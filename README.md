@@ -12,7 +12,7 @@ We use a [Contributor License Agreement](https://github.com/SevenTV/.github/blob
 
 ## License
 
-This project is licensed under the [BSD-4 Clause](LICENSE.md).
+This project is licensed under the [BSD-4 Clause](LICENSE).
 
 ## Code of Conduct
 
