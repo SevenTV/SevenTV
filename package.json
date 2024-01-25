@@ -1,0 +1,15 @@
+{
+	"private": true,
+	"devDependencies": {
+		"@commitlint/cli": "^18.5.0",
+		"@commitlint/config-conventional": "^18.5.0",
+		"commitlint": "^18.5.0",
+		"husky": "^8.0.3",
+		"prettier": "^3.2.4"
+	},
+	"pnpm": {
+		"overrides": {
+			"semver@<7.5.4": ">=7.5.4"
+		}
+	}
+}
