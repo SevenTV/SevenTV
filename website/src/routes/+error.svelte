@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>7TV - {title}</title>
+	<title>{title} - 7TV</title>
 </svelte:head>
 
 <div class="container">
