@@ -1,6 +1,12 @@
 <script lang="ts">
     import Logo from "$/components/icons/logo.svelte";
+    import SearchBar from "$/components/nav/search-bar.svelte";
     import Tabs from "./tabs.svelte";
+
+    import Fa from "svelte-fa";
+    import { faBell, faMessage } from "@fortawesome/free-regular-svg-icons";
+    import { faPlus } from "@fortawesome/free-solid-svg-icons";
+    import Badge from "../badge.svelte";
 </script>
 
 <nav>
@@ -17,8 +23,23 @@
             ]}
         />
     </div>
-    <search>Search</search>
-    <div>User</div>
+    <SearchBar />
+    <div class="user-actions">
+        <button class="button center big">
+            <Fa icon={faBell} fw />
+        </button>
+        <button class="button center big">
+            <Badge count={55}>
+                <Fa icon={faMessage} fw />
+            </Badge>
+        </button>
+        <a href="/upload" class="button center secondary">
+            <Fa icon={faPlus} />
+            Upload
+        </a>
+        <a href="/login" class="button secondary">Login</a>
+        <a href="/signup" class="button primary">Sign Up</a>
+    </div> 
 </nav>
 
 <style lang="scss">
@@ -41,5 +62,11 @@
             display: flex;
             align-items: center;
         }
+    }
+
+    .user-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
     }
 </style>

@@ -9,16 +9,16 @@
 	export let tabs: Tab[];
 </script>
 
-<ul class="selector" aria-label="Tab selector">
+<ul aria-label="tabs">
 	{#each tabs as tab}
-        <li>
+        <li aria-current={$page.url.pathname === tab.pathname}>
             <a class:selected={$page.url.pathname === tab.pathname} href={tab.pathname} draggable="false">{tab.name}</a>
         </li>
 	{/each}
 </ul>
 
 <style lang="scss">
-	.selector {
+	ul {
 		display: flex;
 		flex-wrap: wrap;
         align-items: center;
@@ -30,7 +30,7 @@
         }
 
 		a {
-            padding: 0.75rem 1rem;
+            padding: 1rem;
 			border-top: 2px solid transparent;
 			border-bottom: 2px solid transparent;
 			background-color: none;
@@ -38,12 +38,14 @@
 			color: var(--text);
 			text-decoration: none;
 
+			transition: border-bottom-color 0.1s;
+
             &:hover, &:focus-visible {
-                border-bottom: 2px solid var(--text-light);
+                border-bottom-color: var(--text-light);
             }
 
             &.selected {
-                border-bottom: 2px solid var(--primary);
+                border-bottom-color: var(--primary);
             }
 		}
 	}
