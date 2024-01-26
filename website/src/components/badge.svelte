@@ -17,19 +17,19 @@
 
     .badge {
         position: absolute;
-        top: -0.55rem;
-        right: -0.75rem;
+        top: -0.75rem;
+        right: -0.8rem;
 
         display: flex;
         align-items: center;
         justify-content: center;
 
-        width: 1rem;
-        height: 1rem;
+        width: 1.4rem;
+        height: 1.4rem;
         border-radius: 50%;
         background-color: var(--error);
         border: 3px solid var(--bg-dark);
-        font-size: 0.625rem;
+        font-size: 0.7rem;
         font-weight: 500;
     }
 </style>
