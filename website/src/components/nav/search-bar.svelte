@@ -4,31 +4,22 @@
 </script>
 
 <search>
-    <div class="input-wrapper">
-        <div class="icon">
-            <Fa icon={faSearch} />
-        </div>
-        <input type="text" placeholder="Search" />
+    <div class="icon">
+        <Fa icon={faSearch} />
     </div>
-    <select>
-        <option value="emotes">Emotes</option>
-        <option value="users">Users</option>
-    </select>
+    <input type="text" placeholder="Search" />
 </search>
 
 <style lang="scss">
     search {
         flex-grow: 1;
         max-width: 30rem;
+        min-width: 10rem;
+        position: relative;
 
         display: flex;
         align-items: center;
         justify-content: center;
-
-        .input-wrapper {
-            flex-grow: 1;
-            position: relative;
-        }
 
         .icon {
             position: absolute;
@@ -44,28 +35,27 @@
         }
 
         input {
-            width: calc(100% - 2.5rem);
+            width: 100%;
 
             padding: 0.75rem 0;
             padding-left: 2.5rem;
-            border-radius: 0.5rem 0 0 0.5rem;
-            border: none;
-            border-right: 1px solid var(--border);
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
             outline: none;
-            background-color: var(--bg-lightest);
+            background-color: var(--secondary);
             color: var(--text);
             font-size: 0.875rem;
-        }
 
-        select {
-            padding: 0.75rem 1rem;
-            border-radius: 0 0.5rem 0.5rem 0;
-            border: none;
-            outline: none;
-            background-color: var(--bg-lightest);
-            color: var(--text);
-            font-size: 0.875rem;
-            font-weight: 500;
+            transition: background-color 0.1s;
+
+            &:focus-visible {
+                background-color: var(--secondary-hover);
+                border: 1px solid var(--primary);
+            }
+
+            &:active {
+                background-color: var(--secondary-active);
+            }
         }
     }
 </style>

@@ -1,11 +1,17 @@
 :root {
     --primary: #237bff;
-    --primary-dark: #005eeb;
+    --primary-hover: #1472ff;
+    --primary-active: #0569ff;
+    --primary-disabled: #183663;
+
+    --secondary: #222222;
+    --secondary-hover: #252525;
+    --secondary-active: #383838;
+    --secondary-disabled: #202020;
 
     --bg-dark: #0a0a0a;
     --bg-medium: #0f0f0f;
     --bg-light: #141414;
-    --bg-lightest: #222222;
 
     --text: #ffffff;
     --text-light: #858585;

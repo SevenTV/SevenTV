@@ -5,7 +5,7 @@
 		name: string;
 		pathname: string;
 	};
-
+	
 	export let tabs: Tab[];
 </script>
 
@@ -20,7 +20,6 @@
 <style lang="scss">
 	ul {
 		display: flex;
-		flex-wrap: wrap;
         align-items: center;
 
 		user-select: none;
@@ -38,11 +37,19 @@
 			color: var(--text);
 			text-decoration: none;
 
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+
 			transition: border-bottom-color 0.1s;
 
             &:hover, &:focus-visible {
-                border-bottom-color: var(--text-light);
+                border-bottom-color: var(--secondary-hover);
             }
+
+			&:active {
+				border-bottom-color: var(--primary-active);
+			}
 
             &.selected {
                 border-bottom-color: var(--primary);
