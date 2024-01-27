@@ -12,8 +12,9 @@
 
 <style lang="scss">
     search {
-        flex-grow: 1;
-        max-width: 30rem;
+        /* First, take 30rem and then shrink by a factor of 1 */
+		flex: 0 1 30rem;
+
         min-width: 10rem;
         position: relative;
 
