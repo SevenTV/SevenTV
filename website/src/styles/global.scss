@@ -15,7 +15,8 @@ body {
 }
 
 h1,
-h2 {
+h2,
+hr {
 	margin: 0;
 }
 
@@ -51,6 +52,7 @@ ul {
 	padding: 0.5rem;
 	border-radius: 0.5rem;
 	transition: background-color 0.1s;
+	white-space: nowrap;
 
 	&.center {
 		display: flex;
