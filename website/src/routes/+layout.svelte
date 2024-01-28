@@ -3,6 +3,16 @@
     import "$/styles/colors.scss";
     import "$/styles/global.scss";
     import TopNav from "$/components/nav/top-nav.svelte";
+    import { showMobileMenu } from "$/lib/stores";
+    import MobileMenu from "$/components/nav/mobile-menu.svelte";
+    import { beforeNavigate } from "$app/navigation";
+
+    beforeNavigate((nav) => {
+        // Hide menu on navigate
+        nav.complete.then(() => {
+            $showMobileMenu = false;
+        });
+    });
 </script>
 
 <header>
@@ -11,7 +21,11 @@
 </header>
 
 <main id="main">
-    <slot />
+    {#if $showMobileMenu}
+        <MobileMenu />
+    {:else}
+        <slot />
+    {/if}
 </main>
 
 <style lang="scss">
@@ -27,6 +41,10 @@
 
     header {
         display: contents;
+    }
+
+    main {
+        overflow: auto;
     }
 
     .skip-to-main {

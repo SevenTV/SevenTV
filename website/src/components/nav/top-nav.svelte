@@ -7,7 +7,7 @@
     import { faEllipsisV, faPlus, faSearch } from "@fortawesome/free-solid-svg-icons";
     import Badge from "../badge.svelte";
     import HideOn from "../hide-on.svelte";
-    import { user } from "$/lib/stores";
+    import { user, showMobileMenu } from "$/lib/stores";
     import DropDown from "../drop-down.svelte";
 </script>
 
@@ -32,29 +32,35 @@
     </HideOn>
     <div class="user-actions">
         <button class="button center hide-on-desktop">
-            <Fa icon={faSearch} fw />
+            <Fa icon={faSearch} size="1.2x" fw />
         </button>
         {#if $user}
             <button class="button center">
-                <Fa icon={faBell} fw />
+                <Fa icon={faBell} size="1.2x" fw />
             </button>
             <button class="button center">
                 <Badge count={55}>
-                    <Fa icon={faMessage} fw />
+                    <Fa icon={faMessage} size="1.2x" fw />
                 </Badge>
             </button>
             <a href="/upload" class="button center hide-on-desktop">
-                <Fa icon={faPlusSquare} />
+                <Fa icon={faPlusSquare} size="1.2x" fw />
             </a>
             <a href="/upload" class="button center secondary hide-on-mobile">
-                <Fa icon={faPlus} />
+                <Fa icon={faPlus} size="1.2x" />
                 Upload
             </a>
-            <span>ayyybubu</span>
+            <a href="/user/ayyybubu" class="profile hide-on-mobile">
+                <img src="/test-profile-pic.png" alt="profile" />
+                <span>ayyybubu</span>
+            </a>
+            <button class="profile hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
+                <img src="/test-profile-pic.png" alt="profile" />
+            </button>
         {:else}
             <DropDown>
                 <button class="button center">
-                    <Fa icon={faEllipsisV} fw />
+                    <Fa icon={faEllipsisV} size="1.2x" fw />
                 </button>
                 <svelte:fragment slot="dropdown">
                     <li>
@@ -75,8 +81,7 @@
                     </li>
                 </svelte:fragment>
             </DropDown>
-            <a class="button primary hide-on-mobile" href="/sign-in">Sign In</a>
-            <button class="button primary hide-on-desktop" on:click={() => ($user = true)}>Sign In</button>
+            <a class="button primary" href="/sign-in">Sign In</a>
         {/if}
     </div> 
 </nav>
@@ -91,7 +96,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 2rem;
+        gap: 1rem;
     }
 
     .links {
@@ -115,6 +120,20 @@
         gap: 0.75rem;
         align-items: center;
         justify-content: flex-end;
+
+        .profile {
+            color: var(--text);
+
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+
+            & > img {
+                width: 2rem;
+                height: 2rem;
+            }
+        }
     }
 
     @media screen and (max-width: 960px) {
@@ -125,10 +144,6 @@
 
         .links {
             gap: 1rem;
-        }
-
-        .user-actions {
-            gap: 0.5rem;
         }
     }
 </style>

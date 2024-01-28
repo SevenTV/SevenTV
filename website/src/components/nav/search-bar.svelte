@@ -15,7 +15,6 @@
         /* First, take 30rem and then shrink by a factor of 1 */
 		flex: 0 1 30rem;
 
-        min-width: 10rem;
         position: relative;
 
         display: flex;
