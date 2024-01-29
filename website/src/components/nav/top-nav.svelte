@@ -58,29 +58,31 @@
 				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
 			</button>
 		{:else}
-			<DropDown>
-				<button class="button">
-					<Fa icon={faEllipsisV} size="1.2x" fw />
-				</button>
-				<svelte:fragment slot="dropdown">
-					<li>
-						<a href="/developer">Developer Portal</a>
-					</li>
-					<li>
-						<a href="/contact">Contact</a>
-					</li>
-					<li>
-						<a href="/faq">FAQ</a>
-					</li>
-					<hr />
-					<li>
-						<a href="/privacy">Privacy Policy</a>
-					</li>
-					<li>
-						<a href="/tos">Terms of Service</a>
-					</li>
-				</svelte:fragment>
-			</DropDown>
+			<HideOn mobile>
+				<DropDown>
+					<button class="button">
+						<Fa icon={faEllipsisV} size="1.2x" fw />
+					</button>
+					<svelte:fragment slot="dropdown">
+						<li>
+							<a href="/developer">Developer Portal</a>
+						</li>
+						<li>
+							<a href="/contact">Contact</a>
+						</li>
+						<li>
+							<a href="/faq">FAQ</a>
+						</li>
+						<hr />
+						<li>
+							<a href="/privacy">Privacy Policy</a>
+						</li>
+						<li>
+							<a href="/tos">Terms of Service</a>
+						</li>
+					</svelte:fragment>
+				</DropDown>
+			</HideOn>
 			<a class="button primary" href="/sign-in">Sign In</a>
 		{/if}
 	</div>
