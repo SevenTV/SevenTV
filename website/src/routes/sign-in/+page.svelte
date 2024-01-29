@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { user } from "$/lib/stores";
+	import { user } from "$/lib/stores";
 </script>
 
 <svelte:head>
-    <title>Sign In - 7TV</title>
+	<title>Sign In - 7TV</title>
 </svelte:head>
 
 <h1>Sign In</h1>

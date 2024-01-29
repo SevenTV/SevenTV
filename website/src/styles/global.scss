@@ -1,9 +1,9 @@
 body {
 	margin: 0;
 	padding: 0;
-    font-family: 'Inter', sans-serif;
-    color: var(--text);
-    background-color: var(--bg-dark);
+	font-family: "Inter", sans-serif;
+	color: var(--text);
+	background-color: var(--bg-dark);
 }
 
 * {
@@ -64,7 +64,9 @@ ul {
 	align-items: center;
 	gap: 0.5rem;
 
-	&.primary, &.secondary, &.no-bg {
+	&.primary,
+	&.secondary,
+	&.no-bg {
 		padding: 0.5rem 1rem;
 	}
 
@@ -72,7 +74,8 @@ ul {
 		background-color: var(--secondary);
 	}
 
-	&:hover, &:focus-visible {
+	&:hover,
+	&:focus-visible {
 		text-decoration: none;
 		background-color: var(--secondary-hover);
 	}
@@ -89,7 +92,8 @@ ul {
 	&.primary {
 		background-color: var(--primary);
 
-		&:hover, &:focus-visible {
+		&:hover,
+		&:focus-visible {
 			background-color: var(--primary-hover);
 		}
 

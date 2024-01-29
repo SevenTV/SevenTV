@@ -1,51 +1,50 @@
 <script lang="ts">
-    import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
-    import Fa from "svelte-fa";
+	import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+	import Fa from "svelte-fa";
 
-    export let title: string;
+	export let title: string;
 
-    let expanded = true;
+	let expanded = true;
 </script>
 
 <div class="expandable">
-    <button class="header" on:click={() => (expanded = !expanded)} class:expanded={expanded}>
-        {title}
-        <div class="icon">
-            <Fa icon={faChevronDown} />
-        </div>
-    </button>
-    {#if expanded}
-        <slot />
-    {/if}
+	<button class="header" on:click={() => (expanded = !expanded)} class:expanded>
+		{title}
+		<div class="icon">
+			<Fa icon={faChevronDown} />
+		</div>
+	</button>
+	{#if expanded}
+		<slot />
+	{/if}
 </div>
 
 <style lang="scss">
-    .expandable {
-        display: flex;
-        flex-direction: column;
-    }
+	.expandable {
+		display: flex;
+		flex-direction: column;
+	}
 
-    .header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        
-        color: var(--text-lighter);
-        font-size: 0.75rem;
-        font-weight: 500;
+	.header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 
-        & > .icon {
-            transition: transform 0.1s;
-            transform: rotate(-90deg);
+		color: var(--text-lighter);
+		font-size: 0.75rem;
+		font-weight: 500;
 
-        }
+		& > .icon {
+			transition: transform 0.1s;
+			transform: rotate(-90deg);
+		}
 
-        &.expanded {
-            margin-bottom: 0.5rem;
+		&.expanded {
+			margin-bottom: 0.5rem;
 
-            & > .icon {
-                transform: rotate(0deg);
-            }
-        }
-    }
+			& > .icon {
+				transform: rotate(0deg);
+			}
+		}
+	}
 </style>
