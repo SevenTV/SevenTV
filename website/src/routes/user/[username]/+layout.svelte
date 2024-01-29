@@ -5,29 +5,31 @@
 		faBolt,
 		faBrush,
 		faChevronDown,
-		faCircleCheck,
+		faBadgeCheck,
 		faComment,
 		faEllipsisV,
-		faFileLines,
+		faMemo,
 		faFolder,
-		faGear,
-		faGift,
 		faUpload,
-	} from "@fortawesome/free-solid-svg-icons";
+	} from "@fortawesome/pro-solid-svg-icons";
+	import {
+		faBolt as faRegularBolt,
+		faBrush as faRegularBrush,
+		faComment as faRegularComment,
+		faMemo as faRegularMemo,
+		faFolder as faRegularFolder,
+		faGear,
+		faUpload as faRegularUpload,
+	} from "@fortawesome/pro-regular-svg-icons";
 	import type { LayoutData } from "./$types";
-	import { faHeart } from "@fortawesome/free-regular-svg-icons";
+	import { faGift, faHeart } from "@fortawesome/pro-regular-svg-icons";
 	import { faTwitch, faDiscord } from "@fortawesome/free-brands-svg-icons";
 	import Expandable from "$/components/expandable.svelte";
 	import { page } from "$app/stores";
 	import HideOn from "$/components/hide-on.svelte";
+	import TabLink from "$/components/profile/tab-link.svelte";
 
 	export let data: LayoutData;
-
-	function scrollIntoView(e: MouseEvent) {
-		if (e.target instanceof HTMLElement) {
-			e.target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-		}
-	}
 </script>
 
 <svelte:head>
@@ -39,7 +41,7 @@
 		<img src="/test-profile-pic.jpeg" alt="profile" class="profile-picture" />
 		<span class="name">
 			{data.username}
-			<Fa icon={faCircleCheck} size="0.75x" />
+			<Fa icon={faBadgeCheck} size="0.75x" />
 		</span>
 		<div class="roles">
 			<Role name="Staff" />
@@ -94,66 +96,12 @@
 	<div class="content">
 		<div class="header">
 			<div class="tabs">
-				<a
-					href="/user/{data.username}"
-					class="button no-bg"
-					draggable="false"
-					class:secondary={$page.url.pathname === `/user/${data.username}`}
-					on:click={scrollIntoView}
-				>
-					<Fa icon={faBolt} size="1.2x" />
-					Active
-				</a>
-				<a
-					href="/user/{data.username}/uploaded"
-					class="button no-bg"
-					draggable="false"
-					class:secondary={$page.url.pathname === `/user/${data.username}/uploaded`}
-					on:click={scrollIntoView}
-				>
-					<Fa icon={faUpload} size="1.2x" />
-					Uploaded
-				</a>
-				<a
-					href="/user/{data.username}/emote-sets"
-					class="button no-bg"
-					draggable="false"
-					class:secondary={$page.url.pathname === `/user/${data.username}/emote-sets`}
-					on:click={scrollIntoView}
-				>
-					<Fa icon={faFolder} size="1.2x" />
-					Emote Sets
-				</a>
-				<a
-					href="/user/{data.username}/cosmetics"
-					class="button no-bg"
-					draggable="false"
-					class:secondary={$page.url.pathname === `/user/${data.username}/cosmetics`}
-					on:click={scrollIntoView}
-				>
-					<Fa icon={faBrush} size="1.2x" />
-					Cosmetics
-				</a>
-				<a
-					href="/user/{data.username}/activity-log"
-					class="button no-bg"
-					draggable="false"
-					class:secondary={$page.url.pathname === `/user/${data.username}/activity-log`}
-					on:click={scrollIntoView}
-				>
-					<Fa icon={faFileLines} size="1.2x" />
-					Activity Log
-				</a>
-				<a
-					href="/user/{data.username}/mod-comments"
-					class="button no-bg"
-					draggable="false"
-					class:secondary={$page.url.pathname === `/user/${data.username}/mod-comments`}
-					on:click={scrollIntoView}
-				>
-					<Fa icon={faComment} size="1.2x" />
-					Mod Comments
-				</a>
+				<TabLink title="Active" href="/user/{data.username}" icon={faRegularBolt} activeIcon={faBolt} />
+				<TabLink title="Uploaded" href="/user/{data.username}/uploaded" icon={faRegularUpload} activeIcon={faUpload} />
+				<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets" icon={faRegularFolder} activeIcon={faFolder} />
+				<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics" icon={faRegularBrush} activeIcon={faBrush} />
+				<TabLink title="Activity Log" href="/user/{data.username}/activity-log" icon={faRegularMemo} activeIcon={faMemo} />
+				<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments" icon={faRegularComment} activeIcon={faComment} />
 			</div>
 			<a href="/settings" class="button no-bg hide-on-mobile">
 				<Fa icon={faGear} size="1.2x" />

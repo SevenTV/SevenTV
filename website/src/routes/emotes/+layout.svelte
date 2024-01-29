@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Expandable from "$/components/expandable.svelte";
 	import { page } from "$app/stores";
-	import { faFaceGrinWink, faFolder } from "@fortawesome/free-regular-svg-icons";
-	import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
+	import { faFaceGrinWink, faFolder } from "@fortawesome/pro-regular-svg-icons";
+	import { faChevronLeft, faChevronRight } from "@fortawesome/pro-solid-svg-icons";
 	import Fa from "svelte-fa";
 	import { fly } from "svelte/transition";
 	import { sideBar } from "$/lib/stores";

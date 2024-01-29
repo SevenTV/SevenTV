@@ -1,29 +1,26 @@
 <script lang="ts">
 	import {
 		faChevronRight,
-		faCircleCheck,
 		faCode,
+		faBadgeCheck,
 		faEarthAmericas,
-		faGear,
-		faLock,
-		faRightFromBracket,
-	} from "@fortawesome/free-solid-svg-icons";
+	} from "@fortawesome/pro-solid-svg-icons";
 	import {
 		faCompass,
-		faFileLines,
-		faMessage,
+		faMessageArrowUpRight,
 		faMoon,
 		faQuestionCircle,
 		faSmileWink,
 		faStar,
-	} from "@fortawesome/free-regular-svg-icons";
+		faHome,
+		faGear,
+		faLock,
+		faMemo,
+		faRightFromBracket,
+	} from "@fortawesome/pro-regular-svg-icons";
 	import Fa from "svelte-fa";
 	import { user } from "$/lib/stores";
-	import { loadIcon } from "$/lib/iconLoader";
 	import Role from "../profile/role.svelte";
-
-	let faHome: any;
-	loadIcon("faHome", (icon) => (faHome = icon));
 </script>
 
 <div class="menu">
@@ -31,7 +28,7 @@
 		<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
 		<span class="name">
 			ayyybubu
-			<Fa icon={faCircleCheck} size="0.75x" />
+			<Fa icon={faBadgeCheck} size="0.75x" />
 		</span>
 		<div class="roles">
 			<Role name="Staff" />
@@ -88,7 +85,7 @@
 			Developer Portal
 		</a>
 		<a href="/contact">
-			<Fa icon={faMessage} size="1.2x" fw />
+			<Fa icon={faMessageArrowUpRight} size="1.2x" fw />
 			Contact
 		</a>
 		<a href="/faq">
@@ -100,7 +97,7 @@
 			Privacy Policy
 		</a>
 		<a href="/tos">
-			<Fa icon={faFileLines} size="1.2x" fw />
+			<Fa icon={faMemo} size="1.2x" fw />
 			Terms of Service
 		</a>
 	</div>
