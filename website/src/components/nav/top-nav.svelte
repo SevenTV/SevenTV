@@ -3,8 +3,8 @@
 	import SearchBar from "$/components/nav/search-bar.svelte";
 	import Tabs from "./tabs.svelte";
 	import Fa from "svelte-fa";
-	import { faBell, faMessage, faPlusSquare } from "@fortawesome/free-regular-svg-icons";
-	import { faEllipsisV, faPlus, faSearch } from "@fortawesome/free-solid-svg-icons";
+	import { faBell, faMessage, faPlusSquare } from "@fortawesome/pro-regular-svg-icons";
+	import { faEllipsisV, faPlus, faSearch } from "@fortawesome/pro-solid-svg-icons";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
 	import { user, showMobileMenu } from "$/lib/stores";

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+	import { faChevronDown } from "@fortawesome/pro-solid-svg-icons";
 	import Fa from "svelte-fa";
 
 	export let title: string;
