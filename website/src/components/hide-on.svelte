@@ -3,12 +3,12 @@
 	export let desktop = false;
 </script>
 
-<div class:hide-on-mobile={mobile} class:hide-on-desktop={desktop}>
+<div class="hide-on" class:hide-on-mobile={mobile} class:hide-on-desktop={desktop}>
 	<slot />
 </div>
 
 <style lang="scss">
-	div {
+	.hide-on {
 		display: contents;
 	}
 </style>

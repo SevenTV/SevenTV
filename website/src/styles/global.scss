@@ -70,6 +70,14 @@ ul {
 		padding: 0.5rem 1rem;
 	}
 
+	&.big {
+		padding: 0.75rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+
+		gap: 0.75rem;
+	}
+
 	&.secondary {
 		background-color: var(--secondary);
 	}
@@ -104,6 +112,50 @@ ul {
 		&:disabled {
 			background-color: var(--primary-disabled);
 			cursor: not-allowed;
+		}
+	}
+}
+
+.side-bar-layout {
+	display: flex;
+	height: 100%;
+
+	& > .side-bar {
+		min-width: 16rem;
+		overflow: auto;
+		position: relative;
+
+		background-color: var(--bg-medium);
+		padding: 1rem 1.25rem;
+
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	& > .content {
+		flex-grow: 1;
+		overflow: auto;
+		padding: 1rem 2rem;
+	}
+}
+
+@media screen and (max-width: 960px) {
+	.side-bar-layout {
+		flex-direction: column;
+		overflow: auto;
+
+		& > .side-bar {
+			overflow: unset;
+			margin: 0.75rem 1rem;
+			border-radius: 0.5rem;
+			padding: 1rem;
+		}
+
+		& > .content {
+			overflow: unset;
+			padding: 0.75rem 1rem;
+			padding-top: 0;
 		}
 	}
 }

@@ -5,7 +5,6 @@
 		faCode,
 		faEarthAmericas,
 		faGear,
-		faHome,
 		faLock,
 		faRightFromBracket,
 	} from "@fortawesome/free-solid-svg-icons";
@@ -20,7 +19,11 @@
 	} from "@fortawesome/free-regular-svg-icons";
 	import Fa from "svelte-fa";
 	import { user } from "$/lib/stores";
+	import { loadIcon } from "$/lib/iconLoader";
 	import Role from "../profile/role.svelte";
+
+	let faHome: any;
+	loadIcon("faHome", (icon) => (faHome = icon));
 </script>
 
 <div class="menu">
