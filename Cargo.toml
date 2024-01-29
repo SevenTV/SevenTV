@@ -1,0 +1,26 @@
+[workspace]
+
+members = [
+    "apps/event-api",
+]
+
+resolver = "2"
+
+[profile.release-fat]
+inherits = "release"
+lto = "fat"
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+strip = true
+
+[profile.release-lto]
+inherits = "release"
+lto = 'fat'
+
+[profile.release-debug]
+inherits = "release"
+debug = true
+strip = false
