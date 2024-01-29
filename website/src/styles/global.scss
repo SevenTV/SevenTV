@@ -20,12 +20,18 @@ hr {
 	margin: 0;
 }
 
+hr {
+	border: none;
+	border-bottom: 1px solid var(--border);
+}
+
 button {
 	font-family: inherit;
 	cursor: pointer;
 	border: none;
 	font: inherit;
 	background: none;
+	padding: 0;
 }
 
 a {
@@ -54,23 +60,16 @@ ul {
 	transition: background-color 0.1s;
 	white-space: nowrap;
 
-	&.center {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
 
-	&.primary, &.secondary {
+	&.primary, &.secondary, &.no-bg {
 		padding: 0.5rem 1rem;
 	}
 
 	&.secondary {
 		background-color: var(--secondary);
-
-		&:disabled {
-			background-color: var(--secondary-disabled);
-			cursor: not-allowed;
-		}
 	}
 
 	&:hover, &:focus-visible {
@@ -80,6 +79,11 @@ ul {
 
 	&:active {
 		background-color: var(--secondary-active);
+	}
+
+	&:disabled {
+		background-color: var(--secondary-disabled);
+		cursor: not-allowed;
 	}
 
 	&.primary {

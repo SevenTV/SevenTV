@@ -31,35 +31,35 @@
         <SearchBar />
     </HideOn>
     <div class="user-actions">
-        <button class="button center hide-on-desktop">
+        <button class="button hide-on-desktop">
             <Fa icon={faSearch} size="1.2x" fw />
         </button>
         {#if $user}
-            <button class="button center">
+            <button class="button">
                 <Fa icon={faBell} size="1.2x" fw />
             </button>
-            <button class="button center">
+            <button class="button">
                 <Badge count={55}>
                     <Fa icon={faMessage} size="1.2x" fw />
                 </Badge>
             </button>
-            <a href="/upload" class="button center hide-on-desktop">
+            <a href="/upload" class="button hide-on-desktop">
                 <Fa icon={faPlusSquare} size="1.2x" fw />
             </a>
-            <a href="/upload" class="button center secondary hide-on-mobile">
+            <a href="/upload" class="button secondary hide-on-mobile">
                 <Fa icon={faPlus} size="1.2x" />
                 Upload
             </a>
             <a href="/user/ayyybubu" class="profile hide-on-mobile">
-                <img src="/test-profile-pic.png" alt="profile" />
+                <img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
                 <span>ayyybubu</span>
             </a>
             <button class="profile hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
-                <img src="/test-profile-pic.png" alt="profile" />
+                <img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
             </button>
         {:else}
             <DropDown>
-                <button class="button center">
+                <button class="button">
                     <Fa icon={faEllipsisV} size="1.2x" fw />
                 </button>
                 <svelte:fragment slot="dropdown">
@@ -72,7 +72,7 @@
                     <li>
                         <a href="/faq">FAQ</a>
                     </li>
-                    <hr>
+                    <hr />
                     <li>
                         <a href="/privacy">Privacy Policy</a>
                     </li>
@@ -129,9 +129,12 @@
             gap: 0.5rem;
             text-decoration: none;
 
-            & > img {
+            .profile-picture {
                 width: 2rem;
                 height: 2rem;
+
+                border-radius: 50%;
+                border: 2px solid var(--staff);
             }
         }
     }

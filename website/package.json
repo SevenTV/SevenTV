@@ -10,6 +10,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
+		"@fortawesome/free-brands-svg-icons": "^6.5.1",
 		"@fortawesome/free-regular-svg-icons": "^6.5.1",
 		"@fortawesome/free-solid-svg-icons": "^6.5.1",
 		"@sveltejs/adapter-static": "^3.0.1",

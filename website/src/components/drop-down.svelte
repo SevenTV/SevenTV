@@ -68,7 +68,6 @@
             :global(hr) {
                 width: 80%;
                 height: 1px;
-                color: var(--border);
                 align-self: center;
             }
 

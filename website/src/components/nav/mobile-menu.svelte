@@ -20,18 +20,19 @@
     } from "@fortawesome/free-regular-svg-icons";
     import Fa from "svelte-fa";
     import { user } from "$/lib/stores";
+    import Role from "../profile/role.svelte";
 </script>
 
 <div class="menu">
     <a class="profile" href="/user/ayyybubu">
-        <img src="/test-profile-pic.png" alt="profile" />
+        <img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
         <span class="name">
             ayyybubu
             <Fa icon={faCircleCheck} size="0.75x" />
         </span>
         <div class="roles">
-            <span>Staff</span>
-            <span>Subscriber</span>
+            <Role name="Staff" />
+            <Role name="Subscriber" />
         </div>
         <div class="chevron">
             <Fa icon={faChevronRight} />
@@ -131,11 +132,13 @@
         row-gap: 0.5rem;
         column-gap: 0.75rem;
 
-        img {
+        .profile-picture {
             grid-row: 1 / -1;
 
             width: 3rem;
             height: 3rem;
+            border-radius: 50%;
+            border: 2px solid var(--staff);
         }
 
         .name {
@@ -147,18 +150,9 @@
 
         .roles {
             grid-row: 2;
-            font-size: 0.75rem;
-            font-weight: 500;
 
             display: flex;
             gap: 0.25rem;
-
-            & > span {
-                padding: 0 0.5rem;
-                color: var(--staff);
-                background-color: var(--staff-bg);
-                border-radius: 0.25rem;
-            }
         }
 
         .chevron {
