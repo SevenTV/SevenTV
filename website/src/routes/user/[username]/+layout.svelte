@@ -1,12 +1,11 @@
 <script lang="ts">
     import Role from "$/components/profile/role.svelte";
     import Fa from "svelte-fa";
-    import { faBolt, faBrush, faChevronDown, faCircleCheck, faComment, faFileLines, faFolder, faPaintBrush, faUpload } from "@fortawesome/free-solid-svg-icons";
+    import { faBolt, faBrush, faChevronDown, faCircleCheck, faComment, faFileLines, faFolder, faGear, faPaintBrush, faUpload } from "@fortawesome/free-solid-svg-icons";
     import type { LayoutData } from "./$types";
     import { faHeart } from "@fortawesome/free-regular-svg-icons";
     import { faTwitch, faDiscord } from "@fortawesome/free-brands-svg-icons";
     import Expandable from "$/components/expandable.svelte";
-    import Tabs from "$/components/nav/tabs.svelte";
     import { page } from "$app/stores";
 
     export let data: LayoutData;
@@ -67,30 +66,36 @@
         </Expandable>
     </div>
     <div class="content">
-        <div class="tabs">
-            <a href="/user/{data.username}" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}`}>
-                <Fa icon={faBolt} size="1.2x" />
-                Active
-            </a>
-            <a href="/user/{data.username}/uploaded" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/uploaded`}>
-                <Fa icon={faUpload} size="1.2x" />
-                Uploaded
-            </a>
-            <a href="/user/{data.username}/emote-sets" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/emote-sets`}>
-                <Fa icon={faFolder} size="1.2x" />
-                Emote Sets
-            </a>
-            <a href="/user/{data.username}/cosmetics" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/cosmetics`}>
-                <Fa icon={faBrush} size="1.2x" />
-                Cosmetics
-            </a>
-            <a href="/user/{data.username}/activity-log" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/activity-log`}>
-                <Fa icon={faFileLines} size="1.2x" />
-                Activity Log
-            </a>
-            <a href="/user/{data.username}/mod-comments" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/mod-comments`}>
-                <Fa icon={faComment} size="1.2x" />
-                Mod Comments
+        <div class="header">
+            <div class="tabs">
+                <a href="/user/{data.username}" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}`}>
+                    <Fa icon={faBolt} size="1.2x" />
+                    Active
+                </a>
+                <a href="/user/{data.username}/uploaded" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/uploaded`}>
+                    <Fa icon={faUpload} size="1.2x" />
+                    Uploaded
+                </a>
+                <a href="/user/{data.username}/emote-sets" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/emote-sets`}>
+                    <Fa icon={faFolder} size="1.2x" />
+                    Emote Sets
+                </a>
+                <a href="/user/{data.username}/cosmetics" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/cosmetics`}>
+                    <Fa icon={faBrush} size="1.2x" />
+                    Cosmetics
+                </a>
+                <a href="/user/{data.username}/activity-log" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/activity-log`}>
+                    <Fa icon={faFileLines} size="1.2x" />
+                    Activity Log
+                </a>
+                <a href="/user/{data.username}/mod-comments" class="button no-bg" class:secondary={$page.url.pathname === `/user/${data.username}/mod-comments`}>
+                    <Fa icon={faComment} size="1.2x" />
+                    Mod Comments
+                </a>
+            </div>
+            <a href="/settings" class="button no-bg">
+                <Fa icon={faGear} size="1.2x" />
+                Settings
             </a>
         </div>
         <hr />
@@ -188,6 +193,18 @@
         overflow: auto;
 
         padding: 1rem 2rem;
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+
+            // All buttons except the selected one
+            .button:not(.secondary) {
+                color: var(--text-lighter);
+            }
+        }
 
         .tabs {
             display: flex;
