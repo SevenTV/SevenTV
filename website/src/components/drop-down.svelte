@@ -48,11 +48,11 @@
 			margin: 0;
 			padding: 0;
 			border: var(--border) 1px solid;
-            border-radius: 0.25rem;
+			border-radius: 0.25rem;
 
 			background-color: var(--bg-medium);
 			// filter: drop-shadow(0 0 0.25rem rgba(0, 0, 0, 0.25));
-            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25);
+			box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25);
 
 			:global(li) {
 				display: flex;
@@ -65,11 +65,11 @@
 				}
 			}
 
-            :global(hr) {
-                width: 80%;
-                height: 1px;
-                align-self: center;
-            }
+			:global(hr) {
+				width: 80%;
+				height: 1px;
+				align-self: center;
+			}
 
 			:global(a),
 			:global(button) {
@@ -77,10 +77,10 @@
 
 				text-align: left;
 				color: var(--text);
-                font-size: 0.8125rem;
+				font-size: 0.8125rem;
 				text-decoration: none;
 				font-weight: 500;
-                white-space: nowrap;
+				white-space: nowrap;
 
 				display: flex;
 				align-items: center;

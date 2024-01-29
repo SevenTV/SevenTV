@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Troll from "$/components/icons/troll.svelte";
+	import Troll from "$/components/icons/troll.svelte";
 	import { page } from "$app/stores";
 
 	let title = $page.error?.message ?? "Error";
@@ -10,9 +10,9 @@
 </svelte:head>
 
 <div class="container">
-    <div class="troll">
-        <Troll />
-    </div>
+	<div class="troll">
+		<Troll />
+	</div>
 	<h1>{title}</h1>
 	<span>
 		{#if $page.status === 401}
@@ -34,7 +34,7 @@
 
 <style lang="scss">
 	.container {
-        height: 100%;
+		height: 100%;
 
 		display: flex;
 		flex-direction: column;
@@ -46,9 +46,9 @@
 		font-size: 1.25rem;
 	}
 
-    .troll {
-        font-size: 12rem;
-    }
+	.troll {
+		font-size: 12rem;
+	}
 
 	a {
 		color: var(--text);
