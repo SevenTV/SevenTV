@@ -27,5 +27,9 @@
 		"typescript": "^5.0.0",
 		"vite": "^5.0.3"
 	},
-	"type": "module"
+	"type": "module",
+	"optionalDependencies": {
+		"@fortawesome/pro-regular-svg-icons": "^6.5.1",
+		"@fortawesome/pro-solid-svg-icons": "^6.5.1"
+	}
 }

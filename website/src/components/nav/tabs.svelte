@@ -11,9 +11,11 @@
 
 <ul aria-label="tabs">
 	{#each tabs as tab}
-		<li aria-current={$page.url.pathname === tab.pathname}>
-			<a class:selected={$page.url.pathname === tab.pathname} href={tab.pathname} draggable="false"
-				>{tab.name}</a
+		<li aria-current={$page.url.pathname.startsWith(tab.pathname)}>
+			<a
+				class:selected={$page.url.pathname.startsWith(tab.pathname)}
+				href={tab.pathname}
+				draggable="false">{tab.name}</a
 			>
 		</li>
 	{/each}

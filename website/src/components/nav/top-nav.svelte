@@ -138,6 +138,11 @@
 				border-radius: 50%;
 				border: 2px solid var(--staff);
 			}
+
+			& > span {
+				font-weight: 600;
+				color: var(--staff);
+			}
 		}
 	}
 
