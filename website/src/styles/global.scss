@@ -59,6 +59,7 @@ ul {
 	border-radius: 0.5rem;
 	transition: background-color 0.1s;
 	white-space: nowrap;
+	user-select: none;
 
 	display: flex;
 	align-items: center;
@@ -120,13 +121,34 @@ ul {
 	}
 }
 
+input[type=text] {
+	width: 100%;
+
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.5rem;
+	border: 1px solid transparent;
+	outline: none;
+	background-color: var(--secondary);
+	color: var(--text);
+	font-size: 0.875rem;
+
+	transition: background-color 0.1s;
+
+	&:focus-visible {
+		background-color: var(--secondary-hover);
+		border: 1px solid var(--primary);
+	}
+
+	&:active {
+		background-color: var(--secondary-active);
+	}
+}
+
 .side-bar-layout {
 	display: flex;
 	height: 100%;
 
 	& > .side-bar {
-		min-width: 16rem;
-		overflow: auto;
 		position: relative;
 
 		background-color: var(--bg-medium);
@@ -139,25 +161,38 @@ ul {
 
 	& > .content {
 		flex-grow: 1;
-		overflow: auto;
 		padding: 1rem 2rem;
 	}
 }
 
+// Desktop
+@media screen and (min-width: 961px) {
+	.side-bar-layout {
+		& > .side-bar {
+			width: 100%;
+			max-width: 16rem;
+			overflow: auto;
+		}
+
+		& > .content {
+			overflow: auto;
+		}
+	}
+}
+
+// Mobile
 @media screen and (max-width: 960px) {
 	.side-bar-layout {
 		flex-direction: column;
 		overflow: auto;
 
 		& > .side-bar {
-			overflow: unset;
 			margin: 0.75rem 1rem;
 			border-radius: 0.5rem;
 			padding: 1rem;
 		}
 
 		& > .content {
-			overflow: unset;
 			padding: 0.75rem 1rem;
 			padding-top: 0;
 		}
