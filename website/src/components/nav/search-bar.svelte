@@ -35,27 +35,8 @@
 		}
 
 		input {
-			width: 100%;
-
 			padding: 0.75rem 0;
 			padding-left: 2.5rem;
-			border-radius: 0.5rem;
-			border: 1px solid transparent;
-			outline: none;
-			background-color: var(--secondary);
-			color: var(--text);
-			font-size: 0.875rem;
-
-			transition: background-color 0.1s;
-
-			&:focus-visible {
-				background-color: var(--secondary-hover);
-				border: 1px solid var(--primary);
-			}
-
-			&:active {
-				background-color: var(--secondary-active);
-			}
 		}
 	}
 </style>

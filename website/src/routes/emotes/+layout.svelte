@@ -2,10 +2,32 @@
 	import Expandable from "$/components/expandable.svelte";
 	import { page } from "$app/stores";
 	import { faFaceGrinWink, faFolder } from "@fortawesome/pro-regular-svg-icons";
-	import { faChevronLeft, faChevronRight } from "@fortawesome/pro-solid-svg-icons";
+	import { faChevronLeft, faChevronRight, faXmark } from "@fortawesome/pro-solid-svg-icons";
 	import Fa from "svelte-fa";
 	import { fly } from "svelte/transition";
 	import { sideBar } from "$/lib/stores";
+	import Checkbox from "$/components/checkbox.svelte";
+
+	let tags = ["lorem", "ipsum"];
+
+	$: console.log(tags);
+
+	function removeTag(i: number) {
+		console.log(i);
+		tags.splice(i, 1);
+		tags = [...tags];
+		console.log(tags);
+	}
+
+	let tagInput: string;
+
+	function onTagInput(e: KeyboardEvent) {
+		if (e.key === "Enter" && tagInput) {
+			tags = [...tags, tagInput];
+			tagInput = "";
+			e.preventDefault();
+		}
+	}
 </script>
 
 <div class="side-bar-layout">
@@ -31,8 +53,29 @@
 			</div>
 			<hr />
 			<Expandable title="Sorting">Sort</Expandable>
-			<Expandable title="Tags">Tags</Expandable>
-			<Expandable title="Filters">Filters</Expandable>
+			<Expandable title="Tags">
+				<input type="text" placeholder="Add tags" bind:value={tagInput} on:keypress={onTagInput} />
+				{#if tags && tags.length > 0}
+					<div class="tags">
+						{#each tags as tag, i}
+							<button class="button secondary tag" on:click={() => removeTag(i)}>
+								<span>{tag}</span>
+								<Fa icon={faXmark} />
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</Expandable>
+			<Expandable title="Filters">
+				<div class="filters">
+					<Checkbox label="Zero-Width" />
+					<Checkbox label="Animated" />
+					<Checkbox label="Exact Match" />
+					<Checkbox label="Case Sensitive" />
+					<Checkbox label="Ignore Tags" />
+					<Checkbox label="Personal Use" />
+				</div>
+			</Expandable>
 			<Expandable title="Ratio">Ratio</Expandable>
 		</div>
 	{:else}
@@ -52,7 +95,6 @@
 
 	.side-bar {
 		z-index: 1;
-		position: relative;
 
 		h1 {
 			font-size: 1.125rem;
@@ -76,5 +118,31 @@
 		position: absolute;
 		top: 1rem;
 		left: 0.5rem;
+	}
+
+	.filters {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.tags {
+		margin-top: 0.75rem;
+
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.tag {
+		padding: 0.4rem 0.75rem 0.4rem 1rem;
+		font-weight: 500;
+		max-width: 100%;
+
+		& > span {
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
 	}
 </style>

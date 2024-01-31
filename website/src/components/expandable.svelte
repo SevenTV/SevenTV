@@ -40,7 +40,7 @@
 		}
 
 		&.expanded {
-			margin-bottom: 0.5rem;
+			margin-bottom: 0.75rem;
 
 			& > .icon {
 				transform: rotate(0deg);
