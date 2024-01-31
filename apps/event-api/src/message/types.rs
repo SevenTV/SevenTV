@@ -101,21 +101,7 @@ impl CloseCode {
 	}
 
 	pub const fn into_websocket(self) -> WsCloseCode {
-		match self {
-			Self::ServerError => WsCloseCode::Error,
-			Self::UnknownOperation => WsCloseCode::Policy,
-			Self::InvalidPayload => WsCloseCode::Policy,
-			Self::AuthFailure => WsCloseCode::Policy,
-			Self::AlreadyIdentified => WsCloseCode::Policy,
-			Self::RateLimit => WsCloseCode::Policy,
-			Self::Restart => WsCloseCode::Restart,
-			Self::Maintenance => WsCloseCode::Away,
-			Self::Timeout => WsCloseCode::Restart,
-			Self::AlreadySubscribed => WsCloseCode::Policy,
-			Self::NotSubscribed => WsCloseCode::Policy,
-			Self::InsufficientPrivilege => WsCloseCode::Policy,
-			Self::Reconnect => WsCloseCode::Restart,
-		}
+		WsCloseCode::Library(self.as_u16())
 	}
 }
 

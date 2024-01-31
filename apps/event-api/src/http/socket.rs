@@ -71,13 +71,34 @@ impl WebSocket {
 
 	/// Close the websocket, if the websocket is not ready, this will wait for
 	/// it to be ready.
-	pub async fn close(&mut self, close: CloseFrame<'_>) -> Result<(), hyper_tungstenite::tungstenite::Error> {
+	pub async fn close(&mut self, close: Option<CloseFrame<'_>>) -> Result<(), hyper_tungstenite::tungstenite::Error> {
 		// Wait for the websocket to be ready.
 		self.ready().await?;
 
 		match self {
 			Self::Ready(ws) => {
-				ws.close(Some(close)).await?;
+				ws.close(close).await.ok();
+			}
+			_ => unreachable!("websocket not ready"),
+		}
+
+		// Not sure if this is needed, if we are the ones closing the websocket
+		// however it doesn't hurt to flush it just in case.
+		// See https://github.com/snapview/tungstenite-rs/issues/405
+		self.flush().await.ok();
+
+		Ok(())
+	}
+
+	/// Flush the websocket, if the websocket is not ready, this will wait for
+	/// it to be ready.
+	pub async fn flush(&mut self) -> Result<(), hyper_tungstenite::tungstenite::Error> {
+		// Wait for the websocket to be ready.
+		self.ready().await?;
+
+		match self {
+			Self::Ready(ws) => {
+				ws.flush().await?;
 			}
 			_ => unreachable!("websocket not ready"),
 		}
@@ -184,7 +205,16 @@ impl Socket {
 	/// Receive a message from the socket.
 	pub async fn recv(&mut self) -> Result<Message, SocketError> {
 		match self {
-			Self::WebSocket(ws) => ws.recv().await.map_err(SocketError::WebSocket),
+			Self::WebSocket(ws) => match ws.recv().await.map_err(SocketError::WebSocket) {
+				Ok(Message::Close(frame)) => {
+					// The tungstenite library will not send the echo back to the client
+					// if we don't flush the socket. This is a bug in the library.
+					// See https://github.com/snapview/tungstenite-rs/issues/405
+					ws.flush().await?;
+					Ok(Message::Close(frame))
+				}
+				r => r,
+			},
 			Self::Sse(socket) => {
 				socket.closed().await;
 				Ok(Message::Close(None))
@@ -210,10 +240,10 @@ impl Socket {
 	pub async fn close(&mut self, code: CloseCode, reason: &str) -> Result<(), SocketError> {
 		match self {
 			Self::WebSocket(ws) => {
-				ws.close(CloseFrame {
+				ws.close(Some(CloseFrame {
 					code,
 					reason: Cow::Borrowed(reason),
-				})
+				}))
 				.await?;
 			}
 			Self::Sse(sse) => {

@@ -149,15 +149,17 @@ impl Drop for SocketV3 {
 		match &self.socket {
 			Socket::WebSocket(_) => {
 				self.global.metrics().decr_current_websocket_connections();
+				self.global
+					.metrics()
+					.observe_connection_duration_seconds_websocket(self.start.elapsed().as_secs_f64());
 			}
 			Socket::Sse(_) => {
 				self.global.metrics().decr_current_event_streams();
+				self.global
+					.metrics()
+					.observe_connection_duration_seconds_event_stream(self.start.elapsed().as_secs_f64());
 			}
 		}
-
-		self.global
-			.metrics()
-			.observe_connection_duration_seconds(self.start.elapsed().as_secs_f64());
 	}
 }
 
@@ -257,7 +259,14 @@ impl SocketV3 {
 					tracing::debug!("socket closed: {:?}", err);
 				}
 
-				self.global.metrics().observe_client_close(err.as_str());
+				match self.socket {
+					Socket::Sse(_) => {
+						self.global.metrics().observe_client_close_event_stream(err.as_str());
+					}
+					Socket::WebSocket(_) => {
+						self.global.metrics().observe_client_close_websocket(err.as_str());
+					}
+				}
 				false
 			}
 		} {
@@ -587,9 +596,9 @@ impl SocketV3 {
 				let msg = r?;
 
 				let msg = match msg {
-					hyper_tungstenite::tungstenite::Message::Close(_) => {
+					hyper_tungstenite::tungstenite::Message::Close(frame) => {
 						tracing::debug!("received close message");
-						return Err(SocketV3Error::ClientClosed);
+						return Err(SocketV3Error::ClientClosed(frame.map(|f| f.code)));
 					}
 					hyper_tungstenite::tungstenite::Message::Ping(payload) => {
 						tracing::debug!("received ping message");

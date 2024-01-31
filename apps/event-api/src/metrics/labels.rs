@@ -54,14 +54,29 @@ impl<T: EncodeLabelSet> EncodeLabelSet for Labels<T> {
 /// CloseCode labels.
 pub struct ClientClose {
 	code: &'static str,
+	kind: &'static str,
 	endpoint: &'static str,
 }
 
 impl ClientClose {
 	/// Create a new set of labels, the endpoint is always "v3" since we only
-	/// have one endpoint.
-	pub const fn new(code: &'static str) -> Self {
-		Self { code, endpoint: "v3" }
+	/// have one endpoint for the SSE stream.
+	pub const fn event_stream(code: &'static str) -> Self {
+		Self {
+			code,
+			endpoint: "v3",
+			kind: "event_stream",
+		}
+	}
+
+	/// Create a new set of labels, the endpoint is always "v3" since we only
+	/// have one endpoint for the Websocket stream.
+	pub const fn websocket(code: &'static str) -> Self {
+		Self {
+			code,
+			endpoint: "v3",
+			kind: "websocket",
+		}
 	}
 }
 
@@ -162,11 +177,19 @@ impl CurrentConnection {
 /// ConnectionDuration labels.
 pub struct ConnectionDuration {
 	endpoint: &'static str,
+	kind: &'static str,
 }
 
 impl ConnectionDuration {
-	/// V3 endpoint.
-	pub const V3: Self = Self { endpoint: "v3" };
+	/// Event stream connection.
+	pub const EVENT_STREAM: Self = Self {
+		endpoint: "v3",
+		kind: "event_stream",
+	};
+	pub const WEBSOCKET: Self = Self {
+		endpoint: "v3",
+		kind: "websocket",
+	};
 }
 
 #[derive(Debug, Clone, Hash, Copy, Eq, PartialEq, EncodeLabelSet)]

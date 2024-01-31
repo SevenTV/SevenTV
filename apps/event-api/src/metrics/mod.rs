@@ -104,9 +104,16 @@ impl Metrics {
 	}
 
 	/// Observe a client close code.
-	pub fn observe_client_close(&self, code: &'static str) {
+	pub fn observe_client_close_event_stream(&self, code: &'static str) {
 		self.client_closes
-			.get_or_create(&self.labels.extend(ClientClose::new(code)))
+			.get_or_create(&self.labels.extend(ClientClose::event_stream(code)))
+			.inc();
+	}
+
+	/// Observe a client close code.
+	pub fn observe_client_close_websocket(&self, code: &'static str) {
+		self.client_closes
+			.get_or_create(&self.labels.extend(ClientClose::websocket(code)))
 			.inc();
 	}
 
@@ -142,9 +149,16 @@ impl Metrics {
 	}
 
 	/// Observe how long a connection was open.
-	pub fn observe_connection_duration_seconds(&self, duration: f64) {
+	pub fn observe_connection_duration_seconds_event_stream(&self, duration: f64) {
 		self.connection_duration_seconds
-			.get_or_create(&self.labels.extend(ConnectionDuration::V3))
+			.get_or_create(&self.labels.extend(ConnectionDuration::EVENT_STREAM))
+			.observe(duration);
+	}
+
+	/// Observe how long a connection was open.
+	pub fn observe_connection_duration_seconds_websocket(&self, duration: f64) {
+		self.connection_duration_seconds
+			.get_or_create(&self.labels.extend(ConnectionDuration::WEBSOCKET))
 			.observe(duration);
 	}
 
