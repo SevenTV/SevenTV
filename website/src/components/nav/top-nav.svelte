@@ -4,11 +4,12 @@
 	import Tabs from "./tabs.svelte";
 	import Fa from "svelte-fa";
 	import { faBell, faMessage, faPlusSquare } from "@fortawesome/pro-regular-svg-icons";
-	import { faEllipsisV, faPlus, faSearch } from "@fortawesome/pro-solid-svg-icons";
+	import { faBars, faPlus, faSearch } from "@fortawesome/pro-solid-svg-icons";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
 	import { user, showMobileMenu } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
+	import Menu from "./menu.svelte";
 </script>
 
 <nav>
@@ -21,8 +22,7 @@
 				tabs={[
 					{ name: "Emotes", pathname: "/emotes" },
 					{ name: "Discover", pathname: "/discover" },
-					{ name: "Store", pathname: "/store" },
-					{ name: "More", pathname: "/more" },
+					{ name: "Store", pathname: "/store", hightlight: true },
 				]}
 			/>
 		</HideOn>
@@ -46,44 +46,38 @@
 			<a href="/upload" class="button hide-on-desktop">
 				<Fa icon={faPlusSquare} size="1.2x" fw />
 			</a>
-			<a href="/upload" class="button secondary hide-on-mobile">
+			<a href="/upload" class="button icon-left secondary hide-on-mobile">
 				<Fa icon={faPlus} size="1.2x" />
 				Upload
 			</a>
-			<a href="/user/ayyybubu" class="profile hide-on-mobile">
-				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
-				<span>ayyybubu</span>
-			</a>
+			<HideOn mobile>
+				<DropDown>
+					<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
+					<span class="profile-name">ayyybubu</span>
+					<svelte:fragment slot="dropdown">
+						<Menu />
+					</svelte:fragment>
+				</DropDown>
+			</HideOn>
 			<button class="profile hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
 				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
 			</button>
 		{:else}
 			<HideOn mobile>
-				<DropDown>
-					<button class="button">
-						<Fa icon={faEllipsisV} size="1.2x" fw />
-					</button>
+				<DropDown button>
+					<Fa icon={faBars} size="1.2x" fw />
 					<svelte:fragment slot="dropdown">
-						<li>
-							<a href="/developer">Developer Portal</a>
-						</li>
-						<li>
-							<a href="/contact">Contact</a>
-						</li>
-						<li>
-							<a href="/faq">FAQ</a>
-						</li>
-						<hr />
-						<li>
-							<a href="/privacy">Privacy Policy</a>
-						</li>
-						<li>
-							<a href="/tos">Terms of Service</a>
-						</li>
+						<Menu />
 					</svelte:fragment>
 				</DropDown>
 			</HideOn>
 			<a class="button primary" href="/sign-in">Sign In</a>
+		{/if}
+		<!-- Only show when logged out on mobile -->
+		{#if !$user}
+			<button class="button hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
+				<Fa icon={faBars} size="1.2x" fw />
+			</button>
 		{/if}
 	</div>
 </nav>
@@ -130,19 +124,19 @@
 			align-items: center;
 			gap: 0.5rem;
 			text-decoration: none;
+		}
 
-			.profile-picture {
-				width: 2rem;
-				height: 2rem;
+		.profile-name {
+			font-weight: 600;
+			color: var(--staff);
+		}
 
-				border-radius: 50%;
-				border: 2px solid var(--staff);
-			}
+		.profile-picture {
+			width: 2rem;
+			height: 2rem;
 
-			& > span {
-				font-weight: 600;
-				color: var(--staff);
-			}
+			border-radius: 50%;
+			border: 2px solid var(--staff);
 		}
 	}
 

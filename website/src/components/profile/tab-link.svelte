@@ -18,7 +18,7 @@
 
 <a
     href={href}
-    class="button no-bg"
+    class="button icon-left no-bg"
     draggable="false"
     class:secondary={$page.url.pathname === href}
     on:click={scrollIntoView}
