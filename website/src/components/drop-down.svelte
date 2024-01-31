@@ -26,12 +26,12 @@
 	on:click={toggle}
 	aria-expanded={expanded}
 	aria-controls="dropdown-list-{index}"
-	class:button={button}
+	class:button
 	use:mouseTrap={close}
 >
 	<slot />
 	{#if expanded}
-		<div class="dropped" id="dropdown-list-{index}" transition:fade={{duration: 100}}>
+		<div class="dropped" id="dropdown-list-{index}" transition:fade={{ duration: 100 }}>
 			<slot name="dropdown" />
 		</div>
 	{/if}

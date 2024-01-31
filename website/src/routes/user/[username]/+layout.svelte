@@ -96,12 +96,42 @@
 	<div class="content">
 		<div class="header">
 			<div class="tabs">
-				<TabLink title="Active" href="/user/{data.username}" icon={faRegularBolt} activeIcon={faBolt} />
-				<TabLink title="Uploaded" href="/user/{data.username}/uploaded" icon={faRegularUpload} activeIcon={faUpload} />
-				<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets" icon={faRegularFolder} activeIcon={faFolder} />
-				<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics" icon={faRegularBrush} activeIcon={faBrush} />
-				<TabLink title="Activity Log" href="/user/{data.username}/activity-log" icon={faRegularMemo} activeIcon={faMemo} />
-				<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments" icon={faRegularComment} activeIcon={faComment} />
+				<TabLink
+					title="Active"
+					href="/user/{data.username}"
+					icon={faRegularBolt}
+					activeIcon={faBolt}
+				/>
+				<TabLink
+					title="Uploaded"
+					href="/user/{data.username}/uploaded"
+					icon={faRegularUpload}
+					activeIcon={faUpload}
+				/>
+				<TabLink
+					title="Emote Sets"
+					href="/user/{data.username}/emote-sets"
+					icon={faRegularFolder}
+					activeIcon={faFolder}
+				/>
+				<TabLink
+					title="Cosmetics"
+					href="/user/{data.username}/cosmetics"
+					icon={faRegularBrush}
+					activeIcon={faBrush}
+				/>
+				<TabLink
+					title="Activity Log"
+					href="/user/{data.username}/activity-log"
+					icon={faRegularMemo}
+					activeIcon={faMemo}
+				/>
+				<TabLink
+					title="Mod Comments"
+					href="/user/{data.username}/mod-comments"
+					icon={faRegularComment}
+					activeIcon={faComment}
+				/>
 			</div>
 			<a href="/settings" class="button no-bg hide-on-mobile">
 				<Fa icon={faGear} size="1.2x" />
