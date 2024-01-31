@@ -4,7 +4,7 @@
 	import "$/styles/global.scss";
 	import TopNav from "$/components/nav/top-nav.svelte";
 	import { showMobileMenu } from "$/lib/stores";
-	import MobileMenu from "$/components/nav/mobile-menu.svelte";
+	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
 
 	beforeNavigate((nav) => {
@@ -22,7 +22,7 @@
 
 <main id="main">
 	{#if $showMobileMenu}
-		<MobileMenu />
+		<Menu />
 	{:else}
 		<slot />
 	{/if}

@@ -60,14 +60,14 @@
 			</span>
 		</div>
 		<div class="buttons">
-			<button class="button secondary grow">
+			<button class="button icon-left secondary grow">
 				<Fa icon={faHeart} size="1.2x" />
 				Follow
 			</button>
 			<button class="button secondary more hide-on-mobile">
 				<Fa icon={faChevronDown} size="1.2x" />
 			</button>
-			<button class="button secondary grow hide-on-desktop">
+			<button class="button icon-left secondary grow hide-on-desktop">
 				<Fa icon={faGift} size="1.2x" />
 				Gift
 			</button>

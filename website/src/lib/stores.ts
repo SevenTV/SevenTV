@@ -12,7 +12,11 @@ function sideBarInit() {
 	if (!browser) {
 		return true;
 	}
-	return window.localStorage.getItem("sideBar") === "true";
+	const sideBar = window.localStorage.getItem("sideBar");
+	if (!sideBar) {
+		return true;
+	}
+	return sideBar === "true";
 }
 
 sideBar.subscribe((value) => {

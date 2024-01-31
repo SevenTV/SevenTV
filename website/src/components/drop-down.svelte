@@ -4,6 +4,9 @@
 
 <script lang="ts">
 	import mouseTrap from "$/lib/mouseTrap";
+	import { fade } from "svelte/transition";
+
+	export let button: boolean = false;
 
 	let index = dropDownIndex;
 	dropDownIndex += 1;
@@ -23,69 +26,37 @@
 	on:click={toggle}
 	aria-expanded={expanded}
 	aria-controls="dropdown-list-{index}"
+	class:button={button}
 	use:mouseTrap={close}
 >
 	<slot />
 	{#if expanded}
-		<ul class="list" id="dropdown-list-{index}">
+		<div class="dropped" id="dropdown-list-{index}" transition:fade={{duration: 100}}>
 			<slot name="dropdown" />
-		</ul>
+		</div>
 	{/if}
 </button>
 
 <style lang="scss">
 	button {
 		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 
-		.list {
-			display: flex;
-			flex-direction: column;
-
+		.dropped {
 			z-index: 1;
 
 			position: absolute;
+			top: 100%;
 			right: 0;
 			margin: 0;
 			padding: 0;
 			border: var(--border) 1px solid;
-			border-radius: 0.25rem;
+			border-radius: 0.5rem;
 
 			background-color: var(--bg-medium);
-			// filter: drop-shadow(0 0 0.25rem rgba(0, 0, 0, 0.25));
 			box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25);
-
-			:global(li) {
-				display: flex;
-				flex-direction: column;
-				align-items: stretch;
-
-				&:hover,
-				&:focus-visible {
-					background-color: var(--bg-light);
-				}
-			}
-
-			:global(hr) {
-				width: 80%;
-				height: 1px;
-				align-self: center;
-			}
-
-			:global(a),
-			:global(button) {
-				padding: 0.75rem;
-
-				text-align: left;
-				color: var(--text);
-				font-size: 0.8125rem;
-				text-decoration: none;
-				font-weight: 500;
-				white-space: nowrap;
-
-				display: flex;
-				align-items: center;
-				gap: 0.5rem;
-			}
 		}
 	}
 </style>

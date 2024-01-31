@@ -17,28 +17,34 @@
 		faLock,
 		faMemo,
 		faRightFromBracket,
+		faBrush,
+		faChartLine,
 	} from "@fortawesome/pro-regular-svg-icons";
 	import Fa from "svelte-fa";
 	import { user } from "$/lib/stores";
 	import Role from "../profile/role.svelte";
+	import { fade } from "svelte/transition";
 </script>
 
-<div class="menu">
-	<a class="profile" href="/user/ayyybubu">
-		<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
-		<span class="name">
-			ayyybubu
-			<Fa icon={faBadgeCheck} size="0.75x" />
-		</span>
-		<div class="roles">
-			<Role name="Staff" />
-			<Role name="Subscriber" />
-		</div>
-		<div class="chevron">
-			<Fa icon={faChevronRight} />
-		</div>
-	</a>
-	<div class="link-list">
+<div class="menu" transition:fade={{ duration: 100 }}>
+	{#if $user}
+		<a class="profile" href="/user/ayyybubu">
+			<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
+			<span class="name">
+				ayyybubu
+				<Fa icon={faBadgeCheck} size="0.75x" />
+			</span>
+			<div class="roles">
+				<Role name="Staff" />
+				<Role name="Subscriber" />
+			</div>
+			<div class="chevron">
+				<Fa icon={faChevronRight} />
+			</div>
+		</a>
+		<hr class="hide-on-mobile" />
+	{/if}
+	<div class="link-list hide-on-desktop">
 		<a href="/">
 			<Fa icon={faHome} size="1.2x" fw />
 			Home
@@ -51,11 +57,24 @@
 			<Fa icon={faCompass} size="1.2x" fw />
 			Discover
 		</a>
-		<a href="/store">
+		<a href="/store" class="store">
 			<Fa icon={faStar} size="1.2x" fw />
 			Store
 		</a>
 	</div>
+	{#if $user}
+		<div class="link-list">
+			<a href="/cosmetics">
+				<Fa icon={faBrush} size="1.2x" fw />
+				Cosmetics
+			</a>
+			<a href="/analytics">
+				<Fa icon={faChartLine} size="1.2x" fw />
+				Analytics
+			</a>
+		</div>
+		<hr class="hide-on-mobile" />
+	{/if}
 	<div class="link-list">
 		<button>
 			<Fa icon={faEarthAmericas} size="1.2x" fw />
@@ -71,14 +90,21 @@
 				<Fa icon={faChevronRight} />
 			</div>
 		</button>
-		<button>
-			<Fa icon={faGear} size="1.2x" fw />
-			Settings
-			<div class="chevron">
-				<Fa icon={faChevronRight} />
-			</div>
-		</button>
+		{#if $user}
+			<a href="/settings" class="hide-on-mobile">
+				<Fa icon={faGear} size="1.2x" fw />
+				Settings
+			</a>
+			<button class="hide-on-desktop">
+				<Fa icon={faGear} size="1.2x" fw />
+				Settings
+				<div class="chevron">
+					<Fa icon={faChevronRight} />
+				</div>
+			</button>
+		{/if}
 	</div>
+	<hr class="hide-on-mobile" />
 	<div class="link-list">
 		<a href="/developer">
 			<Fa icon={faCode} size="1.2x" fw />
@@ -101,21 +127,25 @@
 			Terms of Service
 		</a>
 	</div>
-	<div class="link-list">
-		<button on:click={() => ($user = false)}>
-			<Fa icon={faRightFromBracket} size="1.2x" fw />
-			Sign out
-		</button>
-	</div>
+	{#if $user}
+		<hr class="hide-on-mobile" />
+		<div class="link-list">
+			<button on:click={() => ($user = false)}>
+				<Fa icon={faRightFromBracket} size="1.2x" fw />
+				Sign out
+			</button>
+		</div>
+	{/if}
 </div>
 
 <style lang="scss">
 	.menu {
-		padding: 0.5rem 1rem;
-
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+
+		text-align: left;
+
+		min-width: 16rem;
 	}
 
 	.profile {
@@ -176,11 +206,10 @@
 
 		a,
 		button {
-			padding: 0 1rem;
-			height: 3.5rem;
+			padding: 0.75rem;
 			border-radius: 0.5rem;
 			color: var(--text);
-			font-size: 1rem;
+			font-size: 0.875rem;
 			font-weight: 500;
 			text-decoration: none;
 
@@ -197,6 +226,26 @@
 				flex-grow: 1;
 				justify-self: end;
 				text-align: right;
+			}
+		}
+
+		.store {
+			color: var(--subscriber);
+		}
+	}
+
+	@media screen and (max-width: 960px) {
+		.menu {
+			padding: 0.5rem 1rem;
+			gap: 0.5rem;
+		}
+
+		.link-list {
+			a,
+			button {
+				padding: 1rem;
+				font-size: 1rem;
+				gap: 0.75rem;
 			}
 		}
 	}
