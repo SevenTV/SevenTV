@@ -12,6 +12,7 @@
 	import { fly } from "svelte/transition";
 	import { sideBar } from "$/lib/stores";
 	import Checkbox from "$/components/checkbox.svelte";
+	import Select from "$/components/select.svelte";
 
 	let sortAsc = false;
 
@@ -57,10 +58,14 @@
 			<hr />
 			<Expandable title="Sorting">
 				<div class="sorting">
-					<select>
-						<option selected>Popularity</option>
-						<option>Upload Date</option>
-					</select>
+					<div class="select">
+						<Select
+							options={[
+								{ name: "Name", key: 0 },
+								{ name: "Date", key: 1 },
+							]}
+						/>
+					</div>
 					<button class="button secondary" on:click={() => (sortAsc = !sortAsc)}>
 						<Fa icon={sortAsc ? faArrowUpWideShort : faArrowDownWideShort} size="1.2x" />
 					</button>
@@ -138,7 +143,7 @@
 		align-items: center;
 		gap: 0.5rem;
 
-		& > select {
+		.select {
 			flex-grow: 1;
 		}
 

@@ -62,9 +62,14 @@
 				border-bottom-color: var(--primary-active);
 			}
 
+			&:active.highlight {
+				border-bottom-color: var(--subscriber);
+			}
+
 			&.selected {
 				border-bottom-color: var(--primary);
 			}
+
 			&.selected.highlight {
 				border-bottom-color: var(--subscriber);
 			}
