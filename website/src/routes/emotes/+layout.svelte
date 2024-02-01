@@ -1,22 +1,25 @@
 <script lang="ts">
 	import Expandable from "$/components/expandable.svelte";
 	import { page } from "$app/stores";
-	import { faFaceGrinWink, faFolder } from "@fortawesome/pro-regular-svg-icons";
+	import {
+		faArrowDownWideShort,
+		faArrowUpWideShort,
+		faFaceGrinWink,
+		faFolder,
+	} from "@fortawesome/pro-regular-svg-icons";
 	import { faChevronLeft, faChevronRight, faXmark } from "@fortawesome/pro-solid-svg-icons";
 	import Fa from "svelte-fa";
 	import { fly } from "svelte/transition";
 	import { sideBar } from "$/lib/stores";
 	import Checkbox from "$/components/checkbox.svelte";
 
+	let sortAsc = false;
+
 	let tags = ["lorem", "ipsum"];
 
-	$: console.log(tags);
-
 	function removeTag(i: number) {
-		console.log(i);
 		tags.splice(i, 1);
 		tags = [...tags];
-		console.log(tags);
 	}
 
 	let tagInput: string;
@@ -52,7 +55,17 @@
 				</a>
 			</div>
 			<hr />
-			<Expandable title="Sorting">Sort</Expandable>
+			<Expandable title="Sorting">
+				<div class="sorting">
+					<select>
+						<option selected>Popularity</option>
+						<option>Upload Date</option>
+					</select>
+					<button class="button secondary" on:click={() => (sortAsc = !sortAsc)}>
+						<Fa icon={sortAsc ? faArrowUpWideShort : faArrowDownWideShort} size="1.2x" />
+					</button>
+				</div>
+			</Expandable>
 			<Expandable title="Tags">
 				<input type="text" placeholder="Add tags" bind:value={tagInput} on:keypress={onTagInput} />
 				{#if tags && tags.length > 0}
@@ -120,10 +133,18 @@
 		left: 0.5rem;
 	}
 
-	.filters {
+	.sorting {
 		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
+		align-items: center;
+		gap: 0.5rem;
+
+		& > select {
+			flex-grow: 1;
+		}
+
+		& > .button {
+			padding: 0.5rem;
+		}
 	}
 
 	.tags {
@@ -144,5 +165,11 @@
 			overflow: hidden;
 			text-overflow: ellipsis;
 		}
+	}
+
+	.filters {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
 	}
 </style>
