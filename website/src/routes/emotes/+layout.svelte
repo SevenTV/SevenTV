@@ -58,14 +58,7 @@
 			<hr />
 			<Expandable title="Sorting">
 				<div class="sorting">
-					<div class="select">
-						<Select
-							options={[
-								{ name: "Name", key: 0 },
-								{ name: "Date", key: 1 },
-							]}
-						/>
-					</div>
+					<Select options={["Name", "Date"]} />
 					<button class="button secondary" on:click={() => (sortAsc = !sortAsc)}>
 						<Fa icon={sortAsc ? faArrowUpWideShort : faArrowDownWideShort} size="1.2x" />
 					</button>
@@ -142,10 +135,6 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-
-		.select {
-			flex-grow: 1;
-		}
 
 		& > .button {
 			padding: 0.5rem;
