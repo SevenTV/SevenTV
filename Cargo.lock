@@ -1683,9 +1683,9 @@ dependencies = [
 
 [[package]]
 name = "scuffle-utils"
-version = "0.0.3"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b67ffff1d75378b7ff5ecb39d0e1b16e80afb5e88a8af102cbdf4938d864e3c"
+checksum = "510390ab0619b0de107a1187d0df49c5df04ffb9d4abac3a5e9a3ed518dffa58"
 dependencies = [
  "bytes",
  "const_format",

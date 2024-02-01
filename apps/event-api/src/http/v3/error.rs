@@ -4,7 +4,7 @@ use crate::message::types::CloseCode;
 type WsCloseCode = hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 
 #[derive(Debug, thiserror::Error)]
-pub enum SocketV3Error {
+pub enum ConnectionError {
 	#[error("socket error: {0}")]
 	Socket(#[from] SocketError),
 	#[error("server is restarting")]
@@ -23,7 +23,7 @@ pub enum SocketV3Error {
 	Bridge(#[from] reqwest::Error),
 }
 
-impl SocketV3Error {
+impl ConnectionError {
 	pub const fn as_str(&self) -> &'static str {
 		match self {
 			Self::Socket(_) => "CLIENT_CLOSED_ABNORMAL",

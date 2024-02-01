@@ -1,4 +1,3 @@
-use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -58,16 +57,26 @@ async fn handle_socket(
 	let health = global.nats().connection_state() == State::Connected;
 
 	let service = service_fn(move |req| async move {
-		Ok::<_, Infallible>({
-			let mut resp = hyper::Response::new(Full::new(Bytes::new()));
+		Ok::<_, anyhow::Error>({
+			let resp = hyper::Response::builder();
 
-			// If we are not healthy, return a 503, or if we are checking capacity and we
-			// are at capacity.
-			if !health || req.uri().path() == "/capacity" && !capacity {
-				*resp.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
-			} else {
-				// Otherwise we are healthy.
-				*resp.status_mut() = StatusCode::OK;
+			let resp = match req.uri().path() {
+				"/capacity" => resp
+					.status(if !capacity || !health {
+						StatusCode::SERVICE_UNAVAILABLE
+					} else {
+						StatusCode::OK
+					})
+					.body(Full::new(Bytes::new()))
+					.unwrap(),
+				_ => resp
+					.status(if health {
+						StatusCode::OK
+					} else {
+						StatusCode::SERVICE_UNAVAILABLE
+					})
+					.body(Full::new(Bytes::new()))
+					.unwrap(),
 			};
 
 			let user_agent = req

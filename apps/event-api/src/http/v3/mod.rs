@@ -20,7 +20,7 @@ use super::error::EventError;
 use super::socket::Socket;
 use super::Body;
 use crate::global::{AtomicTicket, Global};
-use crate::http::v3::error::SocketV3Error;
+use crate::http::v3::error::ConnectionError;
 use crate::http::v3::topic_map::Subscription;
 use crate::message::types::{CloseCode, Opcode};
 use crate::message::{self, MessagePayload};
@@ -82,7 +82,7 @@ pub async fn handle(mut req: hyper::Request<Incoming>) -> Result<hyper::Response
 		.map_err_route((hyper::StatusCode::INTERNAL_SERVER_ERROR, "failed to upgrade websocket"))?;
 
 		global.metrics().incr_current_websocket_connections();
-		let socket = SocketV3::new(Socket::websocket(websocket), global, initial_subs, ticket);
+		let socket = Connection::new(Socket::websocket(websocket), global, initial_subs, ticket);
 
 		tokio::spawn(socket.serve());
 
@@ -94,7 +94,7 @@ pub async fn handle(mut req: hyper::Request<Incoming>) -> Result<hyper::Response
 		let response = Body::Right(StreamBody::new(ReceiverStream::new(response)));
 
 		global.metrics().incr_current_event_streams();
-		let socket = SocketV3::new(Socket::sse(sender), global, initial_subs, ticket);
+		let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket);
 
 		tokio::spawn(socket.serve());
 
@@ -110,7 +110,7 @@ pub async fn handle(mut req: hyper::Request<Incoming>) -> Result<hyper::Response
 	}
 }
 
-struct SocketV3 {
+struct Connection {
 	/// The socket that this connection is using.
 	socket: Socket,
 	/// The global state.
@@ -144,7 +144,7 @@ struct SocketV3 {
 /// When the socket is dropped, we need to update the metrics.
 /// This will always run regardless of how the socket was dropped (even during a
 /// panic!)
-impl Drop for SocketV3 {
+impl Drop for Connection {
 	fn drop(&mut self) {
 		match &self.socket {
 			Socket::WebSocket(_) => {
@@ -164,7 +164,7 @@ impl Drop for SocketV3 {
 }
 
 /// The implementation of the socket.
-impl SocketV3 {
+impl Connection {
 	pub fn new(
 		socket: Socket,
 		global: Arc<Global>,
@@ -225,7 +225,7 @@ impl SocketV3 {
 		while match self.cycle().context(&ctx).await {
 			Ok(Ok(_)) => true,
 			r => {
-				let err = r.unwrap_or(Err(SocketV3Error::GlobalClosed)).unwrap_err();
+				let err = r.unwrap_or(Err(ConnectionError::GlobalClosed)).unwrap_err();
 
 				if let Some(code) = err.as_close_code() {
 					match code {
@@ -252,7 +252,7 @@ impl SocketV3 {
 						tracing::debug!("socket closed: {:?}", err);
 					}
 
-					if !matches!(err, SocketV3Error::ClosedByServer(_)) {
+					if !matches!(err, ConnectionError::ClosedByServer(_)) {
 						self.send_close(code).await.ok();
 					}
 				} else {
@@ -275,14 +275,14 @@ impl SocketV3 {
 	}
 
 	/// Send a close message to the client, and then close the socket.
-	async fn send_close(&mut self, code: CloseCode) -> Result<(), SocketV3Error> {
+	async fn send_close(&mut self, code: CloseCode) -> Result<(), ConnectionError> {
 		self.send_message(message::payload::EndOfStream {
 			code,
 			message: code.as_str().to_owned(),
 		})
 		.await?;
 		self.socket.close(code.into_websocket(), code.as_str()).await?;
-		Err(SocketV3Error::ClosedByServer(code))
+		Err(ConnectionError::ClosedByServer(code))
 	}
 
 	/// Send an error message to the client, and then close the socket if a
@@ -292,7 +292,7 @@ impl SocketV3 {
 		message: impl ToString,
 		fields: HashMap<String, serde_json::Value>,
 		close_code: Option<CloseCode>,
-	) -> Result<(), SocketV3Error> {
+	) -> Result<(), ConnectionError> {
 		self.send_message(message::payload::Error {
 			message: message.to_string(),
 			fields,
@@ -308,7 +308,7 @@ impl SocketV3 {
 	}
 
 	/// Send an ack message to the client.
-	async fn send_ack(&mut self, command: Opcode, data: serde_json::Value) -> Result<(), SocketV3Error> {
+	async fn send_ack(&mut self, command: Opcode, data: serde_json::Value) -> Result<(), ConnectionError> {
 		self.send_message(message::payload::Ack {
 			command: command.to_string(),
 			data,
@@ -317,7 +317,7 @@ impl SocketV3 {
 	}
 
 	/// Send a message to the client.
-	async fn send_message(&mut self, data: impl MessagePayload + serde::Serialize) -> Result<(), SocketV3Error> {
+	async fn send_message(&mut self, data: impl MessagePayload + serde::Serialize) -> Result<(), ConnectionError> {
 		self.seq += 1;
 		self.global.metrics().observe_server_command(data.opcode());
 		self.socket.send(message::Message::new(data, self.seq - 1)).await?;
@@ -329,7 +329,7 @@ impl SocketV3 {
 		&mut self,
 		auto: Option<u32>,
 		subscribe: &message::payload::Subscribe,
-	) -> Result<(), SocketV3Error> {
+	) -> Result<(), ConnectionError> {
 		if subscribe.condition.is_empty() {
 			self.send_error(
 				"Wildcard event target subscription requires authentication",
@@ -427,7 +427,7 @@ impl SocketV3 {
 		&mut self,
 		auto: bool,
 		unsubscribe: &message::payload::Unsubscribe,
-	) -> Result<(), SocketV3Error> {
+	) -> Result<(), ConnectionError> {
 		if unsubscribe.condition.is_empty() {
 			let count = self.topics.len();
 			self.topics.retain(|topic, _| topic.0 != unsubscribe.ty);
@@ -464,7 +464,7 @@ impl SocketV3 {
 	}
 
 	/// Handle a message from the client.
-	async fn handle_message(&mut self, msg: message::Message) -> Result<(), SocketV3Error> {
+	async fn handle_message(&mut self, msg: message::Message) -> Result<(), ConnectionError> {
 		self.global.metrics().observe_client_command(msg.opcode);
 
 		// We match on the opcode so that we can deserialize the data into the correct
@@ -540,7 +540,7 @@ impl SocketV3 {
 	async fn handle_dispatch(
 		&mut self,
 		payload: &message::Message<message::payload::Dispatch>,
-	) -> Result<(), SocketV3Error> {
+	) -> Result<(), ConnectionError> {
 		// Check if the dispatch is a whisper to a connection.
 		if let Some(whisper) = &payload.data.whisper {
 			if &self.id.to_string() != whisper {
@@ -577,7 +577,7 @@ impl SocketV3 {
 	}
 
 	/// The main driver for the socket.
-	async fn cycle(&mut self) -> Result<(), SocketV3Error> {
+	async fn cycle(&mut self) -> Result<(), ConnectionError> {
 		// On the first cycle, we subscribe to the initial subscriptions.
 		if let Some(initial_subs) = self.initial_subs.take() {
 			for sub in &initial_subs {
@@ -598,7 +598,7 @@ impl SocketV3 {
 				let msg = match msg {
 					hyper_tungstenite::tungstenite::Message::Close(frame) => {
 						tracing::debug!("received close message");
-						return Err(SocketV3Error::ClientClosed(frame.map(|f| f.code)));
+						return Err(ConnectionError::ClientClosed(frame.map(|f| f.code)));
 					}
 					hyper_tungstenite::tungstenite::Message::Ping(payload) => {
 						tracing::debug!("received ping message");
@@ -650,7 +650,7 @@ impl SocketV3 {
 			},
 			_ = &mut self.ttl => {
 				tracing::debug!("ttl expired");
-				Err(SocketV3Error::TtlExpired)
+				Err(ConnectionError::TtlExpired)
 			},
 		}
 	}

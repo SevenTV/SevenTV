@@ -1,10 +1,10 @@
-use super::v3::error::SocketV3Error;
+use super::v3::error::ConnectionError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EventError {
 	#[error("upgrade error: {0}")]
 	Upgrade(#[from] hyper_tungstenite::tungstenite::error::ProtocolError),
 
-	#[error("socket v3 error: {0}")]
-	SocketV3(#[from] SocketV3Error),
+	#[error("connection error: {0}")]
+	Connection(#[from] ConnectionError),
 }
