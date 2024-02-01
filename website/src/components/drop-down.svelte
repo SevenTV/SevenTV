@@ -6,8 +6,6 @@
 	import mouseTrap from "$/lib/mouseTrap";
 	import { fade } from "svelte/transition";
 
-	export let button: boolean = false;
-
 	let index = dropDownIndex;
 	dropDownIndex += 1;
 
@@ -26,7 +24,6 @@
 	on:click={toggle}
 	aria-expanded={expanded}
 	aria-controls="dropdown-list-{index}"
-	class:button
 	use:mouseTrap={close}
 >
 	<slot />
