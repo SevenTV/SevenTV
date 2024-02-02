@@ -10,6 +10,8 @@
 	import { user, showMobileMenu } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
+	import Dms from "../dms.svelte";
+	import Notifications from "../notifications.svelte";
 </script>
 
 <nav>
@@ -35,14 +37,16 @@
 			<Fa icon={faSearch} size="1.2x" fw />
 		</button>
 		{#if $user}
-			<button class="button">
+			<DropDown button>
 				<Fa icon={faBell} size="1.2x" fw />
-			</button>
-			<button class="button">
-				<Badge count={55}>
+				<Notifications slot="dropdown" />
+			</DropDown>
+			<DropDown button>
+				<Badge count={1}>
 					<Fa icon={faMessage} size="1.2x" fw />
 				</Badge>
-			</button>
+				<Dms slot="dropdown" />
+			</DropDown>
 			<a href="/upload" class="button hide-on-desktop">
 				<Fa icon={faPlusSquare} size="1.2x" fw />
 			</a>
@@ -54,9 +58,7 @@
 				<DropDown>
 					<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
 					<span class="profile-name">ayyybubu</span>
-					<svelte:fragment slot="dropdown">
-						<Menu />
-					</svelte:fragment>
+					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
 			<button class="profile hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
@@ -66,9 +68,7 @@
 			<HideOn mobile>
 				<DropDown button>
 					<Fa icon={faBars} size="1.2x" fw />
-					<svelte:fragment slot="dropdown">
-						<Menu />
-					</svelte:fragment>
+					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
 			<a class="button primary" href="/sign-in">Sign In</a>
