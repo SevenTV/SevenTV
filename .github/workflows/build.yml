@@ -62,11 +62,15 @@ jobs:
       - name: Build
         run: cargo build --profile release-lto --bin event-api
 
+      - name: Generate Tag
+        run: |
+          echo "branch=$(echo ${{ github.ref_name }} | sed 's/\//-/g')" >> $GITHUB_ENV
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           push: true
           file: ./apps/event-api/Dockerfile
           tags: |
-            ghcr.io/seventv/event-api:${{ github.ref_name }}-latest
-            ghcr.io/seventv/event-api:${{ github.ref_name }}-${{ github.sha }}
+            ghcr.io/seventv/event-api:${{ env.branch }}-${{ github.sha }}
+            ghcr.io/seventv/event-api:${{ env.branch }}-latest
