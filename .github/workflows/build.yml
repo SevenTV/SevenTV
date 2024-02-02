@@ -68,5 +68,5 @@ jobs:
           push: true
           file: ./apps/event-api/Dockerfile
           tags: |
-            ghcr.io/seventv/event-api:${{ github.ref }}-latest
-            ghcr.io/seventv/event-api:${{ github.ref }}-${{ github.sha }}
+            ghcr.io/seventv/event-api:${{ github.head_ref }}-latest
+            ghcr.io/seventv/event-api:${{ github.head_ref }}-${{ github.sha }}
