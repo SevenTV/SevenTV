@@ -5,6 +5,7 @@ use std::sync::{Arc, Weak};
 use http_body_util::{Full, StreamBody};
 use hyper::body::Incoming;
 use hyper_tungstenite::tungstenite::protocol::WebSocketConfig;
+use scuffle_utils::context::ContextExt;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::RouteError;
@@ -26,7 +27,7 @@ use crate::message::types::{CloseCode, Opcode};
 use crate::message::{self, MessagePayload};
 use crate::object_id::ObjectId;
 use crate::subscription::EventTopic;
-use crate::utils::{jitter, ContextExt};
+use crate::utils::jitter;
 
 mod dedupe;
 pub mod error;
