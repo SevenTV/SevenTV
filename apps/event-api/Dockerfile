@@ -1,4 +1,4 @@
-FROM ubuntu:lunar
+FROM debian:bookwork-slim
 
 WORKDIR /app
 

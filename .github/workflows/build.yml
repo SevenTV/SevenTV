@@ -1,0 +1,66 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+      - troy/ci
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pre_job:
+    name: Pre Job
+    runs-on: ubuntu-latest
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v3.4.0
+        with:
+          skip_after_successful_duplicate: "true"
+          do_not_skip: '["workflow_dispatch", "schedule"]'
+
+      - name: Set output
+        run: echo "should_skip=${{ steps.skip_check.outputs.should_skip }}" >> $GITHUB_OUTPUT
+
+  build:
+    needs: [ pre_job ]
+    if: needs.pre_job.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+    container: rust:1.75.0
+    steps:
+      - uses: actions/checkout@v4
+
+      # This is needed to prevent git from complaining about the
+      # `fatal: detected dubious ownership in repository at` error
+      # when trying to build the website.
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory '*'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: cargo build --profile release-lto --bin event-api
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          file: ./apps/event-api/Dockerfile
+          tags: |
+            ghcr.io/seventv/event-api:${{ github.ref }}-latest
+            ghcr.io/seventv/event-api:${{ github.ref }}-${{ github.sha }}

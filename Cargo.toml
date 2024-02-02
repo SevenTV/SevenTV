@@ -6,10 +6,6 @@ members = [
 
 resolver = "2"
 
-[profile.release-fat]
-inherits = "release"
-lto = "fat"
-
 [profile.dev]
 opt-level = 1
 
@@ -18,7 +14,7 @@ strip = true
 
 [profile.release-lto]
 inherits = "release"
-lto = 'fat'
+lto = "fat"
 
 [profile.release-debug]
 inherits = "release"
