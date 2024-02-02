@@ -71,6 +71,7 @@ jobs:
         with:
           push: true
           file: ./apps/event-api/Dockerfile
+          context: .
           tags: |
             ghcr.io/seventv/event-api:${{ env.branch }}-${{ github.sha }}
             ghcr.io/seventv/event-api:${{ env.branch }}-latest
