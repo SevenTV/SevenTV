@@ -188,20 +188,20 @@ input[type="text"] {
 
 		& > .side-bar {
 			margin: 0.75rem 1rem;
+			margin-bottom: 0;
 			border-radius: 0.5rem;
 			padding: 1rem;
 		}
 
 		& > .content {
 			padding: 0.75rem 1rem;
-			padding-top: 0;
 		}
 	}
 }
 
 /* Screen reader only */
 /* Hide but still render */
-.sr-only:not(:focus):not(:active) {
+.sr-only {
 	clip: rect(0 0 0 0);
 	clip-path: inset(50%);
 	height: 1px;
