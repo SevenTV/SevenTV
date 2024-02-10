@@ -6,8 +6,9 @@
 		faArrowUpWideShort,
 		faFaceGrinWink,
 		faFolder,
+		faArrowLeftFromLine,
 	} from "@fortawesome/pro-regular-svg-icons";
-	import { faChevronLeft, faChevronRight, faXmark } from "@fortawesome/pro-solid-svg-icons";
+	import { faXmark } from "@fortawesome/pro-solid-svg-icons";
 	import Fa from "svelte-fa";
 	import { fly } from "svelte/transition";
 	import { sideBar } from "$/lib/stores";
@@ -38,18 +39,18 @@
 	{#if $sideBar}
 		<div class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
 			<button class="button collapse" on:click={() => ($sideBar = false)}>
-				<Fa icon={faChevronLeft} fw />
+				<Fa icon={faArrowLeftFromLine} size="1.2x" fw />
 			</button>
 			<h1>Directory</h1>
 			<div class="link-list">
-				<a class="button big" href="/emotes" class:secondary={$page.url.pathname === "/emotes"}>
+				<a class="button big" href="/emotes" class:secondary={$page.route.id?.startsWith("/emotes/(emotes)")}>
 					<Fa icon={faFaceGrinWink} size="1.2x" fw />
 					Emotes
 				</a>
 				<a
 					class="button big"
 					href="/emotes/sets"
-					class:secondary={$page.url.pathname === "/emotes/sets"}
+					class:secondary={$page.route.id?.startsWith("/emotes/sets")}
 				>
 					<Fa icon={faFolder} size="1.2x" fw />
 					Emote Sets
@@ -89,10 +90,6 @@
 			</Expandable>
 			<Expandable title="Ratio">Ratio</Expandable>
 		</div>
-	{:else}
-		<button class="button expand" on:click={() => ($sideBar = true)}>
-			<Fa icon={faChevronRight} fw />
-		</button>
 	{/if}
 	<div class="content">
 		<slot />
@@ -122,13 +119,8 @@
 		.link-list {
 			display: flex;
 			flex-direction: column;
+			gap: 0.25rem;
 		}
-	}
-
-	.expand {
-		position: absolute;
-		top: 1rem;
-		left: 0.5rem;
 	}
 
 	.sorting {

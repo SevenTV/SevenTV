@@ -1,4 +1,4 @@
-<script context="module">
+<script lang="ts" context="module">
 	let dropDownIndex = 0;
 </script>
 
