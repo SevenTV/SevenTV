@@ -1,6 +1,9 @@
 <script lang="ts">
-	import Banner from "$/components/store/banner.svelte";
+	import BadgeProgress from "$/components/store/badge-progress.svelte";
+import Banner from "$/components/store/banner.svelte";
 	import Benefits from "$/components/store/benefits.svelte";
+	import MonthlyPaints from "$/components/store/monthly-paints.svelte";
+	import YourSub from "$/components/store/your-sub.svelte";
 
 	let subbed = false;
 </script>
@@ -17,12 +20,10 @@
 	{/if}
 	<div class="top-grid">
 		<div class="subgrid">
-			<section class="your-sub">
-				<button class="button primary" on:click={() => (subbed = !subbed)}>{subbed ? "Unsub" : "Sub"}</button>
-			</section>
-			<section class="badge-progress">Badge progress</section>
+			<YourSub bind:subbed={subbed} />
+			<BadgeProgress />
 		</div>
-		<section class="monthly-paints">Monthly paints</section>
+		<MonthlyPaints />
 	</div>
 	<div class="three-grid">
 		<section class="emote-raffle">Emote raffle</section>
@@ -55,19 +56,13 @@
 		gap: 1rem;
 		flex-wrap: wrap;
 
-		& > * {
-			flex-grow: 1;
-		}
-
 		& > .subgrid {
+			flex-grow: 1;
+
 			display: flex;
 			flex-direction: column;
 			gap: 1rem;
 			flex-wrap: wrap;
-
-			& > * {
-				flex-grow: 1;
-			}
 		}
 	}
 
