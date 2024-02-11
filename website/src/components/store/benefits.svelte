@@ -10,7 +10,7 @@
 	import Fa from "svelte-fa";
 </script>
 
-<div>
+<section>
 	<h2>Subscription Benefits</h2>
 	<div class="benefits">
 		<div class="benefit">
@@ -50,7 +50,7 @@
 			<h3>Raffle Ticket</h3>
 		</div>
 	</div>
-</div>
+</section>
 
 <style lang="scss">
     h2 {
@@ -69,7 +69,7 @@
 		gap: 1rem;
 
         overflow-x: auto;
-        max-width: calc(100vw - 1rem);
+        max-width: 21rem;
         margin-right: -1rem;
 	}
 

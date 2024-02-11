@@ -20,7 +20,7 @@
     </div>
     <div class="buttons">
         <button class="button secondary icon-left hide-on-mobile">
-            <Fa icon={faFolder} fw />
+            <Fa icon={faFolder} fw size="1.2x" />
             Personal Emotes
         </button>
         <button class="button">
