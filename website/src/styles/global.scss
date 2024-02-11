@@ -16,7 +16,8 @@ body {
 
 h1,
 h2,
-hr {
+hr,
+p {
 	margin: 0;
 }
 
@@ -131,6 +132,10 @@ input[type="text"] {
 	background-color: var(--secondary);
 	color: var(--text);
 	font-size: 0.875rem;
+
+	&::placeholder {
+		font-weight: 500;
+	}
 
 	transition: background-color 0.1s;
 
