@@ -11,6 +11,7 @@ use hyper::service::service_fn;
 use hyper::{header, StatusCode};
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto::Builder;
+use scuffle_utils::context::ContextExt;
 use scuffle_utils::http::router::middleware::Middleware;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::{error_handler, RouteError};
@@ -109,20 +110,15 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	socket.set_reuseaddr(true).context("socket reuseaddr")?;
 	socket.set_reuseport(true).context("socket reuseport")?;
 	socket.bind(config.api.bind).context("socket bind")?;
-	let listener = socket.listen(128)?;
+	let listener = socket.listen(config.api.listen_backlog)?;
 
-	loop {
-		tokio::select! {
-			_ = global.ctx().done() => {
-				return Ok(());
-			},
-			r = listener.accept() => {
-				if let Some(fut) = handle_socket(&global, &router, &tls_acceptor, r)? {
-					tokio::spawn(fut);
-				}
-			},
+	while let Ok(r) = listener.accept().context(global.ctx()).await {
+		if let Some(fut) = handle_socket(&global, &router, &tls_acceptor, r)? {
+			tokio::spawn(fut);
 		}
 	}
+
+	Ok(())
 }
 
 /// Create a new socket future.

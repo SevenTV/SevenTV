@@ -93,6 +93,8 @@ impl Default for Nats {
 pub struct Api {
 	/// API bind
 	pub bind: SocketAddr,
+	/// Max Listen Conn
+	pub listen_backlog: u32,
 	/// API heartbeat interval
 	pub heartbeat_interval: Duration,
 	/// Subscription Cleanup Interval
@@ -130,6 +132,7 @@ impl Default for Api {
 	fn default() -> Self {
 		Self {
 			bind: SocketAddr::new([0, 0, 0, 0].into(), 3000),
+			listen_backlog: 128,
 			connection_limit: None,
 			connection_target: None,
 			heartbeat_interval: Duration::from_secs(45),

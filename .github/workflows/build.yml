@@ -1,0 +1,77 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+      - troy/ci
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pre_job:
+    name: Pre Job
+    runs-on: ubuntu-latest
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v3.4.0
+        with:
+          skip_after_successful_duplicate: "true"
+          do_not_skip: '["workflow_dispatch", "schedule"]'
+
+      - name: Set output
+        run: echo "should_skip=${{ steps.skip_check.outputs.should_skip }}" >> $GITHUB_OUTPUT
+
+  build:
+    needs: [ pre_job ]
+    if: needs.pre_job.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+    container: rust:1.76.0
+    steps:
+      - uses: actions/checkout@v4
+
+      # This is needed to prevent git from complaining about the
+      # `fatal: detected dubious ownership in repository at` error
+      # when trying to build the website.
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory '*'
+
+      - name: Install Docker CLI
+        run: |
+          curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-25.0.2.tgz
+          tar xzvf docker-25.0.2.tgz --strip 1 -C /usr/local/bin docker/docker
+          rm docker-25.0.2.tgz
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: cargo build --profile release-lto --bin event-api
+
+      - name: Generate Tag
+        run: |
+          echo "branch=$(echo ${{ github.ref_name }} | sed 's/\//-/g')" >> $GITHUB_ENV
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          file: ./apps/event-api/Dockerfile
+          context: .
+          tags: |
+            ghcr.io/seventv/event-api:${{ env.branch }}-${{ github.sha }}
+            ghcr.io/seventv/event-api:${{ env.branch }}-latest

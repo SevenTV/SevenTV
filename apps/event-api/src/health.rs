@@ -9,6 +9,7 @@ use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::StatusCode;
 use hyper_util::rt::TokioIo;
+use scuffle_utils::context::ContextExt;
 use scuffle_utils::prelude::FutureTimeout;
 use tokio::net::TcpSocket;
 
@@ -28,16 +29,11 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	socket.bind(config.health.bind).context("socket bind")?;
 	let listener = socket.listen(16)?;
 
-	loop {
-		tokio::select! {
-			_ = global.ctx().done() => {
-				return Ok(());
-			},
-			r = listener.accept() => {
-				handle_socket(&global, r).await?;
-			},
-		}
+	while let Ok(r) = listener.accept().context(global.ctx()).await {
+		handle_socket(&global, r).await?;
 	}
+
+	Ok(())
 }
 
 async fn handle_socket(
