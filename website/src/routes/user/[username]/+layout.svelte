@@ -25,7 +25,6 @@
 	import { faGift, faHeart } from "@fortawesome/pro-regular-svg-icons";
 	import { faTwitch, faDiscord } from "@fortawesome/free-brands-svg-icons";
 	import Expandable from "$/components/expandable.svelte";
-	import { page } from "$app/stores";
 	import HideOn from "$/components/hide-on.svelte";
 	import TabLink from "$/components/profile/tab-link.svelte";
 

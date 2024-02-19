@@ -2,7 +2,11 @@
 	import BadgeProgress from "$/components/store/badge-progress.svelte";
 import Banner from "$/components/store/banner.svelte";
 	import Benefits from "$/components/store/benefits.svelte";
+	import EmoteRaffle from "$/components/store/emote-raffle.svelte";
+	import Faq from "$/components/store/faq.svelte";
 	import MonthlyPaints from "$/components/store/monthly-paints.svelte";
+	import PersonalEmotes from "$/components/store/personal-emotes.svelte";
+	import TopGifters from "$/components/store/top-gifters.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
 
 	let subbed = false;
@@ -26,14 +30,14 @@ import Banner from "$/components/store/banner.svelte";
 		<MonthlyPaints />
 	</div>
 	<div class="three-grid">
-		<section class="emote-raffle">Emote raffle</section>
-		<section class="personal-emotes">Personal emotes</section>
-		<section class="top-gifters">Top gifters</section>
+		<EmoteRaffle />
+		<PersonalEmotes />
+		<TopGifters />
 	</div>
 	{#if subbed}
 		<Benefits />
 	{/if}
-	<section class="faq">FAQ</section>
+	<Faq />
 </div>
 
 <style lang="scss">
@@ -42,13 +46,6 @@ import Banner from "$/components/store/banner.svelte";
 		flex-direction: column;
 		gap: 1rem;
 		flex-wrap: wrap;
-	}
-
-	section {
-		background-color: var(--bg-medium);
-		border-radius: 0.5rem;
-		padding: 1rem;
-		min-width: 12rem;
 	}
 
 	.top-grid {
@@ -70,9 +67,5 @@ import Banner from "$/components/store/banner.svelte";
 		display: flex;
 		gap: 1rem;
 		flex-wrap: wrap;
-
-		& > * {
-			flex-grow: 1;
-		}
 	}
 </style>
