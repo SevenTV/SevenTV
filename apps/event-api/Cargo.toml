@@ -2,6 +2,7 @@
 name = "event-api"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0 with Commons Clause"
 
 [dependencies]
 tokio = { version = "1.35", features = ["full"] }
