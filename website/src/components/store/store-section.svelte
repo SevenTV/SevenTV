@@ -18,7 +18,7 @@
 
         background-color: var(--bg-medium);
         border-radius: 0.5rem;
-        padding: 1rem;
+        padding: 1rem 1.25rem;
         min-width: 12rem;
     }
 
