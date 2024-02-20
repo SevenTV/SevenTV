@@ -1,9 +1,10 @@
 <script lang="ts">
     export let name = "emoteName";
     export let index = 0;
+    export let bg: "medium" | "light" = "medium";
 </script>
 
-<div class="emote">
+<div class="emote" style:background-color="var(--bg-{bg})">
     <div class="image" style="animation-delay: {index * 10}ms"></div>
     <span class="name">{name}</span>
     <span class="user">username</span>
@@ -19,7 +20,6 @@
         align-items: center;
         justify-content: center;
 
-        background-color: var(--bg-medium);
         border: 1px solid transparent;
         border-radius: 0.25rem;
         cursor: pointer;

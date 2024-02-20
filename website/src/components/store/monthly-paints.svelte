@@ -14,17 +14,12 @@
             <Fa icon={faEllipsisV} size="1.2x" />
         </button>
     </div>
-    Some paint
-    <br />
-    Some paint
-    <br />
-    Some paint
-    <br />
-    Some paint
-    <br />
-    Some paint
-    <br />
-    Some paint
+    {#each Array(2) as _}
+        <div class="paint">
+            Paint
+            <div class="circle"></div>
+        </div>
+    {/each}
 </StoreSection>
 
 <style lang="scss">
@@ -41,5 +36,24 @@
 
         color: var(--text-lighter);
         font-size: 0.75rem;
+    }
+
+    .paint {
+        padding: 0.5rem 1rem;
+        background-color: var(--bg-light);
+
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        color: var(--text-lighter);
+        font-weight: 600;
+
+        .circle {
+            width: 1.5rem;
+            height: 1.5rem;
+            background-color: var(--secondary);
+            border-radius: 50%;
+        }
     }
 </style>

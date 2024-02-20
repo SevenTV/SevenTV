@@ -2,7 +2,6 @@
 	import {
 		faBadge,
 		faBrush,
-		faSendBackward,
 		faSmilePlus,
 		faTicket,
 		faUserCircle,
@@ -32,16 +31,10 @@
 			<h3>Nametag Paints</h3>
 		</div>
 		<div class="benefit">
-			<div class="gradient g4">
+			<div class="gradient g5">
 				<Fa icon={faBadge} size="3x" />
 			</div>
 			<h3>Subscriber Badge</h3>
-		</div>
-		<div class="benefit">
-			<div class="gradient g5">
-				<Fa icon={faSendBackward} size="3x" />
-			</div>
-			<h3>Zero-Width Emotes</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g6">
@@ -53,6 +46,12 @@
 </section>
 
 <style lang="scss">
+	section {
+		flex-basis: 0;
+		flex-grow: 1;
+		width: 100%;
+	}
+
     h2 {
 		font-size: 1rem;
 		font-weight: 600;
@@ -69,8 +68,7 @@
 		gap: 1rem;
 
         overflow-x: auto;
-        max-width: 21rem;
-        margin-right: -1rem;
+		width: 100%;
 	}
 
 	.benefit {
@@ -104,7 +102,7 @@
 						#ff922f 0%,
 						#ffb800 33%,
 						#43006d 64%,
-						#0b0b0b 80%
+						#0f0f0f 80%
 					),
 					var(--secondary);
 			}
@@ -115,7 +113,7 @@
 						#fff 0%,
 						#ff3535 33%,
 						#43006d 64%,
-						#0b0b0b 80%
+						#0f0f0f 80%
 					),
 					var(--secondary);
 			}
@@ -126,18 +124,7 @@
 						#ff922f 0%,
 						#ff11bc 33%,
 						#43006d 64%,
-						#0b0b0b 80%
-					),
-					var(--secondary);
-			}
-
-			&.g4 {
-				background: radial-gradient(
-						150% 180% at 50% 180%,
-						#ff922f 0%,
-						#9611ff 33%,
-						#43006d 64%,
-						#0b0b0b 80%
+						#0f0f0f 80%
 					),
 					var(--secondary);
 			}
@@ -148,7 +135,7 @@
 						#ff922f 0%,
 						#11f1ff 33%,
 						#43006d 64%,
-						#0b0b0b 80%
+						#0f0f0f 80%
 					),
 					var(--secondary);
 			}
@@ -159,7 +146,7 @@
 						#ff922f 0%,
 						#11ff54 33%,
 						#43006d 64%,
-						#0b0b0b 80%
+						#0f0f0f 80%
 					),
 					var(--secondary);
 			}
