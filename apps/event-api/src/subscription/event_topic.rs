@@ -14,8 +14,8 @@ use crate::message::types::EventType;
 /// is only 16 bytes large. This key is not guaranteed to be unique but almost
 /// always is.
 pub struct EventTopic {
-	event: EventType,
-	cond_hash: Option<[u8; 32]>,
+	pub event: EventType,
+	pub cond_hash: Option<[u8; 32]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -42,6 +42,11 @@ impl EventTopic {
 		};
 
 		Self { event, cond_hash }
+	}
+
+	/// Copy the event conditions but with a different event type.
+	pub fn copy_cond(&self, event: EventType) -> Self {
+		Self { event, cond_hash: self.cond_hash }
 	}
 
 	/// Convert the event topic into a key that is only 16 bytes large.

@@ -5,6 +5,7 @@ use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
 
 use crate::global::Global;
 use crate::message;
+use crate::message::types::EventType;
 
 /// The payload of a message.
 /// The reason we use Arc is because we want to avoid cloning the payload (1000
@@ -136,26 +137,57 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 							continue;
 						};
 
-						if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(topic.as_key()) {
-							let msg = match serde_json::from_slice(&message.payload) {
-								Ok(msg) => msg,
-								Err(err) => {
-									tracing::warn!("malformed message: {:?}: {}", err, String::from_utf8_lossy(&message.payload));
-									continue;
-								}
-							};
-
-							if subscription.get().send(Arc::new(msg)).is_err() {
-								global.metrics().observe_nats_event_miss();
-								subscription.remove();
-								continue;
-							} else {
-								global.metrics().observe_nats_event_hit();
-							}
-						} else {
-							global.metrics().observe_nats_event_miss();
+						let mut keys = vec![topic.as_key()];
+						match keys[0].0 {
+							EventType::SystemAnnouncement => {
+								keys.push(topic.copy_cond(EventType::AnySystem).as_key());
+							},
+							EventType::CreateEmote | EventType::UpdateEmote | EventType::DeleteEmote => {
+								keys.push(topic.copy_cond(EventType::AnyEmote).as_key());
+							},
+							EventType::CreateEmoteSet | EventType::UpdateEmoteSet | EventType::DeleteEmoteSet => {
+								keys.push(topic.copy_cond(EventType::AnyEmoteSet).as_key());
+							},
+							EventType::CreateUser | EventType::UpdateUser | EventType::DeleteUser => {
+								keys.push(topic.copy_cond(EventType::AnyUser).as_key());
+							},
+							EventType::CreateEntitlement | EventType::UpdateEntitlement | EventType::DeleteEntitlement => {
+								keys.push(topic.copy_cond(EventType::AnyEntitlement).as_key());
+							},
+							EventType::CreateCosmetic | EventType::UpdateCosmetic | EventType::DeleteCosmetic => {
+								keys.push(topic.copy_cond(EventType::AnyCosmetic).as_key());
+							},
+							EventType::Whisper => {}
+							EventType::AnySystem | EventType::AnyEmote | EventType::AnyEmoteSet | EventType::AnyUser | EventType::AnyEntitlement | EventType::AnyCosmetic => {}
 						}
 
+						let mut msg = None;
+						let mut missed = true;
+						for key in keys {
+							if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(key) {
+								if msg.is_none() {
+									msg = Some(Arc::new(match serde_json::from_slice(&message.payload) {
+										Ok(msg) => msg,
+										Err(err) => {
+											tracing::warn!("malformed message: {:?}: {}", err, String::from_utf8_lossy(&message.payload));
+											break;
+										}
+									}));
+								}
+
+								if subscription.get().send(msg.clone().unwrap()).is_err() {
+									subscription.remove();
+								} else {
+									missed = false;
+								}
+							}
+						}
+
+						if missed {
+							global.metrics().observe_nats_event_miss();
+						} else {
+							global.metrics().observe_nats_event_hit();
+						}
 					},
 					None => {
 						tracing::warn!("subscription closed");
