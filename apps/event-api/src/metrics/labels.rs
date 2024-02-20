@@ -1,54 +1,5 @@
-use std::sync::Arc;
-
-use prometheus_client::encoding::{EncodeLabelKey, EncodeLabelSet, EncodeLabelValue};
-
-use crate::message::types::Opcode;
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-/// Labels<T> is a wrapper around a set of labels.
-/// This is advantageous because it allows us to have a base set of labels that
-/// are always present, and then extend them with additional labels. Without
-/// copying the base labels.
-pub struct Labels<T> {
-	base_labels: Arc<[(String, String)]>,
-	ext: T,
-}
-
-impl Labels<()> {
-	/// Create a new set of labels.
-	pub fn new(base_labels: Vec<(String, String)>) -> Self {
-		Self {
-			base_labels: base_labels.into(),
-			ext: (),
-		}
-	}
-}
-
-impl<T> Labels<T> {
-	/// Extend the labels with additional labels.
-	pub fn extend<Y>(&self, ext: Y) -> Labels<Y> {
-		Labels {
-			base_labels: self.base_labels.clone(),
-			ext,
-		}
-	}
-}
-
-/// A custom implementation of EncodeLabelSet for Labels<T>.
-impl<T: EncodeLabelSet> EncodeLabelSet for Labels<T> {
-	fn encode(&self, mut encoder: prometheus_client::encoding::LabelSetEncoder) -> Result<(), std::fmt::Error> {
-		for (key, value) in self.base_labels.iter() {
-			let mut label_encoder = encoder.encode_label();
-			let mut label_key_encoder = label_encoder.encode_label_key()?;
-			EncodeLabelKey::encode(key, &mut label_key_encoder)?;
-			let mut label_value_encoder = label_key_encoder.encode_label_value()?;
-			EncodeLabelValue::encode(value, &mut label_value_encoder)?;
-			label_value_encoder.finish()?;
-		}
-
-		self.ext.encode(encoder)
-	}
-}
+use prometheus_client::encoding::EncodeLabelSet;
+use shared::event_api::types::Opcode;
 
 #[derive(Debug, Clone, Hash, Copy, Eq, PartialEq, EncodeLabelSet)]
 /// CloseCode labels.

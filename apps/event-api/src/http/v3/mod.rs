@@ -9,6 +9,9 @@ use scuffle_utils::context::ContextExt;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::RouteError;
+use shared::event_api::types::{CloseCode, Opcode};
+use shared::event_api::{payload, Message, MessageData, MessagePayload};
+use shared::object_id::ObjectId;
 use tokio::time::Instant;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
@@ -23,9 +26,6 @@ use super::Body;
 use crate::global::{AtomicTicket, Global};
 use crate::http::v3::error::ConnectionError;
 use crate::http::v3::topic_map::Subscription;
-use crate::message::types::{CloseCode, Opcode};
-use crate::message::{self, MessagePayload};
-use crate::object_id::ObjectId;
 use crate::subscription::EventTopic;
 use crate::utils::jitter;
 
@@ -135,7 +135,7 @@ struct Connection {
 	/// A map of subscriptions that this connection is subscribed to.
 	topics: TopicMap,
 	/// The initial subscriptions that this connection should subscribe to.
-	initial_subs: Option<Vec<message::payload::Subscribe>>,
+	initial_subs: Option<Vec<payload::Subscribe>>,
 	/// A deduplication cache for dispatch events.
 	dedupe: Dedupe,
 	/// The time that this connection was started.
@@ -169,7 +169,7 @@ impl Connection {
 	pub fn new(
 		socket: Socket,
 		global: Arc<Global>,
-		initial_subs: Option<Vec<message::payload::Subscribe>>,
+		initial_subs: Option<Vec<payload::Subscribe>>,
 		ticket: AtomicTicket,
 	) -> Self {
 		Self {
@@ -199,12 +199,12 @@ impl Connection {
 
 		// Send the hello message.
 		match self
-			.send_message(message::payload::Hello {
+			.send_message(payload::Hello {
 				heartbeat_interval: self.heartbeat_interval.period().as_millis() as u32,
 				session_id: self.id,
 				subscription_limit: self.global.config().api.subscription_limit.map(|s| s as i32).unwrap_or(-1),
 				actor: None,
-				instance: Some(message::payload::HelloInstanceInfo {
+				instance: Some(payload::HelloInstanceInfo {
 					name: "event-api".to_string(),
 					population: self.global.active_connections() as i32,
 				}),
@@ -231,14 +231,14 @@ impl Connection {
 				if let Some(code) = err.as_close_code() {
 					match code {
 						CloseCode::Reconnect => {
-							self.send_message(message::payload::Reconnect {
+							self.send_message(payload::Reconnect {
 								reason: code.to_string(),
 							})
 							.await
 							.ok();
 						}
 						CloseCode::Restart => {
-							self.send_message(message::payload::Reconnect {
+							self.send_message(payload::Reconnect {
 								reason: code.to_string(),
 							})
 							.await
@@ -277,12 +277,12 @@ impl Connection {
 
 	/// Send a close message to the client, and then close the socket.
 	async fn send_close(&mut self, code: CloseCode) -> Result<(), ConnectionError> {
-		self.send_message(message::payload::EndOfStream {
+		self.send_message(payload::EndOfStream {
 			code,
 			message: code.as_str().to_owned(),
 		})
 		.await?;
-		self.socket.close(code.into_websocket(), code.as_str()).await?;
+		self.socket.close(code, code.as_str()).await?;
 		Err(ConnectionError::ClosedByServer(code))
 	}
 
@@ -294,7 +294,7 @@ impl Connection {
 		fields: HashMap<String, serde_json::Value>,
 		close_code: Option<CloseCode>,
 	) -> Result<(), ConnectionError> {
-		self.send_message(message::payload::Error {
+		self.send_message(payload::Error {
 			message: message.to_string(),
 			fields,
 			message_locale: None,
@@ -310,7 +310,7 @@ impl Connection {
 
 	/// Send an ack message to the client.
 	async fn send_ack(&mut self, command: Opcode, data: serde_json::Value) -> Result<(), ConnectionError> {
-		self.send_message(message::payload::Ack {
+		self.send_message(payload::Ack {
 			command: command.to_string(),
 			data,
 		})
@@ -321,7 +321,7 @@ impl Connection {
 	async fn send_message(&mut self, data: impl MessagePayload + serde::Serialize) -> Result<(), ConnectionError> {
 		self.seq += 1;
 		self.global.metrics().observe_server_command(data.opcode());
-		self.socket.send(message::Message::new(data, self.seq - 1)).await?;
+		self.socket.send(Message::new(data, self.seq - 1)).await?;
 		Ok(())
 	}
 
@@ -329,7 +329,7 @@ impl Connection {
 	async fn handle_subscription(
 		&mut self,
 		auto: Option<u32>,
-		subscribe: &message::payload::Subscribe,
+		subscribe: &payload::Subscribe,
 	) -> Result<(), ConnectionError> {
 		if subscribe.condition.is_empty() {
 			self.send_error(
@@ -424,11 +424,7 @@ impl Connection {
 	}
 
 	/// Handle an unsubscribe request.
-	async fn handle_unsubscribe(
-		&mut self,
-		auto: bool,
-		unsubscribe: &message::payload::Unsubscribe,
-	) -> Result<(), ConnectionError> {
+	async fn handle_unsubscribe(&mut self, auto: bool, unsubscribe: &payload::Unsubscribe) -> Result<(), ConnectionError> {
 		if unsubscribe.condition.is_empty() {
 			let count = self.topics.len();
 			self.topics.retain(|topic, _| topic.0 != unsubscribe.ty);
@@ -465,27 +461,27 @@ impl Connection {
 	}
 
 	/// Handle a message from the client.
-	async fn handle_message(&mut self, msg: message::Message) -> Result<(), ConnectionError> {
+	async fn handle_message(&mut self, msg: Message) -> Result<(), ConnectionError> {
 		self.global.metrics().observe_client_command(msg.opcode);
 
 		// We match on the opcode so that we can deserialize the data into the correct
 		// type.
 		let msg = match msg.opcode {
 			Opcode::Resume => {
-				let msg = serde_json::from_value::<message::payload::Resume>(msg.data)?;
-				message::MessageData::Resume(msg)
+				let msg = serde_json::from_value::<payload::Resume>(msg.data)?;
+				MessageData::Resume(msg)
 			}
 			Opcode::Subscribe => {
-				let msg = serde_json::from_value::<message::payload::Subscribe>(msg.data)?;
-				message::MessageData::Subscribe(msg)
+				let msg = serde_json::from_value::<payload::Subscribe>(msg.data)?;
+				MessageData::Subscribe(msg)
 			}
 			Opcode::Unsubscribe => {
-				let msg = serde_json::from_value::<message::payload::Unsubscribe>(msg.data)?;
-				message::MessageData::Unsubscribe(msg)
+				let msg = serde_json::from_value::<payload::Unsubscribe>(msg.data)?;
+				MessageData::Unsubscribe(msg)
 			}
 			Opcode::Bridge => {
-				let msg = serde_json::from_value::<message::payload::Bridge>(msg.data)?;
-				message::MessageData::Bridge(msg)
+				let msg = serde_json::from_value::<payload::Bridge>(msg.data)?;
+				MessageData::Bridge(msg)
 			}
 			_ => {
 				self.send_error("Invalid Opcode", HashMap::new(), Some(CloseCode::UnknownOperation))
@@ -495,7 +491,7 @@ impl Connection {
 		};
 
 		match msg {
-			message::MessageData::Resume(_) => {
+			MessageData::Resume(_) => {
 				// Subscription resume is not supported.
 				self.send_ack(
 					Opcode::Resume,
@@ -507,13 +503,13 @@ impl Connection {
 				)
 				.await?;
 			}
-			message::MessageData::Subscribe(subscribe) => {
+			MessageData::Subscribe(subscribe) => {
 				self.handle_subscription(None, &subscribe).await?;
 			}
-			message::MessageData::Unsubscribe(unsubscribe) => {
+			MessageData::Unsubscribe(unsubscribe) => {
 				self.handle_unsubscribe(false, &unsubscribe).await?;
 			}
-			message::MessageData::Bridge(bridge) => {
+			MessageData::Bridge(bridge) => {
 				// Subscription bridge is a way of interacting with the API through the socket.
 				let res = self
 					.global
@@ -523,7 +519,7 @@ impl Connection {
 					.send()
 					.await?
 					.error_for_status()?;
-				let body = res.json::<Vec<message::Message<message::payload::Dispatch>>>().await?;
+				let body = res.json::<Vec<Message<payload::Dispatch>>>().await?;
 
 				for msg in body {
 					self.handle_dispatch(&msg).await?;
@@ -538,10 +534,7 @@ impl Connection {
 		Ok(())
 	}
 
-	async fn handle_dispatch(
-		&mut self,
-		payload: &message::Message<message::payload::Dispatch>,
-	) -> Result<(), ConnectionError> {
+	async fn handle_dispatch(&mut self, payload: &Message<payload::Dispatch>) -> Result<(), ConnectionError> {
 		// Check if the dispatch is a whisper to a connection.
 		if let Some(whisper) = &payload.data.whisper {
 			if &self.id.to_string() != whisper {
@@ -625,7 +618,7 @@ impl Connection {
 			_ = self.heartbeat_interval.tick() => {
 				tracing::debug!("sending heartbeat");
 
-				self.send_message(message::payload::Heartbeat {
+				self.send_message(payload::Heartbeat {
 					count: self.heartbeat_count,
 				}).await?;
 

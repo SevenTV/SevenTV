@@ -3,8 +3,7 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use sha2::Digest;
-
-use crate::message::types::EventType;
+use shared::event_api::types::EventType;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// A event topic is a combination of an event type and a set of conditions.

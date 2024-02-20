@@ -4,10 +4,12 @@ use std::convert::Infallible;
 use futures_util::{SinkExt, StreamExt};
 use http_body::Frame;
 use hyper::body::Bytes;
-use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
+use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode as WsCloseCode;
 use hyper_tungstenite::tungstenite::protocol::CloseFrame;
-use hyper_tungstenite::tungstenite::Message;
+use hyper_tungstenite::tungstenite::Message as WsMessage;
 use hyper_tungstenite::{HyperWebsocket, HyperWebsocketStream};
+use shared::event_api::types::CloseCode;
+use shared::event_api::{Message, MessagePayload};
 
 /// A Socket is a wrapper around a websocket or SSE connection.
 pub enum Socket {
@@ -56,7 +58,7 @@ impl WebSocket {
 
 	/// Receive a message from the websocket, this will wait for the websocket
 	/// to be ready.
-	pub async fn recv(&mut self) -> Result<Message, hyper_tungstenite::tungstenite::Error> {
+	pub async fn recv(&mut self) -> Result<WsMessage, hyper_tungstenite::tungstenite::Error> {
 		// Wait for the websocket to be ready.
 		self.ready().await?;
 
@@ -110,76 +112,38 @@ impl WebSocket {
 /// A trait for converting a message into a websocket or SSE message.
 pub trait SocketMessage: Sized {
 	fn into_sse(self) -> Frame<Bytes>;
-	fn into_ws(self) -> Message;
+	fn into_ws(self) -> WsMessage;
 }
 
-impl SocketMessage for Message {
+impl SocketMessage for WsMessage {
 	fn into_sse(self) -> Frame<Bytes> {
-		Frame::data(self.into_data().into())
+		panic!("cannot convert WsMessage into SSE")
 	}
 
-	fn into_ws(self) -> Message {
+	fn into_ws(self) -> WsMessage {
 		self
 	}
 }
 
-impl SocketMessage for Frame<Bytes> {
-	fn into_sse(self) -> Frame<Bytes> {
-		self
+impl<T: MessagePayload + serde::Serialize> SocketMessage for Message<T> {
+	fn into_sse(self) -> http_body::Frame<hyper::body::Bytes> {
+		let data = serde_json::to_string(&self.data).expect("failed to serialize message");
+
+		// Create a new frame with the data.
+		http_body::Frame::data(
+			format!(
+				"event: {}\ndata: {}\nid: {}\n\n",
+				self.opcode.as_str().to_lowercase(),
+				data,
+				self.sequence
+			)
+			.into(),
+		)
 	}
 
-	fn into_ws(self) -> Message {
-		Message::binary(self.into_data().unwrap_or_default())
-	}
-}
-
-impl SocketMessage for String {
-	fn into_sse(self) -> Frame<Bytes> {
-		Frame::data(self.into())
-	}
-
-	fn into_ws(self) -> Message {
-		Message::text(self)
-	}
-}
-
-impl SocketMessage for Bytes {
-	fn into_sse(self) -> Frame<Bytes> {
-		Frame::data(self)
-	}
-
-	fn into_ws(self) -> Message {
-		Message::binary(self)
-	}
-}
-
-impl SocketMessage for &[u8] {
-	fn into_sse(self) -> Frame<Bytes> {
-		Frame::data(Bytes::copy_from_slice(self))
-	}
-
-	fn into_ws(self) -> Message {
-		Message::binary(self)
-	}
-}
-
-impl SocketMessage for Vec<u8> {
-	fn into_sse(self) -> Frame<Bytes> {
-		Frame::data(self.into())
-	}
-
-	fn into_ws(self) -> Message {
-		Message::binary(self)
-	}
-}
-
-impl SocketMessage for &str {
-	fn into_sse(self) -> Frame<Bytes> {
-		Frame::data(Bytes::copy_from_slice(self.as_bytes()))
-	}
-
-	fn into_ws(self) -> Message {
-		Message::text(self)
+	fn into_ws(self) -> WsMessage {
+		// Create a new frame with the data.
+		WsMessage::Text(serde_json::to_string(&self).expect("failed to serialize message"))
 	}
 }
 
@@ -203,21 +167,21 @@ impl Socket {
 	}
 
 	/// Receive a message from the socket.
-	pub async fn recv(&mut self) -> Result<Message, SocketError> {
+	pub async fn recv(&mut self) -> Result<WsMessage, SocketError> {
 		match self {
 			Self::WebSocket(ws) => match ws.recv().await.map_err(SocketError::WebSocket) {
-				Ok(Message::Close(frame)) => {
+				Ok(WsMessage::Close(frame)) => {
 					// The tungstenite library will not send the echo back to the client
 					// if we don't flush the socket. This is a bug in the library.
 					// See https://github.com/snapview/tungstenite-rs/issues/405
 					ws.flush().await?;
-					Ok(Message::Close(frame))
+					Ok(WsMessage::Close(frame))
 				}
 				r => r,
 			},
 			Self::Sse(socket) => {
 				socket.closed().await;
-				Ok(Message::Close(None))
+				Ok(WsMessage::Close(None))
 			}
 		}
 	}
@@ -241,7 +205,7 @@ impl Socket {
 		match self {
 			Self::WebSocket(ws) => {
 				ws.close(Some(CloseFrame {
-					code,
+					code: WsCloseCode::from(code.as_u16()),
 					reason: Cow::Borrowed(reason),
 				}))
 				.await?;

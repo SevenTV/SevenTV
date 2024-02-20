@@ -96,6 +96,48 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
+name = "api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-nats",
+ "cap",
+ "chrono",
+ "const-lru",
+ "fnv",
+ "futures",
+ "futures-util",
+ "hex",
+ "http-body 1.0.0",
+ "http-body-util",
+ "hyper 1.1.0",
+ "hyper-tungstenite",
+ "hyper-util",
+ "memory-stats",
+ "pin-project",
+ "prometheus-client",
+ "rand",
+ "reqwest",
+ "rustls 0.22.2",
+ "rustls-pemfile 2.0.0",
+ "scopeguard",
+ "scuffle-config",
+ "scuffle-utils",
+ "serde",
+ "serde_json",
+ "sha2",
+ "shared",
+ "tikv-jemallocator",
+ "tokio",
+ "tokio-rustls 0.25.0",
+ "tokio-stream",
+ "tracing",
+ "ulid",
+ "url",
+ "urlencoding",
+]
+
+[[package]]
 name = "async-nats"
 version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -485,6 +527,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "shared",
  "thiserror",
  "tikv-jemallocator",
  "tokio",
@@ -1729,6 +1772,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
 dependencies = [
  "lazy_static",
+]
+
+[[package]]
+name = "shared"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "hex",
+ "http-body-util",
+ "hyper 1.1.0",
+ "hyper-util",
+ "once_cell",
+ "prometheus-client",
+ "scuffle-config",
+ "scuffle-utils",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ulid",
 ]
 
 [[package]]

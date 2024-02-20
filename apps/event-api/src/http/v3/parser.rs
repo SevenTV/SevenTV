@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use hyper::body::Incoming;
-
-use crate::message::payload;
+use shared::event_api::payload;
 
 const QUERY_HEADER_KEY: &str = "x-7tv-query";
 

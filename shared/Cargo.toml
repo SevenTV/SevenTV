@@ -1,0 +1,24 @@
+[package]
+name = "shared"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0 with Commons Clause"
+
+[dependencies]
+ulid = "1.0"
+hex = "0.4"
+tracing = "0.1"
+serde = { version = "1.0" }
+serde_json = "1.0"
+chrono = "0.4"
+prometheus-client = "0.22"
+tokio = "1.0"
+anyhow = "1.0"
+hyper = { version = "1", features = ["server"] }
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["tokio", "server"] }
+scuffle-utils = { version = "0.0.5", features = ["prelude"] }
+scuffle-config = "0.0.1"
+once_cell = "1.19"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter", "json"] }
+thiserror = "1.0"

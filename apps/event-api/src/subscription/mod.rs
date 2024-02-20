@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
 use futures_util::StreamExt;
+use shared::event_api::{payload, Message};
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
 
 use crate::global::Global;
-use crate::message;
-use crate::message::types::EventType;
+use shared::event_api::types::EventType;
 
 /// The payload of a message.
 /// The reason we use Arc is because we want to avoid cloning the payload (1000
 /// ish bytes) for every subscriber. Arc is a reference counted pointer, so it
 /// is cheap to clone.
-pub type Payload = Arc<message::Message<message::payload::Dispatch>>;
+pub type Payload = Arc<Message<payload::Dispatch>>;
 
 mod error;
 mod event_topic;
