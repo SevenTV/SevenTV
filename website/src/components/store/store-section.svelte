@@ -14,12 +14,16 @@
 
 <style lang="scss">
     section {
+        flex-basis: 0;
         flex-grow: 1;
 
         background-color: var(--bg-medium);
         border-radius: 0.5rem;
         padding: 1rem 1.25rem;
-        min-width: 12rem;
+
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
     }
 
     .header {

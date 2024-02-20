@@ -1,6 +1,7 @@
-body {
+html, body {
 	margin: 0;
 	padding: 0;
+	overflow: hidden;
 	font-family: "Inter", sans-serif;
 	color: var(--text);
 	background-color: var(--bg-dark);
@@ -74,6 +75,10 @@ ul {
 
 	&.icon-left {
 		padding-left: 0.75rem;
+	}
+
+	&.icon-right {
+		padding-right: 0.75rem;
 	}
 
 	&.big {

@@ -65,13 +65,11 @@
     }
 
     .grid {
-        margin: 1rem 0;
-
         display: grid;
         grid-template-columns: auto auto 1fr auto;
         align-items: center;
         column-gap: 0.75rem;
-        row-gap: 1.2rem;
+        row-gap: 1rem;
 
         font-size: 0.875rem;
         font-weight: 500;
@@ -96,7 +94,7 @@
     }
 
     .gift.button {
-        margin-left: auto;
+        align-self: flex-end;
     }
 
     .gold {

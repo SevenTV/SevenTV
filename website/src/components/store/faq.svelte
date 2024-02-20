@@ -21,7 +21,7 @@
 <section>
     <div class="header">
         <Fa icon={faQuestionCircle} />
-        <h2>Frequently Askes Questions</h2>
+        <h2>Frequently Asked Questions</h2>
     </div>
 	<div class="faq">
 		{#each qas as qa}
@@ -42,6 +42,7 @@
 
 <style lang="scss">
     section {
+        flex-basis: 0;
         flex-grow: 1;
 
         background-color: var(--bg-medium);
@@ -91,7 +92,7 @@
         }
 
 		& > input:checked + .a {
-			display: block;
+			display: inline-block;
 		}
 	}
 </style>
