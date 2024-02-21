@@ -37,8 +37,8 @@
 
 <div class="side-bar-layout">
 	{#if $sideBar}
-		<div class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
-			<button class="button collapse" on:click={() => ($sideBar = false)}>
+		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
+			<button class="button square collapse" on:click={() => ($sideBar = false)}>
 				<Fa icon={faArrowLeftFromLine} size="1.2x" fw />
 			</button>
 			<h1>Directory</h1>
@@ -60,8 +60,8 @@
 			<Expandable title="Sorting">
 				<div class="sorting">
 					<Select options={["Name", "Date"]} />
-					<button class="button secondary" on:click={() => (sortAsc = !sortAsc)}>
-						<Fa icon={sortAsc ? faArrowUpWideShort : faArrowDownWideShort} size="1.2x" />
+					<button class="button square secondary" on:click={() => (sortAsc = !sortAsc)}>
+						<Fa icon={sortAsc ? faArrowUpWideShort : faArrowDownWideShort} size="1.2x" fw />
 					</button>
 				</div>
 			</Expandable>
@@ -89,7 +89,7 @@
 				</div>
 			</Expandable>
 			<Expandable title="Ratio">Ratio</Expandable>
-		</div>
+		</aside>
 	{/if}
 	<div class="content">
 		<slot />

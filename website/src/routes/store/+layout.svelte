@@ -14,8 +14,8 @@
 
 <div class="side-bar-layout">
 	{#if $sideBar}
-		<div class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
-			<button class="button collapse" on:click={() => ($sideBar = false)}>
+		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
+			<button class="button square collapse" on:click={() => ($sideBar = false)}>
 				<Fa icon={faArrowLeftFromLine} size="1.2x" fw />
 			</button>
 			<h1>Store</h1>
@@ -46,9 +46,9 @@
 				Redeem Gift Code
 				<input type="text" placeholder="Enter code" />
 			</label>
-		</div>
+		</aside>
     {:else}
-        <button class="button expand" on:click={() => ($sideBar = true)}>
+        <button class="button square expand" on:click={() => ($sideBar = true)}>
             <Fa icon={faArrowRightToLine} size="1.2x" fw />
         </button>
 	{/if}

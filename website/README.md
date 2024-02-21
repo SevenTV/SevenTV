@@ -16,7 +16,7 @@ pnpm run dev
 
 ## Building
 
-To create a production version of your app:
+To create a production version of the app:
 
 ```bash
 pnpm run build

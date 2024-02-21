@@ -9,7 +9,7 @@
 <div class="nav-bar">
     <div class="buttons">
         {#if !$sideBar}
-            <button class="button expand" on:click={() => ($sideBar = true)}>
+            <button class="button square expand" on:click={() => ($sideBar = true)}>
                 <Fa icon={faArrowRightToLine} size="1.2x" fw />
             </button>
         {/if}
@@ -23,10 +23,10 @@
             <Fa icon={faFolder} fw size="1.2x" />
             Personal Emotes
         </button>
-        <button class="button">
+        <button class="button square">
             <Fa icon={faGridHorizontal} fw />
         </button>
-        <button class="button">
+        <button class="button square">
             <Fa icon={faGrid} fw />
         </button>
     </div>

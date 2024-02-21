@@ -10,8 +10,8 @@
             <Fa icon={faRepeat} size="1.2x" />
             <span>12 d</span>
         </div>
-        <button class="button secondary">
-            <Fa icon={faEllipsisV} size="1.2x" />
+        <button class="button secondary square">
+            <Fa icon={faEllipsisV} size="1.2x" fw />
         </button>
     </div>
     {#each Array(2) as _}
@@ -33,6 +33,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        white-space: nowrap;
 
         color: var(--text-lighter);
         font-size: 0.75rem;

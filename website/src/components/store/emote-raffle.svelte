@@ -8,12 +8,12 @@ import StoreSection from "./store-section.svelte";
 <StoreSection title="Global Emote Raffle">
     <span class="header" slot="header">Dec 2023</span>
     <div class="carousel">
-        <button class="button">
-            <Fa icon={faChevronLeft} size="1.2x" />
+        <button class="button square">
+            <Fa icon={faChevronLeft} size="1.2x" fw />
         </button>
         <EmotePreview bg="light" />
-        <button class="button">
-            <Fa icon={faChevronRight} size="1.2x" />
+        <button class="button square">
+            <Fa icon={faChevronRight} size="1.2x" fw />
         </button>
     </div>
     <div class="footer">

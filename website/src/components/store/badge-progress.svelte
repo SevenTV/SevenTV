@@ -27,8 +27,8 @@
         <div class="info">
             <div class="header">
                 <h2>Badge Progress</h2>
-                <button class="button secondary">
-                    <Fa icon={faEllipsisV} size="1.2x" />
+                <button class="button secondary square">
+                    <Fa icon={faEllipsisV} size="1.2x" fw />
                 </button>
             </div>
             <div class="badges">
@@ -152,6 +152,7 @@
             .countdown {
                 position: absolute;
                 top: -0.5rem;
+                white-space: nowrap;
             }
 
             .bar {

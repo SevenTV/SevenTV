@@ -3,31 +3,32 @@
     import { faStar as faStarSolid } from "@fortawesome/pro-solid-svg-icons";
 	import { faChevronDown, faClock, faEllipsisV, faGift, faHourglass, faSparkle, faStar as faStarRegular } from "@fortawesome/pro-regular-svg-icons";
 	import StoreSection from "./store-section.svelte";
-	import HideOn from "../hide-on.svelte";
 
     export let subbed = false;
 </script>
 
 <StoreSection title="Your Subscription">
     <div class="buttons" slot="header">
-        <button class="button secondary icon-left icon-right" class:sub-color={subbed} on:click={() => (subbed = true)}>
+        <button class="button secondary hide-on-mobile" class:sub-color={subbed} on:click={() => (subbed = true)}>
             <Fa icon={subbed ? faStarSolid : faStarRegular} size="1.2x" />
-            <span class="hide-on-mobile">{subbed ? "Subscribed" : "Subscribe"}</span>
+            <span>{subbed ? "Subscribed" : "Subscribe"}</span>
             <Fa icon={faChevronDown} size="1.2x" />
         </button>
-        <HideOn mobile>
-            <button class="button secondary icon-left">
-                <Fa icon={faGift} size="1.2x" />
-                Gift
-            </button>
-        </HideOn>
-        <HideOn desktop>
-            <button class="button secondary">
-                <Fa icon={faGift} size="1.2x" />
-            </button>
-        </HideOn>
-        <button class="button secondary">
-            <Fa icon={faEllipsisV} size="1.2x" />
+        <button class="button secondary icon-left icon-right hide-on-desktop" class:sub-color={subbed} on:click={() => (subbed = true)}>
+            <Fa icon={subbed ? faStarSolid : faStarRegular} size="1.2x" />
+            <Fa icon={faChevronDown} size="1.2x" />
+        </button>
+
+        <button class="button secondary icon-left hide-on-mobile">
+            <Fa icon={faGift} size="1.2x" />
+            Gift
+        </button>
+        <button class="button secondary square hide-on-desktop">
+            <Fa icon={faGift} size="1.2x" fw />
+        </button>
+
+        <button class="button secondary square">
+            <Fa icon={faEllipsisV} size="1.2x" fw />
         </button>
     </div>
     <div class="sub-grid">
@@ -94,6 +95,12 @@
                 font-size: 0.875rem;
                 font-weight: 600;
             }
+        }
+    }
+
+    @media screen and (max-width: 960px) {
+        .sub-grid {
+            grid-template-rows: repeat(4, auto);
         }
     }
 </style>

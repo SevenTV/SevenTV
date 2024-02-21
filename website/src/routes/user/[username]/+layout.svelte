@@ -36,7 +36,7 @@
 </svelte:head>
 
 <div class="side-bar-layout">
-	<div class="side-bar">
+	<aside class="side-bar">
 		<img src="/test-profile-pic.jpeg" alt="profile" class="profile-picture" />
 		<span class="name">
 			{data.username}
@@ -63,8 +63,8 @@
 				<Fa icon={faHeart} size="1.2x" />
 				Follow
 			</button>
-			<button class="button secondary more hide-on-mobile">
-				<Fa icon={faChevronDown} size="1.2x" />
+			<button class="button secondary square more hide-on-mobile">
+				<Fa icon={faChevronDown} size="1.2x" fw />
 			</button>
 			<button class="button icon-left secondary grow hide-on-desktop">
 				<Fa icon={faGift} size="1.2x" />
@@ -88,10 +88,10 @@
 				username
 			</Expandable>
 		</HideOn>
-		<button class="button more hide-on-desktop">
+		<button class="button square more hide-on-desktop">
 			<Fa icon={faEllipsisV} size="1.2x" fw />
 		</button>
-	</div>
+	</aside>
 	<div class="content">
 		<div class="header">
 			<div class="tabs">

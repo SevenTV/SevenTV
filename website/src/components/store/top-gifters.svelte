@@ -6,7 +6,7 @@
 
     const topGifters = [
         {
-            name: "Pokimane",
+            name: "forsen",
             amount: 215
         },
         {
@@ -14,7 +14,7 @@
             amount: 164
         },
         {
-            name: "forsen",
+            name: "Pokimane",
             amount: 121
         },
         {
@@ -30,11 +30,11 @@
 
 <StoreSection title="Top Gifters">
     <div class="header" slot="header">
-        <button class="button">
-            <Fa icon={faChevronLeft} size="1.2x" />
+        <button class="button square">
+            <Fa icon={faChevronLeft} size="1.2x" fw />
         </button>
-        <button class="button">
-            <Fa icon={faChevronRight} size="1.2x" />
+        <button class="button square">
+            <Fa icon={faChevronRight} size="1.2x" fw />
         </button>
     </div>
     <div class="grid">
@@ -61,7 +61,7 @@
 <style lang="scss">
     .header {
         display: flex;
-        gap: 1rem;
+        gap: 0.5rem;
     }
 
     .grid {
