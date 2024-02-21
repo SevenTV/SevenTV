@@ -1,5 +1,6 @@
+use shared::event_api::types::CloseCode;
+
 use crate::http::socket::SocketError;
-use crate::message::types::CloseCode;
 
 type WsCloseCode = hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 

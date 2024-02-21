@@ -1,5 +1,3 @@
-use crate::http::socket::SocketMessage;
-
 pub mod payload;
 pub mod types;
 
@@ -35,28 +33,6 @@ impl<T: MessagePayload> Message<T> {
 			timestamp: chrono::Utc::now().timestamp_millis(),
 			sequence: seq,
 		}
-	}
-}
-
-impl<T: MessagePayload + serde::Serialize> SocketMessage for Message<T> {
-	fn into_sse(self) -> http_body::Frame<hyper::body::Bytes> {
-		let data = serde_json::to_string(&self.data).expect("failed to serialize message");
-
-		// Create a new frame with the data.
-		http_body::Frame::data(
-			format!(
-				"event: {}\ndata: {}\nid: {}\n\n",
-				self.opcode.as_str().to_lowercase(),
-				data,
-				self.sequence
-			)
-			.into(),
-		)
-	}
-
-	fn into_ws(self) -> hyper_tungstenite::tungstenite::Message {
-		// Create a new frame with the data.
-		hyper_tungstenite::tungstenite::Message::Text(serde_json::to_string(&self).expect("failed to serialize message"))
 	}
 }
 

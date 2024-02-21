@@ -1,29 +1,15 @@
-use std::sync::Arc;
-use std::time::Duration;
-
-use anyhow::Context;
-use http_body_util::Full;
-use hyper::body::Bytes;
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper::StatusCode;
-use hyper_util::rt::TokioIo;
 use memory_stats::memory_stats;
 use prometheus_client::metrics::counter::Counter;
 use prometheus_client::metrics::family::Family;
 use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::Histogram;
 use prometheus_client::registry::Registry;
-use scuffle_utils::context::ContextExt;
-use scuffle_utils::prelude::FutureTimeout;
-use tokio::net::TcpSocket;
+use shared::event_api::types::Opcode;
+use shared::metrics::{Labels, DEFAULT_HISTOGRAM_BUCKETS};
 
 use self::labels::{
-	ClientClose, Command, ConnectionDuration, CurrentConnection, Labels, Memory, NatsEvent, TotalSubscription,
-	UniqueSubscriptions,
+	ClientClose, Command, ConnectionDuration, CurrentConnection, Memory, NatsEvent, TotalSubscription, UniqueSubscriptions,
 };
-use crate::global::Global;
-use crate::message::types::Opcode;
 
 mod labels;
 
@@ -39,8 +25,6 @@ pub struct Metrics {
 	memory: Family<Labels<Memory>, Gauge>,
 	labels: Labels<()>,
 }
-
-const DEFAULT_HISTOGRAM_BUCKETS: &[f64] = &[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0];
 
 impl Metrics {
 	pub fn new(mut labels: Vec<(String, String)>) -> Self {
@@ -222,50 +206,4 @@ impl Metrics {
 	pub fn registry(&self) -> &Registry {
 		&self.registry
 	}
-}
-
-pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
-	let config = global.config();
-	tracing::info!("[metrics] listening on http://{}", config.monitoring.bind);
-	let socket = if config.monitoring.bind.is_ipv6() {
-		TcpSocket::new_v6()?
-	} else {
-		TcpSocket::new_v4()?
-	};
-
-	socket.set_reuseaddr(true).context("socket reuseaddr")?;
-	socket.set_reuseport(true).context("socket reuseport")?;
-	socket.bind(config.monitoring.bind).context("socket bind")?;
-	let listener = socket.listen(16)?;
-
-	while let Ok(r) = listener.accept().context(global.ctx()).await {
-		let (socket, _) = r?;
-
-		let registry = global.metrics().registry();
-		let global = &global;
-
-		let service = service_fn(move |_| async {
-			let mut body = String::new();
-
-			global.metrics().observe_memory();
-
-			prometheus_client::encoding::text::encode(&mut body, registry).context("encode prometheus metrics")?;
-
-			Ok::<_, anyhow::Error>({
-				hyper::Response::builder()
-					.header(hyper::header::CONTENT_TYPE, "text/plain")
-					.status(StatusCode::OK)
-					.body(Full::new(Bytes::from(body)))
-					.context("build response")?
-			})
-		});
-
-		http1::Builder::new()
-			.serve_connection(TokioIo::new(socket), service)
-			.timeout(Duration::from_secs(2))
-			.await
-			.ok();
-	}
-
-	Ok(())
 }

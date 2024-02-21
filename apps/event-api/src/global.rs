@@ -101,3 +101,44 @@ impl Global {
 		&self.metrics
 	}
 }
+
+impl shared::metrics::MetricsProvider for Global {
+	fn ctx(&self) -> &scuffle_utils::context::Context {
+		&self.ctx
+	}
+
+	fn bind(&self) -> std::net::SocketAddr {
+		self.config.monitoring.bind
+	}
+
+	fn registry(&self) -> &prometheus_client::registry::Registry {
+		self.metrics.registry()
+	}
+
+	fn pre_hook(&self) {
+		self.metrics.observe_memory()
+	}
+}
+
+impl shared::health::HealthProvider for Global {
+	fn bind(&self) -> std::net::SocketAddr {
+		self.config.health.bind
+	}
+
+	fn ctx(&self) -> &scuffle_utils::context::Context {
+		&self.ctx
+	}
+
+	fn healthy(&self, path: &str) -> bool {
+		(match path {
+			"/capacity" => {
+				if let Some(limit) = self.config.api.connection_target.or(self.config.api.connection_limit) {
+					self.active_connections() < limit
+				} else {
+					true
+				}
+			}
+			_ => true,
+		}) && matches!(self.nats.connection_state(), async_nats::connection::State::Connected)
+	}
+}

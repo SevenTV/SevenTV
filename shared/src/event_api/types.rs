@@ -1,6 +1,8 @@
-use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode as WsCloseCode;
+// use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode as
+// WsCloseCode;
 
-// See the comment on the `payload.rs` file for a description of what this file is.
+// See the comment on the `payload.rs` file for a description of what this file
+// is.
 use super::payload::{Subscribe, Unsubscribe};
 use crate::object_id::ObjectId;
 
@@ -100,9 +102,9 @@ impl CloseCode {
 		}
 	}
 
-	pub const fn into_websocket(self) -> WsCloseCode {
-		WsCloseCode::Library(self.as_u16())
-	}
+	// pub const fn into_websocket(self) -> WsCloseCode {
+	// 	WsCloseCode::Library(self.as_u16())
+	// }
 }
 
 impl std::fmt::Display for CloseCode {

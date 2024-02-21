@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-    "apps/event-api",
+    "apps/*",
+    "shared",
 ]
 
 resolver = "2"
@@ -20,3 +21,6 @@ lto = "fat"
 inherits = "release"
 debug = true
 strip = false
+
+[workspace.dependencies]
+shared = { path = "shared" }
