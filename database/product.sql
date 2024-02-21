@@ -73,13 +73,13 @@ CREATE TABLE "product_codes" (
     "updated_at" timestamptz NOT NULL DEFAULT 'NOW()'
 );
 
-CREATE TABLE "product_code_product_associations" (
+CREATE TABLE "product_code_association_product" (
     "product_code_id" uuid NOT NULL, -- Ref: product_codes.id -> On Delete Cascade
     "associated_product_id" uuid NOT NULL, -- Ref: products.id -> DO NOTHING
     PRIMARY KEY ("product_code_id", "associated_product_id")
 );
 
-CREATE INDEX "product_code_product_associations_associated_product_id_index" ON "product_code_product_associations" ("associated_product_id");
+CREATE INDEX "product_code_association_product_associated_product_id_index" ON "product_code_association_product" ("associated_product_id");
 
 CREATE TYPE "product_purchase_status" AS ENUM ('PENDING', 'COMPLETED', 'REFUNDED', 'FAILED');
 
