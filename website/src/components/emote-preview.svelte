@@ -4,14 +4,17 @@
     export let bg: "medium" | "light" = "medium";
 </script>
 
-<div class="emote" style:background-color="var(--bg-{bg})">
+<a href="/emote/{name}" class="emote" style:background-color="var(--bg-{bg})">
     <div class="image" style="animation-delay: {index * 10}ms"></div>
     <span class="name">{name}</span>
     <span class="user">username</span>
-</div>
+</a>
 
 <style lang="scss">
     .emote {
+        color: var(--text);
+        text-decoration: none;
+
         width: 10rem;
         height: 10rem;
 

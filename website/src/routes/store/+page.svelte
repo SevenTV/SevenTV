@@ -1,6 +1,6 @@
 <script lang="ts">
 	import BadgeProgress from "$/components/store/badge-progress.svelte";
-import Banner from "$/components/store/banner.svelte";
+	import Banner from "$/components/store/banner.svelte";
 	import Benefits from "$/components/store/benefits.svelte";
 	import EmoteRaffle from "$/components/store/emote-raffle.svelte";
 	import Faq from "$/components/store/faq.svelte";
@@ -10,6 +10,8 @@ import Banner from "$/components/store/banner.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
 
 	let subbed = false;
+
+	let mw: number;
 </script>
 
 <svelte:head>
@@ -17,8 +19,10 @@ import Banner from "$/components/store/banner.svelte";
 </svelte:head>
 
 <!-- All things called grid here aren't actually css grids -->
-<div class="grid">
-	<Banner title={subbed ? "Thank You For the Support" : "Unlock Special Perks"} subtitle={subbed ? "Enjoy Your Special Subscriber Perks!" : "Subscribe to ehnance your chatting experience."} />
+<!-- <input type="range" min="0" max="160" bind:value={mw} />
+{mw} -->
+<Banner title={subbed ? "Thank You For the Support" : "Unlock Special Perks"} subtitle={subbed ? "Enjoy Your Special Subscriber Perks!" : "Subscribe to ehnance your chatting experience."} />
+<div class="grid" style="--mw: {mw}rem">
 	{#if !subbed}
 		<Benefits />
 	{/if}
@@ -46,6 +50,10 @@ import Banner from "$/components/store/banner.svelte";
 		flex-direction: column;
 		gap: 1rem;
 		flex-wrap: wrap;
+
+		max-width: 80rem;
+		// max-width: var(--mw);
+		margin: 0 auto;
 	}
 
 	.top-grid {

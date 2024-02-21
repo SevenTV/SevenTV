@@ -13,7 +13,7 @@
                 <!-- 64 - 8 = 56 -->
                 <circle id="track" cx="64" cy="64" r="56" fill="none"></circle>
                 <!-- 2pi * 56 = 356 -->
-                <circle id="progress" cx="64" cy="64" r="56" fill="none" stroke-dasharray="356" stroke-dashoffset={(1 - (percentage / 100)) * 356}></circle>
+                <circle id="progress" cx="64" cy="64" r="56" fill="none" stroke-dasharray="356" style="--offset: {(1 - (percentage / 100)) * 356}"></circle>
 
                 <defs>
                     <linearGradient id="gradient">
@@ -77,11 +77,23 @@
             stroke: url(#gradient);
             stroke-width: 1rem;
             stroke-linecap: round;
+
+            animation: circle-progress 0.5s forwards;
         }
 
         #track {
             stroke: var(--secondary);
             stroke-width: 1rem;
+        }
+    }
+
+    @keyframes circle-progress {
+        from {
+            stroke-dashoffset: 356;
+        }
+
+        to {
+            stroke-dashoffset: var(--offset);
         }
     }
 

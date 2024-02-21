@@ -72,6 +72,9 @@
 	}
 
 	.benefit {
+		flex-basis: 0;
+		flex-grow: 1;
+
 		background-color: var(--bg-medium);
 		border-radius: 0.5rem;
 
@@ -89,7 +92,6 @@
 
 		.gradient {
 			height: 8.5rem;
-			width: 10rem;
 
 			border-radius: 0.5rem;
 			display: flex;
