@@ -13,13 +13,10 @@
 </script>
 
 <section class="banner">
-	<div class="title">
-		<span>
-			<h1>{title}</h1>
-			<p>{subtitle}</p>
-		</span>
-		<button class="button no-bg hide-on-desktop">Learn more</button>
-	</div>
+	<span>
+		<h1>{title}</h1>
+		<p>{subtitle}</p>
+	</span>
 	<div class="icons hide-on-mobile">
 		<Fa icon={faBrush} size="1.5x" />
 		<Fa icon={faUserCircle} size="1.5x" />
@@ -50,18 +47,6 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-
-		.title {
-			display: flex;
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 1rem;
-
-			.button {
-				font-weight: 300;
-				border: 1px solid var(--text-light);
-			}
-		}
 
 		h1 {
 			font-size: 1.875rem;

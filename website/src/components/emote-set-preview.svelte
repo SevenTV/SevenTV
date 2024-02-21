@@ -4,7 +4,7 @@
     export let bg: "medium" | "light" = "medium";
 </script>
 
-<div class="emote-set" style:background-color="var(--bg-{bg})">
+<a href="/emote-set/{name}" class="emote-set" style:background-color="var(--bg-{bg})">
     <div class="emotes">
         {#each Array(12) as _}
             <div class="emote"></div>
@@ -14,10 +14,13 @@
     <div class="percentage">
         {percentage}%
     </div>
-</div>
+</a>
 
 <style lang="scss">
     .emote-set {
+        color: var(--text);
+        text-decoration: none;
+
         display: flex;
         flex-direction: column;
         gap: 0.5rem;

@@ -71,6 +71,7 @@
 
 	.a {
         margin-top: 0.5rem;
+        color: var(--text-lighter);
 
 		display: none;
 	}
