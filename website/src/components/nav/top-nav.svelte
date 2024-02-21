@@ -33,7 +33,7 @@
 		<SearchBar />
 	</HideOn>
 	<div class="user-actions">
-		<button class="button hide-on-desktop">
+		<button class="button hide-on-desktop square">
 			<Fa icon={faSearch} size="1.2x" fw />
 		</button>
 		{#if $user}
@@ -47,7 +47,7 @@
 				</Badge>
 				<Dms slot="dropdown" />
 			</DropDown>
-			<a href="/upload" class="button hide-on-desktop">
+			<a href="/upload" class="button square hide-on-desktop">
 				<Fa icon={faPlusSquare} size="1.2x" fw />
 			</a>
 			<a href="/upload" class="button icon-left secondary hide-on-mobile">
@@ -75,7 +75,7 @@
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
-			<button class="button hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
+			<button class="button square hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
 				<Fa icon={faBars} size="1.2x" fw />
 			</button>
 		{/if}

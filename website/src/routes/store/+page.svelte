@@ -10,8 +10,6 @@
 	import YourSub from "$/components/store/your-sub.svelte";
 
 	let subbed = false;
-
-	let mw: number;
 </script>
 
 <svelte:head>
@@ -19,10 +17,8 @@
 </svelte:head>
 
 <!-- All things called grid here aren't actually css grids -->
-<!-- <input type="range" min="0" max="160" bind:value={mw} />
-{mw} -->
 <Banner title={subbed ? "Thank You For the Support" : "Unlock Special Perks"} subtitle={subbed ? "Enjoy Your Special Subscriber Perks!" : "Subscribe to ehnance your chatting experience."} />
-<div class="grid" style="--mw: {mw}rem">
+<div class="grid">
 	{#if !subbed}
 		<Benefits />
 	{/if}
@@ -52,8 +48,8 @@
 		flex-wrap: wrap;
 
 		max-width: 80rem;
-		// max-width: var(--mw);
 		margin: 0 auto;
+		margin-top: 1rem;
 	}
 
 	.top-grid {

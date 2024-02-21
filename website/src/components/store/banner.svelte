@@ -32,10 +32,10 @@
 		background: radial-gradient(
 				100% 100% at 50% 0%,
 				#ddc4fd 0%,
-				#9227cf 33.33%,
-				#3f188b 64.58%,
-				#1f113e 80.73%,
-				#0e0c13 93.75%
+				#9227cf 33%,
+				#3f188b 64%,
+				#1f113e 80%,
+				#0f0f0f 100%
 			),
 			var(--bg-medium);
 		border-radius: 0.5rem;

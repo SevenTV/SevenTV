@@ -92,6 +92,7 @@
 
 		.gradient {
 			height: 8.5rem;
+			min-width: 10rem;
 
 			border-radius: 0.5rem;
 			display: flex;
