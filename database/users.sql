@@ -35,7 +35,8 @@ CREATE INDEX "users_entitled_cache_invalidate_product_ids_index" ON "users" USIN
 CREATE INDEX "users_active_badge_id_index" ON "users" ("active_badge_id");
 CREATE INDEX "users_active_paint_id_index" ON "users" ("active_paint_id");
 CREATE INDEX "users_active_profile_picture_id_index" ON "users" ("active_profile_picture_id");
-CREATE INDEX "users_active_connection_id_index" ON "users" ("active_connection_id");
+
+CREATE TYPE "connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'YOUTUBE');
 
 CREATE TABLE "user_connections" (
     "id" uuid PRIMARY KEY,
@@ -89,7 +90,7 @@ CREATE TYPE "user_editor_state" AS ENUM ('ACTIVE', 'INVITED', 'BLOCKED_INVITE');
 CREATE TABLE "user_editors" (
     "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
     "editor_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
-    "state" user_editor_state NOT NULL DEFAULT true,
+    "state" user_editor_state NOT NULL DEFAULT 'INVITED',
     "permissions" int8 NOT NULL DEFAULT 0,
     "updated_at" timestamptz NOT NULL DEFAULT 'NOW()',
     PRIMARY KEY ("user_id", "editor_id")
