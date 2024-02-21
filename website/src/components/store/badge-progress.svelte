@@ -8,8 +8,21 @@
 
 <StoreSection>
     <div class="container">
-        <div class="progress-circle" style="--percentage: {percentage}%">
-            {percentage}%
+        <div class="progress-circle">
+            <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                <!-- 64 - 8 = 56 -->
+                <circle id="track" cx="64" cy="64" r="56" fill="none"></circle>
+                <!-- 2pi * 56 = 356 -->
+                <circle id="progress" cx="64" cy="64" r="56" fill="none" stroke-dasharray="356" stroke-dashoffset={(1 - (percentage / 100)) * 356}></circle>
+
+                <defs>
+                    <linearGradient id="gradient">
+                        <stop offset="0%" stop-color="#5d25fe"></stop>
+                        <stop offset="100%" stop-color="#ff36f7"></stop>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>{percentage}%</span>
         </div>
         <div class="info">
             <div class="header">
@@ -42,6 +55,7 @@
         gap: 1.25rem;
     }
 
+    // https://stackoverflow.com/a/69183742/10772729
     .progress-circle {
         width: 8rem;
         height: 8rem;
@@ -49,35 +63,25 @@
         font-size: 1.25rem;
         font-weight: 700;
 
+        position: relative;
         display: flex;
         justify-content: center;
         align-items: center;
 
-        border-radius: 50%;
-        background-color: var(--secondary);
-        z-index: 1;
-        position: relative;
-
-        &::before {
-            content: "";
+        & > svg {
             position: absolute;
-            border-radius: 50%;
-            width: 8rem;
-            height: 8rem;
-            background: linear-gradient(0deg, #5D25FE, #FF36F7);
-            -webkit-mask-image: conic-gradient(white 0%, white var(--percentage), transparent var(--percentage), transparent 100%);
-            mask-image: conic-gradient(white 0%, white var(--percentage), transparent var(--percentage), transparent 100%);
-            z-index: -2;
+            transform: rotate(-90deg);
         }
 
-        &::after {
-            content: "";
-            position: absolute;
-            border-radius: 50%;
-            width: 6rem;
-            height: 6rem;
-            background-color: var(--bg-medium);
-            z-index: -1;
+        #progress {
+            stroke: url(#gradient);
+            stroke-width: 1rem;
+            stroke-linecap: round;
+        }
+
+        #track {
+            stroke: var(--secondary);
+            stroke-width: 1rem;
         }
     }
 
