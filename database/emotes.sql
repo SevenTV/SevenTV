@@ -19,6 +19,8 @@ CREATE TABLE "emote_attributions" (
     PRIMARY KEY ("emote_id", "user_id")
 );
 
+CREATE INDEX "emote_attributions_user_id_index" ON "emote_attributions" ("user_id");
+
 CREATE TABLE "emote_files" (
     "emote_id" uuid NOT NULL, -- Ref: emotes.id -> DO NOTHING
     "file_id" uuid NOT NULL, -- Ref: files.id -> DO NOTHING

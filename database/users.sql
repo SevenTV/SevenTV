@@ -36,7 +36,7 @@ CREATE INDEX "users_active_badge_id_index" ON "users" ("active_badge_id");
 CREATE INDEX "users_active_paint_id_index" ON "users" ("active_paint_id");
 CREATE INDEX "users_active_profile_picture_id_index" ON "users" ("active_profile_picture_id");
 
-CREATE TYPE "connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'YOUTUBE');
+CREATE TYPE "connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'YOUTUBE', 'KICK');
 
 CREATE TABLE "user_connections" (
     "id" uuid PRIMARY KEY,
