@@ -2,6 +2,7 @@
 	import { faEllipsisV, faRepeat } from "@fortawesome/pro-regular-svg-icons";
 	import StoreSection from "./store-section.svelte";
 	import Fa from "svelte-fa";
+	import PaintPreview from "../paint-preview.svelte";
 </script>
 
 <StoreSection title="Monthly Paints">
@@ -15,10 +16,7 @@
         </button>
     </div>
     {#each Array(2) as _}
-        <div class="paint">
-            Paint
-            <div class="circle"></div>
-        </div>
+        <PaintPreview />
     {/each}
 </StoreSection>
 
@@ -37,24 +35,5 @@
 
         color: var(--text-lighter);
         font-size: 0.75rem;
-    }
-
-    .paint {
-        padding: 0.5rem 1rem;
-        background-color: var(--bg-light);
-
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        color: var(--text-lighter);
-        font-weight: 600;
-
-        .circle {
-            width: 1.5rem;
-            height: 1.5rem;
-            background-color: var(--secondary);
-            border-radius: 50%;
-        }
     }
 </style>

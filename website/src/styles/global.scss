@@ -75,11 +75,11 @@ ul {
 		}
 	}
 
-	&.icon-left {
+	&.icon-left:not(.square) {
 		padding-left: 0.75rem;
 	}
 
-	&.icon-right {
+	&.icon-right:not(.square) {
 		padding-right: 0.75rem;
 	}
 
