@@ -48,7 +48,7 @@ CREATE INDEX "ticket_files_file_id_index" ON "ticket_files" ("file_id");
 CREATE TABLE "ticket_members" (
     "ticket_id" uuid NOT NULL, -- Ref: tickets.id -> On Delete Cascade
     "user_id" uuid NOT NULL,  -- Ref: users.id -> On Delete Cascade
-    "kind" support_ticket_member_kind NOT NULL,
+    "kind" ticket_member_kind NOT NULL,
     "voted" boolean NOT NULL DEFAULT false,
     "notifications" boolean NOT NULL DEFAULT true,
     PRIMARY KEY ("ticket_id", "user_id")

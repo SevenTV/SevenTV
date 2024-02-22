@@ -73,13 +73,13 @@ CREATE TABLE "product_codes" (
     "updated_at" timestamptz NOT NULL DEFAULT 'NOW()'
 );
 
-CREATE TABLE "product_code_product_associations" (
+CREATE TABLE "product_code_association_product" (
     "product_code_id" uuid NOT NULL, -- Ref: product_codes.id -> On Delete Cascade
     "associated_product_id" uuid NOT NULL, -- Ref: products.id -> DO NOTHING
     PRIMARY KEY ("product_code_id", "associated_product_id")
 );
 
-CREATE INDEX "product_product_associations_associated_product_id_index" ON "product_product_associations" ("associated_product_id");
+CREATE INDEX "product_code_association_product_associated_product_id_index" ON "product_code_association_product" ("associated_product_id");
 
 CREATE TYPE "product_purchase_status" AS ENUM ('PENDING', 'COMPLETED', 'REFUNDED', 'FAILED');
 
@@ -98,7 +98,6 @@ CREATE INDEX "product_purchases_product_id_index" ON "product_purchases" ("produ
 CREATE INDEX "product_purchases_user_id_index" ON "product_purchases" ("user_id");
 CREATE INDEX "product_purchases_recipient_id_index" ON "product_purchases" ("recipient_id");
 CREATE INDEX "product_purchases_status_index" ON "product_purchases" ("status");
-CREATE INDEX "product_purchases_subscription_id_index" ON "product_purchases" ("subscription_id");
 
 CREATE TYPE "product_subscription_status" AS ENUM ('ACTIVE', 'INACTIVE', 'FAILED');
 
@@ -116,5 +115,3 @@ CREATE INDEX "product_subscriptions_product_id_index" ON "product_subscriptions"
 CREATE INDEX "product_subscriptions_user_id_index" ON "product_subscriptions" ("user_id");
 CREATE INDEX "product_subscriptions_status_index" ON "product_subscriptions" ("status");
 CREATE INDEX "product_subscriptions_next_payment_due_index" ON "product_subscriptions" ("next_payment_due");
-
-CREATE INDEX "product_subscription_purchases_purchase_id_index" ON "product_subscription_purchases" ("purchase_id");
