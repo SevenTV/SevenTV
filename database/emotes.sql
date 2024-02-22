@@ -3,6 +3,7 @@ CREATE TYPE "emote_set_kind" AS ENUM ('NORMAL', 'PERSONAL');
 CREATE TABLE "emotes" (
     "id" uuid PRIMARY KEY,
     "owner_id" uuid, -- Ref: users.id -> On Delete Set NULL
+    "attributed_id" uuid,
     "default_name" varchar(128) NOT NULL,
     "tags" text[] NOT NULL DEFAULT '{}',
     "flags" int4 NOT NULL,
