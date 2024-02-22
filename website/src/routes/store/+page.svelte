@@ -8,6 +8,14 @@
 	import PersonalEmotes from "$/components/store/personal-emotes.svelte";
 	import TopGifters from "$/components/store/top-gifters.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
+	import {
+		faBadge,
+		faBrush,
+		faSmilePlus,
+		faTicket,
+		faUserCircle,
+	} from "@fortawesome/pro-regular-svg-icons";
+	import Fa from "svelte-fa";
 
 	let subbed = false;
 </script>
@@ -17,7 +25,15 @@
 </svelte:head>
 
 <!-- All things called grid here aren't actually css grids -->
-<Banner title={subbed ? "Thank You For the Support" : "Unlock Special Perks"} subtitle={subbed ? "Enjoy Your Special Subscriber Perks!" : "Subscribe to ehnance your chatting experience."} />
+<Banner title={subbed ? "Thank You For the Support" : "Unlock Special Perks"} subtitle={subbed ? "Enjoy Your Special Subscriber Perks!" : "Subscribe to Ehnance Your Chatting Experience."}>
+	<div class="banner-icons hide-on-mobile">
+		<Fa icon={faBrush} size="1.5x" />
+		<Fa icon={faUserCircle} size="1.5x" />
+		<Fa icon={faBadge} size="1.5x" />
+		<Fa icon={faTicket} size="1.5x" />
+		<Fa icon={faSmilePlus} size="1.5x" />
+	</div>
+</Banner>
 <div class="grid">
 	{#if !subbed}
 		<Benefits />
@@ -41,6 +57,16 @@
 </div>
 
 <style lang="scss">
+	.banner-icons {
+		padding: 0 2.75rem;
+
+		display: flex;
+		gap: 3.5rem;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+	}
+
 	.grid {
 		display: flex;
 		flex-direction: column;
@@ -48,8 +74,8 @@
 		flex-wrap: wrap;
 
 		max-width: 80rem;
-		margin: 0 auto;
 		margin-top: 1rem;
+		margin-inline: auto;
 	}
 
 	.top-grid {
