@@ -48,7 +48,9 @@
 			mask-size: 100% 400%;
 			animation: fade-in 0.5s linear forwards;
 		}
+
 		background-color: var(--bg-medium);
+		border-radius: 0.5rem;
 
 		min-width: 12rem;
 		min-height: 11.25rem;

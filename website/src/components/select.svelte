@@ -6,6 +6,7 @@
 
     export let options: string[];
     export let selected: string | null = options[0] ?? null;
+    export let grow: boolean = false;
 
     let expanded = false;
 
@@ -23,6 +24,7 @@
 	on:click={toggle}
 	use:mouseTrap={close}
     class="button secondary select"
+    class:grow={grow}
     class:expanded={expanded}
     tabindex="-1"
 >
@@ -73,13 +75,17 @@
 
     .button.select {
         position: relative;
-        width: 100%;
         justify-content: space-between;
         border: transparent 1px solid;
         background-color: var(--secondary);
 
         &:focus-within {
             border-color: var(--primary);
+        }
+
+        &.grow {
+            width: 100%;
+            flex-grow: 1;
         }
 
         &.expanded {

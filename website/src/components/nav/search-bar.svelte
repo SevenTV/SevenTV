@@ -1,19 +1,37 @@
 <script lang="ts">
 	import Fa from "svelte-fa";
 	import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+
+	export let big: boolean = false;
 </script>
 
-<search>
+<search class:big={big}>
 	<div class="icon">
-		<Fa icon={faSearch} />
+		<Fa icon={faSearch} fw />
 	</div>
 	<input type="text" placeholder="Search" />
 </search>
 
 <style lang="scss">
 	search {
-		/* First, take 30rem and then shrink by a factor of 1 */
-		flex: 0 1 30rem;
+		--icon-left-padding: 0.75rem;
+		--gap: 0.5rem;
+
+		&.big {
+			--icon-left-padding: 1rem;
+			--gap: 0.75rem;
+
+			/* First, take 30rem and then shrink by a factor of 1 */
+			flex: 0 1 30rem;
+
+			input {
+				padding-block: 0.75rem;
+			}
+		}
+
+		&:not(.big) {
+			max-width: 12.5rem;
+		}
 
 		position: relative;
 
@@ -29,14 +47,14 @@
 
 			display: flex;
 			align-items: center;
-			padding-left: 1rem;
+			padding-left: var(--icon-left-padding);
 			color: var(--text-light);
 			pointer-events: none;
 		}
 
 		input {
-			padding: 0.75rem 0;
-			padding-left: 2.5rem;
+			// icon left padding + icon width + gap
+			padding-left: calc(var(--icon-left-padding) + 1rem + var(--gap));
 		}
 	}
 </style>

@@ -59,7 +59,7 @@
 			<hr />
 			<Expandable title="Sorting">
 				<div class="sorting">
-					<Select options={["Name", "Date"]} />
+					<Select options={["Name", "Date"]} grow />
 					<button class="button square secondary" on:click={() => (sortAsc = !sortAsc)}>
 						<Fa icon={sortAsc ? faArrowUpWideShort : faArrowDownWideShort} size="1.2x" fw />
 					</button>

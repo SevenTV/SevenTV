@@ -30,7 +30,7 @@
 		</HideOn>
 	</div>
 	<HideOn mobile>
-		<SearchBar />
+		<SearchBar big />
 	</HideOn>
 	<div class="user-actions">
 		<button class="button hide-on-desktop square">

@@ -74,8 +74,8 @@
 		flex-wrap: wrap;
 
 		max-width: 80rem;
-		margin: 0 auto;
 		margin-top: 1rem;
+		margin-inline: auto;
 	}
 
 	.top-grid {

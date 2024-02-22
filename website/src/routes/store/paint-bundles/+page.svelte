@@ -1,8 +1,11 @@
 <script lang="ts">
+	import HideOn from "$/components/hide-on.svelte";
+	import SearchBar from "$/components/nav/search-bar.svelte";
 	import PaintPreview from "$/components/paint-preview.svelte";
 	import Select from "$/components/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
 	import { faGift, faCartShopping } from "@fortawesome/pro-regular-svg-icons";
+	import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 	import Fa from "svelte-fa";
 
 	const bundles = [
@@ -35,6 +38,7 @@
 			name: "Forsen Bundle",
 			price: 1099,
 			new: false,
+			oldPrice: 10099,
 		},
 	];
 
@@ -53,7 +57,12 @@
 	<div class="header">
 		<h2>Paint Bundles</h2>
 		<div class="buttons">
-			<input type="text" placeholder="Search" />
+			<HideOn mobile>
+				<SearchBar />
+			</HideOn>
+			<button class="button square hide-on-desktop">
+				<Fa icon={faSearch} size="1.2x" fw />
+			</button>
 			<Select options={["Filters"]} />
 		</div>
 	</div>
@@ -76,7 +85,12 @@
 					</button>
 					<button class="button secondary icon-left">
 						<Fa icon={faCartShopping} size="1.2x" />
-						{priceFormat.format(bundle.price / 100)}
+						<span>
+							{#if bundle.oldPrice}
+								<del>{priceFormat.format(bundle.oldPrice / 100)}</del>
+							{/if}
+							{priceFormat.format(bundle.price / 100)}
+						</span>
 					</button>
 				</div>
 			</div>
@@ -87,6 +101,8 @@
 <style lang="scss">
 	section {
 		margin-top: 1rem;
+		margin-inline: auto;
+		max-width: 80rem;
 	}
 
 	h2 {
@@ -98,6 +114,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		gap: 0.5rem;
 
 		.buttons {
 			display: flex;
@@ -144,6 +161,10 @@
 			display: flex;
 			gap: 0.5rem;
 			justify-content: flex-end;
+		}
+
+		del {
+			font-size: 0.75rem;
 		}
 	}
 </style>
