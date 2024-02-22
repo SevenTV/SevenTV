@@ -30,6 +30,7 @@ CREATE INDEX "emote_files_file_id_index" ON "emote_files" ("file_id");
 CREATE TABLE "emote_sets" (
     "id" uuid PRIMARY KEY,
     "owner_id" uuid, -- Ref: users.id -> On Delete Cascade
+    "hidden_on_profile" bool NOT NULL DEFAULT FALSE,
     "name" varchar(64) NOT NULL,
     "kind" emote_set_kind NOT NULL,
     "flags" int4 NOT NULL,
