@@ -13,6 +13,12 @@ CREATE TABLE "emotes" (
 CREATE INDEX "emotes_owner_id_index" ON "emotes" ("owner_id");
 CREATE UNIQUE INDEX "emotes_ticket_id_unique" ON "emotes" ("ticket_id");
 
+CREATE TABLE "emote_attributions" (
+    "emote_id" uuid NOT NULL, -- Ref: emotes.id -> On Delete Cascade
+    "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
+    PRIMARY KEY ("emote_id", "user_id")
+);
+
 CREATE TABLE "emote_files" (
     "emote_id" uuid NOT NULL, -- Ref: emotes.id -> DO NOTHING
     "file_id" uuid NOT NULL, -- Ref: files.id -> DO NOTHING
