@@ -2,6 +2,7 @@
 	"name": "website",
 	"version": "0.0.1",
 	"private": true,
+	"license": "Apache-2.0 with Commons Clause",
 	"scripts": {
 		"dev": "vite dev --host --port 3000",
 		"build": "vite build",
