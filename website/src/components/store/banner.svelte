@@ -1,44 +1,54 @@
 <script lang="ts">
-	import {
-		faBadge,
-		faBrush,
-		faSmilePlus,
-		faTicket,
-		faUserCircle,
-	} from "@fortawesome/pro-regular-svg-icons";
-	import Fa from "svelte-fa";
-
 	export let title: string;
 	export let subtitle: string;
+	export let gradientColor: string = "#9227cf";
 </script>
 
-<section class="banner">
+<section class="banner" style="--gradient-color: {gradientColor}">
 	<span>
 		<h1>{title}</h1>
 		<p>{subtitle}</p>
 	</span>
-	<div class="icons hide-on-mobile">
-		<Fa icon={faBrush} size="1.5x" />
-		<Fa icon={faUserCircle} size="1.5x" />
-		<Fa icon={faBadge} size="1.5x" />
-		<Fa icon={faTicket} size="1.5x" />
-		<Fa icon={faSmilePlus} size="1.5x" />
-	</div>
+	<slot />
 </section>
 
 <style lang="scss">
 	.banner {
-		border-radius: 0.5rem;
-		background: radial-gradient(
+		position: relative;
+		z-index: 0;
+
+		&::before {
+			content: "";
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			border-radius: 0.5rem;
+
+			z-index: -1;
+
+			background: radial-gradient(
 				100% 100% at 50% 0%,
 				#ddc4fd 0%,
-				#9227cf 33%,
+				var(--gradient-color) 33%,
 				#3f188b 64%,
 				#1f113e 80%,
 				#0f0f0f 100%
 			),
 			var(--bg-medium);
-		border-radius: 0.5rem;
+
+			mask-image: radial-gradient(
+				200% 100% at 50% 0%,
+				rgba(white, 1) 0%,
+				rgba(white, 0.7) 33%,
+				rgba(white, 0.2) 66%,
+				rgba(white, 0) 100%
+			);
+			mask-size: 100% 400%;
+			animation: fade-in 0.5s linear forwards;
+		}
+		background-color: var(--bg-medium);
 
 		min-width: 12rem;
 		min-height: 11.25rem;
@@ -56,15 +66,14 @@
 		p {
 			font-weight: 300;
 		}
+	}
 
-		.icons {
-			padding: 0 2.75rem;
-
-			display: flex;
-			gap: 3.5rem;
-			flex-wrap: wrap;
-			align-items: center;
-			justify-content: center;
+	@keyframes fade-in {
+		from {
+			mask-position: 0% 100%;
+		}
+		to {
+			mask-position: 0% 0%;
 		}
 	}
 
