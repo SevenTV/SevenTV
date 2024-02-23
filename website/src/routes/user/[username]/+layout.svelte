@@ -4,7 +4,22 @@
 	import Expandable from "$/components/expandable.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import TabLink from "$/components/profile/tab-link.svelte";
-	import { CaretDown, ChatCircleText, DiscordLogo, DotsThreeVertical, FolderSimple, Gear, Gift, Heart, Lightning, Note, Notepad, PaintBrush, SealCheck, TwitchLogo, Upload } from "phosphor-svelte";
+	import {
+		CaretDown,
+		ChatCircleText,
+		DiscordLogo,
+		DotsThreeVertical,
+		FolderSimple,
+		Gear,
+		Gift,
+		Heart,
+		Lightning,
+		Note,
+		PaintBrush,
+		SealCheck,
+		TwitchLogo,
+		Upload,
+	} from "phosphor-svelte";
 
 	export let data: LayoutData;
 </script>
@@ -85,37 +100,25 @@
 						<Upload weight="fill" />
 					</svelte:fragment>
 				</TabLink>
-				<TabLink
-					title="Emote Sets"
-					href="/user/{data.username}/emote-sets"
-				>
+				<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets">
 					<FolderSimple />
 					<svelte:fragment slot="active">
 						<FolderSimple weight="fill" />
 					</svelte:fragment>
 				</TabLink>
-				<TabLink
-					title="Cosmetics"
-					href="/user/{data.username}/cosmetics"
-				>
+				<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics">
 					<PaintBrush />
 					<svelte:fragment slot="active">
 						<PaintBrush weight="fill" />
 					</svelte:fragment>
 				</TabLink>
-				<TabLink
-					title="Activity Log"
-					href="/user/{data.username}/activity-log"
-				>
+				<TabLink title="Activity Log" href="/user/{data.username}/activity-log">
 					<Note />
 					<svelte:fragment slot="active">
 						<Note weight="fill" />
 					</svelte:fragment>
 				</TabLink>
-				<TabLink
-					title="Mod Comments"
-					href="/user/{data.username}/mod-comments"
-				>
+				<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments">
 					<ChatCircleText />
 					<svelte:fragment slot="active">
 						<ChatCircleText weight="fill" />

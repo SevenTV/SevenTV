@@ -29,14 +29,14 @@
 			z-index: -1;
 
 			background: radial-gradient(
-				100% 100% at 50% 0%,
-				#ddc4fd 0%,
-				var(--gradient-color) 33%,
-				#3f188b 64%,
-				#1f113e 80%,
-				#0f0f0f 100%
-			),
-			var(--bg-medium);
+					100% 100% at 50% 0%,
+					#ddc4fd 0%,
+					var(--gradient-color) 33%,
+					#3f188b 64%,
+					#1f113e 80%,
+					#0f0f0f 100%
+				),
+				var(--bg-medium);
 
 			mask-image: radial-gradient(
 				200% 100% at 50% 0%,

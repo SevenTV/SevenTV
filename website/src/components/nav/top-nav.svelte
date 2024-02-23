@@ -73,7 +73,10 @@
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
-			<button class="button square hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
+			<button
+				class="button square hide-on-desktop"
+				on:click={() => ($showMobileMenu = !$showMobileMenu)}
+			>
 				<List />
 			</button>
 		{/if}
