@@ -1,6 +1,5 @@
 <script lang="ts">
-	import Fa from "svelte-fa";
-	import { faPlus, faQuestionCircle } from "@fortawesome/pro-regular-svg-icons";
+	import { Plus, Question } from "phosphor-svelte";
 
 	const qas = [
 		{
@@ -20,7 +19,7 @@
 
 <section>
     <div class="header">
-        <Fa icon={faQuestionCircle} />
+        <Question />
         <h2>Frequently Asked Questions</h2>
     </div>
 	<div class="faq">
@@ -29,7 +28,7 @@
 			<label class="qa">
 				<div class="q">
                     {qa.q}
-                    <Fa icon={faPlus} size="1.2x" />
+                    <Plus />
                 </div>
 
 				<!-- Pseudo checkbox box for not having to use js for expanding -->

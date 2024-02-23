@@ -1,13 +1,12 @@
 <script lang="ts">
-	import Fa from "svelte-fa";
-	import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+	import { MagnifyingGlass } from "phosphor-svelte";
 
 	export let big: boolean = false;
 </script>
 
 <search class:big={big}>
 	<div class="icon">
-		<Fa icon={faSearch} fw />
+		<MagnifyingGlass />
 	</div>
 	<input type="text" placeholder="Search" />
 </search>

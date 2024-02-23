@@ -1,16 +1,14 @@
 <script lang="ts">
 	import Tabs from "$/components/tabs.svelte";
 	import { sideBar } from "$/lib/stores";
-	import { faArrowRightToLine, faFolder } from "@fortawesome/pro-regular-svg-icons";
-	import { faGrid, faGridHorizontal } from "@fortawesome/pro-solid-svg-icons";
-	import Fa from "svelte-fa";
+	import { ArrowLineRight, FolderSimple, GridFour, GridNine } from "phosphor-svelte";
 </script>
 
 <div class="nav-bar">
     <div class="buttons">
         {#if !$sideBar}
             <button class="button square expand" on:click={() => ($sideBar = true)}>
-                <Fa icon={faArrowRightToLine} size="1.2x" fw />
+                <ArrowLineRight />
             </button>
         {/if}
         <Tabs tabs={[
@@ -20,14 +18,14 @@
     </div>
     <div class="buttons">
         <button class="button secondary icon-left hide-on-mobile">
-            <Fa icon={faFolder} fw size="1.2x" />
+            <FolderSimple />
             Personal Emotes
         </button>
         <button class="button square">
-            <Fa icon={faGridHorizontal} fw />
+            <GridFour />
         </button>
         <button class="button square">
-            <Fa icon={faGrid} fw />
+            <GridNine />
         </button>
     </div>
 </div>

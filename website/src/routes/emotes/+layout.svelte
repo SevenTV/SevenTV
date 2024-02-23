@@ -1,19 +1,11 @@
 <script lang="ts">
 	import Expandable from "$/components/expandable.svelte";
 	import { page } from "$app/stores";
-	import {
-		faArrowDownWideShort,
-		faArrowUpWideShort,
-		faFaceGrinWink,
-		faFolder,
-		faArrowLeftFromLine,
-	} from "@fortawesome/pro-regular-svg-icons";
-	import { faXmark } from "@fortawesome/pro-solid-svg-icons";
-	import Fa from "svelte-fa";
 	import { fly } from "svelte/transition";
 	import { sideBar } from "$/lib/stores";
 	import Checkbox from "$/components/checkbox.svelte";
 	import Select from "$/components/select.svelte";
+	import { ArrowLineLeft, Smiley, FolderSimple, SortAscending, SortDescending, X } from "phosphor-svelte";
 
 	let sortAsc = false;
 
@@ -39,12 +31,12 @@
 	{#if $sideBar}
 		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
 			<button class="button square collapse" on:click={() => ($sideBar = false)}>
-				<Fa icon={faArrowLeftFromLine} size="1.2x" fw />
+				<ArrowLineLeft />
 			</button>
 			<h1>Directory</h1>
 			<div class="link-list">
 				<a class="button big" href="/emotes" class:secondary={$page.route.id?.startsWith("/emotes/(emotes)")}>
-					<Fa icon={faFaceGrinWink} size="1.2x" fw />
+					<Smiley />
 					Emotes
 				</a>
 				<a
@@ -52,7 +44,7 @@
 					href="/emotes/sets"
 					class:secondary={$page.route.id?.startsWith("/emotes/sets")}
 				>
-					<Fa icon={faFolder} size="1.2x" fw />
+					<FolderSimple />
 					Emote Sets
 				</a>
 			</div>
@@ -61,7 +53,11 @@
 				<div class="sorting">
 					<Select options={["Name", "Date"]} grow />
 					<button class="button square secondary" on:click={() => (sortAsc = !sortAsc)}>
-						<Fa icon={sortAsc ? faArrowUpWideShort : faArrowDownWideShort} size="1.2x" fw />
+						{#if sortAsc}
+							<SortAscending />
+						{:else}
+							<SortDescending />
+						{/if}
 					</button>
 				</div>
 			</Expandable>
@@ -72,7 +68,7 @@
 						{#each tags as tag, i}
 							<button class="button secondary tag" on:click={() => removeTag(i)}>
 								<span>{tag}</span>
-								<Fa icon={faXmark} />
+								<X />
 							</button>
 						{/each}
 					</div>

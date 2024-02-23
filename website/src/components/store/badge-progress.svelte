@@ -1,7 +1,6 @@
 <script lang="ts">
-	import Fa from "svelte-fa";
+    import { DotsThreeVertical } from "phosphor-svelte";
     import StoreSection from "./store-section.svelte";
-	import { faEllipsisV } from "@fortawesome/pro-regular-svg-icons";
 
     export let percentage: number = 40;
 </script>
@@ -28,7 +27,7 @@
             <div class="header">
                 <h2>Badge Progress</h2>
                 <button class="button secondary square">
-                    <Fa icon={faEllipsisV} size="1.2x" fw />
+                    <DotsThreeVertical />
                 </button>
             </div>
             <div class="badges">

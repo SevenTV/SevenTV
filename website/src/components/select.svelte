@@ -1,7 +1,6 @@
 <script lang="ts">
-	import Fa from "svelte-fa";
-	import { faChevronDown } from "@fortawesome/pro-solid-svg-icons";
 	import mouseTrap from "$/lib/mouseTrap";
+	import { CaretDown } from "phosphor-svelte";
 	import { fade } from "svelte/transition";
 
     export let options: string[];
@@ -36,7 +35,7 @@
         {/each}
     </select>
     {selected ?? "Select"}
-    <Fa icon={faChevronDown} fw />
+    <CaretDown size="1rem" />
     {#if expanded}
         <div class="dropped" transition:fade={{ duration: 100 }}>
             {#each options as option}

@@ -4,8 +4,6 @@
 
 First, please install [pnpm](https://pnpm.io/) if you haven't already.
 
-> This project requires a paid license of FontAwesome to build. You can get one [here](https://fontawesome.com/pro).
-
 To install all dependencies, run `pnpm install` in this folder.
 
 Once all dependencies are installed, you can start the development server:

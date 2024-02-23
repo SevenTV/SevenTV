@@ -1,8 +1,6 @@
 <script lang="ts">
-    import Fa from "svelte-fa";
-    import { faStar as faStarSolid } from "@fortawesome/pro-solid-svg-icons";
-	import { faChevronDown, faClock, faEllipsisV, faGift, faHourglass, faSparkle, faStar as faStarRegular } from "@fortawesome/pro-regular-svg-icons";
 	import StoreSection from "./store-section.svelte";
+	import { CaretDown, Clock, DotsThreeVertical, Gift, Hourglass, Sparkle, Star } from "phosphor-svelte";
 
     export let subbed = false;
 </script>
@@ -10,49 +8,49 @@
 <StoreSection title="Your Subscription">
     <div class="buttons" slot="header">
         <button class="button secondary hide-on-mobile" class:sub-color={subbed} on:click={() => (subbed = true)}>
-            <Fa icon={subbed ? faStarSolid : faStarRegular} size="1.2x" />
+            <Star weight={subbed ? "fill" : "bold"} />
             <span>{subbed ? "Subscribed" : "Subscribe"}</span>
-            <Fa icon={faChevronDown} size="1.2x" />
+            <CaretDown />
         </button>
         <button class="button secondary icon-left icon-right hide-on-desktop" class:sub-color={subbed} on:click={() => (subbed = true)}>
-            <Fa icon={subbed ? faStarSolid : faStarRegular} size="1.2x" />
-            <Fa icon={faChevronDown} size="1.2x" />
+            <Star weight={subbed ? "fill" : "bold"} />
+            <CaretDown />
         </button>
 
         <button class="button secondary icon-left hide-on-mobile">
-            <Fa icon={faGift} size="1.2x" />
+            <Gift />
             Gift
         </button>
         <button class="button secondary square hide-on-desktop">
-            <Fa icon={faGift} size="1.2x" fw />
+            <Gift />
         </button>
 
         <button class="button secondary square">
-            <Fa icon={faEllipsisV} size="1.2x" fw />
+            <DotsThreeVertical />
         </button>
     </div>
     <div class="sub-grid">
         <span class="key">Plan</span>
         <span class="value">
-            <Fa icon={faSparkle} size="1.2x" />
+            <Sparkle />
             <span>Free</span>
         </span>
 
         <span class="key">Gifted By</span>
         <span class="value">
-            <Fa icon={faGift} size="1.2x" />
+            <Gift />
             <span>N/A</span>
         </span>
 
         <span class="key">Sub Ends</span>
         <span class="value">
-            <Fa icon={faHourglass} size="1.2x" />
+            <Hourglass />
             <span>N/A</span>
         </span>
 
         <span class="key">Previously Subscribed</span>
         <span class="value">
-            <Fa icon={faClock} size="1.2x" />
+            <Clock />
             <span>0 days</span>
         </span>
     </div>

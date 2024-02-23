@@ -1,8 +1,7 @@
 <script lang="ts">
 	import StoreSection from "./store-section.svelte";
 	import EmoteSetPreview from "../emote-set-preview.svelte";
-	import Fa from "svelte-fa";
-	import { faPenToSquare } from "@fortawesome/pro-regular-svg-icons";
+	import { PencilSimple } from "phosphor-svelte";
 </script>
 
 <StoreSection title="Personal Emotes">
@@ -10,7 +9,7 @@
 		<EmoteSetPreview bg="light" />
 	</div>
 	<button class="button edit secondary icon-left">
-		<Fa icon={faPenToSquare} size="1.2x" />
+		<PencilSimple />
 		Edit
 	</button>
 </StoreSection>

@@ -1,142 +1,123 @@
 <script lang="ts">
-	import {
-		faChevronRight,
-		faCode,
-		faBadgeCheck,
-		faEarthAmericas,
-	} from "@fortawesome/pro-solid-svg-icons";
-	import {
-		faCompass,
-		faMessageArrowUpRight,
-		faMoon,
-		faQuestionCircle,
-		faSmileWink,
-		faStar,
-		faHome,
-		faGear,
-		faLock,
-		faMemo,
-		faRightFromBracket,
-		faBrush,
-		faChartLine,
-	} from "@fortawesome/pro-regular-svg-icons";
-	import Fa from "svelte-fa";
 	import { user } from "$/lib/stores";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
+	import { CaretRight, ChartLine, ChatDots, Code, Compass, Gear, GlobeHemisphereWest, House, IconContext, LockSimple, Moon, Note, PaintBrush, Question, SealCheck, SignOut, Smiley, Star } from "phosphor-svelte";
 </script>
 
-<div class="menu" transition:fade={{ duration: 100 }}>
-	{#if $user}
-		<a class="profile" href="/user/ayyybubu">
-			<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
-			<span class="name">
-				ayyybubu
-				<Fa icon={faBadgeCheck} size="0.75x" />
-			</span>
-			<div class="roles">
-				<Role name="Staff" />
-				<Role name="Subscriber" />
-			</div>
-			<div class="chevron">
-				<Fa icon={faChevronRight} />
-			</div>
-		</a>
-		<hr class="hide-on-mobile" />
-	{/if}
-	<div class="link-list hide-on-desktop">
-		<a href="/">
-			<Fa icon={faHome} size="1.2x" fw />
-			Home
-		</a>
-		<a href="/emotes">
-			<Fa icon={faSmileWink} size="1.2x" fw />
-			Emotes
-		</a>
-		<a href="/discover">
-			<Fa icon={faCompass} size="1.2x" fw />
-			Discover
-		</a>
-		<a href="/store" class="store">
-			<Fa icon={faStar} size="1.2x" fw />
-			Store
-		</a>
-	</div>
-	{#if $user}
-		<div class="link-list">
-			<a href="/cosmetics">
-				<Fa icon={faBrush} size="1.2x" fw />
-				Cosmetics
+<IconContext values={{ size: "1.5rem" }}>
+	<div class="menu" transition:fade={{ duration: 100 }}>
+		{#if $user}
+			<a class="profile" href="/user/ayyybubu">
+				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
+				<span class="name">
+					ayyybubu
+					<SealCheck size="0.8rem" />
+				</span>
+				<div class="roles">
+					<Role name="Staff" />
+					<Role name="Subscriber" />
+				</div>
+				<div class="chevron">
+					<CaretRight size="1.2rem" />
+				</div>
 			</a>
-			<a href="/analytics">
-				<Fa icon={faChartLine} size="1.2x" fw />
-				Analytics
+			<hr class="hide-on-mobile" />
+		{/if}
+		<div class="link-list hide-on-desktop">
+			<a href="/">
+				<House />
+				Home
+			</a>
+			<a href="/emotes">
+				<Smiley />
+				Emotes
+			</a>
+			<a href="/discover">
+				<Compass />
+				Discover
+			</a>
+			<a href="/store" class="store">
+				<Star />
+				Store
 			</a>
 		</div>
-		<hr class="hide-on-mobile" />
-	{/if}
-	<div class="link-list">
-		<button>
-			<Fa icon={faEarthAmericas} size="1.2x" fw />
-			Language
-			<div class="chevron">
-				<Fa icon={faChevronRight} />
-			</div>
-		</button>
-		<button>
-			<Fa icon={faMoon} size="1.2x" fw />
-			Theme
-			<div class="chevron">
-				<Fa icon={faChevronRight} />
-			</div>
-		</button>
 		{#if $user}
-			<a href="/settings" class="hide-on-mobile">
-				<Fa icon={faGear} size="1.2x" fw />
-				Settings
-			</a>
-			<button class="hide-on-desktop">
-				<Fa icon={faGear} size="1.2x" fw />
-				Settings
+			<div class="link-list">
+				<a href="/cosmetics">
+					<PaintBrush />
+					Cosmetics
+				</a>
+				<a href="/analytics">
+					<ChartLine />
+					Analytics
+				</a>
+			</div>
+			<hr class="hide-on-mobile" />
+		{/if}
+		<div class="link-list">
+			<button>
+				<GlobeHemisphereWest />
+				Language
 				<div class="chevron">
-					<Fa icon={faChevronRight} />
+					<CaretRight />
 				</div>
 			</button>
-		{/if}
-	</div>
-	<hr class="hide-on-mobile" />
-	<div class="link-list">
-		<a href="/developer">
-			<Fa icon={faCode} size="1.2x" fw />
-			Developer Portal
-		</a>
-		<a href="/contact">
-			<Fa icon={faMessageArrowUpRight} size="1.2x" fw />
-			Contact
-		</a>
-		<a href="/faq">
-			<Fa icon={faQuestionCircle} size="1.2x" fw />
-			FAQ
-		</a>
-		<a href="/privacy">
-			<Fa icon={faLock} size="1.2x" fw />
-			Privacy Policy
-		</a>
-		<a href="/tos">
-			<Fa icon={faMemo} size="1.2x" fw />
-			Terms of Service
-		</a>
-	</div>
-	{#if $user}
+			<button>
+				<Moon />
+				Theme
+				<div class="chevron">
+					<CaretRight />
+				</div>
+			</button>
+			{#if $user}
+				<a href="/settings" class="hide-on-mobile">
+					<Gear />
+					Settings
+				</a>
+				<button class="hide-on-desktop">
+					<Gear />
+					Settings
+					<div class="chevron">
+						<CaretRight />
+					</div>
+				</button>
+			{/if}
+		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<button on:click={() => ($user = false)}>
-				<Fa icon={faRightFromBracket} size="1.2x" fw />
-				Sign out
-			</button>
+			<a href="/developer">
+				<Code />
+				Developer Portal
+			</a>
+			<a href="/contact">
+				<ChatDots />
+				Contact
+			</a>
+			<a href="/faq">
+				<Question />
+				FAQ
+			</a>
+			<a href="/privacy">
+				<LockSimple />
+				Privacy Policy
+			</a>
+			<a href="/tos">
+				<Note />
+				Terms of Service
+			</a>
 		</div>
-	{/if}
-</div>
+		{#if $user}
+			<hr class="hide-on-mobile" />
+			<div class="link-list">
+				<button on:click={() => ($user = false)}>
+					<SignOut />
+					Sign out
+				</button>
+			</div>
+		{/if}
+	</div>
+</IconContext>
 
 <style lang="scss">
 	.menu {
