@@ -5,7 +5,7 @@
 	import { sideBar } from "$/lib/stores";
 	import Checkbox from "$/components/checkbox.svelte";
 	import Select from "$/components/select.svelte";
-	import { ArrowLineLeft, SmileySticker, FolderSimple, SortAscending, SortDescending, X } from "phosphor-svelte";
+	import { ArrowLineLeft, Smiley, FolderSimple, SortAscending, SortDescending, X } from "phosphor-svelte";
 
 	let sortAsc = false;
 
@@ -36,7 +36,7 @@
 			<h1>Directory</h1>
 			<div class="link-list">
 				<a class="button big" href="/emotes" class:secondary={$page.route.id?.startsWith("/emotes/(emotes)")}>
-					<SmileySticker />
+					<Smiley />
 					Emotes
 				</a>
 				<a

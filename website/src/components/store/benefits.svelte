@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PaintBrush, Seal, SmileySticker, Ticket, UserCircle } from "phosphor-svelte";
+	import { PaintBrush, Seal, Smiley, Ticket, UserCircle } from "phosphor-svelte";
 </script>
 
 <section>
@@ -13,7 +13,7 @@
 		</div>
 		<div class="benefit">
 			<div class="gradient g2">
-				<SmileySticker size="4rem" weight="regular" />
+				<Smiley size="4rem" weight="regular" />
 			</div>
 			<h3>Personal Emotes</h3>
 		</div>

@@ -8,7 +8,7 @@
 	import PersonalEmotes from "$/components/store/personal-emotes.svelte";
 	import TopGifters from "$/components/store/top-gifters.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
-	import { PaintBrush, Seal, SmileySticker, Ticket, UserCircle } from "phosphor-svelte";
+	import { PaintBrush, Seal, Smiley, Ticket, UserCircle } from "phosphor-svelte";
 
 	let subbed = false;
 </script>
@@ -24,7 +24,7 @@
 		<UserCircle size="1.8rem" />
 		<Seal size="1.8rem" />
 		<Ticket size="1.8rem" />
-		<SmileySticker size="1.8rem" />
+		<Smiley size="1.8rem" />
 	</div>
 </Banner>
 <div class="grid">
