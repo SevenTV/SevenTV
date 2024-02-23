@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { faEllipsisV, faRepeat } from "@fortawesome/pro-regular-svg-icons";
 	import StoreSection from "./store-section.svelte";
-	import Fa from "svelte-fa";
 	import PaintPreview from "../paint-preview.svelte";
 	import { DotsThreeVertical, Repeat } from "phosphor-svelte";
 </script>

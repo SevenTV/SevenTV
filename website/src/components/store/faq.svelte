@@ -1,6 +1,4 @@
 <script lang="ts">
-	import Fa from "svelte-fa";
-	import { faPlus, faQuestionCircle } from "@fortawesome/pro-regular-svg-icons";
 	import { Plus, Question } from "phosphor-svelte";
 
 	const qas = [

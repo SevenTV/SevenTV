@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { faChevronDown } from "@fortawesome/pro-solid-svg-icons";
 	import { CaretDown } from "phosphor-svelte";
-	import Fa from "svelte-fa";
 
 	export let title: string;
 

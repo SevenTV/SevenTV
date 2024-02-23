@@ -1,13 +1,5 @@
 <script lang="ts">
-	import {
-		faBadge,
-		faBrush,
-		faSmilePlus,
-		faTicket,
-		faUserCircle,
-	} from "@fortawesome/pro-regular-svg-icons";
 	import { PaintBrush, Seal, SmileySticker, Ticket, UserCircle } from "phosphor-svelte";
-	import Fa from "svelte-fa";
 </script>
 
 <section>

@@ -1,8 +1,6 @@
 <script lang="ts">
-	import Fa from "svelte-fa";
-import EmotePreview from "../emote-preview.svelte";
-import StoreSection from "./store-section.svelte";
-	import { faChevronLeft, faChevronRight, faCrown, faTicket } from "@fortawesome/pro-regular-svg-icons";
+    import EmotePreview from "../emote-preview.svelte";
+    import StoreSection from "./store-section.svelte";
 	import { CaretLeft, CaretRight, Crown, Ticket } from "phosphor-svelte";
 </script>
 

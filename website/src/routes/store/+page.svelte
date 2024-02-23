@@ -8,15 +8,7 @@
 	import PersonalEmotes from "$/components/store/personal-emotes.svelte";
 	import TopGifters from "$/components/store/top-gifters.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
-	import {
-		faBadge,
-		faBrush,
-		faSmilePlus,
-		faTicket,
-		faUserCircle,
-	} from "@fortawesome/pro-regular-svg-icons";
 	import { PaintBrush, Seal, SmileySticker, Ticket, UserCircle } from "phosphor-svelte";
-	import Fa from "svelte-fa";
 
 	let subbed = false;
 </script>

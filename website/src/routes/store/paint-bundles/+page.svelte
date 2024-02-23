@@ -4,10 +4,7 @@
 	import PaintPreview from "$/components/paint-preview.svelte";
 	import Select from "$/components/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
-	import { faGift, faCartShopping } from "@fortawesome/pro-regular-svg-icons";
-	import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
-	import Fa from "svelte-fa";
 
 	const bundles = [
 		{
