@@ -1,8 +1,7 @@
 <script lang="ts">
 	import Checkbox from "$/components/checkbox.svelte";
 	import SearchBar from "$/components/search-bar.svelte";
-	import { faArrowUpFromBracket } from "@fortawesome/pro-solid-svg-icons";
-	import Fa from "svelte-fa";
+	import { UploadSimple } from "phosphor-svelte";
 
 	let fileInput: HTMLInputElement;
 	let dragOver = false;
@@ -46,7 +45,7 @@
 	<section class="upload">
 		<button class="file" class:drag-over={dragOver} on:click={browse} on:drop={onDrop} on:dragover={onDragOver} on:dragenter={() => (dragOver = true)} on:dragleave={() => (dragOver = false)}>
 			<input type="file" hidden bind:this={fileInput} />
-			<Fa icon={faArrowUpFromBracket} size="1.2x" />
+			<UploadSimple />
 			<h2>Drop your emote here, or <button>Browse</button></h2>
 			<span class="details">
 				Maximum of 7MB
