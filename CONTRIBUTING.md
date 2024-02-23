@@ -2,11 +2,11 @@
 
 ## Code of Conduct
 
-We have a [Code of Conduct](./CODE_OF_CONDUCT.md) that we expect all contributors to follow. Please read it before contributing.
+We have a [Code of Conduct](https://github.com/SevenTV/.github/blob/main/CODE_OF_CONDUCT.md) that we expect all contributors to follow. Please read it before contributing.
 
 ## CLA
 
-We require all contributors to sign a [Contributor License Agreement](./CLA.md) before we can accept any contributions.
+We require all contributors to sign a [Contributor License Agreement](https://github.com/SevenTV/.github/blob/main/CLA.md) before we can accept any contributions.
 
 To sign the CLA, please head over to [cla.7tv.app](https://cla.7tv.app) and sign the CLA.
 
