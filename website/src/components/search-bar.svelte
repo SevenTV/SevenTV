@@ -2,9 +2,10 @@
 	import { MagnifyingGlass } from "phosphor-svelte";
 
 	export let big: boolean = false;
+	export let grow: boolean = false;
 </script>
 
-<search class:big>
+<search class:big class:grow>
 	<div class="icon">
 		<MagnifyingGlass />
 	</div>
@@ -28,7 +29,7 @@
 			}
 		}
 
-		&:not(.big) {
+		&:not(.big):not(.grow) {
 			max-width: 12.5rem;
 		}
 

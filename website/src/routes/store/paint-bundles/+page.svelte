@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
-import HideOn from "$/components/hide-on.svelte";
-	import SearchBar from "$/components/nav/search-bar.svelte";
+	import HideOn from "$/components/hide-on.svelte";
+	import SearchBar from "$/components/search-bar.svelte";
 	import PaintPreview from "$/components/paint-preview.svelte";
 	import Select from "$/components/select.svelte";
 	import Banner from "$/components/store/banner.svelte";

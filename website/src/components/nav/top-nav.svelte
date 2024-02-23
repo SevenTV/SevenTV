@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Logo from "$/components/icons/logo.svelte";
-	import SearchBar from "$/components/nav/search-bar.svelte";
+	import SearchBar from "$/components/search-bar.svelte";
 	import Tabs from "./tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
