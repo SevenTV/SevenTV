@@ -27,7 +27,7 @@
 	aria-expanded={expanded}
 	aria-controls="dropdown-list-{index}"
 	use:mouseTrap={close}
-	class:button={button}
+	class:button
 >
 	<slot />
 	{#if expanded}

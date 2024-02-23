@@ -50,7 +50,11 @@
 	<title>Paint Bundles - 7TV</title>
 </svelte:head>
 
-<Banner title="Make Yourself Glow" subtitle="Nametag Paints Will Let You Express Yourself in Every Hue." gradientColor="#27cfb1" />
+<Banner
+	title="Make Yourself Glow"
+	subtitle="Nametag Paints Will Let You Express Yourself in Every Hue."
+	gradientColor="#27cfb1"
+/>
 <section>
 	<div class="header">
 		<h2>Paint Bundles</h2>

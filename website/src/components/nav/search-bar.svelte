@@ -4,7 +4,7 @@
 	export let big: boolean = false;
 </script>
 
-<search class:big={big}>
+<search class:big>
 	<div class="icon">
 		<MagnifyingGlass />
 	</div>

@@ -2,7 +2,26 @@
 	import { user } from "$/lib/stores";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
-	import { CaretRight, ChartLine, ChatDots, Code, Compass, Gear, GlobeHemisphereWest, House, IconContext, LockSimple, Moon, Note, PaintBrush, Question, SealCheck, SignOut, Smiley, Star } from "phosphor-svelte";
+	import {
+		CaretRight,
+		ChartLine,
+		ChatDots,
+		Code,
+		Compass,
+		Gear,
+		GlobeHemisphereWest,
+		House,
+		IconContext,
+		LockSimple,
+		Moon,
+		Note,
+		PaintBrush,
+		Question,
+		SealCheck,
+		SignOut,
+		Smiley,
+		Star,
+	} from "phosphor-svelte";
 </script>
 
 <IconContext values={{ size: "1.5rem" }}>

@@ -18,78 +18,79 @@
 </script>
 
 <section>
-    <div class="header">
-        <Question />
-        <h2>Frequently Asked Questions</h2>
-    </div>
+	<div class="header">
+		<Question />
+		<h2>Frequently Asked Questions</h2>
+	</div>
 	<div class="faq">
 		{#each qas as qa}
-            <hr />
+			<hr />
 			<label class="qa">
 				<div class="q">
-                    {qa.q}
-                    <Plus />
-                </div>
+					{qa.q}
+					<Plus />
+				</div>
 
 				<!-- Pseudo checkbox box for not having to use js for expanding -->
 				<input type="checkbox" name="question" hidden />
 				<span class="a">{qa.a}</span>
 			</label>
 		{/each}
-    </div>
+	</div>
 </section>
 
 <style lang="scss">
-    section {
-        flex-basis: 0;
-        flex-grow: 1;
+	section {
+		flex-basis: 0;
+		flex-grow: 1;
 
-        background-color: var(--bg-medium);
-        border-radius: 0.5rem;
-        padding: 1rem 1.25rem;
-        min-width: 12rem;
-    }
+		background-color: var(--bg-medium);
+		border-radius: 0.5rem;
+		padding: 1rem 1.25rem;
+		min-width: 12rem;
+	}
 
-    .header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
+	.header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
 
-    h2 {
-        font-size: 1rem;
-        font-weight: 600;
-    }
+	h2 {
+		font-size: 1rem;
+		font-weight: 600;
+	}
 
 	.faq {
-        margin-top: 1rem;
+		margin-top: 1rem;
 
 		display: flex;
 		flex-direction: column;
 	}
 
 	.a {
-        margin-top: 0.5rem;
-        color: var(--text-lighter);
+		margin-top: 0.5rem;
+		color: var(--text-lighter);
 
 		display: none;
 	}
 
 	.qa {
-        font-size: 0.875rem;
+		font-size: 0.875rem;
 		padding: 1rem 0;
-        cursor: pointer;
-        user-select: none;
+		cursor: pointer;
+		user-select: none;
 
-        & > .q {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+		& > .q {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
 
-        &:hover, &:focus-visible {
-            background-color: var(--bg-light);
-        }
+		&:hover,
+		&:focus-visible {
+			background-color: var(--bg-light);
+		}
 
 		& > input:checked + .a {
 			display: inline-block;

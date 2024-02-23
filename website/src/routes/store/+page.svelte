@@ -18,7 +18,12 @@
 </svelte:head>
 
 <!-- All things called grid here aren't actually css grids -->
-<Banner title={subbed ? "Thank You For the Support" : "Unlock Special Perks"} subtitle={subbed ? "Enjoy Your Special Subscriber Perks!" : "Subscribe to Ehnance Your Chatting Experience."}>
+<Banner
+	title={subbed ? "Thank You For the Support" : "Unlock Special Perks"}
+	subtitle={subbed
+		? "Enjoy Your Special Subscriber Perks!"
+		: "Subscribe to Ehnance Your Chatting Experience."}
+>
 	<div class="banner-icons hide-on-mobile">
 		<PaintBrush size="1.8rem" />
 		<UserCircle size="1.8rem" />
@@ -33,7 +38,7 @@
 	{/if}
 	<div class="top-grid">
 		<div class="subgrid">
-			<YourSub bind:subbed={subbed} />
+			<YourSub bind:subbed />
 			<BadgeProgress />
 		</div>
 		<MonthlyPaints />

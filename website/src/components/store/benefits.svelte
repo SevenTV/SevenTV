@@ -45,7 +45,7 @@
 		width: 100%;
 	}
 
-    h2 {
+	h2 {
 		font-size: 1rem;
 		font-weight: 600;
 		margin-bottom: 1rem;
@@ -60,7 +60,7 @@
 		display: flex;
 		gap: 1rem;
 
-        overflow-x: auto;
+		overflow-x: auto;
 		width: 100%;
 	}
 
@@ -75,13 +75,14 @@
 		flex-direction: column;
 		text-align: center;
 
-        cursor: pointer;
+		cursor: pointer;
 
-        transition: background-color 0.2s;
+		transition: background-color 0.2s;
 
-        &:hover, &:focus-visible {
-            background-color: var(--bg-light);
-        }
+		&:hover,
+		&:focus-visible {
+			background-color: var(--bg-light);
+		}
 
 		.gradient {
 			height: 8.5rem;
