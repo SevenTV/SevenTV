@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Chat from "$/components/chat.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
 	import SearchBar from "$/components/search-bar.svelte";
 	import { faArrowUpFromBracket } from "@fortawesome/pro-solid-svg-icons";
@@ -64,7 +65,7 @@
 		<Checkbox label="Private" />
 	</section>
 	<section class="chat">
-		chat
+		<Chat />
 	</section>
 </div>
 
@@ -73,6 +74,7 @@
 		display: grid;
 		grid-template-areas: "inputs upload" "inputs chat";
 		grid-template-columns: 22.5rem 1fr;
+		grid-template-rows: 1fr 1fr;
 		gap: 1rem;
 
 		height: 100%;
@@ -163,6 +165,7 @@
 		.grid {
 			grid-template-areas: "upload" "inputs" "chat";
 			grid-template-columns: 1fr;
+			grid-template-rows: repeat(3, auto);
 		}
 	}
 </style>
