@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Chat from "$/components/chat.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
 	import SearchBar from "$/components/search-bar.svelte";
 	import { faArrowUpFromBracket } from "@fortawesome/pro-solid-svg-icons";
@@ -25,6 +24,18 @@
 		alert("Supported formats: PNG");
 		e.stopPropagation();
 	}
+
+	let messages: string[] = [];
+
+    let messageInput = "";
+
+    function sendMessage(e: KeyboardEvent) {
+        if (e.key === "Enter" && !e.shiftKey && messageInput.trim().length > 0) {
+			e.preventDefault();
+            messages = [...messages, messageInput];
+            messageInput = "";
+		}
+    }
 </script>
 
 <svelte:head>
@@ -65,7 +76,14 @@
 		<Checkbox label="Private" />
 	</section>
 	<section class="chat">
-		<Chat />
+		<div class="messages">
+			{#each messages as message}
+				<span class="message">
+					<span class="username">ayyybubu</span>: {message}
+				</span>
+			{/each}
+		</div>
+		<input type="text" placeholder="Send a message" bind:value={messageInput} on:keydown|stopPropagation={sendMessage} />
 	</section>
 </div>
 
@@ -159,6 +177,48 @@
 
 	.chat {
 		grid-area: chat;
+		padding: 0.6rem;
+
+		display: flex;
+		flex-direction: column;
+		gap: 0.7rem;
+
+        input {
+            font-size: 0.8125rem;
+            font-weight: 400;
+
+            border-radius: 0.25rem;
+            border-color: var(--border);
+            padding-block: 0.6rem;
+            background-color: var(--bg-medium);
+
+            &::placeholder {
+                opacity: 1;
+                font-weight: 400;
+            }
+        }
+	}
+
+	.messages {
+		flex-grow: 1;
+		flex-basis: 0;
+		overflow: hidden;
+
+        padding-left: 0.6rem;
+
+        display: flex;
+		flex-direction: column;
+        justify-content: flex-end;
+		gap: 0.6rem;
+    }
+
+	.message {
+		font-size: 0.8125rem;
+
+		.username {
+			color: var(--primary);
+			font-weight: 700;
+		}
 	}
 
 	@media screen and (max-width: 960px) {
