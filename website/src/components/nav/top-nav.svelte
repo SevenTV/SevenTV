@@ -12,6 +12,7 @@
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
 	import Notifications from "../notifications.svelte";
+	import { Bell, Chat, List, MagnifyingGlass, Plus, PlusSquare } from "phosphor-svelte";
 </script>
 
 <nav>
@@ -34,24 +35,24 @@
 	</HideOn>
 	<div class="user-actions">
 		<button class="button hide-on-desktop square">
-			<Fa icon={faSearch} size="1.2x" fw />
+			<MagnifyingGlass />
 		</button>
 		{#if $user}
 			<DropDown button>
-				<Fa icon={faBell} size="1.2x" fw />
+				<Bell />
 				<Notifications slot="dropdown" />
 			</DropDown>
 			<DropDown button>
 				<Badge count={1}>
-					<Fa icon={faMessage} size="1.2x" fw />
+					<Chat />
 				</Badge>
 				<Dms slot="dropdown" />
 			</DropDown>
 			<a href="/upload" class="button square hide-on-desktop">
-				<Fa icon={faPlusSquare} size="1.2x" fw />
+				<PlusSquare />
 			</a>
 			<a href="/upload" class="button icon-left secondary hide-on-mobile">
-				<Fa icon={faPlus} size="1.2x" />
+				<Plus />
 				Upload
 			</a>
 			<HideOn mobile>
@@ -67,7 +68,7 @@
 		{:else}
 			<HideOn mobile>
 				<DropDown button>
-					<Fa icon={faBars} size="1.2x" fw />
+					<List />
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
@@ -76,7 +77,7 @@
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
 			<button class="button square hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
-				<Fa icon={faBars} size="1.2x" fw />
+				<List />
 			</button>
 		{/if}
 	</div>

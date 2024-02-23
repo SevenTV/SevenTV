@@ -1,32 +1,10 @@
 <script lang="ts">
 	import Role from "$/components/profile/role.svelte";
-	import Fa from "svelte-fa";
-	import {
-		faBolt,
-		faBrush,
-		faChevronDown,
-		faBadgeCheck,
-		faComment,
-		faEllipsisV,
-		faMemo,
-		faFolder,
-		faUpload,
-	} from "@fortawesome/pro-solid-svg-icons";
-	import {
-		faBolt as faRegularBolt,
-		faBrush as faRegularBrush,
-		faComment as faRegularComment,
-		faMemo as faRegularMemo,
-		faFolder as faRegularFolder,
-		faGear,
-		faUpload as faRegularUpload,
-	} from "@fortawesome/pro-regular-svg-icons";
 	import type { LayoutData } from "./$types";
-	import { faGift, faHeart } from "@fortawesome/pro-regular-svg-icons";
-	import { faTwitch, faDiscord } from "@fortawesome/free-brands-svg-icons";
 	import Expandable from "$/components/expandable.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import TabLink from "$/components/profile/tab-link.svelte";
+	import { CaretDown, ChatCircleText, DiscordLogo, DotsThreeVertical, FolderSimple, Gear, Gift, Heart, Lightning, Note, Notepad, PaintBrush, SealCheck, TwitchLogo, Upload } from "phosphor-svelte";
 
 	export let data: LayoutData;
 </script>
@@ -40,7 +18,7 @@
 		<img src="/test-profile-pic.jpeg" alt="profile" class="profile-picture" />
 		<span class="name">
 			{data.username}
-			<Fa icon={faBadgeCheck} size="0.75x" />
+			<SealCheck size="0.8rem" />
 		</span>
 		<div class="roles">
 			<Role name="Staff" />
@@ -60,25 +38,25 @@
 		</div>
 		<div class="buttons">
 			<button class="button icon-left secondary grow">
-				<Fa icon={faHeart} size="1.2x" />
+				<Heart />
 				Follow
 			</button>
 			<button class="button secondary square more hide-on-mobile">
-				<Fa icon={faChevronDown} size="1.2x" fw />
+				<CaretDown />
 			</button>
 			<button class="button icon-left secondary grow hide-on-desktop">
-				<Fa icon={faGift} size="1.2x" />
+				<Gift />
 				Gift
 			</button>
 		</div>
 		<HideOn mobile>
 			<Expandable title="Connections">
 				<a class="button big" target="_blank" href="https://twitch.tv/ayyybubu">
-					<Fa icon={faTwitch} size="1.2x" fw />
+					<TwitchLogo />
 					<span>ayyybubu</span>
 				</a>
 				<button class="button big">
-					<Fa icon={faDiscord} size="1.2x" fw />
+					<DiscordLogo />
 					<span>bubu</span>
 				</button>
 			</Expandable>
@@ -89,51 +67,63 @@
 			</Expandable>
 		</HideOn>
 		<button class="button square more hide-on-desktop">
-			<Fa icon={faEllipsisV} size="1.2x" fw />
+			<DotsThreeVertical />
 		</button>
 	</aside>
 	<div class="content">
 		<div class="header">
 			<div class="tabs">
-				<TabLink
-					title="Active"
-					href="/user/{data.username}"
-					icon={faRegularBolt}
-					activeIcon={faBolt}
-				/>
-				<TabLink
-					title="Uploaded"
-					href="/user/{data.username}/uploaded"
-					icon={faRegularUpload}
-					activeIcon={faUpload}
-				/>
+				<TabLink title="Active" href="/user/{data.username}">
+					<Lightning />
+					<svelte:fragment slot="active">
+						<Lightning weight="fill" />
+					</svelte:fragment>
+				</TabLink>
+				<TabLink title="Uploaded" href="/user/{data.username}/uploaded">
+					<Upload />
+					<svelte:fragment slot="active">
+						<Upload weight="fill" />
+					</svelte:fragment>
+				</TabLink>
 				<TabLink
 					title="Emote Sets"
 					href="/user/{data.username}/emote-sets"
-					icon={faRegularFolder}
-					activeIcon={faFolder}
-				/>
+				>
+					<FolderSimple />
+					<svelte:fragment slot="active">
+						<FolderSimple weight="fill" />
+					</svelte:fragment>
+				</TabLink>
 				<TabLink
 					title="Cosmetics"
 					href="/user/{data.username}/cosmetics"
-					icon={faRegularBrush}
-					activeIcon={faBrush}
-				/>
+				>
+					<PaintBrush />
+					<svelte:fragment slot="active">
+						<PaintBrush weight="fill" />
+					</svelte:fragment>
+				</TabLink>
 				<TabLink
 					title="Activity Log"
 					href="/user/{data.username}/activity-log"
-					icon={faRegularMemo}
-					activeIcon={faMemo}
-				/>
+				>
+					<Note />
+					<svelte:fragment slot="active">
+						<Note weight="fill" />
+					</svelte:fragment>
+				</TabLink>
 				<TabLink
 					title="Mod Comments"
 					href="/user/{data.username}/mod-comments"
-					icon={faRegularComment}
-					activeIcon={faComment}
-				/>
+				>
+					<ChatCircleText />
+					<svelte:fragment slot="active">
+						<ChatCircleText weight="fill" />
+					</svelte:fragment>
+				</TabLink>
 			</div>
 			<a href="/settings" class="button no-bg hide-on-mobile">
-				<Fa icon={faGear} size="1.2x" />
+				<Gear />
 				Settings
 			</a>
 		</div>

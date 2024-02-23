@@ -1,27 +1,20 @@
 <script lang="ts">
 	import { page } from "$app/stores";
-	import {
-		faArrowLeftFromLine,
-		faArrowRightToLine,
-		faSprayCan,
-		faTshirt,
-	} from "@fortawesome/pro-regular-svg-icons";
-	import { faStar } from "@fortawesome/pro-solid-svg-icons";
-	import Fa from "svelte-fa";
 	import { fly } from "svelte/transition";
 	import { sideBar } from "$/lib/stores";
+	import { ArrowLineLeft, ArrowLineRight, PaintBrush, Star, TShirt } from "phosphor-svelte";
 </script>
 
 <div class="side-bar-layout">
 	{#if $sideBar}
 		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
 			<button class="button square collapse" on:click={() => ($sideBar = false)}>
-				<Fa icon={faArrowLeftFromLine} size="1.2x" fw />
+				<ArrowLineLeft />
 			</button>
 			<h1>Store</h1>
 			<div class="link-list">
 				<a class="button big" href="/store" class:secondary={$page.url.pathname === "/store"}>
-					<Fa icon={faStar} size="1.2x" fw />
+					<Star />
 					Subscription
 				</a>
 				<a
@@ -29,7 +22,7 @@
 					href="/store/paint-bundles"
 					class:secondary={$page.url.pathname === "/store/paint-bundles"}
 				>
-					<Fa icon={faSprayCan} size="1.2x" fw />
+					<PaintBrush />
 					Paint Bundles
 				</a>
 				<a
@@ -37,7 +30,7 @@
 					href="/store/merch"
 					class:secondary={$page.url.pathname === "/store/merch"}
 				>
-					<Fa icon={faTshirt} size="1.2x" fw />
+					<TShirt />
 					Merch
 				</a>
 			</div>
@@ -47,10 +40,10 @@
 				<input type="text" placeholder="Enter code" />
 			</label>
 		</aside>
-    {:else}
-        <button class="button square expand" on:click={() => ($sideBar = true)}>
-            <Fa icon={faArrowRightToLine} size="1.2x" fw />
-        </button>
+	{:else}
+		<button class="button square expand" on:click={() => ($sideBar = true)}>
+			<ArrowLineRight />
+		</button>
 	{/if}
 	<div class="content">
 		<slot />
@@ -94,9 +87,11 @@
 		}
 	}
 
-    .expand {
-        position: absolute;
-        top: 1rem;
-        left: 1rem;
-    }
+	.expand {
+		position: absolute;
+		top: 1rem;
+		left: 1rem;
+
+		z-index: 2;
+	}
 </style>

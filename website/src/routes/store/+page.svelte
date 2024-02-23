@@ -15,6 +15,7 @@
 		faTicket,
 		faUserCircle,
 	} from "@fortawesome/pro-regular-svg-icons";
+	import { PaintBrush, Seal, SmileySticker, Ticket, UserCircle } from "phosphor-svelte";
 	import Fa from "svelte-fa";
 
 	let subbed = false;
@@ -27,11 +28,11 @@
 <!-- All things called grid here aren't actually css grids -->
 <Banner title={subbed ? "Thank You For the Support" : "Unlock Special Perks"} subtitle={subbed ? "Enjoy Your Special Subscriber Perks!" : "Subscribe to Ehnance Your Chatting Experience."}>
 	<div class="banner-icons hide-on-mobile">
-		<Fa icon={faBrush} size="1.5x" />
-		<Fa icon={faUserCircle} size="1.5x" />
-		<Fa icon={faBadge} size="1.5x" />
-		<Fa icon={faTicket} size="1.5x" />
-		<Fa icon={faSmilePlus} size="1.5x" />
+		<PaintBrush size="1.8rem" />
+		<UserCircle size="1.8rem" />
+		<Seal size="1.8rem" />
+		<Ticket size="1.8rem" />
+		<SmileySticker size="1.8rem" />
 	</div>
 </Banner>
 <div class="grid">

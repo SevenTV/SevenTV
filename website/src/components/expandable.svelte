@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { faChevronDown } from "@fortawesome/pro-solid-svg-icons";
+	import { CaretDown } from "phosphor-svelte";
 	import Fa from "svelte-fa";
 
 	export let title: string;
@@ -11,7 +12,7 @@
 	<button class="header" on:click={() => (expanded = !expanded)} class:expanded>
 		{title}
 		<div class="icon">
-			<Fa icon={faChevronDown} />
+			<CaretDown size="1rem" />
 		</div>
 	</button>
 	{#if expanded}

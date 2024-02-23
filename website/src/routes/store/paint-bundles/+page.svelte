@@ -6,6 +6,7 @@
 	import Banner from "$/components/store/banner.svelte";
 	import { faGift, faCartShopping } from "@fortawesome/pro-regular-svg-icons";
 	import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
 	import Fa from "svelte-fa";
 
 	const bundles = [
@@ -61,7 +62,7 @@
 				<SearchBar />
 			</HideOn>
 			<button class="button square hide-on-desktop">
-				<Fa icon={faSearch} size="1.2x" fw />
+				<MagnifyingGlass />
 			</button>
 			<Select options={["Filters"]} />
 		</div>
@@ -80,11 +81,11 @@
 				{/each}
 				<div class="buttons">
 					<button class="button secondary icon-left">
-						<Fa icon={faGift} size="1.2x" />
+						<Gift />
 						Gift
 					</button>
 					<button class="button secondary icon-left">
-						<Fa icon={faCartShopping} size="1.2x" />
+						<ShoppingCartSimple />
 						<span>
 							{#if bundle.oldPrice}
 								<del>{priceFormat.format(bundle.oldPrice / 100)}</del>

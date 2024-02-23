@@ -1,8 +1,6 @@
 <script lang="ts">
     import StoreSection from "./store-section.svelte";
-	import Fa from "svelte-fa";
-	import { faChevronLeft, faChevronRight } from "@fortawesome/pro-solid-svg-icons";
-	import { faGift, faTrophy } from "@fortawesome/pro-regular-svg-icons";
+	import { CaretLeft, CaretRight, Trophy, Gift } from "phosphor-svelte";
 
     const topGifters = [
         {
@@ -31,10 +29,10 @@
 <StoreSection title="Top Gifters">
     <div class="header" slot="header">
         <button class="button square">
-            <Fa icon={faChevronLeft} size="1.2x" fw />
+            <CaretLeft />
         </button>
         <button class="button square">
-            <Fa icon={faChevronRight} size="1.2x" fw />
+            <CaretRight />
         </button>
     </div>
     <div class="grid">
@@ -45,7 +43,7 @@
             <span class="amount">
                 <span class:gold={i === 0} class:silver={i === 1} class:bronze={i === 2}>
                     {#if i < 3}
-                        <Fa icon={faTrophy} size="1.2x" />
+                        <Trophy />
                     {/if}
                 </span>
                 {gifter.amount}
@@ -53,7 +51,7 @@
         {/each}
     </div>
     <button class="gift button secondary icon-left">
-        <Fa icon={faGift} size="1.2x" />
+        <Gift />
         Gift
     </button>
 </StoreSection>

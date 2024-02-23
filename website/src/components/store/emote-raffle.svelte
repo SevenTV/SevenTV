@@ -3,27 +3,28 @@
 import EmotePreview from "../emote-preview.svelte";
 import StoreSection from "./store-section.svelte";
 	import { faChevronLeft, faChevronRight, faCrown, faTicket } from "@fortawesome/pro-regular-svg-icons";
+	import { CaretLeft, CaretRight, Crown, Ticket } from "phosphor-svelte";
 </script>
 
 <StoreSection title="Global Emote Raffle">
     <span class="header" slot="header">Dec 2023</span>
     <div class="carousel">
         <button class="button square">
-            <Fa icon={faChevronLeft} size="1.2x" fw />
+            <CaretLeft />
         </button>
         <EmotePreview bg="light" />
         <button class="button square">
-            <Fa icon={faChevronRight} size="1.2x" fw />
+            <CaretRight />
         </button>
     </div>
     <div class="footer">
         <div class="winner">
             <div class="profile-picture"></div>
             <span>Pokimane</span>
-            <Fa icon={faCrown} size="1.2x" color="#aa71ff" />
+            <Crown color="#aa71ff" />
         </div>
         <button class="button icon-left secondary">
-            <Fa icon={faTicket} size="1.2x" />
+            <Ticket />
             Enter
         </button>
     </div>

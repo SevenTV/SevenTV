@@ -6,6 +6,7 @@
 	import { showMobileMenu } from "$/lib/stores";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
+	import { IconContext } from "phosphor-svelte";
 
 	beforeNavigate((nav) => {
 		// Hide menu on navigate
@@ -15,18 +16,20 @@
 	});
 </script>
 
-<header>
-	<a href="#main" class="skip-to-main">Skip to main content</a>
-	<TopNav />
-</header>
+<IconContext values={{ size: "1.2rem", weight: "bold" }}>
+	<header>
+		<a href="#main" class="skip-to-main">Skip to main content</a>
+		<TopNav />
+	</header>
 
-<main id="main">
-	{#if $showMobileMenu}
-		<Menu />
-	{:else}
-		<slot />
-	{/if}
-</main>
+	<main id="main">
+		{#if $showMobileMenu}
+			<Menu />
+		{:else}
+			<slot />
+		{/if}
+	</main>
+</IconContext>
 
 <style lang="scss">
 	:global(body) {

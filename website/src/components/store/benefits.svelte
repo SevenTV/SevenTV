@@ -6,6 +6,7 @@
 		faTicket,
 		faUserCircle,
 	} from "@fortawesome/pro-regular-svg-icons";
+	import { PaintBrush, Seal, SmileySticker, Ticket, UserCircle } from "phosphor-svelte";
 	import Fa from "svelte-fa";
 </script>
 
@@ -14,31 +15,31 @@
 	<div class="benefits">
 		<div class="benefit">
 			<div class="gradient g1">
-				<Fa icon={faUserCircle} size="3x" />
+				<UserCircle size="4rem" weight="regular" />
 			</div>
 			<h3>Animated Profile Picture</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g2">
-				<Fa icon={faSmilePlus} size="3x" />
+				<SmileySticker size="4rem" weight="regular" />
 			</div>
 			<h3>Personal Emotes</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g3">
-				<Fa icon={faBrush} size="3x" />
+				<PaintBrush size="4rem" weight="regular" />
 			</div>
 			<h3>Nametag Paints</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g5">
-				<Fa icon={faBadge} size="3x" />
+				<Seal size="4rem" weight="regular" />
 			</div>
 			<h3>Subscriber Badge</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g6">
-				<Fa icon={faTicket} size="3x" />
+				<Ticket size="4rem" weight="regular" />
 			</div>
 			<h3>Raffle Ticket</h3>
 		</div>

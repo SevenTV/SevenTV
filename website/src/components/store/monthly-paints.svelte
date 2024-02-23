@@ -3,16 +3,17 @@
 	import StoreSection from "./store-section.svelte";
 	import Fa from "svelte-fa";
 	import PaintPreview from "../paint-preview.svelte";
+	import { DotsThreeVertical, Repeat } from "phosphor-svelte";
 </script>
 
 <StoreSection title="Monthly Paints">
     <div class="buttons" slot="header">
         <div class="renew-countdown">
-            <Fa icon={faRepeat} size="1.2x" />
+            <Repeat />
             <span>12 d</span>
         </div>
         <button class="button secondary square">
-            <Fa icon={faEllipsisV} size="1.2x" fw />
+            <DotsThreeVertical />
         </button>
     </div>
     {#each Array(2) as _}
