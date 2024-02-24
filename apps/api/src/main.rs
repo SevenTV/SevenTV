@@ -7,6 +7,7 @@ use tokio::signal::unix::SignalKind;
 
 mod config;
 mod global;
+mod health;
 mod metrics;
 
 #[global_allocator]
@@ -36,8 +37,8 @@ async fn main() {
 		.with_signal(SignalKind::interrupt())
 		.with_signal(SignalKind::terminate());
 
-	let health_handle = tokio::spawn(shared::health::run(global.clone()));
-	let metrics_handle = tokio::spawn(shared::metrics::run(global.clone()));
+	let health_handle = tokio::spawn(health::run(global.clone()));
+	let metrics_handle = tokio::spawn(metrics::run(global.clone()));
 
 	tokio::select! {
 		_ = signal.recv() => tracing::info!("received shutdown signal"),

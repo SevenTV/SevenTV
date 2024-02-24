@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use futures_util::StreamExt;
+use shared::event_api::types::EventType;
 use shared::event_api::{payload, Message};
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
 
 use crate::global::Global;
-use shared::event_api::types::EventType;
 
 /// The payload of a message.
 /// The reason we use Arc is because we want to avoid cloning the payload (1000
@@ -82,7 +82,10 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 
 	// We subscribe to all events.
 	// The .> wildcard is used to subscribe to all events.
-	let mut sub = global.nats().subscribe(format!("{}.>", global.config().nats.subject)).await?;
+	let mut sub = global
+		.nats()
+		.subscribe(format!("{}.>", global.config().api.nats_event_subject))
+		.await?;
 
 	// fnv::FnvHashMap is used because it is faster than the default HashMap for our
 	// use case.
@@ -130,7 +133,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 				tracing::trace!("received message: {:?}", message);
 				match message {
 					Some(message) => {
-						let subject = message.subject.strip_prefix(&global.config().nats.subject).unwrap_or(&message.subject).trim_matches('.');
+						let subject = message.subject.strip_prefix(&global.config().api.nats_event_subject).unwrap_or(&message.subject).trim_matches('.');
 
 						let Ok(topic) = subject.parse::<EventTopic>() else {
 							tracing::warn!("invalid topic: {:?}", subject);

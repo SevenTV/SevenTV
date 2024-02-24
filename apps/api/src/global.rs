@@ -1,5 +1,6 @@
+use std::sync::Arc;
+
 use anyhow::Context as _;
-use async_nats::connection::State;
 use scuffle_utils::context::Context;
 
 use crate::config::Config;
@@ -9,8 +10,7 @@ pub struct Global {
 	ctx: Context,
 	nats: async_nats::Client,
 	config: Config,
-	http_client: reqwest::Client,
-	metrics: metrics::Metrics,
+	metrics: Arc<metrics::Metrics>,
 }
 
 impl Global {
@@ -18,18 +18,17 @@ impl Global {
 		let nats = async_nats::connect(&config.nats.url).await.context("nats connect")?;
 
 		Ok(Self {
-			metrics: metrics::Metrics::new(
+			metrics: Arc::new(metrics::new(
 				config
-					.monitoring
+					.metrics
 					.labels
 					.iter()
 					.map(|x| (x.key.clone(), x.value.clone()))
 					.collect(),
-			),
+			)),
 			ctx,
 			nats,
 			config,
-			http_client: reqwest::Client::new(),
 		})
 	}
 
@@ -48,45 +47,8 @@ impl Global {
 		&self.config
 	}
 
-	/// Global HTTP client.
-	pub fn http_client(&self) -> &reqwest::Client {
-		&self.http_client
-	}
-
 	/// Global metrics.
-	pub fn metrics(&self) -> &metrics::Metrics {
+	pub fn metrics(&self) -> &Arc<metrics::Metrics> {
 		&self.metrics
-	}
-}
-
-impl shared::metrics::MetricsProvider for Global {
-	fn ctx(&self) -> &scuffle_utils::context::Context {
-		&self.ctx
-	}
-
-	fn bind(&self) -> std::net::SocketAddr {
-		self.config.monitoring.bind
-	}
-
-	fn registry(&self) -> &prometheus_client::registry::Registry {
-		self.metrics.registry()
-	}
-
-	fn pre_hook(&self) {
-		self.metrics.observe_memory()
-	}
-}
-
-impl shared::health::HealthProvider for Global {
-	fn bind(&self) -> std::net::SocketAddr {
-		self.config.health.bind
-	}
-
-	fn ctx(&self) -> &scuffle_utils::context::Context {
-		&self.ctx
-	}
-
-	fn healthy(&self, _path: &str) -> bool {
-		matches!(self.nats.connection_state(), State::Connected)
 	}
 }

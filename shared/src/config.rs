@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::time::Duration;
 
 use serde::Deserialize;
 
@@ -15,8 +16,8 @@ pub struct Config<T: config::Config> {
 	pub logging: Logging,
 	/// Nats configuration
 	pub nats: Nats,
-	/// Monitoring configuration
-	pub monitoring: Monitoring,
+	/// Metrics configuration
+	pub metrics: Metrics,
 	/// Health configuration
 	pub health: Health,
 	/// Memory configuration
@@ -71,15 +72,12 @@ impl Default for Logging {
 pub struct Nats {
 	/// Nats url
 	pub url: String,
-	/// Nats subject
-	pub subject: String,
 }
 
 impl Default for Nats {
 	fn default() -> Self {
 		Self {
 			url: "nats://localhost:4222".to_string(),
-			subject: "events".to_string(),
 		}
 	}
 }
@@ -95,25 +93,28 @@ pub struct TlsConfig {
 
 	/// The path to the TLS CA certificate
 	pub ca_cert: Option<String>,
+
+	/// The alpn protocols to use.
+	pub alpn_protocols: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, config::Config)]
 #[serde(default)]
-pub struct Monitoring {
+pub struct Metrics {
 	/// Monitoring enabled
 	pub enabled: bool,
-	/// Monitoring bind
-	pub bind: SocketAddr,
+	/// Http settings
+	pub http: Http,
 	/// Monitoring labels
 	#[config(cli(skip), env(skip))]
 	pub labels: Vec<KeyValue>,
 }
 
-impl Default for Monitoring {
+impl Default for Metrics {
 	fn default() -> Self {
 		Self {
 			enabled: true,
-			bind: SocketAddr::new([0, 0, 0, 0].into(), 3002),
+			http: Http::new_with_bind(SocketAddr::new([0, 0, 0, 0].into(), 9090)),
 			labels: vec![],
 		}
 	}
@@ -128,20 +129,20 @@ pub struct KeyValue {
 	pub value: String,
 }
 
-#[derive(Debug, Deserialize, config::Config)]
+#[derive(Debug, Deserialize, Clone, config::Config)]
 #[serde(default)]
 pub struct Health {
 	/// Health enabled
 	pub enabled: bool,
-	/// Health bind
-	pub bind: SocketAddr,
+	/// http settings
+	pub http: Http,
 }
 
 impl Default for Health {
 	fn default() -> Self {
 		Self {
 			enabled: true,
-			bind: SocketAddr::new([0, 0, 0, 0].into(), 3001),
+			http: Http::new_with_bind(SocketAddr::new([0, 0, 0, 0].into(), 3001)),
 		}
 	}
 }
@@ -151,6 +152,142 @@ impl Default for Health {
 pub struct Pod {
 	/// Pod name
 	pub name: String,
+}
+
+#[derive(Debug, Deserialize, Clone, config::Config)]
+#[serde(default)]
+pub struct Http {
+	/// HTTP bind
+	pub bind: SocketAddr,
+	/// TLS configuration
+	pub tls: Option<TlsConfig>,
+	/// Max Listen Conn
+	pub listen_backlog: u32,
+	/// Reuse address
+	pub reuse_addr: bool,
+	/// Reuse port
+	pub reuse_port: bool,
+	/// Http1 settings
+	pub http1: Http1,
+	/// Http2 settings
+	pub http2: Http2,
+}
+
+impl Http {
+	pub fn new_with_bind(bind: SocketAddr) -> Self {
+		Self {
+			bind,
+			tls: None,
+			listen_backlog: 128,
+			reuse_addr: false,
+			reuse_port: false,
+			http1: Http1::default(),
+			http2: Http2::default(),
+		}
+	}
+}
+
+#[derive(Debug, Deserialize, Clone, config::Config)]
+#[serde(default)]
+pub struct Http1 {
+	/// Enabled
+	pub enabled: bool,
+	/// Half close
+	pub half_close: bool,
+	/// Keep alive
+	pub keep_alive: bool,
+	/// Max buffer size
+	pub max_buf_size: usize,
+	/// Writev
+	pub writev: bool,
+	/// Header Read Timeout
+	pub header_read_timeout: Option<Duration>,
+}
+
+#[derive(Debug, Deserialize, Clone, config::Config)]
+#[serde(default)]
+pub struct Http2 {
+	/// Enabled
+	pub enabled: bool,
+	/// Max concurrent streams
+	pub max_concurrent_streams: u32,
+	/// Max frame size
+	pub max_frame_size: Option<u32>,
+	/// Max header list size
+	pub max_header_list_size: u32,
+	/// Max send buffer size
+	pub max_send_buf_size: usize,
+	/// Initial Stream Window Size
+	pub initial_stream_window_size: Option<u32>,
+	/// Initial Connection Window Size
+	pub initial_connection_window_size: Option<u32>,
+	/// Adaptive window
+	pub adaptive_window: bool,
+	/// Keep alive window
+	pub keep_alive_interval: Option<Duration>,
+	/// Keep alive timeout
+	pub keep_alive_timeout: Duration,
+}
+
+impl Default for Http1 {
+	fn default() -> Self {
+		Self {
+			enabled: false,
+			half_close: true,
+			keep_alive: true,
+			max_buf_size: 16 * 1024 * 1024,
+			writev: true,
+			header_read_timeout: None,
+		}
+	}
+}
+
+impl Default for Http2 {
+	fn default() -> Self {
+		Self {
+			enabled: true,
+			max_concurrent_streams: 1024,
+			max_frame_size: Some(16 * 1024 * 1024),
+			max_header_list_size: 16 * 1024 * 1024,
+			max_send_buf_size: 16 * 1024 * 1024,
+			initial_stream_window_size: None,
+			initial_connection_window_size: None,
+			adaptive_window: true,
+			keep_alive_interval: None,
+			keep_alive_timeout: Duration::from_secs(20),
+		}
+	}
+}
+
+impl Default for Http {
+	fn default() -> Self {
+		Self {
+			bind: SocketAddr::new([0, 0, 0, 0].into(), 0),
+			tls: None,
+			listen_backlog: 128,
+			reuse_addr: false,
+			reuse_port: false,
+			http1: Http1::default(),
+			http2: Http2::default(),
+		}
+	}
+}
+
+#[derive(Debug, Deserialize, Clone, config::Config, Default)]
+#[serde(default)]
+pub struct HttpCors {
+	/// Allow headers
+	pub allow_headers: Vec<String>,
+	/// Allow methods
+	pub allow_methods: Vec<String>,
+	/// Allow origin
+	pub allow_origin: Vec<String>,
+	/// Expose headers
+	pub expose_headers: Vec<String>,
+	/// Max age seconds
+	pub max_age_seconds: Option<u64>,
+	/// Timing allow origin
+	pub timing_allow_origin: Vec<String>,
 }
 
 pub fn parse<E: config::Config + serde::de::DeserializeOwned + Default>(

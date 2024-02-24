@@ -1,58 +1,55 @@
-use memory_stats::memory_stats;
-use prometheus_client::metrics::family::Family;
-use prometheus_client::metrics::gauge::Gauge;
-use prometheus_client::registry::Registry;
-use shared::metrics::Labels;
+use std::sync::Arc;
 
-use self::labels::Memory;
+use prometheus_client::registry::Registry;
+use shared::metrics::memory::MemoryMetrics;
+use shared::metrics::{self, MetricsProvider};
+
+use crate::global::Global;
 
 mod labels;
 
-pub struct Metrics {
-	registry: Registry,
-	memory: Family<Labels<Memory>, Gauge>,
-	labels: Labels<()>,
+pub type Metrics = metrics::Metrics<AllMetrics>;
+
+pub fn new(mut labels: Vec<(String, String)>) -> Metrics {
+	labels.push(("rust_app".to_string(), env!("CARGO_PKG_NAME").to_string()));
+	metrics::Metrics::new(labels, AllMetrics::default())
 }
 
-impl Metrics {
-	pub fn new(mut labels: Vec<(String, String)>) -> Self {
-		let mut registry = Registry::default();
+pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
+	shared::metrics::run(global.ctx(), &global.config().metrics.http, global.metrics().clone()).await
+}
 
-		let memory = Family::default();
+#[derive(Default)]
+pub struct AllMetrics {
+	pub api: ApiMetrics,
+	pub memory: MemoryMetrics,
+}
 
-		labels.push(("version".into(), env!("CARGO_PKG_VERSION").into()));
-
-		registry.register("api_memory_bytes", "The amount of memory used", memory.clone());
-
-		Self {
-			registry,
-			memory,
-			labels: Labels::new(labels),
-		}
+impl MetricsProvider for AllMetrics {
+	fn register(&mut self, registry: &mut Registry) {
+		self.api.register(registry);
+		self.memory.register(registry);
 	}
 
-	/// Observe memory usage.
-	pub fn observe_memory(&self) {
-		self.memory
-			.get_or_create(&self.labels.extend(Memory::ALLOCATED))
-			.set(super::ALLOCATOR.allocated() as i64);
-		self.memory
-			.get_or_create(&self.labels.extend(Memory::REMAINING))
-			.set(super::ALLOCATOR.remaining() as i64);
-
-		if let Some(usage) = memory_stats() {
-			self.memory
-				.get_or_create(&self.labels.extend(Memory::RESIDENT))
-				.set(usage.physical_mem as i64);
-			self.memory
-				.get_or_create(&self.labels.extend(Memory::VIRTUAL))
-				.set(usage.virtual_mem as i64);
-		} else {
-			tracing::warn!("failed to get memory stats");
-		}
+	fn pre_encode(&self) {
+		self.memory.pre_encode();
+		self.api.pre_encode();
 	}
+}
 
-	pub fn registry(&self) -> &Registry {
-		&self.registry
+impl std::ops::Deref for AllMetrics {
+	type Target = ApiMetrics;
+
+	fn deref(&self) -> &Self::Target {
+		&self.api
 	}
+}
+
+#[derive(Default)]
+pub struct ApiMetrics {}
+
+impl MetricsProvider for ApiMetrics {
+	fn register(&mut self, _registry: &mut Registry) {}
+
+	fn pre_encode(&self) {}
 }
