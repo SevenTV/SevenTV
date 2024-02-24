@@ -1,8 +1,8 @@
 <script lang="ts">
 	import ImagePreview from "$/components/image-preview.svelte";
 	import TabLink from "$/components/profile/tab-link.svelte";
+	import Activity from "$/components/emotes/activity.svelte";
 	import Tag from "$/components/emotes/tag.svelte";
-	import HideOn from "$/components/hide-on.svelte";
 	import type { LayoutData } from "./$types";
 	import {
 		ArrowBendDownRight,
@@ -15,8 +15,6 @@
 		ChartLineUp,
 		Graph,
 		ChatText,
-		Check,
-		X
 	} from "phosphor-svelte";
 
 	export let data: LayoutData;
@@ -140,94 +138,12 @@
 				Activity
 			</span>
 			<div class="activity-events">
-				<div class="event">
-					<X style="margin: 0 0.5rem" weight="bold" color="var(--error)" size="1rem"/>
-					<div class="event-message">
-						<div class="event-text">
-							<a href="/user/forsen" class="user-name">
-								forsen
-							</a>
-							<span>
-								rejected personal use for
-							</span>
-							<span class="emote-name">
-								{data.name}
-							</span>
-						</div>
-						<span class="time">
-							1 hour ago
-						</span>
-					</div>
-				</div>
-				<hr>
-				<div class="event">
-					<NotePencil style="margin: 0 0.5rem" weight="bold" size="1rem"/>
-					<div class="event-message">
-						<div class="event-text">
-							<a href="/user/ayyybubu" class="user-name">
-								ayyybubu
-							</a>
-							<span>
-								renamed
-							</span>
-							<span class="user-name">
-								AlienPls3
-							</span>
-							<span>
-								to
-							</span>
-							<span class="emote-name">
-								{data.name}
-							</span>
-						</div>
-						<span class="time">
-							1 hour ago
-						</span>
-					</div>
-				</div>
-				<hr>
-				<div class="event">
-					<Check style="margin: 0 0.5rem" weight="bold" color="var(--primary)" size="1rem"/>
-					<div class="event-message">
-						<div class="event-text">
-							<a href="/user/forsen" class="user-name">
-								forsen
-							</a>
-							<span>
-								approved
-							</span>
-							<span class="emote-name">
-								{data.name}
-							</span>
-							<span>
-								for public listing
-							</span>
-						</div>
-						<span class="time">
-							1 hour ago
-						</span>
-					</div>
-				</div>
-				<hr>
-				<div class="event">
-					<Plus style="margin: 0 0.5rem" weight="bold" color="var(--primary)" size="1rem"/>
-					<div class="event-message">
-						<div class="event-text">
-							<a href="/user/ayyybubu" class="user-name">
-								ayyybubu
-							</a>
-							<span>
-								created
-							</span>
-							<span class="emote-name">
-								{data.name}
-							</span>
-						</div>
-						<span class="time">
-							1 hour ago
-						</span>
-					</div>
-				</div>
+				{#each data.activity as event, index}
+					<Activity event={{ ...event, oldName: event.oldName || "oldName" }} />
+					{#if index !== data.activity.length - 1}
+						<hr />
+					{/if}
+				{/each}
 			</div>
 		</div>
 	</div>
@@ -245,7 +161,6 @@
 		text-decoration: none;
 	}
 
-	.emote-name,
 	.user-name {
 		font-weight: 700;
 		color: var(--text);
@@ -382,23 +297,6 @@
 				margin-bottom: 1rem;
 				padding: 2rem;
 				width: 30%;
-
-				.activity-events {
-					.event {
-						display: flex;
-						margin: 1rem 0;
-
-						.event-message {
-							font-size: 0.813rem;
-
-							.time {
-								font-size: 0.75rem;
-								font-weight: 500;
-								color: var(--text-lighter);
-							}
-						}
-					}
-				}
 			}
 		}
 	}
