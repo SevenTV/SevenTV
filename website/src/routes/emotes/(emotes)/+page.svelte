@@ -7,7 +7,7 @@
 </svelte:head>
 
 <div class="emotes">
-	{#each new Array(100) as _, i}
+	{#each Array(100) as _, i}
 		<EmotePreview index={i} name="trending{i}" />
 	{/each}
 </div>

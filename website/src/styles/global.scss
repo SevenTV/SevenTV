@@ -107,7 +107,9 @@ ul {
 	}
 
 	&:disabled {
-		background-color: var(--secondary-disabled);
+		&.secondary {
+			background-color: var(--secondary-disabled);
+		}
 		cursor: not-allowed;
 	}
 

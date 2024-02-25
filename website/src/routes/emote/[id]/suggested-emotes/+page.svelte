@@ -2,13 +2,9 @@
 	import EmotePreview from "$/components/emote-preview.svelte";
 </script>
 
-<svelte:head>
-	<title>Top Emotes - 7TV</title>
-</svelte:head>
-
 <div class="emotes">
-	{#each Array(100) as _, i}
-		<EmotePreview index={i} name="topEmote{i}" />
+	{#each Array(10) as _, i}
+		<EmotePreview index={i} name="suggestedEmote{i}" bg="light" />
 	{/each}
 </div>
 
