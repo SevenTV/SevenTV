@@ -34,8 +34,9 @@ export async function load({ params }: LayoutLoadEvent) {
 				time: "1 hour ago",
 				message: [
 					{ text: "forsen", href: "/user/forsen", bold: true },
-					{ text: "rejected personal use for" },
+					{ text: "rejected" },
 					{ text: "AlienDance", bold: true },
+					{ text: "for personal use" },
 				],
 			},
 			{

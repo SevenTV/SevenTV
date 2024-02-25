@@ -7,8 +7,9 @@
 			time: "1 hour ago",
 			message: [
 				{ text: "forsen", href: "/user/forsen", bold: true },
-				{ text: "rejected personal use for" },
+				{ text: "rejected" },
 				{ text: "AlienDance", bold: true },
+				{ text: "for personal use" },
 			],
 		},
 		{
@@ -61,10 +62,10 @@
 		<div class="event-message">
 			<div class="event-text">
 				{#each activity.message as item, i}
-					{#if item.bold}
-						<a href={item.href} class="bold-text">{item.text}</a>
+					{#if item.href}
+						<a href={item.href} class={item.bold ? "bold-text" : ""}>{item.text}</a>
 					{:else}
-						<span>{item.text}</span>
+						<span class={item.bold ? "bold-text" : ""}>{item.text}</span>
 					{/if}
 					{#if i !== activity.message.length - 1}
 						<span> </span>
