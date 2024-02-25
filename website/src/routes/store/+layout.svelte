@@ -3,36 +3,37 @@
 	import { fly } from "svelte/transition";
 	import { sideBar } from "$/lib/stores";
 	import { ArrowLineLeft, ArrowLineRight, PaintBrush, Star, TShirt } from "phosphor-svelte";
+	import Button from "$/components/button.svelte";
 </script>
 
 <div class="side-bar-layout">
 	{#if $sideBar}
 		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
-			<button class="button square collapse" on:click={() => ($sideBar = false)}>
-				<ArrowLineLeft />
-			</button>
+			<Button on:click={() => ($sideBar = false)} style="position: absolute; top: 1rem; right: 1rem;">
+				<ArrowLineLeft slot="icon" />
+			</Button>
 			<h1>Store</h1>
 			<div class="link-list">
-				<a class="button big" href="/store" class:secondary={$page.url.pathname === "/store"}>
-					<Star />
+				<Button big href="/store" primary={$page.url.pathname === "/store"}>
+					<Star slot="icon" />
 					Subscription
-				</a>
-				<a
-					class="button big"
+				</Button>
+				<Button
+					big
 					href="/store/paint-bundles"
-					class:secondary={$page.url.pathname === "/store/paint-bundles"}
+					primary={$page.url.pathname === "/store/paint-bundles"}
 				>
-					<PaintBrush />
+					<PaintBrush slot="icon" />
 					Paint Bundles
-				</a>
-				<a
-					class="button big"
+				</Button>
+				<Button
+					big
 					href="/store/merch"
-					class:secondary={$page.url.pathname === "/store/merch"}
+					primary={$page.url.pathname === "/store/merch"}
 				>
-					<TShirt />
+					<TShirt slot="icon" />
 					Merch
-				</a>
+				</Button>
 			</div>
 			<hr />
 			<label class="redeem">
@@ -41,9 +42,9 @@
 			</label>
 		</aside>
 	{:else}
-		<button class="button square expand" on:click={() => ($sideBar = true)}>
-			<ArrowLineRight />
-		</button>
+		<Button on:click={() => ($sideBar = true)} style="position: absolute; top: 1rem; left: 1rem; z-index: 2;">
+			<ArrowLineRight slot="icon" />
+		</Button>
 	{/if}
 	<div class="content">
 		<slot />
@@ -64,12 +65,6 @@
 			margin: 0.25rem 0;
 		}
 
-		.button.collapse {
-			position: absolute;
-			top: 1rem;
-			right: 1rem;
-		}
-
 		.link-list {
 			display: flex;
 			flex-direction: column;
@@ -85,13 +80,5 @@
 			font-size: 0.75rem;
 			font-weight: 500;
 		}
-	}
-
-	.expand {
-		position: absolute;
-		top: 1rem;
-		left: 1rem;
-
-		z-index: 2;
 	}
 </style>

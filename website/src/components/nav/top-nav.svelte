@@ -10,6 +10,7 @@
 	import Dms from "../dms.svelte";
 	import Notifications from "../notifications.svelte";
 	import { Bell, Chat, List, MagnifyingGlass, Plus, PlusSquare } from "phosphor-svelte";
+	import Button from "../button.svelte";
 </script>
 
 <nav>
@@ -31,27 +32,31 @@
 		<SearchBar big />
 	</HideOn>
 	<div class="user-actions">
-		<button class="button hide-on-desktop square">
-			<MagnifyingGlass />
-		</button>
+		<Button hideOnDesktop>
+			<MagnifyingGlass slot="icon" />
+		</Button>
 		{#if $user}
-			<DropDown button>
-				<Bell />
+			<DropDown>
+				<Button>
+					<Bell slot="icon" />
+				</Button>
 				<Notifications slot="dropdown" />
 			</DropDown>
-			<DropDown button>
-				<Badge count={1}>
-					<Chat />
-				</Badge>
+			<DropDown>
+				<Button>
+					<Badge count={1} slot="icon">
+						<Chat />
+					</Badge>
+				</Button>
 				<Dms slot="dropdown" />
 			</DropDown>
-			<a href="/upload" class="button square hide-on-desktop">
-				<PlusSquare />
-			</a>
-			<a href="/upload" class="button icon-left secondary hide-on-mobile">
-				<Plus />
+			<Button href="/upload" hideOnDesktop>
+				<PlusSquare slot="icon" />
+			</Button>
+			<Button href="/upload" primary hideOnMobile>
+				<PlusSquare slot="icon" />
 				Upload
-			</a>
+			</Button>
 			<HideOn mobile>
 				<DropDown>
 					<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
@@ -64,21 +69,22 @@
 			</button>
 		{:else}
 			<HideOn mobile>
-				<DropDown button>
-					<List />
+				<DropDown>
+					<Button>
+						<List slot="icon" />
+					</Button>
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<a class="button primary" href="/sign-in">Sign In</a>
+			<Button href="/sign-in" secondary>
+				Sign In
+			</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
-			<button
-				class="button square hide-on-desktop"
-				on:click={() => ($showMobileMenu = !$showMobileMenu)}
-			>
-				<List />
-			</button>
+			<Button hideOnDesktop on:click={() => ($showMobileMenu = !$showMobileMenu)}>
+				<List slot="icon" />
+			</Button>
 		{/if}
 	</div>
 </nav>

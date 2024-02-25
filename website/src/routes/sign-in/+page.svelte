@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { user } from "$/lib/stores";
+	import Button from "$/components/button.svelte";
+import { user } from "$/lib/stores";
 </script>
 
 <svelte:head>
@@ -8,4 +9,6 @@
 
 <h1>Sign In</h1>
 
-<button class="button primary" on:click={() => ($user = true)}>Fake login xdd</button>
+<Button secondary on:click={() => ($user = true)}>
+	Fake login xdd
+</Button>

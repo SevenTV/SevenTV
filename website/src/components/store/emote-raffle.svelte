@@ -1,5 +1,6 @@
 <script lang="ts">
-	import EmotePreview from "../emote-preview.svelte";
+	import Button from "../button.svelte";
+import EmotePreview from "../emote-preview.svelte";
 	import StoreSection from "./store-section.svelte";
 	import { CaretLeft, CaretRight, Crown, Ticket } from "phosphor-svelte";
 </script>
@@ -7,13 +8,13 @@
 <StoreSection title="Global Emote Raffle">
 	<span class="header" slot="header">Dec 2023</span>
 	<div class="carousel">
-		<button class="button square">
-			<CaretLeft />
-		</button>
+		<Button>
+			<CaretLeft slot="icon" />
+		</Button>
 		<EmotePreview bg="light" />
-		<button class="button square">
-			<CaretRight />
-		</button>
+		<Button>
+			<CaretRight slot="icon" />
+		</Button>
 	</div>
 	<div class="footer">
 		<div class="winner">
@@ -21,10 +22,10 @@
 			<span>Pokimane</span>
 			<Crown color="#aa71ff" />
 		</div>
-		<button class="button icon-left secondary">
-			<Ticket />
+		<Button primary>
+			<Ticket slot="icon" />
 			Enter
-		</button>
+		</Button>
 	</div>
 </StoreSection>
 

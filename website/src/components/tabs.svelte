@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import Button from "./button.svelte";
 
 	type Tab = {
 		name: string;
@@ -12,12 +13,9 @@
 <ul aria-label="tabs">
 	{#each tabs as tab}
 		<li aria-current={$page.url.pathname === tab.pathname}>
-			<a
-				class="button secondary"
-				class:selected={$page.url.pathname === tab.pathname}
-				href={tab.pathname}
-				draggable="false">{tab.name}</a
-			>
+			<Button primary href={tab.pathname} draggable="false" style={$page.url.pathname === tab.pathname ? "color: var(--text); background-color: var(--secondary-light);" : "color: var(--text-lighter);"}>
+				{tab.name}
+			</Button>
 		</li>
 	{/each}
 </ul>
@@ -34,15 +32,6 @@
 
 		li {
 			display: contents;
-		}
-
-		a {
-			color: var(--text-lighter);
-
-			&.selected {
-				color: var(--text);
-				background-color: var(--secondary-light);
-			}
 		}
 	}
 </style>

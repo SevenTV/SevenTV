@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import Button from "../button.svelte";
 
 	export let title: string;
 	export let href: string;
@@ -11,17 +12,19 @@
 	}
 </script>
 
-<a
+<Button
 	{href}
-	class="button icon-left no-bg"
 	draggable="false"
-	class:secondary={$page.url.pathname === href}
+	primary={$page.url.pathname === href}
+	style={$page.url.pathname !== href && "color: var(--text-lighter)"}
 	on:click={scrollIntoView}
 >
-	{#if $page.url.pathname === href}
-		<slot name="active" />
-	{:else}
-		<slot />
-	{/if}
+	<svelte:fragment slot="icon">
+		{#if $page.url.pathname === href}
+			<slot name="active" />
+		{:else}
+			<slot />
+		{/if}
+	</svelte:fragment>
 	{title}
-</a>
+</Button>

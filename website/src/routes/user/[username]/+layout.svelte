@@ -20,6 +20,7 @@
 		TwitchLogo,
 		Upload,
 	} from "phosphor-svelte";
+	import Button from "$/components/button.svelte";
 
 	export let data: LayoutData;
 </script>
@@ -52,28 +53,28 @@
 			</span>
 		</div>
 		<div class="buttons">
-			<button class="button icon-left secondary grow">
-				<Heart />
+			<Button primary style="flex-grow: 1; justify-content: center;">
+				<Heart slot="icon" />
 				Follow
-			</button>
-			<button class="button secondary square more hide-on-mobile">
-				<CaretDown />
-			</button>
-			<button class="button icon-left secondary grow hide-on-desktop">
-				<Gift />
+			</Button>
+			<Button primary hideOnMobile>
+				<CaretDown slot="icon" />
+			</Button>
+			<Button primary hideOnDesktop>
+				<Gift slot="icon" />
 				Gift
-			</button>
+			</Button>
 		</div>
 		<HideOn mobile>
 			<Expandable title="Connections">
-				<a class="button big" target="_blank" href="https://twitch.tv/ayyybubu">
-					<TwitchLogo />
+				<Button href="https://twitch.tv/ayyybubu" target="_blank" big>
+					<TwitchLogo slot="icon" />
 					<span>ayyybubu</span>
-				</a>
-				<button class="button big">
-					<DiscordLogo />
+				</Button>
+				<Button big>
+					<DiscordLogo slot="icon" />
 					<span>bubu</span>
-				</button>
+				</Button>
 			</Expandable>
 			<Expandable title="Editors">
 				username
@@ -81,9 +82,9 @@
 				username
 			</Expandable>
 		</HideOn>
-		<button class="button square more hide-on-desktop">
-			<DotsThreeVertical />
-		</button>
+		<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
+			<DotsThreeVertical slot="icon" />
+		</Button>
 	</aside>
 	<div class="content">
 		<div class="header">
@@ -125,10 +126,10 @@
 					</svelte:fragment>
 				</TabLink>
 			</div>
-			<a href="/settings" class="button no-bg hide-on-mobile">
-				<Gear />
+			<Button href="/settings" hideOnMobile>
+				<Gear slot="icon" />
 				Settings
-			</a>
+			</Button>
 		</div>
 		<hr class="hide-on-mobile" />
 		<slot />
@@ -183,22 +184,6 @@
 			display: flex;
 			gap: 0.5rem;
 			flex-wrap: wrap;
-
-			& > .grow {
-				flex-basis: 0;
-				flex-grow: 1;
-				justify-content: center;
-			}
-
-			& > .more {
-				padding: 0.5rem;
-			}
-		}
-
-		& > .more {
-			position: absolute;
-			top: 0.5rem;
-			right: 1rem;
 		}
 	}
 
@@ -208,11 +193,6 @@
 			align-items: center;
 			justify-content: space-between;
 			gap: 0.5rem;
-
-			// All buttons except the selected one
-			.button:not(.secondary) {
-				color: var(--text-lighter);
-			}
 		}
 
 		.tabs {

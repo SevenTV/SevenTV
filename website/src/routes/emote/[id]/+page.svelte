@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from "$/components/button.svelte";
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import SearchBar from "$/components/nav/search-bar.svelte";
 	import { CaretLeft, CaretRight } from "phosphor-svelte";
@@ -8,12 +9,12 @@
 	<div class="navigation">
 		<SearchBar />
 		<div class="buttons">
-			<button class="button square" disabled>
-				<CaretLeft />
-			</button>
-			<button class="button square">
-				<CaretRight />
-			</button>
+			<Button disabled style="color: var(--text-light)">
+				<CaretLeft slot="icon" />
+			</Button>
+			<Button>
+				<CaretRight slot="icon" />
+			</Button>
 		</div>
 	</div>
 	<div class="channels">
@@ -35,11 +36,6 @@
 
 			.buttons {
 				display: flex;
-
-				button[disabled],
-				.button:disabled {
-					color: var(--text-light);
-				}
 			}
 		}
 
