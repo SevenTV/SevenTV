@@ -58,48 +58,37 @@
 				{/each}
 			</div>
 			<div class="previews">
-				<div class="32x32">
-					<ImagePreview size={32}/>
-					<span class="size-text">32x32</span>
-				</div>
-				<div class="64x64">
-					<ImagePreview size={64}/>
-					<span class="size-text">64x64</span>
-				</div>
-				<div class="96x96">
-					<ImagePreview size={96}/>
-					<span class="size-text">96x96</span>
-				</div>
-				<div class="128x128">
-					<ImagePreview size={128}/>
-					<span class="size-text">128x128</span>
-				</div>
+				<ImagePreview size={32}/>
+				<ImagePreview size={64}/>
+				<ImagePreview size={96}/>
+				<ImagePreview size={128}/>
 			</div>
 			<div class="buttons">
-				<button class="button icon-left primary grow">
+				<button class="button icon-left primary">
 					<Plus />
-					Use Emote
+					<span>
+						Use
+						<span class="hide-on-mobile">Emote</span>
+					</span>
 				</button>
-				<button class="button icon-left secondary grow">
+				<button class="button icon-left secondary">
 					<FolderPlus />
 					Add to...
 				</button>
-				<button class="button icon-left secondary grow">
+				<button class="button icon-left secondary">
 					<NotePencil />
 					Edit
 				</button>
-				<button class="button icon-rigth secondary grow">
-					<span class="hide-on-mobile">
-						More
-					</span>
+				<button class="button icon-rigth secondary">
+					<span class="hide-on-mobile">More</span>
 					<CaretDown />
 				</button>
 			</div>
 		</div>
-		<div class="right-side hide-on-mobile">
+		<span class="credits hide-on-mobile">
 			<Lightning size="1rem"/>
-			<span class="credits">16 credits</span>
-		</div>
+			16 credits
+		</span>
 	</aside>
 	<div class="bottom-space">
 		<div class="tabs">
@@ -129,9 +118,7 @@
 					</svelte:fragment>
 				</TabLink>
 			</div>
-			<div class="tab-content">
-				<slot />
-			</div>
+			<slot />
 		</div>
 		<div class="activity hide-on-mobile">
 			<span class="title">
@@ -150,7 +137,6 @@
 </div>
 
 <style lang="scss">
-
 	.title {
 		font-size: 1.125rem;
 		font-weight: 600;
@@ -171,14 +157,16 @@
 
 		.top-space {
 			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+
 			background-color: var(--bg-medium);
 			border-radius: 0.5rem;
 			padding: 2rem;
 
 			.user-info {
 				display: flex;
-				gap: 0.625rem;
-				width: 30%;
+				gap: 0.62rem;
 
 				.profile-picture {
 					width: 2.75rem;
@@ -189,6 +177,7 @@
 
 				.user-name {
 					color: var(--staff);
+					font-weight: 500;
 				}
 
 				.artist-info {
@@ -212,35 +201,27 @@
 			}
 
 			.emote-info {
-				display: grid;
-				justify-items: center;
-				width: 40%;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 1rem;
 
 				.title {
-					align-self: center;
 					color: var(--text);
+					font-weight: 600;
 				}
-
+				
 				.tags {
-					align-self: center;
 					display: flex;
 					gap: 0.5rem;
 				}
 
 				.previews {
+					margin-block: 0.5rem;
+
 					display: flex;
 					gap: 2rem;
 					align-items: flex-end;
-					margin: 2rem 0;
-
-					.size-text {
-						font-weight: 400;
-						margin-top: 1rem;
-						display: flex;
-						justify-content: center;
-						font-size: 0.6rem;
-						color: var(--text-lighter);
-					}
 				}
 
 				.buttons {
@@ -249,39 +230,35 @@
 				}
 			}
 
-			.right-side {
-				width: 30%;
+			.credits {
 				display: flex;
-				justify-content: flex-end;
+				align-items: center;
+				gap: 0.5rem;
 
-				.credits {
-					font-size: 1rem;
-					font-weight: 500;
-					color: var(--text);
-				}
+				font-weight: 500;
 			}
 		}
 
 		.bottom-space {
-			gap: 1rem;
 			display: flex;
+			gap: 1rem;
 			margin-top: 1rem;
 
 			.tabs {
+				flex-grow: 1;
+
 				background-color: var(--bg-medium);
 				border-radius: 0.5rem;
 				margin-bottom: 1rem;
 				min-height: 30rem;
 				padding: 2rem;
-				width: 70%;
 
 				.buttons {
-					justify-content: center;
 					display: flex;
-					gap: 2rem;
-					flex-wrap: wrap;
 					gap: 0.5rem;
-					user-select: none;
+					overflow-x: auto;
+					margin-inline: -2rem;
+					padding-left: 2rem;
 
 					-ms-overflow-style: none;
 					scrollbar-width: none;
@@ -292,17 +269,17 @@
 			}
 
 			.activity {
+				flex-basis: 30%;
+
 				background-color: var(--bg-medium);
 				border-radius: 0.5rem;
 				margin-bottom: 1rem;
 				padding: 2rem;
-				width: 30%;
 			}
 		}
 	}
 
 	@media screen and (max-width: 960px) {
-
 		.content {
 			padding: 1rem 1.5rem 0 1.5rem;
 
@@ -315,23 +292,12 @@
 					justify-content: center;
 					gap: 1rem;
 
-					.tags {
-
-						.button {
-							padding: 0.5rem;
-						}
-					}
-
 					.previews {
 						gap: 0.5rem;
 					}
 
 					.buttons {
 						gap: 0.5rem;
-
-						.button {
-							padding: 0.5rem;
-						}
 					}
 				}
 			}
@@ -341,12 +307,7 @@
 					width: 100%;
 
 					.buttons {
-						justify-content: normal;
 						gap: 0;
-						margin-right: -1rem;
-						padding-right: 1rem;
-						overflow-x: auto;
-						flex-wrap: nowrap;
 					}
 				}
 			}

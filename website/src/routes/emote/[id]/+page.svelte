@@ -1,16 +1,12 @@
 <script lang="ts">
 	import ChannelPreview from "$/components/emotes/channel.svelte";
+	import SearchBar from "$/components/nav/search-bar.svelte";
 	import { CaretLeft, CaretRight, MagnifyingGlass } from "phosphor-svelte";
 </script>
 
 <div class="suggested-channels">
 	<div class="navigation">
-		<search>
-			<div class="icon">
-				<MagnifyingGlass />
-			</div>
-			<input type="text" placeholder="Search" />
-		</search>
+		<SearchBar />
 		<div class="buttons">
 			<button class="button square" disabled >
 				<CaretLeft />
@@ -38,43 +34,12 @@
 			justify-content: space-between;
 			gap: 1rem;
 
-			search {
-				--icon-left-padding: 0.75rem;
-				--gap: 0.5rem;
-
-				max-width: 20rem;
-				position: relative;
-
-				display: flex;
-				align-items: center;
-				justify-content: center;
-
-				.icon {
-					position: absolute;
-					top: 0;
-					left: 0;
-					bottom: 0;
-
-					display: flex;
-					align-items: center;
-					padding-left: var(--icon-left-padding);
-					color: var(--text-light);
-					pointer-events: none;
-				}
-
-				input {
-					// icon left padding + icon width + gap
-					padding-left: calc(var(--icon-left-padding) + 1rem + var(--gap));
-				}
-			}
-
 			.buttons {
 				display: flex;
 
 				button[disabled],
 				.button:disabled {
 					color: var(--text-light);
-					background-color: transparent;
 				}
 			}
 		}
@@ -88,7 +53,6 @@
 			gap: 1rem;
 		}
 	}
-
 
 	@media screen and (max-width: 960px) {
 		.suggested-channels {
