@@ -4,7 +4,7 @@
 	export let bg: "medium" | "light" = "medium";
 </script>
 
-<a href="/channel/{user}" class="channel" style:background-color="var(--bg-{bg})">
+<a href="/user/{user}" class="channel" style:background-color="var(--bg-{bg})">
 	<div class="image" style="animation-delay: {index * 10}ms"></div>
 	<span class="user">{user}</span>
 </a>
@@ -14,17 +14,15 @@
 		color: var(--text);
 		text-decoration: none;
 
-		width: 10rem;
-		height: 3.5rem;
+		padding: 0.5rem 1rem;
 
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-bottom: 0.45rem;
+		gap: 0.62rem;
 
 		border: 1px solid transparent;
 		border-radius: 0.25rem;
-		cursor: pointer;
 
 		&:hover,
 		&:focus-visible {
@@ -54,7 +52,7 @@
 	}
 
 	.user {
-		font-weight: 500;
-		margin-left: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 600;
 	}
 </style>
