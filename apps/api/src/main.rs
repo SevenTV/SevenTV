@@ -27,7 +27,7 @@ async fn main() {
 		ALLOCATOR.set_limit(limit).expect("failed to set memory limit");
 	}
 
-	tracing::info!("starting event-api");
+	tracing::info!("starting api");
 
 	let (ctx, handler) = Context::new();
 
