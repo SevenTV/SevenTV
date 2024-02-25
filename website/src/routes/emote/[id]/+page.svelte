@@ -8,7 +8,7 @@
 	<div class="navigation">
 		<SearchBar />
 		<div class="buttons">
-			<button class="button square" disabled >
+			<button class="button square" disabled>
 				<CaretLeft />
 			</button>
 			<button class="button square">
@@ -22,7 +22,6 @@
 		{/each}
 	</div>
 </div>
-
 
 <style lang="scss">
 	.suggested-channels {

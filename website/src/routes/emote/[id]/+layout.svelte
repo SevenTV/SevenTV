@@ -27,21 +27,26 @@
 <div class="content">
 	<aside class="top-space">
 		<div class="user-info hide-on-mobile">
-			<a href="/user/{data.author}" class="profile" >
+			<a href="/user/{data.author}" class="profile">
 				<img src="/test-profile-pic.jpeg" alt="profile" class="profile-picture" />
 			</a>
 			<div class="artist-info">
-				<a href="/user/{data.author}" class="profile" >
+				<a href="/user/{data.author}" class="profile">
 					<span class="user-name">
 						{data.author}
 					</span>
 				</a>
 				{#if data.artists.length}
 					<div class="artists">
-						<ArrowBendDownRight size="0.75rem" color="var(--secondary-light)"/>
+						<ArrowBendDownRight size="0.75rem" color="var(--secondary-light)" />
 						{#each data.artists as artist}
-							<a href="/user/{artist.login}" class="profile" >
-								<img src="{artist.avatar}" alt="{artist.displayName}" title="{artist.displayName}" class="artist-picture" />
+							<a href="/user/{artist.login}" class="profile">
+								<img
+									src={artist.avatar}
+									alt={artist.displayName}
+									title={artist.displayName}
+									class="artist-picture"
+								/>
 							</a>
 						{/each}
 					</div>
@@ -58,10 +63,10 @@
 				{/each}
 			</div>
 			<div class="previews">
-				<ImagePreview size={32}/>
-				<ImagePreview size={64}/>
-				<ImagePreview size={96}/>
-				<ImagePreview size={128}/>
+				<ImagePreview size={32} />
+				<ImagePreview size={64} />
+				<ImagePreview size={96} />
+				<ImagePreview size={128} />
 			</div>
 			<div class="buttons">
 				<button class="button icon-left primary">
@@ -86,7 +91,7 @@
 			</div>
 		</div>
 		<span class="credits hide-on-mobile">
-			<Lightning size="1rem"/>
+			<Lightning size="1rem" />
 			16 credits
 		</span>
 	</aside>
@@ -121,9 +126,7 @@
 			<slot />
 		</div>
 		<div class="activity hide-on-mobile">
-			<span class="title">
-				Activity
-			</span>
+			<span class="title"> Activity </span>
 			<div class="activity-events">
 				{#each data.activity as event, index}
 					<Activity event={{ ...event, oldName: event.oldName || "oldName" }} />
@@ -196,7 +199,6 @@
 							border: 1px solid var(--text);
 						}
 					}
-
 				}
 			}
 
@@ -210,7 +212,7 @@
 					color: var(--text);
 					font-weight: 600;
 				}
-				
+
 				.tags {
 					display: flex;
 					gap: 0.5rem;
@@ -312,6 +314,5 @@
 				}
 			}
 		}
-
 	}
 </style>
