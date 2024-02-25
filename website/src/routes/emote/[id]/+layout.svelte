@@ -84,8 +84,11 @@
 					<NotePencil />
 					Edit
 				</button>
-				<button class="button icon-rigth secondary">
-					<span class="hide-on-mobile">More</span>
+				<button class="button icon-right secondary hide-on-mobile">
+					More
+					<CaretDown />
+				</button>
+				<button class="button secondary square hide-on-desktop">
 					<CaretDown />
 				</button>
 			</div>
@@ -211,6 +214,8 @@
 				.tags {
 					display: flex;
 					gap: 0.5rem;
+					flex-wrap: wrap;
+					justify-content: center;
 				}
 
 				.previews {

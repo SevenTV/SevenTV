@@ -18,7 +18,6 @@
 
 		display: flex;
 		align-items: center;
-		justify-content: center;
 		gap: 0.62rem;
 
 		border: 1px solid transparent;
@@ -43,6 +42,7 @@
 	}
 
 	.image {
+		flex-shrink: 0;
 		width: 2.5rem;
 		height: 2.5rem;
 		border-radius: 50%;
@@ -52,6 +52,10 @@
 	}
 
 	.user {
+		flex-grow: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+
 		font-size: 0.875rem;
 		font-weight: 600;
 	}

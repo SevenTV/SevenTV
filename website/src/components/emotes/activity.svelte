@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Plus, NotePencil, Check, X } from "phosphor-svelte";
+	import { IconContext, Plus, NotePencil, Check, X } from "phosphor-svelte";
 
 	export let activities = [
 		{
@@ -46,15 +46,17 @@
 
 {#each activities as activity, index}
 	<div class="event">
-		{#if activity.kind === "reject"}
-			<X style="margin: 0 0.5rem" weight="bold" color="var(--error)" size="1rem" />
-		{:else if activity.kind === "modify"}
-			<NotePencil style="margin: 0 0.5rem" weight="bold" size="1rem" />
-		{:else if activity.kind === "approve"}
-			<Check style="margin: 0 0.5rem" weight="bold" color="var(--primary)" size="1rem" />
-		{:else}
-			<Plus style="margin: 0 0.5rem" weight="bold" color="var(--primary)" size="1rem" />
-		{/if}
+		<IconContext values={{ style: "margin: 0 0.5rem", size: "1rem" }}>
+			{#if activity.kind === "reject"}
+				<X color="var(--error)" />
+			{:else if activity.kind === "modify"}
+				<NotePencil />
+			{:else if activity.kind === "approve"}
+				<Check color="var(--primary)" />
+			{:else}
+				<Plus  color="var(--primary)" />
+			{/if}
+		</IconContext>
 
 		<div class="event-message">
 			<div class="event-text">

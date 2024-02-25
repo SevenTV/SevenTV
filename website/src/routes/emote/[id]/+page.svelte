@@ -48,7 +48,7 @@
 
 			display: grid;
 			grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-			place-items: center;
+			justify-content: center;
 			gap: 1rem;
 		}
 	}
@@ -56,7 +56,6 @@
 	@media screen and (max-width: 960px) {
 		.suggested-channels {
 			.channels {
-				grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
 				margin-bottom: 0;
 			}
 		}
