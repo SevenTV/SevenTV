@@ -1,7 +1,7 @@
 <script lang="ts">
-	import ChannelPreview from "$/components/emotes/channel.svelte";
+	import ChannelPreview from "$/components/channel-preview.svelte";
 	import SearchBar from "$/components/nav/search-bar.svelte";
-	import { CaretLeft, CaretRight, MagnifyingGlass } from "phosphor-svelte";
+	import { CaretLeft, CaretRight } from "phosphor-svelte";
 </script>
 
 <div class="suggested-channels">
