@@ -128,12 +128,7 @@
 		<div class="activity hide-on-mobile">
 			<span class="title"> Activity </span>
 			<div class="activity-events">
-				{#each data.activity as event, index}
-					<Activity event={{ ...event, oldName: event.oldName || "oldName" }} />
-					{#if index !== data.activity.length - 1}
-						<hr />
-					{/if}
-				{/each}
+				<Activity activities={data.activity} />
 			</div>
 		</div>
 	</div>
