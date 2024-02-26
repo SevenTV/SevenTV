@@ -24,119 +24,117 @@
 	} from "phosphor-svelte";
 </script>
 
-<IconContext values={{ size: "1.5rem" }}>
-	<div class="menu" transition:fade={{ duration: 100 }}>
-		{#if $user}
-			<a class="profile" href="/user/ayyybubu">
-				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
-				<span class="name">
-					ayyybubu
-					<SealCheck size="0.8rem" />
-				</span>
-				<div class="roles">
-					<Role name="Staff" />
-					<Role name="Subscriber" />
-				</div>
-				<div class="chevron">
-					<CaretRight size="1.2rem" />
-				</div>
-			</a>
-			<hr class="hide-on-mobile" />
-		{/if}
-		<div class="link-list hide-on-desktop">
-			<a href="/">
-				<House />
-				Home
-			</a>
-			<a href="/emotes">
-				<Smiley />
-				Emotes
-			</a>
-			<a href="/discover">
-				<Compass />
-				Discover
-			</a>
-			<a href="/store" class="store">
-				<Star />
-				Store
-			</a>
-		</div>
-		{#if $user}
-			<div class="link-list">
-				<a href="/cosmetics">
-					<PaintBrush />
-					Cosmetics
-				</a>
-				<a href="/analytics">
-					<ChartLine />
-					Analytics
-				</a>
+<div class="menu" transition:fade={{ duration: 100 }}>
+	{#if $user}
+		<a class="profile" href="/user/ayyybubu">
+			<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
+			<span class="name">
+				ayyybubu
+				<SealCheck size="0.8rem" />
+			</span>
+			<div class="roles">
+				<Role name="Staff" />
+				<Role name="Subscriber" />
 			</div>
-			<hr class="hide-on-mobile" />
-		{/if}
+			<div class="chevron">
+				<CaretRight size="1.2rem" />
+			</div>
+		</a>
+		<hr class="hide-on-mobile" />
+	{/if}
+	<div class="link-list hide-on-desktop">
+		<a href="/">
+			<House />
+			Home
+		</a>
+		<a href="/emotes">
+			<Smiley />
+			Emotes
+		</a>
+		<a href="/discover">
+			<Compass />
+			Discover
+		</a>
+		<a href="/store" class="store">
+			<Star />
+			Store
+		</a>
+	</div>
+	{#if $user}
 		<div class="link-list">
-			<button>
-				<GlobeHemisphereWest />
-				Language
-				<div class="chevron">
-					<CaretRight />
-				</div>
-			</button>
-			<button>
-				<Moon />
-				Theme
-				<div class="chevron">
-					<CaretRight />
-				</div>
-			</button>
-			{#if $user}
-				<a href="/settings" class="hide-on-mobile">
-					<Gear />
-					Settings
-				</a>
-				<button class="hide-on-desktop">
-					<Gear />
-					Settings
-					<div class="chevron">
-						<CaretRight />
-					</div>
-				</button>
-			{/if}
+			<a href="/cosmetics">
+				<PaintBrush />
+				Cosmetics
+			</a>
+			<a href="/analytics">
+				<ChartLine />
+				Analytics
+			</a>
 		</div>
 		<hr class="hide-on-mobile" />
-		<div class="link-list">
-			<a href="/developer">
-				<Code />
-				Developer Portal
-			</a>
-			<a href="/contact">
-				<ChatDots />
-				Contact
-			</a>
-			<a href="/faq">
-				<Question />
-				FAQ
-			</a>
-			<a href="/privacy">
-				<LockSimple />
-				Privacy Policy
-			</a>
-			<a href="/tos">
-				<Note />
-				Terms of Service
-			</a>
-		</div>
-		{#if $user}
-			<hr class="hide-on-mobile" />
-			<div class="link-list">
-				<button on:click={() => ($user = false)}>
-					<SignOut />
-					Sign out
-				</button>
+	{/if}
+	<div class="link-list">
+		<button>
+			<GlobeHemisphereWest />
+			Language
+			<div class="chevron">
+				<CaretRight />
 			</div>
+		</button>
+		<button>
+			<Moon />
+			Theme
+			<div class="chevron">
+				<CaretRight />
+			</div>
+		</button>
+		{#if $user}
+			<a href="/settings" class="hide-on-mobile">
+				<Gear />
+				Settings
+			</a>
+			<button class="hide-on-desktop">
+				<Gear />
+				Settings
+				<div class="chevron">
+					<CaretRight />
+				</div>
+			</button>
 		{/if}
 	</div>
-</IconContext>
+	<hr class="hide-on-mobile" />
+	<div class="link-list">
+		<a href="/developer">
+			<Code />
+			Developer Portal
+		</a>
+		<a href="/contact">
+			<ChatDots />
+			Contact
+		</a>
+		<a href="/faq">
+			<Question />
+			FAQ
+		</a>
+		<a href="/privacy">
+			<LockSimple />
+			Privacy Policy
+		</a>
+		<a href="/tos">
+			<Note />
+			Terms of Service
+		</a>
+	</div>
+	{#if $user}
+		<hr class="hide-on-mobile" />
+		<div class="link-list">
+			<button on:click={() => ($user = false)}>
+				<SignOut />
+				Sign out
+			</button>
+		</div>
+	{/if}
+</div>
 
 <style lang="scss">
 	.menu {
@@ -206,7 +204,7 @@
 
 		a,
 		button {
-			padding: 0.75rem;
+			padding: 0.75rem 1.2rem;
 			border-radius: 0.5rem;
 			color: var(--text);
 			font-size: 0.875rem;
@@ -215,7 +213,7 @@
 
 			display: flex;
 			align-items: center;
-			gap: 1rem;
+			gap: 1.2rem;
 
 			&:hover,
 			&:focus-visible {

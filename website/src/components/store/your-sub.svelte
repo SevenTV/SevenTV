@@ -16,12 +16,22 @@
 
 <StoreSection title="Your Subscription">
 	<div class="buttons" slot="header">
-		<Button primary hideOnMobile on:click={() => (subbed = true)} style={subbed && "color: var(--subscriber-accent)"}>
+		<Button
+			primary
+			hideOnMobile
+			on:click={() => (subbed = true)}
+			style={subbed && "color: var(--subscriber-accent)"}
+		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<span>{subbed ? "Subscribed" : "Subscribe"}</span>
 			<CaretDown slot="icon-right" />
 		</Button>
-		<Button primary hideOnDesktop on:click={() => (subbed = true)} style={subbed && "color: var(--subscriber-accent)"}>
+		<Button
+			primary
+			hideOnDesktop
+			on:click={() => (subbed = true)}
+			style={subbed && "color: var(--subscriber-accent)"}
+		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<CaretDown slot="icon-right" />
 		</Button>

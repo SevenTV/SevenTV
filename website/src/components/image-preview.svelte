@@ -1,9 +1,14 @@
 <script lang="ts">
 	export let size = 64;
+	export let src: string | null = null;
 </script>
 
 <div class="preview">
-	<div class="image" style="height: {size}px; width: {size}px"></div>
+	{#if src}
+		<img width={size} height={size} {src} alt="preview" />
+	{:else}
+		<div class="image" style="height: {size}px; width: {size}px"></div>
+	{/if}
 	<span class="size-text">{size}x{size}</span>
 </div>
 

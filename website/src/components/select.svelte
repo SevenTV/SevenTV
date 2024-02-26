@@ -20,12 +20,7 @@
 	}
 </script>
 
-<div
-	use:mouseTrap={close}
-	class="select"
-	class:grow
-	class:expanded
->
+<div use:mouseTrap={close} class="select" class:grow class:expanded>
 	<Button primary tabindex="-1" on:click={toggle}>
 		{selected ?? "Select"}
 		<CaretDown slot="icon-right" size="1rem" />

@@ -7,6 +7,8 @@ export const showMobileMenu = writable(false);
 
 export const sideBar = writable(sideBarInit());
 
+export const showUploadDialog = writable(false);
+
 function sideBarInit() {
 	// Show sidebar by default
 	if (!browser) {

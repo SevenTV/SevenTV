@@ -1,6 +1,17 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
-import { user } from "$/lib/stores";
+	import { user } from "$/lib/stores";
+	import { goto } from "$app/navigation";
+	import type { PageData } from "./$types";
+
+	export let data: PageData;
+
+	function login() {
+		$user = true;
+		if (data.redirect) {
+			goto(data.redirect);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -9,6 +20,4 @@ import { user } from "$/lib/stores";
 
 <h1>Sign In</h1>
 
-<Button secondary on:click={() => ($user = true)}>
-	Fake login xdd
-</Button>
+<Button secondary on:click={login}>Fake login xdd</Button>

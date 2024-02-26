@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Logo from "$/components/icons/logo.svelte";
-	import SearchBar from "$/components/nav/search-bar.svelte";
+	import SearchBar from "$/components/search-bar.svelte";
 	import Tabs from "./tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { user, showMobileMenu } from "$/lib/stores";
+	import { user, showMobileMenu, showUploadDialog } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
@@ -50,10 +50,10 @@
 				</Button>
 				<Dms slot="dropdown" />
 			</DropDown>
-			<Button href="/upload" hideOnDesktop>
+			<Button hideOnDesktop on:click={() => ($showUploadDialog = true)}>
 				<PlusSquare slot="icon" />
 			</Button>
-			<Button href="/upload" primary hideOnMobile>
+			<Button primary hideOnMobile on:click={() => ($showUploadDialog = true)}>
 				<PlusSquare slot="icon" />
 				Upload
 			</Button>
@@ -76,9 +76,7 @@
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<Button href="/sign-in" secondary>
-				Sign In
-			</Button>
+			<Button href="/sign-in" secondary>Sign In</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
