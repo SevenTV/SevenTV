@@ -1,22 +1,26 @@
 use std::sync::Arc;
 
 use hyper::body::{Bytes, Incoming};
-use scuffle_utils::http::{router::{builder::RouterBuilder, Router}, RouteError};
+use scuffle_utils::http::router::builder::RouterBuilder;
+use scuffle_utils::http::router::Router;
+use scuffle_utils::http::RouteError;
 use shared::http::Body;
-use utoipa::OpenApi;
 
-use crate::{global::Global, http::error::ApiError};
+use crate::global::Global;
+use crate::http::error::ApiError;
 
-use super::ApiDoc;
+#[derive(utoipa::OpenApi)]
+#[openapi(paths(get_docs,))]
+pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-    Router::builder()
-        .get("/", get_docs)
+	Router::builder().get("/", get_docs)
 }
 
 #[utoipa::path(
     get,
     path = "/v3/docs",
+    tag = "docs",
     responses(
         (status = 200, description = "Returns swagger documentation", content_type = "application/json"),
     ),
@@ -24,11 +28,14 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/docs/docs.go#L24
 pub async fn get_docs(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-    let docs = ApiDoc::openapi().to_pretty_json().unwrap();
+    // This allows us to only generate the OpenAPI documentation once and cache it in memory for the rest of the application's lifetime.
+	static CACHE: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
 
-    Ok(hyper::Response::builder()
-        .status(200)
-        .header("Content-Type", "application/json")
-        .body(Body::Left(Bytes::from(docs).into()))
-        .unwrap())
+	Ok(hyper::Response::builder()
+		.status(200)
+		.header("Content-Type", "application/json")
+		.body(Body::Left(
+			Bytes::from_static(CACHE.get_or_init(|| super::docs().to_json().unwrap().into_bytes())).into(),
+		))
+		.unwrap())
 }

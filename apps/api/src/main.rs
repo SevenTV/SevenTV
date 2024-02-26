@@ -8,8 +8,8 @@ use tokio::signal::unix::SignalKind;
 mod config;
 mod global;
 mod health;
-mod metrics;
 mod http;
+mod metrics;
 
 #[global_allocator]
 static ALLOCATOR: Cap<tikv_jemallocator::Jemalloc> = Cap::new(tikv_jemallocator::Jemalloc, usize::max_value());

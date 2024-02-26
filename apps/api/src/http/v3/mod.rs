@@ -17,39 +17,37 @@ pub mod emote_sets;
 pub mod users;
 pub mod entitlements;
 
-#[derive(OpenApi)]
-#[openapi(
-    paths(
-        docs::get_docs,
-        config::get_extension,
-        config::get_extension_nightly,
-        auth::root,
-        auth::logout,
-        auth::manual,
-        emotes::get_emote_by_id,
-        emotes::create_emote,
-        emote_sets::get_emote_set_by_id,
-        users::get_user_by_id,
-        users::get_user_profile_picture_by_id,
-        users::get_user_presences_by_platform,
-        users::get_user_by_platform_user_id,
-        users::delete_user_by_id,
-        users::update_user_connection_by_id,
-        entitlements::create_entitlement,
-    ),
-    components(
-        schemas(config::ExtensionConfig),
-        schemas(emotes::XEmoteData),
-        schemas(emotes::Emote),
-        schemas(emote_sets::EmoteSet),
-        schemas(users::User),
-        schemas(users::UserConnection),
-        schemas(users::UserProfilePicture),
-        schemas(entitlements::Entitlement),
-        schemas(entitlements::XEntitlementData),
-    ),
-)]
-struct ApiDoc;
+pub fn docs() -> utoipa::openapi::OpenApi {
+    #[derive(OpenApi)]
+    #[openapi(
+        info(
+            title = "7TV",
+            version = "3.0.0",
+            contact(
+                email = "support@7tv.app",
+            ),
+            license(
+                name = "Apache 2.0 with Commons Clause",
+                url = "https://github.com/SevenTV/SevenTV/blob/main/licenses/CC_APACHE2_LICENSE",
+            ),
+            description = include_str!("DESCRIPTION.md"),
+        ),
+        servers(
+            (url = "https://7tv.io", description = "Production"),
+        ),
+    )]
+    struct Docs;
+
+    let mut docs = Docs::openapi();
+    docs.merge(docs::Docs::openapi());
+    docs.merge(config::Docs::openapi());
+    docs.merge(auth::Docs::openapi());
+    docs.merge(emotes::Docs::openapi());
+    docs.merge(emote_sets::Docs::openapi());
+    docs.merge(users::Docs::openapi());
+    docs.merge(entitlements::Docs::openapi());
+    docs
+}
 
 pub fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
     Router::builder()

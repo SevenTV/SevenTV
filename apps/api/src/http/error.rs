@@ -1,3 +1,2 @@
 #[derive(Debug, thiserror::Error)]
-pub enum ApiError {
-}
+pub enum ApiError {}
