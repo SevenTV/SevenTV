@@ -8,24 +8,11 @@ use crate::{global::Global, http::error::ApiError};
 
 pub fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
     Router::builder()
-        .get("/", get_entitlements)
         .post("/", create_entitlement)
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct Entitlement {}
-
-#[utoipa::path(
-    get,
-    path = "/v3/entitlements",
-    responses(
-        (status = 200, description = "Entitlements", body = Vec<Entitlement>),
-    ),
-)]
-pub async fn get_entitlements(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-    todo!()
-}
-
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct XEntitlementData {}
@@ -38,6 +25,7 @@ pub struct XEntitlementData {}
         (status = 201, description = "Entitlement Created"),
     ),
 )]
+// https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/entitlements/entitlements.create.go#L34
 pub async fn create_entitlement(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     todo!()
 }
