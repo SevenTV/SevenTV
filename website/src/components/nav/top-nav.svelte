@@ -4,7 +4,7 @@
 	import Tabs from "./tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { user, showMobileMenu } from "$/lib/stores";
+	import { user, showMobileMenu, showUploadDialog } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
@@ -50,10 +50,10 @@
 				</Button>
 				<Dms slot="dropdown" />
 			</DropDown>
-			<Button href="/upload" hideOnDesktop>
+			<Button hideOnDesktop on:click={() => ($showUploadDialog = true)}>
 				<PlusSquare slot="icon" />
 			</Button>
-			<Button href="/upload" primary hideOnMobile>
+			<Button primary hideOnMobile on:click={() => ($showUploadDialog = true)}>
 				<PlusSquare slot="icon" />
 				Upload
 			</Button>

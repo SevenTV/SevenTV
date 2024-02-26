@@ -3,10 +3,11 @@
 	import "$/styles/colors.scss";
 	import "$/styles/global.scss";
 	import TopNav from "$/components/nav/top-nav.svelte";
-	import { showMobileMenu } from "$/lib/stores";
+	import { showMobileMenu, showUploadDialog } from "$/lib/stores";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
 	import { IconContext } from "phosphor-svelte";
+	import UploadDialog from "$/components/dialogs/upload-dialog.svelte";
 
 	beforeNavigate((nav) => {
 		// Hide menu on navigate
@@ -27,6 +28,9 @@
 			<Menu />
 		{:else}
 			<slot />
+			{#if $showUploadDialog}
+				<UploadDialog />
+			{/if}
 		{/if}
 	</main>
 </IconContext>

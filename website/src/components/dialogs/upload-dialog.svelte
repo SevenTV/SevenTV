@@ -1,7 +1,9 @@
 <script lang="ts">
-	import Checkbox from "$/components/checkbox.svelte";
+	import Dialog from "./dialog.svelte";
+    import Checkbox from "$/components/checkbox.svelte";
 	import SearchBar from "$/components/search-bar.svelte";
 	import { UploadSimple } from "phosphor-svelte";
+	import { showUploadDialog } from "$/lib/stores";
 
 	let fileInput: HTMLInputElement;
 	let dragOver = false;
@@ -37,65 +39,70 @@
     }
 </script>
 
-<svelte:head>
-	<title>Emote Upload - 7TV</title>
-</svelte:head>
-
-<div class="grid">
-	<section class="upload">
-		<button class="file" class:drag-over={dragOver} on:click={browse} on:drop={onDrop} on:dragover={onDragOver} on:dragenter={() => (dragOver = true)} on:dragleave={() => (dragOver = false)}>
-			<input type="file" hidden bind:this={fileInput} />
-			<UploadSimple />
-			<h2>Drop your emote here, or <button>Browse</button></h2>
-			<span class="details">
-				Maximum of 7MB
-				<br />
-				Resolution below 1000x1000 px
-				<br />
-				Frames below 1000
-			</span>
-			<button on:click={onFormatsClick}>Supported formats</button>
-		</button>
-	</section>
-	<section class="inputs">
-		<label>
-			Emote Name
-			<input type="text" placeholder="Enter text" />
-		</label>
-		<label>
-			Tags
-			<input type="text" placeholder="Enter text" />
-		</label>
-		<!-- svelte-ignore a11y-label-has-associated-control -->
-		<label>
-			Emote Attribution
-			<SearchBar grow />
-		</label>
-		<Checkbox label="Zero-Width" />
-		<Checkbox label="Private" />
-	</section>
-	<section class="chat">
-		<div class="messages">
-			{#each messages as message}
-				<span class="message">
-					<span class="username">ayyybubu</span>: {message}
-				</span>
-			{/each}
-		</div>
-		<input type="text" placeholder="Send a message" bind:value={messageInput} on:keydown|stopPropagation={sendMessage} />
-	</section>
-</div>
+<Dialog width={50} on:close={() => ($showUploadDialog = false)}>
+    <div class="grid">
+		<h1 class="heading">Upload emote</h1>
+        <section class="upload">
+            <button class="file" class:drag-over={dragOver} on:click={browse} on:drop={onDrop} on:dragover={onDragOver} on:dragenter={() => (dragOver = true)} on:dragleave={() => (dragOver = false)}>
+                <input type="file" hidden bind:this={fileInput} />
+                <UploadSimple />
+                <h2>Drop your emote here, or <button>Browse</button></h2>
+                <span class="details">
+                    Maximum of 7MB
+                    <br />
+                    Resolution below 1000x1000 px
+                    <br />
+                    Frames below 1000
+                </span>
+                <button on:click={onFormatsClick}>Supported formats</button>
+            </button>
+        </section>
+        <section class="inputs">
+            <label>
+                Emote Name
+                <input type="text" placeholder="Enter text" />
+            </label>
+            <label>
+                Tags
+                <input type="text" placeholder="Enter text" />
+            </label>
+            <!-- svelte-ignore a11y-label-has-associated-control -->
+            <label>
+                Emote Attribution
+                <SearchBar grow />
+            </label>
+            <Checkbox label="Zero-Width" />
+            <Checkbox label="Private" />
+        </section>
+        <section class="chat">
+            <div class="messages">
+                {#each messages as message}
+                    <span class="message">
+                        <span class="username">ayyybubu</span>: {message}
+                    </span>
+                {/each}
+            </div>
+            <input type="text" placeholder="Send a message" bind:value={messageInput} on:keydown|stopPropagation={sendMessage} />
+        </section>
+    </div>
+</Dialog>
 
 <style lang="scss">
 	.grid {
 		display: grid;
-		grid-template-areas: "inputs upload" "inputs chat";
+		grid-template-areas: "heading heading" "inputs upload" "inputs chat";
 		grid-template-columns: 22.5rem 1fr;
-		grid-template-rows: 1fr 1fr;
+		grid-template-rows: auto 1fr 1fr;
 		gap: 1rem;
 
 		height: 100%;
-		padding: 1rem 2rem;
+		padding: 1rem;
+	}
+
+	.heading {
+		grid-area: heading;
+
+		font-size: 1.2rem;
 	}
 
 	section {
@@ -121,6 +128,7 @@
 			height: 100%;
 			border: 1px dashed var(--text-lighter);
 			border-radius: 0.5rem;
+			padding: 1rem 2rem;
 
 			display: flex;
 			flex-direction: column;
@@ -177,6 +185,7 @@
 	.chat {
 		grid-area: chat;
 		padding: 0.6rem;
+		min-height: 15rem;
 
 		display: flex;
 		flex-direction: column;
@@ -222,9 +231,9 @@
 
 	@media screen and (max-width: 960px) {
 		.grid {
-			grid-template-areas: "upload" "inputs" "chat";
+			grid-template-areas: "heading" "upload" "inputs" "chat";
 			grid-template-columns: 1fr;
-			grid-template-rows: repeat(3, auto);
+			// grid-template-rows: repeat(4, auto);
 		}
 	}
 </style>
