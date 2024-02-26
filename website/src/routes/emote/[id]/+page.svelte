@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
 	import ChannelPreview from "$/components/channel-preview.svelte";
-	import SearchBar from "$/components/nav/search-bar.svelte";
+	import SearchBar from "$/components/search-bar.svelte";
 	import { CaretLeft, CaretRight } from "phosphor-svelte";
 </script>
 

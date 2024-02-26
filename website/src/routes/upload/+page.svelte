@@ -137,7 +137,7 @@
 				font-weight: 500;
 
 				span {
-					color: var(--primary);
+					color: var(--secondary);
 				}
 			}
 
@@ -146,7 +146,7 @@
 			}
 
 			button {
-				color: var(--primary);
+				color: var(--secondary);
 				font-weight: 500;
 				padding: 0.5rem;
 				margin: -0.5rem;
@@ -158,7 +158,7 @@
 
 			&.drag-over {
 				border-style: solid;
-				border-color: var(--primary);
+				border-color: var(--secondary);
 
 				background-color: var(--bg-light);
 			}
@@ -215,7 +215,7 @@
 		font-size: 0.8125rem;
 
 		.username {
-			color: var(--primary);
+			color: var(--secondary);
 			font-weight: 700;
 		}
 	}
