@@ -53,9 +53,9 @@
 			{:else if activity.kind === "modify"}
 				<NotePencil />
 			{:else if activity.kind === "approve"}
-				<Check color="var(--primary)" />
+				<Check color="var(--secondary)" />
 			{:else}
-				<Plus  color="var(--primary)" />
+				<Plus  color="var(--secondary)" />
 			{/if}
 		</IconContext>
 

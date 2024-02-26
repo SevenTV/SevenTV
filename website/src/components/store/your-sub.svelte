@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from "../button.svelte";
 	import StoreSection from "./store-section.svelte";
 	import {
 		CaretDown,
@@ -15,35 +16,27 @@
 
 <StoreSection title="Your Subscription">
 	<div class="buttons" slot="header">
-		<button
-			class="button secondary hide-on-mobile"
-			class:sub-color={subbed}
-			on:click={() => (subbed = true)}
-		>
-			<Star weight={subbed ? "fill" : "bold"} />
+		<Button primary hideOnMobile on:click={() => (subbed = true)} style={subbed && "color: var(--subscriber-accent)"}>
+			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<span>{subbed ? "Subscribed" : "Subscribe"}</span>
-			<CaretDown />
-		</button>
-		<button
-			class="button secondary icon-left icon-right hide-on-desktop"
-			class:sub-color={subbed}
-			on:click={() => (subbed = true)}
-		>
-			<Star weight={subbed ? "fill" : "bold"} />
-			<CaretDown />
-		</button>
+			<CaretDown slot="icon-right" />
+		</Button>
+		<Button primary hideOnDesktop on:click={() => (subbed = true)} style={subbed && "color: var(--subscriber-accent)"}>
+			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
+			<CaretDown slot="icon-right" />
+		</Button>
 
-		<button class="button secondary icon-left hide-on-mobile">
-			<Gift />
+		<Button primary hideOnMobile>
+			<Gift slot="icon" />
 			Gift
-		</button>
-		<button class="button secondary square hide-on-desktop">
-			<Gift />
-		</button>
+		</Button>
+		<Button hideOnDesktop>
+			<Gift slot="icon" />
+		</Button>
 
-		<button class="button secondary square">
-			<DotsThreeVertical />
-		</button>
+		<Button primary>
+			<DotsThreeVertical slot="icon" />
+		</Button>
 	</div>
 	<div class="sub-grid">
 		<span class="key">Plan</span>
@@ -76,10 +69,6 @@
 	.buttons {
 		display: flex;
 		gap: 0.5rem;
-	}
-
-	.sub-color {
-		color: var(--subscriber-accent);
 	}
 
 	.sub-grid {

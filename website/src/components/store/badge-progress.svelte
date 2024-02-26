@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { DotsThreeVertical } from "phosphor-svelte";
 	import StoreSection from "./store-section.svelte";
+	import Button from "../button.svelte";
 
 	export let percentage: number = 40;
 </script>
@@ -34,9 +35,9 @@
 		<div class="info">
 			<div class="header">
 				<h2>Badge Progress</h2>
-				<button class="button secondary square">
-					<DotsThreeVertical />
-				</button>
+				<Button primary>
+					<DotsThreeVertical slot="icon" />
+				</Button>
 			</div>
 			<div class="badges">
 				<div class="badge">
@@ -89,7 +90,7 @@
 		}
 
 		#track {
-			stroke: var(--secondary);
+			stroke: var(--primary);
 			stroke-width: 1rem;
 		}
 	}
@@ -141,7 +142,7 @@
 			& > .placeholder {
 				width: 2.25rem;
 				height: 2.25rem;
-				background-color: var(--secondary);
+				background-color: var(--primary);
 				border-radius: 0.5rem;
 			}
 		}
@@ -166,7 +167,7 @@
 				align-self: stretch;
 
 				height: 0.25rem;
-				background-color: var(--secondary);
+				background-color: var(--primary);
 				border-radius: 0.125rem;
 			}
 		}

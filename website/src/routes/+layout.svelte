@@ -52,7 +52,7 @@
 
 	.skip-to-main {
 		position: absolute;
-		color: var(--primary);
+		color: var(--secondary);
 		opacity: 0;
 		pointer-events: none;
 

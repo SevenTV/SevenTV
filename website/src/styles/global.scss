@@ -12,7 +12,7 @@ body {
 	box-sizing: border-box;
 
 	&:focus-visible {
-		outline-color: var(--primary);
+		outline-color: var(--secondary);
 	}
 }
 
@@ -51,87 +51,6 @@ ul {
 	padding: 0;
 }
 
-.button {
-	cursor: pointer;
-	font: inherit;
-	border: none;
-	color: var(--text);
-	font-size: 0.875rem;
-	font-weight: 600;
-	padding: 0.5rem;
-	border-radius: 0.5rem;
-	transition: background-color 0.1s;
-	white-space: nowrap;
-	user-select: none;
-
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-
-	&.primary,
-	&.secondary,
-	&.no-bg {
-		&:not(.square) {
-			padding: 0.5rem 1rem;
-		}
-	}
-
-	&.icon-left:not(.square) {
-		padding-left: 0.75rem;
-	}
-
-	&.icon-right:not(.square) {
-		padding-right: 0.75rem;
-	}
-
-	&.big:not(.square) {
-		padding: 0.75rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-
-		gap: 0.75rem;
-	}
-
-	&.secondary {
-		background-color: var(--secondary);
-	}
-
-	&:hover,
-	&:focus-visible {
-		text-decoration: none;
-		background-color: var(--secondary-hover);
-	}
-
-	&:active {
-		background-color: var(--secondary-active);
-	}
-
-	&:disabled {
-		&.secondary {
-			background-color: var(--secondary-disabled);
-		}
-		cursor: not-allowed;
-	}
-
-	&.primary {
-		background-color: var(--primary);
-
-		&:hover,
-		&:focus-visible {
-			background-color: var(--primary-hover);
-		}
-
-		&:active {
-			background-color: var(--primary-active);
-		}
-
-		&:disabled {
-			background-color: var(--primary-disabled);
-			cursor: not-allowed;
-		}
-	}
-}
-
 input[type="text"] {
 	width: 100%;
 
@@ -139,7 +58,7 @@ input[type="text"] {
 	border-radius: 0.5rem;
 	border: 1px solid transparent;
 	outline: none;
-	background-color: var(--secondary);
+	background-color: var(--primary);
 	color: var(--text);
 	font-size: 0.875rem;
 
@@ -150,12 +69,12 @@ input[type="text"] {
 	transition: background-color 0.1s;
 
 	&:focus-visible {
-		background-color: var(--secondary-hover);
-		border: 1px solid var(--primary);
+		background-color: var(--primary-hover);
+		border: 1px solid var(--secondary);
 	}
 
 	&:active {
-		background-color: var(--secondary-active);
+		background-color: var(--primary-active);
 	}
 }
 

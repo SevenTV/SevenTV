@@ -2,16 +2,17 @@
 	import StoreSection from "./store-section.svelte";
 	import EmoteSetPreview from "../emote-set-preview.svelte";
 	import { PencilSimple } from "phosphor-svelte";
+	import Button from "../button.svelte";
 </script>
 
 <StoreSection title="Personal Emotes">
 	<div class="container">
 		<EmoteSetPreview bg="light" />
 	</div>
-	<button class="button edit secondary icon-left">
-		<PencilSimple />
+	<Button primary style="align-self: flex-end">
+		<PencilSimple slot="icon" />
 		Edit
-	</button>
+	</Button>
 </StoreSection>
 
 <style lang="scss">
@@ -21,9 +22,5 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-	}
-
-	.button.edit {
-		align-self: flex-end;
 	}
 </style>

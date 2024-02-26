@@ -10,13 +10,13 @@
 <style lang="scss">
 	@keyframes loading {
 		0% {
-			background-color: var(--secondary);
+			background-color: var(--primary);
 		}
 		50% {
-			background-color: var(--secondary-active);
+			background-color: var(--primary-active);
 		}
 		100% {
-			background-color: var(--secondary);
+			background-color: var(--primary);
 		}
 	}
 
@@ -28,7 +28,7 @@
 	}
 
 	.image {
-		background-color: var(--secondary);
+		background-color: var(--primary);
 		animation: loading 1s infinite;
 	}
 

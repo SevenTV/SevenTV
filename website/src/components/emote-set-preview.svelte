@@ -45,7 +45,7 @@
 	.emote {
 		width: 2rem;
 		height: 2rem;
-		background-color: var(--secondary);
+		background-color: var(--primary);
 		border-radius: 0.25rem;
 	}
 
@@ -62,7 +62,7 @@
 		font-size: 0.75rem;
 		font-weight: 500;
 
-		background-color: var(--secondary);
+		background-color: var(--primary);
 		border-radius: 0.25rem;
 	}
 </style>

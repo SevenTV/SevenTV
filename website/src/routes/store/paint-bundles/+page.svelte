@@ -1,5 +1,6 @@
 <script lang="ts">
-	import HideOn from "$/components/hide-on.svelte";
+	import Button from "$/components/button.svelte";
+import HideOn from "$/components/hide-on.svelte";
 	import SearchBar from "$/components/nav/search-bar.svelte";
 	import PaintPreview from "$/components/paint-preview.svelte";
 	import Select from "$/components/select.svelte";
@@ -62,9 +63,9 @@
 			<HideOn mobile>
 				<SearchBar />
 			</HideOn>
-			<button class="button square hide-on-desktop">
+			<Button hideOnDesktop>
 				<MagnifyingGlass />
-			</button>
+			</Button>
 			<Select options={["Filters"]} />
 		</div>
 	</div>
@@ -81,19 +82,19 @@
 					<PaintPreview />
 				{/each}
 				<div class="buttons">
-					<button class="button secondary icon-left">
-						<Gift />
+					<Button primary>
+						<Gift slot="icon" />
 						Gift
-					</button>
-					<button class="button secondary icon-left">
-						<ShoppingCartSimple />
+					</Button>
+					<Button primary>
+						<ShoppingCartSimple slot="icon" />
 						<span>
 							{#if bundle.oldPrice}
 								<del>{priceFormat.format(bundle.oldPrice / 100)}</del>
 							{/if}
 							{priceFormat.format(bundle.price / 100)}
 						</span>
-					</button>
+					</Button>
 				</div>
 			</div>
 		{/each}

@@ -16,6 +16,7 @@
 		Graph,
 		ChatText,
 	} from "phosphor-svelte";
+	import Button from "$/components/button.svelte";
 
 	export let data: LayoutData;
 </script>
@@ -38,7 +39,7 @@
 				</a>
 				{#if data.artists.length}
 					<div class="artists">
-						<ArrowBendDownRight size="0.75rem" color="var(--secondary-light)" />
+						<ArrowBendDownRight size="0.75rem" color="var(--primary-light)" />
 						{#each data.artists as artist}
 							<a href="/user/{artist.login}" class="profile">
 								<img
@@ -69,28 +70,28 @@
 				<ImagePreview size={128} />
 			</div>
 			<div class="buttons">
-				<button class="button icon-left primary">
-					<Plus />
+				<Button secondary>
+					<Plus slot="icon" />
 					<span>
 						Use
 						<span class="hide-on-mobile">Emote</span>
 					</span>
-				</button>
-				<button class="button icon-left secondary">
-					<FolderPlus />
+				</Button>
+				<Button primary>
+					<FolderPlus slot="icon" />
 					Add to...
-				</button>
-				<button class="button icon-left secondary">
-					<NotePencil />
+				</Button>
+				<Button primary>
+					<NotePencil slot="icon" />
 					Edit
-				</button>
-				<button class="button icon-right secondary hide-on-mobile">
+				</Button>
+				<Button primary hideOnMobile>
 					More
-					<CaretDown />
-				</button>
-				<button class="button secondary square hide-on-desktop">
-					<CaretDown />
-				</button>
+					<CaretDown slot="icon-right" />
+				</Button>
+				<Button primary hideOnDesktop>
+					<CaretDown slot="icon" />
+				</Button>
 			</div>
 		</div>
 		<span class="credits hide-on-mobile">

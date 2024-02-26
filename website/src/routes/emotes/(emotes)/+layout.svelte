@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from "$/components/button.svelte";
 	import Tabs from "$/components/tabs.svelte";
 	import { sideBar } from "$/lib/stores";
 	import { ArrowLineRight, FolderSimple, GridFour, GridNine } from "phosphor-svelte";
@@ -7,9 +8,9 @@
 <div class="nav-bar">
 	<div class="buttons">
 		{#if !$sideBar}
-			<button class="button square expand" on:click={() => ($sideBar = true)}>
-				<ArrowLineRight />
-			</button>
+			<Button on:click={() => ($sideBar = true)}>
+				<ArrowLineRight slot="icon" />
+			</Button>
 		{/if}
 		<Tabs
 			tabs={[
@@ -19,16 +20,16 @@
 		/>
 	</div>
 	<div class="buttons">
-		<button class="button secondary icon-left hide-on-mobile">
-			<FolderSimple />
+		<Button primary hideOnMobile>
+			<FolderSimple slot="icon" />
 			Personal Emotes
-		</button>
-		<button class="button square">
-			<GridFour />
-		</button>
-		<button class="button square">
-			<GridNine />
-		</button>
+		</Button>
+		<Button>
+			<GridFour slot="icon" />
+		</Button>
+		<Button>
+			<GridNine slot="icon" />
+		</Button>
 	</div>
 </div>
 <slot />

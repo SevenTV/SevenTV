@@ -13,6 +13,7 @@
 		SortDescending,
 		X,
 	} from "phosphor-svelte";
+	import Button from "$/components/button.svelte";
 
 	let sortAsc = false;
 
@@ -37,39 +38,33 @@
 <div class="side-bar-layout">
 	{#if $sideBar}
 		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
-			<button class="button square collapse" on:click={() => ($sideBar = false)}>
-				<ArrowLineLeft />
-			</button>
+			<Button style="position: absolute; top: 1rem; right: 1rem;" on:click={() => ($sideBar = false)}>
+				<ArrowLineLeft slot="icon" />
+			</Button>
 			<h1>Directory</h1>
 			<div class="link-list">
-				<a
-					class="button big"
-					href="/emotes"
-					class:secondary={$page.route.id?.startsWith("/emotes/(emotes)")}
-				>
-					<Smiley />
+				<Button href="/emotes" big primary={$page.route.id?.startsWith("/emotes/(emotes)")}>
+					<Smiley slot="icon" />
 					Emotes
-				</a>
-				<a
-					class="button big"
-					href="/emotes/sets"
-					class:secondary={$page.route.id?.startsWith("/emotes/sets")}
-				>
-					<FolderSimple />
+				</Button>
+				<Button href="/emotes/sets" big primary={$page.route.id?.startsWith("/emotes/sets")}>
+					<FolderSimple slot="icon" />
 					Emote Sets
-				</a>
+				</Button>
 			</div>
 			<hr />
 			<Expandable title="Sorting">
 				<div class="sorting">
 					<Select options={["Name", "Date"]} grow />
-					<button class="button square secondary" on:click={() => (sortAsc = !sortAsc)}>
-						{#if sortAsc}
-							<SortAscending />
-						{:else}
-							<SortDescending />
-						{/if}
-					</button>
+					<Button primary on:click={() => (sortAsc = !sortAsc)}>
+						<svelte:fragment slot="icon">
+							{#if sortAsc}
+								<SortAscending />
+							{:else}
+								<SortDescending />
+							{/if}
+						</svelte:fragment>
+					</Button>
 				</div>
 			</Expandable>
 			<Expandable title="Tags">
@@ -77,10 +72,10 @@
 				{#if tags && tags.length > 0}
 					<div class="tags">
 						{#each tags as tag, i}
-							<button class="button secondary tag" on:click={() => removeTag(i)}>
+							<Button primary on:click={() => removeTag(i)}>
 								<span>{tag}</span>
-								<X />
-							</button>
+								<X slot="icon-right" size="1rem" />
+							</Button>
 						{/each}
 					</div>
 				{/if}
@@ -117,12 +112,6 @@
 			margin: 0.25rem 0;
 		}
 
-		.button.collapse {
-			position: absolute;
-			top: 1rem;
-			right: 1rem;
-		}
-
 		.link-list {
 			display: flex;
 			flex-direction: column;
@@ -134,10 +123,6 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-
-		& > .button {
-			padding: 0.5rem;
-		}
 	}
 
 	.tags {
@@ -147,14 +132,14 @@
 		align-items: center;
 		gap: 0.5rem;
 		flex-wrap: wrap;
-	}
 
-	.tag {
-		padding: 0.4rem 0.75rem 0.4rem 1rem;
-		font-weight: 500;
-		max-width: 100%;
+		& > :global(.button) {
+			padding: 0.4rem 0.75rem 0.4rem 1rem;
+			font-weight: 500;
+			max-width: 100%;
+		}
 
-		& > span {
+		& > :global(.button > span) {
 			overflow: hidden;
 			text-overflow: ellipsis;
 		}

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import StoreSection from "./store-section.svelte";
+	import Button from "../button.svelte";
+import StoreSection from "./store-section.svelte";
 	import { CaretLeft, CaretRight, Trophy, Gift } from "phosphor-svelte";
 
 	const topGifters = [
@@ -28,12 +29,12 @@
 
 <StoreSection title="Top Gifters">
 	<div class="header" slot="header">
-		<button class="button square">
-			<CaretLeft />
-		</button>
-		<button class="button square">
-			<CaretRight />
-		</button>
+		<Button>
+			<CaretLeft slot="icon" />
+		</Button>
+		<Button>
+			<CaretRight slot="icon" />
+		</Button>
 	</div>
 	<div class="grid">
 		{#each topGifters as gifter, i}
@@ -50,10 +51,10 @@
 			</span>
 		{/each}
 	</div>
-	<button class="gift button secondary icon-left">
-		<Gift />
+	<Button primary style="align-self: flex-end">
+		<Gift slot="icon" />
 		Gift
-	</button>
+	</Button>
 </StoreSection>
 
 <style lang="scss">
@@ -80,7 +81,7 @@
 			width: 1.5rem;
 			height: 1.5rem;
 			border-radius: 50%;
-			background-color: var(--secondary);
+			background-color: var(--primary);
 		}
 
 		& > .amount {
@@ -89,10 +90,6 @@
 			align-items: center;
 			justify-content: flex-end;
 		}
-	}
-
-	.gift.button {
-		align-self: flex-end;
 	}
 
 	.gold {
