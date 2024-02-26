@@ -12,7 +12,7 @@ body {
 	box-sizing: border-box;
 
 	&:focus-visible {
-		outline-color: var(--primary);
+		outline-color: var(--secondary);
 	}
 }
 
@@ -58,7 +58,7 @@ input[type="text"] {
 	border-radius: 0.5rem;
 	border: 1px solid transparent;
 	outline: none;
-	background-color: var(--secondary);
+	background-color: var(--primary);
 	color: var(--text);
 	font-size: 0.875rem;
 
@@ -69,12 +69,12 @@ input[type="text"] {
 	transition: background-color 0.1s;
 
 	&:focus-visible {
-		background-color: var(--secondary-hover);
-		border: 1px solid var(--primary);
+		background-color: var(--primary-hover);
+		border: 1px solid var(--secondary);
 	}
 
 	&:active {
-		background-color: var(--secondary-active);
+		background-color: var(--primary-active);
 	}
 }
 

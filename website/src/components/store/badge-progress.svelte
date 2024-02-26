@@ -90,7 +90,7 @@
 		}
 
 		#track {
-			stroke: var(--secondary);
+			stroke: var(--primary);
 			stroke-width: 1rem;
 		}
 	}
@@ -142,7 +142,7 @@
 			& > .placeholder {
 				width: 2.25rem;
 				height: 2.25rem;
-				background-color: var(--secondary);
+				background-color: var(--primary);
 				border-radius: 0.5rem;
 			}
 		}
@@ -167,7 +167,7 @@
 				align-self: stretch;
 
 				height: 0.25rem;
-				background-color: var(--secondary);
+				background-color: var(--primary);
 				border-radius: 0.125rem;
 			}
 		}

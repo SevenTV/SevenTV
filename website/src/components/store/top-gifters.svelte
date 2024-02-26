@@ -81,7 +81,7 @@ import StoreSection from "./store-section.svelte";
 			width: 1.5rem;
 			height: 1.5rem;
 			border-radius: 50%;
-			background-color: var(--secondary);
+			background-color: var(--primary);
 		}
 
 		& > .amount {

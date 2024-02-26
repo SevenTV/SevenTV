@@ -84,7 +84,7 @@
 			border: transparent 1px solid;
 
 			&:focus-within {
-				border-color: var(--primary);
+				border-color: var(--secondary);
 			}
 		}
 

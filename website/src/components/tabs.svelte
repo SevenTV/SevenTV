@@ -13,7 +13,7 @@
 <ul aria-label="tabs">
 	{#each tabs as tab}
 		<li aria-current={$page.url.pathname === tab.pathname}>
-			<Button primary href={tab.pathname} draggable="false" style={$page.url.pathname === tab.pathname ? "color: var(--text); background-color: var(--secondary-light);" : "color: var(--text-lighter);"}>
+			<Button primary href={tab.pathname} draggable="false" style={$page.url.pathname === tab.pathname ? "color: var(--text); background-color: var(--primary-light);" : "color: var(--text-lighter);"}>
 				{tab.name}
 			</Button>
 		</li>
@@ -27,7 +27,7 @@
 
 		user-select: none;
 
-		background-color: var(--secondary);
+		background-color: var(--primary);
 		border-radius: 0.5rem;
 
 		li {

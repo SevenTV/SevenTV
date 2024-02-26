@@ -19,7 +19,7 @@
 		.circle {
 			width: 1.5rem;
 			height: 1.5rem;
-			background-color: var(--secondary);
+			background-color: var(--primary);
 			border-radius: 50%;
 		}
 	}

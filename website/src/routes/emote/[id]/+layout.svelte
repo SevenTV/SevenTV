@@ -39,7 +39,7 @@
 				</a>
 				{#if data.artists.length}
 					<div class="artists">
-						<ArrowBendDownRight size="0.75rem" color="var(--secondary-light)" />
+						<ArrowBendDownRight size="0.75rem" color="var(--primary-light)" />
 						{#each data.artists as artist}
 							<a href="/user/{artist.login}" class="profile">
 								<img

@@ -98,21 +98,21 @@
         }
         
         &.primary {
-            background-color: var(--secondary);
+            background-color: var(--primary);
 
             &:disabled {
-                background-color: var(--secondary-disabled);
+                background-color: var(--primary-disabled);
             }
         }
 
         &:hover,
         &:focus-visible {
             text-decoration: none;
-            background-color: var(--secondary-hover);
+            background-color: var(--primary-hover);
         }
 
         &:active {
-            background-color: var(--secondary-active);
+            background-color: var(--primary-active);
         }
 
         &:disabled {
@@ -120,19 +120,19 @@
         }
 
         &.secondary {
-            background-color: var(--primary);
+            background-color: var(--secondary);
 
             &:hover,
             &:focus-visible {
-                background-color: var(--primary-hover);
+                background-color: var(--secondary-hover);
             }
 
             &:active {
-                background-color: var(--primary-active);
+                background-color: var(--secondary-active);
             }
 
             &:disabled {
-                background-color: var(--primary-disabled);
+                background-color: var(--secondary-disabled);
             }
         }
     }
