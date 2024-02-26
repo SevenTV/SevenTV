@@ -5,7 +5,7 @@
 
 <div class="preview">
 	{#if src}
-		<img width={size} height={size} src={src} alt="preview" />
+		<img width={size} height={size} {src} alt="preview" />
 	{:else}
 		<div class="image" style="height: {size}px; width: {size}px"></div>
 	{/if}

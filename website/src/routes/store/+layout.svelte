@@ -9,7 +9,10 @@
 <div class="side-bar-layout">
 	{#if $sideBar}
 		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
-			<Button on:click={() => ($sideBar = false)} style="position: absolute; top: 1rem; right: 1rem;">
+			<Button
+				on:click={() => ($sideBar = false)}
+				style="position: absolute; top: 1rem; right: 1rem;"
+			>
 				<ArrowLineLeft slot="icon" />
 			</Button>
 			<h1>Store</h1>
@@ -26,11 +29,7 @@
 					<PaintBrush slot="icon" />
 					Paint Bundles
 				</Button>
-				<Button
-					big
-					href="/store/merch"
-					primary={$page.url.pathname === "/store/merch"}
-				>
+				<Button big href="/store/merch" primary={$page.url.pathname === "/store/merch"}>
 					<TShirt slot="icon" />
 					Merch
 				</Button>
@@ -42,7 +41,10 @@
 			</label>
 		</aside>
 	{:else}
-		<Button on:click={() => ($sideBar = true)} style="position: absolute; top: 1rem; left: 1rem; z-index: 2;">
+		<Button
+			on:click={() => ($sideBar = true)}
+			style="position: absolute; top: 1rem; left: 1rem; z-index: 2;"
+		>
 			<ArrowLineRight slot="icon" />
 		</Button>
 	{/if}

@@ -76,9 +76,7 @@
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<Button href="/sign-in" secondary>
-				Sign In
-			</Button>
+			<Button href="/sign-in" secondary>Sign In</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}

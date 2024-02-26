@@ -2,38 +2,38 @@
 	import { X } from "phosphor-svelte";
 	import Button from "./button.svelte";
 
-    export let tags = ["lorem", "ipsum"];
+	export let tags = ["lorem", "ipsum"];
 
-    function removeTag(i: number) {
-        tags.splice(i, 1);
-        tags = [...tags];
-    }
+	function removeTag(i: number) {
+		tags.splice(i, 1);
+		tags = [...tags];
+	}
 
-    let tagInput: string;
+	let tagInput: string;
 
-    function onTagInput(e: KeyboardEvent) {
-        if (e.key === "Enter" && tagInput) {
-            tags = [...tags, tagInput];
-            tagInput = "";
-            e.preventDefault();
-        }
-    }
+	function onTagInput(e: KeyboardEvent) {
+		if (e.key === "Enter" && tagInput) {
+			tags = [...tags, tagInput];
+			tagInput = "";
+			e.preventDefault();
+		}
+	}
 </script>
 
 <input type="text" placeholder="Add tags" bind:value={tagInput} on:keypress={onTagInput} />
 {#if tags && tags.length > 0}
-    <div class="tags">
-        {#each tags as tag, i}
-            <Button primary on:click={() => removeTag(i)}>
-                <span>{tag}</span>
-                <X slot="icon-right" size="1rem" />
-            </Button>
-        {/each}
-    </div>
+	<div class="tags">
+		{#each tags as tag, i}
+			<Button primary on:click={() => removeTag(i)}>
+				<span>{tag}</span>
+				<X slot="icon-right" size="1rem" />
+			</Button>
+		{/each}
+	</div>
 {/if}
 
 <style lang="scss">
-    .tags {
+	.tags {
 		margin-top: 0.75rem;
 
 		display: flex;

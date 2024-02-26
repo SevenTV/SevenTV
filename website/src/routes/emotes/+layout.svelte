@@ -22,7 +22,10 @@
 <div class="side-bar-layout">
 	{#if $sideBar}
 		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
-			<Button style="position: absolute; top: 1rem; right: 1rem;" on:click={() => ($sideBar = false)}>
+			<Button
+				style="position: absolute; top: 1rem; right: 1rem;"
+				on:click={() => ($sideBar = false)}
+			>
 				<ArrowLineLeft slot="icon" />
 			</Button>
 			<h1>Directory</h1>

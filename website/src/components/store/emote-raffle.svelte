@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from "../button.svelte";
-import EmotePreview from "../emote-preview.svelte";
+	import EmotePreview from "../emote-preview.svelte";
 	import StoreSection from "./store-section.svelte";
 	import { CaretLeft, CaretRight, Crown, Ticket } from "phosphor-svelte";
 </script>

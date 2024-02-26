@@ -39,7 +39,10 @@
 	<div use:mouseTrap={onClose}>
 		<slot />
 		{#if showClose}
-			<Button on:click={() => dispatch("close")} style="position: absolute; top: 0.5rem; right: 0.5rem;">
+			<Button
+				on:click={() => dispatch("close")}
+				style="position: absolute; top: 0.5rem; right: 0.5rem;"
+			>
 				<X slot="icon" />
 			</Button>
 		{/if}

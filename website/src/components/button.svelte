@@ -13,27 +13,27 @@
 
 	export let primary: boolean = false;
 	export let secondary: boolean = false;
-    
-    export let big: boolean = false;
 
-    export let hideOnMobile: boolean = false;
-    export let hideOnDesktop: boolean = false;
+	export let big: boolean = false;
+
+	export let hideOnMobile: boolean = false;
+	export let hideOnDesktop: boolean = false;
 </script>
 
 {#if href}
 	<a
-        {href}
-        {...$$restProps}
-        class="button"
+		{href}
+		{...$$restProps}
+		class="button"
 		class:primary
 		class:secondary
-        class:big
-        class:has-text={$$slots.default}
+		class:big
+		class:has-text={$$slots.default}
 		class:icon-only={!$$slots.default && ($$slots.icon || $$slots["icon-right"])}
 		class:icon-left={$$slots.icon}
 		class:icon-right={$$slots["icon-right"]}
-        class:hide-on-mobile={hideOnMobile}
-        class:hide-on-desktop={hideOnDesktop}
+		class:hide-on-mobile={hideOnMobile}
+		class:hide-on-desktop={hideOnDesktop}
 	>
 		<slot name="icon" />
 		<slot />
@@ -42,17 +42,17 @@
 {:else}
 	<button
 		on:click
-        {...$$restProps}
-        class="button"
+		{...$$restProps}
+		class="button"
 		class:primary
 		class:secondary
-        class:big
-        class:has-text={$$slots.default}
+		class:big
+		class:has-text={$$slots.default}
 		class:icon-only={!$$slots.default && ($$slots.icon || $$slots["icon-right"])}
 		class:icon-left={$$slots.icon}
 		class:icon-right={$$slots["icon-right"]}
-        class:hide-on-mobile={hideOnMobile}
-        class:hide-on-desktop={hideOnDesktop}
+		class:hide-on-mobile={hideOnMobile}
+		class:hide-on-desktop={hideOnDesktop}
 	>
 		<slot name="icon" />
 		<slot />
@@ -61,79 +61,80 @@
 {/if}
 
 <style lang="scss">
-    a, button {
-        cursor: pointer;
-        font: inherit;
-        border: none;
-        color: var(--text);
-        font-size: 0.875rem;
-        font-weight: 600;
-        padding: 0.5rem;
-        border-radius: 0.5rem;
-        transition: background-color 0.1s;
-        white-space: nowrap;
-        user-select: none;
+	a,
+	button {
+		cursor: pointer;
+		font: inherit;
+		border: none;
+		color: var(--text);
+		font-size: 0.875rem;
+		font-weight: 600;
+		padding: 0.5rem;
+		border-radius: 0.5rem;
+		transition: background-color 0.1s;
+		white-space: nowrap;
+		user-select: none;
 
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 
-        &.has-text {
-            padding: 0.5rem 1rem;
+		&.has-text {
+			padding: 0.5rem 1rem;
 
-            &.icon-left {
-                padding-left: 0.75rem;
-            }
+			&.icon-left {
+				padding-left: 0.75rem;
+			}
 
-            &.icon-right {
-                padding-right: 0.75rem;
-            }
-        }
+			&.icon-right {
+				padding-right: 0.75rem;
+			}
+		}
 
-        &.big {
-            padding: 0.75rem;
-            font-weight: 500;
+		&.big {
+			padding: 0.75rem;
+			font-weight: 500;
 
-            gap: 0.75rem;
-        }
-        
-        &.primary {
-            background-color: var(--primary);
+			gap: 0.75rem;
+		}
 
-            &:disabled {
-                background-color: var(--primary-disabled);
-            }
-        }
+		&.primary {
+			background-color: var(--primary);
 
-        &:hover,
-        &:focus-visible {
-            text-decoration: none;
-            background-color: var(--primary-hover);
-        }
+			&:disabled {
+				background-color: var(--primary-disabled);
+			}
+		}
 
-        &:active {
-            background-color: var(--primary-active);
-        }
+		&:hover,
+		&:focus-visible {
+			text-decoration: none;
+			background-color: var(--primary-hover);
+		}
 
-        &:disabled {
-            cursor: not-allowed;
-        }
+		&:active {
+			background-color: var(--primary-active);
+		}
 
-        &.secondary {
-            background-color: var(--secondary);
+		&:disabled {
+			cursor: not-allowed;
+		}
 
-            &:hover,
-            &:focus-visible {
-                background-color: var(--secondary-hover);
-            }
+		&.secondary {
+			background-color: var(--secondary);
 
-            &:active {
-                background-color: var(--secondary-active);
-            }
+			&:hover,
+			&:focus-visible {
+				background-color: var(--secondary-hover);
+			}
 
-            &:disabled {
-                background-color: var(--secondary-disabled);
-            }
-        }
-    }
+			&:active {
+				background-color: var(--secondary-active);
+			}
+
+			&:disabled {
+				background-color: var(--secondary-disabled);
+			}
+		}
+	}
 </style>

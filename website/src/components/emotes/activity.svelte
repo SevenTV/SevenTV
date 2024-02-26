@@ -55,7 +55,7 @@
 			{:else if activity.kind === "approve"}
 				<Check color="var(--secondary)" />
 			{:else}
-				<Plus  color="var(--secondary)" />
+				<Plus color="var(--secondary)" />
 			{/if}
 		</IconContext>
 
