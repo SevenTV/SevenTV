@@ -2,7 +2,7 @@
 	import { X } from "phosphor-svelte";
 	import Button from "./button.svelte";
 
-    let tags = ["lorem", "ipsum"];
+    export let tags = ["lorem", "ipsum"];
 
     function removeTag(i: number) {
         tags.splice(i, 1);

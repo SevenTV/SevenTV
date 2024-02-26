@@ -1,8 +1,6 @@
-<script lang="ts">
-	export let name: string;
-</script>
-
-<span>{name}</span>
+<span>
+	<slot />
+</span>
 
 <style lang="scss">
 	span {

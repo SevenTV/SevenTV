@@ -60,7 +60,7 @@
 			</div>
 			<div class="tags">
 				{#each data.tags as tag}
-					<Tag name={tag} />
+					<Tag>{tag}</Tag>
 				{/each}
 			</div>
 			<div class="previews">

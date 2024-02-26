@@ -5,9 +5,20 @@
 	import { UploadSimple } from "phosphor-svelte";
 	import { showUploadDialog } from "$/lib/stores";
 	import TagsInput from "../tags-input.svelte";
+	import Button from "../button.svelte";
+	import ImagePreview from "../image-preview.svelte";
+	import Tag from "../emotes/tag.svelte";
 
 	let fileInput: HTMLInputElement;
 	let dragOver = false;
+
+	let name: string;
+	let tags: string[] = [];
+	let files: FileList;
+
+	function close() {
+		$showUploadDialog = false;
+	}
 
 	function browse() {
 		fileInput.click();
@@ -20,11 +31,6 @@
 
 	function onDragOver(e: DragEvent) {
 		e.preventDefault();
-	}
-
-	function onFormatsClick(e: MouseEvent) {
-		alert("Supported formats: PNG");
-		e.stopPropagation();
 	}
 
 	let messages: string[] = [];
@@ -40,39 +46,66 @@
     }
 </script>
 
-<Dialog width={50} on:close={() => ($showUploadDialog = false)}>
+<Dialog width={60} on:close={close}>
     <div class="grid">
 		<h1 class="heading">Upload emote</h1>
-        <section class="upload">
-            <button class="file" class:drag-over={dragOver} on:click={browse} on:drop={onDrop} on:dragover={onDragOver} on:dragenter={() => (dragOver = true)} on:dragleave={() => (dragOver = false)}>
-                <input type="file" hidden bind:this={fileInput} />
-                <UploadSimple />
-                <h2>Drop your emote here, or <button>Browse</button></h2>
-                <span class="details">
-                    Maximum of 7MB
-                    <br />
-                    Resolution below 1000x1000 px
-                    <br />
-                    Frames below 1000
-                </span>
-                <button on:click={onFormatsClick}>Supported formats</button>
-            </button>
+        <section class="upload" class:preview={files && files[0]}>
+			{#if files && files[0]}
+				<span class="name">{name || "Untitled"}</span>
+				<div class="tags">
+					{#each tags as tag}
+						<Tag>{tag}</Tag>
+					{/each}
+				</div>
+				<div class="previews">
+					<ImagePreview size={32} />
+					<ImagePreview size={64} />
+					<ImagePreview size={96} />
+					<ImagePreview size={128} />
+				</div>
+			{:else}
+				<div class="file" role="button" tabindex="-1" class:drag-over={dragOver} on:drop={onDrop} on:dragover={onDragOver} on:dragenter={() => (dragOver = true)} on:dragleave={() => (dragOver = false)}>
+					<input type="file" hidden bind:this={fileInput} bind:files={files} />
+					<UploadSimple size="1.5rem" />
+					<h2>Drop & drop to upload, or</h2>
+					<Button primary on:click={browse}>
+						Browse Files
+					</Button>
+					<span class="details">
+						7MB max file size
+						<br />
+						1000 x 1000px max resolution
+						<br />
+						1000 frames max
+					</span>
+				</div>
+			{/if}
         </section>
-        <section class="inputs">
-            <div class="field">
-                <span class="label">Emote Name</span>
-                <input type="text" placeholder="Enter text" />
-            </div>
-            <div class="field">
-                <span class="label">Tags</span>
-                <TagsInput />
-            </div>
-            <div class="field">
-                <span class="label">Emote Attribution</span>
-                <SearchBar grow />
-            </div>
-            <Checkbox label="Zero-Width" />
-            <Checkbox label="Private" />
+        <section class="left">
+			<div class="inputs">
+				<div class="field">
+					<span class="label">Emote Name</span>
+					<input type="text" placeholder="Enter text" bind:value={name} />
+				</div>
+				<div class="field">
+					<span class="label">Tags</span>
+					<TagsInput bind:tags={tags} />
+				</div>
+				<div class="field">
+					<span class="label">Emote Attribution</span>
+					<SearchBar grow />
+				</div>
+				<Checkbox label="Zero-Width" />
+				<Checkbox label="Private" />
+			</div>
+			<div class="buttons">
+				<Button primary on:click={close}>
+					Discard
+				</Button>
+				<Button secondary>
+					Upload
+				</Button>
+			</div>
         </section>
         <section class="chat">
             <div class="messages">
@@ -90,9 +123,9 @@
 <style lang="scss">
 	.grid {
 		display: grid;
-		grid-template-areas: "heading heading" "inputs upload" "inputs chat";
-		grid-template-columns: 22.5rem 1fr;
-		grid-template-rows: auto 1fr 1fr;
+		grid-template-areas: "heading heading" "left upload" "left chat";
+		grid-template-columns: 18.5rem 1fr;
+		grid-template-rows: auto 17.5rem 1fr;
 		gap: 1rem;
 
 		height: 100%;
@@ -102,7 +135,8 @@
 	.heading {
 		grid-area: heading;
 
-		font-size: 1.2rem;
+		font-size: 1.25rem;
+		font-weight: 600;
 	}
 
 	section {
@@ -123,22 +157,21 @@
 
 	.upload {
 		grid-area: upload;
-		padding: 1.5rem;
+		padding: 1.25rem;
 
 		.file {
 			width: 100%;
 			height: 100%;
 			border: 1px dashed var(--text-lighter);
 			border-radius: 0.5rem;
-			padding: 1rem 2rem;
+			padding: 1rem 1.25rem;
 
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			justify-content: center;
-			gap: 1rem;
+			gap: 0.75rem;
 
-			color: var(--text-lighter);
 			text-align: center;
 
 			h2 {
@@ -152,18 +185,8 @@
 			}
 
 			.details {
-				font-size: 0.875rem;
-			}
-
-			button {
-				color: var(--secondary);
-				font-weight: 500;
-				padding: 0.5rem;
-				margin: -0.5rem;
-				
-				&:hover, &:focus-visible {
-					text-decoration: underline;
-				}
+				color: var(--text-lighter);
+				font-size: 0.6875rem;
 			}
 
 			&.drag-over {
@@ -173,20 +196,60 @@
 				background-color: var(--bg-light);
 			}
 		}
+
+		&.preview {
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			align-items: center;
+			gap: 0.5rem;
+
+			.name {
+				font-size: 1.25rem;
+				font-weight: 600;
+			}
+
+			.tags {
+				display: flex;
+				gap: 0.5rem;
+				flex-wrap: wrap;
+			}
+
+			.previews {
+				display: flex;
+				justify-content: center;
+				align-items: flex-end;
+				gap: 1rem;
+			}
+		}
 	}
 
-	.inputs {
-		grid-area: inputs;
+	.left {
+		grid-area: left;
+		padding: 1rem 1.25rem;
 
-		padding: 2rem;
 		display: flex;
 		flex-direction: column;
+		justify-content: space-between;
 		gap: 1rem;
+
+		.inputs {
+			display: flex;
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.buttons {
+			display: flex;
+			gap: 0.5rem;
+			justify-content: flex-end;
+			flex-wrap: wrap;
+		}
 	}
 
 	.chat {
 		grid-area: chat;
-		padding: 0.6rem;
+		padding: 1rem;
 		min-height: 15rem;
 
 		display: flex;
@@ -197,7 +260,6 @@
             font-size: 0.8125rem;
             font-weight: 400;
 
-            border-radius: 0.25rem;
             border-color: var(--border);
             padding-block: 0.6rem;
             background-color: var(--bg-medium);
@@ -233,9 +295,8 @@
 
 	@media screen and (max-width: 960px) {
 		.grid {
-			grid-template-areas: "heading" "upload" "inputs" "chat";
+			grid-template-areas: "heading" "upload" "left" "chat";
 			grid-template-columns: 1fr;
-			// grid-template-rows: repeat(4, auto);
 		}
 	}
 </style>

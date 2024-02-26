@@ -65,10 +65,9 @@
 			background-color: var(--bg-dark);
 		}
 
-		backdrop-filter: blur(2rem);
-
 		&::backdrop {
 			background-color: rgba(0, 0, 0, 0.5);
+			backdrop-filter: blur(0.2rem);
 		}
 	}
 
