@@ -25,6 +25,7 @@ pub struct XEntitlementData {}
         (status = 201, description = "Entitlement Created"),
     ),
 )]
+#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/entitlements/entitlements.create.go#L34
 pub async fn create_entitlement(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     todo!()

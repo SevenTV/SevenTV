@@ -30,6 +30,7 @@ pub struct User {}
         ("id" = String, Path, description = "The ID of the user"),
     ),
 )]
+#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.by-id.go#L44
 pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     todo!()
@@ -49,6 +50,7 @@ pub struct UserProfilePicture {}
         ("id" = String, Path, description = "The ID of the user"),
     ),
 )]
+#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.pictures.go#L61
 pub async fn get_user_profile_picture_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     todo!()
@@ -64,6 +66,7 @@ pub async fn get_user_profile_picture_by_id(req: hyper::Request<Incoming>) -> Re
         ("id" = String, Path, description = "The ID of the user"),
     ),
 )]
+#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.presence.write.go#L41
 pub async fn get_user_presences_by_platform(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     todo!()
@@ -81,6 +84,7 @@ pub async fn get_user_presences_by_platform(req: hyper::Request<Incoming>) -> Re
         ("platform_id" = String, Path, description = "The ID of the user on the platform"),
     ),
 )]
+#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.by-connection.go#L42
 pub async fn get_user_by_platform_user_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     todo!()
@@ -97,6 +101,7 @@ pub async fn get_user_by_platform_user_id(req: hyper::Request<Incoming>) -> Resu
         ("id" = String, Path, description = "The ID of the user"),
     ),
 )]
+#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.delete.go#L33
 pub async fn delete_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     todo!()
@@ -117,6 +122,7 @@ pub struct UserConnection {}
         ("connection_id" = String, Path, description = "The ID of the connection"),
     ),
 )]
+#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.update-connection.go#L34
 pub async fn update_user_connection_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     todo!()

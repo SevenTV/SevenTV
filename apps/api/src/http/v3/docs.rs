@@ -21,8 +21,9 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
         (status = 200, description = "Returns swagger documentation", content_type = "application/json"),
     ),
 )]
+#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/docs/docs.go#L24
-pub async fn get_docs(_: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
+pub async fn get_docs(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
     let docs = ApiDoc::openapi().to_pretty_json().unwrap();
 
     Ok(hyper::Response::builder()
