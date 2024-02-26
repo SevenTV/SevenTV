@@ -4,6 +4,7 @@
 	import SearchBar from "$/components/search-bar.svelte";
 	import { UploadSimple } from "phosphor-svelte";
 	import { showUploadDialog } from "$/lib/stores";
+	import TagsInput from "../tags-input.svelte";
 
 	let fileInput: HTMLInputElement;
 	let dragOver = false;
@@ -58,19 +59,18 @@
             </button>
         </section>
         <section class="inputs">
-            <label>
-                Emote Name
+            <div class="field">
+                <span class="label">Emote Name</span>
                 <input type="text" placeholder="Enter text" />
-            </label>
-            <label>
-                Tags
-                <input type="text" placeholder="Enter text" />
-            </label>
-            <!-- svelte-ignore a11y-label-has-associated-control -->
-            <label>
-                Emote Attribution
+            </div>
+            <div class="field">
+                <span class="label">Tags</span>
+                <TagsInput />
+            </div>
+            <div class="field">
+                <span class="label">Emote Attribution</span>
                 <SearchBar grow />
-            </label>
+            </div>
             <Checkbox label="Zero-Width" />
             <Checkbox label="Private" />
         </section>
@@ -110,12 +110,14 @@
 		border-radius: 0.5rem;
 	}
 
-	label {
-		color: var(--text-lighter);
-		font-size: 0.75rem;
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
 
-		input, :global(search) {
-			margin-top: 0.25rem;
+		.label {
+			color: var(--text-lighter);
+			font-size: 0.75rem;
 		}
 	}
 
