@@ -6,7 +6,7 @@ use shared::http::Body;
 
 use crate::{global::Global, http::error::ApiError};
 
-pub fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
+pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
     Router::builder()
         .get("/{id}", get_user_by_id) 
         .get("/{id}/profile-picture", get_user_profile_picture_by_id)

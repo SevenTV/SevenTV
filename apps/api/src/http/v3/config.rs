@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use crate::{global::Global, http::error::ApiError};
 
-pub fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
+pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
     Router::builder()
         .get("/extension", get_extension)
         .get("/extension-nightly", get_extension_nightly)
