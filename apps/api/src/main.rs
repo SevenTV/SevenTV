@@ -9,6 +9,7 @@ mod config;
 mod global;
 mod health;
 mod metrics;
+mod http;
 
 #[global_allocator]
 static ALLOCATOR: Cap<tikv_jemallocator::Jemalloc> = Cap::new(tikv_jemallocator::Jemalloc, usize::max_value());
@@ -39,9 +40,11 @@ async fn main() {
 
 	let health_handle = tokio::spawn(health::run(global.clone()));
 	let metrics_handle = tokio::spawn(metrics::run(global.clone()));
+	let http_handle = tokio::spawn(http::run(global.clone()));
 
 	tokio::select! {
 		_ = signal.recv() => tracing::info!("received shutdown signal"),
+		r = http_handle => tracing::warn!("http server exited: {:?}", r),
 		r = health_handle => tracing::warn!("health server exited: {:?}", r),
 		r = metrics_handle => tracing::warn!("metrics server exited: {:?}", r),
 	}

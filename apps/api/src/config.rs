@@ -1,25 +1,22 @@
 use std::net::SocketAddr;
 
 use serde::Deserialize;
-use shared::config::TlsConfig;
+use shared::config::{Http, HttpCors};
 
 #[derive(Debug, Deserialize, config::Config)]
 #[serde(default)]
 pub struct Api {
-	/// API bind
-	pub bind: SocketAddr,
-	/// Max Listen Conn
-	pub listen_backlog: u32,
-	/// TLS configuration
-	pub tls: Option<TlsConfig>,
+	/// http options
+	pub http: Http,
+	/// cors options
+	pub cors: HttpCors,
 }
 
 impl Default for Api {
 	fn default() -> Self {
 		Self {
-			bind: SocketAddr::new([0, 0, 0, 0].into(), 3000),
-			listen_backlog: 128,
-			tls: None,
+			http: Http::new_with_bind(SocketAddr::from(([0, 0, 0, 0], 8080))),
+			cors: HttpCors::default(),
 		}
 	}
 }

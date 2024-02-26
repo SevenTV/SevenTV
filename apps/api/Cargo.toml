@@ -7,7 +7,7 @@ license = "Apache-2.0 with Commons Clause"
 [dependencies]
 tokio = { version = "1.35", features = ["full"] }
 scuffle-config = "0.0.1"
-scuffle-utils = { version = "0.0.5", features = ["http", "signal", "context", "prelude"] }
+scuffle-utils = { version = "0.1", features = ["http", "signal", "context", "prelude"] }
 serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 hyper = { version = "1", features = ["full"] }
@@ -40,6 +40,8 @@ tikv-jemallocator = { version = "0.5", features = ["background_threads"] }
 const-lru = "1"
 fnv = "1"
 pin-project = "1"
+thiserror = "1"
+utoipa = "4.2"
 
 shared = { workspace = true }
 

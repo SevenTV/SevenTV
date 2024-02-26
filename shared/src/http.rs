@@ -472,7 +472,7 @@ where
 
 			match err {
 				HandleSocketError::Http(err) => {
-					tracing::error!("http error: {err}");
+					tracing::error!("http error: {err:?}");
 				}
 				HandleSocketError::SocketAccept(err) => {
 					tracing::warn!("socket accept error: {err}");

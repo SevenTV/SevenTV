@@ -229,13 +229,16 @@ pub struct Http2 {
 	pub keep_alive_timeout: Duration,
 }
 
+// Default buffer size of 16KB
+const DEFAULT_SIZE: usize = 16 * 1024;
+
 impl Default for Http1 {
 	fn default() -> Self {
 		Self {
-			enabled: false,
+			enabled: true,
 			half_close: true,
 			keep_alive: true,
-			max_buf_size: 16 * 1024 * 1024,
+			max_buf_size: DEFAULT_SIZE,
 			writev: true,
 			header_read_timeout: None,
 		}
@@ -245,11 +248,11 @@ impl Default for Http1 {
 impl Default for Http2 {
 	fn default() -> Self {
 		Self {
-			enabled: true,
+			enabled: false,
 			max_concurrent_streams: 1024,
-			max_frame_size: Some(16 * 1024 * 1024),
-			max_header_list_size: 16 * 1024 * 1024,
-			max_send_buf_size: 16 * 1024 * 1024,
+			max_frame_size: Some(DEFAULT_SIZE as u32),
+			max_header_list_size: DEFAULT_SIZE as u32 + 1,
+			max_send_buf_size: DEFAULT_SIZE + 1,
 			initial_stream_window_size: None,
 			initial_connection_window_size: None,
 			adaptive_window: true,
