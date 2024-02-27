@@ -40,6 +40,18 @@ A good example for this rule is the FAQ section on the subscription store page. 
 
 Try to avoid inline styles. If you need to style a component, create a new class. We don't want our project to look like a Tailwind mess.
 
+### Avoid `!important`
+
+Try to avoid using `!important` in your styles. If you need to use it, it's likely that you're doing something wrong.
+
+### Avoid unnecessary wrapper elements
+
+Avoid unnecessary wrapper elements. If you can solve a problem without adding a new element, do so.
+
+### Use HTML5 elements instead of `div` elements
+
+Use HTML5 elements like `section`, `article`, `header`, `footer`, `nav`, `main`, `aside`, `time`, `progress`, `meter`, `details`, `summary`, `dialog`, `label`, ... instead of `div` elements.
+
 ### Use `kebab-case` for class names
 
 Use [`kebab-case`](https://developer.mozilla.org/en-US/docs/Glossary/Kebab_case) for class names.
