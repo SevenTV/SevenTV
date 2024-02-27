@@ -1,40 +1,39 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
-	import Activity from "$/components/emotes/activity.svelte";
 	import Tag from "$/components/emotes/tag.svelte";
 	import ImagePreview from "$/components/image-preview.svelte";
-	import TabLink from "$/components/profile/tab-link.svelte";
     import {
 		ArrowBendDownRight,
 		Plus,
 		FolderPlus,
 		NotePencil,
 		CaretDown,
-		Users,
-		ChartLineUp,
-		Graph,
-		ChatText,
 		GlobeSimple,
 		Flame,
 		StackSimple,
 	} from "phosphor-svelte";
+	import type { LayoutData } from "./$types";
+
+    export let data: LayoutData;
 </script>
 
 <svelte:head>
-    <title>emoteName - 7TV</title>
+    <title>{data.id} - 7TV</title>
 </svelte:head>
 
-<div class="grid">
+<div class="layout">
     <div>
         <div class="top-bar">
             <a href="/user/ayyybubu" class="user-info">
-                <img src="/test-profile-pic.jpeg" alt="profile" class="profile-picture" />
+                <img src="/test-profile-pic.jpeg" width="44" height="44" alt="profile" class="profile-picture" />
                 <span class="username">ayyybubu</span>
                 <div class="artists">
                     <ArrowBendDownRight size="0.75rem" color="var(--primary-light)" />
                     <a href="/user/ayyybubu" class="profile">
                         <img
                             src="/test-profile-pic.jpeg"
+                            width="16"
+                            height="16"
                             alt="ayyybubu"
                             title="ayyybubu"
                             class="artist-picture"
@@ -60,7 +59,7 @@
 
         <div class="emote-info">
             <div class="heading">
-                <h1>emoteName</h1>
+                <h1>{data.id}</h1>
                 <div class="tags">
                     <Tag>lorem</Tag>
                     <Tag>ipsum</Tag>
@@ -99,51 +98,22 @@
             </div>
         </div>
     </div>
-    <div class="activity">
-        <h2>Activity</h2>
-        <div class="activity-events">
-            <Activity activities={[]} />
-        </div>
-    </div>
     <div class="tabs">
-        <div class="links">
-            <TabLink title="Channels (1020)" href="/emotes/id">
-                <Users />
-                <svelte:fragment slot="active">
-                    <Users weight="fill" />
-                </svelte:fragment>
-            </TabLink>
-            <TabLink title="Statistics" href="/emotes/id/statistics">
-                <ChartLineUp />
-                <svelte:fragment slot="active">
-                    <ChartLineUp weight="fill" />
-                </svelte:fragment>
-            </TabLink>
-            <TabLink title="Suggested Emotes" href="/emotes/id/suggested-emotes">
-                <Graph />
-                <svelte:fragment slot="active">
-                    <Graph weight="fill" />
-                </svelte:fragment>
-            </TabLink>
-            <TabLink title="Mod Comments" href="/emotes/id/mod-comments">
-                <ChatText />
-                <svelte:fragment slot="active">
-                    <ChatText weight="fill" />
-                </svelte:fragment>
-            </TabLink>
-        </div>
         <slot />
     </div>
 </div>
 
 <style lang="scss">
-    .grid {
+    .layout {
+        width: 100%;
+        max-width: 80rem;
+        margin-inline: auto;
+
         padding: 1.25rem;
         min-height: 100%;
 
-        display: grid;
-        grid-template-columns: 3fr 1fr;
-        grid-template-rows: auto 1fr;
+        display: flex;
+        flex-direction: column;
         gap: 1rem;
 
         & > * {
@@ -255,30 +225,7 @@
         }
     }
 
-    .activity {
-        min-width: 22rem;
-
-        h2 {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-    }
-
     .tabs {
-        grid-column: 1 / -1;
-        position: relative;
-
-        .links {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-    }
-
-    @media screen and (max-width: 960px) {
-        .grid {
-            grid-template-columns: 1fr;
-            grid-template-rows: repeat(3, auto);
-        }
+        flex-grow: 1;
     }
 </style>

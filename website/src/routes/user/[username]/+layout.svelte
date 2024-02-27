@@ -3,7 +3,7 @@
 	import type { LayoutData } from "./$types";
 	import Expandable from "$/components/expandable.svelte";
 	import HideOn from "$/components/hide-on.svelte";
-	import TabLink from "$/components/profile/tab-link.svelte";
+	import TabLink from "$/components/tab-link.svelte";
 	import {
 		CaretDown,
 		ChatCircleText,
@@ -91,39 +91,27 @@
 			<div class="tabs">
 				<TabLink title="Active" href="/user/{data.username}">
 					<Lightning />
-					<svelte:fragment slot="active">
-						<Lightning weight="fill" />
-					</svelte:fragment>
+					<Lightning weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Uploaded" href="/user/{data.username}/uploaded">
 					<Upload />
-					<svelte:fragment slot="active">
-						<Upload weight="fill" />
-					</svelte:fragment>
+					<Upload weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets">
 					<FolderSimple />
-					<svelte:fragment slot="active">
-						<FolderSimple weight="fill" />
-					</svelte:fragment>
+					<FolderSimple weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics">
 					<PaintBrush />
-					<svelte:fragment slot="active">
-						<PaintBrush weight="fill" />
-					</svelte:fragment>
+					<PaintBrush weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Activity Log" href="/user/{data.username}/activity-log">
 					<Note />
-					<svelte:fragment slot="active">
-						<Note weight="fill" />
-					</svelte:fragment>
+					<Note weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments">
 					<ChatCircleText />
-					<svelte:fragment slot="active">
-						<ChatCircleText weight="fill" />
-					</svelte:fragment>
+					<ChatCircleText weight="fill" slot="active" />
 				</TabLink>
 			</div>
 			<Button href="/settings" hideOnMobile>

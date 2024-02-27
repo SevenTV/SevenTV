@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Logo from "$/components/icons/logo.svelte";
 	import SearchBar from "$/components/search-bar.svelte";
-	import Tabs from "./tabs.svelte";
+	import TopTabs from "./top-tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
 	import { user, showMobileMenu, showUploadDialog } from "$/lib/stores";
@@ -19,7 +19,7 @@
 			<Logo />
 		</a>
 		<HideOn mobile>
-			<Tabs
+			<TopTabs
 				tabs={[
 					{ name: "Emotes", pathname: "/emotes" },
 					{ name: "Discover", pathname: "/discover" },
