@@ -185,9 +185,8 @@
 
 		.tabs {
 			display: flex;
-			flex-wrap: wrap;
-			gap: 0.5rem;
-			user-select: none;
+			border-radius: 0.5rem;
+			background-color: var(--bg-light);
 
 			-ms-overflow-style: none;
 			scrollbar-width: none;

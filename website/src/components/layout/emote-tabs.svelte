@@ -12,7 +12,7 @@
 </script>
 
 <div class="links">
-    <TabLink title="Channels (1020)" href="/emotes/{id}" first>
+    <TabLink title="Channels (1020)" href="/emotes/{id}">
         <Users />
         <Users weight="fill" slot="active" />
     </TabLink>
@@ -28,7 +28,7 @@
         <Graph />
         <Graph weight="fill" slot="active" />
     </TabLink>
-    <TabLink title="Mod Comments" href="/emotes/{id}/mod-comments" last>
+    <TabLink title="Mod Comments" href="/emotes/{id}/mod-comments">
         <ChatText />
         <ChatText weight="fill" slot="active" />
     </TabLink>
@@ -39,5 +39,11 @@
         display: flex;
         border-radius: 0.5rem;
         background-color: var(--bg-light);
+
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        &::-webkit-scrollbar {
+            display: none;
+        }
     }
 </style>
