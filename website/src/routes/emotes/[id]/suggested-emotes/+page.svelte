@@ -10,7 +10,7 @@
 
 <style lang="scss">
 	.emotes {
-		margin-top: 2rem;
+		margin-top: 1rem;
 
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));

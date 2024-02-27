@@ -34,11 +34,19 @@
 
 	function onDrop(e: DragEvent) {
 		dragOver = false;
+		if (e.dataTransfer) {
+			files = e.dataTransfer.files;
+		}
 		e.preventDefault();
 	}
 
 	function onDragOver(e: DragEvent) {
+		dragOver = true;
 		e.preventDefault();
+	}
+
+	function onDragLeave() {
+		dragOver = false;
 	}
 
 	let messages: string[] = [];
@@ -92,8 +100,7 @@
 					class:drag-over={dragOver}
 					on:drop={onDrop}
 					on:dragover={onDragOver}
-					on:dragenter={() => (dragOver = true)}
-					on:dragleave={() => (dragOver = false)}
+					on:dragleave={onDragLeave}
 				>
 					<input
 						type="file"

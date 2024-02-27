@@ -18,10 +18,10 @@
 
 		display: flex;
 		align-items: center;
-		gap: 0.62rem;
+		gap: 0.5rem;
 
 		border: 1px solid transparent;
-		border-radius: 0.25rem;
+		border-radius: 0.5rem;
 
 		&:hover,
 		&:focus-visible {

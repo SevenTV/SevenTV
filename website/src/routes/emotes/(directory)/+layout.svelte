@@ -30,11 +30,11 @@
 			</Button>
 			<h1>Directory</h1>
 			<div class="link-list">
-				<Button href="/emotes" big primary={$page.route.id?.startsWith("/emotes/(emotes)")}>
+				<Button href="/emotes" big primary={$page.route.id?.startsWith("/emotes/(directory)/(emotes)")}>
 					<Smiley slot="icon" />
 					Emotes
 				</Button>
-				<Button href="/emotes/sets" big primary={$page.route.id?.startsWith("/emotes/sets")}>
+				<Button href="/emotes/sets" big primary={$page.route.id?.startsWith("/emotes/(directory)/sets")}>
 					<FolderSimple slot="icon" />
 					Emote Sets
 				</Button>
