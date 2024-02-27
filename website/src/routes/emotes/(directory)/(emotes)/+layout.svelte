@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
-	import Tabs from "$/components/tabs.svelte";
+	import TabLink from "$/components/tab-link.svelte";
 	import { sideBar } from "$/lib/stores";
-	import { ArrowLineRight, FolderSimple, GridFour, GridNine } from "phosphor-svelte";
+	import { ArrowLineRight, Fire, FolderSimple, GlobeHemisphereWest, GridFour, GridNine, Trophy, Upload } from "phosphor-svelte";
 </script>
 
 <div class="nav-bar">
@@ -12,12 +12,24 @@
 				<ArrowLineRight slot="icon" />
 			</Button>
 		{/if}
-		<Tabs
-			tabs={[
-				{ name: "Top", pathname: "/emotes/top" },
-				{ name: "Trending", pathname: "/emotes" },
-			]}
-		/>
+		<div class="tabs">
+			<TabLink href="/emotes" title="Trending">
+				<Fire />
+				<Fire weight="fill" slot="active" />
+			</TabLink>
+			<TabLink href="/emotes/top" title="Top">
+				<Trophy />
+				<Trophy weight="fill" slot="active" />
+			</TabLink>
+			<TabLink href="/emotes/global" title="Global">
+				<GlobeHemisphereWest />
+				<GlobeHemisphereWest weight="fill" slot="active" />
+			</TabLink>
+			<TabLink href="/emotes/new" title="New">
+				<Upload />
+				<Upload weight="fill" slot="active" />
+			</TabLink>
+		</div>
 	</div>
 	<div class="buttons">
 		<Button primary hideOnMobile>
@@ -40,6 +52,13 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
+	}
+
+	.tabs {
+		display: flex;
+		align-items: center;
+		background-color: var(--bg-light);
+		border-radius: 0.5rem;
 	}
 
 	.buttons {
