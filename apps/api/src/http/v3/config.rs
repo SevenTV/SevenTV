@@ -10,7 +10,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 
 #[derive(utoipa::OpenApi)]
-#[openapi(paths(get_extension, get_extension_nightly,), components(schemas(ExtensionConfig),))]
+#[openapi(paths(get_extension, get_extension_nightly), components(schemas(ExtensionConfig)))]
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {

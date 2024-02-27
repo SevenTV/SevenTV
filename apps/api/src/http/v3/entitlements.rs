@@ -10,7 +10,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 
 #[derive(utoipa::OpenApi)]
-#[openapi(paths(create_entitlement,), components(schemas(XEntitlementData),))]
+#[openapi(paths(create_entitlement), components(schemas(XEntitlementData)))]
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {

@@ -11,7 +11,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 
 #[derive(OpenApi)]
-#[openapi(paths(get_emote_set_by_id,), components(schemas(EmoteSet),))]
+#[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSet)))]
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {

@@ -19,7 +19,7 @@ use crate::http::error::ApiError;
 		delete_user_by_id,
 		update_user_connection_by_id,
 	),
-	components(schemas(User, UserProfilePicture, UserConnection),)
+	components(schemas(User, UserProfilePicture, UserConnection))
 )]
 pub struct Docs;
 
