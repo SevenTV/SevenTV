@@ -9,8 +9,8 @@
 		NotePencil,
 		CaretDown,
 		GlobeSimple,
-		Flame,
 		StackSimple,
+		Fire,
 	} from "phosphor-svelte";
 	import type { LayoutData } from "./$types";
 
@@ -44,15 +44,15 @@
             <div class="flags">
                 <span class="flag">
                     <GlobeSimple size="1rem" />
-                    Global
+                    <span class="hide-on-mobile">Global</span>
                 </span>
                 <span class="flag">
-                    <Flame size="1rem" />
-                    Trending
+                    <Fire size="1rem" />
+                    <span class="hide-on-mobile">Trending</span>
                 </span>
                 <span class="flag">
                     <StackSimple size="1rem" />
-                    Overlay
+                    <span class="hide-on-mobile">Overlay</span>
                 </span>
             </div>
         </div>
@@ -75,18 +75,18 @@
             <div class="buttons">
                 <Button secondary>
                     <Plus slot="icon" />
-                    <span>
-                        Use
-                        <span class="hide-on-mobile">Emote</span>
-                    </span>
+                    Use Emote
                 </Button>
                 <Button primary>
                     <FolderPlus slot="icon" />
                     Add to...
                 </Button>
-                <Button primary>
+                <Button primary hideOnMobile>
                     <NotePencil slot="icon" />
                     Edit
+                </Button>
+                <Button primary>
+                    <NotePencil slot="icon" />
                 </Button>
                 <Button primary hideOnMobile>
                     More
@@ -227,5 +227,19 @@
 
     .tabs {
         flex-grow: 1;
+    }
+
+    @media screen and (max-width: 960px) {
+        .layout {
+            padding: 0.5rem;
+        }
+
+        .emote-info .previews {
+            gap: 0.75rem;
+        }
+
+        .flags .flag {
+            padding: 0.3rem 0.5rem;
+        }
     }
 </style>

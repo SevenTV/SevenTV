@@ -12,23 +12,23 @@
 </script>
 
 <div class="links">
-    <TabLink title="Channels (1020)" href="/emotes/{id}">
+    <TabLink title="Channels (1020)" href="/emotes/{id}" responsive>
         <Users />
         <Users weight="fill" slot="active" />
     </TabLink>
-    <TabLink title="Activity" href="/emotes/{id}/activity">
+    <TabLink title="Activity" href="/emotes/{id}/activity" responsive>
         <Pulse />
         <Pulse weight="fill" slot="active" />
     </TabLink>
-    <TabLink title="Statistics" href="/emotes/{id}/statistics">
+    <TabLink title="Statistics" href="/emotes/{id}/statistics" responsive>
         <ChartLineUp />
         <ChartLineUp weight="fill" slot="active" />
     </TabLink>
-    <TabLink title="Suggested Emotes" href="/emotes/{id}/suggested-emotes">
+    <TabLink title="Suggested Emotes" href="/emotes/{id}/suggested-emotes" responsive>
         <Graph />
         <Graph weight="fill" slot="active" />
     </TabLink>
-    <TabLink title="Mod Comments" href="/emotes/{id}/mod-comments">
+    <TabLink title="Mod Comments" href="/emotes/{id}/mod-comments" responsive>
         <ChatText />
         <ChatText weight="fill" slot="active" />
     </TabLink>

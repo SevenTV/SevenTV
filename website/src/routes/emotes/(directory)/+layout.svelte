@@ -1,75 +1,80 @@
 <script lang="ts">
 	import Expandable from "$/components/expandable.svelte";
-	import { page } from "$app/stores";
-	import { fly } from "svelte/transition";
-	import { sideBar } from "$/lib/stores";
 	import Checkbox from "$/components/checkbox.svelte";
 	import Select from "$/components/select.svelte";
 	import {
-		ArrowLineLeft,
 		Smiley,
 		FolderSimple,
 		SortAscending,
 		SortDescending,
-		X,
+		BookmarkSimple,
 	} from "phosphor-svelte";
 	import Button from "$/components/button.svelte";
 	import TagsInput from "$/components/tags-input.svelte";
+	import TabLink from "$/components/tab-link.svelte";
 
 	let sortAsc = false;
+
+	function menuMatcher(id: string | null, _url: URL, href: string) {
+		switch (href) {
+			case "/emotes":
+				return id?.startsWith("/emotes/(directory)/(emotes)") ?? false;
+			case "/emotes/sets":
+				return id?.startsWith("/emotes/(directory)/sets") ?? false;
+			case "/emotes/bookmarked":
+				return id?.startsWith("/emotes/(directory)/bookmarked") ?? false;
+		}
+		return false;
+	}
 </script>
 
 <div class="side-bar-layout">
-	{#if $sideBar}
-		<aside class="side-bar" transition:fly={{ x: -16 * 16, duration: 200, opacity: 1 }}>
-			<Button
-				style="position: absolute; top: 1rem; right: 1rem;"
-				on:click={() => ($sideBar = false)}
-			>
-				<ArrowLineLeft slot="icon" />
-			</Button>
-			<h1>Directory</h1>
-			<div class="link-list">
-				<Button href="/emotes" big primary={$page.route.id?.startsWith("/emotes/(directory)/(emotes)")}>
-					<Smiley slot="icon" />
-					Emotes
-				</Button>
-				<Button href="/emotes/sets" big primary={$page.route.id?.startsWith("/emotes/(directory)/sets")}>
-					<FolderSimple slot="icon" />
-					Emote Sets
+	<aside class="side-bar">
+		<h1>Directory</h1>
+		<div class="link-list">
+			<TabLink href="/emotes" title="Emotes" big matcher={menuMatcher}>
+				<Smiley />
+				<Smiley width="fill" slot="active" />
+			</TabLink>
+			<TabLink href="/emotes/sets" title="Emote Sets" big matcher={menuMatcher}>
+				<FolderSimple />
+				<FolderSimple width="fill" slot="active" />
+			</TabLink>
+			<TabLink href="/emotes/bookmarked" title="Bookmarked" big matcher={menuMatcher}>
+				<BookmarkSimple />
+				<BookmarkSimple width="fill" slot="active" />
+			</TabLink>
+		</div>
+		<hr />
+		<Expandable title="Sorting">
+			<div class="sorting">
+				<Select options={["Name", "Date"]} grow />
+				<Button primary on:click={() => (sortAsc = !sortAsc)}>
+					<svelte:fragment slot="icon">
+						{#if sortAsc}
+							<SortAscending />
+						{:else}
+							<SortDescending />
+						{/if}
+					</svelte:fragment>
 				</Button>
 			</div>
-			<hr />
-			<Expandable title="Sorting">
-				<div class="sorting">
-					<Select options={["Name", "Date"]} grow />
-					<Button primary on:click={() => (sortAsc = !sortAsc)}>
-						<svelte:fragment slot="icon">
-							{#if sortAsc}
-								<SortAscending />
-							{:else}
-								<SortDescending />
-							{/if}
-						</svelte:fragment>
-					</Button>
-				</div>
-			</Expandable>
-			<Expandable title="Tags">
-				<TagsInput />
-			</Expandable>
-			<Expandable title="Filters">
-				<div class="filters">
-					<Checkbox label="Zero-Width" />
-					<Checkbox label="Animated" />
-					<Checkbox label="Exact Match" />
-					<Checkbox label="Case Sensitive" />
-					<Checkbox label="Ignore Tags" />
-					<Checkbox label="Personal Use" />
-				</div>
-			</Expandable>
-			<Expandable title="Ratio">Ratio</Expandable>
-		</aside>
-	{/if}
+		</Expandable>
+		<Expandable title="Tags">
+			<TagsInput />
+		</Expandable>
+		<Expandable title="Filters">
+			<div class="filters">
+				<Checkbox label="Zero-Width" />
+				<Checkbox label="Animated" />
+				<Checkbox label="Exact Match" />
+				<Checkbox label="Case Sensitive" />
+				<Checkbox label="Ignore Tags" />
+				<Checkbox label="Personal Use" />
+			</div>
+		</Expandable>
+		<Expandable title="Ratio">Ratio</Expandable>
+	</aside>
 	<div class="content">
 		<slot />
 	</div>

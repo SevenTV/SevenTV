@@ -56,6 +56,9 @@
 
 	.name {
 		font-weight: 500;
+		max-width: 90%;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.user {

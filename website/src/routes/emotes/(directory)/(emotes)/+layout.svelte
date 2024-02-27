@@ -1,35 +1,27 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { sideBar } from "$/lib/stores";
-	import { ArrowLineRight, Fire, FolderSimple, GlobeHemisphereWest, GridFour, GridNine, Trophy, Upload } from "phosphor-svelte";
+	import { Fire, FolderSimple, GlobeHemisphereWest, GridFour, GridNine, Trophy, Upload } from "phosphor-svelte";
 </script>
 
 <div class="nav-bar">
-	<div class="buttons">
-		{#if !$sideBar}
-			<Button on:click={() => ($sideBar = true)}>
-				<ArrowLineRight slot="icon" />
-			</Button>
-		{/if}
-		<div class="tabs">
-			<TabLink href="/emotes" title="Trending">
-				<Fire />
-				<Fire weight="fill" slot="active" />
-			</TabLink>
-			<TabLink href="/emotes/top" title="Top">
-				<Trophy />
-				<Trophy weight="fill" slot="active" />
-			</TabLink>
-			<TabLink href="/emotes/global" title="Global">
-				<GlobeHemisphereWest />
-				<GlobeHemisphereWest weight="fill" slot="active" />
-			</TabLink>
-			<TabLink href="/emotes/new" title="New">
-				<Upload />
-				<Upload weight="fill" slot="active" />
-			</TabLink>
-		</div>
+	<div class="tabs">
+		<TabLink href="/emotes" title="Trending" responsive>
+			<Fire />
+			<Fire weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/top" title="Top" responsive>
+			<Trophy />
+			<Trophy weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/global" title="Global" responsive>
+			<GlobeHemisphereWest />
+			<GlobeHemisphereWest weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/new" title="New" responsive>
+			<Upload />
+			<Upload weight="fill" slot="active" />
+		</TabLink>
 	</div>
 	<div class="buttons">
 		<Button primary hideOnMobile>
