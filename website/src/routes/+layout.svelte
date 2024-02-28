@@ -1,6 +1,6 @@
 <script lang="ts">
 	import "$/styles/fonts.scss";
-	import "$/styles/colors.scss";
+	import "$/styles/variables.scss";
 	import "$/styles/global.scss";
 	import TopNav from "$/components/nav/top-nav.svelte";
 	import { showMobileMenu, showUploadDialog } from "$/lib/stores";

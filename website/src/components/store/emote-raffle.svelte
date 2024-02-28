@@ -31,7 +31,7 @@
 
 <style lang="scss">
 	.header {
-		color: var(--text-lighter);
+		color: var(--text-light);
 		font-size: 0.875rem;
 		font-weight: 500;
 	}

@@ -15,8 +15,7 @@
 	--bg-light: #141414;
 
 	--text: #ffffff;
-	--text-light: #858585;
-	--text-lighter: #9c9c9c;
+	--text-light: #9c9c9c;
 	--border: #313131;
 
 	--error: #f6412d;
@@ -28,4 +27,12 @@
 	--subscriber-bg: #fea0001a;
 
 	--subscriber-accent: #e099fa;
+
+	--emote-preview-size: 10rem;
+}
+
+@media screen and (max-width: 960px) {
+	:root {
+		--emote-preview-size: 8rem;
+	}
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { X } from "phosphor-svelte";
+	import { Tag, X } from "phosphor-svelte";
 	import Button from "./button.svelte";
+	import SearchBar from "./search-bar.svelte";
 
 	export let tags = ["lorem", "ipsum"];
 
@@ -20,13 +21,15 @@
 	}
 </script>
 
-<input type="text" placeholder="Add tags" bind:value={tagInput} on:keypress={onTagInput} />
+<SearchBar placeholder="Enter tags" bind:value={tagInput} on:keypress={onTagInput} grow>
+	<Tag />
+</SearchBar>
 {#if tags && tags.length > 0}
 	<div class="tags">
 		{#each tags as tag, i}
 			<Button primary on:click={() => removeTag(i)}>
 				<span>{tag}</span>
-				<X slot="icon-right" size="1rem" />
+				<X size="1rem" />
 			</Button>
 		{/each}
 	</div>
@@ -42,7 +45,8 @@
 		flex-wrap: wrap;
 
 		& > :global(.button) {
-			padding: 0.4rem 0.75rem 0.4rem 1rem;
+			font-size: 0.875rem;
+			padding: 0.22rem 0.5rem 0.22rem 0.62rem;
 			font-weight: 500;
 			max-width: 100%;
 		}

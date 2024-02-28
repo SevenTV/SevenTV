@@ -15,8 +15,8 @@
 		color: var(--text);
 		text-decoration: none;
 
-		width: 10rem;
-		height: 10rem;
+		width: var(--emote-preview-size);
+		height: var(--emote-preview-size);
 
 		display: flex;
 		flex-direction: column;
@@ -46,8 +46,8 @@
 	}
 
 	.image {
-		width: 5rem;
-		height: 5rem;
+		width: calc(var(--emote-preview-size) / 2);
+		height: calc(var(--emote-preview-size) / 2);
 		margin-bottom: 0.5rem;
 
 		background-color: var(--primary);

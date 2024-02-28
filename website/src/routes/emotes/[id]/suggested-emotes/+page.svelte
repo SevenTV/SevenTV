@@ -42,7 +42,7 @@
 		margin-top: 1.5rem;
 
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(var(--emote-preview-size), 1fr));
 		place-items: center;
 		gap: 1rem;
 	}

@@ -109,7 +109,7 @@
 						bind:this={fileInput}
 						bind:files
 					/>
-					<UploadSimple size="1.5rem" color="var(--text-lighter)" />
+					<UploadSimple size="1.5rem" color="var(--text-light)" />
 					<h2>Drop & drop to upload, or</h2>
 					<Button primary on:click={browse}>Browse Files</Button>
 					<span class="details">
@@ -192,7 +192,7 @@
 		gap: 0.25rem;
 
 		.label {
-			color: var(--text-lighter);
+			color: var(--text-light);
 			font-size: 0.75rem;
 		}
 	}
@@ -210,7 +210,7 @@
 		.file {
 			width: 100%;
 			height: 100%;
-			border: 1px dashed var(--text-lighter);
+			border: 1px dashed var(--text-light);
 			border-radius: 0.5rem;
 			padding: 1rem 1.25rem;
 
@@ -233,7 +233,7 @@
 			}
 
 			.details {
-				color: var(--text-lighter);
+				color: var(--text-light);
 				font-size: 0.6875rem;
 			}
 

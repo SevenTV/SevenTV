@@ -91,7 +91,7 @@
 		column-gap: 2rem;
 
 		.key {
-			color: var(--text-lighter);
+			color: var(--text-light);
 			font-size: 0.75rem;
 			font-weight: 500;
 		}

@@ -85,7 +85,7 @@
 
 		.time {
 			grid-area: time;
-			color: var(--text-lighter);
+			color: var(--text-light);
 		}
 	}
 

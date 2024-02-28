@@ -53,7 +53,7 @@
 			</span>
 		</div>
 		<div class="buttons">
-			<Button primary style="flex-grow: 1; justify-content: center;">
+			<Button secondary style="flex-grow: 1; justify-content: center;">
 				<Heart slot="icon" />
 				Follow
 			</Button>
@@ -162,7 +162,7 @@
 
 			.text {
 				font-weight: 400;
-				color: var(--text-lighter);
+				color: var(--text-light);
 			}
 		}
 
@@ -187,6 +187,7 @@
 			display: flex;
 			border-radius: 0.5rem;
 			background-color: var(--bg-light);
+			overflow: auto;
 
 			-ms-overflow-style: none;
 			scrollbar-width: none;
@@ -238,18 +239,8 @@
 			}
 		}
 
-		.content {
-			.header {
-				margin-bottom: 0.75rem;
-			}
-
-			.tabs {
-				gap: 0;
-				margin-right: -1rem;
-				padding-right: 1rem;
-				overflow-x: auto;
-				flex-wrap: nowrap;
-			}
+		.content .header {
+			margin-bottom: 0.75rem;
 		}
 	}
 </style>

@@ -79,7 +79,10 @@ input[type="text"] {
 }
 
 .side-bar-layout {
+	padding: 1.25rem;
+
 	display: flex;
+	gap: 1.25rem;
 	height: 100%;
 
 	& > .side-bar {
@@ -87,6 +90,7 @@ input[type="text"] {
 
 		background-color: var(--bg-medium);
 		padding: 1rem 1.25rem;
+		border-radius: 0.5rem;
 
 		display: flex;
 		flex-direction: column;
@@ -95,7 +99,6 @@ input[type="text"] {
 
 	& > .content {
 		flex-grow: 1;
-		padding: 1rem 2rem;
 	}
 }
 
@@ -107,28 +110,19 @@ input[type="text"] {
 			max-width: 16rem;
 			overflow: auto;
 		}
-
-		& > .content {
-			overflow: auto;
-		}
 	}
 }
 
 // Mobile
 @media screen and (max-width: 960px) {
 	.side-bar-layout {
+		padding: 0.5rem;
+
 		flex-direction: column;
 		overflow: auto;
 
 		& > .side-bar {
-			margin: 0.75rem 1rem;
-			margin-bottom: 0;
-			border-radius: 0.5rem;
 			padding: 1rem;
-		}
-
-		& > .content {
-			padding: 0.75rem 1rem;
 		}
 	}
 }

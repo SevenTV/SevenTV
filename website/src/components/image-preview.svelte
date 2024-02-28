@@ -38,7 +38,7 @@
 	}
 
 	.size-text {
-		color: var(--text-lighter);
+		color: var(--text-light);
 		font-size: 0.75rem;
 	}
 </style>

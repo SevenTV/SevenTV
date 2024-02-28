@@ -36,7 +36,9 @@
 		</Button>
 	</div>
 </div>
-<slot />
+<div class="emotes">
+	<slot />
+</div>
 
 <style lang="scss">
 	.nav-bar {
@@ -56,5 +58,16 @@
 	.buttons {
 		display: flex;
 		gap: 0.5rem;
+	}
+
+	.emotes {
+		overflow: auto;
+		margin-top: 1rem;
+
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(var(--emote-preview-size), 1fr));
+		justify-items: center;
+		align-items: center;
+		gap: 1rem;
 	}
 </style>

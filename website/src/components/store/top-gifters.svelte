@@ -74,7 +74,7 @@
 		font-weight: 500;
 
 		& > .rank {
-			color: var(--text-lighter);
+			color: var(--text-light);
 		}
 
 		& > .profile-picture {

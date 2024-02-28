@@ -26,7 +26,7 @@
 		{big}
 		draggable="false"
 		primary={active}
-		style={!active && "color: var(--text-lighter)"}
+		style={!active && "color: var(--text-light)"}
 		on:click={scrollIntoView}
 		hideOnMobile
 	>
@@ -44,7 +44,7 @@
 		{big}
 		draggable="false"
 		primary={active}
-		style={!active && "color: var(--text-lighter)"}
+		style={!active && "color: var(--text-light)"}
 		on:click={scrollIntoView}
 		hideOnDesktop
 	>
@@ -62,7 +62,7 @@
 		{big}
 		draggable="false"
 		primary={active}
-		style={!active && "color: var(--text-lighter)"}
+		style={!active && "color: var(--text-light)"}
 		on:click={scrollIntoView}
 	>
 		<svelte:fragment slot="icon">

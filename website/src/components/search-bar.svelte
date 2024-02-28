@@ -3,13 +3,18 @@
 
 	export let big: boolean = false;
 	export let grow: boolean = false;
+
+	export let placeholder: string = "Search";
+	export let value: string = "";
 </script>
 
 <search class:big class:grow>
 	<div class="icon">
-		<MagnifyingGlass />
+		<slot>
+			<MagnifyingGlass />
+		</slot>
 	</div>
-	<input type="text" placeholder="Search" />
+	<input type="text" placeholder={placeholder} bind:value={value} on:keypress />
 </search>
 
 <style lang="scss">

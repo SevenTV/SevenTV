@@ -8,6 +8,7 @@
 		SortAscending,
 		SortDescending,
 		BookmarkSimple,
+		PencilSimple,
 	} from "phosphor-svelte";
 	import Button from "$/components/button.svelte";
 	import TagsInput from "$/components/tags-input.svelte";
@@ -46,9 +47,12 @@
 			</TabLink>
 		</div>
 		<hr />
+		<Expandable title="Tags">
+			<TagsInput />
+		</Expandable>
 		<Expandable title="Sorting">
-			<div class="sorting">
-				<Select options={["Name", "Date"]} grow />
+			<div class="row">
+				<Select options={["Alphabetical", "Upload Date"]} grow />
 				<Button primary on:click={() => (sortAsc = !sortAsc)}>
 					<svelte:fragment slot="icon">
 						{#if sortAsc}
@@ -60,20 +64,23 @@
 				</Button>
 			</div>
 		</Expandable>
-		<Expandable title="Tags">
-			<TagsInput />
-		</Expandable>
 		<Expandable title="Filters">
 			<div class="filters">
-				<Checkbox label="Zero-Width" />
 				<Checkbox label="Animated" />
-				<Checkbox label="Exact Match" />
+				<Checkbox label="Static" />
+				<Checkbox label="Overlaying" />
 				<Checkbox label="Case Sensitive" />
-				<Checkbox label="Ignore Tags" />
-				<Checkbox label="Personal Use" />
+				<Checkbox label="Exact Match" />
 			</div>
 		</Expandable>
-		<Expandable title="Ratio">Ratio</Expandable>
+		<Expandable title="Size">
+			<div class="row">
+				<Select options={["Any Size", "idk what this is"]} grow />
+				<Button primary>
+					<PencilSimple slot="icon" />
+				</Button>
+			</div>
+		</Expandable>
 	</aside>
 	<div class="content">
 		<slot />
@@ -86,11 +93,9 @@
 	}
 
 	.side-bar {
-		z-index: 1;
-
 		h1 {
 			font-size: 1.125rem;
-			font-weight: 600;
+			font-weight: 700;
 			margin: 0.25rem 0;
 		}
 
@@ -101,7 +106,7 @@
 		}
 	}
 
-	.sorting {
+	.row {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -111,5 +116,10 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+	}
+
+	.content {
+		display: flex;
+		flex-direction: column;
 	}
 </style>
