@@ -50,28 +50,28 @@
 			transition: border-bottom-color 0.1s;
 
 			&.highlight {
-				color: var(--subscriber);
+				color: var(--store);
 			}
 
 			&:hover,
 			&:focus-visible {
-				border-bottom-color: var(--primary-hover);
+				border-bottom-color: var(--secondary-hover);
 			}
 
 			&:active {
-				border-bottom-color: var(--secondary-active);
+				border-bottom-color: var(--primary-active);
 			}
 
 			&:active.highlight {
-				border-bottom-color: var(--subscriber);
+				border-bottom-color: var(--store);
 			}
 
 			&.selected {
-				border-bottom-color: var(--secondary);
+				border-bottom-color: var(--primary);
 			}
 
 			&.selected.highlight {
-				border-bottom-color: var(--subscriber);
+				border-bottom-color: var(--store);
 			}
 		}
 	}

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import HideOn from "./hide-on.svelte";
 	import { page } from "$app/stores";
 	import Button from "./button.svelte";
 
@@ -24,8 +23,8 @@
 	<Button
 		{href}
 		{big}
+		secondary={active}
 		draggable="false"
-		primary={active}
 		style={!active && "color: var(--text-light)"}
 		on:click={scrollIntoView}
 		hideOnMobile
@@ -42,8 +41,8 @@
 	<Button
 		{href}
 		{big}
+		secondary={active}
 		draggable="false"
-		primary={active}
 		style={!active && "color: var(--text-light)"}
 		on:click={scrollIntoView}
 		hideOnDesktop
@@ -60,8 +59,8 @@
 	<Button
 		{href}
 		{big}
+		secondary={active}
 		draggable="false"
-		primary={active}
 		style={!active && "color: var(--text-light)"}
 		on:click={scrollIntoView}
 	>

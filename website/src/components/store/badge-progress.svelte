@@ -35,7 +35,7 @@
 		<div class="info">
 			<div class="header">
 				<h2>Badge Progress</h2>
-				<Button primary>
+				<Button secondary>
 					<DotsThreeVertical slot="icon" />
 				</Button>
 			</div>
@@ -90,7 +90,7 @@
 		}
 
 		#track {
-			stroke: var(--primary);
+			stroke: var(--secondary);
 			stroke-width: 1rem;
 		}
 	}
@@ -142,7 +142,7 @@
 			& > .placeholder {
 				width: 2.25rem;
 				height: 2.25rem;
-				background-color: var(--primary);
+				background-color: var(--secondary);
 				border-radius: 0.5rem;
 			}
 		}
@@ -167,7 +167,7 @@
 				align-self: stretch;
 
 				height: 0.25rem;
-				background-color: var(--primary);
+				background-color: var(--secondary);
 				border-radius: 0.125rem;
 			}
 		}

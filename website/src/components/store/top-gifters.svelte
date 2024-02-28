@@ -51,7 +51,7 @@
 			</span>
 		{/each}
 	</div>
-	<Button primary style="align-self: flex-end">
+	<Button secondary style="align-self: flex-end">
 		<Gift slot="icon" />
 		Gift
 	</Button>
@@ -81,7 +81,7 @@
 			width: 1.5rem;
 			height: 1.5rem;
 			border-radius: 50%;
-			background-color: var(--primary);
+			background-color: var(--secondary);
 		}
 
 		& > .amount {

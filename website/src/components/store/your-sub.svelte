@@ -17,26 +17,26 @@
 <StoreSection title="Your Subscription">
 	<div class="buttons" slot="header">
 		<Button
-			primary
+			secondary
 			hideOnMobile
 			on:click={() => (subbed = true)}
-			style={subbed && "color: var(--subscriber-accent)"}
+			style={subbed && "color: var(--subscriber)"}
 		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<span>{subbed ? "Subscribed" : "Subscribe"}</span>
 			<CaretDown slot="icon-right" />
 		</Button>
 		<Button
-			primary
+			secondary
 			hideOnDesktop
 			on:click={() => (subbed = true)}
-			style={subbed && "color: var(--subscriber-accent)"}
+			style={subbed && "color: var(--subscriber)"}
 		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<CaretDown slot="icon-right" />
 		</Button>
 
-		<Button primary hideOnMobile>
+		<Button secondary hideOnMobile>
 			<Gift slot="icon" />
 			Gift
 		</Button>
@@ -44,7 +44,7 @@
 			<Gift slot="icon" />
 		</Button>
 
-		<Button primary>
+		<Button secondary>
 			<DotsThreeVertical slot="icon" />
 		</Button>
 	</div>
@@ -101,7 +101,7 @@
 			gap: 0.5rem;
 			align-items: center;
 
-			color: var(--subscriber-accent);
+			color: var(--subscriber);
 
 			span {
 				color: var(--text);

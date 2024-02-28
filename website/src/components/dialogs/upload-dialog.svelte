@@ -111,7 +111,7 @@
 					/>
 					<UploadSimple size="1.5rem" color="var(--text-light)" />
 					<h2>Drop & drop to upload, or</h2>
-					<Button primary on:click={browse}>Browse Files</Button>
+					<Button secondary on:click={browse}>Browse Files</Button>
 					<span class="details">
 						7MB max file size
 						<br />
@@ -140,8 +140,8 @@
 				<Checkbox label="Private" />
 			</div>
 			<div class="buttons">
-				<Button primary on:click={close}>Discard</Button>
-				<Button secondary>Upload</Button>
+				<Button secondary on:click={close}>Discard</Button>
+				<Button primary>Upload</Button>
 			</div>
 		</section>
 		<section class="chat">
@@ -228,7 +228,7 @@
 				font-weight: 500;
 
 				span {
-					color: var(--secondary);
+					color: var(--primary);
 				}
 			}
 
@@ -239,7 +239,7 @@
 
 			&.drag-over {
 				border-style: solid;
-				border-color: var(--secondary);
+				border-color: var(--primary);
 
 				background-color: var(--bg-light);
 			}
@@ -310,7 +310,7 @@
 			font-size: 0.8125rem;
 			font-weight: 400;
 
-			border-color: var(--border);
+			border-color: var(--border-active);
 			padding-block: 0.6rem;
 			background-color: var(--bg-medium);
 
@@ -338,7 +338,7 @@
 		font-size: 0.8125rem;
 
 		.username {
-			color: var(--secondary);
+			color: var(--primary);
 			font-weight: 700;
 		}
 	}

@@ -15,13 +15,13 @@
 <style lang="scss">
 	@keyframes loading {
 		0% {
-			background-color: var(--primary);
+			opacity: 0.5;
 		}
 		50% {
-			background-color: var(--primary-active);
+			opacity: 1.0;
 		}
 		100% {
-			background-color: var(--primary);
+			opacity: 0.5;
 		}
 	}
 
@@ -33,7 +33,7 @@
 	}
 
 	.image {
-		background-color: var(--primary);
+		background-color: var(--preview);
 		animation: loading 1s infinite;
 	}
 

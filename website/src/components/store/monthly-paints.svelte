@@ -11,7 +11,7 @@
 			<Repeat />
 			<span>12 d</span>
 		</div>
-		<Button primary>
+		<Button secondary>
 			<DotsThreeVertical slot="icon" />
 		</Button>
 	</div>

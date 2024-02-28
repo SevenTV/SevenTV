@@ -53,7 +53,7 @@
 			<Button hideOnDesktop on:click={() => ($showUploadDialog = true)}>
 				<PlusSquare slot="icon" />
 			</Button>
-			<Button primary hideOnMobile on:click={() => ($showUploadDialog = true)}>
+			<Button secondary hideOnMobile on:click={() => ($showUploadDialog = true)}>
 				<PlusSquare slot="icon" />
 				Upload
 			</Button>
@@ -76,7 +76,7 @@
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<Button href="/sign-in" secondary>Sign In</Button>
+			<Button href="/sign-in" primary>Sign In</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
@@ -90,7 +90,7 @@
 <style lang="scss">
 	nav {
 		background-color: var(--bg-dark);
-		border-bottom: 1px solid var(--border);
+		border-bottom: 1px solid var(--border-active);
 		padding: 0 2rem;
 		height: 3.5rem;
 

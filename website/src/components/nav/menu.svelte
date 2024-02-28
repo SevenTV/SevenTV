@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { user } from "$/lib/stores";
+	import { Theme, theme, user } from "$/lib/stores";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
@@ -11,7 +11,6 @@
 		Gear,
 		GlobeHemisphereWest,
 		House,
-		IconContext,
 		LockSimple,
 		Moon,
 		Note,
@@ -19,120 +18,157 @@
 		Question,
 		SealCheck,
 		SignOut,
+		Sliders,
 		Smiley,
 		Star,
+		Sun,
 	} from "phosphor-svelte";
+
+	enum Menu {
+		Root,
+		Language,
+		Theme,
+		Settings,
+	};
+
+	let menu = Menu.Root;
+
+	function setMenu(newMenu: Menu) {
+		menu = newMenu;
+	}
 </script>
 
 <div class="menu" transition:fade={{ duration: 100 }}>
-	{#if $user}
-		<a class="profile" href="/user/ayyybubu">
-			<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
-			<span class="name">
-				ayyybubu
-				<SealCheck size="0.8rem" />
-			</span>
-			<div class="roles">
-				<Role name="Staff" />
-				<Role name="Subscriber" />
-			</div>
-			<div class="chevron">
-				<CaretRight size="1.2rem" />
-			</div>
-		</a>
-		<hr class="hide-on-mobile" />
-	{/if}
-	<div class="link-list hide-on-desktop">
-		<a href="/">
-			<House />
-			Home
-		</a>
-		<a href="/emotes">
-			<Smiley />
-			Emotes
-		</a>
-		<a href="/discover">
-			<Compass />
-			Discover
-		</a>
-		<a href="/store" class="store">
-			<Star />
-			Store
-		</a>
-	</div>
-	{#if $user}
-		<div class="link-list">
-			<a href="/cosmetics">
-				<PaintBrush />
-				Cosmetics
+	{#if menu === Menu.Root}
+		{#if $user}
+			<a class="profile" href="/user/ayyybubu">
+				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
+				<span class="name">
+					ayyybubu
+					<SealCheck size="0.8rem" />
+				</span>
+				<div class="roles">
+					<Role name="Staff" />
+					<Role name="Subscriber" />
+				</div>
+				<div class="chevron">
+					<CaretRight size="1.2rem" />
+				</div>
 			</a>
-			<a href="/analytics">
-				<ChartLine />
-				Analytics
+			<hr class="hide-on-mobile" />
+		{/if}
+		<div class="link-list hide-on-desktop">
+			<a href="/">
+				<House />
+				Home
+			</a>
+			<a href="/emotes">
+				<Smiley />
+				Emotes
+			</a>
+			<a href="/discover">
+				<Compass />
+				Discover
+			</a>
+			<a href="/store" class="store">
+				<Star />
+				Store
 			</a>
 		</div>
-		<hr class="hide-on-mobile" />
-	{/if}
-	<div class="link-list">
-		<button>
-			<GlobeHemisphereWest />
-			Language
-			<div class="chevron">
-				<CaretRight />
-			</div>
-		</button>
-		<button>
-			<Moon />
-			Theme
-			<div class="chevron">
-				<CaretRight />
-			</div>
-		</button>
 		{#if $user}
-			<a href="/settings" class="hide-on-mobile">
-				<Gear />
-				Settings
-			</a>
-			<button class="hide-on-desktop">
-				<Gear />
-				Settings
+			<div class="link-list">
+				<a href="/cosmetics">
+					<PaintBrush />
+					Cosmetics
+				</a>
+				<a href="/analytics">
+					<ChartLine />
+					Analytics
+				</a>
+			</div>
+			<hr class="hide-on-mobile" />
+		{/if}
+		<div class="link-list">
+			<button on:click|stopPropagation={() => setMenu(Menu.Language)}>
+				<GlobeHemisphereWest />
+				Language
 				<div class="chevron">
 					<CaretRight />
 				</div>
 			</button>
-		{/if}
-	</div>
-	<hr class="hide-on-mobile" />
-	<div class="link-list">
-		<a href="/developer">
-			<Code />
-			Developer Portal
-		</a>
-		<a href="/contact">
-			<ChatDots />
-			Contact
-		</a>
-		<a href="/faq">
-			<Question />
-			FAQ
-		</a>
-		<a href="/privacy">
-			<LockSimple />
-			Privacy Policy
-		</a>
-		<a href="/tos">
-			<Note />
-			Terms of Service
-		</a>
-	</div>
-	{#if $user}
+			<button on:click|stopPropagation={() => setMenu(Menu.Theme)}>
+				<Moon />
+				Theme
+				<div class="chevron">
+					<CaretRight />
+				</div>
+			</button>
+			{#if $user}
+				<a href="/settings" class="hide-on-mobile">
+					<Gear />
+					Settings
+				</a>
+				<button class="hide-on-desktop" on:click|stopPropagation={() => setMenu(Menu.Settings)}>
+					<Gear />
+					Settings
+					<div class="chevron">
+						<CaretRight />
+					</div>
+				</button>
+			{/if}
+		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<button on:click={() => ($user = false)}>
-				<SignOut />
-				Sign out
+			<a href="/developer">
+				<Code />
+				Developer Portal
+			</a>
+			<a href="/contact">
+				<ChatDots />
+				Contact
+			</a>
+			<a href="/faq">
+				<Question />
+				FAQ
+			</a>
+			<a href="/privacy">
+				<LockSimple />
+				Privacy Policy
+			</a>
+			<a href="/tos">
+				<Note />
+				Terms of Service
+			</a>
+		</div>
+		{#if $user}
+			<hr class="hide-on-mobile" />
+			<div class="link-list">
+				<button on:click={() => ($user = false)}>
+					<SignOut />
+					Sign out
+				</button>
+			</div>
+		{/if}
+	{:else if menu === Menu.Language}
+		Language Picker
+	{:else if menu === Menu.Theme}
+		<h2>Theme</h2>
+		<div class="link-list">
+			<button on:click={() => ($theme = Theme.System)}>
+				<Sliders />
+				System
+			</button>
+			<button on:click={() => ($theme = Theme.Dark)}>
+				<Moon />
+				Dark
+			</button>
+			<button on:click={() => ($theme = Theme.Light)}>
+				<Sun />
+				Light
 			</button>
 		</div>
+	{:else if menu === Menu.Settings}
+		Settings
 	{/if}
 </div>
 
@@ -196,6 +232,12 @@
 		}
 	}
 
+	h2 {
+		margin: 0.5rem 1.2rem;
+		font-size: 1.25rem;
+		font-weight: 600;
+	}
+
 	.link-list {
 		display: flex;
 		flex-direction: column;
@@ -228,7 +270,7 @@
 		}
 
 		.store {
-			color: var(--subscriber);
+			color: var(--store);
 		}
 	}
 
