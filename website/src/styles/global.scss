@@ -1,3 +1,7 @@
+html {
+	color-scheme: dark;
+}
+
 html,
 body {
 	margin: 0;
@@ -99,17 +103,15 @@ input[type="text"] {
 
 	& > .content {
 		flex-grow: 1;
+		min-width: 0;
 	}
 }
 
 // Desktop
 @media screen and (min-width: 961px) {
-	.side-bar-layout {
-		& > .side-bar {
-			width: 100%;
-			max-width: 16rem;
-			overflow: auto;
-		}
+	.side-bar {
+		width: 100%;
+		max-width: 16rem;
 	}
 }
 

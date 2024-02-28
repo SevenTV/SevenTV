@@ -13,6 +13,7 @@
 	import Button from "$/components/button.svelte";
 	import TagsInput from "$/components/tags-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
+	import SearchBar from "$/components/search-bar.svelte";
 
 	let sortAsc = false;
 
@@ -47,6 +48,9 @@
 			</TabLink>
 		</div>
 		<hr />
+		<Expandable title="Search">
+			<SearchBar placeholder="Emote name" grow />
+		</Expandable>
 		<Expandable title="Tags">
 			<TagsInput />
 		</Expandable>

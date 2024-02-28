@@ -120,7 +120,9 @@
 			</Button>
 		</div>
 		<hr class="hide-on-mobile" />
-		<slot />
+		<div class="data">
+			<slot />
+		</div>
 	</div>
 </div>
 
@@ -176,6 +178,9 @@
 	}
 
 	.content {
+		display: flex;
+		flex-direction: column;
+
 		.header {
 			display: flex;
 			align-items: center;
@@ -198,6 +203,10 @@
 
 		hr {
 			margin: 1rem 0;
+		}
+
+		.data {
+			overflow: auto;
 		}
 	}
 

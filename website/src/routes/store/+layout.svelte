@@ -66,4 +66,8 @@
 			font-weight: 500;
 		}
 	}
+
+	.content {
+		overflow: auto;
+	}
 </style>
