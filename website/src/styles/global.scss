@@ -20,6 +20,26 @@ body {
 	}
 }
 
+::-webkit-scrollbar {
+	width: 0.4rem;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--primary);
+
+	&:hover {
+		background: var(--primary-hover);
+	}
+
+	&:active {
+		background: var(--primary-active);
+	}
+}
+
 h1,
 h2,
 hr,
@@ -66,7 +86,7 @@ input[type="text"] {
 	color: var(--text);
 	font-size: 0.875rem;
 
-	&::placeholder {
+	&::-webkit-input-placeholder, &::-moz-placeholder, &::-ms-input-placeholder, &::placeholder {
 		font-weight: 500;
 	}
 
