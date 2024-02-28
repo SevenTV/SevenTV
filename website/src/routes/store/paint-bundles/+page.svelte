@@ -82,11 +82,11 @@
 					<PaintPreview />
 				{/each}
 				<div class="buttons">
-					<Button primary>
+					<Button secondary>
 						<Gift slot="icon" />
 						Gift
 					</Button>
-					<Button primary>
+					<Button secondary>
 						<ShoppingCartSimple slot="icon" />
 						<span>
 							{#if bundle.oldPrice}

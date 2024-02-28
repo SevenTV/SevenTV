@@ -32,7 +32,7 @@
 
 		&:hover,
 		&:focus-visible {
-			border-color: var(--border);
+			border-color: var(--border-active);
 		}
 	}
 
@@ -45,7 +45,7 @@
 	.emote {
 		width: 2rem;
 		height: 2rem;
-		background-color: var(--primary);
+		background-color: var(--secondary);
 		border-radius: 0.25rem;
 	}
 
@@ -62,7 +62,7 @@
 		font-size: 0.75rem;
 		font-weight: 500;
 
-		background-color: var(--primary);
+		background-color: var(--secondary);
 		border-radius: 0.25rem;
 	}
 </style>

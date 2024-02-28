@@ -27,7 +27,7 @@
 {#if tags && tags.length > 0}
 	<div class="tags">
 		{#each tags as tag, i}
-			<Button primary on:click={() => removeTag(i)}>
+			<Button secondary on:click={() => removeTag(i)}>
 				<span>{tag}</span>
 				<X size="1rem" />
 			</Button>

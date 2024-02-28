@@ -26,7 +26,7 @@
 </script>
 
 <div use:mouseTrap={close} class="select" class:grow class:expanded>
-	<Button primary tabindex="-1" on:click={toggle}>
+	<Button secondary tabindex="-1" on:click={toggle}>
 		{selected ?? "Select"}
 		<CaretDown slot="icon-right" size="1rem" />
 	</Button>
@@ -40,7 +40,7 @@
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
-				<Button primary={selected === option} on:click={() => select(option)}>
+				<Button secondary={selected === option} on:click={() => select(option)} noBorder>
 					{option}
 				</Button>
 			{/each}
@@ -81,16 +81,15 @@
 			width: 100%;
 
 			justify-content: space-between;
-			border: transparent 1px solid;
 
 			&:focus-within {
-				border-color: var(--secondary);
+				border-color: var(--primary);
 			}
 		}
 
 		&.expanded {
 			& > :global(.button) {
-				border-color: var(--border);
+				border-color: var(--border-active);
 				border-bottom-left-radius: 0;
 				border-bottom-right-radius: 0;
 			}
@@ -111,12 +110,12 @@
 		right: 0;
 		margin: 0;
 		padding: 0;
-		border: var(--border) 1px solid;
+		border: var(--border-active) 1px solid;
 		border-top: none;
 		border-radius: 0.5rem;
 
 		background-color: var(--bg-medium);
-		box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25);
+		box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1);
 
 		& > :global(.button) {
 			border-radius: 0;

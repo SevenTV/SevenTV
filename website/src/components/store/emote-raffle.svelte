@@ -22,7 +22,7 @@
 			<span>Pokimane</span>
 			<Crown color="#aa71ff" />
 		</div>
-		<Button primary>
+		<Button secondary>
 			<Ticket slot="icon" />
 			Enter
 		</Button>
@@ -61,7 +61,7 @@
 		.profile-picture {
 			width: 1.5rem;
 			height: 1.5rem;
-			background-color: var(--primary);
+			background-color: var(--secondary);
 			border-radius: 50%;
 		}
 	}

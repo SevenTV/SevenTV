@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
+	import EmoteContainer from "$/components/emote-container.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { Fire, FolderSimple, GlobeHemisphereWest, GridFour, GridNine, Trophy, Upload } from "phosphor-svelte";
 </script>
@@ -24,7 +25,7 @@
 		</TabLink>
 	</div>
 	<div class="buttons">
-		<Button primary hideOnMobile>
+		<Button secondary hideOnMobile>
 			<FolderSimple slot="icon" />
 			Personal Emotes
 		</Button>
@@ -36,9 +37,9 @@
 		</Button>
 	</div>
 </div>
-<div class="emotes">
+<EmoteContainer scrollable topMargin={1}>
 	<slot />
-</div>
+</EmoteContainer>
 
 <style lang="scss">
 	.nav-bar {
@@ -58,16 +59,5 @@
 	.buttons {
 		display: flex;
 		gap: 0.5rem;
-	}
-
-	.emotes {
-		overflow: auto;
-		margin-top: 1rem;
-
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(var(--emote-preview-size), 1fr));
-		justify-items: center;
-		align-items: center;
-		gap: 1rem;
 	}
 </style>

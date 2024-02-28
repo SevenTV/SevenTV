@@ -9,7 +9,7 @@
 	<div class="container">
 		<EmoteSetPreview bg="light" />
 	</div>
-	<Button primary style="align-self: flex-end">
+	<Button secondary style="align-self: flex-end">
 		<NotePencil slot="icon" />
 		Edit
 	</Button>

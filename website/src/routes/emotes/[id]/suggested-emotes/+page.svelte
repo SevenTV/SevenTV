@@ -4,6 +4,7 @@
 	import { CaretLeft, CaretRight } from "phosphor-svelte";
 	import type { LayoutData } from "../$types";
 	import Button from "$/components/button.svelte";
+	import EmoteContainer from "$/components/emote-container.svelte";
 
 	export let data: LayoutData;
 </script>
@@ -19,11 +20,11 @@
 		</Button>
 	</div>
 </div>
-<div class="emotes">
+<EmoteContainer topMargin={1.5}>
 	{#each Array(10) as _, i}
 		<EmotePreview index={i} name="suggestedEmote{i}" bg="light" />
 	{/each}
-</div>
+</EmoteContainer>
 
 <style lang="scss">
 	.navigation {
@@ -36,14 +37,5 @@
 	.buttons {
 		display: flex;
         align-items: center;
-	}
-
-	.emotes {
-		margin-top: 1.5rem;
-
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(var(--emote-preview-size), 1fr));
-		place-items: center;
-		gap: 1rem;
 	}
 </style>

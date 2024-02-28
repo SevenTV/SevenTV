@@ -101,7 +101,7 @@
 						#43006d 64%,
 						#0f0f0f 80%
 					),
-					var(--primary);
+					var(--secondary);
 			}
 
 			&.g2 {
@@ -112,7 +112,7 @@
 						#43006d 64%,
 						#0f0f0f 80%
 					),
-					var(--primary);
+					var(--secondary);
 			}
 
 			&.g3 {
@@ -123,7 +123,7 @@
 						#43006d 64%,
 						#0f0f0f 80%
 					),
-					var(--primary);
+					var(--secondary);
 			}
 
 			&.g5 {
@@ -134,7 +134,7 @@
 						#43006d 64%,
 						#0f0f0f 80%
 					),
-					var(--primary);
+					var(--secondary);
 			}
 
 			&.g6 {
@@ -145,7 +145,7 @@
 						#43006d 64%,
 						#0f0f0f 80%
 					),
-					var(--primary);
+					var(--secondary);
 			}
 		}
 	}

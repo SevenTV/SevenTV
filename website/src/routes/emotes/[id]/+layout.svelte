@@ -28,7 +28,7 @@
                 <img src="/test-profile-pic.jpeg" width="44" height="44" alt="profile" class="profile-picture" />
                 <span class="username">ayyybubu</span>
                 <div class="artists">
-                    <ArrowBendDownRight size="0.75rem" color="var(--primary-light)" />
+                    <ArrowBendDownRight size="0.75rem" color="var(--text-light)" />
                     <a href="/user/ayyybubu" class="profile">
                         <img
                             src="/test-profile-pic.jpeg"
@@ -73,26 +73,26 @@
                 <ImagePreview size={128} />
             </div>
             <div class="buttons">
-                <Button secondary>
+                <Button primary>
                     <Plus slot="icon" />
                     Use Emote
                 </Button>
-                <Button primary>
+                <Button secondary>
                     <FolderPlus slot="icon" />
                     Add to...
                 </Button>
-                <Button primary hideOnMobile>
+                <Button secondary hideOnMobile>
                     <NotePencil slot="icon" />
                     Edit
                 </Button>
-                <Button primary>
+                <Button secondary hideOnDesktop>
                     <NotePencil slot="icon" />
                 </Button>
-                <Button primary hideOnMobile>
+                <Button secondary hideOnMobile>
                     More
                     <CaretDown slot="icon-right" />
                 </Button>
-                <Button primary hideOnDesktop>
+                <Button secondary hideOnDesktop>
                     <CaretDown slot="icon" />
                 </Button>
             </div>
@@ -118,6 +118,7 @@
 
         & > * {
             background-color: var(--bg-medium);
+            border: 1px solid var(--layout-border);
             border-radius: 0.5rem;
             padding: 1rem;
         }
@@ -178,7 +179,7 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.3rem 0.5rem 0.3rem 0.75rem;
-            background-color: var(--primary);
+            background-color: var(--secondary);
             border-radius: 0.5rem;
 
             color: var(--text-light);

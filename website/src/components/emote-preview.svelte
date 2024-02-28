@@ -29,19 +29,19 @@
 
 		&:hover,
 		&:focus-visible {
-			border-color: var(--border);
+			border-color: var(--border-active);
 		}
 	}
 
 	@keyframes loading {
 		0% {
-			background-color: var(--primary);
+			opacity: 0.5;
 		}
 		50% {
-			background-color: var(--primary-active);
+			opacity: 1.0;
 		}
 		100% {
-			background-color: var(--primary);
+			opacity: 0.5;
 		}
 	}
 
@@ -50,7 +50,7 @@
 		height: calc(var(--emote-preview-size) / 2);
 		margin-bottom: 0.5rem;
 
-		background-color: var(--primary);
+		background-color: var(--preview);
 		animation: loading 1s infinite;
 	}
 

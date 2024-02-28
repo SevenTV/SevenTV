@@ -20,4 +20,4 @@
 
 <h1>Sign In</h1>
 
-<Button secondary on:click={login}>Fake login xdd</Button>
+<Button primary on:click={login}>Fake login xdd</Button>

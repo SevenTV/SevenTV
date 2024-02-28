@@ -57,7 +57,7 @@
 		<Expandable title="Sorting">
 			<div class="row">
 				<Select options={["Alphabetical", "Upload Date"]} grow />
-				<Button primary on:click={() => (sortAsc = !sortAsc)}>
+				<Button secondary on:click={() => (sortAsc = !sortAsc)}>
 					<svelte:fragment slot="icon">
 						{#if sortAsc}
 							<SortAscending />
@@ -80,7 +80,7 @@
 		<Expandable title="Size">
 			<div class="row">
 				<Select options={["Any Size", "idk what this is"]} grow />
-				<Button primary>
+				<Button secondary>
 					<PencilSimple slot="icon" />
 				</Button>
 			</div>

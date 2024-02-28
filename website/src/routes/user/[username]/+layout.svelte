@@ -53,14 +53,14 @@
 			</span>
 		</div>
 		<div class="buttons">
-			<Button secondary style="flex-grow: 1; justify-content: center;">
+			<Button primary style="flex-grow: 1; justify-content: center;">
 				<Heart slot="icon" />
 				Follow
 			</Button>
-			<Button primary hideOnMobile>
+			<Button secondary hideOnMobile>
 				<CaretDown slot="icon" />
 			</Button>
-			<Button primary hideOnDesktop>
+			<Button secondary hideOnDesktop>
 				<Gift slot="icon" />
 				Gift
 			</Button>

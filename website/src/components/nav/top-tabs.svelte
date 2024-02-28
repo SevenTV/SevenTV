@@ -55,11 +55,11 @@
 
 			&:hover,
 			&:focus-visible {
-				border-bottom-color: var(--primary-hover);
+				border-bottom-color: var(--secondary-hover);
 			}
 
 			&:active {
-				border-bottom-color: var(--secondary-active);
+				border-bottom-color: var(--primary-active);
 			}
 
 			&:active.highlight {
@@ -67,7 +67,7 @@
 			}
 
 			&.selected {
-				border-bottom-color: var(--secondary);
+				border-bottom-color: var(--primary);
 			}
 
 			&.selected.highlight {

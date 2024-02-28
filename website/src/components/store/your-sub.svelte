@@ -17,7 +17,7 @@
 <StoreSection title="Your Subscription">
 	<div class="buttons" slot="header">
 		<Button
-			primary
+			secondary
 			hideOnMobile
 			on:click={() => (subbed = true)}
 			style={subbed && "color: var(--subscriber-accent)"}
@@ -27,7 +27,7 @@
 			<CaretDown slot="icon-right" />
 		</Button>
 		<Button
-			primary
+			secondary
 			hideOnDesktop
 			on:click={() => (subbed = true)}
 			style={subbed && "color: var(--subscriber-accent)"}
@@ -36,7 +36,7 @@
 			<CaretDown slot="icon-right" />
 		</Button>
 
-		<Button primary hideOnMobile>
+		<Button secondary hideOnMobile>
 			<Gift slot="icon" />
 			Gift
 		</Button>
@@ -44,7 +44,7 @@
 			<Gift slot="icon" />
 		</Button>
 
-		<Button primary>
+		<Button secondary>
 			<DotsThreeVertical slot="icon" />
 		</Button>
 	</div>

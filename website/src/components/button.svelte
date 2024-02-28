@@ -66,7 +66,7 @@
 	button {
 		cursor: pointer;
 		font: inherit;
-		border: none;
+		border: 1px solid transparent;
 		color: var(--text);
 		font-size: 0.875rem;
 		font-weight: 600;
@@ -99,42 +99,46 @@
 			gap: 0.75rem;
 		}
 
-		&.primary {
-			background-color: var(--primary);
+		&.secondary {
+			background-color: var(--secondary);
+			color: var(--secondary-text);
+			border-color: var(--secondary-border);
 
 			&:disabled {
-				background-color: var(--primary-disabled);
+				background-color: var(--secondary-disabled);
 			}
 		}
 
 		&:hover,
 		&:focus-visible {
 			text-decoration: none;
-			background-color: var(--primary-hover);
+			background-color: var(--secondary-hover);
 		}
 
 		&:active {
-			background-color: var(--primary-active);
+			background-color: var(--secondary-active);
 		}
 
 		&:disabled {
 			cursor: not-allowed;
 		}
 
-		&.secondary {
-			background-color: var(--secondary);
+		&.primary {
+			background-color: var(--primary);
+			color: var(--primary-text);
+			border-color: var(--primary-border);
 
 			&:hover,
 			&:focus-visible {
-				background-color: var(--secondary-hover);
+				background-color: var(--primary-hover);
 			}
 
 			&:active {
-				background-color: var(--secondary-active);
+				background-color: var(--primary-active);
 			}
 
 			&:disabled {
-				background-color: var(--secondary-disabled);
+				background-color: var(--primary-disabled);
 			}
 		}
 	}
