@@ -36,20 +36,20 @@
 		<div class="link-list">
 			<TabLink href="/emotes" title="Emotes" big matcher={menuMatcher}>
 				<Smiley />
-				<Smiley width="fill" slot="active" />
+				<Smiley weight="fill" slot="active" />
 			</TabLink>
 			<TabLink href="/emotes/sets" title="Emote Sets" big matcher={menuMatcher}>
 				<FolderSimple />
-				<FolderSimple width="fill" slot="active" />
+				<FolderSimple weight="fill" slot="active" />
 			</TabLink>
 			<TabLink href="/emotes/bookmarked" title="Bookmarked" big matcher={menuMatcher}>
 				<BookmarkSimple />
-				<BookmarkSimple width="fill" slot="active" />
+				<BookmarkSimple weight="fill" slot="active" />
 			</TabLink>
 		</div>
 		<hr />
 		<Expandable title="Search">
-			<SearchBar placeholder="Emote name" grow />
+			<SearchBar placeholder="Emote" grow />
 		</Expandable>
 		<Expandable title="Tags">
 			<TagsInput />

@@ -17,6 +17,8 @@
 
 <style lang="scss">
 	.checkbox {
+		overflow: hidden;
+
 		label {
 			user-select: none;
 			cursor: pointer;
@@ -47,6 +49,7 @@
 		}
 
 		input {
+			position: absolute;
 			margin: 0;
 			width: 0;
 			height: 0;

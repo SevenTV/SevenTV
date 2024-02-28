@@ -1,29 +1,24 @@
 <script lang="ts">
-	import { page } from "$app/stores";
 	import { PaintBrush, Star, TShirt } from "phosphor-svelte";
-	import Button from "$/components/button.svelte";
+	import TabLink from "$/components/tab-link.svelte";
 </script>
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
 		<h1>Store</h1>
 		<div class="link-list">
-			<Button big href="/store" primary={$page.url.pathname === "/store"}>
-				<Star slot="icon" />
-				Subscription
-			</Button>
-			<Button
-				big
-				href="/store/paint-bundles"
-				primary={$page.url.pathname === "/store/paint-bundles"}
-			>
-				<PaintBrush slot="icon" />
-				Paint Bundles
-			</Button>
-			<Button big href="/store/merch" primary={$page.url.pathname === "/store/merch"}>
-				<TShirt slot="icon" />
-				Merch
-			</Button>
+			<TabLink href="/store" title="Subscription" big>
+				<Star />
+				<Star weight="fill" slot="active" />
+			</TabLink>
+			<TabLink href="/store/paint-bundles" title="Paint Bundles" big>
+				<PaintBrush />
+				<PaintBrush weight="fill" slot="active" />
+			</TabLink>
+			<TabLink href="/store/merch" title="Merch" big>
+				<TShirt />
+				<TShirt weight="fill" slot="active" />
+			</TabLink>
 		</div>
 		<hr />
 		<label class="redeem">
@@ -46,7 +41,7 @@
 
 		h1 {
 			font-size: 1.125rem;
-			font-weight: 600;
+			font-weight: 700;
 			margin: 0.25rem 0;
 		}
 
