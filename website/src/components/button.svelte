@@ -23,6 +23,7 @@
 {#if href}
 	<a
 		{href}
+		on:click
 		{...$$restProps}
 		class="button"
 		class:primary

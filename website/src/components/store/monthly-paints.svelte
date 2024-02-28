@@ -33,7 +33,7 @@
 		gap: 0.5rem;
 		white-space: nowrap;
 
-		color: var(--text-lighter);
+		color: var(--text-light);
 		font-size: 0.75rem;
 	}
 </style>

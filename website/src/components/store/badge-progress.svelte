@@ -129,7 +129,7 @@
 		display: flex;
 		gap: 0.5rem;
 
-		color: var(--text-lighter);
+		color: var(--text-light);
 		font-size: 0.75rem;
 		font-weight: 600;
 

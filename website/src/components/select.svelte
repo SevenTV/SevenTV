@@ -18,6 +18,11 @@
 	function close() {
 		expanded = false;
 	}
+
+	function select(option: string) {
+		selected = option;
+		expanded = false;
+	}
 </script>
 
 <div use:mouseTrap={close} class="select" class:grow class:expanded>
@@ -35,7 +40,7 @@
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
-				<Button primary={selected === option} on:click={() => (selected = option)}>
+				<Button primary={selected === option} on:click={() => select(option)}>
 					{option}
 				</Button>
 			{/each}

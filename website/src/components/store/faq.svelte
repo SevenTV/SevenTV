@@ -70,7 +70,7 @@
 
 	.a {
 		margin-top: 0.5rem;
-		color: var(--text-lighter);
+		color: var(--text-light);
 
 		display: none;
 	}

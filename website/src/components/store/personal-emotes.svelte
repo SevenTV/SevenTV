@@ -1,7 +1,7 @@
 <script lang="ts">
 	import StoreSection from "./store-section.svelte";
 	import EmoteSetPreview from "../emote-set-preview.svelte";
-	import { PencilSimple } from "phosphor-svelte";
+	import { NotePencil } from "phosphor-svelte";
 	import Button from "../button.svelte";
 </script>
 
@@ -10,7 +10,7 @@
 		<EmoteSetPreview bg="light" />
 	</div>
 	<Button primary style="align-self: flex-end">
-		<PencilSimple slot="icon" />
+		<NotePencil slot="icon" />
 		Edit
 	</Button>
 </StoreSection>

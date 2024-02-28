@@ -34,11 +34,19 @@
 
 	function onDrop(e: DragEvent) {
 		dragOver = false;
+		if (e.dataTransfer) {
+			files = e.dataTransfer.files;
+		}
 		e.preventDefault();
 	}
 
 	function onDragOver(e: DragEvent) {
+		dragOver = true;
 		e.preventDefault();
+	}
+
+	function onDragLeave() {
+		dragOver = false;
 	}
 
 	let messages: string[] = [];
@@ -92,8 +100,7 @@
 					class:drag-over={dragOver}
 					on:drop={onDrop}
 					on:dragover={onDragOver}
-					on:dragenter={() => (dragOver = true)}
-					on:dragleave={() => (dragOver = false)}
+					on:dragleave={onDragLeave}
 				>
 					<input
 						type="file"
@@ -102,7 +109,7 @@
 						bind:this={fileInput}
 						bind:files
 					/>
-					<UploadSimple size="1.5rem" color="var(--text-lighter)" />
+					<UploadSimple size="1.5rem" color="var(--text-light)" />
 					<h2>Drop & drop to upload, or</h2>
 					<Button primary on:click={browse}>Browse Files</Button>
 					<span class="details">
@@ -185,7 +192,7 @@
 		gap: 0.25rem;
 
 		.label {
-			color: var(--text-lighter);
+			color: var(--text-light);
 			font-size: 0.75rem;
 		}
 	}
@@ -203,7 +210,7 @@
 		.file {
 			width: 100%;
 			height: 100%;
-			border: 1px dashed var(--text-lighter);
+			border: 1px dashed var(--text-light);
 			border-radius: 0.5rem;
 			padding: 1rem 1.25rem;
 
@@ -226,7 +233,7 @@
 			}
 
 			.details {
-				color: var(--text-lighter);
+				color: var(--text-light);
 				font-size: 0.6875rem;
 			}
 

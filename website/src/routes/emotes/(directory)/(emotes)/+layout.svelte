@@ -1,0 +1,73 @@
+<script lang="ts">
+	import Button from "$/components/button.svelte";
+	import TabLink from "$/components/tab-link.svelte";
+	import { Fire, FolderSimple, GlobeHemisphereWest, GridFour, GridNine, Trophy, Upload } from "phosphor-svelte";
+</script>
+
+<div class="nav-bar">
+	<div class="tabs">
+		<TabLink href="/emotes" title="Trending" responsive>
+			<Fire />
+			<Fire weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/top" title="Top" responsive>
+			<Trophy />
+			<Trophy weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/global" title="Global" responsive>
+			<GlobeHemisphereWest />
+			<GlobeHemisphereWest weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/new" title="New" responsive>
+			<Upload />
+			<Upload weight="fill" slot="active" />
+		</TabLink>
+	</div>
+	<div class="buttons">
+		<Button primary hideOnMobile>
+			<FolderSimple slot="icon" />
+			Personal Emotes
+		</Button>
+		<Button>
+			<GridFour slot="icon" />
+		</Button>
+		<Button>
+			<GridNine slot="icon" />
+		</Button>
+	</div>
+</div>
+<div class="emotes">
+	<slot />
+</div>
+
+<style lang="scss">
+	.nav-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.tabs {
+		display: flex;
+		align-items: center;
+		background-color: var(--bg-light);
+		border-radius: 0.5rem;
+	}
+
+	.buttons {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.emotes {
+		overflow: auto;
+		margin-top: 1rem;
+
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(var(--emote-preview-size), 1fr));
+		justify-items: center;
+		align-items: center;
+		gap: 1rem;
+	}
+</style>

@@ -48,6 +48,7 @@
 			top: 100%;
 			right: 0;
 			margin: 0;
+			margin-top: 0.25rem;
 			padding: 0;
 			border: var(--border) 1px solid;
 			border-radius: 0.5rem;

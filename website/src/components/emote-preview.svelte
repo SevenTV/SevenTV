@@ -4,7 +4,7 @@
 	export let bg: "medium" | "light" = "medium";
 </script>
 
-<a href="/emote/{name}" class="emote" style:background-color="var(--bg-{bg})">
+<a href="/emotes/{name}" class="emote" style:background-color="var(--bg-{bg})">
 	<div class="image" style="animation-delay: {index * 10}ms"></div>
 	<span class="name">{name}</span>
 	<span class="user">username</span>
@@ -15,8 +15,8 @@
 		color: var(--text);
 		text-decoration: none;
 
-		width: 10rem;
-		height: 10rem;
+		width: var(--emote-preview-size);
+		height: var(--emote-preview-size);
 
 		display: flex;
 		flex-direction: column;
@@ -46,8 +46,8 @@
 	}
 
 	.image {
-		width: 5rem;
-		height: 5rem;
+		width: calc(var(--emote-preview-size) / 2);
+		height: calc(var(--emote-preview-size) / 2);
 		margin-bottom: 0.5rem;
 
 		background-color: var(--primary);
@@ -56,6 +56,9 @@
 
 	.name {
 		font-weight: 500;
+		max-width: 90%;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.user {
