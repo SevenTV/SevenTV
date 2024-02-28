@@ -152,8 +152,8 @@
 			}
 
 			.new {
-				color: var(--subscriber-accent);
-				border: 1px solid var(--subscriber-accent);
+				color: var(--subscriber);
+				border: 1px solid var(--subscriber);
 				padding: 0.2rem 0.5rem;
 				border-radius: 0.25rem;
 				font-size: 0.625rem;

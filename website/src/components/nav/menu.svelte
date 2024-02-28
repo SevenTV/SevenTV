@@ -270,7 +270,7 @@
 		}
 
 		.store {
-			color: var(--subscriber);
+			color: var(--store);
 		}
 	}
 

@@ -20,7 +20,7 @@
 			secondary
 			hideOnMobile
 			on:click={() => (subbed = true)}
-			style={subbed && "color: var(--subscriber-accent)"}
+			style={subbed && "color: var(--subscriber)"}
 		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<span>{subbed ? "Subscribed" : "Subscribe"}</span>
@@ -30,7 +30,7 @@
 			secondary
 			hideOnDesktop
 			on:click={() => (subbed = true)}
-			style={subbed && "color: var(--subscriber-accent)"}
+			style={subbed && "color: var(--subscriber)"}
 		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<CaretDown slot="icon-right" />
@@ -101,7 +101,7 @@
 			gap: 0.5rem;
 			align-items: center;
 
-			color: var(--subscriber-accent);
+			color: var(--subscriber);
 
 			span {
 				color: var(--text);

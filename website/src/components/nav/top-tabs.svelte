@@ -50,7 +50,7 @@
 			transition: border-bottom-color 0.1s;
 
 			&.highlight {
-				color: var(--subscriber);
+				color: var(--store);
 			}
 
 			&:hover,
@@ -63,7 +63,7 @@
 			}
 
 			&:active.highlight {
-				border-bottom-color: var(--subscriber);
+				border-bottom-color: var(--store);
 			}
 
 			&.selected {
@@ -71,7 +71,7 @@
 			}
 
 			&.selected.highlight {
-				border-bottom-color: var(--subscriber);
+				border-bottom-color: var(--store);
 			}
 		}
 	}

@@ -20,7 +20,7 @@
 		<div class="winner">
 			<div class="profile-picture"></div>
 			<span>Pokimane</span>
-			<Crown color="#aa71ff" />
+			<Crown color="var(--subscriber)" />
 		</div>
 		<Button secondary>
 			<Ticket slot="icon" />

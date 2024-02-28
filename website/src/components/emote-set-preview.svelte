@@ -51,7 +51,7 @@
 
 	.name {
 		margin-top: 0.5rem;
-		color: #aa71ff;
+		color: var(--subscriber);
 		font-size: 0.875rem;
 		font-weight: 600;
 	}
