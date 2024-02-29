@@ -19,6 +19,7 @@
 		text-decoration: none;
 
 		width: 100%;
+		max-width: 10rem;
 		aspect-ratio: 1 / 1;
 
 		display: flex;
