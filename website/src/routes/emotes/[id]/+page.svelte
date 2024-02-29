@@ -28,7 +28,7 @@
 </div>
 <div class="channels">
 	{#each Array(20) as _, i}
-		<ChannelPreview index={i} user="channel{i}" bg="light" />
+		<ChannelPreview index={i} user="channel{i}" />
 	{/each}
 </div>
 
@@ -55,7 +55,7 @@
 		margin-top: 1.5rem;
 
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
 		justify-content: center;
 		gap: 1rem;
 	}

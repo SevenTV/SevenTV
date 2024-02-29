@@ -38,7 +38,7 @@
 	}
 </script>
 
-<div class="menu" transition:fade={{ duration: 100 }}>
+<nav class="menu" transition:fade={{ duration: 100 }}>
 	{#if menu === Menu.Root}
 		{#if $user}
 			<a class="profile" href="/user/ayyybubu">
@@ -170,7 +170,7 @@
 	{:else if menu === Menu.Settings}
 		Settings
 	{/if}
-</div>
+</nav>
 
 <style lang="scss">
 	.menu {

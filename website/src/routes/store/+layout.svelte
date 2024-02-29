@@ -6,7 +6,7 @@
 <div class="side-bar-layout">
 	<aside class="side-bar">
 		<h1>Store</h1>
-		<div class="link-list">
+		<nav class="link-list">
 			<TabLink href="/store" title="Subscription" big>
 				<Star />
 				<Star weight="fill" slot="active" />
@@ -19,7 +19,7 @@
 				<TShirt />
 				<TShirt weight="fill" slot="active" />
 			</TabLink>
-		</div>
+		</nav>
 		<hr />
 		<label class="redeem">
 			Redeem Gift Code
