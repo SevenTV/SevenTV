@@ -34,7 +34,7 @@
 			opacity: 0.5;
 		}
 		50% {
-			opacity: 1.0;
+			opacity: 1;
 		}
 		100% {
 			opacity: 0.5;

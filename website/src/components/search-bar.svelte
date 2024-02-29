@@ -14,7 +14,7 @@
 			<MagnifyingGlass />
 		</slot>
 	</div>
-	<input type="text" placeholder={placeholder} bind:value={value} on:keypress />
+	<input type="text" {placeholder} bind:value on:keypress />
 </search>
 
 <style lang="scss">

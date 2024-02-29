@@ -5,7 +5,13 @@
 	export let emoteOnly = false;
 </script>
 
-<a href="/emotes/{name}" class="emote" class:emote-only={emoteOnly} style:background-color="var(--bg-{bg})" title={name}>
+<a
+	href="/emotes/{name}"
+	class="emote"
+	class:emote-only={emoteOnly}
+	style:background-color="var(--bg-{bg})"
+	title={name}
+>
 	<div class="image" style="animation-delay: {index * 10}ms"></div>
 	{#if !emoteOnly}
 		<span class="name">{name}</span>
@@ -48,7 +54,7 @@
 			opacity: 0.5;
 		}
 		50% {
-			opacity: 1.0;
+			opacity: 1;
 		}
 		100% {
 			opacity: 0.5;

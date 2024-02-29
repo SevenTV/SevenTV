@@ -82,7 +82,10 @@ input[type="text"] {
 	color: var(--text);
 	font-size: 0.875rem;
 
-	&::-webkit-input-placeholder, &::-moz-placeholder, &::-ms-input-placeholder, &::placeholder {
+	&::-webkit-input-placeholder,
+	&::-moz-placeholder,
+	&::-ms-input-placeholder,
+	&::placeholder {
 		font-weight: 500;
 	}
 
