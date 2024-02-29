@@ -5,7 +5,7 @@
 </script>
 
 <a href="/user/{user}" class="channel" style:background-color="var(--bg-{bg})">
-	<div class="image" style="animation-delay: {index * 10}ms"></div>
+	<div class="image" style="animation-delay: {-index * 10}ms"></div>
 	<span class="user">{user}</span>
 </a>
 
