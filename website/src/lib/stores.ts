@@ -43,3 +43,33 @@ theme.subscribe((value) => {
             break;
     }
 });
+
+// Layout
+
+export enum Layout {
+    SmallGrid = "small-grid",
+    BigGrid = "big-grid",
+    List = "list",
+};
+
+function loadLayout(key: string) {
+    const savedLayout = browser && window.localStorage.getItem(key);
+    if (savedLayout) {
+        return JSON.parse(savedLayout) as Layout;
+    }
+    return Layout.BigGrid;
+}
+
+function saveLayout(key: string, value: Layout | null) {
+    if (value && browser) {
+        window.localStorage.setItem("discoverFollowingLayout", JSON.stringify(value));
+    }
+}
+
+// Emotes
+export const emotesLayout = writable(loadLayout("emotesLayout"));
+emotesLayout.subscribe((value) => saveLayout("emotesLayout", value));
+
+// Discover / Following
+export const discoverFollowingLayout = writable(loadLayout("discoverFollowingLayout"));
+discoverFollowingLayout.subscribe((value) => saveLayout("discoverFollowingLayout", value));

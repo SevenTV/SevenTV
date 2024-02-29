@@ -92,24 +92,6 @@
 </div>
 
 <style lang="scss">
-	.side-bar-layout {
-		position: relative;
-	}
-
-	.side-bar {
-		h1 {
-			font-size: 1.125rem;
-			font-weight: 700;
-			margin: 0.25rem 0;
-		}
-
-		.link-list {
-			display: flex;
-			flex-direction: column;
-			gap: 0.25rem;
-		}
-	}
-
 	.row {
 		display: flex;
 		align-items: center;
@@ -125,5 +107,6 @@
 	.content {
 		display: flex;
 		flex-direction: column;
+		gap: 1rem;
 	}
 </style>

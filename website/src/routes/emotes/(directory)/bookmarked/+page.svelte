@@ -8,7 +8,7 @@ import EmotePreview from "$/components/emote-preview.svelte";
 </svelte:head>
 
 <h2>Bookmarked Emotes</h2>
-<EmoteContainer scrollable topMargin={1}>
+<EmoteContainer scrollable>
 	{#each Array(100) as _, i}
 		<EmotePreview index={i} name="bookmarkedEmote{i}" />
 	{/each}
