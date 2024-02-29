@@ -78,21 +78,21 @@
 				<Link slot="icon" />
 				Connections
 				{#if connectionsExpanded}
-					<CaretDown slot="icon-right" />
+					<CaretDown slot="icon-right" style="margin-left: auto" />
 				{:else}
-					<CaretRight slot="icon-right" />
+					<CaretRight slot="icon-right" style="margin-left: auto" />
 				{/if}
 			</Button>
 			{#if connectionsExpanded}
-				<Button href="https://twitch.tv/ayyybubu" target="_blank">
+				<Button href="https://twitch.tv/ayyybubu" target="_blank" style="margin-left: 0.5rem">
 					<TwitchLogo slot="icon" />
 					<span>ayyybubu</span>
 				</Button>
-				<Button href="https://youtube.com/channel/bubutv" target="_blank">
+				<Button href="https://youtube.com/channel/bubutv" target="_blank" style="margin-left: 0.5rem">
 					<YoutubeLogo slot="icon" />
 					<span>bubutv</span>
 				</Button>
-				<Button href="https://twitter.com/tweetbubu" target="_blank">
+				<Button href="https://twitter.com/tweetbubu" target="_blank" style="margin-left: 0.5rem">
 					<TwitterLogo slot="icon" />
 					<span>tweetbubu</span>
 				</Button>
@@ -101,9 +101,9 @@
 				<UserCircle slot="icon" />
 				Editors
 				{#if editorsExpanded}
-					<CaretDown slot="icon-right" />
+					<CaretDown slot="icon-right" style="margin-left: auto"/>
 				{:else}
-					<CaretRight slot="icon-right" />
+					<CaretRight slot="icon-right" style="margin-left: auto" />
 				{/if}
 			</Button>
 			{#if editorsExpanded}
@@ -236,6 +236,12 @@
 			display: flex;
 			gap: 0.5rem;
 			flex-wrap: wrap;
+		}
+
+		// Select all buttons except the active one
+		.link-list > :global(.button:not(.secondary)) {
+			color: var(--text-light);
+			font-weight: 500;
 		}
 	}
 
