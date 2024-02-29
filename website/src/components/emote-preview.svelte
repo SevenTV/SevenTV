@@ -2,12 +2,21 @@
 	export let name = "emoteName";
 	export let index = 0;
 	export let bg: "medium" | "light" = "medium";
+	export let emoteOnly = false;
 </script>
 
-<a href="/emotes/{name}" class="emote" style:background-color="var(--bg-{bg})">
+<a
+	href="/emotes/{name}"
+	class="emote"
+	class:emote-only={emoteOnly}
+	style:background-color="var(--bg-{bg})"
+	title={name}
+>
 	<div class="image" style="animation-delay: {index * 10}ms"></div>
-	<span class="name">{name}</span>
-	<span class="user">username</span>
+	{#if !emoteOnly}
+		<span class="name">{name}</span>
+		<span class="user">username</span>
+	{/if}
 </a>
 
 <style lang="scss">
@@ -15,8 +24,9 @@
 		color: var(--text);
 		text-decoration: none;
 
-		width: var(--emote-preview-size);
-		height: var(--emote-preview-size);
+		width: 100%;
+		max-width: 10rem;
+		aspect-ratio: 1 / 1;
 
 		display: flex;
 		flex-direction: column;
@@ -31,6 +41,12 @@
 		&:focus-visible {
 			border-color: var(--border-active);
 		}
+
+		&.emote-only > .image {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+		}
 	}
 
 	@keyframes loading {
@@ -38,7 +54,7 @@
 			opacity: 0.5;
 		}
 		50% {
-			opacity: 1.0;
+			opacity: 1;
 		}
 		100% {
 			opacity: 0.5;
@@ -46,8 +62,8 @@
 	}
 
 	.image {
-		width: calc(var(--emote-preview-size) / 2);
-		height: calc(var(--emote-preview-size) / 2);
+		width: 50%;
+		height: 50%;
 		margin-bottom: 0.5rem;
 
 		background-color: var(--preview);

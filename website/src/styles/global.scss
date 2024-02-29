@@ -82,7 +82,10 @@ input[type="text"] {
 	color: var(--text);
 	font-size: 0.875rem;
 
-	&::-webkit-input-placeholder, &::-moz-placeholder, &::-ms-input-placeholder, &::placeholder {
+	&::-webkit-input-placeholder,
+	&::-moz-placeholder,
+	&::-ms-input-placeholder,
+	&::placeholder {
 		font-weight: 500;
 	}
 
@@ -116,6 +119,18 @@ input[type="text"] {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+
+		& > h1 {
+			font-size: 1.125rem;
+			font-weight: 700;
+			margin: 0.25rem 0;
+		}
+
+		& > .link-list {
+			display: flex;
+			flex-direction: column;
+			gap: 0.25rem;
+		}
 	}
 
 	& > .content {

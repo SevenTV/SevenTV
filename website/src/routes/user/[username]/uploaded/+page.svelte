@@ -1,6 +1,6 @@
 <script lang="ts">
 	import EmoteContainer from "$/components/emote-container.svelte";
-import EmotePreview from "$/components/emote-preview.svelte";
+	import EmotePreview from "$/components/emote-preview.svelte";
 </script>
 
 <EmoteContainer>

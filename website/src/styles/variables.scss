@@ -37,7 +37,6 @@ html {
 	--subscriber: #aa71ff;
 
 	--preview: #222222;
-	--emote-preview-size: 10rem;
 }
 
 @mixin ligth-mode {
@@ -82,10 +81,4 @@ html.light {
 	color-scheme: light;
 
 	@include ligth-mode;
-}
-
-@media screen and (max-width: 960px) {
-	:root {
-		--emote-preview-size: 8rem;
-	}
 }

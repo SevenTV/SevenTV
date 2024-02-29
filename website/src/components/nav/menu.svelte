@@ -29,7 +29,7 @@
 		Language,
 		Theme,
 		Settings,
-	};
+	}
 
 	let menu = Menu.Root;
 

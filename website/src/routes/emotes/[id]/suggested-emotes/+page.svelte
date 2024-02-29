@@ -10,7 +10,7 @@
 </script>
 
 <div class="navigation">
-    <EmoteTabs id={data.id} />
+	<EmoteTabs id={data.id} />
 	<div class="buttons">
 		<Button disabled>
 			<CaretLeft slot="icon" />
@@ -28,14 +28,14 @@
 
 <style lang="scss">
 	.navigation {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-    }
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
 
 	.buttons {
 		display: flex;
-        align-items: center;
+		align-items: center;
 	}
 </style>

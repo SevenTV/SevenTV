@@ -30,12 +30,18 @@
 </script>
 
 <div class="navigation">
-    <EmoteTabs id={data.id} />
+	<EmoteTabs id={data.id} />
 </div>
 <div class="activities">
 	{#each activities as activity, index}
 		<div class="event">
-			<IconContext values={{ style: "grid-area: icon; margin: 0 0.5rem;", size: "1.2rem", color: "var(--primary)" }}>
+			<IconContext
+				values={{
+					style: "grid-area: icon; margin: 0 0.5rem;",
+					size: "1.2rem",
+					color: "var(--primary)",
+				}}
+			>
 				{#if activity.kind === "reject"}
 					<X />
 				{:else if activity.kind === "modify"}
@@ -57,12 +63,12 @@
 </div>
 
 <style lang="scss">
-    .navigation {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-    }
+	.navigation {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
 
 	.activities {
 		margin-top: 1.5rem;

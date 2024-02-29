@@ -6,14 +6,14 @@
 </script>
 
 <div class="navigation">
-    <EmoteTabs id={data.id} />
+	<EmoteTabs id={data.id} />
 </div>
 
 <style lang="scss">
-    .navigation {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-    }
+	.navigation {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
 </style>

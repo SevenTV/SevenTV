@@ -9,7 +9,7 @@
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
 	import Notifications from "../notifications.svelte";
-	import { Bell, Chat, List, MagnifyingGlass, Plus, PlusSquare } from "phosphor-svelte";
+	import { Bell, Chat, List, MagnifyingGlass, PlusSquare } from "phosphor-svelte";
 	import Button from "../button.svelte";
 </script>
 

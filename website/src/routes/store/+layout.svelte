@@ -32,34 +32,14 @@
 </div>
 
 <style lang="scss">
-	.side-bar-layout {
-		position: relative;
-	}
+	.redeem {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 
-	.side-bar {
-		z-index: 1;
-
-		h1 {
-			font-size: 1.125rem;
-			font-weight: 700;
-			margin: 0.25rem 0;
-		}
-
-		.link-list {
-			display: flex;
-			flex-direction: column;
-			gap: 0.25rem;
-		}
-
-		.redeem {
-			display: flex;
-			flex-direction: column;
-			gap: 0.5rem;
-
-			color: var(--text-light);
-			font-size: 0.75rem;
-			font-weight: 500;
-		}
+		color: var(--text-light);
+		font-size: 0.75rem;
+		font-weight: 500;
 	}
 
 	.content {

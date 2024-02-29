@@ -2,7 +2,16 @@
 	import Button from "$/components/button.svelte";
 	import EmoteContainer from "$/components/emote-container.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { Fire, FolderSimple, GlobeHemisphereWest, GridFour, GridNine, Trophy, Upload } from "phosphor-svelte";
+	import { Layout, emotesLayout } from "$/lib/stores";
+	import {
+		Fire,
+		FolderSimple,
+		GlobeHemisphereWest,
+		GridFour,
+		GridNine,
+		Trophy,
+		Upload,
+	} from "phosphor-svelte";
 </script>
 
 <div class="nav-bar">
@@ -29,15 +38,21 @@
 			<FolderSimple slot="icon" />
 			Personal Emotes
 		</Button>
-		<Button>
+		<Button
+			secondary={$emotesLayout === Layout.BigGrid}
+			on:click={() => ($emotesLayout = Layout.BigGrid)}
+		>
 			<GridFour slot="icon" />
 		</Button>
-		<Button>
+		<Button
+			secondary={$emotesLayout === Layout.SmallGrid}
+			on:click={() => ($emotesLayout = Layout.SmallGrid)}
+		>
 			<GridNine slot="icon" />
 		</Button>
 	</div>
 </div>
-<EmoteContainer scrollable topMargin={1}>
+<EmoteContainer scrollable layout={$emotesLayout}>
 	<slot />
 </EmoteContainer>
 
