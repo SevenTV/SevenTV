@@ -6,7 +6,7 @@
 	export let big: boolean = false;
 </script>
 
-<Button href="/user/{user}" big={big}>
+<Button href="/user/{user}" {big}>
 	<div class="image" style="animation-delay: {-index * 10}ms" slot="icon"></div>
 	<span class="user">{user}</span>
 </Button>

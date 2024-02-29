@@ -120,7 +120,7 @@
 				text-decoration: none;
 				background-color: var(--secondary-hover);
 			}
-			
+
 			&:active {
 				background-color: var(--secondary-active);
 			}
