@@ -4,18 +4,18 @@
 	export let user = "channelName";
 	export let index = 0;
 	export let big: boolean = false;
+	export let size: number = 2;
 </script>
 
 <Button href="/user/{user}" {big}>
-	<div class="image" style="animation-delay: {-index * 10}ms" slot="icon"></div>
+	<div class="image" style="animation-delay: {-index * 10}ms; width: {size}rem;" slot="icon"></div>
 	<span class="user">{user}</span>
 </Button>
 
 <style lang="scss">
 	.image {
 		flex-shrink: 0;
-		width: 2rem;
-		height: 2rem;
+		aspect-ratio: 1 / 1;
 		border-radius: 50%;
 
 		background-color: var(--preview);

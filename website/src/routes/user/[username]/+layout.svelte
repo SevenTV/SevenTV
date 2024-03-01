@@ -84,18 +84,20 @@
 				{/if}
 			</Button>
 			{#if connectionsExpanded}
-				<Button href="https://twitch.tv/ayyybubu" target="_blank" style="margin-left: 0.5rem">
-					<TwitchLogo slot="icon" />
-					<span>ayyybubu</span>
-				</Button>
-				<Button href="https://youtube.com/channel/bubutv" target="_blank" style="margin-left: 0.5rem">
-					<YoutubeLogo slot="icon" />
-					<span>bubutv</span>
-				</Button>
-				<Button href="https://twitter.com/tweetbubu" target="_blank" style="margin-left: 0.5rem">
-					<TwitterLogo slot="icon" />
-					<span>tweetbubu</span>
-				</Button>
+				<div class="expanded">
+					<Button href="https://twitch.tv/ayyybubu" target="_blank">
+						<TwitchLogo slot="icon" />
+						<span>ayyybubu</span>
+					</Button>
+					<Button href="https://youtube.com/channel/bubutv" target="_blank">
+						<YoutubeLogo slot="icon" />
+						<span>bubutv</span>
+					</Button>
+					<Button href="https://twitter.com/tweetbubu" target="_blank">
+						<TwitterLogo slot="icon" />
+						<span>tweetbubu</span>
+					</Button>
+				</div>
 			{/if}
 			<Button big on:click={() => (editorsExpanded = !editorsExpanded)}>
 				<UserCircle slot="icon" />
@@ -107,8 +109,10 @@
 				{/if}
 			</Button>
 			{#if editorsExpanded}
-				<ChannelPreview />
-				<ChannelPreview />
+				<div class="expanded">
+					<ChannelPreview size={1.5} />
+					<ChannelPreview size={1.5} />
+				</div>
 			{/if}
 			<hr />
 			<TabLink title="Active Emotes" href="/user/{data.username}" big>
@@ -242,6 +246,14 @@
 		.link-list > :global(.button:not(.secondary)) {
 			color: var(--text-light);
 			font-weight: 500;
+		}
+
+		.expanded {
+			margin-left: 0.5rem;
+
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
 		}
 	}
 
