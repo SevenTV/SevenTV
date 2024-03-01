@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
-	import Tag from "$/components/emotes/tag.svelte";
 	import ImagePreview from "$/components/image-preview.svelte";
 	import {
 		ArrowBendDownRight,
@@ -8,11 +7,10 @@
 		FolderPlus,
 		NotePencil,
 		CaretDown,
-		GlobeSimple,
-		StackSimple,
-		Fire,
 	} from "phosphor-svelte";
 	import type { LayoutData } from "./$types";
+	import Tags from "$/components/emotes/tags.svelte";
+	import Flags from "$/components/emotes/flags.svelte";
 
 	export let data: LayoutData;
 </script>
@@ -47,30 +45,13 @@
 					</a>
 				</div>
 			</a>
-			<div class="flags">
-				<span class="flag">
-					<GlobeSimple size="1rem" />
-					<span class="hide-on-mobile">Global</span>
-				</span>
-				<span class="flag">
-					<Fire size="1rem" />
-					<span class="hide-on-mobile">Trending</span>
-				</span>
-				<span class="flag">
-					<StackSimple size="1rem" />
-					<span class="hide-on-mobile">Overlay</span>
-				</span>
-			</div>
+			<Flags flags={["global", "trending", "overlay"]} />
 		</div>
 
 		<div class="emote-info">
 			<div class="heading">
 				<h1>{data.id}</h1>
-				<div class="tags">
-					<Tag>lorem</Tag>
-					<Tag>ipsum</Tag>
-					<Tag>dolor</Tag>
-				</div>
+				<Tags tags={["tag1", "tag2", "tag3"]} />
 			</div>
 			<div class="previews">
 				<ImagePreview size={32} />
@@ -175,25 +156,6 @@
 		}
 	}
 
-	.flags {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-
-		.flag {
-			display: flex;
-			align-items: center;
-			gap: 0.5rem;
-			padding: 0.3rem 0.5rem 0.3rem 0.75rem;
-			background-color: var(--secondary);
-			border-radius: 0.5rem;
-
-			color: var(--text-light);
-			font-size: 0.75rem;
-			font-weight: 500;
-		}
-	}
-
 	.emote-info {
 		margin-top: 0.5rem;
 
@@ -206,11 +168,6 @@
 			h1 {
 				font-size: 1.25rem;
 				font-weight: 600;
-			}
-
-			.tags {
-				display: flex;
-				gap: 0.5rem;
 			}
 		}
 
@@ -243,10 +200,6 @@
 
 		.emote-info .previews {
 			gap: 0.75rem;
-		}
-
-		.flags .flag {
-			padding: 0.3rem 0.5rem;
 		}
 	}
 </style>

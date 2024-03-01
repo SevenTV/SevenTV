@@ -7,8 +7,8 @@
 	import TagsInput from "../tags-input.svelte";
 	import Button from "../button.svelte";
 	import ImagePreview from "../image-preview.svelte";
-	import Tag from "../emotes/tag.svelte";
 	import { browser } from "$app/environment";
+	import Tags from "../emotes/tags.svelte";
 
 	let fileInput: HTMLInputElement;
 	let dragOver = false;
@@ -80,11 +80,7 @@
 		<section class="upload {previewTheme}" class:preview={files && files[0]}>
 			{#if files && files[0] && imageSrc}
 				<span class="name">{name || "Untitled"}</span>
-				<div class="tags">
-					{#each tags as tag}
-						<Tag>{tag}</Tag>
-					{/each}
-				</div>
+				<Tags tags={tags} />
 				<div class="previews">
 					<ImagePreview size={32} src={imageSrc} />
 					<ImagePreview size={64} src={imageSrc} />
@@ -276,13 +272,6 @@
 			.name {
 				font-size: 1.25rem;
 				font-weight: 600;
-			}
-
-			.tags {
-				display: flex;
-				gap: 0.5rem;
-				flex-wrap: wrap;
-				justify-content: center;
 			}
 
 			.previews {
