@@ -153,6 +153,7 @@
 
 <style lang="scss">
 	.uploads {
+		overflow: auto;
 		overflow: overlay;
 		scrollbar-gutter: stable;
 

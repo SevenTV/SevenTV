@@ -51,8 +51,8 @@
 	}
 
 	main {
+		overflow: auto;
 		overflow: overlay;
-		scrollbar-gutter: stable;
 	}
 
 	.skip-to-main {

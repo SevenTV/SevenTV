@@ -186,7 +186,7 @@
 				</TabLink>
 			</nav>
 		</div>
-		<div class="data">
+		<div class="page">
 			<slot />
 		</div>
 	</div>
@@ -272,8 +272,7 @@
 			display: flex;
 			border-radius: 0.5rem;
 			background-color: var(--bg-light);
-			overflow: overlay;
-			scrollbar-gutter: stable;
+			overflow: auto;
 
 			-ms-overflow-style: none;
 			scrollbar-width: none;
@@ -282,7 +281,8 @@
 			}
 		}
 
-		.data {
+		.page {
+			overflow: auto;
 			overflow: overlay;
 			scrollbar-gutter: stable;
 		}

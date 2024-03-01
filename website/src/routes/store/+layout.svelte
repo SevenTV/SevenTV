@@ -42,13 +42,17 @@
 		font-weight: 500;
 	}
 
-	.content {
-		overflow: overlay;
-		scrollbar-gutter: stable;
-
-		& > :global(*) {
-			// right margin because of side-bar-layout
-			margin-right: 1.25rem;
+	// Only desktop
+	@media screen and (min-width: 961px) {
+		.content {
+			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
+	
+			& > :global(*) {
+				// right margin because of side-bar-layout
+				margin-right: 1.25rem;
+			}
 		}
 	}
 </style>
