@@ -2,34 +2,32 @@
 	import Dialog from "./dialog.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
 	import SearchBar from "$/components/search-bar.svelte";
-	import { Moon, Sliders, Sun, UploadSimple } from "phosphor-svelte";
+	import { ArrowCounterClockwise, Moon, Sun, Trash, UploadSimple } from "phosphor-svelte";
 	import { Theme, showUploadDialog, theme } from "$/lib/stores";
 	import TagsInput from "../tags-input.svelte";
 	import Button from "../button.svelte";
 	import ImagePreview from "../image-preview.svelte";
 	import Tag from "../emotes/tag.svelte";
+	import { browser } from "$app/environment";
 
 	let fileInput: HTMLInputElement;
 	let dragOver = false;
 
 	let name: string;
 	let tags: string[] = [];
-	let files: FileList;
+	let files: FileList | null = null;
 	let imageSrc: string;
-	let previewTheme = $theme;
+	let previewTheme = initialTheme();
+
+	function initialTheme() {
+		if ($theme === Theme.System && browser) {
+			return window.matchMedia("prefers-color-scheme: dark") ? Theme.Dark : Theme.Light;
+		}
+		return $theme;
+	}
 
 	function toggleTheme() {
-		switch (previewTheme) {
-			case Theme.System:
-				previewTheme = Theme.Light;
-				break;
-			case Theme.Light:
-				previewTheme = Theme.Dark;
-				break;
-			case Theme.Dark:
-				previewTheme = Theme.System;
-				break;
-		}
+		previewTheme = previewTheme === Theme.Dark ? Theme.Light : Theme.Dark;
 	}
 
 	$: if (files && files[0]) {
@@ -93,21 +91,20 @@
 					<ImagePreview size={96} src={imageSrc} />
 					<ImagePreview size={128} src={imageSrc} />
 				</div>
-				<Button
-					secondary
-					on:click={toggleTheme}
-					style="position: absolute; top: 1rem; right: 1rem;"
-				>
-					<svelte:fragment slot="icon">
-						{#if previewTheme === Theme.System}
-							<Sliders />
-						{:else if previewTheme === Theme.Dark}
-							<Moon />
-						{:else}
-							<Sun />
-						{/if}
-					</svelte:fragment>
-				</Button>
+				<div class="buttons">
+					<Button secondary on:click={toggleTheme}>
+						<svelte:fragment slot="icon">
+							{#if previewTheme === Theme.Dark}
+								<Moon />
+							{:else}
+								<Sun />
+							{/if}
+						</svelte:fragment>
+					</Button>
+					<Button secondary on:click={() => (files = null)}>
+						<Trash slot="icon" />
+					</Button>
+				</div>
 			{:else}
 				<div
 					class="file"
@@ -222,7 +219,7 @@
 		.file {
 			width: 100%;
 			height: 100%;
-			border: 1px dashed var(--text-light);
+			background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='8' ry='8' stroke='%23333333' stroke-width='3' stroke-dasharray='8%2c 10' stroke-dashoffset='13' stroke-linecap='butt'/%3e%3c/svg%3e");
 			border-radius: 0.5rem;
 			padding: 1rem 1.25rem;
 
@@ -255,6 +252,16 @@
 
 				background-color: var(--bg-light);
 			}
+		}
+
+		.buttons {
+			position: absolute;
+			top: 1rem;
+			right: 1rem;
+
+			display: flex;
+			gap: 0.5rem;
+			align-items: center;
 		}
 
 		&.preview {

@@ -34,7 +34,7 @@
 	use:mouseTrap={onClose}
 	aria-modal="true"
 	transition:fade={{ duration: 100 }}
-	style="--width-prop: {width}rem"
+	style="width: {width}rem"
 >
 	<div use:mouseTrap={onClose}>
 		<slot />
@@ -57,7 +57,6 @@
 		background: none;
 
 		max-width: 90vw;
-		width: var(--width-prop);
 
 		div {
 			color: var(--text);
