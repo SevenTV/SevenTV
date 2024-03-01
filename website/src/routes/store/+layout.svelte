@@ -6,7 +6,7 @@
 <div class="side-bar-layout">
 	<aside class="side-bar">
 		<h1>Store</h1>
-		<div class="link-list">
+		<nav class="link-list">
 			<TabLink href="/store" title="Subscription" big>
 				<Star />
 				<Star weight="fill" slot="active" />
@@ -19,7 +19,7 @@
 				<TShirt />
 				<TShirt weight="fill" slot="active" />
 			</TabLink>
-		</div>
+		</nav>
 		<hr />
 		<label class="redeem">
 			Redeem Gift Code
@@ -42,7 +42,17 @@
 		font-weight: 500;
 	}
 
-	.content {
-		overflow: auto;
+	// Only desktop
+	@media screen and (min-width: 961px) {
+		.content {
+			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
+	
+			& > :global(*) {
+				// right margin because of side-bar-layout
+				margin-right: 1.25rem;
+			}
+		}
 	}
 </style>

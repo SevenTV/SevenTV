@@ -1,11 +1,11 @@
 <script lang="ts">
 	import TabLink from "../tab-link.svelte";
-	import { Users, ChartLineUp, Graph, ChatText, Pulse } from "phosphor-svelte";
+	import { Users, ChartLineUp, Graph, ChatText, Note, Pulse } from "phosphor-svelte";
 
 	export let id: string;
 </script>
 
-<div class="links">
+<nav class="links">
 	<TabLink title="Channels (1020)" href="/emotes/{id}" responsive>
 		<Users />
 		<Users weight="fill" slot="active" />
@@ -26,7 +26,7 @@
 		<ChatText />
 		<ChatText weight="fill" slot="active" />
 	</TabLink>
-</div>
+</nav>
 
 <style lang="scss">
 	.links {

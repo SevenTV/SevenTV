@@ -24,6 +24,8 @@
 	.emotes {
 		&.scrollable {
 			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
 		}
 
 		display: grid;

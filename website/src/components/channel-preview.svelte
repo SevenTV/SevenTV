@@ -1,32 +1,25 @@
 <script lang="ts">
+	import Button from "./button.svelte";
+
 	export let user = "channelName";
 	export let index = 0;
-	export let bg: "medium" | "light" = "medium";
+	export let big: boolean = false;
+	export let size: number = 2;
 </script>
 
-<a href="/user/{user}" class="channel" style:background-color="var(--bg-{bg})">
-	<div class="image" style="animation-delay: {index * 10}ms"></div>
+<Button href="/user/{user}" {big}>
+	<div class="image" style="animation-delay: {-index * 10}ms; width: {size}rem;" slot="icon"></div>
 	<span class="user">{user}</span>
-</a>
+</Button>
 
 <style lang="scss">
-	.channel {
-		color: var(--text);
-		text-decoration: none;
+	.image {
+		flex-shrink: 0;
+		aspect-ratio: 1 / 1;
+		border-radius: 50%;
 
-		padding: 0.5rem 1rem;
-
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-
-		border: 1px solid transparent;
-		border-radius: 0.5rem;
-
-		&:hover,
-		&:focus-visible {
-			border-color: var(--border-active);
-		}
+		background-color: var(--preview);
+		animation: loading 1s infinite;
 	}
 
 	@keyframes loading {
@@ -39,16 +32,6 @@
 		100% {
 			opacity: 0.5;
 		}
-	}
-
-	.image {
-		flex-shrink: 0;
-		width: 2.5rem;
-		height: 2.5rem;
-		border-radius: 50%;
-
-		background-color: var(--preview);
-		animation: loading 1s infinite;
 	}
 
 	.user {

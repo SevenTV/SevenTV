@@ -11,7 +11,7 @@
 <div class="side-bar-layout">
 	<aside class="side-bar">
 		<h1>Discover</h1>
-		<div class="link-list">
+		<nav class="link-list">
 			<TabLink href="/discover" title="News" big {matcher}>
 				<Newspaper />
 				<Newspaper weight="fill" slot="active" />
@@ -20,7 +20,7 @@
 				<Heart />
 				<Heart weight="fill" slot="active" />
 			</TabLink>
-		</div>
+		</nav>
 	</aside>
 	<div class="content">
 		<slot />

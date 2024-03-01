@@ -1,28 +1,36 @@
 <script lang="ts">
 	import Role from "$/components/profile/role.svelte";
 	import type { LayoutData } from "./$types";
-	import Expandable from "$/components/expandable.svelte";
-	import HideOn from "$/components/hide-on.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import {
 		CaretDown,
+		CaretRight,
+		ChartLineUp,
 		ChatCircleText,
 		DiscordLogo,
 		DotsThreeVertical,
 		FolderSimple,
-		Gear,
 		Gift,
 		Heart,
+		IdentificationCard,
 		Lightning,
-		Note,
+		Link,
 		PaintBrush,
+		Pulse,
 		SealCheck,
 		TwitchLogo,
+		TwitterLogo,
 		Upload,
+		UserCircle,
+		YoutubeLogo,
 	} from "phosphor-svelte";
 	import Button from "$/components/button.svelte";
+	import ChannelPreview from "$/components/channel-preview.svelte";
 
 	export let data: LayoutData;
+
+	let connectionsExpanded = false;
+	let editorsExpanded = false;
 </script>
 
 <svelte:head>
@@ -65,30 +73,89 @@
 				Gift
 			</Button>
 		</div>
-		<HideOn mobile>
-			<Expandable title="Connections">
-				<Button href="https://twitch.tv/ayyybubu" target="_blank" big>
-					<TwitchLogo slot="icon" />
-					<span>ayyybubu</span>
-				</Button>
-				<Button big>
-					<DiscordLogo slot="icon" />
-					<span>bubu</span>
-				</Button>
-			</Expandable>
-			<Expandable title="Editors">
-				username
-				<br />
-				username
-			</Expandable>
-		</HideOn>
+		<nav class="link-list hide-on-mobile">
+			<Button big on:click={() => (connectionsExpanded = !connectionsExpanded)}>
+				<Link slot="icon" />
+				Connections
+				{#if connectionsExpanded}
+					<CaretDown slot="icon-right" style="margin-left: auto" />
+				{:else}
+					<CaretRight slot="icon-right" style="margin-left: auto" />
+				{/if}
+			</Button>
+			{#if connectionsExpanded}
+				<div class="expanded">
+					<Button href="https://twitch.tv/ayyybubu" target="_blank">
+						<TwitchLogo slot="icon" />
+						<span>ayyybubu</span>
+					</Button>
+					<Button href="https://youtube.com/channel/bubutv" target="_blank">
+						<YoutubeLogo slot="icon" />
+						<span>bubutv</span>
+					</Button>
+					<Button href="https://twitter.com/tweetbubu" target="_blank">
+						<TwitterLogo slot="icon" />
+						<span>tweetbubu</span>
+					</Button>
+				</div>
+			{/if}
+			<Button big on:click={() => (editorsExpanded = !editorsExpanded)}>
+				<UserCircle slot="icon" />
+				Editors
+				{#if editorsExpanded}
+					<CaretDown slot="icon-right" style="margin-left: auto"/>
+				{:else}
+					<CaretRight slot="icon-right" style="margin-left: auto" />
+				{/if}
+			</Button>
+			{#if editorsExpanded}
+				<div class="expanded">
+					<ChannelPreview size={1.5} />
+					<ChannelPreview size={1.5} />
+				</div>
+			{/if}
+			<hr />
+			<TabLink title="Active Emotes" href="/user/{data.username}" big>
+				<Lightning />
+				<Lightning weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Uploaded Emotes" href="/user/{data.username}/uploaded" big>
+				<Upload />
+				<Upload weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets" big>
+				<FolderSimple />
+				<FolderSimple weight="fill" slot="active" />
+			</TabLink>
+			<hr />
+			<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics" big>
+				<PaintBrush />
+				<PaintBrush weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Activity" href="/user/{data.username}/activity" big>
+				<Pulse />
+				<Pulse weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Analytics" href="/user/{data.username}/analytics" big>
+				<ChartLineUp />
+				<ChartLineUp weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments" big>
+				<ChatCircleText />
+				<ChatCircleText weight="fill" slot="active" />
+			</TabLink>
+		</nav>
 		<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
 			<DotsThreeVertical slot="icon" />
 		</Button>
 	</aside>
 	<div class="content">
-		<div class="header">
-			<div class="tabs">
+		<div class="header hide-on-desktop">
+			<nav class="tabs">
+				<TabLink title="About" href="/user/{data.username}/about">
+					<IdentificationCard />
+					<IdentificationCard weight="fill" slot="active" />
+				</TabLink>
 				<TabLink title="Active" href="/user/{data.username}">
 					<Lightning />
 					<Lightning weight="fill" slot="active" />
@@ -105,22 +172,21 @@
 					<PaintBrush />
 					<PaintBrush weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Activity Log" href="/user/{data.username}/activity-log">
-					<Note />
-					<Note weight="fill" slot="active" />
+				<TabLink title="Activity" href="/user/{data.username}/activity">
+					<Pulse />
+					<Pulse weight="fill" slot="active" />
+				</TabLink>
+				<TabLink title="Analytics" href="/user/{data.username}/analytics">
+					<ChartLineUp />
+					<ChartLineUp weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments">
 					<ChatCircleText />
 					<ChatCircleText weight="fill" slot="active" />
 				</TabLink>
-			</div>
-			<Button href="/settings" hideOnMobile>
-				<Gear slot="icon" />
-				Settings
-			</Button>
+			</nav>
 		</div>
-		<hr class="hide-on-mobile" />
-		<div class="data">
+		<div class="page">
 			<slot />
 		</div>
 	</div>
@@ -175,6 +241,20 @@
 			gap: 0.5rem;
 			flex-wrap: wrap;
 		}
+
+		// Select all buttons except the active one
+		.link-list > :global(.button:not(.secondary)) {
+			color: var(--text-light);
+			font-weight: 500;
+		}
+
+		.expanded {
+			margin-left: 0.5rem;
+
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
 	}
 
 	.content {
@@ -201,12 +281,10 @@
 			}
 		}
 
-		hr {
-			margin: 1rem 0;
-		}
-
-		.data {
+		.page {
 			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
 		}
 	}
 

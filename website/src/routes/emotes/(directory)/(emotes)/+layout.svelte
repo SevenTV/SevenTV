@@ -15,7 +15,7 @@
 </script>
 
 <div class="nav-bar">
-	<div class="tabs">
+	<nav class="tabs">
 		<TabLink href="/emotes" title="Trending" responsive>
 			<Fire />
 			<Fire weight="fill" slot="active" />
@@ -32,7 +32,7 @@
 			<Upload />
 			<Upload weight="fill" slot="active" />
 		</TabLink>
-	</div>
+	</nav>
 	<div class="buttons">
 		<Button secondary hideOnMobile>
 			<FolderSimple slot="icon" />

@@ -21,19 +21,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-	background: rgba(0, 0, 0, 0.2);
+	background: var(--bg-medium);
 }
 
 ::-webkit-scrollbar-thumb {
-	background: var(--secondary);
-
-	&:hover {
-		background: var(--secondary-hover);
-	}
-
-	&:active {
-		background: var(--secondary-active);
-	}
+	background: var(--border-active);
 }
 
 h1,
@@ -136,15 +128,32 @@ input[type="text"] {
 	& > .content {
 		flex-grow: 1;
 		min-width: 0;
+		margin-bottom: -1.25rem;
 	}
 }
 
 // Desktop
 @media screen and (min-width: 961px) {
-	.side-bar {
-		width: 100%;
-		max-width: 16rem;
-		overflow: auto;
+	.side-bar-layout {
+		& > .side-bar {
+			width: 100%;
+			max-width: 16rem;
+			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
+		}
+
+		& > .content {
+			margin-right: -1.25rem;
+
+			& > * {
+				padding-right: 1.25rem;
+
+				&:last-child {
+					padding-bottom: 1.25rem;
+				}
+			}
+		}
 	}
 }
 
@@ -155,6 +164,8 @@ input[type="text"] {
 
 		flex-direction: column;
 		overflow: auto;
+		overflow: overlay;
+		scrollbar-gutter: stable;
 
 		& > .side-bar {
 			padding: 1rem;

@@ -85,6 +85,8 @@
 		}
 
 		.gradient {
+			color: white;
+
 			height: 8.5rem;
 			min-width: 10rem;
 

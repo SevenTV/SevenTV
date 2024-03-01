@@ -33,7 +33,7 @@
 <div class="side-bar-layout">
 	<aside class="side-bar">
 		<h1>Directory</h1>
-		<div class="link-list">
+		<nav class="link-list">
 			<TabLink href="/emotes" title="Emotes" big matcher={menuMatcher}>
 				<Smiley />
 				<Smiley weight="fill" slot="active" />
@@ -46,7 +46,7 @@
 				<BookmarkSimple />
 				<BookmarkSimple weight="fill" slot="active" />
 			</TabLink>
-		</div>
+		</nav>
 		<hr />
 		<Expandable title="Search">
 			<SearchBar placeholder="Emote" grow />

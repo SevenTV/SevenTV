@@ -12,7 +12,7 @@
 	style:background-color="var(--bg-{bg})"
 	title={name}
 >
-	<div class="image" style="animation-delay: {index * 10}ms"></div>
+	<div class="image" style="animation-delay: {-index * 10}ms"></div>
 	{#if !emoteOnly}
 		<span class="name">{name}</span>
 		<span class="user">username</span>
