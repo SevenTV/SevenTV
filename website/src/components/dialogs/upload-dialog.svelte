@@ -2,7 +2,7 @@
 	import Dialog from "./dialog.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
 	import SearchBar from "$/components/search-bar.svelte";
-	import { ArrowCounterClockwise, Moon, Sun, Trash, UploadSimple } from "phosphor-svelte";
+	import { Moon, Sun, Trash, UploadSimple } from "phosphor-svelte";
 	import { Theme, showUploadDialog, theme } from "$/lib/stores";
 	import TagsInput from "../tags-input.svelte";
 	import Button from "../button.svelte";
@@ -123,7 +123,7 @@
 						bind:files
 					/>
 					<UploadSimple size="1.5rem" color="var(--text-light)" />
-					<h2>Drop & drop to upload, or</h2>
+					<h2>Drag & drop to upload, or</h2>
 					<Button secondary on:click={browse}>Browse Files</Button>
 					<span class="details">
 						7MB max file size

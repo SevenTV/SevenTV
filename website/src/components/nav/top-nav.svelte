@@ -108,6 +108,8 @@
 		gap: 2rem;
 
 		.home {
+			color: var(--text);
+
 			display: flex;
 			align-items: center;
 		}

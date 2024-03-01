@@ -8,7 +8,7 @@
 
 <Banner title="Merch" subtitle="Coming soon!" gradientColor="#11bcff">
 	<img
-		src="https://cdn.7tv.app/emote/645921edd3b4256e12d8339a/2x.webp"
+		src="/pausershype.webp"
 		width="64"
 		height="64"
 		alt="Under construction"
