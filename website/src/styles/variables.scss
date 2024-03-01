@@ -2,7 +2,7 @@ html {
 	color-scheme: dark light;
 }
 
-:root {
+@mixin dark-theme {
 	--secondary: #222222;
 	--secondary-text: #ffffff;
 	--secondary-hover: #252525;
@@ -28,18 +28,13 @@ html {
 	--layout-border: transparent;
 	--border-active: #313131;
 
-	--error: #f6412d;
-
-	--staff: #ee4865;
-	--staff-bg: #ee48651a;
-
 	--store: #fea000;
 	--subscriber: #aa71ff;
 
 	--preview: #222222;
 }
 
-@mixin ligth-mode {
+@mixin light-theme {
 	--secondary: #ffffff;
 	--secondary-text: #000000;
 	--secondary-hover: #f9f9f9;
@@ -71,14 +66,29 @@ html {
 	--preview: #ffffff;
 }
 
+:root {
+	@include dark-theme;
+
+	--error: #f6412d;
+
+	--staff: #ee4865;
+	--staff-bg: #ee48651a;
+}
+
 @media (prefers-color-scheme: light) {
 	:root {
-		@include ligth-mode;
+		@include light-theme;
 	}
 }
 
-html.light {
+.dark-theme {
+	color-scheme: dark;
+
+	@include dark-theme;
+}
+
+.light-theme {
 	color-scheme: light;
 
-	@include ligth-mode;
+	@include light-theme;
 }

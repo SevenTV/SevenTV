@@ -2,8 +2,8 @@
 	import Dialog from "./dialog.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
 	import SearchBar from "$/components/search-bar.svelte";
-	import { Moon, Sun, UploadSimple } from "phosphor-svelte";
-	import { showUploadDialog } from "$/lib/stores";
+	import { Moon, Sliders, Sun, UploadSimple } from "phosphor-svelte";
+	import { Theme, showUploadDialog, theme } from "$/lib/stores";
 	import TagsInput from "../tags-input.svelte";
 	import Button from "../button.svelte";
 	import ImagePreview from "../image-preview.svelte";
@@ -16,7 +16,21 @@
 	let tags: string[] = [];
 	let files: FileList;
 	let imageSrc: string;
-	let bgLight: boolean = false;
+	let previewTheme = $theme;
+
+	function toggleTheme() {
+		switch (previewTheme) {
+			case Theme.System:
+				previewTheme = Theme.Light;
+				break;
+			case Theme.Light:
+				previewTheme = Theme.Dark;
+				break;
+			case Theme.Dark:
+				previewTheme = Theme.System;
+				break;
+		}
+	}
 
 	$: if (files && files[0]) {
 		const reader = new FileReader();
@@ -65,7 +79,7 @@
 <Dialog width={60} on:close={close}>
 	<div class="grid">
 		<h1 class="heading">Upload emote</h1>
-		<section class="upload" class:preview={files && files[0]} class:bg-light={bgLight}>
+		<section class="upload {previewTheme}" class:preview={files && files[0]}>
 			{#if files && files[0] && imageSrc}
 				<span class="name">{name || "Untitled"}</span>
 				<div class="tags">
@@ -80,15 +94,17 @@
 					<ImagePreview size={128} src={imageSrc} />
 				</div>
 				<Button
-					primary
-					on:click={() => (bgLight = !bgLight)}
+					secondary
+					on:click={toggleTheme}
 					style="position: absolute; top: 1rem; right: 1rem;"
 				>
 					<svelte:fragment slot="icon">
-						{#if bgLight}
-							<Sun />
-						{:else}
+						{#if previewTheme === Theme.System}
+							<Sliders />
+						{:else if previewTheme === Theme.Dark}
 							<Moon />
+						{:else}
+							<Sun />
 						{/if}
 					</svelte:fragment>
 				</Button>
@@ -201,11 +217,7 @@
 		grid-area: upload;
 		padding: 1.25rem;
 		min-height: 17.5rem;
-
-		&.bg-light {
-			background-color: white;
-			color: black;
-		}
+		color: var(--text);
 
 		.file {
 			width: 100%;
@@ -263,6 +275,7 @@
 				display: flex;
 				gap: 0.5rem;
 				flex-wrap: wrap;
+				justify-content: center;
 			}
 
 			.previews {

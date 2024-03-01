@@ -8,9 +8,9 @@ export const showMobileMenu = writable(false);
 export const showUploadDialog = writable(false);
 
 export enum Theme {
-	System = "system",
-	Light = "light",
-	Dark = "dark",
+	System = "system-theme",
+	Light = "light-theme",
+	Dark = "dark-theme",
 }
 
 export const theme = writable<Theme | null>(loadTheme());
@@ -31,15 +31,15 @@ theme.subscribe((value) => {
 	switch (value) {
 		case null:
 		case Theme.System:
-			document.documentElement.classList.remove("light", "dark");
+			document.documentElement.classList.remove("light-theme", "dark-theme");
 			break;
 		case Theme.Light:
-			document.documentElement.classList.remove("dark");
-			document.documentElement.classList.add("light");
+			document.documentElement.classList.remove("dark-theme");
+			document.documentElement.classList.add("light-theme");
 			break;
 		case Theme.Dark:
-			document.documentElement.classList.remove("light");
-			document.documentElement.classList.add("dark");
+			document.documentElement.classList.remove("light-theme");
+			document.documentElement.classList.add("dark-theme");
 			break;
 	}
 });

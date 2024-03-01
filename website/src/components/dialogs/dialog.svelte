@@ -69,8 +69,7 @@
 		}
 
 		&::backdrop {
-			background-color: rgba(0, 0, 0, 0.5);
-			backdrop-filter: blur(0.2rem);
+			background-color: rgba(0, 0, 0, 0.8);
 		}
 	}
 
