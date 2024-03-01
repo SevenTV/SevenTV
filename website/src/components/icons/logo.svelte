@@ -14,6 +14,6 @@
 
 <style lang="scss">
 	path {
-		fill: var(--text);
+		fill: currentColor;
 	}
 </style>
