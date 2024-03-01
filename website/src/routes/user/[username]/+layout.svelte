@@ -260,7 +260,8 @@
 			display: flex;
 			border-radius: 0.5rem;
 			background-color: var(--bg-light);
-			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
 
 			-ms-overflow-style: none;
 			scrollbar-width: none;
@@ -270,7 +271,8 @@
 		}
 
 		.data {
-			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
 		}
 	}
 

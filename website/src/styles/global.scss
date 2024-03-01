@@ -144,7 +144,8 @@ input[type="text"] {
 	.side-bar {
 		width: 100%;
 		max-width: 16rem;
-		overflow: auto;
+		overflow: overlay;
+		scrollbar-gutter: stable;
 	}
 }
 
@@ -154,7 +155,8 @@ input[type="text"] {
 		padding: 0.5rem;
 
 		flex-direction: column;
-		overflow: auto;
+		overflow: overlay;
+		scrollbar-gutter: stable;
 
 		& > .side-bar {
 			padding: 1rem;
