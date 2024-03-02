@@ -1,13 +1,7 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
 	import ImagePreview from "$/components/image-preview.svelte";
-	import {
-		ArrowBendDownRight,
-		Plus,
-		FolderPlus,
-		NotePencil,
-		CaretDown,
-	} from "phosphor-svelte";
+	import { ArrowBendDownRight, Plus, FolderPlus, NotePencil, CaretDown } from "phosphor-svelte";
 	import type { LayoutData } from "./$types";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags from "$/components/emotes/flags.svelte";

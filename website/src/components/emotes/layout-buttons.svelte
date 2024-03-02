@@ -5,14 +5,14 @@
 </script>
 
 <Button
-    secondary={$emotesLayout === Layout.BigGrid}
-    on:click={() => ($emotesLayout = Layout.BigGrid)}
+	secondary={$emotesLayout === Layout.BigGrid}
+	on:click={() => ($emotesLayout = Layout.BigGrid)}
 >
-    <GridFour slot="icon" />
+	<GridFour slot="icon" />
 </Button>
 <Button
-    secondary={$emotesLayout === Layout.SmallGrid}
-    on:click={() => ($emotesLayout = Layout.SmallGrid)}
+	secondary={$emotesLayout === Layout.SmallGrid}
+	on:click={() => ($emotesLayout = Layout.SmallGrid)}
 >
-    <GridNine slot="icon" />
+	<GridNine slot="icon" />
 </Button>

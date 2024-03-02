@@ -1,11 +1,11 @@
 <script lang="ts">
 	export let value: boolean = false;
-    export let disabled: boolean = false;
+	export let disabled: boolean = false;
 	export let numb: boolean = false;
 </script>
 
-<label class="switch" class:numb={numb} {...$$restProps}>
-	<input type="checkbox" disabled={disabled} bind:checked={value} />
+<label class="switch" class:numb {...$$restProps}>
+	<input type="checkbox" {disabled} bind:checked={value} />
 	<span class="slider"></span>
 </label>
 
@@ -31,9 +31,9 @@
 
 	/* The slider */
 	.slider {
-        cursor: pointer;
+		cursor: pointer;
 		background-color: var(--border-active);
-        border-radius: 0.75rem;
+		border-radius: 0.75rem;
 
 		position: absolute;
 		top: 0;
@@ -48,7 +48,7 @@
 		content: "";
 		height: 1rem;
 		width: 1rem;
-        border-radius: 50%;
+		border-radius: 50%;
 
 		position: absolute;
 		left: 0.125rem;
@@ -62,9 +62,9 @@
 		background-color: var(--primary);
 	}
 
-    input:disabled + .slider {
-        cursor: not-allowed;
-    }
+	input:disabled + .slider {
+		cursor: not-allowed;
+	}
 
 	input:checked:disabled + .slider {
 		background-color: var(--primary-disabled);
@@ -74,7 +74,7 @@
 		transform: translateX(1rem);
 	}
 
-    input:disabled + .slider::before {
-        background-color: var(--text-light);
-    }
+	input:disabled + .slider::before {
+		background-color: var(--text-light);
+	}
 </style>

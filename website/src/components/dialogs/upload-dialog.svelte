@@ -80,7 +80,7 @@
 		<section class="upload {previewTheme}" class:preview={files && files[0]}>
 			{#if files && files[0] && imageSrc}
 				<span class="name">{name || "Untitled"}</span>
-				<Tags tags={tags} />
+				<Tags {tags} />
 				<div class="previews">
 					<ImagePreview size={32} src={imageSrc} />
 					<ImagePreview size={64} src={imageSrc} />

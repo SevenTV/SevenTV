@@ -24,7 +24,7 @@
 	href="/emotes/{name}"
 	class="emote"
 	class:emote-only={emoteOnly}
-	class:selected={selected}
+	class:selected
 	style:background-color="var(--bg-{bg})"
 	title={name}
 	on:click={onClick}
@@ -63,7 +63,7 @@
 		&:focus-visible {
 			border-color: var(--border-active);
 		}
-		
+
 		&.selected {
 			border-color: var(--primary);
 		}

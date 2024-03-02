@@ -4,13 +4,7 @@
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { emotesLayout } from "$/lib/stores";
-	import {
-		Fire,
-		FolderSimple,
-		GlobeHemisphereWest,
-		Trophy,
-		Upload,
-	} from "phosphor-svelte";
+	import { Fire, FolderSimple, GlobeHemisphereWest, Trophy, Upload } from "phosphor-svelte";
 </script>
 
 <div class="nav-bar">
