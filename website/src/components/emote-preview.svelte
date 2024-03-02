@@ -1,26 +1,48 @@
 <script lang="ts">
+	import Checkbox from "./checkbox.svelte";
+
 	export let name = "emoteName";
 	export let index = 0;
 	export let bg: "medium" | "light" = "medium";
 	export let emoteOnly = false;
+	export let selectionMode = false;
+	export let selected = false;
+
+	$: if (!selectionMode) {
+		selected = false;
+	}
+
+	function onClick(e: MouseEvent) {
+		if (selectionMode) {
+			selected = !selected;
+			e.preventDefault();
+		}
+	}
 </script>
 
 <a
 	href="/emotes/{name}"
 	class="emote"
 	class:emote-only={emoteOnly}
+	class:selected
 	style:background-color="var(--bg-{bg})"
 	title={name}
+	on:click={onClick}
 >
 	<div class="image" style="animation-delay: {-index * 10}ms"></div>
 	{#if !emoteOnly}
 		<span class="name">{name}</span>
 		<span class="user">username</span>
 	{/if}
+	{#if selectionMode}
+		<Checkbox bind:value={selected} style="position: absolute; top: 0.5rem; right: 0.5rem;" />
+	{/if}
 </a>
 
 <style lang="scss">
 	.emote {
+		position: relative;
+
 		color: var(--text);
 		text-decoration: none;
 
@@ -40,6 +62,10 @@
 		&:hover,
 		&:focus-visible {
 			border-color: var(--border-active);
+		}
+
+		&.selected {
+			border-color: var(--primary);
 		}
 
 		&.emote-only > .image {

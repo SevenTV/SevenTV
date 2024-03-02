@@ -4,7 +4,7 @@
 	export let bg: "medium" | "light" = "medium";
 </script>
 
-<a href="/emote-set/{name}" class="emote-set" style:background-color="var(--bg-{bg})">
+<a href="/emote-sets/{name}" class="emote-set" style:background-color="var(--bg-{bg})">
 	<div class="emotes">
 		{#each Array(12) as _}
 			<div class="emote"></div>

@@ -7,7 +7,6 @@
 		CaretRight,
 		ChartLineUp,
 		ChatCircleText,
-		DiscordLogo,
 		DotsThreeVertical,
 		FolderSimple,
 		Gift,
@@ -103,7 +102,7 @@
 				<UserCircle slot="icon" />
 				Editors
 				{#if editorsExpanded}
-					<CaretDown slot="icon-right" style="margin-left: auto"/>
+					<CaretDown slot="icon-right" style="margin-left: auto" />
 				{:else}
 					<CaretRight slot="icon-right" style="margin-left: auto" />
 				{/if}

@@ -7,12 +7,7 @@
 </svelte:head>
 
 <Banner title="Merch" subtitle="Coming soon!" gradientColor="#11bcff">
-	<img
-		src="/pausershype.webp"
-		width="64"
-		height="64"
-		alt="Under construction"
-	/>
+	<img src="/pausershype.webp" width="64" height="64" alt="Under construction" />
 </Banner>
 
 <style lang="scss">

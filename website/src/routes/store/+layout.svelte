@@ -48,7 +48,7 @@
 			overflow: auto;
 			overflow: overlay;
 			scrollbar-gutter: stable;
-	
+
 			& > :global(*) {
 				// right margin because of side-bar-layout
 				margin-right: 1.25rem;

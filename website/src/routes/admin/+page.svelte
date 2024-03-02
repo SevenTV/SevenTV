@@ -3,17 +3,17 @@
 </script>
 
 <svelte:head>
-    <title>Overview - 7TV Admin</title>
+	<title>Overview - 7TV Admin</title>
 </svelte:head>
 
 <div class="grid">
-    <MonthlyPaints />
+	<MonthlyPaints />
 </div>
 
 <style lang="scss">
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr));
-        gap: 1rem;
-    }
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr));
+		gap: 1rem;
+	}
 </style>
