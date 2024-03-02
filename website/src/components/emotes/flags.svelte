@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Eye, Fire, GlobeSimple, SealCheck, StackSimple } from "phosphor-svelte";
 
-	const icons: { [key: string]: any } = {
+	const icons: { [key: string]: typeof GlobeSimple } = {
 		global: GlobeSimple,
 		trending: Fire,
 		overlay: StackSimple,

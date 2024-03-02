@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Logo from "$/components/icons/logo.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { Flag, PaintBrush, Table } from "phosphor-svelte";
 </script>

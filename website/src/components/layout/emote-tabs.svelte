@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TabLink from "../tab-link.svelte";
-	import { Users, ChartLineUp, Graph, ChatText, Note, Pulse } from "phosphor-svelte";
+	import { Users, ChartLineUp, Graph, ChatText, Pulse } from "phosphor-svelte";
 
 	export let id: string;
 </script>

@@ -7,7 +7,6 @@
 		CaretRight,
 		ChartLineUp,
 		ChatCircleText,
-		DiscordLogo,
 		DotsThreeVertical,
 		FolderSimple,
 		Gift,
