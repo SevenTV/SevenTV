@@ -6,6 +6,7 @@
 	import Select from "$/components/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
 	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
+	import { priceFormat } from "$/lib/utils";
 
 	const bundles = [
 		{
@@ -40,11 +41,6 @@
 			oldPrice: 10099,
 		},
 	];
-
-	const priceFormat = new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-	});
 </script>
 
 <svelte:head>
