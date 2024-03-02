@@ -4,7 +4,7 @@
 	export let numb: boolean = false;
 </script>
 
-<label class="switch" class:numb={numb}>
+<label class="switch" class:numb={numb} {...$$restProps}>
 	<input type="checkbox" disabled={disabled} bind:checked={value} />
 	<span class="slider"></span>
 </label>

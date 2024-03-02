@@ -3,15 +3,15 @@
 </script>
 
 <script lang="ts">
-	export let label: string;
-	export let checked = false;
+	export let label: string = "";
+	export let value = false;
 	export let disabled = false;
 
 	const id = checkboxIndex++;
 </script>
 
-<div class="checkbox">
-	<input type="checkbox" id="checkbox-{id}" bind:checked {disabled} />
+<div class="checkbox" {...$$restProps}>
+	<input type="checkbox" id="checkbox-{id}" bind:checked={value} {disabled} />
 	<label for="checkbox-{id}">{label}</label>
 </div>
 

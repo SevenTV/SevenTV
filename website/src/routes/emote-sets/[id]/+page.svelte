@@ -96,7 +96,7 @@
     <div class="content">
         <EmoteContainer layout={$emotesLayout}>
             {#each Array(100) as _, i}
-                <EmotePreview name="emoteSetEmote{i}" index={i} emoteOnly={$emotesLayout === Layout.SmallGrid} />
+                <EmotePreview name="emoteSetEmote{i}" index={i} emoteOnly={$emotesLayout === Layout.SmallGrid} selectionMode={selectionMode} />
             {/each}
         </EmoteContainer>
     </div>
