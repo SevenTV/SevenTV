@@ -89,7 +89,7 @@
         </div>
         <div class="buttons">
             <Select options={["No Filters", "Filters"]} />
-            <SearchBar />
+            <SearchBar grow />
             <LayoutButtons />
         </div>
     </div>
@@ -172,7 +172,7 @@
     .controls {
         display: flex;
         gap: 0.5rem;
-        flex-wrap: wrap;
+        flex-wrap: wrap-reverse;
         justify-content: space-between;
     }
 

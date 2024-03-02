@@ -93,6 +93,12 @@ input[type="text"] {
 	}
 }
 
+@media screen and (max-width: 960px) {
+	input[type="text"] {
+		font-size: 1rem;
+	}
+}
+
 .side-bar-layout {
 	padding: 1.25rem;
 
