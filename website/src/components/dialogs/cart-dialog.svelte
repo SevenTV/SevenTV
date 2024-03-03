@@ -109,6 +109,8 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+
+        overflow: auto;
     }
 
     h1 {
