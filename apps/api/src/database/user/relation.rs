@@ -1,12 +1,11 @@
 use postgres_types::{FromSql, ToSql};
-use ulid::Ulid;
 
 use crate::database::Table;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserRelation {
-	pub user_id: Ulid,
-	pub other_user_id: Ulid,
+	pub user_id: ulid::Ulid,
+	pub other_user_id: ulid::Ulid,
 	pub kind: UserRelationKind,
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	#[from_row(from_fn = "scuffle_utils::database::json")]

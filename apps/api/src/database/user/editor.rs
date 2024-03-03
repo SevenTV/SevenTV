@@ -1,16 +1,15 @@
 use postgres_types::{FromSql, ToSql};
-use ulid::Ulid;
 
 use crate::database::Table;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserEditor {
-	pub user_id: Ulid,
-	pub editor_id: Ulid,
+	pub user_id: ulid::Ulid,
+	pub editor_id: ulid::Ulid,
 	pub state: UserEditorState,
 	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: UserEditorSettings,
-	pub added_by_id: Option<Ulid>,
+	pub added_by_id: Option<ulid::Ulid>,
 	pub added_at: chrono::DateTime<chrono::Utc>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }

@@ -1,11 +1,9 @@
-use ulid::Ulid;
-
 use crate::database::Table;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserActiveEmoteSet {
-	pub user_id: Ulid,
-	pub emote_set_id: Ulid,
+	pub user_id: ulid::Ulid,
+	pub emote_set_id: ulid::Ulid,
 	pub priority: i16,
 }
 

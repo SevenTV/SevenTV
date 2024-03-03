@@ -1,10 +1,8 @@
-use ulid::Ulid;
-
 use crate::database::Table;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct Badge {
-	pub id: Ulid,
+	pub id: ulid::Ulid,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
@@ -17,8 +15,8 @@ impl Table for Badge {
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct BadgeFile {
-	pub badge_id: Ulid,
-	pub file_id: Ulid,
+	pub badge_id: ulid::Ulid,
+	pub file_id: ulid::Ulid,
 }
 
 impl Table for BadgeFile {

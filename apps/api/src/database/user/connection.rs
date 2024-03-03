@@ -1,12 +1,11 @@
 use postgres_types::{FromSql, ToSql};
-use ulid::Ulid;
 
 use crate::database::Table;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserConnection {
-	pub id: Ulid,
-	pub user_id: Ulid,
+	pub id: ulid::Ulid,
+	pub user_id: ulid::Ulid,
 	pub platform: UserConnectionPlatform,
 	pub platform_id: String,
 	pub platform_username: String,
