@@ -173,14 +173,13 @@
 
 <style lang="scss">
 	.grid {
+		padding: 1rem;
+
 		display: grid;
 		grid-template-areas: "heading heading" "left upload" "left chat";
 		grid-template-columns: 18.5rem 1fr;
 		grid-template-rows: auto auto 1fr;
 		gap: 1rem;
-
-		height: 100%;
-		padding: 1rem;
 	}
 
 	.heading {

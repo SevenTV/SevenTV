@@ -10,7 +10,7 @@
     let gift = false;
 </script>
 
-<Dialog width={30} on:close>
+<Dialog width={35} on:close>
     <div class="layout">
         <h1>Your Cart</h1>
         <hr />
@@ -88,15 +88,15 @@
         {#if gift}
             <SearchBar grow />
         {/if}
-        <div class="footer">
-            <div class="total">
-                <span>Total</span>
-                <span>{priceFormat.format(7.96)}</span>
-            </div>
-            <div class="buttons">
-                <Button secondary>Cancel</Button>
-                <Button primary>Proceed</Button>
-            </div>
+    </div>
+    <div class="footer">
+        <div class="total">
+            <span>Total</span>
+            <span>{priceFormat.format(7.96)}</span>
+        </div>
+        <div class="buttons">
+            <Button secondary>Cancel</Button>
+            <Button primary>Proceed</Button>
         </div>
     </div>
 </Dialog>
@@ -104,13 +104,10 @@
 <style lang="scss">
     .layout {
         padding: 1rem;
-        height: 100%;
 
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-
-        overflow: auto;
     }
 
     h1 {
@@ -196,6 +193,7 @@
 
     .footer {
         margin-top: auto;
+        padding: 1rem;
     }
 
     .total {
