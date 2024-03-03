@@ -9,7 +9,14 @@
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
 	import Notifications from "../notifications.svelte";
-	import { Bell, Chat, List, MagnifyingGlass, PlusSquare, ShoppingCartSimple } from "phosphor-svelte";
+	import {
+		Bell,
+		Chat,
+		List,
+		MagnifyingGlass,
+		PlusSquare,
+		ShoppingCartSimple,
+	} from "phosphor-svelte";
 	import Button from "../button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 
