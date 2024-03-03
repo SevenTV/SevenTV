@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { priceFormat } from "$/lib/utils";
-	import { Trash } from "phosphor-svelte";
+	import { Trash, Star } from "phosphor-svelte";
     import Button from "../button.svelte";
     import Checkbox from "../checkbox.svelte";
 	import SearchBar from "../search-bar.svelte";
     import Dialog from "./dialog.svelte";
+    import Select from "../select.svelte";
 
     let gift = false;
 </script>
@@ -16,58 +17,86 @@
         <table class="items">
             <thead>
                 <tr>
-                    <th>Preview</th>
+                    <th>Item</th>
+                    <th class="hide-on-mobile">Duration</th>
+                    <th>Price</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {#each Array(3) as _, i}
+                    <tr>
+                        <td class="name">
+                            <div class="center">
+                                <Star color="var(--subscriber)" />
+                                Tier 1 Subscription
+                            </div>
+                        </td>
+                        <td class="duration hide-on-mobile">
+                            <Select options={["1 Month", "3 Months", "1 Year"]} />
+                        </td>
+                        <td class="price">{priceFormat.format((i+1) * 7.96)}</td>
+                        <td class="actions">
+                            <Button secondary>
+                                <Trash slot="icon" />
+                            </Button>
+                        </td>
+                    </tr>
+                {/each}
+            </tbody>
+        </table>
+        <table class="items">
+            <thead>
+                <tr>
+                    <th class="hide-on-mobile">Preview</th>
                     <th>Item</th>
                     <th>Price</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>
-                        <div class="preview">
-                            <div class="placeholder"></div>
-                            <div class="placeholder"></div>
-                            <div class="placeholder"></div>
-                        </div>
-                    </td>
-                    <td class="name">Christmas Bundle</td>
-                    <td class="price">{priceFormat.format(7.96)}</td>
-                    <td class="actions">
-                        <Button secondary>
-                            <Trash slot="icon" />
-                        </Button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="preview">
-                            <div class="placeholder"></div>
-                            <div class="placeholder"></div>
-                            <div class="placeholder"></div>
-                        </div>
-                    </td>
-                    <td class="name">Christmas Bundle</td>
-                    <td class="price">{priceFormat.format(7.96)}</td>
-                    <td class="actions">
-                        <Button secondary>
-                            <Trash slot="icon" />
-                        </Button>
-                    </td>
-                </tr>
+                {#each Array(3) as _, i}
+                    <tr class="hide-on-mobile">
+                        <td>
+                            <div class="preview">
+                                <div class="placeholder"></div>
+                                <div class="placeholder"></div>
+                                <div class="placeholder"></div>
+                            </div>
+                        </td>
+                        <td class="name">Christmas Bundle</td>
+                        <td class="price">{priceFormat.format((i+1) * 7.96)}</td>
+                        <td class="actions">
+                            <Button secondary>
+                                <Trash slot="icon" />
+                            </Button>
+                        </td>
+                    </tr>
+                    <tr class="hide-on-desktop">
+                        <td class="name">Christmas Bundle</td>
+                        <td class="price">{priceFormat.format((i+1) * 7.96)}</td>
+                        <td class="actions">
+                            <Button secondary>
+                                <Trash slot="icon" />
+                            </Button>
+                        </td>
+                    </tr>
+                {/each}
             </tbody>
         </table>
         <Checkbox label="I want to gift someone" bind:value={gift} />
         {#if gift}
             <SearchBar grow />
         {/if}
-        <div class="total">
-            <span>Total</span>
-            <span>{priceFormat.format(7.96)}</span>
-        </div>
-        <div class="buttons">
-            <Button secondary>Cancel</Button>
-            <Button primary>Proceed</Button>
+        <div class="footer">
+            <div class="total">
+                <span>Total</span>
+                <span>{priceFormat.format(7.96)}</span>
+            </div>
+            <div class="buttons">
+                <Button secondary>Cancel</Button>
+                <Button primary>Proceed</Button>
+            </div>
         </div>
     </div>
 </Dialog>
@@ -75,6 +104,8 @@
 <style lang="scss">
     .layout {
         padding: 1rem;
+        height: 100%;
+
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
@@ -87,6 +118,8 @@
     }
 
     .items {
+        width: 100%;
+
         border-spacing: 0 0.5rem;
         border-collapse: separate;
         border: none;
@@ -96,10 +129,12 @@
             color: var(--text-light);
             font-weight: 400;
             text-align: left;
+
+            padding-inline: 0.5rem;
         }
 
         td {
-            padding: 0.5rem 0;
+            padding: 0.5rem;
             background-color: var(--bg-light);
 
             &:first-child {
@@ -129,6 +164,21 @@
         .name {
             font-size: 0.875rem;
             font-weight: 500;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .center {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .duration {
+            // Shrink column
+            width: 1px;
         }
 
         .price {
@@ -142,13 +192,18 @@
         }
     }
 
+    .footer {
+        margin-top: auto;
+    }
+
     .total {
         display: flex;
         justify-content: space-between;
         font-size: 1.25rem;
         font-weight: 600;
 
-        margin-block: 0.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
     }
 
     .buttons {
