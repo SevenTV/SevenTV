@@ -1,6 +1,8 @@
 use postgres_types::{FromSql, ToSql};
 use ulid::Ulid;
 
+use crate::database::Table;
+
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserRelation {
 	pub user_id: Ulid,
@@ -12,6 +14,7 @@ pub struct UserRelation {
 }
 
 #[derive(Debug, Clone, Default, ToSql, FromSql)]
+#[postgres(name = "user_relation_kind")]
 pub enum UserRelationKind {
 	#[default]
 	#[postgres(name = "NOTHING")]
@@ -34,4 +37,8 @@ pub enum MutedState {
 	#[default]
 	Permanent,
 	Temporary(chrono::DateTime<chrono::Utc>),
+}
+
+impl Table for UserRelation {
+	const TABLE_NAME: &'static str = "user_relations";
 }

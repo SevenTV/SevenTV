@@ -1,6 +1,8 @@
 use postgres_types::{FromSql, ToSql};
 use ulid::Ulid;
 
+use crate::database::Table;
+
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserConnection {
 	pub id: Ulid,
@@ -15,6 +17,7 @@ pub struct UserConnection {
 }
 
 #[derive(Debug, Clone, Default, ToSql, FromSql)]
+#[postgres(name = "user_connection_platform")]
 pub enum UserConnectionPlatform {
 	#[default]
 	#[postgres(name = "TWITCH")]
@@ -30,3 +33,7 @@ pub enum UserConnectionPlatform {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct UserConnectionSettings {}
+
+impl Table for UserConnection {
+	const TABLE_NAME: &'static str = "user_connections";
+}

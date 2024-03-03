@@ -1,6 +1,8 @@
 use postgres_types::{FromSql, ToSql};
 use ulid::Ulid;
 
+use crate::database::Table;
+
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserEditor {
 	pub user_id: Ulid,
@@ -25,6 +27,7 @@ pub struct UserEditorSettings {
 pub struct UserEditorPermissions {}
 
 #[derive(Debug, Clone, Default, ToSql, FromSql)]
+#[postgres(name = "user_editor_state")]
 pub enum UserEditorState {
 	#[default]
 	#[postgres(name = "PENDING")]
@@ -33,4 +36,8 @@ pub enum UserEditorState {
 	Accepted,
 	#[postgres(name = "REJECTED")]
 	Rejected,
+}
+
+impl Table for UserEditor {
+	const TABLE_NAME: &'static str = "user_editors";
 }

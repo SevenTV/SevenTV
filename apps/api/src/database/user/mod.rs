@@ -1,7 +1,7 @@
 use ulid::Ulid;
 
 mod active_emote_set;
-mod bans;
+mod ban;
 mod connection;
 mod editor;
 mod profile_picture;
@@ -10,13 +10,15 @@ mod roles;
 mod settings;
 
 pub use active_emote_set::*;
-pub use bans::*;
+pub use ban::*;
 pub use connection::*;
 pub use editor::*;
 pub use profile_picture::*;
 pub use relation::*;
 pub use roles::*;
 pub use settings::*;
+
+use super::Table;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct User {
@@ -33,6 +35,10 @@ pub struct User {
 	pub active_cosmetics: UserActiveCosmetics,
 	#[from_row(flatten)]
 	pub entitled_cache: UserEntitledCache,
+}
+
+impl Table for User {
+	const TABLE_NAME: &'static str = "users";
 }
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]

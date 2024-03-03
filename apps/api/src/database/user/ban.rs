@@ -1,5 +1,7 @@
 use ulid::Ulid;
 
+use crate::database::Table;
+
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserBan {
 	pub id: Ulid,
@@ -15,4 +17,8 @@ pub struct UserBan {
 #[serde(default)]
 pub struct UserBanData {
 	pub reason: String,
+}
+
+impl Table for UserBan {
+	const TABLE_NAME: &'static str = "user_bans";
 }
