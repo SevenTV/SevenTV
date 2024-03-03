@@ -119,7 +119,7 @@
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<a href="/developer">
+			<a href="https://7tv.io/">
 				<Code />
 				Developer Portal
 			</a>

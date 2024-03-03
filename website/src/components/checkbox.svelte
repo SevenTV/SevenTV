@@ -17,8 +17,6 @@
 
 <style lang="scss">
 	.checkbox {
-		overflow: hidden;
-
 		label {
 			user-select: none;
 			cursor: pointer;

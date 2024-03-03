@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
+	import CartDialog from "$/components/dialogs/cart-dialog.svelte";
 	import { user } from "$/lib/stores";
 	import { goto } from "$app/navigation";
 	import type { PageData } from "./$types";
@@ -12,6 +13,8 @@
 			goto(data.redirect);
 		}
 	}
+
+	let cartOpen = false;
 </script>
 
 <svelte:head>
@@ -21,3 +24,9 @@
 <h1>Sign In</h1>
 
 <Button primary on:click={login}>Fake login xdd</Button>
+
+<Button primary on:click={() => (cartOpen = true)}>Open cart modal</Button>
+
+{#if cartOpen}
+	<CartDialog on:close={() => (cartOpen = false)} />
+{/if}

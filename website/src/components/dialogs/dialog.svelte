@@ -36,17 +36,17 @@
 	transition:fade={{ duration: 100 }}
 	style="width: {width}rem"
 >
-	<div use:mouseTrap={onClose}>
+	<div class="trap" use:mouseTrap={onClose}>
 		<slot />
-		{#if showClose}
-			<Button
-				on:click={() => dispatch("close")}
-				style="position: absolute; top: 0.5rem; right: 0.5rem;"
-			>
-				<X slot="icon" />
-			</Button>
-		{/if}
 	</div>
+	{#if showClose}
+		<Button
+			on:click={() => dispatch("close")}
+			style="position: absolute; top: 0.5rem; right: 0.5rem;"
+		>
+			<X slot="icon" />
+		</Button>
+	{/if}
 </dialog>
 
 <style lang="scss">
@@ -55,20 +55,22 @@
 		border: none;
 		padding: 0;
 		background: none;
+		border-radius: 0.5rem;
 
 		max-width: 90vw;
+		overflow: auto;
 
-		div {
-			color: var(--text);
-			font-weight: 500;
+		background-color: var(--bg-dark);
 
-			width: 100%;
-			border-radius: 0.5rem;
-			background-color: var(--bg-dark);
-		}
+		display: flex;
+		flex-direction: column;
 
 		&::backdrop {
 			background-color: rgba(0, 0, 0, 0.8);
+		}
+
+		.trap {
+			display: contents;
 		}
 	}
 
