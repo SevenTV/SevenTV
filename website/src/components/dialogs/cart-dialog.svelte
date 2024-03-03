@@ -6,6 +6,9 @@
 	import SearchBar from "../search-bar.svelte";
     import Dialog from "./dialog.svelte";
     import Select from "../select.svelte";
+	import { createEventDispatcher } from "svelte";
+
+    const dispatch = createEventDispatcher();
 
     let gift = false;
 </script>
@@ -95,7 +98,7 @@
             <span>{priceFormat.format(7.96)}</span>
         </div>
         <div class="buttons">
-            <Button secondary>Cancel</Button>
+            <Button secondary on:click={() => dispatch("close")}>Cancel</Button>
             <Button primary>Proceed</Button>
         </div>
     </div>

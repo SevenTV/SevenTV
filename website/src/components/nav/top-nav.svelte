@@ -9,8 +9,11 @@
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
 	import Notifications from "../notifications.svelte";
-	import { Bell, Chat, List, MagnifyingGlass, PlusSquare } from "phosphor-svelte";
+	import { Bell, Chat, List, MagnifyingGlass, PlusSquare, ShoppingCartSimple } from "phosphor-svelte";
 	import Button from "../button.svelte";
+	import CartDialog from "../dialogs/cart-dialog.svelte";
+
+	let cartDialog = false;
 </script>
 
 <nav>
@@ -50,6 +53,11 @@
 				</Button>
 				<Dms slot="dropdown" />
 			</DropDown>
+			<Button on:click={() => (cartDialog = !cartDialog)}>
+				<Badge count={3} slot="icon">
+					<ShoppingCartSimple />
+				</Badge>
+			</Button>
 			<Button hideOnDesktop on:click={() => ($showUploadDialog = true)}>
 				<PlusSquare slot="icon" />
 			</Button>
@@ -86,6 +94,9 @@
 		{/if}
 	</div>
 </nav>
+{#if cartDialog}
+	<CartDialog on:close={() => (cartDialog = false)} />
+{/if}
 
 <style lang="scss">
 	nav {
