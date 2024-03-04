@@ -5,8 +5,11 @@
 	import type { LayoutData } from "./$types";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags from "$/components/emotes/flags.svelte";
+	import EditEmoteDialog from "$/components/dialogs/edit-emote-dialog.svelte";
 
 	export let data: LayoutData;
+
+	let showEditDialog = false;
 </script>
 
 <svelte:head>
@@ -62,11 +65,11 @@
 					<FolderPlus slot="icon" />
 					Add to...
 				</Button>
-				<Button secondary hideOnMobile>
+				<Button secondary hideOnMobile on:click={() => (showEditDialog = true)}>
 					<NotePencil slot="icon" />
 					Edit
 				</Button>
-				<Button secondary hideOnDesktop>
+				<Button secondary hideOnDesktop on:click={() => (showEditDialog = true)}>
 					<NotePencil slot="icon" />
 				</Button>
 				<Button secondary hideOnMobile>
@@ -83,6 +86,9 @@
 		<slot />
 	</div>
 </div>
+{#if showEditDialog}
+	<EditEmoteDialog on:close={() => (showEditDialog = false)} />
+{/if}
 
 <style lang="scss">
 	.layout {

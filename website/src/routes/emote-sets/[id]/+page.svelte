@@ -6,17 +6,19 @@
 	import { Copy, Lightning, LightningSlash, NotePencil, Trash } from "phosphor-svelte";
 	import type { PageData } from "./$types";
 	import Select from "$/components/select.svelte";
-	import SearchBar from "$/components/search-bar.svelte";
+	import SearchBar from "$/components/input/search-bar.svelte";
 	import { Layout, emotesLayout } from "$/lib/stores";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import Toggle from "$/components/toggle.svelte";
 	import Flags from "$/components/emotes/flags.svelte";
 	import HideOn from "$/components/hide-on.svelte";
+	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 
 	export let data: PageData;
 
 	let enabled = false;
 	let selectionMode = false;
+	let showEditDialog = false;
 </script>
 
 <svelte:head>
@@ -55,7 +57,7 @@
 					</svelte:fragment>
 				</Button>
 			</HideOn>
-			<Button secondary hideOnMobile>
+			<Button secondary hideOnMobile on:click={() => (showEditDialog = true)}>
 				Edit
 				<NotePencil slot="icon-right" />
 			</Button>
@@ -64,7 +66,7 @@
 				<Copy slot="icon-right" />
 			</Button>
 			{#if !selectionMode}
-				<Button secondary hideOnDesktop>
+				<Button secondary hideOnDesktop on:click={() => (showEditDialog = true)}>
 					<NotePencil slot="icon-right" />
 				</Button>
 				<Button secondary hideOnDesktop>
@@ -106,6 +108,9 @@
 		</EmoteContainer>
 	</div>
 </div>
+{#if showEditDialog}
+	<EditEmoteSetDialog on:close={() => (showEditDialog = false)} />
+{/if}
 
 <style lang="scss">
 	.layout {
