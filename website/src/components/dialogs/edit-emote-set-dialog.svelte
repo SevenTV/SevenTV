@@ -30,11 +30,11 @@
 			</div>
 		</label>
 	</div>
-    <div class="buttons">
-        <Button style="color: var(--error); margin-right: auto;">Delete</Button>
-        <Button secondary on:click={() => dispatch("close")}>Cancel</Button>
-        <Button primary>Save</Button>
-    </div>
+	<div class="buttons">
+		<Button style="color: var(--error); margin-right: auto;">Delete</Button>
+		<Button secondary on:click={() => dispatch("close")}>Cancel</Button>
+		<Button primary>Save</Button>
+	</div>
 </Dialog>
 
 <style lang="scss">
@@ -69,7 +69,7 @@
 	}
 
 	.buttons {
-        margin-top: auto;
+		margin-top: auto;
 		padding: 1rem;
 
 		display: flex;

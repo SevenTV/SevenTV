@@ -7,6 +7,8 @@ export const showMobileMenu = writable(false);
 
 export const showUploadDialog = writable(false);
 
+export const showSignInDialog = writable(false);
+
 export enum Theme {
 	System = "system-theme",
 	Light = "light-theme",
@@ -28,19 +30,11 @@ theme.subscribe((value) => {
 		window.localStorage.setItem("theme", JSON.stringify(value));
 	}
 	if (!browser) return;
-	switch (value) {
-		case null:
-		case Theme.System:
-			document.documentElement.classList.remove("light-theme", "dark-theme");
-			break;
-		case Theme.Light:
-			document.documentElement.classList.remove("dark-theme");
-			document.documentElement.classList.add("light-theme");
-			break;
-		case Theme.Dark:
-			document.documentElement.classList.remove("light-theme");
-			document.documentElement.classList.add("dark-theme");
-			break;
+	for (const key in Theme) {
+		document.documentElement.classList.remove(Theme[key as keyof typeof Theme]);
+	}
+	if (value) {
+		document.documentElement.classList.add(value);
 	}
 });
 

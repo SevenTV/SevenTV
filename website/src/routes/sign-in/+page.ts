@@ -1,3 +1,7 @@
-export function load({ url }) {
-	return { redirect: url.searchParams.get("r") };
+import { showSignInDialog } from "$/lib/stores";
+import { redirect } from "@sveltejs/kit";
+
+export function load() {
+	showSignInDialog.set(true);
+	redirect(301, "/");
 }
