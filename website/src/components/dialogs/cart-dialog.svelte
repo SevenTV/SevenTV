@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { priceFormat } from "$/lib/utils";
-	import { Trash, Star } from "phosphor-svelte";
+	import { Trash, Star, User } from "phosphor-svelte";
 	import Button from "../button.svelte";
 	import Checkbox from "../checkbox.svelte";
-	import SearchBar from "../input/search-bar.svelte";
+	import SearchBar from "../input/text-input.svelte";
 	import Dialog from "./dialog.svelte";
 	import Select from "../select.svelte";
 	import { createEventDispatcher } from "svelte";
+	import TextInput from "../input/text-input.svelte";
 
 	const dispatch = createEventDispatcher();
 
@@ -87,9 +88,11 @@
 				{/each}
 			</tbody>
 		</table>
-		<Checkbox label="I want to gift someone" bind:value={gift} />
+		<Checkbox label="Purchase as a gift" bind:value={gift} />
 		{#if gift}
-			<SearchBar grow />
+			<TextInput placeholder="Search a user">
+				<User />
+			</TextInput>
 		{/if}
 	</div>
 	<div class="footer">

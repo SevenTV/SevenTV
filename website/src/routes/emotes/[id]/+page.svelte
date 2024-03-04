@@ -3,9 +3,10 @@
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
-	import SearchBar from "$/components/input/search-bar.svelte";
-	import { CaretLeft, CaretRight } from "phosphor-svelte";
+	import SearchBar from "$/components/input/text-input.svelte";
+	import { CaretLeft, CaretRight, MagnifyingGlass } from "phosphor-svelte";
 	import type { LayoutData } from "./$types";
+	import TextInput from "$/components/input/text-input.svelte";
 
 	export let data: LayoutData;
 </script>
@@ -22,7 +23,9 @@
 			</Button>
 		</div>
 		<HideOn mobile>
-			<SearchBar />
+			<TextInput placeholder="Search" style="max-width: 12.5rem">
+				<MagnifyingGlass />
+			</TextInput>
 		</HideOn>
 	</div>
 </div>

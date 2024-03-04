@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Tag, X } from "phosphor-svelte";
 	import Button from "../button.svelte";
-	import SearchBar from "./search-bar.svelte";
+	import TextInput from "./text-input.svelte";
 
 	export let tags = ["lorem", "ipsum"];
 
@@ -21,9 +21,9 @@
 	}
 </script>
 
-<SearchBar placeholder="Enter tags" bind:value={tagInput} on:keypress={onTagInput} grow>
+<TextInput placeholder="Enter tags" bind:value={tagInput} on:keypress={onTagInput}>
 	<Tag />
-</SearchBar>
+</TextInput>
 {#if tags && tags.length > 0}
 	<div class="tags">
 		{#each tags as tag, i}

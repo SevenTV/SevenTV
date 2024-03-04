@@ -9,11 +9,12 @@
 		SortDescending,
 		BookmarkSimple,
 		PencilSimple,
+		MagnifyingGlass,
 	} from "phosphor-svelte";
 	import Button from "$/components/button.svelte";
 	import TagsInput from "$/components/input/tags-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import SearchBar from "$/components/input/search-bar.svelte";
+	import TextInput from "$/components/input/text-input.svelte";
 
 	let sortAsc = false;
 
@@ -49,7 +50,9 @@
 		</nav>
 		<hr />
 		<Expandable title="Search">
-			<SearchBar placeholder="Emote" grow />
+			<TextInput placeholder="Emote">
+				<MagnifyingGlass />
+			</TextInput>
 		</Expandable>
 		<Expandable title="Tags">
 			<TagsInput />

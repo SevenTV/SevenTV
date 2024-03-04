@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Logo from "$/components/icons/logo.svelte";
-	import SearchBar from "$/components/input/search-bar.svelte";
 	import TopTabs from "./top-tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
@@ -19,6 +18,7 @@
 	} from "phosphor-svelte";
 	import Button from "../button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
+	import TextInput from "$/components/input/text-input.svelte";
 
 	let cartDialog = false;
 </script>
@@ -39,7 +39,9 @@
 		</HideOn>
 	</div>
 	<HideOn mobile>
-		<SearchBar big />
+		<TextInput placeholder="Search" style="flex: 0 1 20rem">
+			<MagnifyingGlass />
+		</TextInput>
 	</HideOn>
 	<div class="user-actions">
 		<Button hideOnDesktop>

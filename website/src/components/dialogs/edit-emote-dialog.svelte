@@ -2,7 +2,7 @@
 	import { User } from "phosphor-svelte";
 	import TagsInput from "../input/tags-input.svelte";
 	import Dialog from "./dialog.svelte";
-	import SearchBar from "../input/search-bar.svelte";
+	import TextInput from "../input/text-input.svelte";
 	import Checkbox from "../checkbox.svelte";
 	import Button from "../button.svelte";
 	import { createEventDispatcher } from "svelte";
@@ -26,9 +26,9 @@
 		<!-- svelte-ignore a11y-label-has-associated-control -->
 		<label>
 			<span>Emote Attribution</span>
-			<SearchBar placeholder="Enter username" grow>
+			<TextInput placeholder="Search users">
 				<User />
-			</SearchBar>
+			</TextInput>
 		</label>
 		<!-- svelte-ignore a11y-label-has-associated-control -->
 		<label>
