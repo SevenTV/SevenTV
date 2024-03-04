@@ -4,7 +4,7 @@
 	import TopTabs from "./top-tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { user, showMobileMenu, showUploadDialog } from "$/lib/stores";
+	import { user, showMobileMenu, showUploadDialog, showSignInDialog } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
@@ -91,7 +91,7 @@
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<Button href="/sign-in" primary>Sign In</Button>
+			<Button primary on:click={() => ($showSignInDialog = true)}>Sign In</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
