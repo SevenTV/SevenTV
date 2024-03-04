@@ -112,10 +112,10 @@ impl<T: BitMask> AllowDeny<T> {
 
 #[bitmask(u8)]
 pub enum EmotePermission {
-	Upload,
-	Delete,
-	Edit,
-	Admin,
+	Upload = 1,
+	Delete = 2,
+	Edit = 4,
+	Admin = 8,
 }
 
 impl Default for EmotePermission {
@@ -134,8 +134,8 @@ impl BitMask for EmotePermission {
 
 #[bitmask(u8)]
 pub enum RolePermission {
-	Assign,
-	Admin,
+	Assign = 1,
+	Admin = 2,
 }
 
 impl BitMask for RolePermission {
@@ -154,9 +154,9 @@ impl Default for RolePermission {
 
 #[bitmask(u8)]
 pub enum EmoteSetPermission {
-	Create,
-	Delete,
-	Admin,
+	Create = 1,
+	Delete = 2,
+	Admin = 4,
 }
 
 impl BitMask for EmoteSetPermission {
@@ -175,7 +175,7 @@ impl Default for EmoteSetPermission {
 
 #[bitmask(u8)]
 pub enum BadgePermission {
-	Admin,
+	Admin = 1,
 }
 
 impl BitMask for BadgePermission {
@@ -194,7 +194,7 @@ impl Default for BadgePermission {
 
 #[bitmask(u8)]
 pub enum PaintPermission {
-	Admin,
+	Admin = 1,
 }
 
 impl BitMask for PaintPermission {
@@ -213,11 +213,11 @@ impl Default for PaintPermission {
 
 #[bitmask(u8)]
 pub enum UserPermission {
-	Ban,
-	Merge,
-	Delete,
-	Edit,
-	Admin,
+	Ban = 1,
+	Merge = 2,
+	Delete = 4,
+	Edit = 8,
+	Admin = 16,
 }
 
 impl BitMask for UserPermission {
@@ -236,13 +236,13 @@ impl Default for UserPermission {
 
 #[bitmask(u8)]
 pub enum FeaturePermission {
-	AnimatedProfilePicture,
-	PersonalEmoteSet,
-	Badge,
-	BypassEmoteSetCountLimit,
-	ByPassEmoteSetSlotsLimit,
-	ByPassPersonalEmoteSetSlotsLimit,
-	Admin,
+	AnimatedProfilePicture = 1,
+	PersonalEmoteSet = 2,
+	Badge = 4,
+	BypassEmoteSetCountLimit = 8,
+	ByPassEmoteSetSlotsLimit = 16,
+	ByPassPersonalEmoteSetSlotsLimit = 32,
+	Admin = 64,
 }
 
 impl BitMask for FeaturePermission {
@@ -261,8 +261,8 @@ impl Default for FeaturePermission {
 
 #[bitmask(u8)]
 pub enum AdminPermission {
-	Admin,
-	SuperAdmin,
+	Admin = 1,
+	SuperAdmin = 2,
 }
 
 impl BitMask for AdminPermission {
