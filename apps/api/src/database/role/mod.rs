@@ -195,15 +195,21 @@ impl PartialOrd for RolePermission {
 
 		match (self, other) {
 			(Self::EmoteUpload(v1), Self::EmoteUpload(v2)) => Some(cmp_bool(v1, v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteUpload(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::EmoteAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteUpload(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::EmoteUpload(_)) => None,
 
 			(Self::EmoteDelete(v1), Self::EmoteDelete(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteDelete(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::EmoteAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteDelete(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::EmoteDelete(_)) => None,
 
 			(Self::EmoteEdit(v1), Self::EmoteEdit(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteEdit(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::EmoteAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteEdit(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::EmoteEdit(_)) => None,
 
 			(Self::EmoteAdmin(v1), Self::EmoteAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
@@ -215,15 +221,21 @@ impl PartialOrd for RolePermission {
 			(_, Self::RoleAdmin(_)) => None,
 
 			(Self::RoleAssign(v1), Self::RoleAssign(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::RoleAssign(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::RoleAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::RoleAssign(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::RoleAssign(_)) => None,
 
 			(Self::EmoteSetCreate(v1), Self::EmoteSetCreate(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteSetCreate(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::EmoteSetAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteSetCreate(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::EmoteSetCreate(_)) => None,
 
 			(Self::EmoteSetDelete(v1), Self::EmoteSetDelete(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteSetDelete(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::EmoteSetAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteSetDelete(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::EmoteSetDelete(_)) => None,
 
 			(Self::EmoteSetAdmin(v1), Self::EmoteSetAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
@@ -239,19 +251,27 @@ impl PartialOrd for RolePermission {
 			(_, Self::PaintAdmin(_)) => None,
 
 			(Self::UserBan(v1), Self::UserBan(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::UserBan(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::UserAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::UserBan(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::UserBan(_)) => None,
 
 			(Self::UserMerge(v1), Self::UserMerge(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::UserMerge(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::UserAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::UserMerge(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::UserMerge(_)) => None,
 
 			(Self::UserDelete(v1), Self::UserDelete(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::UserDelete(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::UserAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::UserDelete(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::UserDelete(_)) => None,
 
 			(Self::UserEdit(v1), Self::UserEdit(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::UserEdit(v2)) => Some(cmp_bool(&true, &v2)),
+			(Self::UserAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::UserEdit(v2)) => {
+				Some(cmp_bool(&true, &v2))
+			}
 			(_, Self::UserEdit(_)) => None,
 
 			(Self::UserAdmin(v1), Self::UserAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
