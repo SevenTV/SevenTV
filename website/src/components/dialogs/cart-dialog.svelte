@@ -3,7 +3,7 @@
 	import { Trash, Star } from "phosphor-svelte";
 	import Button from "../button.svelte";
 	import Checkbox from "../checkbox.svelte";
-	import SearchBar from "../search-bar.svelte";
+	import SearchBar from "../input/search-bar.svelte";
 	import Dialog from "./dialog.svelte";
 	import Select from "../select.svelte";
 	import { createEventDispatcher } from "svelte";

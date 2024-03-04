@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Tag, X } from "phosphor-svelte";
-	import Button from "./button.svelte";
+	import Button from "../button.svelte";
 	import SearchBar from "./search-bar.svelte";
 
 	export let tags = ["lorem", "ipsum"];

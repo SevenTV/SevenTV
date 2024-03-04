@@ -11,9 +11,9 @@
 		PencilSimple,
 	} from "phosphor-svelte";
 	import Button from "$/components/button.svelte";
-	import TagsInput from "$/components/tags-input.svelte";
+	import TagsInput from "$/components/input/tags-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import SearchBar from "$/components/search-bar.svelte";
+	import SearchBar from "$/components/input/search-bar.svelte";
 
 	let sortAsc = false;
 

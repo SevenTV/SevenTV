@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Dialog from "./dialog.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
-	import SearchBar from "$/components/search-bar.svelte";
+	import SearchBar from "$/components/input/search-bar.svelte";
 	import { Moon, Sun, Trash, UploadSimple } from "phosphor-svelte";
 	import { Theme, showUploadDialog, theme } from "$/lib/stores";
-	import TagsInput from "../tags-input.svelte";
+	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../button.svelte";
 	import ImagePreview from "../image-preview.svelte";
 	import { browser } from "$app/environment";

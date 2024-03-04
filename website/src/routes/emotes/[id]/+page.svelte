@@ -3,7 +3,7 @@
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
-	import SearchBar from "$/components/search-bar.svelte";
+	import SearchBar from "$/components/input/search-bar.svelte";
 	import { CaretLeft, CaretRight } from "phosphor-svelte";
 	import type { LayoutData } from "./$types";
 

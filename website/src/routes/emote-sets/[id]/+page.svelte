@@ -6,7 +6,7 @@
 	import { Copy, Lightning, LightningSlash, NotePencil, Trash } from "phosphor-svelte";
 	import type { PageData } from "./$types";
 	import Select from "$/components/select.svelte";
-	import SearchBar from "$/components/search-bar.svelte";
+	import SearchBar from "$/components/input/search-bar.svelte";
 	import { Layout, emotesLayout } from "$/lib/stores";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import Toggle from "$/components/toggle.svelte";
