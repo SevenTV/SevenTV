@@ -1,13 +1,14 @@
+use std::collections::HashMap;
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, Not};
+
 use crate::database::Table;
 
 mod badge;
 mod emote_set;
 mod paint;
 
-use anyhow::Context;
-use serde::de;
-use serde::ser::SerializeMap;
-use serde_json::json;
+use bitmask_enum::bitmask;
+use enum_impl::EnumImpl;
 
 pub use self::badge::*;
 pub use self::emote_set::*;
@@ -27,64 +28,6 @@ pub struct Role {
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-pub trait PermissionsExt {
-	fn has_permission(&self, permission: &RolePermission) -> Option<bool>;
-
-	fn has_any_permission<'a>(&self, permissions: impl IntoIterator<Item = &'a RolePermission>) -> Option<bool> {
-		let mut has_permission = false;
-
-		for permission in permissions {
-			match self.has_permission(permission) {
-				Some(true) => return Some(true),
-				Some(false) => has_permission = true,
-				None => {}
-			}
-		}
-
-		if has_permission { Some(false) } else { None }
-	}
-
-	fn has_all_permissions<'a>(&self, permissions: impl IntoIterator<Item = &'a RolePermission>) -> Option<bool> {
-		for permission in permissions {
-			if !self.has_permission(permission)? {
-				return Some(false);
-			}
-		}
-
-		Some(true)
-	}
-}
-
-impl PermissionsExt for &[RolePermission] {
-	/// Returns true if any of the permissions in the slice match the given
-	/// permission
-	fn has_permission(&self, permission: &RolePermission) -> Option<bool> {
-		let mut has_permission = false;
-
-		for p in *self {
-			match p.has_permission(permission) {
-				Some(true) => return Some(true),
-				Some(false) => has_permission = true,
-				None => {}
-			}
-		}
-
-		if has_permission { Some(false) } else { None }
-	}
-}
-
-impl PermissionsExt for Vec<RolePermission> {
-	fn has_permission(&self, permission: &RolePermission) -> Option<bool> {
-		(&self as &[RolePermission]).has_permission(permission)
-	}
-}
-
-impl PermissionsExt for Role {
-	fn has_permission(&self, permission: &RolePermission) -> Option<bool> {
-		self.data.has_permission(permission)
-	}
-}
-
 impl Table for Role {
 	const TABLE_NAME: &'static str = "roles";
 }
@@ -92,324 +35,465 @@ impl Table for Role {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct RoleData {
-	// TODO: permissions
-	#[serde(deserialize_with = "deserialize_permissions")]
-	#[serde(serialize_with = "serialize_permissions")]
-	/// In the database this is a Map of kind => value where kind is a string
-	/// and value is a JSON value. Meaning that duplicate keys are not allowed
-	/// and the keys are not ordered.
-	pub permissions: Vec<RolePermission>,
+	pub permissions: Permissions,
 }
 
-impl PermissionsExt for RoleData {
-	fn has_permission(&self, permission: &RolePermission) -> Option<bool> {
-		self.permissions.has_permission(permission)
+pub trait BitMask:
+	BitAnd<Output = Self>
+	+ BitOr<Output = Self>
+	+ Not<Output = Self>
+	+ Not<Output = Self>
+	+ BitOrAssign
+	+ BitAndAssign
+	+ Copy
+	+ Default
+	+ PartialEq
+	+ Sized
+	+ From<Self::Bits>
+{
+	type Bits: Copy + serde::Serialize + serde::de::DeserializeOwned;
+
+	fn bits(&self) -> Self::Bits;
+
+	fn is_default(&self) -> bool {
+		*self == Self::default()
+	}
+
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		serde::Serialize::serialize(&self.bits(), serializer)
+	}
+
+	fn deserialize<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		use serde::de::Deserialize;
+
+		let value = Self::Bits::deserialize(deserializer)?;
+		Ok(Self::from(value))
 	}
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-#[serde(tag = "kind", content = "value")]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, Copy, PartialEq, Eq)]
+#[serde(default)]
+#[serde(bound(serialize = "T: BitMask", deserialize = "T: BitMask"))]
+pub struct AllowDeny<T: BitMask> {
+	#[serde(skip_serializing_if = "T::is_default")]
+	#[serde(serialize_with = "T::serialize")]
+	#[serde(deserialize_with = "T::deserialize")]
+	pub allow: T,
+	#[serde(skip_serializing_if = "T::is_default")]
+	#[serde(serialize_with = "T::serialize")]
+	#[serde(deserialize_with = "T::deserialize")]
+	pub deny: T,
+}
+
+impl<T: BitMask> AllowDeny<T> {
+	pub fn permission(&self) -> T {
+		self.allow & !self.deny
+	}
+
+	pub fn merge(&mut self, other: Self) {
+		self.allow = (self.permission() & !other.deny) | other.allow;
+		self.deny |= other.deny;
+	}
+
+	pub fn allow(&mut self, permission: T) {
+		self.allow |= permission;
+		self.deny &= !permission;
+	}
+
+	pub fn deny(&mut self, permission: T) {
+		self.allow &= !permission;
+		self.deny |= permission;
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.allow == T::default() && self.deny == T::default()
+	}
+}
+
+#[bitmask(u8)]
+pub enum EmotePermission {
+	Upload,
+	Delete,
+	Edit,
+	Admin,
+}
+
+impl Default for EmotePermission {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+impl BitMask for EmotePermission {
+	type Bits = u8;
+
+	fn bits(&self) -> Self::Bits {
+		self.bits()
+	}
+}
+
+#[bitmask(u8)]
 pub enum RolePermission {
-	/// EmoteUpload means uploading a new emote
-	EmoteUpload(bool),
-	/// EmoteDelete means deleting an emote you own
-	EmoteDelete(bool),
-	/// EmoteEdit means changing the name, description, and tags of an emote you
-	/// own
-	EmoteEdit(bool),
-	/// EmoteAmin means changing any emote's name, description, and tags
-	EmoteAdmin(bool),
-
-	/// RoleAdmin means creating, editing, and deleting roles
-	RoleAdmin(bool),
-	/// RoleAssign means assigning roles to users
-	RoleAssign(bool),
-
-	/// EmoteSetCreate means creating a new emote set
-	EmoteSetCreate(bool),
-	/// EmoteSetDelete means deleting an emote set you own
-	EmoteSetDelete(bool),
-	/// EmoteSetAdmin means changing the name and description of any emote set
-	EmoteSetAdmin(bool),
-
-	/// BadgeAdmin means creating, editing, and deleting badges
-	BadgeAdmin(bool),
-
-	/// PaintAdmin means creating, editing, and deleting paints
-	PaintAdmin(bool),
-
-	/// UserBan means banning or unbanning users
-	UserBan(bool),
-	/// UserMerge means merging users together
-	UserMerge(bool),
-	/// UserDelete means deleting users
-	UserDelete(bool),
-	/// UserEdit means changing user data
-	UserEdit(bool),
-	/// UserAdmin means changing any user's data or perform any action on any
-	/// user
-	UserAdmin(bool),
-
-	/// FeatureAnimatedProfilePicture allows a user to use an animated profile
-	/// picture
-	FeatureAnimatedProfilePicture(bool),
-	/// FeaturePersonalEmotes allows a user to create/use a personal emote set
-	FeaturePersonalEmoteSet(bool),
-	/// FeatureBadge allows a user to use a badge (if they have one)
-	FeatureBadge(bool),
-	/// FeatureEmoteSetCountLimit sets the number of emote sets a user has
-	FeatureEmoteSetCountLimit(u16),
-	/// FeatureEmoteSlotsLimit sets the number of emote slots a user has
-	FeatureEmoteSetSlotsLimit(u16),
-	/// FeaturePersonalEmoteSetCountLimit sets the number of emotes in a
-	/// personal emote set
-	FeaturePersonalEmoteSlotsLimit(u16),
-
-	/// Admin grants all permissions to the user, and limits are ignored however
-	/// role orders are still respected.
-	Admin(bool),
-
-	/// SuperAdmin grants all permissions to the user, limits and role orders
-	/// are ignored.
-	SuperAdmin(bool),
-
-	/// This value is not a recognized permission
-	Unknown(String, serde_json::Value),
+	Assign,
+	Admin,
 }
 
-impl PartialEq for RolePermission {
-	fn eq(&self, other: &Self) -> bool {
-		self.partial_cmp(other) == Some(std::cmp::Ordering::Equal)
+impl BitMask for RolePermission {
+	type Bits = u8;
+
+	fn bits(&self) -> Self::Bits {
+		self.bits()
 	}
 }
 
-impl PartialOrd for RolePermission {
-	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-		fn cmp_bool(a: &bool, b: &bool) -> std::cmp::Ordering {
-			if a == b {
-				std::cmp::Ordering::Equal
-			} else {
-				std::cmp::Ordering::Less
-			}
-		}
-
-		match (self, other) {
-			(Self::EmoteUpload(v1), Self::EmoteUpload(v2)) => Some(cmp_bool(v1, v2)),
-			(Self::EmoteAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteUpload(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::EmoteUpload(_)) => None,
-
-			(Self::EmoteDelete(v1), Self::EmoteDelete(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::EmoteAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteDelete(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::EmoteDelete(_)) => None,
-
-			(Self::EmoteEdit(v1), Self::EmoteEdit(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::EmoteAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteEdit(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::EmoteEdit(_)) => None,
-
-			(Self::EmoteAdmin(v1), Self::EmoteAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteAdmin(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::EmoteAdmin(_)) => None,
-
-			(Self::RoleAdmin(v1), Self::RoleAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::RoleAdmin(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::RoleAdmin(_)) => None,
-
-			(Self::RoleAssign(v1), Self::RoleAssign(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::RoleAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::RoleAssign(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::RoleAssign(_)) => None,
-
-			(Self::EmoteSetCreate(v1), Self::EmoteSetCreate(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::EmoteSetAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteSetCreate(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::EmoteSetCreate(_)) => None,
-
-			(Self::EmoteSetDelete(v1), Self::EmoteSetDelete(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::EmoteSetAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteSetDelete(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::EmoteSetDelete(_)) => None,
-
-			(Self::EmoteSetAdmin(v1), Self::EmoteSetAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::EmoteSetAdmin(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::EmoteSetAdmin(_)) => None,
-
-			(Self::BadgeAdmin(v1), Self::BadgeAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::BadgeAdmin(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::BadgeAdmin(_)) => None,
-
-			(Self::PaintAdmin(v1), Self::PaintAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::PaintAdmin(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::PaintAdmin(_)) => None,
-
-			(Self::UserBan(v1), Self::UserBan(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::UserAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::UserBan(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::UserBan(_)) => None,
-
-			(Self::UserMerge(v1), Self::UserMerge(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::UserAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::UserMerge(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::UserMerge(_)) => None,
-
-			(Self::UserDelete(v1), Self::UserDelete(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::UserAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::UserDelete(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::UserDelete(_)) => None,
-
-			(Self::UserEdit(v1), Self::UserEdit(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::UserAdmin(true) | Self::SuperAdmin(true) | Self::Admin(true), Self::UserEdit(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::UserEdit(_)) => None,
-
-			(Self::UserAdmin(v1), Self::UserAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::UserAdmin(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::UserAdmin(_)) => None,
-
-			(Self::FeatureAnimatedProfilePicture(v1), Self::FeatureAnimatedProfilePicture(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::FeatureAnimatedProfilePicture(v2)) => {
-				Some(cmp_bool(&true, &v2))
-			}
-			(_, Self::FeatureAnimatedProfilePicture(_)) => None,
-
-			(Self::FeaturePersonalEmoteSet(v1), Self::FeaturePersonalEmoteSet(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::FeaturePersonalEmoteSet(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::FeaturePersonalEmoteSet(_)) => None,
-
-			(Self::FeatureBadge(v1), Self::FeatureBadge(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::FeatureBadge(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::FeatureBadge(_)) => None,
-
-			(Self::FeatureEmoteSetCountLimit(v1), Self::FeatureEmoteSetCountLimit(v2)) => Some(v1.cmp(&v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::FeatureEmoteSetCountLimit(_)) => {
-				Some(std::cmp::Ordering::Greater)
-			}
-			(_, Self::FeatureEmoteSetCountLimit(_)) => None,
-
-			(Self::FeatureEmoteSetSlotsLimit(v1), Self::FeatureEmoteSetSlotsLimit(v2)) => Some(v1.cmp(&v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::FeatureEmoteSetSlotsLimit(_)) => {
-				Some(std::cmp::Ordering::Greater)
-			}
-			(_, Self::FeatureEmoteSetSlotsLimit(_)) => None,
-
-			(Self::FeaturePersonalEmoteSlotsLimit(v1), Self::FeaturePersonalEmoteSlotsLimit(v2)) => Some(v1.cmp(&v2)),
-			(Self::SuperAdmin(true) | Self::Admin(true), Self::FeaturePersonalEmoteSlotsLimit(_)) => {
-				Some(std::cmp::Ordering::Greater)
-			}
-			(_, Self::FeaturePersonalEmoteSlotsLimit(_)) => None,
-
-			(Self::Admin(v1), Self::Admin(v2)) => Some(cmp_bool(&v1, &v2)),
-			(Self::SuperAdmin(true), Self::Admin(v2)) => Some(cmp_bool(&true, &v2)),
-			(_, Self::Admin(_)) => None,
-
-			(Self::SuperAdmin(v1), Self::SuperAdmin(v2)) => Some(cmp_bool(&v1, &v2)),
-			(_, Self::SuperAdmin(_)) => None,
-
-			(Self::Unknown(_, _), _) => None,
-			(_, Self::Unknown(_, _)) => None,
-		}
+impl Default for RolePermission {
+	fn default() -> Self {
+		Self::none()
 	}
 }
 
-impl RolePermission {
-	fn from_parts(kind: String, value: serde_json::Value) -> Self {
-		let map = json!({
-			"kind": kind,
-			"value": value,
-		});
+#[bitmask(u8)]
+pub enum EmoteSetPermission {
+	Create,
+	Delete,
+	Admin,
+}
 
-		serde_json::from_value(map).unwrap_or_else(|_| Self::Unknown(kind, value))
-	}
+impl BitMask for EmoteSetPermission {
+	type Bits = u8;
 
-	fn into_parts(&self) -> anyhow::Result<(String, serde_json::Value)> {
-		match self {
-			Self::Unknown(kind, value) => Ok((kind.clone(), value.clone())),
-			permission => {
-				let mut value = serde_json::to_value(permission).context("failed to serialize permission")?;
-				let map = value.as_object_mut().context("permission value is not an object")?;
-				let kind = match map.remove("kind").context("permission kind is missing")? {
-					serde_json::Value::String(kind) => kind,
-					_ => anyhow::bail!("permission kind is not a string"),
-				};
-				let value = map.remove("value").context("permission value is missing")?;
-
-				Ok((kind, value))
-			}
-		}
+	fn bits(&self) -> Self::Bits {
+		self.bits()
 	}
 }
 
-impl PermissionsExt for RolePermission {
-	fn has_permission(&self, permission: &RolePermission) -> Option<bool> {
-		Some(matches!(
-			self.partial_cmp(permission)?,
-			std::cmp::Ordering::Equal | std::cmp::Ordering::Greater
-		))
+impl Default for EmoteSetPermission {
+	fn default() -> Self {
+		Self::none()
 	}
 }
 
-/// This function is used to deserialize a map of permissions into a Vec of
-/// RolePermission objects. It is used by the RoleData struct to deserialize the
-/// permissions field. The incoming map is expected to be "kind" => "value"
-/// where "kind" is a string and "value" is a JSON value.
-/// If the incoming map is not in the expected format, an error is returned.
-/// If a "kind" is not recognized, a RolePermission::Unknown is created.
-fn deserialize_permissions<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Vec<RolePermission>, D::Error> {
-	struct PermissionsVisitor;
-
-	impl<'de> de::Visitor<'de> for PermissionsVisitor {
-		type Value = Vec<RolePermission>;
-
-		fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-			formatter.write_str("a map of permissions")
-		}
-
-		fn visit_map<A: de::MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-			let mut permissions = Vec::new();
-
-			while let Some((tag, value)) = map.next_entry::<String, serde_json::Value>()? {
-				permissions.push(RolePermission::from_parts(tag, value));
-			}
-
-			Ok(permissions)
-		}
-	}
-
-	deserializer.deserialize_map(PermissionsVisitor)
+#[bitmask(u8)]
+pub enum BadgePermission {
+	Admin,
 }
 
-/// This function is the inverse of deserialize_permissions. It is used by the
-/// RoleData struct to serialize the permissions field. It takes a Vec of
-/// RolePermission objects and serializes them into a map of "kind" => "value"
-/// where "kind" is a string and "value" is a JSON value.
-fn serialize_permissions<S: serde::Serializer>(permissions: &Vec<RolePermission>, serializer: S) -> Result<S::Ok, S::Error> {
-	let mut map = serializer.serialize_map(Some(permissions.len()))?;
+impl BitMask for BadgePermission {
+	type Bits = u8;
 
-	for permission in permissions {
-		match permission {
-			RolePermission::Unknown(tag, value) => {
-				map.serialize_entry(tag, value)?;
-			}
-			permission => {
-				let (tag, value) = permission.into_parts().map_err(serde::ser::Error::custom)?;
-				map.serialize_entry(&tag, &value)?;
-			}
+	fn bits(&self) -> Self::Bits {
+		self.bits()
+	}
+}
+
+impl Default for BadgePermission {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+#[bitmask(u8)]
+pub enum PaintPermission {
+	Admin,
+}
+
+impl BitMask for PaintPermission {
+	type Bits = u8;
+
+	fn bits(&self) -> Self::Bits {
+		self.bits()
+	}
+}
+
+impl Default for PaintPermission {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+#[bitmask(u8)]
+pub enum UserPermission {
+	Ban,
+	Merge,
+	Delete,
+	Edit,
+	Admin,
+}
+
+impl BitMask for UserPermission {
+	type Bits = u8;
+
+	fn bits(&self) -> Self::Bits {
+		self.bits()
+	}
+}
+
+impl Default for UserPermission {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+#[bitmask(u8)]
+pub enum FeaturePermission {
+	AnimatedProfilePicture,
+	PersonalEmoteSet,
+	Badge,
+	BypassEmoteSetCountLimit,
+	ByPassEmoteSetSlotsLimit,
+	ByPassPersonalEmoteSetSlotsLimit,
+	Admin,
+}
+
+impl BitMask for FeaturePermission {
+	type Bits = u8;
+
+	fn bits(&self) -> Self::Bits {
+		self.bits()
+	}
+}
+
+impl Default for FeaturePermission {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+#[bitmask(u8)]
+pub enum AdminPermission {
+	Admin,
+	SuperAdmin,
+}
+
+impl BitMask for AdminPermission {
+	type Bits = u8;
+
+	fn bits(&self) -> Self::Bits {
+		self.bits()
+	}
+}
+
+impl Default for AdminPermission {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
+#[serde(default)]
+pub struct Permissions {
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub emote: AllowDeny<EmotePermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub role: AllowDeny<RolePermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub emote_set: AllowDeny<EmoteSetPermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub badge: AllowDeny<BadgePermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub paint: AllowDeny<PaintPermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub user: AllowDeny<UserPermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub feature: AllowDeny<FeaturePermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub admin: AllowDeny<AdminPermission>,
+
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub emote_set_count_limit: Option<u16>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub emote_set_slots_limit: Option<u16>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub personal_emote_set_slots_limit: Option<u16>,
+
+	#[serde(flatten)]
+	pub unknown: HashMap<String, serde_json::Value>,
+}
+
+impl Permissions {
+	pub fn merge(&mut self, other: Self) {
+		self.emote.merge(other.emote);
+		self.role.merge(other.role);
+		self.emote_set.merge(other.emote_set);
+		self.badge.merge(other.badge);
+		self.paint.merge(other.paint);
+		self.user.merge(other.user);
+		self.feature.merge(other.feature);
+		self.admin.merge(other.admin);
+
+		self.emote_set_count_limit = other.emote_set_count_limit.or(self.emote_set_count_limit);
+		self.emote_set_slots_limit = other.emote_set_slots_limit.or(self.emote_set_slots_limit);
+		self.personal_emote_set_slots_limit = other.personal_emote_set_slots_limit.or(self.personal_emote_set_slots_limit);
+
+		self.unknown.extend(other.unknown);
+	}
+
+	pub fn apply(&mut self, perm: Permission) {
+		match perm {
+			Permission::Emote(perm) => self.emote.allow(perm),
+			Permission::Role(perm) => self.role.allow(perm),
+			Permission::EmoteSet(perm) => self.emote_set.allow(perm),
+			Permission::Badge(perm) => self.badge.allow(perm),
+			Permission::Paint(perm) => self.paint.allow(perm),
+			Permission::User(perm) => self.user.allow(perm),
+			Permission::Feature(perm) => self.feature.allow(perm),
+			Permission::Admin(perm) => self.admin.allow(perm),
+
+			Permission::EmoteSetCount(perm) => self.emote_set_count_limit = Some(perm),
+			Permission::EmoteSetSlots(perm) => self.emote_set_slots_limit = Some(perm),
+			Permission::PersonalEmoteSetSlots(perm) => self.personal_emote_set_slots_limit = Some(perm),
 		}
 	}
 
-	map.end()
+	pub fn has_emote_permission(&self, permission: EmotePermission) -> bool {
+		self.is_admin()
+			|| self.emote.permission().contains(permission)
+			|| self.emote.permission().contains(EmotePermission::Admin)
+	}
+
+	pub fn has_role_permission(&self, permission: RolePermission) -> bool {
+		self.is_admin()
+			|| self.role.permission().contains(permission)
+			|| self.role.permission().contains(RolePermission::Admin)
+	}
+
+	pub fn has_emote_set_permission(&self, permission: EmoteSetPermission) -> bool {
+		self.is_admin()
+			|| self.emote_set.permission().contains(permission)
+			|| self.emote_set.permission().contains(EmoteSetPermission::Admin)
+	}
+
+	pub fn has_badge_permission(&self, permission: BadgePermission) -> bool {
+		self.is_admin()
+			|| self.badge.permission().contains(permission)
+			|| self.badge.permission().contains(BadgePermission::Admin)
+	}
+
+	pub fn has_paint_permission(&self, permission: PaintPermission) -> bool {
+		self.is_admin()
+			|| self.paint.permission().contains(permission)
+			|| self.paint.permission().contains(PaintPermission::Admin)
+	}
+
+	pub fn has_user_permission(&self, permission: UserPermission) -> bool {
+		self.is_admin()
+			|| self.user.permission().contains(permission)
+			|| self.user.permission().contains(UserPermission::Admin)
+	}
+
+	pub fn has_feature_permission(&self, permission: FeaturePermission) -> bool {
+		self.is_admin()
+			|| self.feature.permission().contains(permission)
+			|| self.feature.permission().contains(FeaturePermission::Admin)
+	}
+
+	pub fn has_admin_permission(&self, permission: AdminPermission) -> bool {
+		self.admin.permission().contains(permission) || self.admin.permission().contains(AdminPermission::SuperAdmin)
+	}
+
+	pub fn has_emote_set_count_limit(&self, count: u16) -> bool {
+		self.has_feature_permission(FeaturePermission::BypassEmoteSetCountLimit)
+			|| self.emote_set_count_limit.map_or(true, |limit| count <= limit)
+	}
+
+	pub fn has_emote_set_slots_limit(&self, count: u16) -> bool {
+		self.has_feature_permission(FeaturePermission::ByPassEmoteSetSlotsLimit)
+			|| self.emote_set_slots_limit.map_or(true, |limit| count <= limit)
+	}
+
+	pub fn has_personal_emote_set_slots_limit(&self, count: u16) -> bool {
+		self.has_feature_permission(FeaturePermission::ByPassPersonalEmoteSetSlotsLimit)
+			|| self.personal_emote_set_slots_limit.map_or(true, |limit| count <= limit)
+	}
+
+	pub fn is_admin(&self) -> bool {
+		self.admin
+			.permission()
+			.intersects(AdminPermission::Admin | AdminPermission::SuperAdmin)
+	}
+
+	pub fn is_super_admin(&self) -> bool {
+		self.admin.permission().contains(AdminPermission::SuperAdmin)
+	}
+}
+
+impl FromIterator<Permissions> for Permissions {
+	fn from_iter<I: IntoIterator<Item = Permissions>>(iter: I) -> Self {
+		let mut permissions = Self::default();
+
+		for permission in iter {
+			permissions.merge(permission);
+		}
+
+		permissions
+	}
+}
+
+impl FromIterator<Permission> for Permissions {
+	fn from_iter<I: IntoIterator<Item = Permission>>(iter: I) -> Self {
+		let mut permissions = Self::default();
+
+		for permission in iter {
+			permissions.apply(permission);
+		}
+
+		permissions
+	}
+}
+
+#[derive(Debug, Clone, Copy, EnumImpl)]
+pub enum Permission {
+	#[enum_impl(impl from)]
+	Emote(EmotePermission),
+	#[enum_impl(impl from)]
+	Role(RolePermission),
+	#[enum_impl(impl from)]
+	EmoteSet(EmoteSetPermission),
+	#[enum_impl(impl from)]
+	Badge(BadgePermission),
+	#[enum_impl(impl from)]
+	Paint(PaintPermission),
+	#[enum_impl(impl from)]
+	User(UserPermission),
+	#[enum_impl(impl from)]
+	Feature(FeaturePermission),
+	#[enum_impl(impl from)]
+	Admin(AdminPermission),
+
+	EmoteSetCount(u16),
+	EmoteSetSlots(u16),
+	PersonalEmoteSetSlots(u16),
+}
+
+pub trait PermissionsExt {
+	fn has_permission(&self, permission: impl Into<Permission>) -> bool;
+
+	fn has_any_permission(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
+		permission.into_iter().any(|permission| self.has_permission(permission))
+	}
+
+	fn has_all_permissions(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
+		permission.into_iter().all(|permission| self.has_permission(permission))
+	}
+}
+
+impl PermissionsExt for Permissions {
+	fn has_permission(&self, permission: impl Into<Permission>) -> bool {
+		match permission.into() {
+			Permission::Emote(perm) => self.has_emote_permission(perm),
+			Permission::Role(perm) => self.has_role_permission(perm),
+			Permission::EmoteSet(perm) => self.has_emote_set_permission(perm),
+			Permission::Badge(perm) => self.has_badge_permission(perm),
+			Permission::Paint(perm) => self.has_paint_permission(perm),
+			Permission::User(perm) => self.has_user_permission(perm),
+			Permission::Feature(perm) => self.has_feature_permission(perm),
+			Permission::Admin(perm) => self.has_admin_permission(perm),
+
+			Permission::EmoteSetCount(perm) => self.has_emote_set_count_limit(perm),
+			Permission::EmoteSetSlots(perm) => self.has_emote_set_slots_limit(perm),
+			Permission::PersonalEmoteSetSlots(perm) => self.has_personal_emote_set_slots_limit(perm),
+		}
+	}
 }
 
 #[cfg(test)]
@@ -418,6 +502,139 @@ mod tests {
 
 	#[test]
 	fn test_permissions_cmp() {
-		assert!(RolePermission::EmoteUpload(true).has_permission(&RolePermission::EmoteUpload(true)) == Some(true));
+		let permissions = Permissions {
+			emote: AllowDeny {
+				allow: EmotePermission::Upload,
+				deny: EmotePermission::Delete,
+			},
+			role: AllowDeny {
+				allow: RolePermission::Assign,
+				deny: RolePermission::Admin,
+			},
+			emote_set: AllowDeny {
+				allow: EmoteSetPermission::Create,
+				deny: EmoteSetPermission::Admin,
+			},
+			badge: AllowDeny {
+				allow: BadgePermission::Admin,
+				deny: BadgePermission::none(),
+			},
+			paint: AllowDeny {
+				allow: PaintPermission::Admin,
+				deny: PaintPermission::none(),
+			},
+			user: AllowDeny {
+				allow: UserPermission::Ban,
+				deny: UserPermission::none(),
+			},
+			feature: AllowDeny {
+				allow: FeaturePermission::Badge,
+				deny: FeaturePermission::none(),
+			},
+			admin: AllowDeny {
+				allow: AdminPermission::Admin,
+				deny: AdminPermission::none(),
+			},
+			emote_set_count_limit: Some(10),
+			emote_set_slots_limit: Some(5),
+			personal_emote_set_slots_limit: Some(3),
+			unknown: HashMap::new(),
+		};
+
+		assert_eq!(permissions.has_permission(Permission::Emote(EmotePermission::Upload)), true);
+		assert_eq!(permissions.has_permission(Permission::Emote(EmotePermission::Delete)), true);
+	}
+
+	#[test]
+	fn test_serialize() {
+		let permissions = Permissions {
+			emote: AllowDeny {
+				allow: EmotePermission::Upload,
+				deny: EmotePermission::Delete,
+			},
+			role: AllowDeny {
+				allow: RolePermission::Assign,
+				deny: RolePermission::Admin,
+			},
+			emote_set: AllowDeny {
+				allow: EmoteSetPermission::Create,
+				deny: EmoteSetPermission::Admin,
+			},
+			badge: AllowDeny {
+				allow: BadgePermission::Admin,
+				deny: BadgePermission::none(),
+			},
+			paint: AllowDeny {
+				allow: PaintPermission::Admin,
+				deny: PaintPermission::none(),
+			},
+			user: AllowDeny {
+				allow: UserPermission::Ban,
+				deny: UserPermission::none(),
+			},
+			feature: AllowDeny {
+				allow: FeaturePermission::Badge,
+				deny: FeaturePermission::none(),
+			},
+			admin: AllowDeny {
+				allow: AdminPermission::Admin,
+				deny: AdminPermission::none(),
+			},
+			emote_set_count_limit: Some(10),
+			emote_set_slots_limit: Some(5),
+			personal_emote_set_slots_limit: Some(3),
+			unknown: HashMap::new(),
+		};
+
+		let json = serde_json::to_string(&permissions).unwrap();
+
+		assert_eq!(
+			json,
+			r#"{"emote":{"allow":1,"deny":2},"role":{"allow":1,"deny":2},"emote_set":{"allow":1,"deny":4},"badge":{"allow":1},"paint":{"allow":1},"user":{"allow":1},"feature":{"allow":4},"admin":{"allow":1},"emote_set_count_limit":10,"emote_set_slots_limit":5,"personal_emote_set_slots_limit":3}"#
+		);
+
+		let permissions2: Permissions = serde_json::from_str(&json).unwrap();
+
+		assert_eq!(permissions, permissions2, "permissions not equal");
+
+		let permissions = Permissions::default();
+
+		let json = serde_json::to_string(&permissions).unwrap();
+
+		assert_eq!(json, r#"{}"#);
+
+		let permissions = Permissions {
+			unknown: vec![("emote2".to_string(), serde_json::json!({"allow": 1, "deny": 2}))]
+				.into_iter()
+				.collect(),
+			..Permissions::default()
+		};
+
+		let json = serde_json::to_string(&permissions).unwrap();
+
+		assert_eq!(json, r#"{"emote2":{"allow":1,"deny":2}}"#);
+	}
+
+	#[test]
+	fn test_deserialize() {
+		let json = r#"{}"#;
+
+		let permissions: Permissions = serde_json::from_str(json).unwrap();
+
+		assert_eq!(permissions, Permissions::default(),);
+
+		let json = r#"{"emote2":{"allow":1,"deny":2}}"#;
+
+		let permissions: Permissions = serde_json::from_str(json).unwrap();
+
+		assert_eq!(
+			permissions,
+			Permissions {
+				unknown: vec![("emote2".to_string(), serde_json::json!({"allow": 1, "deny": 2}))]
+					.into_iter()
+					.collect(),
+				..Permissions::default()
+			},
+		);
 	}
 }

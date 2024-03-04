@@ -101,9 +101,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-nats",
+ "bitmask-enum",
  "cap",
  "chrono",
  "const-lru",
+ "enum-impl",
  "fnv",
  "futures",
  "futures-util",
@@ -225,6 +227,16 @@ name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
+
+[[package]]
+name = "bitmask-enum"
+version = "2.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9990737a6d5740ff51cdbbc0f0503015cb30c390f6623968281eb214a520cfc0"
+dependencies = [
+ "quote",
+ "syn 2.0.51",
+]
 
 [[package]]
 name = "block-buffer"
@@ -575,6 +587,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7268b386296a025e474d5140678f75d6de9493ae55a5d709eeb9dd08149945e1"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "enum-impl"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08a8d4b362392c466e9c9b72f6e18511fccd7913b15c183d474e6136fe0fde8d"
+dependencies = [
+ "convert_case",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.51",
 ]
 
 [[package]]

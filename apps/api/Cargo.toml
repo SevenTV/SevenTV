@@ -45,6 +45,8 @@ utoipa = "4.2"
 postgres-from-row = "0.5"
 tokio-postgres = "0.7"
 postgres-types = "0.2"
+bitmask-enum = "2"
+enum-impl = "0.1"
 
 shared = { workspace = true }
 
