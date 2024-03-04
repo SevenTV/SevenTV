@@ -1,10 +1,12 @@
 <script lang="ts">
+	import Button from "$/components/button.svelte";
 	import HideOn from "$/components/hide-on.svelte";
-	import SearchBar from "$/components/nav/search-bar.svelte";
+	import SearchBar from "$/components/input/search-bar.svelte";
 	import PaintPreview from "$/components/paint-preview.svelte";
 	import Select from "$/components/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
 	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
+	import { priceFormat } from "$/lib/utils";
 
 	const bundles = [
 		{
@@ -39,11 +41,6 @@
 			oldPrice: 10099,
 		},
 	];
-
-	const priceFormat = new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-	});
 </script>
 
 <svelte:head>
@@ -62,9 +59,9 @@
 			<HideOn mobile>
 				<SearchBar />
 			</HideOn>
-			<button class="button square hide-on-desktop">
+			<Button hideOnDesktop>
 				<MagnifyingGlass />
-			</button>
+			</Button>
 			<Select options={["Filters"]} />
 		</div>
 	</div>
@@ -81,19 +78,19 @@
 					<PaintPreview />
 				{/each}
 				<div class="buttons">
-					<button class="button secondary icon-left">
-						<Gift />
+					<Button secondary>
+						<Gift slot="icon" />
 						Gift
-					</button>
-					<button class="button secondary icon-left">
-						<ShoppingCartSimple />
+					</Button>
+					<Button secondary>
+						<ShoppingCartSimple slot="icon" />
 						<span>
 							{#if bundle.oldPrice}
 								<del>{priceFormat.format(bundle.oldPrice / 100)}</del>
 							{/if}
 							{priceFormat.format(bundle.price / 100)}
 						</span>
-					</button>
+					</Button>
 				</div>
 			</div>
 		{/each}
@@ -151,8 +148,8 @@
 			}
 
 			.new {
-				color: var(--subscriber-accent);
-				border: 1px solid var(--subscriber-accent);
+				color: var(--subscriber);
+				border: 1px solid var(--subscriber);
 				padding: 0.2rem 0.5rem;
 				border-radius: 0.25rem;
 				font-size: 0.625rem;

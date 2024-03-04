@@ -3,15 +3,15 @@
 </script>
 
 <script lang="ts">
-	export let label: string;
-	export let checked = false;
+	export let label: string = "";
+	export let value = false;
 	export let disabled = false;
 
 	const id = checkboxIndex++;
 </script>
 
-<div class="checkbox">
-	<input type="checkbox" id="checkbox-{id}" bind:checked {disabled} />
+<div class="checkbox" {...$$restProps}>
+	<input type="checkbox" id="checkbox-{id}" bind:checked={value} {disabled} />
 	<label for="checkbox-{id}">{label}</label>
 </div>
 
@@ -33,7 +33,7 @@
 				height: 1rem;
 				width: 1rem;
 
-				border: transparent 1px solid;
+				border: 1px solid var(--secondary-border);
 				border-radius: 0.25rem;
 
 				background-color: var(--secondary);
@@ -47,6 +47,7 @@
 		}
 
 		input {
+			position: absolute;
 			margin: 0;
 			width: 0;
 			height: 0;
@@ -75,6 +76,7 @@
 		input:checked + label::before {
 			background-color: var(--primary);
 			background-size: 0.75rem;
+			border-color: transparent;
 		}
 
 		input:disabled + label {

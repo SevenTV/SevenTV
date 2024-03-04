@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { user } from "$/lib/stores";
+	import { Theme, theme, user } from "$/lib/stores";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
@@ -11,7 +11,6 @@
 		Gear,
 		GlobeHemisphereWest,
 		House,
-		IconContext,
 		LockSimple,
 		Moon,
 		Note,
@@ -19,13 +18,28 @@
 		Question,
 		SealCheck,
 		SignOut,
+		Sliders,
 		Smiley,
 		Star,
+		Sun,
 	} from "phosphor-svelte";
+
+	enum Menu {
+		Root,
+		Language,
+		Theme,
+		Settings,
+	}
+
+	let menu = Menu.Root;
+
+	function setMenu(newMenu: Menu) {
+		menu = newMenu;
+	}
 </script>
 
-<IconContext values={{ size: "1.5rem" }}>
-	<div class="menu" transition:fade={{ duration: 100 }}>
+<nav class="menu" transition:fade={{ duration: 100 }}>
+	{#if menu === Menu.Root}
 		{#if $user}
 			<a class="profile" href="/user/ayyybubu">
 				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
@@ -75,14 +89,14 @@
 			<hr class="hide-on-mobile" />
 		{/if}
 		<div class="link-list">
-			<button>
+			<button on:click|stopPropagation={() => setMenu(Menu.Language)}>
 				<GlobeHemisphereWest />
 				Language
 				<div class="chevron">
 					<CaretRight />
 				</div>
 			</button>
-			<button>
+			<button on:click|stopPropagation={() => setMenu(Menu.Theme)}>
 				<Moon />
 				Theme
 				<div class="chevron">
@@ -94,7 +108,7 @@
 					<Gear />
 					Settings
 				</a>
-				<button class="hide-on-desktop">
+				<button class="hide-on-desktop" on:click|stopPropagation={() => setMenu(Menu.Settings)}>
 					<Gear />
 					Settings
 					<div class="chevron">
@@ -105,7 +119,7 @@
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<a href="/developer">
+			<a href="https://7tv.io/">
 				<Code />
 				Developer Portal
 			</a>
@@ -135,8 +149,28 @@
 				</button>
 			</div>
 		{/if}
-	</div>
-</IconContext>
+	{:else if menu === Menu.Language}
+		Language Picker
+	{:else if menu === Menu.Theme}
+		<h2>Theme</h2>
+		<div class="link-list">
+			<button on:click={() => ($theme = Theme.System)}>
+				<Sliders />
+				System
+			</button>
+			<button on:click={() => ($theme = Theme.Dark)}>
+				<Moon />
+				Dark
+			</button>
+			<button on:click={() => ($theme = Theme.Light)}>
+				<Sun />
+				Light
+			</button>
+		</div>
+	{:else if menu === Menu.Settings}
+		Settings
+	{/if}
+</nav>
 
 <style lang="scss">
 	.menu {
@@ -198,6 +232,12 @@
 		}
 	}
 
+	h2 {
+		margin: 0.5rem 1.2rem;
+		font-size: 1.25rem;
+		font-weight: 600;
+	}
+
 	.link-list {
 		display: flex;
 		flex-direction: column;
@@ -206,7 +246,7 @@
 
 		a,
 		button {
-			padding: 0.75rem;
+			padding: 0.75rem 1.2rem;
 			border-radius: 0.5rem;
 			color: var(--text);
 			font-size: 0.875rem;
@@ -215,7 +255,7 @@
 
 			display: flex;
 			align-items: center;
-			gap: 1rem;
+			gap: 1.2rem;
 
 			&:hover,
 			&:focus-visible {
@@ -230,7 +270,7 @@
 		}
 
 		.store {
-			color: var(--subscriber);
+			color: var(--store);
 		}
 	}
 

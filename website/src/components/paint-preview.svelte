@@ -13,7 +13,7 @@
 		justify-content: space-between;
 		align-items: center;
 
-		color: var(--text-lighter);
+		color: var(--text-light);
 		font-weight: 600;
 
 		.circle {

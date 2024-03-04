@@ -1,15 +1,26 @@
 <script lang="ts">
 	import Logo from "$/components/icons/logo.svelte";
-	import SearchBar from "$/components/nav/search-bar.svelte";
-	import Tabs from "./tabs.svelte";
+	import SearchBar from "$/components/input/search-bar.svelte";
+	import TopTabs from "./top-tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { user, showMobileMenu } from "$/lib/stores";
+	import { user, showMobileMenu, showUploadDialog, showSignInDialog } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
 	import Notifications from "../notifications.svelte";
-	import { Bell, Chat, List, MagnifyingGlass, Plus, PlusSquare } from "phosphor-svelte";
+	import {
+		Bell,
+		Chat,
+		List,
+		MagnifyingGlass,
+		PlusSquare,
+		ShoppingCartSimple,
+	} from "phosphor-svelte";
+	import Button from "../button.svelte";
+	import CartDialog from "../dialogs/cart-dialog.svelte";
+
+	let cartDialog = false;
 </script>
 
 <nav>
@@ -18,7 +29,7 @@
 			<Logo />
 		</a>
 		<HideOn mobile>
-			<Tabs
+			<TopTabs
 				tabs={[
 					{ name: "Emotes", pathname: "/emotes" },
 					{ name: "Discover", pathname: "/discover" },
@@ -31,27 +42,36 @@
 		<SearchBar big />
 	</HideOn>
 	<div class="user-actions">
-		<button class="button hide-on-desktop square">
-			<MagnifyingGlass />
-		</button>
+		<Button hideOnDesktop>
+			<MagnifyingGlass slot="icon" />
+		</Button>
 		{#if $user}
-			<DropDown button>
-				<Bell />
+			<DropDown>
+				<Button>
+					<Bell slot="icon" />
+				</Button>
 				<Notifications slot="dropdown" />
 			</DropDown>
-			<DropDown button>
-				<Badge count={1}>
-					<Chat />
-				</Badge>
+			<DropDown>
+				<Button>
+					<Badge count={1} slot="icon">
+						<Chat />
+					</Badge>
+				</Button>
 				<Dms slot="dropdown" />
 			</DropDown>
-			<a href="/upload" class="button square hide-on-desktop">
-				<PlusSquare />
-			</a>
-			<a href="/upload" class="button icon-left secondary hide-on-mobile">
-				<Plus />
+			<Button on:click={() => (cartDialog = !cartDialog)}>
+				<Badge count={3} slot="icon">
+					<ShoppingCartSimple />
+				</Badge>
+			</Button>
+			<Button hideOnDesktop on:click={() => ($showUploadDialog = true)}>
+				<PlusSquare slot="icon" />
+			</Button>
+			<Button secondary hideOnMobile on:click={() => ($showUploadDialog = true)}>
+				<PlusSquare slot="icon" />
 				Upload
-			</a>
+			</Button>
 			<HideOn mobile>
 				<DropDown>
 					<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
@@ -64,29 +84,31 @@
 			</button>
 		{:else}
 			<HideOn mobile>
-				<DropDown button>
-					<List />
+				<DropDown>
+					<Button>
+						<List slot="icon" />
+					</Button>
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<a class="button primary" href="/sign-in">Sign In</a>
+			<Button primary on:click={() => ($showSignInDialog = true)}>Sign In</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
-			<button
-				class="button square hide-on-desktop"
-				on:click={() => ($showMobileMenu = !$showMobileMenu)}
-			>
-				<List />
-			</button>
+			<Button hideOnDesktop on:click={() => ($showMobileMenu = !$showMobileMenu)}>
+				<List slot="icon" />
+			</Button>
 		{/if}
 	</div>
 </nav>
+{#if cartDialog}
+	<CartDialog on:close={() => (cartDialog = false)} />
+{/if}
 
 <style lang="scss">
 	nav {
 		background-color: var(--bg-dark);
-		border-bottom: 1px solid var(--border);
+		border-bottom: 1px solid var(--border-active);
 		padding: 0 2rem;
 		height: 3.5rem;
 
@@ -104,6 +126,8 @@
 		gap: 2rem;
 
 		.home {
+			color: var(--text);
+
 			display: flex;
 			align-items: center;
 		}

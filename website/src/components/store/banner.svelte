@@ -17,6 +17,8 @@
 		position: relative;
 		z-index: 0;
 
+		color: white;
+
 		&::before {
 			content: "";
 			position: absolute;

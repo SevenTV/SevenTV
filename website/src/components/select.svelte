@@ -2,6 +2,7 @@
 	import mouseTrap from "$/lib/mouseTrap";
 	import { CaretDown } from "phosphor-svelte";
 	import { fade } from "svelte/transition";
+	import Button from "./button.svelte";
 
 	export let options: string[];
 	export let selected: string | null = options[0] ?? null;
@@ -17,16 +18,18 @@
 	function close() {
 		expanded = false;
 	}
+
+	function select(option: string) {
+		selected = option;
+		expanded = false;
+	}
 </script>
 
-<button
-	on:click={toggle}
-	use:mouseTrap={close}
-	class="button secondary select"
-	class:grow
-	class:expanded
-	tabindex="-1"
->
+<div use:mouseTrap={close} class="select" class:grow class:expanded>
+	<Button secondary tabindex="-1" on:click={toggle}>
+		{selected ?? "Select"}
+		<CaretDown slot="icon-right" size="1rem" />
+	</Button>
 	<select bind:value={selected} on:click={toggle} on:keypress={toggle}>
 		{#each options as option}
 			<option value={option}>
@@ -34,22 +37,16 @@
 			</option>
 		{/each}
 	</select>
-	{selected ?? "Select"}
-	<CaretDown size="1rem" />
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
-				<button
-					class="button"
-					class:secondary={selected === option}
-					on:click={() => (selected = option)}
-				>
+				<Button secondary={selected === option} on:click={() => select(option)} noBorder>
 					{option}
-				</button>
+				</Button>
 			{/each}
 		</div>
 	{/if}
-</button>
+</div>
 
 <style lang="scss">
 	select {
@@ -72,25 +69,30 @@
 		width: 1px;
 	}
 
-	.button.select {
+	.select {
 		position: relative;
-		justify-content: space-between;
-		border: transparent 1px solid;
-		background-color: var(--secondary);
-
-		&:focus-within {
-			border-color: var(--primary);
-		}
 
 		&.grow {
 			width: 100%;
 			flex-grow: 1;
 		}
 
+		& > :global(.button) {
+			width: 100%;
+
+			justify-content: space-between;
+
+			&:focus-within {
+				border-color: var(--primary);
+			}
+		}
+
 		&.expanded {
-			border-color: var(--border);
-			border-bottom-left-radius: 0;
-			border-bottom-right-radius: 0;
+			& > :global(.button) {
+				border-color: var(--border-active);
+				border-bottom-left-radius: 0;
+				border-bottom-right-radius: 0;
+			}
 
 			& > .dropped {
 				border-top-left-radius: 0;
@@ -104,18 +106,18 @@
 
 		position: absolute;
 		top: 100%;
-		left: -1px;
-		right: -1px;
+		left: 0;
+		right: 0;
 		margin: 0;
 		padding: 0;
-		border: var(--border) 1px solid;
+		border: var(--border-active) 1px solid;
 		border-top: none;
 		border-radius: 0.5rem;
 
 		background-color: var(--bg-medium);
-		box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.25);
+		box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1);
 
-		& > button {
+		& > :global(.button) {
 			border-radius: 0;
 			width: 100%;
 			padding: 0.5rem 1rem;

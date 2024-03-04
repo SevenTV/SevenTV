@@ -1,12 +1,14 @@
 <script lang="ts">
 	import "$/styles/fonts.scss";
-	import "$/styles/colors.scss";
+	import "$/styles/variables.scss";
 	import "$/styles/global.scss";
 	import TopNav from "$/components/nav/top-nav.svelte";
-	import { showMobileMenu } from "$/lib/stores";
+	import { showMobileMenu, showSignInDialog, showUploadDialog } from "$/lib/stores";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
 	import { IconContext } from "phosphor-svelte";
+	import UploadDialog from "$/components/dialogs/upload-dialog.svelte";
+	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 
 	beforeNavigate((nav) => {
 		// Hide menu on navigate
@@ -27,6 +29,12 @@
 			<Menu />
 		{:else}
 			<slot />
+			{#if $showUploadDialog}
+				<UploadDialog />
+			{/if}
+			{#if $showSignInDialog}
+				<SignInDialog />
+			{/if}
 		{/if}
 	</main>
 </IconContext>
@@ -48,6 +56,7 @@
 
 	main {
 		overflow: auto;
+		overflow: overlay;
 	}
 
 	.skip-to-main {

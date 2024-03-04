@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Discover - 7TV</title>
+	<title>News - 7TV</title>
 </svelte:head>
 
-<h1>Discover</h1>
+<h2>News</h2>

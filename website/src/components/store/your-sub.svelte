@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from "../button.svelte";
 	import StoreSection from "./store-section.svelte";
 	import {
 		CaretDown,
@@ -15,35 +16,37 @@
 
 <StoreSection title="Your Subscription">
 	<div class="buttons" slot="header">
-		<button
-			class="button secondary hide-on-mobile"
-			class:sub-color={subbed}
+		<Button
+			secondary
+			hideOnMobile
 			on:click={() => (subbed = true)}
+			style={subbed && "color: var(--subscriber)"}
 		>
-			<Star weight={subbed ? "fill" : "bold"} />
+			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<span>{subbed ? "Subscribed" : "Subscribe"}</span>
-			<CaretDown />
-		</button>
-		<button
-			class="button secondary icon-left icon-right hide-on-desktop"
-			class:sub-color={subbed}
+			<CaretDown slot="icon-right" />
+		</Button>
+		<Button
+			secondary
+			hideOnDesktop
 			on:click={() => (subbed = true)}
+			style={subbed && "color: var(--subscriber)"}
 		>
-			<Star weight={subbed ? "fill" : "bold"} />
-			<CaretDown />
-		</button>
+			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
+			<CaretDown slot="icon-right" />
+		</Button>
 
-		<button class="button secondary icon-left hide-on-mobile">
-			<Gift />
+		<Button secondary hideOnMobile>
+			<Gift slot="icon" />
 			Gift
-		</button>
-		<button class="button secondary square hide-on-desktop">
-			<Gift />
-		</button>
+		</Button>
+		<Button hideOnDesktop>
+			<Gift slot="icon" />
+		</Button>
 
-		<button class="button secondary square">
-			<DotsThreeVertical />
-		</button>
+		<Button secondary>
+			<DotsThreeVertical slot="icon" />
+		</Button>
 	</div>
 	<div class="sub-grid">
 		<span class="key">Plan</span>
@@ -78,10 +81,6 @@
 		gap: 0.5rem;
 	}
 
-	.sub-color {
-		color: var(--subscriber-accent);
-	}
-
 	.sub-grid {
 		padding: 0.75rem;
 
@@ -92,7 +91,7 @@
 		column-gap: 2rem;
 
 		.key {
-			color: var(--text-lighter);
+			color: var(--text-light);
 			font-size: 0.75rem;
 			font-weight: 500;
 		}
@@ -102,7 +101,7 @@
 			gap: 0.5rem;
 			align-items: center;
 
-			color: var(--subscriber-accent);
+			color: var(--subscriber);
 
 			span {
 				color: var(--text);

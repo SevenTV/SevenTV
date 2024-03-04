@@ -1,0 +1,88 @@
+<script lang="ts">
+	import { createEventDispatcher, onMount } from "svelte";
+	import { fade } from "svelte/transition";
+	import mouseTrap from "$/lib/mouseTrap";
+	import { X } from "phosphor-svelte";
+	import Button from "../button.svelte";
+
+	const dispatch = createEventDispatcher();
+
+	let dialog: HTMLDialogElement;
+
+	export let width: number = 25;
+	export let showClose: boolean = true;
+
+	onMount(() => {
+		dialog.showModal();
+	});
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === "Escape") {
+			dispatch("close");
+		}
+	}
+
+	function onClose() {
+		dispatch("close");
+	}
+</script>
+
+<svelte:window on:keydown={handleKeyDown} />
+
+<dialog
+	bind:this={dialog}
+	use:mouseTrap={onClose}
+	aria-modal="true"
+	transition:fade={{ duration: 100 }}
+	style="width: {width}rem"
+>
+	<div class="trap" use:mouseTrap={onClose}>
+		<slot />
+	</div>
+	{#if showClose}
+		<Button
+			on:click={() => dispatch("close")}
+			style="position: absolute; top: 0.5rem; right: 0.5rem;"
+		>
+			<X slot="icon" />
+		</Button>
+	{/if}
+</dialog>
+
+<style lang="scss">
+	dialog {
+		margin: auto;
+		border: none;
+		padding: 0;
+		background: none;
+		border-radius: 0.5rem;
+
+		max-width: 90vw;
+		overflow: auto;
+
+		background-color: var(--bg-dark);
+
+		display: flex;
+		flex-direction: column;
+
+		&::backdrop {
+			background-color: rgba(0, 0, 0, 0.8);
+		}
+
+		.trap {
+			display: contents;
+		}
+	}
+
+	@media screen and (max-width: 960px) {
+		dialog {
+			max-width: 100vw;
+			width: 100vw;
+
+			max-height: 100vh;
+			max-height: 100dvh;
+			height: 100vh;
+			height: 100dvh;
+		}
+	}
+</style>

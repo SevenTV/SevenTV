@@ -2,6 +2,7 @@
 	import StoreSection from "./store-section.svelte";
 	import PaintPreview from "../paint-preview.svelte";
 	import { DotsThreeVertical, Repeat } from "phosphor-svelte";
+	import Button from "../button.svelte";
 </script>
 
 <StoreSection title="Monthly Paints">
@@ -10,9 +11,9 @@
 			<Repeat />
 			<span>12 d</span>
 		</div>
-		<button class="button secondary square">
-			<DotsThreeVertical />
-		</button>
+		<Button secondary>
+			<DotsThreeVertical slot="icon" />
+		</Button>
 	</div>
 	{#each Array(2) as _}
 		<PaintPreview />
@@ -32,7 +33,7 @@
 		gap: 0.5rem;
 		white-space: nowrap;
 
-		color: var(--text-lighter);
+		color: var(--text-light);
 		font-size: 0.75rem;
 	}
 </style>

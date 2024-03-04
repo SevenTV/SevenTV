@@ -1,27 +1,35 @@
 <script lang="ts">
 	import Role from "$/components/profile/role.svelte";
 	import type { LayoutData } from "./$types";
-	import Expandable from "$/components/expandable.svelte";
-	import HideOn from "$/components/hide-on.svelte";
-	import TabLink from "$/components/profile/tab-link.svelte";
+	import TabLink from "$/components/tab-link.svelte";
 	import {
 		CaretDown,
+		CaretRight,
+		ChartLineUp,
 		ChatCircleText,
-		DiscordLogo,
 		DotsThreeVertical,
 		FolderSimple,
-		Gear,
 		Gift,
 		Heart,
+		IdentificationCard,
 		Lightning,
-		Note,
+		Link,
 		PaintBrush,
+		Pulse,
 		SealCheck,
 		TwitchLogo,
+		TwitterLogo,
 		Upload,
+		UserCircle,
+		YoutubeLogo,
 	} from "phosphor-svelte";
+	import Button from "$/components/button.svelte";
+	import ChannelPreview from "$/components/channel-preview.svelte";
 
 	export let data: LayoutData;
+
+	let connectionsExpanded = false;
+	let editorsExpanded = false;
 </script>
 
 <svelte:head>
@@ -52,86 +60,134 @@
 			</span>
 		</div>
 		<div class="buttons">
-			<button class="button icon-left secondary grow">
-				<Heart />
+			<Button primary style="flex-grow: 1; justify-content: center;">
+				<Heart slot="icon" />
 				Follow
-			</button>
-			<button class="button secondary square more hide-on-mobile">
-				<CaretDown />
-			</button>
-			<button class="button icon-left secondary grow hide-on-desktop">
-				<Gift />
+			</Button>
+			<Button secondary hideOnMobile>
+				<CaretDown slot="icon" />
+			</Button>
+			<Button secondary hideOnDesktop>
+				<Gift slot="icon" />
 				Gift
-			</button>
+			</Button>
 		</div>
-		<HideOn mobile>
-			<Expandable title="Connections">
-				<a class="button big" target="_blank" href="https://twitch.tv/ayyybubu">
-					<TwitchLogo />
-					<span>ayyybubu</span>
-				</a>
-				<button class="button big">
-					<DiscordLogo />
-					<span>bubu</span>
-				</button>
-			</Expandable>
-			<Expandable title="Editors">
-				username
-				<br />
-				username
-			</Expandable>
-		</HideOn>
-		<button class="button square more hide-on-desktop">
-			<DotsThreeVertical />
-		</button>
+		<nav class="link-list hide-on-mobile">
+			<Button big on:click={() => (connectionsExpanded = !connectionsExpanded)}>
+				<Link slot="icon" />
+				Connections
+				{#if connectionsExpanded}
+					<CaretDown slot="icon-right" style="margin-left: auto" />
+				{:else}
+					<CaretRight slot="icon-right" style="margin-left: auto" />
+				{/if}
+			</Button>
+			{#if connectionsExpanded}
+				<div class="expanded">
+					<Button href="https://twitch.tv/ayyybubu" target="_blank">
+						<TwitchLogo slot="icon" />
+						<span>ayyybubu</span>
+					</Button>
+					<Button href="https://youtube.com/channel/bubutv" target="_blank">
+						<YoutubeLogo slot="icon" />
+						<span>bubutv</span>
+					</Button>
+					<Button href="https://twitter.com/tweetbubu" target="_blank">
+						<TwitterLogo slot="icon" />
+						<span>tweetbubu</span>
+					</Button>
+				</div>
+			{/if}
+			<Button big on:click={() => (editorsExpanded = !editorsExpanded)}>
+				<UserCircle slot="icon" />
+				Editors
+				{#if editorsExpanded}
+					<CaretDown slot="icon-right" style="margin-left: auto" />
+				{:else}
+					<CaretRight slot="icon-right" style="margin-left: auto" />
+				{/if}
+			</Button>
+			{#if editorsExpanded}
+				<div class="expanded">
+					<ChannelPreview size={1.5} />
+					<ChannelPreview size={1.5} />
+				</div>
+			{/if}
+			<hr />
+			<TabLink title="Active Emotes" href="/user/{data.username}" big>
+				<Lightning />
+				<Lightning weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Uploaded Emotes" href="/user/{data.username}/uploaded" big>
+				<Upload />
+				<Upload weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets" big>
+				<FolderSimple />
+				<FolderSimple weight="fill" slot="active" />
+			</TabLink>
+			<hr />
+			<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics" big>
+				<PaintBrush />
+				<PaintBrush weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Activity" href="/user/{data.username}/activity" big>
+				<Pulse />
+				<Pulse weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Analytics" href="/user/{data.username}/analytics" big>
+				<ChartLineUp />
+				<ChartLineUp weight="fill" slot="active" />
+			</TabLink>
+			<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments" big>
+				<ChatCircleText />
+				<ChatCircleText weight="fill" slot="active" />
+			</TabLink>
+		</nav>
+		<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
+			<DotsThreeVertical slot="icon" />
+		</Button>
 	</aside>
 	<div class="content">
-		<div class="header">
-			<div class="tabs">
+		<div class="header hide-on-desktop">
+			<nav class="tabs">
+				<TabLink title="About" href="/user/{data.username}/about">
+					<IdentificationCard />
+					<IdentificationCard weight="fill" slot="active" />
+				</TabLink>
 				<TabLink title="Active" href="/user/{data.username}">
 					<Lightning />
-					<svelte:fragment slot="active">
-						<Lightning weight="fill" />
-					</svelte:fragment>
+					<Lightning weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Uploaded" href="/user/{data.username}/uploaded">
 					<Upload />
-					<svelte:fragment slot="active">
-						<Upload weight="fill" />
-					</svelte:fragment>
+					<Upload weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets">
 					<FolderSimple />
-					<svelte:fragment slot="active">
-						<FolderSimple weight="fill" />
-					</svelte:fragment>
+					<FolderSimple weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics">
 					<PaintBrush />
-					<svelte:fragment slot="active">
-						<PaintBrush weight="fill" />
-					</svelte:fragment>
+					<PaintBrush weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Activity Log" href="/user/{data.username}/activity-log">
-					<Note />
-					<svelte:fragment slot="active">
-						<Note weight="fill" />
-					</svelte:fragment>
+				<TabLink title="Activity" href="/user/{data.username}/activity">
+					<Pulse />
+					<Pulse weight="fill" slot="active" />
+				</TabLink>
+				<TabLink title="Analytics" href="/user/{data.username}/analytics">
+					<ChartLineUp />
+					<ChartLineUp weight="fill" slot="active" />
 				</TabLink>
 				<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments">
 					<ChatCircleText />
-					<svelte:fragment slot="active">
-						<ChatCircleText weight="fill" />
-					</svelte:fragment>
+					<ChatCircleText weight="fill" slot="active" />
 				</TabLink>
-			</div>
-			<a href="/settings" class="button no-bg hide-on-mobile">
-				<Gear />
-				Settings
-			</a>
+			</nav>
 		</div>
-		<hr class="hide-on-mobile" />
-		<slot />
+		<div class="page">
+			<slot />
+		</div>
 	</div>
 </div>
 
@@ -173,7 +229,7 @@
 
 			.text {
 				font-weight: 400;
-				color: var(--text-lighter);
+				color: var(--text-light);
 			}
 		}
 
@@ -183,43 +239,39 @@
 			display: flex;
 			gap: 0.5rem;
 			flex-wrap: wrap;
-
-			& > .grow {
-				flex-basis: 0;
-				flex-grow: 1;
-				justify-content: center;
-			}
-
-			& > .more {
-				padding: 0.5rem;
-			}
 		}
 
-		& > .more {
-			position: absolute;
-			top: 0.5rem;
-			right: 1rem;
+		// Select all buttons except the active one
+		.link-list > :global(.button:not(.secondary)) {
+			color: var(--text-light);
+			font-weight: 500;
+		}
+
+		.expanded {
+			margin-left: 0.5rem;
+
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
 		}
 	}
 
 	.content {
+		display: flex;
+		flex-direction: column;
+
 		.header {
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
 			gap: 0.5rem;
-
-			// All buttons except the selected one
-			.button:not(.secondary) {
-				color: var(--text-lighter);
-			}
 		}
 
 		.tabs {
 			display: flex;
-			flex-wrap: wrap;
-			gap: 0.5rem;
-			user-select: none;
+			border-radius: 0.5rem;
+			background-color: var(--bg-light);
+			overflow: auto;
 
 			-ms-overflow-style: none;
 			scrollbar-width: none;
@@ -228,8 +280,10 @@
 			}
 		}
 
-		hr {
-			margin: 1rem 0;
+		.page {
+			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
 		}
 	}
 
@@ -271,18 +325,8 @@
 			}
 		}
 
-		.content {
-			.header {
-				margin-bottom: 0.75rem;
-			}
-
-			.tabs {
-				gap: 0;
-				margin-right: -1rem;
-				padding-right: 1rem;
-				overflow-x: auto;
-				flex-wrap: nowrap;
-			}
+		.content .header {
+			margin-bottom: 0.75rem;
 		}
 	}
 </style>

@@ -4,7 +4,7 @@
 	export let bg: "medium" | "light" = "medium";
 </script>
 
-<a href="/emote-set/{name}" class="emote-set" style:background-color="var(--bg-{bg})">
+<a href="/emote-sets/{name}" class="emote-set" style:background-color="var(--bg-{bg})">
 	<div class="emotes">
 		{#each Array(12) as _}
 			<div class="emote"></div>
@@ -32,7 +32,7 @@
 
 		&:hover,
 		&:focus-visible {
-			border-color: var(--border);
+			border-color: var(--border-active);
 		}
 	}
 
@@ -51,7 +51,7 @@
 
 	.name {
 		margin-top: 0.5rem;
-		color: #aa71ff;
+		color: var(--subscriber);
 		font-size: 0.875rem;
 		font-weight: 600;
 	}

@@ -1,22 +1,54 @@
 <script lang="ts">
+	import Checkbox from "./checkbox.svelte";
+
 	export let name = "emoteName";
 	export let index = 0;
 	export let bg: "medium" | "light" = "medium";
+	export let emoteOnly = false;
+	export let selectionMode = false;
+	export let selected = false;
+
+	$: if (!selectionMode) {
+		selected = false;
+	}
+
+	function onClick(e: MouseEvent) {
+		if (selectionMode) {
+			selected = !selected;
+			e.preventDefault();
+		}
+	}
 </script>
 
-<a href="/emote/{name}" class="emote" style:background-color="var(--bg-{bg})">
-	<div class="image" style="animation-delay: {index * 10}ms"></div>
-	<span class="name">{name}</span>
-	<span class="user">username</span>
+<a
+	href="/emotes/{name}"
+	class="emote"
+	class:emote-only={emoteOnly}
+	class:selected
+	style:background-color="var(--bg-{bg})"
+	title={name}
+	on:click={onClick}
+>
+	<div class="image" style="animation-delay: {-index * 10}ms"></div>
+	{#if !emoteOnly}
+		<span class="name">{name}</span>
+		<span class="user">username</span>
+	{/if}
+	{#if selectionMode}
+		<Checkbox bind:value={selected} style="position: absolute; top: 0.5rem; right: 0.5rem;" />
+	{/if}
 </a>
 
 <style lang="scss">
 	.emote {
+		position: relative;
+
 		color: var(--text);
 		text-decoration: none;
 
-		width: 10rem;
-		height: 10rem;
+		width: 100%;
+		max-width: 10rem;
+		aspect-ratio: 1 / 1;
 
 		display: flex;
 		flex-direction: column;
@@ -29,33 +61,46 @@
 
 		&:hover,
 		&:focus-visible {
-			border-color: var(--border);
+			border-color: var(--border-active);
+		}
+
+		&.selected {
+			border-color: var(--primary);
+		}
+
+		&.emote-only > .image {
+			width: 100%;
+			height: 100%;
+			margin: 0;
 		}
 	}
 
 	@keyframes loading {
 		0% {
-			background-color: var(--secondary);
+			opacity: 0.5;
 		}
 		50% {
-			background-color: var(--secondary-active);
+			opacity: 1;
 		}
 		100% {
-			background-color: var(--secondary);
+			opacity: 0.5;
 		}
 	}
 
 	.image {
-		width: 5rem;
-		height: 5rem;
+		width: 50%;
+		height: 50%;
 		margin-bottom: 0.5rem;
 
-		background-color: var(--secondary);
+		background-color: var(--preview);
 		animation: loading 1s infinite;
 	}
 
 	.name {
 		font-weight: 500;
+		max-width: 90%;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.user {

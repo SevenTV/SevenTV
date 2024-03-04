@@ -29,8 +29,8 @@
 		align-items: center;
 		justify-content: space-between;
 
-		color: var(--text-lighter);
-		font-size: 0.75rem;
+		color: var(--text);
+		font-size: 0.875rem;
 		font-weight: 500;
 
 		& > .icon {
@@ -39,7 +39,7 @@
 		}
 
 		&.expanded {
-			margin-bottom: 0.75rem;
+			margin-bottom: 0.4rem;
 
 			& > .icon {
 				transform: rotate(0deg);
