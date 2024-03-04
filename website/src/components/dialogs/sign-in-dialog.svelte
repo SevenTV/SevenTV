@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { showSignInDialog } from "$/lib/stores";
+	import { showSignInDialog, user } from "$/lib/stores";
 	import { DiscordLogo, GoogleLogo, TwitchLogo } from "phosphor-svelte";
 	import Button from "../button.svelte";
 	import Logo from "../icons/logo.svelte";
@@ -8,6 +8,11 @@
 	function close() {
 		$showSignInDialog = false;
 	}
+
+    function login() {
+        $user = true;
+        close();
+    }
 </script>
 
 <Dialog on:close={close}>
@@ -18,15 +23,15 @@
 			<span class="details">Sign in or create an account to continue</span>
 		</div>
 		<div class="buttons">
-			<Button secondary big>
+			<Button secondary big on:click={login}>
 				<TwitchLogo slot="icon" />
 				Continue with Twitch
 			</Button>
-			<Button secondary big>
+			<Button secondary big on:click={login}>
 				<GoogleLogo slot="icon" />
 				Continue with Google
 			</Button>
-			<Button secondary big>
+			<Button secondary big on:click={login}>
 				<DiscordLogo slot="icon" />
 				Continue with Discord
 			</Button>
