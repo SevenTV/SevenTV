@@ -41,7 +41,9 @@ impl Drop for AtomicTicket {
 
 impl Global {
 	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
-		let nats = async_nats::connect(&config.nats.url).await.context("nats connect")?;
+		let (nats, _) = shared::nats::setup_nats("event-api", &config.nats)
+			.await
+			.context("nats connect")?;
 
 		Ok(Self {
 			metrics: Arc::new(metrics::new(

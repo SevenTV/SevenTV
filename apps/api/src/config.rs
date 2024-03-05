@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use serde::Deserialize;
-use shared::config::{Http, HttpCors};
+use shared::config::{DatabaseConfig, Http, HttpCors};
 
 #[derive(Debug, Deserialize, config::Config)]
 #[serde(default)]
@@ -26,6 +26,9 @@ impl Default for Api {
 pub struct Extra {
 	/// API configuration
 	pub api: Api,
+
+	/// Database configuration
+	pub database: DatabaseConfig,
 }
 
 pub type Config = shared::config::Config<Extra>;

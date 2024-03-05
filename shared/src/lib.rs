@@ -1,7 +1,9 @@
 pub mod config;
+pub mod database;
 pub mod event_api;
 pub mod health;
 pub mod http;
 pub mod logging;
 pub mod metrics;
+pub mod nats;
 pub mod object_id;

@@ -70,14 +70,30 @@ impl Default for Logging {
 #[derive(Debug, Deserialize, config::Config)]
 #[serde(default)]
 pub struct Nats {
-	/// Nats url
-	pub url: String,
+	/// The URI to use for connecting to Nats
+	pub servers: Vec<String>,
+
+	/// The username to use for authentication (user-pass auth)
+	pub username: Option<String>,
+
+	/// The password to use for authentication (user-pass auth)
+	pub password: Option<String>,
+
+	/// The token to use for authentication (token auth)
+	pub token: Option<String>,
+
+	/// The TLS configuration (can be used for mTLS)
+	pub tls: Option<TlsConfig>,
 }
 
 impl Default for Nats {
 	fn default() -> Self {
 		Self {
-			url: "nats://localhost:4222".to_string(),
+			servers: vec!["nats://localhost:4222".to_string()],
+			username: None,
+			password: None,
+			token: None,
+			tls: None,
 		}
 	}
 }
@@ -291,6 +307,24 @@ pub struct HttpCors {
 	pub max_age_seconds: Option<u64>,
 	/// Timing allow origin
 	pub timing_allow_origin: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, config::Config, serde::Deserialize)]
+pub struct DatabaseConfig {
+	/// The database URL to use
+	pub uri: String,
+
+	/// The TLS configuration
+	pub tls: Option<TlsConfig>,
+}
+
+impl Default for DatabaseConfig {
+	fn default() -> Self {
+		Self {
+			uri: "postgres://localhost:5432".to_string(),
+			tls: None,
+		}
+	}
 }
 
 pub fn parse<E: config::Config + serde::de::DeserializeOwned + Default>(

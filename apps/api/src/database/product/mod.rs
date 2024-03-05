@@ -31,13 +31,41 @@ pub struct Product {
 	pub kind: ProductKind,
 	pub rank: i16,
 	pub visibility: ProductVisibility,
+	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: ProductData,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
-pub struct ProductData {}
+pub struct ProductData {
+	pub entitlement_groups: Vec<ProductEntitlementGroup>,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct ProductEntitlementGroup {
+	pub condition: Option<ProductEntitlementCondition>,
+	pub entitlements: Vec<ProductEntitlement>,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct ProductEntitlementCondition {}
+
+impl ProductEntitlementCondition {
+	pub fn evaluate(&self, purchases: &[ProductPurchase], subscription: Option<&ProductSubscription>) -> bool {
+		todo!()
+	}
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum ProductEntitlement {
+	Role(ulid::Ulid),
+	Badge(ulid::Ulid),
+	Paint(ulid::Ulid),
+	EmoteSet(ulid::Ulid),
+}
 
 #[derive(Debug, Clone, Default, ToSql, FromSql)]
 #[postgres(name = "product_kind")]

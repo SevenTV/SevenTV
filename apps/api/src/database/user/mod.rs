@@ -69,10 +69,8 @@ pub struct UserEntitledCache {
 	pub emote_set_ids: Vec<ulid::Ulid>,
 	#[from_row(rename = "entitled_cache_paint_ids")]
 	pub paint_ids: Vec<ulid::Ulid>,
+	#[from_row(rename = "entitled_cache_product_ids")]
+	pub product_ids: Vec<ulid::Ulid>,
 	#[from_row(rename = "entitled_cache_invalidated_at")]
 	pub invalidated_at: chrono::DateTime<chrono::Utc>,
-	#[from_row(rename = "entitled_cache_dependant_role_ids")]
-	pub dependant_role_ids: Vec<ulid::Ulid>,
-	#[from_row(rename = "entitled_cache_dependant_product_ids")]
-	pub dependant_product_ids: Vec<ulid::Ulid>,
 }
