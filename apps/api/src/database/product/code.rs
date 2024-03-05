@@ -5,6 +5,7 @@ use crate::database::Table;
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct ProductCode {
 	pub id: ulid::Ulid,
+	pub owner_id: ulid::Ulid,
 	pub name: String,
 	pub code: String,
 	pub description: Option<String>,
