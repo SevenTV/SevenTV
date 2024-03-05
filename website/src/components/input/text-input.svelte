@@ -1,9 +1,11 @@
 <script lang="ts">
 	export let value = "";
 	export let placeholder: string | null = null;
+
+	export let big: boolean = false;
 </script>
 
-<div class="input" class:has-icon={$$slots.default} {...$$restProps}>
+<div class="input" class:big class:has-icon={$$slots.default} {...$$restProps}>
 	{#if $$slots.default}
 		<div class="icon">
 			<slot />
@@ -16,6 +18,15 @@
 	.input {
 		--icon-left-padding: 0.75rem;
 		--gap: 0.5rem;
+
+		&.big {
+			--icon-left-padding: 1rem;
+			--gap: 0.75rem;
+
+			input {
+				padding-block: 0.75rem;
+			}
+		}
 
 		position: relative;
 

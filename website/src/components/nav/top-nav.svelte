@@ -39,7 +39,7 @@
 		</HideOn>
 	</div>
 	<HideOn mobile>
-		<TextInput placeholder="Search" style="flex: 0 1 20rem">
+		<TextInput placeholder="Search" big style="flex: 0 1 20rem">
 			<MagnifyingGlass />
 		</TextInput>
 	</HideOn>
