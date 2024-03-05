@@ -91,8 +91,8 @@ impl<T: BitMask> AllowDeny<T> {
 	}
 
 	pub fn merge(&mut self, other: Self) {
-		self.allow = (self.permission() & !other.deny) | other.allow;
-		self.deny |= other.deny;
+		self.allow(other.allow);
+		self.deny(other.deny);
 	}
 
 	pub fn allow(&mut self, permission: T) {
