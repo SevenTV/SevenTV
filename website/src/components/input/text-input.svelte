@@ -1,24 +1,21 @@
 <script lang="ts">
-	import { MagnifyingGlass } from "phosphor-svelte";
+	export let value = "";
+	export let placeholder: string | null = null;
 
 	export let big: boolean = false;
-	export let grow: boolean = false;
-
-	export let placeholder: string = "Search";
-	export let value: string = "";
 </script>
 
-<search class:big class:grow>
-	<div class="icon">
-		<slot>
-			<MagnifyingGlass />
-		</slot>
-	</div>
-	<input type="text" {placeholder} bind:value on:keypress />
-</search>
+<div class="input" class:big class:has-icon={$$slots.default} {...$$restProps}>
+	{#if $$slots.default}
+		<div class="icon">
+			<slot />
+		</div>
+	{/if}
+	<input type="text" bind:value={value} {placeholder} on:keypress />
+</div>
 
 <style lang="scss">
-	search {
+	.input {
 		--icon-left-padding: 0.75rem;
 		--gap: 0.5rem;
 
@@ -26,16 +23,9 @@
 			--icon-left-padding: 1rem;
 			--gap: 0.75rem;
 
-			/* First, take 30rem and then shrink by a factor of 1 */
-			flex: 0 1 30rem;
-
 			input {
 				padding-block: 0.75rem;
 			}
-		}
-
-		&:not(.big):not(.grow) {
-			max-width: 12.5rem;
 		}
 
 		position: relative;
@@ -57,7 +47,7 @@
 			pointer-events: none;
 		}
 
-		input {
+		&.has-icon > input {
 			// icon left padding + icon width + gap
 			padding-left: calc(var(--icon-left-padding) + 1rem + var(--gap));
 		}

@@ -1,14 +1,14 @@
 <script lang="ts">
 	import Dialog from "./dialog.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
-	import SearchBar from "$/components/input/search-bar.svelte";
-	import { Moon, Sun, Trash, UploadSimple } from "phosphor-svelte";
+	import { Moon, Sun, Trash, UploadSimple, User } from "phosphor-svelte";
 	import { Theme, showUploadDialog, theme } from "$/lib/stores";
 	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../button.svelte";
 	import ImagePreview from "../image-preview.svelte";
 	import { browser } from "$app/environment";
 	import Tags from "../emotes/tags.svelte";
+	import TextInput from "$/components/input/text-input.svelte";
 
 	let fileInput: HTMLInputElement;
 	let dragOver = false;
@@ -143,7 +143,9 @@
 				</div>
 				<div class="field">
 					<span class="label">Emote Attribution</span>
-					<SearchBar grow />
+					<TextInput placeholder="Search users">
+						<User />
+					</TextInput>
 				</div>
 				<Checkbox label="Zero-Width" />
 				<Checkbox label="Private" />

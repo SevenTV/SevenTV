@@ -3,16 +3,16 @@
 	import EmoteContainer from "$/components/emote-container.svelte";
 	import EmotePreview from "$/components/emote-preview.svelte";
 	import Tags from "$/components/emotes/tags.svelte";
-	import { Copy, Lightning, LightningSlash, NotePencil, Trash } from "phosphor-svelte";
+	import { Copy, Lightning, LightningSlash, MagnifyingGlass, NotePencil, Trash } from "phosphor-svelte";
 	import type { PageData } from "./$types";
 	import Select from "$/components/select.svelte";
-	import SearchBar from "$/components/input/search-bar.svelte";
 	import { Layout, emotesLayout } from "$/lib/stores";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import Toggle from "$/components/toggle.svelte";
 	import Flags from "$/components/emotes/flags.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
+	import TextInput from "$/components/input/text-input.svelte";
 
 	export let data: PageData;
 
@@ -91,7 +91,9 @@
 		</div>
 		<div class="buttons">
 			<Select options={["No Filters", "Filters"]} />
-			<SearchBar grow />
+			<TextInput placeholder="Search">
+				<MagnifyingGlass />
+			</TextInput>
 			<LayoutButtons />
 		</div>
 	</div>

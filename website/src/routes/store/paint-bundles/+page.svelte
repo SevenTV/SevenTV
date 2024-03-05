@@ -1,12 +1,12 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
 	import HideOn from "$/components/hide-on.svelte";
-	import SearchBar from "$/components/input/search-bar.svelte";
 	import PaintPreview from "$/components/paint-preview.svelte";
 	import Select from "$/components/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
 	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
 	import { priceFormat } from "$/lib/utils";
+	import TextInput from "$/components/input/text-input.svelte";
 
 	const bundles = [
 		{
@@ -57,7 +57,9 @@
 		<h2>Paint Bundles</h2>
 		<div class="buttons">
 			<HideOn mobile>
-				<SearchBar />
+				<TextInput placeholder="Search" style="max-width: 12.5rem">
+					<MagnifyingGlass />
+				</TextInput>
 			</HideOn>
 			<Button hideOnDesktop>
 				<MagnifyingGlass />
