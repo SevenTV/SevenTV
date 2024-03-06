@@ -2,4 +2,4 @@
 	<title>7TV</title>
 </svelte:head>
 
-<h1>7TV</h1>
+<h1>70V</h1>

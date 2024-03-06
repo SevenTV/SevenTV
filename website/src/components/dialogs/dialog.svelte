@@ -11,6 +11,7 @@
 	import mouseTrap from "$/lib/mouseTrap";
 	import { X } from "phosphor-svelte";
 	import Button from "../button.svelte";
+	import { browser } from "$app/environment";
 
 	let dialog: HTMLDialogElement;
 
@@ -25,6 +26,13 @@
 
 	$: if (mode) {
 		dialog?.showModal();
+
+		// Focus and immediately blur to prevent visible autofocus
+		// https://stackoverflow.com/a/76827288/10772729
+		dialog?.focus();
+		dialog?.blur();
+	} else {
+		dialog?.close();
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -39,27 +47,25 @@
 
 <svelte:window on:keydown={handleKeyDown} />
 
-{#if mode}
-	<dialog
-		bind:this={dialog}
-		use:mouseTrap={close}
-		aria-modal="true"
-		transition:fade={{ duration: 100 }}
-		style="width: {width}rem"
-	>
-		<div class="trap" use:mouseTrap={close}>
-			<slot />
-		</div>
-		{#if mode === DialogMode.Shown}
-			<Button
-				on:click={close}
-				style="position: absolute; top: 0.5rem; right: 0.5rem;"
-			>
-				<X slot="icon" />
-			</Button>
-		{/if}
-	</dialog>
-{/if}
+<dialog
+	bind:this={dialog}
+	use:mouseTrap={close}
+	aria-modal="true"
+	transition:fade={{ duration: 100 }}
+	style="width: {width}rem"
+>
+	{#if mode === DialogMode.Shown}
+		<Button
+			on:click={close}
+			style="position: absolute; top: 0.5rem; right: 0.5rem;"
+		>
+			<X slot="icon" />
+		</Button>
+	{/if}
+	<div class="trap" use:mouseTrap={close}>
+		<slot />
+	</div>
+</dialog>
 
 <style lang="scss">
 	dialog {
@@ -73,9 +79,6 @@
 		overflow: auto;
 
 		background-color: var(--bg-dark);
-
-		display: flex;
-		flex-direction: column;
 
 		&::backdrop {
 			background-color: rgba(0, 0, 0, 0.8);

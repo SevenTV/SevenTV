@@ -24,13 +24,16 @@
 		<TopNav />
 	</header>
 
+	<UploadDialog bind:mode={$uploadDialogMode} />
+	<SignInDialog bind:mode={$signInDialogMode} />
+	<dialog>
+		Test
+	</dialog>
 	<main id="main">
 		{#if $showMobileMenu}
 			<Menu />
 		{:else}
 			<slot />
-			<UploadDialog bind:mode={$uploadDialogMode} />
-			<SignInDialog bind:mode={$signInDialogMode} />
 		{/if}
 	</main>
 </IconContext>

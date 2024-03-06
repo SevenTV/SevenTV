@@ -21,9 +21,10 @@
 	import TextInput from "$/components/input/text-input.svelte";
 	import { DialogMode } from "../dialogs/dialog.svelte";
 
-	let cartDialog = false;
+	let cartDialogMode = DialogMode.Hidden;
 </script>
 
+<CartDialog bind:mode={cartDialogMode} />
 <nav>
 	<div class="links">
 		<a class="home" href="/">
@@ -63,7 +64,7 @@
 				</Button>
 				<Dms slot="dropdown" />
 			</DropDown>
-			<Button on:click={() => (cartDialog = !cartDialog)}>
+			<Button on:click={() => (cartDialogMode = DialogMode.Shown)}>
 				<Badge count={3} slot="icon">
 					<ShoppingCartSimple />
 				</Badge>
@@ -104,9 +105,6 @@
 		{/if}
 	</div>
 </nav>
-{#if cartDialog}
-	<CartDialog on:close={() => (cartDialog = false)} />
-{/if}
 
 <style lang="scss">
 	nav {

@@ -3,18 +3,16 @@
 	import { Trash, Star, User } from "phosphor-svelte";
 	import Button from "../button.svelte";
 	import Checkbox from "../checkbox.svelte";
-	import SearchBar from "../input/text-input.svelte";
-	import Dialog from "./dialog.svelte";
+	import Dialog, { DialogMode } from "./dialog.svelte";
 	import Select from "../select.svelte";
-	import { createEventDispatcher } from "svelte";
 	import TextInput from "../input/text-input.svelte";
 
-	const dispatch = createEventDispatcher();
+	export let mode: DialogMode = DialogMode.Hidden;
 
 	let gift = false;
 </script>
 
-<Dialog width={35} on:close>
+<Dialog width={35} bind:mode={mode}>
 	<div class="layout">
 		<h1>Your Cart</h1>
 		<hr />
@@ -101,7 +99,7 @@
 			<span>{priceFormat.format(7.96)}</span>
 		</div>
 		<div class="buttons">
-			<Button secondary on:click={() => dispatch("close")}>Cancel</Button>
+			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 			<Button primary>Proceed</Button>
 		</div>
 	</div>
