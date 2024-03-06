@@ -1,21 +1,19 @@
 <script lang="ts">
-	import { showSignInDialog, user } from "$/lib/stores";
+	import { user } from "$/lib/stores";
 	import { DiscordLogo, GoogleLogo, TwitchLogo } from "phosphor-svelte";
 	import Button from "../button.svelte";
 	import Logo from "../icons/logo.svelte";
-	import Dialog from "./dialog.svelte";
+	import Dialog, { DialogMode } from "./dialog.svelte";
 
-	function close() {
-		$showSignInDialog = false;
-	}
+	export let mode: DialogMode = DialogMode.Hidden;
 
     function login() {
         $user = true;
-        close();
+        mode = DialogMode.Hidden;
     }
 </script>
 
-<Dialog on:close={close}>
+<Dialog bind:mode={mode}>
 	<div class="layout">
 		<div class="header">
 			<Logo size={3 * 16} />
@@ -35,7 +33,7 @@
 				<DiscordLogo slot="icon" />
 				Continue with Discord
 			</Button>
-			<a class="trouble" href="/trouble" on:click={close}>Trouble signing in?</a>
+			<a class="trouble" href="/trouble" on:click={() => (mode = DialogMode.Hidden)}>Trouble signing in?</a>
 		</div>
 		<hr />
 		<span class="legal-yapping">

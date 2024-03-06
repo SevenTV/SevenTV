@@ -1,0 +1,47 @@
+<script lang="ts">
+	import { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import TabLink from "$/components/tab-link.svelte";
+	import { signInDialogMode, user } from "$/lib/stores";
+    import { Key, PencilSimple, Bell, CreditCard, Prohibit } from "phosphor-svelte";
+
+    $: if (!$user && !$signInDialogMode) {
+        $signInDialogMode = DialogMode.ShownWithoutClose;
+    }
+</script>
+
+<svelte:head>
+    <title>Settings - 7TV</title>
+</svelte:head>
+
+{#if $user}
+    <div class="side-bar-layout">
+        <aside class="side-bar">
+            <h1>Settings</h1>
+            <nav class="link-list">
+                <TabLink title="Account" href="/settings" big>
+                    <Key />
+                    <Key weight="fill" slot="active" />
+                </TabLink>
+                <TabLink title="Editors" href="/settings/editors" big>
+                    <PencilSimple />
+                    <PencilSimple weight="fill" slot="active" />
+                </TabLink>
+                <TabLink title="Notifications" href="/settings/notifications" big>
+                    <Bell />
+                    <Bell weight="fill" slot="active" />
+                </TabLink>
+                <TabLink title="Blocking" href="/settings/blocking" big>
+                    <Prohibit />
+                    <Prohibit weight="fill" slot="active" />
+                </TabLink>
+                <TabLink title="Billing" href="/settings/billing" big>
+                    <CreditCard />
+                    <CreditCard weight="fill" slot="active" />
+                </TabLink>
+            </nav>
+        </aside>
+        <div class="content">
+            <slot />
+        </div>
+    </div>
+{/if}

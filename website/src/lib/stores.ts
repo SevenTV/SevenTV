@@ -1,13 +1,14 @@
 import { writable } from "svelte/store";
 import { browser } from "$app/environment";
+import { DialogMode } from "$/components/dialogs/dialog.svelte";
 
 export const user = writable(false);
 
 export const showMobileMenu = writable(false);
 
-export const showUploadDialog = writable(false);
+export const uploadDialogMode = writable<DialogMode>(DialogMode.Hidden);
 
-export const showSignInDialog = writable(false);
+export const signInDialogMode = writable<DialogMode>(DialogMode.Hidden);
 
 export enum Theme {
 	System = "system-theme",

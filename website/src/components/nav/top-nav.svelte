@@ -3,7 +3,7 @@
 	import TopTabs from "./top-tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { user, showMobileMenu, showUploadDialog, showSignInDialog } from "$/lib/stores";
+	import { user, showMobileMenu, uploadDialogMode, signInDialogMode } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
@@ -19,6 +19,7 @@
 	import Button from "../button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
+	import { DialogMode } from "../dialogs/dialog.svelte";
 
 	let cartDialog = false;
 </script>
@@ -67,10 +68,10 @@
 					<ShoppingCartSimple />
 				</Badge>
 			</Button>
-			<Button hideOnDesktop on:click={() => ($showUploadDialog = true)}>
+			<Button hideOnDesktop on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
 				<PlusSquare slot="icon" />
 			</Button>
-			<Button secondary hideOnMobile on:click={() => ($showUploadDialog = true)}>
+			<Button secondary hideOnMobile on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
 				<PlusSquare slot="icon" />
 				Upload
 			</Button>
@@ -93,7 +94,7 @@
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<Button primary on:click={() => ($showSignInDialog = true)}>Sign In</Button>
+			<Button primary on:click={() => ($signInDialogMode = DialogMode.Shown)}>Sign In</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}

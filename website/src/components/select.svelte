@@ -40,7 +40,7 @@
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
-				<Button secondary={selected === option} on:click={() => select(option)} noBorder>
+				<Button on:click={() => select(option)} noBorder>
 					{option}
 				</Button>
 			{/each}

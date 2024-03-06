@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Dialog from "./dialog.svelte";
+	import Dialog, { DialogMode } from "./dialog.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
 	import { Moon, Sun, Trash, UploadSimple, User } from "phosphor-svelte";
-	import { Theme, showUploadDialog, theme } from "$/lib/stores";
+	import { Theme, theme } from "$/lib/stores";
 	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../button.svelte";
 	import ImagePreview from "../image-preview.svelte";
@@ -19,6 +19,8 @@
 	let imageSrc: string;
 	let previewTheme = initialTheme();
 
+	export let mode: DialogMode = DialogMode.Hidden;
+
 	function initialTheme() {
 		if ($theme === Theme.System && browser) {
 			return window.matchMedia("prefers-color-scheme: dark") ? Theme.Dark : Theme.Light;
@@ -34,10 +36,6 @@
 		const reader = new FileReader();
 		reader.onload = () => (imageSrc = reader.result as string);
 		reader.readAsDataURL(files[0]);
-	}
-
-	function close() {
-		$showUploadDialog = false;
 	}
 
 	function browse() {
@@ -74,7 +72,7 @@
 	}
 </script>
 
-<Dialog width={60} on:close={close}>
+<Dialog width={60} bind:mode={mode}>
 	<div class="grid">
 		<h1 class="heading">Upload emote</h1>
 		<section class="upload {previewTheme}" class:preview={files && files[0]}>
@@ -151,7 +149,7 @@
 				<Checkbox label="Private" />
 			</div>
 			<div class="buttons">
-				<Button secondary on:click={close}>Discard</Button>
+				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Discard</Button>
 				<Button primary>Upload</Button>
 			</div>
 		</section>
