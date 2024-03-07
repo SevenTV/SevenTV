@@ -1,16 +1,17 @@
 <script lang="ts" generics="C extends ComponentType">
 	// https://stackoverflow.com/a/72532661/10772729
+	// eslint doesn't seem to understand this syntax
 
 	import mouseTrap from "$/lib/mouseTrap";
 	import { CaretDown } from "phosphor-svelte";
 	import { fade } from "svelte/transition";
 	import Button from "./button.svelte";
-	import type { ComponentType } from "svelte";
+	import type { ComponentType } from "svelte"; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 	type Option = {
 		value: string;
 		label: string;
-		icon?: C;
+		icon?: C; // eslint-disable-line no-undef
 	};
 
 	export let options: Option[];
