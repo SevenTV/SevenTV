@@ -19,7 +19,7 @@
         <aside class="side-bar">
             <h1>Settings</h1>
             <TextInput placeholder="Search">
-                <MagnifyingGlass />
+                <MagnifyingGlass slot="icon" />
             </TextInput>
             <nav class="link-list">
                 <TabLink title="Account" href="/settings" big>

@@ -92,10 +92,10 @@
 				{/each}
 			</tbody>
 		</table>
-		<Checkbox label="Purchase as a gift" bind:value={gift} />
+		<Checkbox bind:value={gift}>Purchase as a gift</Checkbox>
 		{#if gift}
 			<TextInput placeholder="Search a user">
-				<User />
+				<User slot="icon" />
 			</TextInput>
 		{/if}
 	</div>

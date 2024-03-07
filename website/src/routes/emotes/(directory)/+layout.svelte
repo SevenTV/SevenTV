@@ -51,7 +51,7 @@
 		<hr />
 		<Expandable title="Search">
 			<TextInput placeholder="Emote">
-				<MagnifyingGlass />
+				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</Expandable>
 		<Expandable title="Tags">
@@ -79,11 +79,11 @@
 		</Expandable>
 		<Expandable title="Filters">
 			<div class="filters">
-				<Checkbox label="Animated" />
-				<Checkbox label="Static" />
-				<Checkbox label="Overlaying" />
-				<Checkbox label="Case Sensitive" />
-				<Checkbox label="Exact Match" />
+				<Checkbox>Animated</Checkbox>
+				<Checkbox>Static</Checkbox>
+				<Checkbox>Overlaying</Checkbox>
+				<Checkbox>Case Sensitive</Checkbox>
+				<Checkbox>Exact Match</Checkbox>
 			</div>
 		</Expandable>
 		<Expandable title="Size">

@@ -131,22 +131,18 @@
 		</section>
 		<section class="left">
 			<div class="inputs">
-				<div class="field">
+				<TextInput placeholder="Enter text" bind:value={name}>
 					<span class="label">Emote Name</span>
-					<input type="text" placeholder="Enter text" bind:value={name} />
-				</div>
-				<div class="field">
+				</TextInput>
+				<TagsInput bind:tags>
 					<span class="label">Tags</span>
-					<TagsInput bind:tags />
-				</div>
-				<div class="field">
+				</TagsInput>
+				<TextInput placeholder="Search users">
 					<span class="label">Emote Attribution</span>
-					<TextInput placeholder="Search users">
-						<User />
-					</TextInput>
-				</div>
-				<Checkbox label="Zero-Width" />
-				<Checkbox label="Private" />
+					<User slot="icon" />
+				</TextInput>
+				<Checkbox>Zero-Width</Checkbox>
+				<Checkbox>Private</Checkbox>
 			</div>
 			<div class="buttons">
 				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Discard</Button>
@@ -194,15 +190,9 @@
 		border-radius: 0.5rem;
 	}
 
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-
-		.label {
-			color: var(--text-light);
-			font-size: 0.75rem;
-		}
+	.label {
+		font-size: 0.75rem;
+		color: var(--text-light);
 	}
 
 	.upload {

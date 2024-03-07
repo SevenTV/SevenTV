@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import Button from "$/components/button.svelte";
 	import XTwitterLogo from "$/components/icons/x-twitter-logo.svelte";
 	import TwitchLogo from "$/components/icons/twitch-logo.svelte";
@@ -6,9 +6,10 @@
 	import DiscordLogo from "$/components/icons/discord-logo.svelte";
 	import Select from "$/components/select.svelte";
 	import KickLogo from "$/components/icons/kick-logo.svelte";
-	import { Trash } from "phosphor-svelte";
+	import { At, Trash, Password } from "phosphor-svelte";
 	import Toggle from "$/components/toggle.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
+	import TextInput from "$/components/input/text-input.svelte";
 </script>
 
 <svelte:head>
@@ -113,36 +114,33 @@
 		</span>
 	</div>
 	<div class="content">
-		<label>
-			Email
-			<input type="email" />
-		</label>
-		<label>
-			Password
-			<input type="password" />
-		</label>
+		<TextInput type="email" style="max-width: 30rem">
+			<At slot="icon" />
+			<h3>Email</h3>
+		</TextInput>
+		<TextInput type="password" style="max-width: 30rem">
+			<Password slot="icon" />
+			<h3>Password</h3>
+		</TextInput>
 		<hr />
-		<div class="labelled-input">
-			<Toggle />
+		<Toggle>
 			<div>
 				<h3>Two Factor Authentication</h3>
 				<span class="details">Enhance the security of your account with Two-Factor Authentication (2FA)</span>
 			</div>
-		</div>
-		<div class="labelled-input">
-			<Checkbox />
+		</Toggle>
+		<Checkbox>
 			<div>
 				<h3>Email</h3>
 				<span class="details">Receive a verification code via email</span>
 			</div>
-		</div>
-		<div class="labelled-input">
-			<Checkbox />
+		</Checkbox>
+		<Checkbox>
 			<div>
 				<h3>Authenticator App</h3>
 				<span class="details">Install an app to generate your verification code</span>
 			</div>
-		</div>
+		</Checkbox>
 		<hr />
 		<span>
 			<h3>Sign Out Everywhere</h3>
@@ -238,10 +236,5 @@
 				font-weight: 500;
 			}
 		}
-	}
-
-	.labelled-input {
-		display: flex;
-		gap: 1rem;
 	}
 </style>

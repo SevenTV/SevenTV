@@ -20,18 +20,20 @@
 	import HideOn from "$/components/hide-on.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
+	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 
 	export let data: PageData;
 
 	let enabled = false;
 	let selectionMode = false;
-	let showEditDialog = false;
+	let editDialogMode = DialogMode.Hidden;
 </script>
 
 <svelte:head>
 	<title>{data.id} - 7TV</title>
 </svelte:head>
 
+<EditEmoteSetDialog bind:mode={editDialogMode} />
 <div class="layout">
 	<div class="set-info">
 		<h1>{data.id}</h1>
@@ -64,7 +66,7 @@
 					</svelte:fragment>
 				</Button>
 			</HideOn>
-			<Button secondary hideOnMobile on:click={() => (showEditDialog = true)}>
+			<Button secondary hideOnMobile on:click={() => (editDialogMode = DialogMode.Shown)}>
 				Edit
 				<NotePencil slot="icon-right" />
 			</Button>
@@ -73,7 +75,7 @@
 				<Copy slot="icon-right" />
 			</Button>
 			{#if !selectionMode}
-				<Button secondary hideOnDesktop on:click={() => (showEditDialog = true)}>
+				<Button secondary hideOnDesktop on:click={() => (editDialogMode = DialogMode.Shown)}>
 					<NotePencil slot="icon-right" />
 				</Button>
 				<Button secondary hideOnDesktop>
@@ -104,7 +106,7 @@
 				]}
 			/>
 			<TextInput placeholder="Search">
-				<MagnifyingGlass />
+				<MagnifyingGlass slot="icon" />
 			</TextInput>
 			<LayoutButtons />
 		</div>
@@ -122,9 +124,6 @@
 		</EmoteContainer>
 	</div>
 </div>
-{#if showEditDialog}
-	<EditEmoteSetDialog on:close={() => (showEditDialog = false)} />
-{/if}
 
 <style lang="scss">
 	.layout {

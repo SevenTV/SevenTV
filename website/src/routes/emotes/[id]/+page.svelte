@@ -24,7 +24,7 @@
 		</div>
 		<HideOn mobile>
 			<TextInput placeholder="Search" style="max-width: 12.5rem">
-				<MagnifyingGlass />
+				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</HideOn>
 	</div>
