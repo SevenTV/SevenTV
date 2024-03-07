@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { user } from "$/lib/stores";
-	import { DiscordLogo, GoogleLogo, TwitchLogo } from "phosphor-svelte";
 	import Button from "../button.svelte";
+	import DiscordLogo from "../icons/discord-logo.svelte";
 	import Logo from "../icons/logo.svelte";
+	import GoogleLogo from "../icons/google-logo.svelte";
+	import TwitchLogo from "../icons/twitch-logo.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
 
 	export let mode: DialogMode = DialogMode.Hidden;

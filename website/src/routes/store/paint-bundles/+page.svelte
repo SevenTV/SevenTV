@@ -64,7 +64,12 @@
 			<Button hideOnDesktop>
 				<MagnifyingGlass />
 			</Button>
-			<Select options={["Filters"]} />
+			<Select
+				options={[
+					{ value: "none", label: "No Filters" },
+					{ value: "filters", label: "Filters" },
+				]}
+			/>
 		</div>
 	</div>
 	<div class="grid">

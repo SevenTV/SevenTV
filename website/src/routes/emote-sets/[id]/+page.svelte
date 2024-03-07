@@ -3,7 +3,14 @@
 	import EmoteContainer from "$/components/emote-container.svelte";
 	import EmotePreview from "$/components/emote-preview.svelte";
 	import Tags from "$/components/emotes/tags.svelte";
-	import { Copy, Lightning, LightningSlash, MagnifyingGlass, NotePencil, Trash } from "phosphor-svelte";
+	import {
+		Copy,
+		Lightning,
+		LightningSlash,
+		MagnifyingGlass,
+		NotePencil,
+		Trash,
+	} from "phosphor-svelte";
 	import type { PageData } from "./$types";
 	import Select from "$/components/select.svelte";
 	import { Layout, emotesLayout } from "$/lib/stores";
@@ -90,7 +97,12 @@
 			{/if}
 		</div>
 		<div class="buttons">
-			<Select options={["No Filters", "Filters"]} />
+			<Select
+				options={[
+					{ value: "none", label: "No Filters" },
+					{ value: "filter", label: "Filter" },
+				]}
+			/>
 			<TextInput placeholder="Search">
 				<MagnifyingGlass />
 			</TextInput>

@@ -12,6 +12,8 @@
 <style lang="scss">
 	/* The switch - the box around the slider */
 	.switch {
+		flex-shrink: 0;
+
 		position: relative;
 		display: inline-block;
 		width: 2.25rem;

@@ -12,7 +12,7 @@
 	let gift = false;
 </script>
 
-<Dialog width={35} bind:mode={mode}>
+<Dialog width={35} bind:mode>
 	<div class="layout">
 		<h1>Your Cart</h1>
 		<hr />
@@ -35,7 +35,13 @@
 							</div>
 						</td>
 						<td class="duration hide-on-mobile">
-							<Select options={["1 Month", "3 Months", "1 Year"]} />
+							<Select
+								options={[
+									{ value: "1", label: "1 Month" },
+									{ value: "3", label: "3 Months" },
+									{ value: "12", label: "1 Year" },
+								]}
+							/>
 						</td>
 						<td class="price">{priceFormat.format((i + 1) * 7.96)}</td>
 						<td class="actions">

@@ -1,12 +1,23 @@
-<script lang="ts">
+<script lang="ts" generics="C extends ComponentType">
+	// https://stackoverflow.com/a/72532661/10772729
+
 	import mouseTrap from "$/lib/mouseTrap";
 	import { CaretDown } from "phosphor-svelte";
 	import { fade } from "svelte/transition";
 	import Button from "./button.svelte";
+	import type { ComponentType } from "svelte";
 
-	export let options: string[];
-	export let selected: string | null = options[0] ?? null;
+	type Option = {
+		value: string;
+		label: string;
+		icon?: C;
+	};
+
+	export let options: Option[];
+	export let selected: string | null = options[0]?.value ?? null;
 	export let grow: boolean = false;
+
+	$: selectedLabel = options.find((o) => o.value === selected);
 
 	let expanded = false;
 
@@ -25,23 +36,33 @@
 	}
 </script>
 
-<div use:mouseTrap={close} class="select" class:grow class:expanded>
+<div use:mouseTrap={close} class="select" class:grow class:expanded {...$$restProps}>
 	<Button secondary tabindex="-1" on:click={toggle}>
-		{selected ?? "Select"}
+		{#if selectedLabel}
+			{#if selectedLabel.icon}
+				<svelte:component this={selectedLabel.icon} />
+			{/if}
+			{selectedLabel.label}
+		{:else}
+		 	Select
+		{/if}
 		<CaretDown slot="icon-right" size="1rem" />
 	</Button>
 	<select bind:value={selected} on:click={toggle} on:keypress={toggle}>
 		{#each options as option}
-			<option value={option}>
-				{option}
+			<option value={option.value}>
+				{option.value}
 			</option>
 		{/each}
 	</select>
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
-				<Button on:click={() => select(option)} noBorder>
-					{option}
+				<Button on:click={() => select(option.value)} noBorder>
+					{#if option.icon}
+						<svelte:component this={option.icon} />
+					{/if}
+					{option.label}
 				</Button>
 			{/each}
 		</div>

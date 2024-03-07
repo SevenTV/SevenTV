@@ -17,14 +17,14 @@
 		PaintBrush,
 		Pulse,
 		SealCheck,
-		TwitchLogo,
-		TwitterLogo,
 		Upload,
 		UserCircle,
-		YoutubeLogo,
 	} from "phosphor-svelte";
 	import Button from "$/components/button.svelte";
 	import ChannelPreview from "$/components/channel-preview.svelte";
+	import TwitchLogo from "$/components/icons/twitch-logo.svelte";
+	import YoutubeLogo from "$/components/icons/youtube-logo.svelte";
+	import XTwitterLogo from "$/components/icons/x-twitter-logo.svelte";
 
 	export let data: LayoutData;
 
@@ -93,7 +93,7 @@
 						<span>bubutv</span>
 					</Button>
 					<Button href="https://twitter.com/tweetbubu" target="_blank">
-						<TwitterLogo slot="icon" />
+						<XTwitterLogo slot="icon" />
 						<span>tweetbubu</span>
 					</Button>
 				</div>

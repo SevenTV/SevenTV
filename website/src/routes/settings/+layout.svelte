@@ -41,7 +41,29 @@
             </nav>
         </aside>
         <div class="content">
-            <slot />
+            <div class="width-wrapper">
+                <slot />
+            </div>
         </div>
     </div>
 {/if}
+
+<style lang="scss">
+    // Only desktop
+	@media screen and (min-width: 961px) {
+		.content {
+			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
+        }
+    }
+
+    .width-wrapper {
+        margin-inline: auto;
+        max-width: 80rem;
+
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+</style>
