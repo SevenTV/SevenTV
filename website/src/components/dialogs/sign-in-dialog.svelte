@@ -6,6 +6,7 @@
 	import GoogleLogo from "../icons/google-logo.svelte";
 	import TwitchLogo from "../icons/twitch-logo.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
+	import { Envelope } from "phosphor-svelte";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 
@@ -23,6 +24,10 @@
 			<span class="details">Sign in or create an account to continue</span>
 		</div>
 		<div class="buttons">
+			<Button secondary big on:click={login}>
+				<Envelope slot="icon" />
+				Use Email
+			</Button>
 			<Button secondary big on:click={login}>
 				<TwitchLogo slot="icon" />
 				Continue with Twitch
