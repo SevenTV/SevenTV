@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import TextInput from "$/components/input/text-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { signInDialogMode, user } from "$/lib/stores";
-    import { Key, PencilSimple, Bell, CreditCard, Prohibit } from "phosphor-svelte";
+    import { Key, PencilSimple, Bell, CreditCard, Prohibit, MagnifyingGlass } from "phosphor-svelte";
 
     $: if (!$user && !$signInDialogMode) {
         $signInDialogMode = DialogMode.ShownWithoutClose;
@@ -17,6 +18,9 @@
     <div class="side-bar-layout">
         <aside class="side-bar">
             <h1>Settings</h1>
+            <TextInput placeholder="Search">
+                <MagnifyingGlass />
+            </TextInput>
             <nav class="link-list">
                 <TabLink title="Account" href="/settings" big>
                     <Key />
@@ -39,6 +43,10 @@
                     <CreditCard weight="fill" slot="active" />
                 </TabLink>
             </nav>
+            <div class="account hide-on-mobile">
+                <img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" width="{2.5 * 16}" height="{2.5 * 16}" />
+                <span class="name">ayyybubu</span>
+            </div>
         </aside>
         <div class="content">
             <div class="width-wrapper">
@@ -49,6 +57,24 @@
 {/if}
 
 <style lang="scss">
+    .account {
+        margin-top: auto;
+
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .profile-picture {
+            border-radius: 50%;
+            border: 2px solid var(--staff);
+        }
+
+        .name {
+            color: var(--staff);
+            font-weight: 600;
+        }
+    }
+
     // Only desktop
 	@media screen and (min-width: 961px) {
 		.content {
