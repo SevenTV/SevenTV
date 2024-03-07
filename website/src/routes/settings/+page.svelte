@@ -10,6 +10,8 @@
 	import Toggle from "$/components/toggle.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
+
+	let twoFaActive = false;
 </script>
 
 <svelte:head>
@@ -17,7 +19,7 @@
 </svelte:head>
 
 <section>
-	<div class="heading">
+	<div>
 		<h2>Profile</h2>
 		<span class="details">
 			Customize preferences and manage details to suit your individual needs
@@ -40,7 +42,7 @@
 		/>
 		<hr />
 		<span>
-			<h3>Animated Profile Picture</h3>
+			<h3>Profile Picture</h3>
 			<span class="details">
 				Choose a profile picture that will be displayed on all platforms
 			</span>
@@ -53,13 +55,13 @@
 					<Trash slot="icon" />
 				</Button>
 			</div>
-			<span class="limits">Max size and frames</span>
+			<span class="limits">TODO Max size and frames</span>
 		</div>
 	</div>
 </section>
 
 <section>
-	<div class="heading">
+	<div>
 		<h2>Connections</h2>
 		<span class="details">
 			Manage and link external accounts to streamline access and enhance interoperability within the
@@ -106,7 +108,7 @@
 </section>
 
 <section>
-	<div class="heading">
+	<div>
 		<h2>Security</h2>
 		<span class="details">
 			Manage and customize your account security with options like password updates and two-factor
@@ -123,24 +125,26 @@
 			<h3>Password</h3>
 		</TextInput>
 		<hr />
-		<Toggle>
+		<Toggle bind:value={twoFaActive}>
 			<div>
 				<h3>Two Factor Authentication</h3>
 				<span class="details">Enhance the security of your account with Two-Factor Authentication (2FA)</span>
 			</div>
 		</Toggle>
-		<Checkbox>
-			<div>
-				<h3>Email</h3>
-				<span class="details">Receive a verification code via email</span>
-			</div>
-		</Checkbox>
-		<Checkbox>
-			<div>
-				<h3>Authenticator App</h3>
-				<span class="details">Install an app to generate your verification code</span>
-			</div>
-		</Checkbox>
+		{#if twoFaActive}
+			<Checkbox>
+				<div>
+					<h3>Email</h3>
+					<span class="details">Receive a verification code via email</span>
+				</div>
+			</Checkbox>
+			<Checkbox>
+				<div>
+					<h3>Authenticator App</h3>
+					<span class="details">Install an app to generate your verification code</span>
+				</div>
+			</Checkbox>
+		{/if}
 		<hr />
 		<span>
 			<h3>Sign Out Everywhere</h3>
@@ -169,7 +173,7 @@
 	}
 
 	h2 {
-		font-size: 1.125rem;
+		font-size: 1.25rem;
 		font-weight: 600;
 	}
 
