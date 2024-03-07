@@ -22,7 +22,8 @@
 </script>
 
 <TextInput placeholder="Enter tags" bind:value={tagInput} on:keypress={onTagInput}>
-	<Tag />
+	<slot />
+	<Tag slot="icon" />
 </TextInput>
 {#if tags && tags.length > 0}
 	<div class="tags">

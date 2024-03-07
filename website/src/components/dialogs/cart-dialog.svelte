@@ -3,18 +3,16 @@
 	import { Trash, Star, User } from "phosphor-svelte";
 	import Button from "../button.svelte";
 	import Checkbox from "../checkbox.svelte";
-	import SearchBar from "../input/text-input.svelte";
-	import Dialog from "./dialog.svelte";
+	import Dialog, { DialogMode } from "./dialog.svelte";
 	import Select from "../select.svelte";
-	import { createEventDispatcher } from "svelte";
 	import TextInput from "../input/text-input.svelte";
 
-	const dispatch = createEventDispatcher();
+	export let mode: DialogMode = DialogMode.Hidden;
 
 	let gift = false;
 </script>
 
-<Dialog width={35} on:close>
+<Dialog width={35} bind:mode>
 	<div class="layout">
 		<h1>Your Cart</h1>
 		<hr />
@@ -37,7 +35,13 @@
 							</div>
 						</td>
 						<td class="duration hide-on-mobile">
-							<Select options={["1 Month", "3 Months", "1 Year"]} />
+							<Select
+								options={[
+									{ value: "1", label: "1 Month" },
+									{ value: "3", label: "3 Months" },
+									{ value: "12", label: "1 Year" },
+								]}
+							/>
 						</td>
 						<td class="price">{priceFormat.format((i + 1) * 7.96)}</td>
 						<td class="actions">
@@ -88,10 +92,10 @@
 				{/each}
 			</tbody>
 		</table>
-		<Checkbox label="Purchase as a gift" bind:value={gift} />
+		<Checkbox bind:value={gift}>Purchase as a gift</Checkbox>
 		{#if gift}
 			<TextInput placeholder="Search a user">
-				<User />
+				<User slot="icon" />
 			</TextInput>
 		{/if}
 	</div>
@@ -101,7 +105,7 @@
 			<span>{priceFormat.format(7.96)}</span>
 		</div>
 		<div class="buttons">
-			<Button secondary on:click={() => dispatch("close")}>Cancel</Button>
+			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 			<Button primary>Proceed</Button>
 		</div>
 	</div>

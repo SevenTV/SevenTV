@@ -6,16 +6,18 @@
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags from "$/components/emotes/flags.svelte";
 	import EditEmoteDialog from "$/components/dialogs/edit-emote-dialog.svelte";
+	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 
 	export let data: LayoutData;
 
-	let showEditDialog = false;
+	let editDialogMode = DialogMode.Hidden;
 </script>
 
 <svelte:head>
 	<title>{data.id} - 7TV</title>
 </svelte:head>
 
+<EditEmoteDialog bind:mode={editDialogMode} />
 <div class="layout">
 	<div>
 		<div class="top-bar">
@@ -65,11 +67,11 @@
 					<FolderPlus slot="icon" />
 					Add to...
 				</Button>
-				<Button secondary hideOnMobile on:click={() => (showEditDialog = true)}>
+				<Button secondary hideOnMobile on:click={() => (editDialogMode = DialogMode.Shown)}>
 					<NotePencil slot="icon" />
 					Edit
 				</Button>
-				<Button secondary hideOnDesktop on:click={() => (showEditDialog = true)}>
+				<Button secondary hideOnDesktop on:click={() => (editDialogMode = DialogMode.Shown)}>
 					<NotePencil slot="icon" />
 				</Button>
 				<Button secondary hideOnMobile>
@@ -86,9 +88,6 @@
 		<slot />
 	</div>
 </div>
-{#if showEditDialog}
-	<EditEmoteDialog on:close={() => (showEditDialog = false)} />
-{/if}
 
 <style lang="scss">
 	.layout {

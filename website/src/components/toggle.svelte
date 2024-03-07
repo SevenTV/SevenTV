@@ -4,12 +4,26 @@
 	export let numb: boolean = false;
 </script>
 
-<label class="switch" class:numb {...$$restProps}>
-	<input type="checkbox" {disabled} bind:checked={value} />
-	<span class="slider"></span>
+<label class:numb>
+	<span class="switch">
+		<input type="checkbox" {disabled} bind:checked={value} />
+		<span class="slider"></span>
+	</span>
+	<slot />
 </label>
 
 <style lang="scss">
+	label {
+		display: flex;
+		gap: 0.5rem;
+
+		cursor: pointer;
+
+		&.numb {
+			pointer-events: none;
+		}
+	}
+
 	/* The switch - the box around the slider */
 	.switch {
 		position: relative;
@@ -17,16 +31,12 @@
 		width: 2.25rem;
 		height: 1.25rem;
 
-		&.numb {
-			pointer-events: none;
+		/* Hide default HTML checkbox */
+		input {
+			opacity: 0;
+			width: 0;
+			height: 0;
 		}
-	}
-
-	/* Hide default HTML checkbox */
-	.switch input {
-		opacity: 0;
-		width: 0;
-		height: 0;
 	}
 
 	/* The slider */
@@ -56,6 +66,10 @@
 
 		background-color: var(--primary-text);
 		transition: transform 0.2s;
+	}
+
+	input:focus-visible + .slider {
+		outline: 1px solid var(--primary);
 	}
 
 	input:checked + .slider {

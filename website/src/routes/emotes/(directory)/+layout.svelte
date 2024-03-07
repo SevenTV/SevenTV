@@ -51,7 +51,7 @@
 		<hr />
 		<Expandable title="Search">
 			<TextInput placeholder="Emote">
-				<MagnifyingGlass />
+				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</Expandable>
 		<Expandable title="Tags">
@@ -59,7 +59,13 @@
 		</Expandable>
 		<Expandable title="Sorting">
 			<div class="row">
-				<Select options={["Alphabetical", "Upload Date"]} grow />
+				<Select
+					options={[
+						{ value: "alpha", label: "Alphabetical" },
+						{ value: "date", label: "Upload Date" },
+					]}
+					grow
+				/>
 				<Button secondary on:click={() => (sortAsc = !sortAsc)}>
 					<svelte:fragment slot="icon">
 						{#if sortAsc}
@@ -73,16 +79,22 @@
 		</Expandable>
 		<Expandable title="Filters">
 			<div class="filters">
-				<Checkbox label="Animated" />
-				<Checkbox label="Static" />
-				<Checkbox label="Overlaying" />
-				<Checkbox label="Case Sensitive" />
-				<Checkbox label="Exact Match" />
+				<Checkbox>Animated</Checkbox>
+				<Checkbox>Static</Checkbox>
+				<Checkbox>Overlaying</Checkbox>
+				<Checkbox>Case Sensitive</Checkbox>
+				<Checkbox>Exact Match</Checkbox>
 			</div>
 		</Expandable>
 		<Expandable title="Size">
 			<div class="row">
-				<Select options={["Any Size", "idk what this is"]} grow />
+				<Select
+					options={[
+						{ value: "any", label: "Any Size" },
+						{ value: "", label: "idk what this is" },
+					]}
+					grow
+				/>
 				<Button secondary>
 					<PencilSimple slot="icon" />
 				</Button>

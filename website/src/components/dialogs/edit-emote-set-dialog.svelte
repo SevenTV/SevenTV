@@ -1,38 +1,36 @@
 <script lang="ts">
 	import TagsInput from "../input/tags-input.svelte";
-	import Dialog from "./dialog.svelte";
+	import Dialog, { DialogMode } from "./dialog.svelte";
 	import Checkbox from "../checkbox.svelte";
 	import Button from "../button.svelte";
-	import { createEventDispatcher } from "svelte";
+	import TextInput from "../input/text-input.svelte";
 
-	const dispatch = createEventDispatcher();
+	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<Dialog on:close>
+<Dialog bind:mode>
 	<div class="layout">
 		<h1>Edit Emote Set</h1>
 		<hr />
-		<label>
-			<span>Emote Set Name</span>
-			<input type="text" placeholder="Emote set name" />
-		</label>
-		<!-- svelte-ignore a11y-label-has-associated-control -->
-		<label>
-			<span>Tags</span>
-			<TagsInput />
-		</label>
-		<!-- svelte-ignore a11y-label-has-associated-control -->
-		<label>
-			<span>Settings</span>
+		<TextInput placeholder="Emote Set name">
+			<span class="label">Emote set name</span>
+		</TextInput>
+		<div class="tags">
+			<TagsInput>
+				<span class="label">Tags</span>
+			</TagsInput>
+		</div>
+		<div>
+			<span class="label">Settings</span>
 			<div class="settings">
-				<Checkbox label="Show on Profile" />
-				<Checkbox label="Publicly Listed" />
+				<Checkbox>Show on Profile</Checkbox>
+				<Checkbox>Publicly Listed</Checkbox>
 			</div>
-		</label>
+		</div>
 	</div>
 	<div class="buttons">
 		<Button style="color: var(--error); margin-right: auto;">Delete</Button>
-		<Button secondary on:click={() => dispatch("close")}>Cancel</Button>
+		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 		<Button primary>Save</Button>
 	</div>
 </Dialog>
@@ -51,18 +49,19 @@
 		font-weight: 600;
 	}
 
-	label {
+	.label {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.tags {
 		display: flex;
 		flex-direction: column;
-
-		& > span {
-			margin-bottom: 0.4rem;
-			font-size: 0.875rem;
-			font-weight: 500;
-		}
 	}
 
 	.settings {
+		margin-top: 0.4rem;
+
 		display: grid;
 		grid-template-columns: auto auto;
 		gap: 0.5rem;

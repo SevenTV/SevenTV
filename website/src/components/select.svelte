@@ -1,12 +1,24 @@
-<script lang="ts">
+<script lang="ts" generics="C extends ComponentType">
+	// https://stackoverflow.com/a/72532661/10772729
+	// eslint doesn't seem to understand this syntax
+
 	import mouseTrap from "$/lib/mouseTrap";
 	import { CaretDown } from "phosphor-svelte";
 	import { fade } from "svelte/transition";
 	import Button from "./button.svelte";
+	import type { ComponentType } from "svelte"; // eslint-disable-line @typescript-eslint/no-unused-vars
 
-	export let options: string[];
-	export let selected: string | null = options[0] ?? null;
+	type Option = {
+		value: string;
+		label: string;
+		icon?: C; // eslint-disable-line no-undef
+	};
+
+	export let options: Option[];
+	export let selected: string | null = options[0]?.value ?? null;
 	export let grow: boolean = false;
+
+	$: selectedLabel = options.find((o) => o.value === selected);
 
 	let expanded = false;
 
@@ -25,23 +37,33 @@
 	}
 </script>
 
-<div use:mouseTrap={close} class="select" class:grow class:expanded>
-	<Button secondary tabindex="-1" on:click={toggle}>
-		{selected ?? "Select"}
-		<CaretDown slot="icon-right" size="1rem" />
-	</Button>
+<div use:mouseTrap={close} class="select" class:grow class:expanded {...$$restProps}>
 	<select bind:value={selected} on:click={toggle} on:keypress={toggle}>
 		{#each options as option}
-			<option value={option}>
-				{option}
+			<option value={option.value}>
+				{option.value}
 			</option>
 		{/each}
 	</select>
+	<Button secondary tabindex="-1" on:click={toggle}>
+		{#if selectedLabel}
+			{#if selectedLabel.icon}
+				<svelte:component this={selectedLabel.icon} />
+			{/if}
+			{selectedLabel.label}
+		{:else}
+			Select
+		{/if}
+		<CaretDown slot="icon-right" size="1rem" />
+	</Button>
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
-				<Button secondary={selected === option} on:click={() => select(option)} noBorder>
-					{option}
+				<Button on:click={() => select(option.value)} noBorder>
+					{#if option.icon}
+						<svelte:component this={option.icon} />
+					{/if}
+					{option.label}
 				</Button>
 			{/each}
 		</div>
@@ -67,6 +89,10 @@
 		position: absolute;
 		white-space: nowrap;
 		width: 1px;
+
+		&:focus-visible + :global(.button) {
+			border-color: var(--primary);
+		}
 	}
 
 	.select {
@@ -79,12 +105,7 @@
 
 		& > :global(.button) {
 			width: 100%;
-
 			justify-content: space-between;
-
-			&:focus-within {
-				border-color: var(--primary);
-			}
 		}
 
 		&.expanded {

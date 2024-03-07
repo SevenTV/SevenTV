@@ -3,7 +3,7 @@
 	import TopTabs from "./top-tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { user, showMobileMenu, showUploadDialog, showSignInDialog } from "$/lib/stores";
+	import { user, showMobileMenu, uploadDialogMode, signInDialogMode } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import Dms from "../dms.svelte";
@@ -19,10 +19,12 @@
 	import Button from "../button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
+	import { DialogMode } from "../dialogs/dialog.svelte";
 
-	let cartDialog = false;
+	let cartDialogMode = DialogMode.Hidden;
 </script>
 
+<CartDialog bind:mode={cartDialogMode} />
 <nav>
 	<div class="links">
 		<a class="home" href="/">
@@ -40,7 +42,7 @@
 	</div>
 	<HideOn mobile>
 		<TextInput placeholder="Search" big style="flex: 0 1 20rem">
-			<MagnifyingGlass />
+			<MagnifyingGlass slot="icon" />
 		</TextInput>
 	</HideOn>
 	<div class="user-actions">
@@ -62,15 +64,15 @@
 				</Button>
 				<Dms slot="dropdown" />
 			</DropDown>
-			<Button on:click={() => (cartDialog = !cartDialog)}>
+			<Button on:click={() => (cartDialogMode = DialogMode.Shown)}>
 				<Badge count={3} slot="icon">
 					<ShoppingCartSimple />
 				</Badge>
 			</Button>
-			<Button hideOnDesktop on:click={() => ($showUploadDialog = true)}>
+			<Button hideOnDesktop on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
 				<PlusSquare slot="icon" />
 			</Button>
-			<Button secondary hideOnMobile on:click={() => ($showUploadDialog = true)}>
+			<Button secondary hideOnMobile on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
 				<PlusSquare slot="icon" />
 				Upload
 			</Button>
@@ -93,7 +95,7 @@
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<Button primary on:click={() => ($showSignInDialog = true)}>Sign In</Button>
+			<Button primary on:click={() => ($signInDialogMode = DialogMode.Shown)}>Sign In</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
@@ -103,9 +105,6 @@
 		{/if}
 	</div>
 </nav>
-{#if cartDialog}
-	<CartDialog on:close={() => (cartDialog = false)} />
-{/if}
 
 <style lang="scss">
 	nav {

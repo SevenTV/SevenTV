@@ -9,8 +9,14 @@
 <div class="navigation">
 	<EmoteTabs id={data.id} />
 	<div class="buttons">
-		<Select options={["This Week", "This Month", "This Century"]} />
-		<Select options={["Channels"]} />
+		<Select
+			options={[
+				{ value: "week", label: "This Week" },
+				{ value: "month", label: "This Month" },
+				{ value: "century", label: "This Century" },
+			]}
+		/>
+		<Select options={[{ value: "channels", label: "Channels" }]} />
 	</div>
 </div>
 

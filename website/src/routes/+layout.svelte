@@ -3,7 +3,7 @@
 	import "$/styles/variables.scss";
 	import "$/styles/global.scss";
 	import TopNav from "$/components/nav/top-nav.svelte";
-	import { showMobileMenu, showSignInDialog, showUploadDialog } from "$/lib/stores";
+	import { showMobileMenu, signInDialogMode, uploadDialogMode } from "$/lib/stores";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
 	import { IconContext } from "phosphor-svelte";
@@ -24,17 +24,14 @@
 		<TopNav />
 	</header>
 
+	<UploadDialog bind:mode={$uploadDialogMode} />
+	<SignInDialog bind:mode={$signInDialogMode} />
+	<dialog>Test</dialog>
 	<main id="main">
 		{#if $showMobileMenu}
 			<Menu />
 		{:else}
 			<slot />
-			{#if $showUploadDialog}
-				<UploadDialog />
-			{/if}
-			{#if $showSignInDialog}
-				<SignInDialog />
-			{/if}
 		{/if}
 	</main>
 </IconContext>
