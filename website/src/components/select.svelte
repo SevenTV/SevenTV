@@ -37,6 +37,13 @@
 </script>
 
 <div use:mouseTrap={close} class="select" class:grow class:expanded {...$$restProps}>
+	<select bind:value={selected} on:click={toggle} on:keypress={toggle}>
+		{#each options as option}
+			<option value={option.value}>
+				{option.value}
+			</option>
+		{/each}
+	</select>
 	<Button secondary tabindex="-1" on:click={toggle}>
 		{#if selectedLabel}
 			{#if selectedLabel.icon}
@@ -48,13 +55,6 @@
 		{/if}
 		<CaretDown slot="icon-right" size="1rem" />
 	</Button>
-	<select bind:value={selected} on:click={toggle} on:keypress={toggle}>
-		{#each options as option}
-			<option value={option.value}>
-				{option.value}
-			</option>
-		{/each}
-	</select>
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
@@ -88,6 +88,10 @@
 		position: absolute;
 		white-space: nowrap;
 		width: 1px;
+
+		&:focus-visible + :global(.button) {
+			border-color: var(--primary);
+		}
 	}
 
 	.select {
@@ -100,12 +104,7 @@
 
 		& > :global(.button) {
 			width: 100%;
-
 			justify-content: space-between;
-
-			&:focus-within {
-				border-color: var(--primary);
-			}
 		}
 
 		&.expanded {

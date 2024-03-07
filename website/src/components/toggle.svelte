@@ -68,6 +68,10 @@
 		transition: transform 0.2s;
 	}
 
+	input:focus-visible + .slider {
+		outline: 1px solid var(--primary);
+	}
+
 	input:checked + .slider {
 		background-color: var(--primary);
 	}

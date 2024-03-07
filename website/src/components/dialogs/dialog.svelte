@@ -27,10 +27,10 @@
 	$: if (mode) {
 		dialog?.showModal();
 
-		// Focus and immediately blur to prevent visible autofocus
-		// https://stackoverflow.com/a/76827288/10772729
-		dialog?.focus();
-		dialog?.blur();
+		// Blur to prevent initial visible autofocus
+		if (browser && document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
+		}
 	} else {
 		dialog?.close();
 	}

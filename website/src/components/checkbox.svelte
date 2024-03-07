@@ -3,13 +3,14 @@
 	export let disabled = false;
 </script>
 
-<label class="checkbox" {...$$restProps}>
+<label {...$$restProps}>
 	<input type="checkbox" bind:checked={value} {disabled} />
+	<span class="checkbox"></span>
 	<slot />
 </label>
 
 <style lang="scss">
-	.checkbox {
+	label {
 		cursor: pointer;
 		user-select: none;
 
@@ -19,8 +20,7 @@
 		color: var(--text);
 		font-size: 0.875rem;
 
-		&::before {
-			content: "";
+		.checkbox {
 			display: inline-block;
 			height: 1rem;
 			width: 1rem;
@@ -49,29 +49,31 @@
 			outline: none;
 		}
 
-		&:has(input:focus-visible)::before {
+		input:focus-visible + .checkbox {
 			border-color: var(--primary);
 		}
 
-		&:has(input:focus-visible)::before, &:has(input:hover)::before {
-			background-color: var(--secondary-hover);
+		input:focus-visible, input:hover {
+			& + .checkbox {
+				background-color: var(--secondary-hover);
+			}
 		}
 
-		&:has(input:active)::before {
+		input:active + .checkbox {
 			background-color: var(--secondary-active);
 		}
 
-		&:has(input:checked)::before {
+		input:checked + .checkbox {
 			background-color: var(--primary);
 			background-size: 0.75rem;
 			border-color: transparent;
 		}
 
-		&:has(input:disabled) {
+		input:disabled {
 			cursor: not-allowed;
 			color: var(--text-light);
 
-			&::before {
+			& + .checkbox {
 				background-color: var(--secondary-disabled);
 			}
 		}
