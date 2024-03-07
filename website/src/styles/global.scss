@@ -64,7 +64,9 @@ ul {
 	padding: 0;
 }
 
-input[type="text"], input[type="email"], input[type="password"] {
+input[type="text"],
+input[type="email"],
+input[type="password"] {
 	width: 100%;
 
 	padding: 0.5rem 0.75rem;
@@ -95,7 +97,9 @@ input[type="text"], input[type="email"], input[type="password"] {
 }
 
 @media screen and (max-width: 960px) {
-	input[type="text"], input[type="email"], input[type="password"] {
+	input[type="text"],
+	input[type="email"],
+	input[type="password"] {
 		font-size: 1rem;
 	}
 }

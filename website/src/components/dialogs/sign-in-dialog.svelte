@@ -10,13 +10,13 @@
 
 	export let mode: DialogMode = DialogMode.Hidden;
 
-    function login() {
-        $user = true;
-        mode = DialogMode.Hidden;
-    }
+	function login() {
+		$user = true;
+		mode = DialogMode.Hidden;
+	}
 </script>
 
-<Dialog bind:mode={mode}>
+<Dialog bind:mode>
 	<div class="layout">
 		<div class="header">
 			<Logo size={3 * 16} />
@@ -40,7 +40,9 @@
 				<DiscordLogo slot="icon" />
 				Continue with Discord
 			</Button>
-			<a class="trouble" href="/trouble" on:click={() => (mode = DialogMode.Hidden)}>Trouble signing in?</a>
+			<a class="trouble" href="/trouble" on:click={() => (mode = DialogMode.Hidden)}
+				>Trouble signing in?</a
+			>
 		</div>
 		<hr />
 		<span class="legal-yapping">

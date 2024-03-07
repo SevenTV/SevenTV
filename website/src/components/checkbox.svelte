@@ -53,7 +53,8 @@
 			border-color: var(--primary);
 		}
 
-		input:focus-visible, input:hover {
+		input:focus-visible,
+		input:hover {
 			& + .checkbox {
 				background-color: var(--secondary-hover);
 			}

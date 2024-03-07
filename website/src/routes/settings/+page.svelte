@@ -128,7 +128,9 @@
 		<Toggle bind:value={twoFaActive}>
 			<div>
 				<h3>Two Factor Authentication</h3>
-				<span class="details">Enhance the security of your account with Two-Factor Authentication (2FA)</span>
+				<span class="details"
+					>Enhance the security of your account with Two-Factor Authentication (2FA)</span
+				>
 			</div>
 		</Toggle>
 		{#if twoFaActive}
@@ -154,7 +156,10 @@
 		<hr />
 		<span>
 			<h3>Delete Account</h3>
-			<span class="details">Permanently remove all personal information and associated data from the platform, terminating your account</span>
+			<span class="details"
+				>Permanently remove all personal information and associated data from the platform,
+				terminating your account</span
+			>
 		</span>
 		<Button secondary style="align-self: flex-start; color: var(--error);">Delete Account</Button>
 	</div>

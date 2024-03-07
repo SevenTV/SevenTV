@@ -3,7 +3,7 @@
 		Hidden = 0,
 		Shown = 1,
 		ShownWithoutClose = 2,
-	};
+	}
 </script>
 
 <script lang="ts">
@@ -55,10 +55,7 @@
 	style="width: {width}rem"
 >
 	{#if mode === DialogMode.Shown}
-		<Button
-			on:click={close}
-			style="position: absolute; top: 0.5rem; right: 0.5rem;"
-		>
+		<Button on:click={close} style="position: absolute; top: 0.5rem; right: 0.5rem;">
 			<X slot="icon" />
 		</Button>
 	{/if}

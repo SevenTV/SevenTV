@@ -51,7 +51,7 @@
 			{/if}
 			{selectedLabel.label}
 		{:else}
-		 	Select
+			Select
 		{/if}
 		<CaretDown slot="icon-right" size="1rem" />
 	</Button>

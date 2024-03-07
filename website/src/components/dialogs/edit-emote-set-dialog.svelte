@@ -4,11 +4,11 @@
 	import Checkbox from "../checkbox.svelte";
 	import Button from "../button.svelte";
 	import TextInput from "../input/text-input.svelte";
-	
+
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<Dialog bind:mode={mode}>
+<Dialog bind:mode>
 	<div class="layout">
 		<h1>Edit Emote Set</h1>
 		<hr />

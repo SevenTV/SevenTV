@@ -72,7 +72,7 @@
 	}
 </script>
 
-<Dialog width={60} bind:mode={mode}>
+<Dialog width={60} bind:mode>
 	<div class="grid">
 		<h1 class="heading">Upload emote</h1>
 		<section class="upload {previewTheme}" class:preview={files && files[0]}>

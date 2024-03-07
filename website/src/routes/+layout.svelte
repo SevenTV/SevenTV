@@ -26,9 +26,7 @@
 
 	<UploadDialog bind:mode={$uploadDialogMode} />
 	<SignInDialog bind:mode={$signInDialogMode} />
-	<dialog>
-		Test
-	</dialog>
+	<dialog>Test</dialog>
 	<main id="main">
 		{#if $showMobileMenu}
 			<Menu />

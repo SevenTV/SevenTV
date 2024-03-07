@@ -9,7 +9,7 @@
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<Dialog bind:mode={mode}>
+<Dialog bind:mode>
 	<div class="layout">
 		<h1>Edit Emote</h1>
 		<hr />

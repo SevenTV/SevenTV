@@ -6,7 +6,13 @@
 	export let big: boolean = false;
 </script>
 
-<label class="input" class:big class:has-label={$$slots.default} class:has-icon={$$slots.icon} {...$$restProps}>
+<label
+	class="input"
+	class:big
+	class:has-label={$$slots.default}
+	class:has-icon={$$slots.icon}
+	{...$$restProps}
+>
 	<slot />
 	{#if $$slots.icon}
 		<div class="icon">
@@ -14,11 +20,11 @@
 		</div>
 	{/if}
 	{#if type === "text"}
-		<input type="text" bind:value={value} {placeholder} on:keypress />
+		<input type="text" bind:value {placeholder} on:keypress />
 	{:else if type === "email"}
-		<input type="email" bind:value={value} {placeholder} on:keypress />
+		<input type="email" bind:value {placeholder} on:keypress />
 	{:else if type === "password"}
-		<input type="password" bind:value={value} {placeholder} on:keypress />
+		<input type="password" bind:value {placeholder} on:keypress />
 	{/if}
 </label>
 
