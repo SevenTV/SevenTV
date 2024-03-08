@@ -1,10 +1,10 @@
 <script lang="ts">
 	export let value: boolean = false;
 	export let disabled: boolean = false;
-	export let numb: boolean = false;
 </script>
 
-<label class:numb>
+<label {...$$restProps}>
+	<slot name="left-label" />
 	<span class="switch">
 		<input type="checkbox" {disabled} bind:checked={value} />
 		<span class="slider"></span>
@@ -18,10 +18,6 @@
 		gap: 0.5rem;
 
 		cursor: pointer;
-
-		&.numb {
-			pointer-events: none;
-		}
 	}
 
 	/* The switch - the box around the slider */

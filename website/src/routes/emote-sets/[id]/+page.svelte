@@ -48,7 +48,7 @@
 		<div class="buttons">
 			<Button secondary on:click={() => (selectionMode = !selectionMode)} hideOnDesktop>
 				Select
-				<Toggle bind:value={selectionMode} numb slot="icon-right" />
+				<Toggle bind:value={selectionMode} style="pointer-events: none" slot="icon-right" />
 			</Button>
 			<HideOn mobile={selectionMode}>
 				<Button primary on:click={() => (enabled = !enabled)}>
@@ -84,7 +84,7 @@
 			{/if}
 			<Button secondary on:click={() => (selectionMode = !selectionMode)} hideOnMobile>
 				Selection Mode
-				<Toggle bind:value={selectionMode} numb slot="icon-right" />
+				<Toggle bind:value={selectionMode} style="pointer-events: none" slot="icon-right" />
 			</Button>
 			{#if selectionMode}
 				<Button>
