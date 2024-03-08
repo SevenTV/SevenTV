@@ -9,6 +9,13 @@
 	import { IconContext } from "phosphor-svelte";
 	import UploadDialog from "$/components/dialogs/upload-dialog.svelte";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
+	import { onMount } from "svelte";
+	import moment from "moment";
+
+	onMount(() => {
+		// Set moment locale
+		moment.locale("en-US");
+	});
 
 	beforeNavigate((nav) => {
 		// Hide menu on navigate

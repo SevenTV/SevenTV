@@ -16,7 +16,7 @@
 	import { Layout, emotesLayout } from "$/lib/stores";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import Toggle from "$/components/toggle.svelte";
-	import Flags from "$/components/emotes/flags.svelte";
+	import Flags from "$/components/flags.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";

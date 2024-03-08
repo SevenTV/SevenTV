@@ -166,35 +166,11 @@
 </section>
 
 <style lang="scss">
-	section {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.details {
-		color: var(--text-light);
-		font-size: 0.875rem;
-	}
-
-	h2 {
-		font-size: 1.25rem;
-		font-weight: 600;
-	}
+	@import "../../styles/settings.scss";
 
 	h3 {
 		font-size: 0.875rem;
 		font-weight: 500;
-	}
-
-	.content {
-		padding: 1rem;
-		background-color: var(--bg-medium);
-		border-radius: 0.5rem;
-
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
 	}
 
 	.profile-picture {

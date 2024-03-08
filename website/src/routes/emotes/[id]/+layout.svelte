@@ -4,7 +4,7 @@
 	import { ArrowBendDownRight, Plus, FolderPlus, NotePencil, CaretDown } from "phosphor-svelte";
 	import type { LayoutData } from "./$types";
 	import Tags from "$/components/emotes/tags.svelte";
-	import Flags from "$/components/emotes/flags.svelte";
+	import Flags from "$/components/flags.svelte";
 	import EditEmoteDialog from "$/components/dialogs/edit-emote-dialog.svelte";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 
