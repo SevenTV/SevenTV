@@ -26,7 +26,12 @@
 					<Key />
 					<Key weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Editors" href="/settings/editors" big>
+				<TabLink
+					title="Editors"
+					href="/settings/editors"
+					matcher={(_id, url, href) => url.pathname.startsWith(href)}
+					big
+				>
 					<PencilSimple />
 					<PencilSimple weight="fill" slot="active" />
 				</TabLink>

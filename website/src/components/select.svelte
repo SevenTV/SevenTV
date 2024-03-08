@@ -59,7 +59,7 @@
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
-				<Button on:click={() => select(option.value)} noBorder>
+				<Button on:click={() => select(option.value)}>
 					{#if option.icon}
 						<svelte:component this={option.icon} />
 					{/if}
