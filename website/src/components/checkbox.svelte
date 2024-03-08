@@ -1,11 +1,10 @@
 <script lang="ts">
 	export let value = false;
 	export let disabled = false;
-	export let numb = false;
 	export let indeterminate: boolean = false;
 </script>
 
-<label class:numb {...$$restProps}>
+<label {...$$restProps}>
 	<input type="checkbox" bind:checked={value} bind:indeterminate on:click {disabled} />
 	<span class="checkbox"></span>
 	<slot />
@@ -21,10 +20,6 @@
 
 		color: var(--text);
 		font-size: 0.875rem;
-
-		&.numb {
-			pointer-events: none;
-		}
 
 		.checkbox {
 			display: inline-block;
