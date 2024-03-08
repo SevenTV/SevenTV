@@ -6,25 +6,29 @@
 	import moment from "moment";
 	import Flags from "../flags.svelte";
 
-    export let selectedMap: boolean[];
+	export let selectedMap: boolean[];
 
-    $: allSelected = selectedMap.every((v) => v);
-    $: anySelected = selectedMap.some((v) => v);
+	$: allSelected = selectedMap.every((v) => v);
+	$: anySelected = selectedMap.some((v) => v);
 
-    function selectAllClick() {
-        selectedMap = Array(selectedMap.length).fill(!allSelected);
-    }
+	function selectAllClick() {
+		selectedMap = Array(selectedMap.length).fill(!allSelected);
+	}
 
-    function buttonClick(e: MouseEvent) {
-        e.stopPropagation();
-    }
+	function buttonClick(e: MouseEvent) {
+		e.stopPropagation();
+	}
 </script>
 
 <table>
 	<thead>
 		<tr>
 			<th class="shrink">
-				<Checkbox value={allSelected} indeterminate={anySelected && !allSelected} on:click={selectAllClick} />
+				<Checkbox
+					value={allSelected}
+					indeterminate={anySelected && !allSelected}
+					on:click={selectAllClick}
+				/>
 			</th>
 			<th>Name</th>
 			<th>Last Modified</th>
@@ -48,7 +52,10 @@
 					<Date date={moment("2024-01-22")} />
 				</td>
 				<td>
-					<Flags flags={["profile", "editors", "emote_sets", "emotes"]} add={(e) => e.stopPropagation()} />
+					<Flags
+						flags={["profile", "editors", "emote_sets", "emotes"]}
+						add={(e) => e.stopPropagation()}
+					/>
 				</td>
 				<td class="shrink">
 					<div class="buttons">
@@ -87,19 +94,20 @@
 		border-bottom: 1px solid var(--border-active);
 	}
 
-    tr {
-        &.data-row {
-            cursor: pointer;
-        }
+	tr {
+		&.data-row {
+			cursor: pointer;
+		}
 
-		&:focus-visible, &:hover {
+		&:focus-visible,
+		&:hover {
 			td {
 				background-color: var(--bg-medium);
 			}
 		}
 
-        &:last-child > td {
-            border-bottom: none;
+		&:last-child > td {
+			border-bottom: none;
 
 			&:first-child {
 				border-bottom-left-radius: 0.5rem;
@@ -108,8 +116,8 @@
 			&:last-child {
 				border-bottom-right-radius: 0.5rem;
 			}
-        }
-    }
+		}
+	}
 
 	td {
 		padding: 0.5rem 0.75rem;

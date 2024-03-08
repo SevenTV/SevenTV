@@ -168,6 +168,11 @@
 <style lang="scss">
 	@import "../../styles/settings.scss";
 
+	h3 {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
 	.profile-picture {
 		display: grid;
 		column-gap: 1rem;

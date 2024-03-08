@@ -39,7 +39,7 @@
 	</HideOn>
 </nav>
 <div class="scroll">
-	<UserTable bind:selectedMap={selectedMap} />
+	<UserTable bind:selectedMap />
 </div>
 
 <style lang="scss">

@@ -6,7 +6,7 @@
 </script>
 
 <label class:numb {...$$restProps}>
-	<input type="checkbox" bind:checked={value} bind:indeterminate={indeterminate} on:click {disabled} />
+	<input type="checkbox" bind:checked={value} bind:indeterminate on:click {disabled} />
 	<span class="checkbox"></span>
 	<slot />
 </label>
