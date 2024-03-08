@@ -39,7 +39,7 @@
 					<Bell />
 					<Bell weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Blocking" href="/settings/blocking" big>
+				<TabLink title="Blocked" href="/settings/blocked" big>
 					<Prohibit />
 					<Prohibit weight="fill" slot="active" />
 				</TabLink>
