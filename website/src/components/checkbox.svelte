@@ -6,7 +6,7 @@
 	export let indeterminate: boolean = false;
 </script>
 
-<label class:option={option} {...$$restProps}>
+<label class:option {...$$restProps}>
 	<slot name="left-label" />
 	<input type="checkbox" bind:checked={value} bind:indeterminate on:click {disabled} />
 	<span class="checkbox"></span>
@@ -37,7 +37,8 @@
 				border-color: var(--primary);
 			}
 
-			&:focus-visible, &:hover {
+			&:focus-visible,
+			&:hover {
 				border-color: var(--border-active);
 			}
 		}

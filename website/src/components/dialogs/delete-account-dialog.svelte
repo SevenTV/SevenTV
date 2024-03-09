@@ -1,49 +1,51 @@
 <script lang="ts">
 	import { Warning } from "phosphor-svelte";
-    import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { DialogMode } from "./dialog.svelte";
 	import Button from "../button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Checkbox from "../checkbox.svelte";
 
-    export let mode: DialogMode = DialogMode.Hidden;
+	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<Dialog bind:mode={mode}>
-    <div class="layout">
-        <h1>Delete Account</h1>
-        <hr />
-        <div class="warning">
-            <Warning size="4rem" weight="fill" color="var(--error)" />
-            <h2>Warning</h2>
-            <span class="details">This action will delete your account permanently. You cannot undo this action.</span>
-        </div>
-        <div class="reasons">
-            <span class="label">Choose the reasons for account deletion</span>
-            <Checkbox option>
-                <div class="label" slot="left-label">Forsen</div>
-            </Checkbox>
-            <Checkbox option>
-                <div class="label" slot="left-label">moo</div>
-            </Checkbox>
-            <Checkbox option>
-                <div class="label" slot="left-label">oom</div>
-            </Checkbox>
-            <Checkbox option>
-                <div class="label" slot="left-label">Need more money for gamba</div>
-            </Checkbox>
-        </div>
-        <TextInput placeholder="ayyybubu">
-            <span class="label">Enter your username to confirm</span>
-        </TextInput>
-        <div class="buttons">
-            <Button style="color: var(--error)">Delete</Button>
-            <Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-        </div>
-    </div>
+<Dialog bind:mode>
+	<div class="layout">
+		<h1>Delete Account</h1>
+		<hr />
+		<div class="warning">
+			<Warning size="4rem" weight="fill" color="var(--error)" />
+			<h2>Warning</h2>
+			<span class="details"
+				>This action will delete your account permanently. You cannot undo this action.</span
+			>
+		</div>
+		<div class="reasons">
+			<span class="label">Choose the reasons for account deletion</span>
+			<Checkbox option>
+				<div class="label" slot="left-label">Forsen</div>
+			</Checkbox>
+			<Checkbox option>
+				<div class="label" slot="left-label">moo</div>
+			</Checkbox>
+			<Checkbox option>
+				<div class="label" slot="left-label">oom</div>
+			</Checkbox>
+			<Checkbox option>
+				<div class="label" slot="left-label">Need more money for gamba</div>
+			</Checkbox>
+		</div>
+		<TextInput placeholder="ayyybubu">
+			<span class="label">Enter your username to confirm</span>
+		</TextInput>
+		<div class="buttons">
+			<Button style="color: var(--error)">Delete</Button>
+			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
+		</div>
+	</div>
 </Dialog>
 
 <style lang="scss">
-    .layout {
+	.layout {
 		padding: 1rem;
 
 		display: flex;
@@ -56,39 +58,39 @@
 		font-weight: 600;
 	}
 
-    h2 {
-        font-size: 1.5rem;
-        font-weight: 500;
-    }
+	h2 {
+		font-size: 1.5rem;
+		font-weight: 500;
+	}
 
-    .details {
-        font-size: 0.875rem;
-        color: var(--text-light);
-    }
+	.details {
+		font-size: 0.875rem;
+		color: var(--text-light);
+	}
 
-    .warning {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+	.warning {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 
-        text-align: center;
-    }
+		text-align: center;
+	}
 
-    .label {
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
+	.label {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
 
-    .reasons {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
+	.reasons {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
 
-    .buttons {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.5rem;
-    }
+	.buttons {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
 </style>
