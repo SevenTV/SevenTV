@@ -17,16 +17,17 @@
 	let tags: string[] = [];
 	let files: FileList | null = null;
 	let imageSrc: string;
-	let previewTheme = initialTheme();
 
 	export let mode: DialogMode = DialogMode.Hidden;
 
-	function initialTheme() {
-		if ($theme === Theme.System && browser) {
+	function initialTheme(theme: Theme | null) {
+		if (theme === Theme.System && browser) {
 			return window.matchMedia("prefers-color-scheme: dark") ? Theme.Dark : Theme.Light;
 		}
-		return $theme;
+		return theme;
 	}
+
+	$: previewTheme = initialTheme($theme);
 
 	function toggleTheme() {
 		previewTheme = previewTheme === Theme.Dark ? Theme.Light : Theme.Dark;

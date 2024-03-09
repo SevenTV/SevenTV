@@ -10,14 +10,18 @@
 	import Toggle from "$/components/toggle.svelte";
 	import Checkbox from "$/components/checkbox.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
+	import { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import DeleteAccountDialog from "$/components/dialogs/delete-account-dialog.svelte";
 
 	let twoFaActive = false;
+	let deleteAccountDialogMode = DialogMode.Hidden;
 </script>
 
 <svelte:head>
 	<title>Account Settings - 7TV</title>
 </svelte:head>
 
+<DeleteAccountDialog bind:mode={deleteAccountDialogMode} />
 <section>
 	<div>
 		<h2>Profile</h2>
@@ -161,7 +165,7 @@
 				terminating your account</span
 			>
 		</span>
-		<Button secondary style="align-self: flex-start; color: var(--error);">Delete Account</Button>
+		<Button secondary style="align-self: flex-start; color: var(--error);" on:click={() => (deleteAccountDialogMode = DialogMode.Shown)}>Delete Account</Button>
 	</div>
 </section>
 
