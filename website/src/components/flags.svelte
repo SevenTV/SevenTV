@@ -51,9 +51,9 @@
 
 <div class="flags" {...$$restProps}>
 	{#each flags as flag}
-		<span class="flag" title={details[flag]}>
+		<span class="flag" class:has-icon={icons[flag]} title={details[flag]}>
 			<svelte:component this={icons[flag]} size="1rem" />
-			<span class="hide-on-mobile">{flag.replace("_", " ")}</span>
+			<span class:hide-on-mobile={icons[flag]}>{flag.replace("_", " ")}</span>
 		</span>
 	{/each}
 	{#if add}
@@ -74,7 +74,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding: 0.3rem 0.5rem 0.3rem 0.62rem;
+		padding: 0.3rem 0.5rem;
 		background-color: var(--secondary);
 		border-radius: 0.5rem;
 
@@ -87,8 +87,8 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 
-		&.add {
-			padding-left: 0.5rem;
+		&.has-icon {
+			padding-left: 0.62rem;
 		}
 	}
 

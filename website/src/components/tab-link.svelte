@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import { createEventDispatcher } from "svelte";
 	import Button from "./button.svelte";
 
+	const dispatch = createEventDispatcher();
+
 	export let title: string | null = null;
-	export let href: string;
+	export let href: string | null = null;
 	export let big: boolean = false;
 	export let responsive: boolean = false;
-	export let matcher: (id: string | null, url: URL, href: string) => boolean = (_id, url, href) => {
+	export let matcher: (id: string | null, url: URL, href: string | null) => boolean = (_id, url, href) => {
 		return url.pathname === href;
 	};
 
@@ -14,6 +17,7 @@
 		if (e.target instanceof HTMLElement) {
 			e.target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
 		}
+		dispatch("click");
 	}
 
 	$: active = matcher($page.route.id, $page.url, href);
