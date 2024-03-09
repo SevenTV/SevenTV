@@ -1,10 +1,13 @@
 <script lang="ts">
+	export let option: boolean = false;
+
 	export let value = false;
 	export let disabled = false;
 	export let indeterminate: boolean = false;
 </script>
 
-<label {...$$restProps}>
+<label class:option={option} {...$$restProps}>
+	<slot name="left-label" />
 	<input type="checkbox" bind:checked={value} bind:indeterminate on:click {disabled} />
 	<span class="checkbox"></span>
 	<slot />
@@ -20,6 +23,24 @@
 
 		color: var(--text);
 		font-size: 0.875rem;
+
+		&.option {
+			padding: 1rem 0.75rem;
+			border-radius: 0.5rem;
+			background-color: var(--bg-medium);
+			border: 1px solid transparent;
+
+			justify-content: space-between;
+			align-items: center;
+
+			&:has(input:checked) {
+				border-color: var(--primary);
+			}
+
+			&:focus-visible, &:hover {
+				border-color: var(--border-active);
+			}
+		}
 
 		.checkbox {
 			flex-shrink: 0;
