@@ -165,7 +165,11 @@
 				terminating your account</span
 			>
 		</span>
-		<Button secondary style="align-self: flex-start; color: var(--error);" on:click={() => (deleteAccountDialogMode = DialogMode.Shown)}>Delete Account</Button>
+		<Button
+			secondary
+			style="align-self: flex-start; color: var(--error);"
+			on:click={() => (deleteAccountDialogMode = DialogMode.Shown)}>Delete Account</Button
+		>
 	</div>
 </section>
 

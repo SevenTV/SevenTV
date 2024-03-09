@@ -4,11 +4,13 @@
 		Fire,
 		FolderSimple,
 		GlobeSimple,
+		House,
 		PencilSimple,
 		Plus,
 		SealCheck,
 		Smiley,
 		StackSimple,
+		Star,
 		User,
 	} from "phosphor-svelte";
 	import Button from "./button.svelte";
@@ -22,6 +24,8 @@
 		overlay: StackSimple,
 		verified: SealCheck,
 		public: Eye,
+		default: House,
+		personal: Star,
 
 		// Permissions
 		profile: User,

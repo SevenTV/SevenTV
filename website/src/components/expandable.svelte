@@ -6,7 +6,7 @@
 	let expanded = true;
 </script>
 
-<div class="expandable">
+<div class="expandable" {...$$restProps}>
 	<button class="header" on:click={() => (expanded = !expanded)} class:expanded>
 		{title}
 		<div class="icon">
@@ -22,6 +22,7 @@
 	.expandable {
 		display: flex;
 		flex-direction: column;
+		gap: 0.5rem;
 	}
 
 	.header {
@@ -29,21 +30,19 @@
 		align-items: center;
 		justify-content: space-between;
 
-		color: var(--text);
+		color: var(--text-light);
 		font-size: 0.875rem;
 		font-weight: 500;
 
 		& > .icon {
+			color: var(--text);
+
 			transition: transform 0.1s;
 			transform: rotate(-90deg);
 		}
 
-		&.expanded {
-			margin-bottom: 0.4rem;
-
-			& > .icon {
-				transform: rotate(0deg);
-			}
+		&.expanded > .icon {
+			transform: rotate(0deg);
 		}
 	}
 </style>
