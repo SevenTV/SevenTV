@@ -2,9 +2,9 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import { Heart, Newspaper } from "phosphor-svelte";
 
-	function matcher(_id: string | null, url: URL, href: string) {
+	function matcher(_id: string | null, url: URL, href: string | null) {
 		if (href === "/discover") return url.pathname === href;
-		return url.pathname.startsWith(href);
+		return !!href && url.pathname.startsWith(href);
 	}
 </script>
 

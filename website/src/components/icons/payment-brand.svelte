@@ -2,6 +2,7 @@
 	import Fa from "svelte-fa";
 	import { faCreditCard } from "@fortawesome/free-regular-svg-icons";
 	import {
+		type IconDefinition,
 		faAlipay,
 		faIdeal,
 		faCcPaypal,
@@ -13,7 +14,7 @@
 		faCcVisa,
 	} from "@fortawesome/free-brands-svg-icons";
 
-	const icons: { [key: string]: any } = {
+	const icons: { [key: string]: IconDefinition } = {
 		alipay: faAlipay,
 		ideal: faIdeal,
 		paypal: faCcPaypal,
