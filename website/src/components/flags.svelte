@@ -57,7 +57,7 @@
 		</span>
 	{/each}
 	{#if add}
-		<Button secondary on:click={add} title="Add" style="padding: 0.3rem 0.5rem; border: none">
+		<Button secondary on:click={add} title="Add" style="padding: 0.3rem 0.5rem; border: none;">
 			<Plus size="1rem" slot="icon" />
 		</Button>
 	{/if}
@@ -93,7 +93,7 @@
 	}
 
 	@media screen and (max-width: 960px) {
-		.flag {
+		.flag.has-icon {
 			padding: 0.3rem 0.5rem;
 		}
 	}
