@@ -38,9 +38,7 @@
 		</TextInput>
 	</HideOn>
 </nav>
-<div class="scroll">
-	<UserTable bind:selectedMap />
-</div>
+<UserTable bind:selectedMap />
 
 <style lang="scss">
 	.nav-bar {
@@ -60,11 +58,5 @@
 		display: flex;
 		background-color: var(--bg-light);
 		border-radius: 0.5rem;
-	}
-
-	.scroll {
-		overflow: auto;
-		overflow: overlay;
-		scrollbar-gutter: stable;
 	}
 </style>

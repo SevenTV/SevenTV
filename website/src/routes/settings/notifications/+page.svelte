@@ -9,7 +9,10 @@
 <section>
 	<div>
 		<h2>Notifications</h2>
-		<span class="details">Real-time updates and alerts, keeping users informed about important events, messages, and activities within the website or application</span>
+		<span class="details"
+			>Real-time updates and alerts, keeping users informed about important events, messages, and
+			activities within the website or application</span
+		>
 	</div>
 	<div class="content">
 		<div class="notification">

@@ -20,59 +20,67 @@
 	}
 </script>
 
-<table>
-	<thead>
-		<tr>
-			<th class="shrink">
-				<Checkbox
-					value={allSelected}
-					indeterminate={anySelected && !allSelected}
-					on:click={selectAllClick}
-				/>
-			</th>
-			<th>Name</th>
-			<th>Last Modified</th>
-			<th>Permissions</th>
-			<th></th>
-		</tr>
-	</thead>
-	<tbody>
-		{#each Array(selectedMap.length) as _, i}
-			<tr class="data-row" on:click={() => (selectedMap[i] = !selectedMap[i])}>
-				<td class="shrink">
-					<Checkbox bind:value={selectedMap[i]} style="pointer-events: none" />
-				</td>
-				<td>
-					<div class="user-info">
-						<div class="placeholder"></div>
-						<span class="name">user{i}</span>
-					</div>
-				</td>
-				<td class="date">
-					<Date date={moment("2024-01-22")} />
-				</td>
-				<td>
-					<Flags
-						flags={["profile", "editors", "emote_sets", "emotes"]}
-						add={(e) => e.stopPropagation()}
+<div class="scroll">
+	<table>
+		<thead>
+			<tr>
+				<th class="shrink">
+					<Checkbox
+						value={allSelected}
+						indeterminate={anySelected && !allSelected}
+						on:click={selectAllClick}
 					/>
-				</td>
-				<td class="shrink">
-					<div class="buttons">
-						<Button on:click={buttonClick}>
-							<PencilSimple slot="icon" />
-						</Button>
-						<Button on:click={buttonClick}>
-							<Trash slot="icon" />
-						</Button>
-					</div>
-				</td>
+				</th>
+				<th>Name</th>
+				<th>Last Modified</th>
+				<th>Permissions</th>
+				<th></th>
 			</tr>
-		{/each}
-	</tbody>
-</table>
+		</thead>
+		<tbody>
+			{#each Array(selectedMap.length) as _, i}
+				<tr class="data-row" on:click={() => (selectedMap[i] = !selectedMap[i])}>
+					<td class="shrink">
+						<Checkbox bind:value={selectedMap[i]} style="pointer-events: none" />
+					</td>
+					<td>
+						<div class="user-info">
+							<div class="placeholder"></div>
+							<span class="name">user{i}</span>
+						</div>
+					</td>
+					<td class="date">
+						<Date date={moment("2024-01-22")} />
+					</td>
+					<td>
+						<Flags
+							flags={["profile", "editors", "emote_sets", "emotes"]}
+							add={(e) => e.stopPropagation()}
+						/>
+					</td>
+					<td class="shrink">
+						<div class="buttons">
+							<Button on:click={buttonClick}>
+								<PencilSimple slot="icon" />
+							</Button>
+							<Button on:click={buttonClick}>
+								<Trash slot="icon" />
+							</Button>
+						</div>
+					</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+</div>
 
 <style lang="scss">
+	.scroll {
+		overflow: auto;
+		overflow: overlay;
+		scrollbar-gutter: stable;
+	}
+
 	table {
 		width: 100%;
 		border-collapse: collapse;

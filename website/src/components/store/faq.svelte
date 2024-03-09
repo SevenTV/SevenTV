@@ -32,7 +32,7 @@
 				</div>
 
 				<!-- Pseudo checkbox box for not having to use js for expanding -->
-				<input type="checkbox" name="question" hidden />
+				<input type="checkbox" name="question" />
 				<span class="a">{qa.a}</span>
 			</label>
 		{/each}
@@ -92,8 +92,20 @@
 			background-color: var(--bg-light);
 		}
 
-		& > input:checked + .a {
-			display: inline-block;
+		& > input {
+			position: absolute;
+			margin: 0;
+			width: 0;
+			height: 0;
+			display: inline;
+			-webkit-appearance: none;
+			-moz-appearance: none;
+			appearance: none;
+			outline: none;
+
+			&:checked + .a {
+				display: inline-block;
+			}
 		}
 	}
 </style>

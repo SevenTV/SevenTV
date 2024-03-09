@@ -18,7 +18,7 @@
 
 	let sortAsc = false;
 
-	function menuMatcher(id: string | null, _url: URL, href: string) {
+	function menuMatcher(id: string | null, _url: URL, href: string | null) {
 		switch (href) {
 			case "/emotes":
 				return id?.startsWith("/emotes/(directory)/(emotes)") ?? false;

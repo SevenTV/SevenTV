@@ -16,7 +16,9 @@
 <section>
 	<div>
 		<h2>Blocked</h2>
-		<span class="details">Display a list of restricted or prohibited content, users, or activities</span>
+		<span class="details"
+			>Display a list of restricted or prohibited content, users, or activities</span
+		>
 	</div>
 	<div class="content">
 		<nav class="nav-bar">
@@ -37,7 +39,7 @@
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</nav>
-		<UserTable bind:selectedMap={selectedMap} />
+		<UserTable bind:selectedMap />
 	</div>
 </section>
 

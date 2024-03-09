@@ -29,7 +29,7 @@
 				<TabLink
 					title="Editors"
 					href="/settings/editors"
-					matcher={(_id, url, href) => url.pathname.startsWith(href)}
+					matcher={(_id, url, href) => !!href && url.pathname.startsWith(href)}
 					big
 				>
 					<PencilSimple />
