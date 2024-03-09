@@ -22,6 +22,8 @@
 		font-size: 0.875rem;
 
 		.checkbox {
+			flex-shrink: 0;
+
 			display: inline-block;
 			height: 1rem;
 			width: 1rem;
