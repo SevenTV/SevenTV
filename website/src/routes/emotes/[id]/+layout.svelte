@@ -7,9 +7,11 @@
 	import Flags from "$/components/flags.svelte";
 	import EditEmoteDialog from "$/components/dialogs/edit-emote-dialog.svelte";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import AddEmoteDialog from "$/components/dialogs/add-emote-dialog.svelte";
 
 	export let data: LayoutData;
 
+	let addEmoteDialogMode = DialogMode.Hidden;
 	let editDialogMode = DialogMode.Hidden;
 </script>
 
@@ -17,6 +19,7 @@
 	<title>{data.id} - 7TV</title>
 </svelte:head>
 
+<AddEmoteDialog bind:mode={addEmoteDialogMode} />
 <EditEmoteDialog bind:mode={editDialogMode} />
 <div class="layout">
 	<div>
@@ -63,7 +66,7 @@
 					<Plus slot="icon" />
 					Use Emote
 				</Button>
-				<Button secondary>
+				<Button secondary on:click={() => (addEmoteDialogMode = DialogMode.Shown)}>
 					<FolderPlus slot="icon" />
 					Add to...
 				</Button>
