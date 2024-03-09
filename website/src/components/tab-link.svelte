@@ -9,7 +9,11 @@
 	export let href: string | null = null;
 	export let big: boolean = false;
 	export let responsive: boolean = false;
-	export let matcher: (id: string | null, url: URL, href: string | null) => boolean = (_id, url, href) => {
+	export let matcher: (id: string | null, url: URL, href: string | null) => boolean = (
+		_id,
+		url,
+		href,
+	) => {
 		return url.pathname === href;
 	};
 

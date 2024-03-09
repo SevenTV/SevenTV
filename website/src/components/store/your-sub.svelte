@@ -2,12 +2,7 @@
 	import Button from "../button.svelte";
 	import SubInfo from "../sub-info.svelte";
 	import StoreSection from "./store-section.svelte";
-	import {
-		CaretDown,
-		DotsThreeVertical,
-		Gift,
-		Star,
-	} from "phosphor-svelte";
+	import { CaretDown, DotsThreeVertical, Gift, Star } from "phosphor-svelte";
 
 	export let subbed = false;
 </script>

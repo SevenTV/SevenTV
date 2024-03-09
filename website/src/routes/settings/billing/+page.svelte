@@ -19,7 +19,11 @@
 <section>
 	<div>
 		<h2>Your Subscription</h2>
-		<span class="details">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.</span>
+		<span class="details"
+			>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet
+			ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa.
+			Corporis possimus aspernatur soluta.</span
+		>
 	</div>
 	<div class="content">
 		<SubInfo style="padding-block: 0" />
@@ -27,7 +31,9 @@
 		<Toggle>
 			<div>
 				<h3>Use Subscription Credits</h3>
-				<span class="details">Your subscription credits will be used first for your next billing</span>
+				<span class="details"
+					>Your subscription credits will be used first for your next billing</span
+				>
 			</div>
 		</Toggle>
 		<hr />
@@ -41,14 +47,29 @@
 <section>
 	<div>
 		<h2>Billing History</h2>
-		<span class="details">See all payment activities associated with your account, such as past billing statements and transactions</span>
+		<span class="details"
+			>See all payment activities associated with your account, such as past billing statements and
+			transactions</span
+		>
 	</div>
 	<div class="content">
 		<nav class="nav-bar">
 			<div class="buttons">
-				<TabLink title="All" matcher={() => historyTab === "all"} on:click={() => (historyTab = "all")} />
-				<TabLink title="Subscriptions" matcher={() => historyTab === "subscriptions"} on:click={() => (historyTab = "subscriptions")} />
-				<TabLink title="Other" matcher={() => historyTab === "other"} on:click={() => (historyTab = "other")} />
+				<TabLink
+					title="All"
+					matcher={() => historyTab === "all"}
+					on:click={() => (historyTab = "all")}
+				/>
+				<TabLink
+					title="Subscriptions"
+					matcher={() => historyTab === "subscriptions"}
+					on:click={() => (historyTab = "subscriptions")}
+				/>
+				<TabLink
+					title="Other"
+					matcher={() => historyTab === "other"}
+					on:click={() => (historyTab = "other")}
+				/>
 			</div>
 			<TextInput placeholder="Search">
 				<MagnifyingGlass slot="icon" />

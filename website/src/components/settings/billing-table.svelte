@@ -1,7 +1,7 @@
 <script lang="ts">
 	import moment from "moment";
 	import Button from "../button.svelte";
-    import Date from "../date.svelte";
+	import Date from "../date.svelte";
 	import { Download, PaintBrush, Star } from "phosphor-svelte";
 	import PaymentBrand from "../icons/payment-brand.svelte";
 	import { priceFormat } from "$/lib/utils";
@@ -9,61 +9,61 @@
 </script>
 
 <div class="scroll">
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Items</th>
-                <th>Payment Method</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Invoice</th>
-            </tr>
-        </thead>
-        <tbody>
-            {#each Array(3) as _, i}
-                <tr>
-                    <td class="date">
-                        <Date date={moment("2024-01-22").subtract(i, "months")} />
-                    </td>
-                    <td>
-                        <div class="items">
-                            <div class="item">
-                                <Star color="var(--subscriber)" />
-                                <span>Subscription - Tier 1</span>
-                            </div>
-                            <div class="item">
-                                <PaintBrush color="var(--subscriber)" />
-                                <span>Paint Bundle - Candy</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <PaymentBrand type="paypal" />
-                    </td>
-                    <td>
-                        <Flags flags={["paid"]} />
-                    </td>
-                    <td class="amount">
-                        {priceFormat.format(5.99 + i * 2.5)}
-                    </td>
-                    <td class="shrink">
-                        <Button on:click={() => alert("download invoice")}>
-                            <Download slot="icon" />
-                        </Button>
-                    </td>
-                </tr>
-            {/each}
-        </tbody>
-    </table>
+	<table>
+		<thead>
+			<tr>
+				<th>Date</th>
+				<th>Items</th>
+				<th>Payment Method</th>
+				<th>Status</th>
+				<th>Amount</th>
+				<th>Invoice</th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each Array(3) as _, i}
+				<tr>
+					<td class="date">
+						<Date date={moment("2024-01-22").subtract(i, "months")} />
+					</td>
+					<td>
+						<div class="items">
+							<div class="item">
+								<Star color="var(--subscriber)" />
+								<span>Subscription - Tier 1</span>
+							</div>
+							<div class="item">
+								<PaintBrush color="var(--subscriber)" />
+								<span>Paint Bundle - Candy</span>
+							</div>
+						</div>
+					</td>
+					<td>
+						<PaymentBrand type="paypal" />
+					</td>
+					<td>
+						<Flags flags={["paid"]} />
+					</td>
+					<td class="amount">
+						{priceFormat.format(5.99 + i * 2.5)}
+					</td>
+					<td class="shrink">
+						<Button on:click={() => alert("download invoice")}>
+							<Download slot="icon" />
+						</Button>
+					</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
 </div>
 
 <style lang="scss">
-    .scroll {
-        overflow: auto;
-        overflow: overlay;
-        scrollbar-gutter: stable;
-    }
+	.scroll {
+		overflow: auto;
+		overflow: overlay;
+		scrollbar-gutter: stable;
+	}
 
 	table {
 		width: 100%;
@@ -110,10 +110,10 @@
 	td {
 		padding: 1rem 1.5rem;
 		border-block: 1px solid var(--border-active);
-        vertical-align: top;
+		vertical-align: top;
 
-        font-size: 0.875rem;
-        font-weight: 500;
+		font-size: 0.875rem;
+		font-weight: 500;
 	}
 
 	.date {
@@ -121,17 +121,17 @@
 		font-size: 0.875rem;
 	}
 
-    .items {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
+	.items {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 
-        .item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-    }
+		.item {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+		}
+	}
 
 	.shrink {
 		// Shrink column width

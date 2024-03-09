@@ -1,19 +1,29 @@
 <script lang="ts">
 	import Fa from "svelte-fa";
 	import { faCreditCard } from "@fortawesome/free-regular-svg-icons";
-	import { faAlipay, faIdeal, faCcPaypal, faCcAmex, faCcDinersClub, faCcDiscover, faCcJcb, faCcMastercard, faCcVisa } from "@fortawesome/free-brands-svg-icons";
+	import {
+		faAlipay,
+		faIdeal,
+		faCcPaypal,
+		faCcAmex,
+		faCcDinersClub,
+		faCcDiscover,
+		faCcJcb,
+		faCcMastercard,
+		faCcVisa,
+	} from "@fortawesome/free-brands-svg-icons";
 
 	const icons: { [key: string]: any } = {
 		alipay: faAlipay,
 		ideal: faIdeal,
 		paypal: faCcPaypal,
 
-        amex: faCcAmex,
-        diners: faCcDinersClub,
-        discover: faCcDiscover,
-        jcb: faCcJcb,
-        mastercard: faCcMastercard,
-        visa: faCcVisa,
+		amex: faCcAmex,
+		diners: faCcDinersClub,
+		discover: faCcDiscover,
+		jcb: faCcJcb,
+		mastercard: faCcMastercard,
+		visa: faCcVisa,
 	};
 
 	const names: { [key: string]: string } = {
