@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { priceFormat } from "$/lib/utils";
 	import { Trash, Star, User } from "phosphor-svelte";
-	import Button from "../button.svelte";
-	import Checkbox from "../checkbox.svelte";
+	import Button from "../input/button.svelte";
+	import Checkbox from "../input/checkbox.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
-	import Select from "../select.svelte";
+	import Select from "../input/select.svelte";
 	import TextInput from "../input/text-input.svelte";
 
 	export let mode: DialogMode = DialogMode.Hidden;

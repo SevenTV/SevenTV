@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import ImagePreview from "$/components/image-preview.svelte";
 	import {
 		ArrowBendDownRight,

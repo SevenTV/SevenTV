@@ -20,7 +20,7 @@
 		Upload,
 		UserCircle,
 	} from "phosphor-svelte";
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import TwitchLogo from "$/components/icons/twitch-logo.svelte";
 	import YoutubeLogo from "$/components/icons/youtube-logo.svelte";

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import EmoteContainer from "$/components/emote-container.svelte";
 	import EmotePreview from "$/components/emote-preview.svelte";
 	import Tags from "$/components/emotes/tags.svelte";
@@ -12,10 +12,10 @@
 		Trash,
 	} from "phosphor-svelte";
 	import type { PageData } from "./$types";
-	import Select from "$/components/select.svelte";
+	import Select from "$/components/input/select.svelte";
 	import { Layout, emotesLayout } from "$/lib/stores";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
-	import Toggle from "$/components/toggle.svelte";
+	import Toggle from "$/components/input/toggle.svelte";
 	import Flags from "$/components/flags.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { User } from "phosphor-svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import { DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";

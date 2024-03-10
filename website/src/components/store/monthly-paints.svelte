@@ -2,7 +2,7 @@
 	import StoreSection from "./store-section.svelte";
 	import PaintPreview from "../paint-preview.svelte";
 	import { DotsThreeVertical, Repeat } from "phosphor-svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 </script>
 
 <StoreSection title="Monthly Paints">

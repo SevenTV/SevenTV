@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { user } from "$/lib/stores";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import DiscordLogo from "../icons/discord-logo.svelte";
 	import Logo from "../icons/logo.svelte";
 	import GoogleLogo from "../icons/google-logo.svelte";

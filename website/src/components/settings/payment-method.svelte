@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { CaretRight } from "phosphor-svelte";
 	import PaymentBrand from "../icons/payment-brand.svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 
 	export let type: string;
 </script>

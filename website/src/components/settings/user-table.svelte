@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { PencilSimple, Trash } from "phosphor-svelte";
-	import Button from "../button.svelte";
-	import Checkbox from "../checkbox.svelte";
+	import Button from "../input/button.svelte";
+	import Checkbox from "../input/checkbox.svelte";
 	import Date from "../date.svelte";
 	import moment from "moment";
 	import Flags from "../flags.svelte";

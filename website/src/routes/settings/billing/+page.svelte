@@ -1,11 +1,11 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import BillingTable from "$/components/settings/billing-table.svelte";
 	import PaymentMethod from "$/components/settings/payment-method.svelte";
 	import SubInfo from "$/components/sub-info.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import Toggle from "$/components/toggle.svelte";
+	import Toggle from "$/components/input/toggle.svelte";
 	import moment from "moment";
 	import { MagnifyingGlass, Plus } from "phosphor-svelte";
 

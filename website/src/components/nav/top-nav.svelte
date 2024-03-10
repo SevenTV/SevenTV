@@ -16,7 +16,7 @@
 		PlusSquare,
 		ShoppingCartSimple,
 	} from "phosphor-svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { DialogMode } from "../dialogs/dialog.svelte";

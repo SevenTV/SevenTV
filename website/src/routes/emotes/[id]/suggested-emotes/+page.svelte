@@ -3,7 +3,7 @@
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
 	import { CaretLeft, CaretRight } from "phosphor-svelte";
 	import type { LayoutData } from "../$types";
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import EmoteContainer from "$/components/emote-container.svelte";
 
 	export let data: LayoutData;

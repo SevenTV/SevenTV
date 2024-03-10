@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/stores";
 	import { createEventDispatcher } from "svelte";
-	import Button from "./button.svelte";
+	import Button from "./input/button.svelte";
 
 	const dispatch = createEventDispatcher();
 

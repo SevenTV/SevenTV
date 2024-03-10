@@ -3,8 +3,8 @@
 	import TagsInput from "../input/tags-input.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
 	import TextInput from "../input/text-input.svelte";
-	import Checkbox from "../checkbox.svelte";
-	import Button from "../button.svelte";
+	import Checkbox from "../input/checkbox.svelte";
+	import Button from "../input/button.svelte";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>

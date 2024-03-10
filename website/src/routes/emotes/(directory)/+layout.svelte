@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Expandable from "$/components/expandable.svelte";
-	import Checkbox from "$/components/checkbox.svelte";
-	import Select from "$/components/select.svelte";
+	import Checkbox from "$/components/input/checkbox.svelte";
+	import Select from "$/components/input/select.svelte";
 	import {
 		Smiley,
 		FolderSimple,
@@ -11,7 +11,7 @@
 		PencilSimple,
 		MagnifyingGlass,
 	} from "phosphor-svelte";
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import TagsInput from "$/components/input/tags-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import TextInput from "$/components/input/text-input.svelte";

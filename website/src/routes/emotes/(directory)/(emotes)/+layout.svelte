@@ -1,12 +1,17 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
+	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
+	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import EmoteContainer from "$/components/emote-container.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { emotesLayout } from "$/lib/stores";
 	import { Fire, FolderSimple, GlobeHemisphereWest, Trophy, Upload } from "phosphor-svelte";
+
+	let defaultEmoteSetDialogMode = DialogMode.Hidden;
 </script>
 
+<DefaultEmoteSetDialog bind:mode={defaultEmoteSetDialogMode} />
 <div class="nav-bar">
 	<nav class="tabs">
 		<TabLink href="/emotes" title="Trending" responsive>
@@ -27,7 +32,7 @@
 		</TabLink>
 	</nav>
 	<div class="buttons">
-		<Button secondary hideOnMobile>
+		<Button secondary hideOnMobile on:click={() => (defaultEmoteSetDialogMode = DialogMode.Shown)}>
 			<FolderSimple slot="icon" />
 			Personal Emotes
 		</Button>
