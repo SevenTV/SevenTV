@@ -74,6 +74,7 @@
 
 		max-width: 90vw;
 		overflow: auto;
+		color: var(--text);
 
 		background-color: var(--bg-dark);
 

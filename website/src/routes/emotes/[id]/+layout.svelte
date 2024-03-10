@@ -1,18 +1,36 @@
 <script lang="ts">
 	import Button from "$/components/button.svelte";
 	import ImagePreview from "$/components/image-preview.svelte";
-	import { ArrowBendDownRight, Plus, FolderPlus, NotePencil, CaretDown } from "phosphor-svelte";
+	import {
+		ArrowBendDownRight,
+		Plus,
+		FolderPlus,
+		NotePencil,
+		CaretDown,
+		PaperPlaneRight,
+		ArrowsMerge,
+		Download,
+		Trash,
+		Flag,
+	} from "phosphor-svelte";
 	import type { LayoutData } from "./$types";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags from "$/components/flags.svelte";
 	import EditEmoteDialog from "$/components/dialogs/edit-emote-dialog.svelte";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import AddEmoteDialog from "$/components/dialogs/add-emote-dialog.svelte";
+	import DropDown from "$/components/drop-down.svelte";
+	import TransferEmoteDialog from "$/components/dialogs/transfer-emote-dialog.svelte";
+	import DeleteEmoteDialog from "$/components/dialogs/delete-emote-dialog.svelte";
+	import ReportEmoteDialog from "$/components/dialogs/report-emote-dialog.svelte";
 
 	export let data: LayoutData;
 
 	let addEmoteDialogMode = DialogMode.Hidden;
 	let editDialogMode = DialogMode.Hidden;
+	let transferDialogMode = DialogMode.Hidden;
+	let deleteDialogMode = DialogMode.Hidden;
+	let reportDialogMode = DialogMode.Hidden;
 </script>
 
 <svelte:head>
@@ -21,6 +39,9 @@
 
 <AddEmoteDialog bind:mode={addEmoteDialogMode} />
 <EditEmoteDialog bind:mode={editDialogMode} />
+<TransferEmoteDialog bind:mode={transferDialogMode} />
+<ReportEmoteDialog bind:mode={reportDialogMode} />
+<DeleteEmoteDialog bind:mode={deleteDialogMode} />
 <div class="layout">
 	<div>
 		<div class="top-bar">
@@ -77,13 +98,41 @@
 				<Button secondary hideOnDesktop on:click={() => (editDialogMode = DialogMode.Shown)}>
 					<NotePencil slot="icon" />
 				</Button>
-				<Button secondary hideOnMobile>
-					More
-					<CaretDown slot="icon-right" />
-				</Button>
-				<Button secondary hideOnDesktop>
-					<CaretDown slot="icon" />
-				</Button>
+				<DropDown>
+					<Button secondary hideOnMobile>
+						More
+						<CaretDown slot="icon-right" />
+					</Button>
+					<Button secondary hideOnDesktop>
+						<CaretDown slot="icon" />
+					</Button>
+					<div slot="dropdown" class="dropdown">
+						<Button on:click={() => (transferDialogMode = DialogMode.Shown)}>
+							<PaperPlaneRight slot="icon" />
+							Transfer
+						</Button>
+						<Button>
+							<ArrowsMerge slot="icon" style="transform: rotate(-90deg)" />
+							Merge
+						</Button>
+						<Button>
+							<Download slot="icon" />
+							Download
+						</Button>
+						<Button on:click={() => (reportDialogMode = DialogMode.Shown)}>
+							<Flag slot="icon" />
+							Report
+						</Button>
+						<hr />
+						<Button
+							style="color: var(--error)"
+							on:click={() => (deleteDialogMode = DialogMode.Shown)}
+						>
+							<Trash slot="icon" />
+							Delete
+						</Button>
+					</div>
+				</DropDown>
 			</div>
 		</div>
 	</div>
@@ -188,6 +237,11 @@
 		.buttons {
 			display: flex;
 			gap: 0.5rem;
+		}
+
+		.dropdown {
+			display: flex;
+			flex-direction: column;
 		}
 	}
 

@@ -22,16 +22,16 @@
 		<div class="reasons">
 			<span class="label">Choose the reasons for account deletion</span>
 			<Checkbox option>
-				<div class="label" slot="left-label">Forsen</div>
+				<span class="label" slot="left-label">Forsen</span>
 			</Checkbox>
 			<Checkbox option>
-				<div class="label" slot="left-label">moo</div>
+				<span class="label" slot="left-label">moo</span>
 			</Checkbox>
 			<Checkbox option>
-				<div class="label" slot="left-label">oom</div>
+				<span class="label" slot="left-label">oom</span>
 			</Checkbox>
 			<Checkbox option>
-				<div class="label" slot="left-label">Need more money for gamba</div>
+				<span class="label" slot="left-label">Need more money for gamba</span>
 			</Checkbox>
 		</div>
 		<TextInput placeholder="ayyybubu">
