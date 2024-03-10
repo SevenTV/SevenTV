@@ -25,7 +25,7 @@
 		font-size: 0.875rem;
 
 		&.option {
-			padding: 1rem 0.75rem;
+			padding: 0.97rem 0.75rem;
 			border-radius: 0.5rem;
 			background-color: var(--bg-medium);
 			border: 1px solid transparent;

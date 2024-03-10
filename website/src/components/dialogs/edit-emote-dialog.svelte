@@ -11,7 +11,7 @@
 
 <Dialog bind:mode>
 	<div class="layout">
-		<h1>Edit Emote</h1>
+		<h1>Edit AlienPls</h1>
 		<hr />
 		<TextInput placeholder="Emote name">
 			<span class="label">Emote name</span>

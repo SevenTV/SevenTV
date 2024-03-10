@@ -1,6 +1,6 @@
 <script lang="ts">
 	export let value = "";
-	export let type: "text" | "email" | "password" = "text";
+	export let type: "text" | "email" | "password" | "textarea" = "text";
 	export let placeholder: string | null = null;
 
 	export let big: boolean = false;
@@ -25,6 +25,8 @@
 		<input type="email" bind:value {placeholder} on:keypress />
 	{:else if type === "password"}
 		<input type="password" bind:value {placeholder} on:keypress />
+	{:else if type === "textarea"}
+		<textarea bind:value {placeholder} on:keypress />
 	{/if}
 </label>
 
@@ -40,8 +42,12 @@
 			--input-block-padding: 0.75rem;
 		}
 
-		input {
+		input, textarea {
 			padding-block: var(--input-block-padding);
+		}
+
+		textarea {
+			height: 7lh;
 		}
 
 		position: relative;

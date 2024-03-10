@@ -66,8 +66,11 @@ ul {
 
 input[type="text"],
 input[type="email"],
-input[type="password"] {
+input[type="password"],
+textarea {
 	width: 100%;
+	resize: none;
+	font-family: inherit;
 
 	padding: 0.5rem 0.75rem;
 	border-radius: 0.5rem;
