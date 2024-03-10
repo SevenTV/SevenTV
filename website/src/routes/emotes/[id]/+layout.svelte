@@ -21,12 +21,14 @@
 	import AddEmoteDialog from "$/components/dialogs/add-emote-dialog.svelte";
 	import DropDown from "$/components/drop-down.svelte";
 	import TransferEmoteDialog from "$/components/dialogs/transfer-emote-dialog.svelte";
+	import DeleteEmoteDialog from "$/components/dialogs/delete-emote-dialog.svelte";
 
 	export let data: LayoutData;
 
 	let addEmoteDialogMode = DialogMode.Hidden;
 	let editDialogMode = DialogMode.Hidden;
 	let transferDialogMode = DialogMode.Hidden;
+	let deleteDialogMode = DialogMode.Hidden;
 </script>
 
 <svelte:head>
@@ -36,6 +38,7 @@
 <AddEmoteDialog bind:mode={addEmoteDialogMode} />
 <EditEmoteDialog bind:mode={editDialogMode} />
 <TransferEmoteDialog bind:mode={transferDialogMode} />
+<DeleteEmoteDialog bind:mode={deleteDialogMode} />
 <div class="layout">
 	<div>
 		<div class="top-bar">
@@ -118,7 +121,7 @@
 							Report
 						</Button>
 						<hr />
-						<Button style="color: var(--error)">
+						<Button style="color: var(--error)" on:click={() => (deleteDialogMode = DialogMode.Shown)}>
 							<Trash slot="icon" />
 							Delete
 						</Button>
