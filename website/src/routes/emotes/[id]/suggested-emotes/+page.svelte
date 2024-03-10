@@ -3,7 +3,7 @@
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
 	import { CaretLeft, CaretRight } from "phosphor-svelte";
 	import type { LayoutData } from "../$types";
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import EmoteContainer from "$/components/emote-container.svelte";
 
 	export let data: LayoutData;
@@ -20,7 +20,7 @@
 		</Button>
 	</div>
 </div>
-<EmoteContainer topMargin={1.5}>
+<EmoteContainer style="margin-top: 1.5rem">
 	{#each Array(10) as _, i}
 		<EmotePreview index={i} name="suggestedEmote{i}" bg="light" />
 	{/each}

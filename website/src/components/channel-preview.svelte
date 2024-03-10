@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "./button.svelte";
+	import Button from "./input/button.svelte";
 
 	export let user = "channelName";
 	export let index = 0;

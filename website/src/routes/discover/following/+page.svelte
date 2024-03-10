@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import EmotePreview from "$/components/emote-preview.svelte";
 	import { discoverFollowingLayout } from "$/lib/stores";
 	import { DotsThree, Plus } from "phosphor-svelte";

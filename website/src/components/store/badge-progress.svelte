@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { DotsThreeVertical } from "phosphor-svelte";
 	import StoreSection from "./store-section.svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 
 	export let percentage: number = 40;
 </script>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Layout, emotesLayout } from "$/lib/stores";
 	import { GridFour, GridNine } from "phosphor-svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 </script>
 
 <Button

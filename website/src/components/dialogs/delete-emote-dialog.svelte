@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import { DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
@@ -13,7 +13,7 @@
 		<span class="label">Reason for deletion</span>
 	</TextInput>
 	<svelte:fragment slot="buttons">
-		<Button style="color: var(--error)">Delete</Button>
+		<Button style="color: var(--danger)">Delete</Button>
 		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 	</svelte:fragment>
 </EmoteDialog>

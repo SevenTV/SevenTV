@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { Layout, discoverFollowingLayout } from "$/lib/stores";
 	import { ListDashes, GridFour, Pulse, Upload } from "phosphor-svelte";

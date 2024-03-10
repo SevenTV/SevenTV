@@ -27,7 +27,7 @@
 		width: 1.4rem;
 		height: 1.4rem;
 		border-radius: 50%;
-		background-color: var(--error);
+		background-color: var(--danger);
 		border: 3px solid var(--bg-dark);
 		font-size: 0.7rem;
 		font-weight: 500;

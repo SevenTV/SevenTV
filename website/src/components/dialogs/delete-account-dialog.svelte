@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Warning } from "phosphor-svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
-	import Checkbox from "../checkbox.svelte";
+	import Checkbox from "../input/checkbox.svelte";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
@@ -13,7 +13,7 @@
 		<h1>Delete Account</h1>
 		<hr />
 		<div class="warning">
-			<Warning size="4rem" weight="fill" color="var(--error)" />
+			<Warning size="4rem" weight="fill" color="var(--danger)" />
 			<h2>Warning</h2>
 			<span class="details"
 				>This action will delete your account permanently. You cannot undo this action.</span
@@ -38,7 +38,7 @@
 			<span class="label">Enter your username to confirm</span>
 		</TextInput>
 		<div class="buttons">
-			<Button style="color: var(--error)">Delete</Button>
+			<Button style="color: var(--danger)">Delete</Button>
 			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 		</div>
 	</div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import UserTable from "$/components/settings/user-table.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import { MagnifyingGlass, Prohibit, PencilSimple, Trash } from "phosphor-svelte";
 
 	let selectedMap = Array(10).fill(false);

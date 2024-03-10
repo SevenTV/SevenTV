@@ -10,7 +10,7 @@
 	import { fade } from "svelte/transition";
 	import mouseTrap from "$/lib/mouseTrap";
 	import { X } from "phosphor-svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import { browser } from "$app/environment";
 
 	let dialog: HTMLDialogElement;

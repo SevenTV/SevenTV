@@ -2,7 +2,7 @@
 	import StoreSection from "./store-section.svelte";
 	import EmoteSetPreview from "../emote-set-preview.svelte";
 	import { NotePencil } from "phosphor-svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 </script>
 
 <StoreSection title="Personal Emotes">

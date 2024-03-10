@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";

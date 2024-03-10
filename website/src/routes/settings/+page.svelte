@@ -1,14 +1,14 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import XTwitterLogo from "$/components/icons/x-twitter-logo.svelte";
 	import TwitchLogo from "$/components/icons/twitch-logo.svelte";
 	import YoutubeLogo from "$/components/icons/youtube-logo.svelte";
 	import DiscordLogo from "$/components/icons/discord-logo.svelte";
-	import Select from "$/components/select.svelte";
+	import Select from "$/components/input/select.svelte";
 	import KickLogo from "$/components/icons/kick-logo.svelte";
 	import { At, Trash, Password } from "phosphor-svelte";
-	import Toggle from "$/components/toggle.svelte";
-	import Checkbox from "$/components/checkbox.svelte";
+	import Toggle from "$/components/input/toggle.svelte";
+	import Checkbox from "$/components/input/checkbox.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import DeleteAccountDialog from "$/components/dialogs/delete-account-dialog.svelte";
@@ -167,7 +167,7 @@
 		</span>
 		<Button
 			secondary
-			style="align-self: flex-start; color: var(--error);"
+			style="align-self: flex-start; color: var(--danger);"
 			on:click={() => (deleteAccountDialogMode = DialogMode.Shown)}>Delete Account</Button
 		>
 	</div>

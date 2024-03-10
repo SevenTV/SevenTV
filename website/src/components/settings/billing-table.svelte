@@ -1,6 +1,6 @@
 <script lang="ts">
 	import moment from "moment";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import Date from "../date.svelte";
 	import { Download, PaintBrush, Star } from "phosphor-svelte";
 	import PaymentBrand from "../icons/payment-brand.svelte";

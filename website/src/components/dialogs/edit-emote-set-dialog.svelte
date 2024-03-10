@@ -1,13 +1,22 @@
 <script lang="ts">
 	import TagsInput from "../input/tags-input.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
-	import Checkbox from "../checkbox.svelte";
-	import Button from "../button.svelte";
+	import Checkbox from "../input/checkbox.svelte";
+	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
+	import DeleteEmoteSetDialog from "./delete-emote-set-dialog.svelte";
 
 	export let mode: DialogMode = DialogMode.Hidden;
+
+	let deleteDialogMode = DialogMode.Hidden;
+
+	function onDeleteClick() {
+		mode = DialogMode.Hidden;
+		deleteDialogMode = DialogMode.Shown;
+	}
 </script>
 
+<DeleteEmoteSetDialog bind:mode={deleteDialogMode} />
 <Dialog bind:mode>
 	<div class="layout">
 		<h1>Edit Emote Set</h1>
@@ -29,7 +38,8 @@
 		</div>
 	</div>
 	<div class="buttons">
-		<Button style="color: var(--error); margin-right: auto;">Delete</Button>
+		<Button style="color: var(--danger); margin-right: auto;" on:click={onDeleteClick}>Delete</Button
+		>
 		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 		<Button primary>Save</Button>
 	</div>

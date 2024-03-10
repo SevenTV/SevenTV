@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Checkbox from "./checkbox.svelte";
+	import Checkbox from "./input/checkbox.svelte";
 
 	export let name = "emoteName";
 	export let index = 0;

@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { Warning } from "phosphor-svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
-	import Checkbox from "../checkbox.svelte";
+	import Checkbox from "../input/checkbox.svelte";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>

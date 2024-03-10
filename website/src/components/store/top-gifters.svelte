@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "../button.svelte";
+	import Button from "../input/button.svelte";
 	import StoreSection from "./store-section.svelte";
 	import { CaretLeft, CaretRight, Trophy, Gift } from "phosphor-svelte";
 

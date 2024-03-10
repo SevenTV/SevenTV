@@ -13,7 +13,7 @@
 		Star,
 		User,
 	} from "phosphor-svelte";
-	import Button from "./button.svelte";
+	import Button from "./input/button.svelte";
 
 	// Used for emote flags, emote set flags and permissions
 

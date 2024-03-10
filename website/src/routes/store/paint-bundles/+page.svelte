@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Button from "$/components/button.svelte";
+	import Button from "$/components/input/button.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import PaintPreview from "$/components/paint-preview.svelte";
-	import Select from "$/components/select.svelte";
+	import Select from "$/components/input/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
 	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
 	import { priceFormat } from "$/lib/utils";

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
-	import Select from "$/components/select.svelte";
+	import Select from "$/components/input/select.svelte";
 	import type { LayoutData } from "../$types";
 
 	export let data: LayoutData;
