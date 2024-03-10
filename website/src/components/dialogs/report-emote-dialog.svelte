@@ -15,13 +15,17 @@
 		<div class="reasons">
 			<span class="label">Choose the reason</span>
 			<Checkbox option>
-				<span class="label" slot="left-label">I made this emote but it was uploaded by someone else</span>
+				<span class="label" slot="left-label"
+					>I made this emote but it was uploaded by someone else</span
+				>
 			</Checkbox>
 			<Checkbox option>
 				<span class="label" slot="left-label">This emote is a duplicate</span>
 			</Checkbox>
 			<Checkbox option>
-				<span class="label" slot="left-label">This emote contains pornographic or overly sexualized imagery</span>
+				<span class="label" slot="left-label"
+					>This emote contains pornographic or overly sexualized imagery</span
+				>
 			</Checkbox>
 			<Checkbox option>
 				<span class="label" slot="left-label">This emote displays extreme violence or gore</span>
@@ -39,7 +43,7 @@
 		<TextInput type="textarea" placeholder="Enter text">
 			<span class="label">Additional Info</span>
 		</TextInput>
-        <span class="details">Abuse of the report feature may lead to your access being revoked.</span>
+		<span class="details">Abuse of the report feature may lead to your access being revoked.</span>
 		<div class="buttons">
 			<Button on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 			<Button primary>Send Report</Button>

@@ -124,7 +124,10 @@
 							Report
 						</Button>
 						<hr />
-						<Button style="color: var(--error)" on:click={() => (deleteDialogMode = DialogMode.Shown)}>
+						<Button
+							style="color: var(--error)"
+							on:click={() => (deleteDialogMode = DialogMode.Shown)}
+						>
 							<Trash slot="icon" />
 							Delete
 						</Button>

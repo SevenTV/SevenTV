@@ -42,7 +42,8 @@
 			--input-block-padding: 0.75rem;
 		}
 
-		input, textarea {
+		input,
+		textarea {
 			padding-block: var(--input-block-padding);
 		}
 
