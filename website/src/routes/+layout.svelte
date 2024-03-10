@@ -3,7 +3,7 @@
 	import "$/styles/variables.scss";
 	import "$/styles/global.scss";
 	import TopNav from "$/components/nav/top-nav.svelte";
-	import { showMobileMenu, signInDialogMode, uploadDialogMode } from "$/lib/stores";
+	import { showMobileMenu, signInDialogMode, uploadDialogMode, defaultEmoteSetDialogMode } from "$/lib/stores";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
 	import { IconContext } from "phosphor-svelte";
@@ -11,6 +11,7 @@
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import { onMount } from "svelte";
 	import moment from "moment";
+	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
 
 	onMount(() => {
 		// Set moment locale
@@ -33,6 +34,7 @@
 
 	<UploadDialog bind:mode={$uploadDialogMode} />
 	<SignInDialog bind:mode={$signInDialogMode} />
+	<DefaultEmoteSetDialog bind:mode={$defaultEmoteSetDialogMode} />
 	<dialog>Test</dialog>
 	<main id="main">
 		{#if $showMobileMenu}
