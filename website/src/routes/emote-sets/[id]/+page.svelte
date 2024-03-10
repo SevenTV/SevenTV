@@ -21,12 +21,16 @@
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import CopyEmotesDialog from "$/components/dialogs/copy-emotes-dialog.svelte";
+	import RemoveEmotesDialog from "$/components/dialogs/remove-emotes-dialog.svelte";
 
 	export let data: PageData;
 
 	let enabled = false;
 	let selectionMode = false;
 	let editDialogMode = DialogMode.Hidden;
+	let copyEmotesDialogMode = DialogMode.Hidden;
+	let removeEmotesDialogMode = DialogMode.Hidden;
 </script>
 
 <svelte:head>
@@ -34,6 +38,8 @@
 </svelte:head>
 
 <EditEmoteSetDialog bind:mode={editDialogMode} />
+<CopyEmotesDialog bind:mode={copyEmotesDialogMode} />
+<RemoveEmotesDialog bind:mode={removeEmotesDialogMode} />
 <div class="layout">
 	<div class="set-info">
 		<h1>{data.id}</h1>
@@ -87,13 +93,13 @@
 				<Toggle bind:value={selectionMode} style="pointer-events: none" slot="icon-right" />
 			</Button>
 			{#if selectionMode}
-				<Button>
+				<Button on:click={() => (copyEmotesDialogMode = DialogMode.Shown)}>
 					<Copy slot="icon" />
 				</Button>
 				<Button>
 					<NotePencil slot="icon" />
 				</Button>
-				<Button>
+				<Button on:click={() => (removeEmotesDialogMode = DialogMode.Shown)}>
 					<Trash slot="icon" />
 				</Button>
 			{/if}

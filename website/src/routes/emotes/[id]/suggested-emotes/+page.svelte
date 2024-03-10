@@ -20,7 +20,7 @@
 		</Button>
 	</div>
 </div>
-<EmoteContainer topMargin={1.5}>
+<EmoteContainer style="margin-top: 1.5rem">
 	{#each Array(10) as _, i}
 		<EmotePreview index={i} name="suggestedEmote{i}" bg="light" />
 	{/each}
