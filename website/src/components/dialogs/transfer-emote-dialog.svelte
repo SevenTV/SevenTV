@@ -16,7 +16,7 @@
 	</TextInput>
 	<svelte:fragment slot="buttons">
 		<Button on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-		<Button primary>Transfer</Button>
+		<Button primary submit>Transfer</Button>
 	</svelte:fragment>
 </EmoteDialog>
 

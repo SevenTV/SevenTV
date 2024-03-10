@@ -13,7 +13,7 @@
 		<span class="label">Reason for deletion</span>
 	</TextInput>
 	<svelte:fragment slot="buttons">
-		<Button style="color: var(--danger)">Delete</Button>
+		<Button style="color: var(--danger)" submit>Delete</Button>
 		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 	</svelte:fragment>
 </EmoteDialog>

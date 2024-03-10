@@ -74,7 +74,7 @@
 </script>
 
 <Dialog width={60} bind:mode>
-	<div class="grid">
+	<form class="grid">
 		<h1 class="heading">Upload emote</h1>
 		<section class="upload {previewTheme}" class:preview={files && files[0]}>
 			{#if files && files[0] && imageSrc}
@@ -147,7 +147,7 @@
 			</div>
 			<div class="buttons">
 				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Discard</Button>
-				<Button primary>Upload</Button>
+				<Button primary submit>Upload</Button>
 			</div>
 		</section>
 		<section class="chat">
@@ -165,7 +165,7 @@
 				on:keydown|stopPropagation={sendMessage}
 			/>
 		</section>
-	</div>
+	</form>
 </Dialog>
 
 <style lang="scss">

@@ -9,7 +9,7 @@
 </script>
 
 <Dialog bind:mode>
-	<div class="layout">
+	<form class="layout">
 		<h1>Delete Account</h1>
 		<hr />
 		<div class="warning">
@@ -38,10 +38,10 @@
 			<span class="label">Enter your username to confirm</span>
 		</TextInput>
 		<div class="buttons">
-			<Button style="color: var(--danger)">Delete</Button>
+			<Button style="color: var(--danger)" submit>Delete</Button>
 			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 		</div>
-	</div>
+	</form>
 </Dialog>
 
 <style lang="scss">
