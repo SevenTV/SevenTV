@@ -53,7 +53,7 @@
 			</p>
 		{/if}
 		<div class="buttons">
-			<Button style="color: var(--error)">Remove</Button>
+			<Button style="color: var(--danger)">Remove</Button>
 			<Button secondary>Edit</Button>
 		</div>
 	</div>

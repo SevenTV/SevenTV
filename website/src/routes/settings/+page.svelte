@@ -167,7 +167,7 @@
 		</span>
 		<Button
 			secondary
-			style="align-self: flex-start; color: var(--error);"
+			style="align-self: flex-start; color: var(--danger);"
 			on:click={() => (deleteAccountDialogMode = DialogMode.Shown)}>Delete Account</Button
 		>
 	</div>

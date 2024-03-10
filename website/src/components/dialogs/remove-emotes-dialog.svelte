@@ -19,7 +19,7 @@
 			{/each}
 		</EmoteContainer>
 		<div class="buttons">
-			<Button style="color: var(--error)">Remove</Button>
+			<Button style="color: var(--danger)">Remove</Button>
 			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 		</div>
 	</div>

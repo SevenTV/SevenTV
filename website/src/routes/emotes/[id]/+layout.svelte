@@ -125,7 +125,7 @@
 						</Button>
 						<hr />
 						<Button
-							style="color: var(--error)"
+							style="color: var(--danger)"
 							on:click={() => (deleteDialogMode = DialogMode.Shown)}
 						>
 							<Trash slot="icon" />

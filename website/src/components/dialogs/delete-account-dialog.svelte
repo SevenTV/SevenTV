@@ -13,7 +13,7 @@
 		<h1>Delete Account</h1>
 		<hr />
 		<div class="warning">
-			<Warning size="4rem" weight="fill" color="var(--error)" />
+			<Warning size="4rem" weight="fill" color="var(--danger)" />
 			<h2>Warning</h2>
 			<span class="details"
 				>This action will delete your account permanently. You cannot undo this action.</span
@@ -38,7 +38,7 @@
 			<span class="label">Enter your username to confirm</span>
 		</TextInput>
 		<div class="buttons">
-			<Button style="color: var(--error)">Delete</Button>
+			<Button style="color: var(--danger)">Delete</Button>
 			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 		</div>
 	</div>
