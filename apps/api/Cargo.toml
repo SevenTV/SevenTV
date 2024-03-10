@@ -48,6 +48,8 @@ postgres-types = "0.2"
 bitmask-enum = "2"
 enum-impl = "0.1"
 tokio-util = "0.7"
+zen-engine = "0.18"
+zen-expression = "0.18"
 
 shared = { workspace = true }
 

@@ -6,6 +6,7 @@ use crate::database::Table;
 pub struct ProductCode {
 	pub id: ulid::Ulid,
 	pub owner_id: Option<ulid::Ulid>,
+	pub purchase_id: Option<ulid::Ulid>,
 	pub name: String,
 	pub code: String,
 	pub description: Option<String>,

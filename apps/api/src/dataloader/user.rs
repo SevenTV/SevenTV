@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Context;
+use chrono::{Datelike, TimeZone};
 use rand::Rng;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
 use tokio::sync::{Mutex, OnceCell};
@@ -9,8 +10,8 @@ use tokio_util::sync::CancellationToken;
 use ulid::Ulid;
 
 use crate::database::{
-	Product, ProductEntitlement, ProductPurchase, ProductPurchaseStatus, ProductSubscription, ProductSubscriptionStatus,
-	User, UserEntitledCache,
+	ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserProduct,
+	UserProductDataPurchase, UserProductDataSubscriptionEntryStatus,
 };
 use crate::global::Global;
 
@@ -18,7 +19,7 @@ pub struct UserLoader {
 	user_role_loader: DataLoader<UserRoleLoader>,
 	user_loader: DataLoader<InternalUserLoader>,
 	user_product_purchase_loader: DataLoader<UserProductPurchaseLoader>,
-	user_subscription_loader: DataLoader<UserSubscriptionLoader>,
+	user_products_loader: DataLoader<UserProductLoader>,
 	requests: Mutex<HashMap<Ulid, SyncToken>>,
 }
 
@@ -124,31 +125,30 @@ impl Loader for UserProductPurchaseLoader {
 	}
 }
 
-struct UserSubscriptionLoader {
+struct UserProductLoader {
 	db: Arc<scuffle_utils::database::Pool>,
 }
 
-impl UserSubscriptionLoader {
+impl UserProductLoader {
 	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
-impl Loader for UserSubscriptionLoader {
+impl Loader for UserProductLoader {
 	type Error = ();
 	type Key = Ulid;
-	type Value = Vec<ProductSubscription>;
+	type Value = Vec<UserProduct>;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<ProductSubscription> =
-			scuffle_utils::database::query("SELECT * FROM product_subscriptions WHERE user_id = ANY($1) AND status = $2")
+		let results: Vec<UserProduct> =
+			scuffle_utils::database::query("SELECT * FROM user_products WHERE user_id = ANY($1)")
 				.bind(keys)
-				.bind(ProductSubscriptionStatus::Active)
 				.build_query_as()
 				.fetch_all(&self.db)
 				.await
 				.map_err(|e| {
-					tracing::error!(err = %e, "failed to fetch product subscriptions by user id");
+					tracing::error!(err = %e, "failed to fetch user products by user id");
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut map, sub| {
@@ -164,7 +164,7 @@ impl UserLoader {
 			user_role_loader: UserRoleLoader::new(db.clone()),
 			user_loader: InternalUserLoader::new(db.clone()),
 			user_product_purchase_loader: UserProductPurchaseLoader::new(db.clone()),
-			user_subscription_loader: UserSubscriptionLoader::new(db.clone()),
+			user_products_loader: UserProductLoader::new(db.clone()),
 			requests: Mutex::new(HashMap::new()),
 		}
 	}
@@ -238,11 +238,11 @@ impl UserLoader {
 			map
 		});
 
-		let Ok(Some(subscriptions)) = self.user_subscription_loader.load(user_id).await else {
+		let Ok(Some(user_products)) = self.user_products_loader.load(user_id).await else {
 			return Ok(None);
 		};
 
-		let subscriptions = subscriptions.into_iter().fold(HashMap::new(), |mut map, sub| {
+		let user_products = user_products.into_iter().fold(HashMap::new(), |mut map, sub| {
 			map.entry(sub.product_id).or_insert(sub);
 			map
 		});
@@ -259,8 +259,8 @@ impl UserLoader {
 			emote_set_ids: Vec::new(),
 			paint_ids: Vec::new(),
 			product_ids: Vec::new(),
-			invalidated_at: chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60)), /* 12 hours + 10%
-			                                                                                            * jitter */
+			// 12 hours + 10%  jitter
+			invalidated_at: chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60)),
 		};
 
 		for product in products.values() {
@@ -274,7 +274,7 @@ impl UserLoader {
 				if entitlement_group
 					.condition
 					.as_ref()
-					.map(|c| c.evaluate(&purchases, subscriptions.get(&product.id)))
+					.map(|c| evaluate_expression(&c, &purchases, user_products.get(&product.id)))
 					.unwrap_or(true)
 				{
 					for entitlement in &entitlement_group.entitlements {
@@ -350,4 +350,87 @@ fn jitter(duration: std::time::Duration) -> std::time::Duration {
 	let mut rng = rand::thread_rng();
 	let jitter = rng.gen_range(0..duration.as_millis() / 10) as u64;
 	duration + std::time::Duration::from_millis(jitter)
+}
+
+fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_product: Option<&UserProduct>) -> bool {
+	#[derive(serde::Serialize)]
+	struct Purchase {
+		date: chrono::DateTime<chrono::Utc>,
+		was_gift: bool,
+		price: f64,
+	}
+
+	#[derive(serde::Serialize)]
+	struct UserProduct {
+		created_at: chrono::DateTime<chrono::Utc>,
+		duraction: Duration,
+		subscription_entries: Vec<UserProductDataPurchase>,
+	}
+
+	#[derive(serde::Serialize)]
+	struct Duration {
+		total_years: i64,
+		total_days: i64,
+		total_months: i32,
+	}
+
+	// count(purchases, #.was_gift and #.date >= '2021-12-01' and #.date <=
+	// '2021-12-31') > 2 any(user_product.subscription_entries, #.status == 'Active'
+	// and #.start <= '2021-12-01' and #.end >= '2021-12-01')
+
+	let purchases = purchases
+		.iter()
+		.map(|pp| Purchase {
+			date: chrono::Utc.timestamp_millis_opt(pp.id.timestamp_ms() as i64).unwrap(),
+			was_gift: pp.data.was_gift,
+			price: pp.data.price,
+		})
+		.collect::<Vec<_>>();
+
+	let user_product = user_product.map(|up| {
+		let total_time = up
+			.data
+			.purchases
+			.iter()
+			.filter(|e| e.status == UserProductDataSubscriptionEntryStatus::Active)
+			.map(|e| e.end - e.start)
+			.sum::<chrono::Duration>();
+
+		let packed_end_at = up.created_at + total_time;
+
+		let total_months = (packed_end_at.year() - up.created_at.year()) * 12 + packed_end_at.month() as i32
+			- up.created_at.month() as i32
+			+ if packed_end_at.day() < up.created_at.day() { -1 } else { 0 };
+
+		let duraction = Duration {
+			total_days: total_time.num_days(),
+			total_years: total_time.num_days() / 365,
+			total_months,
+		};
+
+		UserProduct {
+			created_at: up.created_at,
+			duraction,
+			subscription_entries: up.data.purchases.clone(),
+		}
+	});
+
+	let result = match zen_expression::evaluate_expression(
+		expression,
+		&serde_json::json!({
+			"purchases": purchases,
+			"user_product": user_product,
+		}),
+	) {
+		Ok(result) => result,
+		Err(err) => {
+			// We should consider what we want to do here.
+			// This implies that the expression is invalid, so we should somehow report this
+			// to the user. Rather than logging it here.
+			tracing::error!(err = %err, "failed to evaluate expression");
+			return false;
+		}
+	};
+
+	matches!(result, serde_json::Value::Bool(true))
 }
