@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Warning } from "phosphor-svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
 	import Button from "../button.svelte";
 	import TextInput from "../input/text-input.svelte";
