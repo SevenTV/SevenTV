@@ -10,6 +10,8 @@ export const uploadDialogMode = writable<DialogMode>(DialogMode.Hidden);
 
 export const signInDialogMode = writable<DialogMode>(DialogMode.Hidden);
 
+export const defaultEmoteSetDialogMode = writable<DialogMode>(DialogMode.Hidden);
+
 export enum Theme {
 	System = "system-theme",
 	Light = "light-theme",

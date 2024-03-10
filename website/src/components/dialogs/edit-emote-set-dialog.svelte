@@ -38,7 +38,8 @@
 		</div>
 	</div>
 	<div class="buttons">
-		<Button style="color: var(--danger); margin-right: auto;" on:click={onDeleteClick}>Delete</Button
+		<Button style="color: var(--danger); margin-right: auto;" on:click={onDeleteClick}
+			>Delete</Button
 		>
 		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 		<Button primary>Save</Button>
