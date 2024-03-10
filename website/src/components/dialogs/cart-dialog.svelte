@@ -204,8 +204,6 @@
 	.footer {
 		margin-top: auto;
 		padding: 1rem;
-
-		color: var(--text);
 	}
 
 	.total {
