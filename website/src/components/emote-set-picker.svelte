@@ -6,37 +6,37 @@
 	import Flags from "./flags.svelte";
 	import Radio from "./input/radio.svelte";
 
-    export let radioName: string | null = null;
+	export let radioName: string | null = null;
 
-    $: input = radioName ? Radio : Checkbox;
+	$: input = radioName ? Radio : Checkbox;
 </script>
 
 <TextInput placeholder="Search Emote Set">
-    <MagnifyingGlass slot="icon" />
+	<MagnifyingGlass slot="icon" />
 </TextInput>
 <Expandable title="Pinned">
-    {#each Array(3) as _, i}
-        <svelte:component this={input} option name={radioName ?? ""}>
-            <div slot="left-label" class="emote-set">
-                Emote Set {i + 1}
-                <Flags flags={["600/1000", "default"]} />
-            </div>
-        </svelte:component>
-    {/each}
+	{#each Array(3) as _, i}
+		<svelte:component this={input} option name={radioName ?? ""}>
+			<div slot="left-label" class="emote-set">
+				Emote Set {i + 1}
+				<Flags flags={["600/1000", "default"]} />
+			</div>
+		</svelte:component>
+	{/each}
 </Expandable>
 <Expandable title="ayyybubu">
-    {#each Array(3) as _, i}
-        <svelte:component this={input} option name={radioName ?? ""}>
-            <div slot="left-label" class="emote-set">
-                Emote Set {i + 1}
-                <Flags flags={["600/1000", "default"]} />
-            </div>
-        </svelte:component>
-    {/each}
+	{#each Array(3) as _, i}
+		<svelte:component this={input} option name={radioName ?? ""}>
+			<div slot="left-label" class="emote-set">
+				Emote Set {i + 1}
+				<Flags flags={["600/1000", "default"]} />
+			</div>
+		</svelte:component>
+	{/each}
 </Expandable>
 
 <style lang="scss">
-    .emote-set {
+	.emote-set {
 		font-size: 0.875rem;
 		font-weight: 500;
 

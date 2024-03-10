@@ -56,26 +56,26 @@
 			background-color: var(--secondary);
 			transition: background 0.1s;
 
-            position: relative;
+			position: relative;
 
-            &::after {
-                content: "";
+			&::after {
+				content: "";
 
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                margin: auto;
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				margin: auto;
 
-                height: 0.5rem;
-                width: 0.5rem;
-                border-radius: 50%;
-                background-color: white;
+				height: 0.5rem;
+				width: 0.5rem;
+				border-radius: 50%;
+				background-color: white;
 
-                transform: scale(0);
-                transition: transform 0.1s;
-            }
+				transform: scale(0);
+				transition: transform 0.1s;
+			}
 		}
 
 		input {
@@ -109,9 +109,9 @@
 			background-color: var(--primary);
 			border-color: transparent;
 
-            &::after {
-                transform: scale(1);
-            }
+			&::after {
+				transform: scale(1);
+			}
 		}
 
 		input:disabled {
