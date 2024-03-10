@@ -3,7 +3,12 @@
 	import "$/styles/variables.scss";
 	import "$/styles/global.scss";
 	import TopNav from "$/components/nav/top-nav.svelte";
-	import { showMobileMenu, signInDialogMode, uploadDialogMode, defaultEmoteSetDialogMode } from "$/lib/stores";
+	import {
+		showMobileMenu,
+		signInDialogMode,
+		uploadDialogMode,
+		defaultEmoteSetDialogMode,
+	} from "$/lib/stores";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
 	import { IconContext } from "phosphor-svelte";

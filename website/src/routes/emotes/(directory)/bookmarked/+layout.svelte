@@ -1,7 +1,7 @@
 <script lang="ts">
-    import TabLink from "$/components/tab-link.svelte";
-    import Button from "$/components/input/button.svelte";
-    import { FolderSimple, Smiley, User } from "phosphor-svelte";
+	import TabLink from "$/components/tab-link.svelte";
+	import Button from "$/components/input/button.svelte";
+	import { FolderSimple, Smiley, User } from "phosphor-svelte";
 	import { defaultEmoteSetDialogMode } from "$/lib/stores";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
@@ -14,17 +14,17 @@
 <div class="nav-bar">
 	<nav class="tabs">
 		<TabLink href="/emotes/bookmarked" title="Emotes">
-            <Smiley />
-            <Smiley weight="fill" slot="active" />
-        </TabLink>
-        <TabLink href="/emotes/bookmarked/sets" title="Emote Sets">
-            <FolderSimple />
-            <FolderSimple weight="fill" slot="active" />
-        </TabLink>
-        <TabLink href="/emotes/bookmarked/users" title="Users">
-            <User />
-            <User weight="fill" slot="active" />
-        </TabLink>
+			<Smiley />
+			<Smiley weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/bookmarked/sets" title="Emote Sets">
+			<FolderSimple />
+			<FolderSimple weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/bookmarked/users" title="Users">
+			<User />
+			<User weight="fill" slot="active" />
+		</TabLink>
 	</nav>
 	<div class="buttons">
 		<Button secondary hideOnMobile on:click={() => ($defaultEmoteSetDialogMode = DialogMode.Shown)}>
