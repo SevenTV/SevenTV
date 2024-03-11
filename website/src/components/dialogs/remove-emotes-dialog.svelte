@@ -9,7 +9,7 @@
 </script>
 
 <Dialog width={35} bind:mode>
-	<div class="layout">
+	<form class="layout">
 		<h1>Remove selected emotes from Personal Emotes</h1>
 		<hr />
 		<EmoteContainer layout={Layout.SmallGrid} style="max-height: 11rem" scrollable>
@@ -18,10 +18,10 @@
 			{/each}
 		</EmoteContainer>
 		<div class="buttons">
-			<Button style="color: var(--danger)">Remove</Button>
+			<Button style="color: var(--danger)" submit>Remove</Button>
 			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
 		</div>
-	</div>
+	</form>
 </Dialog>
 
 <style lang="scss">
