@@ -18,7 +18,7 @@
 
 <DeleteEmoteSetDialog bind:mode={deleteDialogMode} />
 <Dialog bind:mode>
-	<div class="layout">
+	<form class="layout">
 		<h1>Edit Emote Set</h1>
 		<hr />
 		<TextInput placeholder="Emote Set name">
@@ -36,14 +36,14 @@
 				<Checkbox>Publicly Listed</Checkbox>
 			</div>
 		</div>
-	</div>
-	<div class="buttons">
-		<Button style="color: var(--danger); margin-right: auto;" on:click={onDeleteClick}
-			>Delete</Button
-		>
-		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-		<Button primary>Save</Button>
-	</div>
+		<div class="buttons">
+			<Button style="color: var(--danger); margin-right: auto;" on:click={onDeleteClick}
+				>Delete</Button
+			>
+			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
+			<Button primary submit>Save</Button>
+		</div>
+	</form>
 </Dialog>
 
 <style lang="scss">
@@ -80,7 +80,6 @@
 
 	.buttons {
 		margin-top: auto;
-		padding: 1rem;
 
 		display: flex;
 		align-items: center;

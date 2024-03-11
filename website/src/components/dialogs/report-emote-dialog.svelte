@@ -8,7 +8,7 @@
 </script>
 
 <Dialog width={40} bind:mode>
-	<div class="layout">
+	<form class="layout">
 		<h1>Report Emote</h1>
 		<hr />
 		<div class="reasons">
@@ -45,9 +45,9 @@
 		<span class="details">Abuse of the report feature may lead to your access being revoked.</span>
 		<div class="buttons">
 			<Button on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-			<Button primary>Send Report</Button>
+			<Button primary submit>Send Report</Button>
 		</div>
-	</div>
+	</form>
 </Dialog>
 
 <style lang="scss">

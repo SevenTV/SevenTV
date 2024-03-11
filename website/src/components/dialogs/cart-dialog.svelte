@@ -13,7 +13,7 @@
 </script>
 
 <Dialog width={35} bind:mode>
-	<div class="layout">
+	<form class="layout">
 		<h1>Your Cart</h1>
 		<hr />
 		<table class="items">
@@ -98,17 +98,17 @@
 				<User slot="icon" />
 			</TextInput>
 		{/if}
-	</div>
-	<div class="footer">
-		<div class="total">
-			<span>Total</span>
-			<span>{priceFormat.format(7.96)}</span>
+		<div class="footer">
+			<div class="total">
+				<span>Total</span>
+				<span>{priceFormat.format(7.96)}</span>
+			</div>
+			<div class="buttons">
+				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
+				<Button primary submit>Proceed</Button>
+			</div>
 		</div>
-		<div class="buttons">
-			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-			<Button primary>Proceed</Button>
-		</div>
-	</div>
+	</form>
 </Dialog>
 
 <style lang="scss">
@@ -203,7 +203,6 @@
 
 	.footer {
 		margin-top: auto;
-		padding: 1rem;
 	}
 
 	.total {

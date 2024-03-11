@@ -23,6 +23,7 @@
 		Star,
 		Sun,
 	} from "phosphor-svelte";
+	import MenuButton from "../input/menu-button.svelte";
 
 	enum Menu {
 		Root,
@@ -33,8 +34,9 @@
 
 	let menu = Menu.Root;
 
-	function setMenu(newMenu: Menu) {
+	function setMenu(e: MouseEvent, newMenu: Menu) {
 		menu = newMenu;
+		e.stopPropagation();
 	}
 </script>
 
@@ -51,102 +53,93 @@
 					<Role name="Staff" />
 					<Role name="Subscriber" />
 				</div>
-				<div class="chevron">
+				<div class="caret">
 					<CaretRight size="1.2rem" />
 				</div>
 			</a>
 			<hr class="hide-on-mobile" />
 		{/if}
 		<div class="link-list hide-on-desktop">
-			<a href="/">
+			<MenuButton href="/">
 				<House />
 				Home
-			</a>
-			<a href="/emotes">
+			</MenuButton>
+			<MenuButton href="/emotes">
 				<Smiley />
 				Emotes
-			</a>
-			<a href="/discover">
+			</MenuButton>
+			<MenuButton href="/discover">
 				<Compass />
 				Discover
-			</a>
-			<a href="/store" class="store">
+			</MenuButton>
+			<MenuButton href="/store" style="color: var(--store)">
 				<Star />
 				Store
-			</a>
+			</MenuButton>
 		</div>
 		{#if $user}
 			<div class="link-list">
-				<a href="/cosmetics">
+				<MenuButton href="/cosmetics">
 					<PaintBrush />
 					Cosmetics
-				</a>
-				<a href="/analytics">
+				</MenuButton>
+				<MenuButton href="/analytics">
 					<ChartLine />
 					Analytics
-				</a>
+				</MenuButton>
 			</div>
 			<hr class="hide-on-mobile" />
 		{/if}
 		<div class="link-list">
-			<button on:click|stopPropagation={() => setMenu(Menu.Language)}>
+			<MenuButton showCaret on:click={(e) => setMenu(e, Menu.Language)}>
 				<GlobeHemisphereWest />
 				Language
-				<div class="chevron">
-					<CaretRight />
-				</div>
-			</button>
-			<button on:click|stopPropagation={() => setMenu(Menu.Theme)}>
+			</MenuButton>
+			<MenuButton showCaret on:click={(e) => setMenu(e, Menu.Theme)}>
 				<Moon />
 				Theme
-				<div class="chevron">
-					<CaretRight />
-				</div>
-			</button>
+			</MenuButton>
 			{#if $user}
-				<a href="/settings" class="hide-on-mobile">
+				<MenuButton href="/settings" hideOnMobile>
 					<Gear />
 					Settings
-				</a>
-				<button class="hide-on-desktop" on:click|stopPropagation={() => setMenu(Menu.Settings)}>
+				</MenuButton>
+				<MenuButton showCaret hideOnDesktop on:click={(e) => setMenu(e, Menu.Settings)}>
 					<Gear />
 					Settings
-					<div class="chevron">
-						<CaretRight />
-					</div>
-				</button>
+				</MenuButton>
 			{/if}
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<a href="https://7tv.io/">
+			<MenuButton href="https://7tv.io/">
 				<Code />
 				Developer Portal
-			</a>
-			<a href="/contact">
+			</MenuButton>
+			<MenuButton href="/contact">
 				<ChatDots />
 				Contact
-			</a>
-			<a href="/faq">
+			</MenuButton>
+			<MenuButton href="/faq">
 				<Question />
 				FAQ
-			</a>
-			<a href="/privacy">
+			</MenuButton>
+			<MenuButton href="/privacy">
 				<LockSimple />
 				Privacy Policy
-			</a>
-			<a href="/tos">
+			</MenuButton>
+			<MenuButton href="/tos">
 				<Note />
 				Terms of Service
-			</a>
+			</MenuButton>
 		</div>
 		{#if $user}
 			<hr class="hide-on-mobile" />
 			<div class="link-list">
-				<button on:click={() => ($user = false)}>
+				<MenuButton on:click={() => ($user = false)}>
 					<SignOut />
 					Sign out
-				</button>
+				</MenuButton>
 			</div>
 		{/if}
 	{:else if menu === Menu.Language}
@@ -154,18 +147,18 @@
 	{:else if menu === Menu.Theme}
 		<h2>Theme</h2>
 		<div class="link-list">
-			<button on:click={() => ($theme = Theme.System)}>
+			<MenuButton on:click={() => ($theme = Theme.System)}>
 				<Sliders />
 				System
-			</button>
-			<button on:click={() => ($theme = Theme.Dark)}>
+			</MenuButton>
+			<MenuButton on:click={() => ($theme = Theme.Dark)}>
 				<Moon />
 				Dark
-			</button>
-			<button on:click={() => ($theme = Theme.Light)}>
+			</MenuButton>
+			<MenuButton on:click={() => ($theme = Theme.Light)}>
 				<Sun />
 				Light
-			</button>
+			</MenuButton>
 		</div>
 	{:else if menu === Menu.Settings}
 		Settings
@@ -219,7 +212,7 @@
 			gap: 0.25rem;
 		}
 
-		.chevron {
+		.caret {
 			grid-row: 1 / -1;
 			justify-self: end;
 
@@ -243,50 +236,12 @@
 		flex-direction: column;
 		background-color: var(--bg-medium);
 		border-radius: 0.5rem;
-
-		a,
-		button {
-			padding: 0.75rem 1.2rem;
-			border-radius: 0.5rem;
-			color: var(--text);
-			font-size: 0.875rem;
-			font-weight: 500;
-			text-decoration: none;
-
-			display: flex;
-			align-items: center;
-			gap: 1.2rem;
-
-			&:hover,
-			&:focus-visible {
-				background-color: var(--bg-light);
-			}
-
-			.chevron {
-				flex-grow: 1;
-				justify-self: end;
-				text-align: right;
-			}
-		}
-
-		.store {
-			color: var(--store);
-		}
 	}
 
 	@media screen and (max-width: 960px) {
 		.menu {
 			padding: 0.5rem 1rem;
 			gap: 0.5rem;
-		}
-
-		.link-list {
-			a,
-			button {
-				padding: 1rem;
-				font-size: 1rem;
-				gap: 0.75rem;
-			}
 		}
 	}
 </style>

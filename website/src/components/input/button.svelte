@@ -15,6 +15,7 @@
 	export let secondary: boolean = false;
 
 	export let big: boolean = false;
+	export let submit: boolean = false;
 
 	export let hideOnMobile: boolean = false;
 	export let hideOnDesktop: boolean = false;
@@ -42,6 +43,7 @@
 	</a>
 {:else}
 	<button
+		type={submit ? "submit" : "button"}
 		on:click
 		{...$$restProps}
 		class="button"

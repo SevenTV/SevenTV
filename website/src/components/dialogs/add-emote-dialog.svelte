@@ -15,7 +15,7 @@
 	<EmoteSetPicker />
 	<svelte:fragment slot="buttons">
 		<Button on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-		<Button primary>Confirm</Button>
+		<Button primary submit>Confirm</Button>
 	</svelte:fragment>
 </EmoteDialog>
 

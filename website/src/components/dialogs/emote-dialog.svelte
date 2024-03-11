@@ -8,7 +8,7 @@
 </script>
 
 <Dialog {width} bind:mode>
-	<div class="layout">
+	<form class="layout">
 		<div class="preview">
 			<EmotePreview />
 			<slot name="preview" />
@@ -20,7 +20,7 @@
 				<slot name="buttons" />
 			</div>
 		</div>
-	</div>
+	</form>
 </Dialog>
 
 <style lang="scss">
