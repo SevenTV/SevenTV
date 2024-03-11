@@ -23,6 +23,7 @@
 	import TransferEmoteDialog from "$/components/dialogs/transfer-emote-dialog.svelte";
 	import DeleteEmoteDialog from "$/components/dialogs/delete-emote-dialog.svelte";
 	import ReportEmoteDialog from "$/components/dialogs/report-emote-dialog.svelte";
+	import MenuButton from "$/components/input/menu-button.svelte";
 
 	export let data: LayoutData;
 
@@ -107,30 +108,30 @@
 						<CaretDown slot="icon" />
 					</Button>
 					<div slot="dropdown" class="dropdown">
-						<Button on:click={() => (transferDialogMode = DialogMode.Shown)}>
-							<PaperPlaneRight slot="icon" />
+						<MenuButton on:click={() => (transferDialogMode = DialogMode.Shown)}>
+							<PaperPlaneRight />
 							Transfer
-						</Button>
-						<Button>
-							<ArrowsMerge slot="icon" style="transform: rotate(-90deg)" />
+						</MenuButton>
+						<MenuButton>
+							<ArrowsMerge style="transform: rotate(-90deg)" />
 							Merge
-						</Button>
-						<Button>
-							<Download slot="icon" />
+						</MenuButton>
+						<MenuButton showCaret>
+							<Download />
 							Download
-						</Button>
-						<Button on:click={() => (reportDialogMode = DialogMode.Shown)}>
-							<Flag slot="icon" />
+						</MenuButton>
+						<MenuButton on:click={() => (reportDialogMode = DialogMode.Shown)}>
+							<Flag />
 							Report
-						</Button>
+						</MenuButton>
 						<hr />
-						<Button
+						<MenuButton
 							style="color: var(--danger)"
 							on:click={() => (deleteDialogMode = DialogMode.Shown)}
 						>
-							<Trash slot="icon" />
+							<Trash />
 							Delete
-						</Button>
+						</MenuButton>
 					</div>
 				</DropDown>
 			</div>
