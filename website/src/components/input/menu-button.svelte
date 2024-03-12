@@ -2,7 +2,7 @@
 	import { CaretRight } from "phosphor-svelte";
 
 	export let href: string | null = null;
-    export let showCaret: boolean = false;
+	export let showCaret: boolean = false;
 
 	export let hideOnMobile: boolean = false;
 	export let hideOnDesktop: boolean = false;
@@ -17,11 +17,11 @@
 		{...$$restProps}
 	>
 		<slot />
-        {#if showCaret}
-            <div class="caret">
-                <CaretRight />
-            </div>
-        {/if}
+		{#if showCaret}
+			<div class="caret">
+				<CaretRight />
+			</div>
+		{/if}
 	</a>
 {:else}
 	<button
@@ -32,11 +32,11 @@
 		{...$$restProps}
 	>
 		<slot />
-        {#if showCaret}
-            <div class="caret">
-                <CaretRight />
-            </div>
-        {/if}
+		{#if showCaret}
+			<div class="caret">
+				<CaretRight />
+			</div>
+		{/if}
 	</button>
 {/if}
 
@@ -66,12 +66,12 @@
 		text-align: right;
 	}
 
-    @media screen and (max-width: 960px) {
-        a,
-        button {
-            padding: 1rem;
-            font-size: 1rem;
-            gap: 0.75rem;
-        }
+	@media screen and (max-width: 960px) {
+		a,
+		button {
+			padding: 1rem;
+			font-size: 1rem;
+			gap: 0.75rem;
+		}
 	}
 </style>

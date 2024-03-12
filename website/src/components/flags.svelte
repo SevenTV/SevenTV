@@ -1,29 +1,14 @@
-<script lang="ts">
-	import {
-		Eye,
-		Fire,
-		FolderSimple,
-		GlobeSimple,
-		House,
-		PencilSimple,
-		Plus,
-		SealCheck,
-		Smiley,
-		StackSimple,
-		Star,
-		User,
-	} from "phosphor-svelte";
-	import Button from "./input/button.svelte";
-
-	// Used for emote flags, emote set flags and permissions
-
-	const icons: { [key: string]: typeof GlobeSimple } = {
-		// Emote / emote set flags
+<script lang="ts" context="module">
+	export const icons: { [key: string]: typeof GlobeSimple } = {
+		// Emote flags
+		active: Lightning,
 		global: GlobeSimple,
 		trending: Fire,
 		overlay: StackSimple,
 		verified: SealCheck,
 		public: Eye,
+
+		// Emote set flags
 		default: House,
 		personal: Star,
 
@@ -34,7 +19,27 @@
 		emotes: Smiley,
 	};
 
-	const details: { [key: string]: string } = {
+	export const colors: { [key: string]: string } = {
+		personal: "#b083f0",
+
+		active: "#529bf5",
+		global: "#57ab5a",
+		trending: "#e0823d",
+		overlay: "#fc8dc7",
+		verified: "#fc8dc7",
+		public: "#ffffff",
+	};
+
+	export function determineHighlightColor(flags: string[], ignoredFlags: string[] = []) {
+		for (const flag of Object.keys(colors)) {
+			if (flags.includes(flag) && !ignoredFlags.includes(flag)) {
+				return colors[flag];
+			}
+		}
+		return null;
+	}
+
+	export const details: { [key: string]: string } = {
 		// Emote / emote set flags
 		global: "Global",
 		trending: "Trending",
@@ -48,17 +53,56 @@
 		emote_sets: "Emote Sets",
 		emotes: "Emotes",
 	};
+</script>
+
+<script lang="ts">
+	import {
+		Eye,
+		Fire,
+		FolderSimple,
+		GlobeSimple,
+		House,
+		Lightning,
+		PencilSimple,
+		Plus,
+		SealCheck,
+		Smiley,
+		StackSimple,
+		Star,
+		User,
+	} from "phosphor-svelte";
+	import Button from "./input/button.svelte";
+
+	// Used for emote flags, emote set flags and permissions
+
+	export let iconOnly: boolean = false;
 
 	export let flags: string[] = [];
 	export let add: ((e: MouseEvent) => void) | null = null;
+
+	$: flags.sort((a, b) => {
+		const keys = Object.keys(icons);
+		return keys.indexOf(a) - keys.indexOf(b);
+	});
 </script>
 
 <div class="flags" {...$$restProps}>
 	{#each flags as flag}
-		<span class="flag" class:has-icon={icons[flag]} title={details[flag]}>
-			<svelte:component this={icons[flag]} size="1rem" />
-			<span class:hide-on-mobile={icons[flag]}>{flag.replace("_", " ")}</span>
-		</span>
+		{#if iconOnly && icons[flag]}
+			<span class="flag icon-only" title={details[flag]} style="color: {colors[flag]}">
+				<svelte:component this={icons[flag]} size="1rem" />
+			</span>
+		{:else}
+			<span
+				class="flag"
+				class:has-icon={icons[flag]}
+				title={details[flag]}
+				style="color: {colors[flag]}; background-color: {colors[flag]}1a"
+			>
+				<svelte:component this={icons[flag]} size="1rem" />
+				<span class:hide-on-mobile={icons[flag]}>{flag.replace("_", " ")}</span>
+			</span>
+		{/if}
 	{/each}
 	{#if add}
 		<Button secondary on:click={add} title="Add" style="padding: 0.3rem 0.5rem; border: none;">
@@ -94,10 +138,15 @@
 		&.has-icon {
 			padding-left: 0.62rem;
 		}
+
+		&.icon-only {
+			padding: 0;
+			background: none;
+		}
 	}
 
 	@media screen and (max-width: 960px) {
-		.flag.has-icon {
+		.flag.has-icon:not(.icon-only) {
 			padding: 0.3rem 0.5rem;
 		}
 	}

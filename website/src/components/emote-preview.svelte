@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Flags, { determineHighlightColor } from "./flags.svelte";
 	import Checkbox from "./input/checkbox.svelte";
 
 	export let name = "emoteName";
@@ -7,6 +8,11 @@
 	export let emoteOnly = false;
 	export let selectionMode = false;
 	export let selected = false;
+	export let ignoredFlagsForHighlight: string[] = [];
+
+	let flags = ["active", "global", "trending", "overlay"];
+
+	$: highlight = determineHighlightColor(flags, ignoredFlagsForHighlight);
 
 	$: if (!selectionMode) {
 		selected = false;
@@ -24,7 +30,7 @@
 	href="/emotes/{name}"
 	class="emote"
 	class:emote-only={emoteOnly}
-	class:selected
+	style:border-color={selected ? "var(--primary)" : `${highlight}80`}
 	style:background-color="var(--bg-{bg})"
 	title={name}
 	on:click={onClick}
@@ -34,9 +40,14 @@
 		<span class="name">{name}</span>
 		<span class="user">username</span>
 	{/if}
-	{#if selectionMode}
-		<Checkbox bind:value={selected} style="position: absolute; top: 0.5rem; right: 0.5rem;" />
-	{/if}
+	<div class="flags">
+		{#if selectionMode}
+			<Checkbox bind:value={selected} />
+		{/if}
+		{#if !emoteOnly}
+			<Flags {flags} iconOnly style="flex-direction: column; gap: 0.4rem;" />
+		{/if}
+	</div>
 </a>
 
 <style lang="scss">
@@ -62,10 +73,6 @@
 		&:hover,
 		&:focus-visible {
 			border-color: var(--border-active);
-		}
-
-		&.selected {
-			border-color: var(--primary);
 		}
 
 		&.emote-only > .image {
@@ -106,5 +113,16 @@
 	.user {
 		font-size: 0.75rem;
 		font-weight: 500;
+	}
+
+	.flags {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		align-items: center;
 	}
 </style>
