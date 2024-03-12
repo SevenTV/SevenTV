@@ -21,10 +21,11 @@
 </script>
 
 <button
-	on:click={toggle}
+	on:click|preventDefault={toggle}
 	aria-expanded={expanded}
 	aria-controls="dropdown-list-{index}"
 	use:mouseTrap={close}
+	{...$$restProps}
 >
 	<slot />
 	{#if expanded}
