@@ -69,7 +69,7 @@
 					</a>
 				</div>
 			</a>
-			<Flags flags={["global", "trending", "overlay"]} />
+			<Flags flags={["active", "global", "trending", "overlay"]} />
 		</div>
 
 		<div class="emote-info">
@@ -164,8 +164,6 @@
 	}
 
 	.top-bar {
-		align-self: stretch;
-
 		display: flex;
 		justify-content: space-between;
 		align-items: center;

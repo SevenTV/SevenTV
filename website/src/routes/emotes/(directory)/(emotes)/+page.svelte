@@ -8,5 +8,10 @@
 </svelte:head>
 
 {#each Array(100) as _, i}
-	<EmotePreview index={i} name="trending{i}" emoteOnly={$emotesLayout === Layout.SmallGrid} />
+	<EmotePreview
+		index={i}
+		name="trending{i}"
+		emoteOnly={$emotesLayout === Layout.SmallGrid}
+		ignoredFlagsForHighlight={["trending"]}
+	/>
 {/each}
