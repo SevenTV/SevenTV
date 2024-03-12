@@ -20,7 +20,10 @@
 	}
 </script>
 
-<button
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- This is just a wrapper element to catch the underlying click event -->
+<div
+	class="dropdown"
 	on:click|preventDefault={toggle}
 	aria-expanded={expanded}
 	aria-controls="dropdown-list-{index}"
@@ -33,29 +36,30 @@
 			<slot name="dropdown" />
 		</div>
 	{/if}
-</button>
+</div>
 
 <style lang="scss">
-	button {
+	.dropdown {
 		position: relative;
+
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
 
-		.dropped {
-			z-index: 1;
+	.dropped {
+		z-index: 1;
 
-			position: absolute;
-			top: 100%;
-			right: 0;
-			margin: 0;
-			margin-top: 0.25rem;
-			padding: 0;
-			border: var(--border-active) 1px solid;
-			border-radius: 0.5rem;
+		position: absolute;
+		top: 100%;
+		right: 0;
+		margin: 0;
+		margin-top: 0.25rem;
+		padding: 0;
+		border: var(--border-active) 1px solid;
+		border-radius: 0.5rem;
 
-			background-color: var(--bg-medium);
-			box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1);
-		}
+		background-color: var(--bg-medium);
+		box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1);
 	}
 </style>
