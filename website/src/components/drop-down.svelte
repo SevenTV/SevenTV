@@ -6,6 +6,9 @@
 	import mouseTrap from "$/lib/mouseTrap";
 	import { fade } from "svelte/transition";
 
+	export let hideOnMobile = false;
+	export let hideOnDesktop = false;
+
 	let index = dropDownIndex;
 	dropDownIndex += 1;
 
@@ -20,17 +23,18 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<!-- This is just a wrapper element to catch the underlying click event -->
-<div
-	class="dropdown"
-	on:click|preventDefault={toggle}
-	aria-expanded={expanded}
-	aria-controls="dropdown-list-{index}"
-	use:mouseTrap={close}
-	{...$$restProps}
->
-	<slot />
+<div class="dropdown" use:mouseTrap={close} class:hide-on-mobile={hideOnMobile} class:hide-on-desktop={hideOnDesktop}>
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<!-- This is just a wrapper element to catch the underlying click event -->
+	<div
+		class="input-wrapper"
+		on:click|preventDefault={toggle}
+		aria-expanded={expanded}
+		aria-controls="dropdown-list-{index}"
+		{...$$restProps}
+	>
+		<slot />
+	</div>
 	{#if expanded}
 		<div class="dropped" id="dropdown-list-{index}" transition:fade={{ duration: 100 }}>
 			<slot name="dropdown" />
@@ -42,9 +46,11 @@
 	.dropdown {
 		position: relative;
 
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
+		.input-wrapper {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
 	}
 
 	.dropped {

@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { EnvelopeSimple, EnvelopeSimpleOpen, Gear } from "phosphor-svelte";
+	import { EnvelopeSimple, EnvelopeSimpleOpen, Gear, MagnifyingGlass, X } from "phosphor-svelte";
 	import Button from "./input/button.svelte";
+	import TextInput from "./input/text-input.svelte";
 
 	let read = false;
 </script>
 
 <div class="popup">
 	<div class="header">
-		<h1>Notifications</h1>
+		<h1>Direct Messages</h1>
 		<Button title="Mark all as read" on:click={() => (read = !read)}>
 			<svelte:fragment slot="icon">
 				{#if read}
@@ -21,6 +22,9 @@
 			<Gear slot="icon" />
 		</Button>
 	</div>
+	<TextInput placeholder="Search">
+		<MagnifyingGlass slot="icon" />
+	</TextInput>
 </div>
 
 <style lang="scss">

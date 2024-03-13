@@ -6,7 +6,7 @@
 	import { user, showMobileMenu, uploadDialogMode, signInDialogMode } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
-	import Dms from "../dms.svelte";
+	import DirectMessages from "../direct-messages.svelte";
 	import Notifications from "../notifications.svelte";
 	import {
 		Bell,
@@ -50,25 +50,40 @@
 			<MagnifyingGlass slot="icon" />
 		</Button>
 		{#if $user}
-			<DropDown>
+			<DropDown hideOnMobile>
 				<Button>
-					<Bell slot="icon" />
+					<Badge count={0} slot="icon">
+						<Bell />
+					</Badge>
 				</Button>
 				<Notifications slot="dropdown" />
 			</DropDown>
-			<DropDown>
+			<Button href="/notifications" hideOnDesktop>
+				<Badge count={0} slot="icon">
+					<Bell />
+				</Badge>
+			</Button>
+
+			<DropDown hideOnMobile>
 				<Button>
 					<Badge count={1} slot="icon">
 						<Chat />
 					</Badge>
 				</Button>
-				<Dms slot="dropdown" />
+				<DirectMessages slot="dropdown" />
 			</DropDown>
+			<Button href="/direct-messages" hideOnDesktop>
+				<Badge count={1} slot="icon">
+					<Chat />
+				</Badge>
+			</Button>
+
 			<Button on:click={() => (cartDialogMode = DialogMode.Shown)}>
 				<Badge count={3} slot="icon">
 					<ShoppingCartSimple />
 				</Badge>
 			</Button>
+
 			<Button hideOnDesktop on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
 				<PlusSquare slot="icon" />
 			</Button>

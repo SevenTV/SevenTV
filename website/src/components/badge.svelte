@@ -5,7 +5,9 @@
 </script>
 
 <div class="badge-container">
-	<span class="badge">{text}</span>
+	{#if count > 0}
+		<span class="badge">{text}</span>
+	{/if}
 	<slot />
 </div>
 
