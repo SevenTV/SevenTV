@@ -7,7 +7,7 @@
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import DirectMessages from "../direct-messages/direct-messages.svelte";
-	import Notifications from "../notifications.svelte";
+	import Notifications from "../notifications/notifications.svelte";
 	import {
 		Bell,
 		Chat,
@@ -56,7 +56,7 @@
 						<Bell />
 					</Badge>
 				</Button>
-				<Notifications slot="dropdown" />
+				<Notifications popup slot="dropdown" />
 			</DropDown>
 			<Button href="/notifications" hideOnDesktop>
 				<Badge count={0} slot="icon">
@@ -70,7 +70,7 @@
 						<Chat />
 					</Badge>
 				</Button>
-				<DirectMessages slot="dropdown" />
+				<DirectMessages popup slot="dropdown" />
 			</DropDown>
 			<Button href="/direct-messages" hideOnDesktop>
 				<Badge count={1} slot="icon">
