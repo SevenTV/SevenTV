@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-    <title>Notifications - 7TV</title>
+	<title>Notifications - 7TV</title>
 </svelte:head>
 
 <Notifications />

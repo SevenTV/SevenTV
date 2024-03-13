@@ -23,7 +23,12 @@
 	}
 </script>
 
-<div class="dropdown" use:mouseTrap={close} class:hide-on-mobile={hideOnMobile} class:hide-on-desktop={hideOnDesktop}>
+<div
+	class="dropdown"
+	use:mouseTrap={close}
+	class:hide-on-mobile={hideOnMobile}
+	class:hide-on-desktop={hideOnDesktop}
+>
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<!-- This is just a wrapper element to catch the underlying click event -->
 	<div
