@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { EnvelopeSimple, EnvelopeSimpleOpen, Gear, MagnifyingGlass, X } from "phosphor-svelte";
+	import { EnvelopeSimple, EnvelopeSimpleOpen, Gear, MagnifyingGlass } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import MessagePreview from "./message-preview.svelte";
