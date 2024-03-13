@@ -26,7 +26,7 @@
 <style lang="scss">
 	.popup {
 		min-width: 25rem;
-		max-width: 60rem;
+		max-width: 50rem;
 		margin-inline: auto;
 		padding: 1rem;
 

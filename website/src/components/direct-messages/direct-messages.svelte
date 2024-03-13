@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { EnvelopeSimple, EnvelopeSimpleOpen, Gear, MagnifyingGlass, X } from "phosphor-svelte";
-	import Button from "./input/button.svelte";
-	import TextInput from "./input/text-input.svelte";
+	import Button from "../input/button.svelte";
+	import TextInput from "../input/text-input.svelte";
+	import MessagePreview from "./message-preview.svelte";
 
 	let read = false;
 </script>
@@ -25,12 +26,20 @@
 	<TextInput placeholder="Search">
 		<MagnifyingGlass slot="icon" />
 	</TextInput>
+	<div class="previews">
+		{#each Array(10) as _, i}
+			<MessagePreview />
+			{#if i !== 9}
+				<hr />
+			{/if}
+		{/each}
+	</div>
 </div>
 
 <style lang="scss">
 	.popup {
 		min-width: 25rem;
-		max-width: 60rem;
+		max-width: 50rem;
 		margin-inline: auto;
 		padding: 1rem;
 
@@ -52,5 +61,11 @@
 		h1 {
 			margin-right: auto;
 		}
+	}
+
+	.previews {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
 	}
 </style>

@@ -6,7 +6,7 @@
 	import { user, showMobileMenu, uploadDialogMode, signInDialogMode } from "$/lib/stores";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
-	import DirectMessages from "../direct-messages.svelte";
+	import DirectMessages from "../direct-messages/direct-messages.svelte";
 	import Notifications from "../notifications.svelte";
 	import {
 		Bell,
