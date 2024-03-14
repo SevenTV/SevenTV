@@ -1,40 +1,42 @@
 <script lang="ts">
 	import moment from 'moment/min/moment-with-locales';
-	import { Clock, Coin, Gift, Hourglass, Sparkle } from "phosphor-svelte";
+	import { Clock, Coin, Gift, Hourglass, IconContext, Sparkle } from "phosphor-svelte";
 	import Date from './date.svelte';
 	import { t } from "svelte-i18n";
 </script>
 
 <div class="sub-grid" {...$$restProps}>
-	<span class="key">{$t("sub_info.plan")}</span>
-	<span class="value">
-		<Sparkle />
-		<span>{$t("sub_info.free")}</span>
-	</span>
+	<IconContext values={{ weight: "bold", size: "1.2rem", color: "var(--subscriber)" }}>
+		<span class="key">{$t("sub_info.plan")}</span>
+		<span class="value">
+			<Sparkle />
+			<span>{$t("sub_info.free")}</span>
+		</span>
 
-	<span class="key">{$t("sub_info.gifted_by")}</span>
-	<span class="value">
-		<Gift />
-		<span>Forsen</span>
-	</span>
+		<span class="key">{$t("sub_info.gifted_by")}</span>
+		<span class="value">
+			<Gift />
+			<span>Forsen</span>
+		</span>
 
-	<span class="key">{$t("sub_info.ends")}</span>
-	<span class="value">
-		<Hourglass />
-		<Date date={moment()} />
-	</span>
+		<span class="key">{$t("sub_info.ends")}</span>
+		<span class="value">
+			<Hourglass />
+			<Date date={moment()} />
+		</span>
 
-	<span class="key">{$t("sub_info.total")}</span>
-	<span class="value">
-		<Clock />
-		<span>{moment.duration(317, "days").humanize({ d: Infinity })}</span>
-	</span>
+		<span class="key">{$t("sub_info.total")}</span>
+		<span class="value">
+			<Clock />
+			<span>{moment.duration(317, "days").humanize({ d: Infinity })}</span>
+		</span>
 
-	<span class="key">{$t("sub_info.credits")}</span>
-	<span class="value">
-		<Coin />
-		<span>3</span>
-	</span>
+		<span class="key">{$t("sub_info.credits")}</span>
+		<span class="value">
+			<Coin />
+			<span>3</span>
+		</span>
+	</IconContext>
 </div>
 
 <style lang="scss">
@@ -58,13 +60,8 @@
 			gap: 0.5rem;
 			align-items: center;
 
-			color: var(--subscriber);
-
-			span {
-				color: var(--text);
-				font-size: 0.875rem;
-				font-weight: 600;
-			}
+			font-size: 0.875rem;
+			font-weight: 600;
 		}
 	}
 
