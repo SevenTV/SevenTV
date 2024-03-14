@@ -1,9 +1,10 @@
-<script>
+<script lang="ts">
 	import CmsPagePreview from "$/components/cms-page-preview.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <svelte:head>
-	<title>News - 7TV</title>
+	<title>{$t("common.news")} - 7TV</title>
 </svelte:head>
 
 <div class="scroll-container">

@@ -15,6 +15,7 @@
 	import TagsInput from "$/components/input/tags-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
+	import { t } from "svelte-i18n";
 
 	let sortAsc = false;
 
@@ -33,36 +34,36 @@
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
-		<h1>Directory</h1>
+		<h1>{$t("pages.directory.title")}</h1>
 		<nav class="link-list">
-			<TabLink href="/emotes" title="Emotes" big matcher={menuMatcher}>
+			<TabLink href="/emotes" title={$t("common.emotes", { values: { count: 2 } })} big matcher={menuMatcher}>
 				<Smiley />
 				<Smiley weight="fill" slot="active" />
 			</TabLink>
-			<TabLink href="/emotes/sets" title="Emote Sets" big matcher={menuMatcher}>
+			<TabLink href="/emotes/sets" title={$t("common.emote_sets", { values: { count: 2 } })} big matcher={menuMatcher}>
 				<FolderSimple />
 				<FolderSimple weight="fill" slot="active" />
 			</TabLink>
-			<TabLink href="/emotes/bookmarked" title="Bookmarked" big matcher={menuMatcher}>
+			<TabLink href="/emotes/bookmarked" title={$t("pages.directory.bookmarked")} big matcher={menuMatcher}>
 				<BookmarkSimple />
 				<BookmarkSimple weight="fill" slot="active" />
 			</TabLink>
 		</nav>
 		<hr />
-		<Expandable title="Search">
-			<TextInput placeholder="Emote">
+		<Expandable title={$t("labels.search")}>
+			<TextInput placeholder={$t("common.emotes", { values: { count: 1 } })}>
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</Expandable>
-		<Expandable title="Tags">
+		<Expandable title={$t("labels.tags")}>
 			<TagsInput />
 		</Expandable>
-		<Expandable title="Sorting">
+		<Expandable title={$t("pages.directory.sorting.title")}>
 			<div class="row">
 				<Select
 					options={[
-						{ value: "alpha", label: "Alphabetical" },
-						{ value: "date", label: "Upload Date" },
+						{ value: "alpha", label: $t("pages.directory.sorting.alphabetical") },
+						{ value: "date", label: $t("pages.directory.sorting.upload_date") },
 					]}
 					grow
 				/>
@@ -77,20 +78,20 @@
 				</Button>
 			</div>
 		</Expandable>
-		<Expandable title="Filters">
+		<Expandable title={$t("labels.filters")}>
 			<div class="filters">
-				<Checkbox>Animated</Checkbox>
-				<Checkbox>Static</Checkbox>
-				<Checkbox>Overlaying</Checkbox>
-				<Checkbox>Case Sensitive</Checkbox>
-				<Checkbox>Exact Match</Checkbox>
+				<Checkbox>{$t("pages.directory.filters.animated")}</Checkbox>
+				<Checkbox>{$t("pages.directory.filters.static")}</Checkbox>
+				<Checkbox>{$t("flags.overlaying")}</Checkbox>
+				<Checkbox>{$t("pages.directory.filters.case_sensitive")}</Checkbox>
+				<Checkbox>{$t("pages.directory.filters.exact_match")}</Checkbox>
 			</div>
 		</Expandable>
-		<Expandable title="Size">
+		<Expandable title={$t("pages.directory.size.title")}>
 			<div class="row">
 				<Select
 					options={[
-						{ value: "any", label: "Any Size" },
+						{ value: "any", label: $t("pages.directory.size.any") },
 						{ value: "", label: "idk what this is" },
 					]}
 					grow

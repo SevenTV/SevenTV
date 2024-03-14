@@ -2,6 +2,7 @@
 	import { EnvelopeSimple, EnvelopeSimpleOpen, Gear } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import Notification from "./notification.svelte";
+	import { t } from "svelte-i18n";
 
 	export let popup = false;
 
@@ -10,8 +11,8 @@
 
 <div class="container" class:popup>
 	<div class="header">
-		<h1>Notifications</h1>
-		<Button title="Mark all as read" on:click={() => (read = !read)}>
+		<h1>{$t("common.notifications")}</h1>
+		<Button on:click={() => (read = !read)}>
 			<svelte:fragment slot="icon">
 				{#if read}
 					<EnvelopeSimple />

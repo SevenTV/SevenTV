@@ -1,34 +1,36 @@
 <script lang="ts">
-	import moment from "moment";
+	import moment from 'moment/min/moment-with-locales';
 	import { Clock, Coin, Gift, Hourglass, Sparkle } from "phosphor-svelte";
+	import Date from './date.svelte';
+	import { t } from "svelte-i18n";
 </script>
 
 <div class="sub-grid" {...$$restProps}>
-	<span class="key">Plan</span>
+	<span class="key">{$t("sub_info.plan")}</span>
 	<span class="value">
 		<Sparkle />
-		<span>Free</span>
+		<span>{$t("sub_info.free")}</span>
 	</span>
 
-	<span class="key">Gifted By</span>
+	<span class="key">{$t("sub_info.gifted_by")}</span>
 	<span class="value">
 		<Gift />
 		<span>Forsen</span>
 	</span>
 
-	<span class="key">Sub Ends</span>
+	<span class="key">{$t("sub_info.ends")}</span>
 	<span class="value">
 		<Hourglass />
-		<span>{moment().format("ll")}</span>
+		<Date date={moment()} />
 	</span>
 
-	<span class="key">Total</span>
+	<span class="key">{$t("sub_info.total")}</span>
 	<span class="value">
 		<Clock />
 		<span>{moment.duration(317, "days").humanize({ d: Infinity })}</span>
 	</span>
 
-	<span class="key">Sub Credits</span>
+	<span class="key">{$t("sub_info.credits")}</span>
 	<span class="value">
 		<Coin />
 		<span>3</span>

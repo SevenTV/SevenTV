@@ -1,15 +1,16 @@
 <script lang="ts">
-	import moment from "moment";
+	import moment from 'moment/min/moment-with-locales';
 	import Button from "../input/button.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <div class="notification">
 	<div class="placeholder"></div>
-	<span class="event">Your emote AlienPls has been Approved for Public Listing.</span>
-	<span class="details">{moment("1970-01-01T00:00:00").fromNow()} · System</span>
+	<span class="event">{$t("notifications.approved_for_public", { values: { emote: "AlienPls" } })}</span>
+	<span class="details">{moment("1970-01-01T00:00:00").fromNow()} · {$t("notifications.system")}</span>
 	<div class="buttons">
-		<Button primary>Accept</Button>
-		<Button secondary>Deny</Button>
+		<Button primary>{$t("labels.accept")}</Button>
+		<Button secondary>{$t("labels.deny")}</Button>
 	</div>
 </div>
 

@@ -2,6 +2,7 @@
 	import "$/styles/fonts.scss";
 	import "$/styles/variables.scss";
 	import "$/styles/global.scss";
+	import "$/lib/i18n";
 	import TopNav from "$/components/nav/top-nav.svelte";
 	import {
 		showMobileMenu,
@@ -14,14 +15,8 @@
 	import { IconContext } from "phosphor-svelte";
 	import UploadDialog from "$/components/dialogs/upload-dialog.svelte";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
-	import { onMount } from "svelte";
-	import moment from "moment";
 	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
-
-	onMount(() => {
-		// Set moment locale
-		moment.locale("en-US");
-	});
+	import { t } from "svelte-i18n";
 
 	beforeNavigate((nav) => {
 		// Hide menu on navigate
@@ -33,14 +28,13 @@
 
 <IconContext values={{ size: "1.2rem", weight: "bold", style: "flex-shrink: 0" }}>
 	<header>
-		<a href="#main" class="skip-to-main">Skip to main content</a>
+		<a href="#main" class="skip-to-main">{$t("common.skip_to_content")}</a>
 		<TopNav />
 	</header>
 
 	<UploadDialog bind:mode={$uploadDialogMode} />
 	<SignInDialog bind:mode={$signInDialogMode} />
 	<DefaultEmoteSetDialog bind:mode={$defaultEmoteSetDialogMode} />
-	<dialog>Test</dialog>
 	<main id="main">
 		{#if $showMobileMenu}
 			<Menu />

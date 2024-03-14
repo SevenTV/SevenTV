@@ -1,21 +1,22 @@
 <script lang="ts">
 	import TabLink from "$/components/tab-link.svelte";
 	import { Flag, PaintBrush, Table } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
-		<h1>Admin Dashboard</h1>
+		<h1>{$t("pages.admin.dashboard")}</h1>
 		<nav class="link-list">
-			<TabLink title="Overview" href="/admin">
+			<TabLink title={$t("pages.admin.overview")} href="/admin">
 				<Table />
 				<Table weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title="Reports" href="/admin/reports">
+			<TabLink title={$t("pages.admin.reports")} href="/admin/reports">
 				<Flag />
 				<Flag weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title="Cosmetics" href="/admin/cosmetics">
+			<TabLink title={$t("common.cosmetics")} href="/admin/cosmetics">
 				<PaintBrush />
 				<PaintBrush weight="fill" slot="active" />
 			</TabLink>

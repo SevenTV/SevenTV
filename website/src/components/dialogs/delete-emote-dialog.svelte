@@ -3,18 +3,19 @@
 	import TextInput from "../input/text-input.svelte";
 	import { DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<EmoteDialog width={35} title="Delete AlienPls" bind:mode>
-	<span class="details">This will delete your emote permanently. You cannot undo this action.</span>
-	<TextInput placeholder="Reason">
-		<span class="label">Reason for deletion</span>
+<EmoteDialog width={35} title={$t("dialogs.delete_emote_or_set.title", { values: { name: "AlienPls" } })} bind:mode>
+	<span class="details">{$t("dialogs.delete_emote_or_set.warning_message_emote")}</span>
+	<TextInput placeholder={$t("dialogs.delete_emote_or_set.reason")}>
+		<span class="label">{$t("dialogs.delete_emote_or_set.reason_for_deletion")}</span>
 	</TextInput>
 	<svelte:fragment slot="buttons">
-		<Button style="color: var(--danger)" submit>Delete</Button>
-		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
+		<Button style="color: var(--danger)" submit>{$t("labels.delete")}</Button>
+		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
 	</svelte:fragment>
 </EmoteDialog>
 

@@ -2,29 +2,31 @@
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
 	import { Check, IconContext, NotePencil, Plus, X } from "phosphor-svelte";
 	import type { LayoutData } from "../$types";
+	import { t } from "svelte-i18n";
+	import moment from "moment/min/moment-with-locales";
 
 	export let data: LayoutData;
 
 	const activities = [
 		{
 			kind: "reject",
-			time: "1 hour ago",
-			message: "ayyybubu rejected AlienPls",
+			user: "ayyybubu",
+			emote: "AlienPls",
 		},
 		{
 			kind: "modify",
-			time: "1 hour ago",
-			message: "ayyybubu modified AlienPls",
+			user: "ayyybubu",
+			emote: "AlienPls",
 		},
 		{
 			kind: "approve",
-			time: "1 hour ago",
-			message: "ayyybubu approved AlienPls",
+			user: "ayyybubu",
+			emote: "AlienPls",
 		},
 		{
 			kind: "create",
-			time: "1 hour ago",
-			message: "ayyybubu created AlienPls",
+			user: "ayyybubu",
+			emote: "AlienPls",
 		},
 	];
 </script>
@@ -53,8 +55,12 @@
 				{/if}
 			</IconContext>
 
-			<span class="text">{activity.message}</span>
-			<span class="time">{activity.time}</span>
+			<span class="text">
+				{$t(`activities.${activity.kind}`, {
+					values: { user: activity.user, emote: activity.emote },
+				})}
+			</span>
+			<span class="time">{moment().fromNow()}</span>
 		</div>
 		{#if index !== activities.length - 1}
 			<hr />

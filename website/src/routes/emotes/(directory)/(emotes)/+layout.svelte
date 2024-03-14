@@ -6,23 +6,24 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import { emotesLayout, defaultEmoteSetDialogMode } from "$/lib/stores";
 	import { Fire, FolderSimple, GlobeHemisphereWest, Trophy, Upload } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <div class="nav-bar">
 	<nav class="tabs">
-		<TabLink href="/emotes" title="Trending" responsive>
+		<TabLink href="/emotes" title={$t("common.trending")} responsive>
 			<Fire />
 			<Fire weight="fill" slot="active" />
 		</TabLink>
-		<TabLink href="/emotes/top" title="Top" responsive>
+		<TabLink href="/emotes/top" title={$t("common.top")} responsive>
 			<Trophy />
 			<Trophy weight="fill" slot="active" />
 		</TabLink>
-		<TabLink href="/emotes/global" title="Global" responsive>
+		<TabLink href="/emotes/global" title={$t("common.emotes", { values: { count: 2 } })} responsive>
 			<GlobeHemisphereWest />
 			<GlobeHemisphereWest weight="fill" slot="active" />
 		</TabLink>
-		<TabLink href="/emotes/new" title="New" responsive>
+		<TabLink href="/emotes/new" title={$t("common.new")} responsive>
 			<Upload />
 			<Upload weight="fill" slot="active" />
 		</TabLink>

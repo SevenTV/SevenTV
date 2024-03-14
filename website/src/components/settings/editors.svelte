@@ -5,6 +5,7 @@
 	import { MagnifyingGlass, PencilSimple, Trash, UserCirclePlus } from "phosphor-svelte";
 	import UserTable from "./user-table.svelte";
 	import HideOn from "../hide-on.svelte";
+	import { t } from "svelte-i18n";
 
 	export let showAddEditor: boolean = false;
 
@@ -15,11 +16,11 @@
 <nav class="nav-bar">
 	<div class="buttons">
 		<div class="link-list">
-			<TabLink title="Editors" href="/settings/editors" />
-			<TabLink title="Editing For" href="/settings/editors/editing-for" />
+			<TabLink title={$t("common.editors")} href="/settings/editors" />
+			<TabLink title={$t("pages.settings.editors.editing_for")} href="/settings/editors/editing-for" />
 		</div>
 		{#if showAddEditor}
-			<TextInput placeholder="Add Editor">
+			<TextInput placeholder={$t("pages.settings.editors.add_editor")}>
 				<UserCirclePlus slot="icon" />
 			</TextInput>
 		{/if}
@@ -33,7 +34,7 @@
 		{/if}
 	</div>
 	<HideOn mobile>
-		<TextInput placeholder="Search">
+		<TextInput placeholder={$t("labels.search")}>
 			<MagnifyingGlass slot="icon" />
 		</TextInput>
 	</HideOn>

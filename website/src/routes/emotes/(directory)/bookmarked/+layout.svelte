@@ -5,23 +5,20 @@
 	import { defaultEmoteSetDialogMode } from "$/lib/stores";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
+	import { t } from "svelte-i18n";
 </script>
-
-<svelte:head>
-	<title>Bookmarked Emotes - 7TV</title>
-</svelte:head>
 
 <div class="nav-bar">
 	<nav class="tabs">
-		<TabLink href="/emotes/bookmarked" title="Emotes">
+		<TabLink href="/emotes/bookmarked" title={$t("common.emotes", { values: { count: 2 } })}>
 			<Smiley />
 			<Smiley weight="fill" slot="active" />
 		</TabLink>
-		<TabLink href="/emotes/bookmarked/sets" title="Emote Sets">
+		<TabLink href="/emotes/bookmarked/sets" title={$t("common.emote_sets", { values: { count: 2 } })}>
 			<FolderSimple />
 			<FolderSimple weight="fill" slot="active" />
 		</TabLink>
-		<TabLink href="/emotes/bookmarked/users" title="Users">
+		<TabLink href="/emotes/bookmarked/users" title={$t("common.users", { values: { count: 2 } })}>
 			<User />
 			<User weight="fill" slot="active" />
 		</TabLink>

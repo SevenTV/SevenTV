@@ -3,9 +3,10 @@
 	import EmotePreview from "../emote-preview.svelte";
 	import StoreSection from "./store-section.svelte";
 	import { CaretLeft, CaretRight, Crown, Ticket } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 </script>
 
-<StoreSection title="Global Emote Raffle">
+<StoreSection title={$t("pages.store.subscription.raffle")}>
 	<span class="header" slot="header">Dec 2023</span>
 	<div class="carousel">
 		<Button>
@@ -24,7 +25,7 @@
 		</div>
 		<Button secondary>
 			<Ticket slot="icon" />
-			Enter
+			{$t("labels.enter")}
 		</Button>
 	</div>
 </StoreSection>

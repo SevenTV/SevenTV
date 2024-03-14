@@ -2,6 +2,7 @@
 	import { CaretRight } from "phosphor-svelte";
 	import PaymentBrand from "../icons/payment-brand.svelte";
 	import Button from "../input/button.svelte";
+	import { t } from "svelte-i18n";
 
 	export let type: string;
 </script>
@@ -17,22 +18,22 @@
 	<div class="info">
 		{#if type === "paypal"}
 			<p>
-				<span class="heading">Paypal Account</span>
+				<span class="heading">PayPal</span>
 				<br />
 				<span class="details">ayyybubu@gmail.com</span>
 			</p>
 		{:else}
 			<p>
-				<span class="heading">Card Info</span>
+				<span class="heading">{$t("pages.settings.billing.payment_methods.card.title")}</span>
 				<br />
 				<span class="details">
-					Ends in 2215
+					{$t("pages.settings.billing.payment_methods.card.ends_in", { values: { digits: "2215" } })}
 					<br />
-					Expires 06/2029
+					{$t("pages.settings.billing.payment_methods.card.expires", { values: { month: "06", year: "2029" } })}
 				</span>
 			</p>
 			<p style="grid-row: span 2">
-				<span class="heading">Address</span>
+				<span class="heading">{$t("pages.settings.billing.payment_methods.card.address")}</span>
 				<br />
 				<span class="details">
 					Sebastian Fors
@@ -47,14 +48,14 @@
 				</span>
 			</p>
 			<p>
-				<span class="heading">Name</span>
+				<span class="heading">{$t("pages.settings.billing.payment_methods.card.name")}</span>
 				<br />
 				<span class="details">Sebastian Fors</span>
 			</p>
 		{/if}
 		<div class="buttons">
-			<Button style="color: var(--danger)">Remove</Button>
-			<Button secondary>Edit</Button>
+			<Button style="color: var(--danger)">{$t("labels.remove")}</Button>
+			<Button secondary>{$t("labels.edit")}</Button>
 		</div>
 	</div>
 </label>

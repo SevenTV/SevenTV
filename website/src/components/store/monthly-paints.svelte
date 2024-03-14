@@ -3,9 +3,10 @@
 	import PaintPreview from "../paint-preview.svelte";
 	import { DotsThreeVertical, Repeat } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
-<StoreSection title="Monthly Paints">
+<StoreSection title={$t("pages.store.subscription.monthly_paints")}>
 	<div class="buttons" slot="header">
 		<div class="renew-countdown">
 			<Repeat />

@@ -4,19 +4,20 @@
 	import TextInput from "../input/text-input.svelte";
 	import { DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<EmoteDialog width={35} title="Transfer AlienPls" bind:mode>
-	<span class="details">This will transfer AlienPls.</span>
-	<TextInput placeholder="Enter Username">
-		<span class="label">Emote Receipient</span>
+<EmoteDialog width={35} title={$t("dialogs.transfer_emote.title", { values: { emote: "AlienPls" } })} bind:mode>
+	<span class="details">{$t("dialogs.transfer_emote.details", { values: { emote: "AlienPls" } })}</span>
+	<TextInput placeholder={$t("labels.search_users", { values: { count: 1 } })}>
+		<span class="label">{$t("dialogs.transfer_emote.receipient")}</span>
 		<User slot="icon" />
 	</TextInput>
 	<svelte:fragment slot="buttons">
-		<Button on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-		<Button primary submit>Transfer</Button>
+		<Button on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+		<Button primary submit>{$t("dialogs.transfer_emote.transfer")}</Button>
 	</svelte:fragment>
 </EmoteDialog>
 

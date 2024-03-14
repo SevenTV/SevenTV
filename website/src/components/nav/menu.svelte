@@ -24,6 +24,8 @@
 		Sun,
 	} from "phosphor-svelte";
 	import MenuButton from "../input/menu-button.svelte";
+	import { locale, dictionary, t } from "svelte-i18n";
+	import { localeNames } from "$/lib/i18n";
 
 	enum Menu {
 		Root,
@@ -62,30 +64,30 @@
 		<div class="link-list hide-on-desktop">
 			<MenuButton href="/">
 				<House />
-				Home
+				{$t("pages.home.title")}
 			</MenuButton>
 			<MenuButton href="/emotes">
 				<Smiley />
-				Emotes
+				{$t("common.emotes", { values: { count: 2 } })}
 			</MenuButton>
 			<MenuButton href="/discover">
 				<Compass />
-				Discover
+				{$t("pages.discover.title")}
 			</MenuButton>
 			<MenuButton href="/store" style="color: var(--store)">
 				<Star />
-				Store
+				{$t("pages.store.title")}
 			</MenuButton>
 		</div>
 		{#if $user}
 			<div class="link-list">
 				<MenuButton href="/cosmetics">
 					<PaintBrush />
-					Cosmetics
+					{$t("common.cosmetics")}
 				</MenuButton>
 				<MenuButton href="/analytics">
 					<ChartLine />
-					Analytics
+					{$t("common.analytics")}
 				</MenuButton>
 			</div>
 			<hr class="hide-on-mobile" />
@@ -93,20 +95,20 @@
 		<div class="link-list">
 			<MenuButton showCaret on:click={(e) => setMenu(e, Menu.Language)}>
 				<GlobeHemisphereWest />
-				Language
+				{$t("common.language")}
 			</MenuButton>
 			<MenuButton showCaret on:click={(e) => setMenu(e, Menu.Theme)}>
 				<Moon />
-				Theme
+				{$t("common.theme")}
 			</MenuButton>
 			{#if $user}
 				<MenuButton href="/settings" hideOnMobile>
 					<Gear />
-					Settings
+					{$t("common.settings")}
 				</MenuButton>
 				<MenuButton showCaret hideOnDesktop on:click={(e) => setMenu(e, Menu.Settings)}>
 					<Gear />
-					Settings
+					{$t("common.settings")}
 				</MenuButton>
 			{/if}
 		</div>
@@ -114,23 +116,23 @@
 		<div class="link-list">
 			<MenuButton href="https://7tv.io/">
 				<Code />
-				Developer Portal
+				{$t("common.developer_portal")}
 			</MenuButton>
 			<MenuButton href="/contact">
 				<ChatDots />
-				Contact
+				{$t("common.contact")}
 			</MenuButton>
 			<MenuButton href="/faq">
 				<Question />
-				FAQ
+				{$t("common.faq_short")}
 			</MenuButton>
 			<MenuButton href="/privacy">
 				<LockSimple />
-				Privacy Policy
+				{$t("common.privacy")}
 			</MenuButton>
 			<MenuButton href="/tos">
 				<Note />
-				Terms of Service
+				{$t("common.tos")}
 			</MenuButton>
 		</div>
 		{#if $user}
@@ -138,30 +140,38 @@
 			<div class="link-list">
 				<MenuButton on:click={() => ($user = false)}>
 					<SignOut />
-					Sign out
+					{$t("common.sign_out")}
 				</MenuButton>
 			</div>
 		{/if}
 	{:else if menu === Menu.Language}
-		Language Picker
+		<h2>{$t("common.language")}</h2>
+		<div class="link-list">
+			{#each Object.keys($dictionary) as l}
+				<MenuButton on:click={() => ($locale = l)}>
+					<GlobeHemisphereWest />
+					{localeNames[l] || l}
+				</MenuButton>
+			{/each}
+		</div>
 	{:else if menu === Menu.Theme}
-		<h2>Theme</h2>
+		<h2>{$t("common.theme")}</h2>
 		<div class="link-list">
 			<MenuButton on:click={() => ($theme = Theme.System)}>
 				<Sliders />
-				System
+				{$t("themes.system")}
 			</MenuButton>
 			<MenuButton on:click={() => ($theme = Theme.Dark)}>
 				<Moon />
-				Dark
+				{$t("themes.dark")}
 			</MenuButton>
 			<MenuButton on:click={() => ($theme = Theme.Light)}>
 				<Sun />
-				Light
+				{$t("themes.light")}
 			</MenuButton>
 		</div>
 	{:else if menu === Menu.Settings}
-		Settings
+		{$t("common.settings")}
 	{/if}
 </nav>
 

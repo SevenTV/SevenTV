@@ -24,6 +24,7 @@
 	import DeleteEmoteDialog from "$/components/dialogs/delete-emote-dialog.svelte";
 	import ReportEmoteDialog from "$/components/dialogs/report-emote-dialog.svelte";
 	import MenuButton from "$/components/input/menu-button.svelte";
+	import { t } from "svelte-i18n";
 
 	export let data: LayoutData;
 
@@ -69,7 +70,7 @@
 					</a>
 				</div>
 			</a>
-			<Flags flags={["active", "global", "trending", "overlay"]} />
+			<Flags flags={["active", "global", "trending", "overlaying"]} />
 		</div>
 
 		<div class="emote-info">
@@ -86,22 +87,22 @@
 			<div class="buttons">
 				<Button primary>
 					<Plus slot="icon" />
-					Use Emote
+					{$t("pages.emote.use_emote")}
 				</Button>
 				<Button secondary on:click={() => (addEmoteDialogMode = DialogMode.Shown)}>
 					<FolderPlus slot="icon" />
-					Add to...
+					{$t("pages.emote.add_to")}
 				</Button>
 				<Button secondary hideOnMobile on:click={() => (editDialogMode = DialogMode.Shown)}>
 					<NotePencil slot="icon" />
-					Edit
+					{$t("labels.edit")}
 				</Button>
 				<Button secondary hideOnDesktop on:click={() => (editDialogMode = DialogMode.Shown)}>
 					<NotePencil slot="icon" />
 				</Button>
 				<DropDown>
 					<Button secondary hideOnMobile>
-						More
+						{$t("labels.more")}
 						<CaretDown slot="icon-right" />
 					</Button>
 					<Button secondary hideOnDesktop>
@@ -110,19 +111,19 @@
 					<div slot="dropdown" class="dropdown">
 						<MenuButton on:click={() => (transferDialogMode = DialogMode.Shown)}>
 							<PaperPlaneRight />
-							Transfer
+							{$t("pages.emote.transfer")}
 						</MenuButton>
 						<MenuButton>
 							<ArrowsMerge style="transform: rotate(-90deg)" />
-							Merge
+							{$t("pages.emote.merge")}
 						</MenuButton>
 						<MenuButton showCaret>
 							<Download />
-							Download
+							{$t("labels.download")}
 						</MenuButton>
 						<MenuButton on:click={() => (reportDialogMode = DialogMode.Shown)}>
 							<Flag />
-							Report
+							{$t("labels.report")}
 						</MenuButton>
 						<hr />
 						<MenuButton
@@ -130,7 +131,7 @@
 							on:click={() => (deleteDialogMode = DialogMode.Shown)}
 						>
 							<Trash />
-							Delete
+							{$t("labels.delete")}
 						</MenuButton>
 					</div>
 				</DropDown>

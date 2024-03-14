@@ -7,6 +7,7 @@
 	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
 	import { priceFormat } from "$/lib/utils";
 	import TextInput from "$/components/input/text-input.svelte";
+	import { t } from "svelte-i18n";
 
 	const bundles = [
 		{
@@ -44,20 +45,20 @@
 </script>
 
 <svelte:head>
-	<title>Paint Bundles - 7TV</title>
+	<title>{$t("common.paint_bundles")} - 7TV</title>
 </svelte:head>
 
 <Banner
-	title="Make Yourself Glow"
-	subtitle="Nametag Paints Will Let You Express Yourself in Every Hue."
+	title={$t("pages.store.paint_bundles.banner_title")}
+	subtitle={$t("pages.store.paint_bundles.banner_subtitle")}
 	gradientColor="#27cfb1"
 />
 <section>
 	<div class="header">
-		<h2>Paint Bundles</h2>
+		<h2>{$t("common.paint_bundles")}</h2>
 		<div class="buttons">
 			<HideOn mobile>
-				<TextInput placeholder="Search" style="max-width: 12.5rem">
+				<TextInput placeholder={$t("labels.search")} style="max-width: 12.5rem">
 					<MagnifyingGlass slot="icon" />
 				</TextInput>
 			</HideOn>
@@ -66,8 +67,8 @@
 			</Button>
 			<Select
 				options={[
-					{ value: "none", label: "No Filters" },
-					{ value: "filters", label: "Filters" },
+					{ value: "none", label: $t("labels.no_filters") },
+					{ value: "filters", label: $t("labels.filters") },
 				]}
 			/>
 		</div>
@@ -78,7 +79,7 @@
 				<div class="header">
 					<span class="name">{bundle.name}</span>
 					{#if bundle.new}
-						<span class="new">NEW</span>
+						<span class="new">{$t("common.new")}</span>
 					{/if}
 				</div>
 				{#each Array(3) as _}
@@ -87,7 +88,7 @@
 				<div class="buttons">
 					<Button secondary>
 						<Gift slot="icon" />
-						Gift
+						{$t("labels.gift")}
 					</Button>
 					<Button secondary>
 						<ShoppingCartSimple slot="icon" />
@@ -160,6 +161,7 @@
 				padding: 0.2rem 0.5rem;
 				border-radius: 0.25rem;
 				font-size: 0.625rem;
+				text-transform: uppercase;
 			}
 		}
 

@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.slug}</title>
+	<title>{data.slug} - 7TV</title>
 </svelte:head>
 
 <h1>{data.slug}</h1>

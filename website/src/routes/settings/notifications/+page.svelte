@@ -1,18 +1,16 @@
 <script lang="ts">
 	import Toggle from "$/components/input/toggle.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <svelte:head>
-	<title>Notification Settings - 7TV</title>
+	<title>{$t("page_titles.notification_settings")} - 7TV</title>
 </svelte:head>
 
 <section>
 	<div>
-		<h2>Notifications</h2>
-		<span class="details"
-			>Real-time updates and alerts, keeping users informed about important events, messages, and
-			activities within the website or application</span
-		>
+		<h2>{$t("common.notifications")}</h2>
+		<span class="details">{$t("pages.settings.notifications.details")}</span>
 	</div>
 	<div class="content">
 		<div class="notification">

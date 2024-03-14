@@ -2,6 +2,7 @@
 	import Button from "../input/button.svelte";
 	import StoreSection from "./store-section.svelte";
 	import { CaretLeft, CaretRight, Trophy, Gift } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	const topGifters = [
 		{
@@ -27,7 +28,7 @@
 	];
 </script>
 
-<StoreSection title="Top Gifters">
+<StoreSection title={$t("pages.store.subscription.top_gifters")}>
 	<div class="header" slot="header">
 		<Button>
 			<CaretLeft slot="icon" />
@@ -53,7 +54,7 @@
 	</div>
 	<Button secondary style="align-self: flex-end">
 		<Gift slot="icon" />
-		Gift
+		{$t("labels.gift")}
 	</Button>
 </StoreSection>
 

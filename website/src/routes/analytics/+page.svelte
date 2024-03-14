@@ -1,5 +1,9 @@
+<script lang="ts">
+	import { t } from "svelte-i18n";
+</script>
+
 <svelte:head>
-	<title>Analytics - 7TV</title>
+	<title>{$t("common.analytics")} - 7TV</title>
 </svelte:head>
 
-<h1>Analytics</h1>
+<h1>{$t("common.analytics")}</h1>

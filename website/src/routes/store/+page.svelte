@@ -9,20 +9,21 @@
 	import TopGifters from "$/components/store/top-gifters.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
 	import { PaintBrush, Seal, Smiley, Ticket, UserCircle } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	let subbed = false;
 </script>
 
 <svelte:head>
-	<title>Subscription - 7TV</title>
+	<title>{$t("common.subscriptions", { values: { count: 1 } })} - 7TV</title>
 </svelte:head>
 
 <!-- All things called grid here aren't actually css grids -->
 <Banner
-	title={subbed ? "Thank You For the Support" : "Unlock Special Perks"}
+	title={subbed ? $t("pages.store.subscription.banner_title_subbed") : $t("pages.store.subscription.banner_title_unsubbed")}
 	subtitle={subbed
-		? "Enjoy Your Special Subscriber Perks!"
-		: "Subscribe to Ehnance Your Chatting Experience."}
+		? $t("pages.store.subscription.banner_subtitle_subbed")
+		: $t("pages.store.subscription.banner_subtitle_unsubbed")}
 >
 	<div class="banner-icons hide-on-mobile">
 		<PaintBrush size="1.8rem" />

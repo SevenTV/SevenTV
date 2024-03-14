@@ -1,5 +1,5 @@
 <script lang="ts">
-	import moment from "moment";
+	import moment from 'moment/min/moment-with-locales';
 	import Button from "./input/button.svelte";
 	import { DotsThree } from "phosphor-svelte";
 	import DropDown from "./drop-down.svelte";

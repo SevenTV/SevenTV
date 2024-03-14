@@ -5,16 +5,17 @@
 	import Checkbox from "./input/checkbox.svelte";
 	import Flags from "./flags.svelte";
 	import Radio from "./input/radio.svelte";
+	import { t } from "svelte-i18n";
 
 	export let radioName: string | null = null;
 
 	$: input = radioName ? Radio : Checkbox;
 </script>
 
-<TextInput placeholder="Search Emote Set">
+<TextInput placeholder={$t("labels.search_emote_set")}>
 	<MagnifyingGlass slot="icon" />
 </TextInput>
-<Expandable title="Pinned">
+<Expandable title={$t("common.pinned")}>
 	{#each Array(3) as _, i}
 		<svelte:component this={input} option name={radioName ?? ""}>
 			<div slot="left-label" class="emote-set">

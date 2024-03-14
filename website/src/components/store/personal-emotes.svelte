@@ -3,15 +3,16 @@
 	import EmoteSetPreview from "../emote-set-preview.svelte";
 	import { NotePencil } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
-<StoreSection title="Personal Emotes">
+<StoreSection title={$t("common.personal_emotes")}>
 	<div class="container">
 		<EmoteSetPreview bg="light" />
 	</div>
 	<Button secondary style="align-self: flex-end">
 		<NotePencil slot="icon" />
-		Edit
+		{$t("labels.edit")}
 	</Button>
 </StoreSection>
 

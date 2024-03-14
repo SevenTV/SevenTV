@@ -4,6 +4,7 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import { signInDialogMode, user } from "$/lib/stores";
 	import { Key, PencilSimple, Bell, CreditCard, Prohibit, MagnifyingGlass } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	$: if (!$user && !$signInDialogMode) {
 		$signInDialogMode = DialogMode.ShownWithoutClose;
@@ -11,23 +12,23 @@
 </script>
 
 <svelte:head>
-	<title>Settings - 7TV</title>
+	<title>{$t("common.settings")} - 7TV</title>
 </svelte:head>
 
 {#if $user}
 	<div class="side-bar-layout">
 		<aside class="side-bar">
-			<h1>Settings</h1>
-			<TextInput placeholder="Search">
+			<h1>{$t("common.settings")}</h1>
+			<TextInput placeholder={$t("labels.search")}>
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 			<nav class="link-list">
-				<TabLink title="Account" href="/settings" big>
+				<TabLink title={$t("pages.settings.account")} href="/settings" big>
 					<Key />
 					<Key weight="fill" slot="active" />
 				</TabLink>
 				<TabLink
-					title="Editors"
+					title={$t("common.editors")}
 					href="/settings/editors"
 					matcher={(_id, url, href) => !!href && url.pathname.startsWith(href)}
 					big
@@ -35,15 +36,15 @@
 					<PencilSimple />
 					<PencilSimple weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Notifications" href="/settings/notifications" big>
+				<TabLink title={$t("common.notifications")} href="/settings/notifications" big>
 					<Bell />
 					<Bell weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Blocked" href="/settings/blocked" big>
+				<TabLink title={$t("pages.settings.blocked.title")} href="/settings/blocked" big>
 					<Prohibit />
 					<Prohibit weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Billing" href="/settings/billing" big>
+				<TabLink title={$t("pages.settings.billing.title")} href="/settings/billing" big>
 					<CreditCard />
 					<CreditCard weight="fill" slot="active" />
 				</TabLink>

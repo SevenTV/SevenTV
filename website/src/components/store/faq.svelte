@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Plus, Question } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	const qas = [
 		{
@@ -20,7 +21,7 @@
 <section>
 	<div class="header">
 		<Question />
-		<h2>Frequently Asked Questions</h2>
+		<h2>{$t("common.faq")}</h2>
 	</div>
 	<div class="faq">
 		{#each qas as qa}

@@ -3,6 +3,7 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import { Layout, discoverFollowingLayout } from "$/lib/stores";
 	import { ListDashes, GridFour, Pulse, Upload } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <svelte:head>
@@ -11,11 +12,11 @@
 
 <div class="nav">
 	<div class="tabs">
-		<TabLink title="Uploads" href="/discover/following">
+		<TabLink title={$t("pages.discover.uploads")} href="/discover/following">
 			<Upload />
 			<Upload weight="fill" slot="active" />
 		</TabLink>
-		<TabLink title="Activity" href="/discover/following/activity">
+		<TabLink title={$t("common.activity")} href="/discover/following/activity">
 			<Pulse />
 			<Pulse weight="fill" slot="active" />
 		</TabLink>

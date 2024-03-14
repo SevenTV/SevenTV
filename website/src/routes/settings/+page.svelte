@@ -12,29 +12,28 @@
 	import TextInput from "$/components/input/text-input.svelte";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import DeleteAccountDialog from "$/components/dialogs/delete-account-dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	let twoFaActive = false;
 	let deleteAccountDialogMode = DialogMode.Hidden;
 </script>
 
 <svelte:head>
-	<title>Account Settings - 7TV</title>
+	<title>{$t("page_titles.account_settings")} - 7TV</title>
 </svelte:head>
 
 <DeleteAccountDialog bind:mode={deleteAccountDialogMode} />
 <section>
 	<div>
-		<h2>Profile</h2>
+		<h2>{$t("common.profile")}</h2>
 		<span class="details">
-			Customize preferences and manage details to suit your individual needs
+			{$t("pages.settings.account.profile.details")}
 		</span>
 	</div>
 	<div class="content">
 		<span>
-			<h3>Display Name</h3>
-			<span class="details">
-				Choose a main connection that will be used for your display name and static profile picture
-			</span>
+			<h3>{$t("pages.settings.account.profile.display_name")}</h3>
+			<span class="details">{$t("pages.settings.account.profile.display_name_description")}</span>
 		</span>
 		<Select
 			options={[
@@ -46,27 +45,29 @@
 		/>
 		<hr />
 		<span>
-			<h3>Profile Picture</h3>
-			<span class="details">
-				Choose a profile picture that will be displayed on all platforms
-			</span>
+			<h3>{$t("common.profile_picture")}</h3>
+			<span class="details">{$t("pages.settings.account.profile.profile_picture_description")}</span
+			>
 		</span>
 		<div class="profile-picture">
 			<div class="placeholder"></div>
 			<div class="buttons">
-				<Button secondary>Update Profile Picture</Button>
+				<Button secondary>{$t("pages.settings.account.profile.update_profile_picture")}</Button>
 				<Button>
 					<Trash slot="icon" />
 				</Button>
 			</div>
-			<span class="limits">TODO Max size and frames</span>
+			<span class="limits">
+				{$t("file_limits.max_size", { values: { size: "7MB" } })},
+				{$t("file_limits.max_resolution", { values: { width: "1000", height: "1000" } })}
+			</span>
 		</div>
 	</div>
 </section>
 
 <section>
 	<div>
-		<h2>Connections</h2>
+		<h2>{$t("common.connections")}</h2>
 		<span class="details">
 			Manage and link external accounts to streamline access and enhance interoperability within the
 			platform
@@ -78,98 +79,98 @@
 				<TwitchLogo />
 				<span>Twitch – ayyybubu</span>
 			</div>
-			<Button secondary>Disconnect</Button>
+			<Button secondary>{$t("labels.disconnect")}</Button>
 		</li>
 		<li>
 			<div class="platform">
 				<YoutubeLogo />
 				<span>YouTube – ayyybubu</span>
 			</div>
-			<Button secondary>Disconnect</Button>
+			<Button secondary>{$t("labels.disconnect")}</Button>
 		</li>
 		<li>
 			<div class="platform">
 				<KickLogo />
 				<span>Kick – gambabubu</span>
 			</div>
-			<Button secondary>Disconnect</Button>
+			<Button secondary>{$t("labels.disconnect")}</Button>
 		</li>
 		<li>
 			<div class="platform">
 				<DiscordLogo />
 				<span>Discord</span>
 			</div>
-			<Button primary>Connect</Button>
+			<Button primary>{$t("labels.connect")}</Button>
 		</li>
 		<li>
 			<div class="platform">
 				<XTwitterLogo />
 				<span>X / Twitter</span>
 			</div>
-			<Button primary>Connect</Button>
+			<Button primary>{$t("labels.connect")}</Button>
 		</li>
 	</ul>
 </section>
 
 <section>
 	<div>
-		<h2>Security</h2>
-		<span class="details">
-			Manage and customize your account security with options like password updates and two-factor
-			authentication
-		</span>
+		<h2>{$t("pages.settings.account.security.title")}</h2>
+		<span class="details">{$t("pages.settings.account.security.details")}</span>
 	</div>
 	<div class="content">
 		<TextInput type="email" style="max-width: 30rem">
 			<At slot="icon" />
-			<h3>Email</h3>
+			<h3>{$t("labels.email")}</h3>
 		</TextInput>
 		<TextInput type="password" style="max-width: 30rem">
 			<Password slot="icon" />
-			<h3>Password</h3>
+			<h3>{$t("labels.password")}</h3>
 		</TextInput>
 		<hr />
 		<Toggle bind:value={twoFaActive}>
 			<div>
-				<h3>Two Factor Authentication</h3>
-				<span class="details"
-					>Enhance the security of your account with Two-Factor Authentication (2FA)</span
-				>
+				<h3>{$t("pages.settings.account.security.2fa")}</h3>
+				<span class="details">{$t("pages.settings.account.security.2fa_details")}</span>
 			</div>
 		</Toggle>
 		{#if twoFaActive}
 			<Checkbox>
 				<div>
-					<h3>Email</h3>
-					<span class="details">Receive a verification code via email</span>
+					<h3>{$t("labels.email")}</h3>
+					<span class="details">{$t("pages.settings.account.security.email_details")}</span>
 				</div>
 			</Checkbox>
 			<Checkbox>
 				<div>
-					<h3>Authenticator App</h3>
-					<span class="details">Install an app to generate your verification code</span>
+					<h3>{$t("pages.settings.account.security.authenticator_app")}</h3>
+					<span class="details">
+						{$t("pages.settings.account.security.authenticator_app_details")}
+					</span>
 				</div>
 			</Checkbox>
 		{/if}
 		<hr />
 		<span>
-			<h3>Sign Out Everywhere</h3>
-			<span class="details">Ensure security and log out from all devices with a single click</span>
+			<h3>{$t("pages.settings.account.security.sign_out_everywhere")}</h3>
+			<span class="details">
+				{$t("pages.settings.account.security.sign_out_everywhere_details")}
+			</span>
 		</span>
-		<Button secondary style="align-self: flex-start">Sign Out Everywhere</Button>
+		<Button secondary style="align-self: flex-start">
+			{$t("pages.settings.account.security.sign_out_everywhere")}
+		</Button>
 		<hr />
 		<span>
-			<h3>Delete Account</h3>
-			<span class="details"
-				>Permanently remove all personal information and associated data from the platform,
-				terminating your account</span
-			>
+			<h3>{$t("common.delete_account")}</h3>
+			<span class="details">{$t("pages.settings.account.security.delete_account_details")}</span>
 		</span>
 		<Button
 			secondary
 			style="align-self: flex-start; color: var(--danger);"
-			on:click={() => (deleteAccountDialogMode = DialogMode.Shown)}>Delete Account</Button
+			on:click={() => (deleteAccountDialogMode = DialogMode.Shown)}
 		>
+			{$t("common.delete_account")}
+		</Button>
 	</div>
 </section>
 

@@ -3,6 +3,7 @@
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import MessagePreview from "./message-preview.svelte";
+	import { t } from "svelte-i18n";
 
 	export let popup = false;
 
@@ -11,8 +12,8 @@
 
 <div class="dms" class:popup>
 	<div class="header">
-		<h1>Direct Messages</h1>
-		<Button title="Mark all as read" on:click={() => (read = !read)}>
+		<h1>{$t("common.direct_messages")}</h1>
+		<Button on:click={() => (read = !read)}>
 			<svelte:fragment slot="icon">
 				{#if read}
 					<EnvelopeSimple />

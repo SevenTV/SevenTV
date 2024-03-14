@@ -4,13 +4,14 @@
 	import EmotePreview from "../emote-preview.svelte";
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
 <Dialog width={35} bind:mode>
 	<div class="layout">
-		<h1>Copy selected emotes to</h1>
+		<h1>{$t("dialogs.copy_emotes.title")}</h1>
 		<hr />
 		<EmoteContainer layout={Layout.SmallGrid} style="max-height: 11rem" scrollable>
 			{#each Array(100) as _, i}

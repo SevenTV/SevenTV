@@ -1,9 +1,10 @@
 <script lang="ts">
 	import MonthlyPaints from "$/components/store/monthly-paints.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <svelte:head>
-	<title>Overview - 7TV Admin</title>
+	<title>{$t("pages.admin.overview")} - 7TV Admin</title>
 </svelte:head>
 
 <div class="grid">
