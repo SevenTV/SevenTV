@@ -125,7 +125,7 @@
     },
     "activities": {
         "added_to_set": "Added new emote to {emote_set}",
-        "created": "{user} created {emote}",
+        "create": "{user} created {emote}",
         "modify": "{user} modified {emote}",
         "approve": "{user} approved {emote}",
         "reject": "{user} rejected {emote}"
@@ -268,7 +268,10 @@
                 "banner_title_unsubbed": "Unlock Special Perks",
                 "banner_subtitle_subbed": "Enjoy Your Special Subscriber Perks!",
                 "banner_subtitle_unsubbed": "Subscribe to Ehnance Your Chatting Experience.",
-                "badge_progress": "Badge Progess",
+                "badge_progress": {
+                    "title": "Badge Progess",
+                    "left": "{duration} left"
+                },
                 "benefits": {
                     "title": "Subscription Benefits",
                     "animated_avatar": "Animated Profile Picture",

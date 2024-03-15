@@ -108,8 +108,8 @@
 		<div class="buttons">
 			<Select
 				options={[
-					{ value: "none", label: "No Filters" },
-					{ value: "filter", label: "Filter" },
+					{ value: "none", label: $t("labels.no_filters") },
+					{ value: "filters", label: $t("labels.filters") },
 				]}
 			/>
 			<TextInput placeholder={$t("labels.search")}>

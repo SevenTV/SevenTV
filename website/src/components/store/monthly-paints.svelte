@@ -4,13 +4,14 @@
 	import { DotsThreeVertical, Repeat } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import { t } from "svelte-i18n";
+	import moment from "moment/min/moment-with-locales";
 </script>
 
 <StoreSection title={$t("pages.store.subscription.monthly_paints")}>
 	<div class="buttons" slot="header">
 		<div class="renew-countdown">
 			<Repeat />
-			<span>12 d</span>
+			<span>{moment.duration(12, "days").humanize()}</span>
 		</div>
 		<Button secondary>
 			<DotsThreeVertical slot="icon" />

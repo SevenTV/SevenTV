@@ -46,7 +46,7 @@
 						<Flags flags={["paid"]} />
 					</td>
 					<td class="amount">
-						{priceFormat.format(5.99 + i * 2.5)}
+						{priceFormat().format(5.99 + i * 2.5)}
 					</td>
 					<td class="shrink">
 						<Button on:click={() => alert("download invoice")}>

@@ -23,7 +23,7 @@
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 			<nav class="link-list">
-				<TabLink title={$t("pages.settings.account")} href="/settings" big>
+				<TabLink title={$t("pages.settings.account.title")} href="/settings" big>
 					<Key />
 					<Key weight="fill" slot="active" />
 				</TabLink>

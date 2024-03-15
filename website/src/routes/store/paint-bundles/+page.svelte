@@ -94,9 +94,9 @@
 						<ShoppingCartSimple slot="icon" />
 						<span>
 							{#if bundle.oldPrice}
-								<del>{priceFormat.format(bundle.oldPrice / 100)}</del>
+								<del>{priceFormat().format(bundle.oldPrice / 100)}</del>
 							{/if}
-							{priceFormat.format(bundle.price / 100)}
+							{priceFormat().format(bundle.price / 100)}
 						</span>
 					</Button>
 				</div>

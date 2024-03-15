@@ -44,7 +44,7 @@
 								]}
 							/>
 						</td>
-						<td class="price">{priceFormat.format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								<Trash slot="icon" />
@@ -74,7 +74,7 @@
 							</div>
 						</td>
 						<td class="name">Christmas Bundle</td>
-						<td class="price">{priceFormat.format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								<Trash slot="icon" />
@@ -83,7 +83,7 @@
 					</tr>
 					<tr class="hide-on-desktop">
 						<td class="name">Christmas Bundle</td>
-						<td class="price">{priceFormat.format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								<Trash slot="icon" />
@@ -102,7 +102,7 @@
 		<div class="footer">
 			<div class="total">
 				<span>{$t("dialogs.cart.total")}</span>
-				<span>{priceFormat.format(7.96)}</span>
+				<span>{priceFormat().format(7.96)}</span>
 			</div>
 			<div class="buttons">
 				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
