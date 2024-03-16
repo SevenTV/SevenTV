@@ -7,6 +7,13 @@
 	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
+
+	const reasons = [
+		$t("dialogs.delete_account.reasons.no_longer_use"),
+		$t("dialogs.delete_account.reasons.privacy_concerns"),
+		$t("dialogs.delete_account.reasons.not_useful"),
+		$t("dialogs.delete_account.reasons.other"),
+	];
 </script>
 
 <Dialog bind:mode>
@@ -20,24 +27,13 @@
 		</div>
 		<div class="reasons">
 			<span class="label">{$t("dialogs.delete_account.choose_reasons")}</span>
-			<Checkbox option>
-				<span class="label" slot="left-label"
-					>{$t("dialogs.delete_account.reasons.no_longer_use")}</span
-				>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label"
-					>{$t("dialogs.delete_account.reasons.privacy_concerns")}</span
-				>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label"
-					>{$t("dialogs.delete_account.reasons.not_useful")}</span
-				>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">{$t("dialogs.delete_account.reasons.other")}</span>
-			</Checkbox>
+			{#each reasons as reason}
+				<Checkbox option>
+					<span class="label" slot="left-label">
+						{reason}
+					</span>
+				</Checkbox>
+			{/each}
 		</div>
 		<TextInput placeholder="ayyybubu">
 			<span class="label">{$t("dialogs.delete_account.confirm_username")}</span>
