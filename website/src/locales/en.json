@@ -303,7 +303,8 @@
 			"use_emote": "Use Emote",
 			"add_to": "Add to...",
 			"transfer": "Transfer",
-			"merge": "Merge"
+			"merge": "Merge",
+			"size": "Size"
 		},
 		"user": {
 			"about": "About",

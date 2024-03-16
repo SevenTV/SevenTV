@@ -162,7 +162,7 @@
 						{:else if moreMenuMode === MoreMenuMode.DownloadSize}
 							{#each [1, 2, 3, 4] as size}
 								<MenuButton on:click={() => download(size)}>
-									{size}x Size
+									{size}x {$t("pages.emote.size")}
 								</MenuButton>
 							{/each}
 						{/if}
