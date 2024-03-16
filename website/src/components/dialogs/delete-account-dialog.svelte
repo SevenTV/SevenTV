@@ -4,42 +4,43 @@
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Checkbox from "../input/checkbox.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
+
+	const reasons = [
+		$t("dialogs.delete_account.reasons.no_longer_use"),
+		$t("dialogs.delete_account.reasons.privacy_concerns"),
+		$t("dialogs.delete_account.reasons.not_useful"),
+		$t("dialogs.delete_account.reasons.other"),
+	];
 </script>
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>Delete Account</h1>
+		<h1>{$t("common.delete_account")}</h1>
 		<hr />
 		<div class="warning">
 			<Warning size="4rem" weight="fill" color="var(--danger)" />
-			<h2>Warning</h2>
-			<span class="details"
-				>This action will delete your account permanently. You cannot undo this action.</span
-			>
+			<h2>{$t("dialogs.delete_account.warning")}</h2>
+			<span class="details">{$t("dialogs.delete_account.warning_message")}</span>
 		</div>
 		<div class="reasons">
-			<span class="label">Choose the reasons for account deletion</span>
-			<Checkbox option>
-				<span class="label" slot="left-label">Forsen</span>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">moo</span>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">oom</span>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">Need more money for gamba</span>
-			</Checkbox>
+			<span class="label">{$t("dialogs.delete_account.choose_reasons")}</span>
+			{#each reasons as reason}
+				<Checkbox option>
+					<span class="label" slot="left-label">
+						{reason}
+					</span>
+				</Checkbox>
+			{/each}
 		</div>
 		<TextInput placeholder="ayyybubu">
-			<span class="label">Enter your username to confirm</span>
+			<span class="label">{$t("dialogs.delete_account.confirm_username")}</span>
 		</TextInput>
 		<div class="buttons">
-			<Button style="color: var(--danger)" submit>Delete</Button>
-			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
+			<Button style="color: var(--danger)" submit>{$t("labels.delete")}</Button>
+			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
 		</div>
 	</form>
 </Dialog>

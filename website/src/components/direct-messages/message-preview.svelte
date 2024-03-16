@@ -1,5 +1,5 @@
 <script lang="ts">
-	import moment from "moment";
+	import moment from "moment/min/moment-with-locales";
 </script>
 
 <a class="preview" href="/direct-messages/ayyybubu">

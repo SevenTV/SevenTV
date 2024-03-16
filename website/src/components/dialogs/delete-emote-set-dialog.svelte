@@ -3,6 +3,7 @@
 	import EmoteSetPreview from "../emote-set-preview.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
@@ -13,16 +14,14 @@
 			<EmoteSetPreview />
 		</div>
 		<div class="content">
-			<h1>Delete Cat Emotes</h1>
-			<span class="details"
-				>This will delete your emote set permanently. You cannot undo this action.</span
-			>
-			<TextInput placeholder="Reason">
-				<span class="label">Reason for deletion</span>
+			<h1>{$t("dialogs.delete_emote_or_set.title", { values: { name: "Cat Emotes" } })}</h1>
+			<span class="details">{$t("dialogs.delete_emote_or_set.warning_message_set")}</span>
+			<TextInput placeholder={$t("dialogs.delete_emote_or_set.reason")}>
+				<span class="label">{$t("dialogs.delete_emote_or_set.reason_for_deletion")}</span>
 			</TextInput>
 			<div class="buttons">
-				<Button style="color: var(--danger)" submit>Delete</Button>
-				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
+				<Button style="color: var(--danger)" submit>{$t("labels.delete")}</Button>
+				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
 			</div>
 		</div>
 	</form>

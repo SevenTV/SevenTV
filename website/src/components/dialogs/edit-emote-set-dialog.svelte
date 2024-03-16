@@ -5,6 +5,7 @@
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import DeleteEmoteSetDialog from "./delete-emote-set-dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 
@@ -19,29 +20,29 @@
 <DeleteEmoteSetDialog bind:mode={deleteDialogMode} />
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>Edit Emote Set</h1>
+		<h1>{$t("dialogs.edit_emote_set.title")}</h1>
 		<hr />
-		<TextInput placeholder="Emote Set name">
-			<span class="label">Emote set name</span>
+		<TextInput placeholder={$t("labels.emote_set_name")}>
+			<span class="label">{$t("labels.emote_set_name")}</span>
 		</TextInput>
 		<div class="tags">
 			<TagsInput>
-				<span class="label">Tags</span>
+				<span class="label">{$t("labels.tags")}</span>
 			</TagsInput>
 		</div>
 		<div>
-			<span class="label">Settings</span>
+			<span class="label">{$t("common.settings")}</span>
 			<div class="settings">
-				<Checkbox>Show on Profile</Checkbox>
-				<Checkbox>Publicly Listed</Checkbox>
+				<Checkbox>{$t("dialogs.edit_emote_set.show_on_profile")}</Checkbox>
+				<Checkbox>{$t("dialogs.edit_emote_set.publicly_listed")}</Checkbox>
 			</div>
 		</div>
 		<div class="buttons">
-			<Button style="color: var(--danger); margin-right: auto;" on:click={onDeleteClick}
-				>Delete</Button
-			>
-			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-			<Button primary submit>Save</Button>
+			<Button style="color: var(--danger); margin-right: auto;" on:click={onDeleteClick}>
+				{$t("labels.delete")}
+			</Button>
+			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+			<Button primary submit>{$t("labels.save")}</Button>
 		</div>
 	</form>
 </Dialog>

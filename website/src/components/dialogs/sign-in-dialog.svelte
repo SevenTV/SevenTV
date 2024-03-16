@@ -7,6 +7,7 @@
 	import TwitchLogo from "../icons/twitch-logo.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
 	import { Envelope } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 
@@ -20,34 +21,37 @@
 	<div class="layout">
 		<div class="header">
 			<Logo size={3 * 16} />
-			<h1>Sign in to 7TV</h1>
-			<span class="details">Sign in or create an account to continue</span>
+			<h1>{$t("dialogs.sign_in.title")}</h1>
+			<span class="details">{$t("dialogs.sign_in.subtitle")}</span>
 		</div>
 		<div class="buttons">
 			<Button secondary big on:click={login}>
 				<Envelope slot="icon" />
-				Use Email
+				{$t("dialogs.sign_in.email")}
 			</Button>
 			<Button secondary big on:click={login}>
 				<TwitchLogo slot="icon" />
-				Continue with Twitch
+				{$t("dialogs.sign_in.continue_with", { values: { platform: "Twitch" } })}
 			</Button>
 			<Button secondary big on:click={login}>
 				<GoogleLogo slot="icon" />
-				Continue with Google
+				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
 			</Button>
 			<Button secondary big on:click={login}>
 				<DiscordLogo slot="icon" />
-				Continue with Discord
+				{$t("dialogs.sign_in.continue_with", { values: { platform: "Discord" } })}
 			</Button>
-			<a class="trouble" href="/trouble" on:click={() => (mode = DialogMode.Hidden)}
-				>Trouble signing in?</a
-			>
+			<a class="trouble" href="/trouble" on:click={() => (mode = DialogMode.Hidden)}>
+				{$t("dialogs.sign_in.trouble")}
+			</a>
 		</div>
 		<hr />
+		<!-- i18n could be improved here -->
 		<span class="legal-yapping">
-			By continuing, you agree to the <a href="/tos" target="_blank">Terms of Service</a> and the
-			<a href="/privacy" target="_blank">Privacy Policy</a>.
+			{$t("dialogs.sign_in.legal_yapping")}
+			<a href="/tos" target="_blank">{$t("common.tos")}</a>
+			{$t("dialogs.sign_in.and")}
+			<a href="/privacy" target="_blank">{$t("common.privacy")}</a>.
 		</span>
 	</div>
 </Dialog>

@@ -3,8 +3,9 @@
 	import Button from "../input/button.svelte";
 	import Checkbox from "../input/checkbox.svelte";
 	import Date from "../date.svelte";
-	import moment from "moment";
+	import moment from "moment/min/moment-with-locales";
 	import Flags from "../flags.svelte";
+	import { t } from "svelte-i18n";
 
 	export let selectedMap: boolean[];
 
@@ -31,9 +32,9 @@
 						on:click={selectAllClick}
 					/>
 				</th>
-				<th>Name</th>
-				<th>Last Modified</th>
-				<th>Permissions</th>
+				<th>{$t("pages.settings.user_table.name")}</th>
+				<th>{$t("pages.settings.user_table.last_modified")}</th>
+				<th>{$t("pages.settings.user_table.permissions")}</th>
 				<th></th>
 			</tr>
 		</thead>

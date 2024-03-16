@@ -1,5 +1,7 @@
-<svelte:head>
-	<title>Emote Sets - 7TV</title>
-</svelte:head>
+<script lang="ts">
+	import { t } from "svelte-i18n";
+</script>
 
-<h1>Emote Sets</h1>
+<svelte:head>
+	<title>{$t("common.emote_sets", { values: { count: 2 } })} - 7TV</title>
+</svelte:head>

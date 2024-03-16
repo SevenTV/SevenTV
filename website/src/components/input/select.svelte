@@ -7,6 +7,7 @@
 	import { fade } from "svelte/transition";
 	import Button from "./button.svelte";
 	import type { ComponentType } from "svelte"; // eslint-disable-line @typescript-eslint/no-unused-vars
+	import { t } from "svelte-i18n";
 
 	type Option = {
 		value: string;
@@ -52,7 +53,7 @@
 			{/if}
 			{selectedLabel.label}
 		{:else}
-			Select
+			{$t("labels.select")}
 		{/if}
 		<CaretDown slot="icon-right" size="1rem" />
 	</Button>

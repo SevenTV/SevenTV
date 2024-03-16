@@ -25,6 +25,7 @@
 	import TwitchLogo from "$/components/icons/twitch-logo.svelte";
 	import YoutubeLogo from "$/components/icons/youtube-logo.svelte";
 	import XTwitterLogo from "$/components/icons/x-twitter-logo.svelte";
+	import { t } from "svelte-i18n";
 
 	export let data: LayoutData;
 
@@ -51,31 +52,31 @@
 			<span>
 				1.4k
 				<br class="hide-on-mobile" />
-				<span class="text">followers</span>
+				<span class="text">{$t("common.followers", { values: { count: 1400 } })}</span>
 			</span>
 			<span>
 				1.2M
 				<br class="hide-on-mobile" />
-				<span class="text">channels</span>
+				<span class="text">{$t("common.channels", { values: { count: 1_200_000 } })}</span>
 			</span>
 		</div>
 		<div class="buttons">
 			<Button primary style="flex-grow: 1; justify-content: center;">
 				<Heart slot="icon" />
-				Follow
+				{$t("labels.follow")}
 			</Button>
 			<Button secondary hideOnMobile>
 				<CaretDown slot="icon" />
 			</Button>
 			<Button secondary hideOnDesktop>
 				<Gift slot="icon" />
-				Gift
+				{$t("labels.gift")}
 			</Button>
 		</div>
 		<nav class="link-list hide-on-mobile">
 			<Button big on:click={() => (connectionsExpanded = !connectionsExpanded)}>
 				<Link slot="icon" />
-				Connections
+				{$t("common.connections")}
 				{#if connectionsExpanded}
 					<CaretDown slot="icon-right" style="margin-left: auto" />
 				{:else}
@@ -100,7 +101,7 @@
 			{/if}
 			<Button big on:click={() => (editorsExpanded = !editorsExpanded)}>
 				<UserCircle slot="icon" />
-				Editors
+				{$t("common.editors")}
 				{#if editorsExpanded}
 					<CaretDown slot="icon-right" style="margin-left: auto" />
 				{:else}
@@ -114,32 +115,36 @@
 				</div>
 			{/if}
 			<hr />
-			<TabLink title="Active Emotes" href="/user/{data.username}" big>
+			<TabLink title={$t("pages.user.active_emotes")} href="/user/{data.username}" big>
 				<Lightning />
 				<Lightning weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title="Uploaded Emotes" href="/user/{data.username}/uploaded" big>
+			<TabLink title={$t("pages.user.uploaded_emotes")} href="/user/{data.username}/uploaded" big>
 				<Upload />
 				<Upload weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets" big>
+			<TabLink
+				title={$t("common.emote_sets", { values: { count: 2 } })}
+				href="/user/{data.username}/emote-sets"
+				big
+			>
 				<FolderSimple />
 				<FolderSimple weight="fill" slot="active" />
 			</TabLink>
 			<hr />
-			<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics" big>
+			<TabLink title={$t("common.cosmetics")} href="/user/{data.username}/cosmetics" big>
 				<PaintBrush />
 				<PaintBrush weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title="Activity" href="/user/{data.username}/activity" big>
+			<TabLink title={$t("common.activity")} href="/user/{data.username}/activity" big>
 				<Pulse />
 				<Pulse weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title="Analytics" href="/user/{data.username}/analytics" big>
+			<TabLink title={$t("common.analytics")} href="/user/{data.username}/analytics" big>
 				<ChartLineUp />
 				<ChartLineUp weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments" big>
+			<TabLink title={$t("common.mod_comments")} href="/user/{data.username}/mod-comments" big>
 				<ChatCircleText />
 				<ChatCircleText weight="fill" slot="active" />
 			</TabLink>
@@ -151,35 +156,38 @@
 	<div class="content">
 		<div class="header hide-on-desktop">
 			<nav class="tabs">
-				<TabLink title="About" href="/user/{data.username}/about">
+				<TabLink title={$t("pages.user.about")} href="/user/{data.username}/about">
 					<IdentificationCard />
 					<IdentificationCard weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Active" href="/user/{data.username}">
+				<TabLink title={$t("common.active")} href="/user/{data.username}">
 					<Lightning />
 					<Lightning weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Uploaded" href="/user/{data.username}/uploaded">
+				<TabLink title={$t("pages.user.uploaded")} href="/user/{data.username}/uploaded">
 					<Upload />
 					<Upload weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Emote Sets" href="/user/{data.username}/emote-sets">
+				<TabLink
+					title={$t("common.emote_sets", { values: { count: 2 } })}
+					href="/user/{data.username}/emote-sets"
+				>
 					<FolderSimple />
 					<FolderSimple weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Cosmetics" href="/user/{data.username}/cosmetics">
+				<TabLink title={$t("common.cosmetics")} href="/user/{data.username}/cosmetics">
 					<PaintBrush />
 					<PaintBrush weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Activity" href="/user/{data.username}/activity">
+				<TabLink title={$t("common.activity")} href="/user/{data.username}/activity">
 					<Pulse />
 					<Pulse weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Analytics" href="/user/{data.username}/analytics">
+				<TabLink title={$t("common.analytics")} href="/user/{data.username}/analytics">
 					<ChartLineUp />
 					<ChartLineUp weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title="Mod Comments" href="/user/{data.username}/mod-comments">
+				<TabLink title={$t("common.mod_comments")} href="/user/{data.username}/mod-comments">
 					<ChatCircleText />
 					<ChatCircleText weight="fill" slot="active" />
 				</TabLink>

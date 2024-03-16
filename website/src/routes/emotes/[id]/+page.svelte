@@ -6,6 +6,7 @@
 	import { CaretLeft, CaretRight, MagnifyingGlass } from "phosphor-svelte";
 	import type { LayoutData } from "./$types";
 	import TextInput from "$/components/input/text-input.svelte";
+	import { t } from "svelte-i18n";
 
 	export let data: LayoutData;
 </script>
@@ -22,7 +23,7 @@
 			</Button>
 		</div>
 		<HideOn mobile>
-			<TextInput placeholder="Search" style="max-width: 12.5rem">
+			<TextInput placeholder={$t("labels.search")} style="max-width: 12.5rem">
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</HideOn>

@@ -6,72 +6,68 @@
 	import SubInfo from "$/components/sub-info.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
-	import moment from "moment";
+	import moment from "moment/min/moment-with-locales";
 	import { MagnifyingGlass, Plus } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	let historyTab: "all" | "subscriptions" | "other" = "all";
 </script>
 
 <svelte:head>
-	<title>Billing Settings - 7TV</title>
+	<title>{$t("page_titles.billing_settings")} - 7TV</title>
 </svelte:head>
 
 <section>
 	<div>
-		<h2>Your Subscription</h2>
-		<span class="details"
-			>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet
-			ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa.
-			Corporis possimus aspernatur soluta.</span
-		>
+		<h2>{$t("common.your_subscription")}</h2>
+		<span class="details">{$t("pages.settings.billing.subscription.details")}</span>
 	</div>
 	<div class="content">
 		<SubInfo style="padding-block: 0" />
 		<hr />
 		<Toggle>
 			<div>
-				<h3>Use Subscription Credits</h3>
-				<span class="details"
-					>Your subscription credits will be used first for your next billing</span
-				>
+				<h3>{$t("pages.settings.billing.subscription.use_credits")}</h3>
+				<span class="details">{$t("pages.settings.billing.subscription.use_credits_details")}</span>
 			</div>
 		</Toggle>
 		<hr />
 		<div>
-			<h3>Subscription Cancelled</h3>
-			<span class="details">Your subscription benefits will expire on {moment().format("ll")}</span>
+			<h3>{$t("pages.settings.billing.subscription.cancelled")}</h3>
+			<span class="details">
+				{$t("pages.settings.billing.subscription.cancelled_details", {
+					values: { date: moment().format("ll") },
+				})}
+			</span>
 		</div>
 	</div>
 </section>
 
 <section>
 	<div>
-		<h2>Billing History</h2>
-		<span class="details"
-			>See all payment activities associated with your account, such as past billing statements and
-			transactions</span
-		>
+		<h2>{$t("pages.settings.billing.history.title")}</h2>
+		<span class="details">{$t("pages.settings.billing.history.details")}</span>
 	</div>
 	<div class="content">
 		<nav class="nav-bar">
 			<div class="buttons">
 				<TabLink
-					title="All"
+					title={$t("labels.all")}
 					matcher={() => historyTab === "all"}
 					on:click={() => (historyTab = "all")}
 				/>
 				<TabLink
-					title="Subscriptions"
+					title={$t("common.subscriptions", { values: { count: 2 } })}
 					matcher={() => historyTab === "subscriptions"}
 					on:click={() => (historyTab = "subscriptions")}
 				/>
 				<TabLink
-					title="Other"
+					title={$t("labels.other")}
 					matcher={() => historyTab === "other"}
 					on:click={() => (historyTab = "other")}
 				/>
 			</div>
-			<TextInput placeholder="Search">
+			<TextInput placeholder={$t("labels.search")}>
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</nav>
@@ -81,8 +77,8 @@
 
 <section>
 	<div>
-		<h2>Payment Methods</h2>
-		<span class="details">Check and update your preferred payment methods</span>
+		<h2>{$t("common.payment_methods", { values: { count: 2 } })}</h2>
+		<span class="details">{$t("pages.settings.billing.payment_methods.details")}</span>
 	</div>
 	<div class="content">
 		<div class="payment-methods">
@@ -92,7 +88,7 @@
 		</div>
 		<Button primary style="align-self: flex-start">
 			<Plus slot="icon" />
-			Add New
+			{$t("pages.settings.billing.payment_methods.add_new")}
 		</Button>
 	</div>
 </section>

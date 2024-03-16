@@ -6,6 +6,7 @@
 	import Dialog, { DialogMode } from "./dialog.svelte";
 	import Select from "../input/select.svelte";
 	import TextInput from "../input/text-input.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 
@@ -14,14 +15,14 @@
 
 <Dialog width={35} bind:mode>
 	<form class="layout">
-		<h1>Your Cart</h1>
+		<h1>{$t("dialogs.cart.title")}</h1>
 		<hr />
 		<table class="items">
 			<thead>
 				<tr>
-					<th>Item</th>
-					<th class="hide-on-mobile">Duration</th>
-					<th>Price</th>
+					<th>{$t("common.items", { values: { count: 1 } })}</th>
+					<th class="hide-on-mobile">{$t("dialogs.cart.duration")}</th>
+					<th>{$t("dialogs.cart.price")}</th>
 					<th></th>
 				</tr>
 			</thead>
@@ -43,7 +44,7 @@
 								]}
 							/>
 						</td>
-						<td class="price">{priceFormat.format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								<Trash slot="icon" />
@@ -56,9 +57,9 @@
 		<table class="items">
 			<thead>
 				<tr>
-					<th class="hide-on-mobile">Preview</th>
-					<th>Item</th>
-					<th>Price</th>
+					<th class="hide-on-mobile">{$t("dialogs.cart.preview")}</th>
+					<th>{$t("common.items", { values: { count: 1 } })}</th>
+					<th>{$t("dialogs.cart.price")}</th>
 					<th></th>
 				</tr>
 			</thead>
@@ -73,7 +74,7 @@
 							</div>
 						</td>
 						<td class="name">Christmas Bundle</td>
-						<td class="price">{priceFormat.format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								<Trash slot="icon" />
@@ -82,7 +83,7 @@
 					</tr>
 					<tr class="hide-on-desktop">
 						<td class="name">Christmas Bundle</td>
-						<td class="price">{priceFormat.format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								<Trash slot="icon" />
@@ -92,20 +93,20 @@
 				{/each}
 			</tbody>
 		</table>
-		<Checkbox bind:value={gift}>Purchase as a gift</Checkbox>
+		<Checkbox bind:value={gift}>{$t("dialogs.cart.purchase_as_gift")}</Checkbox>
 		{#if gift}
-			<TextInput placeholder="Search a user">
+			<TextInput placeholder={$t("labels.search_users", { values: { count: 1 } })}>
 				<User slot="icon" />
 			</TextInput>
 		{/if}
 		<div class="footer">
 			<div class="total">
-				<span>Total</span>
-				<span>{priceFormat.format(7.96)}</span>
+				<span>{$t("dialogs.cart.total")}</span>
+				<span>{priceFormat().format(7.96)}</span>
 			</div>
 			<div class="buttons">
-				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-				<Button primary submit>Proceed</Button>
+				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+				<Button primary submit>{$t("labels.proceed")}</Button>
 			</div>
 		</div>
 	</form>

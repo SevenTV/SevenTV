@@ -2,6 +2,8 @@
 	import { DotsThreeVertical } from "phosphor-svelte";
 	import StoreSection from "./store-section.svelte";
 	import Button from "../input/button.svelte";
+	import { t } from "svelte-i18n";
+	import moment from "moment/min/moment-with-locales";
 
 	export let percentage: number = 40;
 </script>
@@ -34,7 +36,7 @@
 		</div>
 		<div class="info">
 			<div class="header">
-				<h2>Badge Progress</h2>
+				<h2>{$t("pages.store.subscription.badge_progress.title")}</h2>
 				<Button secondary>
 					<DotsThreeVertical slot="icon" />
 				</Button>
@@ -45,7 +47,11 @@
 					<span>1 Year</span>
 				</div>
 				<div class="bar-container">
-					<span class="countdown">23 days left</span>
+					<span class="countdown">
+						{$t("pages.store.subscription.badge_progress.left", {
+							values: { duration: moment.duration(23, "days").humanize() },
+						})}
+					</span>
 					<div class="bar"></div>
 				</div>
 				<div class="badge">

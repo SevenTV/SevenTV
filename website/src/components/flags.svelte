@@ -4,7 +4,7 @@
 		active: Lightning,
 		global: GlobeSimple,
 		trending: Fire,
-		overlay: StackSimple,
+		overlaying: StackSimple,
 		verified: SealCheck,
 		public: Eye,
 
@@ -25,7 +25,7 @@
 		active: "#529bf5",
 		global: "#57ab5a",
 		trending: "#e0823d",
-		overlay: "#fc8dc7",
+		overlaying: "#fc8dc7",
 		verified: "#fc8dc7",
 		public: "#ffffff",
 	};
@@ -38,21 +38,6 @@
 		}
 		return null;
 	}
-
-	export const details: { [key: string]: string } = {
-		// Emote / emote set flags
-		global: "Global",
-		trending: "Trending",
-		overlay: "Overlaying",
-		verified: "Verified",
-		public: "Publicly Listed",
-
-		// Permissions
-		profile: "Profile",
-		editors: "Editors",
-		emote_sets: "Emote Sets",
-		emotes: "Emotes",
-	};
 </script>
 
 <script lang="ts">
@@ -72,6 +57,27 @@
 		User,
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";
+	import { t } from "svelte-i18n";
+
+	const names: { [key: string]: string } = {
+		// Emote flags
+		active: $t("common.active"),
+		global: $t("flags.global"),
+		trending: $t("flags.trending"),
+		overlaying: $t("flags.overlaying"),
+		verified: $t("flags.verified"),
+		public: $t("flags.public"),
+
+		// Emote set flags
+		default: $t("flags.default"),
+		personal: $t("flags.personal"),
+
+		// Permissions
+		profile: $t("common.profile"),
+		editors: $t("common.editors"),
+		emote_sets: $t("common.emote_sets", { values: { count: 2 } }),
+		emotes: $t("common.emotes", { values: { count: 2 } }),
+	};
 
 	// Used for emote flags, emote set flags and permissions
 
@@ -89,18 +95,17 @@
 <div class="flags" {...$$restProps}>
 	{#each flags as flag}
 		{#if iconOnly && icons[flag]}
-			<span class="flag icon-only" title={details[flag]} style="color: {colors[flag]}">
+			<span class="flag icon-only" style="color: {colors[flag]}">
 				<svelte:component this={icons[flag]} size="1rem" />
 			</span>
 		{:else}
 			<span
 				class="flag"
 				class:has-icon={icons[flag]}
-				title={details[flag]}
 				style="color: {colors[flag]}; background-color: {colors[flag]}1a"
 			>
 				<svelte:component this={icons[flag]} size="1rem" />
-				<span class:hide-on-mobile={icons[flag]}>{flag.replace("_", " ")}</span>
+				<span class:hide-on-mobile={icons[flag]}>{names[flag] || flag.replace("_", " ")}</span>
 			</span>
 		{/if}
 	{/each}

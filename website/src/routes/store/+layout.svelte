@@ -1,29 +1,26 @@
 <script lang="ts">
-	import { PaintBrush, Star, TShirt } from "phosphor-svelte";
+	import { PaintBrush, Star } from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
-		<h1>Store</h1>
+		<h1>{$t("pages.store.title")}</h1>
 		<nav class="link-list">
-			<TabLink href="/store" title="Subscription" big>
+			<TabLink href="/store" title={$t("common.subscriptions", { values: { count: 1 } })} big>
 				<Star />
 				<Star weight="fill" slot="active" />
 			</TabLink>
-			<TabLink href="/store/paint-bundles" title="Paint Bundles" big>
+			<TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>
 				<PaintBrush />
 				<PaintBrush weight="fill" slot="active" />
-			</TabLink>
-			<TabLink href="/store/merch" title="Merch" big>
-				<TShirt />
-				<TShirt weight="fill" slot="active" />
 			</TabLink>
 		</nav>
 		<hr />
 		<label class="redeem">
-			Redeem Gift Code
-			<input type="text" placeholder="Enter code" />
+			{$t("pages.store.redeem")}
+			<input type="text" placeholder={$t("labels.redeem")} />
 		</label>
 	</aside>
 	<div class="content">

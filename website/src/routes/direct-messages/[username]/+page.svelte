@@ -6,10 +6,6 @@
 	export let data: PageData;
 </script>
 
-<svelte:head>
-	<title>Direct Messages - 7TV</title>
-</svelte:head>
-
 <Button href="/direct-messages">
 	<CaretLeft slot="icon" />
 	Back

@@ -23,6 +23,7 @@
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import CopyEmotesDialog from "$/components/dialogs/copy-emotes-dialog.svelte";
 	import RemoveEmotesDialog from "$/components/dialogs/remove-emotes-dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	export let data: PageData;
 
@@ -53,15 +54,15 @@
 	<div class="controls">
 		<div class="buttons">
 			<Button secondary on:click={() => (selectionMode = !selectionMode)} hideOnDesktop>
-				Select
+				{$t("labels.select")}
 				<Toggle bind:value={selectionMode} style="pointer-events: none" slot="icon-right" />
 			</Button>
 			<HideOn mobile={selectionMode}>
 				<Button primary on:click={() => (enabled = !enabled)}>
 					{#if enabled}
-						Disable
+						{$t("labels.disable")}
 					{:else}
-						Enable
+						{$t("labels.enable")}
 					{/if}
 					<svelte:fragment slot="icon-right">
 						{#if enabled}
@@ -73,11 +74,11 @@
 				</Button>
 			</HideOn>
 			<Button secondary hideOnMobile on:click={() => (editDialogMode = DialogMode.Shown)}>
-				Edit
+				{$t("labels.edit")}
 				<NotePencil slot="icon-right" />
 			</Button>
 			<Button secondary hideOnMobile>
-				Copy Set
+				{$t("pages.emote_set.copy_set")}
 				<Copy slot="icon-right" />
 			</Button>
 			{#if !selectionMode}
@@ -89,7 +90,7 @@
 				</Button>
 			{/if}
 			<Button secondary on:click={() => (selectionMode = !selectionMode)} hideOnMobile>
-				Selection Mode
+				{$t("labels.selection_mode")}
 				<Toggle bind:value={selectionMode} style="pointer-events: none" slot="icon-right" />
 			</Button>
 			{#if selectionMode}
@@ -107,11 +108,11 @@
 		<div class="buttons">
 			<Select
 				options={[
-					{ value: "none", label: "No Filters" },
-					{ value: "filter", label: "Filter" },
+					{ value: "none", label: $t("labels.no_filters") },
+					{ value: "filters", label: $t("labels.filters") },
 				]}
 			/>
-			<TextInput placeholder="Search">
+			<TextInput placeholder={$t("labels.search")}>
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 			<LayoutButtons />

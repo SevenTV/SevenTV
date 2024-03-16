@@ -20,6 +20,7 @@
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { DialogMode } from "../dialogs/dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	let cartDialogMode = DialogMode.Hidden;
 </script>
@@ -33,15 +34,15 @@
 		<HideOn mobile>
 			<TopTabs
 				tabs={[
-					{ name: "Emotes", pathname: "/emotes" },
-					{ name: "Discover", pathname: "/discover" },
-					{ name: "Store", pathname: "/store", hightlight: true },
+					{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes" },
+					{ name: $t("pages.discover.title"), pathname: "/discover" },
+					{ name: $t("pages.store.title"), pathname: "/store", hightlight: true },
 				]}
 			/>
 		</HideOn>
 	</div>
 	<HideOn mobile>
-		<TextInput placeholder="Search" big style="flex: 0 1 20rem">
+		<TextInput placeholder={$t("labels.search")} big style="flex: 0 1 20rem">
 			<MagnifyingGlass slot="icon" />
 		</TextInput>
 	</HideOn>
@@ -89,7 +90,7 @@
 			</Button>
 			<Button secondary hideOnMobile on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
 				<PlusSquare slot="icon" />
-				Upload
+				{$t("dialogs.upload.upload")}
 			</Button>
 			<HideOn mobile>
 				<DropDown>
@@ -110,7 +111,9 @@
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<Button primary on:click={() => ($signInDialogMode = DialogMode.Shown)}>Sign In</Button>
+			<Button primary on:click={() => ($signInDialogMode = DialogMode.Shown)}>
+				{$t("common.sign_in")}
+			</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}

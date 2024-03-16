@@ -9,6 +9,7 @@
 	import { browser } from "$app/environment";
 	import Tags from "../emotes/tags.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
+	import { t } from "svelte-i18n";
 
 	let fileInput: HTMLInputElement;
 	let dragOver = false;
@@ -75,10 +76,10 @@
 
 <Dialog width={60} bind:mode>
 	<form class="grid">
-		<h1 class="heading">Upload emote</h1>
+		<h1 class="heading">{$t("dialogs.upload.title")}</h1>
 		<section class="upload {previewTheme}" class:preview={files && files[0]}>
 			{#if files && files[0] && imageSrc}
-				<span class="name">{name || "Untitled"}</span>
+				<span class="name">{name || $t("dialogs.upload.untitled")}</span>
 				<Tags {tags} />
 				<div class="previews">
 					<ImagePreview size={32} src={imageSrc} />
@@ -118,36 +119,40 @@
 						bind:files
 					/>
 					<UploadSimple size="1.5rem" color="var(--text-light)" />
-					<h2>Drag & drop to upload, or</h2>
-					<Button secondary on:click={browse}>Browse Files</Button>
+					<h2>{$t("dialogs.upload.drag_drop")}</h2>
+					<Button secondary on:click={browse}>{$t("dialogs.upload.browse_files")}</Button>
 					<span class="details">
-						7MB max file size
+						{$t("file_limits.max_size", { values: { size: "7MB" } })}
 						<br />
-						1000 x 1000px max resolution
+						{$t("file_limits.max_resolution", { values: { width: "1000", height: "1000" } })}
 						<br />
-						1000 frames max
+						{$t("file_limits.max_frames", { values: { count: "1000" } })}
 					</span>
 				</div>
 			{/if}
 		</section>
 		<section class="left">
 			<div class="inputs">
-				<TextInput placeholder="Enter text" bind:value={name}>
-					<span class="label">Emote Name</span>
+				<TextInput placeholder={$t("labels.emote_name")} bind:value={name}>
+					<span class="label">{$t("labels.emote_name")}</span>
 				</TextInput>
 				<TagsInput bind:tags>
-					<span class="label">Tags</span>
+					<span class="label">{$t("labels.tags")}</span>
 				</TagsInput>
-				<TextInput placeholder="Search users">
-					<span class="label">Emote Attribution</span>
+				<TextInput placeholder={$t("labels.search_users", { values: { count: 2 } })}>
+					<span class="label">{$t("labels.emote_attribution")}</span>
 					<User slot="icon" />
 				</TextInput>
-				<Checkbox>Zero-Width</Checkbox>
-				<Checkbox>Private</Checkbox>
+				<Checkbox>{$t("flags.overlaying")}</Checkbox>
 			</div>
-			<div class="buttons">
-				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Discard</Button>
-				<Button primary submit>Upload</Button>
+			<div class="footer">
+				<Checkbox>{$t("dialogs.upload.accept_rules")}</Checkbox>
+				<div class="buttons">
+					<Button secondary on:click={() => (mode = DialogMode.Hidden)}>
+						{$t("dialogs.upload.discard")}
+					</Button>
+					<Button primary submit>{$t("dialogs.upload.upload")}</Button>
+				</div>
 			</div>
 		</section>
 		<section class="chat">
@@ -160,7 +165,7 @@
 			</div>
 			<input
 				type="text"
-				placeholder="Send a message"
+				placeholder={$t("dialogs.upload.chat")}
 				bind:value={messageInput}
 				on:keydown|stopPropagation={sendMessage}
 			/>
@@ -283,6 +288,12 @@
 		gap: 1rem;
 
 		.inputs {
+			display: flex;
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.footer {
 			display: flex;
 			flex-direction: column;
 			gap: 1rem;

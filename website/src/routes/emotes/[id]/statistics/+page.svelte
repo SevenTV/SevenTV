@@ -2,6 +2,7 @@
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
 	import Select from "$/components/input/select.svelte";
 	import type { LayoutData } from "../$types";
+	import { t } from "svelte-i18n";
 
 	export let data: LayoutData;
 </script>
@@ -11,12 +12,14 @@
 	<div class="buttons">
 		<Select
 			options={[
-				{ value: "week", label: "This Week" },
-				{ value: "month", label: "This Month" },
-				{ value: "century", label: "This Century" },
+				{ value: "week", label: $t("labels.time_select.week") },
+				{ value: "month", label: $t("labels.time_select.month") },
+				{ value: "year", label: $t("labels.time_select.year") },
 			]}
 		/>
-		<Select options={[{ value: "channels", label: "Channels" }]} />
+		<Select
+			options={[{ value: "channels", label: $t("common.channels", { values: { count: 2 } }) }]}
+		/>
 	</div>
 </div>
 

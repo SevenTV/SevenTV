@@ -4,10 +4,11 @@
 	import TwitchLogo from "$/components/icons/twitch-logo.svelte";
 	import YoutubeLogo from "$/components/icons/youtube-logo.svelte";
 	import XTwitterLogo from "$/components/icons/x-twitter-logo.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <div class="layout">
-	<h2>Connections</h2>
+	<h2>{$t("common.connections")}</h2>
 	<div class="link-list">
 		<Button href="https://twitch.tv/ayyybubu" target="_blank" big>
 			<TwitchLogo slot="icon" />
@@ -22,7 +23,7 @@
 			<span>tweetbubu</span>
 		</Button>
 	</div>
-	<h2>Editors</h2>
+	<h2>{$t("common.editors")}</h2>
 	<div class="link-list">
 		<ChannelPreview big />
 		<ChannelPreview big />

@@ -5,39 +5,39 @@
 	import TextInput from "../input/text-input.svelte";
 	import Checkbox from "../input/checkbox.svelte";
 	import Button from "../input/button.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>Edit AlienPls</h1>
+		<h1>{$t("dialogs.edit_emote.title", { values: { emote: "AlienPls" } })}</h1>
 		<hr />
-		<TextInput placeholder="Emote name">
-			<span class="label">Emote name</span>
+		<TextInput placeholder={$t("labels.emote_name")}>
+			<span class="label">{$t("labels.emote_name")}</span>
 		</TextInput>
 		<div class="tags">
 			<TagsInput>
-				<span class="label">Tags</span>
+				<span class="label">{$t("labels.tags")}</span>
 			</TagsInput>
 		</div>
-		<TextInput placeholder="Search users">
-			<span class="label">Emote Attribution</span>
+		<TextInput placeholder={$t("labels.search_users", { values: { count: 2 } })}>
+			<span class="label">{$t("labels.emote_attribution")}</span>
 			<User slot="icon" />
 		</TextInput>
 		<div>
-			<span class="label">Settings</span>
+			<span class="label">{$t("common.settings")}</span>
 			<div class="settings">
-				<Checkbox>Overlaying</Checkbox>
-				<Checkbox>Listed</Checkbox>
-				<Checkbox>Private</Checkbox>
-				<Checkbox>Personal Use</Checkbox>
+				<Checkbox>{$t("flags.overlaying")}</Checkbox>
+				<Checkbox>{$t("flags.listed")}</Checkbox>
+				<Checkbox>{$t("flags.personal_use")}</Checkbox>
 			</div>
 		</div>
 		<div class="buttons">
-			<Button style="color: var(--danger); margin-right: auto;">Delete</Button>
-			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-			<Button primary submit>Save</Button>
+			<Button style="color: var(--danger); margin-right: auto;">{$t("labels.delete")}</Button>
+			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+			<Button primary submit>{$t("labels.save")}</Button>
 		</div>
 	</form>
 </Dialog>

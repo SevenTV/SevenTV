@@ -4,18 +4,19 @@
 	import Button from "../input/button.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
 	import EmoteSetPicker from "../emote-set-picker.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<EmoteDialog title="Add AlienPls to" bind:mode>
-	<TextInput placeholder="Emote name" style="max-width: 12.5rem" slot="preview">
-		<span class="label">Change emote name</span>
+<EmoteDialog title={$t("dialogs.add_emote.title", { values: { emote: "AlienPls" } })} bind:mode>
+	<TextInput placeholder={$t("labels.emote_name")} style="max-width: 12.5rem" slot="preview">
+		<span class="label">{$t("dialogs.add_emote.change_name")}</span>
 	</TextInput>
 	<EmoteSetPicker />
 	<svelte:fragment slot="buttons">
-		<Button on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-		<Button primary submit>Confirm</Button>
+		<Button on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+		<Button primary submit>{$t("labels.confirm")}</Button>
 	</svelte:fragment>
 </EmoteDialog>
 

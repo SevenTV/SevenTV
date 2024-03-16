@@ -1,23 +1,24 @@
 <script lang="ts">
-	import moment from "moment";
+	import moment from "moment/min/moment-with-locales";
 	import Button from "../input/button.svelte";
 	import Date from "../date.svelte";
 	import { Download, PaintBrush, Star } from "phosphor-svelte";
 	import PaymentBrand from "../icons/payment-brand.svelte";
 	import { priceFormat } from "$/lib/utils";
 	import Flags from "../flags.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <div class="scroll">
 	<table>
 		<thead>
 			<tr>
-				<th>Date</th>
-				<th>Items</th>
-				<th>Payment Method</th>
-				<th>Status</th>
-				<th>Amount</th>
-				<th>Invoice</th>
+				<th>{$t("pages.settings.billing.table.date")}</th>
+				<th>{$t("common.items", { values: { count: 2 } })}</th>
+				<th>{$t("common.payment_methods", { values: { count: 1 } })}</th>
+				<th>{$t("pages.settings.billing.table.status")}</th>
+				<th>{$t("pages.settings.billing.table.amount")}</th>
+				<th>{$t("pages.settings.billing.table.invoice")}</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -45,7 +46,7 @@
 						<Flags flags={["paid"]} />
 					</td>
 					<td class="amount">
-						{priceFormat.format(5.99 + i * 2.5)}
+						{priceFormat().format(5.99 + i * 2.5)}
 					</td>
 					<td class="shrink">
 						<Button on:click={() => alert("download invoice")}>

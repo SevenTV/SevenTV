@@ -1,13 +1,14 @@
 <script lang="ts">
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
 <Dialog width={30} bind:mode>
 	<div class="layout">
-		<h1>Default Emote Set</h1>
+		<h1>{$t("dialogs.default_set.title")}</h1>
 		<hr />
 		<EmoteSetPicker radioName="default-set" />
 	</div>

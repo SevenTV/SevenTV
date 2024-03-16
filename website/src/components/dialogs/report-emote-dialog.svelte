@@ -3,49 +3,40 @@
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Checkbox from "../input/checkbox.svelte";
+	import { t } from "svelte-i18n";
+
+	const reasons = [
+		$t("dialogs.report_emote.reasons.my_work"),
+		$t("dialogs.report_emote.reasons.duplicate"),
+		$t("dialogs.report_emote.reasons.sexual"),
+		$t("dialogs.report_emote.reasons.violance"),
+		$t("dialogs.report_emote.reasons.its_me"),
+		$t("dialogs.report_emote.reasons.offensive"),
+		$t("dialogs.report_emote.reasons.other"),
+	];
 
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
 <Dialog width={40} bind:mode>
 	<form class="layout">
-		<h1>Report Emote</h1>
+		<h1>{$t("dialogs.report_emote.title")}</h1>
 		<hr />
 		<div class="reasons">
-			<span class="label">Choose the reason</span>
-			<Checkbox option>
-				<span class="label" slot="left-label"
-					>I made this emote but it was uploaded by someone else</span
-				>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">This emote is a duplicate</span>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label"
-					>This emote contains pornographic or overly sexualized imagery</span
-				>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">This emote displays extreme violence or gore</span>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">This emote depicts me and I don't like it</span>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">I find this emote offensive</span>
-			</Checkbox>
-			<Checkbox option>
-				<span class="label" slot="left-label">Other</span>
-			</Checkbox>
+			<span class="label">{$t("dialogs.report_emote.choose_reasons")}</span>
+			{#each reasons as reason}
+				<Checkbox option>
+					<span class="label" slot="left-label">{reason}</span>
+				</Checkbox>
+			{/each}
 		</div>
-		<TextInput type="textarea" placeholder="Enter text">
-			<span class="label">Additional Info</span>
+		<TextInput type="textarea" placeholder={$t("labels.enter_text")}>
+			<span class="label">{$t("dialogs.report_emote.additional_info")}</span>
 		</TextInput>
-		<span class="details">Abuse of the report feature may lead to your access being revoked.</span>
+		<span class="details">{$t("dialogs.report_emote.disclaimer")}</span>
 		<div class="buttons">
-			<Button on:click={() => (mode = DialogMode.Hidden)}>Cancel</Button>
-			<Button primary submit>Send Report</Button>
+			<Button on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+			<Button primary submit>{$t("labels.report")}</Button>
 		</div>
 	</form>
 </Dialog>

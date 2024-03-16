@@ -1,5 +1,9 @@
+<script lang="ts">
+	import { t } from "svelte-i18n";
+</script>
+
 <svelte:head>
-	<title>Terms of Service - 7TV</title>
+	<title>{$t("common.tos")} - 7TV</title>
 </svelte:head>
 
-<h1>Terms of Service</h1>
+<h1>{$t("common.tos")}</h1>

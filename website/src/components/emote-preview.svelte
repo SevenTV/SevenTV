@@ -10,7 +10,7 @@
 	export let selected = false;
 	export let ignoredFlagsForHighlight: string[] = [];
 
-	let flags = ["active", "global", "trending", "overlay"];
+	let flags = ["active", "global", "trending", "overlaying"];
 
 	$: highlight = determineHighlightColor(flags, ignoredFlagsForHighlight);
 

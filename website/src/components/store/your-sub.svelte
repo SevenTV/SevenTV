@@ -3,11 +3,12 @@
 	import SubInfo from "../sub-info.svelte";
 	import StoreSection from "./store-section.svelte";
 	import { CaretDown, DotsThreeVertical, Gift, Star } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	export let subbed = false;
 </script>
 
-<StoreSection title="Your Subscription">
+<StoreSection title={$t("common.your_subscription")}>
 	<div class="buttons" slot="header">
 		<Button
 			secondary
@@ -16,7 +17,11 @@
 			style={subbed && "color: var(--subscriber)"}
 		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
-			<span>{subbed ? "Subscribed" : "Subscribe"}</span>
+			<span>
+				{subbed
+					? $t("pages.store.subscription.subscribed")
+					: $t("pages.store.subscription.subscribe")}
+			</span>
 			<CaretDown slot="icon-right" />
 		</Button>
 		<Button
@@ -31,7 +36,7 @@
 
 		<Button secondary hideOnMobile>
 			<Gift slot="icon" />
-			Gift
+			{$t("labels.gift")}
 		</Button>
 		<Button hideOnDesktop>
 			<Gift slot="icon" />

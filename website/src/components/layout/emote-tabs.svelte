@@ -1,28 +1,33 @@
 <script lang="ts">
 	import TabLink from "../tab-link.svelte";
 	import { Users, ChartLineUp, Graph, ChatText, Pulse } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	export let id: string;
 </script>
 
 <nav class="links">
-	<TabLink title="Channels (1020)" href="/emotes/{id}" responsive>
+	<TabLink
+		title="{$t('common.channels', { values: { count: 2 } })} (1020)"
+		href="/emotes/{id}"
+		responsive
+	>
 		<Users />
 		<Users weight="fill" slot="active" />
 	</TabLink>
-	<TabLink title="Activity" href="/emotes/{id}/activity" responsive>
+	<TabLink title={$t("common.activity")} href="/emotes/{id}/activity" responsive>
 		<Pulse />
 		<Pulse weight="fill" slot="active" />
 	</TabLink>
-	<TabLink title="Statistics" href="/emotes/{id}/statistics" responsive>
+	<TabLink title={$t("common.statistics")} href="/emotes/{id}/statistics" responsive>
 		<ChartLineUp />
 		<ChartLineUp weight="fill" slot="active" />
 	</TabLink>
-	<TabLink title="Suggested Emotes" href="/emotes/{id}/suggested-emotes" responsive>
+	<TabLink title={$t("common.suggested_emotes")} href="/emotes/{id}/suggested-emotes" responsive>
 		<Graph />
 		<Graph weight="fill" slot="active" />
 	</TabLink>
-	<TabLink title="Mod Comments" href="/emotes/{id}/mod-comments" responsive>
+	<TabLink title={$t("common.mod_comments")} href="/emotes/{id}/mod-comments" responsive>
 		<ChatText />
 		<ChatText weight="fill" slot="active" />
 	</TabLink>

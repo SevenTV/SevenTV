@@ -2,6 +2,7 @@
 	import { Tag, X } from "phosphor-svelte";
 	import Button from "./button.svelte";
 	import TextInput from "./text-input.svelte";
+	import { t } from "svelte-i18n";
 
 	export let tags = ["lorem", "ipsum"];
 
@@ -21,7 +22,7 @@
 	}
 </script>
 
-<TextInput placeholder="Enter tags" bind:value={tagInput} on:keypress={onTagInput}>
+<TextInput placeholder={$t("labels.enter_tags")} bind:value={tagInput} on:keypress={onTagInput}>
 	<slot />
 	<Tag slot="icon" />
 </TextInput>

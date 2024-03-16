@@ -1,9 +1,10 @@
 <script lang="ts">
 	import DirectMessages from "$/components/direct-messages/direct-messages.svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <svelte:head>
-	<title>Direct Messages - 7TV</title>
+	<title>{$t("common.direct_messages")} - 7TV</title>
 </svelte:head>
 
 <DirectMessages />

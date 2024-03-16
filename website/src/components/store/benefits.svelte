@@ -1,39 +1,40 @@
 <script lang="ts">
 	import { PaintBrush, Seal, Smiley, Ticket, UserCircle } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <section>
-	<h2>Subscription Benefits</h2>
+	<h2>{$t("pages.store.subscription.benefits.title")}</h2>
 	<div class="benefits">
 		<div class="benefit">
 			<div class="gradient g1">
 				<UserCircle size="4rem" weight="regular" />
 			</div>
-			<h3>Animated Profile Picture</h3>
+			<h3>{$t("pages.store.subscription.benefits.animated_avatar")}</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g2">
 				<Smiley size="4rem" weight="regular" />
 			</div>
-			<h3>Personal Emotes</h3>
+			<h3>{$t("pages.store.subscription.benefits.personal_emotes")}</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g3">
 				<PaintBrush size="4rem" weight="regular" />
 			</div>
-			<h3>Nametag Paints</h3>
+			<h3>{$t("pages.store.subscription.benefits.paints")}</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g5">
 				<Seal size="4rem" weight="regular" />
 			</div>
-			<h3>Subscriber Badge</h3>
+			<h3>{$t("pages.store.subscription.benefits.sub_badge")}</h3>
 		</div>
 		<div class="benefit">
 			<div class="gradient g6">
 				<Ticket size="4rem" weight="regular" />
 			</div>
-			<h3>Raffle Ticket</h3>
+			<h3>{$t("pages.store.subscription.benefits.raffle_tickets")}</h3>
 		</div>
 	</div>
 </section>
