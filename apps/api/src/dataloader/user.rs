@@ -59,7 +59,7 @@ impl Loader for UserRoleLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut map, (user_id, role_id)| {
-			map.entry(user_id).or_insert_with(Vec::new).push(role_id);
+			map.entry(user_id).or_default().push(role_id);
 			map
 		}))
 	}
@@ -92,7 +92,7 @@ impl Loader for UserBadgeLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut map, (user_id, badge_id)| {
-			map.entry(user_id).or_insert_with(Vec::new).push(badge_id);
+			map.entry(user_id).or_default().push(badge_id);
 			map
 		}))
 	}
@@ -125,7 +125,7 @@ impl Loader for UserPaintLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut map, (user_id, paint_id)| {
-			map.entry(user_id).or_insert_with(Vec::new).push(paint_id);
+			map.entry(user_id).or_default().push(paint_id);
 			map
 		}))
 	}
@@ -158,7 +158,7 @@ impl Loader for UserEmoteSetLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut map, (user_id, emote_set_id)| {
-			map.entry(user_id).or_insert_with(Vec::new).push(emote_set_id);
+			map.entry(user_id).or_default().push(emote_set_id);
 			map
 		}))
 	}
@@ -221,7 +221,7 @@ impl Loader for UserProductPurchaseLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut map, pp| {
-			map.entry(pp.user_id.unwrap()).or_insert_with(Vec::new).push(pp);
+			map.entry(pp.user_id.unwrap()).or_default().push(pp);
 			map
 		}))
 	}
@@ -254,7 +254,7 @@ impl Loader for UserProductLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut map, sub| {
-			map.entry(sub.user_id).or_insert_with(Vec::new).push(sub);
+			map.entry(sub.user_id).or_default().push(sub);
 			map
 		}))
 	}
@@ -368,10 +368,13 @@ impl UserLoader {
 			anyhow::bail!("failed to load user product purchases");
 		};
 
-		let product_purchaes = product_purchaes.into_iter().fold(HashMap::new(), |mut map, pp| {
-			map.entry(pp.product_id).or_insert_with(Vec::new).push(pp);
-			map
-		});
+		let product_purchaes =
+			product_purchaes
+				.into_iter()
+				.fold(HashMap::<Ulid, Vec<ProductPurchase>>::new(), |mut map, pp| {
+					map.entry(pp.product_id).or_default().push(pp);
+					map
+				});
 
 		let Ok(Some(user_products)) = self.user_products_loader.load(user_id).await else {
 			anyhow::bail!("failed to load user products");
@@ -405,31 +408,32 @@ impl UserLoader {
 
 			user.entitled_cache.product_ids.push(product.id);
 
-			for entitlement_group in &product.data.entitlement_groups {
-				if entitlement_group
-					.condition
-					.as_ref()
-					.map(|c| evaluate_expression(&c, &purchases, user_products.get(&product.id)))
-					.unwrap_or(true)
-				{
-					for entitlement in &entitlement_group.entitlements {
-						match entitlement {
-							ProductEntitlement::Role(role_id) => {
-								user.entitled_cache.role_ids.push(*role_id);
-							}
-							ProductEntitlement::Badge(badge_id) => {
-								user.entitled_cache.badge_ids.push(*badge_id);
-							}
-							ProductEntitlement::Paint(paint_id) => {
-								user.entitled_cache.paint_ids.push(*paint_id);
-							}
-							ProductEntitlement::EmoteSet(emote_set_id) => {
-								user.entitled_cache.emote_set_ids.push(*emote_set_id);
-							}
-						}
+			product
+				.data
+				.entitlement_groups
+				.iter()
+				.filter(|group| {
+					group
+						.condition
+						.as_ref()
+						.map(|c| evaluate_expression(c, purchases, user_products.get(&product.id)))
+						.unwrap_or(true)
+				})
+				.flat_map(|group| group.entitlements.iter().copied())
+				.for_each(|entitlement| match entitlement {
+					ProductEntitlement::Role(role_id) => {
+						user.entitled_cache.role_ids.push(role_id);
 					}
-				}
-			}
+					ProductEntitlement::Badge(badge_id) => {
+						user.entitled_cache.badge_ids.push(badge_id);
+					}
+					ProductEntitlement::Paint(paint_id) => {
+						user.entitled_cache.paint_ids.push(paint_id);
+					}
+					ProductEntitlement::EmoteSet(emote_set_id) => {
+						user.entitled_cache.emote_set_ids.push(emote_set_id);
+					}
+				});
 		}
 
 		let Ok(badge_ids) = global

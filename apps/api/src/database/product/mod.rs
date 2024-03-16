@@ -123,7 +123,7 @@ pub struct ProductEntitlementGroup {
 	pub entitlements: Vec<ProductEntitlement>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(tag = "kind", content = "id")]
 pub enum ProductEntitlement {
 	Role(ulid::Ulid),

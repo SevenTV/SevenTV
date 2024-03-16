@@ -388,7 +388,7 @@ where
 pub async fn run<B, E>(
 	ctx: &Context,
 	config: &Http,
-	handler: impl HttpHandler<Body = B, Error = E> + Send + Sync + 'static,
+	handler: impl HttpHandler<Body = B, Error = E> + 'static,
 	accept_connection_fn: impl Fn(SocketAddr) -> bool + Send + Sync,
 ) -> anyhow::Result<()>
 where

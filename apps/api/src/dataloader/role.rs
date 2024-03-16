@@ -62,7 +62,7 @@ impl Loader for RoleBadgeByIdLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut acc, (role_id, badge_id)| {
-			acc.entry(role_id).or_insert_with(Vec::new).push(badge_id);
+			acc.entry(role_id).or_default().push(badge_id);
 			acc
 		}))
 	}
@@ -95,7 +95,7 @@ impl Loader for RolePaintByIdLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut acc, (role_id, paint_id)| {
-			acc.entry(role_id).or_insert_with(Vec::new).push(paint_id);
+			acc.entry(role_id).or_default().push(paint_id);
 			acc
 		}))
 	}
@@ -128,7 +128,7 @@ impl Loader for RoleEmoteSetByIdLoader {
 				})?;
 
 		Ok(results.into_iter().fold(HashMap::new(), |mut acc, (role_id, paint_id)| {
-			acc.entry(role_id).or_insert_with(Vec::new).push(paint_id);
+			acc.entry(role_id).or_default().push(paint_id);
 			acc
 		}))
 	}

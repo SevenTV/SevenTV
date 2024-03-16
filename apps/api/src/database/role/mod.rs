@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, Not};
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not};
 
 use crate::database::Table;
 
@@ -541,8 +541,8 @@ mod tests {
 			unknown: HashMap::new(),
 		};
 
-		assert_eq!(permissions.has_permission(Permission::Emote(EmotePermission::Upload)), true);
-		assert_eq!(permissions.has_permission(Permission::Emote(EmotePermission::Delete)), true);
+		assert!(permissions.has_permission(Permission::Emote(EmotePermission::Upload)));
+		assert!(permissions.has_permission(Permission::Emote(EmotePermission::Delete)));
 	}
 
 	#[test]
