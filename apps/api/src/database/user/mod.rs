@@ -1,8 +1,11 @@
 mod active_emote_set;
+mod badge;
 mod ban;
 mod connection;
 mod editor;
+mod emote_set;
 mod gift;
+mod paint;
 mod product;
 mod profile_picture;
 mod relation;
@@ -10,10 +13,13 @@ mod roles;
 mod settings;
 
 pub use active_emote_set::*;
+pub use badge::*;
 pub use ban::*;
 pub use connection::*;
 pub use editor::*;
+pub use emote_set::*;
 pub use gift::*;
+pub use paint::*;
 pub use product::*;
 pub use profile_picture::*;
 pub use relation::*;
