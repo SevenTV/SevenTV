@@ -38,7 +38,7 @@
 		Root,
 		DownloadFormat,
 		DownloadSize,
-	};
+	}
 
 	let moreMenuMode = MoreMenuMode.Root;
 	let downloadFormat: string;

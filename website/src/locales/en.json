@@ -258,7 +258,8 @@
 		},
 		"discover": {
 			"title": "Discover",
-			"uploads": "Uploads"
+			"uploads": "Uploads",
+			"followed": "Followed accounts"
 		},
 		"store": {
 			"title": "Store",

@@ -3,7 +3,7 @@
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
-	Bell,
+		Bell,
 		CaretLeft,
 		CaretRight,
 		ChartLine,
