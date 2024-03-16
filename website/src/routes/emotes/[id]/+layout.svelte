@@ -33,6 +33,25 @@
 	let transferDialogMode = DialogMode.Hidden;
 	let deleteDialogMode = DialogMode.Hidden;
 	let reportDialogMode = DialogMode.Hidden;
+
+	enum MoreMenuMode {
+		Root,
+		DownloadFormat,
+		DownloadSize,
+	};
+
+	let moreMenuMode = MoreMenuMode.Root;
+	let downloadFormat: string;
+
+	function clickFormat(format: string) {
+		downloadFormat = format;
+		moreMenuMode = MoreMenuMode.DownloadSize;
+	}
+
+	function download(size: number) {
+		if (!downloadFormat) return;
+		alert(`downloading ${downloadFormat} at ${size}x`);
+	}
 </script>
 
 <svelte:head>
@@ -109,30 +128,44 @@
 						<CaretDown slot="icon" />
 					</Button>
 					<div slot="dropdown" class="dropdown">
-						<MenuButton on:click={() => (transferDialogMode = DialogMode.Shown)}>
-							<PaperPlaneRight />
-							{$t("pages.emote.transfer")}
-						</MenuButton>
-						<MenuButton>
-							<ArrowsMerge style="transform: rotate(-90deg)" />
-							{$t("pages.emote.merge")}
-						</MenuButton>
-						<MenuButton showCaret>
-							<Download />
-							{$t("labels.download")}
-						</MenuButton>
-						<MenuButton on:click={() => (reportDialogMode = DialogMode.Shown)}>
-							<Flag />
-							{$t("labels.report")}
-						</MenuButton>
-						<hr />
-						<MenuButton
-							style="color: var(--danger)"
-							on:click={() => (deleteDialogMode = DialogMode.Shown)}
-						>
-							<Trash />
-							{$t("labels.delete")}
-						</MenuButton>
+						{#if moreMenuMode === MoreMenuMode.Root}
+							<MenuButton on:click={() => (transferDialogMode = DialogMode.Shown)}>
+								<PaperPlaneRight />
+								{$t("pages.emote.transfer")}
+							</MenuButton>
+							<MenuButton>
+								<ArrowsMerge style="transform: rotate(-90deg)" />
+								{$t("pages.emote.merge")}
+							</MenuButton>
+							<MenuButton showCaret on:click={() => (moreMenuMode = MoreMenuMode.DownloadFormat)}>
+								<Download />
+								{$t("labels.download")}
+							</MenuButton>
+							<MenuButton on:click={() => (reportDialogMode = DialogMode.Shown)}>
+								<Flag />
+								{$t("labels.report")}
+							</MenuButton>
+							<hr />
+							<MenuButton
+								style="color: var(--danger)"
+								on:click={() => (deleteDialogMode = DialogMode.Shown)}
+							>
+								<Trash />
+								{$t("labels.delete")}
+							</MenuButton>
+						{:else if moreMenuMode === MoreMenuMode.DownloadFormat}
+							{#each ["GIF", "WEBP", "AVIF"] as format}
+								<MenuButton showCaret on:click={() => clickFormat(format)}>
+									{format}
+								</MenuButton>
+							{/each}
+						{:else if moreMenuMode === MoreMenuMode.DownloadSize}
+							{#each [1, 2, 3, 4] as size}
+								<MenuButton on:click={() => download(size)}>
+									{size}x Size
+								</MenuButton>
+							{/each}
+						{/if}
 					</div>
 				</DropDown>
 			</div>
