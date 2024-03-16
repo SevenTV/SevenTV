@@ -4,7 +4,7 @@
 	import { CaretLeft, CaretRight } from "phosphor-svelte";
 	import type { LayoutData } from "../$types";
 	import Button from "$/components/input/button.svelte";
-	import EmoteContainer from "$/components/emote-container.svelte";
+	import EmoteContainer from "$/components/layout/emote-container.svelte";
 
 	export let data: LayoutData;
 </script>

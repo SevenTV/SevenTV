@@ -1,5 +1,5 @@
 <script lang="ts">
-	import EmoteContainer from "$/components/emote-container.svelte";
+	import EmoteContainer from "$/components/layout/emote-container.svelte";
 	import EmotePreview from "$/components/emote-preview.svelte";
 	import { t } from "svelte-i18n";
 </script>
