@@ -7,7 +7,11 @@
 </script>
 
 <nav class="links">
-	<TabLink title="{$t("common.channels", { values: { count: 2 } })} (1020)" href="/emotes/{id}" responsive>
+	<TabLink
+		title="{$t('common.channels', { values: { count: 2 } })} (1020)"
+		href="/emotes/{id}"
+		responsive
+	>
 		<Users />
 		<Users weight="fill" slot="active" />
 	</TabLink>

@@ -17,7 +17,11 @@
 			style={subbed && "color: var(--subscriber)"}
 		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
-			<span>{subbed ? $t("pages.store.subscription.subscribed") : $t("pages.store.subscription.subscribe")}</span>
+			<span>
+				{subbed
+					? $t("pages.store.subscription.subscribed")
+					: $t("pages.store.subscription.subscribe")}
+			</span>
 			<CaretDown slot="icon-right" />
 		</Button>
 		<Button

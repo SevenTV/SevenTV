@@ -14,7 +14,10 @@
 			<Smiley />
 			<Smiley weight="fill" slot="active" />
 		</TabLink>
-		<TabLink href="/emotes/bookmarked/sets" title={$t("common.emote_sets", { values: { count: 2 } })}>
+		<TabLink
+			href="/emotes/bookmarked/sets"
+			title={$t("common.emote_sets", { values: { count: 2 } })}
+		>
 			<FolderSimple />
 			<FolderSimple weight="fill" slot="active" />
 		</TabLink>

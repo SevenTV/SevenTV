@@ -17,7 +17,10 @@
 	<div class="buttons">
 		<div class="link-list">
 			<TabLink title={$t("common.editors")} href="/settings/editors" />
-			<TabLink title={$t("pages.settings.editors.editing_for")} href="/settings/editors/editing-for" />
+			<TabLink
+				title={$t("pages.settings.editors.editing_for")}
+				href="/settings/editors/editing-for"
+			/>
 		</div>
 		{#if showAddEditor}
 			<TextInput placeholder={$t("pages.settings.editors.add_editor")}>

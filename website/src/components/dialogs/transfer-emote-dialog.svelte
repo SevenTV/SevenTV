@@ -9,8 +9,14 @@
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<EmoteDialog width={35} title={$t("dialogs.transfer_emote.title", { values: { emote: "AlienPls" } })} bind:mode>
-	<span class="details">{$t("dialogs.transfer_emote.details", { values: { emote: "AlienPls" } })}</span>
+<EmoteDialog
+	width={35}
+	title={$t("dialogs.transfer_emote.title", { values: { emote: "AlienPls" } })}
+	bind:mode
+>
+	<span class="details">
+		{$t("dialogs.transfer_emote.details", { values: { emote: "AlienPls" } })}
+	</span>
 	<TextInput placeholder={$t("labels.search_users", { values: { count: 1 } })}>
 		<span class="label">{$t("dialogs.transfer_emote.receipient")}</span>
 		<User slot="icon" />

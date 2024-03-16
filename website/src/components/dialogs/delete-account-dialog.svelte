@@ -21,13 +21,19 @@
 		<div class="reasons">
 			<span class="label">{$t("dialogs.delete_account.choose_reasons")}</span>
 			<Checkbox option>
-				<span class="label" slot="left-label">{$t("dialogs.delete_account.reasons.no_longer_use")}</span>
+				<span class="label" slot="left-label"
+					>{$t("dialogs.delete_account.reasons.no_longer_use")}</span
+				>
 			</Checkbox>
 			<Checkbox option>
-				<span class="label" slot="left-label">{$t("dialogs.delete_account.reasons.privacy_concerns")}</span>
+				<span class="label" slot="left-label"
+					>{$t("dialogs.delete_account.reasons.privacy_concerns")}</span
+				>
 			</Checkbox>
 			<Checkbox option>
-				<span class="label" slot="left-label">{$t("dialogs.delete_account.reasons.not_useful")}</span>
+				<span class="label" slot="left-label"
+					>{$t("dialogs.delete_account.reasons.not_useful")}</span
+				>
 			</Checkbox>
 			<Checkbox option>
 				<span class="label" slot="left-label">{$t("dialogs.delete_account.reasons.other")}</span>

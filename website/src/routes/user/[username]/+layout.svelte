@@ -123,7 +123,11 @@
 				<Upload />
 				<Upload weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title={$t("common.emote_sets", { values: { count: 2 } })} href="/user/{data.username}/emote-sets" big>
+			<TabLink
+				title={$t("common.emote_sets", { values: { count: 2 } })}
+				href="/user/{data.username}/emote-sets"
+				big
+			>
 				<FolderSimple />
 				<FolderSimple weight="fill" slot="active" />
 			</TabLink>
@@ -164,7 +168,10 @@
 					<Upload />
 					<Upload weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title={$t("common.emote_sets", { values: { count: 2 } })} href="/user/{data.username}/emote-sets">
+				<TabLink
+					title={$t("common.emote_sets", { values: { count: 2 } })}
+					href="/user/{data.username}/emote-sets"
+				>
 					<FolderSimple />
 					<FolderSimple weight="fill" slot="active" />
 				</TabLink>

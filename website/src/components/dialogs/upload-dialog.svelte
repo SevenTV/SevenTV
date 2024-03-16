@@ -148,7 +148,9 @@
 			<div class="footer">
 				<Checkbox>{$t("dialogs.upload.accept_rules")}</Checkbox>
 				<div class="buttons">
-					<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("dialogs.upload.discard")}</Button>
+					<Button secondary on:click={() => (mode = DialogMode.Hidden)}>
+						{$t("dialogs.upload.discard")}
+					</Button>
 					<Button primary submit>{$t("dialogs.upload.upload")}</Button>
 				</div>
 			</div>

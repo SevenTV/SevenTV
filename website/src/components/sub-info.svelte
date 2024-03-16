@@ -1,7 +1,7 @@
 <script lang="ts">
-	import moment from 'moment/min/moment-with-locales';
+	import moment from "moment/min/moment-with-locales";
 	import { Clock, Coin, Gift, Hourglass, IconContext, Sparkle } from "phosphor-svelte";
-	import Date from './date.svelte';
+	import Date from "./date.svelte";
 	import { t } from "svelte-i18n";
 </script>
 

@@ -6,7 +6,7 @@
 	import SubInfo from "$/components/sub-info.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
-	import moment from 'moment/min/moment-with-locales';
+	import moment from "moment/min/moment-with-locales";
 	import { MagnifyingGlass, Plus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
@@ -34,7 +34,11 @@
 		<hr />
 		<div>
 			<h3>{$t("pages.settings.billing.subscription.cancelled")}</h3>
-			<span class="details">{$t("pages.settings.billing.subscription.cancelled_details", { values: { date: moment().format("ll") } })}</span>
+			<span class="details">
+				{$t("pages.settings.billing.subscription.cancelled_details", {
+					values: { date: moment().format("ll") },
+				})}
+			</span>
 		</div>
 	</div>
 </section>

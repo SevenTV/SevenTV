@@ -8,7 +8,11 @@
 	export let mode: DialogMode = DialogMode.Hidden;
 </script>
 
-<EmoteDialog width={35} title={$t("dialogs.delete_emote_or_set.title", { values: { name: "AlienPls" } })} bind:mode>
+<EmoteDialog
+	width={35}
+	title={$t("dialogs.delete_emote_or_set.title", { values: { name: "AlienPls" } })}
+	bind:mode
+>
 	<span class="details">{$t("dialogs.delete_emote_or_set.warning_message_emote")}</span>
 	<TextInput placeholder={$t("dialogs.delete_emote_or_set.reason")}>
 		<span class="label">{$t("dialogs.delete_emote_or_set.reason_for_deletion")}</span>

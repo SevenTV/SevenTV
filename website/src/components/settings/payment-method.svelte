@@ -27,9 +27,13 @@
 				<span class="heading">{$t("pages.settings.billing.payment_methods.card.title")}</span>
 				<br />
 				<span class="details">
-					{$t("pages.settings.billing.payment_methods.card.ends_in", { values: { digits: "2215" } })}
+					{$t("pages.settings.billing.payment_methods.card.ends_in", {
+						values: { digits: "2215" },
+					})}
 					<br />
-					{$t("pages.settings.billing.payment_methods.card.expires", { values: { month: "06", year: "2029" } })}
+					{$t("pages.settings.billing.payment_methods.card.expires", {
+						values: { month: "06", year: "2029" },
+					})}
 				</span>
 			</p>
 			<p style="grid-row: span 2">

@@ -36,15 +36,30 @@
 	<aside class="side-bar">
 		<h1>{$t("pages.directory.title")}</h1>
 		<nav class="link-list">
-			<TabLink href="/emotes" title={$t("common.emotes", { values: { count: 2 } })} big matcher={menuMatcher}>
+			<TabLink
+				href="/emotes"
+				title={$t("common.emotes", { values: { count: 2 } })}
+				big
+				matcher={menuMatcher}
+			>
 				<Smiley />
 				<Smiley weight="fill" slot="active" />
 			</TabLink>
-			<TabLink href="/emotes/sets" title={$t("common.emote_sets", { values: { count: 2 } })} big matcher={menuMatcher}>
+			<TabLink
+				href="/emotes/sets"
+				title={$t("common.emote_sets", { values: { count: 2 } })}
+				big
+				matcher={menuMatcher}
+			>
 				<FolderSimple />
 				<FolderSimple weight="fill" slot="active" />
 			</TabLink>
-			<TabLink href="/emotes/bookmarked" title={$t("pages.directory.bookmarked")} big matcher={menuMatcher}>
+			<TabLink
+				href="/emotes/bookmarked"
+				title={$t("pages.directory.bookmarked")}
+				big
+				matcher={menuMatcher}
+			>
 				<BookmarkSimple />
 				<BookmarkSimple weight="fill" slot="active" />
 			</TabLink>

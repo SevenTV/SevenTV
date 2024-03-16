@@ -20,7 +20,9 @@
 
 <!-- All things called grid here aren't actually css grids -->
 <Banner
-	title={subbed ? $t("pages.store.subscription.banner_title_subbed") : $t("pages.store.subscription.banner_title_unsubbed")}
+	title={subbed
+		? $t("pages.store.subscription.banner_title_subbed")
+		: $t("pages.store.subscription.banner_title_unsubbed")}
 	subtitle={subbed
 		? $t("pages.store.subscription.banner_subtitle_subbed")
 		: $t("pages.store.subscription.banner_subtitle_unsubbed")}

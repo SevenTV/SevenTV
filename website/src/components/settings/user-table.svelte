@@ -3,7 +3,7 @@
 	import Button from "../input/button.svelte";
 	import Checkbox from "../input/checkbox.svelte";
 	import Date from "../date.svelte";
-	import moment from 'moment/min/moment-with-locales';
+	import moment from "moment/min/moment-with-locales";
 	import Flags from "../flags.svelte";
 	import { t } from "svelte-i18n";
 
