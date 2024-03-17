@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from "./$types";
+	import { t } from "svelte-i18n";
 
 	export let data: PageData;
 </script>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Troll from "$/components/icons/troll.svelte";
 	import { page } from "$app/stores";
+	import { t } from "svelte-i18n";
 
 	let title = $page.error?.message ?? "Error";
 </script>
