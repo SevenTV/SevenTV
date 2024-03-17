@@ -513,10 +513,6 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 		total_months: i32,
 	}
 
-	// count(purchases, #.was_gift and #.date >= '2021-12-01' and #.date <=
-	// '2021-12-31') > 2 any(user_product.subscription_entries, #.status == 'Active'
-	// and #.start <= '2021-12-01' and #.end >= '2021-12-01')
-
 	let purchases = purchases
 		.iter()
 		.map(|pp| Purchase {
