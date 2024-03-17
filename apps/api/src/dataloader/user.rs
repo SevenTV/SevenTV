@@ -385,9 +385,7 @@ impl UserLoader {
 			map
 		});
 
-		let unique_product_ids = product_purchaes.keys().copied().collect::<Vec<_>>();
-
-		let Ok(products) = global.product_by_id_loader().load_many(unique_product_ids).await else {
+		let Ok(products) = global.product_by_id_loader().load_many(product_purchaes.keys().copied()).await else {
 			anyhow::bail!("failed to load products");
 		};
 
