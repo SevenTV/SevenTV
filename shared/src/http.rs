@@ -35,23 +35,23 @@ pub fn cors_middleware<B: Sync + Send + 'static, E: 'static>(options: &HttpCors)
 	let max_age = options.max_age_seconds.map(|s| s.to_string().parse::<HeaderValue>().unwrap());
 	let timing_allow_origins = fnv::FnvHashSet::from_iter(options.timing_allow_origin.iter().map(|s| s.to_lowercase()));
 
-	let inner = move |resp: &mut Response<B>| {
+	let inner = move |resp: &mut Response<B>, req: &Request<()>| {
 		if allow_origins.is_empty() {
 			return;
 		}
 
-		let origin = match resp.headers().get(header::ORIGIN) {
+		let origin = match req.headers().get(header::ORIGIN) {
 			Some(origin) => origin.clone(),
 			None => return,
 		};
 
 		let origin_str = origin.to_str().unwrap();
 
-		if allow_origins.contains("*") || allow_origins.contains(origin_str) {
-			resp.headers_mut().insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.clone());
-		} else {
+		if !allow_origins.contains("*") && !allow_origins.contains(origin_str) {
 			return;
 		}
+
+		resp.headers_mut().insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.clone());
 
 		if timing_allow_origins.contains("*") || timing_allow_origins.contains(origin_str) {
 			resp.headers_mut().insert("Timing-Allow-Origin", origin.clone());
@@ -79,8 +79,8 @@ pub fn cors_middleware<B: Sync + Send + 'static, E: 'static>(options: &HttpCors)
 		resp.headers_mut().insert(header::VARY, "Origin".parse().unwrap());
 	};
 
-	Middleware::post(move |mut resp| {
-		inner(&mut resp);
+	Middleware::post_with_req(move |mut resp, req| {
+		inner(&mut resp, &req);
 		async move { Ok(resp) }
 	})
 }
