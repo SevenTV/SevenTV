@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Layout } from "$/lib/stores";
-	import EmoteContainer from "../emote-container.svelte";
+	import EmoteContainer from "../layout/emote-container.svelte";
 	import EmotePreview from "../emote-preview.svelte";
 	import Button from "../input/button.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";

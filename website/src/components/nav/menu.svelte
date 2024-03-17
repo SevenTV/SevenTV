@@ -3,18 +3,24 @@
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
+		Bell,
+		CaretLeft,
 		CaretRight,
 		ChartLine,
 		ChatDots,
 		Code,
 		Compass,
+		CreditCard,
 		Gear,
 		GlobeHemisphereWest,
 		House,
+		Key,
 		LockSimple,
 		Moon,
 		Note,
 		PaintBrush,
+		PencilSimple,
+		Prohibit,
 		Question,
 		SealCheck,
 		SignOut,
@@ -145,7 +151,10 @@
 			</div>
 		{/if}
 	{:else if menu === Menu.Language}
-		<h2>{$t("common.language")}</h2>
+		<MenuButton on:click={() => (menu = Menu.Root)}>
+			<CaretLeft />
+			{$t("common.language")}
+		</MenuButton>
 		<div class="link-list">
 			{#each Object.keys($dictionary) as l}
 				<MenuButton on:click={() => ($locale = l)}>
@@ -155,7 +164,10 @@
 			{/each}
 		</div>
 	{:else if menu === Menu.Theme}
-		<h2>{$t("common.theme")}</h2>
+		<MenuButton on:click={() => (menu = Menu.Root)}>
+			<CaretLeft />
+			{$t("common.theme")}
+		</MenuButton>
 		<div class="link-list">
 			<MenuButton on:click={() => ($theme = Theme.System)}>
 				<Sliders />
@@ -171,7 +183,34 @@
 			</MenuButton>
 		</div>
 	{:else if menu === Menu.Settings}
-		{$t("common.settings")}
+		<MenuButton on:click={() => (menu = Menu.Root)}>
+			<CaretLeft />
+			{$t("common.settings")}
+		</MenuButton>
+		<div class="link-list">
+			<MenuButton href="/settings/account">
+				<Key />
+				{$t("pages.settings.account.title")}
+			</MenuButton>
+			<MenuButton href="/settings/editors">
+				<PencilSimple />
+				{$t("common.editors")}
+			</MenuButton>
+		</div>
+		<div class="link-list">
+			<MenuButton href="/settings/notifications">
+				<Bell />
+				{$t("common.notifications")}
+			</MenuButton>
+			<MenuButton href="/settings/blocked">
+				<Prohibit />
+				{$t("pages.settings.blocked.title")}
+			</MenuButton>
+			<MenuButton href="/settings/billing">
+				<CreditCard />
+				{$t("pages.settings.billing.title")}
+			</MenuButton>
+		</div>
 	{/if}
 </nav>
 
@@ -233,12 +272,6 @@
 		&:focus-visible {
 			background-color: var(--bg-light);
 		}
-	}
-
-	h2 {
-		margin: 0.5rem 1.2rem;
-		font-size: 1.25rem;
-		font-weight: 600;
 	}
 
 	.link-list {

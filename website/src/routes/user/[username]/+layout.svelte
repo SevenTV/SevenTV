@@ -110,8 +110,8 @@
 			</Button>
 			{#if editorsExpanded}
 				<div class="expanded">
-					<ChannelPreview size={1.5} />
-					<ChannelPreview size={1.5} />
+					<ChannelPreview size={1.5} index={0} />
+					<ChannelPreview size={1.5} index={1} />
 				</div>
 			{/if}
 			<hr />
@@ -260,7 +260,7 @@
 
 			display: flex;
 			flex-direction: column;
-			gap: 0.5rem;
+			gap: 0.25rem;
 		}
 	}
 
