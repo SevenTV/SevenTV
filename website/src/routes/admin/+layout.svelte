@@ -6,7 +6,7 @@
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
-		<h1>{$t("pages.admin.dashboard")}</h1>
+		<h1>{$t("pages.admin.title")}</h1>
 		<nav class="link-list">
 			<TabLink title={$t("pages.admin.overview")} href="/admin">
 				<Table />

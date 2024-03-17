@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("pages.admin.reports")} - 7TV Admin</title>
+	<title>{$t("pages.admin.reports")} - {$t("pages.admin.page_title_suffix")}</title>
 </svelte:head>
 
 {$t("pages.admin.reports")}

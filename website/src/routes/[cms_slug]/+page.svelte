@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.slug} - 7TV</title>
+	<title>{data.slug} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <h1>{data.slug}</h1>

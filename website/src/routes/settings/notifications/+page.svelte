@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("page_titles.notification_settings")} - 7TV</title>
+	<title>{$t("page_titles.notification_settings")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <section>

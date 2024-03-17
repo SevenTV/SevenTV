@@ -34,7 +34,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.username} - 7TV</title>
+	<title>{data.username} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <div class="side-bar-layout">

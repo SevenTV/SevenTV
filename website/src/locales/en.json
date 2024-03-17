@@ -1,5 +1,6 @@
 {
 	"page_titles": {
+		"suffix": "7TV",
 		"trending_emotes": "Trending Emotes",
 		"top_emotes": "Top Emotes",
 		"global_emotes": "Global Emotes",
@@ -293,7 +294,8 @@
 			}
 		},
 		"admin": {
-			"dashboard": "Admin Dashboard",
+			"page_title_suffix": "7TV Admin",
+			"title": "Admin",
 			"overview": "Overview",
 			"reports": "Reports"
 		},

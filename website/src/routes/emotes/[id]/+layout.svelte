@@ -55,7 +55,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.id} - 7TV</title>
+	<title>{data.id} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <AddEmoteDialog bind:mode={addEmoteDialogMode} />

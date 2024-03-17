@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("common.privacy")} - 7TV</title>
+	<title>{$t("common.privacy")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <h1>{$t("common.privacy")}</h1>

@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("page_titles.bookmarked_emotes")} - 7TV</title>
+	<title>{$t("page_titles.bookmarked_emotes")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <EmoteContainer scrollable>

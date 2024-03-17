@@ -4,7 +4,7 @@
 	type Tab = {
 		name: string;
 		pathname: string;
-		hightlight?: boolean;
+		highlight?: string;
 	};
 
 	export let tabs: Tab[];
@@ -15,7 +15,7 @@
 		<li aria-current={$page.url.pathname.startsWith(tab.pathname)}>
 			<a
 				class:selected={$page.url.pathname.startsWith(tab.pathname)}
-				class:highlight={tab.hightlight}
+				style="--highlight: {tab.highlight}"
 				href={tab.pathname}
 				draggable="false">{tab.name}</a
 			>
@@ -49,9 +49,7 @@
 
 			transition: border-bottom-color 0.1s;
 
-			&.highlight {
-				color: var(--store);
-			}
+			color: var(--highlight, --text);
 
 			&:hover,
 			&:focus-visible {
@@ -59,19 +57,11 @@
 			}
 
 			&:active {
-				border-bottom-color: var(--primary-active);
-			}
-
-			&:active.highlight {
-				border-bottom-color: var(--store);
+				border-bottom-color: var(--highlight, --primary-active);
 			}
 
 			&.selected {
-				border-bottom-color: var(--primary);
-			}
-
-			&.selected.highlight {
-				border-bottom-color: var(--store);
+				border-bottom-color: var(--highlight, --primary);
 			}
 		}
 	}
