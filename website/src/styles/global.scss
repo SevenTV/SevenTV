@@ -187,18 +187,6 @@ textarea {
 	}
 }
 
-/* Screen reader only */
-/* Hide but still render */
-.sr-only {
-	clip: rect(0 0 0 0);
-	clip-path: inset(50%);
-	height: 1px;
-	overflow: hidden;
-	position: absolute;
-	white-space: nowrap;
-	width: 1px;
-}
-
 @media screen and (max-width: 960px) {
 	.hide-on-mobile {
 		display: none !important;
