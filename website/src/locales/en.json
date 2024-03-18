@@ -12,7 +12,8 @@
 		"editor_settings": "Editor Settings",
 		"notification_settings": "Notification Settings",
 		"blocked_settings": "Blocked Settings",
-		"billing_settings": "Billing Settings"
+		"billing_settings": "Billing Settings",
+		"admin_emote_tickets": "Emote Tickets"
 	},
 	"common": {
 		"sign_in": "Sign In",
@@ -297,7 +298,10 @@
 			"page_title_suffix": "7TV Admin",
 			"title": "Admin",
 			"overview": "Overview",
-			"reports": "Reports"
+			"tickets": {
+				"title": "Tickets",
+				"reports": "Reports"
+			}
 		},
 		"emote_set": {
 			"copy_set": "Copy Set"
