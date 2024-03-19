@@ -4,7 +4,6 @@
 		Check,
 		Clock,
 		EyeSlash,
-		Gear,
 		SealCheck,
 		Smiley,
 		Trash,
