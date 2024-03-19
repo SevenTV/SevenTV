@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { numberFormat } from "$/lib/utils";
 	import TabLink from "../tab-link.svelte";
 	import { Users, ChartLineUp, Graph, ChatText, Pulse } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
@@ -8,7 +9,7 @@
 
 <nav class="links">
 	<TabLink
-		title="{$t('common.channels', { values: { count: 2 } })} (1020)"
+		title="{$t('common.channels', { values: { count: 2 } })} ({numberFormat().format(1020)})"
 		href="/emotes/{id}"
 		responsive
 	>

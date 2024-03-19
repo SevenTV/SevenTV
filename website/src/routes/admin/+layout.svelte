@@ -1,5 +1,6 @@
 <script lang="ts">
 	import TabLink from "$/components/tab-link.svelte";
+	import { numberFormat } from "$/lib/utils";
 	import { page } from "$app/stores";
 	import { CaretDown, CaretUp, Flag, PaintBrush, Smiley, Table, Ticket } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
@@ -32,11 +33,11 @@
 			</TabLink>
 			{#if ticketsSelected}
 				<div class="indent link-list">
-					<TabLink title="{$t("common.emotes", { values: { count: 2 } })} (1920)" href="/admin/tickets/emotes" matcher={customMatcher}>
+					<TabLink title="{$t("common.emotes", { values: { count: 2 } })} ({numberFormat().format(1920)})" href="/admin/tickets/emotes" matcher={customMatcher}>
 						<Smiley />
 						<Smiley weight="fill" slot="active" />
 					</TabLink>
-					<TabLink title="{$t("pages.admin.tickets.reports")} (2)" href="/admin/tickets/reports">
+					<TabLink title="{$t("pages.admin.tickets.reports")} ({numberFormat().format(2)})" href="/admin/tickets/reports">
 						<Flag />
 						<Flag weight="fill" slot="active" />
 					</TabLink>

@@ -75,7 +75,7 @@
         margin-left: 0.5rem;
 
         display: grid;
-        grid-template-columns: auto auto;
+        grid-template-columns: auto 1fr;
         align-items: center;
         column-gap: 0.5rem;
         row-gap: 0.75rem;

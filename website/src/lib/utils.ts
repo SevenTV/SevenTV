@@ -6,3 +6,10 @@ export function priceFormat() {
 		currency: "USD",
 	});
 }
+
+export function numberFormat() {
+	return getNumberFormatter({
+		notation: "compact",
+		unitDisplay: "narrow",
+	});
+}

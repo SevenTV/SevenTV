@@ -15,6 +15,7 @@
 	import Date from "../date.svelte";
 	import CountryFlag from "../country-flag.svelte";
     import { t } from "svelte-i18n";
+	import { numberFormat } from "$/lib/utils";
 
 	export let selectedMap: boolean[];
 
@@ -84,7 +85,7 @@
                         <SealCheck size="1rem" weight="fill" color="var(--subscriber)" />
                     </a>
                 </td>
-                <td>999</td>
+                <td>{numberFormat().format(999)}</td>
                 <td>
                     <CountryFlag code="gb" name="Great Britain" height={1.2 * 16} />
                 </td>

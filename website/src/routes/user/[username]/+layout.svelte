@@ -26,6 +26,7 @@
 	import YoutubeLogo from "$/components/icons/youtube-logo.svelte";
 	import XTwitterLogo from "$/components/icons/x-twitter-logo.svelte";
 	import { t } from "svelte-i18n";
+	import { numberFormat } from "$/lib/utils";
 
 	export let data: LayoutData;
 
@@ -50,12 +51,12 @@
 		</div>
 		<div class="data">
 			<span>
-				1.4k
+				{numberFormat().format(1400)}
 				<br class="hide-on-mobile" />
 				<span class="text">{$t("common.followers", { values: { count: 1400 } })}</span>
 			</span>
 			<span>
-				1.2M
+				{numberFormat().format(1200000)}
 				<br class="hide-on-mobile" />
 				<span class="text">{$t("common.channels", { values: { count: 1_200_000 } })}</span>
 			</span>
