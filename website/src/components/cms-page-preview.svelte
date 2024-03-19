@@ -3,6 +3,7 @@
 	import Button from "./input/button.svelte";
 	import { DotsThree } from "phosphor-svelte";
 	import DropDown from "./drop-down.svelte";
+	import FromNow from "./from-now.svelte";
 
 	export let slug: string;
 </script>
@@ -23,7 +24,7 @@
 		</DropDown>
 		<span class="info">
 			<span class="author">ayyybubu</span>
-			<span class="date"> · {moment("2024-03-12T12:00:00").fromNow()}</span>
+			<span class="date"> · <FromNow date={moment("2024-03-12T12:00:00")} /></span>
 		</span>
 		<article class="text">
 			<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>

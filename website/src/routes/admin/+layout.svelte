@@ -5,6 +5,10 @@
 	import { t } from "svelte-i18n";
 
 	$: ticketsSelected = $page.url.pathname.startsWith("/admin/tickets");
+
+	function customMatcher(_id: string | null, url: URL, href: string | null) {
+		return !!href && url.pathname.startsWith(href);
+	}
 </script>
 
 <div class="side-bar-layout">
@@ -15,7 +19,7 @@
 				<Table />
 				<Table weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title={$t("pages.admin.tickets")} href="/admin/tickets" matcher={() => ticketsSelected} big>
+			<TabLink title={$t("pages.admin.tickets.title")} href="/admin/tickets" matcher={customMatcher} big>
 				<Ticket />
 				<Ticket weight="fill" slot="active" />
 				<svelte:fragment slot="icon-right">
@@ -28,11 +32,11 @@
 			</TabLink>
 			{#if ticketsSelected}
 				<div class="indent link-list">
-					<TabLink title={$t("common.emotes", { values: { count: 2 } })} href="/admin/tickets/emotes">
+					<TabLink title="{$t("common.emotes", { values: { count: 2 } })} (1920)" href="/admin/tickets/emotes" matcher={customMatcher}>
 						<Smiley />
 						<Smiley weight="fill" slot="active" />
 					</TabLink>
-					<TabLink title={$t("pages.admin.reports")} href="/admin/tickets/reports">
+					<TabLink title="{$t("pages.admin.tickets.reports")} (2)" href="/admin/tickets/reports">
 						<Flag />
 						<Flag weight="fill" slot="active" />
 					</TabLink>
@@ -43,7 +47,7 @@
 				<PaintBrush weight="fill" slot="active" />
 			</TabLink>
 		</nav>
-		<img src="/modge.webp" width="64" height="64" alt="Modge" class="modge" />
+		<img src="/modge.webp" width="64" height="64" alt="Modge" class="modge hide-on-mobile" />
 	</aside>
 	<div class="content">
 		<slot />
@@ -59,5 +63,11 @@
 		margin-left: auto;
 		margin-top: auto;
 		filter: saturate(0) opacity(0.2);
+	}
+
+	.content {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 </style>

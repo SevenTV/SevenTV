@@ -146,6 +146,60 @@ textarea {
 	}
 }
 
+table {
+	width: 100%;
+	border-collapse: collapse;
+
+	background-color: var(--bg-light);
+	border-radius: 0.5rem;
+
+	.shrink {
+		// Shrink column width
+		width: 0;
+	}
+}
+
+thead {
+	text-align: left;
+}
+
+th {
+	padding: 0.75rem;
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: var(--text-light);
+
+	border-bottom: 1px solid var(--border-active);
+}
+
+tr {
+	&:focus-visible,
+	&:hover {
+		td {
+			background-color: var(--bg-medium);
+		}
+	}
+
+	&:last-child > td {
+		border-bottom: none;
+
+		&:first-child {
+			border-bottom-left-radius: 0.5rem;
+		}
+
+		&:last-child {
+			border-bottom-right-radius: 0.5rem;
+		}
+	}
+}
+
+td {
+	padding: 0.5rem 0.75rem;
+	border-block: 1px solid var(--border-active);
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
 // Desktop
 @media screen and (min-width: 961px) {
 	.side-bar-layout {

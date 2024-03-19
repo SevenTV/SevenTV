@@ -88,7 +88,18 @@
 
 	$: flags.sort((a, b) => {
 		const keys = Object.keys(icons);
-		return keys.indexOf(a) - keys.indexOf(b);
+		const aIndex = keys.indexOf(a);
+		const bIndex = keys.indexOf(b);
+		if (aIndex === -1 && bIndex === -1) {
+			return 0;
+		}
+		if (aIndex === -1) {
+			return 1;
+		}
+		if (bIndex === -1) {
+			return -1;
+		}
+		return aIndex - bIndex;
 	});
 </script>
 
@@ -120,7 +131,9 @@
 	.flags {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		column-gap: 0.5rem;
+		row-gap: 0.3rem;
+		flex-wrap: wrap;
 	}
 
 	.flag {

@@ -4,6 +4,7 @@
 	import type { LayoutData } from "../$types";
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";
+	import FromNow from "$/components/from-now.svelte";
 
 	export let data: LayoutData;
 
@@ -60,7 +61,7 @@
 					values: { user: activity.user, emote: activity.emote },
 				})}
 			</span>
-			<span class="time">{moment().fromNow()}</span>
+			<span class="time"><FromNow date={moment()} /></span>
 		</div>
 		{#if index !== activities.length - 1}
 			<hr />

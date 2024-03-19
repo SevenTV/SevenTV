@@ -49,17 +49,17 @@ export enum Layout {
 	List = "list",
 }
 
-function loadLayout(key: string) {
+function loadLayout(key: string, defaultLayout?: Layout) {
 	const savedLayout = browser && window.localStorage.getItem(key);
 	if (savedLayout) {
 		return JSON.parse(savedLayout) as Layout;
 	}
-	return Layout.BigGrid;
+	return defaultLayout ?? Layout.BigGrid;
 }
 
 function saveLayout(key: string, value: Layout | null) {
 	if (value && browser) {
-		window.localStorage.setItem("discoverFollowingLayout", JSON.stringify(value));
+		window.localStorage.setItem(key, JSON.stringify(value));
 	}
 }
 
@@ -70,3 +70,8 @@ emotesLayout.subscribe((value) => saveLayout("emotesLayout", value));
 // Discover / Following
 export const discoverFollowingLayout = writable(loadLayout("discoverFollowingLayout"));
 discoverFollowingLayout.subscribe((value) => saveLayout("discoverFollowingLayout", value));
+
+// Admin tickets
+
+export const adminTicketsLayout = writable(loadLayout("adminTicketsLayout", Layout.List));
+adminTicketsLayout.subscribe((value) => saveLayout("adminTicketsLayout", value));
