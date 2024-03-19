@@ -14,6 +14,7 @@
 	} from "phosphor-svelte";
 	import Date from "../date.svelte";
 	import CountryFlag from "../country-flag.svelte";
+    import { t } from "svelte-i18n";
 
 	export let selectedMap: boolean[];
 
@@ -40,13 +41,13 @@
                     <Gear slot="icon" />
                 </Button>
             </th>
-            <th>Emote</th>
-            <th>Uploader</th>
-            <th>Channels</th>
-            <th>Country</th>
-            <th>Tags & Flags</th>
-            <th>Reviewed By</th>
-            <th>Date</th>
+            <th>{$t("common.emotes", { values: { count: 1 } })}</th>
+            <th>{$t("pages.admin.tickets.emote_table.uploader")}</th>
+            <th>{$t("common.channels", { values: { count: 2 } })}</th>
+            <th>{$t("pages.admin.tickets.emote_table.country")}</th>
+            <th>{$t("pages.admin.tickets.emote_table.tags_flags")}</th>
+            <th>{$t("pages.admin.tickets.emote_table.reviewed_by")}</th>
+            <th>{$t("common.date")}</th>
         </tr>
     </thead>
     <tbody>

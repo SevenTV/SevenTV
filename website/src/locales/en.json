@@ -1,6 +1,7 @@
 {
 	"page_titles": {
 		"suffix": "7TV",
+		"admin_suffix": "7TV Admin",
 		"trending_emotes": "Trending Emotes",
 		"top_emotes": "Top Emotes",
 		"global_emotes": "Global Emotes",
@@ -13,7 +14,9 @@
 		"notification_settings": "Notification Settings",
 		"blocked_settings": "Blocked Settings",
 		"billing_settings": "Billing Settings",
-		"admin_emote_tickets": "Emote Tickets"
+		"admin_emote_public_listing": "Emote Public Listing Requests",
+		"admin_emote_personal_use": "Emote Personal Use Requests",
+		"admin_emote_resolved": "Resolved Emote Tickets"
 	},
 	"common": {
 		"sign_in": "Sign In",
@@ -27,6 +30,7 @@
 		"items": "{count, plural, one {Item} other {Items}}",
 		"subscriptions": "{count, plural, one {Subscription} other {Subscriptions}}",
 		"payment_methods": "{count, plural, one {Payment Method} other {Payment Methods}}",
+		"date": "Date",
 		"paint_bundles": "Paint Bundles",
 		"notifications": "Notifications",
 		"connections": "Connections",
@@ -295,11 +299,21 @@
 			}
 		},
 		"admin": {
-			"page_title_suffix": "7TV Admin",
 			"title": "Admin",
 			"overview": "Overview",
 			"tickets": {
 				"title": "Tickets",
+				"emotes": {
+					"public_listing": "Public Listing",
+					"personal_use": "Personal Use",
+					"resolved": "Resolved"
+				},
+				"emote_table": {
+					"uploader": "Uploader",
+					"country": "Country",
+					"tags_flags": "Tags & Flags",
+					"reviewed_by": "Reviewed By"
+				},
 				"reports": "Reports"
 			}
 		},
@@ -383,7 +397,6 @@
 					}
 				},
 				"table": {
-					"date": "Date",
 					"status": "Status",
 					"amount": "Amount",
 					"invoice": "Invoice"

@@ -13,7 +13,7 @@
 	<table>
 		<thead>
 			<tr>
-				<th>{$t("pages.settings.billing.table.date")}</th>
+				<th>{$t("common.date")}</th>
 				<th>{$t("common.items", { values: { count: 2 } })}</th>
 				<th>{$t("common.payment_methods", { values: { count: 1 } })}</th>
 				<th>{$t("pages.settings.billing.table.status")}</th>
