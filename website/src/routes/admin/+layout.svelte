@@ -20,7 +20,12 @@
 				<Table />
 				<Table weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title={$t("pages.admin.tickets.title")} href="/admin/tickets" matcher={customMatcher} big>
+			<TabLink
+				title={$t("pages.admin.tickets.title")}
+				href="/admin/tickets"
+				matcher={customMatcher}
+				big
+			>
 				<Ticket />
 				<Ticket weight="fill" slot="active" />
 				<svelte:fragment slot="icon-right">
@@ -33,11 +38,18 @@
 			</TabLink>
 			{#if ticketsSelected}
 				<div class="indent link-list">
-					<TabLink title="{$t("common.emotes", { values: { count: 2 } })} ({numberFormat().format(1920)})" href="/admin/tickets/emotes" matcher={customMatcher}>
+					<TabLink
+						title="{$t('common.emotes', { values: { count: 2 } })} ({numberFormat().format(1920)})"
+						href="/admin/tickets/emotes"
+						matcher={customMatcher}
+					>
 						<Smiley />
 						<Smiley weight="fill" slot="active" />
 					</TabLink>
-					<TabLink title="{$t("pages.admin.tickets.reports")} ({numberFormat().format(2)})" href="/admin/tickets/reports">
+					<TabLink
+						title="{$t('pages.admin.tickets.reports')} ({numberFormat().format(2)})"
+						href="/admin/tickets/reports"
+					>
 						<Flag />
 						<Flag weight="fill" slot="active" />
 					</TabLink>

@@ -13,8 +13,8 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import { Layout, adminTicketsLayout } from "$/lib/stores";
 	import EmoteTicketsTable from "./emote-tickets-table.svelte";
-    import EmoteTicket from "./emote-ticket.svelte";
-    import { t } from "svelte-i18n";
+	import EmoteTicket from "./emote-ticket.svelte";
+	import { t } from "svelte-i18n";
 	import { numberFormat } from "$/lib/utils";
 	import EmoteTicketDialog from "../dialogs/emote-ticket-dialog.svelte";
 	import { DialogMode } from "../dialogs/dialog.svelte";
@@ -23,25 +23,37 @@
 
 	$: anySelected = selectedMap.some((v) => v);
 
-    let emoteTicketDialogMode = DialogMode.Hidden;
+	let emoteTicketDialogMode = DialogMode.Hidden;
 
-    function showEmoteTicketDialog() {
-        emoteTicketDialogMode = DialogMode.Shown;
-    }
+	function showEmoteTicketDialog() {
+		emoteTicketDialogMode = DialogMode.Shown;
+	}
 </script>
 
 <EmoteTicketDialog bind:mode={emoteTicketDialogMode} />
 <nav class="nav-bar">
 	<div class="tabs">
-		<TabLink title="{$t("pages.admin.tickets.emotes.public_listing")} ({numberFormat().format(9932)})" href="/admin/tickets/emotes" responsive>
+		<TabLink
+			title="{$t('pages.admin.tickets.emotes.public_listing')} ({numberFormat().format(9932)})"
+			href="/admin/tickets/emotes"
+			responsive
+		>
 			<Eye />
 			<Eye weight="fill" slot="active" />
 		</TabLink>
-		<TabLink title="{$t("pages.admin.tickets.emotes.personal_use")} ({numberFormat().format(412)})" href="/admin/tickets/emotes/personal-use" responsive>
+		<TabLink
+			title="{$t('pages.admin.tickets.emotes.personal_use')} ({numberFormat().format(412)})"
+			href="/admin/tickets/emotes/personal-use"
+			responsive
+		>
 			<Star />
 			<Star weight="fill" slot="active" />
 		</TabLink>
-		<TabLink title="{$t("pages.admin.tickets.emotes.resolved")} ({numberFormat().format(100_000)})" href="/admin/tickets/emotes/resolved" responsive>
+		<TabLink
+			title="{$t('pages.admin.tickets.emotes.resolved')} ({numberFormat().format(100_000)})"
+			href="/admin/tickets/emotes/resolved"
+			responsive
+		>
 			<Checks />
 			<Checks weight="fill" slot="active" />
 		</TabLink>
@@ -76,14 +88,14 @@
 </nav>
 <div class="scroll">
 	{#if $adminTicketsLayout === Layout.List}
-        <EmoteTicketsTable bind:selectedMap on:click={showEmoteTicketDialog} />
-    {:else}
-        <div class="tickets-grid">
-            {#each Array(selectedMap.length) as _}
-                <EmoteTicket on:click={showEmoteTicketDialog} />
-            {/each}
-        </div>
-    {/if}
+		<EmoteTicketsTable bind:selectedMap on:click={showEmoteTicketDialog} />
+	{:else}
+		<div class="tickets-grid">
+			{#each Array(selectedMap.length) as _}
+				<EmoteTicket on:click={showEmoteTicketDialog} />
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style lang="scss">
@@ -116,9 +128,9 @@
 		scrollbar-gutter: stable;
 	}
 
-    .tickets-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr));
-        gap: 1rem;
-    }
+	.tickets-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr));
+		gap: 1rem;
+	}
 </style>
