@@ -16,12 +16,21 @@
     import EmoteTicket from "./emote-ticket.svelte";
     import { t } from "svelte-i18n";
 	import { numberFormat } from "$/lib/utils";
+	import EmoteTicketDialog from "../dialogs/emote-ticket-dialog.svelte";
+	import { DialogMode } from "../dialogs/dialog.svelte";
 
 	let selectedMap: boolean[] = Array(20).fill(false);
 
 	$: anySelected = selectedMap.some((v) => v);
+
+    let emoteTicketDialogMode = DialogMode.Hidden;
+
+    function showEmoteTicketDialog() {
+        emoteTicketDialogMode = DialogMode.Shown;
+    }
 </script>
 
+<EmoteTicketDialog bind:mode={emoteTicketDialogMode} />
 <nav class="nav-bar">
 	<div class="tabs">
 		<TabLink title="{$t("pages.admin.tickets.emotes.public_listing")} ({numberFormat().format(9932)})" href="/admin/tickets/emotes" responsive>
@@ -67,11 +76,11 @@
 </nav>
 <div class="scroll">
 	{#if $adminTicketsLayout === Layout.List}
-        <EmoteTicketsTable bind:selectedMap />
+        <EmoteTicketsTable bind:selectedMap on:click={showEmoteTicketDialog} />
     {:else}
         <div class="tickets-grid">
             {#each Array(selectedMap.length) as _}
-                <EmoteTicket />
+                <EmoteTicket on:click={showEmoteTicketDialog} />
             {/each}
         </div>
     {/if}

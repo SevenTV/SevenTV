@@ -15,11 +15,13 @@
 	import EmotePreview from "../emote-preview.svelte";
 	import moment from "moment/min/moment-with-locales";
 	import Flags from "../flags.svelte";
-	import Tags from "../emotes/tags.svelte";
     import FromNow from "../from-now.svelte";
+	import { createEventDispatcher } from "svelte";
+
+    const dispatch = createEventDispatcher();
 </script>
 
-<div class="emote-ticket">
+<button class="emote-ticket" on:click={() => dispatch("click", 0)}>
     <div class="buttons">
         <Button>
             <Check slot="icon" color="var(--admin-approve)" />
@@ -52,7 +54,7 @@
         </div>
         <Flags flags={["overlaying", "lorem", "ipsum", "dolor", "sit", "amet", "consectetur"]} style="grid-column: span 2" />
     </div>
-</div>
+</button>
 
 <style lang="scss">
     .emote-ticket {

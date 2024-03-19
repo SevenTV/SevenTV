@@ -16,6 +16,9 @@
 	import CountryFlag from "../country-flag.svelte";
     import { t } from "svelte-i18n";
 	import { numberFormat } from "$/lib/utils";
+    import { createEventDispatcher } from "svelte";
+
+    const dispatch = createEventDispatcher();
 
 	export let selectedMap: boolean[];
 
@@ -53,7 +56,7 @@
     </thead>
     <tbody>
         {#each Array(selectedMap.length) as _, i}
-            <tr class="data-row">
+            <tr class="data-row" on:click={() => dispatch("click", i)}>
                 <td class="shrink">
                     <Checkbox bind:value={selectedMap[i]} />
                 </td>
