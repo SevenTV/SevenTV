@@ -9,6 +9,8 @@
 	export let hideOnMobile = false;
 	export let hideOnDesktop = false;
 
+	export let align: "left" | "right" = "right";
+
 	let index = dropDownIndex;
 	dropDownIndex += 1;
 
@@ -41,7 +43,7 @@
 		<slot />
 	</div>
 	{#if expanded}
-		<div class="dropped" id="dropdown-list-{index}" transition:fade={{ duration: 100 }}>
+		<div class="dropped" id="dropdown-list-{index}" transition:fade={{ duration: 100 }} style={align === "left" ? "left: 0" : "right: 0"}>
 			<slot name="dropdown" />
 		</div>
 	{/if}
@@ -65,7 +67,6 @@
 
 		position: absolute;
 		top: 100%;
-		right: 0;
 		margin: 0;
 		margin-top: 0.25rem;
 		padding: 0;

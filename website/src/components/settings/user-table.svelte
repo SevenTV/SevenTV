@@ -42,7 +42,7 @@
 			{#each Array(selectedMap.length) as _, i}
 				<tr class="data-row" on:click={() => (selectedMap[i] = !selectedMap[i])}>
 					<td class="shrink">
-						<Checkbox bind:value={selectedMap[i]} style="pointer-events: none" />
+						<Checkbox bind:value={selectedMap[i]} />
 					</td>
 					<td>
 						<div class="user-info">

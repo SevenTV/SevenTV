@@ -1,15 +1,16 @@
 <script lang="ts">
 	import EmotePreview from "$/components/emote-preview.svelte";
 	import Flags from "$/components/flags.svelte";
-	import Button from "$/components/input/button.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
 	import moment from "moment/min/moment-with-locales";
-	import { ArrowsMerge, Check, EyeSlash, Gear, SealCheck, Trash } from "phosphor-svelte";
+	import { SealCheck } from "phosphor-svelte";
 	import Date from "../date.svelte";
 	import CountryFlag from "../country-flag.svelte";
 	import { t } from "svelte-i18n";
 	import { numberFormat } from "$/lib/utils";
 	import { createEventDispatcher } from "svelte";
+	import EmoteTicketsTableActions from "./emote-tickets-table-actions.svelte";
+	import EmoteTicketsTableActionsHeader from "./emote-tickets-table-actions-header.svelte";
 
 	const dispatch = createEventDispatcher();
 
@@ -21,6 +22,14 @@
 	function selectAllClick() {
 		selectedMap = Array(selectedMap.length).fill(!allSelected);
 	}
+
+	let actionsPosition: "left" | "right" = "left";
+	let buttonOptions = {
+		merge: true,
+		delete: true,
+		unlist: true,
+		approve: true,
+	};
 </script>
 
 <table>
@@ -33,11 +42,9 @@
 					on:click={selectAllClick}
 				/>
 			</th>
-			<th class="shrink">
-				<Button>
-					<Gear slot="icon" />
-				</Button>
-			</th>
+			{#if actionsPosition === "left"}
+				<EmoteTicketsTableActionsHeader bind:buttonOptions bind:actionsPosition />
+			{/if}
 			<th>{$t("common.emotes", { values: { count: 1 } })}</th>
 			<th>{$t("pages.admin.tickets.emote_table.uploader")}</th>
 			<th>{$t("common.channels", { values: { count: 2 } })}</th>
@@ -45,6 +52,9 @@
 			<th>{$t("pages.admin.tickets.emote_table.tags_flags")}</th>
 			<th>{$t("pages.admin.tickets.emote_table.reviewed_by")}</th>
 			<th>{$t("common.date")}</th>
+			{#if actionsPosition === "right"}
+				<EmoteTicketsTableActionsHeader bind:buttonOptions bind:actionsPosition />
+			{/if}
 		</tr>
 	</thead>
 	<tbody>
@@ -53,26 +63,9 @@
 				<td class="shrink">
 					<Checkbox bind:value={selectedMap[i]} />
 				</td>
-				<td class="shrink">
-					<div class="buttons">
-						<Button>
-							<ArrowsMerge
-								slot="icon"
-								style="transform: rotate(-90deg)"
-								color="var(--admin-merge)"
-							/>
-						</Button>
-						<Button>
-							<Trash slot="icon" color="var(--danger)" />
-						</Button>
-						<Button>
-							<EyeSlash slot="icon" color="var(--admin-unlist)" />
-						</Button>
-						<Button>
-							<Check slot="icon" color="var(--admin-approve)" />
-						</Button>
-					</div>
-				</td>
+				{#if actionsPosition === "left"}
+					<EmoteTicketsTableActions bind:buttonOptions />
+				{/if}
 				<td>
 					<div class="emote">
 						<EmotePreview emoteOnly style="pointer-events: none" />
@@ -101,17 +94,15 @@
 				<td class="date shrink">
 					<Date date={moment()} />
 				</td>
+				{#if actionsPosition === "right"}
+					<EmoteTicketsTableActions bind:buttonOptions />
+				{/if}
 			</tr>
 		{/each}
 	</tbody>
 </table>
 
 <style lang="scss">
-	.buttons {
-		display: flex;
-		align-items: center;
-	}
-
 	.data-row {
 		cursor: pointer;
 	}

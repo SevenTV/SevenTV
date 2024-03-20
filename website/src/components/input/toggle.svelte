@@ -3,7 +3,8 @@
 	export let disabled: boolean = false;
 </script>
 
-<label {...$$restProps}>
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<label {...$$restProps} on:click|stopPropagation>
 	<slot name="left-label" />
 	<span class="switch">
 		<input type="checkbox" {disabled} bind:checked={value} />
