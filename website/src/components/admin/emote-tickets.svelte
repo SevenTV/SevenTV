@@ -145,7 +145,7 @@
 
 	@media screen and (max-width: 960px) {
 		.tickets-grid {
-			// grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+			grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
 		}
 	}
 </style>

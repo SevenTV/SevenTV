@@ -43,7 +43,12 @@
 		<slot />
 	</div>
 	{#if expanded}
-		<div class="dropped" id="dropdown-list-{index}" transition:fade={{ duration: 100 }} style={align === "left" ? "left: 0" : "right: 0"}>
+		<div
+			class="dropped"
+			id="dropdown-list-{index}"
+			transition:fade={{ duration: 100 }}
+			style={align === "left" ? "left: 0" : "right: 0"}
+		>
 			<slot name="dropdown" />
 		</div>
 	{/if}

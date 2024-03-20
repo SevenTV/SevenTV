@@ -50,7 +50,10 @@
 			</Button>
 		{/if}
 	</div>
-	<EmotePreview emoteOnly style="width: auto; align-self: center; flex-shrink: 0; pointer-events: none" />
+	<EmotePreview
+		emoteOnly
+		style="width: auto; align-self: center; flex-shrink: 0; pointer-events: none"
+	/>
 	<div class="info">
 		<div class="field">
 			<Smiley />
