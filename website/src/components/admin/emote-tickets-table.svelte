@@ -24,11 +24,11 @@
 	}
 
 	let actionsPosition: "left" | "right" = "left";
-	let buttonOptions = {
-		merge: true,
-		delete: true,
-		unlist: true,
-		approve: true,
+	export let buttonOptions: {
+		merge: boolean;
+		delete: boolean;
+		unlist: boolean;
+		approve: boolean;
 	};
 </script>
 

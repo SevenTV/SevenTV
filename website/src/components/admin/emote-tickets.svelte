@@ -18,6 +18,7 @@
 	import { numberFormat } from "$/lib/utils";
 	import EmoteTicketDialog from "../dialogs/emote-ticket-dialog.svelte";
 	import { DialogMode } from "../dialogs/dialog.svelte";
+	import EmoteTicketsButtonOptions from "./emote-tickets-button-options.svelte";
 
 	let selectedMap: boolean[] = Array(20).fill(false);
 
@@ -28,6 +29,13 @@
 	function showEmoteTicketDialog() {
 		emoteTicketDialogMode = DialogMode.Shown;
 	}
+
+	let buttonOptions = {
+		merge: true,
+		delete: true,
+		unlist: true,
+		approve: true,
+	};
 </script>
 
 <EmoteTicketDialog bind:mode={emoteTicketDialogMode} />
@@ -72,6 +80,7 @@
 		</div>
 	{/if}
 	<div class="buttons layout">
+		<EmoteTicketsButtonOptions bind:buttonOptions />
 		<Button
 			secondary={$adminTicketsLayout === Layout.List}
 			on:click={() => ($adminTicketsLayout = Layout.List)}
@@ -88,11 +97,11 @@
 </nav>
 <div class="scroll">
 	{#if $adminTicketsLayout === Layout.List}
-		<EmoteTicketsTable bind:selectedMap on:click={showEmoteTicketDialog} />
+		<EmoteTicketsTable bind:selectedMap bind:buttonOptions on:click={showEmoteTicketDialog} />
 	{:else}
 		<div class="tickets-grid">
 			{#each Array(selectedMap.length) as _}
-				<EmoteTicket on:click={showEmoteTicketDialog} />
+				<EmoteTicket bind:buttonOptions on:click={showEmoteTicketDialog} />
 			{/each}
 		</div>
 	{/if}
@@ -132,5 +141,11 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr));
 		gap: 1rem;
+	}
+
+	@media screen and (max-width: 960px) {
+		.tickets-grid {
+			// grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+		}
 	}
 </style>

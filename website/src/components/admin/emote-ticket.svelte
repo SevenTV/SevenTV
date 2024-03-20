@@ -18,24 +18,39 @@
 	import { createEventDispatcher } from "svelte";
 
 	const dispatch = createEventDispatcher();
+
+	export let buttonOptions: {
+		merge: boolean;
+		delete: boolean;
+		unlist: boolean;
+		approve: boolean;
+	};
 </script>
 
 <button class="emote-ticket" on:click={() => dispatch("click", 0)}>
 	<div class="buttons">
-		<Button>
-			<Check slot="icon" color="var(--admin-approve)" />
-		</Button>
-		<Button>
-			<EyeSlash slot="icon" color="var(--admin-unlist)" />
-		</Button>
-		<Button>
-			<Trash slot="icon" color="var(--danger)" />
-		</Button>
-		<Button>
-			<ArrowsMerge slot="icon" style="transform: rotate(-90deg)" color="var(--admin-merge)" />
-		</Button>
+		{#if buttonOptions.approve}
+			<Button>
+				<Check slot="icon" color="var(--admin-approve)" />
+			</Button>
+		{/if}
+		{#if buttonOptions.unlist}
+			<Button>
+				<EyeSlash slot="icon" color="var(--admin-unlist)" />
+			</Button>
+		{/if}
+		{#if buttonOptions.delete}
+			<Button>
+				<Trash slot="icon" color="var(--danger)" />
+			</Button>
+		{/if}
+		{#if buttonOptions.merge}
+			<Button>
+				<ArrowsMerge slot="icon" style="transform: rotate(-90deg)" color="var(--admin-merge)" />
+			</Button>
+		{/if}
 	</div>
-	<EmotePreview emoteOnly style="width: auto; flex-shrink: 0; pointer-events: none;" />
+	<EmotePreview emoteOnly style="width: auto; align-self: center; flex-shrink: 0; pointer-events: none" />
 	<div class="info">
 		<div class="field">
 			<Smiley />

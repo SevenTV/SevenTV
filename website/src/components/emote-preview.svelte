@@ -36,7 +36,7 @@
 	on:click={onClick}
 	{...$$restProps}
 >
-	<div class="image" style="animation-delay: {-index * 10}ms"></div>
+	<img src="https://cdn.7tv.app/emote/60e8677677b18d5dd3800410/4x.webp" alt={name} class="image" style="animation-delay: {-index * 10}ms" />
 	{#if !emoteOnly}
 		<span class="name">{name}</span>
 		<span class="user">username</span>
