@@ -1,5 +1,6 @@
 <script lang="ts">
 	import moment from "moment/min/moment-with-locales";
+	import FromNow from "../from-now.svelte";
 </script>
 
 <a class="preview" href="/direct-messages/ayyybubu">
@@ -10,7 +11,7 @@
 		ipsum illo animi inventore aut libero sit, sed consequatur earum quidem quia rem! Pariatur, ut
 		quo.</span
 	>
-	<span class="details from-now">{moment("1970-01-01T00:00:00").fromNow()}</span>
+	<span class="details from-now"><FromNow date={moment("1970-01-01T00:00:00")} /></span>
 </a>
 
 <style lang="scss">

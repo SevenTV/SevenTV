@@ -3,5 +3,5 @@
 </script>
 
 <svelte:head>
-	<title>{$t("common.emote_sets", { values: { count: 2 } })} - 7TV</title>
+	<title>{$t("common.emote_sets", { values: { count: 2 } })} - {$t("page_titles.suffix")}</title>
 </svelte:head>

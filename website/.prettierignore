@@ -12,3 +12,6 @@ vite.config.ts.timestamp-*
 # Ignore files for PNPM
 pnpm-lock.yaml
 wasm.d.ts
+
+# Ignore country flags
+/static/flags

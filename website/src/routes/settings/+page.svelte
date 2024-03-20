@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("page_titles.account_settings")} - 7TV</title>
+	<title>{$t("page_titles.account_settings")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <DeleteAccountDialog bind:mode={deleteAccountDialogMode} />

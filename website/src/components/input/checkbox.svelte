@@ -6,7 +6,8 @@
 	export let indeterminate: boolean = false;
 </script>
 
-<label class:option {...$$restProps}>
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<label class:option {...$$restProps} on:click|stopPropagation>
 	<slot name="left-label" />
 	<input type="checkbox" bind:checked={value} bind:indeterminate on:click {disabled} />
 	<span class="checkbox"></span>

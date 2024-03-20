@@ -36,7 +36,8 @@
 				tabs={[
 					{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes" },
 					{ name: $t("pages.discover.title"), pathname: "/discover" },
-					{ name: $t("pages.store.title"), pathname: "/store", hightlight: true },
+					{ name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
+					{ name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" },
 				]}
 			/>
 		</HideOn>

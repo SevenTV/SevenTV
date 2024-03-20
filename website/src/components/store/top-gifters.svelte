@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { numberFormat } from "$/lib/utils";
 	import Button from "../input/button.svelte";
 	import StoreSection from "./store-section.svelte";
 	import { CaretLeft, CaretRight, Trophy, Gift } from "phosphor-svelte";
@@ -7,11 +8,11 @@
 	const topGifters = [
 		{
 			name: "forsen",
-			amount: 215,
+			amount: 2100000500,
 		},
 		{
 			name: "CupOfEggy",
-			amount: 164,
+			amount: 1640,
 		},
 		{
 			name: "Pokimane",
@@ -48,7 +49,7 @@
 						<Trophy />
 					{/if}
 				</span>
-				{gifter.amount}
+				{numberFormat().format(gifter.amount)}
 			</span>
 		{/each}
 	</div>

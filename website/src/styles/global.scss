@@ -132,7 +132,7 @@ textarea {
 			margin: 0.25rem 0;
 		}
 
-		& > .link-list {
+		& .link-list {
 			display: flex;
 			flex-direction: column;
 			gap: 0.25rem;
@@ -144,6 +144,60 @@ textarea {
 		min-width: 0;
 		margin-bottom: -1.25rem;
 	}
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+
+	background-color: var(--bg-light);
+	border-radius: 0.5rem;
+
+	.shrink {
+		// Shrink column width
+		width: 0;
+	}
+}
+
+thead {
+	text-align: left;
+}
+
+th {
+	padding: 0.75rem;
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: var(--text-light);
+
+	border-bottom: 1px solid var(--border-active);
+}
+
+tr {
+	&:focus-visible,
+	&:hover {
+		td {
+			background-color: var(--bg-medium);
+		}
+	}
+
+	&:last-child > td {
+		border-bottom: none;
+
+		&:first-child {
+			border-bottom-left-radius: 0.5rem;
+		}
+
+		&:last-child {
+			border-bottom-right-radius: 0.5rem;
+		}
+	}
+}
+
+td {
+	padding: 0.5rem 0.75rem;
+	border-block: 1px solid var(--border-active);
+	font-size: 0.875rem;
+	font-weight: 500;
 }
 
 // Desktop
@@ -185,18 +239,6 @@ textarea {
 			padding: 1rem;
 		}
 	}
-}
-
-/* Screen reader only */
-/* Hide but still render */
-.sr-only {
-	clip: rect(0 0 0 0);
-	clip-path: inset(50%);
-	height: 1px;
-	overflow: hidden;
-	position: absolute;
-	white-space: nowrap;
-	width: 1px;
 }
 
 @media screen and (max-width: 960px) {

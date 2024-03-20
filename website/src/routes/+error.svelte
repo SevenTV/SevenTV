@@ -1,12 +1,13 @@
 <script lang="ts">
 	import Troll from "$/components/icons/troll.svelte";
 	import { page } from "$app/stores";
+	import { t } from "svelte-i18n";
 
 	let title = $page.error?.message ?? "Error";
 </script>
 
 <svelte:head>
-	<title>{title} - 7TV</title>
+	<title>{title} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <div class="container">

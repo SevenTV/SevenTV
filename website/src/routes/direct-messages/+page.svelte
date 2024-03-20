@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("common.direct_messages")} - 7TV</title>
+	<title>{$t("common.direct_messages")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <DirectMessages />

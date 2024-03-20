@@ -3,5 +3,5 @@
 </script>
 
 <svelte:head>
-	<title>{$t("page_titles.bookmarked_users")} - 7TV</title>
+	<title>{$t("page_titles.bookmarked_users")} - {$t("page_titles.suffix")}</title>
 </svelte:head>

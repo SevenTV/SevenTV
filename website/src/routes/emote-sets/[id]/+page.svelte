@@ -35,7 +35,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.id} - 7TV</title>
+	<title>{data.id} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <EditEmoteSetDialog bind:mode={editDialogMode} />
@@ -55,7 +55,7 @@
 		<div class="buttons">
 			<Button secondary on:click={() => (selectionMode = !selectionMode)} hideOnDesktop>
 				{$t("labels.select")}
-				<Toggle bind:value={selectionMode} style="pointer-events: none" slot="icon-right" />
+				<Toggle bind:value={selectionMode} slot="icon-right" />
 			</Button>
 			<HideOn mobile={selectionMode}>
 				<Button primary on:click={() => (enabled = !enabled)}>
@@ -91,7 +91,7 @@
 			{/if}
 			<Button secondary on:click={() => (selectionMode = !selectionMode)} hideOnMobile>
 				{$t("labels.selection_mode")}
-				<Toggle bind:value={selectionMode} style="pointer-events: none" slot="icon-right" />
+				<Toggle bind:value={selectionMode} slot="icon-right" />
 			</Button>
 			{#if selectionMode}
 				<Button on:click={() => (copyEmotesDialogMode = DialogMode.Shown)}>

@@ -13,7 +13,7 @@
 	<table>
 		<thead>
 			<tr>
-				<th>{$t("pages.settings.billing.table.date")}</th>
+				<th>{$t("common.date")}</th>
 				<th>{$t("common.items", { values: { count: 2 } })}</th>
 				<th>{$t("common.payment_methods", { values: { count: 1 } })}</th>
 				<th>{$t("pages.settings.billing.table.status")}</th>
@@ -66,55 +66,9 @@
 		scrollbar-gutter: stable;
 	}
 
-	table {
-		width: 100%;
-		border-collapse: collapse;
-
-		background-color: var(--bg-light);
-		border-radius: 0.5rem;
-	}
-
-	thead {
-		text-align: left;
-	}
-
-	th {
-		padding: 0.75rem 1.5rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--text-light);
-
-		border-bottom: 1px solid var(--border-active);
-	}
-
-	tr {
-		&:focus-visible,
-		&:hover {
-			td {
-				background-color: var(--bg-medium);
-			}
-		}
-
-		&:last-child > td {
-			border-bottom: none;
-
-			&:first-child {
-				border-bottom-left-radius: 0.5rem;
-			}
-
-			&:last-child {
-				border-bottom-right-radius: 0.5rem;
-			}
-		}
-	}
-
 	td {
 		padding: 1rem 1.5rem;
-		border-block: 1px solid var(--border-active);
 		vertical-align: top;
-
-		font-size: 0.875rem;
-		font-weight: 500;
 	}
 
 	.date {
@@ -132,10 +86,5 @@
 			align-items: center;
 			gap: 0.75rem;
 		}
-	}
-
-	.shrink {
-		// Shrink column width
-		width: 0;
 	}
 </style>

@@ -24,7 +24,6 @@
 	let expanded = false;
 
 	function toggle() {
-		console.log("toggle");
 		expanded = !expanded;
 	}
 

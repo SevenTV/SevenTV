@@ -3,5 +3,5 @@
 </script>
 
 <svelte:head>
-	<title>{$t("page_titles.bookmarked_emote_sets")} - 7TV</title>
+	<title>{$t("page_titles.bookmarked_emote_sets")} - {$t("page_titles.suffix")}</title>
 </svelte:head>

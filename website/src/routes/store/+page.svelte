@@ -15,7 +15,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("common.subscriptions", { values: { count: 1 } })} - 7TV</title>
+	<title>{$t("common.subscriptions", { values: { count: 1 } })} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <!-- All things called grid here aren't actually css grids -->

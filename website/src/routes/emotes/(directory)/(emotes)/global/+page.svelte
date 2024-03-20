@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("page_titles.global_emotes")} - 7TV</title>
+	<title>{$t("page_titles.global_emotes")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 {#each Array(10) as _, i}

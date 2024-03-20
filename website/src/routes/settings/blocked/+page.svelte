@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("page_titles.blocked_settings")} - 7TV</title>
+	<title>{$t("page_titles.blocked_settings")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <section>

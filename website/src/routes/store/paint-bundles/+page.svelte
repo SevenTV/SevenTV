@@ -45,7 +45,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("common.paint_bundles")} - 7TV</title>
+	<title>{$t("common.paint_bundles")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <Banner

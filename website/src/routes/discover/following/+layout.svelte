@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-	<title>Following - 7TV</title>
+	<title>Following - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <div class="nav">

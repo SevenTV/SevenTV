@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("common.settings")} - 7TV</title>
+	<title>{$t("common.settings")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 {#if $user}

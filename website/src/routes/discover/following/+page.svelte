@@ -5,6 +5,7 @@
 	import { DotsThree, Plus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";
+	import FromNow from "$/components/from-now.svelte";
 </script>
 
 <div class="uploads {$discoverFollowingLayout}">
@@ -16,7 +17,7 @@
 			<div class="profile-picture"></div>
 			<span>
 				<span class="username">forsen</span>
-				<span class="time"> · {moment().fromNow()}</span>
+				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
 				<Plus color="var(--primary)" size="1rem" />
@@ -35,29 +36,7 @@
 			<div class="profile-picture"></div>
 			<span>
 				<span class="username">forsen</span>
-				<span class="time"> · {moment().fromNow()}</span>
-			</span>
-			<span>
-				<Plus color="var(--primary)" size="1rem" />
-				<span class="details">{$t("activities.added_to_set")}</span>
-			</span>
-		</div>
-		<div class="emotes">
-			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
-		</div>
-	</div>
-	<div class="upload">
-		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<DotsThree slot="icon" />
-		</Button>
-		<div class="info">
-			<div class="profile-picture"></div>
-			<span>
-				<span class="username">forsen</span>
-				<span class="time"> · {moment().fromNow()}</span>
+				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
 				<Plus color="var(--primary)" size="1rem" />
@@ -79,7 +58,7 @@
 			<div class="profile-picture"></div>
 			<span>
 				<span class="username">forsen</span>
-				<span class="time"> · {moment().fromNow()}</span>
+				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
 				<Plus color="var(--primary)" size="1rem" />
@@ -101,7 +80,29 @@
 			<div class="profile-picture"></div>
 			<span>
 				<span class="username">forsen</span>
-				<span class="time"> · {moment().fromNow()}</span>
+				<span class="time"> · <FromNow date={moment()} /></span>
+			</span>
+			<span>
+				<Plus color="var(--primary)" size="1rem" />
+				<span class="details">{$t("activities.added_to_set")}</span>
+			</span>
+		</div>
+		<div class="emotes">
+			<EmotePreview bg="light" />
+			<EmotePreview bg="light" />
+			<EmotePreview bg="light" />
+			<EmotePreview bg="light" />
+		</div>
+	</div>
+	<div class="upload">
+		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
+			<DotsThree slot="icon" />
+		</Button>
+		<div class="info">
+			<div class="profile-picture"></div>
+			<span>
+				<span class="username">forsen</span>
+				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
 				<Plus color="var(--primary)" size="1rem" />
@@ -121,7 +122,7 @@
 			<div class="profile-picture"></div>
 			<span>
 				<span class="username">forsen</span>
-				<span class="time"> · {moment().fromNow()}</span>
+				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
 				<Plus color="var(--primary)" size="1rem" />
@@ -140,7 +141,7 @@
 			<div class="profile-picture"></div>
 			<span>
 				<span class="username">forsen</span>
-				<span class="time"> · {moment().fromNow()}</span>
+				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
 				<Plus color="var(--primary)" size="1rem" />

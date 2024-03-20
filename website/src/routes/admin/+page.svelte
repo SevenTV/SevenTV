@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("pages.admin.overview")} - 7TV Admin</title>
+	<title>{$t("pages.admin.overview")} - {$t("pages.admin.page_title_suffix")}</title>
 </svelte:head>
 
 <div class="grid">

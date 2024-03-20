@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("common.news")} - 7TV</title>
+	<title>{$t("common.news")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <div class="scroll-container">
