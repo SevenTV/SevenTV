@@ -75,7 +75,7 @@
 				</td>
 				<td>
 					<div class="emote">
-						<EmotePreview emoteOnly />
+						<EmotePreview emoteOnly style="pointer-events: none" />
 						EmoteName
 					</div>
 				</td>

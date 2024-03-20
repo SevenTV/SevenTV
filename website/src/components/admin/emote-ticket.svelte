@@ -35,7 +35,7 @@
 			<ArrowsMerge slot="icon" style="transform: rotate(-90deg)" color="var(--admin-merge)" />
 		</Button>
 	</div>
-	<EmotePreview emoteOnly style="width: auto; flex-shrink: 0;" />
+	<EmotePreview emoteOnly style="width: auto; flex-shrink: 0; pointer-events: none;" />
 	<div class="info">
 		<div class="field">
 			<Smiley />
