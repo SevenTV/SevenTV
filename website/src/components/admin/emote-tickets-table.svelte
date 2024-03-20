@@ -11,6 +11,7 @@
 	import { createEventDispatcher } from "svelte";
 	import EmoteTicketsTableActions from "./emote-tickets-table-actions.svelte";
 	import EmoteTicketsTableActionsHeader from "./emote-tickets-table-actions-header.svelte";
+	import { browser } from "$app/environment";
 
 	const dispatch = createEventDispatcher();
 
@@ -23,7 +24,18 @@
 		selectedMap = Array(selectedMap.length).fill(!allSelected);
 	}
 
-	let actionsPosition: "left" | "right" = "left";
+	function loadActionsPosition(): "left" | "right" | null {
+		if (!browser) return null;
+		const position = window.localStorage.getItem("emoteTicketsActionsPosition");
+		return position && JSON.parse(position);
+	}
+
+	let actionsPosition: "left" | "right" = loadActionsPosition() || "left";
+
+	$: actionsPosition &&
+		browser &&
+		window.localStorage.setItem("emoteTicketsActionsPosition", JSON.stringify(actionsPosition));
+
 	export let buttonOptions: {
 		merge: boolean;
 		delete: boolean;

@@ -8,7 +8,7 @@
 		EyeSlash,
 		Trash,
 		ListBullets,
-		GridNine,
+		GridFour,
 	} from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { Layout, adminTicketsLayout } from "$/lib/stores";
@@ -19,6 +19,7 @@
 	import EmoteTicketDialog from "../dialogs/emote-ticket-dialog.svelte";
 	import { DialogMode } from "../dialogs/dialog.svelte";
 	import EmoteTicketsButtonOptions from "./emote-tickets-button-options.svelte";
+	import { browser } from "$app/environment";
 
 	let selectedMap: boolean[] = Array(20).fill(false);
 
@@ -30,12 +31,28 @@
 		emoteTicketDialogMode = DialogMode.Shown;
 	}
 
-	let buttonOptions = {
+	const defaultButtonOptions = {
 		merge: true,
 		delete: true,
 		unlist: true,
 		approve: true,
 	};
+	function loadButtonOptions(): {
+		merge: boolean;
+		delete: boolean;
+		unlist: boolean;
+		approve: boolean;
+	} | null {
+		if (!browser) return null;
+		const options = window.localStorage.getItem("emoteTicketsButtonOptions");
+		return options && JSON.parse(options);
+	}
+
+	let buttonOptions = loadButtonOptions() || defaultButtonOptions;
+
+	$: buttonOptions &&
+		browser &&
+		window.localStorage.setItem("emoteTicketsButtonOptions", JSON.stringify(buttonOptions));
 </script>
 
 <EmoteTicketDialog bind:mode={emoteTicketDialogMode} />
@@ -80,7 +97,9 @@
 		</div>
 	{/if}
 	<div class="buttons layout">
-		<EmoteTicketsButtonOptions bind:buttonOptions />
+		{#if $adminTicketsLayout === Layout.BigGrid}
+			<EmoteTicketsButtonOptions bind:buttonOptions />
+		{/if}
 		<Button
 			secondary={$adminTicketsLayout === Layout.List}
 			on:click={() => ($adminTicketsLayout = Layout.List)}
@@ -88,10 +107,10 @@
 			<ListBullets slot="icon" />
 		</Button>
 		<Button
-			secondary={$adminTicketsLayout === Layout.SmallGrid}
-			on:click={() => ($adminTicketsLayout = Layout.SmallGrid)}
+			secondary={$adminTicketsLayout === Layout.BigGrid}
+			on:click={() => ($adminTicketsLayout = Layout.BigGrid)}
 		>
-			<GridNine slot="icon" />
+			<GridFour slot="icon" />
 		</Button>
 	</div>
 </nav>
