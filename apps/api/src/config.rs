@@ -38,8 +38,6 @@ pub struct Connections {
 #[derive(Debug, Deserialize, config::Config)]
 #[serde(default)]
 pub struct Connection {
-	/// Token URL
-	pub token_url: String,
 	/// Client ID
 	pub client_id: String,
 	/// Client Secret
@@ -51,7 +49,6 @@ pub struct Connection {
 impl Default for Connection {
 	fn default() -> Self {
 		Self {
-			token_url: "https://id.twitch.tv/oauth2/token".to_string(),
 			client_id: "client_id".to_string(),
 			client_secret: "client_secret".to_string(),
 			redirect_uri: "http://localhost:8080".to_string(),
