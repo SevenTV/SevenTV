@@ -38,7 +38,6 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/auth.route.go#L47
 async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	// https://7tv.io/v3/auth?platform=twitch&callback=true&code=66fixpk9yeht90ohwt4v6ju8x2pvmc&scope=user%3Aread%3Aemail&state=JrPg3Q6nKEYEpugb65GTNp3IXSESSVTjTBh1QZAbCwI-hPJRf5ygVEviMbA4ja3u5V-LF8N4TLJYP9VtZOTe6Q%3D%3D
 	let global: Arc<Global> = req.get_global()?;
 	let platform = req
 		.query_param("platform")
@@ -46,17 +45,17 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 		.ok_or((StatusCode::BAD_REQUEST, "unsupported account provider"))?;
 	let callback = req.query_param("callback").is_some_and(|c| c == "true");
 	if callback {
-		let state = req
-			.query_param("state")
-			.ok_or((StatusCode::BAD_REQUEST, "missing state"))?;
+		let state = req.query_param("state").ok_or((StatusCode::BAD_REQUEST, "missing state"))?;
 		// TODO: validate csrf
-		let code = req
-			.query_param("code")
-			.ok_or((StatusCode::BAD_REQUEST, "missing code"))?;
+		let code = req.query_param("code").ok_or((StatusCode::BAD_REQUEST, "missing code"))?;
 		// exchange code for access token
-		let token = connections::exchange_code(&global, platform, &code).await.map_err(ApiError::from)?;
+		let token = connections::exchange_code(&global, platform, &code)
+			.await
+			.map_err(ApiError::from)?;
 		// query user data from platform
-		let user_data = connections::get_user_data(&global, platform, &token.access_token).await.map_err(ApiError::from)?;
+		let user_data = connections::get_user_data(&global, platform, &token.access_token)
+			.await
+			.map_err(ApiError::from)?;
 		let connection: Option<UserConnection> =
 			scuffle_utils::database::query("SELECT * FROM user_connections WHERE platform = $1 AND platform_id = $2")
 				.bind(platform)

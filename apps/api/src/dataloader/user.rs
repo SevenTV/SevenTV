@@ -385,7 +385,11 @@ impl UserLoader {
 			map
 		});
 
-		let Ok(products) = global.product_by_id_loader().load_many(product_purchaes.keys().copied()).await else {
+		let Ok(products) = global
+			.product_by_id_loader()
+			.load_many(product_purchaes.keys().copied())
+			.await
+		else {
 			anyhow::bail!("failed to load products");
 		};
 

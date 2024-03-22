@@ -3,7 +3,8 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::{database::UserConnectionPlatform, global::Global};
+use crate::database::UserConnectionPlatform;
+use crate::global::Global;
 
 mod discord;
 mod google;

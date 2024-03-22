@@ -80,7 +80,7 @@ impl Global {
 	pub fn config(&self) -> &Config {
 		&self.config
 	}
-	
+
 	/// Global HTTP client.
 	pub fn http_client(&self) -> &reqwest::Client {
 		&self.http_client

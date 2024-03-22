@@ -2,7 +2,8 @@ use std::str::FromStr;
 
 use postgres_types::{FromSql, ToSql};
 
-use crate::{database::Table, global::Global};
+use crate::database::Table;
+use crate::global::Global;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserConnection {
