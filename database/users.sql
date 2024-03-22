@@ -2,27 +2,27 @@ CREATE TYPE "two_fa" AS ("secret" bytea, "codes" int4 []);
 
 CREATE TABLE "users" (
     "id" uuid PRIMARY KEY,
-    "email" varchar(255),
+    "email" varchar(255) DEFAULT NULL,
     "email_verified" boolean NOT NULL DEFAULT false,
-    "password" varchar(255),
+    "password" varchar(255) DEFAULT NULL,
     "updated_at" timestamptz NOT NULL DEFAULT 'NOW()',
     "notification_settings" jsonb NOT NULL DEFAULT '{}',
     "message_settings" jsonb NOT NULL DEFAULT '{}',
     "editor_settings" jsonb NOT NULL DEFAULT '{}',
-    "two_fa" two_fa,
-    "active_badge_id" uuid, -- Ref: badges.id -> On Delete Set NULL
-    "active_paint_id" uuid, -- Ref: paints.id -> On Delete Set NULL
-    "active_profile_picture_id" uuid, -- user_profile_pictures.id -> On Delete Set NULL (Deferable)
+    "two_fa" two_fa DEFAULT NULL,
+    "active_badge_id" uuid DEFAULT NULL, -- Ref: badges.id -> On Delete Set NULL
+    "active_paint_id" uuid DEFAULT NULL, -- Ref: paints.id -> On Delete Set NULL
+    "active_profile_picture_id" uuid DEFAULT NULL, -- user_profile_pictures.id -> On Delete Set NULL (Deferable)
 
     -- Cached fields for quick access
-    "entitled_cache_role_ids" uuid [] NOT NULL,
-    "entitled_cache_badge_ids" uuid [] NOT NULL,
-    "entitled_cache_paint_ids" uuid [] NOT NULL,
-    "entitled_cache_emote_set_ids" uuid [] NOT NULL,
+    "entitled_cache_role_ids" uuid [] NOT NULL DEFAULT '[]',
+    "entitled_cache_badge_ids" uuid [] NOT NULL DEFAULT '[]',
+    "entitled_cache_paint_ids" uuid [] NOT NULL DEFAULT '[]',
+    "entitled_cache_emote_set_ids" uuid [] NOT NULL DEFAULT '[]',
     -- The following fields are used to invalidate the cache when the user's entitlements change
-    "entitled_cache_invalidated_at" timestamptz NOT NULL,
-    "entitled_cache_invalidate_role_ids" uuid [] NOT NULL,
-    "entitled_cache_invalidate_product_ids" uuid [] NOT NULL
+    "entitled_cache_invalidated_at" timestamptz NOT NULL DEFAULT '[]',
+    "entitled_cache_invalidate_role_ids" uuid [] NOT NULL DEFAULT '[]',
+    "entitled_cache_invalidate_product_ids" uuid [] NOT NULL DEFAULT '[]'
 );
 
 CREATE INDEX "users_entitled_cache_role_ids_index" ON "users" USING YBGIN ("entitled_cache_role_ids");
@@ -36,7 +36,7 @@ CREATE INDEX "users_active_badge_id_index" ON "users" ("active_badge_id");
 CREATE INDEX "users_active_paint_id_index" ON "users" ("active_paint_id");
 CREATE INDEX "users_active_profile_picture_id_index" ON "users" ("active_profile_picture_id");
 
-CREATE TYPE "connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'YOUTUBE', 'KICK');
+CREATE TYPE "connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'GOOGLE', 'KICK');
 
 CREATE TABLE "user_connections" (
     "id" uuid PRIMARY KEY,
@@ -44,6 +44,7 @@ CREATE TABLE "user_connections" (
     "platform" connection_platform NOT NULL,
     "platform_id" varchar(64) NOT NULL,
     "platform_username" varchar(255) NOT NULL,
+    "platform_display_name" varchar(255) NOT NULL,
     "platform_avatar_url" varchar(255),
     "updated_at" timestamptz NOT NULL DEFAULT 'NOW()',
     "allow_login" boolean NOT NULL DEFAULT true

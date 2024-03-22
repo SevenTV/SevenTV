@@ -6,6 +6,7 @@ use scuffle_utils::prelude::FutureTimeout;
 use tokio::signal::unix::SignalKind;
 
 mod config;
+mod connections;
 mod database;
 mod dataloader;
 mod global;
@@ -62,6 +63,6 @@ async fn main() {
 		}
 	}
 
-	tracing::info!("stopping event-api");
+	tracing::info!("stopping api");
 	std::process::exit(0);
 }

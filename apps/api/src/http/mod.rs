@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use hyper::body::Incoming;
 use hyper::StatusCode;
@@ -33,4 +33,47 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	shared::http::run(global.ctx(), &config.api.http, routes(&global).build(), |_| true).await?;
 
 	Ok(())
+}
+
+pub trait RequestGlobalExt<E> {
+	fn get_global<G: Sync + Send + 'static, B: From<tokio_util::bytes::Bytes>>(
+		&self,
+	) -> std::result::Result<Arc<G>, RouteError<E, B>>;
+}
+
+impl<E, B> RequestGlobalExt<E> for hyper::Request<B> {
+	fn get_global<G: Sync + Send + 'static, B2: From<tokio_util::bytes::Bytes>>(
+		&self,
+	) -> std::result::Result<Arc<G>, RouteError<E, B2>> {
+		Ok(self
+			.extensions()
+			.get::<Weak<G>>()
+			.expect("global state not set")
+			.upgrade()
+			.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "failed to upgrade global state"))?)
+	}
+}
+
+pub trait RequestQueryParamExt {
+	fn query_param(&self, key: &str) -> Option<String> {
+		self.query_params().find(|(k, _)| *k == key).map(|(_, v)| v)
+	}
+
+	fn query_params(&self) -> impl Iterator<Item = (&str, String)>;
+}
+
+impl<B> RequestQueryParamExt for hyper::Request<B> {
+	fn query_params(&self) -> impl Iterator<Item = (&str, String)> {
+		self.uri().query().unwrap_or("").split('&').filter_map(|param| {
+			let mut parts = param.splitn(2, '=');
+			let key = parts.next()?;
+			let value = parts.next().unwrap_or("");
+			Some((
+				key,
+				urlencoding::decode(value)
+					.map(|s| s.into_owned())
+					.unwrap_or_else(|_| value.to_string()),
+			))
+		})
+	}
 }

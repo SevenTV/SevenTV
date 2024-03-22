@@ -15,6 +15,7 @@ pub struct Global {
 	jetstream: async_nats::jetstream::Context,
 	config: Config,
 	db: Arc<scuffle_utils::database::Pool>,
+	http_client: reqwest::Client,
 	metrics: Arc<metrics::Metrics>,
 	user_by_id_loader: dataloader::user::UserLoader,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
@@ -49,6 +50,7 @@ impl Global {
 			role_badge_by_id_loader: dataloader::role::RoleBadgeByIdLoader::new(db.clone()),
 			role_paint_by_id_loader: dataloader::role::RolePaintByIdLoader::new(db.clone()),
 			role_emote_set_by_id_loader: dataloader::role::RoleEmoteSetByIdLoader::new(db.clone()),
+			http_client: reqwest::Client::new(),
 			db,
 			config,
 		})
@@ -77,6 +79,11 @@ impl Global {
 	/// The configuration.
 	pub fn config(&self) -> &Config {
 		&self.config
+	}
+	
+	/// Global HTTP client.
+	pub fn http_client(&self) -> &reqwest::Client {
+		&self.http_client
 	}
 
 	/// Global metrics.
