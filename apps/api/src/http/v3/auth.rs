@@ -70,7 +70,10 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 	let callback = req.query_param("callback").is_some_and(|c| c == "true");
 	let mut response = Response::builder();
 	if callback {
-		let auth = jar.get(AUTH_COOKIE).map(|c| AuthJwtPayload::verify(&global, c.value())).flatten();
+		let auth = jar
+			.get(AUTH_COOKIE)
+			.map(|c| AuthJwtPayload::verify(&global, c.value()))
+			.flatten();
 
 		// validate csrf
 		let csrf_cookie = jar
@@ -292,7 +295,45 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/logout.auth.route.go#L29
 async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	todo!()
+	let global: Arc<Global> = req.get_global()?;
+	let mut jar = req
+		.headers()
+		.get_all(hyper::header::COOKIE)
+		.iter()
+		.try_fold(CookieJar::new(), |mut jar, h| {
+			for c in Cookie::split_parse_encoded(h.to_str()?) {
+				match c {
+					Ok(cookie) => jar.add_original(cookie.into_owned()),
+					Err(e) => tracing::debug!("failed to parse a cookie {}", e),
+				}
+			}
+			Ok::<CookieJar, ToStrError>(jar)
+		})
+		.map_err_route((StatusCode::BAD_REQUEST, "invalid cookie header"))?;
+
+	if let Some(cookie) = jar.get(AUTH_COOKIE) {
+		let auth = AuthJwtPayload::verify(&global, cookie.value())
+			.map_err_route((StatusCode::UNAUTHORIZED, "invalid auth token"))?;
+		scuffle_utils::database::query("DELETE FROM user_sessions WHERE id = $1")
+			.bind(auth.session_id)
+			.build()
+			.execute(global.db())
+			.await
+			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to delete session"))?;
+		jar.remove(Cookie::build(AUTH_COOKIE));
+	}
+
+	let mut response = Response::builder();
+	for cookie in jar.delta() {
+		response = response.header(hyper::header::SET_COOKIE, cookie.to_string());
+	}
+	Ok(response
+		.status(StatusCode::NO_CONTENT)
+		// empty body
+		.body(http_body_util::Either::Left(http_body_util::Full::new(
+			hyper::body::Bytes::new(),
+		)))
+		.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))?)
 }
 
 #[utoipa::path(
