@@ -15,14 +15,14 @@ CREATE TABLE "users" (
     "active_profile_picture_id" uuid DEFAULT NULL, -- user_profile_pictures.id -> On Delete Set NULL (Deferable)
 
     -- Cached fields for quick access
-    "entitled_cache_role_ids" uuid [] NOT NULL DEFAULT '[]',
-    "entitled_cache_badge_ids" uuid [] NOT NULL DEFAULT '[]',
-    "entitled_cache_paint_ids" uuid [] NOT NULL DEFAULT '[]',
-    "entitled_cache_emote_set_ids" uuid [] NOT NULL DEFAULT '[]',
+    "entitled_cache_role_ids" uuid [] NOT NULL DEFAULT '{}',
+    "entitled_cache_badge_ids" uuid [] NOT NULL DEFAULT '{}',
+    "entitled_cache_paint_ids" uuid [] NOT NULL DEFAULT '{}',
+    "entitled_cache_emote_set_ids" uuid [] NOT NULL DEFAULT '{}',
     -- The following fields are used to invalidate the cache when the user's entitlements change
-    "entitled_cache_invalidated_at" timestamptz NOT NULL DEFAULT '[]',
-    "entitled_cache_invalidate_role_ids" uuid [] NOT NULL DEFAULT '[]',
-    "entitled_cache_invalidate_product_ids" uuid [] NOT NULL DEFAULT '[]'
+    "entitled_cache_invalidated_at" timestamptz NOT NULL DEFAULT 'NOW()',
+    "entitled_cache_invalidate_role_ids" uuid [] NOT NULL DEFAULT '{}',
+    "entitled_cache_invalidate_product_ids" uuid [] NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX "users_entitled_cache_role_ids_index" ON "users" USING YBGIN ("entitled_cache_role_ids");
@@ -36,12 +36,22 @@ CREATE INDEX "users_active_badge_id_index" ON "users" ("active_badge_id");
 CREATE INDEX "users_active_paint_id_index" ON "users" ("active_paint_id");
 CREATE INDEX "users_active_profile_picture_id_index" ON "users" ("active_profile_picture_id");
 
-CREATE TYPE "connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'GOOGLE', 'KICK');
+CREATE TABLE "user_sessions" (
+    "id" uuid PRIMARY KEY,
+    "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
+    "expires_at" timestamptz NOT NULL,
+    "last_used_at" timestamptz NOT NULL DEFAULT 'NOW()'
+);
+
+CREATE TYPE "user_connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'GOOGLE', 'KICK');
 
 CREATE TABLE "user_connections" (
     "id" uuid PRIMARY KEY,
     "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
-    "platform" connection_platform NOT NULL,
+    "platform" user_connection_platform NOT NULL,
+    "platform_access_token" varchar(255) NOT NULL,
+    "platform_access_token_expires_at" timestamptz,
+    "platform_refresh_token" varchar(255),
     "platform_id" varchar(64) NOT NULL,
     "platform_username" varchar(255) NOT NULL,
     "platform_display_name" varchar(255) NOT NULL,

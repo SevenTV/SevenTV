@@ -10,13 +10,15 @@ pub struct UserConnection {
 	pub id: ulid::Ulid,
 	pub user_id: ulid::Ulid,
 	pub platform: UserConnectionPlatform,
+	pub platform_access_token: String,
+	pub platform_access_token_expires_at: Option<chrono::DateTime<chrono::Utc>>,
+	pub platform_refresh_token: Option<String>,
 	pub platform_id: String,
 	pub platform_username: String,
 	pub platform_display_name: String,
-	pub platform_avatar: String,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
-	pub settings: UserConnectionSettings,
+	pub platform_avatar_url: Option<String>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
+	pub allow_login: bool,
 }
 
 #[derive(Debug, Clone, Copy, Hash, Default, ToSql, FromSql, PartialEq, Eq)]
@@ -44,6 +46,18 @@ impl FromStr for UserConnectionPlatform {
 			"kick" => Ok(Self::Kick),
 			_ => Err(()),
 		}
+	}
+}
+
+impl ToString for UserConnectionPlatform {
+	fn to_string(&self) -> String {
+		match self {
+			Self::Twitch => "twitch",
+			Self::Discord => "discord",
+			Self::Google => "google",
+			Self::Kick => "kick",
+		}
+		.to_string()
 	}
 }
 

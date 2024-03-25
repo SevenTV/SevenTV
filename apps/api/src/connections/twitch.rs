@@ -6,6 +6,11 @@ use super::{ConnectionError, PlatformUserData};
 use crate::global::Global;
 
 #[derive(Debug, Deserialize)]
+struct TwitchResponse {
+	pub data: Vec<TwitchUserData>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct TwitchUserData {
 	pub id: String,
 	pub login: String,
@@ -25,12 +30,16 @@ impl From<TwitchUserData> for PlatformUserData {
 }
 
 pub async fn get_user_data(global: &Arc<Global>, access_token: &str) -> Result<TwitchUserData, ConnectionError> {
-	Ok(reqwest::Client::new()
+	let res = reqwest::Client::new()
 		.get("https://api.twitch.tv/helix/users")
 		.header("Client-Id", global.config().api.connections.twitch.client_id.clone())
 		.bearer_auth(access_token)
 		.send()
-		.await?
-		.json()
-		.await?)
+		.await?;
+	if res.status().is_success() {
+		let res: TwitchResponse = res.json().await?;
+		res.data.into_iter().next().ok_or(ConnectionError::NoUserData)
+	} else {
+		Err(ConnectionError::InvalidResponse(res.status()))
+	}
 }

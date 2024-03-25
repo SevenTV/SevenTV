@@ -12,6 +12,7 @@ mod dataloader;
 mod global;
 mod health;
 mod http;
+mod jwt;
 mod metrics;
 
 #[global_allocator]

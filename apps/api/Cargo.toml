@@ -18,8 +18,11 @@ hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"] }
 rustls-pemfile = "2"
 rustls = "0.22"
 tokio-rustls = "0.25"
+jwt-next = "0.17.0"
+hmac = "0.12.1"
 hyper-tungstenite = "0.13"
 http-body = "1.0"
+cookie = { version = "0.18.0", features = ["percent-encode"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 futures-util = "0.3"
 ulid = { version = "1", features = ["postgres"] }

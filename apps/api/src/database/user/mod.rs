@@ -10,6 +10,7 @@ mod product;
 mod profile_picture;
 mod relation;
 mod roles;
+mod session;
 mod settings;
 
 pub use active_emote_set::*;
@@ -24,6 +25,7 @@ pub use product::*;
 pub use profile_picture::*;
 pub use relation::*;
 pub use roles::*;
+pub use session::*;
 pub use settings::*;
 
 use crate::database::Table;

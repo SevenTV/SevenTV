@@ -10,6 +10,7 @@ use shared::http::{cors_middleware, Body};
 use self::error::ApiError;
 use crate::global::Global;
 
+mod cookies;
 mod error;
 pub mod v3;
 

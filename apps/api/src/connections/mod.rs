@@ -16,6 +16,10 @@ pub enum ConnectionError {
 	UnsupportedPlatform,
 	#[error("invalid response code: {0:?}")]
 	InvalidResponse(StatusCode),
+	#[error("no user data")]
+	NoUserData,
+	#[error("login not allowed")]
+	LoginNotAllowed,
 	#[error("reqwest: {0}")]
 	ReqwestError(#[from] reqwest::Error),
 }
@@ -33,9 +37,9 @@ struct TokenRequest {
 pub struct TokenResponse {
 	pub token_type: String,
 	pub access_token: String,
-	pub expires_in: u64,
-	pub refresh_token: String,
-	pub scope: TokenResponseScope,
+	pub expires_in: i64,
+	pub refresh_token: Option<String>,
+	pub scope: Option<TokenResponseScope>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,8 +54,9 @@ pub enum TokenResponseScope {
 /// Google docs: https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
 pub async fn exchange_code(
 	global: &Arc<Global>,
-	platform: UserConnectionPlatform,
+	platform: &UserConnectionPlatform,
 	code: &str,
+	redirect_uri: String,
 ) -> Result<TokenResponse, ConnectionError> {
 	let (url, config) = match platform {
 		UserConnectionPlatform::Twitch => ("https://id.twitch.tv/oauth2/token", &global.config().api.connections.twitch),
@@ -65,9 +70,9 @@ pub async fn exchange_code(
 	let req = TokenRequest {
 		grant_type: "authorization_code".to_string(),
 		code: code.to_string(),
-		client_id: config.client_id.clone(),
-		client_secret: config.client_secret.clone(),
-		redirect_uri: config.redirect_uri.clone(),
+		client_id: config.client_id.to_string(),
+		client_secret: config.client_secret.to_string(),
+		redirect_uri,
 	};
 	let res = global.http_client().post(url).form(&req).send().await?;
 	let status = res.status();

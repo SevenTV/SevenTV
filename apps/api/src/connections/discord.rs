@@ -6,7 +6,7 @@ use super::{ConnectionError, PlatformUserData};
 pub struct DiscordUserData {
 	pub id: String,
 	pub username: String,
-	pub global_name: String,
+	pub global_name: Option<String>,
 	pub avatar: Option<String>,
 }
 
@@ -20,18 +20,21 @@ impl From<DiscordUserData> for PlatformUserData {
 		Self {
 			avatar,
 			id: value.id,
-			username: value.username,
-			display_name: value.global_name,
+			username: value.username.clone(),
+			display_name: value.global_name.unwrap_or(value.username),
 		}
 	}
 }
 
 pub async fn get_user_data(access_token: &str) -> Result<DiscordUserData, ConnectionError> {
-	Ok(reqwest::Client::new()
+	let res = reqwest::Client::new()
 		.get("https://discord.com/api/v10/users/@me")
 		.bearer_auth(access_token)
 		.send()
-		.await?
-		.json()
-		.await?)
+		.await?;
+	if res.status().is_success() {
+		Ok(res.json().await?)
+	} else {
+		Err(ConnectionError::InvalidResponse(res.status()))
+	}
 }
