@@ -347,5 +347,5 @@ async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, 
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/manual.route.go#L41
 async fn manual(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	todo!()
+	unimplemented!("kick auth is not implemented yet")
 }
