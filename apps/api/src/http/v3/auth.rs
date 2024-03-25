@@ -70,6 +70,8 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 	let callback = req.query_param("callback").is_some_and(|c| c == "true");
 	let mut response = Response::builder();
 	if callback {
+		let auth = jar.get(AUTH_COOKIE).map(|c| AuthJwtPayload::verify(&global, c.value())).flatten();
+
 		// validate csrf
 		let csrf_cookie = jar
 			.get(CSRF_COOKIE)
@@ -149,14 +151,19 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 				.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to update user connection"))?;
 			connection.user_id
 		} else {
-			// create user
-			let user_id = Ulid::new();
-			scuffle_utils::database::query("INSERT INTO users (id) VALUES ($1)")
-				.bind(user_id)
-				.build()
-				.execute(&tx)
-				.await
-				.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user"))?;
+			let user_id = if let Some(auth) = auth {
+				auth.user_id
+			} else {
+				// create user
+				let user_id = Ulid::new();
+				scuffle_utils::database::query("INSERT INTO users (id) VALUES ($1)")
+					.bind(user_id)
+					.build()
+					.execute(&tx)
+					.await
+					.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user"))?;
+				user_id
+			};
 			// create user connection
 			scuffle_utils::database::query("INSERT INTO user_connections (id, user_id, platform, platform_access_token, platform_access_token_expires_at, platform_refresh_token, platform_id, platform_username, platform_display_name, platform_avatar_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)")
 				.bind(Ulid::new())
