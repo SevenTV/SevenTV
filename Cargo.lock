@@ -125,6 +125,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-nats",
+ "async-trait",
  "bitmask-enum",
  "cap",
  "chrono",
@@ -226,9 +227,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.77"
+version = "0.1.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c980ee35e870bd1a4d2c8294d4c04d0499e67bca1e4b5cefcc693c2fa00caea9"
+checksum = "a507401cad91ec6a857ed5513a2073c82a9b9048762b885bb98655b306964681"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2550,9 +2551,9 @@ dependencies = [
 [[package]]
 name = "scuffle-utils"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a4ec360e4ec9bc64ace8f8fcd57c9c8441a4b549b5a52d26d0c60be608f0e69"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=feature/website#f8d9db1eabad09d32da9f2ec95895180d9331baa"
 dependencies = [
+ "async-trait",
  "bytes",
  "const_format",
  "deadpool-postgres",

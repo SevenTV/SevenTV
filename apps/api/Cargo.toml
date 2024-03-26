@@ -7,10 +7,11 @@ license = "Apache-2.0 with Commons Clause"
 [dependencies]
 tokio = { version = "1.35", features = ["full"] }
 scuffle-config = "0.0.1"
-scuffle-utils = { version = "0.1", features = ["http", "signal", "context", "prelude", "database", "dataloader"] }
+scuffle-utils = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "feature/website", features = ["http", "signal", "context", "prelude", "database", "dataloader"] }
 serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 hyper = { version = "1", features = ["full"] }
+async-trait = "0.1.79"
 async-nats = "0.34.0"
 anyhow = "1"
 http-body-util = "0.1"

@@ -5,86 +5,30 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context as _;
-use http_body_util::{Full, StreamBody};
-use hyper::body::{Bytes, Incoming};
-use hyper::header::{self, HeaderValue};
+use http_body_util::{Either, Full, StreamBody};
+use hyper::body::Incoming;
 use hyper::rt::{Read, Write};
 use hyper::service::{service_fn, Service};
 use hyper::{Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
 use scuffle_utils::context::{Context, ContextExt};
 use scuffle_utils::http::router::error::RouterError;
-use scuffle_utils::http::router::middleware::Middleware;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::prelude::FutureTimeout;
 use tokio::net::{TcpSocket, TcpStream};
 use tokio_rustls::TlsAcceptor;
 use tokio_stream::wrappers::ReceiverStream;
 
-use crate::config::{Http, HttpCors};
+use crate::config::Http;
 
-pub type Body =
-	http_body_util::Either<Full<Bytes>, StreamBody<ReceiverStream<Result<hyper::body::Frame<Bytes>, Infallible>>>>;
+pub type Body = http_body_util::Either<
+	Full<hyper::body::Bytes>,
+	StreamBody<ReceiverStream<Result<hyper::body::Frame<hyper::body::Bytes>, Infallible>>>,
+>;
 
-/// Add CORS headers to the response.
-pub fn cors_middleware<B: Sync + Send + 'static, E: 'static>(options: &HttpCors) -> Middleware<B, E> {
-	let allow_origins = fnv::FnvHashSet::from_iter(options.allow_origin.iter().map(|s| s.to_lowercase()));
-	let allow_methods = options.allow_methods.join(", ").parse::<HeaderValue>().unwrap();
-	let allow_headers = options.allow_headers.join(", ").parse::<HeaderValue>().unwrap();
-	let expose_headers = options.expose_headers.join(", ").parse::<HeaderValue>().unwrap();
-	let max_age = options.max_age_seconds.map(|s| s.to_string().parse::<HeaderValue>().unwrap());
-	let timing_allow_origins = fnv::FnvHashSet::from_iter(options.timing_allow_origin.iter().map(|s| s.to_lowercase()));
-
-	let inner = move |resp: &mut Response<B>, req: &Request<()>| {
-		if allow_origins.is_empty() {
-			return;
-		}
-
-		let origin = match req.headers().get(header::ORIGIN) {
-			Some(origin) => origin.clone(),
-			None => return,
-		};
-
-		let origin_str = origin.to_str().unwrap();
-
-		if !allow_origins.contains("*") && !allow_origins.contains(origin_str) {
-			return;
-		}
-
-		resp.headers_mut().insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.clone());
-
-		if timing_allow_origins.contains("*") || timing_allow_origins.contains(origin_str) {
-			resp.headers_mut().insert("Timing-Allow-Origin", origin.clone());
-		}
-
-		if !allow_methods.is_empty() {
-			resp.headers_mut()
-				.insert(header::ACCESS_CONTROL_ALLOW_METHODS, allow_methods.clone());
-		}
-
-		if !allow_headers.is_empty() {
-			resp.headers_mut()
-				.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, allow_headers.clone());
-		}
-
-		if !expose_headers.is_empty() {
-			resp.headers_mut()
-				.insert(header::ACCESS_CONTROL_EXPOSE_HEADERS, expose_headers.clone());
-		}
-
-		if let Some(max_age) = max_age.clone() {
-			resp.headers_mut().insert(header::ACCESS_CONTROL_MAX_AGE, max_age);
-		}
-
-		resp.headers_mut().insert(header::VARY, "Origin".parse().unwrap());
-	};
-
-	Middleware::post_with_req(move |mut resp, req| {
-		inner(&mut resp, &req);
-		async move { Ok(resp) }
-	})
+pub fn empty_body() -> Body {
+	Either::Left(Full::default())
 }
-
 pub trait HttpBuilder<B: hyper::body::Body + Send + Sync + 'static>: Send + Sync + 'static {
 	fn serve<I, S>(
 		&self,

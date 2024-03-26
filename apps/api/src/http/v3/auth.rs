@@ -1,23 +1,21 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use cookie::{Cookie, CookieJar};
 use hyper::body::Incoming;
-use hyper::header::ToStrError;
 use hyper::{Response, StatusCode};
 use scuffle_utils::database::deadpool_postgres::GenericClient;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
-use shared::http::Body;
+use shared::http::{empty_body, Body};
 use ulid::Ulid;
 
 use crate::connections;
 use crate::database::{UserConnection, UserConnectionPlatform, UserSession};
 use crate::global::Global;
-use crate::http::cookies::new_cookie;
 use crate::http::error::ApiError;
+use crate::http::middleware::{new_cookie, AUTH_COOKIE};
 use crate::http::{RequestGlobalExt, RequestQueryParamExt};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
 
@@ -33,7 +31,6 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
 }
 
 const CSRF_COOKIE: &str = "seventv-csrf";
-const AUTH_COOKIE: &str = "seventv-auth";
 
 #[utoipa::path(
     get,
@@ -47,51 +44,36 @@ const AUTH_COOKIE: &str = "seventv-auth";
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/auth.route.go#L47
 async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	let global: Arc<Global> = req.get_global()?;
+	let cookies = req.get_cookies()?;
+	let mut cookies = cookies.write().await;
 	let platform = req
 		.query_param("platform")
 		.and_then(|p| UserConnectionPlatform::from_str(&p).ok())
 		.map_err_route((StatusCode::BAD_REQUEST, "invalid account provider"))?;
 
-	let mut jar = req
-		.headers()
-		.get_all(hyper::header::COOKIE)
-		.iter()
-		.try_fold(CookieJar::new(), |mut jar, h| {
-			for c in Cookie::split_parse_encoded(h.to_str()?) {
-				match c {
-					Ok(cookie) => jar.add_original(cookie.into_owned()),
-					Err(e) => tracing::debug!("failed to parse a cookie {}", e),
-				}
-			}
-			Ok::<CookieJar, ToStrError>(jar)
-		})
-		.map_err_route((StatusCode::BAD_REQUEST, "invalid cookie header"))?;
-
 	let callback = req.query_param("callback").is_some_and(|c| c == "true");
 	let mut response = Response::builder();
 	if callback {
-		let auth = jar
-			.get(AUTH_COOKIE)
-			.map(|c| AuthJwtPayload::verify(&global, c.value()))
-			.flatten();
-
-		// validate csrf
-		let csrf_cookie = jar
-			.get(CSRF_COOKIE)
-			.map_err_route((StatusCode::BAD_REQUEST, "missing csrf cookie"))?;
-		let state = req
-			.query_param("state")
-			.map_err_route((StatusCode::BAD_REQUEST, "missing state"))?;
-		let csrf = CsrfJwtPayload::verify(&global, csrf_cookie.value())
-			.and_then(|p| p.validate_random(&state))
-			.map_err_route((StatusCode::BAD_REQUEST, "invalid csrf"))?;
-		if !csrf {
-			return Err((StatusCode::BAD_REQUEST, "invalid state").into());
-		}
-
 		let code = req
 			.query_param("code")
 			.map_err_route((StatusCode::BAD_REQUEST, "missing code"))?;
+
+		// validate csrf
+		{
+			let state = req
+				.query_param("state")
+				.map_err_route((StatusCode::BAD_REQUEST, "missing state"))?;
+			let csrf_cookie = cookies
+				.get(CSRF_COOKIE)
+				.map_err_route((StatusCode::BAD_REQUEST, "missing csrf cookie"))?;
+			let csrf = CsrfJwtPayload::verify(&global, csrf_cookie.value())
+				.and_then(|p| p.validate_random(&state))
+				.map_err_route((StatusCode::BAD_REQUEST, "invalid csrf"))?;
+			if !csrf {
+				return Err((StatusCode::BAD_REQUEST, "invalid state").into());
+			}
+		}
+
 		// exchange code for access token
 		let token = connections::exchange_code(
 			&global,
@@ -154,7 +136,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 				.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to update user connection"))?;
 			connection.user_id
 		} else {
-			let user_id = if let Some(auth) = auth {
+			let user_id = if let Some(auth) = req.extensions().get::<UserSession>() {
 				auth.user_id
 			} else {
 				// create user
@@ -204,7 +186,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 		// create cookie
 		let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(session.expires_at.naive_utc().timestamp())
 			.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to create expiration"))?;
-		jar.add(new_cookie(&global, (AUTH_COOKIE, token.clone())).expires(expiration));
+		cookies.add(new_cookie(&global, (AUTH_COOKIE, token.clone())).expires(expiration));
 		tx.commit()
 			.await
 			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to commit transcation"))?;
@@ -246,7 +228,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 			}
 		};
 		let csrf = CsrfJwtPayload::new();
-		jar.add(new_cookie(
+		cookies.add(new_cookie(
 			&global,
 			(
 				CSRF_COOKIE,
@@ -266,21 +248,15 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 				url,
 				config.client_id,
 				urlencoding::encode(&redirect_uri),
-				urlencoding::encode(&scope),
+				urlencoding::encode(scope),
 				csrf.random()
 			),
 		);
 	}
 
-	for cookie in jar.delta() {
-		response = response.header(hyper::header::SET_COOKIE, cookie.to_string());
-	}
 	Ok(response
 		.status(StatusCode::SEE_OTHER)
-		// empty body
-		.body(http_body_util::Either::Left(http_body_util::Full::new(
-			hyper::body::Bytes::new(),
-		)))
+		.body(empty_body())
 		.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))?)
 }
 
@@ -296,43 +272,19 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/logout.auth.route.go#L29
 async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	let global: Arc<Global> = req.get_global()?;
-	let mut jar = req
-		.headers()
-		.get_all(hyper::header::COOKIE)
-		.iter()
-		.try_fold(CookieJar::new(), |mut jar, h| {
-			for c in Cookie::split_parse_encoded(h.to_str()?) {
-				match c {
-					Ok(cookie) => jar.add_original(cookie.into_owned()),
-					Err(e) => tracing::debug!("failed to parse a cookie {}", e),
-				}
-			}
-			Ok::<CookieJar, ToStrError>(jar)
-		})
-		.map_err_route((StatusCode::BAD_REQUEST, "invalid cookie header"))?;
-
-	if let Some(cookie) = jar.get(AUTH_COOKIE) {
-		let auth = AuthJwtPayload::verify(&global, cookie.value())
-			.map_err_route((StatusCode::UNAUTHORIZED, "invalid auth token"))?;
+	if let Some(session) = req.extensions().get::<UserSession>() {
 		scuffle_utils::database::query("DELETE FROM user_sessions WHERE id = $1")
-			.bind(auth.session_id)
+			.bind(session.id)
 			.build()
 			.execute(global.db())
 			.await
 			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to delete session"))?;
-		jar.remove(Cookie::build(AUTH_COOKIE));
+		req.get_cookies()?.write().await.remove(AUTH_COOKIE);
 	}
 
-	let mut response = Response::builder();
-	for cookie in jar.delta() {
-		response = response.header(hyper::header::SET_COOKIE, cookie.to_string());
-	}
-	Ok(response
+	Ok(Response::builder()
 		.status(StatusCode::NO_CONTENT)
-		// empty body
-		.body(http_body_util::Either::Left(http_body_util::Full::new(
-			hyper::body::Bytes::new(),
-		)))
+		.body(empty_body())
 		.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))?)
 }
 

@@ -1,4 +1,3 @@
-use hyper::header::ToStrError;
 use scuffle_utils::database::deadpool_postgres::PoolError;
 
 use crate::connections::ConnectionError;
@@ -9,8 +8,6 @@ pub enum ApiError {
 	ConnectionError(#[from] ConnectionError),
 	#[error("database: {0}")]
 	Database(#[from] PoolError),
-	#[error("invalid string: {0}")]
-	InvlidString(#[from] ToStrError),
 }
 
 impl From<scuffle_utils::database::tokio_postgres::Error> for ApiError {

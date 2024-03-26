@@ -2,16 +2,19 @@ use std::sync::{Arc, Weak};
 
 use hyper::body::Incoming;
 use hyper::StatusCode;
+use scuffle_utils::http::ext::OptionExt;
 use scuffle_utils::http::router::builder::RouterBuilder;
+use scuffle_utils::http::router::middleware::CorsMiddleware;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::{error_handler, RouteError};
-use shared::http::{cors_middleware, Body};
+use shared::http::{empty_body, Body};
 
 use self::error::ApiError;
+use self::middleware::{AuthMiddleware, CookieMiddleware, Cookies};
 use crate::global::Global;
 
-mod cookies;
 mod error;
+mod middleware;
 pub mod v3;
 
 fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
@@ -20,7 +23,11 @@ fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiE
 	Router::builder()
 		.data(weak)
 		.error_handler(|req, err| async move { error_handler(req, err).await.map(Body::Left) })
-		.middleware(cors_middleware(&global.config().api.cors))
+		.middleware(CorsMiddleware::new(
+			&global.config().api.cors.clone().into_options(empty_body),
+		))
+		.middleware(CookieMiddleware)
+		.middleware(AuthMiddleware)
 		// Handle the v3 API, we have to use a wildcard because of the path format.
 		.scope("/v3", v3::routes(global))
 		// Not found handler.
@@ -40,6 +47,8 @@ pub trait RequestGlobalExt<E> {
 	fn get_global<G: Sync + Send + 'static, B: From<tokio_util::bytes::Bytes>>(
 		&self,
 	) -> std::result::Result<Arc<G>, RouteError<E, B>>;
+
+	fn get_cookies<B2: From<tokio_util::bytes::Bytes>>(&self) -> Result<Cookies, RouteError<E, B2>>;
 }
 
 impl<E, B> RequestGlobalExt<E> for hyper::Request<B> {
@@ -52,6 +61,14 @@ impl<E, B> RequestGlobalExt<E> for hyper::Request<B> {
 			.expect("global state not set")
 			.upgrade()
 			.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "failed to upgrade global state"))?)
+	}
+
+	fn get_cookies<B2: From<tokio_util::bytes::Bytes>>(&self) -> Result<Cookies, RouteError<E, B2>> {
+		Ok(self
+			.extensions()
+			.get::<Cookies>()
+			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "cookies not set"))?
+			.clone())
 	}
 }
 

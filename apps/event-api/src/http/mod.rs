@@ -3,9 +3,10 @@ use std::sync::Arc;
 use hyper::body::Incoming;
 use hyper::StatusCode;
 use scuffle_utils::http::router::builder::RouterBuilder;
+use scuffle_utils::http::router::middleware::CorsMiddleware;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::{error_handler, RouteError};
-use shared::http::{cors_middleware, Body};
+use shared::http::{empty_body, Body};
 
 use self::error::EventError;
 use crate::global::Global;
@@ -22,7 +23,7 @@ fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<Even
 		.error_handler(|req, err| async move { error_handler(req, err).await.map(Body::Left) });
 
 	if let Some(cors) = &global.config().api.cors {
-		builder = builder.middleware(cors_middleware(cors));
+		builder = builder.middleware(CorsMiddleware::new(&cors.clone().into_options(empty_body)));
 	}
 
 	builder

@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
+use scuffle_utils::http::router::middleware::CorsOptions;
 use serde::Deserialize;
 
 use crate::logging;
@@ -307,6 +308,34 @@ pub struct HttpCors {
 	pub max_age_seconds: Option<u64>,
 	/// Timing allow origin
 	pub timing_allow_origin: Vec<String>,
+}
+
+impl<B: Default> From<HttpCors> for CorsOptions<B> {
+	fn from(value: HttpCors) -> Self {
+		Self {
+			allow_headers: value.allow_headers,
+			allow_methods: value.allow_methods,
+			allow_origin: value.allow_origin,
+			expose_headers: value.expose_headers,
+			max_age_seconds: value.max_age_seconds,
+			timing_allow_origin: value.timing_allow_origin,
+			default_response: || B::default(),
+		}
+	}
+}
+
+impl HttpCors {
+	pub fn into_options<B>(self, default_response: fn() -> B) -> CorsOptions<B> {
+		CorsOptions {
+			allow_headers: self.allow_headers,
+			allow_methods: self.allow_methods,
+			allow_origin: self.allow_origin,
+			expose_headers: self.expose_headers,
+			max_age_seconds: self.max_age_seconds,
+			timing_allow_origin: self.timing_allow_origin,
+			default_response,
+		}
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, config::Config, serde::Deserialize)]
