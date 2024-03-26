@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use serde::Deserialize;
-use shared::config::TlsConfig;
+use shared::config::{Http, HttpCors};
 
 #[derive(Debug, Deserialize, config::Config, Default)]
 #[serde(default)]
@@ -14,10 +14,10 @@ pub struct Extra {
 #[derive(Debug, Deserialize, config::Config)]
 #[serde(default)]
 pub struct Api {
-	/// API bind
-	pub bind: SocketAddr,
-	/// Max Listen Conn
-	pub listen_backlog: u32,
+	/// Http options
+	pub http: Http,
+	/// Cors options
+	pub cors: Option<HttpCors>,
 	/// API heartbeat interval
 	pub heartbeat_interval: Duration,
 	/// Subscription Cleanup Interval
@@ -30,28 +30,25 @@ pub struct Api {
 	pub connection_target: Option<usize>,
 	/// API connection time limit
 	pub ttl: Duration,
-	/// API v3 enabled
-	pub v3: bool,
 	/// API bridge url
 	pub bridge_url: String,
-	/// TLS configuration
-	pub tls: Option<TlsConfig>,
+	/// Nats Event Subject
+	pub nats_event_subject: String,
 }
 
 impl Default for Api {
 	fn default() -> Self {
 		Self {
-			bind: SocketAddr::new([0, 0, 0, 0].into(), 3000),
-			listen_backlog: 128,
+			http: Http::new_with_bind(SocketAddr::from(([0, 0, 0, 0], 3000))),
+			cors: None,
 			connection_limit: None,
 			connection_target: None,
 			heartbeat_interval: Duration::from_secs(45),
 			subscription_cleanup_interval: Duration::from_secs(60 * 2),
 			subscription_limit: Some(500),
 			ttl: Duration::from_secs(60 * 60),
-			v3: true,
 			bridge_url: "http://localhost:9700".to_string(),
-			tls: None,
+			nats_event_subject: "api.events".to_string(),
 		}
 	}
 }

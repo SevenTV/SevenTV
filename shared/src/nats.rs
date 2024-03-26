@@ -1,0 +1,47 @@
+use std::time::Duration;
+
+use anyhow::Context;
+use async_nats::ServerAddr;
+
+use crate::config::Nats;
+
+pub async fn setup_nats(name: &str, config: &Nats) -> anyhow::Result<(async_nats::Client, async_nats::jetstream::Context)> {
+	let nats = {
+		let mut options = async_nats::ConnectOptions::new()
+			.connection_timeout(Duration::from_secs(5))
+			.name(name)
+			.retry_on_initial_connect();
+
+		if let Some(user) = &config.username {
+			options = options.user_and_password(user.clone(), config.password.clone().unwrap_or_default())
+		} else if let Some(token) = &config.token {
+			options = options.token(token.clone())
+		}
+
+		if let Some(tls) = &config.tls {
+			options = options
+				.require_tls(true)
+				.add_client_certificate((&tls.cert).into(), (&tls.key).into());
+
+			if let Some(ca_cert) = &tls.ca_cert {
+				options = options.add_root_certificates(ca_cert.into())
+			}
+		}
+
+		options
+			.connect(
+				config
+					.servers
+					.iter()
+					.map(|s| s.parse::<ServerAddr>())
+					.collect::<Result<Vec<_>, _>>()
+					.context("failed to parse nats server addresses")?,
+			)
+			.await
+			.context("failed to connect to nats")?
+	};
+
+	let jetstream = async_nats::jetstream::new(nats.clone());
+
+	Ok((nats, jetstream))
+}

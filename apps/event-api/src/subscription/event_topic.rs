@@ -45,7 +45,10 @@ impl EventTopic {
 
 	/// Copy the event conditions but with a different event type.
 	pub fn copy_cond(&self, event: EventType) -> Self {
-		Self { event, cond_hash: self.cond_hash }
+		Self {
+			event,
+			cond_hash: self.cond_hash,
+		}
 	}
 
 	/// Convert the event topic into a key that is only 16 bytes large.
