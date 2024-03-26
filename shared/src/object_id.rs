@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, utoipa::ToSchema)]
 /// MongoDB ObjectIDs are 12-byte BSON strings, representing a 4-byte timestamp,
 /// 5-byte random value, and a 3-byte incrementing counter. https://docs.mongodb.com/manual/reference/method/ObjectId/
 pub struct ObjectId(u128);

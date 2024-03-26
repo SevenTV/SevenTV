@@ -5,6 +5,8 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
+use shared::object_id::ObjectId;
+use shared::types::*;
 use utoipa::OpenApi;
 
 use super::error::ApiError;
@@ -16,6 +18,7 @@ pub mod docs;
 pub mod emote_sets;
 pub mod emotes;
 pub mod entitlements;
+pub mod types;
 pub mod users;
 
 pub fn docs() -> utoipa::openapi::OpenApi {
@@ -36,6 +39,24 @@ pub fn docs() -> utoipa::openapi::OpenApi {
         servers(
             (url = "https://7tv.io", description = "Production"),
         ),
+		components(schemas(
+			UserModelPartial,
+			ObjectId,
+			UserStyle,
+			CosmeticBadgeModel,
+			CosmeticPaint,
+			CosmeticPaintGradient,
+			CosmeticPaintFunction,
+			CosmeticPaintGradientStop,
+			CosmeticPaintCanvasRepeat,
+			CosmeticPaintShadow,
+			CosmeticPaintText,
+			CosmeticPaintTextTransform,
+			CosmeticPaintStroke,
+			UserConnectionPartial,
+			ImageHost,
+			ImageHostFile
+		))
     )]
 	struct Docs;
 

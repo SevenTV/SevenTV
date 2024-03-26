@@ -9,16 +9,18 @@ use shared::http::Body;
 use crate::global::Global;
 use crate::http::error::ApiError;
 
+use super::types::{Emote, EmoteVersion, EmoteVersionState};
+
 #[derive(utoipa::OpenApi)]
-#[openapi(paths(create_emote, get_emote_by_id), components(schemas(Emote, XEmoteData)))]
+#[openapi(
+	paths(create_emote, get_emote_by_id),
+	components(schemas(Emote, EmoteVersion, EmoteVersionState, XEmoteData))
+)]
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
 	Router::builder().post("/", create_emote).get("/{id}", get_emote_by_id)
 }
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-pub struct Emote {}
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct XEmoteData {}

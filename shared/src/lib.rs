@@ -7,3 +7,4 @@ pub mod logging;
 pub mod metrics;
 pub mod nats;
 pub mod object_id;
+pub mod types;
