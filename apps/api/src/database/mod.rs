@@ -9,6 +9,7 @@ mod page;
 mod paint;
 mod product;
 mod role;
+mod ticket;
 mod user;
 
 pub use self::automod::*;
@@ -20,6 +21,7 @@ pub use self::page::*;
 pub use self::paint::*;
 pub use self::product::*;
 pub use self::role::*;
+pub use self::ticket::*;
 pub use self::user::*;
 
 pub trait Table {
