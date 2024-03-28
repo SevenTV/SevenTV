@@ -65,9 +65,16 @@ impl Paint {
 		Ok(CosmeticPaint {
 			id: self.id.into(),
 			name: self.name,
-			tag: self.tags.into_iter().next().unwrap_or_default(),
-			tooltip: self.description,
-			host,
+			color: todo!(),
+			gradients: todo!(),
+			shadows: todo!(),
+			text: todo!(),
+			function: todo!(),
+			repeat: todo!(),
+			angle: todo!(),
+			shape: todo!(),
+			image_url: todo!(),
+			stops: todo!(),
 		})
 	}
 }

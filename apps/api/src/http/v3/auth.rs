@@ -82,7 +82,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 			format!(
 				"{}/v3/auth?callback=true&platform={}",
 				global.config().api.base_url,
-				platform.to_string()
+				platform
 			),
 		)
 		.await
@@ -189,7 +189,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 			format!(
 				"{}?platform={}&token={}",
 				global.config().api.connections.callback_url,
-				platform.to_string(),
+				platform,
 				token
 			),
 		);
@@ -232,7 +232,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 		let redirect_uri = format!(
 			"{}/v3/auth?callback=true&platform={}",
 			global.config().api.base_url,
-			platform.to_string()
+			platform
 		);
 		response = response.header(
 			hyper::header::LOCATION,
@@ -247,10 +247,10 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 		);
 	}
 
-	Ok(response
+	response
 		.status(StatusCode::SEE_OTHER)
 		.body(empty_body())
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))?)
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))
 }
 
 #[utoipa::path(

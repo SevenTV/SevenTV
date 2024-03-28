@@ -162,9 +162,9 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 	};
 	let data = serde_json::to_vec(&emote).map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize emote"))?;
 	let body = Body::Left(http_body_util::Full::new(data.into()));
-	Ok(hyper::Response::builder()
+	hyper::Response::builder()
 		.status(StatusCode::OK)
 		.header(CONTENT_TYPE, "application/json")
 		.body(body)
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))?)
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))
 }

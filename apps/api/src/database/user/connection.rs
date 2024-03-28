@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::str::FromStr;
 
 use postgres_types::{FromSql, ToSql};
@@ -48,15 +49,14 @@ impl FromStr for UserConnectionPlatform {
 	}
 }
 
-impl ToString for UserConnectionPlatform {
-	fn to_string(&self) -> String {
+impl Display for UserConnectionPlatform {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::Twitch => "twitch",
-			Self::Discord => "discord",
-			Self::Google => "google",
-			Self::Kick => "kick",
+			Self::Twitch => write!(f, "twitch"),
+			Self::Discord => write!(f, "discord"),
+			Self::Google => write!(f, "google"),
+			Self::Kick => write!(f, "kick"),
 		}
-		.to_string()
 	}
 }
 
