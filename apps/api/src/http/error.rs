@@ -8,6 +8,10 @@ pub enum ApiError {
 	ConnectionError(#[from] ConnectionError),
 	#[error("database: {0}")]
 	Database(#[from] PoolError),
+	#[error("json: {0}")]
+	Json(#[from] serde_json::Error),
+	#[error("http: {0}")]
+	Http(#[from] hyper::http::Error),
 }
 
 impl From<scuffle_utils::database::tokio_postgres::Error> for ApiError {

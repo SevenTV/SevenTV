@@ -23,6 +23,9 @@ pub struct Global {
 	role_badge_by_id_loader: DataLoader<dataloader::role::RoleBadgeByIdLoader>,
 	role_paint_by_id_loader: DataLoader<dataloader::role::RolePaintByIdLoader>,
 	role_emote_set_by_id_loader: DataLoader<dataloader::role::RoleEmoteSetByIdLoader>,
+	file_by_id_loader: DataLoader<dataloader::file::FileLoader>,
+	paint_by_id_loader: DataLoader<dataloader::paint::PaintLoader>,
+	badge_by_id_loader: DataLoader<dataloader::badge::BadgeLoader>,
 }
 
 impl Global {
@@ -50,6 +53,9 @@ impl Global {
 			role_badge_by_id_loader: dataloader::role::RoleBadgeByIdLoader::new(db.clone()),
 			role_paint_by_id_loader: dataloader::role::RolePaintByIdLoader::new(db.clone()),
 			role_emote_set_by_id_loader: dataloader::role::RoleEmoteSetByIdLoader::new(db.clone()),
+			file_by_id_loader: dataloader::file::FileLoader::new(db.clone()),
+			paint_by_id_loader: dataloader::paint::PaintLoader::new(db.clone()),
+			badge_by_id_loader: dataloader::badge::BadgeLoader::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			db,
 			config,
@@ -119,5 +125,20 @@ impl Global {
 	/// The role emote set loader.
 	pub fn role_emote_set_by_id_loader(&self) -> &DataLoader<dataloader::role::RoleEmoteSetByIdLoader> {
 		&self.role_emote_set_by_id_loader
+	}
+
+	/// The file loader.
+	pub fn file_by_id_loader(&self) -> &DataLoader<dataloader::file::FileLoader> {
+		&self.file_by_id_loader
+	}
+
+	/// The paint loader.
+	pub fn paint_by_id_loader(&self) -> &DataLoader<dataloader::paint::PaintLoader> {
+		&self.paint_by_id_loader
+	}
+
+	/// The badge loader.
+	pub fn badge_by_id_loader(&self) -> &DataLoader<dataloader::badge::BadgeLoader> {
+		&self.badge_by_id_loader
 	}
 }

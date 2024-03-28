@@ -1,4 +1,5 @@
 use postgres_types::{FromSql, ToSql};
+use shared::types::{ImageHostFile, ImageHostFormat};
 
 use crate::database::Table;
 
@@ -40,3 +41,43 @@ pub enum FileKind {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct FileProperties {}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct ImageFileData {
+	pub width: u32,
+	pub height: u32,
+	pub frame_count: Option<u32>,
+	pub size: u64,
+	pub format: ImageFileFormat,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+pub enum ImageFileFormat {
+	#[default]
+	Webp,
+	Avif,
+}
+
+impl From<ImageFileFormat> for ImageHostFormat {
+	fn from(value: ImageFileFormat) -> Self {
+		match value {
+			ImageFileFormat::Webp => Self::Webp,
+			ImageFileFormat::Avif => Self::Avif,
+		}
+	}
+}
+
+impl ImageFileData {
+	pub fn into_host_file(self, name: String) -> ImageHostFile {
+		ImageHostFile {
+			name: name.clone(),
+			static_name: name,
+			width: self.width,
+			height: self.height,
+			frame_count: self.frame_count.unwrap_or_default(),
+			size: self.size,
+			format: self.format.into(),
+		}
+	}
+}

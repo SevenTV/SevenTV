@@ -8,6 +8,8 @@ use shared::config::{DatabaseConfig, Http, HttpCors};
 pub struct Api {
 	/// http options
 	pub http: Http,
+	/// cdn base url
+	pub cdn_base_url: String,
 	/// public domain
 	pub domain: String,
 	/// base url
@@ -24,6 +26,7 @@ impl Default for Api {
 	fn default() -> Self {
 		Self {
 			http: Http::new_with_bind(SocketAddr::from(([0, 0, 0, 0], 8080))),
+			cdn_base_url: "https://cdn.7tv.app".to_string(),
 			domain: "7tv.io".to_string(),
 			base_url: "https://7tv.io".to_string(),
 			cors: HttpCors::default(),

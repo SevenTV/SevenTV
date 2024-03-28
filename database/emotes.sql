@@ -5,8 +5,8 @@ CREATE TABLE "emotes" (
     "owner_id" uuid, -- Ref: users.id -> On Delete Set NULL
     "default_name" varchar(128) NOT NULL,
     "tags" text[] NOT NULL DEFAULT '{}',
-    "flags" int4 NOT NULL,
-    "ticket_id" uuid NOT NULL, -- Ref: tickets.id -> DO NOTHING
+    "animated" bool NOT NULL DEFAULT FALSE,
+    "settings" jsonb NOT NULL DEFAULT '{}',
     "updated_at" timestamptz NOT NULL DEFAULT 'NOW()'
 );
 

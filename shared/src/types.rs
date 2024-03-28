@@ -9,7 +9,7 @@ pub struct UserModelPartial {
 	pub ty: String,
 	pub username: String,
 	pub display_name: String,
-	pub avatar_url: String,
+	pub avatar_url: Option<String>,
 	pub style: UserStyle,
 	pub roles: Vec<ObjectId>,
 	pub connections: Vec<UserConnectionPartial>,
@@ -21,8 +21,8 @@ pub struct UserModelPartial {
 pub struct UserStyle {
 	pub color: i32,
 	pub paint_id: Option<ObjectId>,
-	pub badge_id: Option<ObjectId>,
 	pub paint: Option<CosmeticPaint>,
+	pub badge_id: Option<ObjectId>,
 	pub badge: Option<CosmeticBadgeModel>,
 }
 
@@ -144,7 +144,7 @@ pub struct UserConnectionPartial {
 	pub platform: String,
 	pub username: String,
 	pub display_name: String,
-	pub linked_at: i64,
+	pub linked_at: u64,
 	pub emote_capacity: i32,
 	pub emote_set_id: Option<ObjectId>,
 }
@@ -163,9 +163,17 @@ pub struct ImageHost {
 pub struct ImageHostFile {
 	pub name: String,
 	pub static_name: String,
-	pub width: i32,
-	pub height: i32,
-	pub frame_count: i32,
-	pub size: i64,
-	pub format: String,
+	pub width: u32,
+	pub height: u32,
+	pub frame_count: u32,
+	pub size: u64,
+	pub format: ImageHostFormat,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ImageHostFormat {
+	#[default]
+	Webp,
+	Avif,
 }

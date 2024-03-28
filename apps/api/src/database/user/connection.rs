@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use postgres_types::{FromSql, ToSql};
+use shared::types::UserConnectionPartial;
 
 use crate::database::Table;
 use crate::global::Global;
@@ -9,10 +10,8 @@ use crate::global::Global;
 pub struct UserConnection {
 	pub id: ulid::Ulid,
 	pub user_id: ulid::Ulid,
+	pub main_connection: bool,
 	pub platform: UserConnectionPlatform,
-	pub platform_access_token: String,
-	pub platform_access_token_expires_at: Option<chrono::DateTime<chrono::Utc>>,
-	pub platform_refresh_token: Option<String>,
 	pub platform_id: String,
 	pub platform_username: String,
 	pub platform_display_name: String,
@@ -67,4 +66,18 @@ pub struct UserConnectionSettings {}
 
 impl Table for UserConnection {
 	const TABLE_NAME: &'static str = "user_connections";
+}
+
+impl From<UserConnection> for UserConnectionPartial {
+	fn from(value: UserConnection) -> Self {
+		Self {
+			id: value.id.into(),
+			platform: value.platform.to_string(),
+			username: value.platform_username,
+			display_name: value.platform_display_name,
+			linked_at: value.id.timestamp_ms(),
+			emote_capacity: 600,
+			emote_set_id: None,
+		}
+	}
 }

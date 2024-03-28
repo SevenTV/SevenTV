@@ -4,7 +4,7 @@ CREATE TABLE "users" (
     "id" uuid PRIMARY KEY,
     "email" varchar(255) DEFAULT NULL,
     "email_verified" boolean NOT NULL DEFAULT false,
-    "password" varchar(255) DEFAULT NULL,
+    "password_hash" varchar(255) DEFAULT NULL,
     "updated_at" timestamptz NOT NULL DEFAULT 'NOW()',
     "notification_settings" jsonb NOT NULL DEFAULT '{}',
     "message_settings" jsonb NOT NULL DEFAULT '{}',
@@ -48,10 +48,8 @@ CREATE TYPE "user_connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'GOOGLE', '
 CREATE TABLE "user_connections" (
     "id" uuid PRIMARY KEY,
     "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
+    "main_connection" boolean NOT NULL DEFAULT false,
     "platform" user_connection_platform NOT NULL,
-    "platform_access_token" varchar(255) NOT NULL,
-    "platform_access_token_expires_at" timestamptz,
-    "platform_refresh_token" varchar(255),
     "platform_id" varchar(64) NOT NULL,
     "platform_username" varchar(255) NOT NULL,
     "platform_display_name" varchar(255) NOT NULL,
@@ -62,6 +60,7 @@ CREATE TABLE "user_connections" (
 
 CREATE INDEX "user_connections_user_id_index" ON "user_connections" ("user_id");
 CREATE UNIQUE INDEX "user_connections_platform_id_index" ON "user_connections" ("platform", "platform_id");
+CREATE UNIQUE INDEX "user_connections_main_connection_index" ON "user_connections" ("user_id") WHERE "main_connection";
 
 CREATE TABLE "user_follows" (
     "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade

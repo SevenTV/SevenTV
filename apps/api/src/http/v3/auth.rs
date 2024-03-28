@@ -99,8 +99,6 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 				.fetch_optional(global.db())
 				.await
 				.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query connection"))?;
-		// expires in with a safety margin of 1 minute
-		let expires_at = chrono::Utc::now() + chrono::Duration::seconds(token.expires_in) - chrono::Duration::minutes(1);
 
 		let mut client = global
 			.db()
@@ -121,10 +119,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 					.into());
 			}
 			// update user connection
-			scuffle_utils::database::query("UPDATE user_connections SET platform_access_token = $1, platform_access_token_expires_at = $2, platform_refresh_token = COALESCE($3, platform_refresh_token), platform_username = $4, platform_display_name = $5, platform_avatar_url = $6, updated_at = NOW() WHERE platform = $7 AND platform_id = $8")
-				.bind(token.access_token)
-				.bind(expires_at)
-				.bind(token.refresh_token)
+			scuffle_utils::database::query("UPDATE user_connections SET platform_username = $4, platform_display_name = $5, platform_avatar_url = $6, updated_at = NOW() WHERE platform = $7 AND platform_id = $8")
 				.bind(user_data.username)
 				.bind(user_data.display_name)
 				.bind(user_data.avatar)
@@ -150,13 +145,11 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 				user_id
 			};
 			// create user connection
-			scuffle_utils::database::query("INSERT INTO user_connections (id, user_id, platform, platform_access_token, platform_access_token_expires_at, platform_refresh_token, platform_id, platform_username, platform_display_name, platform_avatar_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)")
+			scuffle_utils::database::query("INSERT INTO user_connections (id, user_id, main_connection, platform, platform_id, platform_username, platform_display_name, platform_avatar_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
 				.bind(Ulid::new())
 				.bind(user_id)
+				.bind(true)
 				.bind(platform)
-				.bind(token.access_token)
-				.bind(expires_at)
-				.bind(token.refresh_token)
 				.bind(user_data.id)
 				.bind(user_data.username)
 				.bind(user_data.display_name)
@@ -257,7 +250,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 	Ok(response
 		.status(StatusCode::SEE_OTHER)
 		.body(empty_body())
-		.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))?)
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))?)
 }
 
 #[utoipa::path(

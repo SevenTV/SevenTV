@@ -46,6 +46,18 @@ impl ObjectId {
 	}
 }
 
+impl From<ulid::Ulid> for ObjectId {
+	fn from(ulid: ulid::Ulid) -> Self {
+		Self::from_ulid(ulid)
+	}
+}
+
+impl From<ObjectId> for ulid::Ulid {
+	fn from(id: ObjectId) -> Self {
+		id.into_ulid()
+	}
+}
+
 impl std::fmt::Display for ObjectId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let data = self.0.to_be_bytes();

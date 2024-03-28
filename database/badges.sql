@@ -9,6 +9,7 @@ CREATE TABLE "badges" (
 CREATE TABLE "badge_files" (
     "badge_id" uuid NOT NULL, -- Ref: badges.id -> DO NOTHING
     "file_id" uuid NOT NULL, -- Ref: files.id -> DO NOTHING
+    "data" jsonb NOT NULL DEFAULT '{}',
     PRIMARY KEY ("badge_id", "file_id")
 );
 

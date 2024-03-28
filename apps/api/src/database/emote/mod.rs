@@ -14,6 +14,7 @@ pub struct Emote {
 	pub owner_id: Option<ulid::Ulid>,
 	pub default_name: String,
 	pub tags: Vec<String>,
+	pub animated: bool,
 	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub settings: EmoteSettings,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -25,4 +26,8 @@ impl Table for Emote {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(default)]
-pub struct EmoteSettings {}
+pub struct EmoteSettings {
+	pub listed: bool,
+	pub zero_width: bool,
+	pub personal: bool,
+}

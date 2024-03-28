@@ -9,8 +9,9 @@ CREATE TABLE "paints" (
 CREATE TABLE "paint_files" (
     "paint_id" uuid NOT NULL, -- Ref: paints.id -> DO NOTHING
     "file_id" uuid NOT NULL, -- Ref: files.id -> DO NOTHING
+    "data" jsonb NOT NULL DEFAULT '{}',
     PRIMARY KEY ("paint_id", "file_id")
 );
 
 CREATE INDEX "paint_files_file_id_index" ON "paint_files" ("file_id");
-
+CREATE INDEX "paint_files_paint_id_index" ON "paint_files" ("paint_id");
