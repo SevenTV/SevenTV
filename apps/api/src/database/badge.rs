@@ -1,13 +1,11 @@
 use std::sync::Arc;
 
-use shared::{
-	object_id::ObjectId,
-	types::{CosmeticBadgeModel, ImageHost, ImageHostFile},
-};
-
-use crate::{database::Table, global::Global};
+use shared::object_id::ObjectId;
+use shared::types::{CosmeticBadgeModel, ImageHost, ImageHostFile};
 
 use super::ImageFileData;
+use crate::database::Table;
+use crate::global::Global;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct Badge {
@@ -42,7 +40,10 @@ impl Badge {
 			.fetch_all(&global.db())
 			.await
 			.map_err(|_| ())?;
-		let files = global.file_by_id_loader().load_many(badge_files.iter().map(|f| f.file_id)).await?;
+		let files = global
+			.file_by_id_loader()
+			.load_many(badge_files.iter().map(|f| f.file_id))
+			.await?;
 
 		let host = ImageHost {
 			url: format!("{}/badge/{}", global.config().api.cdn_base_url, ObjectId::from_ulid(self.id)),
@@ -52,7 +53,7 @@ impl Badge {
 					let file = files.get(&f.file_id)?;
 					Some(f.data.into_host_file(file.path.clone()))
 				})
-				.collect()
+				.collect(),
 		};
 
 		Ok(CosmeticBadgeModel {

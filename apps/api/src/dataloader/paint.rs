@@ -6,17 +6,17 @@ use ulid::Ulid;
 use crate::database::Paint;
 
 pub struct PaintLoader {
-    db: Arc<scuffle_utils::database::Pool>,
+	db: Arc<scuffle_utils::database::Pool>,
 }
 
 impl PaintLoader {
-    pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
-        DataLoader::new(Self { db })
-    }
+	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
+		DataLoader::new(Self { db })
+	}
 }
 
 impl Loader for PaintLoader {
-    type Error = ();
+	type Error = ();
 	type Key = Ulid;
 	type Value = Paint;
 

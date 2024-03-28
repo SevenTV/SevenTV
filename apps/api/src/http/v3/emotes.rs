@@ -6,19 +6,19 @@ use hyper::header::CONTENT_TYPE;
 use hyper::StatusCode;
 use postgres_from_row::FromRow;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
+use scuffle_utils::http::router::builder::RouterBuilder;
+use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
-use scuffle_utils::http::router::{builder::RouterBuilder, ext::RequestExt};
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
 use shared::object_id::ObjectId;
 use shared::types::ImageHost;
 
+use super::types::{Emote, EmoteFlags, EmoteLifecycle, EmoteVersion, EmoteVersionState};
 use crate::database;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;
-
-use super::types::{Emote, EmoteFlags, EmoteLifecycle, EmoteVersion, EmoteVersionState};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -98,7 +98,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 			.into_iter()
 			.filter_map(|f| {
 				let file = files.get(&f.file_id)?;
-                Some(f.data.into_host_file(file.path.clone()))
+				Some(f.data.into_host_file(file.path.clone()))
 			})
 			.collect(),
 	};

@@ -31,7 +31,8 @@ pub use session::*;
 pub use settings::*;
 use shared::types::{UserConnectionPartial, UserModelPartial, UserStyle};
 
-use crate::{database::Table, global::Global};
+use crate::database::Table;
+use crate::global::Global;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct User {

@@ -6,17 +6,17 @@ use ulid::Ulid;
 use crate::database::Badge;
 
 pub struct BadgeLoader {
-    db: Arc<scuffle_utils::database::Pool>,
+	db: Arc<scuffle_utils::database::Pool>,
 }
 
 impl BadgeLoader {
-    pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
-        DataLoader::new(Self { db })
-    }
+	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
+		DataLoader::new(Self { db })
+	}
 }
 
 impl Loader for BadgeLoader {
-    type Error = ();
+	type Error = ();
 	type Key = Ulid;
 	type Value = Badge;
 

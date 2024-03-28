@@ -42,12 +42,12 @@ bitflags! {
 pub struct EmoteLifecycle(i32);
 
 impl EmoteLifecycle {
-	pub const FAILED: Self = Self(-2);
 	pub const DELETED: Self = Self(-1);
+	pub const DISABLED: Self = Self(2);
+	pub const FAILED: Self = Self(-2);
+	pub const LIVE: Self = Self(3);
 	pub const PENDING: Self = Self(0);
 	pub const PROCESSING: Self = Self(1);
-	pub const DISABLED: Self = Self(2);
-	pub const LIVE: Self = Self(3);
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
