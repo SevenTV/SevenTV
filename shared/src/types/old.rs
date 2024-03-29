@@ -5,13 +5,16 @@ use crate::object_id::ObjectId;
 #[serde(deny_unknown_fields)]
 pub struct UserModelPartial {
 	pub id: ObjectId,
-	#[serde(rename = "type")]
+	#[serde(rename = "type", skip_serializing_if = "String::is_empty")]
 	pub ty: String,
 	pub username: String,
 	pub display_name: String,
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub avatar_url: Option<String>,
 	pub style: UserStyle,
+	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub roles: Vec<ObjectId>,
+	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub connections: Vec<UserConnectionPartial>,
 }
 

@@ -1,13 +1,21 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use hyper::body::Incoming;
+use hyper::StatusCode;
+use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::builder::RouterBuilder;
+use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
-use shared::http::Body;
+use shared::http::{json_response, Body};
+use shared::object_id::ObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::RequestGlobalExt;
+
+use super::types::User;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -33,9 +41,6 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
 		.patch("/{id}/connections/{connection_id}", update_user_connection_by_id)
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-pub struct User {}
-
 #[utoipa::path(
     get,
     path = "/v3/users/{id}",
@@ -51,7 +56,20 @@ pub struct User {}
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.by-id.go#L44
 pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	todo!()
+	let global: Arc<Global> = req.get_global()?;
+
+	let id = req.param("id").map_err_route((StatusCode::BAD_REQUEST, "missing id"))?;
+	let id = ObjectId::from_str(id).map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
+
+	let user = global
+		.user_by_id_loader()
+		.load(&global, id.into_ulid())
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user"))?
+        .map_err_route((StatusCode::NOT_FOUND, "user not found"))?;
+
+	let user: User = user.into();
+    json_response(user)
 }
 
 #[utoipa::path(

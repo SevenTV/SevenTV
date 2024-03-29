@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use shared::object_id::ObjectId;
-use shared::types::old::{CosmeticPaint, CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintShadow, CosmeticPaintShape, ImageHost};
+use shared::types::old::{
+	CosmeticPaint, CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintShadow, CosmeticPaintShape, ImageHost,
+};
 
 use super::ImageFileData;
 use crate::database::Table;
@@ -42,14 +44,41 @@ pub struct PaintData {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-pub enum PaintLayer {
-	SingleColor(u32),
-	LinearGradient { angle: i32, stops: Vec<PaintGradientStop> },
-	RadialGradient { angle: i32, shape: PaintRadialGradientShape, stops: Vec<PaintGradientStop> },
-	Image(ulid::Ulid),
+#[serde(default)]
+pub struct PaintLayer {
+	#[serde(flatten)]
+	pub ty: PaintLayerType,
+	pub opacity: f64,
 }
 
 impl Default for PaintLayer {
+	fn default() -> Self {
+		Self {
+			ty: PaintLayerType::default(),
+			opacity: 1.0,
+		}
+	}
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[serde(tag = "type", content = "data", rename_all = "snake_case")]
+pub enum PaintLayerType {
+	SingleColor(u32),
+	LinearGradient {
+		angle: i32,
+		repeating: bool,
+		stops: Vec<PaintGradientStop>,
+	},
+	RadialGradient {
+		angle: i32,
+		repeating: bool,
+		stops: Vec<PaintGradientStop>,
+		shape: PaintRadialGradientShape,
+	},
+	Image(ulid::Ulid),
+}
+
+impl Default for PaintLayerType {
 	fn default() -> Self {
 		Self::SingleColor(0xffffff)
 	}
@@ -62,6 +91,7 @@ pub struct PaintGradientStop {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[serde(rename_all = "snake_case")]
 pub enum PaintRadialGradientShape {
 	#[default]
 	Ellipse,
@@ -71,7 +101,8 @@ pub enum PaintRadialGradientShape {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 pub struct PaintShadow {
 	pub color: u32,
-	pub offset: (i32, i32),
+	pub offset_x: i32,
+	pub offset_y: i32,
 	pub blur: i32,
 }
 
@@ -79,8 +110,8 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 	fn from(s: PaintShadow) -> Self {
 		Self {
 			color: s.color as i32,
-			x_offset: s.offset.0 as f64,
-			y_offset: s.offset.1 as f64,
+			x_offset: s.offset_x as f64,
+			y_offset: s.offset_y as f64,
 			radius: s.blur as f64,
 		}
 	}
@@ -88,7 +119,7 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 
 impl Paint {
 	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<CosmeticPaint, ()> {
-		let badge_files: Vec<PaintFile> = scuffle_utils::database::query("SELECT * FROM paint_files WHERE paint_id = $1")
+		let paint_files: Vec<PaintFile> = scuffle_utils::database::query("SELECT * FROM paint_files WHERE paint_id = $1")
 			.bind(self.id)
 			.build_query_as()
 			.fetch_all(&global.db())
@@ -96,7 +127,7 @@ impl Paint {
 			.map_err(|_| ())?;
 		let files = global
 			.file_by_id_loader()
-			.load_many(badge_files.iter().map(|f| f.file_id))
+			.load_many(paint_files.iter().map(|f| f.file_id))
 			.await?;
 
 		let first_layer = self.data.layers.first();
@@ -104,44 +135,59 @@ impl Paint {
 		Ok(CosmeticPaint {
 			id: self.id.into(),
 			name: self.name,
-			color: first_layer.and_then(|l| match l {
-				PaintLayer::SingleColor(c) => Some(*c as i32),
+			color: first_layer.and_then(|l| match l.ty {
+				PaintLayerType::SingleColor(c) => Some(c as i32),
 				_ => None,
 			}),
 			gradients: vec![],
 			shadows: self.data.shadows.into_iter().map(|s| s.into()).collect(),
 			text: None,
 			function: first_layer
-				.map(|l| match l {
-					PaintLayer::SingleColor(..) => CosmeticPaintFunction::LinearGradient,
-					PaintLayer::LinearGradient { .. } => CosmeticPaintFunction::LinearGradient,
-					PaintLayer::RadialGradient { .. } => CosmeticPaintFunction::RadialGradient,
-					PaintLayer::Image(..) => CosmeticPaintFunction::Url,
+				.map(|l| match l.ty {
+					PaintLayerType::SingleColor(..) => CosmeticPaintFunction::LinearGradient,
+					PaintLayerType::LinearGradient { .. } => CosmeticPaintFunction::LinearGradient,
+					PaintLayerType::RadialGradient { .. } => CosmeticPaintFunction::RadialGradient,
+					PaintLayerType::Image(..) => CosmeticPaintFunction::Url,
 				})
 				.unwrap_or(CosmeticPaintFunction::LinearGradient),
-			repeat: false,
+			repeat: first_layer
+				.map(|l| match l.ty {
+					PaintLayerType::LinearGradient { repeating, .. } | PaintLayerType::RadialGradient { repeating, .. } => {
+						repeating
+					}
+					_ => false,
+				})
+				.unwrap_or_default(),
 			angle: first_layer
-				.and_then(|l| match l {
-					PaintLayer::LinearGradient { angle, .. } | PaintLayer::RadialGradient { angle, .. } => Some(*angle),
+				.and_then(|l| match l.ty {
+					PaintLayerType::LinearGradient { angle, .. } | PaintLayerType::RadialGradient { angle, .. } => {
+						Some(angle)
+					}
 					_ => None,
 				})
 				.unwrap_or_default(),
 			shape: first_layer
-				.and_then(|l| match l {
-					PaintLayer::RadialGradient { shape: PaintRadialGradientShape::Ellipse, .. } => Some(CosmeticPaintShape::Ellipse),
-					PaintLayer::RadialGradient { shape: PaintRadialGradientShape::Circle, .. } => Some(CosmeticPaintShape::Circle),
+				.and_then(|l| match l.ty {
+					PaintLayerType::RadialGradient {
+						shape: PaintRadialGradientShape::Ellipse,
+						..
+					} => Some(CosmeticPaintShape::Ellipse),
+					PaintLayerType::RadialGradient {
+						shape: PaintRadialGradientShape::Circle,
+						..
+					} => Some(CosmeticPaintShape::Circle),
 					_ => None,
 				})
 				.unwrap_or_default(),
 			image_url: first_layer
-				.and_then(|l| match l {
-					PaintLayer::Image(id) => files.get(id).map(|f| f.path.clone()),
+				.and_then(|l| match l.ty {
+					PaintLayerType::Image(id) => files.get(&id).map(|f| f.path.clone()),
 					_ => None,
 				})
 				.unwrap_or_default(),
 			stops: first_layer
-				.and_then(|l| match l {
-					PaintLayer::LinearGradient { stops, .. } | PaintLayer::RadialGradient { stops, .. } => Some(
+				.and_then(|l| match &l.ty {
+					PaintLayerType::LinearGradient { stops, .. } | PaintLayerType::RadialGradient { stops, .. } => Some(
 						stops
 							.into_iter()
 							.map(|s| CosmeticPaintGradientStop {

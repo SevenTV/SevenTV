@@ -7,14 +7,18 @@ use std::time::Duration;
 use anyhow::Context as _;
 use http_body_util::{Either, Full, StreamBody};
 use hyper::body::Incoming;
+use hyper::header::CONTENT_TYPE;
 use hyper::rt::{Read, Write};
 use hyper::service::{service_fn, Service};
-use hyper::{Request, Response};
+use hyper::{Request, Response, StatusCode};
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
 use scuffle_utils::context::{Context, ContextExt};
+use scuffle_utils::http::ext::ResultExt;
 use scuffle_utils::http::router::error::RouterError;
 use scuffle_utils::http::router::Router;
+use scuffle_utils::http::RouteError;
 use scuffle_utils::prelude::FutureTimeout;
+use serde::Serialize;
 use tokio::net::{TcpSocket, TcpStream};
 use tokio_rustls::TlsAcceptor;
 use tokio_stream::wrappers::ReceiverStream;
@@ -29,6 +33,21 @@ pub type Body = http_body_util::Either<
 pub fn empty_body() -> Body {
 	Either::Left(Full::default())
 }
+
+pub fn json_response<T, E>(data: T) -> Result<Response<Body>, RouteError<E>>
+where
+	T: Serialize,
+	E: From<serde_json::Error> + From<hyper::http::Error>,
+{
+	let data = serde_json::to_vec(&data).map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize emote"))?;
+	let body = Body::Left(http_body_util::Full::new(data.into()));
+	hyper::Response::builder()
+		.status(StatusCode::OK)
+		.header(CONTENT_TYPE, "application/json")
+		.body(body)
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))
+}
+
 pub trait HttpBuilder<B: hyper::body::Body + Send + Sync + 'static>: Send + Sync + 'static {
 	fn serve<I, S>(
 		&self,

@@ -2,7 +2,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use hyper::body::Incoming;
-use hyper::header::CONTENT_TYPE;
 use hyper::StatusCode;
 use postgres_from_row::FromRow;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
@@ -10,7 +9,7 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
-use shared::http::Body;
+use shared::http::{json_response, Body};
 use shared::object_id::ObjectId;
 use shared::types::old::ImageHost;
 
@@ -160,11 +159,5 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 			created_at: emote.id.timestamp_ms(),
 		}],
 	};
-	let data = serde_json::to_vec(&emote).map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize emote"))?;
-	let body = Body::Left(http_body_util::Full::new(data.into()));
-	hyper::Response::builder()
-		.status(StatusCode::OK)
-		.header(CONTENT_TYPE, "application/json")
-		.body(body)
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))
+	json_response(emote)
 }
