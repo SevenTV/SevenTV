@@ -2,7 +2,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use postgres_types::{FromSql, ToSql};
-use shared::types::UserConnectionPartial;
+use shared::types::old::UserConnectionPartial;
 
 use crate::database::Table;
 use crate::global::Global;

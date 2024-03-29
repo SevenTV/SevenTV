@@ -6,7 +6,7 @@ use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
 use shared::object_id::ObjectId;
-use shared::types::*;
+use shared::types::old::*;
 use utoipa::OpenApi;
 
 use super::error::ApiError;

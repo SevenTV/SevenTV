@@ -13,20 +13,20 @@ use crate::http::error::ApiError;
 #[openapi(
 	paths(
 		get_user_by_id,
-		get_user_profile_picture_by_id,
+		upload_user_profile_picture,
 		get_user_presences_by_platform,
 		get_user_by_platform_user_id,
 		delete_user_by_id,
 		update_user_connection_by_id,
 	),
-	components(schemas(User, UserProfilePicture, UserConnection))
+	components(schemas(User, UserConnection))
 )]
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
 	Router::builder()
 		.get("/{id}", get_user_by_id)
-		.get("/{id}/profile-picture", get_user_profile_picture_by_id)
+		.put("/{id}/profile-picture", upload_user_profile_picture)
 		.get("/{id}/presences", get_user_presences_by_platform)
 		.get("/{platform}/{platform_id}", get_user_by_platform_user_id)
 		.delete("/{id}", delete_user_by_id)
@@ -54,16 +54,13 @@ pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Resp
 	todo!()
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-pub struct UserProfilePicture {}
-
 #[utoipa::path(
-    get,
+    put,
     path = "/v3/users/{id}/profile-picture",
     tag = "users",
+    request_body(content = &[u8], description = "Image Binary Data", content_type = "image/*"),
     responses(
-        (status = 200, description = "User Profile Picture", body = UserProfilePicture),
-        // (status = 404, description = "User Profile Picture Not Found", body = ApiError)
+        (status = 200, description = "Success"),
     ),
     params(
         ("id" = String, Path, description = "The ID of the user"),
@@ -71,7 +68,7 @@ pub struct UserProfilePicture {}
 )]
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.pictures.go#L61
-pub async fn get_user_profile_picture_by_id(
+pub async fn upload_user_profile_picture(
 	req: hyper::Request<Incoming>,
 ) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	todo!()

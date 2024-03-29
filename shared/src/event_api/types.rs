@@ -5,7 +5,7 @@
 // is.
 use super::payload::{Subscribe, Unsubscribe};
 use crate::object_id::ObjectId;
-use crate::types::UserModelPartial;
+use crate::types::old::UserModelPartial;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]

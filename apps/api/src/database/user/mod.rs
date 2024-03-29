@@ -29,7 +29,7 @@ pub use relation::*;
 pub use roles::*;
 pub use session::*;
 pub use settings::*;
-use shared::types::{UserConnectionPartial, UserModelPartial, UserStyle};
+use shared::types::old::{UserConnectionPartial, UserModelPartial, UserStyle};
 
 use crate::database::Table;
 use crate::global::Global;
@@ -109,7 +109,7 @@ impl User {
 
 		let paint = match self.active_cosmetics.badge_id {
 			Some(id) => match global.paint_by_id_loader().load(id).await? {
-				Some(p) => Some(p.into_cosmetic_paint(global).await?),
+				Some(p) => Some(p.into_old_model(global).await?),
 				None => None,
 			},
 			None => None,

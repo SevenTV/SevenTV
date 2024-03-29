@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 use shared::object_id::ObjectId;
-use shared::types::{ImageHost, UserModelPartial};
+use shared::types::old::{ImageHost, UserModelPartial};
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]

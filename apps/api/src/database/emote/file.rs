@@ -1,4 +1,4 @@
-use shared::types::ImageHostFormat;
+use shared::types::old::ImageHostFormat;
 
 use crate::database::{ImageFileData, Table};
 

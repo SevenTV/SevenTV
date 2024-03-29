@@ -44,13 +44,15 @@ pub struct CosmeticPaint {
 	pub id: ObjectId,
 	pub name: String,
 	pub color: Option<i32>,
+	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub gradients: Vec<CosmeticPaintGradient>,
 	pub shadows: Vec<CosmeticPaintShadow>,
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub text: Option<CosmeticPaintText>,
 	pub function: CosmeticPaintFunction,
 	pub repeat: bool,
 	pub angle: i32,
-	pub shape: String,
+	pub shape: CosmeticPaintShape,
 	pub image_url: String,
 	pub stops: Vec<CosmeticPaintGradientStop>,
 }
@@ -65,7 +67,7 @@ pub struct CosmeticPaintGradient {
 	pub at: [i32; 2],
 	pub stops: Vec<CosmeticPaintGradientStop>,
 	pub image_url: String,
-	pub shape: String,
+	pub shape: CosmeticPaintShape,
 	pub angle: i32,
 	pub repeat: bool,
 }
@@ -77,6 +79,14 @@ pub enum CosmeticPaintFunction {
 	LinearGradient,
 	RadialGradient,
 	Url,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CosmeticPaintShape {
+	#[default]
+	Circle,
+	Ellipse,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]

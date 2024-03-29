@@ -12,7 +12,7 @@ use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
 use shared::object_id::ObjectId;
-use shared::types::ImageHost;
+use shared::types::old::ImageHost;
 
 use super::types::{Emote, EmoteFlags, EmoteLifecycle, EmoteVersion, EmoteVersionState};
 use crate::database;
@@ -60,7 +60,7 @@ pub async fn create_emote(req: hyper::Request<Incoming>) -> Result<hyper::Respon
     tag = "emotes",
     responses(
         (status = 200, description = "Emote", body = Emote),
-        // (status = 404, description = "Emote Not Found", body = ApiError)
+        (status = 404, description = "Emote Not Found")
     ),
     params(
         ("id" = String, Path, description = "The ID of the emote"),

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use shared::object_id::ObjectId;
-use shared::types::{CosmeticBadgeModel, ImageHost, ImageHostFile};
+use shared::types::old::{CosmeticBadgeModel, ImageHost, ImageHostFile};
 
 use super::ImageFileData;
 use crate::database::Table;
