@@ -40,15 +40,10 @@ impl ObjectId {
 	}
 
 	/// Create a new ObjectID from the given ULID, this will truncate the
-	/// timestamp to seconds.
+	/// timestamp to seconds. This is lossy because we lose the millisecond
+	/// precision of the ULID.
 	pub const fn from_ulid_lossy(ulid: ulid::Ulid) -> Self {
 		Self::from_parts(ulid.timestamp_ms() / 1000, ulid.random() as u64)
-	}
-}
-
-impl From<ulid::Ulid> for ObjectId {
-	fn from(ulid: ulid::Ulid) -> Self {
-		Self::from_ulid_lossy(ulid)
 	}
 }
 
