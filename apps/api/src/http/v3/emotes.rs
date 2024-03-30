@@ -111,7 +111,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 				.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load user"))?;
 			match user {
 				Some(u) => Some(
-					u.into_old_model(&global)
+					u.into_old_model_partial(&global)
 						.await
 						.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert user"))?,
 				),

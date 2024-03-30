@@ -33,6 +33,7 @@ use shared::types::old::{UserConnectionPartial, UserModelPartial, UserStyle};
 
 use crate::database::Table;
 use crate::global::Global;
+use crate::http::v3;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct User {
@@ -92,7 +93,7 @@ pub struct UserEntitledCache {
 }
 
 impl User {
-	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<UserModelPartial, ()> {
+	pub async fn into_old_model_partial(self, global: &Arc<Global>) -> Result<UserModelPartial, ()> {
 		let connections: Vec<UserConnection> =
 			scuffle_utils::database::query("SELECT * FROM user_connections WHERE user_id = $1")
 				.bind(self.id)
@@ -140,6 +141,38 @@ impl User {
 			style,
 			roles: self.entitled_cache.role_ids.into_iter().map(|r| r.into()).collect(),
 			connections: connections.into_iter().map(UserConnectionPartial::from).collect(),
+		})
+	}
+
+	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<v3::types::User, ()> {
+		let created_at = self.id.timestamp_ms();
+		let partial = self.into_old_model_partial(global).await?;
+		Ok(v3::types::User {
+			id: partial.id,
+			ty: partial.ty,
+			username: partial.username,
+			display_name: partial.display_name,
+			created_at,
+			avatar_url: partial.avatar_url,
+			biography: String::new(),
+			style: partial.style,
+			emote_sets: todo!(),
+			editors: todo!(),
+			roles: partial.roles,
+			connections: partial.connections.into_iter().map(|p| {
+				v3::types::UserConnection {
+					id: p.id,
+					platform: p.platform,
+					username: p.username,
+					display_name: p.display_name,
+					linked_at: p.linked_at,
+					emote_capacity: p.emote_capacity,
+					emote_set_id: p.emote_set_id,
+					emote_set: todo!(),
+					presences: todo!(),
+					user: None,
+				}
+			}).collect(),
 		})
 	}
 }

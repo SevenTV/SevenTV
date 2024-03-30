@@ -27,36 +27,17 @@ pub struct User {
 	pub connections: Vec<UserConnection>,
 }
 
-impl From<crate::database::User> for User {
-	fn from(value: crate::database::User) -> Self {
-		Self {
-			id: value.id.into(),
-			ty: "".to_string(),
-			username: todo!(),
-			display_name: todo!(),
-			created_at: value.id.timestamp_ms(),
-			avatar_url: None,
-			biography: todo!(),
-			style: UserStyle::default(),
-			emote_sets: todo!(),
-			editors: todo!(),
-			roles: todo!(),
-			connections: todo!(),
-		}
-	}
-}
-
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetPartial {
-	id: ObjectId,
-	name: String,
-	flags: EmoteSetFlags,
-	tags: Vec<String>,
-	capacity: u32,
+	pub id: ObjectId,
+	pub name: String,
+	pub flags: EmoteSetFlags,
+	pub tags: Vec<String>,
+	pub capacity: u32,
 	#[serde(skip_serializing_if = "Option::is_none")]
-	owner: Option<UserModelPartial>,
+	pub owner: Option<UserModelPartial>,
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -75,27 +56,27 @@ bitflags! {
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 pub struct UserEditor {
-	id: ObjectId,
-	permissions: i32,
-	visible: bool,
-	added_at: u64,
+	pub id: ObjectId,
+	pub permissions: i32,
+	pub visible: bool,
+	pub added_at: u64,
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 pub struct UserConnection {
-	id: ObjectId,
-	platform: String,
-	username: String,
-	display_name: String,
-	linked_at: u64,
-	emote_capacity: u32,
-	emote_set_id: Option<ObjectId>,
-	emote_set: Option<EmoteSetPartial>,
+	pub id: ObjectId,
+	pub platform: String,
+	pub username: String,
+	pub display_name: String,
+	pub linked_at: u64,
+	pub emote_capacity: i32,
+	pub emote_set_id: Option<ObjectId>,
+	pub emote_set: Option<EmoteSetPartial>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
-	presences: Vec<UserModelPartial>,
+	pub presences: Vec<UserModelPartial>,
 	#[serde(skip_serializing_if = "Option::is_none")]
-	user: Option<User>,
+	pub user: Option<User>,
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
