@@ -18,6 +18,7 @@ pub struct Global {
 	http_client: reqwest::Client,
 	metrics: Arc<metrics::Metrics>,
 	user_by_id_loader: dataloader::user::UserLoader,
+	user_connections_loader: DataLoader<dataloader::user_connections::UserConnectionsLoader>,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
 	role_by_id_loader: DataLoader<dataloader::role::RoleByIdLoader>,
 	role_badge_by_id_loader: DataLoader<dataloader::role::RoleBadgeByIdLoader>,
@@ -48,6 +49,7 @@ impl Global {
 			nats,
 			jetstream,
 			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
+			user_connections_loader: dataloader::user_connections::UserConnectionsLoader::new(db.clone()),
 			product_by_id_loader: dataloader::product::ProductByIdLoader::new(db.clone()),
 			role_by_id_loader: dataloader::role::RoleByIdLoader::new(db.clone()),
 			role_badge_by_id_loader: dataloader::role::RoleBadgeByIdLoader::new(db.clone()),
@@ -100,6 +102,11 @@ impl Global {
 	/// The user loader.
 	pub fn user_by_id_loader(&self) -> &dataloader::user::UserLoader {
 		&self.user_by_id_loader
+	}
+
+	/// The user connections loader.
+	pub fn user_connections_loader(&self) -> &DataLoader<dataloader::user_connections::UserConnectionsLoader> {
+		&self.user_connections_loader
 	}
 
 	/// The product loader.

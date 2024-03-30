@@ -27,6 +27,7 @@ pub use product::*;
 pub use profile_picture::*;
 pub use relation::*;
 pub use roles::*;
+use scuffle_utils::http::ext::OptionExt;
 pub use session::*;
 pub use settings::*;
 use shared::types::old::{UserConnectionPartial, UserModelPartial, UserStyle};
@@ -94,13 +95,11 @@ pub struct UserEntitledCache {
 
 impl User {
 	pub async fn into_old_model_partial(self, global: &Arc<Global>) -> Result<UserModelPartial, ()> {
-		let connections: Vec<UserConnection> =
-			scuffle_utils::database::query("SELECT * FROM user_connections WHERE user_id = $1")
-				.bind(self.id)
-				.build_query_as()
-				.fetch_all(&global.db())
-				.await
-				.map_err(|_| ())?;
+		let connections = global
+			.user_connections_loader()
+			.load(&self.id)
+			.await?
+			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user connections"))?;
 		let main_connection = connections.iter().find(|c| c.main_connection).ok_or(())?;
 
 		let avatar_url = match self.active_cosmetics.profile_picture_id {
@@ -159,8 +158,10 @@ impl User {
 			emote_sets: todo!(),
 			editors: todo!(),
 			roles: partial.roles,
-			connections: partial.connections.into_iter().map(|p| {
-				v3::types::UserConnection {
+			connections: partial
+				.connections
+				.into_iter()
+				.map(|p| v3::types::UserConnection {
 					id: p.id,
 					platform: p.platform,
 					username: p.username,
@@ -171,8 +172,8 @@ impl User {
 					emote_set: todo!(),
 					presences: todo!(),
 					user: None,
-				}
-			}).collect(),
+				})
+				.collect(),
 		})
 	}
 }
