@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use hyper::StatusCode;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
-use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::middleware::{Middleware, NextFn};
 use scuffle_utils::http::RouteError;
 
@@ -26,7 +25,6 @@ impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>
 		{
 			let global: Arc<Global> = req.get_global()?;
 			let cookies = req.get_cookies()?;
-			let mut cookies = cookies.write().await;
 			if let Some(cookie) = cookies.get(AUTH_COOKIE) {
 				let jwt = AuthJwtPayload::verify(&global, cookie.value())
 					.map_err_route((StatusCode::UNAUTHORIZED, "invalid auth token"))?;
@@ -38,6 +36,7 @@ impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>
 				.fetch_optional(&global.db())
 				.await
 				.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch session"))?;
+
 				if let Some(session) = session {
 					req.extensions_mut().insert(session);
 				} else {
@@ -47,9 +46,5 @@ impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>
 			}
 		}
 		next(req).await
-	}
-
-	fn extend(&self, builder: RouterBuilder<I, O, RouteError<ApiError>>) -> RouterBuilder<I, O, RouteError<ApiError>> {
-		builder
 	}
 }

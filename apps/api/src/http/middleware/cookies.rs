@@ -1,22 +1,39 @@
 //! Cookie middleware
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use cookie::{Cookie, CookieBuilder, CookieJar};
 use hyper::header::{HeaderValue, ToStrError};
 use hyper::StatusCode;
 use scuffle_utils::http::ext::ResultExt;
-use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::middleware::{Middleware, NextFn};
 use scuffle_utils::http::RouteError;
-use tokio::sync::RwLock;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 
 pub const AUTH_COOKIE: &str = "seventv-auth";
 
-pub type Cookies = Arc<RwLock<CookieJar>>;
+#[derive(Clone)]
+pub struct Cookies(Arc<Mutex<CookieJar>>);
+
+impl Cookies {
+	pub fn delta(&self) -> Vec<Cookie<'static>> {
+		self.0.lock().unwrap().delta().cloned().collect()
+	}
+
+	pub fn add(&self, cookie: impl Into<Cookie<'static>>) {
+		self.0.lock().unwrap().add(cookie);
+	}
+
+	pub fn get(&self, name: &str) -> Option<Cookie<'static>> {
+		self.0.lock().unwrap().get(name).cloned()
+	}
+
+	pub fn remove(&self, name: impl Into<Cookie<'static>>) {
+		self.0.lock().unwrap().remove(name);
+	}
+}
 
 pub fn new_cookie<'c, C: Into<Cookie<'c>>>(global: &Arc<Global>, base: C) -> CookieBuilder<'c> {
 	Cookie::build(base)
@@ -53,22 +70,19 @@ impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>
 			.map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid cookie header"))?;
 		// Using a RwLock here feels a little weird but I didn't find a better solution
 		// to keep a reference to the jar longer than the ownership of the request
-		let jar = Arc::new(RwLock::new(jar));
+		let jar = Cookies(Arc::new(Mutex::new(jar)));
 		req.extensions_mut().insert(jar.clone());
 
 		let mut res = next(req).await?;
 
-		for cookie in jar.read().await.delta() {
+		for cookie in jar.delta() {
 			res.headers_mut().append(
 				hyper::header::SET_COOKIE,
 				HeaderValue::from_str(&cookie.encoded().to_string())
 					.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to encode cookie"))?,
 			);
 		}
-		Ok(res)
-	}
 
-	fn extend(&self, builder: RouterBuilder<I, O, RouteError<ApiError>>) -> RouterBuilder<I, O, RouteError<ApiError>> {
-		builder
+		Ok(res)
 	}
 }

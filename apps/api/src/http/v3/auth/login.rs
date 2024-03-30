@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use cookie::CookieJar;
 use hyper::body::Incoming;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
@@ -11,7 +10,7 @@ use crate::connections;
 use crate::database::{UserConnection, UserConnectionPlatform, UserSession};
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::{new_cookie, AUTH_COOKIE};
+use crate::http::middleware::{new_cookie, Cookies, AUTH_COOKIE};
 use crate::http::RequestQueryParamExt;
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
 
@@ -31,7 +30,7 @@ pub async fn handle_callback(
 	global: &Arc<Global>,
 	platform: UserConnectionPlatform,
 	req: &hyper::Request<Incoming>,
-	cookies: &mut CookieJar,
+	cookies: &Cookies,
 ) -> Result<String, RouteError<ApiError>> {
 	let code = req
 		.query_param("code")
@@ -186,7 +185,7 @@ pub async fn handle_callback(
 pub fn handle_login(
 	global: &Arc<Global>,
 	platform: UserConnectionPlatform,
-	cookies: &mut CookieJar,
+	cookies: &Cookies,
 ) -> Result<String, RouteError<ApiError>> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {

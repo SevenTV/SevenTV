@@ -43,7 +43,6 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 	let global: Arc<Global> = req.get_global()?;
 
 	let cookies = req.get_cookies()?;
-	let mut cookies = cookies.write().await;
 
 	let platform = req
 		.query_param("platform")
@@ -56,9 +55,9 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 		.header(
 			hyper::header::LOCATION,
 			if callback {
-				handle_login_callback(&global, platform, &req, &mut cookies).await?
+				handle_login_callback(&global, platform, &req, &cookies).await?
 			} else {
-				handle_login(&global, platform, &mut cookies)?
+				handle_login(&global, platform, &cookies)?
 			},
 		)
 		.status(StatusCode::SEE_OTHER)
@@ -85,7 +84,8 @@ async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, 
 			.execute(global.db())
 			.await
 			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to delete session"))?;
-		req.get_cookies()?.write().await.remove(AUTH_COOKIE);
+
+		req.get_cookies()?.remove(AUTH_COOKIE);
 	}
 
 	Ok(Response::builder()
