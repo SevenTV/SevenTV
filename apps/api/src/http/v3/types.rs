@@ -30,7 +30,7 @@ pub struct User {
 impl From<crate::database::User> for User {
 	fn from(value: crate::database::User) -> Self {
 		Self {
-			id: value.id.into(),
+			id: value.id,
 			ty: "".to_string(),
 			username: todo!(),
 			display_name: todo!(),

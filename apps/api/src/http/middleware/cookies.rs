@@ -68,8 +68,7 @@ impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>
 				Ok::<CookieJar, ToStrError>(jar)
 			})
 			.map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid cookie header"))?;
-		// Using a RwLock here feels a little weird but I didn't find a better solution
-		// to keep a reference to the jar longer than the ownership of the request
+
 		let jar = Cookies(Arc::new(Mutex::new(jar)));
 		req.extensions_mut().insert(jar.clone());
 

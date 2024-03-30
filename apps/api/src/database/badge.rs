@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use shared::object_id::ObjectId;
 use shared::types::old::{CosmeticBadgeModel, ImageHost, ImageHostFile};
 
 use super::ImageFileData;
@@ -46,7 +45,7 @@ impl Badge {
 			.await?;
 
 		let host = ImageHost {
-			url: format!("{}/badge/{}", global.config().api.cdn_base_url, ObjectId::from_ulid(self.id)),
+			url: format!("{}/badge/{}", global.config().api.cdn_base_url, self.id),
 			files: badge_files
 				.into_iter()
 				.filter_map(|f| {
@@ -57,7 +56,7 @@ impl Badge {
 		};
 
 		Ok(CosmeticBadgeModel {
-			id: self.id.into(),
+			id: self.id,
 			name: self.name,
 			tag: self.tags.into_iter().next().unwrap_or_default(),
 			tooltip: self.description,

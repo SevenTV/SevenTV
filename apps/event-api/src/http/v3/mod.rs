@@ -176,7 +176,7 @@ impl Connection {
 			socket,
 			seq: 0,
 			heartbeat_count: 0,
-			id: ObjectId::from_ulid(Ulid::new()),
+			id: ObjectId::from_ulid_lossy(Ulid::new()),
 			// We jitter the TTL to prevent all connections from expiring at the same time, which would cause a thundering
 			// herd.
 			ttl: Box::pin(tokio::time::sleep(jitter(global.config().api.ttl))),

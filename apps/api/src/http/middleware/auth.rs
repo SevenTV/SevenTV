@@ -28,6 +28,7 @@ impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>
 			if let Some(cookie) = cookies.get(AUTH_COOKIE) {
 				let jwt = AuthJwtPayload::verify(&global, cookie.value())
 					.map_err_route((StatusCode::UNAUTHORIZED, "invalid auth token"))?;
+
 				let session: Option<UserSession> = scuffle_utils::database::query(
 					"UPDATE user_sessions SET last_used_at = NOW() WHERE id = $1 AND expires_at > NOW() RETURNING *",
 				)
@@ -41,10 +42,12 @@ impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>
 					req.extensions_mut().insert(session);
 				} else {
 					cookies.remove(AUTH_COOKIE);
+
 					return Err((StatusCode::UNAUTHORIZED, "expired/invalid session").into());
 				}
 			}
 		}
+
 		next(req).await
 	}
 }

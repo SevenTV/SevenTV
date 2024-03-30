@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use shared::object_id::ObjectId;
 use shared::types::old::{
 	CosmeticPaint, CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintShadow, CosmeticPaintShape, ImageHost,
 };
@@ -133,7 +132,7 @@ impl Paint {
 		let first_layer = self.data.layers.first();
 
 		Ok(CosmeticPaint {
-			id: self.id.into(),
+			id: self.id,
 			name: self.name,
 			color: first_layer.and_then(|l| match l.ty {
 				PaintLayerType::SingleColor(c) => Some(c as i32),

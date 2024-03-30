@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
 use hyper::body::Incoming;
@@ -10,7 +9,7 @@ use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
-use shared::object_id::ObjectId;
+use shared::id::parse_id;
 use shared::types::old::ImageHost;
 
 use super::types::{Emote, EmoteFlags, EmoteLifecycle, EmoteVersion, EmoteVersionState};
@@ -69,12 +68,15 @@ pub async fn create_emote(req: hyper::Request<Incoming>) -> Result<hyper::Respon
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.by-id.go#L36
 pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	let global: Arc<Global> = req.get_global()?;
+
 	let id = req.param("id").map_err_route((StatusCode::BAD_REQUEST, "missing id"))?;
-	let id = ObjectId::from_str(id).map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
+
+	let id = parse_id(id).map_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
+
 	let rows = scuffle_utils::database::query(
 		"SELECT * FROM emotes LEFT JOIN emote_files ON emotes.id = emote_files.emote_id WHERE emotes.id = $1",
 	)
-	.bind(id.into_ulid())
+	.bind(id)
 	.build()
 	.fetch_all(&global.db())
 	.await
@@ -92,7 +94,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load files"))?;
 
 	let host = ImageHost {
-		url: format!("{}/emote/{}", global.config().api.cdn_base_url, ObjectId::from_ulid(emote.id)),
+		url: format!("{}/emote/{}", global.config().api.cdn_base_url, emote.id),
 		files: emote_files
 			.into_iter()
 			.filter_map(|f| {
@@ -137,7 +139,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 	}
 
 	let emote = Emote {
-		id: emote.id.into(),
+		id: emote.id,
 		name: emote.default_name.clone(),
 		flags,
 		tags: emote.tags,
@@ -148,7 +150,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		owner,
 		host: host.clone(),
 		versions: vec![EmoteVersion {
-			id: emote.id.into(),
+			id: emote.id,
 			name: emote.default_name,
 			description: String::new(),
 			lifecycle: EmoteLifecycle::Live,
