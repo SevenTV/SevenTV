@@ -159,8 +159,10 @@ impl User {
 			emote_sets: todo!(),
 			editors: todo!(),
 			roles: partial.roles,
-			connections: partial.connections.into_iter().map(|p| {
-				v3::types::UserConnection {
+			connections: partial
+				.connections
+				.into_iter()
+				.map(|p| v3::types::UserConnection {
 					id: p.id,
 					platform: p.platform,
 					username: p.username,
@@ -171,8 +173,8 @@ impl User {
 					emote_set: todo!(),
 					presences: todo!(),
 					user: None,
-				}
-			}).collect(),
+				})
+				.collect(),
 		})
 	}
 }

@@ -71,7 +71,7 @@ impl Table for UserConnection {
 impl From<UserConnection> for UserConnectionPartial {
 	fn from(value: UserConnection) -> Self {
 		Self {
-			id: value.id.into(),
+			id: value.id,
 			platform: value.platform.to_string(),
 			username: value.platform_username,
 			display_name: value.platform_display_name,

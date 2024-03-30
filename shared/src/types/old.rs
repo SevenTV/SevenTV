@@ -153,7 +153,7 @@ pub struct CosmeticPaintStroke {
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct UserConnectionPartial {
-	pub id: ObjectId,
+	pub id: Ulid,
 	pub platform: String,
 	pub username: String,
 	pub display_name: String,
