@@ -126,20 +126,20 @@ impl User {
 
 		let style = UserStyle {
 			color: 0,
-			paint_id: self.active_cosmetics.paint_id.map(|i| i.into()),
+			paint_id: self.active_cosmetics.paint_id,
 			paint,
-			badge_id: self.active_cosmetics.badge_id.map(|i| i.into()),
+			badge_id: self.active_cosmetics.badge_id,
 			badge,
 		};
 
 		Ok(UserModelPartial {
-			id: self.id.into(),
+			id: self.id,
 			ty: String::new(),
 			username: main_connection.platform_username.clone(),
 			display_name: main_connection.platform_display_name.clone(),
 			avatar_url,
 			style,
-			roles: self.entitled_cache.role_ids.into_iter().map(|r| r.into()).collect(),
+			roles: self.entitled_cache.role_ids.into_iter().collect(),
 			connections: connections.into_iter().map(UserConnectionPartial::from).collect(),
 		})
 	}

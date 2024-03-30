@@ -5,7 +5,6 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
-use shared::object_id::ObjectId;
 use shared::types::old::*;
 use utoipa::OpenApi;
 
@@ -41,7 +40,6 @@ pub fn docs() -> utoipa::openapi::OpenApi {
         ),
 		components(schemas(
 			UserModelPartial,
-			ObjectId,
 			UserStyle,
 			CosmeticBadgeModel,
 			CosmeticPaint,

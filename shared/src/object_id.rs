@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, utoipa::ToSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// MongoDB ObjectIDs are 12-byte BSON strings, representing a 4-byte timestamp,
 /// 5-byte random value, and a 3-byte incrementing counter. https://docs.mongodb.com/manual/reference/method/ObjectId/
 pub struct ObjectId(u128);
@@ -40,15 +40,10 @@ impl ObjectId {
 	}
 
 	/// Create a new ObjectID from the given ULID, this will truncate the
-	/// timestamp to seconds.
-	pub const fn from_ulid(ulid: ulid::Ulid) -> Self {
+	/// timestamp to seconds. This is lossy because we lose the millisecond
+	/// precision of the ULID.
+	pub const fn from_ulid_lossy(ulid: ulid::Ulid) -> Self {
 		Self::from_parts(ulid.timestamp_ms() / 1000, ulid.random() as u64)
-	}
-}
-
-impl From<ulid::Ulid> for ObjectId {
-	fn from(ulid: ulid::Ulid) -> Self {
-		Self::from_ulid(ulid)
 	}
 }
 
@@ -122,7 +117,7 @@ mod tests {
 
 		assert_eq!(ulid.to_string(), "0000000Z80000FA6XM6RQEWAJD");
 
-		let id = ObjectId::from_ulid(ulid);
+		let id = ObjectId::from_ulid_lossy(ulid);
 		assert_eq!(id.timestamp(), 0x00000020);
 		assert_eq!(id.random(), 0xf51bb4362eee2a4d);
 	}

@@ -1,10 +1,10 @@
-use crate::object_id::ObjectId;
+use ulid::Ulid;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct UserModelPartial {
-	pub id: ObjectId,
+	pub id: Ulid,
 	#[serde(rename = "type", skip_serializing_if = "String::is_empty")]
 	pub ty: String,
 	pub username: String,
@@ -13,7 +13,7 @@ pub struct UserModelPartial {
 	pub avatar_url: Option<String>,
 	pub style: UserStyle,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
-	pub roles: Vec<ObjectId>,
+	pub roles: Vec<Ulid>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub connections: Vec<UserConnectionPartial>,
 }
@@ -23,9 +23,9 @@ pub struct UserModelPartial {
 #[serde(deny_unknown_fields)]
 pub struct UserStyle {
 	pub color: i32,
-	pub paint_id: Option<ObjectId>,
+	pub paint_id: Option<Ulid>,
 	pub paint: Option<CosmeticPaint>,
-	pub badge_id: Option<ObjectId>,
+	pub badge_id: Option<Ulid>,
 	pub badge: Option<CosmeticBadgeModel>,
 }
 
@@ -33,7 +33,7 @@ pub struct UserStyle {
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct CosmeticBadgeModel {
-	pub id: ObjectId,
+	pub id: Ulid,
 	pub name: String,
 	pub tag: String,
 	pub tooltip: String,
@@ -44,7 +44,7 @@ pub struct CosmeticBadgeModel {
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct CosmeticPaint {
-	pub id: ObjectId,
+	pub id: Ulid,
 	pub name: String,
 	pub color: Option<i32>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
@@ -159,7 +159,7 @@ pub struct UserConnectionPartial {
 	pub display_name: String,
 	pub linked_at: u64,
 	pub emote_capacity: i32,
-	pub emote_set_id: Option<ObjectId>,
+	pub emote_set_id: Option<Ulid>,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]

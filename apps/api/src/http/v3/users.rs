@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
 use hyper::body::Incoming;
@@ -9,13 +8,12 @@ use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
-use shared::object_id::ObjectId;
+use shared::id::parse_id;
 
+use super::types::User;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;
-
-use super::types::User;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -59,11 +57,11 @@ pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Resp
 	let global: Arc<Global> = req.get_global()?;
 
 	let id = req.param("id").map_err_route((StatusCode::BAD_REQUEST, "missing id"))?;
-	let id = ObjectId::from_str(id).map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
+	let id = parse_id(id).map_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
 
 	let user = global
 		.user_by_id_loader()
-		.load(&global, id.into_ulid())
+		.load(&global, id)
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user"))?
 		.map_err_route((StatusCode::NOT_FOUND, "user not found"))?;
