@@ -54,7 +54,7 @@ pub enum TokenResponseScope {
 /// Google docs: https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
 pub async fn exchange_code(
 	global: &Arc<Global>,
-	platform: &UserConnectionPlatform,
+	platform: UserConnectionPlatform,
 	code: &str,
 	redirect_uri: String,
 ) -> Result<TokenResponse, ConnectionError> {

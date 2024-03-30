@@ -1,12 +1,12 @@
 use bitflags::bitflags;
-use shared::object_id::ObjectId;
 use shared::types::old::{ImageHost, UserModelPartial, UserStyle};
+use ulid::Ulid;
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct User {
-	pub id: ObjectId,
+	pub id: Ulid,
 	#[serde(rename = "type", skip_serializing_if = "String::is_empty")]
 	pub ty: String,
 	pub username: String,
@@ -22,7 +22,7 @@ pub struct User {
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub editors: Vec<UserEditor>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
-	pub roles: Vec<ObjectId>,
+	pub roles: Vec<Ulid>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub connections: Vec<UserConnection>,
 }
@@ -50,7 +50,7 @@ impl From<crate::database::User> for User {
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetPartial {
-	id: ObjectId,
+	id: Ulid,
 	name: String,
 	flags: EmoteSetFlags,
 	tags: Vec<String>,
@@ -75,7 +75,7 @@ bitflags! {
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 pub struct UserEditor {
-	id: ObjectId,
+	id: Ulid,
 	permissions: i32,
 	visible: bool,
 	added_at: u64,
@@ -84,13 +84,13 @@ pub struct UserEditor {
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 pub struct UserConnection {
-	id: ObjectId,
+	id: Ulid,
 	platform: String,
 	username: String,
 	display_name: String,
 	linked_at: u64,
 	emote_capacity: u32,
-	emote_set_id: Option<ObjectId>,
+	emote_set_id: Option<Ulid>,
 	emote_set: Option<EmoteSetPartial>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	presences: Vec<UserModelPartial>,
@@ -102,7 +102,7 @@ pub struct UserConnection {
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct Emote {
-	pub id: ObjectId,
+	pub id: Ulid,
 	pub name: String,
 	pub flags: EmoteFlags,
 	pub tags: Vec<String>,
@@ -135,22 +135,22 @@ bitflags! {
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-pub struct EmoteLifecycle(i32);
-
-impl EmoteLifecycle {
-	pub const DELETED: Self = Self(-1);
-	pub const DISABLED: Self = Self(2);
-	pub const FAILED: Self = Self(-2);
-	pub const LIVE: Self = Self(3);
-	pub const PENDING: Self = Self(0);
-	pub const PROCESSING: Self = Self(1);
+#[repr(i32)]
+pub enum EmoteLifecycle {
+	Deleted = -1,
+	Disabled = 2,
+	Failed = -2,
+	Live = 3,
+	#[default]
+	Pending = 0,
+	Processing = 1,
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteVersion {
-	pub id: ObjectId,
+	pub id: Ulid,
 	pub name: String,
 	pub description: String,
 	pub lifecycle: EmoteLifecycle,

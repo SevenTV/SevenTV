@@ -11,11 +11,10 @@ use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
 use shared::object_id::ObjectId;
 
+use super::types::User;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;
-
-use super::types::User;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -66,10 +65,10 @@ pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Resp
 		.load(&global, id.into_ulid())
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user"))?
-        .map_err_route((StatusCode::NOT_FOUND, "user not found"))?;
+		.map_err_route((StatusCode::NOT_FOUND, "user not found"))?;
 
 	let user: User = user.into();
-    json_response(user)
+	json_response(user)
 }
 
 #[utoipa::path(

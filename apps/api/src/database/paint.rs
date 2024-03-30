@@ -189,7 +189,7 @@ impl Paint {
 				.and_then(|l| match &l.ty {
 					PaintLayerType::LinearGradient { stops, .. } | PaintLayerType::RadialGradient { stops, .. } => Some(
 						stops
-							.into_iter()
+							.iter()
 							.map(|s| CosmeticPaintGradientStop {
 								color: s.color as i32,
 								at: s.at,
