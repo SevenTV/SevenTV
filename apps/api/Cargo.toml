@@ -56,7 +56,6 @@ zen-engine = "0.18"
 zen-expression = "0.18"
 
 shared = { workspace = true }
-bitflags = { version = "2.5.0", features = ["serde"] }
 
 [features]
 default = []

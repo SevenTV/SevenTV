@@ -1,4 +1,4 @@
-use bitflags::bitflags;
+use bitmask_enum::bitmask;
 use shared::types::old::{ImageHost, UserModelPartial, UserStyle};
 use ulid::Ulid;
 
@@ -40,17 +40,15 @@ pub struct EmoteSetPartial {
 	pub owner: Option<UserModelPartial>,
 }
 
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-#[serde(default)]
-pub struct EmoteSetFlags(u32);
-
-bitflags! {
-	impl EmoteSetFlags: u32 {
-		const IMMUTABLE = 1 << 0;
-		const PRIVILEGED = 1 << 1;
-		const PERSONAL = 1 << 2;
-		const COMMERCIAL = 1 << 3;
-	}
+#[derive(Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[bitmask(u8)]
+pub enum EmoteSetFlags {
+	#[default]
+	None = 0b0000,
+	Immutable = 0b0001,
+	Privileged = 0b0010,
+	Personal = 0b0100,
+	Commercial = 0b1000,
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -98,21 +96,20 @@ pub struct Emote {
 	pub versions: Vec<EmoteVersion>,
 }
 
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-#[serde(default)]
-pub struct EmoteFlags(u32);
+#[derive(Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[bitmask(u32)]
+pub enum EmoteFlags {
+	#[default]
+	None = 0,
 
-bitflags! {
-	impl EmoteFlags: u32 {
-		const PRIVATE = 1 << 0;
-		const AUTHENTIC = 1 << 1;
-		const ZERO_WIDTH = 1 << 8;
+	Private = { 1 << 0 },
+	Authentic = { 1 << 1 },
+	ZeroWidth = { 1 << 8 },
 
-		const CONTENT_SEXUAL = 1 << 16;
-		const CONTENT_EPILEPSY = 1 << 17;
-		const CONTENT_EDGY = 1 << 18;
-		const CONTENT_TWITCH_DISALLOWED = 1 << 24;
-	}
+	ContentSexual = { 1 << 16 },
+	ContentEpilepsy = { 1 << 17 },
+	ContentEdgy = { 1 << 18 },
+	ContentTwitchDisallowed = { 1 << 24 },
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
