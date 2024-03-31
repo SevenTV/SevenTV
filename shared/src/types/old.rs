@@ -170,6 +170,44 @@ pub struct ImageHost {
 	pub files: Vec<ImageHostFile>,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ImageHostKind {
+	Badge,
+	Emote,
+	Paint,
+	ProfilePicture,
+}
+
+impl ImageHostKind {
+	pub fn create_base_url(&self, base: &str, id: Ulid) -> String {
+		format!("{base}/{self}/{id}")
+	}
+
+	pub fn create_full_url(&self, base: &str, id: Ulid, scale: u32, format: ImageHostFormat) -> String {
+		format!("{base}/{self}/{id}/{scale}x.{}", format.as_str())
+	}
+}
+
+impl std::fmt::Display for ImageHostKind {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Badge => write!(f, "badge"),
+			Self::Emote => write!(f, "emote"),
+			Self::ProfilePicture => write!(f, "profile-picture"),
+			Self::Paint => write!(f, "paint"),
+		}
+	}
+}
+
+impl ImageHost {
+	pub fn new(base_url: &str, kind: ImageHostKind, id: Ulid, files: Vec<ImageHostFile>) -> Self {
+		Self {
+			url: kind.create_base_url(base_url, id),
+			files,
+		}
+	}
+}
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
@@ -189,4 +227,17 @@ pub enum ImageHostFormat {
 	#[default]
 	Webp,
 	Avif,
+	Gif,
+	Png,
+}
+
+impl ImageHostFormat {
+	pub fn as_str(&self) -> &str {
+		match self {
+			Self::Webp => "webp",
+			Self::Avif => "avif",
+			Self::Gif => "gif",
+			Self::Png => "png",
+		}
+	}
 }

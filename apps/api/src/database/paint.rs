@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use shared::types::old::{
 	CosmeticPaint, CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintShadow, CosmeticPaintShape, ImageHost,
+	ImageHostKind,
 };
 
-use super::ImageFileData;
+use super::FileSetProperties;
 use crate::database::Table;
 use crate::global::Global;
 
@@ -24,15 +25,13 @@ impl Table for Paint {
 }
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
-pub struct PaintFile {
+pub struct PaintFileSet {
 	pub paint_id: ulid::Ulid,
 	pub file_id: ulid::Ulid,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
-	pub data: ImageFileData,
 }
 
-impl Table for PaintFile {
-	const TABLE_NAME: &'static str = "paint_files";
+impl Table for PaintFileSet {
+	const TABLE_NAME: &'static str = "paint_file_sets";
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
@@ -118,14 +117,16 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 
 impl Paint {
 	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<CosmeticPaint, ()> {
-		let paint_files: Vec<PaintFile> = scuffle_utils::database::query("SELECT * FROM paint_files WHERE paint_id = $1")
-			.bind(self.id)
-			.build_query_as()
-			.fetch_all(&global.db())
-			.await
-			.map_err(|_| ())?;
+		let paint_files: Vec<PaintFileSet> =
+			scuffle_utils::database::query("SELECT * FROM paint_file_sets WHERE paint_id = $1")
+				.bind(self.id)
+				.build_query_as()
+				.fetch_all(&global.db())
+				.await
+				.map_err(|_| ())?;
+
 		let files = global
-			.file_by_id_loader()
+			.file_set_by_id_loader()
 			.load_many(paint_files.iter().map(|f| f.file_id))
 			.await?;
 
@@ -180,7 +181,17 @@ impl Paint {
 				.unwrap_or_default(),
 			image_url: first_layer
 				.and_then(|l| match l.ty {
-					PaintLayerType::Image(id) => files.get(&id).map(|f| f.path.clone()),
+					PaintLayerType::Image(id) => files.get(&id).and_then(|f| match &f.properties {
+						FileSetProperties::Image(images) => images.iter().find(|i| i.extra.default).and_then(|i| {
+							Some(ImageHostKind::Paint.create_full_url(
+								&global.config().api.cdn_base_url,
+								id,
+								i.extra.scale,
+								i.mime.as_old_file()?,
+							))
+						}),
+						_ => None,
+					}),
 					_ => None,
 				})
 				.unwrap_or_default(),

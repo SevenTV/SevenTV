@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use shared::types::old::{CosmeticBadgeModel, ImageHost, ImageHostFile};
+use shared::types::old::{CosmeticBadgeModel, ImageHost, ImageHostFile, ImageHostFormat, ImageHostKind};
 
-use super::ImageFileData;
+use super::{FileSet, FileSetKind, FileSetProperties};
 use crate::database::Table;
 use crate::global::Global;
 
@@ -12,6 +12,7 @@ pub struct Badge {
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
+	pub file_set_id: ulid::Ulid,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -19,41 +20,43 @@ impl Table for Badge {
 	const TABLE_NAME: &'static str = "badges";
 }
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
-pub struct BadgeFile {
-	pub badge_id: ulid::Ulid,
-	pub file_id: ulid::Ulid,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
-	pub data: ImageFileData,
-}
-
-impl Table for BadgeFile {
-	const TABLE_NAME: &'static str = "badge_files";
-}
-
 impl Badge {
+	#[tracing::instrument(level = "info", skip(self, global), fields(badge_id = %self.id))]
 	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<CosmeticBadgeModel, ()> {
-		let badge_files: Vec<BadgeFile> = scuffle_utils::database::query("SELECT * FROM badge_files WHERE badge_id = $1")
-			.bind(self.id)
-			.build_query_as()
-			.fetch_all(&global.db())
-			.await
-			.map_err(|_| ())?;
-		let files = global
-			.file_by_id_loader()
-			.load_many(badge_files.iter().map(|f| f.file_id))
-			.await?;
+		let file_set = global.file_set_by_id_loader().load(self.file_set_id).await?.ok_or(())?;
 
-		let host = ImageHost {
-			url: format!("{}/badge/{}", global.config().api.cdn_base_url, self.id),
-			files: badge_files
-				.into_iter()
-				.filter_map(|f| {
-					let file = files.get(&f.file_id)?;
-					Some(f.data.into_host_file(file.path.clone()))
+		if file_set.kind != FileSetKind::Badge {
+			tracing::error!("Badge file set kind is not of type Badge");
+			return Err(());
+		}
+
+		let images = match &file_set.properties {
+			FileSetProperties::Image(images) => images,
+			_ => {
+				tracing::error!("Badge file set properties are not of type Image");
+				return Err(());
+			}
+		};
+
+		let host = ImageHost::new(
+			&global.config().api.cdn_base_url,
+			ImageHostKind::Badge,
+			self.id,
+			images
+				.iter()
+				.filter_map(|image| {
+					Some(ImageHostFile {
+						name: format!("{}x.{}", image.extra.scale, image.mime.extension()?),
+						static_name: format!("{}x_static.{}", image.extra.scale, image.mime.extension()?),
+						width: image.extra.width,
+						height: image.extra.height,
+						frame_count: image.extra.frame_count,
+						size: image.size,
+						format: image.mime.as_old_file()?,
+					})
 				})
 				.collect(),
-		};
+		);
 
 		Ok(CosmeticBadgeModel {
 			id: self.id,

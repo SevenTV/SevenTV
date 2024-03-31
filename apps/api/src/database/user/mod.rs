@@ -18,7 +18,7 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::OptionExt;
 use scuffle_utils::http::router::error::RouterError;
-use shared::types::old::{UserConnectionPartial, UserModelPartial, UserStyle};
+use shared::types::old::{ImageHostKind, UserConnectionPartial, UserModelPartial, UserStyle};
 
 pub use self::active_emote_set::*;
 pub use self::badge::*;
@@ -102,7 +102,15 @@ impl User {
 		let main_connection = connections.iter().find(|c| c.main_connection)?;
 
 		let avatar_url = match self.active_cosmetics.profile_picture_id {
-			Some(id) => global.file_by_id_loader().load(id).await.ok()?.map(|f| f.path),
+			Some(id) => global.file_set_by_id_loader().load(id).await.ok().flatten().and_then(|f| {
+				let file = f.properties.default_image()?;
+				Some(ImageHostKind::ProfilePicture.create_full_url(
+					&global.config().api.cdn_base_url,
+					f.id,
+					file.extra.scale,
+					file.mime.as_old_file()?,
+				))
+			}),
 			None => None,
 		};
 

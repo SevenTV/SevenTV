@@ -3,25 +3,25 @@ use std::sync::Arc;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
 use ulid::Ulid;
 
-use crate::database::Badge;
+use crate::database::Emote;
 
-pub struct BadgeByIdLoader {
+pub struct EmoteByIdLoader {
 	db: Arc<scuffle_utils::database::Pool>,
 }
 
-impl BadgeByIdLoader {
+impl EmoteByIdLoader {
 	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
-impl Loader for BadgeByIdLoader {
+impl Loader for EmoteByIdLoader {
 	type Error = ();
 	type Key = Ulid;
-	type Value = Badge;
+	type Value = Emote;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<Self::Value> = scuffle_utils::database::query("SELECT * FROM badges WHERE id = ANY($1)")
+		let results: Vec<Self::Value> = scuffle_utils::database::query("SELECT * FROM emotes WHERE id = ANY($1)")
 			.bind(keys)
 			.build_query_as()
 			.fetch_all(&self.db)

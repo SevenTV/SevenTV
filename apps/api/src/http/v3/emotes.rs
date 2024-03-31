@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use hyper::body::Incoming;
 use hyper::StatusCode;
-use postgres_from_row::FromRow;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::ext::RequestExt;
@@ -10,10 +9,9 @@ use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
 use shared::id::parse_id;
-use shared::types::old::ImageHost;
+use shared::types::old::{ImageHost, ImageHostKind};
 
 use super::types::{Emote, EmoteFlags, EmoteLifecycle, EmoteVersion, EmoteVersionState};
-use crate::database;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;
@@ -73,38 +71,30 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 
 	let id = parse_id(id).map_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
 
-	let rows = scuffle_utils::database::query(
-		"SELECT * FROM emotes LEFT JOIN emote_files ON emotes.id = emote_files.emote_id WHERE emotes.id = $1",
-	)
-	.bind(id)
-	.build()
-	.fetch_all(&global.db())
-	.await
-	.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch emote"))?;
-
-	let Some(first_row) = rows.first() else {
+	let Some(emote) = global
+		.emote_by_id_loader()
+		.load(id)
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load emote"))?
+	else {
 		return Err((StatusCode::NOT_FOUND, "emote not found").into());
 	};
 
-	let emote = database::Emote::from_row(first_row);
-	let emote_files: Vec<_> = rows.into_iter().map(|r| database::EmoteFile::from_row(&r)).collect();
-
-	let files = global
-		.file_by_id_loader()
-		.load_many(emote_files.iter().map(|f| f.file_id))
+	let Some(file_set) = global
+		.file_set_by_id_loader()
+		.load(emote.file_set_id)
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load files"))?;
-
-	let host = ImageHost {
-		url: format!("{}/emote/{}", global.config().api.cdn_base_url, emote.id),
-		files: emote_files
-			.into_iter()
-			.filter_map(|f| {
-				let file = files.get(&f.file_id)?;
-				Some(f.data.into_host_file(file.path.clone()))
-			})
-			.collect(),
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load file set"))?
+	else {
+		return Err((StatusCode::INTERNAL_SERVER_ERROR, "emote file set not found").into());
 	};
+
+	let host = ImageHost::new(
+		&global.config().api.cdn_base_url,
+		ImageHostKind::Emote,
+		file_set.id,
+		file_set.properties.as_old_image_files(!emote.animated),
+	);
 
 	let owner = match emote.owner_id {
 		Some(owner) => {
@@ -127,17 +117,17 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 	};
 
 	let mut state = vec![];
-	if emote.settings.listed {
+	if emote.settings.public_listed {
 		state.push(EmoteVersionState::Listed);
 	}
-	if emote.settings.personal {
+	if emote.settings.approved_personal {
 		state.push(EmoteVersionState::Personal);
 	} else {
 		state.push(EmoteVersionState::NoPersonal);
 	}
 
 	let mut flags = EmoteFlags::default();
-	if emote.settings.zero_width {
+	if emote.settings.default_zero_width {
 		flags |= EmoteFlags::ZeroWidth;
 	}
 
@@ -148,7 +138,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		tags: emote.tags,
 		lifecycle: EmoteLifecycle::Live,
 		state: state.clone(),
-		listed: emote.settings.listed,
+		listed: emote.settings.public_listed,
 		animated: emote.animated,
 		owner,
 		host: host.clone(),
@@ -158,7 +148,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 			description: String::new(),
 			lifecycle: EmoteLifecycle::Live,
 			state,
-			listed: emote.settings.listed,
+			listed: emote.settings.public_listed,
 			animated: emote.animated,
 			host: Some(host),
 			created_at: emote.id.timestamp_ms(),

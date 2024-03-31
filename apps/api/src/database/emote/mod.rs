@@ -1,9 +1,7 @@
 mod attribution;
-mod file;
 mod set;
 
 pub use attribution::*;
-pub use file::*;
 pub use set::*;
 
 use crate::database::Table;
@@ -15,6 +13,7 @@ pub struct Emote {
 	pub default_name: String,
 	pub tags: Vec<String>,
 	pub animated: bool,
+	pub file_set_id: ulid::Ulid,
 	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub settings: EmoteSettings,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -27,7 +26,7 @@ impl Table for Emote {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct EmoteSettings {
-	pub listed: bool,
-	pub zero_width: bool,
-	pub personal: bool,
+	pub public_listed: bool,
+	pub default_zero_width: bool,
+	pub approved_personal: bool,
 }

@@ -6,17 +6,17 @@ use ulid::Ulid;
 
 use crate::database::UserConnection;
 
-pub struct UserConnectionsLoader {
+pub struct UserConnectionsByUserIdLoader {
 	pub db: Arc<scuffle_utils::database::Pool>,
 }
 
-impl UserConnectionsLoader {
+impl UserConnectionsByUserIdLoader {
 	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
-impl Loader for UserConnectionsLoader {
+impl Loader for UserConnectionsByUserIdLoader {
 	type Error = ();
 	type Key = Ulid;
 	type Value = Vec<UserConnection>;

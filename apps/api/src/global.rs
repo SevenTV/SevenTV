@@ -18,15 +18,16 @@ pub struct Global {
 	http_client: reqwest::Client,
 	metrics: Arc<metrics::Metrics>,
 	user_by_id_loader: dataloader::user::UserLoader,
-	user_connections_loader: DataLoader<dataloader::user_connections::UserConnectionsLoader>,
+	user_connections_loader: DataLoader<dataloader::user_connections::UserConnectionsByUserIdLoader>,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
 	role_by_id_loader: DataLoader<dataloader::role::RoleByIdLoader>,
 	role_badge_by_id_loader: DataLoader<dataloader::role::RoleBadgeByIdLoader>,
 	role_paint_by_id_loader: DataLoader<dataloader::role::RolePaintByIdLoader>,
 	role_emote_set_by_id_loader: DataLoader<dataloader::role::RoleEmoteSetByIdLoader>,
-	file_by_id_loader: DataLoader<dataloader::file::FileLoader>,
-	paint_by_id_loader: DataLoader<dataloader::paint::PaintLoader>,
-	badge_by_id_loader: DataLoader<dataloader::badge::BadgeLoader>,
+	file_set_by_id_loader: DataLoader<dataloader::file::FileSetByIdLoader>,
+	paint_by_id_loader: DataLoader<dataloader::paint::PaintByIdLoader>,
+	badge_by_id_loader: DataLoader<dataloader::badge::BadgeByIdLoader>,
+	emote_by_id_loader: DataLoader<dataloader::emote::EmoteByIdLoader>,
 }
 
 impl Global {
@@ -49,15 +50,16 @@ impl Global {
 			nats,
 			jetstream,
 			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
-			user_connections_loader: dataloader::user_connections::UserConnectionsLoader::new(db.clone()),
+			user_connections_loader: dataloader::user_connections::UserConnectionsByUserIdLoader::new(db.clone()),
 			product_by_id_loader: dataloader::product::ProductByIdLoader::new(db.clone()),
 			role_by_id_loader: dataloader::role::RoleByIdLoader::new(db.clone()),
 			role_badge_by_id_loader: dataloader::role::RoleBadgeByIdLoader::new(db.clone()),
 			role_paint_by_id_loader: dataloader::role::RolePaintByIdLoader::new(db.clone()),
 			role_emote_set_by_id_loader: dataloader::role::RoleEmoteSetByIdLoader::new(db.clone()),
-			file_by_id_loader: dataloader::file::FileLoader::new(db.clone()),
-			paint_by_id_loader: dataloader::paint::PaintLoader::new(db.clone()),
-			badge_by_id_loader: dataloader::badge::BadgeLoader::new(db.clone()),
+			file_set_by_id_loader: dataloader::file::FileSetByIdLoader::new(db.clone()),
+			paint_by_id_loader: dataloader::paint::PaintByIdLoader::new(db.clone()),
+			badge_by_id_loader: dataloader::badge::BadgeByIdLoader::new(db.clone()),
+			emote_by_id_loader: dataloader::emote::EmoteByIdLoader::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			db,
 			config,
@@ -105,7 +107,7 @@ impl Global {
 	}
 
 	/// The user connections loader.
-	pub fn user_connections_loader(&self) -> &DataLoader<dataloader::user_connections::UserConnectionsLoader> {
+	pub fn user_connections_loader(&self) -> &DataLoader<dataloader::user_connections::UserConnectionsByUserIdLoader> {
 		&self.user_connections_loader
 	}
 
@@ -135,17 +137,22 @@ impl Global {
 	}
 
 	/// The file loader.
-	pub fn file_by_id_loader(&self) -> &DataLoader<dataloader::file::FileLoader> {
-		&self.file_by_id_loader
+	pub fn file_set_by_id_loader(&self) -> &DataLoader<dataloader::file::FileSetByIdLoader> {
+		&self.file_set_by_id_loader
 	}
 
 	/// The paint loader.
-	pub fn paint_by_id_loader(&self) -> &DataLoader<dataloader::paint::PaintLoader> {
+	pub fn paint_by_id_loader(&self) -> &DataLoader<dataloader::paint::PaintByIdLoader> {
 		&self.paint_by_id_loader
 	}
 
 	/// The badge loader.
-	pub fn badge_by_id_loader(&self) -> &DataLoader<dataloader::badge::BadgeLoader> {
+	pub fn badge_by_id_loader(&self) -> &DataLoader<dataloader::badge::BadgeByIdLoader> {
 		&self.badge_by_id_loader
+	}
+
+	/// The emote loader.
+	pub fn emote_by_id_loader(&self) -> &DataLoader<dataloader::emote::EmoteByIdLoader> {
+		&self.emote_by_id_loader
 	}
 }

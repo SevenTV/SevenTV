@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod badge;
+pub mod emote;
 pub mod file;
 pub mod paint;
 pub mod product;
