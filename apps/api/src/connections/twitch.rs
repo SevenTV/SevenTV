@@ -36,9 +36,14 @@ pub async fn get_user_data(global: &Arc<Global>, access_token: &str) -> Result<T
 		.bearer_auth(access_token)
 		.send()
 		.await?;
+
 	if res.status().is_success() {
-		let res: TwitchResponse = res.json().await?;
-		res.data.into_iter().next().ok_or(ConnectionError::NoUserData)
+		res.json::<TwitchResponse>()
+			.await?
+			.data
+			.into_iter()
+			.next()
+			.ok_or(ConnectionError::NoUserData)
 	} else {
 		Err(ConnectionError::InvalidResponse(res.status()))
 	}

@@ -52,9 +52,14 @@ pub async fn get_user_data(access_token: &str) -> Result<YoutubeUserData, Connec
 		.bearer_auth(access_token)
 		.send()
 		.await?;
+
 	if res.status().is_success() {
-		let res: YoutubeResponse = res.json().await?;
-		res.items.into_iter().next().ok_or(ConnectionError::NoUserData)
+		res.json::<YoutubeResponse>()
+			.await?
+			.items
+			.into_iter()
+			.next()
+			.ok_or(ConnectionError::NoUserData)
 	} else {
 		Err(ConnectionError::InvalidResponse(res.status()))
 	}

@@ -67,15 +67,22 @@ pub async fn exchange_code(
 		UserConnectionPlatform::Google => ("https://oauth2.googleapis.com/token", &global.config().api.connections.google),
 		_ => return Err(ConnectionError::UnsupportedPlatform),
 	};
-	let req = TokenRequest {
-		grant_type: "authorization_code".to_string(),
-		code: code.to_string(),
-		client_id: config.client_id.to_string(),
-		client_secret: config.client_secret.to_string(),
-		redirect_uri,
-	};
-	let res = global.http_client().post(url).form(&req).send().await?;
+
+	let res = global
+		.http_client()
+		.post(url)
+		.form(&TokenRequest {
+			grant_type: "authorization_code".to_string(),
+			code: code.to_string(),
+			client_id: config.client_id.to_string(),
+			client_secret: config.client_secret.to_string(),
+			redirect_uri,
+		})
+		.send()
+		.await?;
+
 	let status = res.status();
+
 	if status.is_success() {
 		Ok(res.json().await?)
 	} else {

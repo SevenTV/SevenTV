@@ -15,23 +15,25 @@ mod settings;
 
 use std::sync::Arc;
 
-pub use active_emote_set::*;
-pub use badge::*;
-pub use ban::*;
-pub use connection::*;
-pub use editor::*;
-pub use emote_set::*;
-pub use gift::*;
-pub use paint::*;
-pub use product::*;
-pub use profile_picture::*;
-pub use relation::*;
-pub use roles::*;
+use hyper::StatusCode;
 use scuffle_utils::http::ext::OptionExt;
-pub use session::*;
-pub use settings::*;
+use scuffle_utils::http::router::error::RouterError;
 use shared::types::old::{UserConnectionPartial, UserModelPartial, UserStyle};
 
+pub use self::active_emote_set::*;
+pub use self::badge::*;
+pub use self::ban::*;
+pub use self::connection::*;
+pub use self::editor::*;
+pub use self::emote_set::*;
+pub use self::gift::*;
+pub use self::paint::*;
+pub use self::product::*;
+pub use self::profile_picture::*;
+pub use self::relation::*;
+pub use self::roles::*;
+pub use self::session::*;
+pub use self::settings::*;
 use crate::database::Table;
 use crate::global::Global;
 use crate::http::v3;
@@ -94,59 +96,59 @@ pub struct UserEntitledCache {
 }
 
 impl User {
-	pub async fn into_old_model_partial(self, global: &Arc<Global>) -> Result<UserModelPartial, ()> {
-		let connections = global
-			.user_connections_loader()
-			.load(&self.id)
-			.await?
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user connections"))?;
-		let main_connection = connections.iter().find(|c| c.main_connection).ok_or(())?;
+	pub async fn into_old_model_partial(self, global: &Arc<Global>) -> Option<UserModelPartial> {
+		let connections = global.user_connections_loader().load(self.id).await.ok()??;
+
+		let main_connection = connections.iter().find(|c| c.main_connection)?;
 
 		let avatar_url = match self.active_cosmetics.profile_picture_id {
-			Some(id) => global.file_by_id_loader().load(id).await?.map(|f| f.path),
+			Some(id) => global.file_by_id_loader().load(id).await.ok()?.map(|f| f.path),
 			None => None,
 		};
 
-		let paint = match self.active_cosmetics.badge_id {
-			Some(id) => match global.paint_by_id_loader().load(id).await? {
-				Some(p) => Some(p.into_old_model(global).await?),
-				None => None,
-			},
-			None => None,
+		let paint = match self.active_cosmetics.paint_id {
+			Some(id) if self.entitled_cache.paint_ids.contains(&id) => {
+				match global.paint_by_id_loader().load(id).await.ok()? {
+					Some(p) => Some(p.into_old_model(global).await.ok()?),
+					None => None,
+				}
+			}
+			_ => None,
 		};
 
 		let badge = match self.active_cosmetics.badge_id {
-			Some(id) => match global.badge_by_id_loader().load(id).await? {
-				Some(b) => Some(b.into_old_model(global).await?),
-				None => None,
-			},
-			None => None,
+			Some(id) if self.entitled_cache.badge_ids.contains(&id) => {
+				match global.badge_by_id_loader().load(id).await.ok()? {
+					Some(b) => Some(b.into_old_model(global).await.ok()?),
+					None => None,
+				}
+			}
+			_ => None,
 		};
 
-		let style = UserStyle {
-			color: 0,
-			paint_id: self.active_cosmetics.paint_id,
-			paint,
-			badge_id: self.active_cosmetics.badge_id,
-			badge,
-		};
-
-		Ok(UserModelPartial {
+		Some(UserModelPartial {
 			id: self.id,
 			ty: String::new(),
 			username: main_connection.platform_username.clone(),
 			display_name: main_connection.platform_display_name.clone(),
 			avatar_url,
-			style,
+			style: UserStyle {
+				color: 0,
+				paint_id: self.active_cosmetics.paint_id,
+				paint,
+				badge_id: self.active_cosmetics.badge_id,
+				badge,
+			},
 			roles: self.entitled_cache.role_ids.into_iter().collect(),
 			connections: connections.into_iter().map(UserConnectionPartial::from).collect(),
 		})
 	}
 
-	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<v3::types::User, ()> {
+	pub async fn into_old_model(self, global: &Arc<Global>) -> Option<v3::types::User> {
 		let created_at = self.id.timestamp_ms();
 		let partial = self.into_old_model_partial(global).await?;
-		Ok(v3::types::User {
+
+		Some(v3::types::User {
 			id: partial.id,
 			ty: partial.ty,
 			username: partial.username,
