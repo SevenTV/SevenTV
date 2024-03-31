@@ -93,7 +93,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		&global.config().api.cdn_base_url,
 		ImageHostKind::Emote,
 		file_set.id,
-		file_set.properties.as_old_image_files(!emote.animated),
+		file_set.properties.as_old_image_files(),
 	);
 
 	let owner = match emote.owner_id {

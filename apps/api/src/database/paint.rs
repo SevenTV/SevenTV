@@ -181,16 +181,15 @@ impl Paint {
 				.unwrap_or_default(),
 			image_url: first_layer
 				.and_then(|l| match l.ty {
-					PaintLayerType::Image(id) => files.get(&id).and_then(|f| match &f.properties {
-						FileSetProperties::Image(images) => images.iter().find(|i| i.extra.default).and_then(|i| {
+					PaintLayerType::Image(id) => files.get(&id).and_then(|f| {
+						f.properties.default_image().and_then(|i| {
 							Some(ImageHostKind::Paint.create_full_url(
 								&global.config().api.cdn_base_url,
 								id,
 								i.extra.scale,
-								i.mime.as_old_file()?,
+								i.extra.variants.first()?.format,
 							))
-						}),
-						_ => None,
+						})
 					}),
 					_ => None,
 				})

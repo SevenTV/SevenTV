@@ -221,7 +221,7 @@ pub struct ImageHostFile {
 	pub format: ImageHostFormat,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Copy, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ImageHostFormat {
 	#[default]

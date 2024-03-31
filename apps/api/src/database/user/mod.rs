@@ -108,7 +108,7 @@ impl User {
 					&global.config().api.cdn_base_url,
 					f.id,
 					file.extra.scale,
-					file.mime.as_old_file()?,
+					file.extra.variants.first()?.format,
 				))
 			}),
 			None => None,
