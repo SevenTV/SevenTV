@@ -136,9 +136,9 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		state.push(EmoteVersionState::NoPersonal);
 	}
 
-	let mut flags = EmoteFlags::empty();
+	let mut flags = EmoteFlags::default();
 	if emote.settings.zero_width {
-		flags |= EmoteFlags::ZERO_WIDTH;
+		flags |= EmoteFlags::ZeroWidth;
 	}
 
 	let emote = Emote {

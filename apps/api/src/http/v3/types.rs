@@ -1,4 +1,5 @@
 use bitmask_enum::bitmask;
+use serde::{Deserialize, Serialize};
 use shared::types::old::{ImageHost, UserModelPartial, UserStyle};
 use ulid::Ulid;
 
@@ -40,15 +41,38 @@ pub struct EmoteSetPartial {
 	pub owner: Option<UserModelPartial>,
 }
 
-#[derive(Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(utoipa::ToSchema)]
 #[bitmask(u8)]
 pub enum EmoteSetFlags {
-	#[default]
-	None = 0b0000,
 	Immutable = 0b0001,
 	Privileged = 0b0010,
 	Personal = 0b0100,
 	Commercial = 0b1000,
+}
+
+impl Default for EmoteSetFlags {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+impl Serialize for EmoteSetFlags {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serde::Serialize::serialize(&self.bits(), serializer)
+	}
+}
+
+impl<'de> Deserialize<'de> for EmoteSetFlags {
+	fn deserialize<'d, D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		let bits = u8::deserialize(deserializer)?;
+		Ok(Self::from(bits))
+	}
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -96,12 +120,9 @@ pub struct Emote {
 	pub versions: Vec<EmoteVersion>,
 }
 
-#[derive(Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(utoipa::ToSchema)]
 #[bitmask(u32)]
 pub enum EmoteFlags {
-	#[default]
-	None = 0,
-
 	Private = { 1 << 0 },
 	Authentic = { 1 << 1 },
 	ZeroWidth = { 1 << 8 },
@@ -110,6 +131,31 @@ pub enum EmoteFlags {
 	ContentEpilepsy = { 1 << 17 },
 	ContentEdgy = { 1 << 18 },
 	ContentTwitchDisallowed = { 1 << 24 },
+}
+
+impl Default for EmoteFlags {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+impl Serialize for EmoteFlags {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serde::Serialize::serialize(&self.bits(), serializer)
+	}
+}
+
+impl<'de> Deserialize<'de> for EmoteFlags {
+	fn deserialize<'d, D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		let bits = u32::deserialize(deserializer)?;
+		Ok(Self::from(bits))
+	}
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
