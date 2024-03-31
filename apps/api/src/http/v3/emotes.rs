@@ -85,8 +85,10 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 	let Some(first_row) = rows.first() else {
 		return Err((StatusCode::NOT_FOUND, "emote not found").into());
 	};
+
 	let emote = database::Emote::from_row(first_row);
 	let emote_files: Vec<_> = rows.into_iter().map(|r| database::EmoteFile::from_row(&r)).collect();
+
 	let files = global
 		.file_by_id_loader()
 		.load_many(emote_files.iter().map(|f| f.file_id))
@@ -111,11 +113,12 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 				.load(&global, owner)
 				.await
 				.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load user"))?;
+
 			match user {
 				Some(u) => Some(
 					u.into_old_model_partial(&global)
 						.await
-						.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert user"))?,
+						.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert user"))?,
 				),
 				None => None,
 			}
@@ -161,5 +164,6 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 			created_at: emote.id.timestamp_ms(),
 		}],
 	};
+
 	json_response(emote)
 }

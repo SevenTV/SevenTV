@@ -64,12 +64,11 @@ pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Resp
 		.load(&global, id)
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user"))?
-		.map_err_route((StatusCode::NOT_FOUND, "user not found"))?;
-
-	let user = user
+		.map_err_route((StatusCode::NOT_FOUND, "user not found"))?
 		.into_old_model(&global)
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert into old model"))?;
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert into old model"))?;
+
 	json_response(user)
 }
 

@@ -17,6 +17,7 @@ impl From<DiscordUserData> for PlatformUserData {
 			let ext = if a.starts_with("a_") { "gif" } else { "png" };
 			format!("https://cdn.discordapp.com/avatars/{}/{}.{ext}", value.id, a)
 		});
+
 		Self {
 			avatar,
 			id: value.id,
@@ -32,6 +33,7 @@ pub async fn get_user_data(access_token: &str) -> Result<DiscordUserData, Connec
 		.bearer_auth(access_token)
 		.send()
 		.await?;
+
 	if res.status().is_success() {
 		Ok(res.json().await?)
 	} else {
