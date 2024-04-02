@@ -12,7 +12,7 @@ pub struct UserConnection {
 	pub id: ulid::Ulid,
 	pub user_id: ulid::Ulid,
 	pub main_connection: bool,
-	pub platform: UserConnectionPlatform,
+	pub platform: Platform,
 	pub platform_id: String,
 	pub platform_username: String,
 	pub platform_display_name: String,
@@ -22,8 +22,8 @@ pub struct UserConnection {
 }
 
 #[derive(Debug, Clone, Copy, Hash, Default, ToSql, FromSql, PartialEq, Eq)]
-#[postgres(name = "user_connection_platform")]
-pub enum UserConnectionPlatform {
+#[postgres(name = "platform")]
+pub enum Platform {
 	#[default]
 	#[postgres(name = "TWITCH")]
 	Twitch,
@@ -35,7 +35,7 @@ pub enum UserConnectionPlatform {
 	Kick,
 }
 
-impl FromStr for UserConnectionPlatform {
+impl FromStr for Platform {
 	type Err = ();
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -49,7 +49,7 @@ impl FromStr for UserConnectionPlatform {
 	}
 }
 
-impl Display for UserConnectionPlatform {
+impl Display for Platform {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Self::Twitch => write!(f, "twitch"),

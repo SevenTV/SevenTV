@@ -12,6 +12,7 @@ mod relation;
 mod roles;
 mod session;
 mod settings;
+mod presence;
 
 use std::sync::Arc;
 
@@ -34,6 +35,7 @@ pub use self::relation::*;
 pub use self::roles::*;
 pub use self::session::*;
 pub use self::settings::*;
+pub use self::presence::*;
 use crate::database::Table;
 use crate::global::Global;
 use crate::http::v3;

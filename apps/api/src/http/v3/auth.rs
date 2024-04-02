@@ -10,7 +10,7 @@ use scuffle_utils::http::RouteError;
 use shared::http::{empty_body, Body};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
-use crate::database::{UserConnectionPlatform, UserSession};
+use crate::database::{Platform, UserSession};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::AUTH_COOKIE;
@@ -46,7 +46,7 @@ async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, Ro
 
 	let platform = req
 		.query_param("platform")
-		.and_then(|p| UserConnectionPlatform::from_str(&p).ok())
+		.and_then(|p| Platform::from_str(&p).ok())
 		.map_err_route((StatusCode::BAD_REQUEST, "invalid account provider"))?;
 
 	let callback = req.query_param("callback").is_some_and(|c| c == "true");

@@ -7,7 +7,7 @@ use scuffle_utils::http::RouteError;
 use ulid::Ulid;
 
 use crate::connections;
-use crate::database::{UserConnection, UserConnectionPlatform, UserSession};
+use crate::database::{UserConnection, Platform, UserSession};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::{new_cookie, Cookies, AUTH_COOKIE};
@@ -28,7 +28,7 @@ const GOOGLE_AUTH_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonl
 
 pub async fn handle_callback(
 	global: &Arc<Global>,
-	platform: UserConnectionPlatform,
+	platform: Platform,
 	req: &hyper::Request<Incoming>,
 	cookies: &Cookies,
 ) -> Result<String, RouteError<ApiError>> {
@@ -184,14 +184,14 @@ pub async fn handle_callback(
 
 pub fn handle_login(
 	global: &Arc<Global>,
-	platform: UserConnectionPlatform,
+	platform: Platform,
 	cookies: &Cookies,
 ) -> Result<String, RouteError<ApiError>> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
-		UserConnectionPlatform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config().api.connections.twitch),
-		UserConnectionPlatform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config().api.connections.discord),
-		UserConnectionPlatform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config().api.connections.google),
+		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config().api.connections.twitch),
+		Platform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config().api.connections.discord),
+		Platform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config().api.connections.google),
 		_ => {
 			return Err((
 				StatusCode::BAD_REQUEST,

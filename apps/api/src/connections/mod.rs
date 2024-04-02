@@ -3,7 +3,7 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::database::UserConnectionPlatform;
+use crate::database::Platform;
 use crate::global::Global;
 
 mod discord;
@@ -54,17 +54,17 @@ pub enum TokenResponseScope {
 /// Google docs: https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
 pub async fn exchange_code(
 	global: &Arc<Global>,
-	platform: UserConnectionPlatform,
+	platform: Platform,
 	code: &str,
 	redirect_uri: String,
 ) -> Result<TokenResponse, ConnectionError> {
 	let (url, config) = match platform {
-		UserConnectionPlatform::Twitch => ("https://id.twitch.tv/oauth2/token", &global.config().api.connections.twitch),
-		UserConnectionPlatform::Discord => (
+		Platform::Twitch => ("https://id.twitch.tv/oauth2/token", &global.config().api.connections.twitch),
+		Platform::Discord => (
 			"https://discord.com/api/v10/oauth2/token",
 			&global.config().api.connections.discord,
 		),
-		UserConnectionPlatform::Google => ("https://oauth2.googleapis.com/token", &global.config().api.connections.google),
+		Platform::Google => ("https://oauth2.googleapis.com/token", &global.config().api.connections.google),
 		_ => return Err(ConnectionError::UnsupportedPlatform),
 	};
 
@@ -99,13 +99,13 @@ pub struct PlatformUserData {
 
 pub async fn get_user_data(
 	global: &Arc<Global>,
-	platform: UserConnectionPlatform,
+	platform: Platform,
 	access_token: &str,
 ) -> Result<PlatformUserData, ConnectionError> {
 	match platform {
-		UserConnectionPlatform::Discord => discord::get_user_data(access_token).await.map(Into::into),
-		UserConnectionPlatform::Google => google::get_user_data(access_token).await.map(Into::into),
-		UserConnectionPlatform::Twitch => twitch::get_user_data(global, access_token).await.map(Into::into),
+		Platform::Discord => discord::get_user_data(access_token).await.map(Into::into),
+		Platform::Google => google::get_user_data(access_token).await.map(Into::into),
+		Platform::Twitch => twitch::get_user_data(global, access_token).await.map(Into::into),
 		_ => Err(ConnectionError::UnsupportedPlatform),
 	}
 }
