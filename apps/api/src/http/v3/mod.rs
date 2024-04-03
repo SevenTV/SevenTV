@@ -39,10 +39,10 @@ pub fn docs() -> utoipa::openapi::OpenApi {
             (url = "https://7tv.io", description = "Production"),
         ),
 		components(schemas(
-			UserModelPartial,
+			UserPartialModel,
 			UserStyle,
 			CosmeticBadgeModel,
-			CosmeticPaint,
+			CosmeticPaintModel,
 			CosmeticPaintGradient,
 			CosmeticPaintFunction,
 			CosmeticPaintGradientStop,

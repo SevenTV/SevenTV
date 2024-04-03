@@ -5,7 +5,7 @@
 // is.
 use super::payload::{Subscribe, Unsubscribe};
 use crate::object_id::ObjectId;
-use crate::types::old::UserModelPartial;
+use crate::types::old::UserPartialModel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
@@ -320,7 +320,7 @@ pub struct ChangeMap {
 	pub contextual: bool,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	#[serde(default)]
-	pub actor: Option<UserModelPartial>,
+	pub actor: Option<UserPartialModel>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	#[serde(default)]
 	pub added: Vec<ChangeField>,

@@ -9,6 +9,8 @@ use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
 use shared::id::parse_id;
+use shared::types::old::UserPartialModel;
+use ulid::Ulid;
 use utoipa::OpenApi;
 
 use crate::global::Global;
@@ -22,9 +24,6 @@ pub struct Docs;
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
 	Router::builder().get("/emote-sets/{id}", get_emote_set_by_id)
 }
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-pub struct EmoteSet {}
 
 #[utoipa::path(
     get,
@@ -55,12 +54,12 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emote sets"))?
 		.map_err_route((StatusCode::NOT_FOUND, "emote set not found"))?;
 
-    let emote_set_emotes = global
-        .emote_set_emote_by_id_loader()
-        .load(id)
-        .await
-        .map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emote set emotes"))?
-        .unwrap_or_default();
+	let emote_set_emotes = global
+		.emote_set_emote_by_id_loader()
+		.load(id)
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emote set emotes"))?
+		.unwrap_or_default();
 
 	Err((StatusCode::NOT_IMPLEMENTED, "not implemented").into())
 }

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use shared::types::old::{
-	CosmeticPaint, CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintShadow, CosmeticPaintShape, ImageHost,
+	CosmeticPaintModel, CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintShadow, CosmeticPaintShape, ImageHost,
 	ImageHostKind,
 };
 
@@ -116,7 +116,7 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 }
 
 impl Paint {
-	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<CosmeticPaint, ()> {
+	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<CosmeticPaintModel, ()> {
 		let paint_files: Vec<PaintFileSet> =
 			scuffle_utils::database::query("SELECT * FROM paint_file_sets WHERE paint_id = $1")
 				.bind(self.id)
@@ -132,7 +132,7 @@ impl Paint {
 
 		let first_layer = self.data.layers.first();
 
-		Ok(CosmeticPaint {
+		Ok(CosmeticPaintModel {
 			id: self.id,
 			name: self.name,
 			color: first_layer.and_then(|l| match l.ty {

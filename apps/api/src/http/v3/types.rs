@@ -1,6 +1,6 @@
 use bitmask_enum::bitmask;
 use serde::{Deserialize, Serialize};
-use shared::types::old::{ImageHost, UserModelPartial, UserStyle};
+use shared::types::old::{ImageHost, UserPartialModel, UserStyle};
 use ulid::Ulid;
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -38,7 +38,7 @@ pub struct EmoteSetPartial {
 	pub tags: Vec<String>,
 	pub capacity: u32,
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub owner: Option<UserModelPartial>,
+	pub owner: Option<UserPartialModel>,
 }
 
 #[derive(utoipa::ToSchema)]
@@ -96,7 +96,7 @@ pub struct UserConnection {
 	pub emote_set_id: Option<Ulid>,
 	pub emote_set: Option<EmoteSetPartial>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
-	pub presences: Vec<UserModelPartial>,
+	pub presences: Vec<UserPartialModel>,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub user: Option<User>,
 }
@@ -114,7 +114,7 @@ pub struct Emote {
 	pub listed: bool,
 	pub animated: bool,
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub owner: Option<UserModelPartial>,
+	pub owner: Option<UserPartialModel>,
 	pub host: ImageHost,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub versions: Vec<EmoteVersion>,

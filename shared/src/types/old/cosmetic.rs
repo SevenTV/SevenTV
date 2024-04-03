@@ -1,0 +1,137 @@
+use ulid::Ulid;
+
+use super::{ImageHost, UserPartialModel, is_default};
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticModel<T: utoipa::ToSchema<'static>> {
+    pub id: Ulid,
+    pub kind: CosmeticKind,
+    pub data: T,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CosmeticKind {
+    Badge,
+    Paint,
+    Avatar
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticPaintModel {
+	pub id: Ulid,
+	pub name: String,
+	pub color: Option<i32>,
+	pub gradients: Vec<CosmeticPaintGradient>,
+	pub shadows: Vec<CosmeticPaintShadow>,
+	pub text: Option<CosmeticPaintText>,
+	pub function: CosmeticPaintFunction,
+	pub repeat: bool,
+	pub angle: i32,
+	pub shape: CosmeticPaintShape,
+	pub image_url: String,
+	pub stops: Vec<CosmeticPaintGradientStop>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticPaintGradient {
+	pub function: CosmeticPaintFunction,
+	pub canvas_repeat: CosmeticPaintCanvasRepeat,
+	pub canvas_size: [f64; 2],
+    #[serde(skip_serializing_if = "is_default")]
+	pub at: [f64; 2],
+	pub stops: Vec<CosmeticPaintGradientStop>,
+    #[serde(skip_serializing_if = "is_default")]
+	pub image_url: String,
+	pub shape: Option<CosmeticPaintShape>,
+    #[serde(skip_serializing_if = "is_default")]
+	pub angle: i32,
+	pub repeat: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CosmeticPaintFunction {
+	LinearGradient,
+	RadialGradient,
+	Url,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticPaintGradientStop {
+	pub at: f64,
+	pub color: i32,
+    #[serde(skip_serializing_if = "is_default")]
+	pub center_at: [f64; 2],
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum CosmeticPaintCanvasRepeat {
+	NoRepeat,
+	RepeatX,
+	RepeatY,
+	Revert,
+	Round,
+	Space,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticPaintShadow {
+	pub x_offset: f64,
+	pub y_offset: f64,
+	pub radius: f64,
+	pub color: i32,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticPaintText {
+    #[serde(skip_serializing_if = "is_default")]
+	pub weight: u8,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+	pub shadows: Vec<CosmeticPaintShadow>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+	pub transform: Option<CosmeticPaintTextTransform>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+	pub stroke: Option<CosmeticPaintStroke>,
+	pub variant: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticPaintStroke {
+	pub color: i32,
+	pub width: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum CosmeticPaintTextTransform {
+	Uppercase,
+	Lowercase,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CosmeticPaintShape {
+	#[default]
+	Circle,
+	Ellipse,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticBadgeModel {
+	pub id: Ulid,
+	pub name: String,
+	pub tag: String,
+	pub tooltip: String,
+	pub host: ImageHost,
+}
+
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct CosmeticAvatarModel {
+    pub id: Ulid,
+    pub user: UserPartialModel,
+    #[serde(skip_serializing_if = "is_default", rename = "as")]
+    pub aas: String,
+    pub host: ImageHost,
+}

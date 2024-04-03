@@ -19,7 +19,7 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::OptionExt;
 use scuffle_utils::http::router::error::RouterError;
-use shared::types::old::{ImageHostKind, UserConnectionPartial, UserModelPartial, UserStyle};
+use shared::types::old::{ImageHostKind, UserConnectionPartial, UserPartialModel, UserStyle};
 
 pub use self::active_emote_set::*;
 pub use self::badge::*;
@@ -98,7 +98,7 @@ pub struct UserEntitledCache {
 }
 
 impl User {
-	pub async fn into_old_model_partial(self, global: &Arc<Global>) -> Option<UserModelPartial> {
+	pub async fn into_old_model_partial(self, global: &Arc<Global>) -> Option<UserPartialModel> {
 		let connections = global.user_connections_loader().load(self.id).await.ok()??;
 
 		let main_connection = connections.iter().find(|c| c.main_connection)?;
@@ -136,7 +136,7 @@ impl User {
 			_ => None,
 		};
 
-		Some(UserModelPartial {
+		Some(UserPartialModel {
 			id: self.id,
 			ty: String::new(),
 			username: main_connection.platform_username.clone(),
