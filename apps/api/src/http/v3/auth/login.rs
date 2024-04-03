@@ -7,7 +7,7 @@ use scuffle_utils::http::RouteError;
 use ulid::Ulid;
 
 use crate::connections;
-use crate::database::{UserConnection, Platform, UserSession};
+use crate::database::{Platform, UserConnection, UserSession};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::{new_cookie, Cookies, AUTH_COOKIE};
@@ -182,11 +182,7 @@ pub async fn handle_callback(
 	))
 }
 
-pub fn handle_login(
-	global: &Arc<Global>,
-	platform: Platform,
-	cookies: &Cookies,
-) -> Result<String, RouteError<ApiError>> {
+pub fn handle_login(global: &Arc<Global>, platform: Platform, cookies: &Cookies) -> Result<String, RouteError<ApiError>> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
 		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config().api.connections.twitch),

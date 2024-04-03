@@ -142,6 +142,7 @@ dependencies = [
  "hyper 1.2.0",
  "hyper-tungstenite",
  "hyper-util",
+ "itertools 0.12.1",
  "jwt-next",
  "memory-stats",
  "pin-project",
@@ -1392,6 +1393,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "406cda4b368d531c842222cf9d2600a9a4acce8d29423695379c6868a143a9ee"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "json_dotpath"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbdcfef3cf5591f0cef62da413ae795e3d1f5a00936ccec0b2071499a32efd1a"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -3912,9 +3925,9 @@ dependencies = [
 
 [[package]]
 name = "zen-engine"
-version = "0.18.1"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb9bf80c75d6ac225fc8cf831a2837f49ef21ee06dae0287f6f345f325e5f055"
+checksum = "41358ac58712da9a742807c36a505e274648782819fef726852187e4486bd058"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -3922,6 +3935,7 @@ dependencies = [
  "fixedbitset",
  "futures",
  "itertools 0.12.1",
+ "json_dotpath",
  "once_cell",
  "petgraph",
  "rquickjs",
@@ -3929,13 +3943,14 @@ dependencies = [
  "serde_json",
  "thiserror",
  "zen-expression",
+ "zen-tmpl",
 ]
 
 [[package]]
 name = "zen-expression"
-version = "0.18.1"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d939730645864e628693eb39ebc9b7bb40f5a2512cefb9016f45261ba83fc1e5"
+checksum = "f257a36e812adca0c9e2d9eb4ba33ffc3c27da7f16f582a40ecaa5e512ca6207"
 dependencies = [
  "ahash 0.8.11",
  "bumpalo",
@@ -3953,6 +3968,19 @@ dependencies = [
  "strum",
  "strum_macros",
  "thiserror",
+]
+
+[[package]]
+name = "zen-tmpl"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e9459aa7a9e60dd59a979fac8fa9730ac8455c560a8cecdc96936ce33cb7a0e"
+dependencies = [
+ "itertools 0.12.1",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "zen-expression",
 ]
 
 [[package]]

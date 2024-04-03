@@ -19,12 +19,12 @@ use crate::http::{RequestGlobalExt, RequestQueryParamExt};
 mod login;
 
 #[derive(utoipa::OpenApi)]
-#[openapi(paths(root, logout, manual))]
+#[openapi(paths(login, logout, manual))]
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
 	Router::builder()
-		.get("/", root)
+		.get("/", login)
 		.post("/logout", logout)
 		.get("/manual", manual)
 }
@@ -39,7 +39,7 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
 )]
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/auth.route.go#L47
-async fn root(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
+async fn login(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	let global: Arc<Global> = req.get_global()?;
 
 	let cookies = req.get_cookies()?;
@@ -105,5 +105,5 @@ async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, 
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/manual.route.go#L41
 async fn manual(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	unimplemented!("kick auth is not implemented yet")
+	Err((StatusCode::NOT_IMPLEMENTED, "not implemented").into())
 }

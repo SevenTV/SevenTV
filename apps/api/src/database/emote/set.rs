@@ -41,3 +41,7 @@ pub struct EmoteSetEmote {
 	pub flags: i64,
 	pub added_at: chrono::DateTime<chrono::Utc>,
 }
+
+impl Table for EmoteSetEmote {
+	const TABLE_NAME: &'static str = "emote_set_emotes";
+}

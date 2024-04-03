@@ -28,6 +28,8 @@ pub struct Global {
 	paint_by_id_loader: DataLoader<dataloader::paint::PaintByIdLoader>,
 	badge_by_id_loader: DataLoader<dataloader::badge::BadgeByIdLoader>,
 	emote_by_id_loader: DataLoader<dataloader::emote::EmoteByIdLoader>,
+	emote_set_by_id_loader: DataLoader<dataloader::emote_set::EmoteSetByIdLoader>,
+	emote_set_emote_by_id_loader: DataLoader<dataloader::emote_set::EmoteSetEmoteByIdLoader>,
 }
 
 impl Global {
@@ -60,6 +62,8 @@ impl Global {
 			paint_by_id_loader: dataloader::paint::PaintByIdLoader::new(db.clone()),
 			badge_by_id_loader: dataloader::badge::BadgeByIdLoader::new(db.clone()),
 			emote_by_id_loader: dataloader::emote::EmoteByIdLoader::new(db.clone()),
+			emote_set_by_id_loader: dataloader::emote_set::EmoteSetByIdLoader::new(db.clone()),
+			emote_set_emote_by_id_loader: dataloader::emote_set::EmoteSetEmoteByIdLoader::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			db,
 			config,
@@ -154,5 +158,15 @@ impl Global {
 	/// The emote loader.
 	pub fn emote_by_id_loader(&self) -> &DataLoader<dataloader::emote::EmoteByIdLoader> {
 		&self.emote_by_id_loader
+	}
+
+	/// The emote set loader.
+	pub fn emote_set_by_id_loader(&self) -> &DataLoader<dataloader::emote_set::EmoteSetByIdLoader> {
+		&self.emote_set_by_id_loader
+	}
+
+	/// The emote set emote loader.
+	pub fn emote_set_emote_by_id_loader(&self) -> &DataLoader<dataloader::emote_set::EmoteSetEmoteByIdLoader> {
+		&self.emote_set_emote_by_id_loader
 	}
 }
