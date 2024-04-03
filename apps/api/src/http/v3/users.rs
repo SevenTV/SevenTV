@@ -10,7 +10,6 @@ use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
 use shared::id::parse_id;
 
-use super::types::User;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;
@@ -25,7 +24,7 @@ use crate::http::RequestGlobalExt;
 		delete_user_by_id,
 		update_user_connection_by_id,
 	),
-	components(schemas(User, UserConnection))
+	components(schemas())
 )]
 pub struct Docs;
 
@@ -149,9 +148,6 @@ pub async fn get_user_by_platform_user_id(
 pub async fn delete_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	todo!()
 }
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-pub struct UserConnection {}
 
 #[utoipa::path(
     patch,

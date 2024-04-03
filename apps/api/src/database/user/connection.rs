@@ -2,7 +2,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use postgres_types::{FromSql, ToSql};
-use shared::types::old::UserConnectionPartial;
+use shared::types::old::{UserConnectionPartialModel, UserConnectionPlatformModel};
 
 use crate::database::Table;
 use crate::global::Global;
@@ -33,6 +33,17 @@ pub enum Platform {
 	Google,
 	#[postgres(name = "KICK")]
 	Kick,
+}
+
+impl From<Platform> for UserConnectionPlatformModel {
+	fn from(value: Platform) -> Self {
+		match value {
+			Platform::Twitch => Self::Twitch,
+			Platform::Discord => Self::Discord,
+			Platform::Google => Self::Youtube,
+			Platform::Kick => Self::Kick,
+		}
+	}
 }
 
 impl FromStr for Platform {
@@ -68,14 +79,14 @@ impl Table for UserConnection {
 	const TABLE_NAME: &'static str = "user_connections";
 }
 
-impl From<UserConnection> for UserConnectionPartial {
+impl From<UserConnection> for UserConnectionPartialModel {
 	fn from(value: UserConnection) -> Self {
 		Self {
-			id: value.id,
-			platform: value.platform.to_string(),
+			id: value.platform_id,
+			platform: value.platform.into(),
 			username: value.platform_username,
 			display_name: value.platform_display_name,
-			linked_at: value.id.timestamp_ms(),
+			linked_at: value.id.timestamp_ms() as i64,
 			emote_capacity: 600,
 			emote_set_id: None,
 		}

@@ -2,7 +2,9 @@ use bitmask_enum::bitmask;
 use ulid::Ulid;
 use super::{is_default, EmotePartialModel, UserPartialModel};
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct EmoteSetModel {
     pub id: Ulid,
     pub name: String,
@@ -21,7 +23,9 @@ pub struct EmoteSetModel {
 }
 
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct EmoteSetPartialModel {
     pub id: Ulid,
     pub name: String,
@@ -40,12 +44,28 @@ pub enum EmoteSetFlagModel {
     Commercial = 1 << 3,
 }
 
+impl Default for EmoteSetFlagModel {
+    fn default() -> Self {
+        EmoteSetFlagModel::none()
+    }
+}
+
 impl serde::Serialize for EmoteSetFlagModel {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         self.bits().serialize(serializer)
+    }
+}
+
+impl<'a> serde::Deserialize<'a> for EmoteSetFlagModel {
+    fn deserialize<D>(deserializer: D) -> Result<EmoteSetFlagModel, D::Error>
+    where
+        D: serde::Deserializer<'a>,
+    {
+        let bits = i32::deserialize(deserializer)?;
+        EmoteSetFlagModel::try_from(bits).map_err(serde::de::Error::custom)
     }
 }
 
@@ -63,7 +83,9 @@ impl<'a> utoipa::ToSchema<'a> for EmoteSetFlagModel {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct ActiveEmoteModel {
     pub id: Ulid,
     pub name: String,
@@ -82,12 +104,28 @@ pub enum ActiveEmoteFlagModel {
     OverrideBetterTTV = 1 << 18,
 }
 
+impl Default for ActiveEmoteFlagModel {
+    fn default() -> Self {
+        ActiveEmoteFlagModel::none()
+    }
+}
+
 impl serde::Serialize for ActiveEmoteFlagModel {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         self.bits().serialize(serializer)
+    }
+}
+
+impl<'a> serde::Deserialize<'a> for ActiveEmoteFlagModel {
+    fn deserialize<D>(deserializer: D) -> Result<ActiveEmoteFlagModel, D::Error>
+    where
+        D: serde::Deserializer<'a>,
+    {
+        let bits = i32::deserialize(deserializer)?;
+        ActiveEmoteFlagModel::try_from(bits).map_err(serde::de::Error::custom)
     }
 }
 
@@ -105,7 +143,9 @@ impl<'a> utoipa::ToSchema<'a> for ActiveEmoteFlagModel {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct EmoteSetOrigin {
     pub id: Ulid,
     pub weight: i32,

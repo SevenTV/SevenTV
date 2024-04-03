@@ -19,7 +19,8 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::OptionExt;
 use scuffle_utils::http::router::error::RouterError;
-use shared::types::old::{ImageHostKind, UserConnectionPartial, UserPartialModel, UserStyle};
+use shared::types::old::{UserConnectionModel, UserModel, UserTypeModel};
+use shared::types::old::{ImageHostKind, UserConnectionPartialModel, UserPartialModel, UserStyle};
 
 pub use self::active_emote_set::*;
 pub use self::badge::*;
@@ -138,10 +139,10 @@ impl User {
 
 		Some(UserPartialModel {
 			id: self.id,
-			ty: String::new(),
+			user_type: UserTypeModel::Regular,
 			username: main_connection.platform_username.clone(),
 			display_name: main_connection.platform_display_name.clone(),
-			avatar_url,
+			avatar_url: avatar_url.unwrap_or_default(),
 			style: UserStyle {
 				color: 0,
 				paint_id: self.active_cosmetics.paint_id,
@@ -149,31 +150,31 @@ impl User {
 				badge_id: self.active_cosmetics.badge_id,
 				badge,
 			},
-			roles: self.entitled_cache.role_ids.into_iter().collect(),
-			connections: connections.into_iter().map(UserConnectionPartial::from).collect(),
+			role_ids: self.entitled_cache.role_ids.into_iter().collect(),
+			connections: connections.into_iter().map(UserConnectionPartialModel::from).collect(),
 		})
 	}
 
-	pub async fn into_old_model(self, global: &Arc<Global>) -> Option<v3::types::User> {
+	pub async fn into_old_model(self, global: &Arc<Global>) -> Option<UserModel> {
 		let created_at = self.id.timestamp_ms();
 		let partial = self.into_old_model_partial(global).await?;
 
-		Some(v3::types::User {
+		Some(UserModel {
 			id: partial.id,
-			ty: partial.ty,
+			user_type: partial.user_type,
 			username: partial.username,
 			display_name: partial.display_name,
-			created_at,
+			created_at: created_at as i64,
 			avatar_url: partial.avatar_url,
 			biography: String::new(),
 			style: partial.style,
 			emote_sets: todo!(),
 			editors: todo!(),
-			roles: partial.roles,
+			role_ids: partial.role_ids,
 			connections: partial
 				.connections
 				.into_iter()
-				.map(|p| v3::types::UserConnection {
+				.map(|p| UserConnectionModel {
 					id: p.id,
 					platform: p.platform,
 					username: p.username,

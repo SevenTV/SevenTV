@@ -9,8 +9,7 @@ use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
 use shared::id::parse_id;
-use shared::types::old::UserPartialModel;
-use ulid::Ulid;
+use shared::types::old::EmoteSetModel;
 use utoipa::OpenApi;
 
 use crate::global::Global;
@@ -18,7 +17,7 @@ use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;
 
 #[derive(OpenApi)]
-#[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSet)))]
+#[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSetModel)))]
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {

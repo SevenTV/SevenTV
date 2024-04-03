@@ -9,9 +9,8 @@ use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
 use shared::id::parse_id;
-use shared::types::old::{ImageHost, ImageHostKind};
+use shared::types::old::{EmoteFlagsModel, EmoteLifecycleModel, EmoteModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind};
 
-use super::types::{Emote, EmoteFlags, EmoteLifecycle, EmoteVersion, EmoteVersionState};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;
@@ -19,7 +18,7 @@ use crate::http::RequestGlobalExt;
 #[derive(utoipa::OpenApi)]
 #[openapi(
 	paths(create_emote, get_emote_by_id),
-	components(schemas(Emote, EmoteVersion, EmoteVersionState, XEmoteData))
+	components(schemas(XEmoteData))
 )]
 pub struct Docs;
 
@@ -121,37 +120,38 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		state.push(EmoteVersionState::Listed);
 	}
 	if emote.settings.approved_personal {
-		state.push(EmoteVersionState::Personal);
+		state.push(EmoteVersionState::AllowPersonal);
 	} else {
 		state.push(EmoteVersionState::NoPersonal);
 	}
 
-	let mut flags = EmoteFlags::default();
+	let mut flags = EmoteFlagsModel::default();
 	if emote.settings.default_zero_width {
-		flags |= EmoteFlags::ZeroWidth;
+		flags |= EmoteFlagsModel::ZeroWidth;
 	}
 
-	let emote = Emote {
+	let emote = EmoteModel {
 		id: emote.id,
 		name: emote.default_name.clone(),
 		flags,
 		tags: emote.tags,
-		lifecycle: EmoteLifecycle::Live,
+		lifecycle: EmoteLifecycleModel::Live,
 		state: state.clone(),
 		listed: emote.settings.public_listed,
 		animated: emote.animated,
+		owner_id: emote.owner_id.unwrap_or_default(),
 		owner,
 		host: host.clone(),
-		versions: vec![EmoteVersion {
+		versions: vec![EmoteVersionModel {
 			id: emote.id,
 			name: emote.default_name,
 			description: String::new(),
-			lifecycle: EmoteLifecycle::Live,
+			lifecycle: EmoteLifecycleModel::Live,
 			state,
 			listed: emote.settings.public_listed,
 			animated: emote.animated,
 			host: Some(host),
-			created_at: emote.id.timestamp_ms(),
+			created_at: emote.id.timestamp_ms() as i64,
 		}],
 	};
 

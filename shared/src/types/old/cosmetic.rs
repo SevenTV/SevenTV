@@ -2,14 +2,15 @@ use ulid::Ulid;
 
 use super::{ImageHost, UserPartialModel, is_default};
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct CosmeticModel<T: utoipa::ToSchema<'static>> {
     pub id: Ulid,
     pub kind: CosmeticKind,
     pub data: T,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum CosmeticKind {
     Badge,
@@ -17,7 +18,9 @@ pub enum CosmeticKind {
     Avatar
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct CosmeticPaintModel {
 	pub id: Ulid,
 	pub name: String,
@@ -33,7 +36,9 @@ pub struct CosmeticPaintModel {
 	pub stops: Vec<CosmeticPaintGradientStop>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct CosmeticPaintGradient {
 	pub function: CosmeticPaintFunction,
 	pub canvas_repeat: CosmeticPaintCanvasRepeat,
@@ -49,15 +54,18 @@ pub struct CosmeticPaintGradient {
 	pub repeat: bool,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum CosmeticPaintFunction {
+	#[default]
 	LinearGradient,
 	RadialGradient,
 	Url,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct CosmeticPaintGradientStop {
 	pub at: f64,
 	pub color: i32,
@@ -65,9 +73,10 @@ pub struct CosmeticPaintGradientStop {
 	pub center_at: [f64; 2],
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum CosmeticPaintCanvasRepeat {
+	#[default]
 	NoRepeat,
 	RepeatX,
 	RepeatY,
@@ -76,7 +85,9 @@ pub enum CosmeticPaintCanvasRepeat {
 	Space,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct CosmeticPaintShadow {
 	pub x_offset: f64,
 	pub y_offset: f64,
@@ -84,7 +95,9 @@ pub struct CosmeticPaintShadow {
 	pub color: i32,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct CosmeticPaintText {
     #[serde(skip_serializing_if = "is_default")]
 	pub weight: u8,
@@ -97,20 +110,23 @@ pub struct CosmeticPaintText {
 	pub variant: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct CosmeticPaintStroke {
 	pub color: i32,
 	pub width: f64,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum CosmeticPaintTextTransform {
+	#[default]
 	Uppercase,
 	Lowercase,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum CosmeticPaintShape {
 	#[default]
@@ -118,7 +134,9 @@ pub enum CosmeticPaintShape {
 	Ellipse,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct CosmeticBadgeModel {
 	pub id: Ulid,
 	pub name: String,
@@ -127,7 +145,9 @@ pub struct CosmeticBadgeModel {
 	pub host: ImageHost,
 }
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
 pub struct CosmeticAvatarModel {
     pub id: Ulid,
     pub user: UserPartialModel,

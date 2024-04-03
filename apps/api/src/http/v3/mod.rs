@@ -17,7 +17,6 @@ pub mod docs;
 pub mod emote_sets;
 pub mod emotes;
 pub mod entitlements;
-pub mod types;
 pub mod users;
 
 pub fn docs() -> utoipa::openapi::OpenApi {
@@ -51,7 +50,7 @@ pub fn docs() -> utoipa::openapi::OpenApi {
 			CosmeticPaintText,
 			CosmeticPaintTextTransform,
 			CosmeticPaintStroke,
-			UserConnectionPartial,
+			UserConnectionPartialModel,
 			ImageHost,
 			ImageHostFile
 		))
