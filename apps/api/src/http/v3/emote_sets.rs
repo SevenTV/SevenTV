@@ -75,7 +75,9 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 				emotes.values().filter_map(|emote| emote.owner_id).chain(emote_set.owner_id),
 			)
 			.await
-			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?.into_values().map(|user| user.into_old_model_partial(&global)),
+			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?
+			.into_values()
+			.map(|user| user.into_old_model_partial(&global)),
 	)
 	.await
 	.into_iter()
