@@ -5,7 +5,6 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
-use shared::types::old::*;
 use utoipa::OpenApi;
 
 use super::error::ApiError;
@@ -37,27 +36,11 @@ pub fn docs() -> utoipa::openapi::OpenApi {
         servers(
             (url = "https://7tv.io", description = "Production"),
         ),
-		components(schemas(
-			UserPartialModel,
-			UserStyle,
-			CosmeticBadgeModel,
-			CosmeticPaintModel,
-			CosmeticPaintGradient,
-			CosmeticPaintFunction,
-			CosmeticPaintGradientStop,
-			CosmeticPaintCanvasRepeat,
-			CosmeticPaintShadow,
-			CosmeticPaintText,
-			CosmeticPaintTextTransform,
-			CosmeticPaintStroke,
-			UserConnectionPartialModel,
-			ImageHost,
-			ImageFile
-		))
     )]
 	struct Docs;
 
 	let mut docs = Docs::openapi();
+	docs.merge(shared::types::old::Docs::openapi());
 	docs.merge(docs::Docs::openapi());
 	docs.merge(config::Docs::openapi());
 	docs.merge(auth::Docs::openapi());

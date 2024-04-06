@@ -4,8 +4,13 @@ use super::{is_default, ImageHost, UserPartialModel};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[aliases(
+	CosmeticModelPaint = CosmeticModel<CosmeticPaintModel>,
+	CosmeticModelBadge = CosmeticModel<CosmeticBadgeModel>,
+	CosmeticModelAvatar = CosmeticModel<CosmeticAvatarModel>,
+)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/cosmetic.model.go#L15
-pub struct CosmeticModel<T: utoipa::ToSchema<'static>> {
+pub struct CosmeticModel<T> {
 	pub id: Ulid,
 	pub kind: CosmeticKind,
 	pub data: T,

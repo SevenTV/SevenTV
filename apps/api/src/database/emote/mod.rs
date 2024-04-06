@@ -5,7 +5,10 @@ use std::sync::Arc;
 
 pub use attribution::*;
 pub use set::*;
-use shared::types::old::{ImageHost, ImageHostKind, UserPartialModel};
+use shared::types::old::{
+	EmoteLifecycleModel, EmoteModel, EmotePartialModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind,
+	UserPartialModel,
+};
 
 use super::FileSet;
 use crate::database::Table;
@@ -25,13 +28,42 @@ pub struct Emote {
 }
 
 impl Emote {
+	pub fn into_old_model(self, global: &Arc<Global>, owner: Option<UserPartialModel>, file_set: &FileSet) -> EmoteModel {
+		let partial = self.into_old_model_partial(global, owner, file_set);
+
+		EmoteModel {
+			id: partial.id,
+			name: partial.name.clone(),
+			flags: partial.flags,
+			tags: partial.tags,
+			lifecycle: partial.lifecycle,
+			state: partial.state.clone(),
+			listed: partial.listed,
+			animated: partial.animated,
+			owner_id: partial.owner.as_ref().map(|u| u.id).unwrap_or_default(),
+			owner: partial.owner,
+			host: partial.host.clone(),
+			versions: vec![EmoteVersionModel {
+				id: partial.id,
+				name: partial.name,
+				description: String::new(),
+				lifecycle: EmoteLifecycleModel::Live,
+				state: partial.state,
+				listed: partial.listed,
+				animated: partial.animated,
+				host: Some(partial.host),
+				created_at: partial.id.timestamp_ms() as i64,
+			}],
+		}
+	}
+
 	pub fn into_old_model_partial(
 		self,
 		global: &Arc<Global>,
 		owner: Option<UserPartialModel>,
 		file_set: &FileSet,
-	) -> shared::types::old::EmotePartialModel {
-		shared::types::old::EmotePartialModel {
+	) -> EmotePartialModel {
+		EmotePartialModel {
 			id: self.id,
 			name: self.default_name,
 			animated: self.animated,

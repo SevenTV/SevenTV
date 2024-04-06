@@ -3,7 +3,7 @@ use ulid::Ulid;
 
 use super::{ImageHost, UserPartialModel};
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L12
@@ -23,7 +23,7 @@ pub struct EmoteModel {
 	pub versions: Vec<EmoteVersionModel>,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L27
@@ -42,7 +42,7 @@ pub struct EmotePartialModel {
 	pub host: ImageHost,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L40
@@ -60,9 +60,16 @@ pub struct EmoteVersionModel {
 	pub created_at: i64,
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, utoipa::ToSchema, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 #[repr(i32)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L52
+/// EmoteLifecycleModel represents the lifecycle of an emote.
+/// - `Deleted` (-1): The emote has been deleted.
+/// - `Pending` (0): The emote is pending approval.
+/// - `Processing` (1): The emote is being processed.
+/// - `Disabled` (2): The emote has been disabled.
+/// - `Live` (3): The emote is live.
+/// - `Failed` (-2): The emote has failed processing.
 pub enum EmoteLifecycleModel {
 	Deleted = -1,
 	#[default]
@@ -71,41 +78,6 @@ pub enum EmoteLifecycleModel {
 	Disabled = 2,
 	Live = 3,
 	Failed = -2,
-}
-
-impl serde::Serialize for EmoteLifecycleModel {
-	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-		(*self as i32).serialize(serializer)
-	}
-}
-
-impl<'de> serde::Deserialize<'de> for EmoteLifecycleModel {
-	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		let value = i32::deserialize(deserializer)?;
-		match value {
-			-1 => Ok(EmoteLifecycleModel::Deleted),
-			0 => Ok(EmoteLifecycleModel::Pending),
-			1 => Ok(EmoteLifecycleModel::Processing),
-			2 => Ok(EmoteLifecycleModel::Disabled),
-			3 => Ok(EmoteLifecycleModel::Live),
-			-2 => Ok(EmoteLifecycleModel::Failed),
-			_ => Err(serde::de::Error::custom("invalid emote lifecycle")),
-		}
-	}
-}
-
-impl<'a> utoipa::ToSchema<'a> for EmoteLifecycleModel {
-	fn schema() -> (&'a str, utoipa::openapi::RefOr<utoipa::openapi::schema::Schema>) {
-		(
-			"EmoteLifecycleModel",
-			utoipa::openapi::ObjectBuilder::new()
-				.schema_type(utoipa::openapi::schema::SchemaType::Integer)
-				.format(Some(utoipa::openapi::SchemaFormat::KnownFormat(
-					utoipa::openapi::KnownFormat::Int32,
-				)))
-				.into(),
-		)
-	}
 }
 
 #[bitmask(i32)]
@@ -145,6 +117,25 @@ impl<'a> utoipa::ToSchema<'a> for EmoteFlagsModel {
 			"EmoteFlagsModel",
 			utoipa::openapi::ObjectBuilder::new()
 				.schema_type(utoipa::openapi::schema::SchemaType::Integer)
+				.description(Some(
+					"
+These are the flags that can be set on an emote. They are represented as a bitmask.
+
+- `Private` (1): The emote is private and can only be used by the owner.
+
+- `Authentic` (2): The emote is authentic and is not a copy of another emote.
+
+- `ZeroWidth` (256): The emote is a zero-width emote.
+
+- `Sexual` (65536): The emote is sexual in nature.
+
+- `Epilepsy` (131072): The emote may cause epilepsy.
+
+- `Edgy` (262144): The emote is edgy.
+
+- `TwitchDisallowed` (16777216): The emote is disallowed on Twitch.
+",
+				))
 				.format(Some(utoipa::openapi::SchemaFormat::KnownFormat(
 					utoipa::openapi::KnownFormat::Int32,
 				)))

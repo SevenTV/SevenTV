@@ -45,7 +45,7 @@ const-lru = "1"
 fnv = "1"
 pin-project = "1"
 thiserror = "1"
-utoipa = "4.2"
+utoipa = { version = "4.2", features = ["ulid", "repr"] }
 postgres-from-row = "0.5"
 tokio-postgres = "0.7"
 postgres-types = "0.2"

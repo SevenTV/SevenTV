@@ -2818,6 +2818,7 @@ dependencies = [
  "scuffle-utils",
  "serde",
  "serde_json",
+ "serde_repr",
  "thiserror",
  "tokio",
  "tokio-postgres-rustls",
@@ -3562,6 +3563,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.51",
+ "ulid",
 ]
 
 [[package]]

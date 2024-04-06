@@ -1,6 +1,8 @@
 use bitmask_enum::bitmask;
 use postgres_types::{FromSql, ToSql};
-use shared::types::old::{EmotePartialModel, UserPartialModel};
+use shared::types::old::{
+	ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel, EmoteSetFlagModel, EmoteSetModel, UserPartialModel,
+};
 
 use crate::database::Table;
 
@@ -21,28 +23,28 @@ impl EmoteSet {
 		self,
 		emotes: impl IntoIterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>,
 		owner: Option<UserPartialModel>,
-	) -> shared::types::old::EmoteSetModel {
+	) -> EmoteSetModel {
 		let emotes = emotes
 			.into_iter()
 			.map(|(emote, data)| emote.into_old_model(data))
 			.collect::<Vec<_>>();
 
-		shared::types::old::EmoteSetModel {
+		EmoteSetModel {
 			id: self.id,
 			name: self.name,
 			flags: {
-				let mut flags = shared::types::old::EmoteSetFlagModel::none();
+				let mut flags = EmoteSetFlagModel::none();
 
 				if self.kind == EmoteSetKind::Personal {
-					flags |= shared::types::old::EmoteSetFlagModel::Personal;
+					flags |= EmoteSetFlagModel::Personal;
 				}
 
 				if self.settings.immutable {
-					flags |= shared::types::old::EmoteSetFlagModel::Immutable;
+					flags |= EmoteSetFlagModel::Immutable;
 				}
 
 				if self.settings.privileged {
-					flags |= shared::types::old::EmoteSetFlagModel::Privileged;
+					flags |= EmoteSetFlagModel::Privileged;
 				}
 
 				flags
@@ -148,24 +150,24 @@ impl postgres_types::FromSql<'_> for EmoteSetEmoteFlag {
 }
 
 impl EmoteSetEmote {
-	pub fn into_old_model(self, data: Option<EmotePartialModel>) -> shared::types::old::ActiveEmoteModel {
-		shared::types::old::ActiveEmoteModel {
+	pub fn into_old_model(self, data: Option<EmotePartialModel>) -> ActiveEmoteModel {
+		ActiveEmoteModel {
 			id: self.emote_id,
 			actor_id: self.added_by_id,
 			name: self.name,
 			timestamp: self.added_at.timestamp_millis(),
 			origin_id: None,
 			flags: {
-				let mut flags = shared::types::old::ActiveEmoteFlagModel::none();
+				let mut flags = ActiveEmoteFlagModel::none();
 
 				if self.flags.contains(EmoteSetEmoteFlag::ZeroWidth) {
-					flags |= shared::types::old::ActiveEmoteFlagModel::ZeroWidth;
+					flags |= ActiveEmoteFlagModel::ZeroWidth;
 				}
 
 				if self.flags.contains(EmoteSetEmoteFlag::OverrideConflicts) {
-					flags |= shared::types::old::ActiveEmoteFlagModel::OverrideBetterTTV
-						| shared::types::old::ActiveEmoteFlagModel::OverrideTwitchGlobal
-						| shared::types::old::ActiveEmoteFlagModel::OverrideTwitchSubscriber;
+					flags |= ActiveEmoteFlagModel::OverrideBetterTTV
+						| ActiveEmoteFlagModel::OverrideTwitchGlobal
+						| ActiveEmoteFlagModel::OverrideTwitchSubscriber;
 				}
 
 				flags

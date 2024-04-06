@@ -30,5 +30,6 @@ rustls-pemfile = "2.1"
 rustls = "0.22"
 tokio-postgres-rustls = "0.11"
 async-nats = "0.34"
-utoipa = "4.2"
+utoipa = { version = "4.2", features = ["ulid", "repr"] }
 bitmask-enum = "2"
+serde_repr = "0.1"

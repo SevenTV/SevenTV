@@ -43,7 +43,7 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
     path = "/v3/users/{id}",
     tag = "users",
     responses(
-        (status = 200, description = "User", body = User),
+        (status = 200, description = "User", body = UserModel),
         // (status = 404, description = "User Not Found", body = ApiError)
     ),
     params(
@@ -96,7 +96,7 @@ pub async fn upload_user_profile_picture(
     path = "/v3/users/{id}/presences",
     tag = "users",
     responses(
-        (status = 200, description = "User Presences", body = Vec<User>),
+        (status = 200, description = "User Presences", body = Vec<UserModel>),
     ),
     params(
         ("id" = String, Path, description = "The ID of the user"),
@@ -115,7 +115,7 @@ pub async fn get_user_presences_by_platform(
     path = "/v3/users/{platform}/{platform_id}",
     tag = "users",
     responses(
-        (status = 200, description = "User", body = User),
+        (status = 200, description = "User", body = UserModel),
         // (status = 404, description = "User Not Found", body = ApiError)
     ),
     params(
@@ -154,7 +154,7 @@ pub async fn delete_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::R
     path = "/v3/users/{id}/connections/{connection_id}",
     tag = "users",
     responses(
-        (status = 200, description = "User Connection", body = UserConnection),
+        (status = 200, description = "User Connection", body = UserConnectionModel),
         // (status = 404, description = "User Connection Not Found", body = ApiError)
     ),
     params(

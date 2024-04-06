@@ -30,7 +30,7 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
     path = "/v3/emote-sets/{id}",
     tag = "emote-sets",
     responses(
-        (status = 200, description = "Emote Set", body = EmoteSet, content_type = "application/json"),
+        (status = 200, description = "Emote Set", body = EmoteSetModel, content_type = "application/json"),
         // (status = 404, description = "Emote Set Not Found", body = ApiError)
     ),
     params(

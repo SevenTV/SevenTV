@@ -73,7 +73,6 @@ pub struct UserStyle {
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L49
 pub enum UserTypeModel {
 	#[default]
-	#[serde(rename = "")]
 	Regular,
 	Bot,
 	System,

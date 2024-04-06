@@ -78,6 +78,17 @@ impl<'a> utoipa::ToSchema<'a> for EmoteSetFlagModel {
 			"EmoteSetFlagModel",
 			utoipa::openapi::ObjectBuilder::new()
 				.schema_type(utoipa::openapi::schema::SchemaType::Integer)
+				.description(Some(
+					"These flags are used to determine the behavior of the emote set.
+
+- `Immutable` (1): The emote set is immutable and cannot be modified.
+
+- `Privileged` (2): The emote set is privileged and can be used by privileged users.
+
+- `Personal` (4): The emote set is personal and can only be used by the owner.
+
+- `Commercial` (8): The emote set is commercial and can be used for commercial purposes.",
+				))
 				.format(Some(utoipa::openapi::SchemaFormat::KnownFormat(
 					utoipa::openapi::KnownFormat::Int32,
 				)))
@@ -140,6 +151,17 @@ impl<'a> utoipa::ToSchema<'a> for ActiveEmoteFlagModel {
 			"ActiveEmoteFlagModel",
 			utoipa::openapi::ObjectBuilder::new()
 				.schema_type(utoipa::openapi::schema::SchemaType::Integer)
+				.description(Some(
+					"These flags are used to determine the behavior of the active emote.
+
+- `ZeroWidth` (1): The emote is a zero-width emote.
+
+- `OverrideTwitchGlobal` (65536): The emote overrides the global Twitch emote.
+
+- `OverrideTwitchSubscriber` (131072): The emote overrides the Twitch subscriber emote.
+
+- `OverrideBetterTTV` (262144): The emote overrides the BetterTTV emote.",
+				))
 				.format(Some(utoipa::openapi::SchemaFormat::KnownFormat(
 					utoipa::openapi::KnownFormat::Int32,
 				)))

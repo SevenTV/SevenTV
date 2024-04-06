@@ -9,9 +9,6 @@ use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
 use shared::id::parse_id;
-use shared::types::old::{
-	EmoteFlagsModel, EmoteLifecycleModel, EmoteModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind,
-};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -53,7 +50,7 @@ pub async fn create_emote(req: hyper::Request<Incoming>) -> Result<hyper::Respon
     path = "/v3/emotes/{id}",
     tag = "emotes",
     responses(
-        (status = 200, description = "Emote", body = Emote),
+        (status = 200, description = "Emote", body = EmoteModel),
         (status = 404, description = "Emote Not Found")
     ),
     params(
@@ -87,13 +84,6 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		return Err((StatusCode::INTERNAL_SERVER_ERROR, "emote file set not found").into());
 	};
 
-	let host = ImageHost::new(
-		&global.config().api.cdn_base_url,
-		ImageHostKind::Emote,
-		file_set.id,
-		file_set.properties.as_old_image_files(),
-	);
-
 	let owner = match emote.owner_id {
 		Some(owner) => {
 			let user = global
@@ -114,48 +104,5 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		None => None,
 	};
 
-	let mut state = vec![];
-	if emote.settings.public_listed {
-		state.push(EmoteVersionState::Listed);
-	}
-
-	if let Some(approved_personal) = emote.settings.approved_personal {
-		if approved_personal {
-			state.push(EmoteVersionState::AllowPersonal);
-		} else {
-			state.push(EmoteVersionState::NoPersonal);
-		}
-	}
-
-	let mut flags = EmoteFlagsModel::default();
-	if emote.settings.default_zero_width {
-		flags |= EmoteFlagsModel::ZeroWidth;
-	}
-
-	let emote = EmoteModel {
-		id: emote.id,
-		name: emote.default_name.clone(),
-		flags,
-		tags: emote.tags,
-		lifecycle: EmoteLifecycleModel::Live,
-		state: state.clone(),
-		listed: emote.settings.public_listed,
-		animated: emote.animated,
-		owner_id: emote.owner_id.unwrap_or_default(),
-		owner,
-		host: host.clone(),
-		versions: vec![EmoteVersionModel {
-			id: emote.id,
-			name: emote.default_name,
-			description: String::new(),
-			lifecycle: EmoteLifecycleModel::Live,
-			state,
-			listed: emote.settings.public_listed,
-			animated: emote.animated,
-			host: Some(host),
-			created_at: emote.id.timestamp_ms() as i64,
-		}],
-	};
-
-	json_response(emote)
+	json_response(emote.into_old_model(&global, owner, &file_set))
 }
