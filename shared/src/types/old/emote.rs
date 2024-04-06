@@ -107,7 +107,7 @@ impl serde::Serialize for EmoteFlagsModel {
 impl<'a> serde::Deserialize<'a> for EmoteFlagsModel {
 	fn deserialize<D: serde::Deserializer<'a>>(deserializer: D) -> Result<EmoteFlagsModel, D::Error> {
 		let bits = i32::deserialize(deserializer)?;
-		EmoteFlagsModel::try_from(bits).map_err(serde::de::Error::custom)
+		Ok(EmoteFlagsModel::from(bits))
 	}
 }
 

@@ -68,7 +68,7 @@ impl<'a> serde::Deserialize<'a> for EmoteSetFlagModel {
 		D: serde::Deserializer<'a>,
 	{
 		let bits = i32::deserialize(deserializer)?;
-		EmoteSetFlagModel::try_from(bits).map_err(serde::de::Error::custom)
+		Ok(EmoteSetFlagModel::from(bits))
 	}
 }
 
@@ -141,7 +141,7 @@ impl<'a> serde::Deserialize<'a> for ActiveEmoteFlagModel {
 		D: serde::Deserializer<'a>,
 	{
 		let bits = i32::deserialize(deserializer)?;
-		ActiveEmoteFlagModel::try_from(bits).map_err(serde::de::Error::custom)
+		Ok(ActiveEmoteFlagModel::from(bits))
 	}
 }
 
