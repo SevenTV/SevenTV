@@ -3,9 +3,10 @@ use ulid::Ulid;
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
+// https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L47
 pub struct ImageHost {
 	pub url: String,
-	pub files: Vec<ImageHostFile>,
+	pub files: Vec<ImageFile>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -21,7 +22,7 @@ impl ImageHostKind {
 		format!("{base}/{self}/{id}")
 	}
 
-	pub fn create_full_url(&self, base: &str, id: Ulid, scale: u32, format: ImageHostFormat) -> String {
+	pub fn create_full_url(&self, base: &str, id: Ulid, scale: u32, format: ImageFormat) -> String {
 		format!("{base}/{self}/{id}/{scale}x.{}", format.as_str())
 	}
 }
@@ -38,7 +39,7 @@ impl std::fmt::Display for ImageHostKind {
 }
 
 impl ImageHost {
-	pub fn new(base_url: &str, kind: ImageHostKind, id: Ulid, files: Vec<ImageHostFile>) -> Self {
+	pub fn new(base_url: &str, kind: ImageHostKind, id: Ulid, files: Vec<ImageFile>) -> Self {
 		Self {
 			url: kind.create_base_url(base_url, id),
 			files,
@@ -49,33 +50,31 @@ impl ImageHost {
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
-pub struct ImageHostFile {
+// https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L52
+pub struct ImageFile {
 	pub name: String,
 	pub static_name: String,
 	pub width: u32,
 	pub height: u32,
 	pub frame_count: u32,
 	pub size: u64,
-	pub format: ImageHostFormat,
+	pub format: ImageFormat,
 }
 
 #[derive(Debug, Copy, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum ImageHostFormat {
+// https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L63
+pub enum ImageFormat {
 	#[default]
 	Webp,
 	Avif,
-	Gif,
-	Png,
 }
 
-impl ImageHostFormat {
+impl ImageFormat {
 	pub fn as_str(&self) -> &str {
 		match self {
 			Self::Webp => "webp",
 			Self::Avif => "avif",
-			Self::Gif => "gif",
-			Self::Png => "png",
 		}
 	}
 }

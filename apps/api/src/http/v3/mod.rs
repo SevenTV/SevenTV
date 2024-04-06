@@ -52,7 +52,7 @@ pub fn docs() -> utoipa::openapi::OpenApi {
 			CosmeticPaintStroke,
 			UserConnectionPartialModel,
 			ImageHost,
-			ImageHostFile
+			ImageFile
 		))
     )]
 	struct Docs;

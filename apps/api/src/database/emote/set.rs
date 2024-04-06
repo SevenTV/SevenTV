@@ -1,4 +1,6 @@
+use bitmask_enum::bitmask;
 use postgres_types::{FromSql, ToSql};
+use shared::types::old::{EmotePartialModel, UserPartialModel};
 
 use crate::database::Table;
 
@@ -14,11 +16,54 @@ pub struct EmoteSet {
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
+impl EmoteSet {
+	pub fn into_old_model(
+		self,
+		emotes: impl IntoIterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>,
+		owner: Option<UserPartialModel>,
+	) -> shared::types::old::EmoteSetModel {
+		let emotes = emotes
+			.into_iter()
+			.map(|(emote, data)| emote.into_old_model(data))
+			.collect::<Vec<_>>();
+
+		shared::types::old::EmoteSetModel {
+			id: self.id,
+			name: self.name,
+			flags: {
+				let mut flags = shared::types::old::EmoteSetFlagModel::none();
+
+				if self.kind == EmoteSetKind::Personal {
+					flags |= shared::types::old::EmoteSetFlagModel::Personal;
+				}
+
+				if self.settings.immutable {
+					flags |= shared::types::old::EmoteSetFlagModel::Immutable;
+				}
+
+				if self.settings.privileged {
+					flags |= shared::types::old::EmoteSetFlagModel::Privileged;
+				}
+
+				flags
+			},
+			tags: self.tags,
+			immutable: self.settings.immutable,
+			privileged: self.settings.privileged,
+			emote_count: emotes.len() as i32,
+			capacity: self.settings.capacity,
+			emotes,
+			origins: Vec::new(),
+			owner,
+		}
+	}
+}
+
 impl Table for EmoteSet {
 	const TABLE_NAME: &'static str = "emote_sets";
 }
 
-#[derive(Debug, Clone, Default, ToSql, FromSql)]
+#[derive(Debug, Clone, Default, ToSql, FromSql, PartialEq, Eq)]
 #[postgres(name = "emote_set_kind")]
 pub enum EmoteSetKind {
 	#[default]
@@ -30,7 +75,11 @@ pub enum EmoteSetKind {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(default)]
-pub struct EmoteSetSettings {}
+pub struct EmoteSetSettings {
+	pub capacity: i32,
+	pub privileged: bool,
+	pub immutable: bool,
+}
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct EmoteSetEmote {
@@ -38,8 +87,92 @@ pub struct EmoteSetEmote {
 	pub emote_id: ulid::Ulid,
 	pub added_by_id: Option<ulid::Ulid>,
 	pub name: String,
-	pub flags: i64,
+	pub flags: EmoteSetEmoteFlag,
 	pub added_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[bitmask(i64)]
+pub enum EmoteSetEmoteFlag {
+	ZeroWidth = 1 << 0,
+	OverrideConflicts = 1 << 1,
+}
+
+impl Default for EmoteSetEmoteFlag {
+	fn default() -> Self {
+		EmoteSetEmoteFlag::none()
+	}
+}
+
+impl postgres_types::ToSql for EmoteSetEmoteFlag {
+	fn accepts(ty: &postgres_types::Type) -> bool
+	where
+		Self: Sized,
+	{
+		<i64 as postgres_types::ToSql>::accepts(ty)
+	}
+
+	fn to_sql(
+		&self,
+		ty: &postgres_types::Type,
+		out: &mut tokio_util::bytes::BytesMut,
+	) -> Result<postgres_types::IsNull, Box<dyn std::error::Error + Sync + Send>>
+	where
+		Self: Sized,
+	{
+		<i64 as postgres_types::ToSql>::to_sql(&self.bits(), ty, out)
+	}
+
+	fn to_sql_checked(
+		&self,
+		ty: &postgres_types::Type,
+		out: &mut tokio_util::bytes::BytesMut,
+	) -> Result<postgres_types::IsNull, Box<dyn std::error::Error + Sync + Send>> {
+		<i64 as postgres_types::ToSql>::to_sql_checked(&self.bits(), ty, out)
+	}
+}
+
+impl postgres_types::FromSql<'_> for EmoteSetEmoteFlag {
+	fn accepts(ty: &postgres_types::Type) -> bool
+	where
+		Self: Sized,
+	{
+		<i64 as postgres_types::FromSql>::accepts(ty)
+	}
+
+	fn from_sql(ty: &postgres_types::Type, raw: &[u8]) -> Result<Self, Box<dyn std::error::Error + Sync + Send>>
+	where
+		Self: Sized,
+	{
+		<i64 as postgres_types::FromSql>::from_sql(ty, raw).map(EmoteSetEmoteFlag::from)
+	}
+}
+
+impl EmoteSetEmote {
+	pub fn into_old_model(self, data: Option<EmotePartialModel>) -> shared::types::old::ActiveEmoteModel {
+		shared::types::old::ActiveEmoteModel {
+			id: self.emote_id,
+			actor_id: self.added_by_id,
+			name: self.name,
+			timestamp: self.added_at.timestamp_millis(),
+			origin_id: None,
+			flags: {
+				let mut flags = shared::types::old::ActiveEmoteFlagModel::none();
+
+				if self.flags.contains(EmoteSetEmoteFlag::ZeroWidth) {
+					flags |= shared::types::old::ActiveEmoteFlagModel::ZeroWidth;
+				}
+
+				if self.flags.contains(EmoteSetEmoteFlag::OverrideConflicts) {
+					flags |= shared::types::old::ActiveEmoteFlagModel::OverrideBetterTTV
+						| shared::types::old::ActiveEmoteFlagModel::OverrideTwitchGlobal
+						| shared::types::old::ActiveEmoteFlagModel::OverrideTwitchSubscriber;
+				}
+
+				flags
+			},
+			data,
+		}
+	}
 }
 
 impl Table for EmoteSetEmote {

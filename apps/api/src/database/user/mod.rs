@@ -19,8 +19,10 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::OptionExt;
 use scuffle_utils::http::router::error::RouterError;
-use shared::types::old::{UserConnectionModel, UserModel, UserTypeModel};
-use shared::types::old::{ImageHostKind, UserConnectionPartialModel, UserPartialModel, UserStyle};
+use shared::types::old::{
+	ImageFormat as ImageFormatOld, ImageHostKind, UserConnectionModel, UserConnectionPartialModel, UserModel,
+	UserPartialModel, UserStyle, UserTypeModel,
+};
 
 pub use self::active_emote_set::*;
 pub use self::badge::*;
@@ -37,6 +39,7 @@ pub use self::relation::*;
 pub use self::roles::*;
 pub use self::session::*;
 pub use self::settings::*;
+use super::ImageFormat;
 use crate::database::Table;
 use crate::global::Global;
 use crate::http::v3;
@@ -107,12 +110,18 @@ impl User {
 		let avatar_url = match self.active_cosmetics.profile_picture_id {
 			Some(id) => global.file_set_by_id_loader().load(id).await.ok().flatten().and_then(|f| {
 				let file = f.properties.default_image()?;
-				Some(ImageHostKind::ProfilePicture.create_full_url(
-					&global.config().api.cdn_base_url,
-					f.id,
-					file.extra.scale,
-					file.extra.variants.first()?.format,
-				))
+				Some(
+					ImageHostKind::ProfilePicture.create_full_url(
+						&global.config().api.cdn_base_url,
+						f.id,
+						file.extra.scale,
+						file.extra
+							.variants
+							.iter()
+							.find(|v| v.format == ImageFormat::Webp)
+							.map(|_| ImageFormatOld::Webp)?,
+					),
+				)
 			}),
 			None => None,
 		};
@@ -183,7 +192,6 @@ impl User {
 					emote_capacity: p.emote_capacity,
 					emote_set_id: p.emote_set_id,
 					emote_set: todo!(),
-					presences: todo!(),
 					user: None,
 				})
 				.collect(),

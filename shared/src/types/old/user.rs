@@ -1,10 +1,14 @@
 use ulid::Ulid;
 
-use super::{is_default, CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, UserConnectionModel, UserConnectionPartialModel};
+use super::{
+	is_default, CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, UserConnectionModel,
+	UserConnectionPartialModel,
+};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+// https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L15
 pub struct UserModel {
 	pub id: Ulid,
 	#[serde(skip_serializing_if = "is_default")]
@@ -31,6 +35,7 @@ pub struct UserModel {
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+// https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L30
 pub struct UserPartialModel {
 	pub id: Ulid,
 	#[serde(skip_serializing_if = "is_default")]
@@ -46,9 +51,10 @@ pub struct UserPartialModel {
 	pub connections: Vec<UserConnectionPartialModel>,
 }
 
-#[derive(Debug, Clone,  Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+// https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L41
 pub struct UserStyle {
 	#[serde(skip_serializing_if = "is_default")]
 	pub color: i32,
@@ -62,8 +68,9 @@ pub struct UserStyle {
 	pub badge: Option<CosmeticBadgeModel>,
 }
 
-#[derive(Debug, Clone, Default, Copy, PartialEq, Eq,  serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+// https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L49
 pub enum UserTypeModel {
 	#[default]
 	#[serde(rename = "")]
@@ -72,9 +79,10 @@ pub enum UserTypeModel {
 	System,
 }
 
-#[derive(Debug, Clone,  Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+// https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L171
 pub struct UserEditorModel {
 	pub id: Ulid,
 	pub permissions: i32,

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use shared::types::old::{CosmeticBadgeModel, ImageHost, ImageHostFile, ImageHostFormat, ImageHostKind};
+use shared::types::old::{CosmeticBadgeModel, ImageFile, ImageFormat, ImageHost, ImageHostKind};
 
 use super::{FileSet, FileSetKind, FileSetProperties};
 use crate::database::Table;

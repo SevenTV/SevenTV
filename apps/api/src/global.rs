@@ -24,7 +24,7 @@ pub struct Global {
 	role_badge_by_id_loader: DataLoader<dataloader::role::RoleBadgeByIdLoader>,
 	role_paint_by_id_loader: DataLoader<dataloader::role::RolePaintByIdLoader>,
 	role_emote_set_by_id_loader: DataLoader<dataloader::role::RoleEmoteSetByIdLoader>,
-	file_set_by_id_loader: DataLoader<dataloader::file::FileSetByIdLoader>,
+	file_set_by_id_loader: DataLoader<dataloader::file_set::FileSetByIdLoader>,
 	paint_by_id_loader: DataLoader<dataloader::paint::PaintByIdLoader>,
 	badge_by_id_loader: DataLoader<dataloader::badge::BadgeByIdLoader>,
 	emote_by_id_loader: DataLoader<dataloader::emote::EmoteByIdLoader>,
@@ -58,7 +58,7 @@ impl Global {
 			role_badge_by_id_loader: dataloader::role::RoleBadgeByIdLoader::new(db.clone()),
 			role_paint_by_id_loader: dataloader::role::RolePaintByIdLoader::new(db.clone()),
 			role_emote_set_by_id_loader: dataloader::role::RoleEmoteSetByIdLoader::new(db.clone()),
-			file_set_by_id_loader: dataloader::file::FileSetByIdLoader::new(db.clone()),
+			file_set_by_id_loader: dataloader::file_set::FileSetByIdLoader::new(db.clone()),
 			paint_by_id_loader: dataloader::paint::PaintByIdLoader::new(db.clone()),
 			badge_by_id_loader: dataloader::badge::BadgeByIdLoader::new(db.clone()),
 			emote_by_id_loader: dataloader::emote::EmoteByIdLoader::new(db.clone()),
@@ -141,7 +141,7 @@ impl Global {
 	}
 
 	/// The file loader.
-	pub fn file_set_by_id_loader(&self) -> &DataLoader<dataloader::file::FileSetByIdLoader> {
+	pub fn file_set_by_id_loader(&self) -> &DataLoader<dataloader::file_set::FileSetByIdLoader> {
 		&self.file_set_by_id_loader
 	}
 

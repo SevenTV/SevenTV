@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use shared::types::old::{
-	CosmeticPaintModel, CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintShadow, CosmeticPaintShape, ImageHost,
-	ImageHostKind,
+	CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintModel, CosmeticPaintShadow, CosmeticPaintShape,
+	ImageFormat as ImageFormatOld, ImageHost, ImageHostKind,
 };
 
-use super::FileSetProperties;
+use super::{FileSetProperties, ImageFormat};
 use crate::database::Table;
 use crate::global::Global;
 
@@ -182,13 +182,19 @@ impl Paint {
 			image_url: first_layer
 				.and_then(|l| match l.ty {
 					PaintLayerType::Image(id) => files.get(&id).and_then(|f| {
-						f.properties.default_image().and_then(|i| {
-							Some(ImageHostKind::Paint.create_full_url(
-								&global.config().api.cdn_base_url,
-								id,
-								i.extra.scale,
-								i.extra.variants.first()?.format,
-							))
+						f.properties.default_image().and_then(|file| {
+							Some(
+								ImageHostKind::Paint.create_full_url(
+									&global.config().api.cdn_base_url,
+									id,
+									file.extra.scale,
+									file.extra
+										.variants
+										.iter()
+										.find(|v| v.format == ImageFormat::Webp)
+										.map(|_| ImageFormatOld::Webp)?,
+								),
+							)
 						})
 					}),
 					_ => None,

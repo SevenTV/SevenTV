@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use hyper::body::Incoming;
@@ -7,7 +8,7 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
-use shared::http::Body;
+use shared::http::{json_response, Body};
 use shared::id::parse_id;
 use shared::types::old::EmoteSetModel;
 use utoipa::OpenApi;
@@ -60,5 +61,52 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emote set emotes"))?
 		.unwrap_or_default();
 
-	Err((StatusCode::NOT_IMPLEMENTED, "not implemented").into())
+	let emotes = global
+		.emote_by_id_loader()
+		.load_many(emote_set_emotes.iter().map(|emote| emote.emote_id))
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emotes"))?;
+
+	let users = futures::future::join_all(
+		global
+			.user_by_id_loader()
+			.load_many(
+				&global,
+				emotes.values().filter_map(|emote| emote.owner_id).chain(emote_set.owner_id),
+			)
+			.await
+			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?
+			.into_iter()
+			.map(|(_, user)| user.into_old_model_partial(&global)),
+	)
+	.await
+	.into_iter()
+	.filter_map(|u| u.map(|u| (u.id, u)))
+	.collect::<HashMap<_, _>>();
+
+	let file_sets = global
+		.file_set_by_id_loader()
+		.load_many(emotes.values().map(|emote| emote.file_set_id))
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query file sets"))?;
+
+	let emotes = emotes
+		.into_iter()
+		.filter_map(|(id, emote)| {
+			let owner = emote.owner_id.and_then(|id| users.get(&id)).cloned();
+			let file_set = file_sets.get(&emote.file_set_id)?;
+
+			Some((id, emote.into_old_model_partial(&global, owner, file_set)))
+		})
+		.collect::<HashMap<_, _>>();
+
+	let owner = emote_set.owner_id.and_then(|id| users.get(&id)).cloned();
+
+	json_response(emote_set.into_old_model(
+		emote_set_emotes.into_iter().map(|emote| {
+			let partial = emotes.get(&emote.emote_id).cloned();
+			(emote, partial)
+		}),
+		owner,
+	))
 }

@@ -9,17 +9,16 @@ use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
 use shared::id::parse_id;
-use shared::types::old::{EmoteFlagsModel, EmoteLifecycleModel, EmoteModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind};
+use shared::types::old::{
+	EmoteFlagsModel, EmoteLifecycleModel, EmoteModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind,
+};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;
 
 #[derive(utoipa::OpenApi)]
-#[openapi(
-	paths(create_emote, get_emote_by_id),
-	components(schemas(XEmoteData))
-)]
+#[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
@@ -119,10 +118,13 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 	if emote.settings.public_listed {
 		state.push(EmoteVersionState::Listed);
 	}
-	if emote.settings.approved_personal {
-		state.push(EmoteVersionState::AllowPersonal);
-	} else {
-		state.push(EmoteVersionState::NoPersonal);
+
+	if let Some(approved_personal) = emote.settings.approved_personal {
+		if approved_personal {
+			state.push(EmoteVersionState::AllowPersonal);
+		} else {
+			state.push(EmoteVersionState::NoPersonal);
+		}
 	}
 
 	let mut flags = EmoteFlagsModel::default();

@@ -281,7 +281,11 @@ impl UserLoader {
 		global: &Arc<Global>,
 		user_ids: impl IntoIterator<Item = Ulid>,
 	) -> Result<HashMap<Ulid, User>, ()> {
-		let user_ids = user_ids.into_iter().map(|id| self.load(global, id));
+		let user_ids = user_ids
+			.into_iter()
+			.collect::<fnv::FnvHashSet<_>>()
+			.into_iter()
+			.map(|id| self.load(global, id));
 
 		let mut users = HashMap::new();
 

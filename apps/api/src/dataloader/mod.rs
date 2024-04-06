@@ -3,7 +3,7 @@
 pub mod badge;
 pub mod emote;
 pub mod emote_set;
-pub mod file;
+pub mod file_set;
 pub mod paint;
 pub mod product;
 pub mod role;
