@@ -1,10 +1,12 @@
 use serde::{Deserialize, Deserializer};
 
 mod emote;
+mod entitlement;
 mod image_file;
 mod user;
 
 pub use emote::*;
+pub use entitlement::*;
 pub use image_file::*;
 pub use user::*;
 
@@ -35,7 +37,11 @@ where
 	D: Deserializer<'de>,
 {
 	let s = String::deserialize(deserializer)?;
-	if s.is_empty() { Ok(None) } else { Ok(Some(s)) }
+	if s.is_empty() {
+		Ok(None)
+	} else {
+		Ok(Some(s))
+	}
 }
 
 fn unsigned_int<'de, D>(deserializer: D) -> Result<u32, D::Error>

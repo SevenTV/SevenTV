@@ -1,10 +1,13 @@
 use std::pin::Pin;
 use std::sync::Arc;
 
-use fnv::FnvHashSet;
+use anyhow::Context;
+use fnv::{FnvHashMap, FnvHashSet};
+use futures::TryStreamExt;
 use postgres_from_row::tokio_postgres::binary_copy::BinaryCopyInWriter;
 use postgres_types::Type;
 use shared::database::Platform;
+use shared::object_id::ObjectId;
 
 use super::{Job, ProcessOutcome};
 use crate::database::{file_set_kind_type, platform_enum_type};
@@ -14,17 +17,20 @@ use crate::{error, types};
 
 pub struct UsersJob {
 	global: Arc<Global>,
+	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,
 	users_writer: Pin<Box<BinaryCopyInWriter>>,
+	user_roles_writer: Pin<Box<BinaryCopyInWriter>>,
 	file_sets_writer: Pin<Box<BinaryCopyInWriter>>,
 	connections_writer: Pin<Box<BinaryCopyInWriter>>,
+	all_user_roles: FnvHashSet<(ulid::Ulid, ulid::Ulid)>,
 	all_connections: FnvHashSet<(Platform, String)>,
 }
 
 impl UsersJob {
 	pub async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("truncating users and user_connections tables");
-			scuffle_utils::database::query("TRUNCATE users, user_connections")
+			tracing::info!("truncating users, user_connections and user_roles tables");
+			scuffle_utils::database::query("TRUNCATE users, user_connections, user_roles")
 				.build()
 				.execute(global.db())
 				.await?;
@@ -36,11 +42,37 @@ impl UsersJob {
 				.await?;
 		}
 
+		tracing::info!("querying all entitlements");
+		let mut entitlements_cursor = global
+			.mongo()
+			.database("7tv")
+			.collection::<types::Entitlement>("entitlements")
+			.find(None, None)
+			.await?;
+		let mut entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>> = FnvHashMap::default();
+		while let Some(entitlement) = entitlements_cursor
+			.try_next()
+			.await
+			.context("failed to deserialize entitlement")?
+		{
+			// Ignore all entitlements without a user_id
+			if let Some(user_id) = entitlement.user_id {
+				entitlements.entry(user_id).or_default().push(entitlement);
+			}
+		}
+
 		let users_client = global.db().get().await?;
-		// TODO: active paint, badge, profile picture
 		let users_writer = BinaryCopyInWriter::new(users_client
-			.copy_in("COPY users (id, email, pending_profile_picture_file_set_id, active_profile_picture_file_set_id) FROM STDIN WITH (FORMAT BINARY)")
-			.await?, &[Type::UUID, Type::VARCHAR, Type::UUID, Type::UUID]);
+			.copy_in("COPY users (id, email, active_badge_id, active_paint_id, pending_profile_picture_file_set_id, active_profile_picture_file_set_id) FROM STDIN WITH (FORMAT BINARY)")
+			.await?, &[Type::UUID, Type::VARCHAR, Type::UUID, Type::UUID, Type::UUID, Type::UUID]);
+
+		let user_roles_client = global.db().get().await?;
+		let user_roles_writer = BinaryCopyInWriter::new(
+			user_roles_client
+				.copy_in("COPY user_roles (user_id, role_id, added_at) FROM STDIN WITH (FORMAT BINARY)")
+				.await?,
+			&[Type::UUID, Type::UUID, Type::TIMESTAMPTZ],
+		);
 
 		let file_sets_client = global.db().get().await?;
 		let file_sets_writer = BinaryCopyInWriter::new(
@@ -57,9 +89,12 @@ impl UsersJob {
 
 		Ok(Self {
 			global,
+			entitlements,
 			users_writer: Box::pin(users_writer),
+			user_roles_writer: Box::pin(user_roles_writer),
 			file_sets_writer: Box::pin(file_sets_writer),
 			connections_writer: Box::pin(connections_writer),
+			all_user_roles: FnvHashSet::default(),
 			all_connections: FnvHashSet::default(),
 		})
 	}
@@ -76,6 +111,38 @@ impl Job for UsersJob {
 
 	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
 		let user_id = user.id.into_ulid();
+
+		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
+
+		for (id, ref_id) in entitlements.iter().filter_map(|e| match &e.data {
+			types::EntitlementData::Role { ref_id } => Some((e.id, ref_id)),
+			_ => None,
+		}) {
+			let role_id = ref_id.into_ulid();
+			if self.all_user_roles.insert((user_id, role_id)) {
+				if let Err(e) = self
+					.user_roles_writer
+					.as_mut()
+					.write(&[&user_id, &role_id, &chrono::DateTime::from_timestamp(id.timestamp() as i64, 0)])
+					.await
+				{
+					return ProcessOutcome {
+						errors: vec![e.into()],
+						inserted_rows: 0,
+					};
+				}
+			}
+		}
+
+		let active_badge_id = entitlements
+			.iter()
+			.find(|e| matches!(e.data, types::EntitlementData::Badge { selected: true, .. }))
+			.map(|e| e.id.into_ulid());
+
+		let active_paint_id = entitlements
+			.iter()
+			.find(|e| matches!(e.data, types::EntitlementData::Paint { selected: true, .. }))
+			.map(|e| e.id.into_ulid());
 
 		let (pending_profile_picture_file_set_id, active_profile_picture_file_set_id) = match user.avatar {
 			Some(types::UserAvatar::Processed {
@@ -128,6 +195,8 @@ impl Job for UsersJob {
 			.write(&[
 				&user_id,
 				&user.email,
+				&active_badge_id,
+				&active_paint_id,
 				&pending_profile_picture_file_set_id,
 				&active_profile_picture_file_set_id,
 			])
@@ -215,6 +284,9 @@ impl Job for UsersJob {
 
 		self.users_writer.as_mut().finish().await?;
 		tracing::info!("finished writing users");
+
+		self.user_roles_writer.as_mut().finish().await?;
+		tracing::info!("finished writing user roles");
 
 		self.file_sets_writer.as_mut().finish().await?;
 		tracing::info!("finished writing profile picture file sets");
