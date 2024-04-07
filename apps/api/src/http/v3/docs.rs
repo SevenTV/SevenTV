@@ -5,7 +5,6 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::Body;
-use utoipa::OpenApi;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -42,7 +41,7 @@ fn memoize_docs() -> Bytes {
 	static CACHE: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
 
 	Bytes::from_static(CACHE.get_or_init(|| {
-		let docs = Docs::openapi().to_json().unwrap();
+		let docs = super::docs().to_json().unwrap();
 		docs.into_bytes()
 	}))
 }
