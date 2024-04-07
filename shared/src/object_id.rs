@@ -81,7 +81,11 @@ impl serde::Serialize for ObjectId {
 
 impl<'a> serde::Deserialize<'a> for ObjectId {
 	fn deserialize<D: serde::Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
-		deserializer.deserialize_str(ObjectIDVisitor)
+		if !deserializer.is_human_readable() {
+			deserializer.deserialize_bytes(ObjectIDVisitor)
+		} else {
+			deserializer.deserialize_any(ObjectIDVisitor)
+		}
 	}
 }
 
@@ -97,6 +101,31 @@ impl<'a> serde::de::Visitor<'a> for ObjectIDVisitor {
 
 	fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
 		ObjectId::from_str(value).map_err(|_| E::custom("invalid ObjectID"))
+	}
+
+	fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+	where
+		E: serde::de::Error,
+	{
+		let src: [u8; 12] = v
+            .try_into()
+            .map_err(|_| E::invalid_length(v.len(), &"12 bytes"))?;
+		// Pad with 4 zero bytes
+		let mut bytes = [0u8; 16];
+		bytes[4..].copy_from_slice(&src);
+		Ok(ObjectId(u128::from_be_bytes(bytes)))
+	}
+
+	fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+	where
+		A: serde::de::MapAccess<'a>,
+	{
+		match map.next_entry::<String, String>() {
+			Ok(Some((key, value))) if key == "$oid" => {
+				ObjectId::from_str(&value).map_err(|_| serde::de::Error::custom("invalid ObjectID"))
+			}
+			_ => Err(serde::de::Error::custom("invalid ObjectID")),
+		}
 	}
 }
 

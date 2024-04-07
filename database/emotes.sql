@@ -7,11 +7,11 @@ CREATE TABLE "emotes" (
     "tags" text[] NOT NULL DEFAULT '{}',
     "animated" bool NOT NULL DEFAULT FALSE,
     "settings" jsonb NOT NULL DEFAULT '{}',
+    "file_set_id" uuid NOT NULL, -- Ref: file_sets.id -> On Delete Cascade
     "updated_at" timestamptz NOT NULL DEFAULT 'NOW()'
 );
 
 CREATE INDEX "emotes_owner_id_index" ON "emotes" ("owner_id");
-CREATE UNIQUE INDEX "emotes_ticket_id_unique" ON "emotes" ("ticket_id");
 
 CREATE TABLE "emote_attributions" (
     "emote_id" uuid NOT NULL, -- Ref: emotes.id -> On Delete Cascade
@@ -20,14 +20,6 @@ CREATE TABLE "emote_attributions" (
 );
 
 CREATE INDEX "emote_attributions_user_id_index" ON "emote_attributions" ("user_id");
-
-CREATE TABLE "emote_files" (
-    "emote_id" uuid NOT NULL, -- Ref: emotes.id -> DO NOTHING
-    "file_id" uuid NOT NULL, -- Ref: files.id -> DO NOTHING
-    PRIMARY KEY ("emote_id", "file_id")
-);
-
-CREATE INDEX "emote_files_file_id_index" ON "emote_files" ("file_id");
 
 CREATE TABLE "emote_sets" (
     "id" uuid PRIMARY KEY,

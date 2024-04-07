@@ -1,0 +1,24 @@
+# 7TV data transfer report
+
+Report created at `<%= created_at | disp %>`.
+
+It took **<%= format!("{:.2}", took_seconds) %> seconds** to process **<%= total_documents | disp %> documents** and insert **<%= total_rows | disp %> rows**.
+
+Average speed: `<%= (*total_documents as f64 / took_seconds) as u64 %> documents / second`.
+
+## Stats
+
+| Job | Processed Documents | Rows | Duration | Problems |
+|-----|---------------------|------|----------|----------|
+<% for o in &outcomes { %>| `<%= o.job_name %>` | <%= o.processed_documents %> | <%= o.inserted_rows %> | <%= format!("{:.2}", o.took_seconds) %>s | <%= o.errors.len() %> |
+<% } %>
+## Problems
+
+The following section shows problems that need manual fixing.
+
+<% for o in &outcomes { %>## `<%= o.job_name %>`
+
+| # | Problem | Description | Data |
+|---|---------|-------------|------|
+<% for (i, e) in o.errors.iter().enumerate() { %>| `<%= i+1 %>` | <%= e.name() %> | <%= e | disp %> | `<%= e.data() %>` |
+<% } %><% } %>

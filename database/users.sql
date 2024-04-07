@@ -12,7 +12,8 @@ CREATE TABLE "users" (
     "two_fa" two_fa DEFAULT NULL,
     "active_badge_id" uuid DEFAULT NULL, -- Ref: badges.id -> On Delete Set NULL
     "active_paint_id" uuid DEFAULT NULL, -- Ref: paints.id -> On Delete Set NULL
-    "active_profile_picture_id" uuid DEFAULT NULL, -- user_profile_pictures.id -> On Delete Set NULL (Deferable)
+    "pending_profile_picture_file_set_id" uuid DEFAULT NULL, -- file_sets.id -> On Delete Set NULL (Deferable)
+    "active_profile_picture_file_set_id" uuid DEFAULT NULL, -- file_sets.id -> On Delete Set NULL (Deferable)
 
     -- Cached fields for quick access
     "entitled_cache_role_ids" uuid [] NOT NULL DEFAULT '{}',
@@ -34,7 +35,7 @@ CREATE INDEX "users_entitled_cache_invalidate_product_ids_index" ON "users" USIN
 
 CREATE INDEX "users_active_badge_id_index" ON "users" ("active_badge_id");
 CREATE INDEX "users_active_paint_id_index" ON "users" ("active_paint_id");
-CREATE INDEX "users_active_profile_picture_id_index" ON "users" ("active_profile_picture_id");
+CREATE INDEX "users_active_profile_picture_file_set_id_index" ON "users" ("active_profile_picture_file_set_id");
 
 CREATE TABLE "user_sessions" (
     "id" uuid PRIMARY KEY,
@@ -43,13 +44,13 @@ CREATE TABLE "user_sessions" (
     "last_used_at" timestamptz NOT NULL DEFAULT 'NOW()'
 );
 
-CREATE TYPE "user_connection_platform" AS ENUM ('DISCORD', 'TWITCH', 'GOOGLE', 'KICK');
+CREATE TYPE "platform" AS ENUM ('DISCORD', 'TWITCH', 'GOOGLE', 'KICK');
 
 CREATE TABLE "user_connections" (
     "id" uuid PRIMARY KEY,
     "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
     "main_connection" boolean NOT NULL DEFAULT false,
-    "platform" user_connection_platform NOT NULL,
+    "platform_kind" platform NOT NULL,
     "platform_id" varchar(64) NOT NULL,
     "platform_username" varchar(255) NOT NULL,
     "platform_display_name" varchar(255) NOT NULL,
@@ -59,7 +60,7 @@ CREATE TABLE "user_connections" (
 );
 
 CREATE INDEX "user_connections_user_id_index" ON "user_connections" ("user_id");
-CREATE UNIQUE INDEX "user_connections_platform_id_index" ON "user_connections" ("platform", "platform_id");
+CREATE UNIQUE INDEX "user_connections_platform_id_index" ON "user_connections" ("platform_kind", "platform_id");
 CREATE UNIQUE INDEX "user_connections_main_connection_index" ON "user_connections" ("user_id") WHERE "main_connection";
 
 CREATE TABLE "user_follows" (
@@ -107,23 +108,6 @@ CREATE TABLE "user_editors" (
 );
 
 CREATE INDEX "user_editors_editor_id_index" ON "user_editors" ("editor_id");
-
-CREATE TABLE "user_profile_pictures" (
-    "id" uuid PRIMARY KEY,
-    "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
-    "updated_at" timestamptz NOT NULL DEFAULT 'NOW()'
-);
-
-CREATE INDEX "user_profile_pictures_user_id_index" ON "user_profile_pictures" ("user_id");
-
-CREATE TABLE "user_profile_picture_files" (
-    "user_profile_picture_id" uuid NOT NULL, -- Ref: user_profile_pictures.id -> DO NOTHING
-    "file_id" uuid NOT NULL, -- Ref: files.id -> DO NOTHING
-    -- TODO add more fields to describe the file, size width height etc
-    PRIMARY KEY ("user_profile_picture_id", "file_id")
-);
-
-CREATE INDEX "user_profile_picture_files_file_id_index" ON "user_profile_picture_files" ("file_id");
 
 CREATE TABLE "user_active_emote_sets" (
     "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
