@@ -21,7 +21,7 @@ impl Table for Badge {
 
 impl Badge {
 	#[tracing::instrument(level = "info", skip(self), fields(badge_id = %self.id))]
-	pub async fn into_old_model(self, file_set: &FileSet, cdn_base_url: &str) -> Option<CosmeticBadgeModel> {
+	pub fn into_old_model(self, file_set: &FileSet, cdn_base_url: &str) -> Option<CosmeticBadgeModel> {
 		if file_set.kind != FileSetKind::Badge {
 			tracing::error!("Badge file set kind is not of type Badge");
 			return None;

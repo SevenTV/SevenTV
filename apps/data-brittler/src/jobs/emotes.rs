@@ -105,6 +105,7 @@ impl Job for EmotesJob {
 					&false,
 					&postgres_types::Json(FileSetProperties::Image {
 						input: v.input_file.into(),
+						pending: false,
 						outputs,
 					}),
 				])
@@ -129,7 +130,9 @@ impl Job for EmotesJob {
 					&postgres_types::Json(EmoteSettings {
 						public_listed: v.state.listed,
 						default_zero_width: emote.flags.contains(EmoteFlagsModel::ZeroWidth),
-						approved_personal: v.state.allow_personal,
+						approved_personal: Some(v.state.allow_personal),
+						nsfw: emote.flags.contains(EmoteFlagsModel::Sexual),
+						private: emote.flags.contains(EmoteFlagsModel::Private),
 					}),
 					&file_set_id,
 				])

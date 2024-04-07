@@ -116,7 +116,7 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 }
 
 impl Paint {
-	pub async fn into_old_model(self, files: &HashMap<ulid::Ulid, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
+	pub fn into_old_model(self, files: &HashMap<ulid::Ulid, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
 		let first_layer = self.data.layers.first();
 
 		Some(CosmeticPaintModel {

@@ -102,7 +102,7 @@ pub struct UserEntitledCache {
 }
 
 impl User {
-	pub async fn into_old_model_partial(
+	pub fn into_old_model_partial(
 		self,
 		connections: Vec<UserConnection>,
 		profile_picture_file_set: &Option<FileSet>,
@@ -110,8 +110,6 @@ impl User {
 		badge: Option<CosmeticBadgeModel>,
 		cdn_base_url: &str,
 	) -> Option<UserPartialModel> {
-		// let connections = global.user_connections_loader().load(self.id).await.ok()??;
-
 		let main_connection = connections.iter().find(|c| c.main_connection)?;
 
 		let avatar_url = match profile_picture_file_set {
@@ -171,7 +169,7 @@ impl User {
 		})
 	}
 
-	pub async fn into_old_model(
+	pub fn into_old_model(
 		self,
 		connections: Vec<UserConnection>,
 		profile_picture_file_set: &Option<FileSet>,
@@ -181,8 +179,7 @@ impl User {
 	) -> Option<UserModel> {
 		let created_at = self.id.timestamp_ms();
 		let partial = self
-			.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url)
-			.await?;
+			.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url)?;
 
 		Some(UserModel {
 			id: partial.id,

@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use std::num::ParseIntError;
 
 use once_cell::sync::OnceCell;
-use shared::database::FileProperties;
-use shared::types::old::ImageHostFormat;
+use shared::database::{FileProperties, ImageFormat};
 
 // TODO: Default values for width, height, and frame_count
 #[derive(Debug, serde::Deserialize)]
@@ -86,10 +85,10 @@ pub fn image_files_to_file_properties<I: IntoIterator<Item = ImageFile>>(
 		});
 		new_file.extra.variants.push(shared::database::ImageFileVariant {
 			format: match old_file.content_type.as_str() {
-				"image/webp" => ImageHostFormat::Webp,
-				"image/avif" => ImageHostFormat::Avif,
-				"image/gif" => ImageHostFormat::Gif,
-				"image/png" => ImageHostFormat::Png,
+				"image/webp" => ImageFormat::Webp,
+				"image/avif" => ImageFormat::Avif,
+				"image/gif" => ImageFormat::Gif,
+				"image/png" => ImageFormat::Png,
 				_ => return Err(ImageFileError::InvalidImageFileContentType(old_file.content_type)),
 			},
 			is_static,

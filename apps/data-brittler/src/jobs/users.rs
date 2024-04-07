@@ -104,6 +104,7 @@ impl Job for UsersJob {
 						&false,
 						&postgres_types::Json(shared::database::FileSetProperties::Image {
 							input: input_file.into(),
+							pending: false,
 							outputs,
 						}),
 					])
