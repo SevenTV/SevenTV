@@ -5,14 +5,13 @@ use std::sync::Arc;
 
 pub use attribution::*;
 pub use set::*;
-use shared::types::old::{
+use crate::types::old::{
 	EmoteLifecycleModel, EmoteModel, EmotePartialModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind,
 	UserPartialModel,
 };
 
 use super::FileSet;
 use crate::database::Table;
-use crate::global::Global;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct Emote {
@@ -28,8 +27,8 @@ pub struct Emote {
 }
 
 impl Emote {
-	pub fn into_old_model(self, global: &Arc<Global>, owner: Option<UserPartialModel>, file_set: &FileSet) -> EmoteModel {
-		let partial = self.into_old_model_partial(global, owner, file_set);
+	pub fn into_old_model(self, owner: Option<UserPartialModel>, file_set: &FileSet, cdn_base_url: &str) -> EmoteModel {
+		let partial = self.into_old_model_partial(owner, file_set, cdn_base_url);
 
 		EmoteModel {
 			id: partial.id,
@@ -59,9 +58,9 @@ impl Emote {
 
 	pub fn into_old_model_partial(
 		self,
-		global: &Arc<Global>,
 		owner: Option<UserPartialModel>,
 		file_set: &FileSet,
+		cdn_base_url: &str,
 	) -> EmotePartialModel {
 		EmotePartialModel {
 			id: self.id,
@@ -70,18 +69,18 @@ impl Emote {
 			tags: self.tags,
 			owner,
 			flags: {
-				let mut flags = shared::types::old::EmoteFlagsModel::none();
+				let mut flags = crate::types::old::EmoteFlagsModel::none();
 
 				if self.settings.private {
-					flags |= shared::types::old::EmoteFlagsModel::Private;
+					flags |= crate::types::old::EmoteFlagsModel::Private;
 				}
 
 				if self.settings.default_zero_width {
-					flags |= shared::types::old::EmoteFlagsModel::ZeroWidth;
+					flags |= crate::types::old::EmoteFlagsModel::ZeroWidth;
 				}
 
 				if self.settings.nsfw {
-					flags |= shared::types::old::EmoteFlagsModel::Sexual;
+					flags |= crate::types::old::EmoteFlagsModel::Sexual;
 				}
 
 				flags
@@ -91,26 +90,26 @@ impl Emote {
 
 				if let Some(approved_personal) = self.settings.approved_personal {
 					if approved_personal {
-						state.push(shared::types::old::EmoteVersionState::AllowPersonal);
+						state.push(crate::types::old::EmoteVersionState::AllowPersonal);
 					} else {
-						state.push(shared::types::old::EmoteVersionState::NoPersonal);
+						state.push(crate::types::old::EmoteVersionState::NoPersonal);
 					}
 				}
 
 				if self.settings.public_listed {
-					state.push(shared::types::old::EmoteVersionState::Listed);
+					state.push(crate::types::old::EmoteVersionState::Listed);
 				}
 
 				state
 			},
 			lifecycle: if file_set.properties.pending() {
-				shared::types::old::EmoteLifecycleModel::Pending
+				crate::types::old::EmoteLifecycleModel::Pending
 			} else {
-				shared::types::old::EmoteLifecycleModel::Live
+				crate::types::old::EmoteLifecycleModel::Live
 			},
 			listed: self.settings.public_listed,
 			host: ImageHost::new(
-				&global.config().api.cdn_base_url,
+				cdn_base_url,
 				ImageHostKind::Emote,
 				self.id,
 				file_set.properties.as_old_image_files(),

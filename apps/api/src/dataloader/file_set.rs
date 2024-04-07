@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
 use ulid::Ulid;
-
-use crate::database::FileSet;
+use shared::database::FileSet;
 
 pub struct FileSetByIdLoader {
 	db: Arc<scuffle_utils::database::Pool>,

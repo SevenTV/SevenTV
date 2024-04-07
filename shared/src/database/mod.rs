@@ -9,6 +9,10 @@ use scuffle_utils::database::Pool;
 
 use crate::config::DatabaseConfig;
 
+mod types;
+
+pub use types::*;
+
 pub async fn setup_database(config: &DatabaseConfig) -> anyhow::Result<Arc<Pool>> {
 	let mut pg_config = config
 		.uri

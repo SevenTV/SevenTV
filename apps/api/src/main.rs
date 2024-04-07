@@ -7,7 +7,6 @@ use tokio::signal::unix::SignalKind;
 
 mod config;
 mod connections;
-mod database;
 mod dataloader;
 mod global;
 mod health;

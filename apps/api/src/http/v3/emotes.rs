@@ -94,7 +94,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 
 			match user {
 				Some(u) => Some(
-					u.into_old_model_partial(&global)
+					u.into_old_model_partial(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url)
 						.await
 						.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert user"))?,
 				),
@@ -104,5 +104,5 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		None => None,
 	};
 
-	json_response(emote.into_old_model(&global, owner, &file_set))
+	json_response(emote.into_old_model(owner, &file_set, &global.config().api.cdn_base_url))
 }

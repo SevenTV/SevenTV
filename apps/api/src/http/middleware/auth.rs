@@ -4,9 +4,9 @@ use hyper::StatusCode;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::middleware::{Middleware, NextFn};
 use scuffle_utils::http::RouteError;
+use shared::database::UserSession;
 
 use super::AUTH_COOKIE;
-use crate::database::UserSession;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::RequestGlobalExt;

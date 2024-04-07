@@ -3,8 +3,7 @@ use std::sync::Arc;
 
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
 use ulid::Ulid;
-
-use crate::database::Role;
+use shared::database::Role;
 
 pub struct RoleByIdLoader {
 	db: Arc<scuffle_utils::database::Pool>,

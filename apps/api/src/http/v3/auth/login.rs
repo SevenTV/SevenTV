@@ -5,9 +5,9 @@ use hyper::StatusCode;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::RouteError;
 use ulid::Ulid;
+use shared::database::{Platform, UserConnection, UserSession};
 
 use crate::connections;
-use crate::database::{Platform, UserConnection, UserSession};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::{new_cookie, Cookies, AUTH_COOKIE};

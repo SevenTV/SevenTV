@@ -16,13 +16,14 @@ mod settings;
 
 use std::sync::Arc;
 
-use hyper::StatusCode;
-use scuffle_utils::http::ext::OptionExt;
-use scuffle_utils::http::router::error::RouterError;
-use shared::types::old::{
+use crate::types::old::{CosmeticBadgeModel, CosmeticPaintModel};
+use crate::types::old::{
 	ImageFormat as ImageFormatOld, ImageHostKind, UserConnectionModel, UserConnectionPartialModel, UserModel,
 	UserPartialModel, UserStyle, UserTypeModel,
 };
+use hyper::StatusCode;
+use scuffle_utils::http::ext::OptionExt;
+use scuffle_utils::http::router::error::RouterError;
 
 pub use self::active_emote_set::*;
 pub use self::badge::*;
@@ -39,10 +40,9 @@ pub use self::relation::*;
 pub use self::roles::*;
 pub use self::session::*;
 pub use self::settings::*;
+use super::FileSet;
 use super::ImageFormat;
 use crate::database::Table;
-use crate::global::Global;
-use crate::http::v3;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct User {
@@ -102,17 +102,24 @@ pub struct UserEntitledCache {
 }
 
 impl User {
-	pub async fn into_old_model_partial(self, global: &Arc<Global>) -> Option<UserPartialModel> {
-		let connections = global.user_connections_loader().load(self.id).await.ok()??;
+	pub async fn into_old_model_partial(
+		self,
+		connections: Vec<UserConnection>,
+		profile_picture_file_set: &Option<FileSet>,
+		paint: Option<CosmeticPaintModel>,
+		badge: Option<CosmeticBadgeModel>,
+		cdn_base_url: &str,
+	) -> Option<UserPartialModel> {
+		// let connections = global.user_connections_loader().load(self.id).await.ok()??;
 
 		let main_connection = connections.iter().find(|c| c.main_connection)?;
 
-		let avatar_url = match self.active_cosmetics.profile_picture_id {
-			Some(id) => global.file_set_by_id_loader().load(id).await.ok().flatten().and_then(|f| {
+		let avatar_url = match profile_picture_file_set {
+			Some(f) => {
 				let file = f.properties.default_image()?;
 				Some(
 					ImageHostKind::ProfilePicture.create_full_url(
-						&global.config().api.cdn_base_url,
+						cdn_base_url,
 						f.id,
 						file.extra.scale,
 						file.extra
@@ -122,29 +129,29 @@ impl User {
 							.map(|_| ImageFormatOld::Webp)?,
 					),
 				)
-			}),
+			}
 			None => None,
 		};
 
-		let paint = match self.active_cosmetics.paint_id {
-			Some(id) if self.entitled_cache.paint_ids.contains(&id) => {
-				match global.paint_by_id_loader().load(id).await.ok()? {
-					Some(p) => Some(p.into_old_model(global).await.ok()?),
-					None => None,
-				}
-			}
-			_ => None,
-		};
+		// let paint = match self.active_cosmetics.paint_id {
+		// 	Some(id) if self.entitled_cache.paint_ids.contains(&id) => {
+		// 		match global.paint_by_id_loader().load(id).await.ok()? {
+		// 			Some(p) => Some(p.into_old_model().await.ok()?),
+		// 			None => None,
+		// 		}
+		// 	}
+		// 	_ => None,
+		// };
 
-		let badge = match self.active_cosmetics.badge_id {
-			Some(id) if self.entitled_cache.badge_ids.contains(&id) => {
-				match global.badge_by_id_loader().load(id).await.ok()? {
-					Some(b) => Some(b.into_old_model(global).await.ok()?),
-					None => None,
-				}
-			}
-			_ => None,
-		};
+		// let badge = match self.active_cosmetics.badge_id {
+		// 	Some(id) if self.entitled_cache.badge_ids.contains(&id) => {
+		// 		match global.badge_by_id_loader().load(id).await.ok()? {
+		// 			Some(b) => Some(b.into_old_model().await.ok()?),
+		// 			None => None,
+		// 		}
+		// 	}
+		// 	_ => None,
+		// };
 
 		Some(UserPartialModel {
 			id: self.id,
@@ -164,9 +171,18 @@ impl User {
 		})
 	}
 
-	pub async fn into_old_model(self, global: &Arc<Global>) -> Option<UserModel> {
+	pub async fn into_old_model(
+		self,
+		connections: Vec<UserConnection>,
+		profile_picture_file_set: &Option<FileSet>,
+		paint: Option<CosmeticPaintModel>,
+		badge: Option<CosmeticBadgeModel>,
+		cdn_base_url: &str,
+	) -> Option<UserModel> {
 		let created_at = self.id.timestamp_ms();
-		let partial = self.into_old_model_partial(global).await?;
+		let partial = self
+			.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url)
+			.await?;
 
 		Some(UserModel {
 			id: partial.id,

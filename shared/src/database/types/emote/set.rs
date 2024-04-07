@@ -1,6 +1,6 @@
 use bitmask_enum::bitmask;
 use postgres_types::{FromSql, ToSql};
-use shared::types::old::{
+use crate::types::old::{
 	ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel, EmoteSetFlagModel, EmoteSetModel, UserPartialModel,
 };
 

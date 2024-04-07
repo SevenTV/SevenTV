@@ -64,7 +64,7 @@ pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Resp
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user"))?
 		.map_err_route((StatusCode::NOT_FOUND, "user not found"))?
-		.into_old_model(&global)
+		.into_old_model(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url)
 		.await
 		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert into old model"))?;
 

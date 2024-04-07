@@ -77,7 +77,7 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 			.await
 			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?
 			.into_values()
-			.map(|user| user.into_old_model_partial(&global)),
+			.map(|user| user.into_old_model_partial(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url)),
 	)
 	.await
 	.into_iter()
@@ -96,7 +96,7 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 			let owner = emote.owner_id.and_then(|id| users.get(&id)).cloned();
 			let file_set = file_sets.get(&emote.file_set_id)?;
 
-			Some((id, emote.into_old_model_partial(&global, owner, file_set)))
+			Some((id, emote.into_old_model_partial(owner, file_set, &global.config().api.cdn_base_url)))
 		})
 		.collect::<HashMap<_, _>>();
 

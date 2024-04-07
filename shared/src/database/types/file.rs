@@ -1,5 +1,5 @@
 use postgres_types::{FromSql, ToSql};
-use shared::types::old::{ImageFile as OldImageFile, ImageFormat as OldImageFormat};
+use crate::types::old::{ImageFile as OldImageFile, ImageFormat as OldImageFormat};
 
 use crate::database::Table;
 

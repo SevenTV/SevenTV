@@ -3,8 +3,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
 use ulid::Ulid;
-
-use crate::database::{EmoteSet, EmoteSetEmote};
+use shared::database::{EmoteSet, EmoteSetEmote};
 
 pub struct EmoteSetByIdLoader {
 	db: Arc<scuffle_utils::database::Pool>,

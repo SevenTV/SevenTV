@@ -9,7 +9,7 @@ use tokio::sync::{Mutex, OnceCell};
 use tokio_util::sync::CancellationToken;
 use ulid::Ulid;
 
-use crate::database::{
+use shared::database::{
 	ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserProduct,
 	UserProductDataPurchase, UserProductDataSubscriptionEntryStatus,
 };

@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use shared::types::old::{CosmeticBadgeModel, ImageFile, ImageFormat, ImageHost, ImageHostKind};
+use crate::types::old::{CosmeticBadgeModel, ImageFile, ImageFormat, ImageHost, ImageHostKind};
 
 use super::{FileSet, FileSetKind, FileSetProperties};
 use crate::database::Table;
-use crate::global::Global;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct Badge {
@@ -21,23 +20,21 @@ impl Table for Badge {
 }
 
 impl Badge {
-	#[tracing::instrument(level = "info", skip(self, global), fields(badge_id = %self.id))]
-	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<CosmeticBadgeModel, ()> {
-		let file_set = global.file_set_by_id_loader().load(self.file_set_id).await?.ok_or(())?;
-
+	#[tracing::instrument(level = "info", skip(self), fields(badge_id = %self.id))]
+	pub async fn into_old_model(self, file_set: &FileSet, cdn_base_url: &str) -> Option<CosmeticBadgeModel> {
 		if file_set.kind != FileSetKind::Badge {
 			tracing::error!("Badge file set kind is not of type Badge");
-			return Err(());
+			return None;
 		}
 
 		let host = ImageHost::new(
-			&global.config().api.cdn_base_url,
+			cdn_base_url,
 			ImageHostKind::Badge,
 			self.id,
 			file_set.properties.as_old_image_files(),
 		);
 
-		Ok(CosmeticBadgeModel {
+		Some(CosmeticBadgeModel {
 			id: self.id,
 			name: self.name,
 			tag: self.tags.into_iter().next().unwrap_or_default(),

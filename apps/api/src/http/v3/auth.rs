@@ -8,9 +8,9 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{empty_body, Body};
+use shared::database::{Platform, UserSession};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
-use crate::database::{Platform, UserSession};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::AUTH_COOKIE;

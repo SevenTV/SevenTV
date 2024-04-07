@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
 use ulid::Ulid;
-
-use crate::database::Paint;
+use shared::database::Paint;
 
 pub struct PaintByIdLoader {
 	db: Arc<scuffle_utils::database::Pool>,

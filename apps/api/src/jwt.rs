@@ -5,8 +5,8 @@ use hmac::{Hmac, Mac};
 use jwt_next::{Claims, Header, RegisteredClaims, SignWithKey, Token, VerifyWithKey};
 use sha2::Sha256;
 use ulid::Ulid;
+use shared::database::UserSession;
 
-use crate::database::UserSession;
 use crate::global::Global;
 
 pub struct AuthJwtPayload {

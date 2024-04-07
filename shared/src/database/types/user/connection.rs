@@ -2,10 +2,9 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use postgres_types::{FromSql, ToSql};
-use shared::types::old::{UserConnectionPartialModel, UserConnectionPlatformModel};
+use crate::types::old::{UserConnectionPartialModel, UserConnectionPlatformModel};
 
 use crate::database::Table;
-use crate::global::Global;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct UserConnection {

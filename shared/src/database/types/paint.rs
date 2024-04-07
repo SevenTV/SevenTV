@@ -1,13 +1,13 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use shared::types::old::{
+use crate::types::old::{
 	CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintModel, CosmeticPaintShadow, CosmeticPaintShape,
 	ImageFormat as ImageFormatOld, ImageHost, ImageHostKind,
 };
 
-use super::{FileSetProperties, ImageFormat};
+use super::{FileSet, FileSetProperties, ImageFormat};
 use crate::database::Table;
-use crate::global::Global;
 
 #[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
 pub struct Paint {
@@ -116,23 +116,10 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 }
 
 impl Paint {
-	pub async fn into_old_model(self, global: &Arc<Global>) -> Result<CosmeticPaintModel, ()> {
-		let paint_files: Vec<PaintFileSet> =
-			scuffle_utils::database::query("SELECT * FROM paint_file_sets WHERE paint_id = $1")
-				.bind(self.id)
-				.build_query_as()
-				.fetch_all(&global.db())
-				.await
-				.map_err(|_| ())?;
-
-		let files = global
-			.file_set_by_id_loader()
-			.load_many(paint_files.iter().map(|f| f.file_id))
-			.await?;
-
+	pub async fn into_old_model(self, files: &HashMap<ulid::Ulid, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
 		let first_layer = self.data.layers.first();
 
-		Ok(CosmeticPaintModel {
+		Some(CosmeticPaintModel {
 			id: self.id,
 			name: self.name,
 			color: first_layer.and_then(|l| match l.ty {
@@ -185,7 +172,7 @@ impl Paint {
 						f.properties.default_image().and_then(|file| {
 							Some(
 								ImageHostKind::Paint.create_full_url(
-									&global.config().api.cdn_base_url,
+									cdn_base_url,
 									id,
 									file.extra.scale,
 									file.extra
