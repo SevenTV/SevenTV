@@ -16,6 +16,9 @@ pub enum Error {
 
 	#[error("{0}")]
 	ImageFile(#[from] crate::types::ImageFileError),
+
+	#[error("failed to fetch paint image url")]
+	PaintImageUrlRequest(reqwest::Error),
 }
 
 impl Error {
@@ -27,6 +30,7 @@ impl Error {
 			Self::SerializeJson(_) => "SerializeJson",
 			Self::Db(_) => "Db",
 			Self::ImageFile(_) => "ImageFile",
+			Self::PaintImageUrlRequest(_) => "PaintImageUrlRequest",
 		}
 	}
 

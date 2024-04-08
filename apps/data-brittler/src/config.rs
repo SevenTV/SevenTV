@@ -17,6 +17,8 @@ pub struct Extra {
 	pub skip_users: bool,
 	/// Skip emote job
 	pub skip_emotes: bool,
+	/// Skip cosmetic job
+	pub skip_cosmetics: bool,
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 }
@@ -29,6 +31,7 @@ impl Default for Extra {
 			report_path: PathBuf::from("./local/report.md"),
 			skip_users: false,
 			skip_emotes: false,
+			skip_cosmetics: false,
 			truncate: false,
 		}
 	}

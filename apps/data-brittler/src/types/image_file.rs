@@ -23,7 +23,7 @@ pub struct ImageFile {
 impl From<ImageFile> for FileProperties<shared::database::ImageFile> {
 	fn from(value: ImageFile) -> Self {
 		Self {
-			path: value.key,
+			path: format!("{}/{}", value.bucket, value.key),
 			size: value.size,
 			mime: Some(value.content_type),
 			extra: shared::database::ImageFile {

@@ -10,7 +10,7 @@ use shared::database::Platform;
 use shared::object_id::ObjectId;
 
 use super::{Job, ProcessOutcome};
-use crate::database::{file_set_kind_type, platform_enum_type};
+use crate::database::{file_sets_writer, platform_enum_type};
 use crate::global::Global;
 use crate::types::image_files_to_file_properties;
 use crate::{error, types};
@@ -74,13 +74,7 @@ impl UsersJob {
 			&[Type::UUID, Type::UUID, Type::TIMESTAMPTZ],
 		);
 
-		let file_sets_client = global.db().get().await?;
-		let file_sets_writer = BinaryCopyInWriter::new(
-			file_sets_client
-				.copy_in("COPY file_sets (id, kind, authenticated, properties) FROM STDIN WITH (FORMAT BINARY)")
-				.await?,
-			&[Type::UUID, file_set_kind_type(&global).await?, Type::BOOL, Type::JSONB],
-		);
+		let file_sets_writer = file_sets_writer(&global).await?;
 
 		let connections_client = global.db().get().await?;
 		let connections_writer = BinaryCopyInWriter::new(connections_client

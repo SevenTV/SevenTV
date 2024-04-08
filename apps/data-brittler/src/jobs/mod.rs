@@ -13,8 +13,10 @@ use self::emotes::EmotesJob;
 use self::users::UsersJob;
 use crate::format::Number;
 use crate::global::Global;
+use crate::jobs::cosmetics::CosmeticsJob;
 use crate::{error, report};
 
+pub mod cosmetics;
 pub mod emotes;
 pub mod users;
 
@@ -26,6 +28,7 @@ pub struct JobOutcome {
 	pub inserted_rows: u64,
 }
 
+#[derive(Default)]
 pub struct ProcessOutcome {
 	pub errors: Vec<error::Error>,
 	pub inserted_rows: u64,
@@ -131,6 +134,13 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		futures.push(fut);
 	} else {
 		tracing::info!("skipping emotes job");
+	}
+	if !global.config().skip_cosmetics {
+		let emotes = CosmeticsJob::new(global.clone()).await?;
+		let fut = Box::pin(emotes.run(&global));
+		futures.push(fut);
+	} else {
+		tracing::info!("skipping cosmetics job");
 	}
 
 	let results: Vec<JobOutcome> = futures.try_collect().await?;

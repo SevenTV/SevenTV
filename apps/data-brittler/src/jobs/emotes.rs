@@ -53,7 +53,7 @@ impl EmotesJob {
 				Type::UUID,
 				Type::UUID,
 				Type::VARCHAR,
-				Type::VARCHAR_ARRAY,
+				Type::TEXT_ARRAY,
 				Type::BOOL,
 				Type::JSONB,
 				Type::UUID,
@@ -78,10 +78,7 @@ impl Job for EmotesJob {
 	}
 
 	async fn process(&mut self, emote: Self::T) -> ProcessOutcome {
-		let mut outcome = ProcessOutcome {
-			errors: vec![],
-			inserted_rows: 0,
-		};
+		let mut outcome = ProcessOutcome::default();
 
 		for v in emote.versions {
 			let created_at = v.created_at.into_chrono().into();

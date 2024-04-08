@@ -1,10 +1,12 @@
 use serde::{Deserialize, Deserializer};
 
+mod cosmetic;
 mod emote;
 mod entitlement;
 mod image_file;
 mod user;
 
+pub use cosmetic::*;
 pub use emote::*;
 pub use entitlement::*;
 pub use image_file::*;
