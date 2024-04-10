@@ -1,3 +1,23 @@
 # Data Brittler
 
 Makes the data brittle.
+
+## Collections - `7tv`
+
+- [ ] `audit_logs`
+- [ ] `bans`
+- [x] `cosmetics`
+- [x] `emote_sets`
+- [x] `emotes`
+- [x] `entitlements`
+- [ ] `messages` (what is this?)
+- [ ] `messages_read` (?)
+- [ ] `reports`
+- [ ] `roles`
+- [ ] `system`
+- [ ] `user_presences` (do we need to transfer this?)
+- [x] `users`
+
+## Collections - `egvault`
+
+TODO
