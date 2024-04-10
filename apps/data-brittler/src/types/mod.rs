@@ -5,6 +5,7 @@ mod emote;
 mod emote_set;
 mod entitlement;
 mod image_file;
+mod role;
 mod user;
 
 pub use cosmetic::*;
@@ -12,6 +13,7 @@ pub use emote::*;
 pub use emote_set::*;
 pub use entitlement::*;
 pub use image_file::*;
+pub use role::*;
 pub use user::*;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]

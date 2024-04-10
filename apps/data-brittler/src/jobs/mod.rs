@@ -15,11 +15,13 @@ use crate::format::Number;
 use crate::global::Global;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
+use crate::jobs::roles::RolesJob;
 use crate::{error, report};
 
 pub mod cosmetics;
-pub mod emotes;
 pub mod emote_sets;
+pub mod emotes;
+pub mod roles;
 pub mod users;
 
 pub struct JobOutcome {
@@ -47,7 +49,23 @@ pub trait Job: Sized {
 	const NAME: &'static str;
 	type T: serde::de::DeserializeOwned;
 
-	async fn run(mut self, global: &Arc<Global>) -> anyhow::Result<JobOutcome> {
+	async fn new(global: Arc<Global>) -> anyhow::Result<Self>;
+
+	async fn conditional_init_and_run(
+		global: &Arc<Global>,
+		should_run: bool,
+	) -> anyhow::Result<Option<Pin<Box<impl Future<Output = anyhow::Result<JobOutcome>>>>>> {
+		if should_run {
+			let job = Self::new(global.clone()).await?;
+			let fut = Box::pin(job.run(Arc::clone(global)));
+			Ok(Some(fut))
+		} else {
+			tracing::info!("skipping {} job", Self::NAME);
+			Ok(None)
+		}
+	}
+
+	async fn run(mut self, global: Arc<Global>) -> anyhow::Result<JobOutcome> {
 		let run = async move {
 			let timer = Instant::now();
 
@@ -78,7 +96,6 @@ pub trait Job: Sized {
 					Ok(t) => outcome += self.process(t).await,
 					Err(e) => outcome.errors.push(error::Error::Deserialize(e)),
 				}
-				outcome.processed_documents += 1;
 
 				if outcome.processed_documents % tenth == 0 {
 					tracing::info!(
@@ -88,6 +105,8 @@ pub trait Job: Sized {
 						Number::from(count)
 					);
 				}
+
+				outcome.processed_documents += 1;
 			}
 
 			if let Err(e) = self.finish().await {
@@ -119,38 +138,48 @@ pub trait Job: Sized {
 }
 
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
+	let any_run = global.config().users
+		|| global.config().emotes
+		|| global.config().emote_sets
+		|| global.config().cosmetics
+		|| global.config().roles;
+
 	let timer = Instant::now();
 
 	let futures: FuturesUnordered<Pin<Box<dyn Future<Output = anyhow::Result<JobOutcome>> + Send>>> =
 		FuturesUnordered::new();
-	if !global.config().skip_users {
-		let users = UsersJob::new(global.clone()).await?;
-		let fut = Box::pin(users.run(&global));
-		futures.push(fut);
-	} else {
-		tracing::info!("skipping users job");
-	}
-	if !global.config().skip_emotes {
-		let emotes = EmotesJob::new(global.clone()).await?;
-		let fut = Box::pin(emotes.run(&global));
-		futures.push(fut);
-	} else {
-		tracing::info!("skipping emotes job");
-	}
-	if !global.config().skip_emote_sets {
-		let emotes = EmoteSetsJob::new(global.clone()).await?;
-		let fut = Box::pin(emotes.run(&global));
-		futures.push(fut);
-	} else {
-		tracing::info!("skipping emote sets job");
-	}
-	if !global.config().skip_cosmetics {
-		let emotes = CosmeticsJob::new(global.clone()).await?;
-		let fut = Box::pin(emotes.run(&global));
-		futures.push(fut);
-	} else {
-		tracing::info!("skipping cosmetics job");
-	}
+
+	// ugly ass code
+	UsersJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().users || !any_run && !global.config().skip_users,
+	)
+	.await?
+	.map(|j| futures.push(j));
+	EmotesJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().emotes || !any_run && !global.config().skip_emotes,
+	)
+	.await?
+	.map(|j| futures.push(j));
+	EmoteSetsJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().skip_emote_sets || !any_run && !global.config().emote_sets,
+	)
+	.await?
+	.map(|j| futures.push(j));
+	CosmeticsJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().cosmetics || !any_run && !global.config().skip_cosmetics,
+	)
+	.await?
+	.map(|j| futures.push(j));
+	RolesJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().roles || !any_run && !global.config().skip_roles,
+	)
+	.await?
+	.map(|j| futures.push(j));
 
 	let results: Vec<JobOutcome> = futures.try_collect().await?;
 

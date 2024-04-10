@@ -707,6 +707,7 @@ name = "data-brittler"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bitmask-enum",
  "cap",
  "chrono",
  "fnv",

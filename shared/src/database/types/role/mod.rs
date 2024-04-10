@@ -36,6 +36,7 @@ impl Table for Role {
 #[serde(default)]
 pub struct RoleData {
 	pub permissions: Permissions,
+	pub discord_id: Option<u64>,
 }
 
 pub trait BitMask:
@@ -156,7 +157,8 @@ impl Default for RolePermission {
 pub enum EmoteSetPermission {
 	Create = 1,
 	Delete = 2,
-	Admin = 4,
+	Edit = 4,
+	Admin = 8,
 }
 
 impl BitMask for EmoteSetPermission {

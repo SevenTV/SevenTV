@@ -13,7 +13,7 @@ Makes the data brittle.
 - [ ] `messages` (what is this?)
 - [ ] `messages_read` (?)
 - [ ] `reports`
-- [ ] `roles`
+- [x] `roles`
 - [ ] `system`
 - [ ] `user_presences` (do we need to transfer this?)
 - [x] `users`

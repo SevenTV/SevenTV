@@ -10,7 +10,7 @@ use shared::database::Platform;
 use shared::object_id::ObjectId;
 
 use super::{Job, ProcessOutcome};
-use crate::database::{file_sets_writer, platform_enum_type};
+use crate::database::{file_set_kind_type, platform_enum_type};
 use crate::global::Global;
 use crate::types::image_files_to_file_properties;
 use crate::{error, types};
@@ -26,8 +26,12 @@ pub struct UsersJob {
 	all_connections: FnvHashSet<(Platform, String)>,
 }
 
-impl UsersJob {
-	pub async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+impl Job for UsersJob {
+	type T = types::User;
+
+	const NAME: &'static str = "transfer_users";
+
+	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("truncating users, user_connections and user_roles tables");
 			scuffle_utils::database::query("TRUNCATE users, user_connections, user_roles")
@@ -60,6 +64,7 @@ impl UsersJob {
 				entitlements.entry(user_id).or_default().push(entitlement);
 			}
 		}
+		tracing::info!("queried all entitlements");
 
 		let users_client = global.db().get().await?;
 		let users_writer = BinaryCopyInWriter::new(users_client
@@ -74,12 +79,20 @@ impl UsersJob {
 			&[Type::UUID, Type::UUID, Type::TIMESTAMPTZ],
 		);
 
-		let file_sets_writer = file_sets_writer(&global).await?;
+		let file_sets_client = global.db().get().await?;
+		let file_sets_writer = BinaryCopyInWriter::new(
+			file_sets_client
+				.copy_in("COPY file_sets (id, kind, authenticated, properties) FROM STDIN WITH (FORMAT BINARY)")
+				.await?,
+			&[Type::UUID, file_set_kind_type(&global).await?, Type::BOOL, Type::JSONB],
+		);
 
 		let connections_client = global.db().get().await?;
 		let connections_writer = BinaryCopyInWriter::new(connections_client
 			.copy_in("COPY user_connections (id, user_id, main_connection, platform_kind, platform_id, platform_username, platform_display_name, platform_avatar_url) FROM STDIN WITH (FORMAT BINARY)")
 			.await?, &[Type::UUID, Type::UUID, Type::BOOL, platform_enum_type(&global).await?, Type::VARCHAR, Type::VARCHAR, Type::VARCHAR, Type::VARCHAR]);
+
+		tracing::info!("created writers");
 
 		Ok(Self {
 			global,
@@ -92,12 +105,6 @@ impl UsersJob {
 			all_connections: FnvHashSet::default(),
 		})
 	}
-}
-
-impl Job for UsersJob {
-	type T = types::User;
-
-	const NAME: &'static str = "transfer_users";
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
 		self.global.mongo().database("7tv").collection("users")

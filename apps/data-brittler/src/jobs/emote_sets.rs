@@ -15,8 +15,12 @@ pub struct EmoteSetsJob {
 	emote_set_emotes_writer: Pin<Box<BinaryCopyInWriter>>,
 }
 
-impl EmoteSetsJob {
-	pub async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+impl Job for EmoteSetsJob {
+	const NAME: &'static str = "transfer_emote_sets";
+
+	type T = types::EmoteSet;
+
+	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("truncating emote_sets and emote_set_emotes table");
 			scuffle_utils::database::query("TRUNCATE emote_sets, emote_set_emotes")
@@ -61,12 +65,6 @@ impl EmoteSetsJob {
 			emote_set_emotes_writer: Box::pin(emote_set_emotes_writer),
 		})
 	}
-}
-
-impl Job for EmoteSetsJob {
-	const NAME: &'static str = "transfer_emote_sets";
-
-	type T = types::EmoteSet;
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
 		self.global.mongo().database("7tv").collection("emote_sets")

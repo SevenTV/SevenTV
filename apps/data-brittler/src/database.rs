@@ -1,19 +1,8 @@
 use std::sync::Arc;
 
 use postgres_types::Type;
-use tokio_postgres::binary_copy::BinaryCopyInWriter;
 
 use crate::global::Global;
-
-pub async fn file_sets_writer(global: &Arc<Global>) -> anyhow::Result<BinaryCopyInWriter> {
-	let file_sets_client = global.db().get().await?;
-	Ok(BinaryCopyInWriter::new(
-		file_sets_client
-			.copy_in("COPY file_sets (id, kind, authenticated, properties) FROM STDIN WITH (FORMAT BINARY)")
-			.await?,
-		&[Type::UUID, file_set_kind_type(&global).await?, Type::BOOL, Type::JSONB],
-	))
-}
 
 pub async fn platform_enum_type(global: &Arc<Global>) -> anyhow::Result<Type> {
 	let oid: u32 = scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'platform'")

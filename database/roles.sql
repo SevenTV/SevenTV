@@ -1,7 +1,7 @@
 CREATE TABLE "roles" (
     "id" uuid PRIMARY KEY,
     "name" varchar(64) NOT NULL,
-    "description" text,
+    "description" text DEFAULT NULL,
     "data" jsonb NOT NULL DEFAULT '{}',
     "priority" int2 NOT NULL DEFAULT 0,
     "hoist" boolean NOT NULL DEFAULT false,

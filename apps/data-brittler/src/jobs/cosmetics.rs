@@ -4,7 +4,7 @@ use postgres_types::Type;
 use shared::database::{self, FileSetKind, FileSetProperties};
 use tokio_postgres::binary_copy::BinaryCopyInWriter;
 
-use crate::{database::file_sets_writer, error, global::Global, types};
+use crate::{database::file_set_kind_type, error, global::Global, types};
 
 use super::{Job, ProcessOutcome};
 
@@ -17,8 +17,12 @@ pub struct CosmeticsJob {
 	badges_writer: Pin<Box<BinaryCopyInWriter>>,
 }
 
-impl CosmeticsJob {
-	pub async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+impl Job for CosmeticsJob {
+	type T = types::Cosmetic;
+
+	const NAME: &'static str = "transfer_cosmetics";
+
+	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("truncating paints, paint_file_sets and badges table");
 			scuffle_utils::database::query("TRUNCATE paints, paint_file_sets, badges")
@@ -33,7 +37,14 @@ impl CosmeticsJob {
 				.await?;
 		}
 
-		let file_sets_writer = file_sets_writer(&global).await?;
+		let file_sets_client = global.db().get().await?;
+		let file_sets_writer = BinaryCopyInWriter::new(
+			file_sets_client
+				.copy_in("COPY file_sets (id, kind, authenticated, properties) FROM STDIN WITH (FORMAT BINARY)")
+				.await?,
+			&[Type::UUID, file_set_kind_type(&global).await?, Type::BOOL, Type::JSONB],
+		);
+
 
 		let paints_client = global.db().get().await?;
 		let paints_writer = BinaryCopyInWriter::new(
@@ -68,12 +79,6 @@ impl CosmeticsJob {
 			badges_writer: Box::pin(badges_writer),
 		})
 	}
-}
-
-impl Job for CosmeticsJob {
-	type T = types::Cosmetic;
-
-	const NAME: &'static str = "transfer_cosmetics";
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
 		self.global.mongo().database("7tv").collection("cosmetics")
