@@ -26,16 +26,16 @@ CREATE TABLE "emote_sets" (
     "owner_id" uuid, -- Ref: users.id -> On Delete Cascade
     "name" varchar(64) NOT NULL,
     "kind" emote_set_kind NOT NULL,
-    "flags" int4 NOT NULL,
-    "updated_at" timestamptz NOT NULL DEFAULT 'NOW()',
-    "tags" text[] NOT NULL DEFAULT '{}'
+    "tags" text[] NOT NULL DEFAULT '{}',
+    "settings" jsonb NOT NULL DEFAULT '{}',
+    "updated_at" timestamptz NOT NULL DEFAULT 'NOW()'
 );
 
 CREATE INDEX "emote_sets_owner_id_index" ON "emote_sets" ("owner_id");
 
 CREATE TABLE "emote_set_emotes" (
-    "emote_id" uuid NOT NULL, -- Ref: emotes.id -> On Delete Cascade
     "emote_set_id" uuid NOT NULL, -- Ref: emote_sets.id -> On Delete Cascade
+    "emote_id" uuid NOT NULL, -- Ref: emotes.id -> On Delete Cascade
     "added_by_id" uuid, -- Ref: users.id -> On Delete Set Null
     "name" varchar(128) NOT NULL,
     "flags" int4 NOT NULL,

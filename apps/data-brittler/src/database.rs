@@ -16,14 +16,14 @@ pub async fn file_sets_writer(global: &Arc<Global>) -> anyhow::Result<BinaryCopy
 }
 
 pub async fn platform_enum_type(global: &Arc<Global>) -> anyhow::Result<Type> {
-	let platform_type_oid: u32 = scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'platform'")
+	let oid: u32 = scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'platform'")
 		.build()
 		.fetch_one(global.db())
 		.await?
 		.get(0);
 	Ok(Type::new(
 		"platform".to_string(),
-		platform_type_oid,
+		oid,
 		postgres_types::Kind::Enum(vec![
 			"DISCORD".to_string(),
 			"TWITCH".to_string(),
@@ -35,7 +35,7 @@ pub async fn platform_enum_type(global: &Arc<Global>) -> anyhow::Result<Type> {
 }
 
 pub async fn file_set_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
-	let file_set_kind_type_oid: u32 =
+	let oid: u32 =
 		scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'file_set_kind'")
 			.build()
 			.fetch_one(global.db())
@@ -43,7 +43,7 @@ pub async fn file_set_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
 			.get(0);
 	Ok(Type::new(
 		"file_set_kind".to_string(),
-		file_set_kind_type_oid,
+		oid,
 		postgres_types::Kind::Enum(vec![
 			"TICKET".to_string(),
 			"PROFILE_PICTURE".to_string(),
@@ -52,6 +52,24 @@ pub async fn file_set_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
 			"EMOTE".to_string(),
 			"PRODUCT".to_string(),
 			"PAGE".to_string(),
+		]),
+		"".to_string(),
+	))
+}
+
+pub async fn emote_set_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
+	let oid: u32 =
+		scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'emote_set_kind'")
+			.build()
+			.fetch_one(global.db())
+			.await?
+			.get(0);
+	Ok(Type::new(
+		"emote_set_kind".to_string(),
+		oid,
+		postgres_types::Kind::Enum(vec![
+			"NORMAL".to_string(),
+			"PERSONAL".to_string(),
 		]),
 		"".to_string(),
 	))

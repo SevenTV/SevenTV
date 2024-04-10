@@ -53,7 +53,7 @@ impl EmoteSet {
 			immutable: self.settings.immutable,
 			privileged: self.settings.privileged,
 			emote_count: emotes.len() as i32,
-			capacity: self.settings.capacity,
+			capacity: self.settings.capacity as i32,
 			emotes,
 			origins: Vec::new(),
 			owner,
@@ -78,7 +78,7 @@ pub enum EmoteSetKind {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct EmoteSetSettings {
-	pub capacity: i32,
+	pub capacity: u32,
 	pub privileged: bool,
 	pub immutable: bool,
 }
@@ -93,7 +93,7 @@ pub struct EmoteSetEmote {
 	pub added_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[bitmask(i64)]
+#[bitmask(i32)]
 pub enum EmoteSetEmoteFlag {
 	ZeroWidth = 1 << 0,
 	OverrideConflicts = 1 << 1,
@@ -110,7 +110,7 @@ impl postgres_types::ToSql for EmoteSetEmoteFlag {
 	where
 		Self: Sized,
 	{
-		<i64 as postgres_types::ToSql>::accepts(ty)
+		<i32 as postgres_types::ToSql>::accepts(ty)
 	}
 
 	fn to_sql(
@@ -121,7 +121,7 @@ impl postgres_types::ToSql for EmoteSetEmoteFlag {
 	where
 		Self: Sized,
 	{
-		<i64 as postgres_types::ToSql>::to_sql(&self.bits(), ty, out)
+		<i32 as postgres_types::ToSql>::to_sql(&self.bits(), ty, out)
 	}
 
 	fn to_sql_checked(
@@ -129,7 +129,7 @@ impl postgres_types::ToSql for EmoteSetEmoteFlag {
 		ty: &postgres_types::Type,
 		out: &mut tokio_util::bytes::BytesMut,
 	) -> Result<postgres_types::IsNull, Box<dyn std::error::Error + Sync + Send>> {
-		<i64 as postgres_types::ToSql>::to_sql_checked(&self.bits(), ty, out)
+		<i32 as postgres_types::ToSql>::to_sql_checked(&self.bits(), ty, out)
 	}
 }
 
@@ -138,14 +138,14 @@ impl postgres_types::FromSql<'_> for EmoteSetEmoteFlag {
 	where
 		Self: Sized,
 	{
-		<i64 as postgres_types::FromSql>::accepts(ty)
+		<i32 as postgres_types::FromSql>::accepts(ty)
 	}
 
 	fn from_sql(ty: &postgres_types::Type, raw: &[u8]) -> Result<Self, Box<dyn std::error::Error + Sync + Send>>
 	where
 		Self: Sized,
 	{
-		<i64 as postgres_types::FromSql>::from_sql(ty, raw).map(EmoteSetEmoteFlag::from)
+		<i32 as postgres_types::FromSql>::from_sql(ty, raw).map(EmoteSetEmoteFlag::from)
 	}
 }
 

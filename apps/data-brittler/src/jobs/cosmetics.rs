@@ -89,6 +89,7 @@ impl Job for CosmeticsJob {
 				let file_set_id = ulid::Ulid::from_datetime(id.datetime());
 
 				// TODO: image file set properties
+				// TODO: maybe also reupload the image to the image processor because it's only available in webp right now
 				let properties = FileSetProperties::Other(shared::database::FileProperties {
 					path: format!("cdn.7tv.app/badge/{}/1x", cosmetic.id),
 					size: 0,

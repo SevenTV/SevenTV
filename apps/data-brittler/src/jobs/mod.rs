@@ -14,10 +14,12 @@ use self::users::UsersJob;
 use crate::format::Number;
 use crate::global::Global;
 use crate::jobs::cosmetics::CosmeticsJob;
+use crate::jobs::emote_sets::EmoteSetsJob;
 use crate::{error, report};
 
 pub mod cosmetics;
 pub mod emotes;
+pub mod emote_sets;
 pub mod users;
 
 pub struct JobOutcome {
@@ -134,6 +136,13 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		futures.push(fut);
 	} else {
 		tracing::info!("skipping emotes job");
+	}
+	if !global.config().skip_emote_sets {
+		let emotes = EmoteSetsJob::new(global.clone()).await?;
+		let fut = Box::pin(emotes.run(&global));
+		futures.push(fut);
+	} else {
+		tracing::info!("skipping emote sets job");
 	}
 	if !global.config().skip_cosmetics {
 		let emotes = CosmeticsJob::new(global.clone()).await?;

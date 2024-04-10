@@ -2,12 +2,14 @@ use serde::{Deserialize, Deserializer};
 
 mod cosmetic;
 mod emote;
+mod emote_set;
 mod entitlement;
 mod image_file;
 mod user;
 
 pub use cosmetic::*;
 pub use emote::*;
+pub use emote_set::*;
 pub use entitlement::*;
 pub use image_file::*;
 pub use user::*;
