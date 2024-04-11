@@ -64,7 +64,6 @@ impl Job for UsersJob {
 				entitlements.entry(user_id).or_default().push(entitlement);
 			}
 		}
-		tracing::info!("queried all entitlements");
 
 		let users_client = global.db().get().await?;
 		let users_writer = BinaryCopyInWriter::new(users_client
@@ -91,8 +90,6 @@ impl Job for UsersJob {
 		let connections_writer = BinaryCopyInWriter::new(connections_client
 			.copy_in("COPY user_connections (id, user_id, main_connection, platform_kind, platform_id, platform_username, platform_display_name, platform_avatar_url) FROM STDIN WITH (FORMAT BINARY)")
 			.await?, &[Type::UUID, Type::UUID, Type::BOOL, platform_enum_type(&global).await?, Type::VARCHAR, Type::VARCHAR, Type::VARCHAR, Type::VARCHAR]);
-
-		tracing::info!("created writers");
 
 		Ok(Self {
 			global,

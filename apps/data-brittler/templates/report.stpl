@@ -12,13 +12,16 @@ Average speed: `<%= (*total_documents as f64 / took_seconds) as u64 %> documents
 |-----|---------------------|------|----------|----------|
 <% for o in &outcomes { %>| `<%= o.job_name %>` | <%= o.processed_documents %> | <%= o.inserted_rows %> | <%= format!("{:.2}", o.took_seconds) %>s | <%= o.errors.len() %> |
 <% } %>
-## Problems
+## Problems<% if !outcomes.iter().all(|o| o.errors.is_empty()) { %>
 
 The following section shows problems that need manual fixing.
 
-<% for o in &outcomes { %>## `<%= o.job_name %>`
+<% for o in &outcomes { %><% if !o.errors.is_empty() { %>## `<%= o.job_name %>`
 
 | # | Problem | Description | Data |
 |---|---------|-------------|------|
 <% for (i, e) in o.errors.iter().enumerate() { %>| `<%= i+1 %>` | <%= e.name() %> | <%= e | disp %> | `<%= e.data() %>` |
-<% } %><% } %>
+<% } %><% } %><% } %><% } %><% else { %>
+
+No problems were found.
+<% } %>
