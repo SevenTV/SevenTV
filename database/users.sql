@@ -86,11 +86,10 @@ CREATE INDEX "user_blocks_blocked_user_id_index" ON "user_blocks" ("blocked_user
 CREATE TABLE "user_bans" (
     "id" uuid PRIMARY KEY,
     "user_id" uuid NOT NULL, -- Ref: users.id -> On Delete Cascade
-    "reason" text NOT NULL,
+    "created_by_id" uuid, -- Ref: users.id -> On Delete Set NULL
+    "data" jsonb NOT NULL DEFAULT '{}',
     "expires_at" timestamptz,
-    "kind" int4 NOT NULL,
-    "updated_at" timestamptz NOT NULL DEFAULT 'NOW()',
-    "created_by_id" uuid -- Ref: users.id -> On Delete Set NULL
+    "updated_at" timestamptz NOT NULL DEFAULT 'NOW()'
 );
 
 CREATE INDEX "user_bans_user_id_index" ON "user_bans" ("user_id");

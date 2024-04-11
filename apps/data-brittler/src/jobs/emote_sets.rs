@@ -148,4 +148,11 @@ impl Job for EmoteSetsJob {
 
 		outcome
 	}
+
+	async fn finish(mut self) -> anyhow::Result<()> {
+		self.emote_sets_writer.as_mut().finish().await?;
+		self.emote_set_emotes_writer.as_mut().finish().await?;
+
+		Ok(())
+	}
 }

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Deserializer};
 
+mod ban;
 mod cosmetic;
 mod emote;
 mod emote_set;
@@ -8,6 +9,7 @@ mod image_file;
 mod role;
 mod user;
 
+pub use ban::*;
 pub use cosmetic::*;
 pub use emote::*;
 pub use emote_set::*;

@@ -13,11 +13,13 @@ use self::emotes::EmotesJob;
 use self::users::UsersJob;
 use crate::format::Number;
 use crate::global::Global;
+use crate::jobs::bans::BansJob;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
 use crate::jobs::roles::RolesJob;
 use crate::{error, report};
 
+pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
@@ -139,6 +141,7 @@ pub trait Job: Sized {
 
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let any_run = global.config().users
+		|| global.config().bans
 		|| global.config().emotes
 		|| global.config().emote_sets
 		|| global.config().cosmetics
@@ -153,6 +156,12 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	UsersJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().users || !any_run && !global.config().skip_users,
+	)
+	.await?
+	.map(|j| futures.push(j));
+	BansJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().bans || !any_run && !global.config().skip_bans,
 	)
 	.await?
 	.map(|j| futures.push(j));

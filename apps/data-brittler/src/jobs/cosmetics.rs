@@ -217,4 +217,13 @@ impl Job for CosmeticsJob {
 
 		outcome
 	}
+
+	async fn finish(mut self) -> anyhow::Result<()> {
+		self.file_sets_writer.as_mut().finish().await?;
+		self.paints_writer.as_mut().finish().await?;
+		self.paint_file_sets_writer.as_mut().finish().await?;
+		self.badges_writer.as_mut().finish().await?;
+
+		Ok(())
+	}
 }

@@ -73,4 +73,9 @@ impl Job for RolesJob {
 
 		outcome
 	}
+
+	async fn finish(mut self) -> anyhow::Result<()> {
+		self.roles_writer.as_mut().finish().await?;
+		Ok(())
+	}
 }

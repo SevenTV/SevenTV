@@ -19,6 +19,11 @@ pub struct Extra {
 	/// Skip users job
 	pub skip_users: bool,
 
+	/// Run bans job
+	pub bans: bool,
+	/// Skip bans job
+	pub skip_bans: bool,
+
 	/// Run emotes job
 	pub emotes: bool,
 	/// Skip emotes job
@@ -51,6 +56,8 @@ impl Default for Extra {
 			report_path: PathBuf::from("./local/report.md"),
 			users: false,
 			skip_users: false,
+			bans: false,
+			skip_bans: false,
 			emotes: false,
 			skip_emotes: false,
 			emote_sets: false,
