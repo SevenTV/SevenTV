@@ -57,8 +57,8 @@ pub struct Ticket {
 	pub title: String,
 	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: TicketData,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub tags: Vec<String>,
+	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Table for Ticket {

@@ -5,14 +5,14 @@ Makes the data brittle.
 ## Collections - `7tv`
 
 - [ ] `audit_logs`
-- [ ] `bans`
+- [x] `bans`
 - [x] `cosmetics`
 - [x] `emote_sets`
 - [x] `emotes`
 - [x] `entitlements`
 - [ ] `messages` (what is this?)
 - [ ] `messages_read` (?)
-- [ ] `reports`
+- [x] `reports`
 - [x] `roles`
 - [ ] `system`
 - [ ] `user_presences` (do we need to transfer this?)

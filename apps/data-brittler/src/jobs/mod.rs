@@ -16,6 +16,7 @@ use crate::global::Global;
 use crate::jobs::bans::BansJob;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
+use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
 use crate::{error, report};
 
@@ -23,6 +24,7 @@ pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
+pub mod reports;
 pub mod roles;
 pub mod users;
 
@@ -148,7 +150,8 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		|| global.config().emotes
 		|| global.config().emote_sets
 		|| global.config().cosmetics
-		|| global.config().roles;
+		|| global.config().roles
+		|| global.config().reports;
 
 	let timer = Instant::now();
 
@@ -184,6 +187,11 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	RolesJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().roles || !any_run && !global.config().skip_roles,
+	)?
+	.map(|j| futures.push(j));
+	ReportsJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().reports || !any_run && !global.config().skip_reports,
 	)?
 	.map(|j| futures.push(j));
 

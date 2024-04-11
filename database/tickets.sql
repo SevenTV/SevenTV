@@ -23,13 +23,13 @@ CREATE TABLE "tickets" (
     "kind" ticket_kind NOT NULL,
     "status" ticket_status NOT NULL,
     "priority" ticket_priority NOT NULL,
-    "title" varchar(64) NOT NULL,
+    "title" text NOT NULL,
     "data" jsonb NOT NULL DEFAULT '{}',
-    "updated_at" timestamptz NOT NULL DEFAULT 'NOW()',
-    "tags" text[] NOT NULL DEFAULT '{}'
+    "tags" text[] NOT NULL DEFAULT '{}',
+    "updated_at" timestamptz NOT NULL DEFAULT 'NOW()'
 );
 
-CREATE INDEX "tickets_state_index" ON "tickets" ("kind", "state");
+CREATE INDEX "tickets_status_index" ON "tickets" ("kind", "status");
 
 CREATE TABLE "ticket_files" (
     "ticket_id" uuid NOT NULL, -- Ref: tickets.id -> DO NOTHING

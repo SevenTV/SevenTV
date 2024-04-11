@@ -44,6 +44,11 @@ pub struct Extra {
 	/// Skip roless job
 	pub skip_roles: bool,
 
+	/// Run reports job
+	pub reports: bool,
+	/// Skip reports job
+	pub skip_reports: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 }
@@ -66,6 +71,8 @@ impl Default for Extra {
 			skip_cosmetics: false,
 			roles: false,
 			skip_roles: false,
+			reports: false,
+			skip_reports: false,
 			truncate: false,
 		}
 	}
