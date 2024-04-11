@@ -1,12 +1,15 @@
-use std::{pin::Pin, sync::Arc, vec};
+use std::pin::Pin;
+use std::sync::Arc;
+use std::vec;
 
 use postgres_types::Type;
 use shared::database::{self, FileSetKind, FileSetProperties};
 use tokio_postgres::binary_copy::BinaryCopyInWriter;
 
-use crate::{database::file_set_kind_type, error, global::Global, types};
-
 use super::{Job, ProcessOutcome};
+use crate::database::file_set_kind_type;
+use crate::global::Global;
+use crate::{error, types};
 
 pub struct CosmeticsJob {
 	global: Arc<Global>,
@@ -44,7 +47,6 @@ impl Job for CosmeticsJob {
 				.await?,
 			&[Type::UUID, file_set_kind_type(&global).await?, Type::BOOL, Type::JSONB],
 		);
-
 
 		let paints_client = global.db().get().await?;
 		let paints_writer = BinaryCopyInWriter::new(
@@ -94,7 +96,8 @@ impl Job for CosmeticsJob {
 				let file_set_id = ulid::Ulid::from_datetime(id.datetime());
 
 				// TODO: image file set properties
-				// TODO: maybe also reupload the image to the image processor because it's only available in webp right now
+				// TODO: maybe also reupload the image to the image processor because it's only
+				// available in webp right now
 				let properties = FileSetProperties::Other(shared::database::FileProperties {
 					path: format!("cdn.7tv.app/badge/{}/1x", cosmetic.id),
 					size: 0,

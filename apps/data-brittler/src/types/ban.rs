@@ -3,23 +3,23 @@ use shared::object_id::ObjectId;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Ban {
-    #[serde(rename = "_id")]
-    pub id: ObjectId,
-    pub victim_id: ObjectId,
-    pub actor_id: ObjectId,
-    pub reason: String,
-    pub expire_at: super::DateTime,
-    pub effects: BanEffect,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub victim_id: ObjectId,
+	pub actor_id: ObjectId,
+	pub reason: String,
+	pub expire_at: super::DateTime,
+	pub effects: BanEffect,
 }
 
 #[bitmask(i64)]
 // https://github.com/SevenTV/Common/blob/master/structures/v3/type.role.go#L37
 pub enum BanEffect {
-    NoPermissions = 1 << 0,
-    NoAuth = 1 << 1,
-    NoOwnership = 1 << 2,
-    MemoryHole = 1 << 3,
-    BlockedIp = 1 << 4,
+	NoPermissions = 1 << 0,
+	NoAuth = 1 << 1,
+	NoOwnership = 1 << 2,
+	MemoryHole = 1 << 3,
+	BlockedIp = 1 << 4,
 }
 
 impl Default for BanEffect {

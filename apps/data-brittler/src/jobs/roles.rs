@@ -1,12 +1,13 @@
-use std::{pin::Pin, sync::Arc};
+use std::pin::Pin;
+use std::sync::Arc;
 
 use postgres_types::Type;
 use shared::database::RoleData;
 use tokio_postgres::binary_copy::BinaryCopyInWriter;
 
-use crate::{global::Global, types};
-
 use super::{Job, ProcessOutcome};
+use crate::global::Global;
+use crate::types;
 
 pub struct RolesJob {
 	global: Arc<Global>,
@@ -14,11 +15,11 @@ pub struct RolesJob {
 }
 
 impl Job for RolesJob {
-	const NAME: &'static str = "transfer_roles";
-
 	type T = types::Role;
 
-    async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+	const NAME: &'static str = "transfer_roles";
+
+	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("truncating roles table");
 			scuffle_utils::database::query("TRUNCATE roles")
@@ -52,7 +53,7 @@ impl Job for RolesJob {
 
 		let data = RoleData {
 			permissions: role.to_new_permissions(),
-            discord_id: role.discord_id,
+			discord_id: role.discord_id,
 		};
 
 		let priority = role.position.try_into().unwrap_or(i16::MAX);

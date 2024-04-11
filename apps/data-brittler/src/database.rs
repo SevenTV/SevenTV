@@ -24,12 +24,11 @@ pub async fn platform_enum_type(global: &Arc<Global>) -> anyhow::Result<Type> {
 }
 
 pub async fn file_set_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
-	let oid: u32 =
-		scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'file_set_kind'")
-			.build()
-			.fetch_one(global.db())
-			.await?
-			.get(0);
+	let oid: u32 = scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'file_set_kind'")
+		.build()
+		.fetch_one(global.db())
+		.await?
+		.get(0);
 	Ok(Type::new(
 		"file_set_kind".to_string(),
 		oid,
@@ -47,19 +46,15 @@ pub async fn file_set_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
 }
 
 pub async fn emote_set_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
-	let oid: u32 =
-		scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'emote_set_kind'")
-			.build()
-			.fetch_one(global.db())
-			.await?
-			.get(0);
+	let oid: u32 = scuffle_utils::database::query("SELECT oid FROM pg_type WHERE typname = 'emote_set_kind'")
+		.build()
+		.fetch_one(global.db())
+		.await?
+		.get(0);
 	Ok(Type::new(
 		"emote_set_kind".to_string(),
 		oid,
-		postgres_types::Kind::Enum(vec![
-			"NORMAL".to_string(),
-			"PERSONAL".to_string(),
-		]),
+		postgres_types::Kind::Enum(vec!["NORMAL".to_string(), "PERSONAL".to_string()]),
 		"".to_string(),
 	))
 }

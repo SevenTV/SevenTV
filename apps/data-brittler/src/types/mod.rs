@@ -45,11 +45,7 @@ where
 	D: Deserializer<'de>,
 {
 	let s = String::deserialize(deserializer)?;
-	if s.is_empty() {
-		Ok(None)
-	} else {
-		Ok(Some(s))
-	}
+	if s.is_empty() { Ok(None) } else { Ok(Some(s)) }
 }
 
 fn unsigned_int<'de, D>(deserializer: D) -> Result<u32, D::Error>

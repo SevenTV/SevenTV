@@ -1,13 +1,15 @@
-use std::{pin::Pin, sync::Arc};
+use std::pin::Pin;
+use std::sync::Arc;
 
 use chrono::Utc;
 use postgres_types::{Json, Type};
 use shared::database::{EmoteSetEmoteFlag, EmoteSetKind, EmoteSetSettings};
 use tokio_postgres::binary_copy::BinaryCopyInWriter;
 
-use crate::{database::emote_set_kind_type, global::Global, types};
-
 use super::{Job, ProcessOutcome};
+use crate::database::emote_set_kind_type;
+use crate::global::Global;
+use crate::types;
 
 pub struct EmoteSetsJob {
 	global: Arc<Global>,
@@ -16,9 +18,9 @@ pub struct EmoteSetsJob {
 }
 
 impl Job for EmoteSetsJob {
-	const NAME: &'static str = "transfer_emote_sets";
-
 	type T = types::EmoteSet;
+
+	const NAME: &'static str = "transfer_emote_sets";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
@@ -47,7 +49,9 @@ impl Job for EmoteSetsJob {
 		let emote_set_emotes_client = global.db().get().await?;
 		let emote_set_emotes_writer = BinaryCopyInWriter::new(
 			emote_set_emotes_client
-				.copy_in("COPY emote_set_emotes (emote_set_id, emote_id, added_by_id, name, flags, added_at) FROM STDIN WITH (FORMAT BINARY)")
+				.copy_in(
+					"COPY emote_set_emotes (emote_set_id, emote_id, added_by_id, name, flags, added_at) FROM STDIN WITH (FORMAT BINARY)",
+				)
 				.await?,
 			&[
 				Type::UUID,

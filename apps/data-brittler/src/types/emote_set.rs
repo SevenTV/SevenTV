@@ -1,7 +1,5 @@
 use shared::object_id::ObjectId;
-
-pub use shared::types::old::ActiveEmoteFlagModel;
-pub use shared::types::old::EmoteSetFlagModel;
+pub use shared::types::old::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct EmoteSet {
@@ -15,7 +13,7 @@ pub struct EmoteSet {
 	pub immutable: bool,
 	#[serde(default)]
 	pub privileged: bool,
-    #[serde(default)]
+	#[serde(default)]
 	pub flags: EmoteSetFlagModel,
 	#[serde(default, deserialize_with = "super::null_to_default")]
 	pub tags: Vec<String>,
@@ -26,7 +24,7 @@ pub struct EmoteSet {
 pub struct EmoteSetEmote {
 	pub id: Option<ObjectId>,
 	pub name: String,
-    #[serde(default)]
+	#[serde(default)]
 	pub flags: ActiveEmoteFlagModel,
 	pub actor_id: Option<ObjectId>,
 	pub timestamp: Option<super::DateTime>,

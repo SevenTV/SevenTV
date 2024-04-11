@@ -1,12 +1,13 @@
-use std::{pin::Pin, sync::Arc};
+use std::pin::Pin;
+use std::sync::Arc;
 
 use postgres_types::Type;
 use shared::database;
 use tokio_postgres::binary_copy::BinaryCopyInWriter;
 
-use crate::{global::Global, types};
-
 use super::{Job, ProcessOutcome};
+use crate::global::Global;
+use crate::types;
 
 pub struct BansJob {
 	global: Arc<Global>,
@@ -14,9 +15,9 @@ pub struct BansJob {
 }
 
 impl Job for BansJob {
-	const NAME: &'static str = "transfer_bans";
-
 	type T = types::Ban;
+
+	const NAME: &'static str = "transfer_bans";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {

@@ -124,7 +124,11 @@ impl Job for UsersJob {
 				if let Err(e) = self
 					.user_roles_writer
 					.as_mut()
-					.write(&[&user_id, &role_id, &chrono::DateTime::from_timestamp(id.timestamp() as i64, 0)])
+					.write(&[
+						&user_id,
+						&role_id,
+						&chrono::DateTime::from_timestamp(id.timestamp() as i64, 0),
+					])
 					.await
 				{
 					return ProcessOutcome {
