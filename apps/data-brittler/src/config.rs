@@ -9,6 +9,8 @@ pub type Config = shared::config::Config<Extra>;
 pub struct Extra {
 	/// Database configuration
 	pub database: DatabaseConfig,
+	/// ClickHouse connection string
+	pub clickhouse: String,
 	/// MongoDB connection string
 	pub mongo: String,
 	/// Path to the report file
@@ -49,6 +51,11 @@ pub struct Extra {
 	/// Skip reports job
 	pub skip_reports: bool,
 
+	/// Run audit logs job
+	pub audit_logs: bool,
+	/// Skip audit logs job
+	pub skip_audit_logs: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 }
@@ -57,6 +64,7 @@ impl Default for Extra {
 	fn default() -> Self {
 		Self {
 			database: Default::default(),
+			clickhouse: "http://localhost:8123".to_string(),
 			mongo: "mongodb://localhost:27017".to_string(),
 			report_path: PathBuf::from("./local/report.md"),
 			users: false,
@@ -73,6 +81,8 @@ impl Default for Extra {
 			skip_roles: false,
 			reports: false,
 			skip_reports: false,
+			audit_logs: false,
+			skip_audit_logs: false,
 			truncate: false,
 		}
 	}

@@ -10,7 +10,7 @@ hex = "0.4"
 tracing = "0.1"
 serde = { version = "1.0" }
 serde_json = "1.0"
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 prometheus-client = "0.22"
 tokio = "1.0"
 anyhow = "1.0"
@@ -39,3 +39,6 @@ tokio-postgres = "0.7"
 postgres-types = "0.2"
 bitmask-enum = "2"
 enum-impl = "0.1"
+clickhouse = { version = "0.11.6", features = ["uuid", "time"] }
+time = "0.3.36"
+uuid = { version = "1.8.0", features = ["serde"] }

@@ -1,6 +1,8 @@
 use shared::database::Platform;
 use shared::object_id::ObjectId;
 
+use crate::types;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
 	#[error("found duplicate user connection")]
@@ -13,12 +15,19 @@ pub enum Error {
 	SerializeJson(#[from] serde_json::Error),
 	#[error("failed to query database")]
 	Db(#[from] tokio_postgres::Error),
+	#[error("failed to query clickhouse")]
+	Clickhouse(#[from] clickhouse::error::Error),
 
 	#[error("{0}")]
 	ImageFile(#[from] crate::types::ImageFileError),
 
 	#[error("failed to fetch paint image url")]
 	PaintImageUrlRequest(reqwest::Error),
+
+	#[error("unsupported audit log kind")]
+	UnsupportedAuditLogKind(types::AuditLogKind),
+	#[error("failed to convert timestamp")]
+	Timestamp(#[from] time::error::ComponentRange),
 }
 
 impl Error {
@@ -29,8 +38,11 @@ impl Error {
 			Self::Deserialize(_) => "Deserialize",
 			Self::SerializeJson(_) => "SerializeJson",
 			Self::Db(_) => "Db",
+			Self::Clickhouse(_) => "Clickhouse",
 			Self::ImageFile(_) => "ImageFile",
 			Self::PaintImageUrlRequest(_) => "PaintImageUrlRequest",
+			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
+			Self::Timestamp(_) => "Timestamp",
 		}
 	}
 
@@ -42,6 +54,7 @@ impl Error {
 			Self::MissingPlatformId { user_id, platform } => {
 				format!("user id: {}, platform: {:?}", user_id, platform)
 			}
+			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
 			e => format!("{:?}", e),
 		}
 	}

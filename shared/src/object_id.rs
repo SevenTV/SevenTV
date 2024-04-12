@@ -34,6 +34,10 @@ impl ObjectId {
 		ulid::Ulid::from_parts(self.timestamp() * 1000, self.random() as u128)
 	}
 
+	pub fn into_uuid(self) -> uuid::Uuid {
+		self.into_ulid().into()
+	}
+
 	/// Create a new ObjectID from the given timestamp and random value.
 	pub const fn from_parts(timestamp: u64, random: u64) -> Self {
 		Self((timestamp as u128) << 64 | random as u128)

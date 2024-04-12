@@ -1,99 +1,75 @@
-use postgres_types::{FromSql, ToSql};
+use clickhouse::Row;
 
 use super::Table;
 
-#[derive(Debug, Clone, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
 pub struct EmoteActivity {
-    pub id: ulid::Ulid,
-    pub emote_id: ulid::Ulid,
-    pub actor_id: Option<ulid::Ulid>,
+    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    pub emote_id: uuid::Uuid,
+    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    pub actor_id: Option<uuid::Uuid>,
     pub kind: EmoteActivityKind,
-    #[from_row(from_fn = "scuffle_utils::database::json")]
-    pub data: EmoteActivityData,
+    pub timestamp: time::OffsetDateTime,
 }
 
 impl Table for EmoteActivity {
     const TABLE_NAME: &'static str = "emote_activities";
 }
 
-#[derive(Debug, Clone, ToSql, FromSql)]
-#[postgres(name = "emote_activity_kind")]
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum EmoteActivityKind {
-    #[postgres(name = "UPLOAD")]
-    Upload,
-    #[postgres(name = "EDIT")]
-    Edit,
-    #[postgres(name = "MERGE")]
-    Merge,
-    #[postgres(name = "DELETE")]
-    Delete,
+    Upload = 0,
+    Edit = 1,
+    Merge = 2,
+    Delete = 3,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-pub struct EmoteActivityData {}
-
-#[derive(Debug, Clone, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
 pub struct EmoteSetActivity {
-    pub id: ulid::Ulid,
-    pub emote_set_id: ulid::Ulid,
-    pub actor_id: Option<ulid::Ulid>,
+    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    pub emote_set_id: uuid::Uuid,
+    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    pub actor_id: Option<uuid::Uuid>,
     pub kind: EmoteSetActivityKind,
-    #[from_row(from_fn = "scuffle_utils::database::json")]
-    pub data: EmoteSetActivityData,
+    pub timestamp: time::OffsetDateTime,
 }
 
 impl Table for EmoteSetActivity {
     const TABLE_NAME: &'static str = "emote_set_activities";
 }
 
-#[derive(Debug, Clone, ToSql, FromSql)]
-#[postgres(name = "emote_set_activity_kind")]
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum EmoteSetActivityKind {
-    #[postgres(name = "CREATE")]
-    Create,
-    #[postgres(name = "EDIT")]
-    Edit,
-    #[postgres(name = "DELETE")]
-    Delete,
+    Create = 0,
+    Edit = 1,
+    Delete = 2,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-pub struct EmoteSetActivityData {}
-
-#[derive(Debug, Clone, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
 pub struct UserActivity {
-    pub id: ulid::Ulid,
-    pub user_id: ulid::Ulid,
-    pub actor_id: Option<ulid::Ulid>,
+    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    pub user_id: uuid::Uuid,
+    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    pub actor_id: Option<uuid::Uuid>,
     pub kind: UserActivityKind,
-    #[from_row(from_fn = "scuffle_utils::database::json")]
-    pub data: UserActivityData,
+    pub timestamp: time::OffsetDateTime,
 }
 
 impl Table for UserActivity {
     const TABLE_NAME: &'static str = "user_activities";
 }
 
-#[derive(Debug, Clone, ToSql, FromSql)]
-#[postgres(name = "user_activity_kind")]
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum UserActivityKind {
-    #[postgres(name = "LOGIN")]
-    Login,
-    #[postgres(name = "LOGOUT")]
-    Logout,
-    #[postgres(name = "REGISTER")]
-    Register,
-    #[postgres(name = "EDIT")]
-    Edit,
-    #[postgres(name = "MERGE")]
-    Merge,
-    #[postgres(name = "DELETE")]
-    Delete,
-    #[postgres(name = "BAN")]
-    Ban,
-    #[postgres(name = "UNBAN")]
-    Unban,
+    Register = 0,
+    Login = 1,
+    Logout = 2,
+    Edit = 3,
+    Delete = 4,
+    Merge = 5,
+    Ban = 6,
+    Unban = 7,
 }
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-pub struct UserActivityData {}

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Deserializer};
 
+mod audit_log;
 mod ban;
 mod cosmetic;
 mod emote;
@@ -10,6 +11,7 @@ mod report;
 mod role;
 mod user;
 
+pub use audit_log::*;
 pub use ban::*;
 pub use cosmetic::*;
 pub use emote::*;
