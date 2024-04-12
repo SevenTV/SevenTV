@@ -1,6 +1,7 @@
-use std::sync::Arc;
+use std::{mem, sync::Arc};
 
-use shared::database::{self, Table};
+use clickhouse::Row;
+use shared::database::{self, EmoteActivity, EmoteSetActivity, Table, TicketActivity, UserActivity};
 
 use crate::{
 	error,
@@ -10,13 +11,30 @@ use crate::{
 
 use super::{Job, ProcessOutcome};
 
+const BATCH_SIZE: u32 = 1_000_000;
+
 pub struct AuditLogsJob {
 	global: Arc<Global>,
-	// i: u32,
+	i: u32,
 	emote_activity_writer: clickhouse::insert::Insert<database::EmoteActivity>,
 	emote_set_activity_writer: clickhouse::insert::Insert<database::EmoteSetActivity>,
 	user_activity_writer: clickhouse::insert::Insert<database::UserActivity>,
 	ticket_activity_writer: clickhouse::insert::Insert<database::TicketActivity>,
+}
+
+async fn renew_writer<T: Row>(
+	global: &Arc<Global>,
+	old_writer: &mut clickhouse::insert::Insert<T>,
+	table: &str,
+) -> Option<error::Error> {
+	mem::replace(
+		old_writer,
+		global.clickhouse().insert(table).map_err(Into::<error::Error>::into).ok()?,
+	)
+	.end()
+	.await
+	.err()
+	.map(Into::into)
 }
 
 impl Job for AuditLogsJob {
@@ -26,7 +44,9 @@ impl Job for AuditLogsJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("truncating emote_activities, emote_set_activities, user_activities and ticket_activities tables");
+			tracing::info!(
+				"truncating emote_activities, emote_set_activities, user_activities and ticket_activities tables"
+			);
 
 			let conn = global.clickhouse();
 			conn.query("TRUNCATE TABLE emote_activities").execute().await?;
@@ -42,7 +62,7 @@ impl Job for AuditLogsJob {
 
 		Ok(Self {
 			global,
-			// i: 0,
+			i: 0,
 			emote_activity_writer,
 			emote_set_activity_writer,
 			user_activity_writer,
@@ -66,7 +86,12 @@ impl Job for AuditLogsJob {
 		};
 
 		match audit_log.kind {
-			AuditLogKind::CreateEmote | AuditLogKind::ProcessEmote | AuditLogKind::UpdateEmote | AuditLogKind::MergeEmote | AuditLogKind::DeleteEmote | AuditLogKind::UndoDeleteEmote => {
+			AuditLogKind::CreateEmote
+			| AuditLogKind::ProcessEmote
+			| AuditLogKind::UpdateEmote
+			| AuditLogKind::MergeEmote
+			| AuditLogKind::DeleteEmote
+			| AuditLogKind::UndoDeleteEmote => {
 				let kind = match audit_log.kind {
 					AuditLogKind::CreateEmote => database::EmoteActivityKind::Upload,
 					AuditLogKind::ProcessEmote => database::EmoteActivityKind::Process,
@@ -154,29 +179,25 @@ impl Job for AuditLogsJob {
 					Err(e) => {
 						tracing::error!("{e}");
 						outcome.errors.push(e.into());
-					},
+					}
 				}
 			}
 			k => outcome.errors.push(error::Error::UnsupportedAuditLogKind(k)),
 		}
 
-		// self.i += 1;
-		// if self.i > 1_000_000 {
-		// 	if let Err(e) = self.emote_activity_writer.commit().await {
-		// 		outcome.errors.push(e.into());
-		// 	}
-		// 	if let Err(e) = self.emote_set_activity_writer.commit().await {
-		// 		outcome.errors.push(e.into());
-		// 	}
-		// 	if let Err(e) = self.user_activity_writer.commit().await {
-		// 		outcome.errors.push(e.into());
-		// 	}
-		// 	if let Err(e) = self.ticket_activity_writer.commit().await {
-		// 		tracing::error!("failed to commit: {e}");
-		// 		outcome.errors.push(e.into());
-		// 	}
-		// 	self.i = 0;
-		// }
+		self.i += 1;
+		if self.i > BATCH_SIZE {
+			renew_writer(&self.global, &mut self.emote_activity_writer, EmoteActivity::TABLE_NAME).await;
+			renew_writer(
+				&self.global,
+				&mut self.emote_set_activity_writer,
+				EmoteSetActivity::TABLE_NAME,
+			)
+			.await;
+			renew_writer(&self.global, &mut self.user_activity_writer, UserActivity::TABLE_NAME).await;
+			renew_writer(&self.global, &mut self.ticket_activity_writer, TicketActivity::TABLE_NAME).await;
+			self.i = 0;
+		}
 
 		outcome
 	}
