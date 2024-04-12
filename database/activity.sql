@@ -5,9 +5,11 @@ CREATE TABLE emote_activities (
     "actor_id" Nullable(UUID),
     "kind" Enum8(
         'UPLOAD' = 0,
-        'EDIT' = 1,
-        'MERGE' = 2,
-        'DELETE' = 3
+        'PROCESS' = 1,
+        'EDIT' = 2,
+        'MERGE' = 3,
+        'DELETE' = 4,
+        'UNDO_DELETE' = 5
     ),
     "timestamp" DateTime64(9) DEFAULT NOW()
 )
@@ -44,3 +46,16 @@ CREATE TABLE user_activities (
 )
 ENGINE = MergeTree
 ORDER BY ("user_id", "kind", "timestamp");
+
+CREATE TABLE ticket_activities (
+    "ticket_id" UUID,
+    "actor_id" Nullable(UUID),
+    "kind" Enum8(
+        'CREATE' = 0,
+        'EDIT' = 1,
+        'DELETE' = 2
+    ),
+    "timestamp" DateTime64(9) DEFAULT NOW()
+)
+ENGINE = MergeTree
+ORDER BY ("ticket_id", "kind", "timestamp");

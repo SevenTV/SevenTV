@@ -4,11 +4,12 @@ use super::Table;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
 pub struct EmoteActivity {
-    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    #[serde(with = "clickhouse::serde::uuid")]
     pub emote_id: uuid::Uuid,
-    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    #[serde(with = "clickhouse::serde::uuid::option")]
     pub actor_id: Option<uuid::Uuid>,
     pub kind: EmoteActivityKind,
+    #[serde(with = "clickhouse::serde::time::datetime64::nanos")]
     pub timestamp: time::OffsetDateTime,
 }
 
@@ -20,18 +21,21 @@ impl Table for EmoteActivity {
 #[repr(u8)]
 pub enum EmoteActivityKind {
     Upload = 0,
-    Edit = 1,
-    Merge = 2,
-    Delete = 3,
+    Process = 1,
+    Edit = 2,
+    Merge = 3,
+    Delete = 4,
+    UndoDelete = 5,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
 pub struct EmoteSetActivity {
-    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    #[serde(with = "clickhouse::serde::uuid")]
     pub emote_set_id: uuid::Uuid,
-    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    #[serde(with = "clickhouse::serde::uuid::option")]
     pub actor_id: Option<uuid::Uuid>,
     pub kind: EmoteSetActivityKind,
+    #[serde(with = "clickhouse::serde::time::datetime64::nanos")]
     pub timestamp: time::OffsetDateTime,
 }
 
@@ -49,11 +53,12 @@ pub enum EmoteSetActivityKind {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
 pub struct UserActivity {
-    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    #[serde(with = "clickhouse::serde::uuid")]
     pub user_id: uuid::Uuid,
-    // #[serde(with = "ulid::serde::ulid_as_uuid")]
+    #[serde(with = "clickhouse::serde::uuid::option")]
     pub actor_id: Option<uuid::Uuid>,
     pub kind: UserActivityKind,
+    #[serde(with = "clickhouse::serde::time::datetime64::nanos")]
     pub timestamp: time::OffsetDateTime,
 }
 
@@ -72,4 +77,27 @@ pub enum UserActivityKind {
     Merge = 5,
     Ban = 6,
     Unban = 7,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
+pub struct TicketActivity {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub ticket_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid::option")]
+    pub actor_id: Option<uuid::Uuid>,
+    pub kind: TicketActivityKind,
+    #[serde(with = "clickhouse::serde::time::datetime64::nanos")]
+    pub timestamp: time::OffsetDateTime,
+}
+
+impl Table for TicketActivity {
+    const TABLE_NAME: &'static str = "ticket_activities";
+}
+
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
+pub enum TicketActivityKind {
+    Create = 0,
+    Edit = 1,
+    Delete = 2,
 }
