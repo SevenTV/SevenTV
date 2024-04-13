@@ -34,7 +34,7 @@ pub enum TicketKind {
 	Other,
 }
 
-#[derive(Debug, Clone, Default, ToSql, FromSql)]
+#[derive(Debug, Clone, Default, ToSql, FromSql, serde::Serialize, serde::Deserialize)]
 #[postgres(name = "ticket_status")]
 pub enum TicketStatus {
 	#[default]

@@ -112,10 +112,11 @@ pub trait Job: Sized {
 
 			if outcome.processed_documents % tenth == 0 {
 				tracing::info!(
-					"{:.1}% ({}/{})",
+					"{:.1}% ({}/{}) ({} errors)",
 					outcome.processed_documents as f64 / count as f64 * 100.0,
 					Number::from(outcome.processed_documents),
-					Number::from(count)
+					Number::from(count),
+					Number::from(outcome.errors.len())
 				);
 			}
 

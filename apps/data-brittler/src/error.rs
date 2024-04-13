@@ -21,6 +21,9 @@ pub enum Error {
 	#[error("{0}")]
 	ImageFile(#[from] crate::types::ImageFileError),
 
+	#[error("emote set emote found with no name")]
+	EmoteSetEmoteNoName { emote_set_id: ObjectId, emote_id: ObjectId },
+
 	#[error("failed to fetch paint image url")]
 	PaintImageUrlRequest(reqwest::Error),
 
@@ -40,6 +43,7 @@ impl Error {
 			Self::Db(_) => "Db",
 			Self::Clickhouse(_) => "Clickhouse",
 			Self::ImageFile(_) => "ImageFile",
+			Self::EmoteSetEmoteNoName { .. } => "EmoteSetEmoteNoName",
 			Self::PaintImageUrlRequest(_) => "PaintImageUrlRequest",
 			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
 			Self::Timestamp(_) => "Timestamp",
@@ -54,6 +58,9 @@ impl Error {
 			Self::MissingPlatformId { user_id, platform } => {
 				format!("user id: {}, platform: {:?}", user_id, platform)
 			}
+			Self::EmoteSetEmoteNoName { emote_set_id, emote_id } => {
+				format!("emote set id: {}, emote id: {:?}", emote_set_id, emote_id)
+			},
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
 			e => format!("{:?}", e),
 		}

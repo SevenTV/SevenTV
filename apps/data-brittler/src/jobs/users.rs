@@ -15,6 +15,8 @@ use crate::global::Global;
 use crate::types::image_files_to_file_properties;
 use crate::{error, types};
 
+// TODO: editors
+
 pub struct UsersJob {
 	global: Arc<Global>,
 	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,

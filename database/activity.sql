@@ -8,9 +8,9 @@ CREATE TABLE emote_activities (
         'PROCESS' = 1,
         'EDIT' = 2,
         'MERGE' = 3,
-        'DELETE' = 4,
-        'UNDO_DELETE' = 5
+        'DELETE' = 4
     ),
+    "data" Nullable(String),
     "timestamp" DateTime64(3) DEFAULT NOW()
 )
 ENGINE = MergeTree
@@ -24,6 +24,7 @@ CREATE TABLE emote_set_activities (
         'EDIT' = 1,
         'DELETE' = 2
     ),
+    "data" String,
     "timestamp" DateTime64(3) DEFAULT NOW()
 )
 ENGINE = MergeTree
@@ -42,6 +43,7 @@ CREATE TABLE user_activities (
         'BAN' = 6,
         'UNBAN' = 7
     ),
+    "data" String,
     "timestamp" DateTime64(3) DEFAULT NOW()
 )
 ENGINE = MergeTree
@@ -55,6 +57,7 @@ CREATE TABLE ticket_activities (
         'EDIT' = 1,
         'DELETE' = 2
     ),
+    "data" String,
     "timestamp" DateTime64(3) DEFAULT NOW()
 )
 ENGINE = MergeTree

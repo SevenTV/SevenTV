@@ -23,7 +23,8 @@ pub struct EmoteSet {
 #[derive(Debug, serde::Deserialize)]
 pub struct EmoteSetEmote {
 	pub id: Option<ObjectId>,
-	pub name: String,
+	#[serde(default, deserialize_with = "super::empty_string_is_none")]
+	pub name: Option<String>,
 	#[serde(default)]
 	pub flags: ActiveEmoteFlagModel,
 	pub actor_id: Option<ObjectId>,

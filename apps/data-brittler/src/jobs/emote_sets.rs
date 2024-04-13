@@ -9,7 +9,7 @@ use tokio_postgres::binary_copy::BinaryCopyInWriter;
 use super::{Job, ProcessOutcome};
 use crate::database::emote_set_kind_type;
 use crate::global::Global;
-use crate::types;
+use crate::{error, types};
 
 pub struct EmoteSetsJob {
 	global: Arc<Global>,
@@ -117,8 +117,6 @@ impl Job for EmoteSetsJob {
 			.filter_map(|e| e)
 			.filter_map(|e| e.id.map(|id| (id, e)))
 		{
-			let emote_id = emote_id.into_ulid();
-
 			let mut flags = EmoteSetEmoteFlag::none();
 
 			if e.flags.contains(types::ActiveEmoteFlagModel::ZeroWidth) {
@@ -132,14 +130,22 @@ impl Job for EmoteSetsJob {
 				flags |= EmoteSetEmoteFlag::OverrideConflicts;
 			}
 
+			let Some(emote_name) = e.name else {
+				outcome.errors.push(error::Error::EmoteSetEmoteNoName {
+					emote_set_id: emote_set.id,
+					emote_id,
+				});
+				continue;
+			};
+
 			match self
 				.emote_set_emotes_writer
 				.as_mut()
 				.write(&[
 					&id,
-					&emote_id,
+					&emote_id.into_ulid(),
 					&e.actor_id.map(|a| a.into_ulid()),
-					&e.name,
+					&emote_name,
 					&flags.bits(),
 					&e.timestamp.map(|t| t.into_chrono()).unwrap_or(Utc::now()),
 				])

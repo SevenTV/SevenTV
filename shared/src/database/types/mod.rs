@@ -12,6 +12,7 @@ mod product;
 mod role;
 mod ticket;
 mod user;
+mod json_string;
 
 pub use self::activity::*;
 pub use self::automod::*;

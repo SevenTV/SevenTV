@@ -36,7 +36,9 @@ pub enum UserAvatar {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct UserEditor {
-	pub id: ObjectId,
+	#[serde(default)]
+	pub id: Option<ObjectId>,
+	#[serde(default)]
 	pub permissions: u32,
 	#[serde(default)]
 	pub visible: bool,
