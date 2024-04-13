@@ -9,7 +9,7 @@ pub struct EmoteActivity {
     #[serde(with = "clickhouse::serde::uuid::option")]
     pub actor_id: Option<uuid::Uuid>,
     pub kind: EmoteActivityKind,
-    #[serde(with = "clickhouse::serde::time::datetime64::nanos")]
+    #[serde(with = "clickhouse::serde::time::datetime64::millis")]
     pub timestamp: time::OffsetDateTime,
 }
 
@@ -35,7 +35,7 @@ pub struct EmoteSetActivity {
     #[serde(with = "clickhouse::serde::uuid::option")]
     pub actor_id: Option<uuid::Uuid>,
     pub kind: EmoteSetActivityKind,
-    #[serde(with = "clickhouse::serde::time::datetime64::nanos")]
+    #[serde(with = "clickhouse::serde::time::datetime64::millis")]
     pub timestamp: time::OffsetDateTime,
 }
 
@@ -58,7 +58,7 @@ pub struct UserActivity {
     #[serde(with = "clickhouse::serde::uuid::option")]
     pub actor_id: Option<uuid::Uuid>,
     pub kind: UserActivityKind,
-    #[serde(with = "clickhouse::serde::time::datetime64::nanos")]
+    #[serde(with = "clickhouse::serde::time::datetime64::millis")]
     pub timestamp: time::OffsetDateTime,
 }
 
@@ -86,7 +86,7 @@ pub struct TicketActivity {
     #[serde(with = "clickhouse::serde::uuid::option")]
     pub actor_id: Option<uuid::Uuid>,
     pub kind: TicketActivityKind,
-    #[serde(with = "clickhouse::serde::time::datetime64::nanos")]
+    #[serde(with = "clickhouse::serde::time::datetime64::millis")]
     pub timestamp: time::OffsetDateTime,
 }
 
