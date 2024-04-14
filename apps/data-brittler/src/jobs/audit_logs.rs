@@ -14,7 +14,7 @@ use crate::{
 
 use super::{Job, ProcessOutcome};
 
-const BATCH_SIZE: u32 = 10_000;
+const BATCH_SIZE: u32 = 100_000;
 
 pub struct AuditLogsJob {
 	global: Arc<Global>,
@@ -62,6 +62,25 @@ impl Job for AuditLogsJob {
 		let emote_set_activity_writer = global.clickhouse().insert(database::EmoteSetActivity::TABLE_NAME)?;
 		let user_activity_writer = global.clickhouse().insert(database::UserActivity::TABLE_NAME)?;
 		let ticket_activity_writer = global.clickhouse().insert(database::TicketActivity::TABLE_NAME)?;
+
+		// emote_activity_writer
+		// 	.write(&database::EmoteActivity {
+		// 		emote_id: uuid::Uuid::new_v4(),
+		// 		actor_id: Some(uuid::Uuid::new_v4()),
+		// 		kind: database::EmoteActivityKind::Upload,
+		// 		// data: Some(serde_json::to_string(&database::EmoteActivityData::ChangeName {
+		// 		// 	old: "old".to_string(),
+		// 		// 	new: "new".to_string(),
+		// 		// })?),
+		// 		data: Some(database::EmoteActivityData::ChangeName {
+		// 			old: "old".to_string(),
+		// 			new: "new".to_string(),
+		// 		}),
+		// 		timestamp: time::OffsetDateTime::now_utc(),
+		// 	})
+		// 	.await?;
+		// emote_activity_writer.end().await?;
+		// bail!("test");
 
 		Ok(Self {
 			global,

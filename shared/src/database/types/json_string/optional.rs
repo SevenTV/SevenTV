@@ -8,8 +8,7 @@ where
 	match value {
 		Some(value) => {
 			let s = serde_json::to_string(value).map_err(|e| serde::ser::Error::custom(e))?;
-			tracing::debug!("{}", s.len());
-			serializer.serialize_str(&s)
+			serializer.serialize_some(&s)
 		}
 		None => serializer.serialize_none(),
 	}

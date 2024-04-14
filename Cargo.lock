@@ -1486,7 +1486,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.6",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -3143,7 +3143,7 @@ dependencies = [
 [[package]]
 name = "scuffle-utils"
 version = "0.1.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=feature/website#f8d9db1eabad09d32da9f2ec95895180d9331baa"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=feature/website#ef8f294a98623c5475f65b22e1e354c1930ebea7"
 dependencies = [
  "async-trait",
  "bytes",
