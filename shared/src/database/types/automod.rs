@@ -1,6 +1,6 @@
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct AutomodRule {
 	pub id: ulid::Ulid,
 	pub name: String,
@@ -9,7 +9,6 @@ pub struct AutomodRule {
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub priority: i16,
 	pub added_by: Option<ulid::Ulid>,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: AutomodRuleData,
 }
 

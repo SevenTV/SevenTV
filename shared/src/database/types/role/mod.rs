@@ -14,12 +14,11 @@ pub use self::badge::*;
 pub use self::emote_set::*;
 pub use self::paint::*;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct Role {
 	pub id: ulid::Ulid,
 	pub name: String,
 	pub description: Option<String>,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: RoleData,
 	pub priority: i16,
 	pub hoist: bool,

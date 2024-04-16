@@ -1,14 +1,11 @@
-use postgres_types::{FromSql, ToSql};
-
 use super::TimeInterval;
 use crate::database::Table;
 
-#[derive(Debug, Clone, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct ProductPurchase {
 	pub id: ulid::Ulid,
 	pub product_id: ulid::Ulid,
 	pub user_id: Option<ulid::Ulid>,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: ProductPurchaseData,
 	pub status: ProductPurchaseStatus,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -25,19 +22,13 @@ pub struct ProductPurchaseData {
 	pub price: f64,
 }
 
-#[derive(Debug, Clone, Default, ToSql, FromSql)]
-#[postgres(name = "product_purchase_status")]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum ProductPurchaseStatus {
 	#[default]
-	#[postgres(name = "PENDING")]
 	Pending,
-	#[postgres(name = "COMPLETED")]
 	Completed,
-	#[postgres(name = "CANCELLED")]
 	Cancelled,
-	#[postgres(name = "REFUNDED")]
 	Refunded,
-	#[postgres(name = "FAILED")]
 	Failed,
 }
 

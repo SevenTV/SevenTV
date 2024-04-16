@@ -1,12 +1,11 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use postgres_types::{FromSql, ToSql};
 use crate::types::old::{UserConnectionPartialModel, UserConnectionPlatformModel};
 
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UserConnection {
 	pub id: ulid::Ulid,
 	pub user_id: ulid::Ulid,
@@ -20,17 +19,12 @@ pub struct UserConnection {
 	pub allow_login: bool,
 }
 
-#[derive(Debug, Clone, Copy, Hash, Default, ToSql, FromSql, PartialEq, Eq)]
-#[postgres(name = "platform")]
+#[derive(Debug, Clone, Copy, Hash, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub enum Platform {
 	#[default]
-	#[postgres(name = "TWITCH")]
 	Twitch,
-	#[postgres(name = "DISCORD")]
 	Discord,
-	#[postgres(name = "GOOGLE")]
 	Google,
-	#[postgres(name = "KICK")]
 	Kick,
 }
 

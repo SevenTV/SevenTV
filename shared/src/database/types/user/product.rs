@@ -1,10 +1,9 @@
 use crate::database::{Table, TimeInterval};
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UserProduct {
 	pub user_id: ulid::Ulid,
 	pub product_id: ulid::Ulid,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: UserProductData,
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,

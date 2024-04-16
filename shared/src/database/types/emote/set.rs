@@ -1,19 +1,17 @@
 use bitmask_enum::bitmask;
-use postgres_types::{FromSql, ToSql};
 use crate::types::old::{
 	ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel, EmoteSetFlagModel, EmoteSetModel, UserPartialModel,
 };
 
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct EmoteSet {
 	pub id: ulid::Ulid,
 	pub owner_id: Option<ulid::Ulid>,
 	pub name: String,
 	pub kind: EmoteSetKind,
 	pub tags: Vec<String>,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub settings: EmoteSetSettings,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -65,13 +63,10 @@ impl Table for EmoteSet {
 	const TABLE_NAME: &'static str = "emote_sets";
 }
 
-#[derive(Debug, Clone, Default, ToSql, FromSql, PartialEq, Eq)]
-#[postgres(name = "emote_set_kind")]
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub enum EmoteSetKind {
 	#[default]
-	#[postgres(name = "NORMAL")]
 	Normal,
-	#[postgres(name = "PERSONAL")]
 	Personal,
 }
 
@@ -83,7 +78,7 @@ pub struct EmoteSetSettings {
 	pub immutable: bool,
 }
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct EmoteSetEmote {
 	pub emote_set_id: ulid::Ulid,
 	pub emote_id: ulid::Ulid,
@@ -105,47 +100,22 @@ impl Default for EmoteSetEmoteFlag {
 	}
 }
 
-impl postgres_types::ToSql for EmoteSetEmoteFlag {
-	fn accepts(ty: &postgres_types::Type) -> bool
+impl serde::Serialize for EmoteSetEmoteFlag {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
-		Self: Sized,
+		S: serde::Serializer,
 	{
-		<i32 as postgres_types::ToSql>::accepts(ty)
-	}
-
-	fn to_sql(
-		&self,
-		ty: &postgres_types::Type,
-		out: &mut tokio_util::bytes::BytesMut,
-	) -> Result<postgres_types::IsNull, Box<dyn std::error::Error + Sync + Send>>
-	where
-		Self: Sized,
-	{
-		<i32 as postgres_types::ToSql>::to_sql(&self.bits(), ty, out)
-	}
-
-	fn to_sql_checked(
-		&self,
-		ty: &postgres_types::Type,
-		out: &mut tokio_util::bytes::BytesMut,
-	) -> Result<postgres_types::IsNull, Box<dyn std::error::Error + Sync + Send>> {
-		<i32 as postgres_types::ToSql>::to_sql_checked(&self.bits(), ty, out)
+		self.bits().serialize(serializer)
 	}
 }
 
-impl postgres_types::FromSql<'_> for EmoteSetEmoteFlag {
-	fn accepts(ty: &postgres_types::Type) -> bool
+impl<'a> serde::Deserialize<'a> for EmoteSetEmoteFlag {
+	fn deserialize<D>(deserializer: D) -> Result<EmoteSetEmoteFlag, D::Error>
 	where
-		Self: Sized,
+		D: serde::Deserializer<'a>,
 	{
-		<i32 as postgres_types::FromSql>::accepts(ty)
-	}
-
-	fn from_sql(ty: &postgres_types::Type, raw: &[u8]) -> Result<Self, Box<dyn std::error::Error + Sync + Send>>
-	where
-		Self: Sized,
-	{
-		<i32 as postgres_types::FromSql>::from_sql(ty, raw).map(EmoteSetEmoteFlag::from)
+		let bits = i32::deserialize(deserializer)?;
+		Ok(EmoteSetEmoteFlag::from(bits))
 	}
 }
 

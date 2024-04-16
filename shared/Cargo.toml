@@ -32,11 +32,7 @@ tokio-postgres-rustls = "0.11"
 async-nats = "0.34"
 utoipa = { version = "4.2", features = ["ulid", "repr"] }
 serde_repr = "0.1"
-
 tokio-util = "0.7"
-postgres-from-row = "0.5"
-tokio-postgres = "0.7"
-postgres-types = "0.2"
 bitmask-enum = "2"
 enum-impl = "0.1"
 clickhouse = { version = "0.11.6", features = ["uuid", "time"] }

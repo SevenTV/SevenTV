@@ -1,5 +1,3 @@
-use postgres_types::{FromSql, ToSql};
-
 mod association_badge;
 mod association_emote_set;
 mod association_paint;
@@ -18,7 +16,7 @@ pub use code::*;
 pub use code_association_product::*;
 pub use purchase::*;
 
-#[derive(Debug, Clone, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct Product {
 	pub id: ulid::Ulid,
 	pub name: String,
@@ -29,7 +27,6 @@ pub struct Product {
 	pub kind: ProductKind,
 	pub rank: i16,
 	pub visibility: ProductVisibility,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: ProductData,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -132,24 +129,17 @@ pub enum ProductEntitlement {
 	EmoteSet(ulid::Ulid),
 }
 
-#[derive(Debug, Clone, Default, ToSql, FromSql)]
-#[postgres(name = "product_kind")]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum ProductKind {
 	#[default]
-	#[postgres(name = "BASE")]
 	Base,
-	#[postgres(name = "ADDON")]
 	Addon,
-	#[postgres(name = "BUNDLE")]
 	Bundle,
 }
 
-#[derive(Debug, Clone, Default, ToSql, FromSql)]
-#[postgres(name = "product_visibility")]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum ProductVisibility {
 	#[default]
-	#[postgres(name = "PUBLIC")]
 	Public,
-	#[postgres(name = "UNLISTED")]
 	Unlisted,
 }

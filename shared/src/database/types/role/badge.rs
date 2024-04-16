@@ -1,6 +1,6 @@
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct RoleBadge {
 	pub role_id: ulid::Ulid,
 	pub badge_id: ulid::Ulid,
