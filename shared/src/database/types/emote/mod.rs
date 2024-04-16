@@ -13,7 +13,7 @@ use crate::types::old::{
 use super::FileSet;
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct Emote {
 	pub id: ulid::Ulid,
 	pub owner_id: Option<ulid::Ulid>,
@@ -21,7 +21,6 @@ pub struct Emote {
 	pub tags: Vec<String>,
 	pub animated: bool,
 	pub file_set_id: ulid::Ulid,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub settings: EmoteSettings,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }

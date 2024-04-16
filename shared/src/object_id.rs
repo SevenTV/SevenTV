@@ -2,6 +2,8 @@
 
 use std::str::FromStr;
 
+use serde::de::Expected;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// MongoDB ObjectIDs are 12-byte BSON strings, representing a 4-byte timestamp,
 /// 5-byte random value, and a 3-byte incrementing counter. https://docs.mongodb.com/manual/reference/method/ObjectId/
@@ -34,6 +36,10 @@ impl ObjectId {
 		ulid::Ulid::from_parts(self.timestamp() * 1000, self.random() as u128)
 	}
 
+	pub fn into_uuid(self) -> uuid::Uuid {
+		self.into_ulid().into()
+	}
+
 	/// Create a new ObjectID from the given timestamp and random value.
 	pub const fn from_parts(timestamp: u64, random: u64) -> Self {
 		Self((timestamp as u128) << 64 | random as u128)
@@ -60,14 +66,23 @@ impl std::fmt::Display for ObjectId {
 	}
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ObjectIdFromStrError {
+	#[error("invalid ObjectID: empty string")]
+	EmptyString,
+	#[error("invalid ObjectID: {0}")]
+	Hex(#[from] hex::FromHexError),
+}
+
 impl std::str::FromStr for ObjectId {
-	type Err = ();
+	type Err = ObjectIdFromStrError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		if s.is_empty() {
+			return Err(ObjectIdFromStrError::EmptyString);
+		}
 		let mut data = [0u8; 16];
-		hex::decode_to_slice(s, &mut data[4..]).map_err(|err| {
-			tracing::warn!("failed to decode ObjectID: {err} - {s}");
-		})?;
+		hex::decode_to_slice(s, &mut data[4..])?;
 
 		Ok(ObjectId(u128::from_be_bytes(data)))
 	}
@@ -81,7 +96,11 @@ impl serde::Serialize for ObjectId {
 
 impl<'a> serde::Deserialize<'a> for ObjectId {
 	fn deserialize<D: serde::Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
-		deserializer.deserialize_str(ObjectIDVisitor)
+		if !deserializer.is_human_readable() {
+			deserializer.deserialize_bytes(ObjectIDVisitor)
+		} else {
+			deserializer.deserialize_any(ObjectIDVisitor)
+		}
 	}
 }
 
@@ -96,7 +115,28 @@ impl<'a> serde::de::Visitor<'a> for ObjectIDVisitor {
 	}
 
 	fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
-		ObjectId::from_str(value).map_err(|_| E::custom("invalid ObjectID"))
+		ObjectId::from_str(value).map_err(|e| E::custom(e))
+	}
+
+	fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+	where
+		E: serde::de::Error,
+	{
+		let src: [u8; 12] = v.try_into().map_err(|_| E::invalid_length(v.len(), &"12 bytes"))?;
+		// Pad with 4 zero bytes
+		let mut bytes = [0u8; 16];
+		bytes[4..].copy_from_slice(&src);
+		Ok(ObjectId(u128::from_be_bytes(bytes)))
+	}
+
+	fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+	where
+		A: serde::de::MapAccess<'a>,
+	{
+		match map.next_entry::<String, String>() {
+			Ok(Some((key, value))) if key == "$oid" => ObjectId::from_str(&value).map_err(|e| serde::de::Error::custom(e)),
+			_ => Err(serde::de::Error::custom("invalid ObjectID")),
+		}
 	}
 }
 

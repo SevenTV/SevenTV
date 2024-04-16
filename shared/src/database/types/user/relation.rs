@@ -1,26 +1,19 @@
-use postgres_types::{FromSql, ToSql};
-
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UserRelation {
 	pub user_id: ulid::Ulid,
 	pub other_user_id: ulid::Ulid,
 	pub kind: UserRelationKind,
 	pub created_at: chrono::DateTime<chrono::Utc>,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: UserRelationData,
 }
 
-#[derive(Debug, Clone, Default, ToSql, FromSql)]
-#[postgres(name = "user_relation_kind")]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum UserRelationKind {
 	#[default]
-	#[postgres(name = "NOTHING")]
 	Nothing,
-	#[postgres(name = "FOLLOW")]
 	Follow,
-	#[postgres(name = "BLOCK")]
 	Block,
 }
 

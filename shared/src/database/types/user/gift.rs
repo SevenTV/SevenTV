@@ -1,8 +1,6 @@
-use postgres_types::{FromSql, ToSql};
-
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UserGift {
 	pub id: ulid::Ulid,
 	pub sender_id: Option<ulid::Ulid>,
@@ -11,7 +9,6 @@ pub struct UserGift {
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub status: UserGiftStatus,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: UserGiftData,
 }
 
@@ -28,16 +25,11 @@ impl Table for UserGift {
 	const TABLE_NAME: &'static str = "user_gifts";
 }
 
-#[derive(Debug, Clone, Default, ToSql, FromSql)]
-#[postgres(name = "user_gift_status")]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum UserGiftStatus {
 	#[default]
-	#[postgres(name = "ACTIVE")]
 	Active,
-	#[postgres(name = "REDEEMED")]
 	Redeemed,
-	#[postgres(name = "EXPIRED")]
 	Expired,
-	#[postgres(name = "CANCELLED")]
 	Cancelled,
 }

@@ -44,20 +44,16 @@ use super::FileSet;
 use super::ImageFormat;
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct User {
 	pub id: ulid::Ulid,
 	pub email: String,
 	pub email_verified: bool,
 	pub password_hash: String,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub settings: UserSettings,
-	#[from_row(flatten)]
 	pub two_fa: UserTwoFa,
-	#[from_row(flatten)]
 	pub active_cosmetics: UserActiveCosmetics,
-	#[from_row(flatten)]
 	pub entitled_cache: UserEntitledCache,
 }
 
@@ -65,44 +61,32 @@ impl Table for User {
 	const TABLE_NAME: &'static str = "users";
 }
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UserTwoFa {
-	#[from_row(rename = "two_fa_flags")]
 	pub flags: i32,
-	#[from_row(rename = "two_fa_secret")]
 	pub secret: Vec<u8>,
-	#[from_row(rename = "two_fa_recovery_codes")]
 	pub recovery_codes: Vec<i32>,
 }
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UserActiveCosmetics {
-	#[from_row(rename = "active_badge_id")]
 	pub badge_id: Option<ulid::Ulid>,
-	#[from_row(rename = "active_paint_id")]
 	pub paint_id: Option<ulid::Ulid>,
-	#[from_row(rename = "active_profile_picture_id")]
 	pub profile_picture_id: Option<ulid::Ulid>,
 }
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UserEntitledCache {
-	#[from_row(rename = "entitled_cache_role_ids")]
 	pub role_ids: Vec<ulid::Ulid>,
-	#[from_row(rename = "entitled_cache_badge_ids")]
 	pub badge_ids: Vec<ulid::Ulid>,
-	#[from_row(rename = "entitled_cache_emote_set_ids")]
 	pub emote_set_ids: Vec<ulid::Ulid>,
-	#[from_row(rename = "entitled_cache_paint_ids")]
 	pub paint_ids: Vec<ulid::Ulid>,
-	#[from_row(rename = "entitled_cache_product_ids")]
 	pub product_ids: Vec<ulid::Ulid>,
-	#[from_row(rename = "entitled_cache_invalidated_at")]
 	pub invalidated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl User {
-	pub async fn into_old_model_partial(
+	pub fn into_old_model_partial(
 		self,
 		connections: Vec<UserConnection>,
 		profile_picture_file_set: &Option<FileSet>,
@@ -110,8 +94,6 @@ impl User {
 		badge: Option<CosmeticBadgeModel>,
 		cdn_base_url: &str,
 	) -> Option<UserPartialModel> {
-		// let connections = global.user_connections_loader().load(self.id).await.ok()??;
-
 		let main_connection = connections.iter().find(|c| c.main_connection)?;
 
 		let avatar_url = match profile_picture_file_set {
@@ -171,7 +153,7 @@ impl User {
 		})
 	}
 
-	pub async fn into_old_model(
+	pub fn into_old_model(
 		self,
 		connections: Vec<UserConnection>,
 		profile_picture_file_set: &Option<FileSet>,
@@ -181,8 +163,7 @@ impl User {
 	) -> Option<UserModel> {
 		let created_at = self.id.timestamp_ms();
 		let partial = self
-			.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url)
-			.await?;
+			.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url)?;
 
 		Some(UserModel {
 			id: partial.id,

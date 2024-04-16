@@ -9,13 +9,12 @@ use crate::types::old::{
 use super::{FileSet, FileSetProperties, ImageFormat};
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct Paint {
 	pub id: ulid::Ulid,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
-	#[from_row(from_fn = "scuffle_utils::database::json")]
 	pub data: PaintData,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -24,7 +23,7 @@ impl Table for Paint {
 	const TABLE_NAME: &'static str = "paints";
 }
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct PaintFileSet {
 	pub paint_id: ulid::Ulid,
 	pub file_id: ulid::Ulid,
@@ -37,8 +36,8 @@ impl Table for PaintFileSet {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct PaintData {
-	layers: Vec<PaintLayer>,
-	shadows: Vec<PaintShadow>,
+	pub layers: Vec<PaintLayer>,
+	pub shadows: Vec<PaintShadow>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
@@ -99,24 +98,24 @@ pub enum PaintRadialGradientShape {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 pub struct PaintShadow {
 	pub color: u32,
-	pub offset_x: i32,
-	pub offset_y: i32,
-	pub blur: i32,
+	pub offset_x: f64,
+	pub offset_y: f64,
+	pub blur: f64,
 }
 
 impl From<PaintShadow> for CosmeticPaintShadow {
 	fn from(s: PaintShadow) -> Self {
 		Self {
 			color: s.color as i32,
-			x_offset: s.offset_x as f64,
-			y_offset: s.offset_y as f64,
-			radius: s.blur as f64,
+			x_offset: s.offset_x,
+			y_offset: s.offset_y,
+			radius: s.blur,
 		}
 	}
 }
 
 impl Paint {
-	pub async fn into_old_model(self, files: &HashMap<ulid::Ulid, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
+	pub fn into_old_model(self, files: &HashMap<ulid::Ulid, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
 		let first_layer = self.data.layers.first();
 
 		Some(CosmeticPaintModel {

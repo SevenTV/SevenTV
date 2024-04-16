@@ -1,8 +1,6 @@
-use postgres_types::{FromSql, ToSql};
-
 use crate::database::Table;
 
-#[derive(Debug, Clone, Default, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct ProductCode {
 	pub id: ulid::Ulid,
 	pub owner_id: Option<ulid::Ulid>,
@@ -22,15 +20,11 @@ pub struct ProductCode {
 #[serde(default)]
 pub struct ProductCodeData {}
 
-#[derive(Debug, Clone, Default, ToSql, FromSql)]
-#[postgres(name = "product_code_kind")]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum ProductCodeKind {
 	#[default]
-	#[postgres(name = "REDEEM")]
 	Redeem,
-	#[postgres(name = "DISCOUNT")]
 	Discount,
-	#[postgres(name = "GIFT")]
 	Gift,
 }
 

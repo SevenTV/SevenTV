@@ -1,5 +1,6 @@
 #![allow(unused_imports, dead_code)]
 
+mod activity;
 mod automod;
 mod badge;
 mod emote;
@@ -11,7 +12,9 @@ mod product;
 mod role;
 mod ticket;
 mod user;
+mod json_string;
 
+pub use self::activity::*;
 pub use self::automod::*;
 pub use self::badge::*;
 pub use self::emote::*;

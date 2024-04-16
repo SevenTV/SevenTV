@@ -1,7 +1,7 @@
 use super::Platform;
 use crate::database::Table;
 
-#[derive(Debug, Clone, postgres_from_row::FromRow)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct UserPresence {
 	pub user_id: ulid::Ulid,
 	pub platform: Platform,
