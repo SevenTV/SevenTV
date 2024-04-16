@@ -6,7 +6,12 @@ use scuffle_utils::prelude::FutureTimeout;
 use tokio::signal::unix::SignalKind;
 
 mod config;
+mod connections;
+mod dataloader;
 mod global;
+mod health;
+mod http;
+mod jwt;
 mod metrics;
 
 #[global_allocator]
@@ -26,7 +31,7 @@ async fn main() {
 		ALLOCATOR.set_limit(limit).expect("failed to set memory limit");
 	}
 
-	tracing::info!("starting event-api");
+	tracing::info!("starting api");
 
 	let (ctx, handler) = Context::new();
 
@@ -36,11 +41,13 @@ async fn main() {
 		.with_signal(SignalKind::interrupt())
 		.with_signal(SignalKind::terminate());
 
-	let health_handle = tokio::spawn(shared::health::run(global.clone()));
-	let metrics_handle = tokio::spawn(shared::metrics::run(global.clone()));
+	let health_handle = tokio::spawn(health::run(global.clone()));
+	let metrics_handle = tokio::spawn(metrics::run(global.clone()));
+	let http_handle = tokio::spawn(http::run(global.clone()));
 
 	tokio::select! {
 		_ = signal.recv() => tracing::info!("received shutdown signal"),
+		r = http_handle => tracing::warn!("http server exited: {:?}", r),
 		r = health_handle => tracing::warn!("health server exited: {:?}", r),
 		r = metrics_handle => tracing::warn!("metrics server exited: {:?}", r),
 	}
@@ -56,6 +63,6 @@ async fn main() {
 		}
 	}
 
-	tracing::info!("stopping event-api");
+	tracing::info!("stopping api");
 	std::process::exit(0);
 }

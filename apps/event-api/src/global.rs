@@ -13,7 +13,7 @@ pub struct Global {
 	subscription_manager: subscription::SubscriptionManager,
 	active_connections: Arc<std::sync::atomic::AtomicUsize>,
 	http_client: reqwest::Client,
-	metrics: metrics::Metrics,
+	metrics: Arc<metrics::Metrics>,
 }
 
 /// An atomic ticket.
@@ -41,17 +41,19 @@ impl Drop for AtomicTicket {
 
 impl Global {
 	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
-		let nats = async_nats::connect(&config.nats.url).await.context("nats connect")?;
+		let (nats, _) = shared::nats::setup_nats("event-api", &config.nats)
+			.await
+			.context("nats connect")?;
 
 		Ok(Self {
-			metrics: metrics::Metrics::new(
+			metrics: Arc::new(metrics::new(
 				config
-					.monitoring
+					.metrics
 					.labels
 					.iter()
 					.map(|x| (x.key.clone(), x.value.clone()))
 					.collect(),
-			),
+			)),
 			ctx,
 			nats,
 			config,
@@ -97,48 +99,7 @@ impl Global {
 	}
 
 	/// Global metrics.
-	pub fn metrics(&self) -> &metrics::Metrics {
+	pub fn metrics(&self) -> &Arc<metrics::Metrics> {
 		&self.metrics
-	}
-}
-
-impl shared::metrics::MetricsProvider for Global {
-	fn ctx(&self) -> &scuffle_utils::context::Context {
-		&self.ctx
-	}
-
-	fn bind(&self) -> std::net::SocketAddr {
-		self.config.monitoring.bind
-	}
-
-	fn registry(&self) -> &prometheus_client::registry::Registry {
-		self.metrics.registry()
-	}
-
-	fn pre_hook(&self) {
-		self.metrics.observe_memory()
-	}
-}
-
-impl shared::health::HealthProvider for Global {
-	fn bind(&self) -> std::net::SocketAddr {
-		self.config.health.bind
-	}
-
-	fn ctx(&self) -> &scuffle_utils::context::Context {
-		&self.ctx
-	}
-
-	fn healthy(&self, path: &str) -> bool {
-		(match path {
-			"/capacity" => {
-				if let Some(limit) = self.config.api.connection_target.or(self.config.api.connection_limit) {
-					self.active_connections() < limit
-				} else {
-					true
-				}
-			}
-			_ => true,
-		}) && matches!(self.nats.connection_state(), async_nats::connection::State::Connected)
 	}
 }

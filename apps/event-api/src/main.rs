@@ -7,6 +7,7 @@ use tokio::signal::unix::SignalKind;
 
 mod config;
 mod global;
+mod health;
 mod http;
 mod metrics;
 mod subscription;
@@ -50,8 +51,8 @@ async fn main() {
 		.with_signal(SignalKind::terminate());
 
 	let app_handle = tokio::spawn(http::run(global.clone()));
-	let health_handle = tokio::spawn(shared::health::run(global.clone()));
-	let metrics_handle = tokio::spawn(shared::metrics::run(global.clone()));
+	let health_handle = tokio::spawn(health::run(global.clone()));
+	let metrics_handle = tokio::spawn(metrics::run(global.clone()));
 	let subscription_handle = tokio::spawn(subscription::run(global.clone()));
 
 	tokio::select! {

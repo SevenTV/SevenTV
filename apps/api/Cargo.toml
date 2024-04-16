@@ -7,22 +7,26 @@ license = "Apache-2.0 with Commons Clause"
 [dependencies]
 tokio = { version = "1.35", features = ["full"] }
 scuffle-config = "0.0.1"
-scuffle-utils = { version = "0.0.5", features = ["http", "signal", "context", "prelude"] }
+scuffle-utils = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "feature/website", features = ["http", "signal", "context", "prelude", "database", "dataloader"] }
 serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 hyper = { version = "1", features = ["full"] }
-async-nats = "0.33.0"
+async-trait = "0.1.79"
+async-nats = "0.34.0"
 anyhow = "1"
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"] }
 rustls-pemfile = "2"
 rustls = "0.22"
 tokio-rustls = "0.25"
+jwt-next = "0.17.0"
+hmac = "0.12.1"
 hyper-tungstenite = "0.13"
 http-body = "1.0"
+cookie = { version = "0.18.0", features = ["percent-encode"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 futures-util = "0.3"
-ulid = "1"
+ulid = { version = "1", features = ["postgres"] }
 hex = "0.4"
 serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
@@ -30,7 +34,7 @@ sha2 = "0.10"
 urlencoding = "2"
 url = "2"
 futures = "0.3"
-reqwest = { version = "0.11", features = ["json", "rustls"], default-features = false }
+reqwest = { version = "0.12.1", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
 prometheus-client = "0.22"
 scopeguard = "1.1"
 rand = "0.8"
@@ -40,6 +44,12 @@ tikv-jemallocator = { version = "0.5", features = ["background_threads"] }
 const-lru = "1"
 fnv = "1"
 pin-project = "1"
+thiserror = "1"
+utoipa = { version = "4.2", features = ["ulid", "repr"] }
+tokio-util = "0.7"
+zen-engine = "0.20"
+zen-expression = "0.20"
+itertools = "0.12"
 
 shared = { workspace = true }
 
