@@ -7,8 +7,8 @@ use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
-use shared::http::{empty_body, Body};
 use shared::database::{Platform, UserSession};
+use shared::http::{empty_body, Body};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;

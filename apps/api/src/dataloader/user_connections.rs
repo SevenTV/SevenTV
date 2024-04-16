@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use ulid::Ulid;
 use shared::database::UserConnection;
+use ulid::Ulid;
 
 pub struct UserConnectionsByUserIdLoader {
 	pub db: Arc<scuffle_utils::database::Pool>,

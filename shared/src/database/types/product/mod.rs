@@ -1,24 +1,17 @@
-mod association_badge;
-mod association_emote_set;
-mod association_paint;
-mod association_product;
-mod association_role;
 mod code;
-mod code_association_product;
 mod purchase;
 
-pub use association_badge::*;
-pub use association_emote_set::*;
-pub use association_paint::*;
-pub use association_product::*;
-pub use association_role::*;
-pub use code::*;
-pub use code_association_product::*;
-pub use purchase::*;
+use bson::oid::ObjectId;
+
+pub use self::code::*;
+pub use self::purchase::*;
+use super::Collection;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Product {
-	pub id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
@@ -26,8 +19,11 @@ pub struct Product {
 	pub remaining_stock: Option<i32>,
 	pub kind: ProductKind,
 	pub rank: i16,
+	pub price: f64,
 	pub visibility: ProductVisibility,
-	pub data: ProductData,
+	pub entitlement_groups: Vec<ProductEntitlementGroup>,
+	pub giftable: ProductDataGiftable,
+	pub subscription: Option<ProductDataSubscription>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -50,17 +46,6 @@ pub enum TimeInterval {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ProductData {
-	#[serde(default)]
-	pub entitlement_groups: Vec<ProductEntitlementGroup>,
-	#[serde(default)]
-	pub giftable: ProductDataGiftable,
-	#[serde(default)]
-	pub subscription: Option<ProductDataSubscription>,
-	pub price: f64,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// A subscription product is special because the interval at which we bill
 /// might not be
 pub struct ProductDataSubscription {
@@ -74,7 +59,6 @@ pub struct ProductDataSubscription {
 	/// regardless of if the sub is pausable or not staff can always pause a
 	/// sub.
 	pub pauseable: bool,
-	#[serde(default)]
 	pub options: Vec<ProductDataSubscriptionOption>,
 }
 
@@ -85,7 +69,6 @@ pub struct ProductDataSubscriptionOption {
 	/// If unset auto compute the price uses the base price * the product
 	/// interval This allows for the ability to specify a discount for different
 	/// intervals
-	#[serde(default)]
 	pub price: Option<VariantPrice>,
 }
 
@@ -123,10 +106,10 @@ pub struct ProductEntitlementGroup {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(tag = "kind", content = "id")]
 pub enum ProductEntitlement {
-	Role(ulid::Ulid),
-	Badge(ulid::Ulid),
-	Paint(ulid::Ulid),
-	EmoteSet(ulid::Ulid),
+	Role(ObjectId),
+	Badge(ObjectId),
+	Paint(ObjectId),
+	EmoteSet(ObjectId),
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -142,4 +125,8 @@ pub enum ProductVisibility {
 	#[default]
 	Public,
 	Unlisted,
+}
+
+impl Collection for Product {
+	const NAME: &'static str = "products";
 }

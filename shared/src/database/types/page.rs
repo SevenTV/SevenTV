@@ -1,25 +1,24 @@
-use crate::database::Table;
+use bson::oid::ObjectId;
 
-mod author;
-mod file;
-
-pub use author::*;
-pub use file::*;
+use crate::database::Collection;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Page {
-	pub id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
 	pub kind: PageKind,
 	pub title: String,
 	pub slug: String,
 	pub content_md: String,
 	pub keywords: Vec<String>,
+	pub author_ids: Vec<ObjectId>,
+	pub file_ids: Vec<ObjectId>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
-	pub settings: PageSettings,
 }
 
-impl Table for Page {
-	const TABLE_NAME: &'static str = "pages";
+impl Collection for Page {
+	const NAME: &'static str = "pages";
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -29,7 +28,3 @@ pub enum PageKind {
 	Blog,
 	General,
 }
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
-#[serde(default)]
-pub struct PageSettings {}

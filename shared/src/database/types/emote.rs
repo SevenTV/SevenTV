@@ -1,27 +1,27 @@
-mod attribution;
-mod set;
-
 use std::sync::Arc;
 
-pub use attribution::*;
-pub use set::*;
+use bitmask_enum::bitmask;
+use bson::oid::ObjectId;
+
+use super::FileSet;
+use crate::database::Collection;
 use crate::types::old::{
 	EmoteLifecycleModel, EmoteModel, EmotePartialModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind,
 	UserPartialModel,
 };
 
-use super::FileSet;
-use crate::database::Table;
-
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Emote {
-	pub id: ulid::Ulid,
-	pub owner_id: Option<ulid::Ulid>,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub owner_id: Option<ObjectId>,
 	pub default_name: String,
 	pub tags: Vec<String>,
 	pub animated: bool,
-	pub file_set_id: ulid::Ulid,
-	pub settings: EmoteSettings,
+	pub file_set_id: ObjectId,
+	pub flags: EmoteFlags,
+	pub attribution: Vec<EmoteAttribution>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -50,7 +50,7 @@ impl Emote {
 				listed: partial.listed,
 				animated: partial.animated,
 				host: Some(partial.host),
-				created_at: partial.id.timestamp_ms() as i64,
+				created_at: partial.id.timestamp().timestamp_millis() as i64,
 			}],
 		}
 	}
@@ -70,15 +70,15 @@ impl Emote {
 			flags: {
 				let mut flags = crate::types::old::EmoteFlagsModel::none();
 
-				if self.settings.private {
+				if self.flags.contains(EmoteFlags::Private) {
 					flags |= crate::types::old::EmoteFlagsModel::Private;
 				}
 
-				if self.settings.default_zero_width {
+				if self.flags.contains(EmoteFlags::DefaultZeroWidth) {
 					flags |= crate::types::old::EmoteFlagsModel::ZeroWidth;
 				}
 
-				if self.settings.nsfw {
+				if self.flags.contains(EmoteFlags::Nsfw) {
 					flags |= crate::types::old::EmoteFlagsModel::Sexual;
 				}
 
@@ -87,15 +87,13 @@ impl Emote {
 			state: {
 				let mut state = Vec::new();
 
-				if let Some(approved_personal) = self.settings.approved_personal {
-					if approved_personal {
-						state.push(crate::types::old::EmoteVersionState::AllowPersonal);
-					} else {
-						state.push(crate::types::old::EmoteVersionState::NoPersonal);
-					}
+				if self.flags.contains(EmoteFlags::ApprovedPersonal) && !self.flags.contains(EmoteFlags::DeniedPersonal) {
+					state.push(crate::types::old::EmoteVersionState::AllowPersonal);
+				} else if self.flags.contains(EmoteFlags::DeniedPersonal) {
+					state.push(crate::types::old::EmoteVersionState::NoPersonal);
 				}
 
-				if self.settings.public_listed {
+				if self.flags.contains(EmoteFlags::PublicListed) {
 					state.push(crate::types::old::EmoteVersionState::Listed);
 				}
 
@@ -106,7 +104,7 @@ impl Emote {
 			} else {
 				crate::types::old::EmoteLifecycleModel::Live
 			},
-			listed: self.settings.public_listed,
+			listed: self.flags.contains(EmoteFlags::PublicListed),
 			host: ImageHost::new(
 				cdn_base_url,
 				ImageHostKind::Emote,
@@ -117,16 +115,48 @@ impl Emote {
 	}
 }
 
-impl Table for Emote {
-	const TABLE_NAME: &'static str = "emotes";
+impl Collection for Emote {
+	const NAME: &'static str = "emotes";
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
-#[serde(default)]
-pub struct EmoteSettings {
-	pub public_listed: bool,
-	pub private: bool,
-	pub nsfw: bool,
-	pub default_zero_width: bool,
-	pub approved_personal: Option<bool>,
+#[bitmask(u8)]
+pub enum EmoteFlags {
+	PublicListed = 1 << 0,
+	Private = 1 << 1,
+	Nsfw = 1 << 2,
+	DefaultZeroWidth = 1 << 3,
+	ApprovedPersonal = 1 << 4,
+	DeniedPersonal = 1 << 5,
+}
+
+impl Default for EmoteFlags {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+impl serde::Serialize for EmoteFlags {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		self.bits().serialize(serializer)
+	}
+}
+
+impl<'a> serde::Deserialize<'a> for EmoteFlags {
+	fn deserialize<D>(deserializer: D) -> Result<EmoteFlags, D::Error>
+	where
+		D: serde::Deserializer<'a>,
+	{
+		let bits = u8::deserialize(deserializer)?;
+		Ok(EmoteFlags::from(bits))
+	}
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EmoteAttribution {
+	pub user_id: ObjectId,
+	pub added_at: chrono::DateTime<chrono::Utc>,
 }

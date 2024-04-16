@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use ulid::Ulid;
 use shared::database::Role;
 
 pub struct RoleByIdLoader {
@@ -17,7 +17,7 @@ impl RoleByIdLoader {
 
 impl Loader for RoleByIdLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = Role;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
@@ -46,8 +46,8 @@ impl RoleBadgeByIdLoader {
 
 impl Loader for RoleBadgeByIdLoader {
 	type Error = ();
-	type Key = Ulid;
-	type Value = Vec<Ulid>;
+	type Key = ObjectId;
+	type Value = Vec<ObjectId>;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
 		let results: Vec<(Ulid, Ulid)> =

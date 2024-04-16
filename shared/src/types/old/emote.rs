@@ -1,5 +1,5 @@
 use bitmask_enum::bitmask;
-use ulid::Ulid;
+use bson::oid::ObjectId;
 
 use super::{ImageHost, UserPartialModel};
 
@@ -8,7 +8,7 @@ use super::{ImageHost, UserPartialModel};
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L12
 pub struct EmoteModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	pub tags: Vec<String>,
@@ -18,7 +18,7 @@ pub struct EmoteModel {
 	pub animated: bool,
 	pub owner: Option<UserPartialModel>,
 	#[serde(skip)]
-	pub owner_id: Ulid,
+	pub owner_id: ObjectId,
 	pub host: ImageHost,
 	pub versions: Vec<EmoteVersionModel>,
 }
@@ -28,7 +28,7 @@ pub struct EmoteModel {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L27
 pub struct EmotePartialModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
@@ -47,7 +47,7 @@ pub struct EmotePartialModel {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L40
 pub struct EmoteVersionModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub name: String,
 	pub description: String,
 	pub lifecycle: EmoteLifecycleModel,

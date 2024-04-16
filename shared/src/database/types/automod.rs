@@ -1,29 +1,27 @@
-use crate::database::Table;
+use bson::oid::ObjectId;
+
+use crate::database::Collection;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct AutomodRule {
-	pub id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub priority: i16,
-	pub added_by: Option<ulid::Ulid>,
-	pub data: AutomodRuleData,
-}
-
-impl Table for AutomodRule {
-	const TABLE_NAME: &'static str = "automod_rules";
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
-#[serde(default)]
-pub struct AutomodRuleData {
+	pub added_by: Option<ObjectId>,
 	pub kind: AutomodRuleKind,
 	pub enabled: bool,
 	pub words: Vec<String>,
 	pub allowed_words: Vec<String>,
 	pub action: Option<AutomodRuleAction>,
+}
+
+impl Collection for AutomodRule {
+	const NAME: &'static str = "automod_rules";
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
@@ -34,7 +32,8 @@ pub enum AutomodRuleKind {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+// Not sure what the difference between these two is
 pub enum AutomodRuleAction {
-	Timeout(std::time::Duration),
-	Ban(std::time::Duration),
+	Timeout(i64),
+	Ban(i64),
 }

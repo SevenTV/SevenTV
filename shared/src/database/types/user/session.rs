@@ -1,13 +1,17 @@
-use crate::database::Table;
+use bson::oid::ObjectId;
+
+use crate::database::Collection;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserSession {
-	pub id: ulid::Ulid,
-	pub user_id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub user_id: ObjectId,
 	pub expires_at: chrono::DateTime<chrono::Utc>,
 	pub last_used_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl Table for UserSession {
-	const TABLE_NAME: &'static str = "user_sessions";
+impl Collection for UserSession {
+	const NAME: &'static str = "user_sessions";
 }

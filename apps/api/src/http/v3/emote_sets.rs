@@ -96,7 +96,10 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 			let owner = emote.owner_id.and_then(|id| users.get(&id)).cloned();
 			let file_set = file_sets.get(&emote.file_set_id)?;
 
-			Some((id, emote.into_old_model_partial(owner, file_set, &global.config().api.cdn_base_url)))
+			Some((
+				id,
+				emote.into_old_model_partial(owner, file_set, &global.config().api.cdn_base_url),
+			))
 		})
 		.collect::<HashMap<_, _>>();
 

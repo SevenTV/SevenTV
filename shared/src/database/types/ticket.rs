@@ -1,4 +1,6 @@
-use crate::database::Table;
+use bson::oid::ObjectId;
+
+use crate::database::Collection;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum TicketPriority {
@@ -30,33 +32,21 @@ pub enum TicketStatus {
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Ticket {
-	pub id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
 	pub kind: TicketKind,
 	pub status: TicketStatus,
 	pub priority: TicketPriority,
 	pub title: String,
-	pub data: TicketData,
 	pub tags: Vec<String>,
+	pub files: Vec<ObjectId>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl Table for Ticket {
-	const TABLE_NAME: &'static str = "tickets";
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-pub struct TicketData {}
-
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-pub struct TicketFile {
-	pub ticket_id: ulid::Ulid,
-	pub file_id: ulid::Ulid,
-}
-
-impl Table for TicketFile {
-	const TABLE_NAME: &'static str = "ticket_files";
+impl Collection for Ticket {
+	const NAME: &'static str = "tickets";
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -68,13 +58,16 @@ pub enum TicketMemberKind {
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct TicketMember {
-	pub ticket_id: ulid::Ulid,
-	pub user_id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub ticket_id: ObjectId,
+	pub user_id: ObjectId,
 	pub kind: TicketMemberKind,
 	pub notifications: bool,
 }
 
-impl Table for TicketMember {
-	const TABLE_NAME: &'static str = "ticket_members";
+impl Collection for TicketMember {
+	const NAME: &'static str = "ticket_members";
 }

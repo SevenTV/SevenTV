@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use ulid::Ulid;
 use shared::database::Emote;
 
 pub struct EmoteByIdLoader {
@@ -16,7 +16,7 @@ impl EmoteByIdLoader {
 
 impl Loader for EmoteByIdLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = Emote;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {

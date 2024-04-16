@@ -1,19 +1,16 @@
-use crate::database::Table;
+use bson::oid::ObjectId;
+
+use crate::database::Collection;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserProfilePicture {
-	pub id: ulid::Ulid,
-	pub user_id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub user_id: ObjectId,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-pub struct UserProfilePictureFile {
-	pub user_profile_picture_id: ulid::Ulid,
-	pub file_id: ulid::Ulid,
-	// TODO: Add more fields to describe the file
-}
-
-impl Table for UserProfilePicture {
-	const TABLE_NAME: &'static str = "user_profile_pictures";
+impl Collection for UserProfilePicture {
+	const NAME: &'static str = "user_profile_pictures";
 }

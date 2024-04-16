@@ -1,26 +1,26 @@
-use crate::database::Table;
+use bson::oid::ObjectId;
+
+use crate::database::Collection;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserEditor {
-	pub user_id: ulid::Ulid,
-	pub editor_id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub user_id: ObjectId,
+	pub editor_id: ObjectId,
 	pub state: UserEditorState,
-	pub data: UserEditorSettings,
-	pub added_by_id: Option<ulid::Ulid>,
-	pub added_at: chrono::DateTime<chrono::Utc>,
+	pub notes: String,
+	pub permissions: UserEditorPermissions,
+	pub added_by_id: Option<ObjectId>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
-#[serde(default)]
-pub struct UserEditorSettings {
-	pub notes: String,
-	pub permissions: UserEditorPermissions,
+#[serde(deny_unknown_fields)]
+pub struct UserEditorPermissions {
+	// TODO
 }
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
-#[serde(default)]
-pub struct UserEditorPermissions {}
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum UserEditorState {
@@ -30,6 +30,6 @@ pub enum UserEditorState {
 	Rejected,
 }
 
-impl Table for UserEditor {
-	const TABLE_NAME: &'static str = "user_editors";
+impl Collection for UserEditor {
+	const NAME: &'static str = "user_editors";
 }

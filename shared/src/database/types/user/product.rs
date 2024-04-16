@@ -1,22 +1,28 @@
-use crate::database::{Table, TimeInterval};
+use bson::oid::ObjectId;
+
+use crate::database::{Collection, TimeInterval};
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserProduct {
-	pub user_id: ulid::Ulid,
-	pub product_id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub user_id: ObjectId,
+	pub product_id: ObjectId,
 	pub data: UserProductData,
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct UserProductData {
 	pub purchases: Vec<UserProductDataPurchase>,
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserProductDataPurchase {
 	pub duration: TimeInterval,
 	pub created_by: UserProductDataPurchaseCreatedBy,
@@ -32,32 +38,13 @@ pub enum UserProductDataSubscriptionEntryStatus {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 #[serde(tag = "kind", content = "value")]
 pub enum UserProductDataPurchaseCreatedBy {
-	Purchase(ulid::Ulid),
-	Code(ulid::Ulid),
+	Purchase(ObjectId),
+	Code(ObjectId),
 }
 
-impl Table for UserProduct {
-	const TABLE_NAME: &'static str = "user_products";
-}
-
-pub struct UserProductPurchaseAssociation {
-	pub user_id: ulid::Ulid,
-	pub product_id: ulid::Ulid,
-	pub product_purchase_id: ulid::Ulid,
-}
-
-impl Table for UserProductPurchaseAssociation {
-	const TABLE_NAME: &'static str = "user_product_purchase_association";
-}
-
-pub struct UserProductCodeAssociation {
-	pub user_id: ulid::Ulid,
-	pub product_id: ulid::Ulid,
-	pub product_code_id: ulid::Ulid,
-}
-
-impl Table for UserProductCodeAssociation {
-	const TABLE_NAME: &'static str = "user_product_gift_association";
+impl Collection for UserProduct {
+	const NAME: &'static str = "user_products";
 }

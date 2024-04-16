@@ -1,10 +1,10 @@
-use ulid::Ulid;
+use bson::oid::ObjectId;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user-presence.model.go#L9
 pub struct PresenceModel {
-	pub id: Ulid,
-	pub user_id: Ulid,
+	pub id: ObjectId,
+	pub user_id: ObjectId,
 	pub timestamp: i64,
 	pub ttl: i64,
 	pub kind: PresenceKind,

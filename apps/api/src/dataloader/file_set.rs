@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use ulid::Ulid;
 use shared::database::FileSet;
 
 pub struct FileSetByIdLoader {
@@ -16,7 +16,7 @@ impl FileSetByIdLoader {
 
 impl Loader for FileSetByIdLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = FileSet;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {

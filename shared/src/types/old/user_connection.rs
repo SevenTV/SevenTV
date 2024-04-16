@@ -1,4 +1,4 @@
-use ulid::Ulid;
+use bson::oid::ObjectId;
 
 use super::{EmoteSetModel, UserModel};
 
@@ -11,7 +11,7 @@ pub struct UserConnectionModel {
 	pub display_name: String,
 	pub linked_at: i64,
 	pub emote_capacity: i32,
-	pub emote_set_id: Option<Ulid>,
+	pub emote_set_id: Option<ObjectId>,
 	pub emote_set: Option<EmoteSetModel>,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub user: Option<UserModel>,
@@ -26,7 +26,7 @@ pub struct UserConnectionPartialModel {
 	pub display_name: String,
 	pub linked_at: i64,
 	pub emote_capacity: i32,
-	pub emote_set_id: Option<Ulid>,
+	pub emote_set_id: Option<ObjectId>,
 }
 
 #[derive(Debug, Clone, Copy, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]

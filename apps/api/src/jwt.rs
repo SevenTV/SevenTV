@@ -3,15 +3,15 @@ use std::sync::Arc;
 use chrono::{DateTime, TimeZone, Utc};
 use hmac::{Hmac, Mac};
 use jwt_next::{Claims, Header, RegisteredClaims, SignWithKey, Token, VerifyWithKey};
+use mongodb::bson::oid::ObjectId;
 use sha2::Sha256;
-use ulid::Ulid;
 use shared::database::UserSession;
 
 use crate::global::Global;
 
 pub struct AuthJwtPayload {
-	pub user_id: Ulid,
-	pub session_id: Ulid,
+	pub user_id: ObjectId,
+	pub session_id: ObjectId,
 	pub expiration: Option<DateTime<Utc>>,
 	pub issued_at: DateTime<Utc>,
 	pub not_before: Option<DateTime<Utc>>,
@@ -111,8 +111,12 @@ impl JwtState for AuthJwtPayload {
 				.registered
 				.json_web_token_id
 				.as_ref()
-				.and_then(|x| Ulid::from_string(x).ok())?,
-			user_id: claims.registered.subject.as_ref().and_then(|x| Ulid::from_string(x).ok())?,
+				.and_then(|x| ObjectId::from_string(x).ok())?,
+			user_id: claims
+				.registered
+				.subject
+				.as_ref()
+				.and_then(|x| ObjectId::from_string(x).ok())?,
 		})
 	}
 }

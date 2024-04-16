@@ -4,8 +4,8 @@ use hyper::body::Incoming;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::RouteError;
-use ulid::Ulid;
 use shared::database::{Platform, UserConnection, UserSession};
+use ulid::Ulid;
 
 use crate::connections;
 use crate::global::Global;

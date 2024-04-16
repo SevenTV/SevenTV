@@ -1,52 +1,43 @@
-mod active_emote_set;
-mod badge;
 mod ban;
 mod connection;
 mod editor;
-mod emote_set;
 mod gift;
-mod paint;
 mod presence;
 mod product;
 mod profile_picture;
 mod relation;
-mod roles;
 mod session;
 mod settings;
 
 use std::sync::Arc;
 
-use crate::types::old::{CosmeticBadgeModel, CosmeticPaintModel};
-use crate::types::old::{
-	ImageFormat as ImageFormatOld, ImageHostKind, UserConnectionModel, UserConnectionPartialModel, UserModel,
-	UserPartialModel, UserStyle, UserTypeModel,
-};
+use bson::oid::ObjectId;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::OptionExt;
 use scuffle_utils::http::router::error::RouterError;
 
-pub use self::active_emote_set::*;
-pub use self::badge::*;
 pub use self::ban::*;
 pub use self::connection::*;
 pub use self::editor::*;
-pub use self::emote_set::*;
 pub use self::gift::*;
-pub use self::paint::*;
 pub use self::presence::*;
 pub use self::product::*;
 pub use self::profile_picture::*;
 pub use self::relation::*;
-pub use self::roles::*;
 pub use self::session::*;
 pub use self::settings::*;
-use super::FileSet;
-use super::ImageFormat;
-use crate::database::Table;
+use super::{FileSet, ImageFormat};
+use crate::database::Collection;
+use crate::types::old::{
+	CosmeticBadgeModel, CosmeticPaintModel, ImageFormat as ImageFormatOld, ImageHostKind, UserConnectionModel,
+	UserConnectionPartialModel, UserModel, UserPartialModel, UserStyle, UserTypeModel,
+};
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct User {
-	pub id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
 	pub email: String,
 	pub email_verified: bool,
 	pub password_hash: String,
@@ -55,13 +46,19 @@ pub struct User {
 	pub two_fa: UserTwoFa,
 	pub active_cosmetics: UserActiveCosmetics,
 	pub entitled_cache: UserEntitledCache,
+	pub active_emote_set_ids: Vec<ObjectId>,
+	pub granted_badge_ids: Vec<ObjectId>,
+	pub granted_role_ids: Vec<ObjectId>,
+	pub granted_paint_ids: Vec<ObjectId>,
+	pub granted_emote_set_ids: Vec<ObjectId>,
 }
 
-impl Table for User {
-	const TABLE_NAME: &'static str = "users";
+impl Collection for User {
+	const NAME: &'static str = "users";
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserTwoFa {
 	pub flags: i32,
 	pub secret: Vec<u8>,
@@ -69,19 +66,21 @@ pub struct UserTwoFa {
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserActiveCosmetics {
-	pub badge_id: Option<ulid::Ulid>,
-	pub paint_id: Option<ulid::Ulid>,
-	pub profile_picture_id: Option<ulid::Ulid>,
+	pub badge_id: Option<ObjectId>,
+	pub paint_id: Option<ObjectId>,
+	pub profile_picture_id: Option<ObjectId>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserEntitledCache {
-	pub role_ids: Vec<ulid::Ulid>,
-	pub badge_ids: Vec<ulid::Ulid>,
-	pub emote_set_ids: Vec<ulid::Ulid>,
-	pub paint_ids: Vec<ulid::Ulid>,
-	pub product_ids: Vec<ulid::Ulid>,
+	pub role_ids: Vec<ObjectId>,
+	pub badge_ids: Vec<ObjectId>,
+	pub emote_set_ids: Vec<ObjectId>,
+	pub paint_ids: Vec<ObjectId>,
+	pub product_ids: Vec<ObjectId>,
 	pub invalidated_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -161,9 +160,8 @@ impl User {
 		badge: Option<CosmeticBadgeModel>,
 		cdn_base_url: &str,
 	) -> Option<UserModel> {
-		let created_at = self.id.timestamp_ms();
-		let partial = self
-			.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url)?;
+		let created_at = self.id.timestamp().timestamp_millis();
+		let partial = self.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url)?;
 
 		Some(UserModel {
 			id: partial.id,

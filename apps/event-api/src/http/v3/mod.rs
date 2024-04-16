@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::{Arc, Weak};
 
+use bson::oid::ObjectId;
 use http_body_util::{Full, StreamBody};
 use hyper::body::Incoming;
 use hyper_tungstenite::tungstenite::protocol::WebSocketConfig;
@@ -11,11 +12,9 @@ use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::RouteError;
 use shared::event_api::types::{CloseCode, Opcode};
 use shared::event_api::{payload, Message, MessageData, MessagePayload};
-use shared::object_id::ObjectId;
 use tokio::time::Instant;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
-use ulid::Ulid;
 
 use self::dedupe::Dedupe;
 use self::parser::parse_query;
@@ -176,7 +175,7 @@ impl Connection {
 			socket,
 			seq: 0,
 			heartbeat_count: 0,
-			id: ObjectId::from_ulid_lossy(Ulid::new()),
+			id: ObjectId::new(),
 			// We jitter the TTL to prevent all connections from expiring at the same time, which would cause a thundering
 			// herd.
 			ttl: Box::pin(tokio::time::sleep(jitter(global.config().api.ttl))),

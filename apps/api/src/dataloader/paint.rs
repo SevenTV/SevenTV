@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use ulid::Ulid;
 use shared::database::Paint;
 
 pub struct PaintByIdLoader {
@@ -16,7 +16,7 @@ impl PaintByIdLoader {
 
 impl Loader for PaintByIdLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = Paint;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {

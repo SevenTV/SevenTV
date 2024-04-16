@@ -60,7 +60,7 @@ impl Error {
 			}
 			Self::EmoteSetEmoteNoName { emote_set_id, emote_id } => {
 				format!("emote set id: {}, emote id: {:?}", emote_set_id, emote_id)
-			},
+			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
 			e => format!("{:?}", e),
 		}

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
+use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use ulid::Ulid;
 use shared::database::{EmoteSet, EmoteSetEmote};
 
 pub struct EmoteSetByIdLoader {
@@ -17,7 +17,7 @@ impl EmoteSetByIdLoader {
 
 impl Loader for EmoteSetByIdLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = EmoteSet;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
@@ -46,7 +46,7 @@ impl EmoteSetEmoteByIdLoader {
 
 impl Loader for EmoteSetEmoteByIdLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = Vec<EmoteSetEmote>;
 
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
