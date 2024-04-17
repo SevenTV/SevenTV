@@ -203,19 +203,21 @@ impl Default for UserPermission {
 	}
 }
 
-#[bitmask(u8)]
+#[bitmask(u16)]
 pub enum FeaturePermission {
-	AnimatedProfilePicture = 1,
+	UseAnimatedProfilePicture = 1,
 	PersonalEmoteSet = 2,
-	Badge = 4,
+	UseBadge = 4,
 	BypassEmoteSetCountLimit = 8,
 	ByPassEmoteSetSlotsLimit = 16,
 	ByPassPersonalEmoteSetSlotsLimit = 32,
 	Admin = 64,
+	UsePaint = 128,
+	UsePersonalEmoteSet = 256,
 }
 
 impl BitMask for FeaturePermission {
-	type Bits = u8;
+	type Bits = u16;
 
 	fn bits(&self) -> Self::Bits {
 		self.bits()
@@ -291,6 +293,11 @@ pub struct Permissions {
 
 impl Permissions {
 	pub fn merge(&mut self, other: Self) {
+		self.merge_ref(&other);
+		self.unknown.extend(other.unknown);
+	}
+
+	pub fn merge_ref(&mut self, other: &Self) {
 		self.emote.merge(other.emote);
 		self.role.merge(other.role);
 		self.emote_set.merge(other.emote_set);
@@ -303,8 +310,6 @@ impl Permissions {
 		self.emote_set_count_limit = other.emote_set_count_limit.or(self.emote_set_count_limit);
 		self.emote_set_slots_limit = other.emote_set_slots_limit.or(self.emote_set_slots_limit);
 		self.personal_emote_set_slots_limit = other.personal_emote_set_slots_limit.or(self.personal_emote_set_slots_limit);
-
-		self.unknown.extend(other.unknown);
 	}
 
 	pub fn apply(&mut self, perm: Permission) {
@@ -324,64 +329,68 @@ impl Permissions {
 		}
 	}
 
-	pub fn has_emote_permission(&self, permission: EmotePermission) -> bool {
+	pub fn has(&self, permission: impl Into<Permission>) -> bool {
+		self.has_permission(permission)
+	}
+
+	pub fn has_emote(&self, permission: EmotePermission) -> bool {
 		self.is_admin()
 			|| self.emote.permission().contains(permission)
 			|| self.emote.permission().contains(EmotePermission::Admin)
 	}
 
-	pub fn has_role_permission(&self, permission: RolePermission) -> bool {
+	pub fn has_role(&self, permission: RolePermission) -> bool {
 		self.is_admin()
 			|| self.role.permission().contains(permission)
 			|| self.role.permission().contains(RolePermission::Admin)
 	}
 
-	pub fn has_emote_set_permission(&self, permission: EmoteSetPermission) -> bool {
+	pub fn has_emote_set(&self, permission: EmoteSetPermission) -> bool {
 		self.is_admin()
 			|| self.emote_set.permission().contains(permission)
 			|| self.emote_set.permission().contains(EmoteSetPermission::Admin)
 	}
 
-	pub fn has_badge_permission(&self, permission: BadgePermission) -> bool {
+	pub fn has_badge(&self, permission: BadgePermission) -> bool {
 		self.is_admin()
 			|| self.badge.permission().contains(permission)
 			|| self.badge.permission().contains(BadgePermission::Admin)
 	}
 
-	pub fn has_paint_permission(&self, permission: PaintPermission) -> bool {
+	pub fn has_paint(&self, permission: PaintPermission) -> bool {
 		self.is_admin()
 			|| self.paint.permission().contains(permission)
 			|| self.paint.permission().contains(PaintPermission::Admin)
 	}
 
-	pub fn has_user_permission(&self, permission: UserPermission) -> bool {
+	pub fn has_user(&self, permission: UserPermission) -> bool {
 		self.is_admin()
 			|| self.user.permission().contains(permission)
 			|| self.user.permission().contains(UserPermission::Admin)
 	}
 
-	pub fn has_feature_permission(&self, permission: FeaturePermission) -> bool {
+	pub fn has_feature(&self, permission: FeaturePermission) -> bool {
 		self.is_admin()
 			|| self.feature.permission().contains(permission)
 			|| self.feature.permission().contains(FeaturePermission::Admin)
 	}
 
-	pub fn has_admin_permission(&self, permission: AdminPermission) -> bool {
+	pub fn has_admin(&self, permission: AdminPermission) -> bool {
 		self.admin.permission().contains(permission) || self.admin.permission().contains(AdminPermission::SuperAdmin)
 	}
 
 	pub fn has_emote_set_count_limit(&self, count: u16) -> bool {
-		self.has_feature_permission(FeaturePermission::BypassEmoteSetCountLimit)
+		self.has_feature(FeaturePermission::BypassEmoteSetCountLimit)
 			|| self.emote_set_count_limit.map_or(true, |limit| count <= limit)
 	}
 
 	pub fn has_emote_set_slots_limit(&self, count: u16) -> bool {
-		self.has_feature_permission(FeaturePermission::ByPassEmoteSetSlotsLimit)
+		self.has_feature(FeaturePermission::ByPassEmoteSetSlotsLimit)
 			|| self.emote_set_slots_limit.map_or(true, |limit| count <= limit)
 	}
 
 	pub fn has_personal_emote_set_slots_limit(&self, count: u16) -> bool {
-		self.has_feature_permission(FeaturePermission::ByPassPersonalEmoteSetSlotsLimit)
+		self.has_feature(FeaturePermission::ByPassPersonalEmoteSetSlotsLimit)
 			|| self.personal_emote_set_slots_limit.map_or(true, |limit| count <= limit)
 	}
 
@@ -402,6 +411,18 @@ impl FromIterator<Permissions> for Permissions {
 
 		for permission in iter {
 			permissions.merge(permission);
+		}
+
+		permissions
+	}
+}
+
+impl<'a> FromIterator<&'a Permissions> for Permissions {
+	fn from_iter<I: IntoIterator<Item = &'a Permissions>>(iter: I) -> Self {
+		let mut permissions = Self::default();
+
+		for permission in iter {
+			permissions.merge_ref(permission);
 		}
 
 		permissions
@@ -459,14 +480,14 @@ pub trait PermissionsExt {
 impl PermissionsExt for Permissions {
 	fn has_permission(&self, permission: impl Into<Permission>) -> bool {
 		match permission.into() {
-			Permission::Emote(perm) => self.has_emote_permission(perm),
-			Permission::Role(perm) => self.has_role_permission(perm),
-			Permission::EmoteSet(perm) => self.has_emote_set_permission(perm),
-			Permission::Badge(perm) => self.has_badge_permission(perm),
-			Permission::Paint(perm) => self.has_paint_permission(perm),
-			Permission::User(perm) => self.has_user_permission(perm),
-			Permission::Feature(perm) => self.has_feature_permission(perm),
-			Permission::Admin(perm) => self.has_admin_permission(perm),
+			Permission::Emote(perm) => self.has_emote(perm),
+			Permission::Role(perm) => self.has_role(perm),
+			Permission::EmoteSet(perm) => self.has_emote_set(perm),
+			Permission::Badge(perm) => self.has_badge(perm),
+			Permission::Paint(perm) => self.has_paint(perm),
+			Permission::User(perm) => self.has_user(perm),
+			Permission::Feature(perm) => self.has_feature(perm),
+			Permission::Admin(perm) => self.has_admin(perm),
 
 			Permission::EmoteSetCount(perm) => self.has_emote_set_count_limit(perm),
 			Permission::EmoteSetSlots(perm) => self.has_emote_set_slots_limit(perm),
@@ -507,7 +528,7 @@ mod tests {
 				deny: UserPermission::none(),
 			},
 			feature: AllowDeny {
-				allow: FeaturePermission::Badge,
+				allow: FeaturePermission::UseBadge,
 				deny: FeaturePermission::none(),
 			},
 			admin: AllowDeny {
@@ -552,7 +573,7 @@ mod tests {
 				deny: UserPermission::none(),
 			},
 			feature: AllowDeny {
-				allow: FeaturePermission::Badge,
+				allow: FeaturePermission::UseBadge,
 				deny: FeaturePermission::none(),
 			},
 			admin: AllowDeny {

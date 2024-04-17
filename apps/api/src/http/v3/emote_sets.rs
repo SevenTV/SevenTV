@@ -8,6 +8,7 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
+use shared::database::FeaturePermission;
 use shared::http::{json_response, Body};
 use shared::types::old::EmoteSetModel;
 use utoipa::OpenApi;
@@ -73,17 +74,77 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 			emotes.values().filter_map(|emote| emote.owner_id).chain(emote_set.owner_id),
 		)
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?
-		.into_values()
-		.map(|user| user.into_old_model_partial(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url))
-		.map(|user| (user.id, user))
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?;
+
+	let global_config = global
+		.global_config_loader()
+		.load(())
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query global config"))?
+		.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "global config not found"))?;
+
+	let roles = {
+		let mut roles = global
+			.role_by_id_loader()
+			.load_many(users.values().flat_map(|user| user.entitled_cache.role_ids.iter().copied()))
+			.await
+			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query roles"))?;
+
+		global_config
+			.role_ids
+			.iter()
+			.filter_map(|id| roles.remove(id))
+			.collect::<Vec<_>>()
+	};
+
+	let users = users
+		.into_iter()
+		.map(|(id, user)| {
+			let permissions = user.compute_permissions(&roles);
+			(id, (user, permissions))
+		})
 		.collect::<HashMap<_, _>>();
+
+	let profile_pictures = global
+		.user_profile_picture_by_id_loader()
+		.load_many(users.values().filter_map(|(user, permissions)| {
+			if permissions.has(FeaturePermission::UseAnimatedProfilePicture) {
+				user.active_cosmetics.profile_picture_id
+			} else {
+				None
+			}
+		}))
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query profile pictures"))?;
 
 	let file_sets = global
 		.file_set_by_id_loader()
-		.load_many(emotes.values().map(|emote| emote.file_set_id))
+		.load_many(
+			profile_pictures
+				.values()
+				.map(|profile_picture| profile_picture.file_set_id)
+				.chain(emotes.values().map(|emote| emote.file_set_id)),
+		)
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query file sets"))?;
+
+	let cdn_base_url = &global.config().api.cdn_base_url;
+
+	let users = users
+		.into_values()
+		.map(|(user, _)| {
+			let profile_picture_file_set = user
+				.active_cosmetics
+				.profile_picture_id
+				.and_then(|id| profile_pictures.get(&id))
+				.and_then(|profile_picture| file_sets.get(&profile_picture.file_set_id));
+
+			// This api doesnt seem to return the user's badges, paints and connections so
+			// we can ignore them.
+			user.into_old_model_partial(Vec::new(), profile_picture_file_set, None, None, cdn_base_url)
+		})
+		.map(|user| (user.id, user))
+		.collect::<HashMap<_, _>>();
 
 	let emotes = emotes
 		.into_iter()

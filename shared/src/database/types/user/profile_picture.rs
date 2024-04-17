@@ -8,6 +8,7 @@ pub struct UserProfilePicture {
 	#[serde(rename = "_id")]
 	pub id: ObjectId,
 	pub user_id: ObjectId,
+	pub file_set_id: ObjectId,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 

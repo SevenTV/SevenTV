@@ -1,3 +1,4 @@
+use bitmask_enum::bitmask;
 use bson::oid::ObjectId;
 
 use super::{
@@ -84,7 +85,44 @@ pub enum UserTypeModel {
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L171
 pub struct UserEditorModel {
 	pub id: ObjectId,
-	pub permissions: i32,
+	pub permissions: UserEditorModelPermission,
 	pub visible: bool,
 	pub added_at: i64,
+}
+
+#[bitmask(u8)]
+pub enum UserEditorModelPermission {
+	ModifyEmotes = 1 << 0,
+	UsePrivateEmotes = 1 << 1,
+	ManageProfile = 1 << 2,
+	ManageOwnedEmotes = 1 << 3,
+	ManageEmoteSets = 1 << 4,
+	ManageBilling = 1 << 5,
+	ManageEditors = 1 << 6,
+	ViewMessages = 1 << 7,
+}
+
+impl Default for UserEditorModelPermission {
+	fn default() -> Self {
+		UserEditorModelPermission::none()
+	}
+}
+
+impl serde::Serialize for UserEditorModelPermission {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		self.bits().serialize(serializer)
+	}
+}
+
+impl<'a> serde::Deserialize<'a> for UserEditorModelPermission {
+	fn deserialize<D>(deserializer: D) -> Result<UserEditorModelPermission, D::Error>
+	where
+		D: serde::Deserializer<'a>,
+	{
+		let bits = u8::deserialize(deserializer)?;
+		Ok(UserEditorModelPermission::from(bits))
+	}
 }

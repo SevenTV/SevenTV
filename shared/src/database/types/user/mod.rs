@@ -27,7 +27,7 @@ pub use self::profile_picture::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
-use super::{FileSet, ImageFormat};
+use super::{FileSet, ImageFormat, Permissions, Role};
 use crate::database::Collection;
 use crate::types::old::{
 	CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, ImageFormat as ImageFormatOld, ImageHostKind,
@@ -52,6 +52,21 @@ pub struct User {
 	pub granted_role_ids: Vec<ObjectId>,
 	pub granted_paint_ids: Vec<ObjectId>,
 	pub granted_emote_set_ids: Vec<ObjectId>,
+}
+
+impl User {
+	pub fn compute_permissions(&self, roles: &[Role]) -> Permissions {
+		roles
+			.iter()
+			.filter_map(|role| {
+				if self.entitled_cache.role_ids.contains(&role.id) {
+					Some(&role.permissions)
+				} else {
+					None
+				}
+			})
+			.collect()
+	}
 }
 
 impl Collection for User {
@@ -186,7 +201,7 @@ impl User {
 					linked_at: p.linked_at,
 					emote_capacity: p.emote_capacity,
 					emote_set_id: p.emote_set_id,
-					emote_set: todo!(),
+					emote_set: None,
 					user: None,
 				})
 				.collect(),

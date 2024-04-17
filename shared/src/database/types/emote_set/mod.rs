@@ -3,7 +3,8 @@ use bson::oid::ObjectId;
 
 use crate::database::Collection;
 use crate::types::old::{
-	ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel, EmoteSetFlagModel, EmoteSetModel, UserPartialModel,
+	ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel, EmoteSetFlagModel, EmoteSetModel, EmoteSetPartialModel,
+	UserPartialModel,
 };
 
 mod emote;
@@ -95,6 +96,33 @@ impl EmoteSet {
 			capacity: self.capacity as i32,
 			emotes,
 			origins: Vec::new(),
+			owner,
+		}
+	}
+
+	pub fn into_old_model_partial(self, owner: Option<UserPartialModel>) -> EmoteSetPartialModel {
+		EmoteSetPartialModel {
+			id: self.id,
+			name: self.name,
+			capacity: self.capacity as i32,
+			flags: {
+				let mut flags = EmoteSetFlagModel::none();
+
+				if self.kind == EmoteSetKind::Personal {
+					flags |= EmoteSetFlagModel::Personal;
+				}
+
+				if self.flags.contains(EmoteSetFlags::Immutable) {
+					flags |= EmoteSetFlagModel::Immutable;
+				}
+
+				if self.flags.contains(EmoteSetFlags::Privileged) {
+					flags |= EmoteSetFlagModel::Privileged;
+				}
+
+				flags
+			},
+			tags: self.tags,
 			owner,
 		}
 	}

@@ -4,17 +4,17 @@ use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
 use shared::database::{Collection, UserConnection};
 
-pub struct UserConnectionsByUserIdLoader {
+pub struct UserConnectionByUserIdLoader {
 	pub db: mongodb::Database,
 }
 
-impl UserConnectionsByUserIdLoader {
+impl UserConnectionByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
-impl Loader for UserConnectionsByUserIdLoader {
+impl Loader for UserConnectionByUserIdLoader {
 	type Error = ();
 	type Key = ObjectId;
 	type Value = Vec<UserConnection>;

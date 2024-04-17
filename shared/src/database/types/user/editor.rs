@@ -1,6 +1,7 @@
 use bson::oid::ObjectId;
 
 use crate::database::Collection;
+use crate::types::old::{UserEditorModel, UserEditorModelPermission};
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
@@ -16,13 +17,28 @@ pub struct UserEditor {
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
+impl UserEditor {
+	pub fn into_old_model(self) -> Option<UserEditorModel> {
+		if self.state != UserEditorState::Accepted {
+			return None;
+		}
+
+		Some(UserEditorModel {
+			id: self.user_id,
+			added_at: self.id.timestamp().timestamp_millis(),
+			permissions: UserEditorModelPermission::ModifyEmotes,
+			visible: true,
+		})
+	}
+}
+
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditorPermissions {
 	// TODO
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 pub enum UserEditorState {
 	#[default]
 	Pending,

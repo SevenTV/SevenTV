@@ -7,6 +7,7 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
+use shared::database::FeaturePermission;
 use shared::http::{json_response, Body};
 
 use crate::global::Global;
@@ -54,26 +55,97 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
 pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	let global: Arc<Global> = req.get_global()?;
 
-	let id = req.param("id").map_err_route((StatusCode::BAD_REQUEST, "missing id"))?;
-	let id = id.parse().map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
+	let id = req
+		.param("id")
+		.and_then(|id| id.parse().ok())
+		.map_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
 
 	let user = global
 		.user_by_id_loader()
 		.load(&global, id)
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user"))?
-		.map_err_route((StatusCode::NOT_FOUND, "user not found"))?
-		.into_old_model(
-			todo!(),
-			todo!(),
-			todo!(),
-			todo!(),
-			todo!(),
-			todo!(),
-			&global.config().api.cdn_base_url,
-		);
+		.map_err_route((StatusCode::NOT_FOUND, "user not found"))?;
 
-	json_response(user)
+	let global_config = global
+		.global_config_loader()
+		.load(())
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query global config"))?
+		.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "global config not found"))?;
+
+	let roles = {
+		let mut roles = global
+			.role_by_id_loader()
+			.load_many(user.entitled_cache.role_ids.iter().copied())
+			.await
+			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query roles"))?;
+
+		global_config
+			.role_ids
+			.iter()
+			.filter_map(|id| roles.remove(id))
+			.collect::<Vec<_>>()
+	};
+
+	let permissions = user.compute_permissions(&roles);
+
+	let pfp = match (
+		permissions.has(FeaturePermission::UseAnimatedProfilePicture),
+		user.active_cosmetics.profile_picture_id,
+	) {
+		(true, Some(profile_picture_id)) => global
+			.user_profile_picture_by_id_loader()
+			.load(profile_picture_id)
+			.await
+			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch profile picture file set"))?,
+		_ => None,
+	};
+
+	let pfp_file_set = match pfp {
+		Some(pfp) => global
+			.file_set_by_id_loader()
+			.load(pfp.file_set_id)
+			.await
+			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch profile picture file set"))?,
+		None => None,
+	};
+
+	let emote_sets = global
+		.emote_set_by_user_id_loader()
+		.load(user.id)
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch emote sets"))?
+		.unwrap_or_default();
+
+	let user_connections = global
+		.user_connection_by_user_id_loader()
+		.load(user.id)
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user connections"))?
+		.unwrap_or_default();
+
+	let editors = global
+		.user_editor_by_user_id_loader()
+		.load(user.id)
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch editors"))?
+		.unwrap_or_default();
+
+	json_response(
+		user.into_old_model(
+			user_connections,
+			pfp_file_set.as_ref(),
+			None,
+			None,
+			emote_sets
+				.into_iter()
+				.map(|emote_set| emote_set.into_old_model_partial(None))
+				.collect(),
+			editors.into_iter().filter_map(|editor| editor.into_old_model()).collect(),
+			&global.config().api.cdn_base_url,
+		),
+	)
 }
 
 #[utoipa::path(
