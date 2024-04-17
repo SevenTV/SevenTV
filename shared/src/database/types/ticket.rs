@@ -46,7 +46,7 @@ pub struct Ticket {
 }
 
 impl Collection for Ticket {
-	const NAME: &'static str = "tickets";
+	const COLLECTION_NAME: &'static str = "tickets";
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -69,5 +69,5 @@ pub struct TicketMember {
 }
 
 impl Collection for TicketMember {
-	const NAME: &'static str = "ticket_members";
+	const COLLECTION_NAME: &'static str = "ticket_members";
 }

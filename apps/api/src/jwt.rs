@@ -111,12 +111,8 @@ impl JwtState for AuthJwtPayload {
 				.registered
 				.json_web_token_id
 				.as_ref()
-				.and_then(|x| ObjectId::from_string(x).ok())?,
-			user_id: claims
-				.registered
-				.subject
-				.as_ref()
-				.and_then(|x| ObjectId::from_string(x).ok())?,
+				.and_then(|x| ObjectId::parse_str(x).ok())?,
+			user_id: claims.registered.subject.as_ref().and_then(|x| ObjectId::parse_str(x).ok())?,
 		})
 	}
 }
@@ -127,7 +123,7 @@ impl From<UserSession> for AuthJwtPayload {
 			user_id: session.user_id,
 			session_id: session.id,
 			expiration: Some(session.expires_at),
-			issued_at: session.id.datetime().into(),
+			issued_at: session.id.timestamp().into(),
 			not_before: None,
 			audience: None,
 		}
@@ -136,13 +132,15 @@ impl From<UserSession> for AuthJwtPayload {
 
 pub struct CsrfJwtPayload {
 	pub random: [u8; 32],
+	pub user_id: Option<ObjectId>,
 	pub expiration: DateTime<Utc>,
 }
 
 impl CsrfJwtPayload {
-	pub fn new() -> Self {
+	pub fn new(user_id: Option<ObjectId>) -> Self {
 		Self {
 			random: rand::random(),
+			user_id,
 			expiration: Utc::now() + chrono::Duration::minutes(5),
 		}
 	}
@@ -163,7 +161,7 @@ impl JwtState for CsrfJwtPayload {
 			registered: RegisteredClaims {
 				issuer: None,
 				subject: Some("csrf".to_string()),
-				audience: None,
+				audience: self.user_id.map(|id| id.to_string()),
 				expiration: Some(self.expiration.timestamp() as u64),
 				not_before: None,
 				issued_at: None,
@@ -176,6 +174,7 @@ impl JwtState for CsrfJwtPayload {
 	fn from_claims(claims: &Claims) -> Option<Self> {
 		Some(Self {
 			expiration: Utc.timestamp_opt(claims.registered.expiration? as i64, 0).single()?,
+			user_id: claims.registered.audience.as_ref().and_then(|x| ObjectId::parse_str(x).ok()),
 			random: hex::decode(claims.registered.json_web_token_id.as_ref()?)
 				.ok()?
 				.try_into()

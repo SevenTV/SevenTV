@@ -6,7 +6,6 @@ mod emote;
 mod emote_set;
 mod file;
 mod global;
-mod json_string;
 mod page;
 mod paint;
 mod product;
@@ -28,5 +27,12 @@ pub use self::ticket::*;
 pub use self::user::*;
 
 pub trait Collection {
-	const NAME: &'static str;
+	const COLLECTION_NAME: &'static str;
+
+	fn collection(db: &mongodb::Database) -> mongodb::Collection<Self>
+	where
+		Self: Sized,
+	{
+		db.collection(Self::COLLECTION_NAME)
+	}
 }

@@ -1,9 +1,10 @@
 use bson::oid::ObjectId;
+use bson::Bson;
 
 use super::TimeInterval;
 use crate::database::Collection;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProductPurchase {
 	#[serde(rename = "_id")]
@@ -20,6 +21,7 @@ pub struct ProductPurchase {
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ProductPurchaseStatus {
 	#[default]
 	Pending,
@@ -30,5 +32,5 @@ pub enum ProductPurchaseStatus {
 }
 
 impl Collection for ProductPurchase {
-	const NAME: &'static str = "product_purchases";
+	const COLLECTION_NAME: &'static str = "product_purchases";
 }

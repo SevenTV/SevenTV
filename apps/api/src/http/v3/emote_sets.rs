@@ -9,7 +9,6 @@ use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
-use shared::id::parse_id;
 use shared::types::old::EmoteSetModel;
 use utoipa::OpenApi;
 
@@ -44,7 +43,7 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 
 	let id = req
 		.param("id")
-		.and_then(parse_id)
+		.and_then(|id| id.parse().ok())
 		.map_err_route((StatusCode::BAD_REQUEST, "invalid emote set ID"))?;
 
 	let emote_set = global
@@ -67,22 +66,18 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emotes"))?;
 
-	let users = futures::future::join_all(
-		global
-			.user_by_id_loader()
-			.load_many(
-				&global,
-				emotes.values().filter_map(|emote| emote.owner_id).chain(emote_set.owner_id),
-			)
-			.await
-			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?
-			.into_values()
-			.map(|user| user.into_old_model_partial(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url)),
-	)
-	.await
-	.into_iter()
-	.filter_map(|u| u.map(|u| (u.id, u)))
-	.collect::<HashMap<_, _>>();
+	let users = global
+		.user_by_id_loader()
+		.load_many(
+			&global,
+			emotes.values().filter_map(|emote| emote.owner_id).chain(emote_set.owner_id),
+		)
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?
+		.into_values()
+		.map(|user| user.into_old_model_partial(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url))
+		.map(|user| (user.id, user))
+		.collect::<HashMap<_, _>>();
 
 	let file_sets = global
 		.file_set_by_id_loader()

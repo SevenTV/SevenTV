@@ -3,11 +3,12 @@ use std::sync::Arc;
 
 use hyper::body::Incoming;
 use hyper::{Response, StatusCode};
+use mongodb::bson::doc;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
-use shared::database::{Platform, UserSession};
+use shared::database::{Collection, Platform, UserSession};
 use shared::http::{empty_body, Body};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
@@ -38,7 +39,7 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
     ),
 )]
 #[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
-// https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/auth.route.go#L47
+// https://github.c`om/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/auth.route.go#L47
 async fn login(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	let global: Arc<Global> = req.get_global()?;
 
@@ -51,13 +52,15 @@ async fn login(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, R
 
 	let callback = req.query_param("callback").is_some_and(|c| c == "true");
 
+	let session = req.extensions().get::<UserSession>();
+
 	Response::builder()
 		.header(
 			hyper::header::LOCATION,
 			if callback {
 				handle_login_callback(&global, platform, &req, &cookies).await?
 			} else {
-				handle_login(&global, platform, &cookies)?
+				handle_login(&global, session, platform, &cookies)?
 			},
 		)
 		.status(StatusCode::SEE_OTHER)
@@ -78,10 +81,13 @@ async fn login(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, R
 async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
 	let global: Arc<Global> = req.get_global()?;
 	if let Some(session) = req.extensions().get::<UserSession>() {
-		scuffle_utils::database::query("DELETE FROM user_sessions WHERE id = $1")
-			.bind(session.id)
-			.build()
-			.execute(global.db())
+		UserSession::collection(global.db())
+			.delete_one(
+				doc! {
+					"_id": session.id,
+				},
+				None,
+			)
 			.await
 			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to delete session"))?;
 

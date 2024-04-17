@@ -8,7 +8,7 @@ use crate::config::Config;
 pub struct Global {
 	ctx: Context,
 	config: Config,
-	db: Arc<scuffle_utils::database::Pool>,
+	db: mongodb::Database,
 	clickhouse: clickhouse::Client,
 	mongo: mongodb::Client,
 }
@@ -42,7 +42,7 @@ impl Global {
 		&self.config
 	}
 
-	pub fn db(&self) -> &Arc<scuffle_utils::database::Pool> {
+	pub fn db(&self) -> &mongodb::Database {
 		&self.db
 	}
 

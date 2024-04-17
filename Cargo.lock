@@ -3494,6 +3494,7 @@ dependencies = [
  "hyper 1.2.0",
  "hyper-util",
  "memory-stats",
+ "mongodb",
  "once_cell",
  "prometheus-client",
  "rustls 0.23.4",

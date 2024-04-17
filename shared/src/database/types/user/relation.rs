@@ -33,5 +33,5 @@ pub enum MutedState {
 }
 
 impl Collection for UserRelation {
-	const NAME: &'static str = "user_relations";
+	const COLLECTION_NAME: &'static str = "user_relations";
 }

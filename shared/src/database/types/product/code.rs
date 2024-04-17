@@ -29,5 +29,5 @@ pub enum ProductCodeKind {
 }
 
 impl Collection for ProductCode {
-	const NAME: &'static str = "product_codes";
+	const COLLECTION_NAME: &'static str = "product_codes";
 }

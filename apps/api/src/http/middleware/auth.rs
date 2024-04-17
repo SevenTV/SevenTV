@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
+use mongodb::bson::doc;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::middleware::{Middleware, NextFn};
 use scuffle_utils::http::RouteError;
-use shared::database::UserSession;
+use shared::database::{Collection, UserSession};
 
 use super::AUTH_COOKIE;
 use crate::global::Global;
@@ -29,14 +30,26 @@ impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>
 			let jwt = AuthJwtPayload::verify(&global, cookie.value())
 				.map_err_route((StatusCode::UNAUTHORIZED, "invalid auth token"))?;
 
-			let session: Option<UserSession> = scuffle_utils::database::query(
-				"UPDATE user_sessions SET last_used_at = NOW() WHERE id = $1 AND expires_at > NOW() RETURNING *",
-			)
-			.bind(jwt.session_id)
-			.build_query_as()
-			.fetch_optional(&global.db())
-			.await
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch session"))?;
+			let session = UserSession::collection(global.db())
+				.find_one_and_update(
+					doc! {
+						"_id": jwt.session_id,
+						"expires_at": { "$gt": chrono::Utc::now() },
+					},
+					doc! {
+						"$set": {
+							"last_used_at": chrono::Utc::now(),
+						},
+					},
+					Some(
+						mongodb::options::FindOneAndUpdateOptions::builder()
+							.return_document(mongodb::options::ReturnDocument::After)
+							.upsert(false)
+							.build(),
+					),
+				)
+				.await
+				.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to update session"))?;
 
 			if let Some(session) = session {
 				req.extensions_mut().insert(session);

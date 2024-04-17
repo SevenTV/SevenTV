@@ -18,7 +18,7 @@ pub struct Page {
 }
 
 impl Collection for Page {
-	const NAME: &'static str = "pages";
+	const COLLECTION_NAME: &'static str = "pages";
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]

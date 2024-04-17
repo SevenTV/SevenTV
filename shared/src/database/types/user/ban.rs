@@ -15,5 +15,5 @@ pub struct UserBan {
 }
 
 impl Collection for UserBan {
-	const NAME: &'static str = "user_bans";
+	const COLLECTION_NAME: &'static str = "user_bans";
 }

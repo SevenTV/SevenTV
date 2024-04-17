@@ -19,7 +19,7 @@ pub struct Badge {
 }
 
 impl Collection for Badge {
-	const NAME: &'static str = "badges";
+	const COLLECTION_NAME: &'static str = "badges";
 }
 
 impl Badge {

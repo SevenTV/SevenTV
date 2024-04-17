@@ -21,7 +21,7 @@ pub struct AutomodRule {
 }
 
 impl Collection for AutomodRule {
-	const NAME: &'static str = "automod_rules";
+	const COLLECTION_NAME: &'static str = "automod_rules";
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]

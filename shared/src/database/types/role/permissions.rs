@@ -38,16 +38,18 @@ pub trait BitMask:
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, Copy, PartialEq, Eq)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 #[serde(bound(serialize = "T: BitMask", deserialize = "T: BitMask"))]
 pub struct AllowDeny<T: BitMask> {
 	#[serde(skip_serializing_if = "T::is_default")]
 	#[serde(serialize_with = "T::serialize")]
 	#[serde(deserialize_with = "T::deserialize")]
+	#[serde(default)]
 	pub allow: T,
 	#[serde(skip_serializing_if = "T::is_default")]
 	#[serde(serialize_with = "T::serialize")]
 	#[serde(deserialize_with = "T::deserialize")]
+	#[serde(default)]
 	pub deny: T,
 }
 
@@ -247,30 +249,40 @@ impl Default for AdminPermission {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
-#[serde(default)]
 pub struct Permissions {
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub emote: AllowDeny<EmotePermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub role: AllowDeny<RolePermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub emote_set: AllowDeny<EmoteSetPermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub badge: AllowDeny<BadgePermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub paint: AllowDeny<PaintPermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub user: AllowDeny<UserPermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub feature: AllowDeny<FeaturePermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub admin: AllowDeny<AdminPermission>,
 
 	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(default)]
 	pub emote_set_count_limit: Option<u16>,
 	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(default)]
 	pub emote_set_slots_limit: Option<u16>,
 	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(default)]
 	pub personal_emote_set_slots_limit: Option<u16>,
 
 	#[serde(flatten)]

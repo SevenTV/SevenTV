@@ -101,7 +101,7 @@ impl EmoteSet {
 }
 
 impl Collection for EmoteSet {
-	const NAME: &'static str = "emote_sets";
+	const COLLECTION_NAME: &'static str = "emote_sets";
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]

@@ -13,5 +13,5 @@ pub struct UserSession {
 }
 
 impl Collection for UserSession {
-	const NAME: &'static str = "user_sessions";
+	const COLLECTION_NAME: &'static str = "user_sessions";
 }

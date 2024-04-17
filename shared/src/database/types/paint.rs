@@ -24,7 +24,7 @@ pub struct Paint {
 }
 
 impl Collection for Paint {
-	const NAME: &'static str = "paints";
+	const COLLECTION_NAME: &'static str = "paints";
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]

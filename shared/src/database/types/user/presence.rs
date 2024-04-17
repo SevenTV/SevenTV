@@ -17,5 +17,5 @@ pub struct UserPresence {
 }
 
 impl Collection for UserPresence {
-	const NAME: &'static str = "user_presences";
+	const COLLECTION_NAME: &'static str = "user_presences";
 }

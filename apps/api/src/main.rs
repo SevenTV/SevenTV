@@ -15,7 +15,7 @@ mod jwt;
 mod metrics;
 
 #[global_allocator]
-static ALLOCATOR: Cap<tikv_jemallocator::Jemalloc> = Cap::new(tikv_jemallocator::Jemalloc, usize::max_value());
+static ALLOCATOR: Cap<tikv_jemallocator::Jemalloc> = Cap::new(tikv_jemallocator::Jemalloc, usize::MAX);
 
 #[tokio::main]
 async fn main() {

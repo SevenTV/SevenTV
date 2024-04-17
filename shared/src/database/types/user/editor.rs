@@ -31,5 +31,5 @@ pub enum UserEditorState {
 }
 
 impl Collection for UserEditor {
-	const NAME: &'static str = "user_editors";
+	const COLLECTION_NAME: &'static str = "user_editors";
 }

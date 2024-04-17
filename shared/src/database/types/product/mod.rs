@@ -7,7 +7,7 @@ pub use self::code::*;
 pub use self::purchase::*;
 use super::Collection;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Product {
 	#[serde(rename = "_id")]
@@ -45,9 +45,10 @@ pub enum TimeInterval {
 	Month(u16),
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// A subscription product is special because the interval at which we bill
 /// might not be
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProductDataSubscription {
 	pub base_interval: TimeInterval,
 	/// If a subscription is pauseable, the user can pause their subscription
@@ -63,6 +64,7 @@ pub struct ProductDataSubscription {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProductDataSubscriptionOption {
 	/// The number of months for this interval
 	pub interval: TimeInterval,
@@ -97,7 +99,7 @@ pub enum ProductDataGiftable {
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct ProductEntitlementGroup {
 	pub condition: Option<String>,
 	pub entitlements: Vec<ProductEntitlement>,
@@ -105,6 +107,7 @@ pub struct ProductEntitlementGroup {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Copy)]
 #[serde(tag = "kind", content = "id")]
+#[serde(deny_unknown_fields)]
 pub enum ProductEntitlement {
 	Role(ObjectId),
 	Badge(ObjectId),
@@ -128,5 +131,5 @@ pub enum ProductVisibility {
 }
 
 impl Collection for Product {
-	const NAME: &'static str = "products";
+	const COLLECTION_NAME: &'static str = "products";
 }

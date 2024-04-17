@@ -37,3 +37,4 @@ clickhouse = { version = "0.11.6", features = ["uuid", "time"] }
 time = "0.3.36"
 uuid = { version = "1.8.0", features = ["serde"] }
 bson = "2.8"
+mongodb = "2.8"

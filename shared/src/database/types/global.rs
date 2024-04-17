@@ -13,7 +13,7 @@ pub struct GlobalConfig {
 }
 
 impl Collection for GlobalConfig {
-	const NAME: &'static str = "global_config";
+	const COLLECTION_NAME: &'static str = "global_config";
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]

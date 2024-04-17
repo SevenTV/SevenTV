@@ -68,7 +68,7 @@ impl Display for Platform {
 }
 
 impl Collection for UserConnection {
-	const NAME: &'static str = "user_connections";
+	const COLLECTION_NAME: &'static str = "user_connections";
 }
 
 impl From<UserConnection> for UserConnectionPartialModel {

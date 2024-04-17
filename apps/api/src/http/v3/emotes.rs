@@ -8,7 +8,6 @@ use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
-use shared::id::parse_id;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -64,7 +63,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 
 	let id = req.param("id").map_err_route((StatusCode::BAD_REQUEST, "missing id"))?;
 
-	let id = parse_id(id).map_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
+	let id = id.parse().map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
 
 	let Some(emote) = global
 		.emote_by_id_loader()
@@ -92,14 +91,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 				.await
 				.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load user"))?;
 
-			match user {
-				Some(u) => Some(
-					u.into_old_model_partial(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url)
-						.await
-						.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert user"))?,
-				),
-				None => None,
-			}
+			user.map(|u| u.into_old_model_partial(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url))
 		}
 		None => None,
 	};

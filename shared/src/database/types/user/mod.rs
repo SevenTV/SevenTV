@@ -12,6 +12,7 @@ mod settings;
 use std::sync::Arc;
 
 use bson::oid::ObjectId;
+use bson::Bson;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::OptionExt;
 use scuffle_utils::http::router::error::RouterError;
@@ -29,8 +30,8 @@ pub use self::settings::*;
 use super::{FileSet, ImageFormat};
 use crate::database::Collection;
 use crate::types::old::{
-	CosmeticBadgeModel, CosmeticPaintModel, ImageFormat as ImageFormatOld, ImageHostKind, UserConnectionModel,
-	UserConnectionPartialModel, UserModel, UserPartialModel, UserStyle, UserTypeModel,
+	CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, ImageFormat as ImageFormatOld, ImageHostKind,
+	UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel, UserPartialModel, UserStyle, UserTypeModel,
 };
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -38,12 +39,12 @@ use crate::types::old::{
 pub struct User {
 	#[serde(rename = "_id")]
 	pub id: ObjectId,
-	pub email: String,
+	pub email: Option<String>,
 	pub email_verified: bool,
-	pub password_hash: String,
+	pub password_hash: Option<String>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub settings: UserSettings,
-	pub two_fa: UserTwoFa,
+	pub two_fa: Option<UserTwoFa>,
 	pub active_cosmetics: UserActiveCosmetics,
 	pub entitled_cache: UserEntitledCache,
 	pub active_emote_set_ids: Vec<ObjectId>,
@@ -54,7 +55,7 @@ pub struct User {
 }
 
 impl Collection for User {
-	const NAME: &'static str = "users";
+	const COLLECTION_NAME: &'static str = "users";
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -84,61 +85,58 @@ pub struct UserEntitledCache {
 	pub invalidated_at: chrono::DateTime<chrono::Utc>,
 }
 
+impl UserEntitledCache {
+	pub fn dedup(&mut self) {
+		self.role_ids.sort_unstable();
+		self.role_ids.dedup();
+
+		self.badge_ids.sort_unstable();
+		self.badge_ids.dedup();
+
+		self.emote_set_ids.sort_unstable();
+		self.emote_set_ids.dedup();
+
+		self.paint_ids.sort_unstable();
+		self.paint_ids.dedup();
+
+		self.product_ids.sort_unstable();
+		self.product_ids.dedup();
+	}
+}
+
 impl User {
 	pub fn into_old_model_partial(
 		self,
 		connections: Vec<UserConnection>,
-		profile_picture_file_set: &Option<FileSet>,
+		profile_picture_file_set: Option<&FileSet>,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
 		cdn_base_url: &str,
-	) -> Option<UserPartialModel> {
-		let main_connection = connections.iter().find(|c| c.main_connection)?;
+	) -> UserPartialModel {
+		let main_connection = connections.iter().find(|c| c.main_connection);
 
-		let avatar_url = match profile_picture_file_set {
-			Some(f) => {
-				let file = f.properties.default_image()?;
-				Some(
-					ImageHostKind::ProfilePicture.create_full_url(
-						cdn_base_url,
-						f.id,
-						file.extra.scale,
-						file.extra
-							.variants
-							.iter()
-							.find(|v| v.format == ImageFormat::Webp)
-							.map(|_| ImageFormatOld::Webp)?,
-					),
-				)
-			}
-			None => None,
-		};
+		let avatar_url = profile_picture_file_set.and_then(|f| {
+			let file = f.properties.default_image()?;
 
-		// let paint = match self.active_cosmetics.paint_id {
-		// 	Some(id) if self.entitled_cache.paint_ids.contains(&id) => {
-		// 		match global.paint_by_id_loader().load(id).await.ok()? {
-		// 			Some(p) => Some(p.into_old_model().await.ok()?),
-		// 			None => None,
-		// 		}
-		// 	}
-		// 	_ => None,
-		// };
+			Some(
+				ImageHostKind::ProfilePicture.create_full_url(
+					cdn_base_url,
+					f.id,
+					file.extra.scale,
+					file.extra
+						.variants
+						.iter()
+						.find(|v| v.format == ImageFormat::Webp)
+						.map(|_| ImageFormatOld::Webp)?,
+				),
+			)
+		});
 
-		// let badge = match self.active_cosmetics.badge_id {
-		// 	Some(id) if self.entitled_cache.badge_ids.contains(&id) => {
-		// 		match global.badge_by_id_loader().load(id).await.ok()? {
-		// 			Some(b) => Some(b.into_old_model().await.ok()?),
-		// 			None => None,
-		// 		}
-		// 	}
-		// 	_ => None,
-		// };
-
-		Some(UserPartialModel {
+		UserPartialModel {
 			id: self.id,
 			user_type: UserTypeModel::Regular,
-			username: main_connection.platform_username.clone(),
-			display_name: main_connection.platform_display_name.clone(),
+			username: main_connection.map(|c| c.platform_username.clone()).unwrap_or_default(),
+			display_name: main_connection.map(|c| c.platform_display_name.clone()).unwrap_or_default(),
 			avatar_url: avatar_url.unwrap_or_default(),
 			style: UserStyle {
 				color: 0,
@@ -149,31 +147,33 @@ impl User {
 			},
 			role_ids: self.entitled_cache.role_ids.into_iter().collect(),
 			connections: connections.into_iter().map(UserConnectionPartialModel::from).collect(),
-		})
+		}
 	}
 
 	pub fn into_old_model(
 		self,
 		connections: Vec<UserConnection>,
-		profile_picture_file_set: &Option<FileSet>,
+		profile_picture_file_set: Option<&FileSet>,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
+		emote_sets: Vec<EmoteSetPartialModel>,
+		editors: Vec<UserEditorModel>,
 		cdn_base_url: &str,
-	) -> Option<UserModel> {
+	) -> UserModel {
 		let created_at = self.id.timestamp().timestamp_millis();
-		let partial = self.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url)?;
+		let partial = self.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url);
 
-		Some(UserModel {
+		UserModel {
 			id: partial.id,
 			user_type: partial.user_type,
 			username: partial.username,
 			display_name: partial.display_name,
-			created_at: created_at as i64,
+			created_at,
 			avatar_url: partial.avatar_url,
 			biography: String::new(),
 			style: partial.style,
-			emote_sets: todo!(),
-			editors: todo!(),
+			emote_sets,
+			editors,
 			role_ids: partial.role_ids,
 			connections: partial
 				.connections
@@ -190,6 +190,6 @@ impl User {
 					user: None,
 				})
 				.collect(),
-		})
+		}
 	}
 }

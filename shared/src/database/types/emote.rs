@@ -50,7 +50,7 @@ impl Emote {
 				listed: partial.listed,
 				animated: partial.animated,
 				host: Some(partial.host),
-				created_at: partial.id.timestamp().timestamp_millis() as i64,
+				created_at: partial.id.timestamp().timestamp_millis(),
 			}],
 		}
 	}
@@ -116,7 +116,7 @@ impl Emote {
 }
 
 impl Collection for Emote {
-	const NAME: &'static str = "emotes";
+	const COLLECTION_NAME: &'static str = "emotes";
 }
 
 #[bitmask(u8)]

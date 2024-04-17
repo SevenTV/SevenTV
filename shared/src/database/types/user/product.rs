@@ -46,5 +46,5 @@ pub enum UserProductDataPurchaseCreatedBy {
 }
 
 impl Collection for UserProduct {
-	const NAME: &'static str = "user_products";
+	const COLLECTION_NAME: &'static str = "user_products";
 }

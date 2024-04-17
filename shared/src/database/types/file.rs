@@ -14,7 +14,7 @@ pub struct FileSet {
 }
 
 impl Collection for FileSet {
-	const NAME: &'static str = "file_sets";
+	const COLLECTION_NAME: &'static str = "file_sets";
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize)]

@@ -1,15 +1,14 @@
-use std::sync::Arc;
-
+use futures::{TryFutureExt, TryStreamExt};
 use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::Emote;
+use shared::database::{Collection, Emote};
 
 pub struct EmoteByIdLoader {
-	db: Arc<scuffle_utils::database::Pool>,
+	db: mongodb::Database,
 }
 
 impl EmoteByIdLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
+	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
@@ -19,14 +18,21 @@ impl Loader for EmoteByIdLoader {
 	type Key = ObjectId;
 	type Value = Emote;
 
+	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<Self::Value> = scuffle_utils::database::query("SELECT * FROM emotes WHERE id = ANY($1)")
-			.bind(keys)
-			.build_query_as()
-			.fetch_all(&self.db)
+		let results: Vec<Self::Value> = Emote::collection(&self.db)
+			.find(
+				mongodb::bson::doc! {
+					"_id": {
+						"$in": keys,
+					}
+				},
+				None,
+			)
+			.and_then(|f| f.try_collect())
 			.await
-			.map_err(|e| {
-				tracing::error!(err = %e, "failed to fetch badges by id");
+			.map_err(|err| {
+				tracing::error!("failed to load: {err}");
 			})?;
 
 		Ok(results.into_iter().map(|r| (r.id, r)).collect())

@@ -8,7 +8,6 @@ use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
 use shared::http::{json_response, Body};
-use shared::id::parse_id;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -56,7 +55,7 @@ pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Resp
 	let global: Arc<Global> = req.get_global()?;
 
 	let id = req.param("id").map_err_route((StatusCode::BAD_REQUEST, "missing id"))?;
-	let id = parse_id(id).map_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
+	let id = id.parse().map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
 
 	let user = global
 		.user_by_id_loader()
@@ -64,9 +63,15 @@ pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Resp
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch user"))?
 		.map_err_route((StatusCode::NOT_FOUND, "user not found"))?
-		.into_old_model(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url)
-		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert into old model"))?;
+		.into_old_model(
+			todo!(),
+			todo!(),
+			todo!(),
+			todo!(),
+			todo!(),
+			todo!(),
+			&global.config().api.cdn_base_url,
+		);
 
 	json_response(user)
 }

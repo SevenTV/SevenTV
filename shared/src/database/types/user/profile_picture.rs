@@ -12,5 +12,5 @@ pub struct UserProfilePicture {
 }
 
 impl Collection for UserProfilePicture {
-	const NAME: &'static str = "user_profile_pictures";
+	const COLLECTION_NAME: &'static str = "user_profile_pictures";
 }

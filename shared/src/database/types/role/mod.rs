@@ -29,5 +29,5 @@ pub struct Role {
 }
 
 impl Collection for Role {
-	const NAME: &'static str = "roles";
+	const COLLECTION_NAME: &'static str = "roles";
 }

@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use hyper::body::Incoming;
 use hyper::StatusCode;
+use mongodb::bson::{doc, to_bson};
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::RouteError;
-use shared::database::{Platform, UserConnection, UserSession};
-use ulid::Ulid;
+use shared::database::{Collection, Platform, User, UserConnection, UserSession};
 
 use crate::connections;
 use crate::global::Global;
@@ -44,16 +44,9 @@ pub async fn handle_callback(
 		.get(CSRF_COOKIE)
 		.map_err_route((StatusCode::BAD_REQUEST, "missing csrf cookie"))?;
 
-	CsrfJwtPayload::verify(global, csrf_cookie.value())
-		.and_then(|p| p.validate_random(&state))
-		.map(|valid| {
-			if valid {
-				Ok(())
-			} else {
-				Err((StatusCode::BAD_REQUEST, "invalid state"))
-			}
-		})
-		.map_err_route((StatusCode::BAD_REQUEST, "invalid csrf"))??;
+	let csrf_payload = CsrfJwtPayload::verify(global, csrf_cookie.value())
+		.filter(|payload| payload.validate_random(&state).unwrap_or_default())
+		.map_err_route((StatusCode::BAD_REQUEST, "invalid csrf"))?;
 
 	// exchange code for access token
 	let token = connections::exchange_code(
@@ -70,119 +63,141 @@ pub async fn handle_callback(
 		.await
 		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to get user data from platform"))?;
 
-	let connection: Option<UserConnection> =
-		scuffle_utils::database::query("SELECT * FROM user_connections WHERE platform = $1 AND platform_id = $2")
-			.bind(platform)
-			.bind(user_data.id.clone())
-			.build_query_as()
-			.fetch_optional(global.db())
-			.await
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query connection"))?;
-
-	let mut client = global
-		.db()
-		.get()
+	let mut session = global
+		.mongo()
+		.start_session(None)
 		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to initialize db client"))?;
-
-	let tx = client
-		.transaction()
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to start session"))?;
+	session
+		.start_transaction(None)
 		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to initialize db transaction"))?;
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to start transaction"))?;
 
-	let user_id = if let Some(connection) = connection {
-		if !connection.allow_login {
-			return Err((
-				StatusCode::FORBIDDEN,
-				"connection is not allowed to login",
-				ApiError::ConnectionError(connections::ConnectionError::LoginNotAllowed),
+	let user = if let Some(user_id) = csrf_payload.user_id {
+		User::collection(global.db())
+			.find_one_with_session(
+				doc! {
+					"_id": user_id,
+				},
+				None,
+				&mut session,
 			)
-				.into());
-		}
-
-		// update user connection
-		scuffle_utils::database::query("UPDATE user_connections SET platform_username = $4, platform_display_name = $5, platform_avatar_url = $6, updated_at = NOW() WHERE platform = $7 AND platform_id = $8")
-            .bind(user_data.username)
-            .bind(user_data.display_name)
-            .bind(user_data.avatar)
-            .bind(platform)
-            .bind(user_data.id)
-            .build()
-            .execute(&tx)
-            .await
-            .map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to update user connection"))?;
-
-		connection.user_id
+			.await
+			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to find user"))?
+			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to find user"))?
 	} else {
-		let user_id = if let Some(auth) = req.extensions().get::<UserSession>() {
-			auth.user_id
-		} else {
-			// create user
-			let user_id = Ulid::new();
+		let user = User::default();
+		User::collection(global.db())
+			.insert_one_with_session(&user, None, &mut session)
+			.await
+			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user"))?;
 
-			scuffle_utils::database::query("INSERT INTO users (id) VALUES ($1)")
-				.bind(user_id)
-				.build()
-				.execute(&tx)
-				.await
-				.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user"))?;
+		user
+	};
 
-			user_id
+	let connection = UserConnection::collection(global.db())
+		.find_one_and_update_with_session(
+			doc! {
+				"platform": to_bson(&platform).expect("failed to convert platform to bson"),
+				"platform_id": &user_data.id,
+			},
+			doc! {
+				"$set": {
+					"platform_username": &user_data.username,
+					"platform_display_name": &user_data.display_name,
+					"platform_avatar_url": &user_data.avatar,
+					"updated_at": chrono::Utc::now(),
+				},
+				"$setOnInsert": to_bson(&UserConnection {
+					user_id: user.id,
+					main_connection: csrf_payload.user_id.is_none(),
+					platform,
+					platform_id: user_data.id,
+					platform_username: user_data.username,
+					platform_display_name: user_data.display_name,
+					platform_avatar_url: user_data.avatar,
+					updated_at: chrono::Utc::now(),
+					allow_login: true,
+					..Default::default()
+				}).expect("failed to convert user connection to bson"),
+			},
+			Some(
+				mongodb::options::FindOneAndUpdateOptions::builder()
+					.upsert(true)
+					.return_document(mongodb::options::ReturnDocument::After)
+					.build(),
+			),
+			&mut session,
+		)
+		.await
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to update user connection"))?
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user connection"))?;
+
+	if connection.user_id != user.id {
+		return Err((StatusCode::BAD_REQUEST, "connection already connected to another account").into());
+	}
+
+	if connection.allow_login && csrf_payload.user_id.is_none() {
+		return Err((StatusCode::BAD_REQUEST, "connection has login disabled").into());
+	}
+
+	let user_session = if csrf_payload.user_id.is_none() {
+		let user_session = UserSession {
+			user_id: user.id,
+			// TODO maybe allow for this to be configurable
+			expires_at: chrono::Utc::now() + chrono::Duration::days(30),
+			last_used_at: chrono::Utc::now(),
+			..Default::default()
 		};
 
-		// create user connection
-		scuffle_utils::database::query("INSERT INTO user_connections (id, user_id, main_connection, platform, platform_id, platform_username, platform_display_name, platform_avatar_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
-            .bind(Ulid::new())
-            .bind(user_id)
-            .bind(true)
-            .bind(platform)
-            .bind(user_data.id)
-            .bind(user_data.username)
-            .bind(user_data.display_name)
-            .bind(user_data.avatar)
-            .build()
-            .execute(&tx)
-            .await
-            .map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user connection"))?;
+		UserSession::collection(global.db())
+			.insert_one_with_session(&user_session, None, &mut session)
+			.await
+			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user session"))?;
 
-		user_id
+		Some(user_session)
+	} else {
+		None
 	};
-	// create session
-	let session: UserSession = scuffle_utils::database::query(
-		"INSERT INTO user_sessions (id, user_id, expires_at) VALUES ($1, $2, $3) RETURNING *",
-	)
-	.bind(Ulid::new())
-	.bind(user_id)
-	.bind(chrono::Utc::now() + chrono::Duration::days(30))
-	.build_query_as()
-	.fetch_one(&tx)
-	.await
-	.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user connection"))?;
+
+	session
+		.commit_transaction()
+		.await
+		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to commit transaction"))?;
 
 	// create jwt access token
-	let jwt = AuthJwtPayload::from(session.clone());
-	let token = jwt
-		.serialize(global)
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize jwt"))?;
-	// create cookie
-	let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(session.expires_at.naive_utc().timestamp())
-		.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to create expiration"))?;
+	if let Some(user_session) = user_session {
+		let jwt = AuthJwtPayload::from(user_session.clone());
+		let token = jwt
+			.serialize(global)
+			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize jwt"))?;
+		// create cookie
+		let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(user_session.expires_at.timestamp())
+			.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to create expiration"))?;
 
-	cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
+		cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
 
-	tx.commit()
-		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to commit transcation"))?;
-
-	Ok(format!(
-		"{}?platform={}&token={}",
-		global.config().api.connections.callback_url,
-		platform,
-		token
-	))
+		Ok(format!(
+			"{}?platform={}&token={}",
+			global.config().api.connections.callback_url,
+			platform,
+			token
+		))
+	} else {
+		Ok(format!(
+			"{}?platform={}",
+			global.config().api.connections.callback_url,
+			platform,
+		))
+	}
 }
 
-pub fn handle_login(global: &Arc<Global>, platform: Platform, cookies: &Cookies) -> Result<String, RouteError<ApiError>> {
+pub fn handle_login(
+	global: &Arc<Global>,
+	session: Option<&UserSession>,
+	platform: Platform,
+	cookies: &Cookies,
+) -> Result<String, RouteError<ApiError>> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
 		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config().api.connections.twitch),
@@ -198,7 +213,7 @@ pub fn handle_login(global: &Arc<Global>, platform: Platform, cookies: &Cookies)
 		}
 	};
 
-	let csrf = CsrfJwtPayload::new();
+	let csrf = CsrfJwtPayload::new(session.map(|s| s.user_id));
 
 	cookies.add(new_cookie(
 		global,

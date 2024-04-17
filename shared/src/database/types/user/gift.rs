@@ -20,7 +20,7 @@ pub struct UserGift {
 }
 
 impl Collection for UserGift {
-	const NAME: &'static str = "user_gifts";
+	const COLLECTION_NAME: &'static str = "user_gifts";
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]

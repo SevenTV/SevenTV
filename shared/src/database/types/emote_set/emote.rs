@@ -76,5 +76,5 @@ impl EmoteSetEmote {
 }
 
 impl Collection for EmoteSetEmote {
-	const NAME: &'static str = "emote_set_emotes";
+	const COLLECTION_NAME: &'static str = "emote_set_emotes";
 }
