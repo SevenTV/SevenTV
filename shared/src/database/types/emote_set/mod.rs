@@ -22,7 +22,6 @@ pub struct EmoteSet {
 	pub tags: Vec<String>,
 	pub capacity: u32,
 	pub flags: EmoteSetFlags,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[bitmask(u8)]

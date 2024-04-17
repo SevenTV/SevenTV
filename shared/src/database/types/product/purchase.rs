@@ -17,7 +17,6 @@ pub struct ProductPurchase {
 	pub subscription_time: Option<TimeInterval>,
 	pub price: f64,
 	pub status: ProductPurchaseStatus,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]

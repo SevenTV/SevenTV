@@ -18,7 +18,6 @@ pub struct UserConnection {
 	pub platform_username: String,
 	pub platform_display_name: String,
 	pub platform_avatar_url: Option<String>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub allow_login: bool,
 }
 

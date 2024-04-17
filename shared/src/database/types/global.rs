@@ -10,7 +10,6 @@ pub struct GlobalConfig {
 	pub alerts: GlobalConfigAlerts,
 	pub emote_set_ids: Vec<ObjectId>,
 	pub role_ids: Vec<ObjectId>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Collection for GlobalConfig {

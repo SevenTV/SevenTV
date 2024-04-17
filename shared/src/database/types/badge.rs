@@ -15,7 +15,6 @@ pub struct Badge {
 	pub description: String,
 	pub tags: Vec<String>,
 	pub file_set_id: ObjectId,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Collection for Badge {

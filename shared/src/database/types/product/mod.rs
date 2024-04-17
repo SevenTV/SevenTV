@@ -24,7 +24,6 @@ pub struct Product {
 	pub entitlement_groups: Vec<ProductEntitlementGroup>,
 	pub giftable: ProductDataGiftable,
 	pub subscription: Option<ProductDataSubscription>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

@@ -90,25 +90,16 @@ pub async fn get_user_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Resp
 
 	let permissions = user.compute_permissions(&roles);
 
-	let pfp = match (
-		permissions.has(FeaturePermission::UseAnimatedProfilePicture),
-		user.active_cosmetics.profile_picture_id,
+	let pfp_file_set = match (
+		permissions.has(FeaturePermission::UseCustomProfilePicture),
+		user.style.active_profile_picture_id,
 	) {
 		(true, Some(profile_picture_id)) => global
-			.user_profile_picture_by_id_loader()
+			.file_set_by_id_loader()
 			.load(profile_picture_id)
 			.await
 			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch profile picture file set"))?,
 		_ => None,
-	};
-
-	let pfp_file_set = match pfp {
-		Some(pfp) => global
-			.file_set_by_id_loader()
-			.load(pfp.file_set_id)
-			.await
-			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to fetch profile picture file set"))?,
-		None => None,
 	};
 
 	let emote_sets = global

@@ -10,8 +10,6 @@ pub struct UserProduct {
 	pub user_id: ObjectId,
 	pub product_id: ObjectId,
 	pub data: UserProductData,
-	pub created_at: chrono::DateTime<chrono::Utc>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]

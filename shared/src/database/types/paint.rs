@@ -20,7 +20,6 @@ pub struct Paint {
 	pub tags: Vec<String>,
 	pub data: PaintData,
 	pub file_set_ids: Vec<ObjectId>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Collection for Paint {

@@ -22,7 +22,6 @@ pub struct Emote {
 	pub file_set_id: ObjectId,
 	pub flags: EmoteFlags,
 	pub attribution: Vec<EmoteAttribution>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Emote {

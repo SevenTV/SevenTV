@@ -10,7 +10,6 @@ pub struct AutomodRule {
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub priority: i16,
 	pub added_by: Option<ObjectId>,
 	pub kind: AutomodRuleKind,

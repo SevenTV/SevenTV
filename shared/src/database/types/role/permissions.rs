@@ -205,7 +205,7 @@ impl Default for UserPermission {
 
 #[bitmask(u16)]
 pub enum FeaturePermission {
-	UseAnimatedProfilePicture = 1,
+	UseCustomProfilePicture = 1,
 	PersonalEmoteSet = 2,
 	UseBadge = 4,
 	BypassEmoteSetCountLimit = 8,

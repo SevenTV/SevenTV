@@ -11,7 +11,6 @@ pub struct UserBan {
 	pub created_by_id: Option<ObjectId>,
 	pub reason: String,
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Collection for UserBan {

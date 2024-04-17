@@ -10,7 +10,6 @@ pub struct UserRelation {
 	pub user_id: ObjectId,
 	pub other_user_id: ObjectId,
 	pub kind: UserRelationKind,
-	pub created_at: chrono::DateTime<chrono::Utc>,
 	pub notes: String,
 	pub muted: Option<MutedState>,
 }

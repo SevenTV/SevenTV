@@ -11,7 +11,6 @@ pub struct UserGift {
 	pub recipient_id: ObjectId,
 	pub product_code_id: ObjectId,
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub status: UserGiftStatus,
 	pub message: Option<String>,
 	/// If the gift was given to the recipient by 7TV itself, this will be true.

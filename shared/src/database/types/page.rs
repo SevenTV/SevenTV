@@ -14,7 +14,6 @@ pub struct Page {
 	pub keywords: Vec<String>,
 	pub author_ids: Vec<ObjectId>,
 	pub file_ids: Vec<ObjectId>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Collection for Page {

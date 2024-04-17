@@ -4,7 +4,6 @@ mod editor;
 mod gift;
 mod presence;
 mod product;
-mod profile_picture;
 mod relation;
 mod session;
 mod settings;
@@ -23,7 +22,6 @@ pub use self::editor::*;
 pub use self::gift::*;
 pub use self::presence::*;
 pub use self::product::*;
-pub use self::profile_picture::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
@@ -31,7 +29,8 @@ use super::{FileSet, ImageFormat, Permissions, Role};
 use crate::database::Collection;
 use crate::types::old::{
 	CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, ImageFormat as ImageFormatOld, ImageHostKind,
-	UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel, UserPartialModel, UserStyle, UserTypeModel,
+	UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel, UserPartialModel,
+	UserStyle as UserStyleOld, UserTypeModel,
 };
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -42,16 +41,21 @@ pub struct User {
 	pub email: Option<String>,
 	pub email_verified: bool,
 	pub password_hash: Option<String>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub settings: UserSettings,
 	pub two_fa: Option<UserTwoFa>,
-	pub active_cosmetics: UserActiveCosmetics,
-	pub entitled_cache: UserEntitledCache,
+	pub style: UserStyle,
 	pub active_emote_set_ids: Vec<ObjectId>,
-	pub granted_badge_ids: Vec<ObjectId>,
-	pub granted_role_ids: Vec<ObjectId>,
-	pub granted_paint_ids: Vec<ObjectId>,
-	pub granted_emote_set_ids: Vec<ObjectId>,
+	pub grants: UserGrants,
+	pub entitled_cache: UserEntitledCache,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct UserGrants {
+	pub role_ids: Vec<ObjectId>,
+	pub badge_ids: Vec<ObjectId>,
+	pub paint_ids: Vec<ObjectId>,
+	pub emote_set_ids: Vec<ObjectId>,
 }
 
 impl User {
@@ -83,10 +87,11 @@ pub struct UserTwoFa {
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct UserActiveCosmetics {
-	pub badge_id: Option<ObjectId>,
-	pub paint_id: Option<ObjectId>,
-	pub profile_picture_id: Option<ObjectId>,
+pub struct UserStyle {
+	pub active_badge_id: Option<ObjectId>,
+	pub active_paint_id: Option<ObjectId>,
+	pub active_profile_picture_id: Option<ObjectId>,
+	pub all_profile_picture_ids: Vec<ObjectId>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -153,11 +158,11 @@ impl User {
 			username: main_connection.map(|c| c.platform_username.clone()).unwrap_or_default(),
 			display_name: main_connection.map(|c| c.platform_display_name.clone()).unwrap_or_default(),
 			avatar_url: avatar_url.unwrap_or_default(),
-			style: UserStyle {
+			style: UserStyleOld {
 				color: 0,
-				paint_id: self.active_cosmetics.paint_id,
+				paint_id: self.style.active_paint_id,
 				paint,
-				badge_id: self.active_cosmetics.badge_id,
+				badge_id: self.style.active_badge_id,
 				badge,
 			},
 			role_ids: self.entitled_cache.role_ids.into_iter().collect(),

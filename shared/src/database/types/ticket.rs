@@ -42,7 +42,6 @@ pub struct Ticket {
 	pub title: String,
 	pub tags: Vec<String>,
 	pub files: Vec<ObjectId>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Collection for Ticket {

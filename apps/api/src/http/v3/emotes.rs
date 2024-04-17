@@ -84,10 +84,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		None => None,
 	};
 
-	let pfp = match (
-		&owner,
-		owner.as_ref().and_then(|owner| owner.active_cosmetics.profile_picture_id),
-	) {
+	let pfp_file_set_id = match (&owner, owner.as_ref().and_then(|owner| owner.style.active_profile_picture_id)) {
 		(Some(owner), Some(profile_picture_id)) => {
 			let roles = global
 				.role_by_id_loader()
@@ -111,13 +108,9 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 
 			if owner
 				.compute_permissions(&roles)
-				.has(FeaturePermission::UseAnimatedProfilePicture)
+				.has(FeaturePermission::UseCustomProfilePicture)
 			{
-				global
-					.user_profile_picture_by_id_loader()
-					.load(profile_picture_id)
-					.await
-					.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load profile picture"))?
+				Some(profile_picture_id)
 			} else {
 				None
 			}
@@ -127,12 +120,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 
 	let file_sets = global
 		.file_set_by_id_loader()
-		.load_many(
-			pfp.as_ref()
-				.map(|pfp| pfp.file_set_id)
-				.into_iter()
-				.chain(Some(emote.file_set_id)),
-		)
+		.load_many(pfp_file_set_id.into_iter().chain(Some(emote.file_set_id)))
 		.await
 		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load file set"))?;
 
@@ -143,7 +131,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 	let owner = owner.map(|owner| {
 		owner.into_old_model_partial(
 			Vec::new(),
-			pfp.as_ref().and_then(|pfp| file_sets.get(&pfp.file_set_id)),
+			pfp_file_set_id.and_then(|id| file_sets.get(&id)),
 			None,
 			None,
 			&global.config().api.cdn_base_url,

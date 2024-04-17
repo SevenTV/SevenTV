@@ -105,24 +105,18 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 		})
 		.collect::<HashMap<_, _>>();
 
-	let profile_pictures = global
-		.user_profile_picture_by_id_loader()
-		.load_many(users.values().filter_map(|(user, permissions)| {
-			if permissions.has(FeaturePermission::UseAnimatedProfilePicture) {
-				user.active_cosmetics.profile_picture_id
-			} else {
-				None
-			}
-		}))
-		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query profile pictures"))?;
-
 	let file_sets = global
 		.file_set_by_id_loader()
 		.load_many(
-			profile_pictures
+			users
 				.values()
-				.map(|profile_picture| profile_picture.file_set_id)
+				.filter_map(|(user, permissions)| {
+					if permissions.has(FeaturePermission::UseCustomProfilePicture) {
+						user.style.active_profile_picture_id
+					} else {
+						None
+					}
+				})
 				.chain(emotes.values().map(|emote| emote.file_set_id)),
 		)
 		.await
@@ -133,11 +127,7 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 	let users = users
 		.into_values()
 		.map(|(user, _)| {
-			let profile_picture_file_set = user
-				.active_cosmetics
-				.profile_picture_id
-				.and_then(|id| profile_pictures.get(&id))
-				.and_then(|profile_picture| file_sets.get(&profile_picture.file_set_id));
+			let profile_picture_file_set = user.style.active_profile_picture_id.and_then(|id| file_sets.get(&id));
 
 			// This api doesnt seem to return the user's badges, paints and connections so
 			// we can ignore them.

@@ -116,7 +116,6 @@ pub async fn handle_callback(
 					platform_username: user_data.username,
 					platform_display_name: user_data.display_name,
 					platform_avatar_url: user_data.avatar,
-					updated_at: chrono::Utc::now(),
 					allow_login: true,
 					..Default::default()
 				}).expect("failed to convert user connection to bson"),

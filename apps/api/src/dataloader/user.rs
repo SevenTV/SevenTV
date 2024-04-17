@@ -262,10 +262,10 @@ impl UserLoader {
 		};
 
 		user.entitled_cache = UserEntitledCache {
-			role_ids: user.granted_role_ids.clone(),
-			badge_ids: user.granted_badge_ids.clone(),
-			emote_set_ids: user.granted_emote_set_ids.clone(),
-			paint_ids: user.granted_paint_ids.clone(),
+			role_ids: user.grants.role_ids.clone(),
+			badge_ids: user.grants.badge_ids.clone(),
+			emote_set_ids: user.grants.emote_set_ids.clone(),
+			paint_ids: user.grants.paint_ids.clone(),
 			product_ids: Vec::new(),
 			// 12 hours + 10%  jitter
 			invalidated_at: chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60)),
@@ -391,11 +391,13 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 			.map(|e| e.end - e.start)
 			.sum::<chrono::Duration>();
 
-		let packed_end_at = up.created_at + total_time;
+		let created_at = up.id.timestamp().to_chrono();
 
-		let total_months = (packed_end_at.year() - up.created_at.year()) * 12 + packed_end_at.month() as i32
-			- up.created_at.month() as i32
-			+ if packed_end_at.day() < up.created_at.day() { -1 } else { 0 };
+		let packed_end_at = created_at + total_time;
+
+		let total_months = (packed_end_at.year() - created_at.year()) * 12 + packed_end_at.month() as i32
+			- created_at.month() as i32
+			+ if packed_end_at.day() < created_at.day() { -1 } else { 0 };
 
 		let duraction = Duration {
 			total_days: total_time.num_days(),
@@ -404,7 +406,7 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 		};
 
 		UserProduct {
-			created_at: up.created_at,
+			created_at,
 			duraction,
 			subscription_entries: up.data.purchases.clone(),
 		}

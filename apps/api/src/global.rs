@@ -30,7 +30,6 @@ pub struct Global {
 	emote_set_emote_by_id_loader: DataLoader<dataloader::emote_set::EmoteSetEmoteByIdLoader>,
 	emote_set_by_user_id_loader: DataLoader<dataloader::emote_set::EmoteSetByUserIdLoader>,
 	global_config_loader: DataLoader<dataloader::global_config::GlobalConfigLoader>,
-	user_profile_picture_by_id_loader: DataLoader<dataloader::user_profile_picture::UserProfilePictureByIdLoader>,
 	user_editor_by_user_id_loader: DataLoader<dataloader::user_editor::UserEditorByUserIdLoader>,
 	user_editor_by_editor_id_loader: DataLoader<dataloader::user_editor::UserEditorByEditorIdLoader>,
 }
@@ -68,9 +67,6 @@ impl Global {
 			emote_set_emote_by_id_loader: dataloader::emote_set::EmoteSetEmoteByIdLoader::new(db.clone()),
 			emote_set_by_user_id_loader: dataloader::emote_set::EmoteSetByUserIdLoader::new(db.clone()),
 			global_config_loader: dataloader::global_config::GlobalConfigLoader::new(db.clone()),
-			user_profile_picture_by_id_loader: dataloader::user_profile_picture::UserProfilePictureByIdLoader::new(
-				db.clone(),
-			),
 			user_editor_by_user_id_loader: dataloader::user_editor::UserEditorByUserIdLoader::new(db.clone()),
 			user_editor_by_editor_id_loader: dataloader::user_editor::UserEditorByEditorIdLoader::new(db.clone()),
 			http_client: reqwest::Client::new(),
@@ -180,13 +176,6 @@ impl Global {
 	/// The global config loader.
 	pub fn global_config_loader(&self) -> &DataLoader<dataloader::global_config::GlobalConfigLoader> {
 		&self.global_config_loader
-	}
-
-	/// The user profile picture loader.
-	pub fn user_profile_picture_by_id_loader(
-		&self,
-	) -> &DataLoader<dataloader::user_profile_picture::UserProfilePictureByIdLoader> {
-		&self.user_profile_picture_by_id_loader
 	}
 
 	/// The user editor by user loader.

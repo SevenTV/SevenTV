@@ -17,7 +17,6 @@ pub struct ProductCode {
 	pub remaining_uses: Option<i32>,
 	pub kind: ProductCodeKind,
 	pub product_ids: Vec<ObjectId>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]

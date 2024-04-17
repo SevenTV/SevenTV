@@ -14,7 +14,6 @@ pub struct UserEditor {
 	pub notes: String,
 	pub permissions: UserEditorPermissions,
 	pub added_by_id: Option<ObjectId>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl UserEditor {

@@ -25,7 +25,6 @@ pub struct Role {
 	pub hoist: bool,
 	pub color: i32,
 	pub tags: Vec<String>,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Collection for Role {
