@@ -1,4 +1,4 @@
-use ulid::Ulid;
+use bson::oid::ObjectId;
 
 use super::{is_default, ImageHost, UserPartialModel};
 
@@ -11,7 +11,7 @@ use super::{is_default, ImageHost, UserPartialModel};
 )]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/cosmetic.model.go#L15
 pub struct CosmeticModel<T> {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub kind: CosmeticKind,
 	pub data: T,
 }
@@ -30,7 +30,7 @@ pub enum CosmeticKind {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/cosmetic.model.go#L29
 pub struct CosmeticPaintModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub name: String,
 	pub color: Option<i32>,
 	pub gradients: Vec<CosmeticPaintGradient>,
@@ -146,7 +146,7 @@ pub enum CosmeticPaintShape {
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct CosmeticBadgeModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub name: String,
 	pub tag: String,
 	pub tooltip: String,
@@ -157,7 +157,7 @@ pub struct CosmeticBadgeModel {
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct CosmeticAvatarModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub user: UserPartialModel,
 	#[serde(skip_serializing_if = "is_default", rename = "as")]
 	pub aas: String,

@@ -1,22 +1,24 @@
 use std::sync::Arc;
 
-use crate::types::old::{CosmeticBadgeModel, ImageFile, ImageFormat, ImageHost, ImageHostKind};
+use bson::oid::ObjectId;
 
 use super::{FileSet, FileSetKind, FileSetProperties};
-use crate::database::Table;
+use crate::database::Collection;
+use crate::types::old::{CosmeticBadgeModel, ImageFile, ImageFormat, ImageHost, ImageHostKind};
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Badge {
-	pub id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
-	pub file_set_id: ulid::Ulid,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
+	pub file_set_id: ObjectId,
 }
 
-impl Table for Badge {
-	const TABLE_NAME: &'static str = "badges";
+impl Collection for Badge {
+	const COLLECTION_NAME: &'static str = "badges";
 }
 
 impl Badge {

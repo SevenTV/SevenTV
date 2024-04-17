@@ -1,9 +1,14 @@
+use bson::oid::ObjectId;
+
 use super::Platform;
-use crate::database::Table;
+use crate::database::Collection;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserPresence {
-	pub user_id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub user_id: ObjectId,
 	pub platform: Platform,
 	pub platform_room_id: String,
 	pub authentic: bool,
@@ -11,6 +16,6 @@ pub struct UserPresence {
 	pub last_seen_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl Table for UserPresence {
-	const TABLE_NAME: &'static str = "user_presences";
+impl Collection for UserPresence {
+	const COLLECTION_NAME: &'static str = "user_presences";
 }

@@ -1,40 +1,37 @@
-use futures::{TryFutureExt, TryStreamExt};
 use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, Paint};
+use shared::database::{Collection, GlobalConfig};
 
-pub struct PaintByIdLoader {
+pub struct GlobalConfigLoader {
 	db: mongodb::Database,
 }
 
-impl PaintByIdLoader {
+impl GlobalConfigLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
-impl Loader for PaintByIdLoader {
+impl Loader for GlobalConfigLoader {
 	type Error = ();
-	type Key = ObjectId;
-	type Value = Paint;
+	type Key = ();
+	type Value = GlobalConfig;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<Self::Value> = Paint::collection(&self.db)
-			.find(
+		let config: GlobalConfig = Self::Value::collection(&self.db)
+			.find_one(
 				mongodb::bson::doc! {
-					"_id": {
-						"$in": keys,
-					}
+					"_id": ObjectId::from_bytes(Default::default())
 				},
 				None,
 			)
-			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})?
+			.unwrap_or_default();
 
-		Ok(results.into_iter().map(|r| (r.id, r)).collect())
+		Ok([((), config)].into_iter().collect())
 	}
 }

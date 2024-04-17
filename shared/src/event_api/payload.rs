@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use bson::oid::ObjectId;
+
 // There is a lot of code in this file. I will try to explain it as best as I can.
 // These are the structs that were used in the previous implementation of the event-api, for the payloads.
 // When events are dispatched on NATs or received from the websocket, they SHOULD be in the form of these structs.
@@ -9,7 +11,6 @@ use std::collections::HashMap;
 // it rather than silently ignoring it, and potentially causing issues.
 use super::types::{self, ChangeMap, CloseCode, EventType, SessionEffect};
 use super::MessagePayload;
-use crate::object_id::ObjectId;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]

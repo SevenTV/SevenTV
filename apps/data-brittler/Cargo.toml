@@ -20,7 +20,6 @@ scuffle-utils = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "fe
     "signal",
     "context",
     "prelude",
-    "database",
     "dataloader",
 ] }
 

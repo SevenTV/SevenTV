@@ -1,47 +1,40 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use bson::oid::ObjectId;
+
+use super::{FileSet, FileSetProperties, ImageFormat};
+use crate::database::Collection;
 use crate::types::old::{
 	CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintModel, CosmeticPaintShadow, CosmeticPaintShape,
 	ImageFormat as ImageFormatOld, ImageHost, ImageHostKind,
 };
 
-use super::{FileSet, FileSetProperties, ImageFormat};
-use crate::database::Table;
-
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Paint {
-	pub id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
 	pub data: PaintData,
-	pub updated_at: chrono::DateTime<chrono::Utc>,
+	pub file_set_ids: Vec<ObjectId>,
 }
 
-impl Table for Paint {
-	const TABLE_NAME: &'static str = "paints";
-}
-
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-pub struct PaintFileSet {
-	pub paint_id: ulid::Ulid,
-	pub file_id: ulid::Ulid,
-}
-
-impl Table for PaintFileSet {
-	const TABLE_NAME: &'static str = "paint_file_sets";
+impl Collection for Paint {
+	const COLLECTION_NAME: &'static str = "paints";
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct PaintData {
 	pub layers: Vec<PaintLayer>,
 	pub shadows: Vec<PaintShadow>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct PaintLayer {
 	#[serde(flatten)]
 	pub ty: PaintLayerType,
@@ -59,6 +52,7 @@ impl Default for PaintLayer {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
 pub enum PaintLayerType {
 	SingleColor(u32),
 	LinearGradient {
@@ -72,7 +66,7 @@ pub enum PaintLayerType {
 		stops: Vec<PaintGradientStop>,
 		shape: PaintRadialGradientShape,
 	},
-	Image(ulid::Ulid),
+	Image(ObjectId),
 }
 
 impl Default for PaintLayerType {
@@ -82,6 +76,7 @@ impl Default for PaintLayerType {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[serde(deny_unknown_fields)]
 pub struct PaintGradientStop {
 	pub at: f64,
 	pub color: u32,
@@ -89,6 +84,7 @@ pub struct PaintGradientStop {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
 pub enum PaintRadialGradientShape {
 	#[default]
 	Ellipse,
@@ -96,6 +92,7 @@ pub enum PaintRadialGradientShape {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[serde(deny_unknown_fields)]
 pub struct PaintShadow {
 	pub color: u32,
 	pub offset_x: f64,
@@ -115,7 +112,7 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 }
 
 impl Paint {
-	pub fn into_old_model(self, files: &HashMap<ulid::Ulid, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
+	pub fn into_old_model(self, files: &HashMap<ObjectId, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
 		let first_layer = self.data.layers.first();
 
 		Some(CosmeticPaintModel {

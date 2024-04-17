@@ -2,28 +2,27 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Context;
-use chrono::{Datelike, TimeZone};
+use chrono::Datelike;
+use futures::{TryFutureExt, TryStreamExt};
+use itertools::Itertools;
+use mongodb::bson::oid::ObjectId;
+use mongodb::bson::to_bson;
 use rand::Rng;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use tokio::sync::{Mutex, OnceCell};
-use tokio_util::sync::CancellationToken;
-use ulid::Ulid;
-
 use shared::database::{
-	ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserProduct,
+	Collection, ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserProduct,
 	UserProductDataPurchase, UserProductDataSubscriptionEntryStatus,
 };
+use tokio::sync::{Mutex, OnceCell};
+use tokio_util::sync::CancellationToken;
+
 use crate::global::Global;
 
 pub struct UserLoader {
-	user_role_loader: DataLoader<UserRoleLoader>,
-	user_badge_loader: DataLoader<UserBadgeLoader>,
-	user_paint_loader: DataLoader<UserPaintLoader>,
-	user_emote_set_loader: DataLoader<UserEmoteSetLoader>,
 	user_loader: DataLoader<InternalUserLoader>,
 	user_product_purchase_loader: DataLoader<UserProductPurchaseLoader>,
 	user_products_loader: DataLoader<UserProductLoader>,
-	requests: Mutex<HashMap<Ulid, SyncToken>>,
+	requests: Mutex<HashMap<ObjectId, SyncToken>>,
 }
 
 #[derive(Clone)]
@@ -32,161 +31,36 @@ struct SyncToken {
 	done: CancellationToken,
 }
 
-struct UserRoleLoader {
-	db: Arc<scuffle_utils::database::Pool>,
-}
-
-impl UserRoleLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
-	}
-}
-
-impl Loader for UserRoleLoader {
-	type Error = ();
-	type Key = Ulid;
-	type Value = Vec<Ulid>;
-
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<(Ulid, Ulid)> =
-			scuffle_utils::database::query("SELECT user_id, role_id FROM user_roles WHERE user_id = ANY($1)")
-				.bind(keys)
-				.build_query_scalar()
-				.fetch_all(&self.db)
-				.await
-				.map_err(|e| {
-					tracing::error!(err = %e, "failed to fetch user roles by user id");
-				})?;
-
-		Ok(results.into_iter().fold(HashMap::new(), |mut map, (user_id, role_id)| {
-			map.entry(user_id).or_default().push(role_id);
-			map
-		}))
-	}
-}
-
-struct UserBadgeLoader {
-	db: Arc<scuffle_utils::database::Pool>,
-}
-
-impl UserBadgeLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
-	}
-}
-
-impl Loader for UserBadgeLoader {
-	type Error = ();
-	type Key = Ulid;
-	type Value = Vec<Ulid>;
-
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<(Ulid, Ulid)> =
-			scuffle_utils::database::query("SELECT user_id, badge_id FROM user_badges WHERE user_id = ANY($1)")
-				.bind(keys)
-				.build_query_scalar()
-				.fetch_all(&self.db)
-				.await
-				.map_err(|e| {
-					tracing::error!(err = %e, "failed to fetch user badges by user id");
-				})?;
-
-		Ok(results.into_iter().fold(HashMap::new(), |mut map, (user_id, badge_id)| {
-			map.entry(user_id).or_default().push(badge_id);
-			map
-		}))
-	}
-}
-
-struct UserPaintLoader {
-	db: Arc<scuffle_utils::database::Pool>,
-}
-
-impl UserPaintLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
-	}
-}
-
-impl Loader for UserPaintLoader {
-	type Error = ();
-	type Key = Ulid;
-	type Value = Vec<Ulid>;
-
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<(Ulid, Ulid)> =
-			scuffle_utils::database::query("SELECT user_id, paint_id FROM user_paints WHERE user_id = ANY($1)")
-				.bind(keys)
-				.build_query_scalar()
-				.fetch_all(&self.db)
-				.await
-				.map_err(|e| {
-					tracing::error!(err = %e, "failed to fetch user paints by user id");
-				})?;
-
-		Ok(results.into_iter().fold(HashMap::new(), |mut map, (user_id, paint_id)| {
-			map.entry(user_id).or_default().push(paint_id);
-			map
-		}))
-	}
-}
-
-struct UserEmoteSetLoader {
-	db: Arc<scuffle_utils::database::Pool>,
-}
-
-impl UserEmoteSetLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
-	}
-}
-
-impl Loader for UserEmoteSetLoader {
-	type Error = ();
-	type Key = Ulid;
-	type Value = Vec<Ulid>;
-
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<(Ulid, Ulid)> =
-			scuffle_utils::database::query("SELECT user_id, emote_set_id FROM user_paints WHERE user_id = ANY($1)")
-				.bind(keys)
-				.build_query_scalar()
-				.fetch_all(&self.db)
-				.await
-				.map_err(|e| {
-					tracing::error!(err = %e, "failed to fetch user emote sets by user id");
-				})?;
-
-		Ok(results.into_iter().fold(HashMap::new(), |mut map, (user_id, emote_set_id)| {
-			map.entry(user_id).or_default().push(emote_set_id);
-			map
-		}))
-	}
-}
-
 struct InternalUserLoader {
-	db: Arc<scuffle_utils::database::Pool>,
+	db: mongodb::Database,
 }
 
 impl InternalUserLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
+	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
 impl Loader for InternalUserLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = User;
 
+	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<Self::Value> = scuffle_utils::database::query("SELECT * FROM users WHERE id = ANY($1)")
-			.bind(keys)
-			.build_query_as()
-			.fetch_all(&self.db)
+		let results: Vec<Self::Value> = Self::Value::collection(&self.db)
+			.find(
+				mongodb::bson::doc! {
+					"_id": {
+						"$in": keys,
+					}
+				},
+				None,
+			)
+			.and_then(|f| f.try_collect())
 			.await
-			.map_err(|e| {
-				tracing::error!(err = %e, "failed to fetch users by id");
+			.map_err(|err| {
+				tracing::error!("failed to load: {err}");
 			})?;
 
 		Ok(results.into_iter().map(|r| (r.id, r)).collect())
@@ -194,79 +68,85 @@ impl Loader for InternalUserLoader {
 }
 
 struct UserProductPurchaseLoader {
-	db: Arc<scuffle_utils::database::Pool>,
+	db: mongodb::Database,
 }
 
 impl UserProductPurchaseLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
+	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
 impl Loader for UserProductPurchaseLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = Vec<ProductPurchase>;
 
+	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<ProductPurchase> =
-			scuffle_utils::database::query("SELECT * FROM product_purchases WHERE user_id = ANY($1) AND status = $2")
-				.bind(keys)
-				.bind(ProductPurchaseStatus::Completed)
-				.build_query_as()
-				.fetch_all(&self.db)
-				.await
-				.map_err(|e| {
-					tracing::error!(err = %e, "failed to fetch product purchases by user id");
-				})?;
+		let results: Self::Value = ProductPurchase::collection(&self.db)
+			.find(
+				mongodb::bson::doc! {
+					"$and": {
+						"product_id": {
+							"$in": keys,
+						},
+						"status": {
+							"$eq": to_bson(&ProductPurchaseStatus::Completed).unwrap(),
+						},
+					},
+				},
+				None,
+			)
+			.and_then(|f| f.try_collect())
+			.await
+			.map_err(|err| {
+				tracing::error!("failed to load: {err}");
+			})?;
 
-		Ok(results.into_iter().fold(HashMap::new(), |mut map, pp| {
-			map.entry(pp.user_id.unwrap()).or_default().push(pp);
-			map
-		}))
+		Ok(results.into_iter().into_group_map_by(|r| r.product_id))
 	}
 }
 
 struct UserProductLoader {
-	db: Arc<scuffle_utils::database::Pool>,
+	db: mongodb::Database,
 }
 
 impl UserProductLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> DataLoader<Self> {
+	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
 impl Loader for UserProductLoader {
 	type Error = ();
-	type Key = Ulid;
+	type Key = ObjectId;
 	type Value = Vec<UserProduct>;
 
+	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<UserProduct> =
-			scuffle_utils::database::query("SELECT * FROM user_products WHERE user_id = ANY($1)")
-				.bind(keys)
-				.build_query_as()
-				.fetch_all(&self.db)
-				.await
-				.map_err(|e| {
-					tracing::error!(err = %e, "failed to fetch user products by user id");
-				})?;
+		let results: Self::Value = UserProduct::collection(&self.db)
+			.find(
+				mongodb::bson::doc! {
+					"user_id": {
+						"$in": keys,
+					},
+				},
+				None,
+			)
+			.and_then(|f| f.try_collect())
+			.await
+			.map_err(|err| {
+				tracing::error!("failed to load: {err}");
+			})?;
 
-		Ok(results.into_iter().fold(HashMap::new(), |mut map, sub| {
-			map.entry(sub.user_id).or_default().push(sub);
-			map
-		}))
+		Ok(results.into_iter().into_group_map_by(|r| r.user_id))
 	}
 }
 
 impl UserLoader {
-	pub fn new(db: Arc<scuffle_utils::database::Pool>) -> Self {
+	pub fn new(db: mongodb::Database) -> Self {
 		Self {
-			user_role_loader: UserRoleLoader::new(db.clone()),
-			user_badge_loader: UserBadgeLoader::new(db.clone()),
-			user_paint_loader: UserPaintLoader::new(db.clone()),
-			user_emote_set_loader: UserEmoteSetLoader::new(db.clone()),
 			user_loader: InternalUserLoader::new(db.clone()),
 			user_product_purchase_loader: UserProductPurchaseLoader::new(db.clone()),
 			user_products_loader: UserProductLoader::new(db.clone()),
@@ -279,8 +159,8 @@ impl UserLoader {
 	pub async fn load_many(
 		&self,
 		global: &Arc<Global>,
-		user_ids: impl IntoIterator<Item = Ulid>,
-	) -> Result<HashMap<Ulid, User>, ()> {
+		user_ids: impl IntoIterator<Item = ObjectId>,
+	) -> Result<HashMap<ObjectId, User>, ()> {
 		let user_ids = user_ids
 			.into_iter()
 			.collect::<fnv::FnvHashSet<_>>()
@@ -298,7 +178,7 @@ impl UserLoader {
 		Ok(users)
 	}
 
-	pub async fn load(&self, global: &Arc<Global>, user_id: Ulid) -> Result<Option<User>, ()> {
+	pub async fn load(&self, global: &Arc<Global>, user_id: ObjectId) -> Result<Option<User>, ()> {
 		let token = {
 			let mut inserted = false;
 
@@ -343,7 +223,7 @@ impl UserLoader {
 		result
 	}
 
-	async fn internal_load_fn(&self, global: &Arc<Global>, user_id: Ulid) -> anyhow::Result<Option<User>> {
+	async fn internal_load_fn(&self, global: &Arc<Global>, user_id: ObjectId) -> anyhow::Result<Option<User>> {
 		let Ok(Some(mut user)) = self.user_loader.load(user_id).await else {
 			return Ok(None);
 		};
@@ -352,30 +232,14 @@ impl UserLoader {
 			return Ok(Some(user));
 		}
 
-		let Ok(Some(role_ids)) = self.user_role_loader.load(user_id).await else {
-			anyhow::bail!("failed to load user roles");
-		};
-
-		let Ok(Some(badge_ids)) = self.user_badge_loader.load(user_id).await else {
-			anyhow::bail!("failed to load user badges");
-		};
-
-		let Ok(Some(paint_ids)) = self.user_paint_loader.load(user_id).await else {
-			anyhow::bail!("failed to load user paints");
-		};
-
-		let Ok(Some(emote_set_ids)) = self.user_emote_set_loader.load(user_id).await else {
-			anyhow::bail!("failed to load user emote sets");
-		};
-
-		let Ok(Some(product_purchaes)) = self.user_product_purchase_loader.load(user_id).await else {
+		let Ok(Some(product_purchases)) = self.user_product_purchase_loader.load(user_id).await else {
 			anyhow::bail!("failed to load user product purchases");
 		};
 
-		let product_purchaes =
-			product_purchaes
+		let product_purchases =
+			product_purchases
 				.into_iter()
-				.fold(HashMap::<Ulid, Vec<ProductPurchase>>::new(), |mut map, pp| {
+				.fold(HashMap::<ObjectId, Vec<ProductPurchase>>::new(), |mut map, pp| {
 					map.entry(pp.product_id).or_default().push(pp);
 					map
 				});
@@ -391,31 +255,30 @@ impl UserLoader {
 
 		let Ok(products) = global
 			.product_by_id_loader()
-			.load_many(product_purchaes.keys().copied())
+			.load_many(product_purchases.keys().copied())
 			.await
 		else {
 			anyhow::bail!("failed to load products");
 		};
 
 		user.entitled_cache = UserEntitledCache {
-			role_ids,
-			badge_ids,
-			emote_set_ids,
-			paint_ids,
+			role_ids: user.grants.role_ids.clone(),
+			badge_ids: user.grants.badge_ids.clone(),
+			emote_set_ids: user.grants.emote_set_ids.clone(),
+			paint_ids: user.grants.paint_ids.clone(),
 			product_ids: Vec::new(),
 			// 12 hours + 10%  jitter
 			invalidated_at: chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60)),
 		};
 
 		for product in products.values() {
-			let Some(purchases) = product_purchaes.get(&product.id) else {
+			let Some(purchases) = product_purchases.get(&product.id) else {
 				continue;
 			};
 
 			user.entitled_cache.product_ids.push(product.id);
 
 			product
-				.data
 				.entitlement_groups
 				.iter()
 				.filter(|group| {
@@ -442,50 +305,41 @@ impl UserLoader {
 				});
 		}
 
-		let Ok(badge_ids) = global
-			.role_badge_by_id_loader()
+		let Ok(roles) = global
+			.role_by_id_loader()
 			.load_many(user.entitled_cache.role_ids.clone())
 			.await
 		else {
-			anyhow::bail!("failed to load role badges");
-		};
-
-		user.entitled_cache.badge_ids.extend(badge_ids.into_values().flatten());
-
-		let Ok(paint_ids) = global
-			.role_paint_by_id_loader()
-			.load_many(user.entitled_cache.role_ids.clone())
-			.await
-		else {
-			anyhow::bail!("failed to load role paints");
-		};
-
-		user.entitled_cache.paint_ids.extend(paint_ids.into_values().flatten());
-
-		let Ok(emote_set_ids) = global
-			.role_emote_set_by_id_loader()
-			.load_many(user.entitled_cache.role_ids.clone())
-			.await
-		else {
-			anyhow::bail!("failed to load role emote sets");
+			anyhow::bail!("failed to load roles");
 		};
 
 		user.entitled_cache
+			.badge_ids
+			.extend(roles.values().flat_map(|r| r.badge_ids.iter().copied()));
+		user.entitled_cache
+			.paint_ids
+			.extend(roles.values().flat_map(|r| r.paint_ids.iter().copied()));
+		user.entitled_cache
 			.emote_set_ids
-			.extend(emote_set_ids.into_values().flatten());
+			.extend(roles.values().flat_map(|r| r.emote_set_ids.iter().copied()));
 
-		scuffle_utils::database::query("UPDATE users SET entitled_cache_role_ids = $1, entitled_cache_badge_ids = $2, entitled_cache_emote_set_ids = $3, entitled_cache_paint_ids = $4, entitled_cache_invalidated_at = $5, entitled_cache_product_ids = $6 WHERE id = $7")
-            .bind(&user.entitled_cache.role_ids)
-            .bind(&user.entitled_cache.badge_ids)
-            .bind(&user.entitled_cache.emote_set_ids)
-            .bind(&user.entitled_cache.paint_ids)
-            .bind(user.entitled_cache.invalidated_at)
-            .bind(&user.entitled_cache.product_ids)
-            .bind(user_id)
-            .build()
-            .execute(global.db())
-            .await
-            .context("failed to update user entitled cache")?;
+		// Deduplicate
+		user.entitled_cache.dedup();
+
+		User::collection(global.db())
+			.update_one(
+				mongodb::bson::doc! {
+					"_id": user.id,
+				},
+				mongodb::bson::doc! {
+					"$set": {
+						"entitled_cache": to_bson(&user.entitled_cache).context("failed to serialize user entitled cache")?,
+					},
+				},
+				None,
+			)
+			.await
+			.context("failed to update user entitled cache")?;
 
 		Ok(Some(user))
 	}
@@ -522,9 +376,9 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 	let purchases = purchases
 		.iter()
 		.map(|pp| Purchase {
-			date: chrono::Utc.timestamp_millis_opt(pp.id.timestamp_ms() as i64).unwrap(),
-			was_gift: pp.data.was_gift,
-			price: pp.data.price,
+			date: pp.id.timestamp().into(),
+			was_gift: pp.was_gift,
+			price: pp.price,
 		})
 		.collect::<Vec<_>>();
 
@@ -537,11 +391,13 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 			.map(|e| e.end - e.start)
 			.sum::<chrono::Duration>();
 
-		let packed_end_at = up.created_at + total_time;
+		let created_at = up.id.timestamp().to_chrono();
 
-		let total_months = (packed_end_at.year() - up.created_at.year()) * 12 + packed_end_at.month() as i32
-			- up.created_at.month() as i32
-			+ if packed_end_at.day() < up.created_at.day() { -1 } else { 0 };
+		let packed_end_at = created_at + total_time;
+
+		let total_months = (packed_end_at.year() - created_at.year()) * 12 + packed_end_at.month() as i32
+			- created_at.month() as i32
+			+ if packed_end_at.day() < created_at.day() { -1 } else { 0 };
 
 		let duraction = Duration {
 			total_days: total_time.num_days(),
@@ -550,7 +406,7 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 		};
 
 		UserProduct {
-			created_at: up.created_at,
+			created_at,
 			duraction,
 			subscription_entries: up.data.purchases.clone(),
 		}

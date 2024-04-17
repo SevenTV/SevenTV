@@ -1,29 +1,30 @@
 use futures::{TryFutureExt, TryStreamExt};
+use itertools::Itertools;
 use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, Paint};
+use shared::database::{Collection, UserConnection};
 
-pub struct PaintByIdLoader {
-	db: mongodb::Database,
+pub struct UserConnectionByUserIdLoader {
+	pub db: mongodb::Database,
 }
 
-impl PaintByIdLoader {
+impl UserConnectionByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		DataLoader::new(Self { db })
 	}
 }
 
-impl Loader for PaintByIdLoader {
+impl Loader for UserConnectionByUserIdLoader {
 	type Error = ();
 	type Key = ObjectId;
-	type Value = Paint;
+	type Value = Vec<UserConnection>;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
 	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
-		let results: Vec<Self::Value> = Paint::collection(&self.db)
+		let results: Self::Value = UserConnection::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
-					"_id": {
+					"user_id": {
 						"$in": keys,
 					}
 				},
@@ -35,6 +36,6 @@ impl Loader for PaintByIdLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().map(|r| (r.id, r)).collect())
+		Ok(results.into_iter().into_group_map_by(|r| r.user_id))
 	}
 }

@@ -1,10 +1,11 @@
 // use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode as
 // WsCloseCode;
 
+use bson::oid::ObjectId;
+
 // See the comment on the `payload.rs` file for a description of what this file
 // is.
 use super::payload::{Subscribe, Unsubscribe};
-use crate::object_id::ObjectId;
 use crate::types::old::UserPartialModel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

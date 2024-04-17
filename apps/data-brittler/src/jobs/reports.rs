@@ -1,17 +1,15 @@
-use std::{pin::Pin, sync::Arc};
+use std::pin::Pin;
+use std::sync::Arc;
 
 use fnv::FnvHashSet;
 use postgres_types::Type;
 use shared::database;
 use tokio_postgres::binary_copy::BinaryCopyInWriter;
 
-use crate::{
-	database::{ticket_kind_type, ticket_member_kind_type, ticket_priority_type, ticket_status_type},
-	global::Global,
-	types,
-};
-
 use super::{Job, ProcessOutcome};
+use crate::database::{ticket_kind_type, ticket_member_kind_type, ticket_priority_type, ticket_status_type};
+use crate::global::Global;
+use crate::types;
 
 // Only emote reports because reporting users was never implemented
 
@@ -23,9 +21,9 @@ pub struct ReportsJob {
 }
 
 impl Job for ReportsJob {
-	const NAME: &'static str = "transfer_reports";
-
 	type T = types::Report;
+
+	const NAME: &'static str = "transfer_reports";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
@@ -39,7 +37,9 @@ impl Job for ReportsJob {
 		let tickets_client = global.db().get().await?;
 		let tickets_writer = BinaryCopyInWriter::new(
 			tickets_client
-				.copy_in("COPY tickets (id, kind, status, priority, title, data, updated_at) FROM STDIN WITH (FORMAT BINARY)")
+				.copy_in(
+					"COPY tickets (id, kind, status, priority, title, data, updated_at) FROM STDIN WITH (FORMAT BINARY)",
+				)
 				.await?,
 			&[
 				Type::UUID,
@@ -48,7 +48,7 @@ impl Job for ReportsJob {
 				ticket_priority_type(&global).await?,
 				Type::TEXT,
 				Type::JSONB,
-                Type::TIMESTAMPTZ,
+				Type::TIMESTAMPTZ,
 			],
 		);
 
@@ -90,7 +90,7 @@ impl Job for ReportsJob {
 				&database::TicketPriority::Low,
 				&report.subject,
 				&postgres_types::Json(data),
-                &report.last_updated_at.into_chrono(),
+				&report.last_updated_at.into_chrono(),
 			])
 			.await
 		{
@@ -101,7 +101,7 @@ impl Job for ReportsJob {
 			}
 		}
 
-        let op = report.actor_id.into_ulid();
+		let op = report.actor_id.into_ulid();
 		match self
 			.ticket_members_writer
 			.as_mut()
@@ -111,7 +111,7 @@ impl Job for ReportsJob {
 			Ok(_) => outcome.inserted_rows += 1,
 			Err(e) => outcome.errors.push(e.into()),
 		}
-        self.all_members.insert((id, op));
+		self.all_members.insert((id, op));
 
 		for assignee in report.assignee_ids {
 			let assignee = assignee.into_ulid();

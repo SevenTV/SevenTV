@@ -1,17 +1,20 @@
+use bson::oid::ObjectId;
+
+use crate::database::Collection;
 use crate::types::old::{ImageFile as OldImageFile, ImageFormat as OldImageFormat};
 
-use crate::database::Table;
-
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct FileSet {
-	pub id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
 	pub kind: FileSetKind,
 	pub authenticated: bool,
 	pub properties: FileSetProperties,
 }
 
-impl Table for FileSet {
-	const TABLE_NAME: &'static str = "file_sets";
+impl Collection for FileSet {
+	const COLLECTION_NAME: &'static str = "file_sets";
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -91,7 +94,7 @@ impl FileSetProperties {
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct ImageFile {
 	pub scale: u32,
 	pub width: u32,
@@ -101,7 +104,7 @@ pub struct ImageFile {
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct ImageFileVariant {
 	pub format: ImageFormat,
 	pub is_static: bool,
@@ -109,7 +112,7 @@ pub struct ImageFileVariant {
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct FileProperties<E> {
 	pub path: String,
 	pub size: u64,

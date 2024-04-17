@@ -18,8 +18,6 @@ pub enum ConnectionError {
 	InvalidResponse(StatusCode),
 	#[error("no user data")]
 	NoUserData,
-	#[error("login not allowed")]
-	LoginNotAllowed,
 	#[error("reqwest: {0}")]
 	ReqwestError(#[from] reqwest::Error),
 }

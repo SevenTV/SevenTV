@@ -14,30 +14,34 @@ pub struct Global {
 	nats: async_nats::Client,
 	jetstream: async_nats::jetstream::Context,
 	config: Config,
-	db: Arc<scuffle_utils::database::Pool>,
+	mongo: mongodb::Client,
+	db: mongodb::Database,
 	http_client: reqwest::Client,
 	metrics: Arc<metrics::Metrics>,
 	user_by_id_loader: dataloader::user::UserLoader,
-	user_connections_loader: DataLoader<dataloader::user_connections::UserConnectionsByUserIdLoader>,
+	user_connection_by_user_id_loader: DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader>,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
 	role_by_id_loader: DataLoader<dataloader::role::RoleByIdLoader>,
-	role_badge_by_id_loader: DataLoader<dataloader::role::RoleBadgeByIdLoader>,
-	role_paint_by_id_loader: DataLoader<dataloader::role::RolePaintByIdLoader>,
-	role_emote_set_by_id_loader: DataLoader<dataloader::role::RoleEmoteSetByIdLoader>,
 	file_set_by_id_loader: DataLoader<dataloader::file_set::FileSetByIdLoader>,
 	paint_by_id_loader: DataLoader<dataloader::paint::PaintByIdLoader>,
 	badge_by_id_loader: DataLoader<dataloader::badge::BadgeByIdLoader>,
 	emote_by_id_loader: DataLoader<dataloader::emote::EmoteByIdLoader>,
 	emote_set_by_id_loader: DataLoader<dataloader::emote_set::EmoteSetByIdLoader>,
 	emote_set_emote_by_id_loader: DataLoader<dataloader::emote_set::EmoteSetEmoteByIdLoader>,
+	emote_set_by_user_id_loader: DataLoader<dataloader::emote_set::EmoteSetByUserIdLoader>,
+	global_config_loader: DataLoader<dataloader::global_config::GlobalConfigLoader>,
+	user_editor_by_user_id_loader: DataLoader<dataloader::user_editor::UserEditorByUserIdLoader>,
+	user_editor_by_editor_id_loader: DataLoader<dataloader::user_editor::UserEditorByEditorIdLoader>,
 }
 
 impl Global {
 	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
 		let (nats, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
-		let db = shared::database::setup_database(&config.database)
+		let mongo = shared::database::setup_database(&config.database)
 			.await
 			.context("database setup")?;
+
+		let db = mongo.default_database().unwrap_or_else(|| mongo.database("7tv"));
 
 		Ok(Self {
 			metrics: Arc::new(metrics::new(
@@ -52,19 +56,21 @@ impl Global {
 			nats,
 			jetstream,
 			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
-			user_connections_loader: dataloader::user_connections::UserConnectionsByUserIdLoader::new(db.clone()),
+			user_connection_by_user_id_loader: dataloader::user_connection::UserConnectionByUserIdLoader::new(db.clone()),
 			product_by_id_loader: dataloader::product::ProductByIdLoader::new(db.clone()),
 			role_by_id_loader: dataloader::role::RoleByIdLoader::new(db.clone()),
-			role_badge_by_id_loader: dataloader::role::RoleBadgeByIdLoader::new(db.clone()),
-			role_paint_by_id_loader: dataloader::role::RolePaintByIdLoader::new(db.clone()),
-			role_emote_set_by_id_loader: dataloader::role::RoleEmoteSetByIdLoader::new(db.clone()),
 			file_set_by_id_loader: dataloader::file_set::FileSetByIdLoader::new(db.clone()),
 			paint_by_id_loader: dataloader::paint::PaintByIdLoader::new(db.clone()),
 			badge_by_id_loader: dataloader::badge::BadgeByIdLoader::new(db.clone()),
 			emote_by_id_loader: dataloader::emote::EmoteByIdLoader::new(db.clone()),
 			emote_set_by_id_loader: dataloader::emote_set::EmoteSetByIdLoader::new(db.clone()),
 			emote_set_emote_by_id_loader: dataloader::emote_set::EmoteSetEmoteByIdLoader::new(db.clone()),
+			emote_set_by_user_id_loader: dataloader::emote_set::EmoteSetByUserIdLoader::new(db.clone()),
+			global_config_loader: dataloader::global_config::GlobalConfigLoader::new(db.clone()),
+			user_editor_by_user_id_loader: dataloader::user_editor::UserEditorByUserIdLoader::new(db.clone()),
+			user_editor_by_editor_id_loader: dataloader::user_editor::UserEditorByEditorIdLoader::new(db.clone()),
 			http_client: reqwest::Client::new(),
+			mongo,
 			db,
 			config,
 		})
@@ -85,9 +91,14 @@ impl Global {
 		&self.jetstream
 	}
 
-	/// The database pool.
-	pub fn db(&self) -> &Arc<scuffle_utils::database::Pool> {
+	/// The MongoDB database.
+	pub fn db(&self) -> &mongodb::Database {
 		&self.db
+	}
+
+	/// The MongoDB client.
+	pub fn mongo(&self) -> &mongodb::Client {
+		&self.mongo
 	}
 
 	/// The configuration.
@@ -111,8 +122,10 @@ impl Global {
 	}
 
 	/// The user connections loader.
-	pub fn user_connections_loader(&self) -> &DataLoader<dataloader::user_connections::UserConnectionsByUserIdLoader> {
-		&self.user_connections_loader
+	pub fn user_connection_by_user_id_loader(
+		&self,
+	) -> &DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader> {
+		&self.user_connection_by_user_id_loader
 	}
 
 	/// The product loader.
@@ -123,21 +136,6 @@ impl Global {
 	/// The role loader.
 	pub fn role_by_id_loader(&self) -> &DataLoader<dataloader::role::RoleByIdLoader> {
 		&self.role_by_id_loader
-	}
-
-	/// The role badge loader.
-	pub fn role_badge_by_id_loader(&self) -> &DataLoader<dataloader::role::RoleBadgeByIdLoader> {
-		&self.role_badge_by_id_loader
-	}
-
-	/// The role paint loader.
-	pub fn role_paint_by_id_loader(&self) -> &DataLoader<dataloader::role::RolePaintByIdLoader> {
-		&self.role_paint_by_id_loader
-	}
-
-	/// The role emote set loader.
-	pub fn role_emote_set_by_id_loader(&self) -> &DataLoader<dataloader::role::RoleEmoteSetByIdLoader> {
-		&self.role_emote_set_by_id_loader
 	}
 
 	/// The file loader.
@@ -168,5 +166,25 @@ impl Global {
 	/// The emote set emote loader.
 	pub fn emote_set_emote_by_id_loader(&self) -> &DataLoader<dataloader::emote_set::EmoteSetEmoteByIdLoader> {
 		&self.emote_set_emote_by_id_loader
+	}
+
+	/// The emote set by user loader.
+	pub fn emote_set_by_user_id_loader(&self) -> &DataLoader<dataloader::emote_set::EmoteSetByUserIdLoader> {
+		&self.emote_set_by_user_id_loader
+	}
+
+	/// The global config loader.
+	pub fn global_config_loader(&self) -> &DataLoader<dataloader::global_config::GlobalConfigLoader> {
+		&self.global_config_loader
+	}
+
+	/// The user editor by user loader.
+	pub fn user_editor_by_user_id_loader(&self) -> &DataLoader<dataloader::user_editor::UserEditorByUserIdLoader> {
+		&self.user_editor_by_user_id_loader
+	}
+
+	/// The user editor by editor loader.
+	pub fn user_editor_by_editor_id_loader(&self) -> &DataLoader<dataloader::user_editor::UserEditorByEditorIdLoader> {
+		&self.user_editor_by_editor_id_loader
 	}
 }

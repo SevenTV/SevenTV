@@ -1,5 +1,5 @@
 use bitmask_enum::bitmask;
-use ulid::Ulid;
+use bson::oid::ObjectId;
 
 use super::{is_default, EmotePartialModel, UserPartialModel};
 
@@ -8,7 +8,7 @@ use super::{is_default, EmotePartialModel, UserPartialModel};
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L9
 pub struct EmoteSetModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub name: String,
 	pub flags: EmoteSetFlagModel,
 	pub tags: Vec<String>,
@@ -29,7 +29,7 @@ pub struct EmoteSetModel {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L23
 pub struct EmoteSetPartialModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub name: String,
 	pub flags: EmoteSetFlagModel,
 	pub tags: Vec<String>,
@@ -102,13 +102,13 @@ impl<'a> utoipa::ToSchema<'a> for EmoteSetFlagModel {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L45
 pub struct ActiveEmoteModel {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub name: String,
 	pub flags: ActiveEmoteFlagModel,
 	pub timestamp: i64,
-	pub actor_id: Option<Ulid>,
+	pub actor_id: Option<ObjectId>,
 	pub data: Option<EmotePartialModel>,
-	pub origin_id: Option<Ulid>,
+	pub origin_id: Option<ObjectId>,
 }
 
 #[bitmask(i32)]
@@ -175,7 +175,7 @@ impl<'a> utoipa::ToSchema<'a> for ActiveEmoteFlagModel {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L64
 pub struct EmoteSetOrigin {
-	pub id: Ulid,
+	pub id: ObjectId,
 	pub weight: i32,
 	pub slices: Vec<u32>,
 }

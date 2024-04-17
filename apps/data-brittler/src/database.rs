@@ -58,8 +58,14 @@ pub async fn ticket_priority_type(global: &Arc<Global>) -> anyhow::Result<Type> 
 	any_enum_type(
 		global,
 		"ticket_priority",
-		vec!["LOW".to_string(), "MEDIUM".to_string(), "HIGH".to_string(), "URGENT".to_string()],
-	).await
+		vec![
+			"LOW".to_string(),
+			"MEDIUM".to_string(),
+			"HIGH".to_string(),
+			"URGENT".to_string(),
+		],
+	)
+	.await
 }
 
 pub async fn ticket_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
@@ -74,7 +80,8 @@ pub async fn ticket_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
 			"EMOTE_PERSONAL_USE_REQUEST".to_string(),
 			"OTHER".to_string(),
 		],
-	).await
+	)
+	.await
 }
 
 pub async fn ticket_member_kind_type(global: &Arc<Global>) -> anyhow::Result<Type> {
@@ -82,13 +89,20 @@ pub async fn ticket_member_kind_type(global: &Arc<Global>) -> anyhow::Result<Typ
 		global,
 		"ticket_member_kind",
 		vec!["OP".to_string(), "MEMBER".to_string(), "STAFF".to_string()],
-	).await
+	)
+	.await
 }
 
 pub async fn ticket_status_type(global: &Arc<Global>) -> anyhow::Result<Type> {
 	any_enum_type(
 		global,
 		"ticket_status",
-		vec!["PENDING".to_string(), "IN_PROGRESS".to_string(), "FIXED".to_string(), "CLOSED".to_string()],
-	).await
+		vec![
+			"PENDING".to_string(),
+			"IN_PROGRESS".to_string(),
+			"FIXED".to_string(),
+			"CLOSED".to_string(),
+		],
+	)
+	.await
 }

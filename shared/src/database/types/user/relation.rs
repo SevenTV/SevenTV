@@ -1,12 +1,17 @@
-use crate::database::Table;
+use bson::oid::ObjectId;
+
+use crate::database::Collection;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserRelation {
-	pub user_id: ulid::Ulid,
-	pub other_user_id: ulid::Ulid,
+	#[serde(rename = "_id")]
+	pub id: ObjectId,
+	pub user_id: ObjectId,
+	pub other_user_id: ObjectId,
 	pub kind: UserRelationKind,
-	pub created_at: chrono::DateTime<chrono::Utc>,
-	pub data: UserRelationData,
+	pub notes: String,
+	pub muted: Option<MutedState>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -18,19 +23,14 @@ pub enum UserRelationKind {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
-#[serde(default)]
-pub struct UserRelationData {
-	pub notes: String,
-	pub muted: Option<MutedState>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[serde(deny_unknown_fields)]
+#[serde(untagged)]
 pub enum MutedState {
 	#[default]
 	Permanent,
 	Temporary(chrono::DateTime<chrono::Utc>),
 }
 
-impl Table for UserRelation {
-	const TABLE_NAME: &'static str = "user_relations";
+impl Collection for UserRelation {
+	const COLLECTION_NAME: &'static str = "user_relations";
 }

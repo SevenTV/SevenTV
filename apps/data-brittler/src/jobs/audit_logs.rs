@@ -1,18 +1,14 @@
-use std::{mem, sync::Arc};
+use std::mem;
+use std::sync::Arc;
 
 use clickhouse::Row;
-use shared::{
-	database::{self, Table},
-	types::old::EmoteFlagsModel,
-};
-
-use crate::{
-	error,
-	global::Global,
-	types::{self, AuditLogChange, AuditLogChangeArray, AuditLogKind},
-};
+use shared::database::{self, Collection};
+use shared::types::old::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
+use crate::error;
+use crate::global::Global;
+use crate::types::{self, AuditLogChange, AuditLogChangeArray, AuditLogKind};
 
 const BATCH_SIZE: u32 = 100_000;
 
@@ -41,9 +37,9 @@ async fn renew_writer<T: Row>(
 }
 
 impl Job for AuditLogsJob {
-	const NAME: &'static str = "transfer_audit_logs";
-
 	type T = types::AuditLog;
+
+	const NAME: &'static str = "transfer_audit_logs";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
@@ -58,18 +54,18 @@ impl Job for AuditLogsJob {
 			conn.query("TRUNCATE TABLE ticket_activities").execute().await?;
 		}
 
-		let emote_activity_writer = global.clickhouse().insert(database::EmoteActivity::TABLE_NAME)?;
-		let emote_set_activity_writer = global.clickhouse().insert(database::EmoteSetActivity::TABLE_NAME)?;
-		let user_activity_writer = global.clickhouse().insert(database::UserActivity::TABLE_NAME)?;
-		let ticket_activity_writer = global.clickhouse().insert(database::TicketActivity::TABLE_NAME)?;
+		let emote_activity_writer = global.clickhouse().insert(database::EmoteActivity::NAME)?;
+		let emote_set_activity_writer = global.clickhouse().insert(database::EmoteSetActivity::NAME)?;
+		let user_activity_writer = global.clickhouse().insert(database::UserActivity::NAME)?;
+		let ticket_activity_writer = global.clickhouse().insert(database::TicketActivity::NAME)?;
 
 		// emote_activity_writer
 		// 	.write(&database::EmoteActivity {
 		// 		emote_id: uuid::Uuid::new_v4(),
 		// 		actor_id: Some(uuid::Uuid::new_v4()),
 		// 		kind: database::EmoteActivityKind::Upload,
-		// 		// data: Some(serde_json::to_string(&database::EmoteActivityData::ChangeName {
-		// 		// 	old: "old".to_string(),
+		// 		// data: Some(serde_json::to_string(&database::EmoteActivityData::ChangeName
+		// { 		// 	old: "old".to_string(),
 		// 		// 	new: "new".to_string(),
 		// 		// })?),
 		// 		data: Some(database::EmoteActivityData::ChangeName {
@@ -396,30 +392,15 @@ impl Job for AuditLogsJob {
 
 		self.i += 1;
 		if self.i > BATCH_SIZE {
-			renew_writer(
-				&self.global,
-				&mut self.emote_activity_writer,
-				database::EmoteActivity::TABLE_NAME,
-			)
-			.await;
+			renew_writer(&self.global, &mut self.emote_activity_writer, database::EmoteActivity::NAME).await;
 			renew_writer(
 				&self.global,
 				&mut self.emote_set_activity_writer,
-				database::EmoteSetActivity::TABLE_NAME,
+				database::EmoteSetActivity::NAME,
 			)
 			.await;
-			renew_writer(
-				&self.global,
-				&mut self.user_activity_writer,
-				database::UserActivity::TABLE_NAME,
-			)
-			.await;
-			renew_writer(
-				&self.global,
-				&mut self.ticket_activity_writer,
-				database::TicketActivity::TABLE_NAME,
-			)
-			.await;
+			renew_writer(&self.global, &mut self.user_activity_writer, database::UserActivity::NAME).await;
+			renew_writer(&self.global, &mut self.ticket_activity_writer, database::TicketActivity::NAME).await;
 			self.i = 0;
 		}
 

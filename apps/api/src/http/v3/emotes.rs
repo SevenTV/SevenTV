@@ -7,8 +7,8 @@ use scuffle_utils::http::router::builder::RouterBuilder;
 use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::router::Router;
 use scuffle_utils::http::RouteError;
+use shared::database::FeaturePermission;
 use shared::http::{json_response, Body};
-use shared::id::parse_id;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -64,7 +64,7 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 
 	let id = req.param("id").map_err_route((StatusCode::BAD_REQUEST, "missing id"))?;
 
-	let id = parse_id(id).map_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
+	let id = id.parse().map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
 
 	let Some(emote) = global
 		.emote_by_id_loader()
@@ -75,34 +75,68 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		return Err((StatusCode::NOT_FOUND, "emote not found").into());
 	};
 
-	let Some(file_set) = global
-		.file_set_by_id_loader()
-		.load(emote.file_set_id)
-		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load file set"))?
-	else {
-		return Err((StatusCode::INTERNAL_SERVER_ERROR, "emote file set not found").into());
-	};
-
 	let owner = match emote.owner_id {
-		Some(owner) => {
-			let user = global
-				.user_by_id_loader()
-				.load(&global, owner)
-				.await
-				.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load user"))?;
-
-			match user {
-				Some(u) => Some(
-					u.into_old_model_partial(todo!(), todo!(), todo!(), todo!(), &global.config().api.cdn_base_url)
-						.await
-						.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to convert user"))?,
-				),
-				None => None,
-			}
-		}
+		Some(owner) => global
+			.user_by_id_loader()
+			.load(&global, owner)
+			.await
+			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load user"))?,
 		None => None,
 	};
 
-	json_response(emote.into_old_model(owner, &file_set, &global.config().api.cdn_base_url))
+	let pfp_file_set_id = match (&owner, owner.as_ref().and_then(|owner| owner.style.active_profile_picture_id)) {
+		(Some(owner), Some(profile_picture_id)) => {
+			let roles = global
+				.role_by_id_loader()
+				.load_many(owner.entitled_cache.role_ids.iter().copied())
+				.await
+				.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load roles"))?;
+
+			let global_config = global
+				.global_config_loader()
+				.load(())
+				.await
+				.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load global config"))?
+				.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "global config not found"))?;
+
+			let roles = global_config
+				.role_ids
+				.iter()
+				.filter_map(|id| roles.get(id))
+				.cloned()
+				.collect::<Vec<_>>();
+
+			if owner
+				.compute_permissions(&roles)
+				.has(FeaturePermission::UseCustomProfilePicture)
+			{
+				Some(profile_picture_id)
+			} else {
+				None
+			}
+		}
+		_ => None,
+	};
+
+	let file_sets = global
+		.file_set_by_id_loader()
+		.load_many(pfp_file_set_id.into_iter().chain(Some(emote.file_set_id)))
+		.await
+		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load file set"))?;
+
+	let emote_file_set = file_sets
+		.get(&emote.file_set_id)
+		.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "emote file set not found"))?;
+
+	let owner = owner.map(|owner| {
+		owner.into_old_model_partial(
+			Vec::new(),
+			pfp_file_set_id.and_then(|id| file_sets.get(&id)),
+			None,
+			None,
+			&global.config().api.cdn_base_url,
+		)
+	});
+
+	json_response(emote.into_old_model(owner, emote_file_set, &global.config().api.cdn_base_url))
 }
