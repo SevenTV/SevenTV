@@ -35,6 +35,7 @@ impl Job for UsersJob {
 			tracing::info!("dropping users and user_connections collections");
 			User::collection(global.target_db()).drop(None).await?;
 			UserConnection::collection(global.target_db()).drop(None).await?;
+			UserEditor::collection(global.target_db()).drop(None).await?;
 
 			tracing::info!("deleting profile picture files from file_sets collection");
 			FileSet::collection(global.target_db())

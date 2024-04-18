@@ -13,21 +13,22 @@ pub struct Global {
 
 impl Global {
 	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
-		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse);
+		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
 
-		let mongo = shared::database::setup_database(&config.database)
+		let mongo_source = shared::database::setup_database(&config.source_database)
 			.await
-			.context("database setup")?;
+			.context("source database setup")?;
 
-		let source_db = mongo.database(&config.source_db);
-		let target_db = mongo.database(&config.target_db);
+		let mongo_target = shared::database::setup_database(&config.target_database)
+			.await
+			.context("target database setup")?;
 
 		Ok(Self {
 			ctx,
 			config,
 			clickhouse,
-			source_db,
-			target_db,
+			source_db: mongo_source.default_database().unwrap_or_else(|| mongo_source.database("7tv")),
+			target_db: mongo_target.default_database().unwrap_or_else(|| mongo_source.database("7tv-new")),
 		})
 	}
 
