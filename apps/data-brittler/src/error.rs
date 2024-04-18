@@ -15,6 +15,8 @@ pub enum Error {
 	SerializeJson(#[from] serde_json::Error),
 	#[error("failed to query database")]
 	Db(#[from] mongodb::error::Error),
+	#[error("failed to insert all documents")]
+	InsertMany,
 	#[error("failed to query clickhouse")]
 	Clickhouse(#[from] clickhouse::error::Error),
 
@@ -41,6 +43,7 @@ impl Error {
 			Self::Deserialize(_) => "Deserialize",
 			Self::SerializeJson(_) => "SerializeJson",
 			Self::Db(_) => "Db",
+			Self::InsertMany => "InsertMany",
 			Self::Clickhouse(_) => "Clickhouse",
 			Self::ImageFile(_) => "ImageFile",
 			Self::EmoteSetEmoteNoName { .. } => "EmoteSetEmoteNoName",

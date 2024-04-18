@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use mongodb::bson::doc;
+use mongodb::options::InsertManyOptions;
 use shared::database::{Collection, Emote, EmoteFlags, FileSet, FileSetKind, FileSetProperties};
 use shared::types::old::EmoteFlagsModel;
 
@@ -11,6 +12,8 @@ use crate::{error, types};
 
 pub struct EmotesJob {
 	global: Arc<Global>,
+	emotes: Vec<Emote>,
+	file_sets: Vec<FileSet>,
 }
 
 impl Job for EmotesJob {
@@ -20,8 +23,8 @@ impl Job for EmotesJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("truncating emotes collection");
-			Emote::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			tracing::info!("dropping emotes collection");
+			Emote::collection(global.target_db()).drop(None).await?;
 
 			tracing::info!("deleting emotes files from file_sets collection");
 			FileSet::collection(global.target_db())
@@ -29,7 +32,11 @@ impl Job for EmotesJob {
 				.await?;
 		}
 
-		Ok(Self { global })
+		Ok(Self {
+			global,
+			emotes: vec![],
+			file_sets: vec![],
+		})
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
@@ -52,28 +59,16 @@ impl Job for EmotesJob {
 				}
 			};
 
-			match FileSet::collection(self.global.target_db())
-				.insert_one(
-					FileSet {
-						id: file_set_id,
-						kind: FileSetKind::Emote,
-						authenticated: false,
-						properties: FileSetProperties::Image {
-							input: v.input_file.into(),
-							pending: false,
-							outputs,
-						},
-					},
-					None,
-				)
-				.await
-			{
-				Ok(_) => outcome.inserted_rows += 1,
-				Err(e) => {
-					outcome.errors.push(e.into());
-					continue;
-				}
-			}
+			self.file_sets.push(FileSet {
+				id: file_set_id,
+				kind: FileSetKind::Emote,
+				authenticated: false,
+				properties: FileSetProperties::Image {
+					input: v.input_file.into(),
+					pending: false,
+					outputs,
+				},
+			});
 
 			let mut flags = EmoteFlags::none();
 			if emote.flags.contains(EmoteFlagsModel::Private) {
@@ -86,24 +81,47 @@ impl Job for EmotesJob {
 				flags |= EmoteFlags::Nsfw;
 			}
 
-			match Emote::collection(self.global.target_db())
-				.insert_one(
-					Emote {
-						id: crate::database::object_id_from_datetime(created_at),
-						owner_id: Some(emote.owner_id),
-						default_name: v.name.unwrap_or_else(|| emote.name.clone()),
-						tags: emote.tags.clone(),
-						animated: v.animated,
-						file_set_id,
-						flags,
-						attribution: vec![],
-					},
-					None,
-				)
-				.await
-			{
-				Ok(_) => outcome.inserted_rows += 1,
-				Err(e) => outcome.errors.push(error::Error::Db(e)),
+			self.emotes.push(Emote {
+				id: crate::database::object_id_from_datetime(created_at),
+				owner_id: Some(emote.owner_id),
+				default_name: v.name.unwrap_or_else(|| emote.name.clone()),
+				tags: emote.tags.clone(),
+				animated: v.animated,
+				file_set_id,
+				flags,
+				attribution: vec![],
+			});
+		}
+
+		outcome
+	}
+
+	async fn finish(self) -> ProcessOutcome {
+		tracing::info!("finishing emotes job");
+
+		let mut outcome = ProcessOutcome::default();
+
+		let insert_options = InsertManyOptions::builder().ordered(false).build();
+		let emotes = Emote::collection(self.global.target_db());
+		let file_sets = FileSet::collection(self.global.target_db());
+
+		let res = tokio::join!(
+			emotes.insert_many(&self.emotes, insert_options.clone()),
+			file_sets.insert_many(&self.file_sets, insert_options.clone()),
+		);
+		let res = vec![res.0, res.1]
+			.into_iter()
+			.zip(vec![self.emotes.len(), self.file_sets.len()]);
+
+		for (res, len) in res {
+			match res {
+				Ok(res) => {
+					outcome.inserted_rows += res.inserted_ids.len() as u64;
+					if res.inserted_ids.len() != len {
+						outcome.errors.push(error::Error::InsertMany);
+					}
+				}
+				Err(e) => outcome.errors.push(e.into()),
 			}
 		}
 

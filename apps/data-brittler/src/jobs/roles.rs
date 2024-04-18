@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use shared::database::{Collection, GlobalConfig, Role};
 
@@ -20,8 +19,8 @@ impl Job for RolesJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("truncating roles collection");
-			Role::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			tracing::info!("dropping roles collection");
+			Role::collection(global.target_db()).drop(None).await?;
 		}
 
 		Ok(RolesJob {
@@ -65,12 +64,14 @@ impl Job for RolesJob {
 		outcome
 	}
 
-	async fn finish(mut self) -> anyhow::Result<()> {
+	async fn finish(mut self) -> ProcessOutcome {
 		self.all_roles.sort_by_cached_key(|(_, p)| *p);
 
 		let role_ids = self.all_roles.into_iter().map(|(id, _)| id).collect();
 
-		GlobalConfig::collection(self.global.target_db())
+		let mut outcome = ProcessOutcome::default();
+
+		match GlobalConfig::collection(self.global.target_db())
 			.insert_one(
 				GlobalConfig {
 					role_ids,
@@ -78,7 +79,12 @@ impl Job for RolesJob {
 				},
 				None,
 			)
-			.await;
-		Ok(())
+			.await
+		{
+			Ok(_) => outcome.inserted_rows += 1,
+			Err(e) => outcome.errors.push(e.into()),
+		}
+
+		outcome
 	}
 }

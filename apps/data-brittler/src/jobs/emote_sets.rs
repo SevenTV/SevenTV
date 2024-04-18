@@ -1,20 +1,17 @@
-use std::pin::Pin;
 use std::sync::Arc;
 
-use chrono::Utc;
-use postgres_types::{Json, Type};
-use shared::database::{EmoteSetEmoteFlag, EmoteSetKind, EmoteSetSettings};
-use tokio_postgres::binary_copy::BinaryCopyInWriter;
+use mongodb::bson::oid::ObjectId;
+use mongodb::options::InsertManyOptions;
+use shared::database::{Collection, EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetKind};
 
 use super::{Job, ProcessOutcome};
-use crate::database::emote_set_kind_type;
 use crate::global::Global;
 use crate::{error, types};
 
 pub struct EmoteSetsJob {
 	global: Arc<Global>,
-	emote_sets_writer: Pin<Box<BinaryCopyInWriter>>,
-	emote_set_emotes_writer: Pin<Box<BinaryCopyInWriter>>,
+	emote_sets: Vec<EmoteSet>,
+	emote_set_emotes: Vec<EmoteSetEmote>,
 }
 
 impl Job for EmoteSetsJob {
@@ -24,60 +21,20 @@ impl Job for EmoteSetsJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("truncating emote_sets and emote_set_emotes table");
-			scuffle_utils::database::query("TRUNCATE emote_sets, emote_set_emotes")
-				.build()
-				.execute(global.source_db())
-				.await?;
+			tracing::info!("dropping emote_sets and emote_set_emotes collections");
+			EmoteSet::collection(global.target_db()).drop(None).await?;
+			EmoteSetEmote::collection(global.target_db()).drop(None).await?;
 		}
 
-		let emote_sets_client = global.source_db().get().await?;
-		let emote_sets_writer = BinaryCopyInWriter::new(
-			emote_sets_client
-				.copy_in("COPY emote_sets (id, owner_id, name, kind, tags, settings) FROM STDIN WITH (FORMAT BINARY)")
-				.await?,
-			&[
-				Type::UUID,
-				Type::UUID,
-				Type::VARCHAR,
-				emote_set_kind_type(&global).await?,
-				Type::TEXT_ARRAY,
-				Type::JSONB,
-			],
-		);
-
-		let emote_set_emotes_client = global.source_db().get().await?;
-		let emote_set_emotes_writer = BinaryCopyInWriter::new(
-			emote_set_emotes_client
-				.copy_in(
-					"COPY emote_set_emotes (emote_set_id, emote_id, added_by_id, name, flags, added_at) FROM STDIN WITH (FORMAT BINARY)",
-				)
-				.await?,
-			&[
-				Type::UUID,
-				Type::UUID,
-				Type::UUID,
-				Type::VARCHAR,
-				Type::INT4,
-				Type::TIMESTAMPTZ,
-			],
-		);
-
-		Ok(Self {
-			global,
-			emote_sets_writer: Box::pin(emote_sets_writer),
-			emote_set_emotes_writer: Box::pin(emote_set_emotes_writer),
-		})
+		Ok(Self { global, emote_sets: vec![], emote_set_emotes: vec![] })
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().database("7tv").collection("emote_sets")
+		self.global.source_db().collection("emote_sets")
 	}
 
 	async fn process(&mut self, emote_set: Self::T) -> ProcessOutcome {
 		let mut outcome = ProcessOutcome::default();
-
-		let id = emote_set.id.into_ulid();
 
 		let kind = if emote_set.flags.contains(types::EmoteSetFlagModel::Personal) {
 			EmoteSetKind::Personal
@@ -85,32 +42,24 @@ impl Job for EmoteSetsJob {
 			EmoteSetKind::Normal
 		};
 
-		let settings = EmoteSetSettings {
-			capacity: emote_set.capacity,
-			privileged: emote_set.privileged || emote_set.flags.contains(types::EmoteSetFlagModel::Privileged),
-			immutable: emote_set.immutable || emote_set.flags.contains(types::EmoteSetFlagModel::Immutable),
-		};
-
-		match self
-			.emote_sets_writer
-			.as_mut()
-			.write(&[
-				&id,
-				&emote_set.owner_id.into_ulid(),
-				&emote_set.name,
-				&kind,
-				&emote_set.tags,
-				&Json(settings),
-			])
-			.await
-		{
-			Ok(_) => outcome.inserted_rows += 1,
-			Err(e) => {
-				outcome.errors.push(e.into());
-				return outcome;
-			}
+		let mut flags = EmoteSetFlags::none();
+		if emote_set.immutable || emote_set.flags.contains(types::EmoteSetFlagModel::Immutable) {
+			flags |= EmoteSetFlags::Immutable;
+		}
+		if emote_set.privileged || emote_set.flags.contains(types::EmoteSetFlagModel::Privileged) {
+			flags |= EmoteSetFlags::Privileged;
 		}
 
+		self.emote_sets.push(EmoteSet {
+			id: emote_set.id,
+			owner_id: Some(emote_set.owner_id),
+			name: emote_set.name,
+			kind,
+			tags: emote_set.tags,
+			capacity: emote_set.capacity,
+			flags,
+		});
+		
 		for (emote_id, e) in emote_set
 			.emotes
 			.into_iter()
@@ -138,31 +87,48 @@ impl Job for EmoteSetsJob {
 				continue;
 			};
 
-			match self
-				.emote_set_emotes_writer
-				.as_mut()
-				.write(&[
-					&id,
-					&emote_id.into_ulid(),
-					&e.actor_id.map(|a| a.into_ulid()),
-					&emote_name,
-					&flags.bits(),
-					&e.timestamp.map(|t| t.into_chrono()).unwrap_or(Utc::now()),
-				])
-				.await
-			{
-				Ok(_) => outcome.inserted_rows += 1,
-				Err(e) => outcome.errors.push(e.into()),
-			}
+			self.emote_set_emotes.push(EmoteSetEmote {
+				id: ObjectId::new(),
+				emote_set_id: emote_set.id,
+				emote_id,
+				added_by_id: e.actor_id,
+				name: emote_name,
+				flags,
+			});
 		}
 
 		outcome
 	}
 
-	async fn finish(mut self) -> anyhow::Result<()> {
-		self.emote_sets_writer.as_mut().finish().await?;
-		self.emote_set_emotes_writer.as_mut().finish().await?;
+	async fn finish(self) -> ProcessOutcome {
+		tracing::info!("finishing emote sets job");
 
-		Ok(())
+		let mut outcome = ProcessOutcome::default();
+
+		let insert_options = InsertManyOptions::builder().ordered(false).build();
+		let emote_sets = EmoteSet::collection(self.global.target_db());
+		let emote_set_emotes = EmoteSetEmote::collection(self.global.target_db());
+
+		let res = tokio::join!(
+			emote_sets.insert_many(&self.emote_sets, insert_options.clone()),
+			emote_set_emotes.insert_many(&self.emote_set_emotes, insert_options.clone()),
+		);
+		let res = vec![res.0, res.1]
+			.into_iter()
+			.zip(vec![self.emote_sets.len(), self.emote_set_emotes.len()]);
+
+		for (res, len) in res {
+			match res {
+				Ok(res) => {
+					outcome.inserted_rows += res.inserted_ids.len() as u64;
+					if res.inserted_ids.len() != len {
+						outcome.errors.push(error::Error::InsertMany);
+					}
+				}
+				Err(e) => outcome.errors.push(e.into()),
+			}
+		}
+
+		outcome
 	}
 }

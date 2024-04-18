@@ -7,7 +7,6 @@ pub struct Global {
 	ctx: Context,
 	config: Config,
 	clickhouse: clickhouse::Client,
-	mongo: mongodb::Client,
 	source_db: mongodb::Database,
 	target_db: mongodb::Database,
 }
@@ -27,7 +26,6 @@ impl Global {
 			ctx,
 			config,
 			clickhouse,
-			mongo,
 			source_db,
 			target_db,
 		})

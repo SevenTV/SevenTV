@@ -5,9 +5,9 @@ use fnv::{FnvHashMap, FnvHashSet};
 use futures::TryStreamExt;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
+use mongodb::options::InsertManyOptions;
 use shared::database::{
-	self, Collection, FileSet, FileSetProperties, Platform, User, UserConnection, UserEntitledCache, UserGrants,
-	UserSettings, UserStyle,
+	self, Collection, FileSet, FileSetProperties, Platform, User, UserConnection, UserEditor, UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle
 };
 
 use super::{Job, ProcessOutcome};
@@ -15,12 +15,14 @@ use crate::global::Global;
 use crate::types::image_files_to_file_properties;
 use crate::{error, types};
 
-// TODO: editors
-
 pub struct UsersJob {
 	global: Arc<Global>,
 	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,
 	all_connections: FnvHashSet<(Platform, String)>,
+	users: Vec<User>,
+	file_sets: Vec<FileSet>,
+	connections: Vec<UserConnection>,
+	editors: Vec<UserEditor>,
 }
 
 impl Job for UsersJob {
@@ -30,9 +32,9 @@ impl Job for UsersJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("truncating users, user_connections and user_roles collections");
-			User::collection(global.target_db()).delete_many(doc! {}, None);
-			UserConnection::collection(global.target_db()).delete_many(doc! {}, None);
+			tracing::info!("dropping users and user_connections collections");
+			User::collection(global.target_db()).drop(None).await?;
+			UserConnection::collection(global.target_db()).drop(None).await?;
 
 			tracing::info!("deleting profile picture files from file_sets collection");
 			FileSet::collection(global.target_db())
@@ -65,6 +67,10 @@ impl Job for UsersJob {
 			global,
 			entitlements,
 			all_connections: FnvHashSet::default(),
+			users: vec![],
+			file_sets: vec![],
+			connections: vec![],
+			editors: vec![],
 		})
 	}
 
@@ -73,6 +79,8 @@ impl Job for UsersJob {
 	}
 
 	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
+		let mut outcome = ProcessOutcome::default();
+
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
 
 		let mut roles = FnvHashSet::default();
@@ -110,27 +118,16 @@ impl Job for UsersJob {
 					}
 				};
 
-				if let Err(e) = FileSet::collection(self.global.target_db())
-					.insert_one(
-						FileSet {
-							id,
-							kind: database::FileSetKind::ProfilePicture,
-							authenticated: false,
-							properties: FileSetProperties::Image {
-								input: input_file.into(),
-								pending: false,
-								outputs,
-							},
-						},
-						None,
-					)
-					.await
-				{
-					return ProcessOutcome {
-						errors: vec![e.into()],
-						inserted_rows: 0,
-					};
-				}
+				self.file_sets.push(FileSet {
+					id,
+					kind: database::FileSetKind::ProfilePicture,
+					authenticated: false,
+					properties: FileSetProperties::Image {
+						input: input_file.into(),
+						pending: false,
+						outputs,
+					},
+				});
 
 				(None, Some(id))
 			}
@@ -138,41 +135,27 @@ impl Job for UsersJob {
 			_ => (None, None),
 		};
 
-		if let Err(e) = User::collection(self.global.target_db())
-			.insert_one(
-				User {
-					id: user.id,
-					email: user.email,
-					email_verified: false,
-					password_hash: None,
-					settings: UserSettings::default(),
-					two_fa: None,
-					style: UserStyle {
-						active_badge_id,
-						active_paint_id,
-						pending_profile_picture_id,
-						active_profile_picture_id,
-						all_profile_picture_ids: active_profile_picture_id.map(|id| vec![id]).unwrap_or_default(),
-					},
-					active_emote_set_ids: vec![],
-					grants: UserGrants {
-						role_ids: roles.into_iter().collect(),
-						..Default::default()
-					},
-					entitled_cache: UserEntitledCache::default(),
-				},
-				None,
-			)
-			.await
-		{
-			return ProcessOutcome {
-				errors: vec![e.into()],
-				inserted_rows: 0,
-			};
-		}
-
-		let mut errors = Vec::new();
-		let mut inserted_rows = 1;
+		self.users.push(User {
+			id: user.id,
+			email: user.email,
+			email_verified: false,
+			password_hash: None,
+			settings: UserSettings::default(),
+			two_fa: None,
+			style: UserStyle {
+				active_badge_id,
+				active_paint_id,
+				pending_profile_picture_id,
+				active_profile_picture_id,
+				all_profile_picture_ids: active_profile_picture_id.map(|id| vec![id]).unwrap_or_default(),
+			},
+			active_emote_set_ids: vec![],
+			grants: UserGrants {
+				role_ids: roles.into_iter().collect(),
+				..Default::default()
+			},
+			entitled_cache: UserEntitledCache::default(),
+		});
 
 		for (i, connection) in user.connections.into_iter().enumerate() {
 			let id = crate::database::object_id_from_datetime(connection.linked_at.into_chrono());
@@ -207,7 +190,7 @@ impl Job for UsersJob {
 						display_name,
 					} => (Platform::Kick, id, username, display_name, None),
 					_ => {
-						errors.push(error::Error::MissingPlatformId {
+						outcome.errors.push(error::Error::MissingPlatformId {
 							user_id: user.id,
 							platform: connection.platform.into(),
 						});
@@ -216,7 +199,7 @@ impl Job for UsersJob {
 				};
 
 			if self.all_connections.insert((platform, platform_id.clone())) {
-				match UserConnection::collection(self.global.target_db()).insert_one(UserConnection {
+				self.connections.push(UserConnection {
 					id,
 					user_id: user.id,
 					main_connection: i == 0,
@@ -226,22 +209,67 @@ impl Job for UsersJob {
 					platform_display_name,
 					platform_avatar_url,
 					allow_login: true,
-				}, None).await
-				{
-					Ok(_) => inserted_rows += 1,
-					Err(e) => errors.push(e.into()),
-				}
+				});
 			} else {
-				errors.push(error::Error::DuplicateUserConnection { platform, platform_id });
+				outcome
+					.errors
+					.push(error::Error::DuplicateUserConnection { platform, platform_id });
 			}
 		}
 
-		ProcessOutcome { errors, inserted_rows }
+		for editor in user.editors {
+			if let Some(editor_id) = editor.id {
+				let permissions = UserEditorPermissions {};
+
+				self.editors.push(UserEditor {
+					id: ObjectId::new(),
+					user_id: user.id,
+					editor_id,
+					state: UserEditorState::Accepted,
+					notes: None,
+					permissions,
+					added_by_id: Some(user.id),
+				});
+			}
+		}
+
+		outcome
 	}
 
-	async fn finish(self) -> anyhow::Result<()> {
+	async fn finish(self) -> ProcessOutcome {
 		tracing::info!("finishing users job");
 
-		Ok(())
+		let mut outcome = ProcessOutcome::default();
+
+		let insert_options = InsertManyOptions::builder().ordered(false).build();
+		let file_sets = FileSet::collection(self.global.target_db());
+		let users = User::collection(self.global.target_db());
+		let connections = UserConnection::collection(self.global.target_db());
+		let editors = UserEditor::collection(self.global.target_db());
+
+		let res = tokio::join!(
+			file_sets.insert_many(&self.file_sets, insert_options.clone()),
+			users.insert_many(&self.users, insert_options.clone()),
+			connections.insert_many(&self.connections, insert_options.clone()),
+			editors.insert_many(&self.editors, insert_options),
+		);
+		let res =
+			vec![res.0, res.1, res.2, res.3]
+				.into_iter()
+				.zip(vec![self.file_sets.len(), self.users.len(), self.connections.len(), self.editors.len()]);
+
+		for (res, len) in res {
+			match res {
+				Ok(res) => {
+					outcome.inserted_rows += res.inserted_ids.len() as u64;
+					if res.inserted_ids.len() != len {
+						outcome.errors.push(error::Error::InsertMany);
+					}
+				}
+				Err(e) => outcome.errors.push(e.into()),
+			}
+		}
+
+		outcome
 	}
 }

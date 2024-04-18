@@ -15,7 +15,7 @@ mod report;
 mod types;
 
 #[global_allocator]
-static ALLOCATOR: Cap<tikv_jemallocator::Jemalloc> = Cap::new(tikv_jemallocator::Jemalloc, usize::max_value());
+static ALLOCATOR: Cap<tikv_jemallocator::Jemalloc> = Cap::new(tikv_jemallocator::Jemalloc, usize::MAX);
 
 #[tokio::main]
 async fn main() {
@@ -41,10 +41,18 @@ async fn main() {
 		.with_signal(SignalKind::interrupt())
 		.with_signal(SignalKind::terminate());
 
+	let memuse = async {
+		loop {
+			tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+			tracing::info!("memory usage: {} MiB", ALLOCATOR.allocated() / 1024 / 1204);
+		}
+	};
+
 	let jobs_handle = tokio::spawn(jobs::run(global.clone()));
 
 	tokio::select! {
 		_ = signal.recv() => {},
+		_ = memuse => {},
 		r = jobs_handle => match r {
 			Err(e) => tracing::error!("failed to spawn jobs: {e:?}"),
 			Ok(Err(e)) => tracing::error!("failed to run jobs: {e:?}"),

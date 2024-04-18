@@ -59,25 +59,6 @@ impl Job for AuditLogsJob {
 		let user_activity_writer = global.clickhouse().insert(database::UserActivity::NAME)?;
 		let ticket_activity_writer = global.clickhouse().insert(database::TicketActivity::NAME)?;
 
-		// emote_activity_writer
-		// 	.write(&database::EmoteActivity {
-		// 		emote_id: uuid::Uuid::new_v4(),
-		// 		actor_id: Some(uuid::Uuid::new_v4()),
-		// 		kind: database::EmoteActivityKind::Upload,
-		// 		// data: Some(serde_json::to_string(&database::EmoteActivityData::ChangeName
-		// { 		// 	old: "old".to_string(),
-		// 		// 	new: "new".to_string(),
-		// 		// })?),
-		// 		data: Some(database::EmoteActivityData::ChangeName {
-		// 			old: "old".to_string(),
-		// 			new: "new".to_string(),
-		// 		}),
-		// 		timestamp: time::OffsetDateTime::now_utc(),
-		// 	})
-		// 	.await?;
-		// emote_activity_writer.end().await?;
-		// bail!("test");
-
 		Ok(Self {
 			global,
 			i: 0,
@@ -89,13 +70,13 @@ impl Job for AuditLogsJob {
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().database("7tv").collection("audit_logs")
+		self.global.source_db().collection("audit_logs")
 	}
 
 	async fn process(&mut self, audit_log: Self::T) -> ProcessOutcome {
 		let mut outcome = ProcessOutcome::default();
 
-		let timestamp = match time::OffsetDateTime::from_unix_timestamp(audit_log.id.timestamp() as i64) {
+		let timestamp = match time::OffsetDateTime::from_unix_timestamp(audit_log.id.timestamp().to_chrono().timestamp()) {
 			Ok(ts) => ts,
 			Err(e) => {
 				outcome.errors.push(e.into());

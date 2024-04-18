@@ -13,7 +13,7 @@ use self::emotes::EmotesJob;
 use self::users::UsersJob;
 use crate::format::Number;
 use crate::global::Global;
-use crate::jobs::audit_logs::AuditLogsJob;
+// use crate::jobs::audit_logs::AuditLogsJob;
 use crate::jobs::bans::BansJob;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
@@ -21,7 +21,7 @@ use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
 use crate::{error, report};
 
-pub mod audit_logs;
+// pub mod audit_logs;
 pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
@@ -123,9 +123,7 @@ pub trait Job: Sized {
 			outcome.processed_documents += 1;
 		}
 
-		if let Err(e) = self.finish().await {
-			tracing::error!("failed to finish job (susge?): {}", e);
-		}
+		outcome += self.finish().await;
 
 		let took_seconds = timer.elapsed().as_secs_f64();
 
@@ -142,8 +140,8 @@ pub trait Job: Sized {
 
 	async fn collection(&self) -> mongodb::Collection<Self::T>;
 	async fn process(&mut self, t: Self::T) -> ProcessOutcome;
-	async fn finish(self) -> anyhow::Result<()> {
-		Ok(())
+	async fn finish(self) -> ProcessOutcome {
+		ProcessOutcome::default()
 	}
 }
 
@@ -180,7 +178,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	.map(|j| futures.push(j));
 	EmoteSetsJob::conditional_init_and_run(
 		&global,
-		any_run && global.config().skip_emote_sets || !any_run && !global.config().emote_sets,
+		any_run && global.config().emote_sets || !any_run && !global.config().skip_emote_sets,
 	)?
 	.map(|j| futures.push(j));
 	CosmeticsJob::conditional_init_and_run(
@@ -198,11 +196,11 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		any_run && global.config().reports || !any_run && !global.config().skip_reports,
 	)?
 	.map(|j| futures.push(j));
-	AuditLogsJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().audit_logs || !any_run && !global.config().skip_audit_logs,
-	)?
-	.map(|j| futures.push(j));
+	// AuditLogsJob::conditional_init_and_run(
+	// 	&global,
+	// 	any_run && global.config().audit_logs || !any_run && !global.config().skip_audit_logs,
+	// )?
+	// .map(|j| futures.push(j));
 
 	let results: Vec<JobOutcome> = futures.try_collect().await?;
 
