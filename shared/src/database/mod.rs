@@ -5,5 +5,6 @@ mod types;
 pub use types::*;
 
 pub async fn setup_database(config: &DatabaseConfig) -> anyhow::Result<mongodb::Client> {
-	anyhow::bail!("Database setup not implemented");
+	let options = mongodb::options::ClientOptions::parse(&config.uri).await?;
+	Ok(mongodb::Client::with_options(options)?)
 }
