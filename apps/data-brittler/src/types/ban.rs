@@ -1,5 +1,5 @@
 use bitmask_enum::bitmask;
-use shared::object_id::ObjectId;
+use mongodb::bson::oid::ObjectId;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Ban {

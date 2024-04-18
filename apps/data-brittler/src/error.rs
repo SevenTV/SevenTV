@@ -1,5 +1,5 @@
 use shared::database::Platform;
-use shared::object_id::ObjectId;
+use mongodb::bson::oid::ObjectId;
 
 use crate::types;
 
@@ -14,7 +14,7 @@ pub enum Error {
 	#[error("failed to serialize json data")]
 	SerializeJson(#[from] serde_json::Error),
 	#[error("failed to query database")]
-	Db(#[from] tokio_postgres::Error),
+	Db(#[from] mongodb::error::Error),
 	#[error("failed to query clickhouse")]
 	Clickhouse(#[from] clickhouse::error::Error),
 

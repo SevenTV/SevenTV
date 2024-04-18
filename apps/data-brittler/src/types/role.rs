@@ -1,6 +1,6 @@
 use bitmask_enum::bitmask;
+use mongodb::bson::oid::ObjectId;
 use shared::database::{self, AllowDeny};
-use shared::object_id::ObjectId;
 
 // https://github.com/SevenTV/Common/blob/master/structures/v3/type.role.go
 
@@ -182,10 +182,10 @@ impl Role {
 		let mut perm = AllowDeny::default();
 
 		if self.allowed.contains(RolePermission::FeatureProfilePictureAnimation) {
-			perm.allow(database::FeaturePermission::AnimatedProfilePicture);
+			perm.allow(database::FeaturePermission::UseCustomProfilePicture);
 		}
 		if self.denied.contains(RolePermission::FeatureProfilePictureAnimation) {
-			perm.deny(database::FeaturePermission::AnimatedProfilePicture);
+			perm.deny(database::FeaturePermission::UseCustomProfilePicture);
 		}
 
 		perm

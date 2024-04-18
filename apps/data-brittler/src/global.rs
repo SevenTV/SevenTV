@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Context as _;
 use scuffle_utils::context::Context;
 
@@ -8,29 +6,30 @@ use crate::config::Config;
 pub struct Global {
 	ctx: Context,
 	config: Config,
-	db: mongodb::Database,
 	clickhouse: clickhouse::Client,
 	mongo: mongodb::Client,
+	source_db: mongodb::Database,
+	target_db: mongodb::Database,
 }
 
 impl Global {
 	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
-		let db = shared::database::setup_database(&config.database)
+		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse);
+
+		let mongo = shared::database::setup_database(&config.database)
 			.await
 			.context("database setup")?;
 
-		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse);
-
-		let mut options = mongodb::options::ClientOptions::parse(&config.mongo).await?;
-		options.app_name = Some("data-brittler".to_string());
-		let mongo: mongodb::Client = mongodb::Client::with_options(options).context("failed to connect to MongoDB")?;
+		let source_db = mongo.database(&config.source_db);
+		let target_db = mongo.database(&config.target_db);
 
 		Ok(Self {
 			ctx,
 			config,
-			db,
 			clickhouse,
 			mongo,
+			source_db,
+			target_db,
 		})
 	}
 
@@ -42,15 +41,15 @@ impl Global {
 		&self.config
 	}
 
-	pub fn db(&self) -> &mongodb::Database {
-		&self.db
-	}
-
 	pub fn clickhouse(&self) -> &clickhouse::Client {
 		&self.clickhouse
 	}
 
-	pub fn mongo(&self) -> &mongodb::Client {
-		&self.mongo
+	pub fn source_db(&self) -> &mongodb::Database {
+		&self.source_db
+	}
+
+	pub fn target_db(&self) -> &mongodb::Database {
+		&self.target_db
 	}
 }

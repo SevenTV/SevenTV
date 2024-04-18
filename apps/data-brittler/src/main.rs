@@ -6,7 +6,6 @@ use scuffle_utils::prelude::FutureTimeout;
 use tokio::signal::unix::SignalKind;
 
 mod config;
-mod csv_copy_in;
 mod database;
 mod error;
 mod format;

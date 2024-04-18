@@ -27,11 +27,11 @@ impl Job for EmoteSetsJob {
 			tracing::info!("truncating emote_sets and emote_set_emotes table");
 			scuffle_utils::database::query("TRUNCATE emote_sets, emote_set_emotes")
 				.build()
-				.execute(global.db())
+				.execute(global.source_db())
 				.await?;
 		}
 
-		let emote_sets_client = global.db().get().await?;
+		let emote_sets_client = global.source_db().get().await?;
 		let emote_sets_writer = BinaryCopyInWriter::new(
 			emote_sets_client
 				.copy_in("COPY emote_sets (id, owner_id, name, kind, tags, settings) FROM STDIN WITH (FORMAT BINARY)")
@@ -46,7 +46,7 @@ impl Job for EmoteSetsJob {
 			],
 		);
 
-		let emote_set_emotes_client = global.db().get().await?;
+		let emote_set_emotes_client = global.source_db().get().await?;
 		let emote_set_emotes_writer = BinaryCopyInWriter::new(
 			emote_set_emotes_client
 				.copy_in(
@@ -71,7 +71,7 @@ impl Job for EmoteSetsJob {
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.mongo().database("7tv").collection("emote_sets")
+		self.global.source_db().database("7tv").collection("emote_sets")
 	}
 
 	async fn process(&mut self, emote_set: Self::T) -> ProcessOutcome {

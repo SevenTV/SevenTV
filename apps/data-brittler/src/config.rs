@@ -7,14 +7,16 @@ pub type Config = shared::config::Config<Extra>;
 #[derive(Debug, serde::Deserialize, config::Config)]
 #[serde(default)]
 pub struct Extra {
-	/// Database configuration
 	pub database: DatabaseConfig,
 	/// ClickHouse connection string
 	pub clickhouse: String,
-	/// MongoDB connection string
-	pub mongo: String,
 	/// Path to the report file
 	pub report_path: PathBuf,
+
+	/// Source database name
+	pub source_db: String,
+	/// Target database name
+	pub target_db: String,
 
 	/// Run users job
 	pub users: bool,
@@ -63,10 +65,11 @@ pub struct Extra {
 impl Default for Extra {
 	fn default() -> Self {
 		Self {
-			database: Default::default(),
+			database: DatabaseConfig::default(),
 			clickhouse: "http://localhost:8123".to_string(),
-			mongo: "mongodb://localhost:27017".to_string(),
 			report_path: PathBuf::from("./local/report.md"),
+			source_db: "7tv".to_string(),
+			target_db: "7tv-new".to_string(),
 			users: false,
 			skip_users: false,
 			bans: false,

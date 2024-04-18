@@ -89,7 +89,7 @@ impl Job for AuditLogsJob {
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.mongo().database("7tv").collection("audit_logs")
+		self.global.source_db().database("7tv").collection("audit_logs")
 	}
 
 	async fn process(&mut self, audit_log: Self::T) -> ProcessOutcome {

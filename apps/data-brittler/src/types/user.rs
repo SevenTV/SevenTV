@@ -1,5 +1,5 @@
+use mongodb::bson::oid::ObjectId;
 use shared::database::Platform;
-use shared::object_id::ObjectId;
 
 use super::ImageFile;
 

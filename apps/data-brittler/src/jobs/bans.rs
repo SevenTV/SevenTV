@@ -24,11 +24,11 @@ impl Job for BansJob {
 			tracing::info!("truncating user_bans table");
 			scuffle_utils::database::query("TRUNCATE user_bans")
 				.build()
-				.execute(global.db())
+				.execute(global.source_db())
 				.await?;
 		}
 
-		let bans_client = global.db().get().await?;
+		let bans_client = global.source_db().get().await?;
 		let bans_writer = BinaryCopyInWriter::new(
 			bans_client
 				.copy_in("COPY user_bans (id, user_id, created_by_id, data, expires_at) FROM STDIN WITH (FORMAT BINARY)")
@@ -43,7 +43,7 @@ impl Job for BansJob {
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.mongo().database("7tv").collection("bans")
+		self.global.source_db().database("7tv").collection("bans")
 	}
 
 	async fn process(&mut self, ban: Self::T) -> ProcessOutcome {

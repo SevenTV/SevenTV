@@ -30,17 +30,17 @@ impl Job for CosmeticsJob {
 			tracing::info!("truncating paints, paint_file_sets and badges table");
 			scuffle_utils::database::query("TRUNCATE paints, paint_file_sets, badges")
 				.build()
-				.execute(global.db())
+				.execute(global.source_db())
 				.await?;
 
 			tracing::info!("deleting all paint and badge file sets");
 			scuffle_utils::database::query("DELETE FROM file_sets WHERE kind = 'PAINT' OR kind = 'BADGE'")
 				.build()
-				.execute(global.db())
+				.execute(global.source_db())
 				.await?;
 		}
 
-		let file_sets_client = global.db().get().await?;
+		let file_sets_client = global.source_db().get().await?;
 		let file_sets_writer = BinaryCopyInWriter::new(
 			file_sets_client
 				.copy_in("COPY file_sets (id, kind, authenticated, properties) FROM STDIN WITH (FORMAT BINARY)")
@@ -48,7 +48,7 @@ impl Job for CosmeticsJob {
 			&[Type::UUID, file_set_kind_type(&global).await?, Type::BOOL, Type::JSONB],
 		);
 
-		let paints_client = global.db().get().await?;
+		let paints_client = global.source_db().get().await?;
 		let paints_writer = BinaryCopyInWriter::new(
 			paints_client
 				.copy_in("COPY paints (id, name, data) FROM STDIN WITH (FORMAT BINARY)")
@@ -56,7 +56,7 @@ impl Job for CosmeticsJob {
 			&[Type::UUID, Type::VARCHAR, Type::JSONB],
 		);
 
-		let paint_file_sets_client = global.db().get().await?;
+		let paint_file_sets_client = global.source_db().get().await?;
 		let paint_file_sets_writer = BinaryCopyInWriter::new(
 			paint_file_sets_client
 				.copy_in("COPY paint_file_sets (paint_id, file_set_id) FROM STDIN WITH (FORMAT BINARY)")
@@ -64,7 +64,7 @@ impl Job for CosmeticsJob {
 			&[Type::UUID, Type::UUID],
 		);
 
-		let badges_client = global.db().get().await?;
+		let badges_client = global.source_db().get().await?;
 		let badges_writer = BinaryCopyInWriter::new(
 			badges_client
 				.copy_in("COPY badges (id, name, description, tags, file_set_id) FROM STDIN WITH (FORMAT BINARY)")
@@ -83,7 +83,7 @@ impl Job for CosmeticsJob {
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.mongo().database("7tv").collection("cosmetics")
+		self.global.source_db().database("7tv").collection("cosmetics")
 	}
 
 	async fn process(&mut self, cosmetic: Self::T) -> ProcessOutcome {
