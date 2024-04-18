@@ -4,7 +4,7 @@ Makes the data brittle.
 
 ## Collections - `7tv`
 
-- [ ] `audit_logs`
+- [x] `audit_logs`
 - [x] `bans`
 - [x] `cosmetics`
 - [x] `emote_sets`
