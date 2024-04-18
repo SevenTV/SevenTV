@@ -28,7 +28,7 @@ pub struct UserModel {
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub editors: Vec<UserEditorModel>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
-	pub role_ids: Vec<ObjectId>,
+	pub roles: Vec<ObjectId>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	pub connections: Vec<UserConnectionModel>,
 }

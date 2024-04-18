@@ -87,14 +87,18 @@ impl Loader for UserProductPurchaseLoader {
 		let results: Self::Value = ProductPurchase::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
-					"$and": {
-						"product_id": {
-							"$in": keys,
+					"$and": [
+						{
+							"product_id": {
+								"$in": keys,
+							}
 						},
-						"status": {
-							"$eq": to_bson(&ProductPurchaseStatus::Completed).unwrap(),
+						{
+							"status": {
+								"$eq": to_bson(&ProductPurchaseStatus::Completed).unwrap(),
+							}
 						},
-					},
+					],
 				},
 				None,
 			)
@@ -232,7 +236,7 @@ impl UserLoader {
 			return Ok(Some(user));
 		}
 
-		let Ok(Some(product_purchases)) = self.user_product_purchase_loader.load(user_id).await else {
+		let Ok(product_purchases) = self.user_product_purchase_loader.load(user_id).await.map(Option::unwrap_or_default) else {
 			anyhow::bail!("failed to load user product purchases");
 		};
 
@@ -244,7 +248,7 @@ impl UserLoader {
 					map
 				});
 
-		let Ok(Some(user_products)) = self.user_products_loader.load(user_id).await else {
+		let Ok(user_products) = self.user_products_loader.load(user_id).await.map(Option::unwrap_or_default) else {
 			anyhow::bail!("failed to load user products");
 		};
 

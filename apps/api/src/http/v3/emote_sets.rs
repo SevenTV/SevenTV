@@ -22,7 +22,7 @@ use crate::http::RequestGlobalExt;
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-	Router::builder().get("/emote-sets/{id}", get_emote_set_by_id)
+	Router::builder().get("/:id", get_emote_set_by_id)
 }
 
 #[utoipa::path(

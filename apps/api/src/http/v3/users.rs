@@ -30,12 +30,12 @@ pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
 	Router::builder()
-		.get("/{id}", get_user_by_id)
-		.put("/{id}/profile-picture", upload_user_profile_picture)
-		.get("/{id}/presences", get_user_presences_by_platform)
-		.get("/{platform}/{platform_id}", get_user_by_platform_user_id)
-		.delete("/{id}", delete_user_by_id)
-		.patch("/{id}/connections/{connection_id}", update_user_connection_by_id)
+		.get("/:id", get_user_by_id)
+		.put("/:id/profile-picture", upload_user_profile_picture)
+		.get("/:id/presences", get_user_presences_by_platform)
+		.get("/:platform/{platform_id}", get_user_by_platform_user_id)
+		.delete("/:id", delete_user_by_id)
+		.patch("/:id/connections/:connection_id", update_user_connection_by_id)
 }
 
 #[utoipa::path(

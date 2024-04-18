@@ -23,9 +23,9 @@ impl UserEditor {
 		}
 
 		Some(UserEditorModel {
-			id: self.user_id,
+			id: self.editor_id,
 			added_at: self.id.timestamp().timestamp_millis(),
-			permissions: UserEditorModelPermission::ModifyEmotes,
+			permissions: UserEditorModelPermission::ModifyEmotes | UserEditorModelPermission::ManageEmoteSets,
 			visible: true,
 		})
 	}

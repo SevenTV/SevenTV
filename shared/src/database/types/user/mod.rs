@@ -194,7 +194,7 @@ impl User {
 			style: partial.style,
 			emote_sets,
 			editors,
-			role_ids: partial.role_ids,
+			roles: partial.role_ids,
 			connections: partial
 				.connections
 				.into_iter()

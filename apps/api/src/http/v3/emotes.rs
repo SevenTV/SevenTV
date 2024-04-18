@@ -19,7 +19,7 @@ use crate::http::RequestGlobalExt;
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-	Router::builder().post("/", create_emote).get("/{id}", get_emote_by_id)
+	Router::builder().post("/", create_emote).get("/:id", get_emote_by_id)
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]

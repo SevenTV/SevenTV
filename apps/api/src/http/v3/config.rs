@@ -15,7 +15,7 @@ use crate::http::error::ApiError;
 pub struct Docs;
 
 pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-	Router::builder().get("/{name}", get_extension_config)
+	Router::builder().get("/:name", get_extension_config)
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
