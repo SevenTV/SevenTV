@@ -6,7 +6,7 @@ pub type AutomodRuleId = Id<AutomodRule>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AutomodRule {
-	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	#[serde(rename = "_id")]
 	pub id: AutomodRuleId,
 	pub name: String,
 	pub description: String,

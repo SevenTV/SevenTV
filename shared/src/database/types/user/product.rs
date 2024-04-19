@@ -6,7 +6,7 @@ pub type UserProductId = Id<UserProduct>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserProduct {
-	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	#[serde(rename = "_id")]
 	pub id: UserProductId,
 	pub user_id: UserId,
 	pub product_id: ProductId,

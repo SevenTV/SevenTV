@@ -6,7 +6,7 @@ pub type PageId = Id<Page>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Page {
-	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	#[serde(rename = "_id")]
 	pub id: PageId,
 	pub kind: PageKind,
 	pub title: String,

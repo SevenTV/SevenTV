@@ -36,7 +36,7 @@ pub type UserId = Id<User>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct User {
-	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	#[serde(rename = "_id")]
 	pub id: UserId,
 	pub email: Option<String>,
 	pub email_verified: bool,

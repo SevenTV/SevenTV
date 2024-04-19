@@ -9,7 +9,7 @@ pub type BadgeId = Id<Badge>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Badge {
-	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	#[serde(rename = "_id")]
 	pub id: BadgeId,
 	pub name: String,
 	pub description: String,

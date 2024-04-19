@@ -1,5 +1,6 @@
 use std::fmt;
 
+use chrono::TimeZone;
 use mongodb::bson;
 
 pub struct Id<S = ()>(ulid::Ulid, std::marker::PhantomData<S>);
@@ -49,6 +50,52 @@ impl<S> Id<S> {
 		Self::from_ulid(ulid::Ulid::new())
 	}
 
+	pub fn with_timestamp_ms(timestamp_ms: u64) -> Self {
+		Self::with_timestamp(chrono::Utc.timestamp_millis_opt(timestamp_ms as i64).unwrap())
+	}
+
+	pub fn with_timestamp(timestamp: chrono::DateTime<chrono::Utc>) -> Self {
+		Self::from_ulid(ulid::Ulid::from_datetime(timestamp.into()))
+	}
+
+	pub const fn as_ulid(&self) -> ulid::Ulid {
+		self.0
+	}
+
+	pub const fn as_uuid(&self) -> uuid::Uuid {
+		uuid::Uuid::from_bytes(self.0.to_bytes())
+	}
+
+	pub const fn is_object_id_compatible(&self) -> bool {
+		self.timestamp_ms() % 1000 == 0 // MongoDB ObjectId has a timestamp resolution of 1 second
+			&& self.random() <= u64::MAX as u128 // MongoDB ObjectId has a random value of 8 bytes
+			&& self.timestamp_ms() / 1000 <= u32::MAX as u64 // MongoDB ObjectId has a timestamp value of 4 bytes
+	}
+
+	pub const fn as_object_id(&self) -> Option<bson::oid::ObjectId> {
+		if !self.is_object_id_compatible() {
+			None
+		} else {
+			let timestamp = ((self.timestamp_ms() / 1000) as u32).to_be_bytes();
+			let random = (self.random() as u64).to_be_bytes();
+
+			Some(bson::oid::ObjectId::from_bytes([
+				timestamp[0],
+				timestamp[1],
+				timestamp[2],
+				timestamp[3],
+				random[0],
+				random[1],
+				random[2],
+				random[3],
+				random[4],
+				random[5],
+				random[6],
+				random[7],
+			]))
+		}
+	}
+
 	pub const fn is_nil(&self) -> bool {
 		self.0.is_nil()
 	}
@@ -88,10 +135,17 @@ impl<S> Id<S> {
 	pub const fn from_object_id(object_id: bson::oid::ObjectId) -> Self {
 		let bytes = object_id.bytes();
 
-		Self::from_bytes([
-			bytes[0], bytes[1], bytes[2], bytes[3], 0, 0, 0, 0, bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9],
-			bytes[10], bytes[11],
-		])
+		let timestamp = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+
+		let random = u64::from_be_bytes([
+			bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9], bytes[10], bytes[11],
+		]);
+
+		Self::from_parts(timestamp as u64, random as u128)
+	}
+
+	pub const fn from_parts(timestamp: u64, random: u128) -> Self {
+		Self::from_ulid(ulid::Ulid::from_parts(timestamp, random))
 	}
 
 	pub const fn cast<T>(self) -> Id<T> {
@@ -149,7 +203,7 @@ impl<S> From<Id<S>> for bson::Bson {
 
 impl<S> Default for Id<S> {
 	fn default() -> Self {
-		Self::nil()
+		Self::new()
 	}
 }
 
@@ -188,7 +242,10 @@ impl<S> serde::Serialize for Id<S> {
 	fn serialize<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error> {
 		// This is a hack to check if the serializer is a bson serializer because
 		// bson::uuid::Uuid has a custom implementation for bson serialization
-		let serializer_name = std::any::type_name::<T>();
+		let serializer_name = std::any::type_name::<T>()
+			.trim_start_matches('&')
+			.trim_start_matches("mut")
+			.trim();
 		if serializer_name.starts_with("bson::") {
 			bson::uuid::Uuid::from(*self).serialize(serializer)
 		} else {
@@ -201,7 +258,10 @@ impl<'de, S> serde::Deserialize<'de> for Id<S> {
 	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
 		// This is a hack to check if the deserializer is a bson deserializer because
 		// bson::uuid::Uuid has a custom implementation for bson deserialization
-		let deserializer_name = std::any::type_name::<D>();
+		let deserializer_name = std::any::type_name::<D>()
+			.trim_start_matches('&')
+			.trim_start_matches("mut")
+			.trim();
 		if deserializer_name.starts_with("bson::") {
 			bson::uuid::Uuid::deserialize(deserializer).map(Self::from)
 		} else {

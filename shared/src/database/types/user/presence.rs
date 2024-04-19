@@ -6,7 +6,7 @@ pub type UserPresenceId = Id<UserPresence>;
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserPresence {
-	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	#[serde(rename = "_id")]
 	pub id: UserPresenceId,
 	pub user_id: UserId,
 	pub platform: Platform,
