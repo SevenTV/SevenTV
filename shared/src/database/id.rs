@@ -242,43 +242,87 @@ impl<S> std::fmt::Display for Id<S> {
 
 impl<S> serde::Serialize for Id<S> {
 	fn serialize<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error> {
-		match T::serde_kind() {
-			SerdeKindType::Bson => BsonUuid::from(*self).serialize(serializer),
-			SerdeKindType::Other => self.to_string().serialize(serializer),
-		}
+		self.to_string().serialize(serializer)
 	}
 }
 
 impl<'de, S> serde::Deserialize<'de> for Id<S> {
 	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		match D::serde_kind() {
-			SerdeKindType::Bson => BsonUuid::deserialize(deserializer).map(Self::from),
-			SerdeKindType::Other => String::deserialize(deserializer)?.parse().map_err(serde::de::Error::custom),
-		}
+		String::deserialize(deserializer)?.parse().map_err(serde::de::Error::custom)
 	}
 }
 
+pub mod bson {
+    use serde::{Deserialize, Serialize};
 
-enum SerdeKindType {
-	Bson,
-	Other,
-}
+    use super::*;
 
-trait SerdeKind {
-	fn serde_kind() -> SerdeKindType;
-}
+	pub trait IdLike<S>: Sized {
+		fn encode<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error>;
+		fn decode<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error>;
+	}
 
-impl<T> SerdeKind for T {
-	fn serde_kind() -> SerdeKindType {
-		let name = std::any::type_name::<T>();
-		let bson_serialize_name: &str = std::any::type_name::<mongodb::bson::ser::Serializer>();
-		let bson_deserialize_name: &str = std::any::type_name::<mongodb::bson::de::Deserializer>();
-
-		if name == bson_serialize_name || name == bson_deserialize_name {
-			SerdeKindType::Bson
-		} else {
-			SerdeKindType::Other
+	impl<S> IdLike<S> for Id<S> {
+		fn encode<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error> {
+			BsonUuid::from(*self).serialize(serializer)
 		}
+
+		fn decode<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+			BsonUuid::deserialize(deserializer).map(Self::from)
+		}
+	}
+
+	impl<S, T> IdLike<S> for Option<T>
+	where
+		T: IdLike<S>,
+	{
+		fn encode<U: serde::Serializer>(&self, serializer: U) -> Result<U::Ok, U::Error> {
+			match self {
+				Some(value) => value.encode(serializer),
+				None => serializer.serialize_none(),
+			}
+		}
+
+		fn decode<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+			struct Visitor<T, S>(std::marker::PhantomData<(T, S)>);
+
+			impl<'de, T, S> serde::de::Visitor<'de> for Visitor<T, S>
+			where
+				T: IdLike<S>,
+			{
+				type Value = Option<T>;
+
+				fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+					write!(formatter, "an optional value")
+				}
+
+				fn visit_none<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+					Ok(None)
+				}
+
+				fn visit_some<D: serde::Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+					T::decode(deserializer).map(Some)
+				}
+			}
+
+			deserializer.deserialize_option(Visitor(std::marker::PhantomData))
+		}
+	}
+
+	pub fn serialize<S, T, U>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+		T: IdLike<U>,
+	{
+		value.encode(serializer)
+	}
+
+	pub fn deserialize<'de, T, D, U>(deserializer: D) -> Result<T, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+		T: IdLike<U>,
+	{
+		T::decode(deserializer)
 	}
 }
 
@@ -287,29 +331,40 @@ mod tests {
 	use super::*;
 	use mongodb::bson;
 
+	#[derive(serde::Serialize, serde::Deserialize)]
+	struct TestBson {
+		#[serde(with = "super::bson", rename = "_id")]
+		id: Id,
+	}
+
+	#[derive(serde::Serialize, serde::Deserialize)]
+	struct TestJson {
+		id: Id,
+	}
+
 	#[test]
 	fn test_bson_serde() {
-		// bson serialization
 		let id = Id::new();
 
-		assert_eq!(bson::to_bson(&id).unwrap(), bson::Bson::from(bson::uuid::Uuid::from(id)));
+		let doc = bson::to_document(&TestBson { id }).unwrap();
 
-		let returned: Id = bson::from_bson(bson::Bson::from(bson::uuid::Uuid::from(id))).unwrap();
+		assert_eq!(doc, bson::doc! { "_id": BsonUuid::from(id) });
 
-		assert_eq!(id, returned);
+		let returned: TestBson = bson::from_document(doc).unwrap();
+
+		assert_eq!(id, returned.id);
 	}
 
 	#[test]
 	fn test_json_serde() {
-		// json serialization
 		let id = Id::new();
 
-		let json = serde_json::to_string(&id).unwrap();
+		let json = serde_json::to_string(&TestJson { id }).unwrap();
 
-		assert_eq!(json, format!("\"{}\"", id));
+		assert_eq!(json, format!("{{\"id\":\"{}\"}}", id));
 
-		let returned: Id = serde_json::from_str(&json).unwrap();
+		let returned: TestJson = serde_json::from_str(&json).unwrap();
 
-		assert_eq!(id, returned);
+		assert_eq!(id, returned.id);
 	}
 }

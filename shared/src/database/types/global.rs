@@ -6,7 +6,7 @@ pub type GlobalConfigId = Id<GlobalConfig>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct GlobalConfig {
-	#[serde(rename = "_id")]
+	#[serde(rename = "_id", with = "crate::database::id::bson")]
 	pub id: GlobalConfigId,
 	pub alerts: GlobalConfigAlerts,
 	pub emote_set_ids: Vec<EmoteSetId>,

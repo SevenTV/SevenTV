@@ -6,7 +6,7 @@ pub type UserPresenceId = Id<UserPresence>;
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserPresence {
-	#[serde(rename = "_id")]
+	#[serde(rename = "_id", with = "crate::database::id::bson")]
 	pub id: UserPresenceId,
 	pub user_id: UserId,
 	pub platform: Platform,

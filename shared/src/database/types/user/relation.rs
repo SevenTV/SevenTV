@@ -6,7 +6,7 @@ pub type UserRelationId = Id<UserRelation>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserRelation {
-	#[serde(rename = "_id")]
+	#[serde(rename = "_id", with = "crate::database::id::bson")]
 	pub id: UserRelationId,
 	pub user_id: UserId,
 	pub other_user_id: UserId,

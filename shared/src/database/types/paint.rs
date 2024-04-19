@@ -13,7 +13,7 @@ pub type PaintId = Id<Paint>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Paint {
-	#[serde(rename = "_id")]
+	#[serde(rename = "_id", with = "crate::database::id::bson")]
 	pub id: PaintId,
 	pub name: String,
 	pub description: String,

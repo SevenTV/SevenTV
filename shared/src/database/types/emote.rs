@@ -14,7 +14,7 @@ pub type EmoteId = Id<Emote>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Emote {
-	#[serde(rename = "_id")]
+	#[serde(rename = "_id", with = "crate::database::id::bson")]
 	pub id: EmoteId,
 	pub owner_id: Option<UserId>,
 	pub default_name: String,

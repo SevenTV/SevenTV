@@ -6,7 +6,7 @@ pub type ProductCodeId = Id<ProductCode>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProductCode {
-	#[serde(rename = "_id")]
+	#[serde(rename = "_id", with = "crate::database::id::bson")]
 	pub id: ProductCodeId,
 	pub owner_id: Option<UserId>,
 	pub purchase_id: Option<ProductPurchaseId>,

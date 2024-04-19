@@ -35,7 +35,7 @@ pub type TicketId = Id<Ticket>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ticket {
-	#[serde(rename = "_id")]
+	#[serde(rename = "_id", with = "crate::database::id::bson")]
 	pub id: TicketId,
 	pub kind: TicketKind,
 	pub status: TicketStatus,
@@ -62,7 +62,7 @@ pub type TicketMemberId = Id<TicketMember>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct TicketMember {
-	#[serde(rename = "_id")]
+	#[serde(rename = "_id", with = "crate::database::id::bson")]
 	pub id: TicketMemberId,
 	pub ticket_id: TicketId,
 	pub user_id: UserId,
