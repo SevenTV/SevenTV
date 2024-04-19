@@ -1,7 +1,9 @@
 use std::fmt;
 
 use chrono::TimeZone;
-use mongodb::bson;
+use mongodb::bson::oid::{ObjectId, Error as OidError};
+use mongodb::bson::uuid::Uuid as BsonUuid;
+use mongodb::bson::Bson;
 
 pub struct Id<S = ()>(ulid::Ulid, std::marker::PhantomData<S>);
 
@@ -72,14 +74,14 @@ impl<S> Id<S> {
 			&& self.timestamp_ms() / 1000 <= u32::MAX as u64 // MongoDB ObjectId has a timestamp value of 4 bytes
 	}
 
-	pub const fn as_object_id(&self) -> Option<bson::oid::ObjectId> {
+	pub const fn as_object_id(&self) -> Option<ObjectId> {
 		if !self.is_object_id_compatible() {
 			None
 		} else {
 			let timestamp = ((self.timestamp_ms() / 1000) as u32).to_be_bytes();
 			let random = (self.random() as u64).to_be_bytes();
 
-			Some(bson::oid::ObjectId::from_bytes([
+			Some(ObjectId::from_bytes([
 				timestamp[0],
 				timestamp[1],
 				timestamp[2],
@@ -132,7 +134,7 @@ impl<S> Id<S> {
 		self.0.to_bytes()
 	}
 
-	pub const fn from_object_id(object_id: bson::oid::ObjectId) -> Self {
+	pub const fn from_object_id(object_id: ObjectId) -> Self {
 		let bytes = object_id.bytes();
 
 		let timestamp = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
@@ -165,14 +167,14 @@ impl<S> From<uuid::Uuid> for Id<S> {
 	}
 }
 
-impl<S> From<bson::uuid::Uuid> for Id<S> {
-	fn from(uuid: bson::uuid::Uuid) -> Self {
+impl<S> From<BsonUuid> for Id<S> {
+	fn from(uuid: BsonUuid) -> Self {
 		Self::from_bytes(uuid.bytes())
 	}
 }
 
-impl<S> From<bson::oid::ObjectId> for Id<S> {
-	fn from(object_id: bson::oid::ObjectId) -> Self {
+impl<S> From<ObjectId> for Id<S> {
+	fn from(object_id: ObjectId) -> Self {
 		Self::from_object_id(object_id)
 	}
 }
@@ -189,15 +191,15 @@ impl<S> From<Id<S>> for uuid::Uuid {
 	}
 }
 
-impl<S> From<Id<S>> for bson::uuid::Uuid {
-	fn from(id: Id<S>) -> bson::uuid::Uuid {
-		bson::uuid::Uuid::from_bytes(id.0.to_bytes())
+impl<S> From<Id<S>> for BsonUuid {
+	fn from(id: Id<S>) -> BsonUuid {
+		BsonUuid::from_bytes(id.0.to_bytes())
 	}
 }
 
-impl<S> From<Id<S>> for bson::Bson {
-	fn from(id: Id<S>) -> bson::Bson {
-		bson::uuid::Uuid::from(id).into()
+impl<S> From<Id<S>> for Bson {
+	fn from(id: Id<S>) -> Bson {
+		BsonUuid::from(id).into()
 	}
 }
 
@@ -214,7 +216,7 @@ pub enum IdFromStrError {
 	#[error("invalid uuid: {0}")]
 	Uuid(uuid::Error),
 	#[error("invalid object id: {0}")]
-	ObjectId(bson::oid::Error),
+	ObjectId(OidError),
 	#[error("invalid id length: {0}")]
 	InvalidLength(usize),
 }
@@ -240,34 +242,42 @@ impl<S> std::fmt::Display for Id<S> {
 
 impl<S> serde::Serialize for Id<S> {
 	fn serialize<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error> {
-		// This is a hack to check if the serializer is a bson serializer because
-		// bson::uuid::Uuid has a custom implementation for bson serialization
-		let serializer_name = std::any::type_name::<T>()
-			.trim_start_matches('&')
-			.trim_start_matches("mut")
-			.trim();
-		if serializer_name.starts_with("bson::") {
-			bson::uuid::Uuid::from(*self).serialize(serializer)
-		} else {
-			self.0.serialize(serializer)
+		match T::serde_kind() {
+			SerdeKindType::Bson => BsonUuid::from(*self).serialize(serializer),
+			SerdeKindType::Other => self.to_string().serialize(serializer),
 		}
 	}
 }
 
 impl<'de, S> serde::Deserialize<'de> for Id<S> {
 	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		// This is a hack to check if the deserializer is a bson deserializer because
-		// bson::uuid::Uuid has a custom implementation for bson deserialization
-		let deserializer_name = std::any::type_name::<D>()
-			.trim_start_matches('&')
-			.trim_start_matches("mut")
-			.trim();
+		match D::serde_kind() {
+			SerdeKindType::Bson => BsonUuid::deserialize(deserializer).map(Self::from),
+			SerdeKindType::Other => String::deserialize(deserializer)?.parse().map_err(serde::de::Error::custom),
+		}
+	}
+}
 
-		if deserializer_name.starts_with("bson::") {
-			bson::uuid::Uuid::deserialize(deserializer).map(Self::from)
+
+enum SerdeKindType {
+	Bson,
+	Other,
+}
+
+trait SerdeKind {
+	fn serde_kind() -> SerdeKindType;
+}
+
+impl<T> SerdeKind for T {
+	fn serde_kind() -> SerdeKindType {
+		let name = std::any::type_name::<T>();
+		let bson_serialize_name: &str = std::any::type_name::<mongodb::bson::ser::Serializer>();
+		let bson_deserialize_name: &str = std::any::type_name::<mongodb::bson::de::Deserializer>();
+
+		if name == bson_serialize_name || name == bson_deserialize_name {
+			SerdeKindType::Bson
 		} else {
-			let s = String::deserialize(deserializer)?;
-			s.parse().map_err(serde::de::Error::custom)
+			SerdeKindType::Other
 		}
 	}
 }
@@ -275,6 +285,7 @@ impl<'de, S> serde::Deserialize<'de> for Id<S> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use mongodb::bson;
 
 	#[test]
 	fn test_bson_serde() {
@@ -282,8 +293,6 @@ mod tests {
 		let id = Id::new();
 
 		assert_eq!(bson::to_bson(&id).unwrap(), bson::Bson::from(bson::uuid::Uuid::from(id)));
-
-		dbg!(bson::Bson::from(bson::uuid::Uuid::from(id)));
 
 		let returned: Id = bson::from_bson(bson::Bson::from(bson::uuid::Uuid::from(id))).unwrap();
 
