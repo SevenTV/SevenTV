@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::{Arc, Weak};
 
-use bson::oid::ObjectId;
 use http_body_util::{Full, StreamBody};
 use hyper::body::Incoming;
 use hyper_tungstenite::tungstenite::protocol::WebSocketConfig;
@@ -10,6 +9,7 @@ use scuffle_utils::context::ContextExt;
 use scuffle_utils::http::ext::{OptionExt, ResultExt};
 use scuffle_utils::http::router::ext::RequestExt;
 use scuffle_utils::http::RouteError;
+use shared::database::Id;
 use shared::event_api::types::{CloseCode, Opcode};
 use shared::event_api::{payload, Message, MessageData, MessagePayload};
 use tokio::time::Instant;
@@ -122,7 +122,7 @@ struct Connection {
 	/// The number of heartbeats that have been sent.
 	heartbeat_count: u64,
 	/// The ID of this connection.
-	id: ObjectId,
+	id: Id,
 	/// The TTL for this connection, in rust a Pin<Box<_>> is used to track the
 	/// state of the timer.
 	ttl: Pin<Box<tokio::time::Sleep>>,
@@ -175,7 +175,7 @@ impl Connection {
 			socket,
 			seq: 0,
 			heartbeat_count: 0,
-			id: ObjectId::new(),
+			id: Id::new(),
 			// We jitter the TTL to prevent all connections from expiring at the same time, which would cause a thundering
 			// herd.
 			ttl: Box::pin(tokio::time::sleep(jitter(global.config().api.ttl))),
@@ -200,7 +200,7 @@ impl Connection {
 		match self
 			.send_message(payload::Hello {
 				heartbeat_interval: self.heartbeat_interval.period().as_millis() as u32,
-				session_id: self.id,
+				session_id: self.id.into(),
 				subscription_limit: self.global.config().api.subscription_limit.map(|s| s as i32).unwrap_or(-1),
 				actor: None,
 				instance: Some(payload::HelloInstanceInfo {

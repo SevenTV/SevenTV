@@ -104,7 +104,7 @@ impl<S> Id<S> {
 		self.0.timestamp_ms()
 	}
 
-	pub fn datetime(&self) -> chrono::DateTime<chrono::Utc> {
+	pub fn timestamp(&self) -> chrono::DateTime<chrono::Utc> {
 		self.0.datetime().into()
 	}
 
@@ -262,10 +262,10 @@ impl<'de, S> serde::Deserialize<'de> for Id<S> {
 			.trim_start_matches('&')
 			.trim_start_matches("mut")
 			.trim();
+
 		if deserializer_name.starts_with("bson::") {
 			bson::uuid::Uuid::deserialize(deserializer).map(Self::from)
 		} else {
-			// Parse the string
 			let s = String::deserialize(deserializer)?;
 			s.parse().map_err(serde::de::Error::custom)
 		}
@@ -282,6 +282,8 @@ mod tests {
 		let id = Id::new();
 
 		assert_eq!(bson::to_bson(&id).unwrap(), bson::Bson::from(bson::uuid::Uuid::from(id)));
+
+		dbg!(bson::Bson::from(bson::uuid::Uuid::from(id)));
 
 		let returned: Id = bson::from_bson(bson::Bson::from(bson::uuid::Uuid::from(id))).unwrap();
 

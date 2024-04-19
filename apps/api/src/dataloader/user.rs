@@ -378,7 +378,7 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 	let purchases = purchases
 		.iter()
 		.map(|pp| Purchase {
-			date: pp.id.datetime(),
+			date: pp.id.timestamp(),
 			was_gift: pp.was_gift,
 			price: pp.price,
 		})
@@ -393,7 +393,7 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 			.map(|e| e.end - e.start)
 			.sum::<chrono::Duration>();
 
-		let created_at = up.id.datetime();
+		let created_at = up.id.timestamp();
 
 		let packed_end_at = created_at + total_time;
 

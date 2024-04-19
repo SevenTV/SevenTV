@@ -118,7 +118,7 @@ impl From<UserSession> for AuthJwtPayload {
 			user_id: session.user_id,
 			session_id: session.id,
 			expiration: Some(session.expires_at),
-			issued_at: session.id.datetime(),
+			issued_at: session.id.timestamp(),
 			not_before: None,
 			audience: None,
 		}
