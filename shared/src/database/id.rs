@@ -262,13 +262,17 @@ impl<S> std::fmt::Display for Id<S> {
 /// impl<T> IsBsonSerializer for T {
 /// 	default const IS_BSON_SERIALIZER: bool = false;
 /// }
-fn matches<U, T>() -> bool {
-	std::any::type_name::<U>().contains(std::any::type_name::<T>())
+fn matches_ser<U>() -> bool {
+	std::any::type_name::<U>().contains("bson::ser")
+}
+
+fn matches_de<U>() -> bool {
+	std::any::type_name::<U>().contains("bson::de")
 }
 
 impl<S> serde::Serialize for Id<S> {
 	fn serialize<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error> {
-		if matches::<T, mongodb::bson::ser::Serializer>() {
+		if matches_ser::<T>() {
 			BsonUuid::from(*self).serialize(serializer)
 		} else {
 			self.to_string().serialize(serializer)
@@ -278,7 +282,7 @@ impl<S> serde::Serialize for Id<S> {
 
 impl<'de, S> serde::Deserialize<'de> for Id<S> {
 	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		if matches::<D, mongodb::bson::de::Deserializer>() {
+		if matches_de::<D>() {
 			BsonUuid::deserialize(deserializer).map(Self::from)
 		} else {
 			String::deserialize(deserializer)?.parse().map_err(serde::de::Error::custom)
