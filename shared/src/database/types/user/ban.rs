@@ -6,7 +6,7 @@ pub type UserBanId = Id<UserBan>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserBan {
-	#[serde(rename = "_id", with = "crate::database::id::bson")]
+	#[serde(rename = "_id")]
 	pub id: UserBanId,
 	pub user_id: UserId,
 	pub created_by_id: Option<UserId>,

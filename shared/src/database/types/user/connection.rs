@@ -10,7 +10,7 @@ pub type UserConnectionId = Id<UserConnection>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserConnection {
-	#[serde(rename = "_id", with = "crate::database::id::bson")]
+	#[serde(rename = "_id")]
 	pub id: UserConnectionId,
 	pub user_id: UserId,
 	pub main_connection: bool,

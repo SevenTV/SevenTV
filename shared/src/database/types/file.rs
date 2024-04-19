@@ -6,7 +6,7 @@ pub type FileSetId = Id<FileSet>;
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FileSet {
-	#[serde(rename = "_id", with = "crate::database::id::bson")]
+	#[serde(rename = "_id")]
 	pub id: FileSetId,
 	pub kind: FileSetKind,
 	pub authenticated: bool,

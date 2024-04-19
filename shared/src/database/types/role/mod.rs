@@ -16,7 +16,7 @@ pub type RoleId = Id<Role>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Role {
-	#[serde(rename = "_id", with = "crate::database::id::bson")]
+	#[serde(rename = "_id")]
 	pub id: RoleId,
 	pub badge_ids: Vec<BadgeId>,
 	pub paint_ids: Vec<PaintId>,

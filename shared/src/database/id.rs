@@ -1,7 +1,7 @@
 use std::fmt;
 
 use chrono::TimeZone;
-use mongodb::bson::oid::{ObjectId, Error as OidError};
+use mongodb::bson::oid::{Error as OidError, ObjectId};
 use mongodb::bson::uuid::Uuid as BsonUuid;
 use mongodb::bson::Bson;
 
@@ -240,100 +240,61 @@ impl<S> std::fmt::Display for Id<S> {
 	}
 }
 
+/// Very Hacky way to check if the current serializer/deserializer is the
+/// MongoDB BSON one This is used to determine if we should
+/// serialize/deserialize the ID as a BSON UUID or a string This can be fixed
+/// when we use specialization (nightly only)
+///
+/// #![feature(min_specialization)]
+///
+/// trait IsBsonSerializer {
+/// 	const IS_BSON_SERIALIZER: bool;
+/// }
+///
+/// impl IsBsonSerializer for mongodb::bson::ser::Serializer {
+/// 	const IS_BSON_SERIALIZER: bool = true;
+/// }
+///
+/// impl IsBsonSerializer for mongodb::bson::de::Deserializer {
+/// 	const IS_BSON_SERIALIZER: bool = true;
+/// }
+///
+/// impl<T> IsBsonSerializer for T {
+/// 	default const IS_BSON_SERIALIZER: bool = false;
+/// }
+fn matches<U, T>() -> bool {
+	std::any::type_name::<U>().contains(std::any::type_name::<T>())
+}
+
 impl<S> serde::Serialize for Id<S> {
 	fn serialize<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error> {
-		self.to_string().serialize(serializer)
+		if matches::<T, mongodb::bson::ser::Serializer>() {
+			BsonUuid::from(*self).serialize(serializer)
+		} else {
+			self.to_string().serialize(serializer)
+		}
 	}
 }
 
 impl<'de, S> serde::Deserialize<'de> for Id<S> {
 	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		String::deserialize(deserializer)?.parse().map_err(serde::de::Error::custom)
-	}
-}
-
-pub mod bson {
-    use serde::{Deserialize, Serialize};
-
-    use super::*;
-
-	pub trait IdLike<S>: Sized {
-		fn encode<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error>;
-		fn decode<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error>;
-	}
-
-	impl<S> IdLike<S> for Id<S> {
-		fn encode<T: serde::Serializer>(&self, serializer: T) -> Result<T::Ok, T::Error> {
-			BsonUuid::from(*self).serialize(serializer)
-		}
-
-		fn decode<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		if matches::<D, mongodb::bson::de::Deserializer>() {
 			BsonUuid::deserialize(deserializer).map(Self::from)
+		} else {
+			String::deserialize(deserializer)?.parse().map_err(serde::de::Error::custom)
 		}
-	}
-
-	impl<S, T> IdLike<S> for Option<T>
-	where
-		T: IdLike<S>,
-	{
-		fn encode<U: serde::Serializer>(&self, serializer: U) -> Result<U::Ok, U::Error> {
-			match self {
-				Some(value) => value.encode(serializer),
-				None => serializer.serialize_none(),
-			}
-		}
-
-		fn decode<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-			struct Visitor<T, S>(std::marker::PhantomData<(T, S)>);
-
-			impl<'de, T, S> serde::de::Visitor<'de> for Visitor<T, S>
-			where
-				T: IdLike<S>,
-			{
-				type Value = Option<T>;
-
-				fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-					write!(formatter, "an optional value")
-				}
-
-				fn visit_none<E: serde::de::Error>(self) -> Result<Self::Value, E> {
-					Ok(None)
-				}
-
-				fn visit_some<D: serde::Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
-					T::decode(deserializer).map(Some)
-				}
-			}
-
-			deserializer.deserialize_option(Visitor(std::marker::PhantomData))
-		}
-	}
-
-	pub fn serialize<S, T, U>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
-	where
-		S: serde::Serializer,
-		T: IdLike<U>,
-	{
-		value.encode(serializer)
-	}
-
-	pub fn deserialize<'de, T, D, U>(deserializer: D) -> Result<T, D::Error>
-	where
-		D: serde::Deserializer<'de>,
-		T: IdLike<U>,
-	{
-		T::decode(deserializer)
 	}
 }
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	use mongodb::bson;
+
+	use super::*;
 
 	#[derive(serde::Serialize, serde::Deserialize)]
 	struct TestBson {
-		#[serde(with = "super::bson", rename = "_id")]
+		#[serde(rename = "_id")]
 		id: Id,
 	}
 

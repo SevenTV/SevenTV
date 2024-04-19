@@ -7,7 +7,7 @@ pub type UserEditorId = Id<UserEditor>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditor {
-	#[serde(rename = "_id", with = "crate::database::id::bson")]
+	#[serde(rename = "_id")]
 	pub id: UserEditorId,
 	pub user_id: UserId,
 	pub editor_id: UserId,
