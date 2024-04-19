@@ -42,7 +42,7 @@ impl Job for RolesJob {
 		match Role::collection(self.global.target_db())
 			.insert_one(
 				Role {
-					id: role.id,
+					id: role.id.into(),
 					badge_ids: vec![],
 					paint_ids: vec![],
 					emote_set_ids: vec![],
@@ -67,7 +67,7 @@ impl Job for RolesJob {
 	async fn finish(mut self) -> ProcessOutcome {
 		self.all_roles.sort_by_cached_key(|(_, p)| *p);
 
-		let role_ids = self.all_roles.into_iter().map(|(id, _)| id).collect();
+		let role_ids = self.all_roles.into_iter().map(|(id, _)| id.into()).collect();
 
 		let mut outcome = ProcessOutcome::default();
 

@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
-use shared::database::{Collection, EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetKind};
+use shared::database::{
+	Collection, EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetEmoteId, EmoteSetFlags, EmoteSetKind,
+};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -26,7 +27,11 @@ impl Job for EmoteSetsJob {
 			EmoteSetEmote::collection(global.target_db()).drop(None).await?;
 		}
 
-		Ok(Self { global, emote_sets: vec![], emote_set_emotes: vec![] })
+		Ok(Self {
+			global,
+			emote_sets: vec![],
+			emote_set_emotes: vec![],
+		})
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
@@ -51,15 +56,15 @@ impl Job for EmoteSetsJob {
 		}
 
 		self.emote_sets.push(EmoteSet {
-			id: emote_set.id,
-			owner_id: Some(emote_set.owner_id),
+			id: emote_set.id.into(),
+			owner_id: Some(emote_set.owner_id.into()),
 			name: emote_set.name,
 			kind,
 			tags: emote_set.tags,
 			capacity: emote_set.capacity,
 			flags,
 		});
-		
+
 		for (emote_id, e) in emote_set
 			.emotes
 			.into_iter()
@@ -88,10 +93,10 @@ impl Job for EmoteSetsJob {
 			};
 
 			self.emote_set_emotes.push(EmoteSetEmote {
-				id: ObjectId::new(),
-				emote_set_id: emote_set.id,
-				emote_id,
-				added_by_id: e.actor_id,
+				id: EmoteSetEmoteId::new(),
+				emote_set_id: emote_set.id.into(),
+				emote_id: emote_id.into(),
+				added_by_id: e.actor_id.map(Into::into),
 				name: emote_name,
 				flags,
 			});

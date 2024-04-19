@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use mongodb::bson::doc;
 use mongodb::options::InsertManyOptions;
-use shared::database::{Collection, Emote, EmoteFlags, FileSet, FileSetKind, FileSetProperties};
+use shared::database::{Collection, Emote, EmoteFlags, EmoteId, FileSet, FileSetId, FileSetKind, FileSetProperties};
 use shared::types::old::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
@@ -47,9 +47,7 @@ impl Job for EmotesJob {
 		let mut outcome = ProcessOutcome::default();
 
 		for v in emote.versions {
-			let created_at = v.created_at.into_chrono().into();
-
-			let file_set_id = crate::database::object_id_from_datetime(created_at);
+			let file_set_id = FileSetId::with_timestamp(v.created_at.into_chrono());
 
 			let outputs = match image_files_to_file_properties(v.image_files) {
 				Ok(outputs) => outputs,
@@ -82,8 +80,8 @@ impl Job for EmotesJob {
 			}
 
 			self.emotes.push(Emote {
-				id: crate::database::object_id_from_datetime(created_at),
-				owner_id: Some(emote.owner_id),
+				id: v.id.into(),
+				owner_id: Some(emote.owner_id.into()),
 				default_name: v.name.unwrap_or_else(|| emote.name.clone()),
 				tags: emote.tags.clone(),
 				animated: v.animated,

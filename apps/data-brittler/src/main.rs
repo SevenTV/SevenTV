@@ -6,7 +6,6 @@ use scuffle_utils::prelude::FutureTimeout;
 use tokio::signal::unix::SignalKind;
 
 mod config;
-mod database;
 mod error;
 mod format;
 mod global;

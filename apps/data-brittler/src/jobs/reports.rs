@@ -3,7 +3,7 @@ use std::sync::Arc;
 use fnv::FnvHashSet;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
-use shared::database::{self, Collection, Ticket, TicketKind, TicketMember, TicketPriority};
+use shared::database::{self, Collection, Ticket, TicketKind, TicketMember, TicketMemberId, TicketPriority};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -44,7 +44,7 @@ impl Job for ReportsJob {
 		// Only emote reports because reporting users was never implemented
 
 		self.tickets.push(Ticket {
-			id: report.id,
+			id: report.id.into(),
 			kind: TicketKind::EmoteReport,
 			status: report.status.into(),
 			priority: TicketPriority::Low,
@@ -55,9 +55,9 @@ impl Job for ReportsJob {
 
 		let op = report.actor_id;
 		self.ticket_members.push(TicketMember {
-			id: ObjectId::new(),
-			ticket_id: report.id,
-			user_id: op,
+			id: TicketMemberId::new(),
+			ticket_id: report.id.into(),
+			user_id: op.into(),
 			kind: database::TicketMemberKind::Op,
 			notifications: true,
 		});
@@ -66,9 +66,9 @@ impl Job for ReportsJob {
 		for assignee in report.assignee_ids {
 			if self.all_members.insert((report.id, assignee)) {
 				self.ticket_members.push(TicketMember {
-					id: ObjectId::new(),
-					ticket_id: report.id,
-					user_id: assignee,
+					id: TicketMemberId::new(),
+					ticket_id: report.id.into(),
+					user_id: assignee.into(),
 					kind: database::TicketMemberKind::Staff,
 					notifications: true,
 				});

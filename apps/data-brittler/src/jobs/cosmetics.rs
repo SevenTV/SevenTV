@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::vec;
 
 use mongodb::bson::doc;
-use shared::database::{self, Badge, Collection, FileSet, FileSetKind, FileSetProperties, Paint};
+use shared::database::{self, Badge, Collection, FileSet, FileSetId, FileSetKind, FileSetProperties, Paint};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -55,7 +55,7 @@ impl Job for CosmeticsJob {
 
 		match cosmetic.data {
 			types::CosmeticData::Badge { tooltip, tag } => {
-				let file_set_id = crate::database::object_id_from_datetime(cosmetic.id.timestamp().to_chrono());
+				let file_set_id = FileSetId::with_timestamp(cosmetic.id.timestamp().to_chrono());
 
 				// TODO: image file set properties
 				// TODO: maybe also reupload the image to the image processor because it's only
@@ -90,7 +90,7 @@ impl Job for CosmeticsJob {
 				match Badge::collection(self.global.target_db())
 					.insert_one(
 						Badge {
-							id: cosmetic.id,
+							id: cosmetic.id.into(),
 							name: cosmetic.name,
 							description: tooltip,
 							tags,
@@ -135,7 +135,7 @@ impl Job for CosmeticsJob {
 						image_url: Some(image_url),
 						..
 					} => {
-						let file_set_id = crate::database::object_id_from_datetime(cosmetic.id.timestamp().to_chrono());
+						let file_set_id = FileSetId::with_timestamp(cosmetic.id.timestamp().to_chrono());
 
 						let image_data = match self.http_client.get(image_url).send().await {
 							Ok(res) => res.bytes().await.unwrap(),
@@ -185,7 +185,7 @@ impl Job for CosmeticsJob {
 				match Paint::collection(self.global.target_db())
 					.insert_one(
 						Paint {
-							id: cosmetic.id,
+							id: cosmetic.id.into(),
 							name: cosmetic.name,
 							description: String::new(),
 							tags: vec![],

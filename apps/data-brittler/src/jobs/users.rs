@@ -7,7 +7,8 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
 use shared::database::{
-	self, Collection, FileSet, FileSetProperties, Platform, User, UserConnection, UserEditor, UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle
+	self, Collection, FileSet, FileSetProperties, Platform, User, UserConnection, UserConnectionId, UserEditor,
+	UserEditorId, UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle,
 };
 
 use super::{Job, ProcessOutcome};
@@ -120,7 +121,7 @@ impl Job for UsersJob {
 				};
 
 				self.file_sets.push(FileSet {
-					id,
+					id: id.into(),
 					kind: database::FileSetKind::ProfilePicture,
 					authenticated: false,
 					properties: FileSetProperties::Image {
@@ -137,29 +138,29 @@ impl Job for UsersJob {
 		};
 
 		self.users.push(User {
-			id: user.id,
+			id: user.id.into(),
 			email: user.email,
 			email_verified: false,
 			password_hash: None,
 			settings: UserSettings::default(),
 			two_fa: None,
 			style: UserStyle {
-				active_badge_id,
-				active_paint_id,
-				pending_profile_picture_id,
-				active_profile_picture_id,
-				all_profile_picture_ids: active_profile_picture_id.map(|id| vec![id]).unwrap_or_default(),
+				active_badge_id: active_badge_id.map(Into::into),
+				active_paint_id: active_paint_id.map(Into::into),
+				pending_profile_picture_id: pending_profile_picture_id.map(Into::into),
+				active_profile_picture_id: active_profile_picture_id.map(Into::into),
+				all_profile_picture_ids: active_profile_picture_id.map(|id| vec![id.into()]).unwrap_or_default(),
 			},
 			active_emote_set_ids: vec![],
 			grants: UserGrants {
-				role_ids: roles.into_iter().collect(),
+				role_ids: roles.into_iter().map(|rid| rid.into()).collect(),
 				..Default::default()
 			},
 			entitled_cache: UserEntitledCache::default(),
 		});
 
 		for (i, connection) in user.connections.into_iter().enumerate() {
-			let id = crate::database::object_id_from_datetime(connection.linked_at.into_chrono());
+			let id = UserConnectionId::with_timestamp(connection.linked_at.into_chrono());
 
 			let (platform, platform_id, platform_username, platform_display_name, platform_avatar_url) =
 				match connection.platform {
@@ -201,8 +202,8 @@ impl Job for UsersJob {
 
 			if self.all_connections.insert((platform, platform_id.clone())) {
 				self.connections.push(UserConnection {
-					id,
-					user_id: user.id,
+					id: id.into(),
+					user_id: user.id.into(),
 					main_connection: i == 0,
 					platform,
 					platform_id,
@@ -223,13 +224,13 @@ impl Job for UsersJob {
 				let permissions = UserEditorPermissions {};
 
 				self.editors.push(UserEditor {
-					id: ObjectId::new(),
-					user_id: user.id,
-					editor_id,
+					id: UserEditorId::new(),
+					user_id: user.id.into(),
+					editor_id: editor_id.into(),
 					state: UserEditorState::Accepted,
 					notes: None,
 					permissions,
-					added_by_id: Some(user.id),
+					added_by_id: Some(user.id.into()),
 				});
 			}
 		}
@@ -254,10 +255,12 @@ impl Job for UsersJob {
 			connections.insert_many(&self.connections, insert_options.clone()),
 			editors.insert_many(&self.editors, insert_options),
 		);
-		let res =
-			vec![res.0, res.1, res.2, res.3]
-				.into_iter()
-				.zip(vec![self.file_sets.len(), self.users.len(), self.connections.len(), self.editors.len()]);
+		let res = vec![res.0, res.1, res.2, res.3].into_iter().zip(vec![
+			self.file_sets.len(),
+			self.users.len(),
+			self.connections.len(),
+			self.editors.len(),
+		]);
 
 		for (res, len) in res {
 			match res {

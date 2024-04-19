@@ -1,5 +1,5 @@
-use shared::database::Platform;
 use mongodb::bson::oid::ObjectId;
+use shared::database::Platform;
 
 use crate::types;
 

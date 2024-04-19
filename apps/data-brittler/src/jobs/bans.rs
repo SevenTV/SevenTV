@@ -36,9 +36,9 @@ impl Job for BansJob {
 		match UserBan::collection(self.global.target_db())
 			.insert_one(
 				UserBan {
-					id: ban.id,
-					user_id: ban.victim_id,
-					created_by_id: Some(ban.actor_id),
+					id: ban.id.into(),
+					user_id: ban.victim_id.into(),
+					created_by_id: Some(ban.actor_id.into()),
 					reason: ban.reason,
 					expires_at: Some(ban.expire_at.into_chrono()),
 				},

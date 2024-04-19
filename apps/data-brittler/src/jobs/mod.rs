@@ -198,8 +198,8 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	.map(|j| futures.push(j));
 	// AuditLogsJob::conditional_init_and_run(
 	// 	&global,
-	// 	any_run && global.config().audit_logs || !any_run && !global.config().skip_audit_logs,
-	// )?
+	// 	any_run && global.config().audit_logs || !any_run &&
+	// !global.config().skip_audit_logs, )?
 	// .map(|j| futures.push(j));
 
 	let results: Vec<JobOutcome> = futures.try_collect().await?;

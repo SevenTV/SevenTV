@@ -27,8 +27,12 @@ impl Global {
 			ctx,
 			config,
 			clickhouse,
-			source_db: mongo_source.default_database().unwrap_or_else(|| mongo_source.database("7tv")),
-			target_db: mongo_target.default_database().unwrap_or_else(|| mongo_source.database("7tv-new")),
+			source_db: mongo_source
+				.default_database()
+				.unwrap_or_else(|| mongo_source.database("7tv")),
+			target_db: mongo_target
+				.default_database()
+				.unwrap_or_else(|| mongo_source.database("7tv-new")),
 		})
 	}
 

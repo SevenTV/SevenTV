@@ -1,6 +1,6 @@
+use mongodb::bson::oid::ObjectId;
 use serde::Deserialize;
 use shared::database;
-use mongodb::bson::oid::ObjectId;
 
 #[derive(Debug, Deserialize)]
 pub struct Report {
