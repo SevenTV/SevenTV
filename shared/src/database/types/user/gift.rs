@@ -1,15 +1,16 @@
-use bson::oid::ObjectId;
+use super::UserId;
+use crate::database::{Collection, Id, ProductCodeId};
 
-use crate::database::Collection;
+pub type UserGiftId = Id<UserGift>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserGift {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub sender_id: Option<ObjectId>,
-	pub recipient_id: ObjectId,
-	pub product_code_id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: UserGiftId,
+	pub sender_id: Option<UserId>,
+	pub recipient_id: UserId,
+	pub product_code_id: ProductCodeId,
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 	pub status: UserGiftStatus,
 	pub message: Option<String>,

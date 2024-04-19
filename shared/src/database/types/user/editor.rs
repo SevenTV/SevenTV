@@ -1,19 +1,20 @@
-use bson::oid::ObjectId;
-
-use crate::database::Collection;
+use super::UserId;
+use crate::database::{Collection, Id};
 use crate::types::old::{UserEditorModel, UserEditorModelPermission};
+
+pub type UserEditorId = Id<UserEditor>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditor {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub user_id: ObjectId,
-	pub editor_id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: UserEditorId,
+	pub user_id: UserId,
+	pub editor_id: UserId,
 	pub state: UserEditorState,
-	pub notes: String,
+	pub notes: Option<String>,
 	pub permissions: UserEditorPermissions,
-	pub added_by_id: Option<ObjectId>,
+	pub added_by_id: Option<UserId>,
 }
 
 impl UserEditor {
@@ -24,7 +25,7 @@ impl UserEditor {
 
 		Some(UserEditorModel {
 			id: self.editor_id,
-			added_at: self.id.timestamp().timestamp_millis(),
+			added_at: self.id.timestamp_ms(),
 			permissions: UserEditorModelPermission::ModifyEmotes | UserEditorModelPermission::ManageEmoteSets,
 			visible: true,
 		})

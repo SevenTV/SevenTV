@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "apps/*",
+    "apps/api",
     "shared",
 ]
 
@@ -24,9 +24,3 @@ strip = false
 
 [workspace.dependencies]
 shared = { path = "shared" }
-
-# These patches are pending PRs to the upstream crates
-# TODO: Remove these once the PRs are merged
-[patch.crates-io]
-# https://github.com/remkop22/postgres-from-row/pull/9
-postgres-from-row = { git = "https://github.com/ScuffleTV/postgres-from-row.git", branch = "troy/from_fn" }

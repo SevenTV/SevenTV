@@ -1,8 +1,7 @@
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, EmoteSet, EmoteSetEmote};
+use shared::database::{Collection, EmoteSet, EmoteSetEmote, EmoteSetId, UserId};
 
 pub struct EmoteSetByIdLoader {
 	db: mongodb::Database,
@@ -16,7 +15,7 @@ impl EmoteSetByIdLoader {
 
 impl Loader for EmoteSetByIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = EmoteSetId;
 	type Value = EmoteSet;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
@@ -52,7 +51,7 @@ impl EmoteSetEmoteByIdLoader {
 
 impl Loader for EmoteSetEmoteByIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = EmoteSetId;
 	type Value = Vec<EmoteSetEmote>;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
@@ -88,7 +87,7 @@ impl EmoteSetByUserIdLoader {
 
 impl Loader for EmoteSetByUserIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = UserId;
 	type Value = Vec<EmoteSet>;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]

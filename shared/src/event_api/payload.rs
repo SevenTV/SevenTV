@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use bson::oid::ObjectId;
-
 // There is a lot of code in this file. I will try to explain it as best as I can.
 // These are the structs that were used in the previous implementation of the event-api, for the payloads.
 // When events are dispatched on NATs or received from the websocket, they SHOULD be in the form of these structs.
@@ -11,16 +9,17 @@ use bson::oid::ObjectId;
 // it rather than silently ignoring it, and potentially causing issues.
 use super::types::{self, ChangeMap, CloseCode, EventType, SessionEffect};
 use super::MessagePayload;
+use crate::database::{Id, UserId};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct Hello {
 	pub heartbeat_interval: u32,
-	pub session_id: ObjectId,
+	pub session_id: Id,
 	pub subscription_limit: i32,
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub actor: Option<ObjectId>,
+	pub actor: Option<UserId>,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub instance: Option<HelloInstanceInfo>,
 }
@@ -172,7 +171,7 @@ impl MessagePayload for Signal {
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct SignalUser {
-	pub id: ObjectId,
+	pub id: UserId,
 	pub channel_id: String,
 	pub username: String,
 	pub display_name: String,

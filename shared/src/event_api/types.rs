@@ -1,11 +1,10 @@
 // use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode as
 // WsCloseCode;
 
-use bson::oid::ObjectId;
-
 // See the comment on the `payload.rs` file for a description of what this file
 // is.
 use super::payload::{Subscribe, Unsubscribe};
+use crate::database::Id;
 use crate::types::old::UserPartialModel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -314,7 +313,7 @@ fn is_false(v: &bool) -> bool {
 #[serde(deny_unknown_fields)]
 pub struct ChangeMap {
 	#[serde(default)]
-	pub id: ObjectId,
+	pub id: Id,
 	pub kind: ObjectKind,
 	#[serde(skip_serializing_if = "is_false")]
 	#[serde(default)]

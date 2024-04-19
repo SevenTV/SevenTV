@@ -1,7 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, Role};
+use shared::database::{Collection, Role, RoleId};
 
 pub struct RoleByIdLoader {
 	db: mongodb::Database,
@@ -15,7 +14,7 @@ impl RoleByIdLoader {
 
 impl Loader for RoleByIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = RoleId;
 	type Value = Role;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]

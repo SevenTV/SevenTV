@@ -1,14 +1,14 @@
 use bitmask_enum::bitmask;
-use bson::oid::ObjectId;
 
 use super::{ImageHost, UserPartialModel};
+use crate::database::{EmoteId, UserId};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L12
 pub struct EmoteModel {
-	pub id: ObjectId,
+	pub id: EmoteId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	pub tags: Vec<String>,
@@ -18,7 +18,7 @@ pub struct EmoteModel {
 	pub animated: bool,
 	pub owner: Option<UserPartialModel>,
 	#[serde(skip)]
-	pub owner_id: ObjectId,
+	pub owner_id: UserId,
 	pub host: ImageHost,
 	pub versions: Vec<EmoteVersionModel>,
 }
@@ -28,7 +28,7 @@ pub struct EmoteModel {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L27
 pub struct EmotePartialModel {
-	pub id: ObjectId,
+	pub id: EmoteId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
@@ -47,7 +47,7 @@ pub struct EmotePartialModel {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L40
 pub struct EmoteVersionModel {
-	pub id: ObjectId,
+	pub id: EmoteId,
 	pub name: String,
 	pub description: String,
 	pub lifecycle: EmoteLifecycleModel,
@@ -57,7 +57,7 @@ pub struct EmoteVersionModel {
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub host: Option<ImageHost>,
 	#[serde(rename = "createdAt")]
-	pub created_at: i64,
+	pub created_at: u64,
 }
 
 #[derive(Debug, Default, Clone, Copy, utoipa::ToSchema, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]

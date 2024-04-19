@@ -3,15 +3,14 @@ use std::sync::Arc;
 use chrono::{DateTime, TimeZone, Utc};
 use hmac::{Hmac, Mac};
 use jwt_next::{Claims, Header, RegisteredClaims, SignWithKey, Token, VerifyWithKey};
-use mongodb::bson::oid::ObjectId;
 use sha2::Sha256;
-use shared::database::UserSession;
+use shared::database::{UserId, UserSession, UserSessionId};
 
 use crate::global::Global;
 
 pub struct AuthJwtPayload {
-	pub user_id: ObjectId,
-	pub session_id: ObjectId,
+	pub user_id: UserId,
+	pub session_id: UserSessionId,
 	pub expiration: Option<DateTime<Utc>>,
 	pub issued_at: DateTime<Utc>,
 	pub not_before: Option<DateTime<Utc>>,
@@ -107,12 +106,8 @@ impl JwtState for AuthJwtPayload {
 				.registered
 				.not_before
 				.and_then(|x| Utc.timestamp_opt(x as i64, 0).single()),
-			session_id: claims
-				.registered
-				.json_web_token_id
-				.as_ref()
-				.and_then(|x| ObjectId::parse_str(x).ok())?,
-			user_id: claims.registered.subject.as_ref().and_then(|x| ObjectId::parse_str(x).ok())?,
+			session_id: claims.registered.json_web_token_id.as_ref().and_then(|x| x.parse().ok())?,
+			user_id: claims.registered.subject.as_ref().and_then(|x| x.parse().ok())?,
 		})
 	}
 }
@@ -123,7 +118,7 @@ impl From<UserSession> for AuthJwtPayload {
 			user_id: session.user_id,
 			session_id: session.id,
 			expiration: Some(session.expires_at),
-			issued_at: session.id.timestamp().into(),
+			issued_at: session.id.datetime(),
 			not_before: None,
 			audience: None,
 		}
@@ -132,12 +127,12 @@ impl From<UserSession> for AuthJwtPayload {
 
 pub struct CsrfJwtPayload {
 	pub random: [u8; 32],
-	pub user_id: Option<ObjectId>,
+	pub user_id: Option<UserId>,
 	pub expiration: DateTime<Utc>,
 }
 
 impl CsrfJwtPayload {
-	pub fn new(user_id: Option<ObjectId>) -> Self {
+	pub fn new(user_id: Option<UserId>) -> Self {
 		Self {
 			random: rand::random(),
 			user_id,
@@ -174,7 +169,7 @@ impl JwtState for CsrfJwtPayload {
 	fn from_claims(claims: &Claims) -> Option<Self> {
 		Some(Self {
 			expiration: Utc.timestamp_opt(claims.registered.expiration? as i64, 0).single()?,
-			user_id: claims.registered.audience.as_ref().and_then(|x| ObjectId::parse_str(x).ok()),
+			user_id: claims.registered.audience.as_ref().and_then(|x| x.parse().ok()),
 			random: hex::decode(claims.registered.json_web_token_id.as_ref()?)
 				.ok()?
 				.try_into()

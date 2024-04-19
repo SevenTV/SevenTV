@@ -1,4 +1,4 @@
-use bson::oid::ObjectId;
+use crate::database::Id;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
@@ -18,11 +18,11 @@ pub enum ImageHostKind {
 }
 
 impl ImageHostKind {
-	pub fn create_base_url(&self, base: &str, id: ObjectId) -> String {
+	pub fn create_base_url(&self, base: &str, id: Id) -> String {
 		format!("{base}/{self}/{id}")
 	}
 
-	pub fn create_full_url(&self, base: &str, id: ObjectId, scale: u32, format: ImageFormat) -> String {
+	pub fn create_full_url(&self, base: &str, id: Id, scale: u32, format: ImageFormat) -> String {
 		format!("{base}/{self}/{id}/{scale}x.{}", format.as_str())
 	}
 }
@@ -39,7 +39,7 @@ impl std::fmt::Display for ImageHostKind {
 }
 
 impl ImageHost {
-	pub fn new(base_url: &str, kind: ImageHostKind, id: ObjectId, files: Vec<ImageFile>) -> Self {
+	pub fn new(base_url: &str, kind: ImageHostKind, id: Id, files: Vec<ImageFile>) -> Self {
 		Self {
 			url: kind.create_base_url(base_url, id),
 			files,

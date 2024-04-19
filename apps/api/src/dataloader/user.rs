@@ -5,12 +5,11 @@ use anyhow::Context;
 use chrono::Datelike;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use mongodb::bson::oid::ObjectId;
 use mongodb::bson::to_bson;
 use rand::Rng;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
 use shared::database::{
-	Collection, ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserProduct,
+	Collection, ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserId, UserProduct,
 	UserProductDataPurchase, UserProductDataSubscriptionEntryStatus,
 };
 use tokio::sync::{Mutex, OnceCell};
@@ -22,7 +21,7 @@ pub struct UserLoader {
 	user_loader: DataLoader<InternalUserLoader>,
 	user_product_purchase_loader: DataLoader<UserProductPurchaseLoader>,
 	user_products_loader: DataLoader<UserProductLoader>,
-	requests: Mutex<HashMap<ObjectId, SyncToken>>,
+	requests: Mutex<HashMap<UserId, SyncToken>>,
 }
 
 #[derive(Clone)]
@@ -43,7 +42,7 @@ impl InternalUserLoader {
 
 impl Loader for InternalUserLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = UserId;
 	type Value = User;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
@@ -79,7 +78,7 @@ impl UserProductPurchaseLoader {
 
 impl Loader for UserProductPurchaseLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = UserId;
 	type Value = Vec<ProductPurchase>;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
@@ -89,7 +88,7 @@ impl Loader for UserProductPurchaseLoader {
 				mongodb::bson::doc! {
 					"$and": [
 						{
-							"product_id": {
+							"user_id": {
 								"$in": keys,
 							}
 						},
@@ -108,7 +107,7 @@ impl Loader for UserProductPurchaseLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.product_id))
+		Ok(results.into_iter().into_group_map_by(|r| r.user_id.unwrap()))
 	}
 }
 
@@ -124,7 +123,7 @@ impl UserProductLoader {
 
 impl Loader for UserProductLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = UserId;
 	type Value = Vec<UserProduct>;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
@@ -163,8 +162,8 @@ impl UserLoader {
 	pub async fn load_many(
 		&self,
 		global: &Arc<Global>,
-		user_ids: impl IntoIterator<Item = ObjectId>,
-	) -> Result<HashMap<ObjectId, User>, ()> {
+		user_ids: impl IntoIterator<Item = UserId>,
+	) -> Result<HashMap<UserId, User>, ()> {
 		let user_ids = user_ids
 			.into_iter()
 			.collect::<fnv::FnvHashSet<_>>()
@@ -182,7 +181,7 @@ impl UserLoader {
 		Ok(users)
 	}
 
-	pub async fn load(&self, global: &Arc<Global>, user_id: ObjectId) -> Result<Option<User>, ()> {
+	pub async fn load(&self, global: &Arc<Global>, user_id: UserId) -> Result<Option<User>, ()> {
 		let token = {
 			let mut inserted = false;
 
@@ -227,7 +226,7 @@ impl UserLoader {
 		result
 	}
 
-	async fn internal_load_fn(&self, global: &Arc<Global>, user_id: ObjectId) -> anyhow::Result<Option<User>> {
+	async fn internal_load_fn(&self, global: &Arc<Global>, user_id: UserId) -> anyhow::Result<Option<User>> {
 		let Ok(Some(mut user)) = self.user_loader.load(user_id).await else {
 			return Ok(None);
 		};
@@ -236,26 +235,25 @@ impl UserLoader {
 			return Ok(Some(user));
 		}
 
-		let Ok(product_purchases) = self.user_product_purchase_loader.load(user_id).await.map(Option::unwrap_or_default) else {
+		let Ok(product_purchases) = self
+			.user_product_purchase_loader
+			.load(user_id)
+			.await
+			.map(Option::unwrap_or_default)
+		else {
 			anyhow::bail!("failed to load user product purchases");
 		};
 
-		let product_purchases =
-			product_purchases
-				.into_iter()
-				.fold(HashMap::<ObjectId, Vec<ProductPurchase>>::new(), |mut map, pp| {
-					map.entry(pp.product_id).or_default().push(pp);
-					map
-				});
+		let product_purchases = product_purchases.into_iter().into_group_map_by(|pp| pp.product_id);
 
 		let Ok(user_products) = self.user_products_loader.load(user_id).await.map(Option::unwrap_or_default) else {
 			anyhow::bail!("failed to load user products");
 		};
 
-		let user_products = user_products.into_iter().fold(HashMap::new(), |mut map, sub| {
-			map.entry(sub.product_id).or_insert(sub);
-			map
-		});
+		let user_products = user_products
+			.into_iter()
+			.map(|up| (up.product_id, up))
+			.collect::<HashMap<_, _>>();
 
 		let Ok(products) = global
 			.product_by_id_loader()
@@ -380,7 +378,7 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 	let purchases = purchases
 		.iter()
 		.map(|pp| Purchase {
-			date: pp.id.timestamp().into(),
+			date: pp.id.datetime(),
 			was_gift: pp.was_gift,
 			price: pp.price,
 		})
@@ -395,7 +393,7 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 			.map(|e| e.end - e.start)
 			.sum::<chrono::Duration>();
 
-		let created_at = up.id.timestamp().to_chrono();
+		let created_at = up.id.datetime();
 
 		let packed_end_at = created_at + total_time;
 

@@ -1,15 +1,16 @@
-use bson::oid::ObjectId;
+use super::{EmoteSetId, RoleId};
+use crate::database::{Collection, Id};
 
-use crate::database::Collection;
+pub type GlobalConfigId = Id<GlobalConfig>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct GlobalConfig {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: GlobalConfigId,
 	pub alerts: GlobalConfigAlerts,
-	pub emote_set_ids: Vec<ObjectId>,
-	pub role_ids: Vec<ObjectId>,
+	pub emote_set_ids: Vec<EmoteSetId>,
+	pub role_ids: Vec<RoleId>,
 }
 
 impl Collection for GlobalConfig {

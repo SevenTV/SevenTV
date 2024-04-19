@@ -1,14 +1,15 @@
-use bson::oid::ObjectId;
+use super::UserId;
+use crate::database::{Collection, Id};
 
-use crate::database::Collection;
+pub type UserBanId = Id<UserBan>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserBan {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub user_id: ObjectId,
-	pub created_by_id: Option<ObjectId>,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: UserBanId,
+	pub user_id: UserId,
+	pub created_by_id: Option<UserId>,
 	pub reason: String,
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }

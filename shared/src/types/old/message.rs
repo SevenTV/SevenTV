@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
-use bson::oid::ObjectId;
+use crate::database::{Id, UserId};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/message.model.go#L9
 pub struct InboxMessageModel {
-	pub id: ObjectId,
+	pub id: Id,
 	pub kind: MessageKind,
 	#[serde(rename = "createdAt")]
 	pub created_at: i64,
-	pub author_id: Option<ObjectId>,
+	pub author_id: Option<UserId>,
 	pub read: bool,
 	#[serde(rename = "readAt")]
 	pub read_at: Option<i64>,
@@ -28,15 +28,15 @@ pub struct InboxMessageModel {
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/message.model.go#L24
 pub struct ModRequestMessageModel {
-	pub id: ObjectId,
+	pub id: Id,
 	pub kind: MessageKind,
 	#[serde(rename = "createdAt")]
 	pub created_at: i64,
-	pub author_id: Option<ObjectId>,
+	pub author_id: Option<UserId>,
 	#[serde(rename = "targetKind")]
 	pub target_kind: i32,
 	#[serde(rename = "targetID")]
-	pub target_id: ObjectId,
+	pub target_id: UserId,
 	pub read: bool,
 	pub wish: String,
 	pub actor_country_name: String,

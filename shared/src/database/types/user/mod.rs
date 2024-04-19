@@ -10,8 +10,6 @@ mod settings;
 
 use std::sync::Arc;
 
-use bson::oid::ObjectId;
-use bson::Bson;
 use hyper::StatusCode;
 use scuffle_utils::http::ext::OptionExt;
 use scuffle_utils::http::router::error::RouterError;
@@ -25,26 +23,28 @@ pub use self::product::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
-use super::{FileSet, ImageFormat, Permissions, Role};
-use crate::database::Collection;
+use super::{BadgeId, EmoteSetId, FileSet, FileSetId, ImageFormat, PaintId, Permissions, ProductId, Role, RoleId};
+use crate::database::{Collection, Id};
 use crate::types::old::{
 	CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, ImageFormat as ImageFormatOld, ImageHostKind,
 	UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel, UserPartialModel,
 	UserStyle as UserStyleOld, UserTypeModel,
 };
 
+pub type UserId = Id<User>;
+
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct User {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: UserId,
 	pub email: Option<String>,
 	pub email_verified: bool,
 	pub password_hash: Option<String>,
 	pub settings: UserSettings,
 	pub two_fa: Option<UserTwoFa>,
 	pub style: UserStyle,
-	pub active_emote_set_ids: Vec<ObjectId>,
+	pub active_emote_set_ids: Vec<EmoteSetId>,
 	pub grants: UserGrants,
 	pub entitled_cache: UserEntitledCache,
 }
@@ -52,10 +52,10 @@ pub struct User {
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserGrants {
-	pub role_ids: Vec<ObjectId>,
-	pub badge_ids: Vec<ObjectId>,
-	pub paint_ids: Vec<ObjectId>,
-	pub emote_set_ids: Vec<ObjectId>,
+	pub role_ids: Vec<RoleId>,
+	pub badge_ids: Vec<BadgeId>,
+	pub paint_ids: Vec<PaintId>,
+	pub emote_set_ids: Vec<EmoteSetId>,
 }
 
 impl User {
@@ -88,20 +88,21 @@ pub struct UserTwoFa {
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserStyle {
-	pub active_badge_id: Option<ObjectId>,
-	pub active_paint_id: Option<ObjectId>,
-	pub active_profile_picture_id: Option<ObjectId>,
-	pub all_profile_picture_ids: Vec<ObjectId>,
+	pub active_badge_id: Option<BadgeId>,
+	pub active_paint_id: Option<PaintId>,
+	pub active_profile_picture_id: Option<FileSetId>,
+	pub all_profile_picture_ids: Vec<FileSetId>,
+	pub pending_profile_picture_id: Option<FileSetId>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserEntitledCache {
-	pub role_ids: Vec<ObjectId>,
-	pub badge_ids: Vec<ObjectId>,
-	pub emote_set_ids: Vec<ObjectId>,
-	pub paint_ids: Vec<ObjectId>,
-	pub product_ids: Vec<ObjectId>,
+	pub role_ids: Vec<RoleId>,
+	pub badge_ids: Vec<BadgeId>,
+	pub emote_set_ids: Vec<EmoteSetId>,
+	pub paint_ids: Vec<PaintId>,
+	pub product_ids: Vec<ProductId>,
 	pub invalidated_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -141,7 +142,7 @@ impl User {
 			Some(
 				ImageHostKind::ProfilePicture.create_full_url(
 					cdn_base_url,
-					f.id,
+					f.id.cast(),
 					file.extra.scale,
 					file.extra
 						.variants
@@ -180,7 +181,7 @@ impl User {
 		editors: Vec<UserEditorModel>,
 		cdn_base_url: &str,
 	) -> UserModel {
-		let created_at = self.id.timestamp().timestamp_millis();
+		let created_at = self.id.timestamp_ms();
 		let partial = self.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url);
 
 		UserModel {

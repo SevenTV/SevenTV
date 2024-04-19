@@ -1,7 +1,6 @@
 use bitmask_enum::bitmask;
-use bson::oid::ObjectId;
 
-use crate::database::Collection;
+use crate::database::{Collection, Id};
 use crate::types::old::{
 	ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel, EmoteSetFlagModel, EmoteSetModel, EmoteSetPartialModel,
 	UserPartialModel,
@@ -11,12 +10,16 @@ mod emote;
 
 pub use emote::*;
 
+use super::UserId;
+
+pub type EmoteSetId = Id<EmoteSet>;
+
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSet {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub owner_id: Option<ObjectId>,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: EmoteSetId,
+	pub owner_id: Option<UserId>,
 	pub name: String,
 	pub kind: EmoteSetKind,
 	pub tags: Vec<String>,

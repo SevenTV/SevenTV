@@ -1,8 +1,7 @@
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, UserConnection};
+use shared::database::{Collection, UserConnection, UserId};
 
 pub struct UserConnectionByUserIdLoader {
 	pub db: mongodb::Database,
@@ -16,7 +15,7 @@ impl UserConnectionByUserIdLoader {
 
 impl Loader for UserConnectionByUserIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = UserId;
 	type Value = Vec<UserConnection>;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]

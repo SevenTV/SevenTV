@@ -1,7 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, Paint};
+use shared::database::{Collection, Paint, PaintId};
 
 pub struct PaintByIdLoader {
 	db: mongodb::Database,
@@ -15,7 +14,7 @@ impl PaintByIdLoader {
 
 impl Loader for PaintByIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = PaintId;
 	type Value = Paint;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]

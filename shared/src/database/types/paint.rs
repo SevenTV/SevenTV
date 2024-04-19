@@ -1,25 +1,25 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use bson::oid::ObjectId;
-
-use super::{FileSet, FileSetProperties, ImageFormat};
-use crate::database::Collection;
+use super::{FileSet, FileSetId, FileSetProperties, ImageFormat};
+use crate::database::{Collection, Id};
 use crate::types::old::{
 	CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintModel, CosmeticPaintShadow, CosmeticPaintShape,
 	ImageFormat as ImageFormatOld, ImageHost, ImageHostKind,
 };
 
+pub type PaintId = Id<Paint>;
+
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Paint {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: PaintId,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
 	pub data: PaintData,
-	pub file_set_ids: Vec<ObjectId>,
+	pub file_set_ids: Vec<FileSetId>,
 }
 
 impl Collection for Paint {
@@ -66,7 +66,7 @@ pub enum PaintLayerType {
 		stops: Vec<PaintGradientStop>,
 		shape: PaintRadialGradientShape,
 	},
-	Image(ObjectId),
+	Image(FileSetId),
 }
 
 impl Default for PaintLayerType {
@@ -112,7 +112,7 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 }
 
 impl Paint {
-	pub fn into_old_model(self, files: &HashMap<ObjectId, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
+	pub fn into_old_model(self, files: &HashMap<FileSetId, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
 		let first_layer = self.data.layers.first();
 
 		Some(CosmeticPaintModel {
@@ -169,7 +169,7 @@ impl Paint {
 							Some(
 								ImageHostKind::Paint.create_full_url(
 									cdn_base_url,
-									id,
+									id.cast(),
 									file.extra.scale,
 									file.extra
 										.variants

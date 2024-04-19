@@ -1,7 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, FileSet};
+use shared::database::{Collection, FileSet, FileSetId};
 
 pub struct FileSetByIdLoader {
 	db: mongodb::Database,
@@ -15,7 +14,7 @@ impl FileSetByIdLoader {
 
 impl Loader for FileSetByIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = FileSetId;
 	type Value = FileSet;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]

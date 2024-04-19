@@ -1,17 +1,18 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use bson::oid::ObjectId;
-
-use crate::database::Collection;
+use super::UserId;
+use crate::database::{Collection, Id};
 use crate::types::old::{UserConnectionPartialModel, UserConnectionPlatformModel};
+
+pub type UserConnectionId = Id<UserConnection>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserConnection {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub user_id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: UserConnectionId,
+	pub user_id: UserId,
 	pub main_connection: bool,
 	pub platform: Platform,
 	pub platform_id: String,
@@ -77,7 +78,7 @@ impl From<UserConnection> for UserConnectionPartialModel {
 			platform: value.platform.into(),
 			username: value.platform_username,
 			display_name: value.platform_display_name,
-			linked_at: value.id.timestamp().timestamp_millis(),
+			linked_at: value.id.timestamp_ms(),
 			emote_capacity: 600,
 			emote_set_id: None,
 		}

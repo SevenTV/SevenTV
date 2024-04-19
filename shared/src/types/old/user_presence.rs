@@ -1,10 +1,10 @@
-use bson::oid::ObjectId;
+use crate::database::{UserId, UserPresenceId};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user-presence.model.go#L9
 pub struct PresenceModel {
-	pub id: ObjectId,
-	pub user_id: ObjectId,
+	pub id: UserPresenceId,
+	pub user_id: UserId,
 	pub timestamp: i64,
 	pub ttl: i64,
 	pub kind: PresenceKind,

@@ -1,7 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, Emote};
+use shared::database::{Collection, Emote, EmoteId};
 
 pub struct EmoteByIdLoader {
 	db: mongodb::Database,
@@ -15,7 +14,7 @@ impl EmoteByIdLoader {
 
 impl Loader for EmoteByIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = EmoteId;
 	type Value = Emote;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]

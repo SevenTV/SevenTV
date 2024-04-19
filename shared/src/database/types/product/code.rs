@@ -1,14 +1,15 @@
-use bson::oid::ObjectId;
+use super::{ProductId, ProductPurchaseId};
+use crate::database::{Collection, Id, UserId};
 
-use crate::database::Collection;
+pub type ProductCodeId = Id<ProductCode>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProductCode {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub owner_id: Option<ObjectId>,
-	pub purchase_id: Option<ObjectId>,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: ProductCodeId,
+	pub owner_id: Option<UserId>,
+	pub purchase_id: Option<ProductPurchaseId>,
 	pub name: String,
 	pub code: String,
 	pub description: Option<String>,
@@ -16,7 +17,7 @@ pub struct ProductCode {
 	pub enabled: bool,
 	pub remaining_uses: Option<i32>,
 	pub kind: ProductCodeKind,
-	pub product_ids: Vec<ObjectId>,
+	pub product_ids: Vec<ProductId>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]

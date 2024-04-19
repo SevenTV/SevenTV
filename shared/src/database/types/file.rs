@@ -1,13 +1,13 @@
-use bson::oid::ObjectId;
-
-use crate::database::Collection;
+use crate::database::{Collection, Id};
 use crate::types::old::{ImageFile as OldImageFile, ImageFormat as OldImageFormat};
+
+pub type FileSetId = Id<FileSet>;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FileSet {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: FileSetId,
 	pub kind: FileSetKind,
 	pub authenticated: bool,
 	pub properties: FileSetProperties,

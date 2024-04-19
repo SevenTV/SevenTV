@@ -1,25 +1,26 @@
 use std::sync::Arc;
 
 use bitmask_enum::bitmask;
-use bson::oid::ObjectId;
 
-use super::FileSet;
-use crate::database::Collection;
+use super::{FileSet, FileSetId, UserId};
+use crate::database::{Collection, Id};
 use crate::types::old::{
 	EmoteLifecycleModel, EmoteModel, EmotePartialModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind,
 	UserPartialModel,
 };
 
+pub type EmoteId = Id<Emote>;
+
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Emote {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub owner_id: Option<ObjectId>,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: EmoteId,
+	pub owner_id: Option<UserId>,
 	pub default_name: String,
 	pub tags: Vec<String>,
 	pub animated: bool,
-	pub file_set_id: ObjectId,
+	pub file_set_id: FileSetId,
 	pub flags: EmoteFlags,
 	pub attribution: Vec<EmoteAttribution>,
 }
@@ -49,7 +50,7 @@ impl Emote {
 				listed: partial.listed,
 				animated: partial.animated,
 				host: Some(partial.host),
-				created_at: partial.id.timestamp().timestamp_millis(),
+				created_at: partial.id.timestamp_ms(),
 			}],
 		}
 	}
@@ -107,7 +108,7 @@ impl Emote {
 			host: ImageHost::new(
 				cdn_base_url,
 				ImageHostKind::Emote,
-				self.id,
+				self.id.cast(),
 				file_set.properties.as_old_image_files(),
 			),
 		}
@@ -156,6 +157,6 @@ impl<'a> serde::Deserialize<'a> for EmoteFlags {
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteAttribution {
-	pub user_id: ObjectId,
+	pub user_id: UserId,
 	pub added_at: chrono::DateTime<chrono::Utc>,
 }

@@ -1,6 +1,5 @@
-use bson::oid::ObjectId;
-
-use crate::database::Collection;
+use super::{FileSetId, UserId};
+use crate::database::{Collection, Id};
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub enum TicketPriority {
@@ -31,17 +30,19 @@ pub enum TicketStatus {
 	Closed,
 }
 
+pub type TicketId = Id<Ticket>;
+
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ticket {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: TicketId,
 	pub kind: TicketKind,
 	pub status: TicketStatus,
 	pub priority: TicketPriority,
 	pub title: String,
 	pub tags: Vec<String>,
-	pub files: Vec<ObjectId>,
+	pub files: Vec<FileSetId>,
 }
 
 impl Collection for Ticket {
@@ -56,13 +57,15 @@ pub enum TicketMemberKind {
 	Staff,
 }
 
+pub type TicketMemberId = Id<TicketMember>;
+
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct TicketMember {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub ticket_id: ObjectId,
-	pub user_id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: TicketMemberId,
+	pub ticket_id: TicketId,
+	pub user_id: UserId,
 	pub kind: TicketMemberKind,
 	pub notifications: bool,
 }

@@ -1,7 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Badge, Collection};
+use shared::database::{Badge, BadgeId, Collection};
 
 pub struct BadgeByIdLoader {
 	db: mongodb::Database,
@@ -15,7 +14,7 @@ impl BadgeByIdLoader {
 
 impl Loader for BadgeByIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = BadgeId;
 	type Value = Badge;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]

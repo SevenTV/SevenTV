@@ -48,7 +48,7 @@ tokio-util = "0.7"
 zen-engine = "0.20"
 zen-expression = "0.20"
 itertools = "0.12"
-mongodb = "2.8"
+mongodb = { version = "2.8", features = ["tokio-runtime", "bson-chrono-0_4"]}
 
 shared = { workspace = true }
 

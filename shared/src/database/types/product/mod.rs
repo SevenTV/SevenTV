@@ -1,17 +1,18 @@
 mod code;
 mod purchase;
 
-use bson::oid::ObjectId;
-
 pub use self::code::*;
 pub use self::purchase::*;
-use super::Collection;
+use super::{BadgeId, Collection, EmoteSetId, PaintId, RoleId};
+use crate::database::Id;
+
+pub type ProductId = Id<Product>;
 
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Product {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: ProductId,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
@@ -108,10 +109,10 @@ pub struct ProductEntitlementGroup {
 #[serde(tag = "kind", content = "id")]
 #[serde(deny_unknown_fields)]
 pub enum ProductEntitlement {
-	Role(ObjectId),
-	Badge(ObjectId),
-	Paint(ObjectId),
-	EmoteSet(ObjectId),
+	Role(RoleId),
+	Badge(BadgeId),
+	Paint(PaintId),
+	EmoteSet(EmoteSetId),
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]

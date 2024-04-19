@@ -1,17 +1,18 @@
-use bson::oid::ObjectId;
+use super::UserId;
+use crate::database::{Collection, Id};
 
-use crate::database::Collection;
+pub type AutomodRuleId = Id<AutomodRule>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AutomodRule {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: AutomodRuleId,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
 	pub priority: i16,
-	pub added_by: Option<ObjectId>,
+	pub added_by: Option<UserId>,
 	pub kind: AutomodRuleKind,
 	pub enabled: bool,
 	pub words: Vec<String>,

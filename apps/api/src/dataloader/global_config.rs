@@ -1,6 +1,5 @@
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, GlobalConfig};
+use shared::database::{Collection, GlobalConfig, GlobalConfigId};
 
 pub struct GlobalConfigLoader {
 	db: mongodb::Database,
@@ -22,7 +21,7 @@ impl Loader for GlobalConfigLoader {
 		let config: GlobalConfig = Self::Value::collection(&self.db)
 			.find_one(
 				mongodb::bson::doc! {
-					"_id": ObjectId::from_bytes(Default::default())
+					"_id": GlobalConfigId::nil(),
 				},
 				None,
 			)

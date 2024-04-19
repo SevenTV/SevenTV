@@ -1,17 +1,19 @@
 use bitmask_enum::bitmask;
-use bson::oid::ObjectId;
 
-use crate::database::Collection;
+use super::EmoteSetId;
+use crate::database::{Collection, EmoteId, Id, UserId};
 use crate::types::old::{ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel};
+
+pub type EmoteSetEmoteId = Id<EmoteSetEmote>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetEmote {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub emote_set_id: ObjectId,
-	pub emote_id: ObjectId,
-	pub added_by_id: Option<ObjectId>,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: EmoteSetEmoteId,
+	pub emote_set_id: EmoteSetId,
+	pub emote_id: EmoteId,
+	pub added_by_id: Option<UserId>,
 	pub name: String,
 	pub flags: EmoteSetEmoteFlag,
 }
@@ -53,7 +55,7 @@ impl EmoteSetEmote {
 			id: self.emote_id,
 			actor_id: self.added_by_id,
 			name: self.name,
-			timestamp: self.id.timestamp().timestamp_millis(),
+			timestamp: self.id.timestamp_ms() as i64,
 			origin_id: None,
 			flags: {
 				let mut flags = ActiveEmoteFlagModel::none();

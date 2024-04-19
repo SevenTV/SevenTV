@@ -1,14 +1,15 @@
-use bson::oid::ObjectId;
+use super::UserId;
+use crate::database::{Collection, Id};
 
-use crate::database::Collection;
+pub type UserRelationId = Id<UserRelation>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserRelation {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
-	pub user_id: ObjectId,
-	pub other_user_id: ObjectId,
+	#[serde(rename = "_id", skip_serializing_if = "Id::is_nil")]
+	pub id: UserRelationId,
+	pub user_id: UserId,
+	pub other_user_id: UserId,
 	pub kind: UserRelationKind,
 	pub notes: String,
 	pub muted: Option<MutedState>,

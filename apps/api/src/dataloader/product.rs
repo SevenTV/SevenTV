@@ -1,7 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
-use mongodb::bson::oid::ObjectId;
 use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{Collection, Product};
+use shared::database::{Collection, Product, ProductId};
 
 pub struct ProductByIdLoader {
 	db: mongodb::Database,
@@ -15,7 +14,7 @@ impl ProductByIdLoader {
 
 impl Loader for ProductByIdLoader {
 	type Error = ();
-	type Key = ObjectId;
+	type Key = ProductId;
 	type Value = Product;
 
 	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
