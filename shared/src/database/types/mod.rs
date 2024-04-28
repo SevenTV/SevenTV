@@ -1,5 +1,6 @@
 #![allow(unused_imports, dead_code)]
 
+mod activity;
 mod automod;
 mod badge;
 mod emote;
@@ -12,7 +13,9 @@ mod product;
 mod role;
 mod ticket;
 mod user;
+mod json_string;
 
+pub use self::activity::*;
 pub use self::automod::*;
 pub use self::badge::*;
 pub use self::emote::*;
@@ -25,6 +28,7 @@ pub use self::product::*;
 pub use self::role::*;
 pub use self::ticket::*;
 pub use self::user::*;
+pub use self::json_string::*;
 
 pub trait Collection {
 	const COLLECTION_NAME: &'static str;

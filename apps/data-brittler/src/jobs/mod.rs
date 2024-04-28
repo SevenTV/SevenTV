@@ -13,7 +13,7 @@ use self::emotes::EmotesJob;
 use self::users::UsersJob;
 use crate::format::Number;
 use crate::global::Global;
-// use crate::jobs::audit_logs::AuditLogsJob;
+use crate::jobs::audit_logs::AuditLogsJob;
 use crate::jobs::bans::BansJob;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
@@ -21,7 +21,7 @@ use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
 use crate::{error, report};
 
-// pub mod audit_logs;
+pub mod audit_logs;
 pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
@@ -196,11 +196,11 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		any_run && global.config().reports || !any_run && !global.config().skip_reports,
 	)?
 	.map(|j| futures.push(j));
-	// AuditLogsJob::conditional_init_and_run(
-	// 	&global,
-	// 	any_run && global.config().audit_logs || !any_run &&
-	// !global.config().skip_audit_logs, )?
-	// .map(|j| futures.push(j));
+	AuditLogsJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().audit_logs || !any_run && !global.config().skip_audit_logs,
+	)?
+	.map(|j| futures.push(j));
 
 	let results: Vec<JobOutcome> = futures.try_collect().await?;
 
