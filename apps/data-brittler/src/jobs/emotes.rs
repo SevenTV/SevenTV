@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use mongodb::bson::doc;
 use mongodb::options::InsertManyOptions;
-use shared::database::{Collection, Emote, EmoteFlags, EmoteId, FileSet, FileSetId, FileSetKind, FileSetProperties};
+use shared::database::{Collection, Emote, EmoteFlags, FileSet, FileSetId, FileSetKind, FileSetProperties};
 use shared::types::old::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};

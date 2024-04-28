@@ -71,6 +71,7 @@ pub struct TicketMember {
 	pub user_id: UserId,
 	pub kind: TicketMemberKind,
 	pub notifications: bool,
+	pub last_read: Option<TicketMessageId>,
 }
 
 impl Collection for TicketMember {
