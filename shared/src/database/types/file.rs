@@ -30,7 +30,7 @@ pub enum FileSetKind {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case", tag = "kind")]
+#[serde(rename_all = "snake_case", tag = "kind", content = "data")]
 pub enum FileSetProperties {
 	Image {
 		input: FileProperties<ImageFile>,

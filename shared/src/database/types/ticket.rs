@@ -12,7 +12,7 @@ pub enum TicketPriority {
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "snake_case", tag = "kind")]
+#[serde(rename_all = "snake_case", tag = "kind", content = "data")]
 pub enum TicketData {
 	EmoteReport { emote_id: EmoteId },
 	UserReport { user_id: UserId },
