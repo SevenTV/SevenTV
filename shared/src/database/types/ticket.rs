@@ -76,3 +76,20 @@ pub struct TicketMember {
 impl Collection for TicketMember {
 	const COLLECTION_NAME: &'static str = "ticket_members";
 }
+
+pub type TicketMessageId = Id<TicketMessage>;
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TicketMessage {
+	#[serde(rename = "_id")]
+	pub id: TicketMessageId,
+	pub ticket_id: TicketId,
+	pub user_id: UserId,
+	pub content: String,
+	pub files: Vec<FileSetId>,
+}
+
+impl Collection for TicketMessage {
+	const COLLECTION_NAME: &'static str = "ticket_messages";
+}
