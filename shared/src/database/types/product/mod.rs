@@ -87,15 +87,16 @@ pub enum VariantPrice {
 	Amount(f64),
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum ProductDataGiftable {
+	/// Cannot be gifted, only bought for self
+	No = 0,
 	#[default]
 	/// Can be gifted or bought for self
-	Yes,
-	/// Cannot be gifted, only bought for self
-	No,
+	Yes = 1,
 	/// Can only be gifted, not bought for self
-	Required,
+	Required = 2,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -115,19 +116,21 @@ pub enum ProductEntitlement {
 	EmoteSet(EmoteSetId),
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum ProductKind {
 	#[default]
-	Base,
-	Addon,
-	Bundle,
+	Base = 0,
+	Addon = 1,
+	Bundle = 2,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum ProductVisibility {
+	Unlisted = 0,
 	#[default]
-	Public,
-	Unlisted,
+	Public = 1,
 }
 
 impl Collection for Product {

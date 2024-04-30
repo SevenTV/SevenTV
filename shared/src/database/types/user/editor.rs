@@ -38,12 +38,13 @@ pub struct UserEditorPermissions {
 	// TODO
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Eq)]
+#[repr(u8)]
 pub enum UserEditorState {
 	#[default]
-	Pending,
-	Accepted,
-	Rejected,
+	Pending = 0,
+	Accepted = 1,
+	Rejected = 2,
 }
 
 impl Collection for UserEditor {

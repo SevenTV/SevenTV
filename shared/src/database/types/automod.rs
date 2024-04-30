@@ -24,14 +24,16 @@ impl Collection for AutomodRule {
 	const COLLECTION_NAME: &'static str = "automod_rules";
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Clone, Default)]
+#[repr(u8)]
 pub enum AutomodRuleKind {
 	#[default]
-	Normal,
-	Regex,
+	Normal = 0,
+	Regex = 1,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[serde(rename_all = "snake_case", tag = "kind", content = "value")]
 // Not sure what the difference between these two is
 pub enum AutomodRuleAction {
 	Timeout(i64),

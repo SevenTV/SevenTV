@@ -23,11 +23,12 @@ impl Collection for UserGift {
 	const COLLECTION_NAME: &'static str = "user_gifts";
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum UserGiftStatus {
 	#[default]
-	Active,
-	Redeemed,
-	Expired,
-	Cancelled,
+	Active = 0,
+	Redeemed = 1,
+	Expired = 2,
+	Cancelled = 3,
 }

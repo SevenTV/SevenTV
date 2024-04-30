@@ -21,10 +21,11 @@ impl Collection for Page {
 	const COLLECTION_NAME: &'static str = "pages";
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum PageKind {
 	#[default]
-	Support,
-	Blog,
-	General,
+	Support = 0,
+	Blog = 1,
+	General = 2,
 }

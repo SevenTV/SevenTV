@@ -1,33 +1,36 @@
-use super::{FileSetId, UserId};
+use super::{EmoteId, FileSetId, UserId};
 use crate::database::{Collection, Id};
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[repr(u8)]
 pub enum TicketPriority {
 	#[default]
-	Low,
-	Medium,
-	High,
-	Urgent,
+	Low = 0,
+	Medium = 1,
+	High = 2,
+	Urgent = 3,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-pub enum TicketKind {
-	EmoteReport,
-	UserReport,
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum TicketData {
+	EmoteReport { emote_id: EmoteId },
+	UserReport { user_id: UserId },
 	Billing,
-	EmoteListingRequest,
-	EmotePersonalUseRequest,
+	EmoteListingRequest { emote_id: EmoteId },
+	EmotePersonalUseRequest { emote_id: EmoteId },
 	#[default]
 	Other,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[repr(u8)]
 pub enum TicketStatus {
 	#[default]
-	Pending,
-	InProgress,
-	Fixed,
-	Closed,
+	Pending = 0,
+	InProgress = 1,
+	Fixed = 2,
+	Closed = 3,
 }
 
 pub type TicketId = Id<Ticket>;
@@ -37,24 +40,24 @@ pub type TicketId = Id<Ticket>;
 pub struct Ticket {
 	#[serde(rename = "_id")]
 	pub id: TicketId,
-	pub kind: TicketKind,
 	pub status: TicketStatus,
 	pub priority: TicketPriority,
 	pub title: String,
 	pub tags: Vec<String>,
-	pub files: Vec<FileSetId>,
+	pub data: TicketData,
 }
 
 impl Collection for Ticket {
 	const COLLECTION_NAME: &'static str = "tickets";
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[repr(u8)]
 pub enum TicketMemberKind {
 	#[default]
-	Op,
-	Member,
-	Staff,
+	Op = 0,
+	Member = 1,
+	Staff = 2,
 }
 
 pub type TicketMemberId = Id<TicketMember>;

@@ -30,10 +30,11 @@ pub struct UserProductDataPurchase {
 	pub status: UserProductDataSubscriptionEntryStatus,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Eq)]
+#[repr(u8)]
 pub enum UserProductDataSubscriptionEntryStatus {
-	Active,
-	Cancelled,
+	Active = 0,
+	Cancelled = 1,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

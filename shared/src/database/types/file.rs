@@ -17,18 +17,20 @@ impl Collection for FileSet {
 	const COLLECTION_NAME: &'static str = "file_sets";
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum FileSetKind {
-	Ticket,
-	ProfilePicture,
-	Badge,
-	Paint,
-	Emote,
-	Product,
-	Page,
+	Ticket = 0,
+	ProfilePicture = 1,
+	Badge = 2,
+	Paint = 3,
+	Emote = 4,
+	Product = 5,
+	Page = 6,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
 pub enum FileSetProperties {
 	Image {
 		input: FileProperties<ImageFile>,
@@ -120,11 +122,12 @@ pub struct FileProperties<E> {
 	pub extra: E,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr, utoipa::ToSchema)]
+#[repr(u8)]
 pub enum ImageFormat {
 	#[default]
-	Webp,
-	Avif,
-	Gif,
-	Png,
+	Webp = 0,
+	Avif = 1,
+	Gif = 2,
+	Png = 3,
 }
