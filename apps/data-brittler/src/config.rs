@@ -61,6 +61,11 @@ pub struct Extra {
 	/// Skip messages job
 	pub skip_messages: bool,
 
+	/// Run system job
+	pub system: bool,
+	/// Skip system job
+	pub skip_system: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 }
@@ -99,6 +104,8 @@ impl Default for Extra {
 			skip_audit_logs: false,
 			messages: false,
 			skip_messages: false,
+			system: false,
+			skip_system: false,
 			truncate: false,
 		}
 	}

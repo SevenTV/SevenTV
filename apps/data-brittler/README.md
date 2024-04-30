@@ -14,7 +14,7 @@ Makes the data brittle.
 - [x] `messages_read`
 - [x] `reports`
 - [x] `roles`
-- [ ] `system`
+- [x] `system`
 - [x] `users`
 
 ## Collections - `egvault`

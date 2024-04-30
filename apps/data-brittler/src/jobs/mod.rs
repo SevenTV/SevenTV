@@ -21,6 +21,7 @@ use crate::jobs::emote_sets::EmoteSetsJob;
 use crate::jobs::messages::MessagesJob;
 use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
+use crate::jobs::system::SystemJob;
 use crate::{error, report};
 
 pub mod audit_logs;
@@ -32,6 +33,7 @@ pub mod messages;
 pub mod reports;
 pub mod roles;
 pub mod users;
+pub mod system;
 
 pub struct JobOutcome {
 	pub job_name: String,
@@ -113,7 +115,7 @@ pub trait Job: Sized {
 				Err(e) => outcome.errors.push(error::Error::Deserialize(e)),
 			}
 
-			if outcome.processed_documents % tenth == 0 {
+			if tenth != 0 && outcome.processed_documents % tenth == 0 {
 				tracing::info!(
 					"{:.1}% ({}/{}) ({} errors)",
 					outcome.processed_documents as f64 / count as f64 * 100.0,
@@ -157,7 +159,8 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		|| global.config().roles
 		|| global.config().reports
 		|| global.config().audit_logs
-		|| global.config().messages;
+		|| global.config().messages
+		|| global.config().system;
 
 	let timer = Instant::now();
 
@@ -216,6 +219,11 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	MessagesJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().messages || !any_run && !global.config().skip_messages,
+	)?
+	.map(|j| futures.push(j));
+	SystemJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().system || !any_run && !global.config().skip_system,
 	)?
 	.map(|j| futures.push(j));
 

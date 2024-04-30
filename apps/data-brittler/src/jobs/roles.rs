@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use mongodb::bson::{self, doc};
 use mongodb::bson::oid::ObjectId;
-use shared::database::{Collection, GlobalConfig, Role};
+use mongodb::options::UpdateOptions;
+use shared::database::{Collection, EmoteSetId, GlobalConfig, Role};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -67,17 +69,23 @@ impl Job for RolesJob {
 	async fn finish(mut self) -> ProcessOutcome {
 		self.all_roles.sort_by_cached_key(|(_, p)| *p);
 
-		let role_ids = self.all_roles.into_iter().map(|(id, _)| id.into()).collect();
+		let role_ids: Vec<EmoteSetId> = self.all_roles.into_iter().map(|(id, _)| id.into()).collect();
 
 		let mut outcome = ProcessOutcome::default();
 
 		match GlobalConfig::collection(self.global.target_db())
-			.insert_one(
-				GlobalConfig {
-					role_ids,
-					..Default::default()
+			.update_one(
+				doc! {},
+				doc! {
+					"$set": {
+						"role_ids": role_ids,
+					},
+					"$setOnInsert": {
+						"alerts": [],
+						"emote_set_ids": [],
+					},
 				},
-				None,
+				UpdateOptions::builder().upsert(true).build(),
 			)
 			.await
 		{

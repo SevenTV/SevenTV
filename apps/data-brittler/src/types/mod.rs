@@ -10,6 +10,7 @@ mod image_file;
 mod message;
 mod report;
 mod role;
+mod system;
 mod user;
 
 pub use audit_log::*;
@@ -22,6 +23,7 @@ pub use image_file::*;
 pub use message::*;
 pub use report::*;
 pub use role::*;
+pub use system::*;
 pub use user::*;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
