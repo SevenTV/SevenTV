@@ -7,6 +7,7 @@ mod emote;
 mod emote_set;
 mod entitlement;
 mod image_file;
+mod message;
 mod report;
 mod role;
 mod user;
@@ -18,6 +19,7 @@ pub use emote::*;
 pub use emote_set::*;
 pub use entitlement::*;
 pub use image_file::*;
+pub use message::*;
 pub use report::*;
 pub use role::*;
 pub use user::*;
@@ -49,7 +51,11 @@ where
 	D: Deserializer<'de>,
 {
 	let s = String::deserialize(deserializer)?;
-	if s.is_empty() { Ok(None) } else { Ok(Some(s)) }
+	if s.is_empty() {
+		Ok(None)
+	} else {
+		Ok(Some(s))
+	}
 }
 
 fn unsigned_int<'de, D>(deserializer: D) -> Result<u32, D::Error>

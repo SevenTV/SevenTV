@@ -27,7 +27,7 @@ impl From<ReportStatus> for database::TicketStatus {
 	fn from(value: ReportStatus) -> Self {
 		match value {
 			ReportStatus::Open => database::TicketStatus::Pending,
-			ReportStatus::Closed => database::TicketStatus::Closed,
+			ReportStatus::Closed => database::TicketStatus::Fixed,
 		}
 	}
 }

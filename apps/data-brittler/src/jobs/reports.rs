@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use fnv::FnvHashSet;
 use mongodb::options::InsertManyOptions;
-use shared::database::{self, Collection, Ticket, TicketId, TicketKind, TicketMember, TicketMemberId, TicketMessage, TicketMessageId, TicketPriority, UserId};
+use shared::database::{
+	self, Collection, Ticket, TicketData, TicketId, TicketMember, TicketMemberId, TicketMessage, TicketMessageId,
+	TicketPriority, UserId,
+};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -22,12 +25,6 @@ impl Job for ReportsJob {
 	const NAME: &'static str = "transfer_reports";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			tracing::info!("dropping tickets and ticket_members collections");
-			Ticket::collection(global.target_db()).drop(None).await?;
-			TicketMember::collection(global.target_db()).drop(None).await?;
-		}
-
 		Ok(Self {
 			global,
 			all_members: FnvHashSet::default(),
@@ -48,11 +45,13 @@ impl Job for ReportsJob {
 
 		self.tickets.push(Ticket {
 			id: ticket_id,
-			kind: TicketKind::EmoteReport,
 			status: report.status.into(),
 			priority: TicketPriority::Low,
 			title: report.subject,
 			tags: vec![],
+			data: TicketData::EmoteReport {
+				emote_id: report.target_id.into(),
+			},
 		});
 
 		let message_id = TicketMessageId::with_timestamp(report.id.timestamp().to_chrono());
@@ -108,9 +107,11 @@ impl Job for ReportsJob {
 			ticket_members.insert_many(&self.ticket_members, insert_options.clone()),
 			ticket_messages.insert_many(&self.ticket_messages, insert_options.clone()),
 		);
-		let res = vec![res.0, res.1]
-			.into_iter()
-			.zip(vec![self.tickets.len(), self.ticket_members.len(), self.ticket_messages.len()]);
+		let res = vec![res.0, res.1].into_iter().zip(vec![
+			self.tickets.len(),
+			self.ticket_members.len(),
+			self.ticket_messages.len(),
+		]);
 
 		for (res, len) in res {
 			match res {

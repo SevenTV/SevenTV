@@ -6,6 +6,7 @@ use anyhow::Context;
 use futures::stream::FuturesUnordered;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
+use shared::database::{Collection, Ticket, TicketMember, TicketMessage};
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -17,6 +18,7 @@ use crate::jobs::audit_logs::AuditLogsJob;
 use crate::jobs::bans::BansJob;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
+use crate::jobs::messages::MessagesJob;
 use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
 use crate::{error, report};
@@ -26,6 +28,7 @@ pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
+pub mod messages;
 pub mod reports;
 pub mod roles;
 pub mod users;
@@ -153,9 +156,18 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		|| global.config().cosmetics
 		|| global.config().roles
 		|| global.config().reports
-		|| global.config().audit_logs;
+		|| global.config().audit_logs
+		|| global.config().messages;
 
 	let timer = Instant::now();
+
+	// This has to be here because it's these are target collections for multiple jobs
+	if global.config().truncate && global.config().reports && global.config().messages {
+		tracing::info!("dropping tickets, ticket_members and ticket_messages collections");
+		Ticket::collection(global.target_db()).drop(None).await?;
+		TicketMember::collection(global.target_db()).drop(None).await?;
+		TicketMessage::collection(global.target_db()).drop(None).await?;
+	}
 
 	let futures: FuturesUnordered<Pin<Box<dyn Future<Output = anyhow::Result<JobOutcome>> + Send>>> =
 		FuturesUnordered::new();
@@ -199,6 +211,11 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	AuditLogsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().audit_logs || !any_run && !global.config().skip_audit_logs,
+	)?
+	.map(|j| futures.push(j));
+	MessagesJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().messages || !any_run && !global.config().skip_messages,
 	)?
 	.map(|j| futures.push(j));
 

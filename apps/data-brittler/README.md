@@ -10,12 +10,11 @@ Makes the data brittle.
 - [x] `emote_sets`
 - [x] `emotes`
 - [x] `entitlements`
-- [ ] `messages` (what is this?)
-- [ ] `messages_read` (?)
+- [x] `messages`
+- [x] `messages_read`
 - [x] `reports`
 - [x] `roles`
 - [ ] `system`
-- [ ] `user_presences` (do we need to transfer this?)
 - [x] `users`
 
 ## Collections - `egvault`
