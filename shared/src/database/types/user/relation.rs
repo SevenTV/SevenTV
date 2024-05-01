@@ -15,12 +15,13 @@ pub struct UserRelation {
 	pub muted: Option<MutedState>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum UserRelationKind {
 	#[default]
-	Nothing,
-	Follow,
-	Block,
+	Nothing = 0,
+	Follow = 1,
+	Block = 2,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]

@@ -22,13 +22,14 @@ pub struct UserConnection {
 	pub allow_login: bool,
 }
 
-#[derive(Debug, Clone, Copy, Hash, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Copy, Hash, Default, PartialEq, Eq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum Platform {
 	#[default]
-	Twitch,
-	Discord,
-	Google,
-	Kick,
+	Twitch = 0,
+	Discord = 1,
+	Google = 2,
+	Kick = 3,
 }
 
 impl From<Platform> for UserConnectionPlatformModel {

@@ -18,15 +18,15 @@ pub struct ProductPurchase {
 	pub status: ProductPurchaseStatus,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum ProductPurchaseStatus {
 	#[default]
-	Pending,
-	Completed,
-	Cancelled,
-	Refunded,
-	Failed,
+	Pending = 0,
+	Completed = 1,
+	Cancelled = 2,
+	Refunded = 3,
+	Failed = 4,
 }
 
 impl Collection for ProductPurchase {

@@ -20,12 +20,13 @@ pub struct ProductCode {
 	pub product_ids: Vec<ProductId>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
 pub enum ProductCodeKind {
 	#[default]
-	Redeem,
-	Discount,
-	Gift,
+	Redeem = 0,
+	Discount = 1,
+	Gift = 2,
 }
 
 impl Collection for ProductCode {
