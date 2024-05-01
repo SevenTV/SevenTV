@@ -7,13 +7,16 @@ use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use mongodb::bson::to_bson;
 use rand::Rng;
-use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::runtime;
+use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{
 	Collection, ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserId, UserProduct,
 	UserProductDataPurchase, UserProductDataSubscriptionEntryStatus,
 };
 use tokio::sync::{Mutex, OnceCell};
 use tokio_util::sync::CancellationToken;
+use tracing::Instrument;
 
 use crate::global::Global;
 
@@ -21,7 +24,7 @@ pub struct UserLoader {
 	user_loader: DataLoader<InternalUserLoader>,
 	user_product_purchase_loader: DataLoader<UserProductPurchaseLoader>,
 	user_products_loader: DataLoader<UserProductLoader>,
-	requests: Mutex<HashMap<UserId, SyncToken>>,
+	requests: Arc<Mutex<HashMap<UserId, SyncToken>>>,
 }
 
 #[derive(Clone)]
@@ -36,7 +39,7 @@ struct InternalUserLoader {
 
 impl InternalUserLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("InternalUserLoader", Self { db })
 	}
 }
 
@@ -45,8 +48,10 @@ impl Loader for InternalUserLoader {
 	type Key = UserId;
 	type Value = User;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "InternalUserLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let results: Vec<Self::Value> = Self::Value::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
@@ -72,7 +77,7 @@ struct UserProductPurchaseLoader {
 
 impl UserProductPurchaseLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("UserProductPurchaseLoader", Self { db })
 	}
 }
 
@@ -81,8 +86,10 @@ impl Loader for UserProductPurchaseLoader {
 	type Key = UserId;
 	type Value = Vec<ProductPurchase>;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "UserProductPurchaseLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let results: Self::Value = ProductPurchase::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
@@ -117,7 +124,7 @@ struct UserProductLoader {
 
 impl UserProductLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("UserProductLoader", Self { db })
 	}
 }
 
@@ -126,8 +133,10 @@ impl Loader for UserProductLoader {
 	type Key = UserId;
 	type Value = Vec<UserProduct>;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "user_product_by_user_id", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let results: Self::Value = UserProduct::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
@@ -153,7 +162,7 @@ impl UserLoader {
 			user_loader: InternalUserLoader::new(db.clone()),
 			user_product_purchase_loader: UserProductPurchaseLoader::new(db.clone()),
 			user_products_loader: UserProductLoader::new(db.clone()),
-			requests: Mutex::new(HashMap::new()),
+			requests: Arc::new(Mutex::new(HashMap::new())),
 		}
 	}
 }
@@ -181,6 +190,7 @@ impl UserLoader {
 		Ok(users)
 	}
 
+	#[tracing::instrument(name = "UserLoader::load", skip_all, fields(user_id = %user_id))]
 	pub async fn load(&self, global: &Arc<Global>, user_id: UserId) -> Result<Option<User>, ()> {
 		let token = {
 			let mut inserted = false;
@@ -207,9 +217,20 @@ impl UserLoader {
 			token
 		};
 
+		runtime::spawn(Self::load_user_miss(global.clone(), token, user_id).in_current_span())
+			.await
+			.map_err(|err| {
+				tracing::error!("failed to spawn task: {err}");
+			})?
+	}
+
+	#[tracing::instrument(name = "UserLoader::load_user_miss", skip_all, fields(user_id = %user_id))]
+	async fn load_user_miss(global: Arc<Global>, token: SyncToken, user_id: UserId) -> Result<Option<User>, ()> {
+		tracing::Span::current().make_root();
+
 		let _guard = token.done.drop_guard();
 
-		let result = match self.internal_load_fn(global, user_id).await {
+		let result = match global.user_by_id_loader().internal_load_fn(&global, user_id).await {
 			Ok(Some(user)) => {
 				token.result.set(user.clone()).ok();
 				Ok(Some(user))
@@ -221,11 +242,12 @@ impl UserLoader {
 			}
 		};
 
-		self.requests.lock().await.remove(&user_id);
+		global.user_by_id_loader().requests.lock().await.remove(&user_id);
 
 		result
 	}
 
+	#[tracing::instrument(name = "UserLoader::internal_load_fn", skip_all, fields(user_id = %user_id))]
 	async fn internal_load_fn(&self, global: &Arc<Global>, user_id: UserId) -> anyhow::Result<Option<User>> {
 		let Ok(Some(mut user)) = self.user_loader.load(user_id).await else {
 			return Ok(None);
@@ -353,6 +375,7 @@ fn jitter(duration: std::time::Duration) -> std::time::Duration {
 	duration + std::time::Duration::from_millis(jitter)
 }
 
+#[tracing::instrument(name = "evaluate_expression", skip(purchases, user_product))]
 fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_product: Option<&UserProduct>) -> bool {
 	#[derive(serde::Serialize)]
 	struct Purchase {

@@ -51,16 +51,27 @@ pub async fn get_user_data(access_token: &str) -> Result<YoutubeUserData, Connec
 		.get("https://youtube.googleapis.com/youtube/v3/channels?part=snippet&mine=true")
 		.bearer_auth(access_token)
 		.send()
-		.await?;
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "request failed");
+			ConnectionError::RequestError
+		})?;
 
-	if res.status().is_success() {
-		res.json::<YoutubeResponse>()
-			.await?
-			.items
-			.into_iter()
-			.next()
-			.ok_or(ConnectionError::NoUserData)
+	let status = res.status();
+	let text = res.text().await.map_err(|err| {
+		tracing::error!(error = %err, "failed to read response");
+		ConnectionError::RequestError
+	})?;
+
+	if status.is_success() {
+		let res = serde_json::from_str::<YoutubeResponse>(&text).map_err(|err| {
+			tracing::error!(error = %err, text, "failed to parse response");
+			ConnectionError::RequestError
+		})?;
+
+		Ok(res.items.into_iter().next().ok_or(ConnectionError::NoUserData)?)
 	} else {
-		Err(ConnectionError::InvalidResponse(res.status()))
+		tracing::error!(%status, text, "invalid response");
+		Err(ConnectionError::RequestError)
 	}
 }

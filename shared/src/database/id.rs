@@ -227,7 +227,7 @@ impl<S> std::str::FromStr for Id<S> {
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s.len() {
 			26 => s.parse().map_err(IdFromStrError::Ulid).map(Self::from_ulid),
-			32 => s.parse().map_err(IdFromStrError::Uuid).map(Self::from_uuid),
+			32 | 36 => s.parse().map_err(IdFromStrError::Uuid).map(Self::from_uuid),
 			24 => s.parse().map_err(IdFromStrError::ObjectId).map(Self::from_object_id),
 			len => Err(IdFromStrError::InvalidLength(len)),
 		}

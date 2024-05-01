@@ -1,25 +1,23 @@
 use std::sync::Arc;
 
-use hyper::body::Incoming;
+use axum::extract::{Path, Request, State};
+use axum::response::IntoResponse;
+use axum::routing::{get, post};
+use axum::{Json, Router};
 use hyper::StatusCode;
-use scuffle_utils::http::ext::{OptionExt, ResultExt};
-use scuffle_utils::http::router::builder::RouterBuilder;
-use scuffle_utils::http::router::ext::RequestExt;
-use scuffle_utils::http::router::Router;
-use scuffle_utils::http::RouteError;
-use shared::database::FeaturePermission;
-use shared::http::{json_response, Body};
+use shared::database::{EmoteId, FeaturePermission};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::RequestGlobalExt;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
 pub struct Docs;
 
-pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-	Router::builder().post("/", create_emote).get("/:id", get_emote_by_id)
+pub fn routes() -> Router<Arc<Global>> {
+	Router::new()
+		.route("/", post(create_emote))
+		.route("/:id", get(get_emote_by_id))
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -39,10 +37,11 @@ pub struct XEmoteData {}
         ("X-Emote-Data" = XEmoteData, Header, description = "The properties of the emote"),
     ),
 )]
-#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
+#[tracing::instrument(skip(global))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L58
-pub async fn create_emote(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	todo!()
+pub async fn create_emote(State(global): State<Arc<Global>>, req: Request) -> Result<impl IntoResponse, ApiError> {
+	let _ = global;
+	Ok(ApiError::NOT_IMPLEMENTED)
 }
 
 #[utoipa::path(
@@ -57,30 +56,25 @@ pub async fn create_emote(req: hyper::Request<Incoming>) -> Result<hyper::Respon
         ("id" = String, Path, description = "The ID of the emote"),
     ),
 )]
-#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
+#[tracing::instrument(skip_all, fields(id = %id))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.by-id.go#L36
-pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	let global: Arc<Global> = req.get_global()?;
-
-	let id = req.param("id").map_err_route((StatusCode::BAD_REQUEST, "missing id"))?;
-
-	let id = id.parse().map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid id"))?;
-
-	let Some(emote) = global
+pub async fn get_emote_by_id(
+	State(global): State<Arc<Global>>,
+	Path(id): Path<EmoteId>,
+) -> Result<impl IntoResponse, ApiError> {
+	let emote = global
 		.emote_by_id_loader()
 		.load(id)
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load emote"))?
-	else {
-		return Err((StatusCode::NOT_FOUND, "emote not found").into());
-	};
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found"))?;
 
 	let owner = match emote.owner_id {
 		Some(owner) => global
 			.user_by_id_loader()
 			.load(&global, owner)
 			.await
-			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load user"))?,
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?,
 		None => None,
 	};
 
@@ -90,14 +84,14 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 				.role_by_id_loader()
 				.load_many(owner.entitled_cache.role_ids.iter().copied())
 				.await
-				.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load roles"))?;
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 			let global_config = global
 				.global_config_loader()
 				.load(())
 				.await
-				.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load global config"))?
-				.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "global config not found"))?;
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 			let roles = global_config
 				.role_ids
@@ -122,11 +116,9 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		.file_set_by_id_loader()
 		.load_many(pfp_file_set_id.into_iter().chain(Some(emote.file_set_id)))
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to load file set"))?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-	let emote_file_set = file_sets
-		.get(&emote.file_set_id)
-		.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "emote file set not found"))?;
+	let emote_file_set = file_sets.get(&emote.file_set_id).ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let owner = owner.map(|owner| {
 		owner.into_old_model_partial(
@@ -138,5 +130,9 @@ pub async fn get_emote_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Res
 		)
 	});
 
-	json_response(emote.into_old_model(owner, emote_file_set, &global.config().api.cdn_base_url))
+	Ok(Json(emote.into_old_model(
+		owner,
+		emote_file_set,
+		&global.config().api.cdn_base_url,
+	)))
 }

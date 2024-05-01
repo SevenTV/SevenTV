@@ -2,17 +2,13 @@
 
 use std::sync::{Arc, Mutex};
 
+use axum::extract::Request;
+use axum::response::{IntoResponse, Response};
 use cookie::{Cookie, CookieBuilder, CookieJar};
-use hyper::header::{HeaderValue, ToStrError};
-use hyper::StatusCode;
-use scuffle_utils::http::ext::ResultExt;
-use scuffle_utils::http::router::middleware::{Middleware, NextFn};
-use scuffle_utils::http::RouteError;
+use hyper::header::HeaderValue;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-
-pub const AUTH_COOKIE: &str = "seventv-auth";
 
 #[derive(Clone)]
 pub struct Cookies(Arc<Mutex<CookieJar>>);
@@ -44,44 +40,95 @@ pub fn new_cookie<'c, C: Into<Cookie<'c>>>(global: &Arc<Global>, base: C) -> Coo
 		.same_site(cookie::SameSite::None)
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug, Copy)]
 pub struct CookieMiddleware;
 
-#[async_trait::async_trait]
-impl<I: Send + 'static, O: Send + 'static> Middleware<I, O, RouteError<ApiError>> for CookieMiddleware {
-	async fn handle(
-		&self,
-		mut req: hyper::Request<I>,
-		next: NextFn<I, O, RouteError<ApiError>>,
-	) -> Result<hyper::Response<O>, RouteError<ApiError>> {
-		let jar = req
+impl<S> tower::Layer<S> for CookieMiddleware {
+	type Service = CookieMiddlewareService<S>;
+
+	fn layer(&self, inner: S) -> Self::Service {
+		CookieMiddlewareService { inner }
+	}
+}
+
+#[derive(Clone)]
+pub struct CookieMiddlewareService<S> {
+	inner: S,
+}
+
+#[pin_project::pin_project(project = CookieFutureProj)]
+pub enum CookieFuture<F> {
+	EarlyError(Option<ApiError>),
+	Inner(#[pin] F, Cookies),
+}
+
+impl<F, E> std::future::Future for CookieFuture<F>
+where
+	F: std::future::Future<Output = Result<Response, E>>,
+{
+	type Output = Result<Response, E>;
+
+	fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+		match self.project() {
+			CookieFutureProj::EarlyError(err) => {
+				std::task::Poll::Ready(Ok(err.take().expect("error already taken").into_response()))
+			}
+			CookieFutureProj::Inner(fut, cookies) => {
+				let mut resp = match fut.poll(cx) {
+					std::task::Poll::Ready(Ok(res)) => res,
+					std::task::Poll::Ready(Err(err)) => return std::task::Poll::Ready(Err(err)),
+					std::task::Poll::Pending => return std::task::Poll::Pending,
+				};
+
+				for cookie in cookies.delta() {
+					resp.headers_mut().append(
+						hyper::header::SET_COOKIE,
+						HeaderValue::from_str(&cookie.encoded().to_string()).unwrap(),
+					);
+				}
+
+				std::task::Poll::Ready(Ok(resp))
+			}
+		}
+	}
+}
+
+impl<S, B> tower::Service<Request<B>> for CookieMiddlewareService<S>
+where
+	S: tower::Service<Request<B>, Response = Response> + Clone + Send,
+	S::Error: Send,
+	S::Future: Send,
+	B: Send,
+{
+	type Error = S::Error;
+	type Future = CookieFuture<S::Future>;
+	type Response = S::Response;
+
+	fn call(&mut self, mut req: Request<B>) -> Self::Future {
+		let jar = match req
 			.headers()
 			.get_all(hyper::header::COOKIE)
 			.iter()
 			.try_fold(CookieJar::new(), |mut jar, h| {
-				for c in Cookie::split_parse_encoded(h.to_str()?) {
+				for c in Cookie::split_parse_encoded(h.to_str().map_err(|_| ApiError::BAD_REQUEST)?) {
 					match c {
 						Ok(cookie) => jar.add_original(cookie.into_owned()),
-						Err(e) => tracing::debug!("failed to parse a cookie {}", e),
+						Err(_) => return Err(ApiError::BAD_REQUEST),
 					}
 				}
-				Ok::<CookieJar, ToStrError>(jar)
-			})
-			.map_ignore_err_route((StatusCode::BAD_REQUEST, "invalid cookie header"))?;
+				Ok(jar)
+			}) {
+			Ok(jar) => jar,
+			Err(err) => return CookieFuture::EarlyError(Some(err)),
+		};
 
 		let jar = Cookies(Arc::new(Mutex::new(jar)));
 		req.extensions_mut().insert(jar.clone());
 
-		let mut res = next(req).await?;
+		CookieFuture::Inner(self.inner.call(req), jar)
+	}
 
-		for cookie in jar.delta() {
-			res.headers_mut().append(
-				hyper::header::SET_COOKIE,
-				HeaderValue::from_str(&cookie.encoded().to_string())
-					.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to encode cookie"))?,
-			);
-		}
-
-		Ok(res)
+	fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+		self.inner.poll_ready(cx).map_err(Into::into)
 	}
 }

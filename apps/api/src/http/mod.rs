@@ -1,97 +1,90 @@
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
-use hyper::body::Incoming;
-use hyper::StatusCode;
-use scuffle_utils::http::ext::OptionExt;
-use scuffle_utils::http::router::builder::RouterBuilder;
-use scuffle_utils::http::router::middleware::CorsMiddleware;
-use scuffle_utils::http::router::Router;
-use scuffle_utils::http::{error_handler, RouteError};
-use shared::http::{empty_body, Body};
+use anyhow::Context as _;
+use axum::extract::{MatchedPath, Request};
+use axum::response::Response;
+use axum::Router;
+use scuffle_foundations::context::Context;
+use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
+use tower::ServiceBuilder;
+use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
+use tower_http::trace::TraceLayer;
+use tracing::Span;
 
 use self::error::ApiError;
-use self::middleware::{AuthMiddleware, CookieMiddleware, Cookies};
+use self::middleware::auth::AuthMiddleware;
+use self::middleware::cookies::CookieMiddleware;
 use crate::global::Global;
 
-mod error;
-mod middleware;
+pub mod error;
+pub mod extract;
+pub mod middleware;
 pub mod v3;
 
-fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-	let weak = Arc::downgrade(global);
+#[derive(Clone)]
+struct TraceRequestId;
 
-	Router::builder()
-		.data(weak)
-		.error_handler(|req, err| async move { error_handler(req, err).await.map(Body::Left) })
-		.middleware(CorsMiddleware::new(
-			&global.config().api.cors.clone().into_options(empty_body),
-		))
-		.middleware(CookieMiddleware)
-		.middleware(AuthMiddleware)
-		// Handle the v3 API, we have to use a wildcard because of the path format.
-		.scope("/v3", v3::routes(global))
-		// Not found handler.
-		.not_found(|_| async move { Err((StatusCode::NOT_FOUND, "not found").into()) })
+impl MakeRequestId for TraceRequestId {
+	fn make_request_id<B>(&mut self, _: &hyper::Request<B>) -> Option<RequestId> {
+		tracing::Span::current()
+			.trace_id()
+			.and_then(|id| id.to_string().parse().ok())
+			.map(RequestId::new)
+	}
 }
 
-#[tracing::instrument(name = "api", level = "info", skip(global))]
+fn routes(global: Arc<Global>) -> Router {
+	Router::new()
+		.nest("/v3", v3::routes())
+		.with_state(global.clone())
+		.fallback(not_found)
+		.layer(
+			ServiceBuilder::new()
+				.layer(
+					TraceLayer::new_for_http()
+						.make_span_with(|req: &Request| {
+							let matched_path = req.extensions().get::<MatchedPath>().map(MatchedPath::as_str);
+
+							let span = tracing::info_span!(
+								"request",
+								"request.method" = %req.method(),
+								"request.uri" = %req.uri(),
+								"request.matched_path" = %matched_path.unwrap_or("<not found>"),
+								"response.status_code" = tracing::field::Empty,
+							);
+
+							span.make_root();
+
+							span
+						})
+						.on_response(|res: &Response, _, span: &Span| {
+							span.record("response.status_code", &res.status().as_u16());
+						}),
+				)
+				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
+				.layer(PropagateRequestIdLayer::x_request_id())
+				.layer(CookieMiddleware)
+				.layer(AuthMiddleware::new(global)),
+		)
+}
+
+#[tracing::instrument]
+pub async fn not_found() -> ApiError {
+	ApiError::NOT_FOUND
+}
+
+#[tracing::instrument(skip(global))]
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let config = global.config();
 
-	shared::http::run(global.ctx(), &config.api.http, routes(&global).build(), |_| true).await?;
+	let tcp_listener = tokio::net::TcpListener::bind(config.api.bind).await?;
+
+	tracing::info!("listening on {}", tcp_listener.local_addr()?);
+
+	axum::serve(tcp_listener, routes(global))
+		.with_graceful_shutdown(Context::global().into_done())
+		.await
+		.context("http server failed")?;
 
 	Ok(())
-}
-
-pub trait RequestGlobalExt<E> {
-	fn get_global<G: Sync + Send + 'static, B: From<tokio_util::bytes::Bytes>>(
-		&self,
-	) -> std::result::Result<Arc<G>, RouteError<E, B>>;
-
-	fn get_cookies<B2: From<tokio_util::bytes::Bytes>>(&self) -> Result<Cookies, RouteError<E, B2>>;
-}
-
-impl<E, B> RequestGlobalExt<E> for hyper::Request<B> {
-	fn get_global<G: Sync + Send + 'static, B2: From<tokio_util::bytes::Bytes>>(
-		&self,
-	) -> std::result::Result<Arc<G>, RouteError<E, B2>> {
-		Ok(self
-			.extensions()
-			.get::<Weak<G>>()
-			.expect("global state not set")
-			.upgrade()
-			.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "failed to upgrade global state"))?)
-	}
-
-	fn get_cookies<B2: From<tokio_util::bytes::Bytes>>(&self) -> Result<Cookies, RouteError<E, B2>> {
-		Ok(self
-			.extensions()
-			.get::<Cookies>()
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "cookies not set"))?
-			.clone())
-	}
-}
-
-pub trait RequestQueryParamExt {
-	fn query_param(&self, key: &str) -> Option<String> {
-		self.query_params().find(|(k, _)| *k == key).map(|(_, v)| v)
-	}
-
-	fn query_params(&self) -> impl Iterator<Item = (&str, String)>;
-}
-
-impl<B> RequestQueryParamExt for hyper::Request<B> {
-	fn query_params(&self) -> impl Iterator<Item = (&str, String)> {
-		self.uri().query().unwrap_or("").split('&').filter_map(|param| {
-			let mut parts = param.splitn(2, '=');
-			let key = parts.next()?;
-			let value = parts.next().unwrap_or("");
-			Some((
-				key,
-				urlencoding::decode(value)
-					.map(|s| s.into_owned())
-					.unwrap_or_else(|_| value.to_string()),
-			))
-		})
-	}
 }

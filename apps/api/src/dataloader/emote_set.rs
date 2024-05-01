@@ -1,6 +1,7 @@
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{Collection, EmoteSet, EmoteSetEmote, EmoteSetId, UserId};
 
 pub struct EmoteSetByIdLoader {
@@ -9,7 +10,7 @@ pub struct EmoteSetByIdLoader {
 
 impl EmoteSetByIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("EmoteSetByIdLoader", Self { db })
 	}
 }
 
@@ -18,8 +19,10 @@ impl Loader for EmoteSetByIdLoader {
 	type Key = EmoteSetId;
 	type Value = EmoteSet;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "EmoteSetByIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let results: Vec<Self::Value> = EmoteSet::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
@@ -45,7 +48,7 @@ pub struct EmoteSetEmoteByIdLoader {
 
 impl EmoteSetEmoteByIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("EmoteSetEmoteByIdLoader", Self { db })
 	}
 }
 
@@ -54,8 +57,8 @@ impl Loader for EmoteSetEmoteByIdLoader {
 	type Key = EmoteSetId;
 	type Value = Vec<EmoteSetEmote>;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "EmoteSetEmoteByIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<EmoteSetEmote> = EmoteSetEmote::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
@@ -81,7 +84,7 @@ pub struct EmoteSetByUserIdLoader {
 
 impl EmoteSetByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("EmoteSetByUserIdLoader", Self { db })
 	}
 }
 
@@ -90,8 +93,8 @@ impl Loader for EmoteSetByUserIdLoader {
 	type Key = UserId;
 	type Value = Vec<EmoteSet>;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "EmoteSetByUserIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<EmoteSet> = EmoteSet::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {

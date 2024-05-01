@@ -1,5 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
-use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{Collection, FileSet, FileSetId};
 
 pub struct FileSetByIdLoader {
@@ -8,7 +9,7 @@ pub struct FileSetByIdLoader {
 
 impl FileSetByIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("FileSetByIdLoader", Self { db })
 	}
 }
 
@@ -17,8 +18,10 @@ impl Loader for FileSetByIdLoader {
 	type Key = FileSetId;
 	type Value = FileSet;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "FileSetByIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let results: Vec<Self::Value> = FileSet::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {

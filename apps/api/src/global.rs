@@ -1,23 +1,19 @@
 #![allow(dead_code)]
 
-use std::sync::Arc;
-
 use anyhow::Context as _;
-use scuffle_utils::context::Context;
-use scuffle_utils::dataloader::DataLoader;
+use scuffle_foundations::dataloader::DataLoader;
+use scuffle_foundations::telementry::server::HealthCheck;
 
 use crate::config::Config;
-use crate::{dataloader, metrics};
+use crate::dataloader;
 
 pub struct Global {
-	ctx: Context,
 	nats: async_nats::Client,
 	jetstream: async_nats::jetstream::Context,
 	config: Config,
 	mongo: mongodb::Client,
 	db: mongodb::Database,
 	http_client: reqwest::Client,
-	metrics: Arc<metrics::Metrics>,
 	user_by_id_loader: dataloader::user::UserLoader,
 	user_connection_by_user_id_loader: DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader>,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
@@ -35,7 +31,7 @@ pub struct Global {
 }
 
 impl Global {
-	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
+	pub async fn new(config: Config) -> anyhow::Result<Self> {
 		let (nats, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
 		let mongo = shared::database::setup_database(&config.database)
 			.await
@@ -44,15 +40,6 @@ impl Global {
 		let db = mongo.default_database().unwrap_or_else(|| mongo.database("7tv"));
 
 		Ok(Self {
-			metrics: Arc::new(metrics::new(
-				config
-					.metrics
-					.labels
-					.iter()
-					.map(|x| (x.key.clone(), x.value.clone()))
-					.collect(),
-			)),
-			ctx,
 			nats,
 			jetstream,
 			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
@@ -74,11 +61,6 @@ impl Global {
 			db,
 			config,
 		})
-	}
-
-	/// The global context.
-	pub fn ctx(&self) -> &Context {
-		&self.ctx
 	}
 
 	/// The NATS client.
@@ -109,11 +91,6 @@ impl Global {
 	/// Global HTTP client.
 	pub fn http_client(&self) -> &reqwest::Client {
 		&self.http_client
-	}
-
-	/// Global metrics.
-	pub fn metrics(&self) -> &Arc<metrics::Metrics> {
-		&self.metrics
 	}
 
 	/// The user loader.
@@ -186,5 +163,31 @@ impl Global {
 	/// The user editor by editor loader.
 	pub fn user_editor_by_editor_id_loader(&self) -> &DataLoader<dataloader::user_editor::UserEditorByEditorIdLoader> {
 		&self.user_editor_by_editor_id_loader
+	}
+}
+
+impl HealthCheck for Global {
+	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output = bool> + Send + '_>> {
+		Box::pin(async {
+			tracing::info!("running health check");
+
+			if !match self.db().run_command(mongodb::bson::doc! { "ping": 1 }, None).await {
+				Ok(r) => r.get_bool("ok").unwrap_or(false),
+				Err(err) => {
+					tracing::error!(%err, "failed to ping database");
+
+					false
+				}
+			} {
+				return false;
+			}
+
+			if !matches!(self.nats().connection_state(), async_nats::connection::State::Connected) {
+				tracing::error!("nats not connected");
+				return false;
+			}
+
+			true
+		})
 	}
 }

@@ -7,20 +7,14 @@ members = [
 
 resolver = "2"
 
-[profile.dev]
-opt-level = 1
-
 [profile.release]
-strip = true
+strip = false
+debug = true
+lto = "thin"
 
 [profile.release-lto]
 inherits = "release"
 lto = "fat"
-
-[profile.release-debug]
-inherits = "release"
-debug = true
-strip = false
 
 [workspace.dependencies]
 shared = { path = "shared" }

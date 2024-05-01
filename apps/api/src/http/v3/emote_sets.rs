@@ -1,28 +1,25 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use hyper::body::Incoming;
+use axum::extract::State;
+use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::{Json, Router};
 use hyper::StatusCode;
-use scuffle_utils::http::ext::{OptionExt, ResultExt};
-use scuffle_utils::http::router::builder::RouterBuilder;
-use scuffle_utils::http::router::ext::RequestExt;
-use scuffle_utils::http::router::Router;
-use scuffle_utils::http::RouteError;
-use shared::database::FeaturePermission;
-use shared::http::{json_response, Body};
+use shared::database::{EmoteSetId, FeaturePermission};
 use shared::types::old::EmoteSetModel;
 use utoipa::OpenApi;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::RequestGlobalExt;
+use crate::http::extract::Path;
 
 #[derive(OpenApi)]
 #[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSetModel)))]
 pub struct Docs;
 
-pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-	Router::builder().get("/:id", get_emote_set_by_id)
+pub fn routes() -> Router<Arc<Global>> {
+	Router::new().route("/:id", get(get_emote_set_by_id))
 }
 
 #[utoipa::path(
@@ -37,35 +34,31 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
         ("id" = String, Path, description = "The ID of the emote set"),
     ),
 )]
-#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
+#[tracing::instrument(skip_all, fields(id = %id))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emote-sets/emote-sets.by-id.go#L42
-pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	let global: Arc<Global> = req.get_global()?;
-
-	let id = req
-		.param("id")
-		.and_then(|id| id.parse().ok())
-		.map_err_route((StatusCode::BAD_REQUEST, "invalid emote set ID"))?;
-
+pub async fn get_emote_set_by_id(
+	State(global): State<Arc<Global>>,
+	Path(id): Path<EmoteSetId>,
+) -> Result<impl IntoResponse, ApiError> {
 	let emote_set = global
 		.emote_set_by_id_loader()
 		.load(id)
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emote sets"))?
-		.map_err_route((StatusCode::NOT_FOUND, "emote set not found"))?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote set not found"))?;
 
 	let emote_set_emotes = global
 		.emote_set_emote_by_id_loader()
 		.load(id)
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emote set emotes"))?
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default();
 
 	let emotes = global
 		.emote_by_id_loader()
 		.load_many(emote_set_emotes.iter().map(|emote| emote.emote_id))
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query emotes"))?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let users = global
 		.user_by_id_loader()
@@ -74,21 +67,21 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 			emotes.values().filter_map(|emote| emote.owner_id).chain(emote_set.owner_id),
 		)
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query users"))?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let global_config = global
 		.global_config_loader()
 		.load(())
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query global config"))?
-		.ok_or((StatusCode::INTERNAL_SERVER_ERROR, "global config not found"))?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let roles = {
 		let mut roles = global
 			.role_by_id_loader()
 			.load_many(users.values().flat_map(|user| user.entitled_cache.role_ids.iter().copied()))
 			.await
-			.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query roles"))?;
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		global_config
 			.role_ids
@@ -120,7 +113,7 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 				.chain(emotes.values().map(|emote| emote.file_set_id)),
 		)
 		.await
-		.map_ignore_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to query file sets"))?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let cdn_base_url = &global.config().api.cdn_base_url;
 
@@ -151,11 +144,11 @@ pub async fn get_emote_set_by_id(req: hyper::Request<Incoming>) -> Result<hyper:
 
 	let owner = emote_set.owner_id.and_then(|id| users.get(&id)).cloned();
 
-	json_response(emote_set.into_old_model(
+	Ok(Json(emote_set.into_old_model(
 		emote_set_emotes.into_iter().map(|emote| {
 			let partial = emotes.get(&emote.emote_id).cloned();
 			(emote, partial)
 		}),
 		owner,
-	))
+	)))
 }

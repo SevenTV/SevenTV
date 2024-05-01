@@ -1,6 +1,7 @@
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{Collection, UserConnection, UserId};
 
 pub struct UserConnectionByUserIdLoader {
@@ -9,7 +10,7 @@ pub struct UserConnectionByUserIdLoader {
 
 impl UserConnectionByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("UserConnectionByUserIdLoader", Self { db })
 	}
 }
 
@@ -18,8 +19,10 @@ impl Loader for UserConnectionByUserIdLoader {
 	type Key = UserId;
 	type Value = Vec<UserConnection>;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "UserConnectionByUserIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let results: Self::Value = UserConnection::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {

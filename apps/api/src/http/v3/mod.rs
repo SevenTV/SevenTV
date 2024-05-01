@@ -1,13 +1,8 @@
 use std::sync::Arc;
 
-use hyper::body::Incoming;
-use scuffle_utils::http::router::builder::RouterBuilder;
-use scuffle_utils::http::router::Router;
-use scuffle_utils::http::RouteError;
-use shared::http::Body;
+use axum::Router;
 use utoipa::OpenApi;
 
-use super::error::ApiError;
 use crate::global::Global;
 
 pub mod auth;
@@ -51,13 +46,13 @@ pub fn docs() -> utoipa::openapi::OpenApi {
 	docs
 }
 
-pub fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-	Router::builder()
-		.scope("/docs", docs::routes(global))
-		.scope("/config", config::routes(global))
-		.scope("/auth", auth::routes(global))
-		.scope("/emotes", emotes::routes(global))
-		.scope("/emote-sets", emote_sets::routes(global))
-		.scope("/users", users::routes(global))
-		.scope("/entitlements", entitlements::routes(global))
+pub fn routes() -> Router<Arc<Global>> {
+	Router::new()
+		.nest("/docs", docs::routes())
+		.nest("/config", config::routes())
+		.nest("/auth", auth::routes())
+		.nest("/emotes", emotes::routes())
+		.nest("/emote-sets", emote_sets::routes())
+		.nest("/users", users::routes())
+		.nest("/entitlements", entitlements::routes())
 }

@@ -1,64 +1,48 @@
 use std::net::SocketAddr;
 
-use serde::Deserialize;
-use shared::config::{DatabaseConfig, Http, HttpCors};
+use scuffle_foundations::settings::auto_settings;
+use shared::config::DatabaseConfig;
 
-#[derive(Debug, Deserialize, config::Config)]
+#[auto_settings]
 #[serde(default)]
 pub struct Api {
 	/// http options
-	pub http: Http,
+	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 8080)))]
+	pub bind: SocketAddr,
 	/// cdn base url
+	#[settings(default = "https://cdn.7tv.app".into())]
 	pub cdn_base_url: String,
 	/// public domain
+	#[settings(default = "7tv.io".into())]
 	pub domain: String,
 	/// base url
+	#[settings(default = "https://7tv.io".into())]
 	pub base_url: String,
 	/// cors options
-	pub cors: HttpCors,
+	// pub cors: HttpCors,
 	/// connection config
 	pub connections: ConnectionsConfig,
 	/// jwt config
 	pub jwt: JwtConfig,
 }
 
-impl Default for Api {
-	fn default() -> Self {
-		Self {
-			http: Http::new_with_bind(SocketAddr::from(([0, 0, 0, 0], 8080))),
-			cdn_base_url: "https://cdn.7tv.app".to_string(),
-			domain: "7tv.io".to_string(),
-			base_url: "https://7tv.io".to_string(),
-			cors: HttpCors::default(),
-			connections: ConnectionsConfig::default(),
-			jwt: JwtConfig::default(),
-		}
-	}
-}
-
-#[derive(Debug, Clone, PartialEq, config::Config, serde::Deserialize)]
+#[auto_settings]
 #[serde(default)]
 pub struct JwtConfig {
 	/// JWT secret
+	#[settings(default = "seventv-api".into())]
 	pub secret: String,
 
 	/// JWT issuer
+	#[settings(default = "seventv-api".into())]
 	pub issuer: String,
 }
 
-impl Default for JwtConfig {
-	fn default() -> Self {
-		Self {
-			issuer: "seventv-api".to_string(),
-			secret: "seventv-api".to_string(),
-		}
-	}
-}
-
-#[derive(Debug, Clone, Deserialize, config::Config)]
+#[auto_settings]
 #[serde(default)]
 pub struct ConnectionsConfig {
 	/// Callback URL
+	#[settings(default = "https://7tv.app/auth/callback".into())]
 	pub callback_url: String,
 	/// Twitch connection
 	pub twitch: ConnectionConfig,
@@ -68,35 +52,18 @@ pub struct ConnectionsConfig {
 	pub google: ConnectionConfig,
 }
 
-impl Default for ConnectionsConfig {
-	fn default() -> Self {
-		Self {
-			callback_url: "https://7tv.app/auth/callback".to_string(),
-			twitch: ConnectionConfig::default(),
-			discord: ConnectionConfig::default(),
-			google: ConnectionConfig::default(),
-		}
-	}
-}
-
-#[derive(Debug, Clone, Deserialize, config::Config)]
+#[auto_settings]
+#[serde(default)]
 pub struct ConnectionConfig {
 	/// Client ID
+	#[settings(default = "client_id".into())]
 	pub client_id: String,
 	/// Client Secret
+	#[settings(default = "client_secret".into())]
 	pub client_secret: String,
 }
 
-impl Default for ConnectionConfig {
-	fn default() -> Self {
-		Self {
-			client_id: "client_id".to_string(),
-			client_secret: "client_secret".to_string(),
-		}
-	}
-}
-
-#[derive(Default, Debug, Deserialize, config::Config)]
+#[auto_settings]
 #[serde(default)]
 pub struct Extra {
 	/// API configuration

@@ -11,8 +11,6 @@ mod settings;
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use scuffle_utils::http::ext::OptionExt;
-use scuffle_utils::http::router::error::RouterError;
 
 pub use self::ban::*;
 pub use self::connection::*;
