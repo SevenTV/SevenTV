@@ -1,6 +1,7 @@
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{Collection, UserEditor, UserId};
 
 pub struct UserEditorByUserIdLoader {
@@ -9,7 +10,7 @@ pub struct UserEditorByUserIdLoader {
 
 impl UserEditorByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("UserEditorByUserIdLoader", Self { db })
 	}
 }
 
@@ -18,8 +19,10 @@ impl Loader for UserEditorByUserIdLoader {
 	type Key = UserId;
 	type Value = Vec<UserEditor>;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "UserEditorByUserIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let results: Self::Value = UserEditor::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
@@ -45,7 +48,7 @@ pub struct UserEditorByEditorIdLoader {
 
 impl UserEditorByEditorIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("UserEditorByEditorIdLoader", Self { db })
 	}
 }
 
@@ -54,8 +57,8 @@ impl Loader for UserEditorByEditorIdLoader {
 	type Key = UserId;
 	type Value = Vec<UserEditor>;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "UserEditorByEditorIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Self::Value = UserEditor::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {

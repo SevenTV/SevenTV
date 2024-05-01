@@ -1,21 +1,20 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
-use hyper::body::Incoming;
-use hyper::{Response, StatusCode};
+use axum::body::Body;
+use axum::extract::State;
+use axum::response::{IntoResponse, Response};
+use axum::routing::{get, post};
+use axum::{Extension, Router};
+use hyper::StatusCode;
 use mongodb::bson::doc;
-use scuffle_utils::http::ext::{OptionExt, ResultExt};
-use scuffle_utils::http::router::builder::RouterBuilder;
-use scuffle_utils::http::router::Router;
-use scuffle_utils::http::RouteError;
 use shared::database::{Collection, Platform, UserSession};
-use shared::http::{empty_body, Body};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::AUTH_COOKIE;
-use crate::http::{RequestGlobalExt, RequestQueryParamExt};
+use crate::http::extract::Query;
+use crate::http::middleware::auth::AUTH_COOKIE;
+use crate::http::middleware::cookies::Cookies;
 
 mod login;
 
@@ -23,11 +22,22 @@ mod login;
 #[openapi(paths(login, logout, manual))]
 pub struct Docs;
 
-pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiError>> {
-	Router::builder()
-		.get("/", login)
-		.post("/logout", logout)
-		.get("/manual", manual)
+pub fn routes() -> Router<Arc<Global>> {
+	Router::new()
+		.route("/", get(login))
+		.route("/logout", post(logout))
+		.route("/manual", get(manual))
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+pub struct LoginRequest {
+	pub platform: Platform,
+	#[serde(default)]
+	pub callback: bool,
+	#[serde(default)]
+	pub code: Option<String>,
+	#[serde(default)]
+	pub state: Option<String>,
 }
 
 #[utoipa::path(
@@ -38,34 +48,35 @@ pub fn routes(_: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<ApiEr
         (status = 303, description = "Auth Redirect"),
     ),
 )]
-#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
+#[tracing::instrument(
+	skip_all,
+	fields(
+		query.platform = %query.platform,
+		query.callback = %query.callback,
+		session = session.as_ref().map(|s| s.user_id.to_string())
+	)
+)]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/auth.route.go#L47
-async fn login(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	let global: Arc<Global> = req.get_global()?;
-
-	let cookies = req.get_cookies()?;
-
-	let platform = req
-		.query_param("platform")
-		.and_then(|p| Platform::from_str(&p).ok())
-		.map_err_route((StatusCode::BAD_REQUEST, "invalid account provider"))?;
-
-	let callback = req.query_param("callback").is_some_and(|c| c == "true");
-
-	let session = req.extensions().get::<UserSession>();
+async fn login(
+	State(global): State<Arc<Global>>,
+	Extension(cookies): Extension<Cookies>,
+	session: Option<Extension<UserSession>>,
+	Query(query): Query<LoginRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+	let location = if query.callback {
+		handle_login_callback(&global, query, &cookies).await?
+	} else {
+		handle_login(&global, session.as_deref(), query.platform, &cookies)?
+	};
 
 	Response::builder()
-		.header(
-			hyper::header::LOCATION,
-			if callback {
-				handle_login_callback(&global, platform, &req, &cookies).await?
-			} else {
-				handle_login(&global, session, platform, &cookies)?
-			},
-		)
+		.header(hyper::header::LOCATION, location)
 		.status(StatusCode::SEE_OTHER)
-		.body(empty_body())
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))
+		.body(Body::empty())
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to create response");
+			ApiError::INTERNAL_SERVER_ERROR
+		})
 }
 
 #[utoipa::path(
@@ -76,11 +87,14 @@ async fn login(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, R
         (status = 204, description = "Logout"),
     ),
 )]
-#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
+#[tracing::instrument(skip(global, cookies))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/logout.auth.route.go#L29
-async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	let global: Arc<Global> = req.get_global()?;
-	if let Some(session) = req.extensions().get::<UserSession>() {
+async fn logout(
+	State(global): State<Arc<Global>>,
+	Extension(cookies): Extension<Cookies>,
+	session: Option<Extension<UserSession>>,
+) -> Result<impl IntoResponse, ApiError> {
+	if let Some(Extension(session)) = session {
 		UserSession::collection(global.db())
 			.delete_one(
 				doc! {
@@ -89,15 +103,21 @@ async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, 
 				None,
 			)
 			.await
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to delete session"))?;
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to delete session");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
-		req.get_cookies()?.remove(AUTH_COOKIE);
+		cookies.remove(AUTH_COOKIE);
 	}
 
-	Ok(Response::builder()
+	Response::builder()
 		.status(StatusCode::NO_CONTENT)
-		.body(empty_body())
-		.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to build response"))?)
+		.body(Body::empty())
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to create response");
+			ApiError::INTERNAL_SERVER_ERROR
+		})
 }
 
 #[utoipa::path(
@@ -108,8 +128,8 @@ async fn logout(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, 
         (status = 200, description = "Manual Auth"),
     ),
 )]
-#[tracing::instrument(level = "info", skip(req), fields(path = %req.uri().path(), method = %req.method()))]
+#[tracing::instrument]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/manual.route.go#L41
-async fn manual(req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<ApiError>> {
-	Err((StatusCode::NOT_IMPLEMENTED, "not implemented").into())
+async fn manual() -> Result<impl IntoResponse, ApiError> {
+	Ok(ApiError::NOT_IMPLEMENTED)
 }

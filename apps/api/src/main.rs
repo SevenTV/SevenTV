@@ -1,62 +1,66 @@
 use std::sync::Arc;
 
-use cap::Cap;
-use scuffle_utils::context::Context;
-use scuffle_utils::prelude::FutureTimeout;
+use scuffle_foundations::bootstrap::{bootstrap, Bootstrap};
+use scuffle_foundations::settings::cli::Matches;
 use tokio::signal::unix::SignalKind;
+
+use crate::config::Config;
 
 mod config;
 mod connections;
 mod dataloader;
 mod global;
-mod health;
 mod http;
 mod jwt;
-mod metrics;
 
-#[global_allocator]
-static ALLOCATOR: Cap<tikv_jemallocator::Jemalloc> = Cap::new(tikv_jemallocator::Jemalloc, usize::MAX);
+struct BootstrapWrapper(Config);
 
-#[tokio::main]
-async fn main() {
-	let config = shared::config::parse(true, Some("config".into())).expect("failed to parse config");
-	shared::logging::init(&config.logging.level, config.logging.mode).expect("failed to initialize logging");
+impl From<Config> for BootstrapWrapper {
+	fn from(config: Config) -> Self {
+		Self(config)
+	}
+}
 
-	if let Some(path) = config.config_file.as_ref() {
-		tracing::info!("using config file: {path}");
+impl Bootstrap for BootstrapWrapper {
+	type Settings = Config;
+
+	fn telemetry_config(&self) -> Option<scuffle_foundations::telementry::settings::TelementrySettings> {
+		Some(self.0.telementry.clone())
 	}
 
-	if let Some(limit) = config.memory.limit {
-		tracing::info!("setting memory limit to {limit} bytes");
-		ALLOCATOR.set_limit(limit).expect("failed to set memory limit");
+	fn runtime_mode(&self) -> scuffle_foundations::bootstrap::RuntimeSettings {
+		self.0.runtime.clone()
 	}
+}
 
+#[bootstrap]
+async fn main(settings: Matches<BootstrapWrapper>) {
 	tracing::info!("starting api");
 
-	let (ctx, handler) = Context::new();
+	let global = Arc::new(
+		global::Global::new(settings.settings.0)
+			.await
+			.expect("failed to initialize global"),
+	);
 
-	let global = Arc::new(global::Global::new(ctx, config).await.expect("failed to initialize global"));
+	scuffle_foundations::telementry::server::register_health_check(global.clone());
 
-	let mut signal = scuffle_utils::signal::SignalHandler::new()
+	let mut signal = scuffle_foundations::signal::SignalHandler::new()
 		.with_signal(SignalKind::interrupt())
 		.with_signal(SignalKind::terminate());
 
-	let health_handle = tokio::spawn(health::run(global.clone()));
-	let metrics_handle = tokio::spawn(metrics::run(global.clone()));
 	let http_handle = tokio::spawn(http::run(global.clone()));
 
 	tokio::select! {
 		_ = signal.recv() => tracing::info!("received shutdown signal"),
 		r = http_handle => tracing::warn!("http server exited: {:?}", r),
-		r = health_handle => tracing::warn!("health server exited: {:?}", r),
-		r = metrics_handle => tracing::warn!("metrics server exited: {:?}", r),
 	}
 
-	drop(global);
+	let handler = scuffle_foundations::context::Handler::global();
 
 	tokio::select! {
 		_ = signal.recv() => tracing::info!("received second shutdown signal, forcing exit"),
-		r = handler.cancel().timeout(std::time::Duration::from_secs(60)) => {
+		r = tokio::time::timeout(std::time::Duration::from_secs(60), handler.shutdown()) => {
 			if r.is_err() {
 				tracing::warn!("failed to cancel context in time, force exit");
 			}

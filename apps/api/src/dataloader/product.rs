@@ -1,5 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
-use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{Collection, Product, ProductId};
 
 pub struct ProductByIdLoader {
@@ -8,7 +9,7 @@ pub struct ProductByIdLoader {
 
 impl ProductByIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("ProductByIdLoader", Self { db })
 	}
 }
 
@@ -17,8 +18,10 @@ impl Loader for ProductByIdLoader {
 	type Key = ProductId;
 	type Value = Product;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "ProductByIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let results: Vec<Self::Value> = Product::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {

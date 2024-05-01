@@ -6,8 +6,7 @@ license = "Apache-2.0 with Commons Clause"
 
 [dependencies]
 tokio = { version = "1.35", features = ["full"] }
-scuffle-config = "0.0.1"
-scuffle-utils = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "feature/website", features = ["http", "signal", "context", "prelude", "dataloader"] }
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
 serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 hyper = { version = "1", features = ["full"] }
@@ -34,7 +33,6 @@ urlencoding = "2"
 url = "2"
 futures = "0.3"
 reqwest = { version = "0.12.1", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
-prometheus-client = "0.22"
 scopeguard = "1.1"
 rand = "0.8"
 memory-stats = "1"
@@ -49,6 +47,10 @@ zen-engine = "0.20"
 zen-expression = "0.20"
 itertools = "0.12"
 mongodb = { version = "2.8", features = ["tokio-runtime", "bson-chrono-0_4"]}
+
+tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
+axum = "0.7"
+tower = "0.4"
 
 shared = { workspace = true }
 

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use shared::database::Platform;
 
 use crate::global::Global;
+use crate::http::error::ApiError;
 
 mod discord;
 mod google;
@@ -14,12 +15,22 @@ mod twitch;
 pub enum ConnectionError {
 	#[error("unsupported platform")]
 	UnsupportedPlatform,
-	#[error("invalid response code: {0:?}")]
-	InvalidResponse(StatusCode),
+	#[error("request failed")]
+	RequestError,
 	#[error("no user data")]
 	NoUserData,
-	#[error("reqwest: {0}")]
-	ReqwestError(#[from] reqwest::Error),
+}
+
+impl From<ConnectionError> for ApiError {
+	fn from(value: ConnectionError) -> Self {
+		match value {
+			ConnectionError::UnsupportedPlatform => ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform"),
+			ConnectionError::RequestError => ApiError::INTERNAL_SERVER_ERROR,
+			ConnectionError::NoUserData => {
+				ApiError::new_const(StatusCode::BAD_REQUEST, "3rd party platform did not return user data")
+			}
+		}
+	}
 }
 
 #[derive(Debug, Serialize)]
@@ -50,13 +61,15 @@ pub enum TokenResponseScope {
 /// Twitch docs: https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow
 /// Discord docs: https://discord.com/developers/docs/topics/oauth2#authorization-code-grant
 /// Google docs: https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
+/// Kick docs: Kick does not have any documentation.
+#[tracing::instrument(skip(global, code, redirect_uri), fields(endpoint))]
 pub async fn exchange_code(
 	global: &Arc<Global>,
 	platform: Platform,
 	code: &str,
 	redirect_uri: String,
 ) -> Result<TokenResponse, ConnectionError> {
-	let (url, config) = match platform {
+	let (endpoint, config) = match platform {
 		Platform::Twitch => ("https://id.twitch.tv/oauth2/token", &global.config().api.connections.twitch),
 		Platform::Discord => (
 			"https://discord.com/api/v10/oauth2/token",
@@ -66,9 +79,11 @@ pub async fn exchange_code(
 		_ => return Err(ConnectionError::UnsupportedPlatform),
 	};
 
+	tracing::Span::current().record("endpoint", &endpoint);
+
 	let res = global
 		.http_client()
-		.post(url)
+		.post(endpoint)
 		.form(&TokenRequest {
 			grant_type: "authorization_code".to_string(),
 			code: code.to_string(),
@@ -77,14 +92,26 @@ pub async fn exchange_code(
 			redirect_uri,
 		})
 		.send()
-		.await?;
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "request failed");
+			ConnectionError::RequestError
+		})?;
 
 	let status = res.status();
+	let text = res.text().await.map_err(|err| {
+		tracing::error!(error = %err, "failed to read response");
+		ConnectionError::RequestError
+	})?;
 
 	if status.is_success() {
-		Ok(res.json().await?)
+		Ok(serde_json::from_str(&text).map_err(|err| {
+			tracing::error!(error = %err, text, "failed to parse response");
+			ConnectionError::RequestError
+		})?)
 	} else {
-		Err(ConnectionError::InvalidResponse(status))
+		tracing::error!(%status, text, "invalid response");
+		Err(ConnectionError::RequestError)
 	}
 }
 
@@ -95,6 +122,7 @@ pub struct PlatformUserData {
 	pub avatar: Option<String>,
 }
 
+#[tracing::instrument(skip(global, access_token))]
 pub async fn get_user_data(
 	global: &Arc<Global>,
 	platform: Platform,

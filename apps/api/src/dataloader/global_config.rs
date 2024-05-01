@@ -1,4 +1,5 @@
-use scuffle_utils::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{Collection, GlobalConfig, GlobalConfigId};
 
 pub struct GlobalConfigLoader {
@@ -7,7 +8,7 @@ pub struct GlobalConfigLoader {
 
 impl GlobalConfigLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new(Self { db })
+		DataLoader::new("GlobalConfigLoader", Self { db })
 	}
 }
 
@@ -16,8 +17,10 @@ impl Loader for GlobalConfigLoader {
 	type Key = ();
 	type Value = GlobalConfig;
 
-	#[tracing::instrument(level = "info", skip(self), fields(keys = ?keys))]
-	async fn load(&self, keys: &[Self::Key]) -> LoaderOutput<Self> {
+	#[tracing::instrument(name = "GlobalConfigLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
 		let config: GlobalConfig = Self::Value::collection(&self.db)
 			.find_one(
 				mongodb::bson::doc! {

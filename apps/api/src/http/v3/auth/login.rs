@@ -1,17 +1,15 @@
 use std::sync::Arc;
 
-use hyper::body::Incoming;
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use scuffle_utils::http::ext::{OptionExt, ResultExt};
-use scuffle_utils::http::RouteError;
 use shared::database::{Collection, Platform, User, UserConnection, UserSession};
 
+use super::LoginRequest;
 use crate::connections;
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::{new_cookie, Cookies, AUTH_COOKIE};
-use crate::http::RequestQueryParamExt;
+use crate::http::middleware::auth::AUTH_COOKIE;
+use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
 
 const CSRF_COOKIE: &str = "seventv-csrf";
@@ -26,52 +24,48 @@ const GOOGLE_AUTH_URL: &str =
 	"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&include_granted_scopes=true&";
 const GOOGLE_AUTH_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonly";
 
-pub async fn handle_callback(
-	global: &Arc<Global>,
-	platform: Platform,
-	req: &hyper::Request<Incoming>,
-	cookies: &Cookies,
-) -> Result<String, RouteError<ApiError>> {
-	let code = req
-		.query_param("code")
-		.map_err_route((StatusCode::BAD_REQUEST, "missing code"))?;
+pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies: &Cookies) -> Result<String, ApiError> {
+	let code = query
+		.code
+		.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "missing code from query"))?;
+	let state = query
+		.state
+		.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "missing state from query"))?;
 
 	// validate csrf
-	let state = req
-		.query_param("state")
-		.map_err_route((StatusCode::BAD_REQUEST, "missing state"))?;
 	let csrf_cookie = cookies
 		.get(CSRF_COOKIE)
-		.map_err_route((StatusCode::BAD_REQUEST, "missing csrf cookie"))?;
+		.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "missing csrf cookie"))?;
 
 	let csrf_payload = CsrfJwtPayload::verify(global, csrf_cookie.value())
 		.filter(|payload| payload.validate_random(&state).unwrap_or_default())
-		.map_err_route((StatusCode::BAD_REQUEST, "invalid csrf"))?;
+		.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "invalid csrf"))?;
 
 	// exchange code for access token
 	let token = connections::exchange_code(
 		global,
-		platform,
+		query.platform,
 		&code,
-		format!("{}/v3/auth?callback=true&platform={}", global.config().api.base_url, platform),
+		format!(
+			"{}/v3/auth?callback=true&platform={}",
+			global.config().api.base_url,
+			query.platform
+		),
 	)
-	.await
-	.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to exchange code"))?;
+	.await?;
 
 	// query user data from platform
-	let user_data = connections::get_user_data(global, platform, &token.access_token)
-		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to get user data from platform"))?;
+	let user_data = connections::get_user_data(global, query.platform, &token.access_token).await?;
 
-	let mut session = global
-		.mongo()
-		.start_session(None)
-		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to start session"))?;
-	session
-		.start_transaction(None)
-		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to start transaction"))?;
+	let mut session = global.mongo().start_session(None).await.map_err(|err| {
+		tracing::error!(error = %err, "failed to start session");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	session.start_transaction(None).await.map_err(|err| {
+		tracing::error!(error = %err, "failed to start transaction");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
 
 	let user = if let Some(user_id) = csrf_payload.user_id {
 		User::collection(global.db())
@@ -83,14 +77,21 @@ pub async fn handle_callback(
 				&mut session,
 			)
 			.await
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to find user"))?
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to find user"))?
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to find user");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?
+			.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "user not found"))?
 	} else {
 		let user = User::default();
+
 		User::collection(global.db())
 			.insert_one_with_session(&user, None, &mut session)
 			.await
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user"))?;
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to insert user");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		user
 	};
@@ -98,7 +99,7 @@ pub async fn handle_callback(
 	let connection = UserConnection::collection(global.db())
 		.find_one_and_update_with_session(
 			doc! {
-				"platform": to_bson(&platform).expect("failed to convert platform to bson"),
+				"platform": to_bson(&query.platform).expect("failed to convert platform to bson"),
 				"platform_id": &user_data.id,
 			},
 			doc! {
@@ -111,7 +112,7 @@ pub async fn handle_callback(
 				"$setOnInsert": to_bson(&UserConnection {
 					user_id: user.id,
 					main_connection: csrf_payload.user_id.is_none(),
-					platform,
+					platform: query.platform,
 					platform_id: user_data.id,
 					platform_username: user_data.username,
 					platform_display_name: user_data.display_name,
@@ -129,15 +130,27 @@ pub async fn handle_callback(
 			&mut session,
 		)
 		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to update user connection"))?
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user connection"))?;
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to find user connection");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?
+		.ok_or_else(|| {
+			tracing::error!("user connection failed to be created");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 	if connection.user_id != user.id {
-		return Err((StatusCode::BAD_REQUEST, "connection already connected to another account").into());
+		return Err(ApiError::new_const(
+			StatusCode::BAD_REQUEST,
+			"connection already paired with another user",
+		));
 	}
 
 	if connection.allow_login && csrf_payload.user_id.is_none() {
-		return Err((StatusCode::BAD_REQUEST, "connection has login disabled").into());
+		return Err(ApiError::new_const(
+			StatusCode::UNAUTHORIZED,
+			"connection is not allowed to login",
+		));
 	}
 
 	let user_session = if csrf_payload.user_id.is_none() {
@@ -152,43 +165,49 @@ pub async fn handle_callback(
 		UserSession::collection(global.db())
 			.insert_one_with_session(&user_session, None, &mut session)
 			.await
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to create user session"))?;
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to insert user session");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		Some(user_session)
 	} else {
 		None
 	};
 
-	session
-		.commit_transaction()
-		.await
-		.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to commit transaction"))?;
+	session.commit_transaction().await.map_err(|err| {
+		tracing::error!(error = %err, "failed to commit transaction");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
 
 	// create jwt access token
-	if let Some(user_session) = user_session {
+	let redirect_url = if let Some(user_session) = user_session {
 		let jwt = AuthJwtPayload::from(user_session.clone());
-		let token = jwt
-			.serialize(global)
-			.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize jwt"))?;
+		let token = jwt.serialize(global).ok_or_else(|| {
+			tracing::error!("failed to serialize jwt");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		// create cookie
-		let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(user_session.expires_at.timestamp())
-			.map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "failed to create expiration"))?;
+		let expiration =
+			cookie::time::OffsetDateTime::from_unix_timestamp(user_session.expires_at.timestamp()).map_err(|err| {
+				tracing::error!(error = %err, "failed to convert expiration to cookie time");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
 
-		Ok(format!(
+		format!(
 			"{}?platform={}&token={}",
 			global.config().api.connections.callback_url,
-			platform,
+			query.platform,
 			token
-		))
+		)
 	} else {
-		Ok(format!(
-			"{}?platform={}",
-			global.config().api.connections.callback_url,
-			platform,
-		))
-	}
+		format!("{}?platform={}", global.config().api.connections.callback_url, query.platform)
+	};
+
+	Ok(redirect_url)
 }
 
 pub fn handle_login(
@@ -196,20 +215,13 @@ pub fn handle_login(
 	session: Option<&UserSession>,
 	platform: Platform,
 	cookies: &Cookies,
-) -> Result<String, RouteError<ApiError>> {
+) -> Result<String, ApiError> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
 		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config().api.connections.twitch),
 		Platform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config().api.connections.discord),
 		Platform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config().api.connections.google),
-		_ => {
-			return Err((
-				StatusCode::BAD_REQUEST,
-				"unsupported platform",
-				ApiError::ConnectionError(connections::ConnectionError::UnsupportedPlatform),
-			)
-				.into());
-		}
+		_ => return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform")),
 	};
 
 	let csrf = CsrfJwtPayload::new(session.map(|s| s.user_id));
@@ -218,19 +230,25 @@ pub fn handle_login(
 		global,
 		(
 			CSRF_COOKIE,
-			csrf.serialize(global)
-				.map_err_route((StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize csrf"))?,
+			csrf.serialize(global).ok_or_else(|| {
+				tracing::error!("failed to serialize csrf");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?,
 		),
 	));
 
-	let redirect_uri = format!("{}/v3/auth?callback=true&platform={}", global.config().api.base_url, platform);
-
-	Ok(format!(
+	let redirect_url = format!(
 		"{}client_id={}&redirect_uri={}&response_type=code&scope={}&state={}",
 		url,
 		config.client_id,
-		urlencoding::encode(&redirect_uri),
+		urlencoding::encode(&format!(
+			"{}/v3/auth?callback=true&platform={}",
+			global.config().api.base_url,
+			platform
+		)),
 		urlencoding::encode(scope),
 		csrf.random()
-	))
+	);
+
+	Ok(redirect_url)
 }
