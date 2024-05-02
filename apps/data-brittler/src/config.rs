@@ -1,19 +1,33 @@
 use std::path::PathBuf;
 
+use scuffle_foundations::settings::auto_settings;
 use shared::config::DatabaseConfig;
 
 pub type Config = shared::config::Config<Extra>;
 
-#[derive(Debug, serde::Deserialize, config::Config)]
+#[auto_settings]
 #[serde(default)]
 pub struct Extra {
 	/// Source database configuration
+	#[settings(default = DatabaseConfig {
+		uri: "mongodb://localhost:27017/7tv".to_string(),
+		..Default::default()
+	})]
 	pub source_database: DatabaseConfig,
 	/// Target database configuration
+	#[settings(default = DatabaseConfig {
+		uri: "mongodb://localhost:27017/7tv-new".to_string(),
+		..Default::default()
+	})]
 	pub target_database: DatabaseConfig,
 	/// ClickHouse connection string
+	#[settings(default = DatabaseConfig {
+		uri: "http://localhost:8123".to_string(),
+		..Default::default()
+	})]
 	pub clickhouse: DatabaseConfig,
 	/// Path to the report file
+	#[settings(default = PathBuf::from("./local/report.md"))]
 	pub report_path: PathBuf,
 
 	/// Run users job
@@ -68,45 +82,4 @@ pub struct Extra {
 
 	/// Truncate tables before inserting data
 	pub truncate: bool,
-}
-
-impl Default for Extra {
-	fn default() -> Self {
-		Self {
-			source_database: DatabaseConfig {
-				uri: "mongodb://localhost:27017/7tv".to_string(),
-				..Default::default()
-			},
-			target_database: DatabaseConfig {
-				uri: "mongodb://localhost:27017/7tv-new".to_string(),
-				..Default::default()
-			},
-			clickhouse: DatabaseConfig {
-				uri: "http://localhost:8123".to_string(),
-				..Default::default()
-			},
-			report_path: PathBuf::from("./local/report.md"),
-			users: false,
-			skip_users: false,
-			bans: false,
-			skip_bans: false,
-			emotes: false,
-			skip_emotes: false,
-			emote_sets: false,
-			skip_emote_sets: false,
-			cosmetics: false,
-			skip_cosmetics: false,
-			roles: false,
-			skip_roles: false,
-			reports: false,
-			skip_reports: false,
-			audit_logs: false,
-			skip_audit_logs: false,
-			messages: false,
-			skip_messages: false,
-			system: false,
-			skip_system: false,
-			truncate: false,
-		}
-	}
 }

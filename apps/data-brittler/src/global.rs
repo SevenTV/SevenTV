@@ -1,10 +1,8 @@
 use anyhow::Context as _;
-use scuffle_utils::context::Context;
 
 use crate::config::Config;
 
 pub struct Global {
-	ctx: Context,
 	config: Config,
 	clickhouse: clickhouse::Client,
 	source_db: mongodb::Database,
@@ -12,7 +10,7 @@ pub struct Global {
 }
 
 impl Global {
-	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
+	pub async fn new(config: Config) -> anyhow::Result<Self> {
 		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
 
 		let mongo_source = shared::database::setup_database(&config.source_database)
@@ -24,7 +22,6 @@ impl Global {
 			.context("target database setup")?;
 
 		Ok(Self {
-			ctx,
 			config,
 			clickhouse,
 			source_db: mongo_source
@@ -34,10 +31,6 @@ impl Global {
 				.default_database()
 				.unwrap_or_else(|| mongo_source.database("7tv-new")),
 		})
-	}
-
-	pub fn ctx(&self) -> &Context {
-		&self.ctx
 	}
 
 	pub fn config(&self) -> &Config {

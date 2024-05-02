@@ -71,7 +71,7 @@ pub trait Job: Sized {
 			let fut = Box::pin(
 				async move {
 					match Self::new(global.clone()).await {
-						Ok(job) => job.run(global.clone()).await,
+						Ok(job) => job.run().await,
 						Err(e) => Err(e),
 					}
 				}
@@ -84,7 +84,7 @@ pub trait Job: Sized {
 		}
 	}
 
-	async fn run(mut self, global: Arc<Global>) -> anyhow::Result<JobOutcome> {
+	async fn run(mut self) -> anyhow::Result<JobOutcome> {
 		let timer = Instant::now();
 
 		let collection = self.collection().await;
@@ -105,7 +105,7 @@ pub trait Job: Sized {
 		let mut documents = collection.find(None, None).await.context("failed to query documents")?;
 
 		while let Some(r) = documents.try_next().await.transpose() {
-			if global.ctx().is_done() {
+			if scuffle_foundations::context::Context::global().is_done() {
 				tracing::info!("job cancelled");
 				break;
 			}

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use mongodb::bson::{self, doc};
+use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::UpdateOptions;
 use shared::database::{Collection, EmoteSetId, GlobalConfig, Role};
