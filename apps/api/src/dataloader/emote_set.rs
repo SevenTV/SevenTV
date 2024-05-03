@@ -1,7 +1,7 @@
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{Collection, EmoteSet, EmoteSetEmote, EmoteSetId, UserId};
 
 pub struct EmoteSetByIdLoader {

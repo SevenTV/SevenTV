@@ -1,6 +1,6 @@
 use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{Badge, BadgeId, Collection};
 
 pub struct BadgeByIdLoader {

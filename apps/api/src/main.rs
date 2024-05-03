@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use scuffle_foundations::bootstrap::{bootstrap, Bootstrap};
+use scuffle_foundations::bootstrap::{bootstrap, Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::cli::Matches;
+use scuffle_foundations::telemetry::settings::TelemetrySettings;
 use tokio::signal::unix::SignalKind;
 
 use crate::config::Config;
@@ -24,11 +25,11 @@ impl From<Config> for BootstrapWrapper {
 impl Bootstrap for BootstrapWrapper {
 	type Settings = Config;
 
-	fn telemetry_config(&self) -> Option<scuffle_foundations::telementry::settings::TelementrySettings> {
-		Some(self.0.telementry.clone())
+	fn telemetry_config(&self) -> Option<TelemetrySettings> {
+		Some(self.0.telemetry.clone())
 	}
 
-	fn runtime_mode(&self) -> scuffle_foundations::bootstrap::RuntimeSettings {
+	fn runtime_mode(&self) -> RuntimeSettings {
 		self.0.runtime.clone()
 	}
 }
@@ -43,7 +44,7 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 			.expect("failed to initialize global"),
 	);
 
-	scuffle_foundations::telementry::server::register_health_check(global.clone());
+	scuffle_foundations::telemetry::server::register_health_check(global.clone());
 
 	let mut signal = scuffle_foundations::signal::SignalHandler::new()
 		.with_signal(SignalKind::interrupt())

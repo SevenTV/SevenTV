@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use axum::extract::{MatchedPath, Request};
+use axum::routing::get;
 use axum::response::Response;
 use axum::Router;
-use scuffle_foundations::context::Context;
-use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use tower::ServiceBuilder;
 use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
 use tower_http::trace::TraceLayer;
@@ -35,6 +35,7 @@ impl MakeRequestId for TraceRequestId {
 
 fn routes(global: Arc<Global>) -> Router {
 	Router::new()
+		.route("/", get(root))
 		.nest("/v3", v3::routes())
 		.with_state(global.clone())
 		.fallback(not_found)
@@ -69,22 +70,28 @@ fn routes(global: Arc<Global>) -> Router {
 }
 
 #[tracing::instrument]
+async fn root() -> &'static str {
+	"Welcome to the 7TV API!"
+}
+
+#[tracing::instrument]
 pub async fn not_found() -> ApiError {
 	ApiError::NOT_FOUND
 }
 
-#[tracing::instrument(skip(global))]
+#[tracing::instrument(name = "API", skip(global))]
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let config = global.config();
 
-	let tcp_listener = tokio::net::TcpListener::bind(config.api.bind).await?;
+	let mut server = scuffle_foundations::http::server::Server::builder()
+		.bind(config.api.bind)
+		.with_workers(config.api.workers)
+		.build(routes(global))
+		.context("Failed to build HTTP server")?;
 
-	tracing::info!("listening on {}", tcp_listener.local_addr()?);
+	server.start().await.context("Failed to start HTTP server")?;
 
-	axum::serve(tcp_listener, routes(global))
-		.with_graceful_shutdown(Context::global().into_done())
-		.await
-		.context("http server failed")?;
+	server.wait().await.context("HTTP server failed")?;
 
 	Ok(())
 }

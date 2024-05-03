@@ -9,7 +9,7 @@ use mongodb::bson::to_bson;
 use rand::Rng;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::runtime;
-use scuffle_foundations::telementry::opentelemetry::OpenTelemetrySpanExt;
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{
 	Collection, ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserId, UserProduct,
 	UserProductDataPurchase, UserProductDataSubscriptionEntryStatus,

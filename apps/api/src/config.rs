@@ -9,6 +9,9 @@ pub struct Api {
 	/// http options
 	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 8080)))]
 	pub bind: SocketAddr,
+	/// worker count
+	#[settings(default = 1)]
+	pub workers: usize,
 	/// cdn base url
 	#[settings(default = "https://cdn.7tv.app".into())]
 	pub cdn_base_url: String,

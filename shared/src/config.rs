@@ -1,6 +1,6 @@
 use scuffle_foundations::bootstrap::RuntimeSettings;
 use scuffle_foundations::settings::{auto_settings, Settings};
-use scuffle_foundations::telementry::settings::TelementrySettings;
+use scuffle_foundations::telemetry::settings::TelemetrySettings;
 
 #[auto_settings]
 pub struct Config<T: Settings + Default> {
@@ -8,8 +8,8 @@ pub struct Config<T: Settings + Default> {
 	pub pod: Pod,
 	/// Nats configuration
 	pub nats: Nats,
-	/// Telementry configuration
-	pub telementry: TelementrySettings,
+	/// Telemetry configuration
+	pub telemetry: TelemetrySettings,
 	/// Runtime configuration
 	pub runtime: RuntimeSettings,
 	#[serde(flatten)]

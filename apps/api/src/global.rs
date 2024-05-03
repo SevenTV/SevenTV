@@ -2,7 +2,7 @@
 
 use anyhow::Context as _;
 use scuffle_foundations::dataloader::DataLoader;
-use scuffle_foundations::telementry::server::HealthCheck;
+use scuffle_foundations::telemetry::server::HealthCheck;
 
 use crate::config::Config;
 use crate::dataloader;
