@@ -177,56 +177,66 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		FuturesUnordered::new();
 
 	// ugly ass code
-	UsersJob::conditional_init_and_run(
+	if let Some(j) = UsersJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().users || !any_run && !global.config().skip_users,
-	)?
-	.map(|j| futures.push(j));
-	BansJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = BansJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().bans || !any_run && !global.config().skip_bans,
-	)?
-	.map(|j| futures.push(j));
-	EmotesJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = EmotesJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().emotes || !any_run && !global.config().skip_emotes,
-	)?
-	.map(|j| futures.push(j));
-	EmoteSetsJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = EmoteSetsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().emote_sets || !any_run && !global.config().skip_emote_sets,
-	)?
-	.map(|j| futures.push(j));
-	CosmeticsJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = CosmeticsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().cosmetics || !any_run && !global.config().skip_cosmetics,
-	)?
-	.map(|j| futures.push(j));
-	RolesJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = RolesJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().roles || !any_run && !global.config().skip_roles,
-	)?
-	.map(|j| futures.push(j));
-	ReportsJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = ReportsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().reports || !any_run && !global.config().skip_reports,
-	)?
-	.map(|j| futures.push(j));
-	AuditLogsJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = AuditLogsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().audit_logs || !any_run && !global.config().skip_audit_logs,
-	)?
-	.map(|j| futures.push(j));
-	MessagesJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = MessagesJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().messages || !any_run && !global.config().skip_messages,
-	)?
-	.map(|j| futures.push(j));
-	SystemJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = SystemJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().system || !any_run && !global.config().skip_system,
-	)?
-	.map(|j| futures.push(j));
+	)? {
+		futures.push(j);
+	}
 
 	let results: Vec<JobOutcome> = futures.try_collect().await?;
 

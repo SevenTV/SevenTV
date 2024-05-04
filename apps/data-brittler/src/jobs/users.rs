@@ -91,7 +91,7 @@ impl Job for UsersJob {
 			types::EntitlementData::Role { ref_id } => Some(ref_id),
 			_ => None,
 		}) {
-			roles.insert(role_id.clone());
+			roles.insert(*role_id);
 		}
 
 		let active_badge_id = entitlements
@@ -202,7 +202,7 @@ impl Job for UsersJob {
 
 			if self.all_connections.insert((platform, platform_id.clone())) {
 				self.connections.push(UserConnection {
-					id: id.into(),
+					id,
 					user_id: user.id.into(),
 					main_connection: i == 0,
 					platform,

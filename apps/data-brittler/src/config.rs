@@ -11,19 +11,16 @@ pub struct Extra {
 	/// Source database configuration
 	#[settings(default = DatabaseConfig {
 		uri: "mongodb://localhost:27017/7tv".to_string(),
-		..Default::default()
 	})]
 	pub source_database: DatabaseConfig,
 	/// Target database configuration
 	#[settings(default = DatabaseConfig {
 		uri: "mongodb://localhost:27017/7tv-new".to_string(),
-		..Default::default()
 	})]
 	pub target_database: DatabaseConfig,
 	/// ClickHouse connection string
 	#[settings(default = DatabaseConfig {
 		uri: "http://localhost:8123".to_string(),
-		..Default::default()
 	})]
 	pub clickhouse: DatabaseConfig,
 	/// Path to the report file

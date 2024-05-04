@@ -275,8 +275,8 @@ impl Job for AuditLogsJob {
 							removed: editors.removed.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect(),
 						},
 						AuditLogChange::UserRoles(roles) => database::UserActivityData::ChangeRoles {
-							added: roles.added.into_iter().filter_map(|e| e).map(|id| id.into()).collect(),
-							removed: roles.removed.into_iter().filter_map(|e| e).map(|id| id.into()).collect(),
+							added: roles.added.into_iter().flatten().map(|id| id.into()).collect(),
+							removed: roles.removed.into_iter().flatten().map(|id| id.into()).collect(),
 						},
 						_ => unimplemented!(),
 					})

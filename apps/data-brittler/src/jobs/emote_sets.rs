@@ -65,12 +65,7 @@ impl Job for EmoteSetsJob {
 			flags,
 		});
 
-		for (emote_id, e) in emote_set
-			.emotes
-			.into_iter()
-			.filter_map(|e| e)
-			.filter_map(|e| e.id.map(|id| (id, e)))
-		{
+		for (emote_id, e) in emote_set.emotes.into_iter().flatten().filter_map(|e| e.id.map(|id| (id, e))) {
 			let mut flags = EmoteSetEmoteFlag::none();
 
 			if e.flags.contains(types::ActiveEmoteFlagModel::ZeroWidth) {

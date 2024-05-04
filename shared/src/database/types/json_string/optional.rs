@@ -7,7 +7,7 @@ where
 {
 	match value {
 		Some(value) => {
-			let s = serde_json::to_string(value).map_err(|e| serde::ser::Error::custom(e))?;
+			let s = serde_json::to_string(value).map_err(serde::ser::Error::custom)?;
 			serializer.serialize_some(&s)
 		}
 		None => serializer.serialize_none(),
@@ -20,7 +20,7 @@ where
 	D: Deserializer<'de>,
 {
 	match Option::<String>::deserialize(deserializer)? {
-		Some(s) => serde_json::from_str(&s).map_err(|e| serde::de::Error::custom(e)).map(Some),
+		Some(s) => serde_json::from_str(&s).map_err(serde::de::Error::custom).map(Some),
 		None => Ok(None),
 	}
 }
