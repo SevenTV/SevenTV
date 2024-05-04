@@ -122,7 +122,9 @@ pub struct FileProperties<E> {
 	pub extra: E,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr, utoipa::ToSchema)]
+#[derive(
+	Debug, Copy, Clone, Default, PartialEq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr, utoipa::ToSchema,
+)]
 #[repr(u8)]
 pub enum ImageFormat {
 	#[default]

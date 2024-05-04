@@ -2,17 +2,15 @@ use std::sync::Arc;
 
 use fnv::FnvHashMap;
 use futures::TryStreamExt;
-use mongodb::{
-	bson::oid::ObjectId,
-	options::InsertManyOptions,
-};
+use mongodb::bson::oid::ObjectId;
+use mongodb::options::InsertManyOptions;
 use shared::database::{
 	Collection, Ticket, TicketData, TicketMember, TicketMemberId, TicketMemberKind, TicketPriority, TicketStatus,
 };
 
-use crate::{error, global::Global, types};
-
 use super::{Job, ProcessOutcome};
+use crate::global::Global;
+use crate::{error, types};
 
 pub struct MessagesJob {
 	global: Arc<Global>,
@@ -23,9 +21,9 @@ pub struct MessagesJob {
 }
 
 impl Job for MessagesJob {
-	const NAME: &'static str = "transfer_messages";
-
 	type T = types::Message;
+
+	const NAME: &'static str = "transfer_messages";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		let mut read = FnvHashMap::default();
@@ -137,10 +135,9 @@ impl Job for MessagesJob {
 			tickets.insert_many(&self.tickets, insert_options.clone()),
 			ticket_members.insert_many(&self.ticket_members, insert_options.clone()),
 		);
-		let res = vec![res.0, res.1].into_iter().zip(vec![
-			self.tickets.len(),
-			self.ticket_members.len(),
-		]);
+		let res = vec![res.0, res.1]
+			.into_iter()
+			.zip(vec![self.tickets.len(), self.ticket_members.len()]);
 
 		for (res, len) in res {
 			match res {

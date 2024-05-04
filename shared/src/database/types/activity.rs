@@ -1,8 +1,7 @@
 use clickhouse::Row;
 
-use crate::database;
-
 use super::{EmoteId, RoleId, UserId};
+use crate::database;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
 pub struct EmoteActivity {
@@ -11,8 +10,8 @@ pub struct EmoteActivity {
 	#[serde(with = "clickhouse::serde::uuid::option")]
 	pub actor_id: Option<uuid::Uuid>,
 	pub kind: EmoteActivityKind,
-    #[serde(with = "super::json_string::optional")]
-    pub data: Option<EmoteActivityData>,
+	#[serde(with = "super::json_string::optional")]
+	pub data: Option<EmoteActivityData>,
 	#[serde(with = "clickhouse::serde::time::datetime64::millis")]
 	pub timestamp: time::OffsetDateTime,
 }
@@ -33,9 +32,9 @@ pub enum EmoteActivityData {
 		old: String,
 		new: String,
 	},
-    Merge {
-        // TODO
-    },
+	Merge {
+		// TODO
+	},
 	ChangeOwner {
 		old: UserId,
 		new: UserId,
@@ -53,7 +52,7 @@ pub enum EmoteActivityData {
 // same as database::EmoteSettings but different
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 pub struct EmoteSettingsChange {
-    pub public_listed: Option<bool>,
+	pub public_listed: Option<bool>,
 	pub private: Option<bool>,
 	pub nsfw: Option<bool>,
 	pub default_zero_width: Option<bool>,
@@ -67,8 +66,8 @@ pub struct EmoteSetActivity {
 	#[serde(with = "clickhouse::serde::uuid::option")]
 	pub actor_id: Option<uuid::Uuid>,
 	pub kind: EmoteSetActivityKind,
-    #[serde(with = "super::json_string::optional")]
-    pub data: Option<EmoteSetActivityData>,
+	#[serde(with = "super::json_string::optional")]
+	pub data: Option<EmoteSetActivityData>,
 	#[serde(with = "clickhouse::serde::time::datetime64::millis")]
 	pub timestamp: time::OffsetDateTime,
 }
@@ -83,8 +82,11 @@ pub enum EmoteSetActivityKind {
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub enum EmoteSetActivityData {
-    ChangeName { old: String, new: String },
-    ChangeTags {
+	ChangeName {
+		old: String,
+		new: String,
+	},
+	ChangeTags {
 		added: Vec<String>,
 		removed: Vec<String>,
 	},
@@ -92,10 +94,10 @@ pub enum EmoteSetActivityData {
 		old: EmoteSetSettingsChange,
 		new: EmoteSetSettingsChange,
 	},
-    ChangeEmotes {
-        added: Vec<EmoteId>,
-        removed: Vec<EmoteId>,
-    },
+	ChangeEmotes {
+		added: Vec<EmoteId>,
+		removed: Vec<EmoteId>,
+	},
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
@@ -113,8 +115,8 @@ pub struct UserActivity {
 	#[serde(with = "clickhouse::serde::uuid::option")]
 	pub actor_id: Option<uuid::Uuid>,
 	pub kind: UserActivityKind,
-    #[serde(with = "super::json_string::optional")]
-    pub data: Option<UserActivityData>,
+	#[serde(with = "super::json_string::optional")]
+	pub data: Option<UserActivityData>,
 	#[serde(with = "clickhouse::serde::time::datetime64::millis")]
 	pub timestamp: time::OffsetDateTime,
 }
@@ -134,14 +136,8 @@ pub enum UserActivityKind {
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub enum UserActivityData {
-    ChangeEditors {
-        added: Vec<UserId>,
-        removed: Vec<UserId>,
-    },
-    ChangeRoles {
-        added: Vec<RoleId>,
-        removed: Vec<RoleId>,
-    },
+	ChangeEditors { added: Vec<UserId>, removed: Vec<UserId> },
+	ChangeRoles { added: Vec<RoleId>, removed: Vec<RoleId> },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
@@ -151,8 +147,8 @@ pub struct TicketActivity {
 	#[serde(with = "clickhouse::serde::uuid::option")]
 	pub actor_id: Option<uuid::Uuid>,
 	pub kind: TicketActivityKind,
-    #[serde(with = "super::json_string::optional")]
-    pub data: Option<TicketActivityData>,
+	#[serde(with = "super::json_string::optional")]
+	pub data: Option<TicketActivityData>,
 	#[serde(with = "clickhouse::serde::time::datetime64::millis")]
 	pub timestamp: time::OffsetDateTime,
 }
@@ -167,12 +163,12 @@ pub enum TicketActivityKind {
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub enum TicketActivityData {
-    ChangeStatus {
-        old: database::TicketStatus,
-        new: database::TicketStatus,
-    },
-    ChangeAssignees {
-        added: Vec<UserId>,
-        removed: Vec<UserId>,
-    },
+	ChangeStatus {
+		old: database::TicketStatus,
+		new: database::TicketStatus,
+	},
+	ChangeAssignees {
+		added: Vec<UserId>,
+		removed: Vec<UserId>,
+	},
 }

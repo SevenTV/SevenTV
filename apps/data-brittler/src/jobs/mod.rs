@@ -32,8 +32,8 @@ pub mod emotes;
 pub mod messages;
 pub mod reports;
 pub mod roles;
-pub mod users;
 pub mod system;
+pub mod users;
 
 pub struct JobOutcome {
 	pub job_name: String,
@@ -164,7 +164,8 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 
 	let timer = Instant::now();
 
-	// This has to be here because it's these are target collections for multiple jobs
+	// This has to be here because it's these are target collections for multiple
+	// jobs
 	if global.config().truncate && global.config().reports && global.config().messages {
 		tracing::info!("dropping tickets, ticket_members and ticket_messages collections");
 		Ticket::collection(global.target_db()).drop(None).await?;
