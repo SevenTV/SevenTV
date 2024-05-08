@@ -381,7 +381,7 @@ fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_pro
 	struct Purchase {
 		date: chrono::DateTime<chrono::Utc>,
 		was_gift: bool,
-		price: f64,
+		price: i64,
 	}
 
 	#[derive(serde::Serialize)]

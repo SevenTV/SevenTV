@@ -1,5 +1,5 @@
 use super::UserId;
-use crate::database::{Collection, Id, ProductCodeId, ProductId, ProductPurchaseId, TimeInterval};
+use crate::database::{Collection, GiftCodeId, Id, PriceId, PurchaseId, RedeemCodeId};
 
 pub type UserProductId = Id<UserProduct>;
 
@@ -9,7 +9,7 @@ pub struct UserProduct {
 	#[serde(rename = "_id")]
 	pub id: UserProductId,
 	pub user_id: UserId,
-	pub product_id: ProductId,
+	pub product_id: PriceId,
 	pub data: UserProductData,
 }
 
@@ -23,7 +23,7 @@ pub struct UserProductData {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserProductDataPurchase {
-	pub duration: TimeInterval,
+	// pub duration: TimeInterval,
 	pub created_by: UserProductDataPurchaseCreatedBy,
 	pub start: chrono::DateTime<chrono::Utc>,
 	pub end: chrono::DateTime<chrono::Utc>,
@@ -41,8 +41,9 @@ pub enum UserProductDataSubscriptionEntryStatus {
 #[serde(deny_unknown_fields)]
 #[serde(tag = "kind", content = "value")]
 pub enum UserProductDataPurchaseCreatedBy {
-	Purchase(ProductPurchaseId),
-	Code(ProductCodeId),
+	Purchase(PurchaseId),
+	Redeem(RedeemCodeId),
+	Gift(GiftCodeId),
 }
 
 impl Collection for UserProduct {

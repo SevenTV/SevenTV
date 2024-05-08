@@ -1,34 +1,46 @@
-use super::{ProductId, ProductPurchaseId};
+use super::{PriceId, PurchaseId};
 use crate::database::{Collection, Id, UserId};
 
-pub type ProductCodeId = Id<ProductCode>;
+// This is not intended to be used for discount/promo codes
+// We use Stripe's coupon system for that
 
+pub type RedeemCodeId = Id<RedeemCode>;
+
+/// A redeem code is a code that can be redeemed for a product.
+/// Redeeming a code is always free.
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct ProductCode {
+pub struct RedeemCode {
 	#[serde(rename = "_id")]
-	pub id: ProductCodeId,
-	pub owner_id: Option<UserId>,
-	pub purchase_id: Option<ProductPurchaseId>,
+	pub id: RedeemCodeId,
 	pub name: String,
 	pub code: String,
 	pub description: Option<String>,
-	pub tags: Vec<String>,
 	pub enabled: bool,
 	pub remaining_uses: Option<i32>,
-	pub kind: ProductCodeKind,
-	pub product_ids: Vec<ProductId>,
+	pub price_ids: Vec<PriceId>,
 }
 
-#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
-#[repr(u8)]
-pub enum ProductCodeKind {
-	#[default]
-	Redeem = 0,
-	Discount = 1,
-	Gift = 2,
+impl Collection for RedeemCode {
+	const COLLECTION_NAME: &'static str = "redeem_codes";
 }
 
-impl Collection for ProductCode {
-	const COLLECTION_NAME: &'static str = "product_codes";
+pub type GiftCodeId = Id<GiftCode>;
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+/// A gift code involves a purchase that has already been made.
+pub struct GiftCode {
+	#[serde(rename = "_id")]
+	pub id: GiftCodeId,
+	pub owner_id: Option<UserId>,
+	pub purchase_id: PurchaseId,
+	pub name: String,
+	pub code: String,
+	pub description: Option<String>,
+	pub enabled: bool,
+}
+
+impl Collection for GiftCode {
+	const COLLECTION_NAME: &'static str = "gift_codes";
 }

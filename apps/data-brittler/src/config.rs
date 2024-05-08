@@ -8,11 +8,16 @@ pub type Config = shared::config::Config<Extra>;
 #[auto_settings]
 #[serde(default)]
 pub struct Extra {
-	/// Source database configuration
+	/// Main source database configuration
 	#[settings(default = DatabaseConfig {
 		uri: "mongodb://localhost:27017/7tv".to_string(),
 	})]
-	pub source_database: DatabaseConfig,
+	pub main_source_database: DatabaseConfig,
+	/// Egvault source database configuration
+	#[settings(default = DatabaseConfig {
+		uri: "mongodb://localhost:27017/egvault".to_string(),
+	})]
+	pub egvault_source_database: DatabaseConfig,
 	/// Target database configuration
 	#[settings(default = DatabaseConfig {
 		uri: "mongodb://localhost:27017/7tv-new".to_string(),
@@ -26,6 +31,10 @@ pub struct Extra {
 	/// Path to the report file
 	#[settings(default = PathBuf::from("./local/report.md"))]
 	pub report_path: PathBuf,
+	/// Stripe API key
+	pub stripe_key: String,
+	/// Paypal configuration
+	pub paypal: PaypalConfig,
 
 	/// Run users job
 	pub users: bool,
@@ -77,6 +86,20 @@ pub struct Extra {
 	/// Skip system job
 	pub skip_system: bool,
 
+	/// Run products job
+	pub prices: bool,
+	/// Skip products job
+	pub skip_prices: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct PaypalConfig {
+	/// Paypal client id
+	pub client_id: String,
+	/// Paypal client secret
+	pub client_secret: String,
 }

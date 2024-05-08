@@ -19,6 +19,7 @@ use crate::jobs::bans::BansJob;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
 use crate::jobs::messages::MessagesJob;
+use crate::jobs::prices::PricesJob;
 use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
 use crate::jobs::system::SystemJob;
@@ -34,6 +35,7 @@ pub mod reports;
 pub mod roles;
 pub mod system;
 pub mod users;
+pub mod prices;
 
 pub struct JobOutcome {
 	pub job_name: String,
@@ -160,7 +162,8 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		|| global.config().reports
 		|| global.config().audit_logs
 		|| global.config().messages
-		|| global.config().system;
+		|| global.config().system
+		|| global.config().prices;
 
 	let timer = Instant::now();
 
@@ -234,6 +237,12 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	if let Some(j) = SystemJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().system || !any_run && !global.config().skip_system,
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = PricesJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().prices || !any_run && !global.config().skip_prices,
 	)? {
 		futures.push(j);
 	}

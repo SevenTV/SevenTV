@@ -33,6 +33,13 @@ pub enum Error {
 	UnsupportedAuditLogKind(types::AuditLogKind),
 	#[error("failed to convert timestamp")]
 	Timestamp(#[from] time::error::ComponentRange),
+
+	#[error("invalid stripe id: {0}")]
+	InvalidStripeId(String),
+	#[error("{0}")]
+	Stripe(#[from] stripe::StripeError),
+	#[error("paypal: {0}")]
+	Paypal(reqwest::Error),
 }
 
 impl Error {
@@ -50,6 +57,9 @@ impl Error {
 			Self::PaintImageUrlRequest(_) => "PaintImageUrlRequest",
 			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
 			Self::Timestamp(_) => "Timestamp",
+			Self::Stripe(_) => "Stripe",
+			Self::Paypal(_) => "Paypal",
+			Self::InvalidStripeId(_) => "InvalidStripeId",
 		}
 	}
 
@@ -65,6 +75,7 @@ impl Error {
 				format!("emote set id: {}, emote id: {:?}", emote_set_id, emote_id)
 			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
+			Self::InvalidStripeId(id) => format!("id: {}", id),
 			e => format!("{:?}", e),
 		}
 	}
