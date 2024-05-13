@@ -9,12 +9,39 @@ pub type PurchaseId = Id<Purchase>;
 pub struct Purchase {
 	#[serde(rename = "_id")]
 	pub id: PurchaseId,
-	pub user_id: UserId,
+	pub purchase_kind: PurchaseKind,
 	pub data: PurchaseData,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "snake_case", tag = "kind", content = "data")]
+#[serde(deny_unknown_fields, rename_all = "snake_case", tag = "kind", content = "data")]
+pub enum PurchaseKind {
+	Normal {
+		user_id: UserId,
+	},
+	Gift {
+		recipient: GiftRecipient,
+		buyer_id: UserId,
+		/// None if the gift has not been redeemed or accepted yet
+		user_id: Option<UserId>,
+	},
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case", tag = "kind", content = "data")]
+pub enum GiftRecipient {
+	/// The gift can be redeemed by anyone
+	Anyone {
+		code: String,
+	},
+	/// The gift can only be redeemed by one of the specified users
+	User {
+		users: Vec<UserId>,
+	},
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case", tag = "kind", content = "data")]
 pub enum PurchaseData {
 	OneTime {
 		items: Vec<PriceId>,
