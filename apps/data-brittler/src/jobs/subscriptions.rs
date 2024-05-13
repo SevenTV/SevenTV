@@ -43,7 +43,7 @@ impl Job for SubscriptionsJob {
 					description: None,
 					enabled: false,
 					recipient: RedeemCodeRecipient::Anyone {
-						code: "nnys.live".to_string(),
+						code: "NNYS2023".to_string(),
 						remaining_uses: None,
 					},
 					redeem_type: RedeemCodeType::ExNihilo {
@@ -63,7 +63,7 @@ impl Job for SubscriptionsJob {
 				RedeemCode {
 					id: unknown_code,
 					name: "Unknown Code".into(),
-					description: None,
+					description: Some("A placeholder for any code that was redeemed before the migration.".to_string()),
 					enabled: false,
 					recipient: RedeemCodeRecipient::Anyone {
 						code: "unknown".to_string(),
