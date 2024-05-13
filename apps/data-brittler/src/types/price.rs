@@ -6,14 +6,23 @@ pub struct Price {
     pub id: ObjectId,
     pub template_index: u32,
     pub label: String,
-    pub provider: PriceProvider,
+    pub provider: GatewayProvider,
     pub provider_id: String,
     pub live: bool,
 }
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum PriceProvider {
+pub enum GatewayProvider {
     Paypal,
     Stripe,
+}
+
+impl From<GatewayProvider> for shared::database::GatewayProvider {
+    fn from(value: GatewayProvider) -> Self {
+        match value {
+            GatewayProvider::Paypal => Self::Paypal,
+            GatewayProvider::Stripe => Self::Stripe,
+        }
+    }
 }

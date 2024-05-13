@@ -11,6 +11,7 @@ mod message;
 mod price;
 mod report;
 mod role;
+mod subscription;
 mod system;
 mod user;
 
@@ -25,6 +26,7 @@ pub use message::*;
 pub use price::*;
 pub use report::*;
 pub use role::*;
+pub use subscription::*;
 pub use system::*;
 pub use user::*;
 

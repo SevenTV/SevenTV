@@ -5,6 +5,7 @@ use crate::config::Config;
 pub struct Global {
 	config: Config,
 	clickhouse: clickhouse::Client,
+	stripe_client: stripe::Client,
 	main_source_db: mongodb::Database,
 	egvault_source_db: mongodb::Database,
 	target_db: mongodb::Database,
@@ -27,6 +28,7 @@ impl Global {
 			.context("target database setup")?;
 
 		Ok(Self {
+			stripe_client: stripe::Client::new(&config.stripe_key),
 			config,
 			clickhouse,
 			main_source_db: mongo_source
@@ -59,5 +61,9 @@ impl Global {
 
 	pub fn target_db(&self) -> &mongodb::Database {
 		&self.target_db
+	}
+
+	pub fn stripe_client(&self) -> &stripe::Client {
+		&self.stripe_client
 	}
 }

@@ -91,6 +91,11 @@ pub struct Extra {
 	/// Skip products job
 	pub skip_prices: bool,
 
+	/// Run subscriptions job
+	pub subscriptions: bool,
+	/// Skip subscriptions job
+	pub skip_subscriptions: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 }

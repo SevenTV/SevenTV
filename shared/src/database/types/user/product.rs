@@ -1,5 +1,5 @@
 use super::UserId;
-use crate::database::{Collection, GiftCodeId, Id, PriceId, PurchaseId, RedeemCodeId};
+use crate::database::{Collection, Id, PriceId, PurchaseId, RedeemCodeId};
 
 pub type UserProductId = Id<UserProduct>;
 
@@ -43,7 +43,6 @@ pub enum UserProductDataSubscriptionEntryStatus {
 pub enum UserProductDataPurchaseCreatedBy {
 	Purchase(PurchaseId),
 	Redeem(RedeemCodeId),
-	Gift(GiftCodeId),
 }
 
 impl Collection for UserProduct {

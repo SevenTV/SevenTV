@@ -6,41 +6,45 @@ use crate::database::{Collection, Id, UserId};
 
 pub type RedeemCodeId = Id<RedeemCode>;
 
-/// A redeem code is a code that can be redeemed for a product.
-/// Redeeming a code is always free.
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct RedeemCode {
 	#[serde(rename = "_id")]
 	pub id: RedeemCodeId,
 	pub name: String,
-	pub code: String,
 	pub description: Option<String>,
 	pub enabled: bool,
-	pub remaining_uses: Option<i32>,
-	pub price_ids: Vec<PriceId>,
+	pub recipient: RedeemCodeRecipient,
+	pub redeem_type: RedeemCodeType,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "snake_case", tag = "kind", content = "data")]
+pub enum RedeemCodeRecipient {
+	/// A code that can be redeemed by anyone.
+	Anyone {
+		code: String,
+		remaining_uses: Option<i32>,
+	},
+	/// A code that can only be redeemed by a specific user.
+	User {
+		user_id: UserId,
+	},
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "snake_case", tag = "kind", content = "data")]
+pub enum RedeemCodeType {
+	/// A code that grants access to the listed prices out of nothing (ex nihilo).
+	ExNihilo {
+		price_ids: Vec<PriceId>,
+	},
+	/// A gift code with an associated purchase that has already been made.
+	Gift {
+		purchase_id: PurchaseId,
+	},
 }
 
 impl Collection for RedeemCode {
 	const COLLECTION_NAME: &'static str = "redeem_codes";
-}
-
-pub type GiftCodeId = Id<GiftCode>;
-
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-#[serde(deny_unknown_fields)]
-/// A gift code involves a purchase that has already been made.
-pub struct GiftCode {
-	#[serde(rename = "_id")]
-	pub id: GiftCodeId,
-	pub owner_id: Option<UserId>,
-	pub purchase_id: PurchaseId,
-	pub name: String,
-	pub code: String,
-	pub description: Option<String>,
-	pub enabled: bool,
-}
-
-impl Collection for GiftCode {
-	const COLLECTION_NAME: &'static str = "gift_codes";
 }

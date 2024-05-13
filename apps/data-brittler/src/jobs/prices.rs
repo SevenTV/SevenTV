@@ -8,7 +8,6 @@ use super::{Job, ProcessOutcome};
 
 pub struct PricesJob {
 	global: Arc<Global>,
-	stripe_client: stripe::Client,
 }
 
 impl Job for PricesJob {
@@ -22,8 +21,7 @@ impl Job for PricesJob {
 			Price::collection(global.target_db()).drop(None).await?;
 		}
 
-		let stripe_client = stripe::Client::new(&global.config().stripe_key);
-		Ok(Self { global, stripe_client })
+		Ok(Self { global })
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
@@ -34,7 +32,7 @@ impl Job for PricesJob {
 		let mut outcome = ProcessOutcome::default();
 
 		let (provider, data) = match price.provider {
-			types::PriceProvider::Paypal => {
+			types::GatewayProvider::Paypal => {
 				match paypal::Plan::query_by_id(&price.provider_id, &self.global.config().paypal).await {
 					Ok(mut pp_plan) => {
 						let first_billing_cycle = pp_plan.billing_cycles.remove(0);
@@ -70,12 +68,12 @@ impl Job for PricesJob {
 					}
 				}
 			}
-			types::PriceProvider::Stripe => {
+			types::GatewayProvider::Stripe => {
 				let Ok(stripe_id) = stripe::PriceId::from_str(&price.provider_id) else {
 					outcome.errors.push(Error::InvalidStripeId(price.provider_id));
 					return outcome;
 				};
-				match stripe::Price::retrieve(&self.stripe_client, &stripe_id, &["product"]).await {
+				match stripe::Price::retrieve(&self.global.stripe_client(), &stripe_id, &["product"]).await {
 					Ok(data) => (GatewayProvider::Stripe, data),
 					Err(e) => {
 						outcome.errors.push(e.into());

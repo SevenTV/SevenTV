@@ -40,6 +40,8 @@ pub enum Error {
 	Stripe(#[from] stripe::StripeError),
 	#[error("paypal: {0}")]
 	Paypal(reqwest::Error),
+	#[error("price not found")]
+	PriceNotFound(String),
 }
 
 impl Error {
@@ -60,6 +62,7 @@ impl Error {
 			Self::Stripe(_) => "Stripe",
 			Self::Paypal(_) => "Paypal",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
+			Self::PriceNotFound(_) => "PriceNotFound",
 		}
 	}
 
@@ -76,6 +79,7 @@ impl Error {
 			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
 			Self::InvalidStripeId(id) => format!("id: {}", id),
+			Self::PriceNotFound(id) => format!("id: {}", id),
 			e => format!("{:?}", e),
 		}
 	}

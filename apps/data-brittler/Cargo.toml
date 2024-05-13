@@ -51,4 +51,5 @@ async-stripe = { version = "0.37.0", default-features = false, features = [
     "checkout",
     "billing",
     "products",
+    "chrono",
 ] }

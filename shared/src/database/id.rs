@@ -143,7 +143,7 @@ impl<S> Id<S> {
 			bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9], bytes[10], bytes[11],
 		]);
 
-		Self::from_parts(timestamp as u64, random as u128)
+		Self::from_parts((timestamp as u64) * 1000, random as u128)
 	}
 
 	pub const fn from_parts(timestamp: u64, random: u128) -> Self {
