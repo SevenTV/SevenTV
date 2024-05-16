@@ -1,64 +1,40 @@
-mod code;
 mod purchase;
+mod invoice;
 
-pub use self::code::*;
-pub use self::purchase::*;
-use super::{BadgeId, Collection, EmoteSetId, PaintId, RoleId};
-use crate::database::Id;
-
-pub type PriceId = Id<Price>;
-
-#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
+// An item that can be purchased
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Price {
+pub struct Product {
+	// This ID will be the stripe ID for the product
 	#[serde(rename = "_id")]
-	pub id: PriceId,
-	pub tags: Vec<String>,
-	pub rank: i16,
-	pub entitlement_groups: Vec<PriceEntitlementGroup>,
-	pub giftable: PriceDataGiftable,
-	pub provider: GatewayProvider,
-	pub provider_id: String,
-	pub data: stripe::Price,
+	pub id: stripe::ProductId,
+	pub kind: ProductKind,
+	// there will be other fields here like name, description, price, etc.
+	// those fields will be shown in the UI but are not relevant to the core logic
+	// We should also make those fields sync from Stripe.
+	pub prices: Vec<ProductPrice>,
 }
 
-#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
-#[repr(u8)]
-pub enum GatewayProvider {
-	#[default]
-	Stripe = 0,
-	Paypal = 1,
-}
-
-#[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
-#[repr(u8)]
-pub enum PriceDataGiftable {
-	/// Cannot be gifted, only bought for self
-	No = 0,
-	#[default]
-	/// Can be gifted or bought for self
-	Yes = 1,
-	/// Can only be gifted, not bought for self
-	Required = 2,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct PriceEntitlementGroup {
-	pub condition: Option<String>,
-	pub entitlements: Vec<PriceEntitlement>,
+pub struct ProductPrice {
+	pub id: stripe::PriceId,
+	// some other fields like currency, amount, etc.
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Copy)]
-#[serde(tag = "kind", content = "id")]
+// The kind of product
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(u8)]
+pub enum ProductKind {
+	Subscription = 0,
+	OneTimePurchase = 1,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
-pub enum PriceEntitlement {
-	Role(RoleId),
-	Badge(BadgeId),
-	Paint(PaintId),
-	EmoteSet(EmoteSetId),
-}
-
-impl Collection for Price {
-	const COLLECTION_NAME: &'static str = "prices";
+pub struct ProductRef {
+	// The invoice id
+	pub id: stripe::InvoiceId,
+	// The item this reference refers to otherwise it is the whole invoice
+	pub price_id: stripe::PriceId,
 }
