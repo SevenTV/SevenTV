@@ -1,4 +1,4 @@
-use crate::database::UserId;
+use crate::database::{Collection, UserId};
 
 use super::ProductRef;
 
@@ -74,4 +74,8 @@ pub struct InvoiceRef {
 	pub id: stripe::InvoiceId,
 	// Optionally the item this reference refers to otherwise it is the whole invoice
 	pub item_id: stripe::InvoiceLineItemId,
+}
+
+impl Collection for Invoice {
+    const COLLECTION_NAME: &'static str = "invoices";
 }

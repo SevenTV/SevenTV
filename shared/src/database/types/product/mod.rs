@@ -1,3 +1,5 @@
+use super::Collection;
+
 mod purchase;
 mod invoice;
 
@@ -37,4 +39,8 @@ pub struct ProductRef {
 	pub id: stripe::InvoiceId,
 	// The item this reference refers to otherwise it is the whole invoice
 	pub price_id: stripe::PriceId,
+}
+
+impl Collection for Product {
+	const COLLECTION_NAME: &'static str = "products";
 }

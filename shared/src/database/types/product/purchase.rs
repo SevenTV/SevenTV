@@ -1,6 +1,6 @@
 use mongodb::bson::DateTime;
 
-use crate::database::{Id, UserId};
+use crate::database::{Collection, Id, UserId};
 
 use super::invoice::InvoiceRef;
 
@@ -23,6 +23,10 @@ pub struct Purchase {
 	pub invoice: InvoiceRef,
 	// If this item has been refunded
 	pub refuned: bool,
+}
+
+impl Collection for Purchase {
+	const COLLECTION_NAME: &'static str = "purchases";
 }
 
 // A subscription to a `Product`
@@ -123,7 +127,7 @@ pub enum SubscriptionPeriodSpecialKind {
     // A gifted period
     Gift {
         // The user who gifted the period
-        gifter_id: Id<User>,
+        gifter_id: UserId,
         // The invoice that created the gift
         invoice: InvoiceRef,
     },
@@ -131,4 +135,8 @@ pub enum SubscriptionPeriodSpecialKind {
     System {
         reason: String,
     },
+}
+
+impl Collection for Subscription {
+	const COLLECTION_NAME: &'static str = "subscriptions";
 }
