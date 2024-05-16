@@ -37,6 +37,7 @@ pub struct SubscriptionCycle {
     pub unit: SubscriptionCycleUnit,
     pub value: u32,
     pub status: SubscriptionCycleStatus,
+    pub timestamp: Option<super::DateTime>,
     pub internal: bool,
     pub pending: bool,
     pub trial_end_at: Option<super::DateTime>,

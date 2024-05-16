@@ -3,6 +3,7 @@ use std::vec;
 
 use mongodb::bson::doc;
 use shared::database::{self, Badge, Collection, FileSet, FileSetId, FileSetKind, FileSetProperties, Paint};
+use scuffle_image_processor_proto::{input, DrivePath, Events, Input, Output, ProcessImageRequest, Task};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -10,7 +11,6 @@ use crate::{error, types};
 
 pub struct CosmeticsJob {
 	global: Arc<Global>,
-	http_client: reqwest::Client,
 }
 
 impl Job for CosmeticsJob {
@@ -42,7 +42,6 @@ impl Job for CosmeticsJob {
 
 		Ok(Self {
 			global,
-			http_client: reqwest::Client::new(),
 		})
 	}
 
@@ -137,13 +136,27 @@ impl Job for CosmeticsJob {
 					} => {
 						let file_set_id = FileSetId::with_timestamp(cosmetic.id.timestamp().to_chrono());
 
-						let image_data = match self.http_client.get(image_url).send().await {
-							Ok(res) => res.bytes().await.unwrap(),
-							Err(e) => {
-								outcome.errors.push(error::Error::PaintImageUrlRequest(e));
-								return outcome;
-							}
+						let processor_request = ProcessImageRequest {
+							task: Some(Task {
+								input: Some(Input {
+									path: Some(input::Path::PublicUrl(image_url)),
+									..Default::default()
+								}),
+								output: Some(Output {
+									drive_path: Some(DrivePath {
+										drive: "public_s3".to_string(),
+										path: format!("paint/{}", file_set_id),
+									}),
+									..Default::default()
+								}),
+								events: Some(Events {
+									..Default::default()
+								}),
+								limits: None,
+							}),
+							..Default::default()
 						};
+
 						// TODO: upload image data to s3 input bucket
 						let properties = FileSetProperties::Image {
 							input: todo!(),

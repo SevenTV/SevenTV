@@ -22,7 +22,7 @@ pub struct Purchase {
 	// The invoice that created this purchase
 	pub invoice: InvoiceRef,
 	// If this item has been refunded
-	pub refuned: bool,
+	pub refunded: bool,
 }
 
 impl Collection for Purchase {
@@ -83,8 +83,8 @@ pub enum SubscriptionState {
 #[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 #[repr(u8)]
 pub enum SubscriptionStanding {
-	// Cancelled by the user (ends at the end of the current period)
-	Cancelled = 0,
+	// Canceled by the user (ends at the end of the current period)
+	Canceled = 0,
 	// The subscription payment is overdue (active but payment has failed)
 	Overdue = 1,
 }
@@ -109,11 +109,11 @@ pub struct SubscriptionPeriod {
 	// How this period was created (if none then it is a normal period)
     pub special_kind: Option<SubscriptionPeriodSpecialKind>,
 	// The invoice that created this period
-	pub invoice_id: String,
+	pub invoice_id: Option<stripe::InvoiceId>,
 	// If this period is enabled.
 	pub enabled: bool,
 	// Price id for the period
-	pub product_price_id: String,
+	pub product_price_id: stripe::PriceId,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

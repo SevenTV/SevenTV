@@ -22,7 +22,6 @@ use crate::jobs::messages::MessagesJob;
 use crate::jobs::prices::PricesJob;
 use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
-use crate::jobs::subscriptions::SubscriptionsJob;
 use crate::jobs::system::SystemJob;
 use crate::{error, report};
 
@@ -32,6 +31,7 @@ pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
 pub mod messages;
+pub mod paypal;
 pub mod prices;
 pub mod reports;
 pub mod roles;
@@ -249,7 +249,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	)? {
 		futures.push(j);
 	}
-	if let Some(j) = SubscriptionsJob::conditional_init_and_run(
+	if let Some(j) = subscriptions::SubscriptionsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().subscriptions || !any_run && !global.config().skip_subscriptions,
 	)? {

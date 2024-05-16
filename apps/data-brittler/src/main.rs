@@ -47,26 +47,21 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 		.with_signal(SignalKind::interrupt())
 		.with_signal(SignalKind::terminate());
 
-	let jobs_handle = tokio::spawn(jobs::run(global.clone()));
-
-	tokio::select! {
-		_ = signal.recv() => {},
-		r = jobs_handle => match r {
-			Err(e) => tracing::error!("failed to spawn jobs: {e:?}"),
-			Ok(Err(e)) => tracing::error!("failed to run jobs: {e:?}"),
-			_ => {},
-		},
-	}
-
 	let handler = scuffle_foundations::context::Handler::global();
 
+	let shutdown = tokio::spawn(async move {
+		signal.recv().await;
+		tracing::info!("received shutdown signal, waiting for jobs to finish");
+		handler.shutdown().await;
+		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv()).await.ok();
+	});
+
 	tokio::select! {
-		_ = signal.recv() => tracing::info!("received second shutdown signal, forcing exit"),
-		r = tokio::time::timeout(std::time::Duration::from_secs(60), handler.shutdown()) => {
-			if r.is_err() {
-				tracing::warn!("failed to cancel context in time, force exit");
-			}
-		}
+		r = jobs::run(global.clone()) => match r {
+			Err(e) => tracing::error!("failed to run jobs: {e:?}"),
+			_ => {},
+		},
+		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
 	}
 
 	tracing::info!("stopping data-brittler");

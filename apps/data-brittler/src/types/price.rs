@@ -17,12 +17,3 @@ pub enum GatewayProvider {
     Paypal,
     Stripe,
 }
-
-impl From<GatewayProvider> for shared::database::GatewayProvider {
-    fn from(value: GatewayProvider) -> Self {
-        match value {
-            GatewayProvider::Paypal => Self::Paypal,
-            GatewayProvider::Stripe => Self::Stripe,
-        }
-    }
-}

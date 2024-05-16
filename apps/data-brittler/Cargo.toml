@@ -28,6 +28,10 @@ scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch
     "context",
     "signal",
 ] }
+scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext", features = [
+    "client",
+    "serde",
+] }
 
 cap = "0.1"
 tikv-jemallocator = { version = "0.5", features = ["background_threads"] }
@@ -52,4 +56,5 @@ async-stripe = { version = "0.37.0", default-features = false, features = [
     "billing",
     "products",
     "chrono",
+    "stream",
 ] }

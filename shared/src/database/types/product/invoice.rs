@@ -16,7 +16,7 @@ pub struct Invoice {
 	// User who the invoice is for
 	pub user_id: UserId,
 	// If this invoice was paid via a legacy payment
-	pub paypal_payment_id: Vec<String>,
+	pub paypal_payment_ids: Vec<String>,
 	// If the invoice was deleted
 	pub status: InvoiceStatus,
 }

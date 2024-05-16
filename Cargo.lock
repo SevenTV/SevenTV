@@ -1052,6 +1052,7 @@ dependencies = [
  "sailfish",
  "scuffle-config",
  "scuffle-foundations 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=lennart/fix-foundations-spelling)",
+ "scuffle-image-processor-proto",
  "serde",
  "serde_json",
  "serde_repr",
@@ -2106,6 +2107,15 @@ dependencies = [
 
 [[package]]
 name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
@@ -2879,6 +2889,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a3a8689ce29b9b1e4d2363bd5b2ee0f6765d6fb6973df48f24145c9325d4f6e"
 dependencies = [
  "smallvec",
+]
+
+[[package]]
+name = "pbjson"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1030c719b0ec2a2d25a5df729d6cff1acf3cc230bf766f4f97833591f7577b90"
+dependencies = [
+ "base64 0.21.7",
+ "serde",
+]
+
+[[package]]
+name = "pbjson-build"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2580e33f2292d34be285c5bc3dba5259542b083cfad6037b6d70345f24dcb735"
+dependencies = [
+ "heck 0.4.1",
+ "itertools 0.11.0",
+ "prost 0.12.4",
+ "prost-types",
 ]
 
 [[package]]
@@ -3989,6 +4021,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "scuffle-image-processor-proto"
+version = "0.0.0"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#da414e37f82643647d8c703cc6034d6639e074e2"
+dependencies = [
+ "pbjson",
+ "pbjson-build",
+ "prost 0.12.4",
+ "prost-build",
+ "serde",
+ "tonic",
+ "tonic-build",
+]
+
+[[package]]
 name = "scuffle-utils"
 version = "0.1.0"
 source = "git+https://github.com/ScuffleTV/scuffle.git?branch=feature/website#ef8f294a98623c5475f65b22e1e354c1930ebea7"
@@ -4970,6 +5016,19 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "tonic-build"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be4ef6dd70a610078cb4e338a0f79d06bc759ff1b22d2120c2ff02ae264ba9c2"
+dependencies = [
+ "prettyplease",
+ "proc-macro2",
+ "prost-build",
+ "quote",
+ "syn 2.0.60",
 ]
 
 [[package]]

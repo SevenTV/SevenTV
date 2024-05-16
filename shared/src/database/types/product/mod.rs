@@ -1,7 +1,10 @@
 use super::Collection;
 
-mod purchase;
-mod invoice;
+pub mod purchase;
+pub mod invoice;
+
+pub use purchase::*;
+pub use invoice::*;
 
 // An item that can be purchased
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

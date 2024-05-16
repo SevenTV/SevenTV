@@ -19,7 +19,6 @@ pub use self::presence::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
-use super::PriceId;
 use super::{BadgeId, EmoteSetId, FileSet, FileSetId, ImageFormat, PaintId, Permissions, Role, RoleId};
 use crate::database::{Collection, Id};
 use crate::types::old::{
@@ -99,7 +98,7 @@ pub struct UserEntitledCache {
 	pub badge_ids: Vec<BadgeId>,
 	pub emote_set_ids: Vec<EmoteSetId>,
 	pub paint_ids: Vec<PaintId>,
-	pub price_ids: Vec<PriceId>,
+	pub product_ids: Vec<stripe::ProductId>,
 	pub invalidated_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -117,8 +116,8 @@ impl UserEntitledCache {
 		self.paint_ids.sort_unstable();
 		self.paint_ids.dedup();
 
-		self.price_ids.sort_unstable();
-		self.price_ids.dedup();
+		self.product_ids.sort_unstable();
+		self.product_ids.dedup();
 	}
 }
 

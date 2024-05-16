@@ -45,9 +45,24 @@ impl Default for DateTime {
 
 impl DateTime {
 	pub fn into_chrono(self) -> chrono::DateTime<chrono::Utc> {
-		match self {
+		self.into()
+	}
+}
+
+impl From<DateTime> for chrono::DateTime<chrono::Utc> {
+	fn from(value: DateTime) -> Self {
+		match value {
 			DateTime::Bson(d) => d.to_chrono(),
 			DateTime::Chrono(d) => d,
+		}
+	}
+}
+
+impl From<DateTime> for mongodb::bson::DateTime {
+	fn from(value: DateTime) -> Self {
+		match value {
+			DateTime::Bson(d) => d,
+			DateTime::Chrono(d) => d.into(),
 		}
 	}
 }

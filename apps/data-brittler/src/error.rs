@@ -26,9 +26,6 @@ pub enum Error {
 	#[error("emote set emote found with no name")]
 	EmoteSetEmoteNoName { emote_set_id: ObjectId, emote_id: ObjectId },
 
-	#[error("failed to fetch paint image url")]
-	PaintImageUrlRequest(reqwest::Error),
-
 	#[error("unsupported audit log kind")]
 	UnsupportedAuditLogKind(types::AuditLogKind),
 	#[error("failed to convert timestamp")]
@@ -40,8 +37,6 @@ pub enum Error {
 	Stripe(#[from] stripe::StripeError),
 	#[error("paypal: {0}")]
 	Paypal(reqwest::Error),
-	#[error("price not found")]
-	PriceNotFound(String),
 }
 
 impl Error {
@@ -56,13 +51,11 @@ impl Error {
 			Self::Clickhouse(_) => "Clickhouse",
 			Self::ImageFile(_) => "ImageFile",
 			Self::EmoteSetEmoteNoName { .. } => "EmoteSetEmoteNoName",
-			Self::PaintImageUrlRequest(_) => "PaintImageUrlRequest",
 			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
 			Self::Paypal(_) => "Paypal",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
-			Self::PriceNotFound(_) => "PriceNotFound",
 		}
 	}
 
@@ -79,7 +72,6 @@ impl Error {
 			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
 			Self::InvalidStripeId(id) => format!("id: {}", id),
-			Self::PriceNotFound(id) => format!("id: {}", id),
 			e => format!("{:?}", e),
 		}
 	}
