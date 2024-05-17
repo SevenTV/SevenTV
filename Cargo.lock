@@ -151,7 +151,7 @@ dependencies = [
  "rustls 0.23.7",
  "rustls-pemfile 2.1.2",
  "scopeguard",
- "scuffle-foundations 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=foundations)",
+ "scuffle-foundations",
  "serde",
  "serde_json",
  "sha2",
@@ -311,27 +311,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "uuid 0.8.2",
-]
-
-[[package]]
-name = "async-stripe"
-version = "0.37.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d2a0d22fa50ae36b553e0115def2ce37c9c377b9e0ba5c6ea0943e173642fd7"
-dependencies = [
- "chrono",
- "futures-util",
- "http-types",
- "hyper 0.14.28",
- "hyper-rustls 0.24.2",
- "serde",
- "serde_json",
- "serde_path_to_error",
- "serde_qs 0.10.1",
- "smart-default",
- "smol_str",
- "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -854,6 +833,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-lru"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df6e177825970fee44e66f247adbfd1844480027d21e64ccec91e6e7579c2ad0"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1105,7 +1093,7 @@ dependencies = [
  "regex",
  "sailfish",
  "scuffle-config",
- "scuffle-foundations 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=lennart/fix-foundations-spelling)",
+ "scuffle-foundations",
  "scuffle-image-processor-proto",
  "serde",
  "serde_json",
@@ -1116,7 +1104,7 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -1313,6 +1301,51 @@ checksum = "534c5cf6194dfab3db3242765c03bbe257cf92f22b38f6bc0c58d59108a820ba"
 dependencies = [
  "libc",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "event-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-nats 0.34.0",
+ "bson",
+ "cap",
+ "chrono",
+ "const-lru",
+ "fnv",
+ "futures",
+ "futures-util",
+ "hex",
+ "http-body 1.0.0",
+ "http-body-util",
+ "hyper 1.3.1",
+ "hyper-tungstenite",
+ "hyper-util",
+ "memory-stats",
+ "once_cell",
+ "pin-project",
+ "prometheus-client",
+ "rand 0.8.5",
+ "reqwest",
+ "rustls 0.23.7",
+ "rustls-pemfile 2.1.2",
+ "scopeguard",
+ "scuffle-config",
+ "scuffle-utils",
+ "serde",
+ "serde_json",
+ "sha2",
+ "shared",
+ "thiserror",
+ "tikv-jemallocator",
+ "tokio",
+ "tokio-rustls 0.26.0",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "urlencoding",
 ]
 
 [[package]]
@@ -2875,9 +2908,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "path-tree"
-version = "0.7.6"
+version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a3a8689ce29b9b1e4d2363bd5b2ee0f6765d6fb6973df48f24145c9325d4f6e"
+checksum = "02bcb8f8cf1dee5acae79493abe06a4dfb40e34406a420e929ffb8dce1e06cdd"
 dependencies = [
  "smallvec",
 ]
@@ -2900,7 +2933,7 @@ checksum = "2580e33f2292d34be285c5bc3dba5259542b083cfad6037b6d70345f24dcb735"
 dependencies = [
  "heck 0.4.1",
  "itertools 0.11.0",
- "prost 0.12.4",
+ "prost 0.12.6",
  "prost-types",
 ]
 
@@ -3335,6 +3368,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
 dependencies = [
  "rand_core 0.5.1",
+]
+
+[[package]]
+name = "redox_syscall"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4722d768eff46b75989dd134e5c353f0d6296e5aaa3132e776cbdb56be7731aa"
+dependencies = [
+ "bitflags 1.3.2",
 ]
 
 [[package]]
@@ -3809,7 +3851,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "serde",
- "syn 2.0.60",
+ "syn 2.0.64",
  "toml",
 ]
 
@@ -3878,7 +3920,7 @@ dependencies = [
  "toml",
  "tracing",
  "ulid",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -3916,7 +3958,7 @@ dependencies = [
  "regex",
  "rustls 0.21.12",
  "scc",
- "scuffle-foundations-macros 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=foundations)",
+ "scuffle-foundations-macros",
  "serde",
  "serde_yaml",
  "socket2 0.5.7",
@@ -3934,48 +3976,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "scuffle-foundations"
-version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=lennart/fix-foundations-spelling#e3e4e44367b2f8297fce249a8614604aa971ae81"
-dependencies = [
- "anyhow",
- "axum 0.7.5",
- "clap",
- "const-str",
- "flate2",
- "futures",
- "humantime",
- "humantime-serde",
- "itertools 0.12.1",
- "jemalloc_pprof",
- "matchers",
- "num_cpus",
- "once_cell",
- "opentelemetry",
- "opentelemetry-otlp",
- "opentelemetry_sdk",
- "parking_lot",
- "pin-project",
- "pprof",
- "prometheus-client",
- "prost 0.12.4",
- "rand 0.8.5",
- "regex",
- "scc",
- "scuffle-foundations-macros 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=lennart/fix-foundations-spelling)",
- "serde",
- "serde_yaml",
- "spin 0.9.8",
- "thread_local",
- "tikv-jemalloc-ctl",
- "tikv-jemallocator",
- "tokio",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "scuffle-foundations-macros"
 version = "0.0.0"
 source = "git+https://github.com/ScuffleTV/scuffle.git?branch=foundations#d5a68224a54d44be417a0c0869a872154cfd531c"
@@ -3988,25 +3988,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "scuffle-foundations-macros"
-version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=lennart/fix-foundations-spelling#e3e4e44367b2f8297fce249a8614604aa971ae81"
-dependencies = [
- "convert_case 0.6.0",
- "darling 0.20.8",
- "proc-macro2",
- "quote",
- "syn 2.0.60",
-]
-
-[[package]]
 name = "scuffle-image-processor-proto"
 version = "0.0.0"
 source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#da414e37f82643647d8c703cc6034d6639e074e2"
 dependencies = [
  "pbjson",
  "pbjson-build",
- "prost 0.12.4",
+ "prost 0.12.6",
  "prost-build",
  "serde",
  "tonic",
@@ -4044,7 +4032,7 @@ checksum = "c2f58c6fee8de6801eda3e191c76cbc97080ad138b27f530f6a8159b4f437f77"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.60",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -4254,9 +4242,9 @@ dependencies = [
 
 [[package]]
 name = "serde_spanned"
-version = "0.6.5"
+version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb3622f419d1296904700073ea6cc23ad690adbd66f13ea683df73298736f0c1"
+checksum = "79e674e01f999af37c49f70a6ede167a8a60b2503e56c5599532a65baa5969a0"
 dependencies = [
  "serde",
 ]
@@ -4372,7 +4360,7 @@ dependencies = [
  "prometheus-client",
  "rustls 0.23.7",
  "rustls-pemfile 2.1.2",
- "scuffle-foundations 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=lennart/fix-foundations-spelling)",
+ "scuffle-foundations",
  "serde",
  "serde_json",
  "serde_repr",
@@ -4894,14 +4882,14 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.8.12"
+version = "0.8.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9dd1545e8208b4a5af1aa9bbd0b4cf7e9ea08fabc5d0a5c67fcaafa17433aa3"
+checksum = "a4e43f8cc456c9704c851ae29c67e17ef65d2c30017c17a9765b89c382dc8bba"
 dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "toml_edit 0.22.12",
+ "toml_edit 0.22.13",
 ]
 
 [[package]]
@@ -4909,6 +4897,9 @@ name = "toml_datetime"
 version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4badfd56924ae69bcc9039335b2e017639ce3f9b001c393c1b2d1ef846ce2cbf"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "toml_edit"
@@ -4934,15 +4925,15 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.22.12"
+version = "0.22.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3328d4f68a705b2a4498da1d580585d39a6510f98318a2cec3018a7ec61ddef"
+checksum = "c127785850e8c20836d49732ae6abfa47616e60bf9d9f57c43c250361a9db96c"
 dependencies = [
  "indexmap 2.2.6",
  "serde",
  "serde_spanned",
  "toml_datetime",
- "winnow 0.6.7",
+ "winnow 0.6.8",
 ]
 
 [[package]]
@@ -4982,7 +4973,7 @@ dependencies = [
  "proc-macro2",
  "prost-build",
  "quote",
- "syn 2.0.60",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -5685,9 +5676,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b9415ee827af173ebb3f15f9083df5a122eb93572ec28741fb153356ea2578"
+checksum = "c3c52e9c97a68071b23e836c9380edae937f17b9c4667bd021973efc689f618d"
 dependencies = [
  "memchr",
 ]

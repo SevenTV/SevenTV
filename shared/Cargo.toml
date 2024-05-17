@@ -21,7 +21,7 @@ hyper-util = { version = "0.1", features = [
     "http1",
     "http2",
 ] }
-scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "lennart/fix-foundations-spelling" }
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
 once_cell = "1.19"
 tracing-subscriber = { version = "0.3", features = [
     "fmt",
