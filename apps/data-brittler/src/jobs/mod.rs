@@ -31,7 +31,6 @@ pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
 pub mod messages;
-pub mod paypal;
 pub mod prices;
 pub mod reports;
 pub mod roles;

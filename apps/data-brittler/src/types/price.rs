@@ -11,7 +11,7 @@ pub struct Price {
     pub live: bool,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum GatewayProvider {
     Paypal,
