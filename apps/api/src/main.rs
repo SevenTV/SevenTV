@@ -52,20 +52,18 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 
 	let http_handle = tokio::spawn(http::run(global.clone()));
 
-	tokio::select! {
-		_ = signal.recv() => tracing::info!("received shutdown signal"),
-		r = http_handle => tracing::warn!("http server exited: {:?}", r),
-	}
-
 	let handler = scuffle_foundations::context::Handler::global();
 
+	let shutdown = tokio::spawn(async move {
+		signal.recv().await;
+		tracing::info!("received shutdown signal, waiting for jobs to finish");
+		handler.shutdown().await;
+		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv()).await.ok();
+	});
+
 	tokio::select! {
-		_ = signal.recv() => tracing::info!("received second shutdown signal, forcing exit"),
-		r = tokio::time::timeout(std::time::Duration::from_secs(60), handler.shutdown()) => {
-			if r.is_err() {
-				tracing::warn!("failed to cancel context in time, force exit");
-			}
-		}
+		r = http_handle => tracing::warn!("http server exited: {:?}", r),
+		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
 	}
 
 	tracing::info!("stopping api");
