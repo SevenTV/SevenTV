@@ -21,7 +21,7 @@ pub use self::product::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
-use super::{BadgeId, EmoteSetId, FileSet, FileSetId, ImageFormat, PaintId, Permissions, ProductId, Role, RoleId};
+use super::{BadgeId, EmoteSetId, PaintId, Permissions, ProductId, Role, RoleId};
 use crate::database::{Collection, Id};
 use crate::types::old::{
 	CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, ImageFormat as ImageFormatOld, ImageHostKind,

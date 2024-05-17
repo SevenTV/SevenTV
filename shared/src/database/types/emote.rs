@@ -20,13 +20,13 @@ pub struct Emote {
 	pub default_name: String,
 	pub tags: Vec<String>,
 	pub animated: bool,
-	pub file_set_id: FileSetId,
+	pub file_set_id: Option<FileSetId>,
 	pub flags: EmoteFlags,
 	pub attribution: Vec<EmoteAttribution>,
 }
 
 impl Emote {
-	pub fn into_old_model(self, owner: Option<UserPartialModel>, file_set: &FileSet, cdn_base_url: &str) -> EmoteModel {
+	pub fn into_old_model(self, owner: Option<UserPartialModel>, file_set: Option<&FileSet>, cdn_base_url: &str) -> EmoteModel {
 		let partial = self.into_old_model_partial(owner, file_set, cdn_base_url);
 
 		EmoteModel {
@@ -58,7 +58,7 @@ impl Emote {
 	pub fn into_old_model_partial(
 		self,
 		owner: Option<UserPartialModel>,
-		file_set: &FileSet,
+		file_set: Option<&FileSet>,
 		cdn_base_url: &str,
 	) -> EmotePartialModel {
 		EmotePartialModel {
@@ -99,7 +99,7 @@ impl Emote {
 
 				state
 			},
-			lifecycle: if file_set.properties.pending() {
+			lifecycle: if file_set.is_none() {
 				crate::types::old::EmoteLifecycleModel::Pending
 			} else {
 				crate::types::old::EmoteLifecycleModel::Live
@@ -109,7 +109,7 @@ impl Emote {
 				cdn_base_url,
 				ImageHostKind::Emote,
 				self.id.cast(),
-				file_set.properties.as_old_image_files(),
+				file_set.map(|file_set| file_set.properties.as_old_image_files()).unwrap_or_default(),
 			),
 		}
 	}

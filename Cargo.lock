@@ -138,6 +138,7 @@ dependencies = [
  "hmac",
  "http-body 1.0.0",
  "http-body-util",
+ "humantime-serde",
  "hyper 1.3.1",
  "hyper-tungstenite",
  "hyper-util",
@@ -152,6 +153,7 @@ dependencies = [
  "rustls-pemfile 2.1.2",
  "scopeguard",
  "scuffle-foundations",
+ "scuffle-image-processor-proto",
  "serde",
  "serde_json",
  "sha2",
@@ -162,6 +164,7 @@ dependencies = [
  "tokio-rustls 0.26.0",
  "tokio-stream",
  "tokio-util",
+ "tonic",
  "tower",
  "tower-http",
  "tracing",
@@ -180,9 +183,9 @@ checksum = "96d30a06541fbafbc7f82ed10c06164cfbd2c401138f6addd8404629c4b16711"
 
 [[package]]
 name = "async-nats"
-version = "0.34.0"
+version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eea7b126ebfa4db78e9e788b2a792b6329f35b4f2fdd56dbc646dedc2beec7a5"
+checksum = "d5e47d2f7305524258908449aff6c86db36697a9b4219bfb1777e0ca1945358d"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -205,7 +208,7 @@ dependencies = [
  "thiserror",
  "time",
  "tokio",
- "tokio-rustls 0.25.0",
+ "tokio-rustls 0.26.0",
  "tracing",
  "tryhard",
  "url",
@@ -1132,6 +1135,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum-as-inner"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ffccbb6966c05b32ef8fbac435df276c4ae4d3dc55a8cd0eb9745e6c12f546a"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
+]
+
+[[package]]
 name = "enum-impl"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1472,12 +1487,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
-name = "heck"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
-
-[[package]]
 name = "hermit-abi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1769,6 +1778,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "418a0a6fab821475f634efe3ccc45c013f742efe03d853e8d3355d5cb850ecf8"
 dependencies = [
  "matches",
+ "unicode-bidi",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "idna"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d20d6b07bfbc108882d88ed8e37d39636dcc260e15e30c45e6ba089610b917c"
+dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
@@ -2156,8 +2175,8 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.24.1",
  "tokio-util",
- "trust-dns-proto",
- "trust-dns-resolver",
+ "trust-dns-proto 0.21.2",
+ "trust-dns-resolver 0.21.2",
  "typed-builder",
  "uuid",
  "webpki-roots 0.25.4",
@@ -2841,7 +2860,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80b776a1b2dc779f5ee0641f8ade0125bc1298dd41a9a0c16d8bd57b42d222b1"
 dependencies = [
  "bytes",
- "heck 0.5.0",
+ "heck 0.4.1",
  "itertools 0.12.1",
  "log",
  "multimap",
@@ -3318,6 +3337,7 @@ dependencies = [
  "aws-lc-rs",
  "log",
  "once_cell",
+ "ring",
  "rustls-pki-types",
  "rustls-webpki 0.102.3",
  "subtle",
@@ -3433,7 +3453,7 @@ dependencies = [
 [[package]]
 name = "scuffle-foundations"
 version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=foundations#db5e1d25087a01a1e264dccb2b834ad617fa3162"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#da414e37f82643647d8c703cc6034d6639e074e2"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
@@ -3485,13 +3505,24 @@ dependencies = [
 [[package]]
 name = "scuffle-foundations-macros"
 version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=foundations#db5e1d25087a01a1e264dccb2b834ad617fa3162"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#da414e37f82643647d8c703cc6034d6639e074e2"
 dependencies = [
  "convert_case 0.6.0",
  "darling 0.20.8",
  "proc-macro2",
  "quote",
  "syn 2.0.60",
+]
+
+[[package]]
+name = "scuffle-image-processor-proto"
+version = "0.0.0"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#da414e37f82643647d8c703cc6034d6639e074e2"
+dependencies = [
+ "prost 0.12.4",
+ "prost-build",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]
@@ -3758,7 +3789,9 @@ dependencies = [
  "clickhouse",
  "enum-impl",
  "fnv",
+ "futures",
  "hex",
+ "http 0.2.12",
  "http-body-util",
  "hyper 1.3.1",
  "hyper-util",
@@ -3778,8 +3811,11 @@ dependencies = [
  "tokio-rustls 0.26.0",
  "tokio-stream",
  "tokio-util",
+ "tonic",
+ "tower",
  "tracing",
  "tracing-subscriber",
+ "trust-dns-resolver 0.23.2",
  "ulid",
  "utoipa",
  "uuid",
@@ -4316,12 +4352,28 @@ dependencies = [
  "percent-encoding",
  "pin-project",
  "prost 0.12.4",
+ "rustls-pemfile 2.1.2",
+ "rustls-pki-types",
  "tokio",
+ "tokio-rustls 0.25.0",
  "tokio-stream",
  "tower",
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "tonic-build"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be4ef6dd70a610078cb4e338a0f79d06bc759ff1b22d2120c2ff02ae264ba9c2"
+dependencies = [
+ "prettyplease",
+ "proc-macro2",
+ "prost-build",
+ "quote",
+ "syn 2.0.60",
 ]
 
 [[package]]
@@ -4459,7 +4511,7 @@ dependencies = [
  "async-trait",
  "cfg-if",
  "data-encoding",
- "enum-as-inner",
+ "enum-as-inner 0.4.0",
  "futures-channel",
  "futures-io",
  "futures-util",
@@ -4472,6 +4524,31 @@ dependencies = [
  "thiserror",
  "tinyvec",
  "tokio",
+ "url",
+]
+
+[[package]]
+name = "trust-dns-proto"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3119112651c157f4488931a01e586aa459736e9d6046d3bd9105ffb69352d374"
+dependencies = [
+ "async-trait",
+ "cfg-if",
+ "data-encoding",
+ "enum-as-inner 0.6.0",
+ "futures-channel",
+ "futures-io",
+ "futures-util",
+ "idna 0.4.0",
+ "ipnet",
+ "once_cell",
+ "rand",
+ "smallvec",
+ "thiserror",
+ "tinyvec",
+ "tokio",
+ "tracing",
  "url",
 ]
 
@@ -4492,7 +4569,28 @@ dependencies = [
  "smallvec",
  "thiserror",
  "tokio",
- "trust-dns-proto",
+ "trust-dns-proto 0.21.2",
+]
+
+[[package]]
+name = "trust-dns-resolver"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10a3e6c3aff1718b3c73e395d1f35202ba2ffa847c6a62eea0db8fb4cfe30be6"
+dependencies = [
+ "cfg-if",
+ "futures-util",
+ "ipconfig",
+ "lru-cache",
+ "once_cell",
+ "parking_lot",
+ "rand",
+ "resolv-conf",
+ "smallvec",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "trust-dns-proto 0.23.2",
 ]
 
 [[package]]

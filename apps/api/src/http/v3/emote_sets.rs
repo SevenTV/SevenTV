@@ -110,7 +110,7 @@ pub async fn get_emote_set_by_id(
 						None
 					}
 				})
-				.chain(emotes.values().map(|emote| emote.file_set_id)),
+				.chain(emotes.values().flat_map(|emote| emote.file_set_id)),
 		)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -133,11 +133,11 @@ pub async fn get_emote_set_by_id(
 		.into_iter()
 		.filter_map(|(id, emote)| {
 			let owner = emote.owner_id.and_then(|id| users.get(&id)).cloned();
-			let file_set = file_sets.get(&emote.file_set_id)?;
+			let file_set = file_sets.get(&emote.file_set_id?)?;
 
 			Some((
 				id,
-				emote.into_old_model_partial(owner, file_set, &global.config().api.cdn_base_url),
+				emote.into_old_model_partial(owner, Some(file_set), &global.config().api.cdn_base_url),
 			))
 		})
 		.collect::<HashMap<_, _>>();

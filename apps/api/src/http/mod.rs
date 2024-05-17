@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use axum::extract::{MatchedPath, Request};
-use axum::routing::get;
 use axum::response::Response;
+use axum::routing::get;
 use axum::Router;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use tower::ServiceBuilder;

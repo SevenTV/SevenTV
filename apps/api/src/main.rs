@@ -12,6 +12,7 @@ mod connections;
 mod dataloader;
 mod global;
 mod http;
+mod image_processor;
 mod jwt;
 
 struct BootstrapWrapper(Config);

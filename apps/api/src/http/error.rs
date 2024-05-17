@@ -15,6 +15,7 @@ pub struct ApiError {
 
 impl ApiError {
 	pub const BAD_REQUEST: Self = Self::new_const(StatusCode::BAD_REQUEST, "bad request");
+	pub const FORBIDDEN: Self = Self::new_const(StatusCode::FORBIDDEN, "forbidden");
 	pub const GONE: Self = Self::new_const(StatusCode::GONE, "the requested resource is no longer available");
 	pub const INTERNAL_SERVER_ERROR: Self = Self::new_const(StatusCode::INTERNAL_SERVER_ERROR, "internal server error");
 	pub const NOT_FOUND: Self = Self::new_const(StatusCode::NOT_FOUND, "not found");

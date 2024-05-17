@@ -1,6 +1,8 @@
 use crate::database::{Collection, Id};
 use crate::types::old::{ImageFile as OldImageFile, ImageFormat as OldImageFormat};
 
+use super::{BadgeId, EmoteId, PageId, PaintId, ProductId, TicketId, UserId};
+
 pub type FileSetId = Id<FileSet>;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
@@ -8,13 +10,65 @@ pub type FileSetId = Id<FileSet>;
 pub struct FileSet {
 	#[serde(rename = "_id")]
 	pub id: FileSetId,
+	pub ref_id: FileSetRefId,
 	pub kind: FileSetKind,
-	pub authenticated: bool,
-	pub properties: FileSetProperties,
+	pub data: FileSetData,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(tag = "kind", content = "id", rename_all = "snake_case")]
+pub enum FileSetRefId {
+	Ticket(TicketId),
+	ProfilePicture(UserId),
+	Badge(BadgeId),
+	Paint(PaintId),
+	Emote(EmoteId),
+	Product(ProductId),
+	Page(PageId),
 }
 
 impl Collection for FileSet {
 	const COLLECTION_NAME: &'static str = "file_sets";
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields, tag = "kind", rename_all = "snake_case")]
+pub enum FileSetData {
+	ImageProcessor(ImageProcessorResult),
+	PendingImageProcessor(GenericFile),
+	Generic(GenericFile),
+}
+
+impl FileSetData {
+	pub fn as_generic(&self) -> Option<&GenericFile> {
+		match self {
+			Self::Generic(g) => Some(g),
+			_ => None,
+		}
+	}
+
+	pub fn as_image_processor(&self) -> Option<&ImageProcessorResult> {
+		match self {
+			Self::ImageProcessor(i) => Some(i),
+			_ => None,
+		}
+	}
+
+	pub fn as_pending_image_processor(&self) -> Option<&GenericFile> {
+		match self {
+			Self::PendingImageProcessor(i) => Some(i),
+			_ => None,
+		}
+	}
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct GenericFile {
+	pub path: String,
+	pub mime: String,
+	pub size: u64,
+	pub sha256: String,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
@@ -29,105 +83,34 @@ pub enum FileSetKind {
 	Page = 6,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case", tag = "kind", content = "data")]
-pub enum FileSetProperties {
-	Image {
-		input: FileProperties<ImageFile>,
-		pending: bool,
-		outputs: Vec<FileProperties<ImageFile>>,
-	},
-	Other(FileProperties<()>),
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Image {
+	#[serde(flatten)]
+    pub generic: GenericFile,
+    pub width: u32,
+    pub height: u32,
+    pub frame_count: u32,
+	pub scale: Option<u32>,
 }
 
-impl FileSetProperties {
-	pub fn as_image(&self) -> Option<&[FileProperties<ImageFile>]> {
-		match self {
-			Self::Image { outputs, .. } => Some(outputs),
-			_ => None,
-		}
-	}
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImageProcessorResult {
+    pub input: Image,
+    pub outputs: Vec<Image>,
+}
 
-	pub fn pending(&self) -> bool {
-		match self {
-			Self::Image { pending, .. } => *pending,
-			_ => false,
-		}
-	}
-
-	pub fn default_image(&self) -> Option<&FileProperties<ImageFile>> {
-		match self {
-			Self::Image { outputs, .. } => outputs.iter().max_by_key(|image| image.extra.scale),
-			_ => None,
-		}
-	}
-
+impl ImageProcessorResult {
 	pub fn as_old_image_files(&self) -> Vec<OldImageFile> {
-		match self {
-			Self::Image { outputs, .. } => outputs
-				.iter()
-				.flat_map(|image| {
-					image.extra.variants.iter().filter_map(|variant| {
-						let format = match variant.format {
-							ImageFormat::Webp => OldImageFormat::Webp,
-							ImageFormat::Avif => OldImageFormat::Avif,
-							_ => return None,
-						};
-
-						if image.extra.frame_count > 1 && variant.is_static {
-							return None;
-						}
-
-						Some(OldImageFile {
-							name: format!("{}x.{}", image.extra.scale, format.as_str()),
-							static_name: format!("{}x_static.{}", image.extra.scale, format.as_str()),
-							width: image.extra.width,
-							height: image.extra.height,
-							frame_count: image.extra.frame_count,
-							size: image.size,
-							format,
-						})
-					})
-				})
-				.collect(),
-			_ => vec![],
-		}
+		self.outputs.iter().map(|output| OldImageFile {
+			name: output.generic.path.clone(),
+			static_name: output.generic.path.clone(),
+			width: output.width,
+			height: output.height,
+			frame_count: output.frame_count,
+			size: output.generic.size,
+			format: OldImageFormat::from_mime(&output.generic.mime),
+		}).collect()
 	}
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ImageFile {
-	pub scale: u32,
-	pub width: u32,
-	pub height: u32,
-	pub frame_count: u32,
-	pub variants: Vec<ImageFileVariant>,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ImageFileVariant {
-	pub format: ImageFormat,
-	pub is_static: bool,
-	pub size: u64,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct FileProperties<E> {
-	pub path: String,
-	pub size: u64,
-	pub mime: Option<String>,
-	pub extra: E,
-}
-
-#[derive(Debug, Copy, Clone, Default, PartialEq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr, utoipa::ToSchema)]
-#[repr(u8)]
-pub enum ImageFormat {
-	#[default]
-	Webp = 0,
-	Avif = 1,
-	Gif = 2,
-	Png = 3,
 }

@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use super::{FileSet, FileSetId, FileSetKind, FileSetProperties};
 use crate::database::{Collection, Id};
 use crate::types::old::{CosmeticBadgeModel, ImageFile, ImageFormat, ImageHost, ImageHostKind};
+
+use super::{FileSet, FileSetId, FileSetKind, FileSetRefId};
 
 pub type BadgeId = Id<Badge>;
 
@@ -24,8 +25,8 @@ impl Collection for Badge {
 impl Badge {
 	#[tracing::instrument(level = "info", skip(self), fields(badge_id = %self.id))]
 	pub fn into_old_model(self, file_set: &FileSet, cdn_base_url: &str) -> Option<CosmeticBadgeModel> {
-		if file_set.kind != FileSetKind::Badge {
-			tracing::error!("Badge file set kind is not of type Badge");
+		if file_set.kind != FileSetKind::Badge || FileSetRefId::Badge(self.id) != file_set.ref_id {
+			tracing::error!("badge file set is not for this badge");
 			return None;
 		}
 
