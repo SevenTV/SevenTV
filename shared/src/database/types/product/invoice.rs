@@ -2,13 +2,15 @@ use crate::database::{Collection, UserId};
 
 use super::ProductRef;
 
+pub type InvoiceId = stripe::InvoiceId;
+
 // An invoice that is generated for a purchase
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Invoice {
 	// This ID will be the stripe ID for the invoice
 	#[serde(rename = "_id")]
-	pub id: stripe::InvoiceId,
+	pub id: InvoiceId,
 	// These items will be the stripe line items for the invoice
 	pub items: Vec<InvoiceItem>,
 	// customer id from stripe

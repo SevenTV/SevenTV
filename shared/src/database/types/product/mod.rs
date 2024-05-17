@@ -6,13 +6,15 @@ pub mod invoice;
 pub use purchase::*;
 pub use invoice::*;
 
+pub type ProductId = stripe::ProductId;
+
 // An item that can be purchased
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Product {
 	// This ID will be the stripe ID for the product
 	#[serde(rename = "_id")]
-	pub id: stripe::ProductId,
+	pub id: ProductId,
 	pub kind: ProductKind,
 	// there will be other fields here like name, description, price, etc.
 	// those fields will be shown in the UI but are not relevant to the core logic

@@ -29,6 +29,8 @@ impl Collection for Purchase {
 	const COLLECTION_NAME: &'static str = "purchases";
 }
 
+pub type SubscriptionId = stripe::SubscriptionId;
+
 // A subscription to a `Product`
 // `Subscription` are always for products of kind `Subscription`
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -36,7 +38,7 @@ impl Collection for Purchase {
 pub struct Subscription {
 	// The stripe id for the subscription
 	#[serde(rename = "_id")]
-	pub id: stripe::SubscriptionId,
+	pub id: SubscriptionId,
 	// Product id for the subscription
 	pub product_id: stripe::ProductId,
 	// The user who received the subscription
