@@ -33,8 +33,6 @@ pub struct Extra {
 	pub report_path: PathBuf,
 	/// Stripe API key
 	pub stripe_key: String,
-	/// Paypal configuration
-	pub paypal: PaypalConfig,
 
 	/// Run users job
 	pub users: bool,
@@ -98,13 +96,4 @@ pub struct Extra {
 
 	/// Truncate tables before inserting data
 	pub truncate: bool,
-}
-
-#[auto_settings]
-#[serde(default)]
-pub struct PaypalConfig {
-	/// Paypal client id
-	pub client_id: String,
-	/// Paypal client secret
-	pub client_secret: String,
 }

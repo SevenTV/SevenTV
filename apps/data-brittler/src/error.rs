@@ -35,8 +35,6 @@ pub enum Error {
 	InvalidStripeId(String),
 	#[error("{0}")]
 	Stripe(#[from] stripe::StripeError),
-	#[error("paypal: {0}")]
-	Paypal(reqwest::Error),
 }
 
 impl Error {
@@ -54,7 +52,6 @@ impl Error {
 			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
-			Self::Paypal(_) => "Paypal",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
 		}
 	}

@@ -9,7 +9,6 @@ mod error;
 mod format;
 mod global;
 mod jobs;
-mod paypal;
 mod report;
 mod types;
 
