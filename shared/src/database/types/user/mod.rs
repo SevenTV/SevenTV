@@ -1,7 +1,6 @@
 mod ban;
 mod connection;
 mod editor;
-mod gift;
 mod presence;
 mod relation;
 mod session;
@@ -14,7 +13,6 @@ use hyper::StatusCode;
 pub use self::ban::*;
 pub use self::connection::*;
 pub use self::editor::*;
-pub use self::gift::*;
 pub use self::presence::*;
 pub use self::relation::*;
 pub use self::session::*;
