@@ -1,6 +1,5 @@
-use crate::database::{Collection, PurchaseInventoryItemId, UserId};
-
 use super::ProductRef;
+use crate::database::{Collection, PurchaseInventoryItemId, UserId};
 
 // An invoice that is generated for a purchase
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -27,10 +26,10 @@ pub struct Invoice {
 #[repr(u8)]
 pub enum InvoiceStatus {
 	Draft = 0,
-    Open = 1,
-    Paid = 2,
-    Uncollectible = 3,
-    Void = 4,
+	Open = 1,
+	Paid = 2,
+	Uncollectible = 3,
+	Void = 4,
 }
 
 impl From<InvoiceStatus> for stripe::InvoiceStatus {
@@ -82,5 +81,5 @@ pub struct InvoiceRef {
 }
 
 impl Collection for Invoice {
-    const COLLECTION_NAME: &'static str = "invoices";
+	const COLLECTION_NAME: &'static str = "invoices";
 }

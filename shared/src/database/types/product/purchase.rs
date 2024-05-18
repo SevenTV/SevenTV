@@ -1,14 +1,15 @@
 use mongodb::bson::DateTime;
 
+use super::invoice::InvoiceRef;
+use super::ProductRef;
 use crate::database::{Collection, Id, UserId};
-
-use super::{invoice::InvoiceRef, ProductRef};
 
 pub type PurchaseId = Id<Purchase>;
 
 // A purchase of a `Product`
 // `Purchase` are always for products of kind `OneTimePurchase`
-// Unlike the `Subscription`, a user can have multiple purchases of the same product.
+// Unlike the `Subscription`, a user can have multiple purchases of the same
+// product.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Purchase {
@@ -30,8 +31,9 @@ impl Collection for Purchase {
 }
 
 // A subscription is a recurring purchase of a `Product` or multiple `Product`s
-// In stripe a subscription is a special type of cron job that creates an invoice every billing cycle
-// but also allows you to prorate the cost of the subscription if the user changes their plan.
+// In stripe a subscription is a special type of cron job that creates an
+// invoice every billing cycle but also allows you to prorate the cost of the
+// subscription if the user changes their plan.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Subscription {
@@ -51,7 +53,7 @@ pub struct Subscription {
 	// The status of this subscription
 	pub standing: Option<SubscriptionStanding>,
 	// Legacy PayPal subscription
-	// In the past we used to use PayPal as our payment processor, we have since moved to Stripe. 
+	// In the past we used to use PayPal as our payment processor, we have since moved to Stripe.
 	// However some subscriptions still exist that are paid through PayPal.
 	// In this case we have a reference to the PayPal subscription that is managing this stripe subscription.
 	pub paypal_subscription: Option<PayPalSubscription>,
@@ -114,7 +116,7 @@ pub struct SubscriptionPeriod {
 	// If this period is enabled.
 	pub state: SubscriptionPeriodState,
 	// How this period was created (if none then it is a normal period)
-    pub items: Vec<SubscriptionPeriodItem>,
+	pub items: Vec<SubscriptionPeriodItem>,
 	// If this period is a trial period and the reason why
 	pub trial: Option<SubscriptionPeriodTrial>,
 }
@@ -149,15 +151,15 @@ pub struct SubscriptionPeriodItem {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, tag = "kind", content = "data", rename_all = "snake_case")]
 pub enum SubscriptionPeriodSpecialKind {
-    // A gifted period
-    Gift {
+	// A gifted period
+	Gift {
 		/// The inventory item that this period was created from
-        inventory_id: PurchaseInventoryItemId,
-    },
-    // A period created by the system
-    System {
-        reason: String,
-    },
+		inventory_id: PurchaseInventoryItemId,
+	},
+	// A period created by the system
+	System {
+		reason: String,
+	},
 }
 
 impl Collection for Subscription {
@@ -179,21 +181,23 @@ pub struct PurchaseInventoryItem {
 	pub invoice: InvoiceRef,
 	/// State of the inventory item
 	pub state: PurchaseInventoryState,
-	/// Expire time of the item, if the item is not claimed by this time it will no longer be claimable.
+	/// Expire time of the item, if the item is not claimed by this time it will
+	/// no longer be claimable.
 	pub expires: Option<DateTime>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, tag = "kind", content = "data", rename_all = "snake_case")]
 pub enum PurchaseInventoryState {
-	/// The item is currently unclaimed but 
+	/// The item is currently unclaimed but
 	UnclaimedGiftable {
 		// A unique code that can be used to claim the item
 		// When the code is none, it means the item's code has been revoked.
 		code: Option<String>,
 		// A set of users who can claim the item (if empty then anyone can claim the item, if they are not blacklisted)
 		recipient_whitelist: Vec<UserId>,
-		// A set of users who cannot claim the item (if empty only users in the whitelist can claim the item, unless that is empty in which case anyone can claim the item)
+		// A set of users who cannot claim the item (if empty only users in the whitelist can claim the item, unless that is
+		// empty in which case anyone can claim the item)
 		recipient_blacklist: Vec<UserId>,
 		// The time the code expires
 		expires: DateTime,
@@ -205,9 +209,7 @@ pub enum PurchaseInventoryState {
 	/// The item has been consumed by the user.
 	Consumed,
 	/// The item has been revoked by the system
-	Revoked {
-		reason: String,
-	},
+	Revoked { reason: String },
 	/// The item has been refunded
 	Refunded,
 }
