@@ -1,20 +1,38 @@
 use std::path::PathBuf;
 
+use scuffle_foundations::settings::auto_settings;
 use shared::config::DatabaseConfig;
 
 pub type Config = shared::config::Config<Extra>;
 
-#[derive(Debug, serde::Deserialize, config::Config)]
+#[auto_settings]
 #[serde(default)]
 pub struct Extra {
-	/// Database configuration
-	pub database: DatabaseConfig,
+	/// Main source database configuration
+	#[settings(default = DatabaseConfig {
+		uri: "mongodb://localhost:27017/7tv".to_string(),
+	})]
+	pub main_source_database: DatabaseConfig,
+	/// Egvault source database configuration
+	#[settings(default = DatabaseConfig {
+		uri: "mongodb://localhost:27017/egvault".to_string(),
+	})]
+	pub egvault_source_database: DatabaseConfig,
+	/// Target database configuration
+	#[settings(default = DatabaseConfig {
+		uri: "mongodb://localhost:27017/7tv-new".to_string(),
+	})]
+	pub target_database: DatabaseConfig,
 	/// ClickHouse connection string
-	pub clickhouse: String,
-	/// MongoDB connection string
-	pub mongo: String,
+	#[settings(default = DatabaseConfig {
+		uri: "http://localhost:8123".to_string(),
+	})]
+	pub clickhouse: DatabaseConfig,
 	/// Path to the report file
+	#[settings(default = PathBuf::from("./local/report.md"))]
 	pub report_path: PathBuf,
+	/// Stripe API key
+	pub stripe_key: String,
 
 	/// Run users job
 	pub users: bool,
@@ -56,34 +74,26 @@ pub struct Extra {
 	/// Skip audit logs job
 	pub skip_audit_logs: bool,
 
+	/// Run messages job
+	pub messages: bool,
+	/// Skip messages job
+	pub skip_messages: bool,
+
+	/// Run system job
+	pub system: bool,
+	/// Skip system job
+	pub skip_system: bool,
+
+	/// Run products job
+	pub prices: bool,
+	/// Skip products job
+	pub skip_prices: bool,
+
+	/// Run subscriptions job
+	pub subscriptions: bool,
+	/// Skip subscriptions job
+	pub skip_subscriptions: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
-}
-
-impl Default for Extra {
-	fn default() -> Self {
-		Self {
-			database: Default::default(),
-			clickhouse: "http://localhost:8123".to_string(),
-			mongo: "mongodb://localhost:27017".to_string(),
-			report_path: PathBuf::from("./local/report.md"),
-			users: false,
-			skip_users: false,
-			bans: false,
-			skip_bans: false,
-			emotes: false,
-			skip_emotes: false,
-			emote_sets: false,
-			skip_emote_sets: false,
-			cosmetics: false,
-			skip_cosmetics: false,
-			roles: false,
-			skip_roles: false,
-			reports: false,
-			skip_reports: false,
-			audit_logs: false,
-			skip_audit_logs: false,
-			truncate: false,
-		}
-	}
 }

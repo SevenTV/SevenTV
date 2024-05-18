@@ -6,6 +6,7 @@ use anyhow::Context;
 use futures::stream::FuturesUnordered;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
+use shared::database::{Collection, Ticket, TicketMember, TicketMessage};
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -17,8 +18,11 @@ use crate::jobs::audit_logs::AuditLogsJob;
 use crate::jobs::bans::BansJob;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
+use crate::jobs::messages::MessagesJob;
+use crate::jobs::prices::PricesJob;
 use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
+use crate::jobs::system::SystemJob;
 use crate::{error, report};
 
 pub mod audit_logs;
@@ -26,8 +30,12 @@ pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
+pub mod messages;
+pub mod prices;
 pub mod reports;
 pub mod roles;
+pub mod subscriptions;
+pub mod system;
 pub mod users;
 
 pub struct JobOutcome {
@@ -66,7 +74,7 @@ pub trait Job: Sized {
 			let fut = Box::pin(
 				async move {
 					match Self::new(global.clone()).await {
-						Ok(job) => job.run(global.clone()).await,
+						Ok(job) => job.run().await,
 						Err(e) => Err(e),
 					}
 				}
@@ -79,7 +87,7 @@ pub trait Job: Sized {
 		}
 	}
 
-	async fn run(mut self, global: Arc<Global>) -> anyhow::Result<JobOutcome> {
+	async fn run(mut self) -> anyhow::Result<JobOutcome> {
 		let timer = Instant::now();
 
 		let collection = self.collection().await;
@@ -100,7 +108,7 @@ pub trait Job: Sized {
 		let mut documents = collection.find(None, None).await.context("failed to query documents")?;
 
 		while let Some(r) = documents.try_next().await.transpose() {
-			if global.ctx().is_done() {
+			if scuffle_foundations::context::Context::global().is_done() {
 				tracing::info!("job cancelled");
 				break;
 			}
@@ -110,7 +118,7 @@ pub trait Job: Sized {
 				Err(e) => outcome.errors.push(error::Error::Deserialize(e)),
 			}
 
-			if outcome.processed_documents % tenth == 0 {
+			if tenth != 0 && outcome.processed_documents % tenth == 0 {
 				tracing::info!(
 					"{:.1}% ({}/{}) ({} errors)",
 					outcome.processed_documents as f64 / count as f64 * 100.0,
@@ -123,9 +131,7 @@ pub trait Job: Sized {
 			outcome.processed_documents += 1;
 		}
 
-		if let Err(e) = self.finish().await {
-			tracing::error!("failed to finish job (susge?): {}", e);
-		}
+		outcome += self.finish().await;
 
 		let took_seconds = timer.elapsed().as_secs_f64();
 
@@ -142,8 +148,8 @@ pub trait Job: Sized {
 
 	async fn collection(&self) -> mongodb::Collection<Self::T>;
 	async fn process(&mut self, t: Self::T) -> ProcessOutcome;
-	async fn finish(self) -> anyhow::Result<()> {
-		Ok(())
+	async fn finish(self) -> ProcessOutcome {
+		ProcessOutcome::default()
 	}
 }
 
@@ -155,54 +161,99 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		|| global.config().cosmetics
 		|| global.config().roles
 		|| global.config().reports
-		|| global.config().audit_logs;
+		|| global.config().audit_logs
+		|| global.config().messages
+		|| global.config().system
+		|| global.config().prices
+		|| global.config().subscriptions;
 
 	let timer = Instant::now();
+
+	// This has to be here because it's these are target collections for multiple
+	// jobs
+	if global.config().truncate && global.config().reports && global.config().messages {
+		tracing::info!("dropping tickets, ticket_members and ticket_messages collections");
+		Ticket::collection(global.target_db()).drop(None).await?;
+		TicketMember::collection(global.target_db()).drop(None).await?;
+		TicketMessage::collection(global.target_db()).drop(None).await?;
+	}
 
 	let futures: FuturesUnordered<Pin<Box<dyn Future<Output = anyhow::Result<JobOutcome>> + Send>>> =
 		FuturesUnordered::new();
 
 	// ugly ass code
-	UsersJob::conditional_init_and_run(
+	if let Some(j) = UsersJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().users || !any_run && !global.config().skip_users,
-	)?
-	.map(|j| futures.push(j));
-	BansJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = BansJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().bans || !any_run && !global.config().skip_bans,
-	)?
-	.map(|j| futures.push(j));
-	EmotesJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = EmotesJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().emotes || !any_run && !global.config().skip_emotes,
-	)?
-	.map(|j| futures.push(j));
-	EmoteSetsJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = EmoteSetsJob::conditional_init_and_run(
 		&global,
-		any_run && global.config().skip_emote_sets || !any_run && !global.config().emote_sets,
-	)?
-	.map(|j| futures.push(j));
-	CosmeticsJob::conditional_init_and_run(
+		any_run && global.config().emote_sets || !any_run && !global.config().skip_emote_sets,
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = CosmeticsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().cosmetics || !any_run && !global.config().skip_cosmetics,
-	)?
-	.map(|j| futures.push(j));
-	RolesJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = RolesJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().roles || !any_run && !global.config().skip_roles,
-	)?
-	.map(|j| futures.push(j));
-	ReportsJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = ReportsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().reports || !any_run && !global.config().skip_reports,
-	)?
-	.map(|j| futures.push(j));
-	AuditLogsJob::conditional_init_and_run(
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = AuditLogsJob::conditional_init_and_run(
 		&global,
 		any_run && global.config().audit_logs || !any_run && !global.config().skip_audit_logs,
-	)?
-	.map(|j| futures.push(j));
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = MessagesJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().messages || !any_run && !global.config().skip_messages,
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = SystemJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().system || !any_run && !global.config().skip_system,
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = PricesJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().prices || !any_run && !global.config().skip_prices,
+	)? {
+		futures.push(j);
+	}
+	if let Some(j) = subscriptions::SubscriptionsJob::conditional_init_and_run(
+		&global,
+		any_run && global.config().subscriptions || !any_run && !global.config().skip_subscriptions,
+	)? {
+		futures.push(j);
+	}
 
 	let results: Vec<JobOutcome> = futures.try_collect().await?;
 

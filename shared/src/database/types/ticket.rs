@@ -14,11 +14,19 @@ pub enum TicketPriority {
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case", tag = "kind", content = "data")]
 pub enum TicketData {
-	EmoteReport { emote_id: EmoteId },
-	UserReport { user_id: UserId },
+	EmoteReport {
+		emote_id: EmoteId,
+	},
+	UserReport {
+		user_id: UserId,
+	},
 	Billing,
-	EmoteListingRequest { emote_id: EmoteId },
-	EmotePersonalUseRequest { emote_id: EmoteId },
+	EmoteListingRequest {
+		emote_id: EmoteId,
+	},
+	EmotePersonalUseRequest {
+		emote_id: EmoteId,
+	},
 	#[default]
 	Other,
 }
@@ -71,6 +79,7 @@ pub struct TicketMember {
 	pub user_id: UserId,
 	pub kind: TicketMemberKind,
 	pub notifications: bool,
+	pub last_read: Option<TicketMessageId>,
 }
 
 impl Collection for TicketMember {

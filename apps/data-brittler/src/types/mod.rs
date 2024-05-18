@@ -7,8 +7,12 @@ mod emote;
 mod emote_set;
 mod entitlement;
 mod image_file;
+mod message;
+mod price;
 mod report;
 mod role;
+mod subscription;
+mod system;
 mod user;
 
 pub use audit_log::*;
@@ -18,8 +22,12 @@ pub use emote::*;
 pub use emote_set::*;
 pub use entitlement::*;
 pub use image_file::*;
+pub use message::*;
+pub use price::*;
 pub use report::*;
 pub use role::*;
+pub use subscription::*;
+pub use system::*;
 pub use user::*;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -37,9 +45,24 @@ impl Default for DateTime {
 
 impl DateTime {
 	pub fn into_chrono(self) -> chrono::DateTime<chrono::Utc> {
-		match self {
+		self.into()
+	}
+}
+
+impl From<DateTime> for chrono::DateTime<chrono::Utc> {
+	fn from(value: DateTime) -> Self {
+		match value {
 			DateTime::Bson(d) => d.to_chrono(),
 			DateTime::Chrono(d) => d,
+		}
+	}
+}
+
+impl From<DateTime> for mongodb::bson::DateTime {
+	fn from(value: DateTime) -> Self {
+		match value {
+			DateTime::Bson(d) => d,
+			DateTime::Chrono(d) => d.into(),
 		}
 	}
 }
@@ -49,7 +72,11 @@ where
 	D: Deserializer<'de>,
 {
 	let s = String::deserialize(deserializer)?;
-	if s.is_empty() { Ok(None) } else { Ok(Some(s)) }
+	if s.is_empty() {
+		Ok(None)
+	} else {
+		Ok(Some(s))
+	}
 }
 
 fn unsigned_int<'de, D>(deserializer: D) -> Result<u32, D::Error>

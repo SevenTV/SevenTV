@@ -1,5 +1,5 @@
 use super::UserId;
-use crate::database::{Collection, Id, ProductCodeId};
+use crate::database::{Collection, Id};
 
 pub type UserGiftId = Id<UserGift>;
 
@@ -10,7 +10,7 @@ pub struct UserGift {
 	pub id: UserGiftId,
 	pub sender_id: Option<UserId>,
 	pub recipient_id: UserId,
-	pub product_code_id: ProductCodeId,
+	// pub product_code_id: ProductCodeId,
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 	pub status: UserGiftStatus,
 	pub message: Option<String>,

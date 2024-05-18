@@ -15,12 +15,22 @@ regex = "1.10.4"
 once_cell = "1.19.0"
 
 scuffle-config = "0.0.1"
-scuffle-utils = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "feature/website", features = [
-    "http",
-    "signal",
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "lennart/fix-foundations-spelling", default-features = false, features = [
+    "opentelemetry",
+    "runtime",
+    "macros",
+    "logging",
+    "env-filter",
+    "settings",
+    "bootstrap",
+    "cli",
+    "metrics",
     "context",
-    "prelude",
-    "dataloader",
+    "signal",
+] }
+scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext", features = [
+    "client",
+    "serde",
 ] }
 
 cap = "0.1"
@@ -32,15 +42,18 @@ serde = { version = "1.0", features = ["derive"] }
 bitmask-enum = "2"
 mongodb = { version = "2.8.2", features = ["bson-chrono-0_4"] }
 chrono = "0.4.37"
-ulid = "1.1.2"
 serde_json = "1.0.115"
-tokio-postgres = "0.7.10"
-postgres-from-row = "0.5"
-postgres-types = "0.2"
 clickhouse = "0.11.6"
 
 sailfish = "0.8.3"
 uuid = "1.8.0"
-reqwest = "0.12.3"
 serde_repr = "0.1.19"
 time = "0.3.36"
+async-stripe = { version = "0.37.0", default-features = false, features = [
+    "runtime-tokio-hyper-rustls",
+    "checkout",
+    "billing",
+    "products",
+    "chrono",
+    "stream",
+] }

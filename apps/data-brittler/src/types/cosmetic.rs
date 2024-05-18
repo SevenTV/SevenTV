@@ -1,5 +1,5 @@
+use mongodb::bson::oid::ObjectId;
 use shared::database;
-use shared::object_id::ObjectId;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Cosmetic {

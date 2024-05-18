@@ -1,5 +1,5 @@
 use bitmask_enum::bitmask;
-use shared::object_id::ObjectId;
+use mongodb::bson::oid::ObjectId;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Ban {
@@ -13,7 +13,7 @@ pub struct Ban {
 }
 
 #[bitmask(i64)]
-// https://github.com/SevenTV/Common/blob/master/structures/v3/type.role.go#L37
+// https://github.com/SevenTV/Common/blob/master/structures/v3/type.ban.go#L29
 pub enum BanEffect {
 	NoPermissions = 1 << 0,
 	NoAuth = 1 << 1,
