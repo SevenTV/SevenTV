@@ -1,4 +1,4 @@
-use super::ProductRef;
+use super::{CustomerId, InvoiceId, InvoiceLineItemId, ProductRef};
 use crate::database::{Collection, PurchaseInventoryItemId, UserId};
 
 // An invoice that is generated for a purchase
@@ -7,11 +7,11 @@ use crate::database::{Collection, PurchaseInventoryItemId, UserId};
 pub struct Invoice {
 	/// This ID will be the stripe ID for the invoice
 	#[serde(rename = "_id")]
-	pub id: stripe::InvoiceId,
+	pub id: InvoiceId,
 	/// These items will be the stripe line items for the invoice
 	pub items: Vec<InvoiceItem>,
 	/// customer id from stripe
-	pub customer_id: stripe::CustomerId,
+	pub customer_id: CustomerId,
 	/// User who the invoice is for
 	pub user_id: UserId,
 	/// If this invoice was paid via a legacy payment
@@ -60,7 +60,7 @@ impl From<stripe::InvoiceStatus> for InvoiceStatus {
 #[serde(deny_unknown_fields)]
 pub struct InvoiceItem {
 	// This will be a line item id from stripe
-	pub id: stripe::InvoiceLineItemId,
+	pub id: InvoiceLineItemId,
 	// This is a stripe id for the product
 	pub product: ProductRef,
 	// User who the item is for, if the item was not immediately consumed by the buyer
@@ -75,9 +75,9 @@ pub struct InvoiceItem {
 #[serde(deny_unknown_fields)]
 pub struct InvoiceRef {
 	// The invoice id
-	pub id: stripe::InvoiceId,
+	pub id: InvoiceId,
 	// Optionally the item this reference refers to otherwise it is the whole invoice
-	pub item_id: stripe::InvoiceLineItemId,
+	pub item_id: InvoiceLineItemId,
 }
 
 impl Collection for Invoice {

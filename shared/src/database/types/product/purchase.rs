@@ -1,7 +1,7 @@
 use mongodb::bson::DateTime;
 
-use super::invoice::InvoiceRef;
-use super::ProductRef;
+use super::{invoice::InvoiceRef, ProductId};
+use super::{InvoiceId, InvoiceLineItemId, ProductRef, SubscriptionId};
 use crate::database::{Collection, Id, UserId};
 
 pub type PurchaseId = Id<Purchase>;
@@ -17,7 +17,7 @@ pub struct Purchase {
 	#[serde(rename = "_id")]
 	pub id: PurchaseId,
 	// The stripe id for the purchase (corrisponds to the `Product.id` field)
-	pub product_id: stripe::ProductId,
+	pub product_id: ProductId,
 	// Our internal id for the user who received the purchase
 	pub user_id: UserId,
 	// The invoice that created this purchase
@@ -39,9 +39,9 @@ impl Collection for Purchase {
 pub struct Subscription {
 	// The stripe id for the subscription
 	#[serde(rename = "_id")]
-	pub id: stripe::SubscriptionId,
+	pub id: SubscriptionId,
 	// The current active product ids for the subscription
-	pub active_product_ids: Vec<stripe::ProductId>,
+	pub active_product_ids: Vec<ProductId>,
 	// The user who received the subscription
 	pub user_id: UserId,
 	// Start time of the subscription
@@ -112,7 +112,7 @@ pub struct SubscriptionPeriod {
 	// Or if the subscription is refunded, or they change their plan.
 	pub projected_end: DateTime,
 	// The invoice that created this period
-	pub invoice_id: Option<stripe::InvoiceId>,
+	pub invoice_id: Option<InvoiceId>,
 	// If this period is enabled.
 	pub state: SubscriptionPeriodState,
 	// How this period was created (if none then it is a normal period)
@@ -142,7 +142,7 @@ pub struct SubscriptionPeriodItem {
 	/// The product that this period is for
 	pub product: ProductRef,
 	/// The item in the invoice that created this period.
-	pub invoice_item_id: Option<stripe::InvoiceLineItemId>,
+	pub invoice_item_id: Option<InvoiceLineItemId>,
 	// A special kind of period, for example if the period was gifted
 	// Or if we issued a free period for some reason
 	pub special_kind: Option<SubscriptionPeriodSpecialKind>,

@@ -145,6 +145,11 @@ macro_rules! stripe_id {
 
 stripe_id!(ProductId, stripe::ProductId);
 stripe_id!(ProductPriceId, stripe::PriceId);
+stripe_id!(SubscriptionId, stripe::SubscriptionId);
+stripe_id!(InvoiceId, stripe::InvoiceId);
+stripe_id!(CustomerId, stripe::CustomerId);
+stripe_id!(InvoiceLineItemId, stripe::InvoiceLineItemId);
+stripe_id!(CouponId, stripe::CouponId);
 
 // An item that can be purchased
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -193,7 +198,7 @@ pub struct ProductBundle {
 	/// The products that make up this bundle
 	pub products: Vec<ProductRef>,
 	/// The coupon that is applied to this bundle at checkout
-	pub coupon: Option<stripe::CouponId>,
+	pub coupon: Option<CouponId>,
 	/// The behavior of the bundle if the user already has some of the products
 	/// in the bundle Product limits are only applied after this behavior is
 	/// applied

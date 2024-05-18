@@ -17,6 +17,8 @@ pub use self::presence::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
+
+use super::ProductId;
 use super::{BadgeId, EmoteSetId, FileSet, FileSetId, ImageFormat, PaintId, Permissions, Role, RoleId};
 use crate::database::{Collection, Id};
 use crate::types::old::{
@@ -96,7 +98,7 @@ pub struct UserEntitledCache {
 	pub badge_ids: Vec<BadgeId>,
 	pub emote_set_ids: Vec<EmoteSetId>,
 	pub paint_ids: Vec<PaintId>,
-	pub product_ids: Vec<stripe::ProductId>,
+	pub product_ids: Vec<ProductId>,
 	pub invalidated_at: chrono::DateTime<chrono::Utc>,
 }
 
