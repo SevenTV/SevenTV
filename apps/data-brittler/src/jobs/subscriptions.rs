@@ -4,10 +4,9 @@ use std::sync::Arc;
 use chrono::{Days, Months};
 use shared::database::{Collection, Subscription, SubscriptionPeriod, SubscriptionStanding, SubscriptionState};
 
+use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
-
-use super::{Job, ProcessOutcome};
 
 pub struct SubscriptionsJob {
 	global: Arc<Global>,
@@ -15,9 +14,9 @@ pub struct SubscriptionsJob {
 }
 
 impl Job for SubscriptionsJob {
-	const NAME: &'static str = "transfer_stripe";
-
 	type T = types::Subscription;
+
+	const NAME: &'static str = "transfer_stripe";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {

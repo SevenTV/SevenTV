@@ -1,10 +1,10 @@
 use super::Collection;
 
-pub mod purchase;
 pub mod invoice;
+pub mod purchase;
 
-pub use purchase::*;
 pub use invoice::*;
+pub use purchase::*;
 
 pub type ProductId = stripe::ProductId;
 

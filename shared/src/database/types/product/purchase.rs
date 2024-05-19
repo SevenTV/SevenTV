@@ -1,14 +1,14 @@
 use mongodb::bson::DateTime;
 
-use crate::database::{Collection, Id, UserId};
-
 use super::invoice::InvoiceRef;
+use crate::database::{Collection, Id, UserId};
 
 pub type PurchaseId = Id<Purchase>;
 
 // A purchase of a `Product`
 // `Purchase` are always for products of kind `OneTimePurchase`
-// Unlike the `Subscription`, a user can have multiple purchases of the same product.
+// Unlike the `Subscription`, a user can have multiple purchases of the same
+// product.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Purchase {
@@ -97,19 +97,20 @@ pub struct SubscriptionScheduledPeriod {
 	// The end time of the period will always be in the future
 	pub end: DateTime,
 	// How this period was created (if none then it is a normal period)
-    pub special_kind: Option<SubscriptionPeriodSpecialKind>,
+	pub special_kind: Option<SubscriptionPeriodSpecialKind>,
 	// The price id for the period
 	pub product_price_id: String,
 }
 
-// Subscription Periods only have a single end time because they are always contiguous
+// Subscription Periods only have a single end time because they are always
+// contiguous
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionPeriod {
 	// The end time of the period (may be in the future if the period is ongoing)
 	pub end: DateTime,
 	// How this period was created (if none then it is a normal period)
-    pub special_kind: Option<SubscriptionPeriodSpecialKind>,
+	pub special_kind: Option<SubscriptionPeriodSpecialKind>,
 	// The invoice that created this period
 	pub invoice_id: Option<stripe::InvoiceId>,
 	// If this period is enabled.
@@ -121,22 +122,22 @@ pub struct SubscriptionPeriod {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, tag = "kind", content = "data", rename_all = "snake_case")]
 pub enum SubscriptionPeriodSpecialKind {
-    // A trial period
-    Trial {
-        // The reason for the trial
-        reason: Option<String>,
-    },
-    // A gifted period
-    Gift {
-        // The user who gifted the period
-        gifter_id: UserId,
-        // The invoice that created the gift
-        invoice: InvoiceRef,
-    },
-    // A period created by the system
-    System {
-        reason: String,
-    },
+	// A trial period
+	Trial {
+		// The reason for the trial
+		reason: Option<String>,
+	},
+	// A gifted period
+	Gift {
+		// The user who gifted the period
+		gifter_id: UserId,
+		// The invoice that created the gift
+		invoice: InvoiceRef,
+	},
+	// A period created by the system
+	System {
+		reason: String,
+	},
 }
 
 impl Collection for Subscription {

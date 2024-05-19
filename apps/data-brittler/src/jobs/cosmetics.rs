@@ -2,8 +2,8 @@ use std::sync::Arc;
 use std::vec;
 
 use mongodb::bson::doc;
-use shared::database::{self, Badge, Collection, FileSet, FileSetId, FileSetKind, FileSetProperties, Paint};
 use scuffle_image_processor_proto::{input, DrivePath, Events, Input, Output, ProcessImageRequest, Task};
+use shared::database::{self, Badge, Collection, FileSet, FileSetId, FileSetKind, FileSetProperties, Paint};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -40,9 +40,7 @@ impl Job for CosmeticsJob {
 				.await?;
 		}
 
-		Ok(Self {
-			global,
-		})
+		Ok(Self { global })
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
@@ -149,9 +147,7 @@ impl Job for CosmeticsJob {
 									}),
 									..Default::default()
 								}),
-								events: Some(Events {
-									..Default::default()
-								}),
+								events: Some(Events { ..Default::default() }),
 								limits: None,
 							}),
 							..Default::default()
