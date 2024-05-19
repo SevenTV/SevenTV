@@ -95,6 +95,10 @@ pub struct SubscriptionScheduledPeriod {
 	pub items: Vec<SubscriptionPeriodItem>,
 }
 
+impl Collection for Subscription {
+	const COLLECTION_NAME: &'static str = "subscriptions";
+}
+
 pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 
 // Subscription Periods are the individual billing periods of a subscription
@@ -162,8 +166,8 @@ pub enum SubscriptionPeriodSpecialKind {
 	},
 }
 
-impl Collection for Subscription {
-	const COLLECTION_NAME: &'static str = "subscriptions";
+impl Collection for SubscriptionPeriod {
+	const COLLECTION_NAME: &'static str = "subscription_periods";
 }
 
 pub type PurchaseInventoryItemId = Id<PurchaseInventoryItem>;

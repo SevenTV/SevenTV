@@ -61,14 +61,14 @@ impl Job for PricesJob {
 			ProductKind::OneTimePurchase
 		};
 
-		let entry = self.products.entry(product.id()).or_insert(Product {
-			id: product.id(),
-			kind,
-			prices: vec![],
-		});
-		entry.prices.push(ProductPrice {
-			id: price_id,
-		});
+		// let entry = self.products.entry(product.id()).or_insert(Product {
+		// 	id: product.id(),
+		// 	kind,
+		// 	prices: vec![],
+		// });
+		// entry.prices.push(ProductPrice {
+		// 	id: price_id,
+		// });
 
 		outcome
 	}

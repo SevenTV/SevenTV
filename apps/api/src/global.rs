@@ -17,6 +17,7 @@ pub struct Global {
 	user_by_id_loader: dataloader::user::UserLoader,
 	user_connection_by_user_id_loader: DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader>,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
+	product_entitlement_group_by_id_loader: DataLoader<dataloader::product::ProductEntitlementGroupByIdLoader>,
 	role_by_id_loader: DataLoader<dataloader::role::RoleByIdLoader>,
 	file_set_by_id_loader: DataLoader<dataloader::file_set::FileSetByIdLoader>,
 	paint_by_id_loader: DataLoader<dataloader::paint::PaintByIdLoader>,
@@ -45,6 +46,7 @@ impl Global {
 			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
 			user_connection_by_user_id_loader: dataloader::user_connection::UserConnectionByUserIdLoader::new(db.clone()),
 			product_by_id_loader: dataloader::product::ProductByIdLoader::new(db.clone()),
+			product_entitlement_group_by_id_loader: dataloader::product::ProductEntitlementGroupByIdLoader::new(db.clone()),
 			role_by_id_loader: dataloader::role::RoleByIdLoader::new(db.clone()),
 			file_set_by_id_loader: dataloader::file_set::FileSetByIdLoader::new(db.clone()),
 			paint_by_id_loader: dataloader::paint::PaintByIdLoader::new(db.clone()),
@@ -108,6 +110,11 @@ impl Global {
 	/// The product loader.
 	pub fn product_by_id_loader(&self) -> &DataLoader<dataloader::product::ProductByIdLoader> {
 		&self.product_by_id_loader
+	}
+
+	/// The entitlement group loader.
+	pub fn product_entitlement_group_by_id_loader(&self) -> &DataLoader<dataloader::product::ProductEntitlementGroupByIdLoader> {
+		&self.product_entitlement_group_by_id_loader
 	}
 
 	/// The role loader.

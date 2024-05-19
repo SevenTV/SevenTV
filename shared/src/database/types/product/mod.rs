@@ -355,3 +355,7 @@ pub enum ProductEntitlement {
 	/// other products as if they had been purchased.
 	Product(ProductId),
 }
+
+impl Collection for ProductEntitlementGroup {
+	const COLLECTION_NAME: &'static str = "product_entitlement_groups";
+}

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Context;
-use chrono::Datelike;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use mongodb::bson::to_bson;
@@ -11,8 +10,8 @@ use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::runtime;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::{
-	Collection, ProductEntitlement, ProductPurchase, ProductPurchaseStatus, User, UserEntitledCache, UserId, UserProduct,
-	UserProductDataPurchase, UserProductDataSubscriptionEntryStatus,
+	Collection, ProductEntitlementGroupEvaluationCondition, Purchase, Subscription, SubscriptionDuration,
+	SubscriptionPeriod, SubscriptionPeriodId, User, UserEntitledCache, UserId,
 };
 use tokio::sync::{Mutex, OnceCell};
 use tokio_util::sync::CancellationToken;
@@ -22,8 +21,9 @@ use crate::global::Global;
 
 pub struct UserLoader {
 	user_loader: DataLoader<InternalUserLoader>,
-	user_product_purchase_loader: DataLoader<UserProductPurchaseLoader>,
-	user_products_loader: DataLoader<UserProductLoader>,
+	user_purchase_loader: DataLoader<UserPurchaseLoader>,
+	user_subscription_loader: DataLoader<UserSubscriptionLoader>,
+	user_subscription_period_loader: DataLoader<UserSubscriptionPeriodByIdLoader>,
 	requests: Arc<Mutex<HashMap<UserId, SyncToken>>>,
 }
 
@@ -71,40 +71,31 @@ impl Loader for InternalUserLoader {
 	}
 }
 
-struct UserProductPurchaseLoader {
+struct UserPurchaseLoader {
 	db: mongodb::Database,
 }
 
-impl UserProductPurchaseLoader {
+impl UserPurchaseLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new("UserProductPurchaseLoader", Self { db })
+		DataLoader::new("UserPurchaseLoader", Self { db })
 	}
 }
 
-impl Loader for UserProductPurchaseLoader {
+impl Loader for UserPurchaseLoader {
 	type Error = ();
 	type Key = UserId;
-	type Value = Vec<ProductPurchase>;
+	type Value = Vec<Purchase>;
 
-	#[tracing::instrument(name = "UserProductPurchaseLoader::load", skip(self), fields(key_count = keys.len()))]
+	#[tracing::instrument(name = "UserPurchaseLoader::load", skip(self), fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
-		let results: Self::Value = ProductPurchase::collection(&self.db)
+		let results: Self::Value = Purchase::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
-					"$and": [
-						{
-							"user_id": {
-								"$in": keys,
-							}
-						},
-						{
-							"status": {
-								"$eq": to_bson(&ProductPurchaseStatus::Completed).unwrap(),
-							}
-						},
-					],
+					"user_id": {
+						"$in": keys,
+					}
 				},
 				None,
 			)
@@ -114,35 +105,35 @@ impl Loader for UserProductPurchaseLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.user_id.unwrap()))
+		Ok(results.into_iter().into_group_map_by(|r| r.user_id))
 	}
 }
 
-struct UserProductLoader {
+struct UserSubscriptionLoader {
 	db: mongodb::Database,
 }
 
-impl UserProductLoader {
+impl UserSubscriptionLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new("UserProductLoader", Self { db })
+		DataLoader::new("UserSubscriptionLoader", Self { db })
 	}
 }
 
-impl Loader for UserProductLoader {
+impl Loader for UserSubscriptionLoader {
 	type Error = ();
 	type Key = UserId;
-	type Value = Vec<UserProduct>;
+	type Value = Vec<Subscription>;
 
-	#[tracing::instrument(name = "user_product_by_user_id", skip(self), fields(key_count = keys.len()))]
+	#[tracing::instrument(name = "UserSubscriptionLoader::load", skip(self), fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
-		let results: Self::Value = UserProduct::collection(&self.db)
+		let results: Self::Value = Subscription::collection(&self.db)
 			.find(
 				mongodb::bson::doc! {
 					"user_id": {
 						"$in": keys,
-					},
+					}
 				},
 				None,
 			)
@@ -160,10 +151,49 @@ impl UserLoader {
 	pub fn new(db: mongodb::Database) -> Self {
 		Self {
 			user_loader: InternalUserLoader::new(db.clone()),
-			user_product_purchase_loader: UserProductPurchaseLoader::new(db.clone()),
-			user_products_loader: UserProductLoader::new(db.clone()),
+			user_purchase_loader: UserPurchaseLoader::new(db.clone()),
+			user_subscription_loader: UserSubscriptionLoader::new(db.clone()),
+			user_subscription_period_loader: UserSubscriptionPeriodByIdLoader::new(db.clone()),
 			requests: Arc::new(Mutex::new(HashMap::new())),
 		}
+	}
+}
+
+struct UserSubscriptionPeriodByIdLoader {
+	db: mongodb::Database,
+}
+
+impl UserSubscriptionPeriodByIdLoader {
+	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
+		DataLoader::new("UserSubscriptionPeriodByIdLoader", Self { db })
+	}
+}
+
+impl Loader for UserSubscriptionPeriodByIdLoader {
+	type Error = ();
+	type Key = SubscriptionPeriodId;
+	type Value = SubscriptionPeriod;
+
+	#[tracing::instrument(name = "UserSubscriptionPeriodByIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
+		let results: Vec<Self::Value> = SubscriptionPeriod::collection(&self.db)
+			.find(
+				mongodb::bson::doc! {
+					"_id": {
+						"$in": keys,
+					}
+				},
+				None,
+			)
+			.and_then(|f| f.try_collect())
+			.await
+			.map_err(|err| {
+				tracing::error!("failed to load: {err}");
+			})?;
+
+		Ok(results.into_iter().map(|r| (r.id, r)).collect())
 	}
 }
 
@@ -257,33 +287,43 @@ impl UserLoader {
 			return Ok(Some(user));
 		}
 
-		let Ok(product_purchases) = self
-			.user_product_purchase_loader
-			.load(user_id)
-			.await
-			.map(Option::unwrap_or_default)
-		else {
-			anyhow::bail!("failed to load user product purchases");
-		};
+		// // Purchases
+		// let Ok(purchases) = self.user_purchase_loader.load(user_id).await.map(Option::unwrap_or_default) else {
+		// 	anyhow::bail!("failed to load user purchases");
+		// };
 
-		let product_purchases = product_purchases.into_iter().into_group_map_by(|pp| pp.product_id);
+		// let purchases = purchases.into_iter().into_group_map_by(|p| p.product_id.clone());
 
-		let Ok(user_products) = self.user_products_loader.load(user_id).await.map(Option::unwrap_or_default) else {
-			anyhow::bail!("failed to load user products");
-		};
+		// // Subscriptions
+		// let Ok(subscriptions) = self
+		// 	.user_subscription_loader
+		// 	.load(user_id)
+		// 	.await
+		// 	.map(Option::unwrap_or_default)
+		// else {
+		// 	anyhow::bail!("failed to load user subscriptions");
+		// };
 
-		let user_products = user_products
-			.into_iter()
-			.map(|up| (up.product_id, up))
-			.collect::<HashMap<_, _>>();
+		// // Load products
+		// let product_ids = subscriptions
+		// 	.iter()
+		// 	.flat_map(|s| s.active_product_ids.iter().cloned())
+		// 	.chain(purchases.keys().cloned())
+		// 	.collect::<Vec<_>>();
 
-		let Ok(products) = global
-			.product_by_id_loader()
-			.load_many(product_purchases.keys().copied())
-			.await
-		else {
-			anyhow::bail!("failed to load products");
-		};
+		// let Ok(products) = global.product_by_id_loader().load_many(product_ids).await else {
+		// 	anyhow::bail!("failed to load products");
+		// };
+
+		// let mut product_subscriptions = HashMap::new();
+		// for sub in subscriptions {
+		// 	for product_id in &sub.active_product_ids {
+		// 		product_subscriptions
+		// 			.entry(product_id.clone())
+		// 			.or_insert_with(Vec::new)
+		// 			.push(sub.clone());
+		// 	}
+		// }
 
 		user.entitled_cache = UserEntitledCache {
 			role_ids: user.grants.role_ids.clone(),
@@ -295,39 +335,73 @@ impl UserLoader {
 			invalidated_at: chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60)),
 		};
 
-		for product in products.values() {
-			let Some(purchases) = product_purchases.get(&product.id) else {
-				continue;
-			};
+		// for product in products.values() {
+		// 	let subscriptions = product_subscriptions.get(&product.id).map(Vec::as_slice).unwrap_or_default();
 
-			user.entitled_cache.product_ids.push(product.id);
+		// 	let Ok(active_periods) = self
+		// 		.user_subscription_period_loader
+		// 		.load_many(subscriptions.iter().filter_map(|s| s.active_period))
+		// 		.await
+		// 	else {
+		// 		anyhow::bail!("failed to load subscription periods");
+		// 	};
 
-			product
-				.entitlement_groups
-				.iter()
-				.filter(|group| {
-					group
-						.condition
-						.as_ref()
-						.map(|c| evaluate_expression(c, purchases, user_products.get(&product.id)))
-						.unwrap_or(true)
-				})
-				.flat_map(|group| group.entitlements.iter().copied())
-				.for_each(|entitlement| match entitlement {
-					ProductEntitlement::Role(role_id) => {
-						user.entitled_cache.role_ids.push(role_id);
-					}
-					ProductEntitlement::Badge(badge_id) => {
-						user.entitled_cache.badge_ids.push(badge_id);
-					}
-					ProductEntitlement::Paint(paint_id) => {
-						user.entitled_cache.paint_ids.push(paint_id);
-					}
-					ProductEntitlement::EmoteSet(emote_set_id) => {
-						user.entitled_cache.emote_set_ids.push(emote_set_id);
-					}
-				});
-		}
+		// 	let sub_total_time = subscriptions.iter().fold(None, |total, s| {
+		// 		if let Some(active_period) = s.active_period.and_then(|id| active_periods.get(&id)) {
+		// 			let start: chrono::DateTime<chrono::Utc> = s.start.into();
+		// 			let end = active_period.end.map(Into::into).unwrap_or(chrono::Utc::now());
+		// 			Some(total.unwrap_or(chrono::TimeDelta::zero()) + (end - start))
+		// 		} else {
+		// 			total
+		// 		}
+		// 	});
+		// 	let sub_periods = vec![];
+
+		// 	let Some(product) = products.get(&product.id) else {
+		// 		continue;
+		// 	};
+
+		// 	user.entitled_cache.product_ids.push(product.id.clone());
+
+		// 	let Ok(entitlement_groups) = global
+		// 		.product_entitlement_group_by_id_loader()
+		// 		.load_many(product.entitlement_group_ids.iter().copied())
+		// 		.await
+		// 	else {
+		// 		anyhow::bail!("failed to load entitlement groups");
+		// 	};
+
+		// 	for group in entitlement_groups.values() {
+		// 		for evaluation in &group.evaluations {
+		// 			if evaluation
+		// 				.conditions
+		// 				.iter()
+		// 				.any(|c| eval_condition(c, sub_total_time, &sub_periods))
+		// 			{
+		// 				for entitlement in &evaluation.entitlements {
+		// 					match entitlement {
+		// 						ProductEntitlement::Role(role_id) => {
+		// 							user.entitled_cache.role_ids.push(*role_id);
+		// 						}
+		// 						ProductEntitlement::Badge(badge_id) => {
+		// 							user.entitled_cache.badge_ids.push(*badge_id);
+		// 						}
+		// 						ProductEntitlement::Paint(paint_id) => {
+		// 							user.entitled_cache.paint_ids.push(*paint_id);
+		// 						}
+		// 						ProductEntitlement::EmoteSet(emote_set_id) => {
+		// 							user.entitled_cache.emote_set_ids.push(*emote_set_id);
+		// 						}
+		// 						ProductEntitlement::Product(product_id) => {
+		// 							// TODO: recursively load product entitlements
+		// 							user.entitled_cache.product_ids.push(product_id.clone());
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		let Ok(roles) = global
 			.role_by_id_loader()
@@ -375,84 +449,104 @@ fn jitter(duration: std::time::Duration) -> std::time::Duration {
 	duration + std::time::Duration::from_millis(jitter)
 }
 
-#[tracing::instrument(name = "evaluate_expression", skip(purchases, user_product))]
-fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_product: Option<&UserProduct>) -> bool {
-	#[derive(serde::Serialize)]
-	struct Purchase {
-		date: chrono::DateTime<chrono::Utc>,
-		was_gift: bool,
-		price: i64,
-	}
-
-	#[derive(serde::Serialize)]
-	struct UserProduct {
-		created_at: chrono::DateTime<chrono::Utc>,
-		duraction: Duration,
-		subscription_entries: Vec<UserProductDataPurchase>,
-	}
-
-	#[derive(serde::Serialize)]
-	struct Duration {
-		total_years: i64,
-		total_days: i64,
-		total_months: i32,
-	}
-
-	let purchases = purchases
-		.iter()
-		.map(|pp| Purchase {
-			date: pp.id.timestamp(),
-			was_gift: pp.was_gift,
-			price: pp.price,
-		})
-		.collect::<Vec<_>>();
-
-	let user_product = user_product.map(|up| {
-		let total_time = up
-			.data
-			.purchases
-			.iter()
-			.filter(|e| e.status == UserProductDataSubscriptionEntryStatus::Active)
-			.map(|e| e.end - e.start)
-			.sum::<chrono::Duration>();
-
-		let created_at = up.id.timestamp();
-
-		let packed_end_at = created_at + total_time;
-
-		let total_months = (packed_end_at.year() - created_at.year()) * 12 + packed_end_at.month() as i32
-			- created_at.month() as i32
-			+ if packed_end_at.day() < created_at.day() { -1 } else { 0 };
-
-		let duraction = Duration {
-			total_days: total_time.num_days(),
-			total_years: total_time.num_days() / 365,
-			total_months,
-		};
-
-		UserProduct {
-			created_at,
-			duraction,
-			subscription_entries: up.data.purchases.clone(),
+#[tracing::instrument(name = "eval_condition", skip(sub_total_time))]
+fn eval_condition(
+	cond: &ProductEntitlementGroupEvaluationCondition,
+	sub_total_time: Option<chrono::TimeDelta>,
+	sub_periods: &[(chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)],
+) -> bool {
+	match cond {
+		ProductEntitlementGroupEvaluationCondition::SubscriptionDuration(SubscriptionDuration::Days(days)) => {
+			sub_total_time.map(|t| t.num_days() >= *days as i64).unwrap_or(false)
 		}
-	});
-
-	let result = match zen_expression::evaluate_expression(
-		expression,
-		&serde_json::json!({
-			"purchases": purchases,
-			"user_product": user_product,
-		}),
-	) {
-		Ok(result) => result,
-		Err(err) => {
-			// We should consider what we want to do here.
-			// This implies that the expression is invalid, so we should somehow report this
-			// to the user. Rather than logging it here.
-			tracing::error!(err = %err, "failed to evaluate expression");
-			return false;
+		ProductEntitlementGroupEvaluationCondition::SubscriptionDuration(SubscriptionDuration::Months(_)) => {
+			// TODO: look into using date_component crate for this
+			unimplemented!()
 		}
-	};
-
-	matches!(result, serde_json::Value::Bool(true))
+		ProductEntitlementGroupEvaluationCondition::SubscriptionPeriod { start, end } => {
+			sub_periods.iter().any(|(s, e)| s <= start && e >= end)
+		}
+	}
 }
+
+// #[tracing::instrument(name = "evaluate_expression", skip(purchases, user_product))]
+// fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_product: Option<&UserProduct>) -> bool {
+// 	#[derive(serde::Serialize)]
+// 	struct Purchase {
+// 		date: chrono::DateTime<chrono::Utc>,
+// 		was_gift: bool,
+// 		price: i64,
+// 	}
+
+// 	#[derive(serde::Serialize)]
+// 	struct UserProduct {
+// 		created_at: chrono::DateTime<chrono::Utc>,
+// 		duraction: Duration,
+// 		subscription_entries: Vec<UserProductDataPurchase>,
+// 	}
+
+// 	#[derive(serde::Serialize)]
+// 	struct Duration {
+// 		total_years: i64,
+// 		total_days: i64,
+// 		total_months: i32,
+// 	}
+
+// 	let purchases = purchases
+// 		.iter()
+// 		.map(|pp| Purchase {
+// 			date: pp.id.timestamp(),
+// 			was_gift: pp.was_gift,
+// 			price: pp.price,
+// 		})
+// 		.collect::<Vec<_>>();
+
+// 	let user_product = user_product.map(|up| {
+// 		let total_time = up
+// 			.data
+// 			.purchases
+// 			.iter()
+// 			.filter(|e| e.status == UserProductDataSubscriptionEntryStatus::Active)
+// 			.map(|e| e.end - e.start)
+// 			.sum::<chrono::Duration>();
+
+// 		let created_at = up.id.timestamp();
+
+// 		let packed_end_at = created_at + total_time;
+
+// 		let total_months = (packed_end_at.year() - created_at.year()) * 12 + packed_end_at.month() as i32
+// 			- created_at.month() as i32
+// 			+ if packed_end_at.day() < created_at.day() { -1 } else { 0 };
+
+// 		let duraction = Duration {
+// 			total_days: total_time.num_days(),
+// 			total_years: total_time.num_days() / 365,
+// 			total_months,
+// 		};
+
+// 		UserProduct {
+// 			created_at,
+// 			duraction,
+// 			subscription_entries: up.data.purchases.clone(),
+// 		}
+// 	});
+
+// 	let result = match zen_expression::evaluate_expression(
+// 		expression,
+// 		&serde_json::json!({
+// 			"purchases": purchases,
+// 			"user_product": user_product,
+// 		}),
+// 	) {
+// 		Ok(result) => result,
+// 		Err(err) => {
+// 			// We should consider what we want to do here.
+// 			// This implies that the expression is invalid, so we should somehow report this
+// 			// to the user. Rather than logging it here.
+// 			tracing::error!(err = %err, "failed to evaluate expression");
+// 			return false;
+// 		}
+// 	};
+
+// 	matches!(result, serde_json::Value::Bool(true))
+// }

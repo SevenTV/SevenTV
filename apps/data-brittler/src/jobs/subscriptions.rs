@@ -2,7 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use chrono::{Days, Months};
-use shared::database::{Collection, Subscription, SubscriptionPeriod, SubscriptionStanding, SubscriptionState};
+use shared::database::{Collection, Subscription, SubscriptionPeriod, SubscriptionStanding};
 
 use crate::global::Global;
 use crate::{error, types};
@@ -58,36 +58,36 @@ impl Job for SubscriptionsJob {
 			return outcome;
 		};
 
-		let (state, standing) = match sub.cycle.status {
-			types::SubscriptionCycleStatus::Ongoing => (SubscriptionState::Active, None),
-			types::SubscriptionCycleStatus::Ended => (SubscriptionState::Ended, None),
-			types::SubscriptionCycleStatus::Canceled => (SubscriptionState::Active, Some(SubscriptionStanding::Canceled)),
-		};
+		// let (state, standing) = match sub.cycle.status {
+		// 	types::SubscriptionCycleStatus::Ongoing => (SubscriptionState::Active, None),
+		// 	types::SubscriptionCycleStatus::Ended => (SubscriptionState::Ended, None),
+		// 	types::SubscriptionCycleStatus::Canceled => (SubscriptionState::Active, Some(SubscriptionStanding::Canceled)),
+		// };
 
-		let end = match sub.cycle.unit {
-			types::SubscriptionCycleUnit::Year => cycle_timestamp.into_chrono().checked_add_months(Months::new(12)),
-			types::SubscriptionCycleUnit::Month => cycle_timestamp.into_chrono().checked_add_months(Months::new(1)),
-			types::SubscriptionCycleUnit::Day => cycle_timestamp.into_chrono().checked_add_days(Days::new(1)),
-		}
-		.expect("failed to add duration");
+		// let end = match sub.cycle.unit {
+		// 	types::SubscriptionCycleUnit::Year => cycle_timestamp.into_chrono().checked_add_months(Months::new(12)),
+		// 	types::SubscriptionCycleUnit::Month => cycle_timestamp.into_chrono().checked_add_months(Months::new(1)),
+		// 	types::SubscriptionCycleUnit::Day => cycle_timestamp.into_chrono().checked_add_days(Days::new(1)),
+		// }
+		// .expect("failed to add duration");
 
-		self.subscriptions.push(Subscription {
-			id: provider_id,
-			product_id,
-			user_id: sub.subscriber_id.into(),
-			start: sub.started_at.into(),
-			periods: vec![SubscriptionPeriod {
-				end: end.into(),
-				special_kind: None,
-				invoice_id: None,
-				enabled: true,
-				product_price_id: price_id,
-			}],
-			scheduled_periods: vec![],
-			standing,
-			paypal_subscription: None,
-			state,
-		});
+		// self.subscriptions.push(Subscription {
+		// 	id: provider_id,
+		// 	product_id,
+		// 	user_id: sub.subscriber_id.into(),
+		// 	start: sub.started_at.into(),
+		// 	periods: vec![SubscriptionPeriod {
+		// 		end: end.into(),
+		// 		special_kind: None,
+		// 		invoice_id: None,
+		// 		enabled: true,
+		// 		product_price_id: price_id,
+		// 	}],
+		// 	scheduled_periods: vec![],
+		// 	standing,
+		// 	paypal_subscription: None,
+		// 	state,
+		// });
 
 		outcome
 	}

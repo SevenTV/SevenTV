@@ -125,7 +125,7 @@ name = "api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats 0.34.0",
+ "async-nats 0.35.1",
  "async-trait",
  "axum 0.7.5",
  "cap",
