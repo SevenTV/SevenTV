@@ -25,7 +25,7 @@ pub struct XEmoteData {}
 
 #[utoipa::path(
     post,
-    path = "/v3/emotes",
+    path = "/emotes",
     tag = "emotes",
     // Currently utoipa does not support multiple request body types so we use `image/*` as a placeholder
     // See https://github.com/juhaku/utoipa/pull/876
@@ -46,7 +46,7 @@ pub async fn create_emote(State(global): State<Arc<Global>>, req: Request) -> Re
 
 #[utoipa::path(
     get,
-    path = "/v3/emotes/{id}",
+    path = "/emotes/{id}",
     tag = "emotes",
     responses(
         (status = 200, description = "Emote", body = EmoteModel),

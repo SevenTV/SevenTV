@@ -20,7 +20,7 @@ pub struct XEntitlementData {}
 
 #[utoipa::path(
     post,
-    path = "/v3/entitlements",
+    path = "/entitlements",
     tag = "entitlements",
     request_body = XEntitlementData,
     responses(

@@ -22,11 +22,40 @@ pub struct Api {
 	#[settings(default = "https://7tv.io".into())]
 	pub base_url: String,
 	/// cors options
-	// pub cors: HttpCors,
+	pub cors: HttpCors,
 	/// connection config
 	pub connections: ConnectionsConfig,
 	/// jwt config
 	pub jwt: JwtConfig,
+	/// stripe config
+	pub stripe: StripeConfig,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct StripeConfig {
+	/// Stripe secret key
+	pub webhook_secret: String,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct HttpCors {
+	/// allowed origins
+	#[settings(default = vec!["https://7tv.app".into(), "https://7tv.io".into()])]
+	pub allowed_origins: Vec<String>,
+	/// allowed headers
+	#[settings(default = vec!["Content-Type".into(), "Authorization".into()])]
+	pub allowed_headers: Vec<String>,
+	/// allowed methods
+	#[settings(default = vec!["GET".into(), "POST".into()])]
+	pub allowed_methods: Vec<String>,
+	/// allow credentials
+	#[settings(default = true)]
+	pub allow_credentials: bool,
+	/// max age
+	#[settings(default = 3600)]
+	pub max_age: u64,
 }
 
 #[auto_settings]

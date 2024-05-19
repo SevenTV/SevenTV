@@ -29,7 +29,7 @@ pub fn docs() -> utoipa::openapi::OpenApi {
             description = include_str!("DESCRIPTION.md"),
         ),
         servers(
-            (url = "https://7tv.io", description = "Production"),
+            (url = "https://7tv.io/v3", description = "Production"),
         ),
     )]
 	struct Docs;

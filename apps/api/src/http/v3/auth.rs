@@ -42,7 +42,7 @@ pub struct LoginRequest {
 
 #[utoipa::path(
     get,
-    path = "/v3/auth",
+    path = "/auth",
     tag = "auth",
     responses(
         (status = 303, description = "Auth Redirect"),
@@ -81,7 +81,7 @@ async fn login(
 
 #[utoipa::path(
     post,
-    path = "/v3/auth/logout",
+    path = "/auth/logout",
     tag = "auth",
     responses(
         (status = 204, description = "Logout"),
@@ -122,7 +122,7 @@ async fn logout(
 
 #[utoipa::path(
     get,
-    path = "/v3/auth/manual",
+    path = "/auth/manual",
     tag = "auth",
     responses(
         (status = 200, description = "Manual Auth"),

@@ -11,7 +11,7 @@ serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 hyper = { version = "1", features = ["full"] }
 async-trait = "0.1.79"
-async-nats = "0.34.0"
+async-nats = "0.35.1"
 anyhow = "1"
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"] }
@@ -43,14 +43,16 @@ pin-project = "1"
 thiserror = "1"
 utoipa = { version = "4.2", features = ["repr"] }
 tokio-util = "0.7"
-zen-engine = "0.20"
-zen-expression = "0.20"
-itertools = "0.12"
+zen-engine = "0.21"
+zen-expression = "0.21"
+itertools = "0.13"
 mongodb = { version = "2.8", features = ["tokio-runtime", "bson-chrono-0_4"]}
 
 tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
 axum = "0.7"
 tower = "0.4"
+
+async-stripe = { version = "0.37.0", features = ["runtime-tokio-hyper-rustls"] }
 
 shared = { workspace = true }
 

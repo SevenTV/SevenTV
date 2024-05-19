@@ -24,7 +24,7 @@ pub fn routes() -> Router<Arc<Global>> {
 
 #[utoipa::path(
     get,
-    path = "/v3/emote-sets/{id}",
+    path = "/emote-sets/{id}",
     tag = "emote-sets",
     responses(
         (status = 200, description = "Emote Set", body = EmoteSetModel, content_type = "application/json"),

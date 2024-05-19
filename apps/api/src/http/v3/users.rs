@@ -37,7 +37,7 @@ pub fn routes() -> Router<Arc<Global>> {
 
 #[utoipa::path(
     get,
-    path = "/v3/users/{id}",
+    path = "/users/{id}",
     tag = "users",
     responses(
         (status = 200, description = "User", body = UserModel),
@@ -134,7 +134,7 @@ pub async fn get_user_by_id(
 
 #[utoipa::path(
     put,
-    path = "/v3/users/{id}/profile-picture",
+    path = "/users/{id}/profile-picture",
     tag = "users",
     request_body(content = &[u8], description = "Image Binary Data", content_type = "image/*"),
     responses(
@@ -156,7 +156,7 @@ pub async fn upload_user_profile_picture(
 
 #[utoipa::path(
     get,
-    path = "/v3/users/{id}/presences",
+    path = "/users/{id}/presences",
     tag = "users",
     responses(
         (status = 200, description = "User Presences", body = Vec<UserModel>),
@@ -177,7 +177,7 @@ pub async fn get_user_presences_by_platform(
 
 #[utoipa::path(
     get,
-    path = "/v3/users/{platform}/{platform_id}",
+    path = "/users/{platform}/{platform_id}",
     tag = "users",
     responses(
         (status = 200, description = "User", body = UserModel),
@@ -200,7 +200,7 @@ pub async fn get_user_by_platform_user_id(
 
 #[utoipa::path(
     delete,
-    path = "/v3/users/{id}",
+    path = "/users/{id}",
     tag = "users",
     responses(
         (status = 204, description = "User Deleted"),
@@ -222,7 +222,7 @@ pub async fn delete_user_by_id(
 
 #[utoipa::path(
     patch,
-    path = "/v3/users/{id}/connections/{connection_id}",
+    path = "/users/{id}/connections/{connection_id}",
     tag = "users",
     responses(
         (status = 200, description = "User Connection", body = UserConnectionModel),

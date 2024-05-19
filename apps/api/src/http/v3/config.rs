@@ -20,7 +20,7 @@ pub struct ExtensionConfig {}
 
 #[utoipa::path(
     get,
-    path = "/v3/config/{name}",
+    path = "/config/{name}",
     tag = "config",
     responses(
         (status = 200, description = "Extension Config", body = ExtensionConfig, content_type = "application/json"),

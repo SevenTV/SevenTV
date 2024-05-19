@@ -125,7 +125,8 @@ name = "api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats 0.34.0",
+ "async-nats",
+ "async-stripe",
  "async-trait",
  "axum 0.7.5",
  "cap",
@@ -141,7 +142,7 @@ dependencies = [
  "hyper 1.3.1",
  "hyper-tungstenite",
  "hyper-util",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "jwt-next",
  "memory-stats",
  "mongodb",
@@ -187,39 +188,6 @@ dependencies = [
  "concurrent-queue",
  "event-listener",
  "futures-core",
-]
-
-[[package]]
-name = "async-nats"
-version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eea7b126ebfa4db78e9e788b2a792b6329f35b4f2fdd56dbc646dedc2beec7a5"
-dependencies = [
- "base64 0.22.1",
- "bytes",
- "futures",
- "memchr",
- "nkeys",
- "nuid",
- "once_cell",
- "portable-atomic",
- "rand 0.8.5",
- "regex",
- "ring",
- "rustls-native-certs 0.7.0",
- "rustls-pemfile 2.1.2",
- "rustls-webpki 0.102.4",
- "serde",
- "serde_json",
- "serde_nanos",
- "serde_repr",
- "thiserror",
- "time",
- "tokio",
- "tokio-rustls 0.25.0",
- "tracing",
- "tryhard",
- "url",
 ]
 
 [[package]]
@@ -296,6 +264,8 @@ checksum = "2d2a0d22fa50ae36b553e0115def2ce37c9c377b9e0ba5c6ea0943e173642fd7"
 dependencies = [
  "chrono",
  "futures-util",
+ "hex",
+ "hmac",
  "http-types",
  "hyper 0.14.28",
  "hyper-rustls 0.24.2",
@@ -303,10 +273,12 @@ dependencies = [
  "serde_json",
  "serde_path_to_error",
  "serde_qs 0.10.1",
+ "sha2",
  "smart-default",
  "smol_str",
  "thiserror",
  "tokio",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -613,7 +585,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "time",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -780,7 +752,7 @@ dependencies = [
  "time",
  "tokio",
  "url",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -1100,7 +1072,7 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -1115,7 +1087,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
 dependencies = [
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -1304,7 +1276,7 @@ name = "event-api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats 0.35.1",
+ "async-nats",
  "bson",
  "cap",
  "chrono",
@@ -2146,6 +2118,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2464,7 +2445,7 @@ dependencies = [
  "trust-dns-proto",
  "trust-dns-resolver",
  "typed-builder",
- "uuid",
+ "uuid 1.8.0",
  "webpki-roots 0.25.4",
 ]
 
@@ -3536,7 +3517,7 @@ dependencies = [
  "rkyv_derive",
  "seahash",
  "tinyvec",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -3916,7 +3897,7 @@ dependencies = [
  "toml",
  "tracing",
  "ulid",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -4339,7 +4320,7 @@ name = "shared"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats 0.34.0",
+ "async-nats",
  "async-stripe",
  "bitmask-enum",
  "chrono",
@@ -4370,7 +4351,7 @@ dependencies = [
  "tracing-subscriber",
  "ulid",
  "utoipa",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -4565,7 +4546,7 @@ dependencies = [
  "debugid",
  "memmap2",
  "stable_deref_trait",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -5007,7 +4988,7 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
- "uuid",
+ "uuid 1.8.0",
 ]
 
 [[package]]
@@ -5205,7 +5186,7 @@ dependencies = [
  "getrandom 0.2.15",
  "rand 0.8.5",
  "serde",
- "uuid",
+ "uuid 1.8.0",
  "web-time",
 ]
 
@@ -5306,6 +5287,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.64",
+]
+
+[[package]]
+name = "uuid"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "getrandom 0.2.15",
 ]
 
 [[package]]
@@ -5701,9 +5691,9 @@ dependencies = [
 
 [[package]]
 name = "zen-engine"
-version = "0.20.1"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41358ac58712da9a742807c36a505e274648782819fef726852187e4486bd058"
+checksum = "eafb69f5ec588237aab5e1bccca8217eb0a41a23d649578f0aca7635cba91957"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -5724,9 +5714,9 @@ dependencies = [
 
 [[package]]
 name = "zen-expression"
-version = "0.20.1"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f257a36e812adca0c9e2d9eb4ba33ffc3c27da7f16f582a40ecaa5e512ca6207"
+checksum = "bbbd41392fbe817ffd4973af34584ecc32c0b9e1507bae4712677c692044308d"
 dependencies = [
  "ahash 0.8.11",
  "bumpalo",
@@ -5748,9 +5738,9 @@ dependencies = [
 
 [[package]]
 name = "zen-tmpl"
-version = "0.20.1"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e9459aa7a9e60dd59a979fac8fa9730ac8455c560a8cecdc96936ce33cb7a0e"
+checksum = "b736e51bd442661c7c264458f30dadab9aecd911cad8698e57359f194bf33d0b"
 dependencies = [
  "itertools 0.12.1",
  "serde",

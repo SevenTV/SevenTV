@@ -18,8 +18,10 @@ use crate::global::Global;
 
 pub mod error;
 pub mod extract;
+pub mod internal;
 pub mod middleware;
 pub mod v3;
+pub mod v4;
 
 #[derive(Clone)]
 struct TraceRequestId;
@@ -37,6 +39,8 @@ fn routes(global: Arc<Global>) -> Router {
 	Router::new()
 		.route("/", get(root))
 		.nest("/v3", v3::routes())
+		.nest("/v4", v4::routes())
+		.nest("/internal", internal::routes())
 		.with_state(global.clone())
 		.fallback(not_found)
 		.layer(

@@ -37,6 +37,6 @@ impl Loader for ProductByIdLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().map(|r| (r.id, r)).collect())
+		Ok(results.into_iter().map(|r| (r.id.clone(), r)).collect())
 	}
 }
