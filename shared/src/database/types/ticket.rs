@@ -1,4 +1,4 @@
-use super::{EmoteId, FileSetId, UserId};
+use super::{EmoteId, UserId};
 use crate::database::{Collection, Id};
 
 #[derive(Debug, Clone, Default, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
@@ -96,7 +96,15 @@ pub struct TicketMessage {
 	pub ticket_id: TicketId,
 	pub user_id: UserId,
 	pub content: String,
-	pub files: Vec<FileSetId>,
+	pub files: Vec<TicketFile>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TicketFile {
+	pub path: String,
+	pub mime: String,
+	pub size: u64,
 }
 
 impl Collection for TicketMessage {

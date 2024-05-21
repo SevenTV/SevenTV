@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bitmask_enum::bitmask;
 
-use super::{FileSet, FileSetId, UserId};
+use super::{UserId, ImageSet};
 use crate::database::{Collection, Id};
 use crate::types::old::{
 	EmoteLifecycleModel, EmoteModel, EmotePartialModel, EmoteVersionModel, EmoteVersionState, ImageHost, ImageHostKind,
@@ -20,14 +20,14 @@ pub struct Emote {
 	pub default_name: String,
 	pub tags: Vec<String>,
 	pub animated: bool,
-	pub file_set_id: FileSetId,
+	pub image_set: ImageSet,
 	pub flags: EmoteFlags,
 	pub attribution: Vec<EmoteAttribution>,
 }
 
 impl Emote {
-	pub fn into_old_model(self, owner: Option<UserPartialModel>, file_set: &FileSet, cdn_base_url: &str) -> EmoteModel {
-		let partial = self.into_old_model_partial(owner, file_set, cdn_base_url);
+	pub fn into_old_model(self, owner: Option<UserPartialModel>, cdn_base_url: &str) -> EmoteModel {
+		let partial = self.into_old_model_partial(owner, cdn_base_url);
 
 		EmoteModel {
 			id: partial.id,
@@ -58,7 +58,6 @@ impl Emote {
 	pub fn into_old_model_partial(
 		self,
 		owner: Option<UserPartialModel>,
-		file_set: &FileSet,
 		cdn_base_url: &str,
 	) -> EmotePartialModel {
 		EmotePartialModel {
@@ -99,18 +98,13 @@ impl Emote {
 
 				state
 			},
-			lifecycle: if file_set.properties.pending() {
+			lifecycle: if self.image_set.input.is_pending() {
 				crate::types::old::EmoteLifecycleModel::Pending
 			} else {
 				crate::types::old::EmoteLifecycleModel::Live
 			},
 			listed: self.flags.contains(EmoteFlags::PublicListed),
-			host: ImageHost::new(
-				cdn_base_url,
-				ImageHostKind::Emote,
-				self.id.cast(),
-				file_set.properties.as_old_image_files(),
-			),
+			host: ImageHost::from_image_set(&self.image_set, cdn_base_url, ImageHostKind::Emote, &self.id),
 		}
 	}
 }

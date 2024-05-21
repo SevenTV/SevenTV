@@ -283,7 +283,7 @@ impl UserLoader {
 			return Ok(None);
 		};
 
-		if user.entitled_cache.invalidated_at > chrono::Utc::now() {
+		if user.entitled_cache.invalidated_at.to_chrono() > chrono::Utc::now() {
 			return Ok(Some(user));
 		}
 
@@ -332,7 +332,7 @@ impl UserLoader {
 			paint_ids: user.grants.paint_ids.clone(),
 			product_ids: Vec::new(),
 			// 12 hours + 10%  jitter
-			invalidated_at: chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60)),
+			invalidated_at: mongodb::bson::DateTime::from(chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60))),
 		};
 
 		// for product in products.values() {

@@ -23,6 +23,7 @@ pub struct User {
 #[serde(untagged)]
 pub enum UserAvatar {
 	Pending {
+		// TODO: What is this id?
 		pending_id: ObjectId,
 	},
 	Processed {

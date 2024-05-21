@@ -1,5 +1,5 @@
 use super::{is_default, ImageHost, UserPartialModel};
-use crate::database::{BadgeId, FileSetId, PaintId};
+use crate::database::{BadgeId, PaintId, UserId};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -28,7 +28,7 @@ impl CosmeticModelData for CosmeticBadgeModel {
 }
 
 impl CosmeticModelData for CosmeticAvatarModel {
-	type Id = FileSetId;
+	type Id = UserId;
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -172,7 +172,7 @@ pub struct CosmeticBadgeModel {
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct CosmeticAvatarModel {
-	pub id: FileSetId,
+	pub id: UserId,
 	pub user: UserPartialModel,
 	#[serde(skip_serializing_if = "is_default", rename = "as")]
 	pub aas: String,

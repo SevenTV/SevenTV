@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use super::{FileSet, FileSetId, FileSetKind, FileSetProperties};
 use crate::database::{Collection, Id};
 use crate::types::old::{CosmeticBadgeModel, ImageFile, ImageFormat, ImageHost, ImageHostKind};
+
+use super::ImageSet;
 
 pub type BadgeId = Id<Badge>;
 
@@ -14,7 +15,7 @@ pub struct Badge {
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
-	pub file_set_id: FileSetId,
+	pub image_set: ImageSet,
 }
 
 impl Collection for Badge {
@@ -23,21 +24,12 @@ impl Collection for Badge {
 
 impl Badge {
 	#[tracing::instrument(level = "info", skip(self), fields(badge_id = %self.id))]
-	pub fn into_old_model(self, file_set: &FileSet, cdn_base_url: &str) -> Option<CosmeticBadgeModel> {
-		if file_set.kind != FileSetKind::Badge {
-			tracing::error!("Badge file set kind is not of type Badge");
-			return None;
-		}
-
-		let host = ImageHost::new(
-			cdn_base_url,
-			ImageHostKind::Badge,
-			self.id.cast(),
-			file_set.properties.as_old_image_files(),
-		);
+	pub fn into_old_model(self, image_set: &ImageSet, cdn_base_url: &str) -> Option<CosmeticBadgeModel> {
+		let id = self.id.cast();
+		let host = ImageHost::from_image_set(image_set, cdn_base_url, ImageHostKind::Badge, &id);
 
 		Some(CosmeticBadgeModel {
-			id: self.id.cast(),
+			id,
 			name: self.name,
 			tag: self.tags.into_iter().next().unwrap_or_default(),
 			tooltip: self.description,

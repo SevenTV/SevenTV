@@ -5,7 +5,7 @@ use axum::response::IntoResponse;
 use axum::routing::{delete, get, patch, put};
 use axum::{Json, Router};
 use hyper::StatusCode;
-use shared::database::{FeaturePermission, UserConnectionId, UserId};
+use shared::database::{UserConnectionId, UserId};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -60,41 +60,6 @@ pub async fn get_user_by_id(
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
 
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-	let roles = {
-		let mut roles = global
-			.role_by_id_loader()
-			.load_many(user.entitled_cache.role_ids.iter().copied())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		global_config
-			.role_ids
-			.iter()
-			.filter_map(|id| roles.remove(id))
-			.collect::<Vec<_>>()
-	};
-
-	let permissions = user.compute_permissions(&roles);
-
-	let pfp_file_set = match (
-		permissions.has(FeaturePermission::UseCustomProfilePicture),
-		user.style.active_profile_picture_id,
-	) {
-		(true, Some(profile_picture_id)) => global
-			.file_set_by_id_loader()
-			.load(profile_picture_id)
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?,
-		_ => None,
-	};
-
 	let emote_sets = global
 		.emote_set_by_user_id_loader()
 		.load(user.id)
@@ -119,7 +84,6 @@ pub async fn get_user_by_id(
 	Ok(Json(
 		user.into_old_model(
 			user_connections,
-			pfp_file_set.as_ref(),
 			None,
 			None,
 			emote_sets

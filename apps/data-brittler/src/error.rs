@@ -20,9 +20,6 @@ pub enum Error {
 	#[error("failed to query clickhouse")]
 	Clickhouse(#[from] clickhouse::error::Error),
 
-	#[error("{0}")]
-	ImageFile(#[from] crate::types::ImageFileError),
-
 	#[error("emote set emote found with no name")]
 	EmoteSetEmoteNoName { emote_set_id: ObjectId, emote_id: ObjectId },
 
@@ -35,6 +32,9 @@ pub enum Error {
 	InvalidStripeId(String),
 	#[error("{0}")]
 	Stripe(#[from] stripe::StripeError),
+
+	#[error("not implemented")]
+	NotImplemented(&'static str),
 }
 
 impl Error {
@@ -47,12 +47,12 @@ impl Error {
 			Self::Db(_) => "Db",
 			Self::InsertMany => "InsertMany",
 			Self::Clickhouse(_) => "Clickhouse",
-			Self::ImageFile(_) => "ImageFile",
 			Self::EmoteSetEmoteNoName { .. } => "EmoteSetEmoteNoName",
 			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
+			Self::NotImplemented(_) => "NotImplemented",
 		}
 	}
 
@@ -69,6 +69,7 @@ impl Error {
 			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
 			Self::InvalidStripeId(id) => format!("id: {}", id),
+			Self::NotImplemented(msg) => msg.to_string(),
 			e => format!("{:?}", e),
 		}
 	}

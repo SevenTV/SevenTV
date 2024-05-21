@@ -3,17 +3,15 @@ use std::sync::Arc;
 use anyhow::Context;
 use fnv::{FnvHashMap, FnvHashSet};
 use futures::TryStreamExt;
-use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
 use shared::database::{
-	self, Collection, FileSet, FileSetProperties, Platform, User, UserConnection, UserConnectionId, UserEditor,
-	UserEditorId, UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle,
+	Collection, ImageSet, ImageSetInput, Platform, User, UserConnection, UserConnectionId, UserEditor, UserEditorId,
+	UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle,
 };
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
-use crate::types::image_files_to_file_properties;
 use crate::{error, types};
 
 pub struct UsersJob {
@@ -21,7 +19,6 @@ pub struct UsersJob {
 	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,
 	all_connections: FnvHashSet<(Platform, String)>,
 	users: Vec<User>,
-	file_sets: Vec<FileSet>,
 	connections: Vec<UserConnection>,
 	editors: Vec<UserEditor>,
 }
@@ -37,14 +34,6 @@ impl Job for UsersJob {
 			User::collection(global.target_db()).drop(None).await?;
 			UserConnection::collection(global.target_db()).drop(None).await?;
 			UserEditor::collection(global.target_db()).drop(None).await?;
-
-			tracing::info!("deleting profile picture files from file_sets collection");
-			FileSet::collection(global.target_db())
-				.delete_many(
-					doc! { "kind": mongodb::bson::to_bson(&database::FileSetKind::ProfilePicture)? },
-					None,
-				)
-				.await?;
 		}
 
 		tracing::info!("querying all entitlements");
@@ -70,7 +59,6 @@ impl Job for UsersJob {
 			entitlements,
 			all_connections: FnvHashSet::default(),
 			users: vec![],
-			file_sets: vec![],
 			connections: vec![],
 			editors: vec![],
 		})
@@ -104,37 +92,22 @@ impl Job for UsersJob {
 			.find(|e| matches!(e.data, types::EntitlementData::Paint { selected: true, .. }))
 			.map(|e| e.id);
 
-		let (pending_profile_picture_id, active_profile_picture_id) = match user.avatar {
+		let active_profile_picture = match user.avatar {
 			Some(types::UserAvatar::Processed {
-				id,
-				input_file,
-				image_files,
-			}) => {
-				let outputs = match image_files_to_file_properties(image_files) {
-					Ok(outputs) => outputs,
-					Err(e) => {
-						return ProcessOutcome {
-							errors: vec![e.into()],
-							inserted_rows: 0,
-						};
-					}
-				};
-
-				self.file_sets.push(FileSet {
-					id: id.into(),
-					kind: database::FileSetKind::ProfilePicture,
-					authenticated: false,
-					properties: FileSetProperties::Image {
-						input: input_file.into(),
-						pending: false,
-						outputs,
-					},
-				});
-
-				(None, Some(id))
+				input_file, image_files, ..
+			}) => Some(ImageSet {
+				input: ImageSetInput::Image(input_file.into()),
+				outputs: image_files.into_iter().map(Into::into).collect(),
+			}),
+			// Some(types::UserAvatar::Pending { pending_id }) => Some(ImageSet {
+			// 	input: ImageSetInput::Pending { path: todo!(), mime: todo!(), size: todo!() },
+			// 	outputs: vec![],
+			// }),
+			Some(types::UserAvatar::Pending { .. }) => {
+				outcome.errors.push(error::Error::NotImplemented("pending avatar"));
+				None
 			}
-			Some(types::UserAvatar::Pending { pending_id }) => (Some(pending_id), None),
-			_ => (None, None),
+			_ => None,
 		};
 
 		self.users.push(User {
@@ -147,9 +120,8 @@ impl Job for UsersJob {
 			style: UserStyle {
 				active_badge_id: active_badge_id.map(Into::into),
 				active_paint_id: active_paint_id.map(Into::into),
-				pending_profile_picture_id: pending_profile_picture_id.map(Into::into),
-				active_profile_picture_id: active_profile_picture_id.map(Into::into),
-				all_profile_picture_ids: active_profile_picture_id.map(|id| vec![id.into()]).unwrap_or_default(),
+				active_profile_picture: active_profile_picture.clone(),
+				all_profile_pictures: active_profile_picture.map(|p| vec![p]).unwrap_or_default(),
 			},
 			active_emote_set_ids: vec![],
 			grants: UserGrants {
@@ -244,23 +216,19 @@ impl Job for UsersJob {
 		let mut outcome = ProcessOutcome::default();
 
 		let insert_options = InsertManyOptions::builder().ordered(false).build();
-		let file_sets = FileSet::collection(self.global.target_db());
 		let users = User::collection(self.global.target_db());
 		let connections = UserConnection::collection(self.global.target_db());
 		let editors = UserEditor::collection(self.global.target_db());
 
 		let res = tokio::join!(
-			file_sets.insert_many(&self.file_sets, insert_options.clone()),
 			users.insert_many(&self.users, insert_options.clone()),
 			connections.insert_many(&self.connections, insert_options.clone()),
 			editors.insert_many(&self.editors, insert_options),
 		);
-		let res = vec![res.0, res.1, res.2, res.3].into_iter().zip(vec![
-			self.file_sets.len(),
-			self.users.len(),
-			self.connections.len(),
-			self.editors.len(),
-		]);
+		let res =
+			vec![res.0, res.1, res.2]
+				.into_iter()
+				.zip(vec![self.users.len(), self.connections.len(), self.editors.len()]);
 
 		for (res, len) in res {
 			match res {

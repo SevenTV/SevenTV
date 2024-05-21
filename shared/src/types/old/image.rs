@@ -1,4 +1,4 @@
-use crate::database::Id;
+use crate::database::{Id, Image, ImageSet};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
@@ -17,13 +17,18 @@ pub enum ImageHostKind {
 	ProfilePicture,
 }
 
-impl ImageHostKind {
-	pub fn create_base_url(&self, base: &str, id: Id) -> String {
-		format!("{base}/{self}/{id}")
+impl ImageHost {
+	pub fn from_image_set<T>(image_set: &ImageSet, cdn_base_url: &str, kind: ImageHostKind, id: &Id<T>) -> Self {
+		Self {
+			url: kind.create_base_url(cdn_base_url, id),
+			files: image_set.outputs.iter().map(Into::into).collect(),
+		}
 	}
+}
 
-	pub fn create_full_url(&self, base: &str, id: Id, scale: u32, format: ImageFormat) -> String {
-		format!("{base}/{self}/{id}/{scale}x.{}", format.as_str())
+impl ImageHostKind {
+	pub fn create_base_url<T>(&self, base: &str, id: &Id<T>) -> String {
+		format!("{base}/{self}/{id}")
 	}
 }
 
@@ -34,15 +39,6 @@ impl std::fmt::Display for ImageHostKind {
 			Self::Emote => write!(f, "emote"),
 			Self::ProfilePicture => write!(f, "profile-picture"),
 			Self::Paint => write!(f, "paint"),
-		}
-	}
-}
-
-impl ImageHost {
-	pub fn new(base_url: &str, kind: ImageHostKind, id: Id, files: Vec<ImageFile>) -> Self {
-		Self {
-			url: kind.create_base_url(base_url, id),
-			files,
 		}
 	}
 }
@@ -59,6 +55,30 @@ pub struct ImageFile {
 	pub frame_count: u32,
 	pub size: u64,
 	pub format: ImageFormat,
+}
+
+impl From<&Image> for ImageFile {
+	fn from(value: &Image) -> Self {
+		Self {
+			name: value.path.clone(),
+			static_name: value.path.clone(),
+			width: value.width,
+			height: value.height,
+			frame_count: value.frame_count,
+			size: value.size,
+			format: match &value.mime {
+				mime if mime.starts_with("image/webp") => ImageFormat::Webp,
+				mime if mime.starts_with("image/avif") => ImageFormat::Avif,
+				_ => ImageFormat::Webp,
+			},
+		}
+	}
+}
+
+impl From<Image> for ImageFile {
+	fn from(value: Image) -> Self {
+		(&value).into()
+	}
 }
 
 #[derive(Debug, Copy, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]

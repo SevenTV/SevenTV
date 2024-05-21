@@ -5,7 +5,7 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use hyper::StatusCode;
-use shared::database::{EmoteId, FeaturePermission};
+use shared::database::EmoteId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -78,52 +78,9 @@ pub async fn get_emote_by_id(
 		None => None,
 	};
 
-	let pfp_file_set_id = match (&owner, owner.as_ref().and_then(|owner| owner.style.active_profile_picture_id)) {
-		(Some(owner), Some(profile_picture_id)) => {
-			let roles = global
-				.role_by_id_loader()
-				.load_many(owner.entitled_cache.role_ids.iter().copied())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-			let roles = global_config
-				.role_ids
-				.iter()
-				.filter_map(|id| roles.get(id))
-				.cloned()
-				.collect::<Vec<_>>();
-
-			if owner
-				.compute_permissions(&roles)
-				.has(FeaturePermission::UseCustomProfilePicture)
-			{
-				Some(profile_picture_id)
-			} else {
-				None
-			}
-		}
-		_ => None,
-	};
-
-	let file_sets = global
-		.file_set_by_id_loader()
-		.load_many(pfp_file_set_id.into_iter().chain(Some(emote.file_set_id)))
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-	let emote_file_set = file_sets.get(&emote.file_set_id).ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 	let owner = owner.map(|owner| {
 		owner.into_old_model_partial(
 			Vec::new(),
-			pfp_file_set_id.and_then(|id| file_sets.get(&id)),
 			None,
 			None,
 			&global.config().api.cdn_base_url,
@@ -132,7 +89,6 @@ pub async fn get_emote_by_id(
 
 	Ok(Json(emote.into_old_model(
 		owner,
-		emote_file_set,
 		&global.config().api.cdn_base_url,
 	)))
 }
