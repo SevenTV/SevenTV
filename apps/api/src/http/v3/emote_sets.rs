@@ -69,6 +69,12 @@ pub async fn get_emote_set_by_id(
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
+	let connections = global
+		.user_connection_by_user_id_loader()
+		.load_many(users.keys().copied())
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
 	let global_config = global
 		.global_config_loader()
 		.load(())
@@ -103,9 +109,10 @@ pub async fn get_emote_set_by_id(
 	let users = users
 		.into_values()
 		.map(|(user, _)| {
-			// This api doesnt seem to return the user's badges, paints and connections so
+			// This api doesnt seem to return the user's badges and paints so
 			// we can ignore them.
-			user.into_old_model_partial(Vec::new(), None, None, cdn_base_url)
+			let connections = connections.get(&user.id).cloned().unwrap_or_default();
+			user.into_old_model_partial(connections, None, None, cdn_base_url)
 		})
 		.map(|user| (user.id, user))
 		.collect::<HashMap<_, _>>();
@@ -115,10 +122,7 @@ pub async fn get_emote_set_by_id(
 		.filter_map(|(id, emote)| {
 			let owner = emote.owner_id.and_then(|id| users.get(&id)).cloned();
 
-			Some((
-				id,
-				emote.into_old_model_partial(owner, &global.config().api.cdn_base_url),
-			))
+			Some((id, emote.into_old_model_partial(owner, &global.config().api.cdn_base_url)))
 		})
 		.collect::<HashMap<_, _>>();
 

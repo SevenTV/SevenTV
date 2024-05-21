@@ -70,25 +70,25 @@ pub async fn get_emote_by_id(
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found"))?;
 
 	let owner = match emote.owner_id {
-		Some(owner) => global
-			.user_by_id_loader()
-			.load(&global, owner)
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?,
+		Some(owner) => {
+			let conns = global
+				.user_connection_by_user_id_loader()
+				.load(owner)
+				.await
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.unwrap_or_default();
+			global
+				.user_by_id_loader()
+				.load(&global, owner)
+				.await
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.map(|u| (u, conns))
+		}
 		None => None,
 	};
 
-	let owner = owner.map(|owner| {
-		owner.into_old_model_partial(
-			Vec::new(),
-			None,
-			None,
-			&global.config().api.cdn_base_url,
-		)
-	});
+	let owner =
+		owner.map(|(owner, conns)| owner.into_old_model_partial(conns, None, None, &global.config().api.cdn_base_url));
 
-	Ok(Json(emote.into_old_model(
-		owner,
-		&global.config().api.cdn_base_url,
-	)))
+	Ok(Json(emote.into_old_model(owner, &global.config().api.cdn_base_url)))
 }
