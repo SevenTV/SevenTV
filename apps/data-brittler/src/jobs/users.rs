@@ -1,31 +1,26 @@
-use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Context;
 use fnv::{FnvHashMap, FnvHashSet};
 use futures::TryStreamExt;
-use postgres_from_row::tokio_postgres::binary_copy::BinaryCopyInWriter;
-use postgres_types::Type;
-use shared::database::Platform;
-use shared::object_id::ObjectId;
+use mongodb::bson::oid::ObjectId;
+use mongodb::options::InsertManyOptions;
+use shared::database::{
+	Collection, ImageSet, ImageSetInput, Platform, User, UserConnection, UserConnectionId, UserEditor, UserEditorId,
+	UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle,
+};
 
 use super::{Job, ProcessOutcome};
-use crate::database::{file_set_kind_type, platform_enum_type};
 use crate::global::Global;
-use crate::types::image_files_to_file_properties;
 use crate::{error, types};
-
-// TODO: editors
 
 pub struct UsersJob {
 	global: Arc<Global>,
 	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,
-	users_writer: Pin<Box<BinaryCopyInWriter>>,
-	user_roles_writer: Pin<Box<BinaryCopyInWriter>>,
-	file_sets_writer: Pin<Box<BinaryCopyInWriter>>,
-	connections_writer: Pin<Box<BinaryCopyInWriter>>,
-	all_user_roles: FnvHashSet<(ulid::Ulid, ulid::Ulid)>,
 	all_connections: FnvHashSet<(Platform, String)>,
+	users: Vec<User>,
+	connections: Vec<UserConnection>,
+	editors: Vec<UserEditor>,
 }
 
 impl Job for UsersJob {
@@ -35,23 +30,15 @@ impl Job for UsersJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("truncating users, user_connections and user_roles tables");
-			scuffle_utils::database::query("TRUNCATE users, user_connections, user_roles")
-				.build()
-				.execute(global.db())
-				.await?;
-
-			tracing::info!("deleting profile picture files from file_sets table");
-			scuffle_utils::database::query("DELETE FROM file_sets WHERE kind = 'PROFILE_PICTURE'")
-				.build()
-				.execute(global.db())
-				.await?;
+			tracing::info!("dropping users and user_connections collections");
+			User::collection(global.target_db()).drop(None).await?;
+			UserConnection::collection(global.target_db()).drop(None).await?;
+			UserEditor::collection(global.target_db()).drop(None).await?;
 		}
 
 		tracing::info!("querying all entitlements");
 		let mut entitlements_cursor = global
-			.mongo()
-			.database("7tv")
+			.source_db()
 			.collection::<types::Entitlement>("entitlements")
 			.find(None, None)
 			.await?;
@@ -67,156 +54,85 @@ impl Job for UsersJob {
 			}
 		}
 
-		let users_client = global.db().get().await?;
-		let users_writer = BinaryCopyInWriter::new(users_client
-			.copy_in("COPY users (id, email, active_badge_id, active_paint_id, pending_profile_picture_file_set_id, active_profile_picture_file_set_id) FROM STDIN WITH (FORMAT BINARY)")
-			.await?, &[Type::UUID, Type::VARCHAR, Type::UUID, Type::UUID, Type::UUID, Type::UUID]);
-
-		let user_roles_client = global.db().get().await?;
-		let user_roles_writer = BinaryCopyInWriter::new(
-			user_roles_client
-				.copy_in("COPY user_roles (user_id, role_id, added_at) FROM STDIN WITH (FORMAT BINARY)")
-				.await?,
-			&[Type::UUID, Type::UUID, Type::TIMESTAMPTZ],
-		);
-
-		let file_sets_client = global.db().get().await?;
-		let file_sets_writer = BinaryCopyInWriter::new(
-			file_sets_client
-				.copy_in("COPY file_sets (id, kind, authenticated, properties) FROM STDIN WITH (FORMAT BINARY)")
-				.await?,
-			&[Type::UUID, file_set_kind_type(&global).await?, Type::BOOL, Type::JSONB],
-		);
-
-		let connections_client = global.db().get().await?;
-		let connections_writer = BinaryCopyInWriter::new(connections_client
-			.copy_in("COPY user_connections (id, user_id, main_connection, platform_kind, platform_id, platform_username, platform_display_name, platform_avatar_url) FROM STDIN WITH (FORMAT BINARY)")
-			.await?, &[Type::UUID, Type::UUID, Type::BOOL, platform_enum_type(&global).await?, Type::VARCHAR, Type::VARCHAR, Type::VARCHAR, Type::VARCHAR]);
-
 		Ok(Self {
 			global,
 			entitlements,
-			users_writer: Box::pin(users_writer),
-			user_roles_writer: Box::pin(user_roles_writer),
-			file_sets_writer: Box::pin(file_sets_writer),
-			connections_writer: Box::pin(connections_writer),
-			all_user_roles: FnvHashSet::default(),
 			all_connections: FnvHashSet::default(),
+			users: vec![],
+			connections: vec![],
+			editors: vec![],
 		})
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.mongo().database("7tv").collection("users")
+		self.global.source_db().collection("users")
 	}
 
 	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
-		let user_id = user.id.into_ulid();
+		let mut outcome = ProcessOutcome::default();
 
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
 
-		for (id, ref_id) in entitlements.iter().filter_map(|e| match &e.data {
-			types::EntitlementData::Role { ref_id } => Some((e.id, ref_id)),
+		let mut roles = FnvHashSet::default();
+
+		for role_id in entitlements.iter().filter_map(|e| match &e.data {
+			types::EntitlementData::Role { ref_id } => Some(ref_id),
 			_ => None,
 		}) {
-			let role_id = ref_id.into_ulid();
-			if self.all_user_roles.insert((user_id, role_id)) {
-				if let Err(e) = self
-					.user_roles_writer
-					.as_mut()
-					.write(&[
-						&user_id,
-						&role_id,
-						&chrono::DateTime::from_timestamp(id.timestamp() as i64, 0),
-					])
-					.await
-				{
-					return ProcessOutcome {
-						errors: vec![e.into()],
-						inserted_rows: 0,
-					};
-				}
-			}
+			roles.insert(*role_id);
 		}
 
 		let active_badge_id = entitlements
 			.iter()
 			.find(|e| matches!(e.data, types::EntitlementData::Badge { selected: true, .. }))
-			.map(|e| e.id.into_ulid());
+			.map(|e| e.id);
 
 		let active_paint_id = entitlements
 			.iter()
 			.find(|e| matches!(e.data, types::EntitlementData::Paint { selected: true, .. }))
-			.map(|e| e.id.into_ulid());
+			.map(|e| e.id);
 
-		let (pending_profile_picture_file_set_id, active_profile_picture_file_set_id) = match user.avatar {
+		let active_profile_picture = match user.avatar {
 			Some(types::UserAvatar::Processed {
-				id,
-				input_file,
-				image_files,
-			}) => {
-				let file_set_id = id.into_ulid();
-
-				let outputs = match image_files_to_file_properties(image_files) {
-					Ok(outputs) => outputs,
-					Err(e) => {
-						return ProcessOutcome {
-							errors: vec![e.into()],
-							inserted_rows: 0,
-						};
-					}
-				};
-
-				if let Err(e) = self
-					.file_sets_writer
-					.as_mut()
-					.write(&[
-						&ulid::Ulid::from(file_set_id),
-						&shared::database::FileSetKind::ProfilePicture,
-						&false,
-						&postgres_types::Json(shared::database::FileSetProperties::Image {
-							input: input_file.into(),
-							pending: false,
-							outputs,
-						}),
-					])
-					.await
-				{
-					return ProcessOutcome {
-						errors: vec![e.into()],
-						inserted_rows: 0,
-					};
-				}
-
-				(None, Some(file_set_id))
+				input_file, image_files, ..
+			}) => Some(ImageSet {
+				input: ImageSetInput::Image(input_file.into()),
+				outputs: image_files.into_iter().map(Into::into).collect(),
+			}),
+			// Some(types::UserAvatar::Pending { pending_id }) => Some(ImageSet {
+			// 	input: ImageSetInput::Pending { path: todo!(), mime: todo!(), size: todo!() },
+			// 	outputs: vec![],
+			// }),
+			Some(types::UserAvatar::Pending { .. }) => {
+				outcome.errors.push(error::Error::NotImplemented("pending avatar"));
+				None
 			}
-			Some(types::UserAvatar::Pending { pending_id }) => (Some(pending_id.into_ulid()), None),
-			_ => (None, None),
+			_ => None,
 		};
 
-		if let Err(e) = self
-			.users_writer
-			.as_mut()
-			.write(&[
-				&user_id,
-				&user.email,
-				&active_badge_id,
-				&active_paint_id,
-				&pending_profile_picture_file_set_id,
-				&active_profile_picture_file_set_id,
-			])
-			.await
-		{
-			return ProcessOutcome {
-				errors: vec![e.into()],
-				inserted_rows: 0,
-			};
-		}
-
-		let mut errors = Vec::new();
-		let mut inserted_rows = 1;
+		self.users.push(User {
+			id: user.id.into(),
+			email: user.email,
+			email_verified: false,
+			password_hash: None,
+			settings: UserSettings::default(),
+			two_fa: None,
+			style: UserStyle {
+				active_badge_id: active_badge_id.map(Into::into),
+				active_paint_id: active_paint_id.map(Into::into),
+				active_profile_picture: active_profile_picture.clone(),
+				all_profile_pictures: active_profile_picture.map(|p| vec![p]).unwrap_or_default(),
+			},
+			active_emote_set_ids: vec![],
+			grants: UserGrants {
+				role_ids: roles.into_iter().map(|rid| rid.into()).collect(),
+				..Default::default()
+			},
+			entitled_cache: UserEntitledCache::default(),
+		});
 
 		for (i, connection) in user.connections.into_iter().enumerate() {
-			let id = ulid::Ulid::from_datetime(connection.linked_at.into_chrono().into());
+			let id = UserConnectionId::with_timestamp(connection.linked_at.into_chrono());
 
 			let (platform, platform_id, platform_username, platform_display_name, platform_avatar_url) =
 				match connection.platform {
@@ -248,7 +164,7 @@ impl Job for UsersJob {
 						display_name,
 					} => (Platform::Kick, id, username, display_name, None),
 					_ => {
-						errors.push(error::Error::MissingPlatformId {
+						outcome.errors.push(error::Error::MissingPlatformId {
 							user_id: user.id,
 							platform: connection.platform.into(),
 						});
@@ -257,47 +173,75 @@ impl Job for UsersJob {
 				};
 
 			if self.all_connections.insert((platform, platform_id.clone())) {
-				match self
-					.connections_writer
-					.as_mut()
-					.write(&[
-						&id,
-						&user_id,
-						&(i == 0),
-						&platform,
-						&platform_id,
-						&platform_username,
-						&platform_display_name,
-						&platform_avatar_url,
-					])
-					.await
-				{
-					Ok(_) => inserted_rows += 1,
-					Err(e) => errors.push(e.into()),
-				}
+				self.connections.push(UserConnection {
+					id,
+					user_id: user.id.into(),
+					main_connection: i == 0,
+					platform,
+					platform_id,
+					platform_username,
+					platform_display_name,
+					platform_avatar_url,
+					allow_login: true,
+				});
 			} else {
-				errors.push(error::Error::DuplicateUserConnection { platform, platform_id });
+				outcome
+					.errors
+					.push(error::Error::DuplicateUserConnection { platform, platform_id });
 			}
 		}
 
-		ProcessOutcome { errors, inserted_rows }
+		for editor in user.editors {
+			if let Some(editor_id) = editor.id {
+				let permissions = UserEditorPermissions {};
+
+				self.editors.push(UserEditor {
+					id: UserEditorId::new(),
+					user_id: user.id.into(),
+					editor_id: editor_id.into(),
+					state: UserEditorState::Accepted,
+					notes: None,
+					permissions,
+					added_by_id: Some(user.id.into()),
+				});
+			}
+		}
+
+		outcome
 	}
 
-	async fn finish(mut self) -> anyhow::Result<()> {
+	async fn finish(self) -> ProcessOutcome {
 		tracing::info!("finishing users job");
 
-		self.users_writer.as_mut().finish().await?;
-		tracing::info!("finished writing users");
+		let mut outcome = ProcessOutcome::default();
 
-		self.user_roles_writer.as_mut().finish().await?;
-		tracing::info!("finished writing user roles");
+		let insert_options = InsertManyOptions::builder().ordered(false).build();
+		let users = User::collection(self.global.target_db());
+		let connections = UserConnection::collection(self.global.target_db());
+		let editors = UserEditor::collection(self.global.target_db());
 
-		self.file_sets_writer.as_mut().finish().await?;
-		tracing::info!("finished writing profile picture file sets");
+		let res = tokio::join!(
+			users.insert_many(&self.users, insert_options.clone()),
+			connections.insert_many(&self.connections, insert_options.clone()),
+			editors.insert_many(&self.editors, insert_options),
+		);
+		let res =
+			vec![res.0, res.1, res.2]
+				.into_iter()
+				.zip(vec![self.users.len(), self.connections.len(), self.editors.len()]);
 
-		self.connections_writer.as_mut().finish().await?;
-		tracing::info!("finished writing user connections");
+		for (res, len) in res {
+			match res {
+				Ok(res) => {
+					outcome.inserted_rows += res.inserted_ids.len() as u64;
+					if res.inserted_ids.len() != len {
+						outcome.errors.push(error::Error::InsertMany);
+					}
+				}
+				Err(e) => outcome.errors.push(e.into()),
+			}
+		}
 
-		Ok(())
+		outcome
 	}
 }

@@ -4,9 +4,9 @@ use axum::extract::Request;
 use axum::response::Response;
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use hyper::StatusCode;
+use hyper::{header, StatusCode};
 use mongodb::bson::doc;
-use shared::database::{Collection, UserSession};
+use shared::database::{Collection, UserId, UserSession};
 
 use super::cookies::Cookies;
 use crate::global::Global;
@@ -41,6 +41,14 @@ pub struct AuthMiddlewareService<S> {
 	inner: S,
 }
 
+#[derive(Debug, Clone)]
+pub enum AuthSession {
+	/// The user session
+	Session(UserSession),
+	/// Old user sessions, only user id available
+	Old(UserId),
+}
+
 impl<S> AuthMiddlewareService<S> {
 	async fn serve<B>(mut self, mut req: Request<B>) -> Result<Response, EitherApiError<S::Error>>
 	where
@@ -50,42 +58,56 @@ impl<S> AuthMiddlewareService<S> {
 		B: Send,
 	{
 		let cookies = req.extensions().get::<Cookies>().expect("cookies not found");
+		let auth_cookie = cookies.get(AUTH_COOKIE);
 
-		if let Some(cookie) = cookies.get(AUTH_COOKIE) {
-			let jwt = AuthJwtPayload::verify(&self.global, cookie.value()).ok_or_else(|| {
+		if let Some(token) = auth_cookie.as_ref().map(|c| c.value()).or_else(|| {
+			req.headers()
+				.get(header::AUTHORIZATION)
+				.and_then(|v| v.to_str().ok())
+				.map(|s| s.trim_start_matches("Bearer "))
+		}) {
+			let jwt = AuthJwtPayload::verify(&self.global, token).ok_or_else(|| {
 				cookies.remove(AUTH_COOKIE);
 				ApiError::UNAUTHORIZED
 			})?;
 
-			let session = UserSession::collection(self.global.db())
-				.find_one_and_update(
-					doc! {
-						"_id": jwt.session_id,
-						"expires_at": { "$gt": chrono::Utc::now() },
-					},
-					doc! {
-						"$set": {
-							"last_used_at": chrono::Utc::now(),
-						},
-					},
-					Some(
-						mongodb::options::FindOneAndUpdateOptions::builder()
-							.return_document(mongodb::options::ReturnDocument::After)
-							.upsert(false)
-							.build(),
-					),
-				)
-				.await
-				.map_err(|err| {
-					tracing::error!(error = %err, "failed to find user session");
-					ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, "failed to find user session")
-				})?
-				.ok_or_else(|| {
-					cookies.remove(AUTH_COOKIE);
-					ApiError::new(StatusCode::UNAUTHORIZED, "session not found")
-				})?;
+			match jwt.session_id {
+				Some(session_id) => {
+					let session = UserSession::collection(self.global.db())
+						.find_one_and_update(
+							doc! {
+								"_id": session_id,
+								"expires_at": { "$gt": chrono::Utc::now() },
+							},
+							doc! {
+								"$set": {
+									"last_used_at": chrono::Utc::now(),
+								},
+							},
+							Some(
+								mongodb::options::FindOneAndUpdateOptions::builder()
+									.return_document(mongodb::options::ReturnDocument::After)
+									.upsert(false)
+									.build(),
+							),
+						)
+						.await
+						.map_err(|err| {
+							tracing::error!(error = %err, "failed to find user session");
+							ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, "failed to find user session")
+						})?
+						.ok_or_else(|| {
+							cookies.remove(AUTH_COOKIE);
+							ApiError::new(StatusCode::UNAUTHORIZED, "session not found")
+						})?;
 
-			req.extensions_mut().insert(session);
+					req.extensions_mut().insert(AuthSession::Session(session));
+				}
+				// old session
+				None => {
+					req.extensions_mut().insert(AuthSession::Old(jwt.user_id));
+				},
+			}
 		}
 
 		self.inner.call(req).await.map_err(EitherApiError::Other)

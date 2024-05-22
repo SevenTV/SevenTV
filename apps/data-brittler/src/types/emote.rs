@@ -1,4 +1,4 @@
-use shared::object_id::ObjectId;
+use mongodb::bson::oid::ObjectId;
 use shared::types::old::EmoteFlagsModel;
 
 use super::image_file::ImageFile;

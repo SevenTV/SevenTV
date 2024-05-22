@@ -1,23 +1,22 @@
-use std::pin::Pin;
 use std::sync::Arc;
 
 use fnv::FnvHashSet;
-use postgres_types::Type;
-use shared::database;
-use tokio_postgres::binary_copy::BinaryCopyInWriter;
+use mongodb::options::InsertManyOptions;
+use shared::database::{
+	self, Collection, Ticket, TicketData, TicketId, TicketMember, TicketMemberId, TicketMessage, TicketMessageId,
+	TicketPriority, UserId,
+};
 
 use super::{Job, ProcessOutcome};
-use crate::database::{ticket_kind_type, ticket_member_kind_type, ticket_priority_type, ticket_status_type};
 use crate::global::Global;
-use crate::types;
-
-// Only emote reports because reporting users was never implemented
+use crate::{error, types};
 
 pub struct ReportsJob {
 	global: Arc<Global>,
-	tickets_writer: Pin<Box<BinaryCopyInWriter>>,
-	ticket_members_writer: Pin<Box<BinaryCopyInWriter>>,
-	all_members: FnvHashSet<(ulid::Ulid, ulid::Ulid)>,
+	all_members: FnvHashSet<(TicketId, UserId)>,
+	tickets: Vec<Ticket>,
+	ticket_members: Vec<TicketMember>,
+	ticket_messages: Vec<TicketMessage>,
 }
 
 impl Job for ReportsJob {
@@ -26,115 +25,106 @@ impl Job for ReportsJob {
 	const NAME: &'static str = "transfer_reports";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			tracing::info!("truncating tickets and ticket_members tables");
-			scuffle_utils::database::query("TRUNCATE tickets, ticket_members")
-				.build()
-				.execute(global.db())
-				.await?;
-		}
-
-		let tickets_client = global.db().get().await?;
-		let tickets_writer = BinaryCopyInWriter::new(
-			tickets_client
-				.copy_in(
-					"COPY tickets (id, kind, status, priority, title, data, updated_at) FROM STDIN WITH (FORMAT BINARY)",
-				)
-				.await?,
-			&[
-				Type::UUID,
-				ticket_kind_type(&global).await?,
-				ticket_status_type(&global).await?,
-				ticket_priority_type(&global).await?,
-				Type::TEXT,
-				Type::JSONB,
-				Type::TIMESTAMPTZ,
-			],
-		);
-
-		let ticket_members_client = global.db().get().await?;
-		let ticket_members_writer = BinaryCopyInWriter::new(
-			ticket_members_client
-				.copy_in("COPY ticket_members (ticket_id, user_id, kind) FROM STDIN WITH (FORMAT BINARY)")
-				.await?,
-			&[Type::UUID, Type::UUID, ticket_member_kind_type(&global).await?],
-		);
-
 		Ok(Self {
 			global,
-			tickets_writer: Box::pin(tickets_writer),
-			ticket_members_writer: Box::pin(ticket_members_writer),
 			all_members: FnvHashSet::default(),
+			tickets: vec![],
+			ticket_members: vec![],
+			ticket_messages: vec![],
 		})
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.mongo().database("7tv").collection("reports")
+		self.global.source_db().collection("reports")
 	}
 
 	async fn process(&mut self, report: Self::T) -> ProcessOutcome {
-		let mut outcome = ProcessOutcome::default();
+		// Only emote reports because reporting users was never implemented
 
-		let id = report.id.into_ulid();
+		let ticket_id = report.id.into();
 
-		// TODO: data
-		let data = database::TicketData {};
+		self.tickets.push(Ticket {
+			id: ticket_id,
+			status: report.status.into(),
+			priority: TicketPriority::Low,
+			title: report.subject,
+			tags: vec![],
+			data: TicketData::EmoteReport {
+				emote_id: report.target_id.into(),
+			},
+		});
 
-		match self
-			.tickets_writer
-			.as_mut()
-			.write(&[
-				&id,
-				&database::TicketKind::EmoteReport,
-				&Into::<database::TicketStatus>::into(report.status),
-				&database::TicketPriority::Low,
-				&report.subject,
-				&postgres_types::Json(data),
-				&report.last_updated_at.into_chrono(),
-			])
-			.await
-		{
-			Ok(_) => outcome.inserted_rows += 1,
-			Err(e) => {
-				outcome.errors.push(e.into());
-				return outcome;
+		let message_id = TicketMessageId::with_timestamp(report.id.timestamp().to_chrono());
+
+		self.ticket_messages.push(TicketMessage {
+			id: message_id,
+			ticket_id,
+			user_id: report.actor_id.into(),
+			content: report.body,
+			files: vec![],
+		});
+
+		let op = report.actor_id.into();
+		self.ticket_members.push(TicketMember {
+			id: TicketMemberId::new(),
+			ticket_id,
+			user_id: op,
+			kind: database::TicketMemberKind::Op,
+			notifications: true,
+			last_read: Some(message_id),
+		});
+		self.all_members.insert((ticket_id, op));
+
+		for assignee in report.assignee_ids {
+			let assignee = assignee.into();
+			if self.all_members.insert((ticket_id, assignee)) {
+				self.ticket_members.push(TicketMember {
+					id: TicketMemberId::new(),
+					ticket_id,
+					user_id: assignee,
+					kind: database::TicketMemberKind::Staff,
+					notifications: true,
+					last_read: Some(message_id),
+				});
 			}
 		}
 
-		let op = report.actor_id.into_ulid();
-		match self
-			.ticket_members_writer
-			.as_mut()
-			.write(&[&id, &op, &database::TicketMemberKind::Op])
-			.await
-		{
-			Ok(_) => outcome.inserted_rows += 1,
-			Err(e) => outcome.errors.push(e.into()),
-		}
-		self.all_members.insert((id, op));
+		ProcessOutcome::default()
+	}
 
-		for assignee in report.assignee_ids {
-			let assignee = assignee.into_ulid();
+	async fn finish(self) -> ProcessOutcome {
+		tracing::info!("finishing reports job");
 
-			if self.all_members.insert((id, assignee)) {
-				match self
-					.ticket_members_writer
-					.as_mut()
-					.write(&[&id, &assignee, &database::TicketMemberKind::Staff])
-					.await
-				{
-					Ok(_) => outcome.inserted_rows += 1,
-					Err(e) => outcome.errors.push(e.into()),
+		let mut outcome = ProcessOutcome::default();
+
+		let insert_options = InsertManyOptions::builder().ordered(false).build();
+		let tickets = Ticket::collection(self.global.target_db());
+		let ticket_members = TicketMember::collection(self.global.target_db());
+		let ticket_messages = TicketMessage::collection(self.global.target_db());
+
+		let res = tokio::join!(
+			tickets.insert_many(&self.tickets, insert_options.clone()),
+			ticket_members.insert_many(&self.ticket_members, insert_options.clone()),
+			ticket_messages.insert_many(&self.ticket_messages, insert_options.clone()),
+		);
+		let res = vec![res.0, res.1].into_iter().zip(vec![
+			self.tickets.len(),
+			self.ticket_members.len(),
+			self.ticket_messages.len(),
+		]);
+
+		for (res, len) in res {
+			match res {
+				Ok(res) => {
+					outcome.inserted_rows += res.inserted_ids.len() as u64;
+					if res.inserted_ids.len() != len {
+						outcome.errors.push(error::Error::InsertMany);
+					}
 				}
+				Err(e) => outcome.errors.push(e.into()),
 			}
 		}
 
 		outcome
-	}
-
-	async fn finish(mut self) -> anyhow::Result<()> {
-		self.tickets_writer.as_mut().finish().await?;
-		self.ticket_members_writer.as_mut().finish().await?;
-		Ok(())
 	}
 }

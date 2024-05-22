@@ -1,5 +1,5 @@
+use mongodb::bson::oid::ObjectId;
 use shared::database::Platform;
-use shared::object_id::ObjectId;
 
 use crate::types;
 
@@ -14,23 +14,27 @@ pub enum Error {
 	#[error("failed to serialize json data")]
 	SerializeJson(#[from] serde_json::Error),
 	#[error("failed to query database")]
-	Db(#[from] tokio_postgres::Error),
+	Db(#[from] mongodb::error::Error),
+	#[error("failed to insert all documents")]
+	InsertMany,
 	#[error("failed to query clickhouse")]
 	Clickhouse(#[from] clickhouse::error::Error),
 
-	#[error("{0}")]
-	ImageFile(#[from] crate::types::ImageFileError),
-
 	#[error("emote set emote found with no name")]
 	EmoteSetEmoteNoName { emote_set_id: ObjectId, emote_id: ObjectId },
-
-	#[error("failed to fetch paint image url")]
-	PaintImageUrlRequest(reqwest::Error),
 
 	#[error("unsupported audit log kind")]
 	UnsupportedAuditLogKind(types::AuditLogKind),
 	#[error("failed to convert timestamp")]
 	Timestamp(#[from] time::error::ComponentRange),
+
+	#[error("invalid stripe id: {0}")]
+	InvalidStripeId(String),
+	#[error("{0}")]
+	Stripe(#[from] stripe::StripeError),
+
+	#[error("not implemented")]
+	NotImplemented(&'static str),
 }
 
 impl Error {
@@ -41,12 +45,14 @@ impl Error {
 			Self::Deserialize(_) => "Deserialize",
 			Self::SerializeJson(_) => "SerializeJson",
 			Self::Db(_) => "Db",
+			Self::InsertMany => "InsertMany",
 			Self::Clickhouse(_) => "Clickhouse",
-			Self::ImageFile(_) => "ImageFile",
 			Self::EmoteSetEmoteNoName { .. } => "EmoteSetEmoteNoName",
-			Self::PaintImageUrlRequest(_) => "PaintImageUrlRequest",
 			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
 			Self::Timestamp(_) => "Timestamp",
+			Self::Stripe(_) => "Stripe",
+			Self::InvalidStripeId(_) => "InvalidStripeId",
+			Self::NotImplemented(_) => "NotImplemented",
 		}
 	}
 
@@ -62,6 +68,8 @@ impl Error {
 				format!("emote set id: {}, emote id: {:?}", emote_set_id, emote_id)
 			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
+			Self::InvalidStripeId(id) => format!("id: {}", id),
+			Self::NotImplemented(msg) => msg.to_string(),
 			e => format!("{:?}", e),
 		}
 	}

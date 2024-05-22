@@ -1,4 +1,4 @@
-use super::{FileSetId, UserId};
+use super::{ImageSet, UserId};
 use crate::database::{Collection, Id};
 
 pub type PageId = Id<Page>;
@@ -14,7 +14,7 @@ pub struct Page {
 	pub content_md: String,
 	pub keywords: Vec<String>,
 	pub author_ids: Vec<UserId>,
-	pub file_ids: Vec<FileSetId>,
+	pub image_sets: Vec<ImageSet>,
 }
 
 impl Collection for Page {

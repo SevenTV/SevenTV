@@ -1,4 +1,4 @@
-use shared::object_id::ObjectId;
+use mongodb::bson::oid::ObjectId;
 pub use shared::types::old::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
 #[derive(Debug, serde::Deserialize)]

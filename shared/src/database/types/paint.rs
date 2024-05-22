@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use super::{FileSet, FileSetId, FileSetProperties, ImageFormat};
 use crate::database::{Collection, Id};
 use crate::types::old::{
 	CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintModel, CosmeticPaintShadow, CosmeticPaintShape,
 	ImageFormat as ImageFormatOld, ImageHost, ImageHostKind,
 };
+
+use super::ImageSet;
 
 pub type PaintId = Id<Paint>;
 
@@ -19,7 +20,6 @@ pub struct Paint {
 	pub description: String,
 	pub tags: Vec<String>,
 	pub data: PaintData,
-	pub file_set_ids: Vec<FileSetId>,
 }
 
 impl Collection for Paint {
@@ -66,7 +66,7 @@ pub enum PaintLayerType {
 		stops: Vec<PaintGradientStop>,
 		shape: PaintRadialGradientShape,
 	},
-	Image(FileSetId),
+	Image(ImageSet),
 }
 
 impl Default for PaintLayerType {
@@ -112,7 +112,7 @@ impl From<PaintShadow> for CosmeticPaintShadow {
 }
 
 impl Paint {
-	pub fn into_old_model(self, files: &HashMap<FileSetId, FileSet>, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
+	pub fn into_old_model(self, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
 		let first_layer = self.data.layers.first();
 
 		Some(CosmeticPaintModel {
@@ -163,23 +163,8 @@ impl Paint {
 				})
 				.unwrap_or_default(),
 			image_url: first_layer
-				.and_then(|l| match l.ty {
-					PaintLayerType::Image(id) => files.get(&id).and_then(|f| {
-						f.properties.default_image().and_then(|file| {
-							Some(
-								ImageHostKind::Paint.create_full_url(
-									cdn_base_url,
-									id.cast(),
-									file.extra.scale,
-									file.extra
-										.variants
-										.iter()
-										.find(|v| v.format == ImageFormat::Webp)
-										.map(|_| ImageFormatOld::Webp)?,
-								),
-							)
-						})
-					}),
+				.and_then(|l| match &l.ty {
+					PaintLayerType::Image(image_set) => image_set.outputs.first().map(|i| i.get_url(cdn_base_url)),
 					_ => None,
 				})
 				.unwrap_or_default(),

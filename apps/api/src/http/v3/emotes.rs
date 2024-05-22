@@ -8,6 +8,9 @@ use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use scuffle_image_processor_proto as image_processor;
 use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission, FeaturePermission, UserSession};
+use axum::{Json, Router};
+use hyper::StatusCode;
+use shared::database::EmoteId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -189,21 +192,25 @@ pub async fn get_emote_by_id(
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found"))?;
 
 	let owner = match emote.owner_id {
-		Some(owner) => global
-			.user_by_id_loader()
-			.load(&global, owner)
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?,
+		Some(owner) => {
+			let conns = global
+				.user_connection_by_user_id_loader()
+				.load(owner)
+				.await
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.unwrap_or_default();
+			global
+				.user_by_id_loader()
+				.load(&global, owner)
+				.await
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.map(|u| (u, conns))
+		}
 		None => None,
 	};
 
-	let pfp_file_set_id = match (&owner, owner.as_ref().and_then(|owner| owner.style.active_profile_picture_id)) {
-		(Some(owner), Some(profile_picture_id)) => {
-			let roles = global
-				.role_by_id_loader()
-				.load_many(owner.entitled_cache.role_ids.iter().copied())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+	let owner =
+		owner.map(|(owner, conns)| owner.into_old_model_partial(conns, None, None, &global.config().api.cdn_base_url));
 
 			let global_config = global
 				.global_config_loader()

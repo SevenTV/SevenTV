@@ -2,7 +2,7 @@ use std::mem;
 use std::sync::Arc;
 
 use clickhouse::Row;
-use shared::database::{self, Collection};
+use shared::database::{self, EmoteId, EmoteSetId, TicketId, UserId};
 use shared::types::old::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
@@ -54,29 +54,10 @@ impl Job for AuditLogsJob {
 			conn.query("TRUNCATE TABLE ticket_activities").execute().await?;
 		}
 
-		let emote_activity_writer = global.clickhouse().insert(database::EmoteActivity::NAME)?;
-		let emote_set_activity_writer = global.clickhouse().insert(database::EmoteSetActivity::NAME)?;
-		let user_activity_writer = global.clickhouse().insert(database::UserActivity::NAME)?;
-		let ticket_activity_writer = global.clickhouse().insert(database::TicketActivity::NAME)?;
-
-		// emote_activity_writer
-		// 	.write(&database::EmoteActivity {
-		// 		emote_id: uuid::Uuid::new_v4(),
-		// 		actor_id: Some(uuid::Uuid::new_v4()),
-		// 		kind: database::EmoteActivityKind::Upload,
-		// 		// data: Some(serde_json::to_string(&database::EmoteActivityData::ChangeName
-		// { 		// 	old: "old".to_string(),
-		// 		// 	new: "new".to_string(),
-		// 		// })?),
-		// 		data: Some(database::EmoteActivityData::ChangeName {
-		// 			old: "old".to_string(),
-		// 			new: "new".to_string(),
-		// 		}),
-		// 		timestamp: time::OffsetDateTime::now_utc(),
-		// 	})
-		// 	.await?;
-		// emote_activity_writer.end().await?;
-		// bail!("test");
+		let emote_activity_writer = global.clickhouse().insert("emote_activities")?;
+		let emote_set_activity_writer = global.clickhouse().insert("emote_set_activities")?;
+		let user_activity_writer = global.clickhouse().insert("user_activities")?;
+		let ticket_activity_writer = global.clickhouse().insert("ticket_activities")?;
 
 		Ok(Self {
 			global,
@@ -89,13 +70,13 @@ impl Job for AuditLogsJob {
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.mongo().database("7tv").collection("audit_logs")
+		self.global.source_db().collection("audit_logs")
 	}
 
 	async fn process(&mut self, audit_log: Self::T) -> ProcessOutcome {
 		let mut outcome = ProcessOutcome::default();
 
-		let timestamp = match time::OffsetDateTime::from_unix_timestamp(audit_log.id.timestamp() as i64) {
+		let timestamp = match time::OffsetDateTime::from_unix_timestamp(audit_log.id.timestamp().to_chrono().timestamp()) {
 			Ok(ts) => ts,
 			Err(e) => {
 				outcome.errors.push(e.into());
@@ -182,8 +163,8 @@ impl Job for AuditLogsJob {
 							AuditLogChange::Owner(owner) => {
 								if let (Some(old), Some(new)) = (owner.old.into_inner(), owner.new.into_inner()) {
 									Some(database::EmoteActivityData::ChangeOwner {
-										old: old.into_ulid(),
-										new: new.into_ulid(),
+										old: old.into(),
+										new: new.into(),
 									})
 								} else {
 									// TODO: do something here?
@@ -202,8 +183,8 @@ impl Job for AuditLogsJob {
 
 				for data in changes {
 					let activity = database::EmoteActivity {
-						emote_id: audit_log.target_id.into_uuid(),
-						actor_id: Some(audit_log.actor_id.into_uuid()),
+						emote_id: EmoteId::from(audit_log.target_id).as_uuid(),
+						actor_id: Some(UserId::from(audit_log.actor_id).as_uuid()),
 						kind,
 						data,
 						timestamp,
@@ -243,18 +224,8 @@ impl Job for AuditLogsJob {
 							database::EmoteSetActivityData::ChangeSettings { old, new }
 						}
 						AuditLogChange::EmoteSetEmotes(emotes) => {
-							let added = emotes
-								.added
-								.into_iter()
-								.filter_map(|e| e.id)
-								.map(|id| id.into_ulid())
-								.collect();
-							let removed = emotes
-								.removed
-								.into_iter()
-								.filter_map(|e| e.id)
-								.map(|id| id.into_ulid())
-								.collect();
+							let added = emotes.added.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect();
+							let removed = emotes.removed.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect();
 							database::EmoteSetActivityData::ChangeEmotes { added, removed }
 						}
 						_ => unimplemented!(),
@@ -268,8 +239,8 @@ impl Job for AuditLogsJob {
 
 				for data in changes {
 					let activity = database::EmoteSetActivity {
-						emote_set_id: audit_log.target_id.into_uuid(),
-						actor_id: Some(audit_log.actor_id.into_uuid()),
+						emote_set_id: EmoteSetId::from(audit_log.target_id).as_uuid(),
+						actor_id: Some(UserId::from(audit_log.actor_id).as_uuid()),
 						kind,
 						data,
 						timestamp,
@@ -300,22 +271,12 @@ impl Job for AuditLogsJob {
 					.into_iter()
 					.map(|c| match c {
 						AuditLogChange::UserEditors(editors) => database::UserActivityData::ChangeEditors {
-							added: editors
-								.added
-								.into_iter()
-								.filter_map(|e| e.id)
-								.map(|id| id.into_ulid())
-								.collect(),
-							removed: editors
-								.removed
-								.into_iter()
-								.filter_map(|e| e.id)
-								.map(|id| id.into_ulid())
-								.collect(),
+							added: editors.added.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect(),
+							removed: editors.removed.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect(),
 						},
 						AuditLogChange::UserRoles(roles) => database::UserActivityData::ChangeRoles {
-							added: roles.added.into_iter().filter_map(|e| e).map(|id| id.into_ulid()).collect(),
-							removed: roles.removed.into_iter().filter_map(|e| e).map(|id| id.into_ulid()).collect(),
+							added: roles.added.into_iter().flatten().map(|id| id.into()).collect(),
+							removed: roles.removed.into_iter().flatten().map(|id| id.into()).collect(),
 						},
 						_ => unimplemented!(),
 					})
@@ -328,8 +289,8 @@ impl Job for AuditLogsJob {
 
 				for data in changes {
 					let activity = database::UserActivity {
-						user_id: audit_log.target_id.into_uuid(),
-						actor_id: Some(audit_log.actor_id.into_uuid()),
+						user_id: UserId::from(audit_log.target_id).as_uuid(),
+						actor_id: Some(UserId::from(audit_log.actor_id).as_uuid()),
 						kind,
 						data,
 						timestamp,
@@ -357,8 +318,8 @@ impl Job for AuditLogsJob {
 							new: status.new.into(),
 						},
 						AuditLogChange::ReportAssignees(assignees) => database::TicketActivityData::ChangeAssignees {
-							added: assignees.added.into_iter().map(|id| id.into_ulid()).collect(),
-							removed: assignees.removed.into_iter().map(|id| id.into_ulid()).collect(),
+							added: assignees.added.into_iter().map(|id| id.into()).collect(),
+							removed: assignees.removed.into_iter().map(|id| id.into()).collect(),
 						},
 						_ => unimplemented!(),
 					})
@@ -371,8 +332,8 @@ impl Job for AuditLogsJob {
 
 				for data in changes {
 					let activity = database::TicketActivity {
-						ticket_id: audit_log.target_id.into_uuid(),
-						actor_id: Some(audit_log.actor_id.into_uuid()),
+						ticket_id: TicketId::from(audit_log.target_id).as_uuid(),
+						actor_id: Some(UserId::from(audit_log.actor_id).as_uuid()),
 						kind,
 						data,
 						timestamp,
@@ -392,27 +353,32 @@ impl Job for AuditLogsJob {
 
 		self.i += 1;
 		if self.i > BATCH_SIZE {
-			renew_writer(&self.global, &mut self.emote_activity_writer, database::EmoteActivity::NAME).await;
-			renew_writer(
-				&self.global,
-				&mut self.emote_set_activity_writer,
-				database::EmoteSetActivity::NAME,
-			)
-			.await;
-			renew_writer(&self.global, &mut self.user_activity_writer, database::UserActivity::NAME).await;
-			renew_writer(&self.global, &mut self.ticket_activity_writer, database::TicketActivity::NAME).await;
+			renew_writer(&self.global, &mut self.emote_activity_writer, "emote_activities").await;
+			renew_writer(&self.global, &mut self.emote_set_activity_writer, "emote_set_activities").await;
+			renew_writer(&self.global, &mut self.user_activity_writer, "user_activities").await;
+			renew_writer(&self.global, &mut self.ticket_activity_writer, "ticket_activities").await;
 			self.i = 0;
 		}
 
 		outcome
 	}
 
-	async fn finish(self) -> anyhow::Result<()> {
-		self.emote_activity_writer.end().await?;
-		self.emote_set_activity_writer.end().await?;
-		self.user_activity_writer.end().await?;
-		self.ticket_activity_writer.end().await?;
+	async fn finish(self) -> ProcessOutcome {
+		let mut outcome = ProcessOutcome::default();
 
-		Ok(())
+		if let Err(e) = self.emote_activity_writer.end().await {
+			outcome.errors.push(e.into());
+		}
+		if let Err(e) = self.emote_set_activity_writer.end().await {
+			outcome.errors.push(e.into());
+		}
+		if let Err(e) = self.user_activity_writer.end().await {
+			outcome.errors.push(e.into());
+		}
+		if let Err(e) = self.ticket_activity_writer.end().await {
+			outcome.errors.push(e.into());
+		}
+
+		outcome
 	}
 }

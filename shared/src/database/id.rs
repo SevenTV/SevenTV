@@ -143,7 +143,7 @@ impl<S> Id<S> {
 			bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9], bytes[10], bytes[11],
 		]);
 
-		Self::from_parts(timestamp as u64, random as u128)
+		Self::from_parts((timestamp as u64) * 1000, random as u128)
 	}
 
 	pub const fn from_parts(timestamp: u64, random: u128) -> Self {
@@ -248,19 +248,19 @@ impl<S> std::fmt::Display for Id<S> {
 /// #![feature(min_specialization)]
 ///
 /// trait IsBsonSerializer {
-/// 	const IS_BSON_SERIALIZER: bool;
+///     const IS_BSON_SERIALIZER: bool;
 /// }
 ///
 /// impl IsBsonSerializer for mongodb::bson::ser::Serializer {
-/// 	const IS_BSON_SERIALIZER: bool = true;
+///     const IS_BSON_SERIALIZER: bool = true;
 /// }
 ///
 /// impl IsBsonSerializer for mongodb::bson::de::Deserializer {
-/// 	const IS_BSON_SERIALIZER: bool = true;
+///     const IS_BSON_SERIALIZER: bool = true;
 /// }
 ///
 /// impl<T> IsBsonSerializer for T {
-/// 	default const IS_BSON_SERIALIZER: bool = false;
+///     default const IS_BSON_SERIALIZER: bool = false;
 /// }
 fn matches_ser<U>() -> bool {
 	std::any::type_name::<U>().contains("bson::ser")

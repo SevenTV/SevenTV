@@ -6,7 +6,7 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
 use hyper::StatusCode;
-use shared::database::{EmoteSetId, FeaturePermission};
+use shared::database::EmoteSetId;
 use shared::types::old::EmoteSetModel;
 use utoipa::OpenApi;
 
@@ -69,6 +69,12 @@ pub async fn get_emote_set_by_id(
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
+	let connections = global
+		.user_connection_by_user_id_loader()
+		.load_many(users.keys().copied())
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
 	let global_config = global
 		.global_config_loader()
 		.load(())
@@ -98,33 +104,15 @@ pub async fn get_emote_set_by_id(
 		})
 		.collect::<HashMap<_, _>>();
 
-	let file_sets = global
-		.file_set_by_id_loader()
-		.load_many(
-			users
-				.values()
-				.filter_map(|(user, permissions)| {
-					if permissions.has(FeaturePermission::UseCustomProfilePicture) {
-						user.style.active_profile_picture_id
-					} else {
-						None
-					}
-				})
-				.chain(emotes.values().flat_map(|emote| emote.file_set_id)),
-		)
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
 	let cdn_base_url = &global.config().api.cdn_base_url;
 
 	let users = users
 		.into_values()
 		.map(|(user, _)| {
-			let profile_picture_file_set = user.style.active_profile_picture_id.and_then(|id| file_sets.get(&id));
-
-			// This api doesnt seem to return the user's badges, paints and connections so
+			// This api doesnt seem to return the user's badges and paints so
 			// we can ignore them.
-			user.into_old_model_partial(Vec::new(), profile_picture_file_set, None, None, cdn_base_url)
+			let connections = connections.get(&user.id).cloned().unwrap_or_default();
+			user.into_old_model_partial(connections, None, None, cdn_base_url)
 		})
 		.map(|user| (user.id, user))
 		.collect::<HashMap<_, _>>();
@@ -133,12 +121,8 @@ pub async fn get_emote_set_by_id(
 		.into_iter()
 		.filter_map(|(id, emote)| {
 			let owner = emote.owner_id.and_then(|id| users.get(&id)).cloned();
-			let file_set = file_sets.get(&emote.file_set_id?)?;
 
-			Some((
-				id,
-				emote.into_old_model_partial(owner, Some(file_set), &global.config().api.cdn_base_url),
-			))
+			Some((id, emote.into_old_model_partial(owner, &global.config().api.cdn_base_url)))
 		})
 		.collect::<HashMap<_, _>>();
 

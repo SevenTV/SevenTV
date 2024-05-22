@@ -1,8 +1,9 @@
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use chrono::{DateTime, TimeZone, Utc};
 use hmac::{Hmac, Mac};
 use jwt_next::{Claims, Header, RegisteredClaims, SignWithKey, Token, VerifyWithKey};
+use mongodb::bson::oid::ObjectId;
 use sha2::Sha256;
 use shared::database::{UserId, UserSession, UserSessionId};
 
@@ -10,7 +11,8 @@ use crate::global::Global;
 
 pub struct AuthJwtPayload {
 	pub user_id: UserId,
-	pub session_id: UserSessionId,
+	/// `None` for old sessions because sessions weren't saved server-side
+	pub session_id: Option<UserSessionId>,
 	pub expiration: Option<DateTime<Utc>>,
 	pub issued_at: DateTime<Utc>,
 	pub not_before: Option<DateTime<Utc>>,
@@ -88,13 +90,34 @@ impl JwtState for AuthJwtPayload {
 				expiration: self.expiration.map(|x| x.timestamp() as u64),
 				not_before: self.not_before.map(|x| x.timestamp() as u64),
 				issued_at: Some(self.issued_at.timestamp() as u64),
-				json_web_token_id: Some(self.session_id.to_string()),
+				json_web_token_id: self.session_id.map(|s| s.to_string()),
 			},
 			private: Default::default(),
 		}
 	}
 
 	fn from_claims(claims: &Claims) -> Option<Self> {
+		// We need to figure out if this is an old jwt token
+		// Old token payloads look like this:
+		// {
+		//   "u": "63f927eff8070da4e44c018b",
+		//   "v": 1,
+		//   "iss": "seventv-api",
+		//   "exp": 1724159847,
+		//   "nbf": 1716383847,
+		//   "iat": 1716383847
+		// }
+		// User id is encoded as object id in the `u` field and the session id is missing.
+		//
+		// New tokens encode the user id as ULID in the subject field (`sub`) and the session id as ULID in the jwt id (`jti`) field.
+
+		let user_id = if let Some(user_id) = claims.private.get("u") {
+			let user_id = ObjectId::from_str(user_id.as_str()?).ok()?;
+			UserId::from(user_id)
+		} else {
+			claims.registered.subject.as_ref().and_then(|x| x.parse().ok())?
+		};
+
 		Some(Self {
 			audience: claims.registered.audience.clone(),
 			expiration: claims
@@ -106,8 +129,14 @@ impl JwtState for AuthJwtPayload {
 				.registered
 				.not_before
 				.and_then(|x| Utc.timestamp_opt(x as i64, 0).single()),
-			session_id: claims.registered.json_web_token_id.as_ref().and_then(|x| x.parse().ok())?,
-			user_id: claims.registered.subject.as_ref().and_then(|x| x.parse().ok())?,
+			session_id: claims
+				.registered
+				.json_web_token_id
+				.as_ref()
+				.map(|s| s.parse())
+				.transpose()
+				.ok()?,
+			user_id,
 		})
 	}
 }
@@ -116,7 +145,7 @@ impl From<UserSession> for AuthJwtPayload {
 	fn from(session: UserSession) -> Self {
 		AuthJwtPayload {
 			user_id: session.user_id,
-			session_id: session.id,
+			session_id: Some(session.id),
 			expiration: Some(session.expires_at),
 			issued_at: session.id.timestamp(),
 			not_before: None,

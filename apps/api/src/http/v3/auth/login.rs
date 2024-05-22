@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use shared::database::{Collection, Platform, User, UserConnection, UserSession};
+use shared::database::{Collection, Platform, User, UserConnection, UserId, UserSession};
 
 use super::LoginRequest;
 use crate::connections;
@@ -212,7 +212,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 pub fn handle_login(
 	global: &Arc<Global>,
-	session: Option<&UserSession>,
+	user_id: Option<UserId>,
 	platform: Platform,
 	cookies: &Cookies,
 ) -> Result<String, ApiError> {
@@ -224,7 +224,7 @@ pub fn handle_login(
 		_ => return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform")),
 	};
 
-	let csrf = CsrfJwtPayload::new(session.map(|s| s.user_id));
+	let csrf = CsrfJwtPayload::new(user_id);
 
 	cookies.add(new_cookie(
 		global,

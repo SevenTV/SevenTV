@@ -1,5 +1,5 @@
+use mongodb::bson::oid::ObjectId;
 use shared::database::Platform;
-use shared::object_id::ObjectId;
 
 use super::ImageFile;
 
@@ -23,6 +23,7 @@ pub struct User {
 #[serde(untagged)]
 pub enum UserAvatar {
 	Pending {
+		// TODO: What is this id?
 		pending_id: ObjectId,
 	},
 	Processed {

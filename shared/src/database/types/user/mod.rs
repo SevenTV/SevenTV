@@ -1,9 +1,7 @@
 mod ban;
 mod connection;
 mod editor;
-mod gift;
 mod presence;
-mod product;
 mod relation;
 mod session;
 mod settings;
@@ -15,13 +13,14 @@ use hyper::StatusCode;
 pub use self::ban::*;
 pub use self::connection::*;
 pub use self::editor::*;
-pub use self::gift::*;
 pub use self::presence::*;
-pub use self::product::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
-use super::{BadgeId, EmoteSetId, PaintId, Permissions, ProductId, Role, RoleId};
+
+use super::ImageSet;
+use super::ProductId;
+use super::{BadgeId, EmoteSetId, PaintId, Permissions, Role, RoleId};
 use crate::database::{Collection, Id};
 use crate::types::old::{
 	CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, ImageFormat as ImageFormatOld, ImageHostKind,
@@ -88,12 +87,11 @@ pub struct UserTwoFa {
 pub struct UserStyle {
 	pub active_badge_id: Option<BadgeId>,
 	pub active_paint_id: Option<PaintId>,
-	pub active_profile_picture_id: Option<FileSetId>,
-	pub all_profile_picture_ids: Vec<FileSetId>,
-	pub pending_profile_picture_id: Option<FileSetId>,
+	pub active_profile_picture: Option<ImageSet>,
+	pub all_profile_pictures: Vec<ImageSet>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserEntitledCache {
 	pub role_ids: Vec<RoleId>,
@@ -101,7 +99,20 @@ pub struct UserEntitledCache {
 	pub emote_set_ids: Vec<EmoteSetId>,
 	pub paint_ids: Vec<PaintId>,
 	pub product_ids: Vec<ProductId>,
-	pub invalidated_at: chrono::DateTime<chrono::Utc>,
+	pub invalidated_at: mongodb::bson::DateTime,
+}
+
+impl Default for UserEntitledCache {
+	fn default() -> Self {
+		Self {
+			role_ids: Default::default(),
+			badge_ids: Default::default(),
+			emote_set_ids: Default::default(),
+			paint_ids: Default::default(),
+			product_ids: Default::default(),
+			invalidated_at: mongodb::bson::DateTime::now(),
+		}
+	}
 }
 
 impl UserEntitledCache {
@@ -127,29 +138,16 @@ impl User {
 	pub fn into_old_model_partial(
 		self,
 		connections: Vec<UserConnection>,
-		profile_picture_file_set: Option<&FileSet>,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
 		cdn_base_url: &str,
 	) -> UserPartialModel {
 		let main_connection = connections.iter().find(|c| c.main_connection);
 
-		let avatar_url = profile_picture_file_set.and_then(|f| {
-			let file = f.properties.default_image()?;
-
-			Some(
-				ImageHostKind::ProfilePicture.create_full_url(
-					cdn_base_url,
-					f.id.cast(),
-					file.extra.scale,
-					file.extra
-						.variants
-						.iter()
-						.find(|v| v.format == ImageFormat::Webp)
-						.map(|_| ImageFormatOld::Webp)?,
-				),
-			)
-		});
+		let avatar_url = self
+			.style
+			.active_profile_picture
+			.and_then(|s| s.outputs.iter().max_by_key(|i| i.size).map(|i| i.get_url(cdn_base_url)));
 
 		UserPartialModel {
 			id: self.id,
@@ -172,7 +170,6 @@ impl User {
 	pub fn into_old_model(
 		self,
 		connections: Vec<UserConnection>,
-		profile_picture_file_set: Option<&FileSet>,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
 		emote_sets: Vec<EmoteSetPartialModel>,
@@ -180,7 +177,7 @@ impl User {
 		cdn_base_url: &str,
 	) -> UserModel {
 		let created_at = self.id.timestamp_ms();
-		let partial = self.into_old_model_partial(connections, profile_picture_file_set, paint, badge, cdn_base_url);
+		let partial = self.into_old_model_partial(connections, paint, badge, cdn_base_url);
 
 		UserModel {
 			id: partial.id,
