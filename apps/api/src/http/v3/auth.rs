@@ -13,7 +13,7 @@ use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Query;
-use crate::http::middleware::auth::AUTH_COOKIE;
+use crate::http::middleware::auth::{AuthSession, AUTH_COOKIE};
 use crate::http::middleware::cookies::Cookies;
 
 mod login;
@@ -53,20 +53,23 @@ pub struct LoginRequest {
 	fields(
 		query.platform = %query.platform,
 		query.callback = %query.callback,
-		session = session.as_ref().map(|s| s.user_id.to_string())
 	)
 )]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/auth.route.go#L47
 async fn login(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	session: Option<Extension<UserSession>>,
+	session: Option<Extension<AuthSession>>,
 	Query(query): Query<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let location = if query.callback {
 		handle_login_callback(&global, query, &cookies).await?
 	} else {
-		handle_login(&global, session.as_deref(), query.platform, &cookies)?
+		let user_id = session.map(|s| match s.0 {
+			AuthSession::Session(session) => session.user_id,
+			AuthSession::Old(user_id) => user_id,
+		});
+		handle_login(&global, user_id, query.platform, &cookies)?
 	};
 
 	Response::builder()
@@ -92,9 +95,9 @@ async fn login(
 async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	session: Option<Extension<UserSession>>,
+	session: Option<Extension<AuthSession>>,
 ) -> Result<impl IntoResponse, ApiError> {
-	if let Some(Extension(session)) = session {
+	if let Some(Extension(AuthSession::Session(session))) = session {
 		UserSession::collection(global.db())
 			.delete_one(
 				doc! {
@@ -107,9 +110,9 @@ async fn logout(
 				tracing::error!(error = %err, "failed to delete session");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
-
-		cookies.remove(AUTH_COOKIE);
 	}
+
+	cookies.remove(AUTH_COOKIE);
 
 	Response::builder()
 		.status(StatusCode::NO_CONTENT)
