@@ -52,6 +52,7 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 		.with_signal(SignalKind::terminate());
 
 	let http_handle = tokio::spawn(http::run(global.clone()));
+	let image_processor_callback_handle = tokio::spawn(image_processor::callback::run(global.clone()));
 
 	let handler = scuffle_foundations::context::Handler::global();
 
@@ -64,6 +65,7 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 
 	tokio::select! {
 		r = http_handle => tracing::warn!("http server exited: {:?}", r),
+		r = image_processor_callback_handle => tracing::warn!("image processor callback handler exited: {:?}", r),
 		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
 	}
 

@@ -7,6 +7,8 @@ use shared::database::EmoteId;
 
 use crate::config::ImageProcessorConfig;
 
+pub mod callback;
+
 pub struct ImageProcessor {
 	client: ImageProcessorClient<tonic::transport::Channel>,
 	input_drive_name: String,

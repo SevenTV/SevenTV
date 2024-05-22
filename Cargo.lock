@@ -152,7 +152,7 @@ dependencies = [
  "rustls 0.23.7",
  "rustls-pemfile 2.1.2",
  "scopeguard",
- "scuffle-foundations 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext)",
+ "scuffle-foundations",
  "scuffle-image-processor-proto",
  "serde",
  "serde_json",
@@ -1063,7 +1063,7 @@ dependencies = [
  "regex",
  "sailfish",
  "scuffle-config",
- "scuffle-foundations 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=foundations)",
+ "scuffle-foundations",
  "scuffle-image-processor-proto",
  "serde",
  "serde_json",
@@ -1873,7 +1873,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.7",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -3918,41 +3918,7 @@ dependencies = [
 [[package]]
 name = "scuffle-foundations"
 version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=foundations#d5a68224a54d44be417a0c0869a872154cfd531c"
-dependencies = [
- "anyhow",
- "clap",
- "const-str",
- "futures",
- "humantime-serde",
- "itertools 0.12.1",
- "matchers",
- "num_cpus",
- "once_cell",
- "opentelemetry",
- "opentelemetry-otlp",
- "opentelemetry_sdk",
- "parking_lot",
- "pin-project",
- "prometheus-client",
- "rand 0.8.5",
- "regex",
- "scc",
- "scuffle-foundations-macros 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=foundations)",
- "serde",
- "serde_yaml",
- "spin 0.9.8",
- "thread_local",
- "tokio",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "scuffle-foundations"
-version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#da414e37f82643647d8c703cc6034d6639e074e2"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#8a57bf82a2ca098dd4215de9c6eaa8790a146efd"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
@@ -3984,7 +3950,7 @@ dependencies = [
  "regex",
  "rustls 0.21.12",
  "scc",
- "scuffle-foundations-macros 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext)",
+ "scuffle-foundations-macros",
  "serde",
  "serde_yaml",
  "socket2 0.5.7",
@@ -4004,19 +3970,7 @@ dependencies = [
 [[package]]
 name = "scuffle-foundations-macros"
 version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=foundations#d5a68224a54d44be417a0c0869a872154cfd531c"
-dependencies = [
- "convert_case 0.6.0",
- "darling 0.20.9",
- "proc-macro2",
- "quote",
- "syn 2.0.65",
-]
-
-[[package]]
-name = "scuffle-foundations-macros"
-version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#da414e37f82643647d8c703cc6034d6639e074e2"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#8a57bf82a2ca098dd4215de9c6eaa8790a146efd"
 dependencies = [
  "convert_case 0.6.0",
  "darling 0.20.9",
@@ -4028,7 +3982,7 @@ dependencies = [
 [[package]]
 name = "scuffle-image-processor-proto"
 version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#da414e37f82643647d8c703cc6034d6639e074e2"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#8a57bf82a2ca098dd4215de9c6eaa8790a146efd"
 dependencies = [
  "pbjson",
  "pbjson-build",
@@ -4400,7 +4354,7 @@ dependencies = [
  "prometheus-client",
  "rustls 0.23.7",
  "rustls-pemfile 2.1.2",
- "scuffle-foundations 0.0.0 (git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext)",
+ "scuffle-foundations",
  "serde",
  "serde_json",
  "serde_repr",

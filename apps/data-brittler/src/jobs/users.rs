@@ -6,8 +6,7 @@ use futures::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
 use shared::database::{
-	Collection, ImageSet, ImageSetInput, Platform, User, UserConnection, UserConnectionId, UserEditor, UserEditorId,
-	UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle,
+	Collection, ImageSet, ImageSetInput, Platform, RoleId, User, UserConnection, UserConnectionId, UserEditor, UserEditorId, UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle
 };
 
 use super::{Job, ProcessOutcome};
@@ -79,7 +78,7 @@ impl Job for UsersJob {
 			types::EntitlementData::Role { ref_id } => Some(ref_id),
 			_ => None,
 		}) {
-			roles.insert(*role_id);
+			roles.insert(RoleId::from(*role_id));
 		}
 
 		let active_badge_id = entitlements
@@ -125,7 +124,7 @@ impl Job for UsersJob {
 			},
 			active_emote_set_ids: vec![],
 			grants: UserGrants {
-				role_ids: roles.into_iter().map(|rid| rid.into()).collect(),
+				role_ids: roles.into_iter().collect(),
 				..Default::default()
 			},
 			entitled_cache: UserEntitledCache::default(),

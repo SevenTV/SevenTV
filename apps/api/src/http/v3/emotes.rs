@@ -6,8 +6,10 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
+use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
-use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission};
+use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission, ImageSet, ImageSetInput};
+use shared::types::old::EmoteFlagsModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -28,10 +30,8 @@ pub fn routes() -> Router<Arc<Global>> {
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L385
 pub struct XEmoteData {
 	name: String,
-	description: String,
 	tags: Vec<String>,
-	zero_width: bool,
-	private: bool,
+	flags: EmoteFlagsModel,
 }
 
 #[utoipa::path(
@@ -58,14 +58,11 @@ pub async fn create_emote(
 ) -> Result<impl IntoResponse, ApiError> {
 	let emote_data = headers.get("X-Emote-Data").ok_or(ApiError::BAD_REQUEST)?;
 
-	let emote_data = serde_json::from_str::<XEmoteData>(
-		emote_data
-			.to_str()
-			.map_err(|_| ApiError::BAD_REQUEST)?
-	).map_err(|_| ApiError::BAD_REQUEST)?;
+	let emote_data = serde_json::from_str::<XEmoteData>(emote_data.to_str().map_err(|_| ApiError::BAD_REQUEST)?)
+		.map_err(|_| ApiError::BAD_REQUEST)?;
 
 	// TODO: validate emote name
-	
+
 	let user_id = match auth_session.ok_or(ApiError::UNAUTHORIZED)?.0 {
 		AuthSession::Session(session) => session.user_id,
 		AuthSession::Old(user_id) => user_id,
@@ -107,62 +104,65 @@ pub async fn create_emote(
 
 	let emote_id = EmoteId::new();
 
+	let input = match global.image_processor().upload_emote(emote_id, body).await {
+		Ok(ProcessImageResponse {
+			error: None,
+			upload_info: Some(ProcessImageResponseUploadInfo {
+				path: Some(path),
+				content_type,
+				size,
+			}),
+			..
+		}) => ImageSetInput::Pending {
+			path: path.path,
+			mime: content_type,
+			size,
+		},
+		Ok(ProcessImageResponse { error: Some(err), .. }) => {
+			// At this point if we get a decode error then the image is invalid
+			// and we should return a bad request
+			if err.code == image_processor::ErrorCode::Decode as i32 {
+				return Err(ApiError::BAD_REQUEST);
+			}
+
+			tracing::error!(code = ?err.code(), "failed to upload emote: {}", err.message);
+			return Err(ApiError::INTERNAL_SERVER_ERROR);
+		}
+		Err(err) => {
+			tracing::error!("failed to upload emote: {:#}", err);
+			return Err(ApiError::INTERNAL_SERVER_ERROR);
+		}
+		_ => {
+			tracing::error!("failed to upload emote: unknown error");
+			return Err(ApiError::INTERNAL_SERVER_ERROR);
+		}
+	};
+
+	let mut flags = EmoteFlags::default();
+	if emote_data.flags.contains(EmoteFlagsModel::ZeroWidth) {
+		flags |= EmoteFlags::DefaultZeroWidth;
+	}
+	if emote_data.flags.contains(EmoteFlagsModel::Private) {
+		flags |= EmoteFlags::Private;
+	}
+
 	let emote = Emote {
 		id: emote_id,
 		owner_id: Some(user_id),
 		default_name: emote_data.name,
 		tags: emote_data.tags,
-		flags: {
-			let mut flags = EmoteFlags::default();
-
-			flags |= if emote_data.zero_width {
-				EmoteFlags::DefaultZeroWidth
-			} else {
-				EmoteFlags::none()
-			};
-
-			flags |= if emote_data.private {
-				EmoteFlags::Private
-			} else {
-				EmoteFlags::none()
-			};
-
-			flags
+		flags,
+		image_set: ImageSet {
+			input,
+			..Default::default()
 		},
 		..Default::default()
 	};
 
-	let mut session = global.mongo().start_session(None).await.map_err(|err| {
-		tracing::error!(error = %err, "failed to start session");
+	Emote::collection(global.db()).insert_one(emote, None).await.map_err(|err| {
+		tracing::error!(error = %err, "failed to insert emote");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
-
-	Emote::collection(global.db())
-		.insert_one_with_session(emote, None, &mut session)
-		.await
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert emote");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-	let result = match global.image_processor().upload_emote(emote_id, body).await {
-		Ok(result) => result,
-		Err(err) => {
-			tracing::error!("failed to upload emote: {:#}", err);
-			return Err(ApiError::INTERNAL_SERVER_ERROR);
-		}
-	};
-
-	if let Some(err) = result.error {
-		// At this point if we get a decode error then the image is invalid
-		// and we should return a bad request
-		if err.code == image_processor::ErrorCode::Decode as i32 {
-			return Err(ApiError::BAD_REQUEST);
-		}
-
-		tracing::error!(code = ?err.code(), "failed to upload emote: {}", err.message);
-		return Err(ApiError::INTERNAL_SERVER_ERROR);
-	}
 
 	Ok(StatusCode::CREATED)
 }
@@ -213,8 +213,5 @@ pub async fn get_emote_by_id(
 	let owner =
 		owner.map(|(owner, conns)| owner.into_old_model_partial(conns, None, None, &global.config().api.cdn_base_url));
 
-	Ok(Json(emote.into_old_model(
-		owner,
-		&global.config().api.cdn_base_url,
-	)))
+	Ok(Json(emote.into_old_model(owner, &global.config().api.cdn_base_url)))
 }
