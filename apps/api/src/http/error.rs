@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::fmt::Display;
 
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -16,6 +15,7 @@ pub struct ApiError {
 
 impl ApiError {
 	pub const BAD_REQUEST: Self = Self::new_const(StatusCode::BAD_REQUEST, "bad request");
+	pub const FORBIDDEN: Self = Self::new_const(StatusCode::FORBIDDEN, "forbidden");
 	pub const GONE: Self = Self::new_const(StatusCode::GONE, "the requested resource is no longer available");
 	pub const INTERNAL_SERVER_ERROR: Self = Self::new_const(StatusCode::INTERNAL_SERVER_ERROR, "internal server error");
 	pub const NOT_FOUND: Self = Self::new_const(StatusCode::NOT_FOUND, "not found");
@@ -29,10 +29,6 @@ impl ApiError {
 			status: status_code.canonical_reason().unwrap_or("unknown status code").into(),
 			error_code: 0,
 		}
-	}
-
-	pub fn missing_header(header: impl Display) -> Self {
-		Self::new(StatusCode::BAD_REQUEST, format!("missing header: {}", header))
 	}
 
 	pub const fn new_const(status_code: StatusCode, error: &'static str) -> Self {

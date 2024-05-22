@@ -14,7 +14,7 @@ once_cell = "1.19"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter", "json"] }
 thiserror = "1.0"
 hyper = { version = "1", features = ["full"] }
-async-nats = "0.34.0"
+async-nats = "0.35.0"
 anyhow = "1"
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"] }

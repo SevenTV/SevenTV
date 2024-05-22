@@ -1,14 +1,17 @@
 use std::sync::Arc;
 
-use axum::extract::{Path, Request, State};
+use axum::body::Bytes;
+use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::{Json, Router};
-use hyper::StatusCode;
-use shared::database::EmoteId;
+use axum::{Extension, Json, Router};
+use hyper::{HeaderMap, StatusCode};
+use scuffle_image_processor_proto as image_processor;
+use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::auth::AuthSession;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
@@ -20,8 +23,16 @@ pub fn routes() -> Router<Arc<Global>> {
 		.route("/:id", get(get_emote_by_id))
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-pub struct XEmoteData {}
+#[derive(Debug, serde::Serialize, Default, serde::Deserialize, utoipa::ToSchema)]
+#[serde(default)]
+// https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L385
+pub struct XEmoteData {
+	name: String,
+	description: String,
+	tags: Vec<String>,
+	zero_width: bool,
+	private: bool,
+}
 
 #[utoipa::path(
     post,
@@ -39,9 +50,121 @@ pub struct XEmoteData {}
 )]
 #[tracing::instrument(skip(global))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L58
-pub async fn create_emote(State(global): State<Arc<Global>>, req: Request) -> Result<impl IntoResponse, ApiError> {
-	let _ = global;
-	Ok(ApiError::NOT_IMPLEMENTED)
+pub async fn create_emote(
+	State(global): State<Arc<Global>>,
+	auth_session: Option<Extension<AuthSession>>,
+	headers: HeaderMap,
+	body: Bytes,
+) -> Result<impl IntoResponse, ApiError> {
+	let emote_data = headers.get("X-Emote-Data").ok_or(ApiError::BAD_REQUEST)?;
+
+	let emote_data = serde_json::from_str::<XEmoteData>(
+		emote_data
+			.to_str()
+			.map_err(|_| ApiError::BAD_REQUEST)?
+	).map_err(|_| ApiError::BAD_REQUEST)?;
+
+	// TODO: validate emote name
+	
+	let user_id = match auth_session.ok_or(ApiError::UNAUTHORIZED)?.0 {
+		AuthSession::Session(session) => session.user_id,
+		AuthSession::Old(user_id) => user_id,
+	};
+
+	let user = global
+		.user_by_id_loader()
+		.load(&global, user_id)
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::UNAUTHORIZED)?;
+
+	let global_config = global
+		.global_config_loader()
+		.load(())
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+	let roles = {
+		let mut roles = global
+			.role_by_id_loader()
+			.load_many(user.entitled_cache.role_ids.iter().copied())
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		global_config
+			.role_ids
+			.iter()
+			.filter_map(|id| roles.remove(id))
+			.collect::<Vec<_>>()
+	};
+
+	let permissions = user.compute_permissions(&roles);
+
+	if !permissions.has(EmotePermission::Upload) {
+		return Err(ApiError::FORBIDDEN);
+	}
+
+	let emote_id = EmoteId::new();
+
+	let emote = Emote {
+		id: emote_id,
+		owner_id: Some(user_id),
+		default_name: emote_data.name,
+		tags: emote_data.tags,
+		flags: {
+			let mut flags = EmoteFlags::default();
+
+			flags |= if emote_data.zero_width {
+				EmoteFlags::DefaultZeroWidth
+			} else {
+				EmoteFlags::none()
+			};
+
+			flags |= if emote_data.private {
+				EmoteFlags::Private
+			} else {
+				EmoteFlags::none()
+			};
+
+			flags
+		},
+		..Default::default()
+	};
+
+	let mut session = global.mongo().start_session(None).await.map_err(|err| {
+		tracing::error!(error = %err, "failed to start session");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	Emote::collection(global.db())
+		.insert_one_with_session(emote, None, &mut session)
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to insert emote");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+	let result = match global.image_processor().upload_emote(emote_id, body).await {
+		Ok(result) => result,
+		Err(err) => {
+			tracing::error!("failed to upload emote: {:#}", err);
+			return Err(ApiError::INTERNAL_SERVER_ERROR);
+		}
+	};
+
+	if let Some(err) = result.error {
+		// At this point if we get a decode error then the image is invalid
+		// and we should return a bad request
+		if err.code == image_processor::ErrorCode::Decode as i32 {
+			return Err(ApiError::BAD_REQUEST);
+		}
+
+		tracing::error!(code = ?err.code(), "failed to upload emote: {}", err.message);
+		return Err(ApiError::INTERNAL_SERVER_ERROR);
+	}
+
+	Ok(StatusCode::CREATED)
 }
 
 #[utoipa::path(
@@ -90,5 +213,8 @@ pub async fn get_emote_by_id(
 	let owner =
 		owner.map(|(owner, conns)| owner.into_old_model_partial(conns, None, None, &global.config().api.cdn_base_url));
 
-	Ok(Json(emote.into_old_model(owner, &global.config().api.cdn_base_url)))
+	Ok(Json(emote.into_old_model(
+		owner,
+		&global.config().api.cdn_base_url,
+	)))
 }

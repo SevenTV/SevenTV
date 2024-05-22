@@ -6,6 +6,7 @@ use scuffle_foundations::telemetry::server::HealthCheck;
 
 use crate::config::Config;
 use crate::dataloader;
+use crate::image_processor::ImageProcessor;
 
 pub struct Global {
 	nats: async_nats::Client,
@@ -15,6 +16,7 @@ pub struct Global {
 	db: mongodb::Database,
 	http_client: reqwest::Client,
 	user_by_id_loader: dataloader::user::UserLoader,
+	image_processor: ImageProcessor,
 	user_connection_by_user_id_loader: DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader>,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
 	product_entitlement_group_by_id_loader: DataLoader<dataloader::product::ProductEntitlementGroupByIdLoader>,
@@ -42,6 +44,9 @@ impl Global {
 		Ok(Self {
 			nats,
 			jetstream,
+			image_processor: ImageProcessor::new(&config.api.image_processor)
+				.await
+				.context("image processor setup")?,
 			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
 			user_connection_by_user_id_loader: dataloader::user_connection::UserConnectionByUserIdLoader::new(db.clone()),
 			product_by_id_loader: dataloader::product::ProductByIdLoader::new(db.clone()),
@@ -91,6 +96,11 @@ impl Global {
 	/// Global HTTP client.
 	pub fn http_client(&self) -> &reqwest::Client {
 		&self.http_client
+	}
+
+	/// Image processor.
+	pub fn image_processor(&self) -> &ImageProcessor {
+		&self.image_processor
 	}
 
 	/// The user loader.
