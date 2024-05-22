@@ -21,7 +21,13 @@ impl ImageHost {
 	pub fn from_image_set<T>(image_set: &ImageSet, cdn_base_url: &str, kind: ImageHostKind, id: &Id<T>) -> Self {
 		Self {
 			url: kind.create_base_url(cdn_base_url, id),
-			files: image_set.outputs.iter().map(Into::into).collect(),
+			files: image_set
+				.outputs
+				.iter()
+				// Filter out any images with formats that should not be returned by the v3 api
+				.filter(|i| ImageFormat::from_mime(&i.mime).is_some())
+				.map(Into::into)
+				.collect(),
 		}
 	}
 }
@@ -61,16 +67,12 @@ impl From<&Image> for ImageFile {
 	fn from(value: &Image) -> Self {
 		Self {
 			name: value.path.clone(),
-			static_name: value.path.clone(),
+			static_name: value.path.replace("x.", "x_static."),
 			width: value.width,
 			height: value.height,
 			frame_count: value.frame_count,
 			size: value.size,
-			format: match &value.mime {
-				mime if mime.starts_with("image/webp") => ImageFormat::Webp,
-				mime if mime.starts_with("image/avif") => ImageFormat::Avif,
-				_ => ImageFormat::Webp,
-			},
+			format: ImageFormat::from_mime(&value.mime).unwrap_or(ImageFormat::Webp),
 		}
 	}
 }
@@ -91,6 +93,14 @@ pub enum ImageFormat {
 }
 
 impl ImageFormat {
+	pub fn from_mime(mime: &str) -> Option<Self> {
+		match mime {
+			mime if mime.starts_with("image/webp") => Some(Self::Webp),
+			mime if mime.starts_with("image/avif") => Some(Self::Avif),
+			_ => None,
+		}
+	}
+
 	pub fn as_str(&self) -> &str {
 		match self {
 			Self::Webp => "webp",
