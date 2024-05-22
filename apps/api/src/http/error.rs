@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::fmt::Display;
 
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -30,10 +29,6 @@ impl ApiError {
 			status: status_code.canonical_reason().unwrap_or("unknown status code").into(),
 			error_code: 0,
 		}
-	}
-
-	pub fn missing_header(header: impl Display) -> Self {
-		Self::new(StatusCode::BAD_REQUEST, format!("missing header: {}", header))
 	}
 
 	pub const fn new_const(status_code: StatusCode, error: &'static str) -> Self {
