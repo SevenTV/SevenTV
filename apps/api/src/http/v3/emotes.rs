@@ -7,10 +7,11 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use scuffle_image_processor_proto as image_processor;
-use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission, UserSession};
+use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::auth::AuthSession;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
@@ -51,7 +52,7 @@ pub struct XEmoteData {
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L58
 pub async fn create_emote(
 	State(global): State<Arc<Global>>,
-	user_session: Option<Extension<UserSession>>,
+	auth_session: Option<Extension<AuthSession>>,
 	headers: HeaderMap,
 	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -65,11 +66,14 @@ pub async fn create_emote(
 
 	// TODO: validate emote name
 	
-	let user_session = user_session.ok_or(ApiError::UNAUTHORIZED)?.0;
+	let user_id = match auth_session.ok_or(ApiError::UNAUTHORIZED)?.0 {
+		AuthSession::Session(session) => session.user_id,
+		AuthSession::Old(user_id) => user_id,
+	};
 
 	let user = global
 		.user_by_id_loader()
-		.load(&global, user_session.user_id)
+		.load(&global, user_id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::UNAUTHORIZED)?;
@@ -105,7 +109,7 @@ pub async fn create_emote(
 
 	let emote = Emote {
 		id: emote_id,
-		owner_id: Some(user_session.user_id),
+		owner_id: Some(user_id),
 		default_name: emote_data.name,
 		tags: emote_data.tags,
 		flags: {
