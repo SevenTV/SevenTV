@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use mongodb::bson::doc;
 use mongodb::options::UpdateOptions;
-use shared::database::{Collection, EmoteSetId, GlobalConfig};
+use shared::database::{Collection, EmoteSetId, GlobalConfig, GlobalConfigId};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -38,6 +38,7 @@ impl Job for SystemJob {
 						"emote_set_ids": emote_set_id,
 					},
 					"$setOnInsert": {
+						"_id": GlobalConfigId::nil(),
 						"alerts": [],
 						"role_ids": [],
 					},

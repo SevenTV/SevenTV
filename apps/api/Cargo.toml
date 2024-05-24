@@ -8,6 +8,7 @@ license = "Apache-2.0 with Commons Clause"
 tokio = { version = "1.35", features = ["full"] }
 scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext" }
 scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext", features = ["client"] }
+prost = "0.12.6"
 tonic = { version = "0.11" }
 
 serde = { version = "1.0", features = ["derive"] }

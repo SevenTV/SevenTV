@@ -9,6 +9,50 @@ use crate::config::ImageProcessorConfig;
 
 pub mod callback;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Subject {
+	Emote(EmoteId),
+	Wildcard,
+}
+
+impl Subject {
+	pub fn to_string(&self, prefix: &str) -> String {
+		let mut parts: Vec<String> = Vec::new();
+
+		if !prefix.is_empty() {
+			parts.push(prefix.to_string());
+		}
+
+		match self {
+			Self::Emote(id) => {
+				parts.push("emote".to_string());
+				parts.push(id.to_string());
+			},
+			Self::Wildcard => {
+				parts.push(">".to_string());
+			},
+		}
+
+		parts.join(".")
+	}
+
+	pub fn from_string(s: &str, prefix: &str) -> anyhow::Result<Self> {
+		let mut parts = s.split('.');
+
+		if !prefix.is_empty() {
+			if parts.next().context("no prefix")? != prefix {
+				anyhow::bail!("invalid prefix");
+			}
+		}
+
+		match (parts.next().context("subject too short")?, parts.next()) {
+			("emote", Some(id)) => Ok(Self::Emote(id.parse()?)),
+			(">", None) => Ok(Self::Wildcard),
+			_ => anyhow::bail!("invalid subject"),
+		}
+	}
+}
+
 pub struct ImageProcessor {
 	client: ImageProcessorClient<tonic::transport::Channel>,
 	input_drive_name: String,
@@ -38,15 +82,7 @@ impl ImageProcessor {
 		id: EmoteId,
 		data: Bytes,
 	) -> tonic::Result<scuffle_image_processor_proto::ProcessImageResponse> {
-		let mut parts = Vec::new();
-
-		if !self.event_queue_topic_prefix.is_empty() {
-			parts.push(self.event_queue_topic_prefix.clone());
-		}
-
-		parts.push("emote".to_string());
-
-		let prefix = parts.join(".");
+		let topic = Subject::Emote(id).to_string(&self.event_queue_topic_prefix);
 
 		let request = image_processor::ProcessImageRequest {
 			input_upload: Some(image_processor::InputUpload {
@@ -111,19 +147,19 @@ impl ImageProcessor {
 				events: Some(image_processor::Events {
 					on_success: Some(image_processor::EventQueue {
 						name: self.event_queue_name.clone(),
-						topic: format!("{prefix}.success"),
+						topic: topic.clone(),
 					}),
 					on_start: Some(image_processor::EventQueue {
 						name: self.event_queue_name.clone(),
-						topic: format!("{prefix}.start"),
+						topic: topic.clone(),
 					}),
 					on_failure: Some(image_processor::EventQueue {
 						name: self.event_queue_name.clone(),
-						topic: format!("{prefix}.failure"),
+						topic: topic.clone(),
 					}),
 					on_cancel: Some(image_processor::EventQueue {
 						name: self.event_queue_name.clone(),
-						topic: format!("{prefix}.cancel"),
+						topic: topic.clone(),
 					}),
 					metadata: [("emote_id".to_string(), id.to_string())].into_iter().collect(),
 					..Default::default()

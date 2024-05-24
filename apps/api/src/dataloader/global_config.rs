@@ -1,6 +1,6 @@
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Collection, GlobalConfig, GlobalConfigId};
+use shared::database::{Collection, GlobalConfig};
 
 pub struct GlobalConfigLoader {
 	db: mongodb::Database,
@@ -22,17 +22,14 @@ impl Loader for GlobalConfigLoader {
 		tracing::Span::current().make_root();
 
 		let config: GlobalConfig = Self::Value::collection(&self.db)
-			.find_one(
-				mongodb::bson::doc! {
-					"_id": GlobalConfigId::nil(),
-				},
-				None,
-			)
+			.find_one(None, None)
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
 			})?
-			.unwrap_or_default();
+			.ok_or_else(|| {
+				tracing::error!("failed to load: not found");
+			})?;
 
 		Ok([((), config)].into_iter().collect())
 	}

@@ -8,7 +8,7 @@ use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
-use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission, ImageSet, ImageSetInput};
+use shared::database::{AdminPermission, Collection, Emote, EmoteFlags, EmoteId, EmotePermission, ImageSet, ImageSetInput};
 use shared::types::old::EmoteFlagsModel;
 
 use crate::global::Global;
@@ -98,7 +98,7 @@ pub async fn create_emote(
 
 	let permissions = user.compute_permissions(&roles);
 
-	if !permissions.has(EmotePermission::Upload) {
+	if !(permissions.has(EmotePermission::Upload) || permissions.has(EmotePermission::Admin) || permissions.has(AdminPermission::Admin) || permissions.has(AdminPermission::SuperAdmin)) {
 		return Err(ApiError::FORBIDDEN);
 	}
 
