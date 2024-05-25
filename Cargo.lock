@@ -3919,7 +3919,7 @@ dependencies = [
 [[package]]
 name = "scuffle-foundations"
 version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#8a57bf82a2ca098dd4215de9c6eaa8790a146efd"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#fac6d5d44f4c610ca413b86dfbd34fb9a0ebd957"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
@@ -3971,7 +3971,7 @@ dependencies = [
 [[package]]
 name = "scuffle-foundations-macros"
 version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#8a57bf82a2ca098dd4215de9c6eaa8790a146efd"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#fac6d5d44f4c610ca413b86dfbd34fb9a0ebd957"
 dependencies = [
  "convert_case 0.6.0",
  "darling 0.20.9",
@@ -3983,7 +3983,7 @@ dependencies = [
 [[package]]
 name = "scuffle-image-processor-proto"
 version = "0.0.0"
-source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#8a57bf82a2ca098dd4215de9c6eaa8790a146efd"
+source = "git+https://github.com/ScuffleTV/scuffle.git?branch=troy/image-processor-ext#fac6d5d44f4c610ca413b86dfbd34fb9a0ebd957"
 dependencies = [
  "pbjson",
  "pbjson-build",

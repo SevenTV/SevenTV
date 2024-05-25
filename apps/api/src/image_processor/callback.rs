@@ -7,7 +7,7 @@ use mongodb::bson::{doc, to_bson};
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
-use shared::database::{Collection, Emote, Image, ImageSet};
+use shared::database::{Collection, Emote, Image};
 
 use crate::{global::Global, image_processor::Subject};
 
@@ -123,7 +123,11 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_callback::Success) -> anyhow::Result<()> {
 	match subject {
 		Subject::Emote(id) => {
-			let outputs = event
+			let animated = event.files.iter().any(|i| i.frame_count > 1);
+
+			let input = event.input_metadata.context("missing input metadata")?;
+
+			let outputs: Vec<_> = event
 				.files
 				.into_iter()
 				.map(|i| Image {
@@ -135,10 +139,6 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_cal
 					frame_count: i.frame_count,
 				})
 				.collect();
-			let image_set = ImageSet {
-				input: shared::database::ImageSetInput::Image(Image { ..Default::default() }),
-				outputs,
-			};
 
 			Emote::collection(global.db())
 				.update_one(
@@ -147,7 +147,15 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_cal
 					},
 					doc! {
 						"$set": {
-							"image_set": to_bson(&image_set)?,
+							"animated": animated,
+							"image_set": {
+								"input": {
+									"width": input.width,
+									"height": input.height,
+									"frame_count": input.frame_count,
+								},
+								"outputs": to_bson(&outputs)?,
+							},
 						},
 					},
 					None,
@@ -163,14 +171,19 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_cal
 async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callback::Fail) -> anyhow::Result<()> {
 	match subject {
 		Subject::Emote(id) => {
-			Emote::collection(global.db()).delete_one(doc! {
-				"_id": id,
-			}, None).await?;
+			Emote::collection(global.db())
+				.delete_one(
+					doc! {
+						"_id": id,
+					},
+					None,
+				)
+				.await?;
 
 			// Notify user of failure with reason
 
 			Ok(())
-		},
+		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
 }
@@ -178,14 +191,19 @@ async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callb
 async fn handle_cancel(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
 	match subject {
 		Subject::Emote(id) => {
-			Emote::collection(global.db()).delete_one(doc! {
-				"_id": id,
-			}, None).await?;
+			Emote::collection(global.db())
+				.delete_one(
+					doc! {
+						"_id": id,
+					},
+					None,
+				)
+				.await?;
 
 			// Notify user of cancellation
 
 			Ok(())
-		},
+		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
 }
