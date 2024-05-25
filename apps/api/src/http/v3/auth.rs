@@ -65,10 +65,7 @@ async fn login(
 	let location = if query.callback {
 		handle_login_callback(&global, query, &cookies).await?
 	} else {
-		let user_id = session.map(|s| match s.0 {
-			AuthSession::Session(session) => session.user_id,
-			AuthSession::Old(user_id) => user_id,
-		});
+		let user_id = session.map(|s| s.user_id());
 		handle_login(&global, user_id, query.platform, &cookies)?
 	};
 

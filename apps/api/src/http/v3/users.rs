@@ -1,15 +1,22 @@
 use std::sync::Arc;
 
+use axum::body::Bytes;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, patch, put};
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use hyper::StatusCode;
-use shared::database::{UserConnectionId, UserId};
+use mongodb::bson::{doc, to_bson};
+use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
+use serde::Deserialize;
+use shared::database::{
+	Collection, FeaturePermission, ImageSet, ImageSetInput, User, UserConnectionId, UserId, UserPermission,
+};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
+use crate::http::middleware::auth::AuthSession;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -96,6 +103,14 @@ pub async fn get_user_by_id(
 	))
 }
 
+#[derive(Debug, Clone, Deserialize)]
+enum TargetUser {
+	#[serde(rename = "@me")]
+	Me,
+	#[serde(untagged)]
+	Other(UserId),
+}
+
 #[utoipa::path(
     put,
     path = "/v3/users/{id}/profile-picture",
@@ -108,14 +123,141 @@ pub async fn get_user_by_id(
         ("id" = String, Path, description = "The ID of the user"),
     ),
 )]
-#[tracing::instrument(skip_all, fields(id = %id))]
+#[tracing::instrument(skip_all, fields(id = ?id))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.pictures.go#L61
 pub async fn upload_user_profile_picture(
 	State(global): State<Arc<Global>>,
-	Path(id): Path<UserId>,
+	Path(id): Path<TargetUser>,
+	auth_session: Option<Extension<AuthSession>>,
+	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
-	let _ = global;
-	Ok(ApiError::NOT_IMPLEMENTED)
+	let authed_user_id = auth_session.ok_or(ApiError::UNAUTHORIZED)?.user_id();
+
+	let id = match id {
+		TargetUser::Me => authed_user_id,
+		TargetUser::Other(id) => id,
+	};
+
+	let user = global
+		.user_by_id_loader()
+		.load(&global, id)
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::NOT_FOUND)?;
+
+	let authed_user = global
+		.user_by_id_loader()
+		.load(&global, authed_user_id)
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::UNAUTHORIZED)?;
+
+	let global_config = global
+		.global_config_loader()
+		.load(())
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+	let roles = {
+		let mut roles = global
+			.role_by_id_loader()
+			.load_many(authed_user.entitled_cache.role_ids.iter().copied())
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		global_config
+			.role_ids
+			.iter()
+			.filter_map(|id| roles.remove(id))
+			.collect::<Vec<_>>()
+	};
+
+	let permissions = authed_user.compute_permissions(&roles);
+
+	if authed_user_id == id {
+		// When someone wants to change their own profile picture
+		if !permissions.has(FeaturePermission::UseCustomProfilePicture) {
+			return Err(ApiError::FORBIDDEN);
+		}
+	} else {
+		// When someone wants to change another user's profile picture, they must have `UserPermission::Edit`
+		if !permissions.has(UserPermission::Edit) {
+			return Err(ApiError::FORBIDDEN);
+		}
+	}
+
+	// check if user already has a pending profile picture change
+	if let Some(ImageSet {
+		input: ImageSetInput::Pending { .. },
+		..
+	}) = user.style.active_profile_picture
+	{
+		return Err(ApiError::new_const(
+			StatusCode::CONFLICT,
+			"profile picture change already pending",
+		));
+	}
+
+	let input = match global.image_processor().upload_profile_picture(id, body).await {
+		Ok(ProcessImageResponse {
+			error: None,
+			upload_info: Some(ProcessImageResponseUploadInfo {
+				path: Some(path),
+				content_type,
+				size,
+			}),
+			..
+		}) => ImageSetInput::Pending {
+			path: path.path,
+			mime: content_type,
+			size,
+		},
+		Ok(ProcessImageResponse { error: Some(err), .. }) => {
+			// At this point if we get a decode error then the image is invalid
+			// and we should return a bad request
+			if err.code == image_processor::ErrorCode::Decode as i32 || err.code == image_processor::ErrorCode::InvalidInput as i32 {
+				return Err(ApiError::BAD_REQUEST);
+			}
+
+			tracing::error!(code = ?err.code(), "failed to upload profile picture: {}", err.message);
+			return Err(ApiError::INTERNAL_SERVER_ERROR);
+		}
+		Err(err) => {
+			tracing::error!("failed to upload profile picture: {:#}", err);
+			return Err(ApiError::INTERNAL_SERVER_ERROR);
+		}
+		_ => {
+			tracing::error!("failed to upload profile picture: unknown error");
+			return Err(ApiError::INTERNAL_SERVER_ERROR);
+		}
+	};
+
+	let image_set = ImageSet { input, outputs: vec![] };
+	let image_set = to_bson(&image_set).map_err(|e| {
+		tracing::error!(error = %e, "failed to serialize image set");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	User::collection(global.db())
+		.update_one(
+			doc! {
+				"_id": user.id,
+			},
+			doc! {
+				"$set": {
+					"style.active_profile_picture": image_set,
+				}
+			},
+			None,
+		)
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to update user");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+	Ok(StatusCode::OK)
 }
 
 #[utoipa::path(

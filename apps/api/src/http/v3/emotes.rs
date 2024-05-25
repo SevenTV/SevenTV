@@ -63,10 +63,7 @@ pub async fn create_emote(
 
 	// TODO: validate emote name
 
-	let user_id = match auth_session.ok_or(ApiError::UNAUTHORIZED)?.0 {
-		AuthSession::Session(session) => session.user_id,
-		AuthSession::Old(user_id) => user_id,
-	};
+	let user_id = auth_session.ok_or(ApiError::UNAUTHORIZED)?.user_id();
 
 	let user = global
 		.user_by_id_loader()
@@ -121,7 +118,7 @@ pub async fn create_emote(
 		Ok(ProcessImageResponse { error: Some(err), .. }) => {
 			// At this point if we get a decode error then the image is invalid
 			// and we should return a bad request
-			if err.code == image_processor::ErrorCode::Decode as i32 {
+			if err.code == image_processor::ErrorCode::Decode as i32 || err.code == image_processor::ErrorCode::InvalidInput as i32 {
 				return Err(ApiError::BAD_REQUEST);
 			}
 

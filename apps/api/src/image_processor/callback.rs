@@ -7,7 +7,7 @@ use mongodb::bson::{doc, to_bson};
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
-use shared::database::{Collection, Emote, Image};
+use shared::database::{Collection, Emote, Image, ImageSet, User};
 
 use crate::{global::Global, image_processor::Subject};
 
@@ -121,25 +121,25 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 }
 
 async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_callback::Success) -> anyhow::Result<()> {
+	let input = event.input_metadata.context("missing input metadata")?;
+
+	let animated = event.files.iter().any(|i| i.frame_count > 1);
+
+	let outputs: Vec<_> = event
+		.files
+		.into_iter()
+		.map(|i| Image {
+			path: i.path,
+			mime: i.content_type,
+			size: i.size as u64,
+			width: i.width,
+			height: i.height,
+			frame_count: i.frame_count,
+		})
+		.collect();
+
 	match subject {
 		Subject::Emote(id) => {
-			let animated = event.files.iter().any(|i| i.frame_count > 1);
-
-			let input = event.input_metadata.context("missing input metadata")?;
-
-			let outputs: Vec<_> = event
-				.files
-				.into_iter()
-				.map(|i| Image {
-					path: i.path,
-					mime: i.content_type,
-					size: i.size as u64,
-					width: i.width,
-					height: i.height,
-					frame_count: i.frame_count,
-				})
-				.collect();
-
 			Emote::collection(global.db())
 				.update_one(
 					doc! {
@@ -154,6 +154,43 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_cal
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
+					None,
+				)
+				.await?;
+		}
+		Subject::ProfilePicture(id) => {
+			let outputs = to_bson(&outputs)?;
+
+			// https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline
+			let aggregation = vec![
+				doc! {
+					"$set": {
+						"style.active_profile_picture.input.width": input.width,
+						"style.active_profile_picture.input.height": input.height,
+						"style.active_profile_picture.input.frame_count": input.frame_count,
+						"style.active_profile_picture.outputs": outputs,
+					},
+				},
+				// $push is not available in update pipelines
+				// so we have to use $concatArrays to append to an array
+				doc! {
+					"$set": {
+						"style.all_profile_pictures": {
+							"$concatArrays": [
+								"$style.all_profile_pictures",
+								["$style.active_profile_picture"]
+							],
+						},
+					},
+				},
+			];
+
+			User::collection(global.db())
+				.update_one(
+					doc! {
+						"_id": id,
+					},
+					aggregation,
 					None,
 				)
 				.await?;
@@ -177,11 +214,22 @@ async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callb
 				.await?;
 
 			// Notify user of failure with reason
+		}
+		Subject::ProfilePicture(id) => {
+			User::collection(global.db())
+				.update_one(
+					doc! { "_id": id },
+					doc! { "style.active_profile_picture": to_bson(&Option::<ImageSet>::None)? },
+					None,
+				)
+				.await?;
 
-			Ok(())
+			// Notify user of failure with reason
 		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
+
+	Ok(())
 }
 
 async fn handle_cancel(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
@@ -197,9 +245,20 @@ async fn handle_cancel(global: &Arc<Global>, subject: Subject) -> anyhow::Result
 				.await?;
 
 			// Notify user of cancellation
+		}
+		Subject::ProfilePicture(id) => {
+			User::collection(global.db())
+				.update_one(
+					doc! { "_id": id },
+					doc! { "style.active_profile_picture": to_bson(&Option::<ImageSet>::None)? },
+					None,
+				)
+				.await?;
 
-			Ok(())
+			// Notify user of cancellation
 		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
+
+	Ok(())
 }

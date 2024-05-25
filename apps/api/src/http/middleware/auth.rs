@@ -49,6 +49,15 @@ pub enum AuthSession {
 	Old(UserId),
 }
 
+impl AuthSession {
+	pub fn user_id(&self) -> UserId {
+		match self {
+			Self::Session(session) => session.user_id,
+			Self::Old(user_id) => *user_id,
+		}
+	}
+}
+
 impl<S> AuthMiddlewareService<S> {
 	async fn serve<B>(mut self, mut req: Request<B>) -> Result<Response, EitherApiError<S::Error>>
 	where
