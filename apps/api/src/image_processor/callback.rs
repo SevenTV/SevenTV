@@ -148,14 +148,10 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_cal
 					doc! {
 						"$set": {
 							"animated": animated,
-							"image_set": {
-								"input": {
-									"width": input.width,
-									"height": input.height,
-									"frame_count": input.frame_count,
-								},
-								"outputs": to_bson(&outputs)?,
-							},
+							"image_set.input.width": input.width,
+							"image_set.input.height": input.height,
+							"image_set.input.frame_count": input.frame_count,
+							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
 					None,
