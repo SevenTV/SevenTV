@@ -98,7 +98,11 @@ pub async fn create_emote(
 
 	let permissions = user.compute_permissions(&roles);
 
-	if !(permissions.has(EmotePermission::Upload) || permissions.has(EmotePermission::Admin) || permissions.has(AdminPermission::Admin) || permissions.has(AdminPermission::SuperAdmin)) {
+	if !(permissions.has(EmotePermission::Upload)
+		|| permissions.has(EmotePermission::Admin)
+		|| permissions.has(AdminPermission::Admin)
+		|| permissions.has(AdminPermission::SuperAdmin))
+	{
 		return Err(ApiError::FORBIDDEN);
 	}
 
@@ -151,20 +155,24 @@ pub async fn create_emote(
 		owner_id: Some(user_id),
 		default_name: emote_data.name,
 		tags: emote_data.tags,
+		animated: false, // will be set by the image processor callback
+		image_set: ImageSet { input, outputs: vec![] },
 		flags,
-		image_set: ImageSet {
-			input,
-			..Default::default()
-		},
-		..Default::default()
+		attribution: vec![],
 	};
 
-	Emote::collection(global.db()).insert_one(emote, None).await.map_err(|err| {
-		tracing::error!(error = %err, "failed to insert emote");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+	Emote::collection(global.db())
+		.insert_one(emote.clone(), None)
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to insert emote");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
-	Ok(StatusCode::CREATED)
+	// we don't have to return the owner here
+	let emote = emote.into_old_model_partial(None, &global.config().api.cdn_base_url);
+
+	Ok((StatusCode::CREATED, Json(emote)))
 }
 
 #[utoipa::path(
