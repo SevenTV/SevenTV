@@ -1,19 +1,27 @@
-use axum::response::IntoResponse;
+use async_graphql::{extensions, EmptySubscription, Schema};
+use axum::response::{self, IntoResponse};
 
-use crate::http::error::ApiError;
+mod mutations;
+mod queries;
 
-#[derive(utoipa::OpenApi)]
-#[openapi(paths(handler))]
-pub struct Docs;
+pub type V3Schema = Schema<queries::Query, mutations::Mutation, EmptySubscription>;
 
-#[utoipa::path(
-    post,
-    path = "/v3/gql",
-    tag = "gql",
-    responses(
-        (status = 200, description = "Returns the GraphQL API response", content_type = "application/json"),
-    ),
-)]
-pub async fn handler() -> Result<impl IntoResponse, ApiError> {
-	Ok("Hello, World!")
+pub fn schema() -> V3Schema {
+	Schema::build(queries::Query::default(), mutations::Mutation::default(), EmptySubscription)
+        .enable_federation()
+        .enable_subscription_in_federation()
+        .extension(extensions::Analyzer)
+        .extension(extensions::Tracing)
+        .limit_complexity(400) // We don't want to allow too complex queries to be executed
+        .finish()
+}
+
+#[utoipa::path(get, path = "/v3/gql/playground", tag = "gql")]
+pub async fn playground() -> impl IntoResponse {
+	response::Html(
+		async_graphql::http::GraphiQLSource::build()
+			.endpoint("/v3/gql")
+			.title("7TV API v3 GraphQL Playground")
+			.finish(),
+	)
 }
