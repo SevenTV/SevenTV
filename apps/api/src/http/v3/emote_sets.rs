@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::extract::State;
@@ -13,6 +12,8 @@ use utoipa::OpenApi;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
+
+use super::emote_set_loader::load_emote_set;
 
 #[derive(OpenApi)]
 #[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSetModel)))]
@@ -54,85 +55,25 @@ pub async fn get_emote_set_by_id(
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default();
 
-	let emotes = global
-		.emote_by_id_loader()
-		.load_many(emote_set_emotes.iter().map(|emote| emote.emote_id))
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+	let emotes = load_emote_set(&global, emote_set_emotes).await?;
 
-	let users = global
-		.user_by_id_loader()
-		.load_many(
-			&global,
-			emotes.values().filter_map(|emote| emote.owner_id).chain(emote_set.owner_id),
-		)
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-	let connections = global
-		.user_connection_by_user_id_loader()
-		.load_many(users.keys().copied())
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-	let roles = {
-		let mut roles = global
-			.role_by_id_loader()
-			.load_many(users.values().flat_map(|user| user.entitled_cache.role_ids.iter().copied()))
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		global_config
-			.role_ids
-			.iter()
-			.filter_map(|id| roles.remove(id))
-			.collect::<Vec<_>>()
+	let owner = match emote_set.owner_id {
+		Some(owner) => {
+			let conns = global
+				.user_connection_by_user_id_loader()
+				.load(owner)
+				.await
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.unwrap_or_default();
+			global
+				.user_by_id_loader()
+				.load(&global, owner)
+				.await
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.map(|u| u.into_old_model_partial(conns, None, None, &global.config().api.cdn_base_url))
+		}
+		None => None,
 	};
 
-	let users = users
-		.into_iter()
-		.map(|(id, user)| {
-			let permissions = user.compute_permissions(&roles);
-			(id, (user, permissions))
-		})
-		.collect::<HashMap<_, _>>();
-
-	let cdn_base_url = &global.config().api.cdn_base_url;
-
-	let users = users
-		.into_values()
-		.map(|(user, _)| {
-			// This api doesnt seem to return the user's badges and paints so
-			// we can ignore them.
-			let connections = connections.get(&user.id).cloned().unwrap_or_default();
-			user.into_old_model_partial(connections, None, None, cdn_base_url)
-		})
-		.map(|user| (user.id, user))
-		.collect::<HashMap<_, _>>();
-
-	let emotes = emotes
-		.into_iter()
-		.filter_map(|(id, emote)| {
-			let owner = emote.owner_id.and_then(|id| users.get(&id)).cloned();
-
-			Some((id, emote.into_old_model_partial(owner, &global.config().api.cdn_base_url)))
-		})
-		.collect::<HashMap<_, _>>();
-
-	let owner = emote_set.owner_id.and_then(|id| users.get(&id)).cloned();
-
-	Ok(Json(emote_set.into_old_model(
-		emote_set_emotes.into_iter().map(|emote| {
-			let partial = emotes.get(&emote.emote_id).cloned();
-			(emote, partial)
-		}),
-		owner,
-	)))
+	Ok(Json(emote_set.into_old_model(emotes, owner)))
 }

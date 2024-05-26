@@ -80,6 +80,7 @@ impl From<UserConnection> for UserConnectionPartialModel {
 			username: value.platform_username,
 			display_name: value.platform_display_name,
 			linked_at: value.id.timestamp_ms(),
+			// TODO: get slots from permissions
 			emote_capacity: 600,
 			emote_set_id: None,
 		}

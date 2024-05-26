@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use axum::body::Bytes;
@@ -10,13 +11,17 @@ use mongodb::bson::{doc, to_bson};
 use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
 use serde::Deserialize;
 use shared::database::{
-	Collection, FeaturePermission, ImageSet, ImageSetInput, User, UserConnectionId, UserId, UserPermission,
+	Collection, FeaturePermission, ImageSet, ImageSetInput, Platform, User, UserConnection, UserConnectionId, UserId,
+	UserPermission,
 };
+use shared::types::old::{UserConnectionModel, UserConnectionPartialModel};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
+
+use super::emote_set_loader::{fake_user_set, get_fake_set_for_user_active_sets};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -24,7 +29,7 @@ use crate::http::middleware::auth::AuthSession;
 		get_user_by_id,
 		upload_user_profile_picture,
 		get_user_presences_by_platform,
-		get_user_by_platform_user_id,
+		get_user_by_platform_id,
 		delete_user_by_id,
 		update_user_connection_by_id,
 	),
@@ -37,7 +42,7 @@ pub fn routes() -> Router<Arc<Global>> {
 		.route("/:id", get(get_user_by_id))
 		.route("/:id/profile-picture", put(upload_user_profile_picture))
 		.route("/:id/presences", get(get_user_presences_by_platform))
-		.route("/:platform/{platform_id}", get(get_user_by_platform_user_id))
+		.route("/:platform/:platform_id", get(get_user_by_platform_id))
 		.route("/:id", delete(delete_user_by_id))
 		.route("/:id/connections/:connection_id", patch(update_user_connection_by_id))
 }
@@ -88,19 +93,50 @@ pub async fn get_user_by_id(
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default();
 
-	Ok(Json(
-		user.into_old_model(
-			user_connections,
-			None,
-			None,
-			emote_sets
-				.into_iter()
-				.map(|emote_set| emote_set.into_old_model_partial(None))
-				.collect(),
-			editors.into_iter().filter_map(|editor| editor.into_old_model()).collect(),
-			&global.config().api.cdn_base_url,
-		),
-	))
+	let global_config = global
+		.global_config_loader()
+		.load(())
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+	let roles = {
+		let mut roles = global
+			.role_by_id_loader()
+			.load_many(user.entitled_cache.role_ids.iter().copied())
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		global_config
+			.role_ids
+			.iter()
+			.filter_map(|id| roles.remove(id))
+			.collect::<Vec<_>>()
+	};
+
+	let permissions = user.compute_permissions(&roles);
+
+	// the fake user emote set
+	let fake_user_set = fake_user_set(user.id, permissions.emote_set_slots_limit.unwrap_or(600)).into_old_model(vec![], None);
+
+	let mut old_model = user.into_old_model(
+		user_connections,
+		None,
+		None,
+		emote_sets
+			.into_iter()
+			.map(|emote_set| emote_set.into_old_model_partial(None))
+			.collect(),
+		editors.into_iter().filter_map(|editor| editor.into_old_model()).collect(),
+		&global.config().api.cdn_base_url,
+	);
+
+	old_model.connections.iter_mut().for_each(|conn| {
+		conn.emote_set_id = Some(fake_user_set.id);
+		conn.emote_set = Some(fake_user_set.clone());
+	});
+
+	Ok(Json(old_model))
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -216,7 +252,9 @@ pub async fn upload_user_profile_picture(
 		Ok(ProcessImageResponse { error: Some(err), .. }) => {
 			// At this point if we get a decode error then the image is invalid
 			// and we should return a bad request
-			if err.code == image_processor::ErrorCode::Decode as i32 || err.code == image_processor::ErrorCode::InvalidInput as i32 {
+			if err.code == image_processor::ErrorCode::Decode as i32
+				|| err.code == image_processor::ErrorCode::InvalidInput as i32
+			{
 				return Err(ApiError::BAD_REQUEST);
 			}
 
@@ -296,12 +334,110 @@ pub async fn get_user_presences_by_platform(
 )]
 #[tracing::instrument(skip_all, fields(platform = %platform, platform_id = %platform_id))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.by-connection.go#L42
-pub async fn get_user_by_platform_user_id(
+pub async fn get_user_by_platform_id(
 	State(global): State<Arc<Global>>,
 	Path((platform, platform_id)): Path<(String, String)>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let _ = global;
-	Ok(ApiError::NOT_IMPLEMENTED)
+	let platform = Platform::from_str(&platform.to_lowercase()).map_err(|_| ApiError::BAD_REQUEST)?;
+	let platform = to_bson(&platform).map_err(|e| {
+		tracing::error!(error = %e, "failed to serialize platform");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	let connection = UserConnection::collection(global.db())
+		.find_one(doc! { "platform": platform, "platform_id": platform_id }, None)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to find user connection");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?
+		.ok_or(ApiError::NOT_FOUND)?;
+
+	// query the user
+	let user = global
+		.user_by_id_loader()
+		.load(&global, connection.user_id)
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+	let mut connection_model: UserConnectionModel = UserConnectionPartialModel::from(connection).into();
+
+	// query user
+	// query all user connections
+	let connections = global
+		.user_connection_by_user_id_loader()
+		.load(user.id)
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.unwrap_or_default();
+
+	let editors = global
+		.user_editor_by_user_id_loader()
+		.load(user.id)
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.unwrap_or_default()
+		.into_iter()
+		.filter_map(|e| e.into_old_model())
+		.collect::<Vec<_>>();
+
+	// query user emote sets
+	let emote_sets = global
+		.emote_set_by_user_id_loader()
+		.load(user.id)
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.unwrap_or_default()
+		.into_iter()
+		.map(|s| s.into_old_model_partial(None))
+		.collect::<Vec<_>>();
+
+	let global_config = global
+		.global_config_loader()
+		.load(())
+		.await
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+	let roles = {
+		let mut roles = global
+			.role_by_id_loader()
+			.load_many(user.entitled_cache.role_ids.iter().copied())
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		global_config
+			.role_ids
+			.iter()
+			.filter_map(|id| roles.remove(id))
+			.collect::<Vec<_>>()
+	};
+
+	let permissions = user.compute_permissions(&roles);
+
+	let user_fake_set = get_fake_set_for_user_active_sets(
+		&global,
+		user.clone(),
+		connections.clone(),
+		permissions.emote_set_slots_limit.unwrap_or(600),
+	)
+	.await?;
+	connection_model.emote_set_id = Some(user_fake_set.id);
+	connection_model.emote_set = Some(user_fake_set);
+
+	let user_full = user.into_old_model(
+		connections,
+		None,
+		None,
+		emote_sets,
+		editors,
+		&global.config().api.cdn_base_url,
+	);
+
+	connection_model.user = Some(user_full);
+
+	Ok(Json(connection_model))
 }
 
 #[utoipa::path(

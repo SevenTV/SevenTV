@@ -11,6 +11,7 @@ pub mod docs;
 pub mod emote_sets;
 pub mod emotes;
 pub mod entitlements;
+pub mod emote_set_loader;
 pub mod users;
 
 pub fn docs() -> utoipa::openapi::OpenApi {
