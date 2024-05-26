@@ -4,7 +4,7 @@ use std::sync::Arc;
 use axum::body::Bytes;
 use axum::extract::State;
 use axum::response::IntoResponse;
-use axum::routing::{delete, get, patch, put};
+use axum::routing::{delete, get, patch, post, put};
 use axum::{Extension, Json, Router};
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
@@ -14,7 +14,7 @@ use shared::database::{
 	Collection, FeaturePermission, ImageSet, ImageSetInput, Platform, User, UserConnection, UserConnectionId, UserId,
 	UserPermission,
 };
-use shared::types::old::{UserConnectionModel, UserConnectionPartialModel};
+use shared::types::old::{PresenceModel, UserConnectionModel, UserConnectionPartialModel};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -28,7 +28,7 @@ use super::emote_set_loader::{fake_user_set, get_fake_set_for_user_active_sets};
 	paths(
 		get_user_by_id,
 		upload_user_profile_picture,
-		get_user_presences_by_platform,
+		create_user_presence,
 		get_user_by_platform_id,
 		delete_user_by_id,
 		update_user_connection_by_id,
@@ -41,7 +41,7 @@ pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.route("/:id", get(get_user_by_id))
 		.route("/:id/profile-picture", put(upload_user_profile_picture))
-		.route("/:id/presences", get(get_user_presences_by_platform))
+		.route("/:id/presences", post(create_user_presence))
 		.route("/:platform/:platform_id", get(get_user_by_platform_id))
 		.route("/:id", delete(delete_user_by_id))
 		.route("/:id/connections/:connection_id", patch(update_user_connection_by_id))
@@ -300,11 +300,11 @@ pub async fn upload_user_profile_picture(
 }
 
 #[utoipa::path(
-    get,
+    post,
     path = "/v3/users/{id}/presences",
     tag = "users",
     responses(
-        (status = 200, description = "User Presences", body = Vec<UserModel>),
+        (status = 200, description = "User Presence", body = PresenceModel),
     ),
     params(
         ("id" = String, Path, description = "The ID of the user"),
@@ -312,11 +312,11 @@ pub async fn upload_user_profile_picture(
 )]
 #[tracing::instrument(skip_all, fields(id = %id))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.presence.write.go#L41
-pub async fn get_user_presences_by_platform(
-	State(global): State<Arc<Global>>,
+pub async fn create_user_presence(
+	// State(global): State<Arc<Global>>,
 	Path(id): Path<UserId>,
+	Json(_presence): Json<PresenceModel>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let _ = global;
 	Ok(ApiError::NOT_IMPLEMENTED)
 }
 
@@ -455,9 +455,9 @@ pub async fn get_user_by_platform_id(
 )]
 #[tracing::instrument]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.delete.go#L33
-pub async fn delete_user_by_id() -> ApiError {
+pub async fn delete_user_by_id() -> Result<impl IntoResponse, ApiError> {
 	// will be left unimplemented because it is unused
-	ApiError::NOT_IMPLEMENTED
+	Ok(ApiError::NOT_IMPLEMENTED)
 }
 
 #[utoipa::path(
