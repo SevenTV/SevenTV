@@ -20,8 +20,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
-
-use super::emote_set_loader::{fake_user_set, get_fake_set_for_user_active_sets};
+use crate::http::v3::emote_set_loader::{fake_user_set, get_fake_set_for_user_active_sets};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(

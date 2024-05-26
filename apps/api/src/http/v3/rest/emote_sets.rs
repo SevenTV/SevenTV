@@ -12,8 +12,7 @@ use utoipa::OpenApi;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
-
-use super::emote_set_loader::load_emote_set;
+use crate::http::v3::emote_set_loader::load_emote_set;
 
 #[derive(OpenApi)]
 #[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSetModel)))]
