@@ -117,7 +117,8 @@ pub async fn get_user_by_id(
 	let permissions = user.compute_permissions(&roles);
 
 	// the fake user emote set
-	let fake_user_set = fake_user_set(user.id, permissions.emote_set_slots_limit.unwrap_or(600)).into_old_model(vec![], None);
+	let fake_user_set =
+		fake_user_set(user.id, permissions.emote_set_slots_limit.unwrap_or(600)).into_old_model(vec![], None);
 
 	let mut old_model = user.into_old_model(
 		user_connections,
@@ -452,14 +453,11 @@ pub async fn get_user_by_platform_id(
         ("id" = String, Path, description = "The ID of the user"),
     ),
 )]
-#[tracing::instrument(skip_all, fields(id = %id))]
+#[tracing::instrument]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.delete.go#L33
-pub async fn delete_user_by_id(
-	State(global): State<Arc<Global>>,
-	Path(id): Path<UserId>,
-) -> Result<impl IntoResponse, ApiError> {
-	let _ = global;
-	Ok(ApiError::NOT_IMPLEMENTED)
+pub async fn delete_user_by_id() -> ApiError {
+	// will be left unimplemented because it is unused
+	ApiError::NOT_IMPLEMENTED
 }
 
 #[utoipa::path(
