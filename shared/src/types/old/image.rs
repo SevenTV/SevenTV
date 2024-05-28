@@ -1,11 +1,13 @@
 use crate::database::{Id, Image, ImageSet};
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
+#[graphql(complex, rename_fields = "snake_case")]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L47
 pub struct ImageHost {
 	pub url: String,
+	#[graphql(skip)]
 	pub files: Vec<ImageFile>,
 }
 
@@ -32,6 +34,19 @@ impl ImageHost {
 	}
 }
 
+#[async_graphql::ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+impl ImageHost {
+	async fn files(&self, formats: Option<Vec<ImageFormat>>) -> Vec<ImageFile> {
+		let formats = formats.unwrap_or_default();
+
+		self.files
+			.iter()
+			.filter(|i| formats.is_empty() || formats.iter().any(|f| *f == i.format))
+			.cloned()
+			.collect()
+	}
+}
+
 impl ImageHostKind {
 	pub fn create_base_url<T>(&self, base: &str, id: &Id<T>) -> String {
 		format!("{base}/{self}/{id}")
@@ -49,9 +64,10 @@ impl std::fmt::Display for ImageHostKind {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
+#[graphql(name = "Image", rename_fields = "snake_case")]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L52
 pub struct ImageFile {
 	pub name: String,
@@ -65,9 +81,13 @@ pub struct ImageFile {
 
 impl From<&Image> for ImageFile {
 	fn from(value: &Image) -> Self {
+		let name = value.path.clone();
+		// trim everything until last '/'
+		let name = name.split('/').last().unwrap_or(&name).to_string();
+
 		Self {
-			name: value.path.clone(),
-			static_name: value.path.replace("x.", "x_static."),
+			static_name: name.replace("x.", "x_static."),
+			name,
 			width: value.width,
 			height: value.height,
 			frame_count: value.frame_count,
@@ -83,21 +103,36 @@ impl From<Image> for ImageFile {
 	}
 }
 
-#[derive(Debug, Copy, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L63
 pub enum ImageFormat {
 	#[default]
 	Webp,
 	Avif,
+	Gif,
+	Png,
 }
+
+async_graphql::scalar!(ImageFormat);
 
 impl ImageFormat {
 	pub fn from_mime(mime: &str) -> Option<Self> {
 		match mime {
 			mime if mime.starts_with("image/webp") => Some(Self::Webp),
 			mime if mime.starts_with("image/avif") => Some(Self::Avif),
+			mime if mime.starts_with("image/gif") => Some(Self::Gif),
+			mime if mime.starts_with("image/png") => Some(Self::Png),
 			_ => None,
+		}
+	}
+
+	pub fn to_mime(&self) -> &'static str {
+		match self {
+			Self::Webp => "image/webp",
+			Self::Avif => "image/avif",
+			Self::Gif => "image/gif",
+			Self::Png => "image/png",
 		}
 	}
 
@@ -105,6 +140,8 @@ impl ImageFormat {
 		match self {
 			Self::Webp => "webp",
 			Self::Avif => "avif",
+			Self::Gif => "gif",
+			Self::Png => "png",
 		}
 	}
 }

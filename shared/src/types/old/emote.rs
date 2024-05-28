@@ -1,11 +1,10 @@
 use bitmask_enum::bitmask;
 
 use super::{ImageHost, UserPartialModel};
-use crate::database::{EmoteId, UserId};
+use crate::database::{self, EmoteId, UserId};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L12
 pub struct EmoteModel {
 	pub id: EmoteId,
@@ -80,6 +79,8 @@ pub enum EmoteLifecycleModel {
 	Failed = -2,
 }
 
+async_graphql::scalar!(EmoteLifecycleModel);
+
 #[bitmask(i32)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L63
 pub enum EmoteFlagsModel {
@@ -90,6 +91,26 @@ pub enum EmoteFlagsModel {
 	Epilepsy = 1 << 17,
 	Edgy = 1 << 18,
 	TwitchDisallowed = 1 << 24,
+}
+
+impl From<database::EmoteFlags> for EmoteFlagsModel {
+	fn from(value: database::EmoteFlags) -> Self {
+		let mut flags = Self::none();
+
+		if value.contains(database::EmoteFlags::Private) {
+			flags |= Self::Private;
+		}
+
+		if value.contains(database::EmoteFlags::DefaultZeroWidth) {
+			flags |= Self::ZeroWidth;
+		}
+
+		if value.contains(database::EmoteFlags::Nsfw) {
+			flags |= Self::Sexual;
+		}
+
+		flags
+	}
 }
 
 impl Default for EmoteFlagsModel {
@@ -110,6 +131,8 @@ impl<'a> serde::Deserialize<'a> for EmoteFlagsModel {
 		Ok(EmoteFlagsModel::from(bits))
 	}
 }
+
+async_graphql::scalar!(EmoteFlagsModel);
 
 impl<'a> utoipa::ToSchema<'a> for EmoteFlagsModel {
 	fn schema() -> (&'a str, utoipa::openapi::RefOr<utoipa::openapi::schema::Schema>) {
@@ -153,3 +176,5 @@ pub enum EmoteVersionState {
 	AllowPersonal,
 	NoPersonal,
 }
+
+async_graphql::scalar!(EmoteVersionState);

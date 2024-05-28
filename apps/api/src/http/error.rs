@@ -1,5 +1,7 @@
 use std::borrow::Cow;
+use std::sync::Arc;
 
+use async_graphql::ErrorExtensionValues;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use hyper::StatusCode;
@@ -48,6 +50,22 @@ impl IntoResponse for ApiError {
 		// });
 
 		(self.status_code, Json(self)).into_response()
+	}
+}
+
+impl From<ApiError> for async_graphql::Error {
+	fn from(value: ApiError) -> Self {
+		let mut extensions = ErrorExtensionValues::default();
+		extensions.set("code", value.error_code);
+		// for backward compatibility
+		extensions.set("fields", async_graphql::Value::Object(Default::default()));
+		extensions.set("message", value.error.to_string());
+
+		Self {
+			message: value.error.to_string(),
+			source: Some(Arc::new(value)),
+			extensions: Some(extensions),
+		}
 	}
 }
 

@@ -59,7 +59,7 @@ impl Collection for Ticket {
 	const COLLECTION_NAME: &'static str = "tickets";
 }
 
-#[derive(Debug, Clone, Default, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
 #[repr(u8)]
 pub enum TicketMemberKind {
 	#[default]

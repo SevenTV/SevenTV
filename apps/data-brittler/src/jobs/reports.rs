@@ -25,6 +25,13 @@ impl Job for ReportsJob {
 	const NAME: &'static str = "transfer_reports";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+		if global.config().truncate {
+			tracing::info!("truncating tickets, ticket_members and ticket_messages collection");
+			Ticket::collection(global.target_db()).drop(None).await?;
+			TicketMember::collection(global.target_db()).drop(None).await?;
+			TicketMessage::collection(global.target_db()).drop(None).await?;
+		}
+
 		Ok(Self {
 			global,
 			all_members: FnvHashSet::default(),

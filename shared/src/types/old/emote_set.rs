@@ -47,6 +47,8 @@ pub enum EmoteSetFlagModel {
 	Commercial = 1 << 3,
 }
 
+async_graphql::scalar!(EmoteSetFlagModel);
+
 impl Default for EmoteSetFlagModel {
 	fn default() -> Self {
 		EmoteSetFlagModel::none()

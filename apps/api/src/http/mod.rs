@@ -36,7 +36,7 @@ impl MakeRequestId for TraceRequestId {
 fn routes(global: Arc<Global>) -> Router {
 	Router::new()
 		.route("/", get(root))
-		.nest("/v3", v3::routes())
+		.nest("/v3", v3::routes(&global))
 		.with_state(global.clone())
 		.fallback(not_found)
 		.layer(

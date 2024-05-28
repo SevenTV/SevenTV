@@ -30,6 +30,9 @@ pub struct Global {
 	global_config_loader: DataLoader<dataloader::global_config::GlobalConfigLoader>,
 	user_editor_by_user_id_loader: DataLoader<dataloader::user_editor::UserEditorByUserIdLoader>,
 	user_editor_by_editor_id_loader: DataLoader<dataloader::user_editor::UserEditorByEditorIdLoader>,
+	ticket_by_id_loader: DataLoader<dataloader::ticket::TicketByIdLoader>,
+	ticket_members_by_ticket_id_loader: DataLoader<dataloader::ticket::TicketMembersByTicketIdLoader>,
+	ticket_messages_by_ticket_id_loader: DataLoader<dataloader::ticket::TicketMessagesByTicketIdLoader>,
 }
 
 impl Global {
@@ -61,6 +64,9 @@ impl Global {
 			global_config_loader: dataloader::global_config::GlobalConfigLoader::new(db.clone()),
 			user_editor_by_user_id_loader: dataloader::user_editor::UserEditorByUserIdLoader::new(db.clone()),
 			user_editor_by_editor_id_loader: dataloader::user_editor::UserEditorByEditorIdLoader::new(db.clone()),
+			ticket_by_id_loader: dataloader::ticket::TicketByIdLoader::new(db.clone()),
+			ticket_members_by_ticket_id_loader: dataloader::ticket::TicketMembersByTicketIdLoader::new(db.clone()),
+			ticket_messages_by_ticket_id_loader: dataloader::ticket::TicketMessagesByTicketIdLoader::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			mongo,
 			db,
@@ -173,6 +179,21 @@ impl Global {
 	/// The user editor by editor loader.
 	pub fn user_editor_by_editor_id_loader(&self) -> &DataLoader<dataloader::user_editor::UserEditorByEditorIdLoader> {
 		&self.user_editor_by_editor_id_loader
+	}
+
+	/// The ticket loader.
+	pub fn ticket_by_id_loader(&self) -> &DataLoader<dataloader::ticket::TicketByIdLoader> {
+		&self.ticket_by_id_loader
+	}
+
+	/// The ticket members loader.
+	pub fn ticket_members_by_ticket_id_loader(&self) -> &DataLoader<dataloader::ticket::TicketMembersByTicketIdLoader> {
+		&self.ticket_members_by_ticket_id_loader
+	}
+
+	/// The ticket messages loader.
+	pub fn ticket_messages_by_ticket_id_loader(&self) -> &DataLoader<dataloader::ticket::TicketMessagesByTicketIdLoader> {
+		&self.ticket_messages_by_ticket_id_loader
 	}
 }
 

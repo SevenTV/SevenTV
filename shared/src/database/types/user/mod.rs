@@ -147,7 +147,8 @@ impl User {
 		let avatar_url = self
 			.style
 			.active_profile_picture
-			.and_then(|s| s.outputs.iter().max_by_key(|i| i.size).map(|i| i.get_url(cdn_base_url)));
+			.and_then(|s| s.outputs.iter().max_by_key(|i| i.size).map(|i| i.get_url(cdn_base_url)))
+			.or(main_connection.and_then(|c| c.platform_avatar_url.clone()));
 
 		UserPartialModel {
 			id: self.id,

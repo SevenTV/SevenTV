@@ -54,3 +54,5 @@ pub enum UserConnectionPlatformModel {
 	Discord,
 	Kick,
 }
+
+async_graphql::scalar!(UserConnectionPlatformModel);

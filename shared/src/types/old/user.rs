@@ -79,6 +79,8 @@ pub enum UserTypeModel {
 	System,
 }
 
+async_graphql::scalar!(UserTypeModel);
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
@@ -101,6 +103,8 @@ pub enum UserEditorModelPermission {
 	ManageEditors = 1 << 6,
 	ViewMessages = 1 << 7,
 }
+
+async_graphql::scalar!(UserEditorModelPermission);
 
 impl Default for UserEditorModelPermission {
 	fn default() -> Self {

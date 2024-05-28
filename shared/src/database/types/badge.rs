@@ -24,9 +24,9 @@ impl Collection for Badge {
 
 impl Badge {
 	#[tracing::instrument(level = "info", skip(self), fields(badge_id = %self.id))]
-	pub fn into_old_model(self, image_set: &ImageSet, cdn_base_url: &str) -> Option<CosmeticBadgeModel> {
+	pub fn into_old_model(self, cdn_base_url: &str) -> Option<CosmeticBadgeModel> {
 		let id = self.id.cast();
-		let host = ImageHost::from_image_set(image_set, cdn_base_url, ImageHostKind::Badge, &id);
+		let host = ImageHost::from_image_set(&self.image_set, cdn_base_url, ImageHostKind::Badge, &id);
 
 		Some(CosmeticBadgeModel {
 			id,

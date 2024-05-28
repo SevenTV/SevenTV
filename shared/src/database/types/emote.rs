@@ -45,7 +45,7 @@ impl Emote {
 				id: partial.id,
 				name: partial.name,
 				description: String::new(),
-				lifecycle: EmoteLifecycleModel::Live,
+				lifecycle: partial.lifecycle,
 				state: partial.state,
 				listed: partial.listed,
 				animated: partial.animated,
@@ -66,38 +66,8 @@ impl Emote {
 			animated: self.animated,
 			tags: self.tags,
 			owner,
-			flags: {
-				let mut flags = crate::types::old::EmoteFlagsModel::none();
-
-				if self.flags.contains(EmoteFlags::Private) {
-					flags |= crate::types::old::EmoteFlagsModel::Private;
-				}
-
-				if self.flags.contains(EmoteFlags::DefaultZeroWidth) {
-					flags |= crate::types::old::EmoteFlagsModel::ZeroWidth;
-				}
-
-				if self.flags.contains(EmoteFlags::Nsfw) {
-					flags |= crate::types::old::EmoteFlagsModel::Sexual;
-				}
-
-				flags
-			},
-			state: {
-				let mut state = Vec::new();
-
-				if self.flags.contains(EmoteFlags::ApprovedPersonal) && !self.flags.contains(EmoteFlags::DeniedPersonal) {
-					state.push(crate::types::old::EmoteVersionState::AllowPersonal);
-				} else if self.flags.contains(EmoteFlags::DeniedPersonal) {
-					state.push(crate::types::old::EmoteVersionState::NoPersonal);
-				}
-
-				if self.flags.contains(EmoteFlags::PublicListed) {
-					state.push(crate::types::old::EmoteVersionState::Listed);
-				}
-
-				state
-			},
+			state: self.flags.to_old_state(),
+			flags: self.flags.into(),
 			lifecycle: if self.image_set.input.is_pending() {
 				crate::types::old::EmoteLifecycleModel::Pending
 			} else {
@@ -121,6 +91,24 @@ pub enum EmoteFlags {
 	DefaultZeroWidth = 1 << 3,
 	ApprovedPersonal = 1 << 4,
 	DeniedPersonal = 1 << 5,
+}
+
+impl EmoteFlags {
+	pub fn to_old_state(&self) -> Vec<crate::types::old::EmoteVersionState> {
+		let mut state = Vec::new();
+
+		if self.contains(EmoteFlags::ApprovedPersonal) && !self.contains(EmoteFlags::DeniedPersonal) {
+			state.push(crate::types::old::EmoteVersionState::AllowPersonal);
+		} else if self.contains(EmoteFlags::DeniedPersonal) {
+			state.push(crate::types::old::EmoteVersionState::NoPersonal);
+		}
+
+		if self.contains(EmoteFlags::PublicListed) {
+			state.push(crate::types::old::EmoteVersionState::Listed);
+		}
+
+		state
+	}
 }
 
 impl Default for EmoteFlags {

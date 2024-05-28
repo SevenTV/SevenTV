@@ -290,6 +290,21 @@ impl<'de, S> serde::Deserialize<'de> for Id<S> {
 	}
 }
 
+#[async_graphql::Scalar]
+impl<S: Sync + Send> async_graphql::ScalarType for Id<S> {
+	fn parse(value: async_graphql::Value) -> async_graphql::InputValueResult<Self> {
+		if let async_graphql::Value::String(value) = &value {
+			Ok(value.parse().map_err(|e| async_graphql::InputValueError::custom(e))?)
+		} else {
+			Err(async_graphql::InputValueError::expected_type(value))
+		}
+	}
+
+	fn to_value(&self) -> async_graphql::Value {
+		async_graphql::Value::String(self.to_string())
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use mongodb::bson;

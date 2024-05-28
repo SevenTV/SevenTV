@@ -40,9 +40,12 @@ pub enum CosmeticKind {
 	Avatar,
 }
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+async_graphql::scalar!(CosmeticKind);
+
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+#[graphql(name = "CosmeticPaint", rename_fields = "snake_case")]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/cosmetic.model.go#L29
 pub struct CosmeticPaintModel {
 	pub id: PaintId,
@@ -51,17 +54,24 @@ pub struct CosmeticPaintModel {
 	pub gradients: Vec<CosmeticPaintGradient>,
 	pub shadows: Vec<CosmeticPaintShadow>,
 	pub text: Option<CosmeticPaintText>,
+	#[graphql(deprecation)]
 	pub function: CosmeticPaintFunction,
+	#[graphql(deprecation)]
 	pub repeat: bool,
+	#[graphql(deprecation)]
 	pub angle: i32,
+	#[graphql(deprecation)]
 	pub shape: CosmeticPaintShape,
+	#[graphql(deprecation)]
 	pub image_url: String,
+	#[graphql(deprecation)]
 	pub stops: Vec<CosmeticPaintGradientStop>,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+#[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintGradient {
 	pub function: CosmeticPaintFunction,
 	pub canvas_repeat: CosmeticPaintCanvasRepeat,
@@ -86,9 +96,12 @@ pub enum CosmeticPaintFunction {
 	Url,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+async_graphql::scalar!(CosmeticPaintFunction);
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+#[graphql(name = "CosmeticPaintStop", rename_fields = "snake_case")]
 pub struct CosmeticPaintGradientStop {
 	pub at: f64,
 	pub color: i32,
@@ -108,9 +121,12 @@ pub enum CosmeticPaintCanvasRepeat {
 	Space,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+async_graphql::scalar!(CosmeticPaintCanvasRepeat);
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+#[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintShadow {
 	pub x_offset: f64,
 	pub y_offset: f64,
@@ -118,9 +134,10 @@ pub struct CosmeticPaintShadow {
 	pub color: i32,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+#[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintText {
 	#[serde(skip_serializing_if = "is_default")]
 	pub weight: u8,
@@ -133,9 +150,10 @@ pub struct CosmeticPaintText {
 	pub variant: String,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+#[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintStroke {
 	pub color: i32,
 	pub width: f64,
@@ -149,6 +167,8 @@ pub enum CosmeticPaintTextTransform {
 	Lowercase,
 }
 
+async_graphql::scalar!(CosmeticPaintTextTransform);
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum CosmeticPaintShape {
@@ -157,9 +177,12 @@ pub enum CosmeticPaintShape {
 	Ellipse,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+async_graphql::scalar!(CosmeticPaintShape);
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+#[graphql(name = "CosmeticBadge", rename_fields = "snake_case")]
 pub struct CosmeticBadgeModel {
 	pub id: BadgeId,
 	pub name: String,

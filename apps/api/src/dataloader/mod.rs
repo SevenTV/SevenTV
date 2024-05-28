@@ -11,3 +11,4 @@ pub mod role;
 pub mod user;
 pub mod user_connection;
 pub mod user_editor;
+pub mod ticket;

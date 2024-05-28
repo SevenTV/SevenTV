@@ -61,6 +61,24 @@ impl<'a> serde::Deserialize<'a> for EmoteSetFlags {
 }
 
 impl EmoteSet {
+	pub fn to_old_flags(&self) -> EmoteSetFlagModel {
+		let mut flags = EmoteSetFlagModel::none();
+
+		if self.kind == EmoteSetKind::Personal {
+			flags |= EmoteSetFlagModel::Personal;
+		}
+
+		if self.flags.contains(EmoteSetFlags::Immutable) {
+			flags |= EmoteSetFlagModel::Immutable;
+		}
+
+		if self.flags.contains(EmoteSetFlags::Privileged) {
+			flags |= EmoteSetFlagModel::Privileged;
+		}
+
+		flags
+	}
+
 	pub fn into_old_model(
 		self,
 		emotes: impl IntoIterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>,
@@ -72,25 +90,9 @@ impl EmoteSet {
 			.collect::<Vec<_>>();
 
 		EmoteSetModel {
+			flags: self.to_old_flags(),
 			id: self.id,
 			name: self.name,
-			flags: {
-				let mut flags = EmoteSetFlagModel::none();
-
-				if self.kind == EmoteSetKind::Personal {
-					flags |= EmoteSetFlagModel::Personal;
-				}
-
-				if self.flags.contains(EmoteSetFlags::Immutable) {
-					flags |= EmoteSetFlagModel::Immutable;
-				}
-
-				if self.flags.contains(EmoteSetFlags::Privileged) {
-					flags |= EmoteSetFlagModel::Privileged;
-				}
-
-				flags
-			},
 			tags: self.tags,
 			immutable: self.flags.contains(EmoteSetFlags::Immutable),
 			privileged: self.flags.contains(EmoteSetFlags::Privileged),
