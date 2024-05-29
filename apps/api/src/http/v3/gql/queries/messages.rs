@@ -1,7 +1,7 @@
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
-use shared::database::{EmoteId, Id, TicketId, UserId};
+use shared::database::{EmoteId, Id, TicketId, TicketPermission, UserId};
 
-use crate::http::error::ApiError;
+use crate::http::{error::ApiError, v3::gql::guards::PermissionGuard};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/messages.gql
 
@@ -80,6 +80,7 @@ impl MessagesQuery {
         vec![]
     }
 
+    #[graphql(guard = "PermissionGuard::new(TicketPermission::Read)")]
     async fn mod_requests<'ctx>(&self) -> Result<ModRequestMessageList, ApiError> {
         Err(ApiError::NOT_IMPLEMENTED)
     }
