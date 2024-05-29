@@ -29,7 +29,7 @@ pub struct UserLoader {
 
 #[derive(Clone)]
 struct SyncToken {
-	result: OnceCell<User>,
+	result: Arc<OnceCell<User>>,
 	done: CancellationToken,
 }
 
@@ -233,7 +233,7 @@ impl UserLoader {
 				.or_insert_with(|| {
 					inserted = true;
 					SyncToken {
-						result: OnceCell::new(),
+						result: Arc::new(OnceCell::new()),
 						done: CancellationToken::new(),
 					}
 				})
