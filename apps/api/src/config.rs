@@ -99,6 +99,9 @@ pub struct Extra {
 
 	/// Database configuration
 	pub database: DatabaseConfig,
+
+	/// Database configuration
+	pub clickhouse: DatabaseConfig,
 }
 
 pub type Config = shared::config::Config<Extra>;

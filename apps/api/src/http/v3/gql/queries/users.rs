@@ -218,14 +218,11 @@ impl UserPartial {
 	) -> Result<Vec<Self>, ApiError> {
 		let ids: Vec<_> = ids.clone().into_iter().collect();
 
-		tracing::info!(ids = ?ids);
-
 		let users = global
 			.user_by_id_loader()
 			.load_many(global, ids.clone())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		tracing::info!(users = ?users);
 
 		let mut all_connections = global
 			.user_connection_by_user_id_loader()
@@ -420,9 +417,6 @@ impl UsersQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let id = session.user_id();
-
-		tracing::info!("actor: {}", id);
-
 		Ok(Some(UserPartial::load_from_db(global, id).await?.into()))
 	}
 
@@ -450,6 +444,7 @@ impl UsersQuery {
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
+	#[graphql(name = "usersByID")]
 	async fn users_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<UserId>) -> Result<Vec<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		UserPartial::load_many_from_db(global, list).await

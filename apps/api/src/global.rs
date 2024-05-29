@@ -14,6 +14,7 @@ pub struct Global {
 	config: Config,
 	mongo: mongodb::Client,
 	db: mongodb::Database,
+	clickhouse: clickhouse::Client,
 	http_client: reqwest::Client,
 	user_by_id_loader: dataloader::user::UserLoader,
 	image_processor: ImageProcessor,
@@ -44,6 +45,8 @@ impl Global {
 
 		let db = mongo.default_database().unwrap_or_else(|| mongo.database("7tv"));
 
+		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
+
 		Ok(Self {
 			nats,
 			jetstream,
@@ -70,6 +73,7 @@ impl Global {
 			http_client: reqwest::Client::new(),
 			mongo,
 			db,
+			clickhouse,
 			config,
 		})
 	}
@@ -92,6 +96,11 @@ impl Global {
 	/// The MongoDB client.
 	pub fn mongo(&self) -> &mongodb::Client {
 		&self.mongo
+	}
+
+	/// The ClickHouse client.
+	pub fn clickhouse(&self) -> &clickhouse::Client {
+		&self.clickhouse
 	}
 
 	/// The configuration.

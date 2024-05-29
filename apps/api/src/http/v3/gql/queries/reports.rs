@@ -7,7 +7,7 @@ use mongodb::{
 	options::FindOptions,
 };
 use shared::database::{
-	AdminPermission, Collection, EmoteId, Ticket, TicketData, TicketId, TicketMember, TicketMemberKind, TicketMessage,
+	TicketPermission, Collection, EmoteId, Ticket, TicketData, TicketId, TicketMember, TicketMemberKind, TicketMessage,
 	TicketStatus, UserId,
 };
 
@@ -25,7 +25,7 @@ pub struct ReportsQuery;
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Report {
 	id: TicketId,
-	target_kind: i32,
+	target_kind: u32,
 	target_id: EmoteId,
 	actor_id: UserId,
 	// actor
@@ -132,7 +132,7 @@ impl From<ReportStatus> for TicketStatus {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl ReportsQuery {
-	#[graphql(guard = "PermissionGuard::new(AdminPermission::Admin)")]
+	#[graphql(guard = "PermissionGuard::new(TicketPermission::Read)")]
 	async fn reports<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -217,7 +217,7 @@ impl ReportsQuery {
 			.collect())
 	}
 
-    #[graphql(guard = "PermissionGuard::new(AdminPermission::Admin)")]
+    #[graphql(guard = "PermissionGuard::new(TicketPermission::Read)")]
 	async fn report<'ctx>(&self, ctx: &Context<'ctx>, id: TicketId) -> Result<Option<Report>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

@@ -1,8 +1,6 @@
-// https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
-
 use std::sync::Arc;
 
-use async_graphql::{ComplexObject, Context, Object};
+use async_graphql::{ComplexObject, Context, Enum, Object};
 use shared::{
 	database::{EmoteSetId, Id, UserId},
 	types::old::EmoteSetFlagModel,
@@ -11,6 +9,8 @@ use shared::{
 use crate::{global::Global, http::error::ApiError};
 
 use super::{emotes::Emote, users::UserPartial};
+
+// https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
 #[derive(Default)]
 pub struct EmoteSetsQuery;
@@ -109,6 +109,12 @@ pub struct EmoteSetOrigin {
 	pub slices: Vec<i32>,
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+pub enum EmoteSetName {
+	Global,
+}
+
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteSetsQuery {
 	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteSetId) -> Result<EmoteSet, ApiError> {
@@ -122,5 +128,14 @@ impl EmoteSetsQuery {
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		Ok(EmoteSet::from_db(emote_set))
+	}
+
+	#[graphql(name = "emoteSetsByID")]
+	async fn emote_sets_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<EmoteSetId>) -> Result<Vec<EmoteSet>, ApiError> {
+		Err(ApiError::NOT_IMPLEMENTED)
+	}
+
+	async fn named_emote_set<'ctx>(&self, ctx: &Context<'ctx>, name: EmoteSetName) -> Result<EmoteSet, ApiError> {
+		Err(ApiError::NOT_IMPLEMENTED)
 	}
 }

@@ -1,15 +1,23 @@
 use async_graphql::MergedObject;
 
+// https://github.com/SevenTV/API/tree/main/internal/api/gql/v3/schema
+
 mod audit_logs;
+mod cosmetics;
 mod emote_sets;
 mod emotes;
+mod messages;
 mod reports;
+mod roles;
 mod users;
 
 #[derive(MergedObject, Default)]
 pub struct Query(
-	emotes::EmotesQuery,
+	cosmetics::CosmeticsQuery,
 	emote_sets::EmoteSetsQuery,
+	emotes::EmotesQuery,
+	messages::MessagesQuery,
 	reports::ReportsQuery,
+	roles::RolesQuery,
 	users::UsersQuery,
 );

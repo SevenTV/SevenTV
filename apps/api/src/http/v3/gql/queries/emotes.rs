@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql::{ComplexObject, Context, Object};
+use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use shared::{
 	database::{EmoteId, UserId},
 	types::old::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState, ImageHost, ImageHostKind},
@@ -19,7 +19,7 @@ pub struct EmotesQuery;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emotes.gql
 
-#[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
+#[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Emote {
 	pub id: EmoteId,
@@ -121,7 +121,37 @@ impl Emote {
 	}
 }
 
-#[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
+#[derive(Debug, Clone, Default, SimpleObject)]
+#[graphql(complex, rename_fields = "snake_case")]
+pub struct EmotePartial {
+	pub id: EmoteId,
+	pub name: String,
+	pub flags: EmoteFlagsModel,
+	pub lifecycle: EmoteLifecycleModel,
+	pub tags: Vec<String>,
+	pub animated: bool,
+	// created_at
+	pub owner_id: UserId,
+	// owner
+
+	pub host: ImageHost,
+	pub state: Vec<EmoteVersionState>,
+	pub listed: bool,
+}
+
+#[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+impl EmotePartial {
+	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
+		self.id.timestamp()
+	}
+
+	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		UserPartial::load_from_db(global, self.owner_id).await
+	}
+}
+
+#[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmoteVersion {
 	id: EmoteId,
@@ -142,11 +172,60 @@ impl EmoteVersion {
 	}
 }
 
-#[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
+#[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EmoteCommonName {
 	pub name: String,
 	pub count: u32,
+}
+
+#[derive(Debug, Clone, Default, InputObject)]
+#[graphql(rename_fields = "snake_case")]
+pub struct EmoteSearchFilter {
+	pub category: Option<EmoteSearchCategory>,
+	pub case_sensitive: Option<bool>,
+	pub exact_match: Option<bool>,
+	pub ignore_tags: Option<bool>,
+	pub animated: Option<bool>,
+	pub zero_width: Option<bool>,
+	pub authentic: Option<bool>,
+	pub aspect_ratio: Option<String>,
+	pub personal_use: Option<bool>,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
+#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
+pub enum EmoteSearchCategory {
+	Top,
+	TrendingDay,
+	TrendingWeek,
+	TrendingMonth,
+	Featured,
+	New,
+	Global,
+}
+
+#[derive(Debug, Clone, Default, InputObject)]
+#[graphql(name = "Sort", rename_fields = "snake_case")]
+pub struct EmoteSearchSort {
+	pub value: String,
+	pub order: EmoteSearchSortOrder,
+}
+
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Enum)]
+#[graphql(name = "SortOrder", rename_items = "SCREAMING_SNAKE_CASE")]
+pub enum EmoteSearchSortOrder {
+	#[default]
+	Ascending,
+	Descending,
+}
+
+#[derive(Debug, Clone, Default, SimpleObject)]
+#[graphql(rename_fields = "snake_case")]
+pub struct EmoteSearchResult {
+	count: u32,
+	max_page: u32,
+	items: Vec<Emote>,
 }
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
@@ -164,5 +243,21 @@ impl EmotesQuery {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(emote.map(|e| Emote::from_db(global, e)))
+	}
+
+	#[graphql(name = "emotesByID")]
+	async fn emotes_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<EmoteId>) -> Result<Vec<EmotePartial>, ApiError> {
+		Err(ApiError::NOT_IMPLEMENTED)
+	}
+
+	async fn emotes(
+		&self,
+		ctx: &Context<'_>,
+		page: Option<u32>,
+		limit: Option<u32>,
+		filter: Option<EmoteSearchFilter>,
+		sort: Option<EmoteSearchSort>,
+	) -> Result<Vec<Emote>, ApiError> {
+		Err(ApiError::NOT_IMPLEMENTED)
 	}
 }

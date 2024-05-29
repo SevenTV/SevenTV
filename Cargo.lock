@@ -142,6 +142,7 @@ dependencies = [
  "axum 0.7.5",
  "cap",
  "chrono",
+ "clickhouse",
  "cookie",
  "fnv",
  "futures",

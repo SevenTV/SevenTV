@@ -231,6 +231,29 @@ impl Default for FeaturePermission {
 }
 
 #[bitmask(u8)]
+pub enum TicketPermission {
+	Create = 1,
+	Read = 2,
+	Message = 4,
+	Edit = 8,
+	Admin = 16,
+}
+
+impl BitMask for TicketPermission {
+	type Bits = u8;
+
+	fn bits(&self) -> Self::Bits {
+		self.bits()
+	}
+}
+
+impl Default for TicketPermission {
+	fn default() -> Self {
+		Self::none()
+	}
+}
+
+#[bitmask(u8)]
 pub enum AdminPermission {
 	Admin = 1,
 	SuperAdmin = 2,
@@ -275,6 +298,9 @@ pub struct Permissions {
 	pub feature: AllowDeny<FeaturePermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
 	#[serde(default)]
+	pub ticket: AllowDeny<TicketPermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
 	pub admin: AllowDeny<AdminPermission>,
 
 	#[serde(skip_serializing_if = "Option::is_none")]
@@ -305,6 +331,7 @@ impl Permissions {
 		self.paint.merge(other.paint);
 		self.user.merge(other.user);
 		self.feature.merge(other.feature);
+		self.ticket.merge(other.ticket);
 		self.admin.merge(other.admin);
 
 		self.emote_set_count_limit = other.emote_set_count_limit.or(self.emote_set_count_limit);
@@ -321,6 +348,7 @@ impl Permissions {
 			Permission::Paint(perm) => self.paint.allow(perm),
 			Permission::User(perm) => self.user.allow(perm),
 			Permission::Feature(perm) => self.feature.allow(perm),
+			Permission::Ticket(perm) => self.ticket.allow(perm),
 			Permission::Admin(perm) => self.admin.allow(perm),
 
 			Permission::EmoteSetCount(perm) => self.emote_set_count_limit = Some(perm),
@@ -373,6 +401,12 @@ impl Permissions {
 		self.is_admin()
 			|| self.feature.permission().contains(permission)
 			|| self.feature.permission().contains(FeaturePermission::Admin)
+	}
+
+	pub fn has_ticket(&self, permission: TicketPermission) -> bool {
+		self.is_admin()
+			|| self.ticket.permission().contains(permission)
+			|| self.ticket.permission().contains(TicketPermission::Admin)
 	}
 
 	pub fn has_admin(&self, permission: AdminPermission) -> bool {
@@ -458,6 +492,8 @@ pub enum Permission {
 	#[enum_impl(impl from)]
 	Feature(FeaturePermission),
 	#[enum_impl(impl from)]
+	Ticket(TicketPermission),
+	#[enum_impl(impl from)]
 	Admin(AdminPermission),
 
 	EmoteSetCount(u16),
@@ -487,6 +523,7 @@ impl PermissionsExt for Permissions {
 			Permission::Paint(perm) => self.has_paint(perm),
 			Permission::User(perm) => self.has_user(perm),
 			Permission::Feature(perm) => self.has_feature(perm),
+			Permission::Ticket(perm) => self.has_ticket(perm),
 			Permission::Admin(perm) => self.has_admin(perm),
 
 			Permission::EmoteSetCount(perm) => self.has_emote_set_count_limit(perm),
@@ -530,6 +567,10 @@ mod tests {
 			feature: AllowDeny {
 				allow: FeaturePermission::UseBadge,
 				deny: FeaturePermission::none(),
+			},
+			ticket: AllowDeny {
+				allow: TicketPermission::Read,
+				deny: TicketPermission::none(),
 			},
 			admin: AllowDeny {
 				allow: AdminPermission::Admin,
@@ -576,6 +617,10 @@ mod tests {
 				allow: FeaturePermission::UseBadge,
 				deny: FeaturePermission::none(),
 			},
+			ticket: AllowDeny {
+				allow: TicketPermission::Read,
+				deny: TicketPermission::none(),
+			},
 			admin: AllowDeny {
 				allow: AdminPermission::Admin,
 				deny: AdminPermission::none(),
@@ -590,7 +635,7 @@ mod tests {
 
 		assert_eq!(
 			json,
-			r#"{"emote":{"allow":1,"deny":2},"role":{"allow":1,"deny":2},"emote_set":{"allow":1,"deny":4},"badge":{"allow":1},"paint":{"allow":1},"user":{"allow":1},"feature":{"allow":4},"admin":{"allow":1},"emote_set_count_limit":10,"emote_set_slots_limit":5,"personal_emote_set_slots_limit":3}"#
+			r#"{"emote":{"allow":1,"deny":2},"role":{"allow":1,"deny":2},"emote_set":{"allow":1,"deny":4},"badge":{"allow":1},"paint":{"allow":1},"user":{"allow":1},"feature":{"allow":4},"ticket":{"allow":2},"admin":{"allow":1},"emote_set_count_limit":10,"emote_set_slots_limit":5,"personal_emote_set_slots_limit":3}"#
 		);
 
 		let permissions2: Permissions = serde_json::from_str(&json).unwrap();

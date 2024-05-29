@@ -53,6 +53,7 @@ zen-engine = "0.20"
 zen-expression = "0.20"
 itertools = "0.12"
 mongodb = { version = "2.8", features = ["tokio-runtime", "bson-chrono-0_4"]}
+clickhouse = "0.11.6"
 
 tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
 axum = "0.7"
