@@ -19,4 +19,6 @@ impl Collection for GlobalConfig {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
-pub struct GlobalConfigAlerts {}
+pub struct GlobalConfigAlerts {
+	pub message: Option<String>,
+}

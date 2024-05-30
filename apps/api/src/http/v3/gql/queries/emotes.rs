@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
-use shared::{
-	database::{EmoteId, UserId},
-	types::old::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState, ImageHost, ImageHostKind},
-};
+use shared::types::old::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState, ImageHost, ImageHostKind};
 
-use crate::{global::Global, http::error::ApiError};
+use crate::{
+	global::Global,
+	http::{
+		error::ApiError,
+		v3::gql::object_id::{EmoteObjectId, UserObjectId},
+	},
+};
 
 use super::{
 	audit_logs::AuditLog,
@@ -22,14 +25,14 @@ pub struct EmotesQuery;
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Emote {
-	pub id: EmoteId,
+	pub id: EmoteObjectId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	pub lifecycle: EmoteLifecycleModel,
 	pub tags: Vec<String>,
 	pub animated: bool,
 	// created_at
-	pub owner_id: UserId,
+	pub owner_id: UserObjectId,
 	// owner
 
 	// channels
@@ -61,7 +64,7 @@ impl Emote {
 		};
 
 		Self {
-			id: value.id,
+			id: value.id.into(),
 			name: value.default_name.clone(),
 			flags: value.flags.into(),
 			lifecycle,
@@ -70,7 +73,7 @@ impl Emote {
 			owner_id: value.owner_id.map(Into::into).unwrap_or_default(),
 			host: host.clone(),
 			versions: vec![EmoteVersion {
-				id: value.id,
+				id: value.id.into(),
 				name: value.default_name,
 				description: String::new(),
 				lifecycle,
@@ -95,7 +98,7 @@ impl Emote {
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_from_db(global, self.owner_id).await
+		UserPartial::load_from_db(global, *self.owner_id).await
 	}
 
 	async fn channels(&self, ctx: &Context<'_>, page: u32, limit: u32) -> Result<UserSearchResult, ApiError> {
@@ -124,19 +127,35 @@ impl Emote {
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmotePartial {
-	pub id: EmoteId,
+	pub id: EmoteObjectId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	pub lifecycle: EmoteLifecycleModel,
 	pub tags: Vec<String>,
 	pub animated: bool,
 	// created_at
-	pub owner_id: UserId,
+	pub owner_id: UserObjectId,
 	// owner
-
 	pub host: ImageHost,
 	pub state: Vec<EmoteVersionState>,
 	pub listed: bool,
+}
+
+impl From<Emote> for EmotePartial {
+	fn from(value: Emote) -> Self {
+		Self {
+			id: value.id,
+			name: value.name,
+			flags: value.flags,
+			lifecycle: value.lifecycle,
+			tags: value.tags,
+			animated: value.animated,
+			owner_id: value.owner_id,
+			host: value.host,
+			state: value.state,
+			listed: value.listed,
+		}
+	}
 }
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
@@ -147,14 +166,14 @@ impl EmotePartial {
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_from_db(global, self.owner_id).await
+		UserPartial::load_from_db(global, *self.owner_id).await
 	}
 }
 
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmoteVersion {
-	id: EmoteId,
+	id: EmoteObjectId,
 	name: String,
 	description: String,
 	// created_at
@@ -230,7 +249,7 @@ pub struct EmoteSearchResult {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmotesQuery {
-	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteId) -> Result<Option<Emote>, ApiError> {
+	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteObjectId) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| {
 			tracing::error!("failed to get global from context");
 			ApiError::INTERNAL_SERVER_ERROR
@@ -238,7 +257,7 @@ impl EmotesQuery {
 
 		let emote = global
 			.emote_by_id_loader()
-			.load(id)
+			.load(*id)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -246,8 +265,23 @@ impl EmotesQuery {
 	}
 
 	#[graphql(name = "emotesByID")]
-	async fn emotes_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<EmoteId>) -> Result<Vec<EmotePartial>, ApiError> {
-		Err(ApiError::NOT_IMPLEMENTED)
+	async fn emotes_by_id<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		list: Vec<EmoteObjectId>,
+	) -> Result<Vec<EmotePartial>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| {
+			tracing::error!("failed to get global from context");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		let emote = global
+			.emote_by_id_loader()
+			.load_many(list.into_iter().map(|i| *i))
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		Ok(emote.into_iter().map(|(_, e)| Emote::from_db(global, e).into()).collect())
 	}
 
 	async fn emotes(

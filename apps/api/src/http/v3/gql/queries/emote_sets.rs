@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object};
 use shared::{
-	database::{EmoteSetId, Id, UserId},
 	types::old::EmoteSetFlagModel,
 };
 
-use crate::{global::Global, http::error::ApiError};
+use crate::{global::Global, http::{error::ApiError, v3::gql::object_id::{EmoteSetObjectId, ObjectId, UserObjectId}}};
 
 use super::{emotes::Emote, users::UserPartial};
 
@@ -18,7 +17,7 @@ pub struct EmoteSetsQuery;
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmoteSet {
-	pub id: EmoteSetId,
+	pub id: EmoteSetObjectId,
 	pub name: String,
 	pub flags: EmoteSetFlagModel,
 	pub tags: Vec<String>,
@@ -26,7 +25,7 @@ pub struct EmoteSet {
 	// emote_count
 	// capacity
 	pub origins: Vec<EmoteSetOrigin>, // always empty
-	pub owner_id: Option<UserId>,
+	pub owner_id: Option<UserObjectId>,
 	// owner
 }
 
@@ -34,11 +33,11 @@ impl EmoteSet {
 	pub fn from_db(value: shared::database::EmoteSet) -> Self {
 		Self {
 			flags: value.to_old_flags(),
-			id: value.id,
+			id: value.id.into(),
 			name: value.name,
 			tags: value.tags,
 			origins: Vec::new(),
-			owner_id: value.owner_id,
+			owner_id: value.owner_id.map(Into::into),
 		}
 	}
 }
@@ -62,7 +61,7 @@ impl EmoteSet {
 
 		let user = global
 			.user_by_id_loader()
-			.load(global, owner_id)
+			.load(global, *owner_id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
@@ -97,14 +96,14 @@ impl EmoteSet {
 		};
 
 		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(Some(UserPartial::load_from_db(global, id).await?))
+		Ok(Some(UserPartial::load_from_db(global, *id).await?))
 	}
 }
 
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EmoteSetOrigin {
-	pub id: Id<()>,
+	pub id: ObjectId<()>,
 	pub weight: i32,
 	pub slices: Vec<i32>,
 }
@@ -117,12 +116,12 @@ pub enum EmoteSetName {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteSetsQuery {
-	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteSetId) -> Result<EmoteSet, ApiError> {
+	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteSetObjectId) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_set = global
 			.emote_set_by_id_loader()
-			.load(id)
+			.load(*id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
@@ -131,7 +130,7 @@ impl EmoteSetsQuery {
 	}
 
 	#[graphql(name = "emoteSetsByID")]
-	async fn emote_sets_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<EmoteSetId>) -> Result<Vec<EmoteSet>, ApiError> {
+	async fn emote_sets_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<EmoteSetObjectId>) -> Result<Vec<EmoteSet>, ApiError> {
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 

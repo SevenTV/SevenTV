@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use futures::StreamExt;
@@ -7,11 +7,13 @@ use mongodb::{
 	options::FindOptions,
 };
 use shared::database::{
-	TicketPermission, Collection, EmoteId, Ticket, TicketData, TicketId, TicketMember, TicketMemberKind, TicketMessage,
-	TicketStatus, UserId,
+	Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketMessage, TicketPermission, TicketStatus,
 };
 
-use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::gql::{
+	guards::PermissionGuard,
+	object_id::{EmoteObjectId, TicketObjectId, UserObjectId},
+};
 use crate::{global::Global, http::error::ApiError};
 
 use super::users::{User, UserPartial};
@@ -24,10 +26,10 @@ pub struct ReportsQuery;
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Report {
-	id: TicketId,
+	id: TicketObjectId,
 	target_kind: u32,
-	target_id: EmoteId,
-	actor_id: UserId,
+	target_id: EmoteObjectId,
+	actor_id: UserObjectId,
 	// actor
 	subject: String,
 	body: String,
@@ -37,7 +39,7 @@ pub struct Report {
 	notes: Vec<String>,
 	// assignees
 	#[graphql(skip)]
-	assignee_ids: Vec<UserId>,
+	assignee_ids: Vec<UserObjectId>,
 }
 
 impl Report {
@@ -62,14 +64,14 @@ impl Report {
 		let assignee_ids = members
 			.iter()
 			.filter(|m| m.kind == TicketMemberKind::Staff)
-			.map(|m| m.user_id)
+			.map(|m| m.user_id.into())
 			.collect();
 
 		Some(Self {
-			id: ticket.id,
+			id: ticket.id.into(),
 			target_kind: 2,
-			target_id: emote_id,
-			actor_id,
+			target_id: emote_id.into(),
+			actor_id: actor_id.into(),
 			subject: ticket.title,
 			body: body_msg.map(|m| m.content.clone()).unwrap_or_default(),
 			priority: ticket.priority as u8,
@@ -84,16 +86,18 @@ impl Report {
 impl Report {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
 		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.actor_id).await?.into())
+		Ok(UserPartial::load_from_db(global, *self.actor_id).await?.into())
 	}
 
 	async fn assignees<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<User>, ApiError> {
 		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_many_from_db(global, self.assignee_ids.iter().copied())
-			.await?
-			.into_iter()
-			.map(Into::into)
-			.collect())
+		Ok(
+			UserPartial::load_many_from_db(global, self.assignee_ids.iter().map(|i| i.deref().clone()))
+				.await?
+				.into_iter()
+				.map(Into::into)
+				.collect(),
+		)
 	}
 
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
@@ -138,10 +142,10 @@ impl ReportsQuery {
 		ctx: &Context<'ctx>,
 		status: Option<ReportStatus>,
 		limit: Option<u32>,
-		after_id: Option<TicketId>,
-		before_id: Option<TicketId>,
+		after_id: Option<TicketObjectId>,
+		before_id: Option<TicketObjectId>,
 	) -> Result<Vec<Report>, ApiError> {
-		if let (Some(after_id), Some(before_id)) = (after_id, before_id) {
+		if let (Some(after_id), Some(before_id)) = (after_id.map(|i| *i), before_id.map(|i| *i)) {
 			if after_id > before_id {
 				return Err(ApiError::BAD_REQUEST);
 			}
@@ -158,11 +162,11 @@ impl ReportsQuery {
 		let mut id_args = mongodb::bson::Document::new();
 
 		if let Some(after_id) = after_id {
-			id_args.insert("$gt", after_id);
+			id_args.insert("$gt", *after_id);
 		}
 
 		if let Some(before_id) = before_id {
-			id_args.insert("$lt", before_id);
+			id_args.insert("$lt", *before_id);
 		}
 
 		if id_args.len() > 0 {
@@ -217,13 +221,13 @@ impl ReportsQuery {
 			.collect())
 	}
 
-    #[graphql(guard = "PermissionGuard::new(TicketPermission::Read)")]
-	async fn report<'ctx>(&self, ctx: &Context<'ctx>, id: TicketId) -> Result<Option<Report>, ApiError> {
+	#[graphql(guard = "PermissionGuard::new(TicketPermission::Read)")]
+	async fn report<'ctx>(&self, ctx: &Context<'ctx>, id: TicketObjectId) -> Result<Option<Report>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let Some(ticket) = global
 			.ticket_by_id_loader()
-			.load(id)
+			.load(*id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		else {
@@ -232,14 +236,14 @@ impl ReportsQuery {
 
 		let members = global
 			.ticket_members_by_ticket_id_loader()
-			.load(id)
+			.load(*id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
 		let messages = global
 			.ticket_messages_by_ticket_id_loader()
-			.load(id)
+			.load(*id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();

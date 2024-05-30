@@ -1,5 +1,6 @@
 use async_graphql::SimpleObject;
-use shared::database::{Id, UserId};
+
+use crate::http::v3::gql::object_id::{ObjectId, UserObjectId};
 
 use super::users::UserPartial;
 
@@ -8,11 +9,11 @@ use super::users::UserPartial;
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct AuditLog {
-    id: Id<()>,
+    id: ObjectId<()>,
     actor: UserPartial,
-    actor_id: UserId,
+    actor_id: UserObjectId,
     kind: u32,
-    target_id: Id<()>,
+    target_id: ObjectId<()>,
     // created_at
     changes: Vec<AuditLogChange>,
     reason: String,

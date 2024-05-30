@@ -1,7 +1,6 @@
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
-use shared::database::RoleId;
 
-use crate::http::error::ApiError;
+use crate::http::{error::ApiError, v3::gql::object_id::RoleObjectId};
 
 use super::users::User;
 
@@ -13,7 +12,7 @@ pub struct RolesQuery;
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Role {
-    id: RoleId,
+    id: RoleObjectId,
     name: String,
     color: i32,
     allowed: String,
@@ -41,7 +40,7 @@ impl RolesQuery {
         Err(ApiError::NOT_IMPLEMENTED)
     }
 
-    async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: RoleId) -> Result<Option<Role>, ApiError> {
+    async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: RoleObjectId) -> Result<Option<Role>, ApiError> {
         Err(ApiError::NOT_IMPLEMENTED)
     }
 }

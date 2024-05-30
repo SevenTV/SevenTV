@@ -1,17 +1,14 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
-use shared::{
-	database::{BadgeId, EmoteSetId, Id, PaintId, RoleId, UserId},
-	types::old::{
-		CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, UserConnectionPlatformModel, UserEditorModelPermission,
-		UserTypeModel,
-	},
-};
+use shared::{database::UserId, types::old::{
+	CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, UserConnectionPlatformModel, UserEditorModelPermission,
+	UserTypeModel,
+}};
 
 use crate::{
 	global::Global,
-	http::{error::ApiError, middleware::auth::AuthSession},
+	http::{error::ApiError, middleware::auth::AuthSession, v3::gql::object_id::{BadgeObjectId, EmoteSetObjectId, ObjectId, PaintObjectId, RoleObjectId, UserObjectId}},
 };
 
 use super::{audit_logs::AuditLog, emote_sets::EmoteSet, emotes::Emote, reports::Report};
@@ -24,7 +21,7 @@ pub struct UsersQuery;
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct User {
-	id: UserId,
+	id: UserObjectId,
 	#[graphql(name = "type")]
 	user_type: UserTypeModel,
 	username: String,
@@ -37,7 +34,7 @@ pub struct User {
 	// editors
 	// editor_of
 	// cosmetics
-	roles: Vec<RoleId>,
+	roles: Vec<RoleObjectId>,
 
 	// emote_sets
 	// owned_emotes
@@ -80,7 +77,7 @@ impl User {
 
 		let editors = global
 			.user_editor_by_user_id_loader()
-			.load(self.id)
+			.load(*self.id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -93,7 +90,7 @@ impl User {
 
 		let editors = global
 			.user_editor_by_editor_id_loader()
-			.load(self.id)
+			.load(*self.id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -110,7 +107,7 @@ impl User {
 
 		let emote_sets = global
 			.emote_set_by_user_id_loader()
-			.load(self.id)
+			.load(*self.id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -144,7 +141,7 @@ impl User {
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct UserEditor {
-	id: UserId,
+	id: UserObjectId,
 	// user
 	permissions: UserEditorModelPermission,
 	visible: bool,
@@ -158,7 +155,7 @@ impl UserEditor {
 		}
 
 		Some(UserEditor {
-			id: editor_of.then_some(value.user_id).unwrap_or(value.editor_id),
+			id: editor_of.then_some(value.user_id.into()).unwrap_or(value.editor_id.into()),
 			added_at: value.id.timestamp(),
 			permissions: UserEditorModelPermission::ModifyEmotes | UserEditorModelPermission::ManageEmoteSets,
 			visible: true,
@@ -170,14 +167,14 @@ impl UserEditor {
 impl UserEditor {
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.id).await?)
+		Ok(UserPartial::load_from_db(global, *self.id).await?)
 	}
 }
 
 #[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct UserCosmetic {
-	id: Id<()>,
+	id: ObjectId<()>,
 	selected: bool,
 	kind: CosmeticKind,
 }
@@ -185,7 +182,7 @@ pub struct UserCosmetic {
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct UserPartial {
-	id: UserId,
+	id: UserObjectId,
 	#[graphql(name = "type")]
 	user_type: UserTypeModel,
 	username: String,
@@ -194,7 +191,7 @@ pub struct UserPartial {
 	avatar_url: String,
 	biography: String,
 	style: UserStyle,
-	roles: Vec<RoleId>,
+	roles: Vec<RoleObjectId>,
 	// connections
 	// emote_sets
 	#[graphql(skip)]
@@ -216,7 +213,7 @@ impl UserPartial {
 		global: &Arc<Global>,
 		ids: impl IntoIterator<Item = UserId> + Clone,
 	) -> Result<Vec<Self>, ApiError> {
-		let ids: Vec<_> = ids.clone().into_iter().collect();
+		let ids: Vec<_> = ids.into_iter().collect();
 
 		let users = global
 			.user_by_id_loader()
@@ -288,7 +285,7 @@ impl UserPartial {
 			.or(main_connection.and_then(|c| c.platform_avatar_url.clone()));
 
 		Self {
-			id: user.id,
+			id: user.id.into(),
 			user_type: UserTypeModel::Regular,
 			username: main_connection.map(|c| c.platform_username.clone()).unwrap_or_default(),
 			display_name: main_connection.map(|c| c.platform_display_name.clone()).unwrap_or_default(),
@@ -296,10 +293,10 @@ impl UserPartial {
 			biography: String::new(),
 			style: UserStyle {
 				color: 0,
-				paint_id: user.style.active_paint_id,
-				badge_id: user.style.active_badge_id,
+				paint_id: user.style.active_paint_id.map(Into::into),
+				badge_id: user.style.active_badge_id.map(Into::into),
 			},
-			roles: user.grants.role_ids,
+			roles: user.grants.role_ids.into_iter().map(Into::into).collect(),
 			db_permissions: permissions,
 			db_connections: connections,
 		}
@@ -324,7 +321,7 @@ impl UserPartial {
 
 		let emote_sets = global
 			.emote_set_by_user_id_loader()
-			.load(self.id)
+			.load(*self.id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -342,7 +339,7 @@ pub struct UserConnection {
 	pub display_name: String,
 	pub linked_at: chrono::DateTime<chrono::Utc>,
 	pub emote_capacity: i32,
-	pub emote_set_id: Option<EmoteSetId>,
+	pub emote_set_id: Option<EmoteSetObjectId>,
 }
 
 impl UserConnection {
@@ -363,9 +360,9 @@ impl UserConnection {
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct UserStyle {
 	color: i32,
-	paint_id: Option<PaintId>,
+	paint_id: Option<PaintObjectId>,
 	// paint
-	badge_id: Option<BadgeId>,
+	badge_id: Option<BadgeObjectId>,
 	// badge
 }
 
@@ -380,7 +377,7 @@ impl UserStyle {
 
 		Ok(global
 			.paint_by_id_loader()
-			.load(id)
+			.load(*id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.and_then(|p| p.into_old_model(&global.config().api.cdn_base_url)))
@@ -395,7 +392,7 @@ impl UserStyle {
 
 		Ok(global
 			.badge_by_id_loader()
-			.load(id)
+			.load(*id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.and_then(|b| b.into_old_model(&global.config().api.cdn_base_url)))
@@ -420,9 +417,9 @@ impl UsersQuery {
 		Ok(Some(UserPartial::load_from_db(global, id).await?.into()))
 	}
 
-	async fn user<'ctx>(&self, ctx: &Context<'ctx>, id: UserId) -> Result<User, ApiError> {
+	async fn user<'ctx>(&self, ctx: &Context<'ctx>, id: UserObjectId) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, id).await?.into())
+		Ok(UserPartial::load_from_db(global, *id).await?.into())
 	}
 
 	async fn user_by_connection<'ctx>(
@@ -445,8 +442,8 @@ impl UsersQuery {
 	}
 
 	#[graphql(name = "usersByID")]
-	async fn users_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<UserId>) -> Result<Vec<UserPartial>, ApiError> {
+	async fn users_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<UserObjectId>) -> Result<Vec<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_many_from_db(global, list).await
+		UserPartial::load_many_from_db(global, list.into_iter().map(Into::into)).await
 	}
 }
