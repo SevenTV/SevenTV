@@ -1,20 +1,25 @@
 use std::sync::Arc;
 
-use async_graphql::{ComplexObject, Context, Enum, Object};
-use shared::{
-	types::old::EmoteSetFlagModel,
+use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
+use hyper::StatusCode;
+use shared::types::old::{EmoteFlagsModel, EmoteSetFlagModel};
+
+use crate::{
+	global::Global,
+	http::{
+		error::ApiError,
+		v3::gql::object_id::{EmoteObjectId, EmoteSetObjectId, ObjectId, UserObjectId},
+	},
 };
 
-use crate::{global::Global, http::{error::ApiError, v3::gql::object_id::{EmoteSetObjectId, ObjectId, UserObjectId}}};
-
-use super::{emotes::Emote, users::UserPartial};
+use super::{emotes::EmotePartial, users::UserPartial};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
 #[derive(Default)]
 pub struct EmoteSetsQuery;
 
-#[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
+#[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmoteSet {
 	pub id: EmoteSetObjectId,
@@ -42,9 +47,35 @@ impl EmoteSet {
 	}
 }
 
+#[derive(Debug, Clone, Default, SimpleObject)]
+#[graphql(rename_fields = "snake_case")]
+pub struct ActiveEmote {
+	id: EmoteObjectId,
+	name: String,
+	flags: EmoteFlagsModel,
+	timestamp: chrono::DateTime<chrono::Utc>,
+	data: EmotePartial,
+	actor: Option<UserPartial>,
+	origin_id: Option<ObjectId<()>>,
+}
+
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmoteSet {
-	async fn emotes(&self) -> Result<Vec<Emote>, ApiError> {
+	async fn emotes<'ctx>(&self, ctx: &Context<'ctx>, limit: Option<u32>, _origins: Option<bool>) -> Result<Vec<ActiveEmote>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let emote_set_emotes = global
+			.emote_set_emote_by_id_loader()
+			.load(*self.id)
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.unwrap_or_default();
+
+		let emote_set_emotes = match limit {
+			Some(limit) => emote_set_emotes.into_iter().take(limit as usize).collect(),
+			None => emote_set_emotes,
+		};
+
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
@@ -130,11 +161,52 @@ impl EmoteSetsQuery {
 	}
 
 	#[graphql(name = "emoteSetsByID")]
-	async fn emote_sets_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<EmoteSetObjectId>) -> Result<Vec<EmoteSet>, ApiError> {
-		Err(ApiError::NOT_IMPLEMENTED)
+	async fn emote_sets_by_id<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		list: Vec<EmoteSetObjectId>,
+	) -> Result<Vec<EmoteSet>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		if list.len() > 1000 {
+			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "list too large"));
+		}
+
+		let emote_sets = global
+			.emote_set_by_id_loader()
+			.load_many(list.into_iter().map(|id| *id))
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.into_values()
+			.map(EmoteSet::from_db)
+			.collect();
+
+		Ok(emote_sets)
 	}
 
 	async fn named_emote_set<'ctx>(&self, ctx: &Context<'ctx>, name: EmoteSetName) -> Result<EmoteSet, ApiError> {
-		Err(ApiError::NOT_IMPLEMENTED)
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		match name {
+			EmoteSetName::Global => {
+				let global_config = global
+					.global_config_loader()
+					.load(())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+				let global_emote_set = global_config.emote_set_ids.first().ok_or(ApiError::NOT_FOUND)?;
+
+				let global_set = global
+					.emote_set_by_id_loader()
+					.load(*global_emote_set)
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::NOT_FOUND)?;
+
+				Ok(EmoteSet::from_db(global_set))
+			}
+		}
 	}
 }

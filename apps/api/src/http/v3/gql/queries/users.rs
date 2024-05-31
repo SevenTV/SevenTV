@@ -316,7 +316,7 @@ impl UserPartial {
 			.collect()
 	}
 
-	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, entitled: bool) -> Result<Vec<EmoteSet>, ApiError> {
+	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: bool) -> Result<Vec<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_sets = global

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
+use hyper::StatusCode;
 use shared::types::old::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState, ImageHost, ImageHostKind};
 
 use crate::{
@@ -270,10 +271,11 @@ impl EmotesQuery {
 		ctx: &Context<'ctx>,
 		list: Vec<EmoteObjectId>,
 	) -> Result<Vec<EmotePartial>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| {
-			tracing::error!("failed to get global from context");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		if list.len() > 1000 {
+			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "list too large"));
+		}
 
 		let emote = global
 			.emote_by_id_loader()
