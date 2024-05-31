@@ -1,5 +1,5 @@
 use mongodb::bson::oid::ObjectId;
-use shared::types::old::EmoteFlagsModel;
+use shared::old_types::EmoteFlagsModel;
 
 use super::image_file::ImageFile;
 

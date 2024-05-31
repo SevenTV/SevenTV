@@ -5,10 +5,11 @@ use utoipa::OpenApi;
 
 use crate::global::Global;
 
-pub mod emote_set_loader;
 pub mod docs;
+pub mod emote_set_loader;
 pub mod gql;
 pub mod rest;
+pub mod types;
 
 pub fn docs() -> utoipa::openapi::OpenApi {
 	#[derive(OpenApi)]
@@ -32,9 +33,10 @@ pub fn docs() -> utoipa::openapi::OpenApi {
 	struct Docs;
 
 	let mut docs = Docs::openapi();
-	docs.merge(shared::types::old::Docs::openapi());
 	docs.merge(docs::Docs::openapi());
 	docs.merge(gql::Docs::openapi());
+	docs.merge(types::Docs::openapi());
+	docs.merge(rest::types::Docs::openapi());
 	docs.merge(rest::config::Docs::openapi());
 	docs.merge(rest::auth::Docs::openapi());
 	docs.merge(rest::emotes::Docs::openapi());

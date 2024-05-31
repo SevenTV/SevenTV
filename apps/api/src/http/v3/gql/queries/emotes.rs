@@ -2,13 +2,16 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
-use shared::types::old::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState, ImageHost, ImageHostKind};
+use shared::old_types::{EmoteFlagsModel, ImageHost, ImageHostKind};
 
 use crate::{
 	global::Global,
 	http::{
 		error::ApiError,
-		v3::gql::object_id::{EmoteObjectId, UserObjectId},
+		v3::{
+			gql::object_id::{EmoteObjectId, UserObjectId},
+			types::{EmoteLifecycleModel, EmoteVersionState},
+		},
 	},
 };
 
@@ -56,7 +59,7 @@ impl Emote {
 			ImageHostKind::Emote,
 			&value.id,
 		);
-		let state = value.flags.to_old_state();
+		let state = EmoteVersionState::from_db(&value.flags);
 		let listed = value.flags.contains(shared::database::EmoteFlags::PublicListed);
 		let lifecycle = if value.image_set.input.is_pending() {
 			EmoteLifecycleModel::Pending

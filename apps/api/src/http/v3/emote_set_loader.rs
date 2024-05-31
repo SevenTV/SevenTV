@@ -2,10 +2,12 @@ use std::{collections::HashMap, sync::Arc};
 
 use shared::{
 	database::{EmoteSet, EmoteSetEmote, EmoteSetFlags, EmoteSetKind, User, UserConnection, UserId},
-	types::old::{EmotePartialModel, EmoteSetModel},
+	old_types::UserPartialModel,
 };
 
 use crate::{global::Global, http::error::ApiError};
+
+use super::rest::types::{EmotePartialModel, EmoteSetModel};
 
 pub async fn load_emote_set(
 	global: &Arc<Global>,
@@ -66,7 +68,7 @@ pub async fn load_emote_set(
 			// This api doesnt seem to return the user's badges and paints so
 			// we can ignore them.
 			let connections = connections.get(&user.id).cloned().unwrap_or_default();
-			user.into_old_model_partial(connections, None, None, cdn_base_url)
+			UserPartialModel::from_db(user, connections, None, None, cdn_base_url)
 		})
 		.map(|user| (user.id, user))
 		.collect::<HashMap<_, _>>();
@@ -76,7 +78,10 @@ pub async fn load_emote_set(
 		.filter_map(|(id, emote)| {
 			let owner = emote.owner_id.and_then(|id| users.get(&id)).cloned();
 
-			Some((id, emote.into_old_model_partial(owner, &global.config().api.cdn_base_url)))
+			Some((
+				id,
+				EmotePartialModel::from_db(emote, owner, &global.config().api.cdn_base_url),
+			))
 		})
 		.collect::<HashMap<_, _>>();
 
@@ -114,8 +119,15 @@ pub async fn get_fake_set_for_user_active_sets(
 		.take(slots as usize)
 		.collect();
 
-	Ok(fake_user_set(user.id, slots).into_old_model(
+	Ok(EmoteSetModel::from_db(
+		fake_user_set(user.id, slots),
 		load_emote_set(global, emote_set_emotes).await?,
-		Some(user.into_old_model_partial(user_connections, None, None, &global.config().api.cdn_base_url)),
+		Some(UserPartialModel::from_db(
+			user,
+			user_connections,
+			None,
+			None,
+			&global.config().api.cdn_base_url,
+		)),
 	))
 }

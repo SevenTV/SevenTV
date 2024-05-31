@@ -4,6 +4,7 @@ use mongodb::options::InsertManyOptions;
 use shared::database::{
 	Collection, EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetEmoteId, EmoteSetFlags, EmoteSetKind,
 };
+use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -41,17 +42,17 @@ impl Job for EmoteSetsJob {
 	async fn process(&mut self, emote_set: Self::T) -> ProcessOutcome {
 		let mut outcome = ProcessOutcome::default();
 
-		let kind = if emote_set.flags.contains(types::EmoteSetFlagModel::Personal) {
+		let kind = if emote_set.flags.contains(EmoteSetFlagModel::Personal) {
 			EmoteSetKind::Personal
 		} else {
 			EmoteSetKind::Normal
 		};
 
 		let mut flags = EmoteSetFlags::none();
-		if emote_set.immutable || emote_set.flags.contains(types::EmoteSetFlagModel::Immutable) {
+		if emote_set.immutable || emote_set.flags.contains(EmoteSetFlagModel::Immutable) {
 			flags |= EmoteSetFlags::Immutable;
 		}
-		if emote_set.privileged || emote_set.flags.contains(types::EmoteSetFlagModel::Privileged) {
+		if emote_set.privileged || emote_set.flags.contains(EmoteSetFlagModel::Privileged) {
 			flags |= EmoteSetFlags::Privileged;
 		}
 
@@ -68,13 +69,13 @@ impl Job for EmoteSetsJob {
 		for (emote_id, e) in emote_set.emotes.into_iter().flatten().filter_map(|e| e.id.map(|id| (id, e))) {
 			let mut flags = EmoteSetEmoteFlag::none();
 
-			if e.flags.contains(types::ActiveEmoteFlagModel::ZeroWidth) {
+			if e.flags.contains(ActiveEmoteFlagModel::ZeroWidth) {
 				flags |= EmoteSetEmoteFlag::ZeroWidth;
 			}
 			if e.flags.intersects(
-				types::ActiveEmoteFlagModel::OverrideTwitchSubscriber
-					| types::ActiveEmoteFlagModel::OverrideTwitchGlobal
-					| types::ActiveEmoteFlagModel::OverrideBetterTTV,
+				ActiveEmoteFlagModel::OverrideTwitchSubscriber
+					| ActiveEmoteFlagModel::OverrideTwitchGlobal
+					| ActiveEmoteFlagModel::OverrideBetterTTV,
 			) {
 				flags |= EmoteSetEmoteFlag::OverrideConflicts;
 			}

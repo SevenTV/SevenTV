@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
 use shared::database::{Collection, Emote, EmoteFlags, ImageSet, ImageSetInput};
-use shared::types::old::EmoteFlagsModel;
+use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;

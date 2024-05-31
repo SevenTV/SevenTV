@@ -1,10 +1,6 @@
 use bitmask_enum::bitmask;
 
 use crate::database::{Collection, Id};
-use crate::types::old::{
-	ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel, EmoteSetFlagModel, EmoteSetModel, EmoteSetPartialModel,
-	UserPartialModel,
-};
 
 mod emote;
 
@@ -57,78 +53,6 @@ impl<'a> serde::Deserialize<'a> for EmoteSetFlags {
 	{
 		let bits = u8::deserialize(deserializer)?;
 		Ok(EmoteSetFlags::from(bits))
-	}
-}
-
-impl EmoteSet {
-	pub fn to_old_flags(&self) -> EmoteSetFlagModel {
-		let mut flags = EmoteSetFlagModel::none();
-
-		if self.kind == EmoteSetKind::Personal {
-			flags |= EmoteSetFlagModel::Personal;
-		}
-
-		if self.flags.contains(EmoteSetFlags::Immutable) {
-			flags |= EmoteSetFlagModel::Immutable;
-		}
-
-		if self.flags.contains(EmoteSetFlags::Privileged) {
-			flags |= EmoteSetFlagModel::Privileged;
-		}
-
-		flags
-	}
-
-	pub fn into_old_model(
-		self,
-		emotes: impl IntoIterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>,
-		owner: Option<UserPartialModel>,
-	) -> EmoteSetModel {
-		let emotes = emotes
-			.into_iter()
-			.map(|(emote, data)| emote.into_old_model(data))
-			.collect::<Vec<_>>();
-
-		EmoteSetModel {
-			flags: self.to_old_flags(),
-			id: self.id,
-			name: self.name,
-			tags: self.tags,
-			immutable: self.flags.contains(EmoteSetFlags::Immutable),
-			privileged: self.flags.contains(EmoteSetFlags::Privileged),
-			emote_count: emotes.len() as i32,
-			capacity: self.capacity as i32,
-			emotes,
-			origins: Vec::new(),
-			owner,
-		}
-	}
-
-	pub fn into_old_model_partial(self, owner: Option<UserPartialModel>) -> EmoteSetPartialModel {
-		EmoteSetPartialModel {
-			id: self.id,
-			name: self.name,
-			capacity: self.capacity as i32,
-			flags: {
-				let mut flags = EmoteSetFlagModel::none();
-
-				if self.kind == EmoteSetKind::Personal {
-					flags |= EmoteSetFlagModel::Personal;
-				}
-
-				if self.flags.contains(EmoteSetFlags::Immutable) {
-					flags |= EmoteSetFlagModel::Immutable;
-				}
-
-				if self.flags.contains(EmoteSetFlags::Privileged) {
-					flags |= EmoteSetFlagModel::Privileged;
-				}
-
-				flags
-			},
-			tags: self.tags,
-			owner,
-		}
 	}
 }
 

@@ -6,13 +6,15 @@ use axum::routing::get;
 use axum::{Json, Router};
 use hyper::StatusCode;
 use shared::database::EmoteSetId;
-use shared::types::old::EmoteSetModel;
+use shared::old_types::UserPartialModel;
 use utoipa::OpenApi;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::v3::emote_set_loader::load_emote_set;
+
+use super::types::EmoteSetModel;
 
 #[derive(OpenApi)]
 #[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSetModel)))]
@@ -69,10 +71,10 @@ pub async fn get_emote_set_by_id(
 				.load(&global, owner)
 				.await
 				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.map(|u| u.into_old_model_partial(conns, None, None, &global.config().api.cdn_base_url))
+				.map(|u| UserPartialModel::from_db(u, conns, None, None, &global.config().api.cdn_base_url))
 		}
 		None => None,
 	};
 
-	Ok(Json(emote_set.into_old_model(emotes, owner)))
+	Ok(Json(EmoteSetModel::from_db(emote_set, emotes, owner)))
 }

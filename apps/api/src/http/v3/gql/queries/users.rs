@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
-use shared::{database::UserId, types::old::{
-	CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, UserConnectionPlatformModel, UserEditorModelPermission,
+use shared::{database::UserId, old_types::{
+	CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, UserConnectionPlatformModel,
 	UserTypeModel,
 }};
 
 use crate::{
 	global::Global,
-	http::{error::ApiError, middleware::auth::AuthSession, v3::gql::object_id::{BadgeObjectId, EmoteSetObjectId, ObjectId, PaintObjectId, RoleObjectId, UserObjectId}},
+	http::{error::ApiError, middleware::auth::AuthSession, v3::{gql::object_id::{BadgeObjectId, EmoteSetObjectId, ObjectId, PaintObjectId, RoleObjectId, UserObjectId}, types::UserEditorModelPermission}},
 };
 
 use super::{audit_logs::AuditLog, emote_sets::EmoteSet, emotes::Emote, reports::Report};
@@ -380,7 +380,7 @@ impl UserStyle {
 			.load(*id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.and_then(|p| p.into_old_model(&global.config().api.cdn_base_url)))
+			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_base_url)))
 	}
 
 	async fn badge<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<CosmeticBadgeModel>, ApiError> {
@@ -395,7 +395,7 @@ impl UserStyle {
 			.load(*id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.and_then(|b| b.into_old_model(&global.config().api.cdn_base_url)))
+			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_base_url)))
 	}
 }
 

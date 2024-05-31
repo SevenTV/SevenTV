@@ -9,11 +9,13 @@ use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
 use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission, ImageSet, ImageSetInput};
-use shared::types::old::EmoteFlagsModel;
+use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
+
+use super::types::{EmoteModel, EmotePartialModel};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
@@ -118,7 +120,9 @@ pub async fn create_emote(
 		Ok(ProcessImageResponse { error: Some(err), .. }) => {
 			// At this point if we get a decode error then the image is invalid
 			// and we should return a bad request
-			if err.code == image_processor::ErrorCode::Decode as i32 || err.code == image_processor::ErrorCode::InvalidInput as i32 {
+			if err.code == image_processor::ErrorCode::Decode as i32
+				|| err.code == image_processor::ErrorCode::InvalidInput as i32
+			{
 				return Err(ApiError::BAD_REQUEST);
 			}
 
@@ -163,7 +167,7 @@ pub async fn create_emote(
 		})?;
 
 	// we don't have to return the owner here
-	let emote = emote.into_old_model_partial(None, &global.config().api.cdn_base_url);
+	let emote = EmotePartialModel::from_db(emote, None, &global.config().api.cdn_base_url);
 
 	Ok((StatusCode::CREATED, Json(emote)))
 }
@@ -212,7 +216,7 @@ pub async fn get_emote_by_id(
 	};
 
 	let owner =
-		owner.map(|(owner, conns)| owner.into_old_model_partial(conns, None, None, &global.config().api.cdn_base_url));
+		owner.map(|(owner, conns)| UserPartialModel::from_db(owner, conns, None, None, &global.config().api.cdn_base_url));
 
-	Ok(Json(emote.into_old_model(owner, &global.config().api.cdn_base_url)))
+	Ok(Json(EmoteModel::from_db(emote, owner, &global.config().api.cdn_base_url)))
 }

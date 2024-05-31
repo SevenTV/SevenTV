@@ -1,5 +1,5 @@
-use super::{is_default, ImageHost, UserPartialModel};
-use crate::database::{BadgeId, PaintId, UserId};
+use super::{is_default, ImageHost, ImageHostKind, UserPartialModel};
+use crate::database::{BadgeId, Paint, PaintId, PaintLayerType, PaintRadialGradientShape, PaintShadow, UserId};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -68,6 +68,82 @@ pub struct CosmeticPaintModel {
 	pub stops: Vec<CosmeticPaintGradientStop>,
 }
 
+impl CosmeticPaintModel {
+	pub fn from_db(value: Paint, cdn_base_url: &str) -> Option<Self> {
+		let first_layer = value.data.layers.first();
+
+		Some(Self {
+			id: value.id,
+			name: value.name,
+			color: first_layer.and_then(|l| match l.ty {
+				PaintLayerType::SingleColor(c) => Some(c as i32),
+				_ => None,
+			}),
+			gradients: vec![],
+			shadows: value.data.shadows.into_iter().map(|s| s.into()).collect(),
+			text: None,
+			function: first_layer
+				.map(|l| match l.ty {
+					PaintLayerType::SingleColor(..) => CosmeticPaintFunction::LinearGradient,
+					PaintLayerType::LinearGradient { .. } => CosmeticPaintFunction::LinearGradient,
+					PaintLayerType::RadialGradient { .. } => CosmeticPaintFunction::RadialGradient,
+					PaintLayerType::Image(..) => CosmeticPaintFunction::Url,
+				})
+				.unwrap_or(CosmeticPaintFunction::LinearGradient),
+			repeat: first_layer
+				.map(|l| match l.ty {
+					PaintLayerType::LinearGradient { repeating, .. } | PaintLayerType::RadialGradient { repeating, .. } => {
+						repeating
+					}
+					_ => false,
+				})
+				.unwrap_or_default(),
+			angle: first_layer
+				.and_then(|l| match l.ty {
+					PaintLayerType::LinearGradient { angle, .. } | PaintLayerType::RadialGradient { angle, .. } => {
+						Some(angle)
+					}
+					_ => None,
+				})
+				.unwrap_or_default(),
+			shape: first_layer
+				.and_then(|l| match l.ty {
+					PaintLayerType::RadialGradient {
+						shape: PaintRadialGradientShape::Ellipse,
+						..
+					} => Some(CosmeticPaintShape::Ellipse),
+					PaintLayerType::RadialGradient {
+						shape: PaintRadialGradientShape::Circle,
+						..
+					} => Some(CosmeticPaintShape::Circle),
+					_ => None,
+				})
+				.unwrap_or_default(),
+			image_url: first_layer
+				.and_then(|l| match &l.ty {
+					PaintLayerType::Image(image_set) => image_set.outputs.first().map(|i| i.get_url(cdn_base_url)),
+					_ => None,
+				})
+				.unwrap_or_default(),
+			stops: first_layer
+				.and_then(|l| match &l.ty {
+					PaintLayerType::LinearGradient { stops, .. } | PaintLayerType::RadialGradient { stops, .. } => Some(
+						stops
+							.iter()
+							.map(|s| CosmeticPaintGradientStop {
+								color: s.color as i32,
+								at: s.at,
+								center_at: [0.0, 0.0],
+							})
+							.collect(),
+					),
+					_ => None,
+				})
+				.unwrap_or_default(),
+		})
+	}
+}
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
@@ -134,6 +210,17 @@ pub struct CosmeticPaintShadow {
 	pub color: i32,
 }
 
+impl From<PaintShadow> for CosmeticPaintShadow {
+	fn from(s: PaintShadow) -> Self {
+		Self {
+			color: s.color as i32,
+			x_offset: s.offset_x,
+			y_offset: s.offset_y,
+			radius: s.blur,
+		}
+	}
+}
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
@@ -189,6 +276,21 @@ pub struct CosmeticBadgeModel {
 	pub tag: String,
 	pub tooltip: String,
 	pub host: ImageHost,
+}
+
+impl CosmeticBadgeModel {
+	pub fn from_db(value: crate::database::Badge, cdn_base_url: &str) -> Option<Self> {
+		let id = value.id.cast();
+		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url, ImageHostKind::Badge, &id);
+
+		Some(Self {
+			id,
+			name: value.name,
+			tag: value.tags.into_iter().next().unwrap_or_default(),
+			tooltip: value.description,
+			host,
+		})
+	}
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]

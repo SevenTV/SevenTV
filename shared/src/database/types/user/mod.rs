@@ -22,11 +22,6 @@ use super::ImageSet;
 use super::ProductId;
 use super::{BadgeId, EmoteSetId, PaintId, Permissions, Role, RoleId};
 use crate::database::{Collection, Id};
-use crate::types::old::{
-	CosmeticBadgeModel, CosmeticPaintModel, EmoteSetPartialModel, ImageFormat as ImageFormatOld, ImageHostKind,
-	UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel, UserPartialModel,
-	UserStyle as UserStyleOld, UserTypeModel,
-};
 
 pub type UserId = Id<User>;
 
@@ -131,82 +126,5 @@ impl UserEntitledCache {
 
 		self.product_ids.sort_unstable();
 		self.product_ids.dedup();
-	}
-}
-
-impl User {
-	pub fn into_old_model_partial(
-		self,
-		connections: Vec<UserConnection>,
-		paint: Option<CosmeticPaintModel>,
-		badge: Option<CosmeticBadgeModel>,
-		cdn_base_url: &str,
-	) -> UserPartialModel {
-		let main_connection = connections.iter().find(|c| c.main_connection);
-
-		let avatar_url = self
-			.style
-			.active_profile_picture
-			.and_then(|s| s.outputs.iter().max_by_key(|i| i.size).map(|i| i.get_url(cdn_base_url)))
-			.or(main_connection.and_then(|c| c.platform_avatar_url.clone()));
-
-		UserPartialModel {
-			id: self.id,
-			user_type: UserTypeModel::Regular,
-			username: main_connection.map(|c| c.platform_username.clone()).unwrap_or_default(),
-			display_name: main_connection.map(|c| c.platform_display_name.clone()).unwrap_or_default(),
-			avatar_url: avatar_url.unwrap_or_default(),
-			style: UserStyleOld {
-				color: 0,
-				paint_id: self.style.active_paint_id,
-				paint,
-				badge_id: self.style.active_badge_id,
-				badge,
-			},
-			role_ids: self.entitled_cache.role_ids.into_iter().collect(),
-			connections: connections.into_iter().map(UserConnectionPartialModel::from).collect(),
-		}
-	}
-
-	pub fn into_old_model(
-		self,
-		connections: Vec<UserConnection>,
-		paint: Option<CosmeticPaintModel>,
-		badge: Option<CosmeticBadgeModel>,
-		emote_sets: Vec<EmoteSetPartialModel>,
-		editors: Vec<UserEditorModel>,
-		cdn_base_url: &str,
-	) -> UserModel {
-		let created_at = self.id.timestamp_ms();
-		let partial = self.into_old_model_partial(connections, paint, badge, cdn_base_url);
-
-		UserModel {
-			id: partial.id,
-			user_type: partial.user_type,
-			username: partial.username,
-			display_name: partial.display_name,
-			created_at,
-			avatar_url: partial.avatar_url,
-			biography: String::new(),
-			style: partial.style,
-			emote_sets,
-			editors,
-			roles: partial.role_ids,
-			connections: partial
-				.connections
-				.into_iter()
-				.map(|p| UserConnectionModel {
-					id: p.id,
-					platform: p.platform,
-					username: p.username,
-					display_name: p.display_name,
-					linked_at: p.linked_at,
-					emote_capacity: p.emote_capacity,
-					emote_set_id: p.emote_set_id,
-					emote_set: None,
-					user: None,
-				})
-				.collect(),
-		}
 	}
 }

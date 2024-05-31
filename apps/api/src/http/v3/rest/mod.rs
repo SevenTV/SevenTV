@@ -9,6 +9,7 @@ pub mod config;
 pub mod emote_sets;
 pub mod emotes;
 pub mod entitlements;
+pub mod types;
 pub mod users;
 
 pub fn routes() -> Router<Arc<Global>> {

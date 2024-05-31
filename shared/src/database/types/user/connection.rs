@@ -3,7 +3,6 @@ use std::str::FromStr;
 
 use super::UserId;
 use crate::database::{Collection, Id};
-use crate::types::old::{UserConnectionPartialModel, UserConnectionPlatformModel};
 
 pub type UserConnectionId = Id<UserConnection>;
 
@@ -30,17 +29,6 @@ pub enum Platform {
 	Discord = 1,
 	Google = 2,
 	Kick = 3,
-}
-
-impl From<Platform> for UserConnectionPlatformModel {
-	fn from(value: Platform) -> Self {
-		match value {
-			Platform::Twitch => Self::Twitch,
-			Platform::Discord => Self::Discord,
-			Platform::Google => Self::Youtube,
-			Platform::Kick => Self::Kick,
-		}
-	}
 }
 
 impl FromStr for Platform {
@@ -70,19 +58,4 @@ impl Display for Platform {
 
 impl Collection for UserConnection {
 	const COLLECTION_NAME: &'static str = "user_connections";
-}
-
-impl From<UserConnection> for UserConnectionPartialModel {
-	fn from(value: UserConnection) -> Self {
-		Self {
-			id: value.platform_id,
-			platform: value.platform.into(),
-			username: value.platform_username,
-			display_name: value.platform_display_name,
-			linked_at: value.id.timestamp_ms(),
-			// TODO: get slots from permissions
-			emote_capacity: 600,
-			emote_set_id: None,
-		}
-	}
 }

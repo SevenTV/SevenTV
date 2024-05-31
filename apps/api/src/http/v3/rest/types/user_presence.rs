@@ -1,4 +1,4 @@
-use crate::database::{UserId, UserPresenceId};
+use shared::database::{UserId, UserPresenceId};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user-presence.model.go#L9

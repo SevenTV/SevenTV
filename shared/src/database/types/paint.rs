@@ -2,10 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::database::{Collection, Id};
-use crate::types::old::{
-	CosmeticPaintFunction, CosmeticPaintGradientStop, CosmeticPaintModel, CosmeticPaintShadow, CosmeticPaintShape,
-	ImageFormat as ImageFormatOld, ImageHost, ImageHostKind,
-};
 
 use super::ImageSet;
 
@@ -98,91 +94,4 @@ pub struct PaintShadow {
 	pub offset_x: f64,
 	pub offset_y: f64,
 	pub blur: f64,
-}
-
-impl From<PaintShadow> for CosmeticPaintShadow {
-	fn from(s: PaintShadow) -> Self {
-		Self {
-			color: s.color as i32,
-			x_offset: s.offset_x,
-			y_offset: s.offset_y,
-			radius: s.blur,
-		}
-	}
-}
-
-impl Paint {
-	pub fn into_old_model(self, cdn_base_url: &str) -> Option<CosmeticPaintModel> {
-		let first_layer = self.data.layers.first();
-
-		Some(CosmeticPaintModel {
-			id: self.id,
-			name: self.name,
-			color: first_layer.and_then(|l| match l.ty {
-				PaintLayerType::SingleColor(c) => Some(c as i32),
-				_ => None,
-			}),
-			gradients: vec![],
-			shadows: self.data.shadows.into_iter().map(|s| s.into()).collect(),
-			text: None,
-			function: first_layer
-				.map(|l| match l.ty {
-					PaintLayerType::SingleColor(..) => CosmeticPaintFunction::LinearGradient,
-					PaintLayerType::LinearGradient { .. } => CosmeticPaintFunction::LinearGradient,
-					PaintLayerType::RadialGradient { .. } => CosmeticPaintFunction::RadialGradient,
-					PaintLayerType::Image(..) => CosmeticPaintFunction::Url,
-				})
-				.unwrap_or(CosmeticPaintFunction::LinearGradient),
-			repeat: first_layer
-				.map(|l| match l.ty {
-					PaintLayerType::LinearGradient { repeating, .. } | PaintLayerType::RadialGradient { repeating, .. } => {
-						repeating
-					}
-					_ => false,
-				})
-				.unwrap_or_default(),
-			angle: first_layer
-				.and_then(|l| match l.ty {
-					PaintLayerType::LinearGradient { angle, .. } | PaintLayerType::RadialGradient { angle, .. } => {
-						Some(angle)
-					}
-					_ => None,
-				})
-				.unwrap_or_default(),
-			shape: first_layer
-				.and_then(|l| match l.ty {
-					PaintLayerType::RadialGradient {
-						shape: PaintRadialGradientShape::Ellipse,
-						..
-					} => Some(CosmeticPaintShape::Ellipse),
-					PaintLayerType::RadialGradient {
-						shape: PaintRadialGradientShape::Circle,
-						..
-					} => Some(CosmeticPaintShape::Circle),
-					_ => None,
-				})
-				.unwrap_or_default(),
-			image_url: first_layer
-				.and_then(|l| match &l.ty {
-					PaintLayerType::Image(image_set) => image_set.outputs.first().map(|i| i.get_url(cdn_base_url)),
-					_ => None,
-				})
-				.unwrap_or_default(),
-			stops: first_layer
-				.and_then(|l| match &l.ty {
-					PaintLayerType::LinearGradient { stops, .. } | PaintLayerType::RadialGradient { stops, .. } => Some(
-						stops
-							.iter()
-							.map(|s| CosmeticPaintGradientStop {
-								color: s.color as i32,
-								at: s.at,
-								center_at: [0.0, 0.0],
-							})
-							.collect(),
-					),
-					_ => None,
-				})
-				.unwrap_or_default(),
-		})
-	}
 }

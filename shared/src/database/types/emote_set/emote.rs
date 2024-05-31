@@ -2,7 +2,6 @@ use bitmask_enum::bitmask;
 
 use super::EmoteSetId;
 use crate::database::{Collection, EmoteId, Id, UserId};
-use crate::types::old::{ActiveEmoteFlagModel, ActiveEmoteModel, EmotePartialModel};
 
 pub type EmoteSetEmoteId = Id<EmoteSetEmote>;
 
@@ -46,34 +45,6 @@ impl<'a> serde::Deserialize<'a> for EmoteSetEmoteFlag {
 	{
 		let bits = i32::deserialize(deserializer)?;
 		Ok(EmoteSetEmoteFlag::from(bits))
-	}
-}
-
-impl EmoteSetEmote {
-	pub fn into_old_model(self, data: Option<EmotePartialModel>) -> ActiveEmoteModel {
-		ActiveEmoteModel {
-			id: self.emote_id,
-			actor_id: self.added_by_id,
-			name: self.name,
-			timestamp: self.id.timestamp_ms() as i64,
-			origin_id: None,
-			flags: {
-				let mut flags = ActiveEmoteFlagModel::none();
-
-				if self.flags.contains(EmoteSetEmoteFlag::ZeroWidth) {
-					flags |= ActiveEmoteFlagModel::ZeroWidth;
-				}
-
-				if self.flags.contains(EmoteSetEmoteFlag::OverrideConflicts) {
-					flags |= ActiveEmoteFlagModel::OverrideBetterTTV
-						| ActiveEmoteFlagModel::OverrideTwitchGlobal
-						| ActiveEmoteFlagModel::OverrideTwitchSubscriber;
-				}
-
-				flags
-			},
-			data,
-		}
 	}
 }
 

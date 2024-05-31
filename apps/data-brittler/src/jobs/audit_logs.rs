@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use clickhouse::Row;
 use shared::database::{self, EmoteId, EmoteSetId, TicketId, UserId};
-use shared::types::old::EmoteFlagsModel;
+use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
 use crate::error;

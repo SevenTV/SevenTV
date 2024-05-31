@@ -6,7 +6,7 @@ use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::{
 	database::{Badge, Collection, Paint},
-	types::old::{CosmeticBadgeModel, CosmeticPaintModel},
+	old_types::{CosmeticBadgeModel, CosmeticPaintModel},
 };
 
 use crate::{
@@ -46,7 +46,7 @@ impl CosmeticsQuery {
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.filter_map(|p| async {
-					p.ok()?.into_old_model(&global.config().api.cdn_base_url)
+					CosmeticPaintModel::from_db(p.ok()?, &global.config().api.cdn_base_url)
 				})
 				.collect::<Vec<_>>()
 				.await;
@@ -56,7 +56,7 @@ impl CosmeticsQuery {
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.filter_map(|b| async {
-					b.ok()?.into_old_model(&global.config().api.cdn_base_url)
+					CosmeticBadgeModel::from_db(b.ok()?, &global.config().api.cdn_base_url)
 				})
 				.collect::<Vec<_>>()
 				.await;
@@ -69,7 +69,7 @@ impl CosmeticsQuery {
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.into_values()
-				.filter_map(|p| p.into_old_model(&global.config().api.cdn_base_url))
+				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_base_url))
 				.collect();
 
 			let badges = global
@@ -78,7 +78,7 @@ impl CosmeticsQuery {
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.into_values()
-				.filter_map(|b| b.into_old_model(&global.config().api.cdn_base_url))
+				.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_base_url))
 				.collect();
 
 			(paints, badges)

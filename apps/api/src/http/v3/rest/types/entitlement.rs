@@ -1,5 +1,4 @@
-use super::UserPartialModel;
-use crate::database::Id;
+use shared::{database::Id, old_types::UserPartialModel};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/entitlement.model.go#L9

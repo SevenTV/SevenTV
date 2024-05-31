@@ -1,5 +1,5 @@
 use mongodb::bson::oid::ObjectId;
-pub use shared::types::old::{ActiveEmoteFlagModel, EmoteSetFlagModel};
+use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct EmoteSet {

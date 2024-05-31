@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::database::{Id, UserId};
+use shared::database::{Id, UserId};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]

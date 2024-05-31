@@ -14,13 +14,15 @@ use shared::database::{
 	Collection, FeaturePermission, ImageSet, ImageSetInput, Platform, User, UserConnection, UserConnectionId, UserId,
 	UserPermission,
 };
-use shared::types::old::{PresenceModel, UserConnectionModel, UserConnectionPartialModel};
+use shared::old_types::UserConnectionPartialModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::emote_set_loader::{fake_user_set, get_fake_set_for_user_active_sets};
+
+use super::types::{EmoteSetModel, EmoteSetPartialModel, PresenceModel, UserConnectionModel, UserEditorModel, UserModel};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -116,18 +118,22 @@ pub async fn get_user_by_id(
 	let permissions = user.compute_permissions(&roles);
 
 	// the fake user emote set
-	let fake_user_set =
-		fake_user_set(user.id, permissions.emote_set_slots_limit.unwrap_or(600)).into_old_model(vec![], None);
+	let fake_user_set = EmoteSetModel::from_db(
+		fake_user_set(user.id, permissions.emote_set_slots_limit.unwrap_or(600)),
+		vec![],
+		None,
+	);
 
-	let mut old_model = user.into_old_model(
+	let mut old_model = UserModel::from_db(
+		user,
 		user_connections,
 		None,
 		None,
 		emote_sets
 			.into_iter()
-			.map(|emote_set| emote_set.into_old_model_partial(None))
+			.map(|emote_set| EmoteSetPartialModel::from_db(emote_set, None))
 			.collect(),
-		editors.into_iter().filter_map(|editor| editor.into_old_model()).collect(),
+		editors.into_iter().filter_map(|editor| UserEditorModel::from_db(editor)).collect(),
 		&global.config().api.cdn_base_url,
 	);
 
@@ -379,7 +385,7 @@ pub async fn get_user_by_platform_id(
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default()
 		.into_iter()
-		.filter_map(|e| e.into_old_model())
+		.filter_map(|e| UserEditorModel::from_db(e))
 		.collect::<Vec<_>>();
 
 	// query user emote sets
@@ -390,7 +396,7 @@ pub async fn get_user_by_platform_id(
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default()
 		.into_iter()
-		.map(|s| s.into_old_model_partial(None))
+		.map(|s| EmoteSetPartialModel::from_db(s, None))
 		.collect::<Vec<_>>();
 
 	let global_config = global
@@ -426,7 +432,8 @@ pub async fn get_user_by_platform_id(
 	connection_model.emote_set_id = Some(user_fake_set.id);
 	connection_model.emote_set = Some(user_fake_set);
 
-	let user_full = user.into_old_model(
+	let user_full = UserModel::from_db(
+		user,
 		connections,
 		None,
 		None,

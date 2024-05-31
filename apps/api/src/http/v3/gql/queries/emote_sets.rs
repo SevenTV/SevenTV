@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use hyper::StatusCode;
-use shared::types::old::{EmoteFlagsModel, EmoteSetFlagModel};
+use shared::old_types::{EmoteFlagsModel, EmoteSetFlagModel};
 
 use crate::{
 	global::Global,
@@ -37,7 +37,7 @@ pub struct EmoteSet {
 impl EmoteSet {
 	pub fn from_db(value: shared::database::EmoteSet) -> Self {
 		Self {
-			flags: value.to_old_flags(),
+			flags: EmoteSetFlagModel::from_db(&value),
 			id: value.id.into(),
 			name: value.name,
 			tags: value.tags,
