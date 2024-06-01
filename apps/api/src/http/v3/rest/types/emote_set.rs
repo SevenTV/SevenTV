@@ -100,21 +100,7 @@ impl ActiveEmoteModel {
 			name: value.name,
 			timestamp: value.id.timestamp_ms() as i64,
 			origin_id: None,
-			flags: {
-				let mut flags = ActiveEmoteFlagModel::none();
-
-				if value.flags.contains(EmoteSetEmoteFlag::ZeroWidth) {
-					flags |= ActiveEmoteFlagModel::ZeroWidth;
-				}
-
-				if value.flags.contains(EmoteSetEmoteFlag::OverrideConflicts) {
-					flags |= ActiveEmoteFlagModel::OverrideBetterTTV
-						| ActiveEmoteFlagModel::OverrideTwitchGlobal
-						| ActiveEmoteFlagModel::OverrideTwitchSubscriber;
-				}
-
-				flags
-			},
+			flags: value.flags.into(),
 			data,
 		}
 	}

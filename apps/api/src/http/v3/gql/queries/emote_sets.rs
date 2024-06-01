@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use hyper::StatusCode;
-use shared::database::{User, UserConnection};
-use shared::old_types::{EmoteFlagsModel, EmoteSetFlagModel};
+use mongodb::bson::doc;
+use shared::database::{Collection, EmoteId, EmoteSetEmote, User, UserConnection, UserId};
+use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
-use super::emotes::EmotePartial;
+use super::emotes::{Emote, EmotePartial};
 use super::users::UserPartial;
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -62,15 +63,63 @@ impl EmoteSet {
 }
 
 #[derive(Debug, Clone, Default, SimpleObject)]
-#[graphql(rename_fields = "snake_case")]
+#[graphql(complex, rename_fields = "snake_case")]
 pub struct ActiveEmote {
 	id: EmoteObjectId,
 	name: String,
-	flags: EmoteFlagsModel,
-	timestamp: chrono::DateTime<chrono::Utc>,
-	data: EmotePartial,
-	actor: Option<UserPartial>,
+	flags: ActiveEmoteFlagModel,
+	// timestamp
+	// data
+	// actor
 	origin_id: Option<ObjectId<()>>,
+
+	#[graphql(skip)]
+	emote_id: EmoteId,
+	#[graphql(skip)]
+	actor_id: Option<UserId>,
+}
+
+impl ActiveEmote {
+	pub fn from_db(value: EmoteSetEmote) -> Self {
+		Self {
+			id: value.emote_id.into(),
+			name: value.name,
+			flags: value.flags.into(),
+			emote_id: value.emote_id,
+			actor_id: value.added_by_id,
+			origin_id: None,
+		}
+	}
+}
+
+#[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+impl ActiveEmote {
+	async fn timestamp(&self) -> chrono::DateTime<chrono::Utc> {
+		self.id.timestamp()
+	}
+
+	async fn data<'ctx>(&self, ctx: &Context<'ctx>) -> Result<EmotePartial, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let emote = global
+			.emote_by_id_loader()
+			.load(self.emote_id)
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
+
+		Ok(Emote::from_db(global, emote).into())
+	}
+
+	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		if let Some(actor_id) = self.actor_id {
+			Ok(Some(UserPartial::load_from_db(global, actor_id).await?))
+		} else {
+			Ok(None)
+		}
+	}
 }
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
@@ -93,16 +142,36 @@ impl EmoteSet {
 				.unwrap_or_default(),
 		};
 
-		let emote_set_emotes = match limit {
-			Some(limit) => emote_set_emotes.into_iter().take(limit as usize).collect(),
-			None => emote_set_emotes,
+		let emotes = match limit {
+			Some(limit) => emote_set_emotes
+				.into_iter()
+				.take(limit as usize)
+				.map(ActiveEmote::from_db)
+				.collect(),
+			None => emote_set_emotes.into_iter().map(ActiveEmote::from_db).collect(),
 		};
 
-		Err(ApiError::NOT_IMPLEMENTED)
+		Ok(emotes)
 	}
 
-	async fn emote_count(&self) -> Result<u32, ApiError> {
-		Err(ApiError::NOT_IMPLEMENTED)
+	async fn emote_count<'ctx>(&self, ctx: &Context<'ctx>) -> Result<u32, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		match &self.virtual_set_of {
+			Some((user, slots)) => Ok(get_virtual_set_emotes_for_user(global, user, *slots).await?.len() as u32),
+			None => {
+				let count = EmoteSetEmote::collection(global.db())
+					.count_documents(
+						doc! {
+							"emote_set_id": *self.id,
+						},
+						None,
+					)
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+				Ok(count as u32)
+			}
+		}
 	}
 
 	async fn capacity<'ctx>(&self, ctx: &Context<'ctx>) -> Result<u16, ApiError> {

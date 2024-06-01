@@ -43,7 +43,7 @@ pub struct Emote {
 }
 
 impl Emote {
-	fn from_db(global: &Arc<Global>, value: shared::database::Emote) -> Self {
+	pub fn from_db(global: &Arc<Global>, value: shared::database::Emote) -> Self {
 		let host = ImageHost::from_image_set(
 			&value.image_set,
 			&global.config().api.cdn_base_url,

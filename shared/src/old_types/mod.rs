@@ -7,8 +7,7 @@
 //! All other old types are defined in the respective application crates.
 
 use crate::database::{
-	self, BadgeId, EmoteSet, EmoteSetFlags, EmoteSetId, EmoteSetKind, PaintId, Platform, RoleId, User, UserConnection,
-	UserId,
+	self, BadgeId, EmoteSet, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetId, EmoteSetKind, PaintId, Platform, RoleId, User, UserConnection, UserId
 };
 
 mod cosmetic;
@@ -287,6 +286,26 @@ pub enum ActiveEmoteFlagModel {
 	OverrideTwitchGlobal = 1 << 16,
 	OverrideTwitchSubscriber = 1 << 17,
 	OverrideBetterTTV = 1 << 18,
+}
+
+async_graphql::scalar!(ActiveEmoteFlagModel);
+
+impl From<EmoteSetEmoteFlag> for ActiveEmoteFlagModel {
+	fn from(value: EmoteSetEmoteFlag) -> Self {
+		let mut flags = Self::none();
+
+		if value.contains(EmoteSetEmoteFlag::ZeroWidth) {
+			flags |= Self::ZeroWidth;
+		}
+
+		if value.contains(EmoteSetEmoteFlag::OverrideConflicts) {
+			flags |= Self::OverrideBetterTTV
+				| Self::OverrideTwitchGlobal
+				| Self::OverrideTwitchSubscriber;
+		}
+
+		flags
+	}
 }
 
 impl Default for ActiveEmoteFlagModel {
