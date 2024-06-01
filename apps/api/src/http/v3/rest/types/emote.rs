@@ -1,6 +1,4 @@
-use shared::database::{Emote, EmoteFlags};
-
-use shared::database::{EmoteId, UserId};
+use shared::database::{Emote, EmoteFlags, EmoteId, UserId};
 use shared::old_types::{EmoteFlagsModel, ImageHost, ImageHostKind, UserPartialModel};
 
 use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};
@@ -75,11 +73,7 @@ pub struct EmotePartialModel {
 }
 
 impl EmotePartialModel {
-	pub fn from_db(
-		value: Emote,
-		owner: Option<UserPartialModel>,
-		cdn_base_url: &str,
-	) -> Self {
+	pub fn from_db(value: Emote, owner: Option<UserPartialModel>, cdn_base_url: &str) -> Self {
 		Self {
 			id: value.id,
 			name: value.default_name,

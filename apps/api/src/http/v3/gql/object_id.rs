@@ -23,43 +23,43 @@ impl<T> fmt::Debug for ObjectId<T> {
 }
 
 impl<T> Clone for ObjectId<T> {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
+	fn clone(&self) -> Self {
+		Self(self.0.clone())
+	}
 }
 
 impl<T> Copy for ObjectId<T> {}
 
 impl<T> Default for ObjectId<T> {
-    fn default() -> Self {
-        Self(Id::default())
-    }
+	fn default() -> Self {
+		Self(Id::default())
+	}
 }
 
 impl<T> From<Id<T>> for ObjectId<T> {
-    fn from(id: Id<T>) -> Self {
-        Self(id)
-    }
+	fn from(id: Id<T>) -> Self {
+		Self(id)
+	}
 }
 
 impl<T> From<ObjectId<T>> for Id<T> {
-    fn from(object_id: ObjectId<T>) -> Self {
-        object_id.0
-    }
+	fn from(object_id: ObjectId<T>) -> Self {
+		object_id.0
+	}
 }
 
 impl<T> Deref for ObjectId<T> {
-    type Target = Id<T>;
+	type Target = Id<T>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
 }
 
 impl<T> ObjectId<T> {
-    pub fn real(self) -> Id<T> {
-        self.0
-    }
+	pub fn real(self) -> Id<T> {
+		self.0
+	}
 }
 
 #[Scalar]

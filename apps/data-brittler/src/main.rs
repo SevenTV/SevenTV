@@ -58,10 +58,7 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 			.ok();
 	});
 
-	let joined_jobs = futures::future::join(
-		jobs::run(global.clone()),
-		image_processor_callback::run(global.clone()),
-	);
+	let joined_jobs = futures::future::join(jobs::run(global.clone()), image_processor_callback::run(global.clone()));
 
 	tokio::select! {
 		r = joined_jobs => match r {

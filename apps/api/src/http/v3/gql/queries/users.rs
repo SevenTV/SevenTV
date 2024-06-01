@@ -1,17 +1,20 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
-use shared::{database::UserId, old_types::{
-	CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, UserConnectionPlatformModel,
-	UserTypeModel,
-}};
+use shared::database::UserId;
+use shared::old_types::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, UserConnectionPlatformModel, UserTypeModel};
 
-use crate::{
-	global::Global,
-	http::{error::ApiError, middleware::auth::AuthSession, v3::{gql::object_id::{BadgeObjectId, EmoteSetObjectId, ObjectId, PaintObjectId, RoleObjectId, UserObjectId}, types::UserEditorModelPermission}},
+use super::audit_logs::AuditLog;
+use super::emote_sets::EmoteSet;
+use super::emotes::Emote;
+use super::reports::Report;
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::middleware::auth::AuthSession;
+use crate::http::v3::gql::object_id::{
+	BadgeObjectId, EmoteSetObjectId, ObjectId, PaintObjectId, RoleObjectId, UserObjectId,
 };
-
-use super::{audit_logs::AuditLog, emote_sets::EmoteSet, emotes::Emote, reports::Report};
+use crate::http::v3::types::UserEditorModelPermission;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
 

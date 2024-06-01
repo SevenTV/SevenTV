@@ -4,10 +4,9 @@ use std::sync::Arc;
 use chrono::{Days, Months};
 use shared::database::{Collection, Subscription, SubscriptionPeriod, SubscriptionStanding};
 
+use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
-
-use super::{Job, ProcessOutcome};
 
 pub struct SubscriptionsJob {
 	global: Arc<Global>,
@@ -15,9 +14,9 @@ pub struct SubscriptionsJob {
 }
 
 impl Job for SubscriptionsJob {
-	const NAME: &'static str = "transfer_stripe";
-
 	type T = types::Subscription;
+
+	const NAME: &'static str = "transfer_stripe";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
@@ -61,14 +60,16 @@ impl Job for SubscriptionsJob {
 		// let (state, standing) = match sub.cycle.status {
 		// 	types::SubscriptionCycleStatus::Ongoing => (SubscriptionState::Active, None),
 		// 	types::SubscriptionCycleStatus::Ended => (SubscriptionState::Ended, None),
-		// 	types::SubscriptionCycleStatus::Canceled => (SubscriptionState::Active, Some(SubscriptionStanding::Canceled)),
-		// };
+		// 	types::SubscriptionCycleStatus::Canceled => (SubscriptionState::Active,
+		// Some(SubscriptionStanding::Canceled)), };
 
 		// let end = match sub.cycle.unit {
-		// 	types::SubscriptionCycleUnit::Year => cycle_timestamp.into_chrono().checked_add_months(Months::new(12)),
-		// 	types::SubscriptionCycleUnit::Month => cycle_timestamp.into_chrono().checked_add_months(Months::new(1)),
-		// 	types::SubscriptionCycleUnit::Day => cycle_timestamp.into_chrono().checked_add_days(Days::new(1)),
-		// }
+		// 	types::SubscriptionCycleUnit::Year =>
+		// cycle_timestamp.into_chrono().checked_add_months(Months::new(12)),
+		// 	types::SubscriptionCycleUnit::Month =>
+		// cycle_timestamp.into_chrono().checked_add_months(Months::new(1)),
+		// 	types::SubscriptionCycleUnit::Day =>
+		// cycle_timestamp.into_chrono().checked_add_days(Days::new(1)), }
 		// .expect("failed to add duration");
 
 		// self.subscriptions.push(Subscription {

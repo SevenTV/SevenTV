@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use crate::config::ImageProcessorConfig;
-use crate::database::{BadgeId, EmoteId, Id, PaintId, PaintLayerId, UserId};
 use anyhow::Context;
 use bytes::Bytes;
 use image_processor::{OutputFormat, OutputFormatOptions, OutputQuality};
 use scuffle_image_processor_proto::image_processor_client::ImageProcessorClient;
 use scuffle_image_processor_proto::{self as image_processor};
+
+use crate::config::ImageProcessorConfig;
+use crate::database::{BadgeId, EmoteId, Id, PaintId, PaintLayerId, UserId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Subject {

@@ -17,10 +17,7 @@ pub use self::presence::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
-
-use super::ImageSet;
-use super::ProductId;
-use super::{BadgeId, EmoteSetId, PaintId, Permissions, Role, RoleId};
+use super::{BadgeId, EmoteSetId, ImageSet, PaintId, Permissions, ProductId, Role, RoleId};
 use crate::database::{Collection, Id};
 
 pub type UserId = Id<User>;

@@ -4,15 +4,12 @@ use async_graphql::{Context, Object};
 use futures::StreamExt;
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::{
-	database::{Badge, Collection, Paint},
-	old_types::{CosmeticBadgeModel, CosmeticPaintModel},
-};
+use shared::database::{Badge, Collection, Paint};
+use shared::old_types::{CosmeticBadgeModel, CosmeticPaintModel};
 
-use crate::{
-	global::Global,
-	http::{error::ApiError, v3::gql::object_id::ObjectId},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::v3::gql::object_id::ObjectId;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/cosmetics.gql
 
@@ -45,9 +42,7 @@ impl CosmeticsQuery {
 				.find(doc! {}, None)
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.filter_map(|p| async {
-					CosmeticPaintModel::from_db(p.ok()?, &global.config().api.cdn_base_url)
-				})
+				.filter_map(|p| async { CosmeticPaintModel::from_db(p.ok()?, &global.config().api.cdn_base_url) })
 				.collect::<Vec<_>>()
 				.await;
 
@@ -55,9 +50,7 @@ impl CosmeticsQuery {
 				.find(doc! {}, None)
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.filter_map(|b| async {
-					CosmeticBadgeModel::from_db(b.ok()?, &global.config().api.cdn_base_url)
-				})
+				.filter_map(|b| async { CosmeticBadgeModel::from_db(b.ok()?, &global.config().api.cdn_base_url) })
 				.collect::<Vec<_>>()
 				.await;
 

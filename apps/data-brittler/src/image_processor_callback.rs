@@ -1,4 +1,6 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Context;
 use async_nats::jetstream::{consumer, stream};
@@ -7,10 +9,8 @@ use mongodb::bson::{doc, to_bson};
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
-use shared::{
-	database::{Badge, Collection, Emote, Image, Paint, PaintLayerId, User},
-	image_processor::Subject,
-};
+use shared::database::{Badge, Collection, Emote, Image, Paint, PaintLayerId, User};
+use shared::image_processor::Subject;
 
 use crate::global::Global;
 

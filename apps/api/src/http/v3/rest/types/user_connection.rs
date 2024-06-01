@@ -1,7 +1,5 @@
-use shared::{
-	database::EmoteSetId,
-	old_types::{UserConnectionPartialModel, UserConnectionPlatformModel},
-};
+use shared::database::EmoteSetId;
+use shared::old_types::{UserConnectionPartialModel, UserConnectionPlatformModel};
 
 use super::{EmoteSetModel, UserModel};
 

@@ -54,7 +54,10 @@ pub struct ProcessOutcome {
 
 impl ProcessOutcome {
 	pub fn error(e: impl Into<error::Error>) -> Self {
-		Self { errors: vec![e.into()], ..Default::default() }
+		Self {
+			errors: vec![e.into()],
+			..Default::default()
+		}
 	}
 
 	pub fn with_error(mut self, e: impl Into<error::Error>) -> Self {

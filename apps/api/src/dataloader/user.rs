@@ -288,11 +288,13 @@ impl UserLoader {
 		}
 
 		// // Purchases
-		// let Ok(purchases) = self.user_purchase_loader.load(user_id).await.map(Option::unwrap_or_default) else {
-		// 	anyhow::bail!("failed to load user purchases");
+		// let Ok(purchases) =
+		// self.user_purchase_loader.load(user_id).await.map(Option::unwrap_or_default)
+		// else { 	anyhow::bail!("failed to load user purchases");
 		// };
 
-		// let purchases = purchases.into_iter().into_group_map_by(|p| p.product_id.clone());
+		// let purchases = purchases.into_iter().into_group_map_by(|p|
+		// p.product_id.clone());
 
 		// // Subscriptions
 		// let Ok(subscriptions) = self
@@ -311,8 +313,8 @@ impl UserLoader {
 		// 	.chain(purchases.keys().cloned())
 		// 	.collect::<Vec<_>>();
 
-		// let Ok(products) = global.product_by_id_loader().load_many(product_ids).await else {
-		// 	anyhow::bail!("failed to load products");
+		// let Ok(products) = global.product_by_id_loader().load_many(product_ids).await
+		// else { 	anyhow::bail!("failed to load products");
 		// };
 
 		// let mut product_subscriptions = HashMap::new();
@@ -332,11 +334,15 @@ impl UserLoader {
 			paint_ids: user.grants.paint_ids.clone(),
 			product_ids: Vec::new(),
 			// 12 hours + 10%  jitter
-			invalidated_at: mongodb::bson::DateTime::from(chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60))),
+			invalidated_at: mongodb::bson::DateTime::from(
+				chrono::Utc::now() + jitter(std::time::Duration::from_secs(12 * 60 * 60)),
+			),
 		};
 
 		// for product in products.values() {
-		// 	let subscriptions = product_subscriptions.get(&product.id).map(Vec::as_slice).unwrap_or_default();
+		// 	let subscriptions =
+		// product_subscriptions.get(&product.id).map(Vec::as_slice).
+		// unwrap_or_default();
 
 		// 	let Ok(active_periods) = self
 		// 		.user_subscription_period_loader
@@ -347,11 +353,11 @@ impl UserLoader {
 		// 	};
 
 		// 	let sub_total_time = subscriptions.iter().fold(None, |total, s| {
-		// 		if let Some(active_period) = s.active_period.and_then(|id| active_periods.get(&id)) {
-		// 			let start: chrono::DateTime<chrono::Utc> = s.start.into();
-		// 			let end = active_period.end.map(Into::into).unwrap_or(chrono::Utc::now());
-		// 			Some(total.unwrap_or(chrono::TimeDelta::zero()) + (end - start))
-		// 		} else {
+		// 		if let Some(active_period) = s.active_period.and_then(|id|
+		// active_periods.get(&id)) { 			let start: chrono::DateTime<chrono::Utc> =
+		// s.start.into(); 			let end =
+		// active_period.end.map(Into::into).unwrap_or(chrono::Utc::now()); 			Some(total.
+		// unwrap_or(chrono::TimeDelta::zero()) + (end - start)) 		} else {
 		// 			total
 		// 		}
 		// 	});
@@ -469,8 +475,9 @@ fn eval_condition(
 	}
 }
 
-// #[tracing::instrument(name = "evaluate_expression", skip(purchases, user_product))]
-// fn evaluate_expression(expression: &str, purchases: &[ProductPurchase], user_product: Option<&UserProduct>) -> bool {
+// #[tracing::instrument(name = "evaluate_expression", skip(purchases,
+// user_product))] fn evaluate_expression(expression: &str, purchases:
+// &[ProductPurchase], user_product: Option<&UserProduct>) -> bool {
 // 	#[derive(serde::Serialize)]
 // 	struct Purchase {
 // 		date: chrono::DateTime<chrono::Utc>,
@@ -514,7 +521,8 @@ fn eval_condition(
 
 // 		let packed_end_at = created_at + total_time;
 
-// 		let total_months = (packed_end_at.year() - created_at.year()) * 12 + packed_end_at.month() as i32
+// 		let total_months = (packed_end_at.year() - created_at.year()) * 12 +
+// packed_end_at.month() as i32
 // 			- created_at.month() as i32
 // 			+ if packed_end_at.day() < created_at.day() { -1 } else { 0 };
 
@@ -541,8 +549,8 @@ fn eval_condition(
 // 		Ok(result) => result,
 // 		Err(err) => {
 // 			// We should consider what we want to do here.
-// 			// This implies that the expression is invalid, so we should somehow report this
-// 			// to the user. Rather than logging it here.
+// 			// This implies that the expression is invalid, so we should somehow report
+// this 			// to the user. Rather than logging it here.
 // 			tracing::error!(err = %err, "failed to evaluate expression");
 // 			return false;
 // 		}

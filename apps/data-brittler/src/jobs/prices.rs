@@ -1,11 +1,12 @@
-use std::{str::FromStr, sync::Arc};
+use std::str::FromStr;
+use std::sync::Arc;
 
 use fnv::FnvHashMap;
 use shared::database::{Collection, Product, ProductKind, ProductPrice};
 
-use crate::{error, global::Global, types};
-
 use super::{Job, ProcessOutcome};
+use crate::global::Global;
+use crate::{error, types};
 
 pub struct PricesJob {
 	global: Arc<Global>,
@@ -13,9 +14,9 @@ pub struct PricesJob {
 }
 
 impl Job for PricesJob {
-	const NAME: &'static str = "transfer_prices";
-
 	type T = types::Price;
+
+	const NAME: &'static str = "transfer_prices";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {

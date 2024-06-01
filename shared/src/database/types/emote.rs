@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bitmask_enum::bitmask;
 
-use super::{UserId, ImageSet};
+use super::{ImageSet, UserId};
 use crate::database::{Collection, Id};
 
 pub type EmoteId = Id<Emote>;

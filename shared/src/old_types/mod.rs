@@ -1,11 +1,15 @@
-//! All types in this module are used by at least two of the following applications:
+//! All types in this module are used by at least two of the following
+//! applications:
 //! - api
 //! - data-brittler
 //! - event-api
-//! 
+//!
 //! All other old types are defined in the respective application crates.
 
-use crate::database::{self, BadgeId, EmoteSet, EmoteSetFlags, EmoteSetId, EmoteSetKind, PaintId, Platform, RoleId, User, UserConnection, UserId};
+use crate::database::{
+	self, BadgeId, EmoteSet, EmoteSetFlags, EmoteSetId, EmoteSetKind, PaintId, Platform, RoleId, User, UserConnection,
+	UserId,
+};
 
 mod cosmetic;
 mod image;

@@ -1,9 +1,8 @@
-use shared::{database::{User, UserConnection, UserEditor, UserEditorState}, old_types::{CosmeticBadgeModel, CosmeticPaintModel, UserPartialModel, UserStyle, UserTypeModel}};
-use shared::database::{RoleId, UserId};
-
-use crate::http::v3::types::UserEditorModelPermission;
+use shared::database::{RoleId, User, UserConnection, UserEditor, UserEditorState, UserId};
+use shared::old_types::{CosmeticBadgeModel, CosmeticPaintModel, UserPartialModel, UserStyle, UserTypeModel};
 
 use super::{is_default, EmoteSetPartialModel, UserConnectionModel};
+use crate::http::v3::types::UserEditorModelPermission;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]

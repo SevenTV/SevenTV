@@ -1,4 +1,5 @@
-use std::{str::FromStr, sync::Arc};
+use std::str::FromStr;
+use std::sync::Arc;
 
 use chrono::{DateTime, TimeZone, Utc};
 use hmac::{Hmac, Mac};
@@ -107,9 +108,11 @@ impl JwtState for AuthJwtPayload {
 		//   "nbf": 1716383847,
 		//   "iat": 1716383847
 		// }
-		// User id is encoded as object id in the `u` field and the session id is missing.
+		// User id is encoded as object id in the `u` field and the session id is
+		// missing.
 		//
-		// New tokens encode the user id as ULID in the subject field (`sub`) and the session id as ULID in the jwt id (`jti`) field.
+		// New tokens encode the user id as ULID in the subject field (`sub`) and the
+		// session id as ULID in the jwt id (`jti`) field.
 
 		let user_id = if let Some(user_id) = claims.private.get("u") {
 			let user_id = ObjectId::from_str(user_id.as_str()?).ok()?;

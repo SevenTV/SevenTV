@@ -1,13 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use shared::{
-	database::{EmoteSet, EmoteSetEmote, EmoteSetFlags, EmoteSetKind, User, UserConnection, UserId},
-	old_types::UserPartialModel,
-};
-
-use crate::{global::Global, http::error::ApiError};
+use shared::database::{EmoteSet, EmoteSetEmote, EmoteSetFlags, EmoteSetKind, User, UserConnection, UserId};
+use shared::old_types::UserPartialModel;
 
 use super::rest::types::{EmotePartialModel, EmoteSetModel};
+use crate::global::Global;
+use crate::http::error::ApiError;
 
 pub async fn load_emote_set(
 	global: &Arc<Global>,

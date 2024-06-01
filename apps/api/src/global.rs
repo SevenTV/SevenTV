@@ -136,7 +136,9 @@ impl Global {
 	}
 
 	/// The entitlement group loader.
-	pub fn product_entitlement_group_by_id_loader(&self) -> &DataLoader<dataloader::product::ProductEntitlementGroupByIdLoader> {
+	pub fn product_entitlement_group_by_id_loader(
+		&self,
+	) -> &DataLoader<dataloader::product::ProductEntitlementGroupByIdLoader> {
 		&self.product_entitlement_group_by_id_loader
 	}
 

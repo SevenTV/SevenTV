@@ -65,12 +65,12 @@ impl From<ImageFile> for Image {
 
 // pub fn image_files_to_file_properties<I: IntoIterator<Item = ImageFile>>(
 // 	image_files: I,
-// ) -> Result<Vec<FileProperties<shared::database::ImageFile>>, ImageFileError> {
-// 	let mut files = HashMap::new();
+// ) -> Result<Vec<FileProperties<shared::database::ImageFile>>, ImageFileError>
+// { 	let mut files = HashMap::new();
 
 // 	for old_file in image_files {
-// 		let rexp = IMAGE_FILE_REGEX.get_or_init(|| regex::Regex::new(r"^(\d+)x(_static)?$").unwrap());
-// 		let captures = rexp
+// 		let rexp = IMAGE_FILE_REGEX.get_or_init(||
+// regex::Regex::new(r"^(\d+)x(_static)?$").unwrap()); 		let captures = rexp
 // 			.captures(&old_file.name)
 // 			.ok_or_else(|| ImageFileError::InvalidImageFileName(old_file.name.clone()))?;
 
@@ -85,8 +85,8 @@ impl From<ImageFile> for Image {
 // 		let key: String = key.into_iter().rev().skip(1).rev().collect();
 // 		let path = format!("{}/{}", old_file.bucket, key);
 
-// 		let new_file = files.entry(scale).or_insert_with(|| shared::database::FileProperties {
-// 			path,
+// 		let new_file = files.entry(scale).or_insert_with(||
+// shared::database::FileProperties { 			path,
 // 			size: old_file.size,
 // 			mime: Some(old_file.content_type.clone()),
 // 			extra: shared::database::ImageFile {
@@ -103,8 +103,8 @@ impl From<ImageFile> for Image {
 // 				"image/avif" => ImageFormat::Avif,
 // 				"image/gif" => ImageFormat::Gif,
 // 				"image/png" => ImageFormat::Png,
-// 				_ => return Err(ImageFileError::InvalidImageFileContentType(old_file.content_type)),
-// 			},
+// 				_ => return
+// Err(ImageFileError::InvalidImageFileContentType(old_file.content_type)), 			},
 // 			is_static,
 // 			size: old_file.size,
 // 		});

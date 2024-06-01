@@ -4,15 +4,11 @@ use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use hyper::StatusCode;
 use shared::old_types::{EmoteFlagsModel, EmoteSetFlagModel};
 
-use crate::{
-	global::Global,
-	http::{
-		error::ApiError,
-		v3::gql::object_id::{EmoteObjectId, EmoteSetObjectId, ObjectId, UserObjectId},
-	},
-};
-
-use super::{emotes::EmotePartial, users::UserPartial};
+use super::emotes::EmotePartial;
+use super::users::UserPartial;
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::v3::gql::object_id::{EmoteObjectId, EmoteSetObjectId, ObjectId, UserObjectId};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
@@ -61,7 +57,12 @@ pub struct ActiveEmote {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmoteSet {
-	async fn emotes<'ctx>(&self, ctx: &Context<'ctx>, limit: Option<u32>, _origins: Option<bool>) -> Result<Vec<ActiveEmote>, ApiError> {
+	async fn emotes<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		limit: Option<u32>,
+		_origins: Option<bool>,
+	) -> Result<Vec<ActiveEmote>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_set_emotes = global

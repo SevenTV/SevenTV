@@ -1,4 +1,6 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Context;
 use async_nats::jetstream::{consumer, stream};
@@ -7,7 +9,8 @@ use mongodb::bson::{doc, to_bson};
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
-use shared::{database::{Badge, Collection, Emote, Image, ImageSet, Paint, PaintLayerId, User}, image_processor::Subject};
+use shared::database::{Badge, Collection, Emote, Image, ImageSet, Paint, PaintLayerId, User};
+use shared::image_processor::Subject;
 
 use crate::global::Global;
 
@@ -120,7 +123,12 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-async fn handle_success(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>, event: event_callback::Success) -> anyhow::Result<()> {
+async fn handle_success(
+	global: &Arc<Global>,
+	subject: Subject,
+	metadata: HashMap<String, String>,
+	event: event_callback::Success,
+) -> anyhow::Result<()> {
 	let input = event.input_metadata.context("missing input metadata")?;
 
 	let animated = event.files.iter().any(|i| i.frame_count > 1);
@@ -215,7 +223,7 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, metadata: HashMa
 					None,
 				)
 				.await?;
-		},
+		}
 		Subject::Badge(id) => {
 			Badge::collection(global.db())
 				.update_one(
@@ -233,7 +241,7 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, metadata: HashMa
 					None,
 				)
 				.await?;
-		},
+		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
 
@@ -278,7 +286,7 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 					None,
 				)
 				.await?;
-		},
+		}
 		Subject::Badge(id) => {
 			Badge::collection(global.db())
 				.delete_one(
@@ -288,14 +296,19 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 					None,
 				)
 				.await?;
-		},
+		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
 
 	Ok(())
 }
 
-async fn handle_fail(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>, _event: event_callback::Fail) -> anyhow::Result<()> {
+async fn handle_fail(
+	global: &Arc<Global>,
+	subject: Subject,
+	metadata: HashMap<String, String>,
+	_event: event_callback::Fail,
+) -> anyhow::Result<()> {
 	handle_abort(global, subject, metadata).await?;
 
 	// Notify user of failure with reason

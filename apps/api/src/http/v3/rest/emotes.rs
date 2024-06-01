@@ -11,11 +11,10 @@ use scuffle_image_processor_proto as image_processor;
 use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission, ImageSet, ImageSetInput};
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
+use super::types::{EmoteModel, EmotePartialModel};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-
-use super::types::{EmoteModel, EmotePartialModel};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]

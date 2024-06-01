@@ -1,7 +1,7 @@
 use mongodb::bson::DateTime;
 
-use super::{invoice::InvoiceRef, ProductId};
-use super::{InvoiceId, InvoiceLineItemId, ProductRef, SubscriptionId};
+use super::invoice::InvoiceRef;
+use super::{InvoiceId, InvoiceLineItemId, ProductId, ProductRef, SubscriptionId};
 use crate::database::{Collection, Id, UserId};
 
 pub type PurchaseId = Id<Purchase>;

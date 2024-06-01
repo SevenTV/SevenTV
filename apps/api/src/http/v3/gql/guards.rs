@@ -3,10 +3,9 @@ use std::sync::Arc;
 use async_graphql::{Context, Guard};
 use shared::database::Permission;
 
-use crate::{
-	global::Global,
-	http::{error::ApiError, middleware::auth::AuthSession},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::middleware::auth::AuthSession;
 
 pub struct PermissionGuard {
 	pub permission: Permission,
@@ -32,33 +31,33 @@ impl Guard for PermissionGuard {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::UNAUTHORIZED)?;
 
-            let global_config = global
-            .global_config_loader()
-            .load(())
-            .await
-            .map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-            .ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-    
-        let roles = {
-            let mut roles = global
-                .role_by_id_loader()
-                .load_many(user.entitled_cache.role_ids.iter().copied())
-                .await
-                .map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-    
-            global_config
-                .role_ids
-                .iter()
-                .filter_map(|id| roles.remove(id))
-                .collect::<Vec<_>>()
-        };
-    
-        let permissions = user.compute_permissions(&roles);
+		let global_config = global
+			.global_config_loader()
+			.load(())
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-        if !permissions.has(self.permission) {
-            return Err(ApiError::FORBIDDEN.into());
-        }
+		let roles = {
+			let mut roles = global
+				.role_by_id_loader()
+				.load_many(user.entitled_cache.role_ids.iter().copied())
+				.await
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-        Ok(())
+			global_config
+				.role_ids
+				.iter()
+				.filter_map(|id| roles.remove(id))
+				.collect::<Vec<_>>()
+		};
+
+		let permissions = user.compute_permissions(&roles);
+
+		if !permissions.has(self.permission) {
+			return Err(ApiError::FORBIDDEN.into());
+		}
+
+		Ok(())
 	}
 }

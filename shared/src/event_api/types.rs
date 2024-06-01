@@ -4,7 +4,8 @@
 // See the comment on the `payload.rs` file for a description of what this file
 // is.
 use super::payload::{Subscribe, Unsubscribe};
-use crate::{database::Id, old_types::UserPartialModel};
+use crate::database::Id;
+use crate::old_types::UserPartialModel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]

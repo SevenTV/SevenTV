@@ -81,7 +81,7 @@ impl Job for CosmeticsJob {
 				);
 				let input = match ip.send_req(processor_request).await {
 					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
-						return outcome.with_error(error::Error::ImageProcessor(error))
+						return outcome.with_error(error::Error::ImageProcessor(error));
 					}
 					Ok(scuffle_image_processor_proto::ProcessImageResponse {
 						id,
@@ -182,7 +182,7 @@ impl Job for CosmeticsJob {
 						);
 						let input = match ip.send_req(processor_request).await {
 							Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
-								return outcome.with_error(error::Error::ImageProcessor(error))
+								return outcome.with_error(error::Error::ImageProcessor(error));
 							}
 							Ok(scuffle_image_processor_proto::ProcessImageResponse {
 								id,

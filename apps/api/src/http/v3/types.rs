@@ -1,4 +1,5 @@
-//! This module contains types that are only used in the API but are needed for both REST and GraphQL endpoints.
+//! This module contains types that are only used in the API but are needed for
+//! both REST and GraphQL endpoints.
 
 use bitmask_enum::bitmask;
 use shared::database::EmoteFlags;
@@ -111,7 +112,8 @@ impl<'a> utoipa::ToSchema<'a> for UserEditorModelPermission {
 			"UserEditorModelPermission",
 			utoipa::openapi::ObjectBuilder::new()
 				.schema_type(utoipa::openapi::schema::SchemaType::Integer)
-				.description(Some("These flags are used to define what permissions a user editor has.
+				.description(Some(
+					"These flags are used to define what permissions a user editor has.
 
 - `ModifyEmotes` (1): Allows modifying emotes in the user's active emote sets
 
@@ -127,7 +129,8 @@ impl<'a> utoipa::ToSchema<'a> for UserEditorModelPermission {
 
 - `ManageEditors` (64): Allows adding or removing editors for the user
 
-- `ViewMessages` (128): Allows viewing the user's private messages, such as inbox"))
+- `ViewMessages` (128): Allows viewing the user's private messages, such as inbox",
+				))
 				.format(Some(utoipa::openapi::SchemaFormat::KnownFormat(
 					utoipa::openapi::KnownFormat::Int32,
 				)))

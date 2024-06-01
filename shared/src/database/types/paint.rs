@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::database::{Collection, Id};
-
 use super::ImageSet;
+use crate::database::{Collection, Id};
 
 pub type PaintId = Id<Paint>;
 

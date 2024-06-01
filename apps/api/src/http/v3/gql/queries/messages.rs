@@ -2,22 +2,14 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use futures::StreamExt;
-use mongodb::{
-	bson::{doc, to_bson},
-	options::FindOptions,
-};
+use mongodb::bson::{doc, to_bson};
+use mongodb::options::FindOptions;
 use shared::database::{Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketPermission, TicketStatus};
 
-use crate::{
-	global::Global,
-	http::{
-		error::ApiError,
-		v3::gql::{
-			guards::PermissionGuard,
-			object_id::{EmoteObjectId, ObjectId, TicketObjectId, UserObjectId},
-		},
-	},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::gql::object_id::{EmoteObjectId, ObjectId, TicketObjectId, UserObjectId};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/messages.gql
 

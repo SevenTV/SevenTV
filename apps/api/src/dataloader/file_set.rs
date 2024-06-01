@@ -18,9 +18,9 @@
 // 	type Key = FileSetId;
 // 	type Value = FileSet;
 
-// 	#[tracing::instrument(name = "FileSetByIdLoader::load", skip(self), fields(key_count = keys.len()))]
-// 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-// 		tracing::Span::current().make_root();
+// 	#[tracing::instrument(name = "FileSetByIdLoader::load", skip(self),
+// fields(key_count = keys.len()))] 	async fn load(&self, keys: Vec<Self::Key>)
+// -> LoaderOutput<Self> { 		tracing::Span::current().make_root();
 
 // 		let results: Vec<Self::Value> = FileSet::collection(&self.db)
 // 			.find(

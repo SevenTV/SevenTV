@@ -60,7 +60,9 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 		signal.recv().await;
 		tracing::info!("received shutdown signal, waiting for jobs to finish");
 		handler.shutdown().await;
-		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv()).await.ok();
+		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv())
+			.await
+			.ok();
 	});
 
 	tokio::select! {

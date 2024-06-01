@@ -16,13 +16,12 @@ use shared::database::{
 };
 use shared::old_types::UserConnectionPartialModel;
 
+use super::types::{EmoteSetModel, EmoteSetPartialModel, PresenceModel, UserConnectionModel, UserEditorModel, UserModel};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::emote_set_loader::{fake_user_set, get_fake_set_for_user_active_sets};
-
-use super::types::{EmoteSetModel, EmoteSetPartialModel, PresenceModel, UserConnectionModel, UserEditorModel, UserModel};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -133,7 +132,10 @@ pub async fn get_user_by_id(
 			.into_iter()
 			.map(|emote_set| EmoteSetPartialModel::from_db(emote_set, None))
 			.collect(),
-		editors.into_iter().filter_map(|editor| UserEditorModel::from_db(editor)).collect(),
+		editors
+			.into_iter()
+			.filter_map(|editor| UserEditorModel::from_db(editor))
+			.collect(),
 		&global.config().api.cdn_base_url,
 	);
 
@@ -223,7 +225,8 @@ pub async fn upload_user_profile_picture(
 			return Err(ApiError::FORBIDDEN);
 		}
 	} else {
-		// When someone wants to change another user's profile picture, they must have `UserPermission::Edit`
+		// When someone wants to change another user's profile picture, they must have
+		// `UserPermission::Edit`
 		if !permissions.has(UserPermission::Edit) {
 			return Err(ApiError::FORBIDDEN);
 		}

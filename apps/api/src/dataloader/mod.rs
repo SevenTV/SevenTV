@@ -8,7 +8,7 @@ pub mod global_config;
 pub mod paint;
 pub mod product;
 pub mod role;
+pub mod ticket;
 pub mod user;
 pub mod user_connection;
 pub mod user_editor;
-pub mod ticket;

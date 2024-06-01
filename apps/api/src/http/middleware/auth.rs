@@ -115,7 +115,7 @@ impl<S> AuthMiddlewareService<S> {
 				// old session
 				None => {
 					req.extensions_mut().insert(AuthSession::Old(jwt.user_id));
-				},
+				}
 			}
 		}
 

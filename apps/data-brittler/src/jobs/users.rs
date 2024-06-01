@@ -6,7 +6,8 @@ use futures::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
 use shared::database::{
-	Collection, ImageSet, ImageSetInput, Platform, RoleId, User, UserConnection, UserConnectionId, UserEditor, UserEditorId, UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle
+	Collection, ImageSet, ImageSetInput, Platform, RoleId, User, UserConnection, UserConnectionId, UserEditor, UserEditorId,
+	UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle,
 };
 
 use super::{Job, ProcessOutcome};
