@@ -20,25 +20,25 @@ pub struct EmotesQuery;
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Emote {
-	pub id: EmoteObjectId,
-	pub name: String,
-	pub flags: EmoteFlagsModel,
-	pub lifecycle: EmoteLifecycleModel,
-	pub tags: Vec<String>,
-	pub animated: bool,
+	id: EmoteObjectId,
+	name: String,
+	flags: EmoteFlagsModel,
+	lifecycle: EmoteLifecycleModel,
+	tags: Vec<String>,
+	animated: bool,
 	// created_at
-	pub owner_id: UserObjectId,
+	owner_id: UserObjectId,
 	// owner
 
 	// channels
 	// common_names
 	// trending
-	pub host: ImageHost,
-	pub versions: Vec<EmoteVersion>,
+	host: ImageHost,
+	versions: Vec<EmoteVersion>,
 	// activity
-	pub state: Vec<EmoteVersionState>,
-	pub listed: bool,
-	pub personal_use: bool,
+	state: Vec<EmoteVersionState>,
+	listed: bool,
+	personal_use: bool,
 	// reports
 }
 
@@ -122,18 +122,18 @@ impl Emote {
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmotePartial {
-	pub id: EmoteObjectId,
-	pub name: String,
-	pub flags: EmoteFlagsModel,
-	pub lifecycle: EmoteLifecycleModel,
-	pub tags: Vec<String>,
-	pub animated: bool,
+	id: EmoteObjectId,
+	name: String,
+	flags: EmoteFlagsModel,
+	lifecycle: EmoteLifecycleModel,
+	tags: Vec<String>,
+	animated: bool,
 	// created_at
-	pub owner_id: UserObjectId,
+	owner_id: UserObjectId,
 	// owner
-	pub host: ImageHost,
-	pub state: Vec<EmoteVersionState>,
-	pub listed: bool,
+	host: ImageHost,
+	state: Vec<EmoteVersionState>,
+	listed: bool,
 }
 
 impl From<Emote> for EmotePartial {
@@ -189,22 +189,22 @@ impl EmoteVersion {
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EmoteCommonName {
-	pub name: String,
-	pub count: u32,
+	name: String,
+	count: u32,
 }
 
 #[derive(Debug, Clone, Default, InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EmoteSearchFilter {
-	pub category: Option<EmoteSearchCategory>,
-	pub case_sensitive: Option<bool>,
-	pub exact_match: Option<bool>,
-	pub ignore_tags: Option<bool>,
-	pub animated: Option<bool>,
-	pub zero_width: Option<bool>,
-	pub authentic: Option<bool>,
-	pub aspect_ratio: Option<String>,
-	pub personal_use: Option<bool>,
+	category: Option<EmoteSearchCategory>,
+	case_sensitive: Option<bool>,
+	exact_match: Option<bool>,
+	ignore_tags: Option<bool>,
+	animated: Option<bool>,
+	zero_width: Option<bool>,
+	authentic: Option<bool>,
+	aspect_ratio: Option<String>,
+	personal_use: Option<bool>,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
@@ -222,8 +222,8 @@ pub enum EmoteSearchCategory {
 #[derive(Debug, Clone, Default, InputObject)]
 #[graphql(name = "Sort", rename_fields = "snake_case")]
 pub struct EmoteSearchSort {
-	pub value: String,
-	pub order: EmoteSearchSortOrder,
+	value: String,
+	order: EmoteSearchSortOrder,
 }
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Enum)]

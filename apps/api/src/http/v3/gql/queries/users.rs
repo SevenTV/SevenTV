@@ -336,13 +336,13 @@ impl UserPartial {
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct UserConnection {
-	pub id: String,
-	pub platform: UserConnectionPlatformModel,
-	pub username: String,
-	pub display_name: String,
-	pub linked_at: chrono::DateTime<chrono::Utc>,
-	pub emote_capacity: i32,
-	pub emote_set_id: Option<EmoteSetObjectId>,
+	id: String,
+	platform: UserConnectionPlatformModel,
+	username: String,
+	display_name: String,
+	linked_at: chrono::DateTime<chrono::Utc>,
+	emote_capacity: i32,
+	emote_set_id: Option<EmoteSetObjectId>,
 }
 
 impl UserConnection {

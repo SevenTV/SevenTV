@@ -18,15 +18,15 @@ pub struct EmoteSetsQuery;
 #[derive(Debug, Clone, Default, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmoteSet {
-	pub id: EmoteSetObjectId,
-	pub name: String,
-	pub flags: EmoteSetFlagModel,
-	pub tags: Vec<String>,
+	id: EmoteSetObjectId,
+	name: String,
+	flags: EmoteSetFlagModel,
+	tags: Vec<String>,
 	// emotes
 	// emote_count
 	// capacity
-	pub origins: Vec<EmoteSetOrigin>, // always empty
-	pub owner_id: Option<UserObjectId>,
+	origins: Vec<EmoteSetOrigin>, // always empty
+	owner_id: Option<UserObjectId>,
 	// owner
 }
 
@@ -135,9 +135,9 @@ impl EmoteSet {
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EmoteSetOrigin {
-	pub id: ObjectId<()>,
-	pub weight: i32,
-	pub slices: Vec<i32>,
+	id: ObjectId<()>,
+	weight: i32,
+	slices: Vec<i32>,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
