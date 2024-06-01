@@ -105,14 +105,15 @@ pub async fn create_emote(
 
 	let input = match global.image_processor().upload_emote(emote_id, body).await {
 		Ok(ProcessImageResponse {
+			id,
 			error: None,
 			upload_info: Some(ProcessImageResponseUploadInfo {
 				path: Some(path),
 				content_type,
 				size,
 			}),
-			..
 		}) => ImageSetInput::Pending {
+			task_id: id,
 			path: path.path,
 			mime: content_type,
 			size,

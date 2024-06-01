@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use async_nats::jetstream::{consumer, stream};
@@ -7,9 +7,9 @@ use mongodb::bson::{doc, to_bson};
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
-use shared::database::{Collection, Emote, Image, ImageSet, User};
+use shared::{database::{Badge, Collection, Emote, Image, ImageSet, Paint, PaintLayerId, User}, image_processor::Subject};
 
-use crate::{global::Global, image_processor::Subject};
+use crate::global::Global;
 
 const JETSTREAM_NAME: &str = "image-processor-callback";
 const JETSTREAM_CONSUMER_NAME: &str = "image-processor-callback-consumer";
@@ -69,8 +69,8 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 			}
 		};
 
-		let event = match EventCallback::decode(message.payload.as_ref()) {
-			Ok(EventCallback { event: Some(event), .. }) => event,
+		let event_callback = match EventCallback::decode(message.payload.as_ref()) {
+			Ok(callback) => callback,
 			err => {
 				if let Err(err) = err {
 					tracing::warn!(error = %err, "failed to decode event callback");
@@ -87,22 +87,22 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 			}
 		};
 
-		tracing::debug!(event = ?event, subject = ?subject, "received image processor callback event");
+		tracing::debug!(event_callback = ?event_callback, subject = ?subject, "received image processor callback event");
 
 		// handle event
-		match event {
+		match event_callback.event.context("missing event")? {
 			event_callback::Event::Success(event) => {
-				if let Err(err) = handle_success(&global, subject, event).await {
+				if let Err(err) = handle_success(&global, subject, event_callback.metadata, event).await {
 					tracing::error!(error = %err, "failed to handle success event");
 				}
 			}
 			event_callback::Event::Fail(event) => {
-				if let Err(err) = handle_fail(&global, subject, event).await {
+				if let Err(err) = handle_fail(&global, subject, event_callback.metadata, event).await {
 					tracing::error!(error = %err, "failed to handle fail event");
 				}
 			}
 			event_callback::Event::Cancel(_) => {
-				if let Err(err) = handle_cancel(&global, subject).await {
+				if let Err(err) = handle_cancel(&global, subject, event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle cancel event");
 				}
 			}
@@ -120,7 +120,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_callback::Success) -> anyhow::Result<()> {
+async fn handle_success(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>, event: event_callback::Success) -> anyhow::Result<()> {
 	let input = event.input_metadata.context("missing input metadata")?;
 
 	let animated = event.files.iter().any(|i| i.frame_count > 1);
@@ -195,13 +195,52 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_cal
 				)
 				.await?;
 		}
+		Subject::Paint(id) => {
+			let layer_id: PaintLayerId = metadata.get("layer_id").context("missing layer_id")?.parse()?;
+
+			Paint::collection(global.db())
+				.update_one(
+					doc! {
+						"_id": id,
+						"data.layers.id": layer_id,
+					},
+					doc! {
+						"$set": {
+							"data.layers.$.data.input.width": input.width,
+							"data.layers.$.data.input.height": input.height,
+							"data.layers.$.data.input.frame_count": input.frame_count,
+							"data.layers.$.data.outputs": to_bson(&outputs)?,
+						},
+					},
+					None,
+				)
+				.await?;
+		},
+		Subject::Badge(id) => {
+			Badge::collection(global.db())
+				.update_one(
+					doc! {
+						"_id": id,
+					},
+					doc! {
+						"$set": {
+							"image_set.input.width": input.width,
+							"image_set.input.height": input.height,
+							"image_set.input.frame_count": input.frame_count,
+							"image_set.outputs": to_bson(&outputs)?,
+						},
+					},
+					None,
+				)
+				.await?;
+		},
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
 
 	Ok(())
 }
 
-async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callback::Fail) -> anyhow::Result<()> {
+async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>) -> anyhow::Result<()> {
 	match subject {
 		Subject::Emote(id) => {
 			Emote::collection(global.db())
@@ -212,8 +251,6 @@ async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callb
 					None,
 				)
 				.await?;
-
-			// Notify user of failure with reason
 		}
 		Subject::ProfilePicture(id) => {
 			User::collection(global.db())
@@ -223,19 +260,27 @@ async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callb
 					None,
 				)
 				.await?;
-
-			// Notify user of failure with reason
 		}
-		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
-	}
+		Subject::Paint(id) => {
+			let layer_id: PaintLayerId = metadata.get("layer_id").context("missing layer_id")?.parse()?;
 
-	Ok(())
-}
-
-async fn handle_cancel(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
-	match subject {
-		Subject::Emote(id) => {
-			Emote::collection(global.db())
+			Paint::collection(global.db())
+				.update_one(
+					doc! {
+						"_id": id,
+						"data.layers": { "id": layer_id },
+					},
+					doc! {
+						"$pull": {
+							"data.layers": { "id": layer_id },
+						},
+					},
+					None,
+				)
+				.await?;
+		},
+		Subject::Badge(id) => {
+			Badge::collection(global.db())
 				.delete_one(
 					doc! {
 						"_id": id,
@@ -243,22 +288,25 @@ async fn handle_cancel(global: &Arc<Global>, subject: Subject) -> anyhow::Result
 					None,
 				)
 				.await?;
-
-			// Notify user of cancellation
-		}
-		Subject::ProfilePicture(id) => {
-			User::collection(global.db())
-				.update_one(
-					doc! { "_id": id },
-					doc! { "style.active_profile_picture": to_bson(&Option::<ImageSet>::None)? },
-					None,
-				)
-				.await?;
-
-			// Notify user of cancellation
-		}
+		},
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
+
+	Ok(())
+}
+
+async fn handle_fail(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>, _event: event_callback::Fail) -> anyhow::Result<()> {
+	handle_abort(global, subject, metadata).await?;
+
+	// Notify user of failure with reason
+
+	Ok(())
+}
+
+async fn handle_cancel(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>) -> anyhow::Result<()> {
+	handle_abort(global, subject, metadata).await?;
+
+	// Notify user of cancellation
 
 	Ok(())
 }

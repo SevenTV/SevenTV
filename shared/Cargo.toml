@@ -48,3 +48,6 @@ trust-dns-resolver = "0.23"
 futures = "0.3"
 async-stripe = { version = "0.37.0", features = ["runtime-tokio-hyper-rustls"] }
 async-graphql = { verion = "7.0.5", default-features = false }
+scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext", features = ["client"] }
+humantime-serde = "1"
+bytes = "1.6.0"

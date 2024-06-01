@@ -12,6 +12,7 @@ pub struct ImageSet {
 #[serde(untagged)]
 pub enum ImageSetInput {
     Pending {
+        task_id: String,
         path: String,
         mime: String,
         size: u64,
@@ -28,6 +29,7 @@ impl ImageSetInput {
 impl Default for ImageSetInput {
     fn default() -> Self {
         ImageSetInput::Pending {
+            task_id: String::default(),
             path: String::default(),
             mime: String::default(),
             size: u64::default(),

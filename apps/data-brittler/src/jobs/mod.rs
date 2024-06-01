@@ -52,6 +52,17 @@ pub struct ProcessOutcome {
 	pub inserted_rows: u64,
 }
 
+impl ProcessOutcome {
+	pub fn error(e: impl Into<error::Error>) -> Self {
+		Self { errors: vec![e.into()], ..Default::default() }
+	}
+
+	pub fn with_error(mut self, e: impl Into<error::Error>) -> Self {
+		self.errors.push(e.into());
+		self
+	}
+}
+
 impl AddAssign<ProcessOutcome> for JobOutcome {
 	fn add_assign(&mut self, mut rhs: ProcessOutcome) {
 		self.errors.append(&mut rhs.errors);

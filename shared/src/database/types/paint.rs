@@ -29,9 +29,12 @@ pub struct PaintData {
 	pub shadows: Vec<PaintShadow>,
 }
 
+pub type PaintLayerId = Id<PaintLayer>;
+
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct PaintLayer {
+	pub id: PaintLayerId,
 	#[serde(flatten)]
 	pub ty: PaintLayerType,
 	pub opacity: f64,
@@ -40,6 +43,7 @@ pub struct PaintLayer {
 impl Default for PaintLayer {
 	fn default() -> Self {
 		Self {
+			id: PaintLayerId::default(),
 			ty: PaintLayerType::default(),
 			opacity: 1.0,
 		}

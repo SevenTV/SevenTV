@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use scuffle_foundations::settings::auto_settings;
-use shared::config::DatabaseConfig;
+use shared::config::{DatabaseConfig, ImageProcessorConfig};
 
 pub type Config = shared::config::Config<Extra>;
 
@@ -33,6 +33,8 @@ pub struct Extra {
 	pub report_path: PathBuf,
 	/// Stripe API key
 	pub stripe_key: String,
+	/// image processor config
+	pub image_processor: ImageProcessorConfig,
 
 	/// Run users job
 	pub users: bool,

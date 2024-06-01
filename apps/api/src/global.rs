@@ -3,10 +3,10 @@
 use anyhow::Context as _;
 use scuffle_foundations::dataloader::DataLoader;
 use scuffle_foundations::telemetry::server::HealthCheck;
+use shared::image_processor::ImageProcessor;
 
 use crate::config::Config;
 use crate::dataloader;
-use crate::image_processor::ImageProcessor;
 
 pub struct Global {
 	nats: async_nats::Client,

@@ -243,14 +243,15 @@ pub async fn upload_user_profile_picture(
 
 	let input = match global.image_processor().upload_profile_picture(id, body).await {
 		Ok(ProcessImageResponse {
+			id,
 			error: None,
 			upload_info: Some(ProcessImageResponseUploadInfo {
 				path: Some(path),
 				content_type,
 				size,
 			}),
-			..
 		}) => ImageSetInput::Pending {
+			task_id: id,
 			path: path.path,
 			mime: content_type,
 			size,

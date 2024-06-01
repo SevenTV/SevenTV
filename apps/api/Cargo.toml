@@ -61,8 +61,6 @@ tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
 axum = "0.7"
 tower = "0.4"
 
-humantime-serde = "1"
-
 shared = { workspace = true }
 
 [features]

@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use scuffle_foundations::settings::auto_settings;
-use shared::config::DatabaseConfig;
+use shared::config::{DatabaseConfig, ImageProcessorConfig};
 
 #[auto_settings]
 #[serde(default)]
@@ -29,29 +29,6 @@ pub struct Api {
 	pub jwt: JwtConfig,
 	/// image processor config
 	pub image_processor: ImageProcessorConfig,
-}
-
-#[auto_settings]
-#[serde(default)]
-pub struct ImageProcessorConfig {
-	/// Image Processor address
-	pub address: Vec<String>,
-	/// Resolve Interval
-	#[settings(default = std::time::Duration::from_secs(10))]
-	#[serde(with = "humantime_serde")]
-	pub resolve_interval: std::time::Duration,
-	/// Event Queue Name
-	#[settings(default = "nats".into())]
-	pub event_queue_name: String,
-	/// Event Queue Topic Prefix
-	#[settings(default = "image_processor".into())]
-	pub event_queue_topic_prefix: String,
-	/// Input Drive Name
-	#[settings(default = "s3".into())]
-	pub input_drive_name: String,
-	/// Output Drive Name
-	#[settings(default = "s3".into())]
-	pub output_drive_name: String,
 }
 
 #[auto_settings]

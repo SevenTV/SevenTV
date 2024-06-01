@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use mongodb::bson::oid::ObjectId;
 use shared::database::Platform;
 
@@ -33,6 +35,20 @@ pub enum Error {
 	#[error("{0}")]
 	Stripe(#[from] stripe::StripeError),
 
+	#[error("reqwest error")]
+	Reqwest(#[from] reqwest::Error),
+	#[error("failed to download image")]
+	ImageDownload {
+		cosmetic_id: ObjectId,
+		status: reqwest::StatusCode,
+	},
+	#[error("grpc error")]
+	Grpc(#[from] tonic::Status),
+	#[error("image processor error")]
+	ImageProcessor(scuffle_image_processor_proto::Error),
+	#[error("failed to set once cell value")]
+	OnceCellSet(#[from] tokio::sync::SetError<HashSet<String>>),
+
 	#[error("not implemented")]
 	NotImplemented(&'static str),
 }
@@ -52,6 +68,11 @@ impl Error {
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
+			Self::Reqwest(_) => "Reqwest",
+			Self::ImageDownload { .. } => "ImageDownload",
+			Self::Grpc(_) => "Grpc",
+			Self::ImageProcessor(_) => "ImageProcessor",
+			Self::OnceCellSet(_) => "OnceCellSet",
 			Self::NotImplemented(_) => "NotImplemented",
 		}
 	}
@@ -69,6 +90,8 @@ impl Error {
 			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
 			Self::InvalidStripeId(id) => format!("id: {}", id),
+			Self::ImageProcessor(e) => e.message.clone(),
+			Self::ImageDownload { cosmetic_id, status } => format!("cosmetic id: {}, status: {}", cosmetic_id, status),
 			Self::NotImplemented(msg) => msg.to_string(),
 			e => format!("{:?}", e),
 		}

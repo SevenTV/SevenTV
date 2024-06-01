@@ -8,6 +8,7 @@ mod config;
 mod error;
 mod format;
 mod global;
+mod image_processor_callback;
 mod jobs;
 mod report;
 mod types;
@@ -52,12 +53,20 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 		signal.recv().await;
 		tracing::info!("received shutdown signal, waiting for jobs to finish");
 		handler.shutdown().await;
-		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv()).await.ok();
+		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv())
+			.await
+			.ok();
 	});
 
+	let joined_jobs = futures::future::join(
+		jobs::run(global.clone()),
+		image_processor_callback::run(global.clone()),
+	);
+
 	tokio::select! {
-		r = jobs::run(global.clone()) => match r {
-			Err(e) => tracing::error!("failed to run jobs: {e:?}"),
+		r = joined_jobs => match r {
+			(Err(e), _) => tracing::error!(error = %e, "failed to run jobs"),
+			(_, Err(e)) => tracing::error!(error = %e, "failed to run image processor callback"),
 			_ => {},
 		},
 		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
