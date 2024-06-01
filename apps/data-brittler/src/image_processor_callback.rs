@@ -96,26 +96,33 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 
 		// handle event
 		match event_callback.event.context("missing event")? {
+			event_callback::Event::Start(_) => {
+				// ack
+				message
+					.ack()
+					.await
+					.map_err(|e| anyhow::anyhow!(e))
+					.context("failed to ack message")?;
+				continue;
+			}
 			event_callback::Event::Success(event) => {
 				if let Err(err) = handle_success(&global, subject, event_callback.metadata, event).await {
 					tracing::error!(error = %err, "failed to handle success event");
 				}
-				processed_tasks.insert(event_callback.id.clone());
 			}
 			event_callback::Event::Fail(event) => {
 				if let Err(err) = handle_fail(&global, subject, event_callback.metadata, event).await {
 					tracing::error!(error = %err, "failed to handle fail event");
 				}
-				processed_tasks.insert(event_callback.id.clone());
 			}
 			event_callback::Event::Cancel(_) => {
 				if let Err(err) = handle_cancel(&global, subject, event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle cancel event");
 				}
-				processed_tasks.insert(event_callback.id.clone());
 			}
-			_ => {}
 		}
+
+		processed_tasks.insert(event_callback.id.clone());
 
 		// ack
 		message
