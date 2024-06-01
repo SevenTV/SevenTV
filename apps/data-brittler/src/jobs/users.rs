@@ -68,7 +68,7 @@ impl Job for UsersJob {
 		self.global.source_db().collection("users")
 	}
 
-	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
+	async fn process(&mut self, mut user: Self::T) -> ProcessOutcome {
 		let mut outcome = ProcessOutcome::default();
 
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
@@ -110,6 +110,14 @@ impl Job for UsersJob {
 			_ => None,
 		};
 
+		user.connections.sort_by(|a, b| a.platform.cmp(&b.platform));
+		let active_emote_set_ids = user
+			.connections
+			.iter()
+			.filter_map(|c| c.emote_set_id)
+			.map(Into::into)
+			.collect();
+
 		self.users.push(User {
 			id: user.id.into(),
 			email: user.email,
@@ -123,7 +131,7 @@ impl Job for UsersJob {
 				active_profile_picture: active_profile_picture.clone(),
 				all_profile_pictures: active_profile_picture.map(|p| vec![p]).unwrap_or_default(),
 			},
-			active_emote_set_ids: vec![],
+			active_emote_set_ids,
 			grants: UserGrants {
 				role_ids: roles.into_iter().collect(),
 				..Default::default()

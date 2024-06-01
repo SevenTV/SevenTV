@@ -17,11 +17,12 @@ use shared::database::{
 use shared::old_types::UserConnectionPartialModel;
 
 use super::types::{EmoteSetModel, EmoteSetPartialModel, PresenceModel, UserConnectionModel, UserEditorModel, UserModel};
+use super::virtual_set::get_virtual_rest_set_for_user;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::emote_set_loader::{fake_user_set, get_fake_set_for_user_active_sets};
+use crate::http::v3::emote_set_loader::virtual_user_set;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -116,9 +117,14 @@ pub async fn get_user_by_id(
 
 	let permissions = user.compute_permissions(&roles);
 
-	// the fake user emote set
-	let fake_user_set = EmoteSetModel::from_db(
-		fake_user_set(user.id, permissions.emote_set_slots_limit.unwrap_or(600)),
+	let display_name = user_connections
+		.iter()
+		.find(|conn| conn.main_connection)
+		.map(|c| c.platform_display_name.clone());
+
+	// the virtual user emote set
+	let virtual_user_set = EmoteSetModel::from_db(
+		virtual_user_set(user.id, display_name, permissions.emote_set_slots_limit.unwrap_or(600)),
 		vec![],
 		None,
 	);
@@ -140,8 +146,8 @@ pub async fn get_user_by_id(
 	);
 
 	old_model.connections.iter_mut().for_each(|conn| {
-		conn.emote_set_id = Some(fake_user_set.id);
-		conn.emote_set = Some(fake_user_set.clone());
+		conn.emote_set_id = Some(virtual_user_set.id);
+		conn.emote_set = Some(virtual_user_set.clone());
 	});
 
 	Ok(Json(old_model))
@@ -426,7 +432,7 @@ pub async fn get_user_by_platform_id(
 
 	let permissions = user.compute_permissions(&roles);
 
-	let user_fake_set = get_fake_set_for_user_active_sets(
+	let user_fake_set = get_virtual_rest_set_for_user(
 		&global,
 		user.clone(),
 		connections.clone(),

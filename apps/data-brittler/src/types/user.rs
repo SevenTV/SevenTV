@@ -61,7 +61,7 @@ pub struct UserConnection {
 	pub emote_set_id: Option<ObjectId>,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE", tag = "platform", content = "data")]
 pub enum ConnectionPlatform {
 	Twitch {

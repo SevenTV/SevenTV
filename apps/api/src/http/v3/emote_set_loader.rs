@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use shared::database::{EmoteSet, EmoteSetEmote, EmoteSetFlags, EmoteSetKind, User, UserConnection, UserId};
+use shared::database::{EmoteSet, EmoteSetEmote, EmoteSetFlags, EmoteSetKind, User, UserId};
 use shared::old_types::UserPartialModel;
 
-use super::rest::types::{EmotePartialModel, EmoteSetModel};
+use super::rest::types::EmotePartialModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
 
@@ -90,11 +90,23 @@ pub async fn load_emote_set(
 	}))
 }
 
-pub fn fake_user_set(user_id: UserId, slots: u16) -> EmoteSet {
+pub fn virtual_user_set(user_id: UserId, display_name: Option<String>, slots: u16) -> EmoteSet {
+	let mut name = String::new();
+	if let Some(display_name) = display_name {
+		name.push_str(&display_name);
+		let lower = display_name.to_lowercase();
+		if lower.ends_with('s') || lower.ends_with('z') || lower.ends_with('x') {
+			name.push_str("' ");
+		} else {
+			name.push_str("'s ");
+		}
+	}
+	name.push_str("Enabled Emotes");
+
 	EmoteSet {
 		id: user_id.cast(),
 		owner_id: Some(user_id),
-		name: "Enabled Emotes".to_string(),
+		name,
 		kind: EmoteSetKind::Normal,
 		tags: Vec::new(),
 		flags: EmoteSetFlags::none(),
@@ -102,13 +114,12 @@ pub fn fake_user_set(user_id: UserId, slots: u16) -> EmoteSet {
 	}
 }
 
-pub async fn get_fake_set_for_user_active_sets(
+pub async fn get_virtual_set_emotes_for_user(
 	global: &Arc<Global>,
-	user: User,
-	user_connections: Vec<UserConnection>,
+	user: &User,
 	slots: u16,
-) -> Result<EmoteSetModel, ApiError> {
-	let emote_set_emotes: Vec<_> = global
+) -> Result<Vec<EmoteSetEmote>, ApiError> {
+	Ok(global
 		.emote_set_emote_by_id_loader()
 		.load_many(user.active_emote_set_ids.iter().copied())
 		.await
@@ -116,17 +127,5 @@ pub async fn get_fake_set_for_user_active_sets(
 		.into_values()
 		.flatten()
 		.take(slots as usize)
-		.collect();
-
-	Ok(EmoteSetModel::from_db(
-		fake_user_set(user.id, slots),
-		load_emote_set(global, emote_set_emotes).await?,
-		Some(UserPartialModel::from_db(
-			user,
-			user_connections,
-			None,
-			None,
-			&global.config().api.cdn_base_url,
-		)),
-	))
+		.collect())
 }
