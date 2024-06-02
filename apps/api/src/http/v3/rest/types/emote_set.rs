@@ -1,4 +1,4 @@
-use shared::database::{EmoteId, EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetId, UserId};
+use shared::database::{EmoteId, EmoteSet, EmoteSetEmote, EmoteSetFlags, EmoteSetId, UserId};
 use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel, UserPartialModel};
 
 use super::{is_default, EmotePartialModel};

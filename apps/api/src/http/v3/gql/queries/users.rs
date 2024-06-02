@@ -22,7 +22,7 @@ use crate::http::v3::types::UserEditorModelPermission;
 pub struct UsersQuery;
 
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
-#[graphql(rename_fields = "snake_case")]
+#[graphql(complex, rename_fields = "snake_case")]
 pub struct User {
 	id: UserObjectId,
 	#[graphql(name = "type")]
@@ -72,7 +72,7 @@ impl From<UserPartial> for User {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl User {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.timestamp()
+		self.id.id().timestamp()
 	}
 
 	async fn editors<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
@@ -80,7 +80,7 @@ impl User {
 
 		let editors = global
 			.user_editor_by_user_id_loader()
-			.load(*self.id)
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -93,7 +93,7 @@ impl User {
 
 		let editors = global
 			.user_editor_by_editor_id_loader()
-			.load(*self.id)
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -105,12 +105,12 @@ impl User {
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
-	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, entitled: bool) -> Result<Vec<EmoteSet>, ApiError> {
+	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_sets = global
 			.emote_set_by_user_id_loader()
-			.load(*self.id)
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -170,7 +170,7 @@ impl UserEditor {
 impl UserEditor {
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, *self.id).await?)
+		Ok(UserPartial::load_from_db(global, self.id.id()).await?)
 	}
 }
 
@@ -309,7 +309,7 @@ impl UserPartial {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserPartial {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.timestamp()
+		self.id.id().timestamp()
 	}
 
 	async fn connections(&self) -> Vec<UserConnection> {
@@ -319,12 +319,12 @@ impl UserPartial {
 			.collect()
 	}
 
-	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: bool) -> Result<Vec<EmoteSet>, ApiError> {
+	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_sets = global
 			.emote_set_by_user_id_loader()
-			.load(*self.id)
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -354,7 +354,7 @@ impl UserConnection {
 			display_name: value.platform_display_name,
 			linked_at: value.id.timestamp(),
 			emote_capacity: slots as i32,
-			emote_set_id: None,
+			emote_set_id: Some(value.user_id.cast().into()),
 		}
 	}
 }
@@ -380,7 +380,7 @@ impl UserStyle {
 
 		Ok(global
 			.paint_by_id_loader()
-			.load(*id)
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_base_url)))
@@ -395,7 +395,7 @@ impl UserStyle {
 
 		Ok(global
 			.badge_by_id_loader()
-			.load(*id)
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_base_url)))
@@ -422,7 +422,7 @@ impl UsersQuery {
 
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>, id: UserObjectId) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, *id).await?.into())
+		Ok(UserPartial::load_from_db(global, id.id()).await?.into())
 	}
 
 	async fn user_by_connection<'ctx>(
@@ -447,6 +447,6 @@ impl UsersQuery {
 	#[graphql(name = "usersByID")]
 	async fn users_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<UserObjectId>) -> Result<Vec<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_many_from_db(global, list.into_iter().map(Into::into)).await
+		UserPartial::load_many_from_db(global, list.into_iter().map(|id| id.id())).await
 	}
 }

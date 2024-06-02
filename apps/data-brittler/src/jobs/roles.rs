@@ -68,7 +68,7 @@ impl Job for RolesJob {
 	}
 
 	async fn finish(mut self) -> ProcessOutcome {
-		self.all_roles.sort_by_cached_key(|(_, p)| *p);
+		self.all_roles.sort_by_key(|(_, p)| *p);
 
 		let role_ids: Vec<RoleId> = self.all_roles.into_iter().map(|(id, _)| id).collect();
 

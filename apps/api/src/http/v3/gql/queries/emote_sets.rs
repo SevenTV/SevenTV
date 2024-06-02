@@ -95,7 +95,7 @@ impl ActiveEmote {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ActiveEmote {
 	async fn timestamp(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.timestamp()
+		self.id.id().timestamp()
 	}
 
 	async fn data<'ctx>(&self, ctx: &Context<'ctx>) -> Result<EmotePartial, ApiError> {
@@ -136,7 +136,7 @@ impl EmoteSet {
 			Some((user, slots)) => get_virtual_set_emotes_for_user(global, user, *slots).await?,
 			None => global
 				.emote_set_emote_by_id_loader()
-				.load(*self.id)
+				.load(self.id.id())
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.unwrap_or_default(),
@@ -163,7 +163,7 @@ impl EmoteSet {
 				let count = EmoteSetEmote::collection(global.db())
 					.count_documents(
 						doc! {
-							"emote_set_id": *self.id,
+							"emote_set_id": self.id.id(),
 						},
 						None,
 					)
@@ -183,7 +183,7 @@ impl EmoteSet {
 
 		let user = global
 			.user_by_id_loader()
-			.load(global, *owner_id)
+			.load(global, owner_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
@@ -218,7 +218,7 @@ impl EmoteSet {
 		};
 
 		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(Some(UserPartial::load_from_db(global, *id).await?))
+		Ok(Some(UserPartial::load_from_db(global, id.id()).await?))
 	}
 }
 
@@ -241,40 +241,41 @@ impl EmoteSetsQuery {
 	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteSetObjectId) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let emote_set = global
-			.emote_set_by_id_loader()
-			.load(*id)
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		match id {
+			EmoteSetObjectId::Id(id) => {
+				let emote_set = global
+					.emote_set_by_id_loader()
+					.load(id)
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::NOT_FOUND)?;
 
-		if let Some(emote_set) = emote_set {
-			// all good
-			Ok(EmoteSet::from_db(emote_set))
-		} else {
-			// this may be a virtual set
-			// check if there is a user with the provided id
-			let user = global
-				.user_by_id_loader()
-				.load(global, (*id).cast())
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::NOT_FOUND)?;
+				Ok(EmoteSet::from_db(emote_set))
+			},
+			EmoteSetObjectId::VirtualId(user_id) => {
+				// check if there is a user with the provided id
+				let user = global
+					.user_by_id_loader()
+					.load(global, user_id)
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::NOT_FOUND)?;
 
-			let user_connections = global
-				.user_connection_by_user_id_loader()
-				.load(user.id)
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.unwrap_or_default();
+				let user_connections = global
+					.user_connection_by_user_id_loader()
+					.load(user.id)
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.unwrap_or_default();
 
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+				let global_config = global
+					.global_config_loader()
+					.load(())
+					.await
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-			let roles = {
+				let roles = {
 				let mut roles = global
 					.role_by_id_loader()
 					.load_many(user.entitled_cache.role_ids.iter().copied())
@@ -286,11 +287,12 @@ impl EmoteSetsQuery {
 					.iter()
 					.filter_map(|id| roles.remove(id))
 					.collect::<Vec<_>>()
-			};
+				};
 
-			let slots = user.compute_permissions(&roles).emote_set_slots_limit.unwrap_or(600);
+				let slots = user.compute_permissions(&roles).emote_set_slots_limit.unwrap_or(600);
 
-			Ok(EmoteSet::virtual_set_for_user(user, user_connections, slots).await)
+				Ok(EmoteSet::virtual_set_for_user(user, user_connections, slots).await)
+			}
 		}
 	}
 
@@ -306,9 +308,19 @@ impl EmoteSetsQuery {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "list too large"));
 		}
 
+		let mut set_ids = vec![];
+		let mut virtual_user_ids = vec![];
+
+		for id in list {
+			match id {
+				EmoteSetObjectId::Id(id) => set_ids.push(id),
+				EmoteSetObjectId::VirtualId(user_id) => virtual_user_ids.push(user_id),
+			}
+		}
+
 		let mut emote_sets: Vec<_> = global
 			.emote_set_by_id_loader()
-			.load_many(list.iter().map(|id| **id))
+			.load_many(set_ids)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()
@@ -318,7 +330,7 @@ impl EmoteSetsQuery {
 		// load users with ids for virtual sets
 		let users = global
 			.user_by_id_loader()
-			.load_many(global, list.iter().map(|id| (**id).cast()))
+			.load_many(global, virtual_user_ids)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

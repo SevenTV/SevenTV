@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
@@ -6,7 +5,7 @@ use futures::StreamExt;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::FindOptions;
 use shared::database::{
-	Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketMessage, TicketPermission, TicketStatus,
+	Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketMessage, TicketPermission, TicketStatus
 };
 
 use super::users::{User, UserPartial};
@@ -83,13 +82,13 @@ impl Report {
 impl Report {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
 		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, *self.actor_id).await?.into())
+		Ok(UserPartial::load_from_db(global, self.actor_id.id()).await?.into())
 	}
 
 	async fn assignees<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<User>, ApiError> {
 		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		Ok(
-			UserPartial::load_many_from_db(global, self.assignee_ids.iter().map(|i| i.deref().clone()))
+			UserPartial::load_many_from_db(global, self.assignee_ids.iter().map(|i| i.id()))
 				.await?
 				.into_iter()
 				.map(Into::into)
@@ -98,7 +97,7 @@ impl Report {
 	}
 
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.timestamp()
+		self.id.id().timestamp()
 	}
 }
 
@@ -142,7 +141,7 @@ impl ReportsQuery {
 		after_id: Option<TicketObjectId>,
 		before_id: Option<TicketObjectId>,
 	) -> Result<Vec<Report>, ApiError> {
-		if let (Some(after_id), Some(before_id)) = (after_id.map(|i| *i), before_id.map(|i| *i)) {
+		if let (Some(after_id), Some(before_id)) = (after_id.map(|i| i.id()), before_id.map(|i| i.id())) {
 			if after_id > before_id {
 				return Err(ApiError::BAD_REQUEST);
 			}
@@ -159,11 +158,11 @@ impl ReportsQuery {
 		let mut id_args = mongodb::bson::Document::new();
 
 		if let Some(after_id) = after_id {
-			id_args.insert("$gt", *after_id);
+			id_args.insert("$gt", after_id.id());
 		}
 
 		if let Some(before_id) = before_id {
-			id_args.insert("$lt", *before_id);
+			id_args.insert("$lt", before_id.id());
 		}
 
 		if id_args.len() > 0 {
@@ -224,7 +223,7 @@ impl ReportsQuery {
 
 		let Some(ticket) = global
 			.ticket_by_id_loader()
-			.load(*id)
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		else {
@@ -233,14 +232,14 @@ impl ReportsQuery {
 
 		let members = global
 			.ticket_members_by_ticket_id_loader()
-			.load(*id)
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
 		let messages = global
 			.ticket_messages_by_ticket_id_loader()
-			.load(*id)
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();

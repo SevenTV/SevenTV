@@ -88,12 +88,12 @@ impl Emote {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl Emote {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.timestamp()
+		self.id.id().timestamp()
 	}
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_from_db(global, *self.owner_id).await
+		UserPartial::load_from_db(global, self.owner_id.id()).await
 	}
 
 	async fn channels(&self, ctx: &Context<'_>, page: u32, limit: u32) -> Result<UserSearchResult, ApiError> {
@@ -156,12 +156,12 @@ impl From<Emote> for EmotePartial {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmotePartial {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.timestamp()
+		self.id.id().timestamp()
 	}
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_from_db(global, *self.owner_id).await
+		UserPartial::load_from_db(global, self.owner_id.id()).await
 	}
 }
 
@@ -182,7 +182,7 @@ pub struct EmoteVersion {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmoteVersion {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.timestamp()
+		self.id.id().timestamp()
 	}
 }
 
@@ -252,7 +252,7 @@ impl EmotesQuery {
 
 		let emote = global
 			.emote_by_id_loader()
-			.load(*id)
+			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -273,7 +273,7 @@ impl EmotesQuery {
 
 		let emote = global
 			.emote_by_id_loader()
-			.load_many(list.into_iter().map(|i| *i))
+			.load_many(list.into_iter().map(|i| i.id()))
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 

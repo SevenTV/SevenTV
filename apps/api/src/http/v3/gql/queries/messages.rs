@@ -79,7 +79,7 @@ impl ModRequestMessage {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ModRequestMessage {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.timestamp()
+		self.id.id().timestamp()
 	}
 }
 
@@ -166,7 +166,7 @@ impl MessagesQuery {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		if let Some(after_id) = after_id {
-			search_args.insert("_id", doc! { "$gt": *after_id });
+			search_args.insert("_id", doc! { "$gt": after_id.id() });
 		}
 
 		let limit = limit.unwrap_or(100).min(500);

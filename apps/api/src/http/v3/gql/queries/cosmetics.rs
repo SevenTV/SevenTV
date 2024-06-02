@@ -58,7 +58,7 @@ impl CosmeticsQuery {
 		} else {
 			let paints = global
 				.paint_by_id_loader()
-				.load_many(list.clone().into_iter().map(|id| (*id).cast()))
+				.load_many(list.clone().into_iter().map(|id| id.id().cast()))
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.into_values()
@@ -67,7 +67,7 @@ impl CosmeticsQuery {
 
 			let badges = global
 				.badge_by_id_loader()
-				.load_many(list.into_iter().map(|id| (*id).cast()))
+				.load_many(list.into_iter().map(|id| id.id().cast()))
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.into_values()
