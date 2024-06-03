@@ -33,4 +33,16 @@ pub struct EmoteVersionState {
 	pub listed: bool,
 	#[serde(default, deserialize_with = "super::null_to_default")]
 	pub allow_personal: bool,
+	pub lifecycle: EmoteLifecycle,
+}
+
+#[derive(Debug, PartialEq, Eq, serde_repr::Deserialize_repr)]
+#[repr(i32)]
+pub enum EmoteLifecycle {
+	Deleted = -1,
+	Pending = 0,
+	Processing = 1,
+	Disabled = 2,
+	Live = 3,
+	Failed = -2,
 }

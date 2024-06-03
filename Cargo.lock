@@ -175,6 +175,7 @@ dependencies = [
  "shared",
  "thiserror",
  "tikv-jemallocator",
+ "time",
  "tokio",
  "tokio-rustls 0.26.0",
  "tokio-stream",
@@ -245,6 +246,7 @@ dependencies = [
  "static_assertions_next",
  "tempfile",
  "thiserror",
+ "time",
  "tracing",
  "tracing-futures",
 ]

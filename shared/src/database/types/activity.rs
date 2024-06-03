@@ -33,7 +33,7 @@ pub enum EmoteActivityData {
 		new: String,
 	},
 	Merge {
-		// TODO
+		new_emote_id: EmoteId,
 	},
 	ChangeOwner {
 		old: UserId,

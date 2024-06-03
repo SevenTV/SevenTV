@@ -127,10 +127,10 @@ impl Job for AuditLogsJob {
 								);
 								Some(database::EmoteActivityData::ChangeSettings { old, new })
 							}
-							AuditLogChange::NewEmoteId(_) => {
-								// TODO
-								Some(database::EmoteActivityData::Merge {})
-							}
+							AuditLogChange::NewEmoteId(emote_id) => emote_id
+								.new
+								.into_inner()
+								.map(|id| database::EmoteActivityData::Merge { new_emote_id: id.into() }),
 							AuditLogChange::Tags(tags) => Some(database::EmoteActivityData::ChangeTags {
 								added: tags.new,
 								removed: tags.old,

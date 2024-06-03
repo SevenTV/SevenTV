@@ -6,6 +6,7 @@ use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
+use crate::types::EmoteLifecycle;
 use crate::{error, types};
 
 pub struct EmotesJob {
@@ -33,6 +34,10 @@ impl Job for EmotesJob {
 
 	async fn process(&mut self, emote: Self::T) -> ProcessOutcome {
 		for v in emote.versions {
+			if [EmoteLifecycle::Deleted, EmoteLifecycle::Failed].contains(&v.state.lifecycle) {
+				continue;
+			}
+
 			let mut flags = EmoteFlags::none();
 			if emote.flags.contains(EmoteFlagsModel::Private) {
 				flags |= EmoteFlags::Private;

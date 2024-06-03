@@ -16,7 +16,7 @@ bitmask-enum = "2"
 serde_repr = "0.1"
 tracing = "0.1"
 hyper = { version = "1", features = ["full"] }
-async-graphql = { version = "7.0.5", features = ["apollo_tracing", "tracing"] }
+async-graphql = { version = "7.0.5", features = ["apollo_tracing", "tracing", "chrono", "time"] }
 async-graphql-axum = "7.0.5"
 async-trait = "0.1.79"
 async-nats = "0.35.0"
@@ -36,6 +36,7 @@ futures-util = "0.3"
 hex = "0.4"
 serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
+time = { version = "0.3.36", features = ["serde"] } # clickhouse is cringe and uses time instead of chrono
 sha2 = "0.10"
 urlencoding = "2"
 url = "2"

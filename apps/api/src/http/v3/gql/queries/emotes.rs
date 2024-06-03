@@ -108,8 +108,17 @@ impl Emote {
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
-	async fn activity(&self) -> Result<Vec<AuditLog>, ApiError> {
-		Err(ApiError::NOT_IMPLEMENTED)
+	async fn activity<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<AuditLog>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let activities = global
+			.emote_activity_by_emote_id_loader()
+			.load(self.id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.unwrap_or_default();
+
+		Ok(activities.into_iter().map(AuditLog::from_db_emote).collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {

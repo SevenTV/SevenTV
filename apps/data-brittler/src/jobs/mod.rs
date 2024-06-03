@@ -287,5 +287,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	.render_once()?;
 	tokio::fs::write(&global.config().report_path, report).await?;
 
+	scuffle_foundations::context::Handler::global().shutdown().await;
+
 	Ok(())
 }
