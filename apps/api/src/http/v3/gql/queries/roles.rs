@@ -5,11 +5,11 @@ use bitmask_enum::bitmask;
 use futures::StreamExt;
 use mongodb::bson::doc;
 use shared::database::{self, Collection, GlobalConfig, Permissions};
+use shared::old_types::RoleObjectId;
 
 use super::users::User;
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::gql::object_id::RoleObjectId;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/roles.gql
 

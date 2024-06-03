@@ -1,5 +1,5 @@
 use shared::database::{RoleId, User, UserConnection, UserEditor, UserEditorState, UserId};
-use shared::old_types::{CosmeticBadgeModel, CosmeticPaintModel, UserPartialModel, UserStyle, UserTypeModel};
+use shared::old_types::{CosmeticBadgeModel, CosmeticPaintModel, UserPartialModel, UserStyle, UserTypeModel, VirtualId};
 
 use super::{is_default, EmoteSetPartialModel, UserConnectionModel};
 use crate::http::v3::types::UserEditorModelPermission;
@@ -66,7 +66,7 @@ impl UserModel {
 					display_name: p.display_name,
 					linked_at: p.linked_at,
 					emote_capacity: p.emote_capacity,
-					emote_set_id: p.emote_set_id,
+					emote_set_id: VirtualId(partial.id),
 					emote_set: None,
 					user: None,
 				})

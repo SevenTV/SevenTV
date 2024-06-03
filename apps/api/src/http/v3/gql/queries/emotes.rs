@@ -3,13 +3,13 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
 use shared::old_types::{EmoteFlagsModel, ImageHost, ImageHostKind};
+use shared::old_types::{EmoteObjectId, UserObjectId};
 
 use super::audit_logs::AuditLog;
 use super::reports::Report;
 use super::users::{UserPartial, UserSearchResult};
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::gql::object_id::{EmoteObjectId, UserObjectId};
 use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};
 
 #[derive(Default)]

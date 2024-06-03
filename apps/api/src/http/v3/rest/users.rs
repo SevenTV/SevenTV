@@ -14,7 +14,7 @@ use shared::database::{
 	Collection, FeaturePermission, ImageSet, ImageSetInput, Platform, User, UserConnection, UserConnectionId, UserId,
 	UserPermission,
 };
-use shared::old_types::UserConnectionPartialModel;
+use shared::old_types::{EmoteSetObjectId, UserConnectionPartialModel, VirtualId};
 
 use super::types::{EmoteSetModel, EmoteSetPartialModel, PresenceModel, UserConnectionModel, UserEditorModel, UserModel};
 use super::virtual_set::get_virtual_rest_set_for_user;
@@ -123,11 +123,14 @@ pub async fn get_user_by_id(
 		.map(|c| c.platform_display_name.clone());
 
 	// the virtual user emote set
-	let virtual_user_set = EmoteSetModel::from_db(
+	let mut virtual_user_set = EmoteSetModel::from_db(
 		virtual_user_set(user.id, display_name, permissions.emote_set_slots_limit.unwrap_or(600)),
 		vec![],
 		None,
 	);
+
+	let user_id = user.id;
+	virtual_user_set.id = EmoteSetObjectId::VirtualId(VirtualId(user.id));
 
 	let mut old_model = UserModel::from_db(
 		user,
@@ -146,7 +149,7 @@ pub async fn get_user_by_id(
 	);
 
 	old_model.connections.iter_mut().for_each(|conn| {
-		conn.emote_set_id = Some(virtual_user_set.id);
+		conn.emote_set_id = VirtualId(user_id);
 		conn.emote_set = Some(virtual_user_set.clone());
 	});
 
@@ -432,15 +435,17 @@ pub async fn get_user_by_platform_id(
 
 	let permissions = user.compute_permissions(&roles);
 
-	let user_fake_set = get_virtual_rest_set_for_user(
+	let mut user_virtual_set = get_virtual_rest_set_for_user(
 		&global,
 		user.clone(),
 		connections.clone(),
 		permissions.emote_set_slots_limit.unwrap_or(600),
 	)
 	.await?;
-	connection_model.emote_set_id = Some(user_fake_set.id);
-	connection_model.emote_set = Some(user_fake_set);
+	user_virtual_set.id = EmoteSetObjectId::VirtualId(VirtualId(user.id));
+
+	connection_model.emote_set_id = VirtualId(user.id);
+	connection_model.emote_set = Some(user_virtual_set);
 
 	let user_full = UserModel::from_db(
 		user,
@@ -476,6 +481,12 @@ pub async fn delete_user_by_id() -> Result<impl IntoResponse, ApiError> {
 	Ok(ApiError::NOT_IMPLEMENTED)
 }
 
+// https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.update-connection.go#L86
+#[derive(Debug, Clone, Deserialize)]
+struct UpdateUserConnectionBody {
+	new_user_id: UserId,
+}
+
 #[utoipa::path(
     patch,
     path = "/v3/users/{id}/connections/{connection_id}",
@@ -494,6 +505,7 @@ pub async fn delete_user_by_id() -> Result<impl IntoResponse, ApiError> {
 pub async fn update_user_connection_by_id(
 	State(global): State<Arc<Global>>,
 	Path((id, connection_id)): Path<(UserId, UserConnectionId)>,
+	Json(body): Json<UpdateUserConnectionBody>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let _ = global;
 	Ok(ApiError::NOT_IMPLEMENTED)

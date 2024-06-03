@@ -1,7 +1,7 @@
 mod id;
 mod types;
 
-pub use id::Id;
+pub use id::*;
 pub use types::*;
 
 use crate::config::DatabaseConfig;

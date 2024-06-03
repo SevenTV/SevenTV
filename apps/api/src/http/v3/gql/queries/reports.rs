@@ -7,12 +7,12 @@ use mongodb::options::FindOptions;
 use shared::database::{
 	Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketMessage, TicketPermission, TicketStatus
 };
+use shared::old_types::{EmoteObjectId, TicketObjectId, UserObjectId};
 
 use super::users::{User, UserPartial};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::object_id::{EmoteObjectId, TicketObjectId, UserObjectId};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/reports.gql
 

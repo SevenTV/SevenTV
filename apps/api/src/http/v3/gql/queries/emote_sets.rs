@@ -4,14 +4,14 @@ use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::{Collection, EmoteId, EmoteSetEmote, User, UserConnection, UserId};
-use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
+use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel, VirtualId};
+use shared::old_types::{EmoteObjectId, EmoteSetObjectId, ObjectId, UserObjectId};
 
 use super::emotes::{Emote, EmotePartial};
 use super::users::UserPartial;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, virtual_user_set};
-use crate::http::v3::gql::object_id::{EmoteObjectId, EmoteSetObjectId, ObjectId, UserObjectId};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
@@ -56,6 +56,7 @@ impl EmoteSet {
 
 		let mut set = Self::from_db(virtual_user_set(user.id, display_name, slots));
 
+		set.id = EmoteSetObjectId::VirtualId(VirtualId(user.id));
 		set.virtual_set_of = Some((user, slots));
 
 		set
@@ -251,8 +252,8 @@ impl EmoteSetsQuery {
 					.ok_or(ApiError::NOT_FOUND)?;
 
 				Ok(EmoteSet::from_db(emote_set))
-			},
-			EmoteSetObjectId::VirtualId(user_id) => {
+			}
+			EmoteSetObjectId::VirtualId(VirtualId(user_id)) => {
 				// check if there is a user with the provided id
 				let user = global
 					.user_by_id_loader()
@@ -276,17 +277,17 @@ impl EmoteSetsQuery {
 					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 				let roles = {
-				let mut roles = global
-					.role_by_id_loader()
-					.load_many(user.entitled_cache.role_ids.iter().copied())
-					.await
-					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+					let mut roles = global
+						.role_by_id_loader()
+						.load_many(user.entitled_cache.role_ids.iter().copied())
+						.await
+						.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-				global_config
-					.role_ids
-					.iter()
-					.filter_map(|id| roles.remove(id))
-					.collect::<Vec<_>>()
+					global_config
+						.role_ids
+						.iter()
+						.filter_map(|id| roles.remove(id))
+						.collect::<Vec<_>>()
 				};
 
 				let slots = user.compute_permissions(&roles).emote_set_slots_limit.unwrap_or(600);
@@ -314,7 +315,7 @@ impl EmoteSetsQuery {
 		for id in list {
 			match id {
 				EmoteSetObjectId::Id(id) => set_ids.push(id),
-				EmoteSetObjectId::VirtualId(user_id) => virtual_user_ids.push(user_id),
+				EmoteSetObjectId::VirtualId(VirtualId(user_id)) => virtual_user_ids.push(user_id),
 			}
 		}
 

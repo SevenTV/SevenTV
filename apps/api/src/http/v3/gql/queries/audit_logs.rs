@@ -1,7 +1,7 @@
 use async_graphql::SimpleObject;
+use shared::old_types::{ObjectId, UserObjectId};
 
 use super::users::UserPartial;
-use crate::http::v3::gql::object_id::{ObjectId, UserObjectId};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/audit.gql
 

@@ -5,11 +5,10 @@ use futures::StreamExt;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::{Badge, Collection, Paint};
-use shared::old_types::{CosmeticBadgeModel, CosmeticPaintModel};
+use shared::old_types::{CosmeticBadgeModel, CosmeticPaintModel, ObjectId};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::gql::object_id::ObjectId;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/cosmetics.gql
 

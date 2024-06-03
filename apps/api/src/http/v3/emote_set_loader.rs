@@ -104,7 +104,7 @@ pub fn virtual_user_set(user_id: UserId, display_name: Option<String>, slots: u1
 	name.push_str("Enabled Emotes");
 
 	EmoteSet {
-		id: user_id.cast(),
+		id: Default::default(), // set when calling
 		owner_id: Some(user_id),
 		name,
 		kind: EmoteSetKind::Normal,

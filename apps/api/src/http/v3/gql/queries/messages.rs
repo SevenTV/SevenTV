@@ -5,11 +5,11 @@ use futures::StreamExt;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::FindOptions;
 use shared::database::{Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketPermission, TicketStatus};
+use shared::old_types::{EmoteObjectId, ObjectId, TicketObjectId, UserObjectId};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::object_id::{EmoteObjectId, ObjectId, TicketObjectId, UserObjectId};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/messages.gql
 

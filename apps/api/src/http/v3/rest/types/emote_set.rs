@@ -1,5 +1,5 @@
 use shared::database::{EmoteId, EmoteSet, EmoteSetEmote, EmoteSetFlags, EmoteSetId, UserId};
-use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel, UserPartialModel};
+use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel, EmoteSetObjectId, UserPartialModel};
 
 use super::{is_default, EmotePartialModel};
 
@@ -8,7 +8,7 @@ use super::{is_default, EmotePartialModel};
 #[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L9
 pub struct EmoteSetModel {
-	pub id: EmoteSetId,
+	pub id: EmoteSetObjectId,
 	pub name: String,
 	pub flags: EmoteSetFlagModel,
 	pub tags: Vec<String>,
@@ -37,7 +37,7 @@ impl EmoteSetModel {
 
 		Self {
 			flags: EmoteSetFlagModel::from_db(&value),
-			id: value.id,
+			id: value.id.into(),
 			name: value.name,
 			tags: value.tags,
 			immutable: value.flags.contains(EmoteSetFlags::Immutable),

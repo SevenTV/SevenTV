@@ -6,16 +6,19 @@
 //!
 //! All other old types are defined in the respective application crates.
 
+use bitmask_enum::bitmask;
+
 use crate::database::{
-	self, BadgeId, EmoteSet, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetId, EmoteSetKind, PaintId, Platform, RoleId, User, UserConnection, UserId
+	self, BadgeId, EmoteSet, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetKind, PaintId, Platform, RoleId, User, UserConnection, UserId
 };
 
 mod cosmetic;
 mod image;
+mod object_id;
 
-use bitmask_enum::bitmask;
 pub use cosmetic::*;
 pub use image::*;
+pub use object_id::*;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(components(schemas(
@@ -151,7 +154,7 @@ pub struct UserConnectionPartialModel {
 	pub display_name: String,
 	pub linked_at: u64,
 	pub emote_capacity: i32,
-	pub emote_set_id: Option<EmoteSetId>,
+	pub emote_set_id: VirtualId,
 }
 
 impl From<UserConnection> for UserConnectionPartialModel {
@@ -164,7 +167,7 @@ impl From<UserConnection> for UserConnectionPartialModel {
 			linked_at: value.id.timestamp_ms(),
 			// TODO: get slots from permissions
 			emote_capacity: 600,
-			emote_set_id: None,
+			emote_set_id: VirtualId(value.user_id),
 		}
 	}
 }
@@ -178,6 +181,17 @@ pub enum UserConnectionPlatformModel {
 	Youtube,
 	Discord,
 	Kick,
+}
+
+impl From<UserConnectionPlatformModel> for Platform {
+	fn from(value: UserConnectionPlatformModel) -> Self {
+		match value {
+			UserConnectionPlatformModel::Twitch => Self::Twitch,
+			UserConnectionPlatformModel::Youtube => Self::Google,
+			UserConnectionPlatformModel::Discord => Self::Discord,
+			UserConnectionPlatformModel::Kick => Self::Kick,
+		}
+	}
 }
 
 impl From<Platform> for UserConnectionPlatformModel {

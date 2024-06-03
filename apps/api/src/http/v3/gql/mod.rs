@@ -10,7 +10,6 @@ use crate::http::middleware::auth::AuthSession;
 
 mod guards;
 mod mutations;
-mod object_id;
 mod queries;
 
 pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {

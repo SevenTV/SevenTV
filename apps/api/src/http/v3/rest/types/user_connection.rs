@@ -1,5 +1,4 @@
-use shared::database::EmoteSetId;
-use shared::old_types::{UserConnectionPartialModel, UserConnectionPlatformModel};
+use shared::old_types::{UserConnectionPartialModel, UserConnectionPlatformModel, VirtualId};
 
 use super::{EmoteSetModel, UserModel};
 
@@ -12,7 +11,7 @@ pub struct UserConnectionModel {
 	pub display_name: String,
 	pub linked_at: u64,
 	pub emote_capacity: i32,
-	pub emote_set_id: Option<EmoteSetId>,
+	pub emote_set_id: VirtualId, // this is always a VirtualId
 	pub emote_set: Option<EmoteSetModel>,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub user: Option<UserModel>,

@@ -1,8 +1,12 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
-use shared::database::UserId;
-use shared::old_types::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, UserConnectionPlatformModel, UserTypeModel};
+use mongodb::bson::{doc, to_bson};
+use shared::database::{self, Collection, UserId};
+use shared::old_types::{
+	BadgeObjectId, CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, EmoteSetObjectId, ObjectId, PaintObjectId,
+	RoleObjectId, UserConnectionPlatformModel, UserObjectId, UserTypeModel, VirtualId,
+};
 
 use super::audit_logs::AuditLog;
 use super::emote_sets::EmoteSet;
@@ -11,9 +15,6 @@ use super::reports::Report;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::gql::object_id::{
-	BadgeObjectId, EmoteSetObjectId, ObjectId, PaintObjectId, RoleObjectId, UserObjectId,
-};
 use crate::http::v3::types::UserEditorModelPermission;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
@@ -121,7 +122,16 @@ impl User {
 	}
 
 	async fn owned_emotes<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Emote>, ApiError> {
-		Err(ApiError::NOT_IMPLEMENTED)
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let emotes = global
+			.emote_by_user_id_loader()
+			.load(self.id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.unwrap_or_default();
+
+		Ok(emotes.into_iter().map(|e| Emote::from_db(global, e)).collect())
 	}
 
 	async fn activity(&self) -> Result<Vec<AuditLog>, ApiError> {
@@ -354,7 +364,7 @@ impl UserConnection {
 			display_name: value.platform_display_name,
 			linked_at: value.id.timestamp(),
 			emote_capacity: slots as i32,
-			emote_set_id: Some(value.user_id.cast().into()),
+			emote_set_id: Some(EmoteSetObjectId::VirtualId(VirtualId(value.user_id))),
 		}
 	}
 }
@@ -431,7 +441,23 @@ impl UsersQuery {
 		platform: UserConnectionPlatformModel,
 		id: String,
 	) -> Result<User, ApiError> {
-		Err(ApiError::NOT_IMPLEMENTED)
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let platform = to_bson(&database::Platform::from(platform)).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let connection = database::UserConnection::collection(global.db())
+			.find_one(
+				doc! {
+				   "platform": platform,
+				   "platform_id": id,
+				},
+				None,
+			)
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
+
+		Ok(UserPartial::load_from_db(global, connection.user_id).await?.into())
 	}
 
 	async fn users<'ctx>(
