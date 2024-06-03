@@ -9,7 +9,8 @@
 use bitmask_enum::bitmask;
 
 use crate::database::{
-	self, BadgeId, EmoteSet, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetKind, PaintId, Platform, RoleId, User, UserConnection, UserId
+	self, BadgeId, EmoteSet, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetKind, PaintId, Platform, RoleId, User,
+	UserConnection, UserId,
 };
 
 mod cosmetic;
@@ -313,9 +314,7 @@ impl From<EmoteSetEmoteFlag> for ActiveEmoteFlagModel {
 		}
 
 		if value.contains(EmoteSetEmoteFlag::OverrideConflicts) {
-			flags |= Self::OverrideBetterTTV
-				| Self::OverrideTwitchGlobal
-				| Self::OverrideTwitchSubscriber;
+			flags |= Self::OverrideBetterTTV | Self::OverrideTwitchGlobal | Self::OverrideTwitchSubscriber;
 		}
 
 		flags

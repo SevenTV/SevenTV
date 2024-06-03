@@ -4,8 +4,9 @@ use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::{Collection, EmoteId, EmoteSetEmote, User, UserConnection, UserId};
-use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel, VirtualId};
-use shared::old_types::{EmoteObjectId, EmoteSetObjectId, ObjectId, UserObjectId};
+use shared::old_types::{
+	ActiveEmoteFlagModel, EmoteObjectId, EmoteSetFlagModel, EmoteSetObjectId, ObjectId, UserObjectId, VirtualId,
+};
 
 use super::emotes::{Emote, EmotePartial};
 use super::users::UserPartial;

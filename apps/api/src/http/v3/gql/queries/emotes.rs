@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
-use shared::old_types::{EmoteFlagsModel, ImageHost, ImageHostKind};
-use shared::old_types::{EmoteObjectId, UserObjectId};
+use shared::old_types::{EmoteFlagsModel, EmoteObjectId, ImageHost, ImageHostKind, UserObjectId};
 
 use super::audit_logs::AuditLog;
 use super::reports::Report;

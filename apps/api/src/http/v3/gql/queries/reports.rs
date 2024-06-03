@@ -5,7 +5,7 @@ use futures::StreamExt;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::FindOptions;
 use shared::database::{
-	Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketMessage, TicketPermission, TicketStatus
+	Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketMessage, TicketPermission, TicketStatus,
 };
 use shared::old_types::{EmoteObjectId, TicketObjectId, UserObjectId};
 

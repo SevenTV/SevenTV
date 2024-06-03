@@ -163,11 +163,19 @@ impl RolePermission {
 
 		// Feature Permissions
 		{
-			if value.feature.allow.contains(database::FeaturePermission::UseCustomProfilePicture) {
+			if value
+				.feature
+				.allow
+				.contains(database::FeaturePermission::UseCustomProfilePicture)
+			{
 				allowed |= RolePermission::FeatureProfilePictureAnimation;
 			}
-			
-			if value.feature.deny.contains(database::FeaturePermission::UseCustomProfilePicture) {
+
+			if value
+				.feature
+				.deny
+				.contains(database::FeaturePermission::UseCustomProfilePicture)
+			{
 				denied |= RolePermission::FeatureProfilePictureAnimation;
 			}
 		}
@@ -177,7 +185,7 @@ impl RolePermission {
 			if value.admin.allow.contains(database::AdminPermission::SuperAdmin) {
 				allowed |= RolePermission::SuperAdministrator;
 			}
-			
+
 			if value.admin.deny.contains(database::AdminPermission::SuperAdmin) {
 				denied |= RolePermission::SuperAdministrator;
 			}
@@ -272,7 +280,7 @@ impl RolesQuery {
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-		
+
 		let role = global
 			.role_by_id_loader()
 			.load(id.id())

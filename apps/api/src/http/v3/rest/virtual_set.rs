@@ -1,19 +1,12 @@
 use std::sync::Arc;
 
-use shared::{
-	database::{User, UserConnection},
-	old_types::UserPartialModel,
-};
-
-use crate::{
-	global::Global,
-	http::{
-		error::ApiError,
-		v3::emote_set_loader::{get_virtual_set_emotes_for_user, load_emote_set, virtual_user_set},
-	},
-};
+use shared::database::{User, UserConnection};
+use shared::old_types::UserPartialModel;
 
 use super::types::EmoteSetModel;
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, load_emote_set, virtual_user_set};
 
 pub async fn get_virtual_rest_set_for_user(
 	global: &Arc<Global>,
