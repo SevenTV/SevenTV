@@ -82,7 +82,9 @@ impl EmotePartialModel {
 			owner,
 			state: EmoteVersionState::from_db(&value.flags),
 			flags: value.flags.into(),
-			lifecycle: if value.image_set.input.is_pending() {
+			lifecycle: if value.replaced_by.is_some() {
+				EmoteLifecycleModel::Deleted
+			} else if value.image_set.input.is_pending() {
 				EmoteLifecycleModel::Pending
 			} else {
 				EmoteLifecycleModel::Live

@@ -34,6 +34,7 @@ pub struct EmoteVersionState {
 	#[serde(default, deserialize_with = "super::null_to_default")]
 	pub allow_personal: bool,
 	pub lifecycle: EmoteLifecycle,
+	pub replace_id: Option<ObjectId>,
 }
 
 #[derive(Debug, PartialEq, Eq, serde_repr::Deserialize_repr)]

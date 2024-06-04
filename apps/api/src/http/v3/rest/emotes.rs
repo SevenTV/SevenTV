@@ -156,6 +156,7 @@ pub async fn create_emote(
 		image_set: ImageSet { input, outputs: vec![] },
 		flags,
 		attribution: vec![],
+		replaced_by: None,
 	};
 
 	Emote::collection(global.db())
