@@ -51,7 +51,7 @@ impl Emote {
 		);
 		let state = EmoteVersionState::from_db(&value.flags);
 		let listed = value.flags.contains(shared::database::EmoteFlags::PublicListed);
-		let lifecycle = if value.replaced_by.is_some() {
+		let lifecycle = if value.merged_into.is_some() {
 			EmoteLifecycleModel::Deleted
 		} else if value.image_set.input.is_pending() {
 			EmoteLifecycleModel::Pending

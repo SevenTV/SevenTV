@@ -132,8 +132,8 @@ impl Job for AuditLogsJob {
 								.into_inner()
 								.map(|id| database::EmoteActivityData::Merge { new_emote_id: id.into() }),
 							AuditLogChange::Tags(tags) => Some(database::EmoteActivityData::ChangeTags {
-								added: tags.new,
-								removed: tags.old,
+								new: tags.new,
+								old: tags.old,
 							}),
 							AuditLogChange::Flags(flags) => {
 								let mut old = database::EmoteSettingsChange::default();

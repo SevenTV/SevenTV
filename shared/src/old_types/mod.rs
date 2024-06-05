@@ -208,7 +208,7 @@ impl From<Platform> for UserConnectionPlatformModel {
 
 async_graphql::scalar!(UserConnectionPlatformModel);
 
-#[bitmask(i32)]
+#[bitmask(u32)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L63
 pub enum EmoteFlagsModel {
 	Private = 1 << 0,
@@ -254,7 +254,7 @@ impl serde::Serialize for EmoteFlagsModel {
 
 impl<'a> serde::Deserialize<'a> for EmoteFlagsModel {
 	fn deserialize<D: serde::Deserializer<'a>>(deserializer: D) -> Result<EmoteFlagsModel, D::Error> {
-		let bits = i32::deserialize(deserializer)?;
+		let bits = u32::deserialize(deserializer)?;
 		Ok(EmoteFlagsModel::from(bits))
 	}
 }

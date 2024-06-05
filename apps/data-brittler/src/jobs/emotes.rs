@@ -63,7 +63,8 @@ impl Job for EmotesJob {
 				image_set,
 				flags,
 				attribution: vec![],
-				replaced_by: v.state.replace_id.map(Into::into),
+				merged_into: v.state.replace_id.map(Into::into),
+				merged_at: None,
 			});
 		}
 

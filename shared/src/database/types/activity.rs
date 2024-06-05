@@ -40,8 +40,8 @@ pub enum EmoteActivityData {
 		new: UserId,
 	},
 	ChangeTags {
-		added: Vec<String>,
-		removed: Vec<String>,
+		new: Vec<String>,
+		old: Vec<String>,
 	},
 	ChangeSettings {
 		old: EmoteSettingsChange,

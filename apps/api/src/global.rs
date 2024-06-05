@@ -36,6 +36,7 @@ pub struct Global {
 	ticket_members_by_ticket_id_loader: DataLoader<dataloader::ticket::TicketMembersByTicketIdLoader>,
 	ticket_messages_by_ticket_id_loader: DataLoader<dataloader::ticket::TicketMessagesByTicketIdLoader>,
 	emote_activity_by_emote_id_loader: DataLoader<dataloader::activity::EmoteActivityByEmoteIdLoader>,
+	emote_set_activity_by_actor_id_loader: DataLoader<dataloader::activity::EmoteSetActivityByActorIdLoader>,
 }
 
 impl Global {
@@ -74,6 +75,9 @@ impl Global {
 			ticket_members_by_ticket_id_loader: dataloader::ticket::TicketMembersByTicketIdLoader::new(db.clone()),
 			ticket_messages_by_ticket_id_loader: dataloader::ticket::TicketMessagesByTicketIdLoader::new(db.clone()),
 			emote_activity_by_emote_id_loader: dataloader::activity::EmoteActivityByEmoteIdLoader::new(clickhouse.clone()),
+			emote_set_activity_by_actor_id_loader: dataloader::activity::EmoteSetActivityByActorIdLoader::new(
+				clickhouse.clone(),
+			),
 			http_client: reqwest::Client::new(),
 			mongo,
 			db,
@@ -219,6 +223,13 @@ impl Global {
 	/// The emote activity loader.
 	pub fn emote_activity_by_emote_id_loader(&self) -> &DataLoader<dataloader::activity::EmoteActivityByEmoteIdLoader> {
 		&self.emote_activity_by_emote_id_loader
+	}
+
+	/// The emote set activity loader.
+	pub fn emote_set_activity_by_actor_id_loader(
+		&self,
+	) -> &DataLoader<dataloader::activity::EmoteSetActivityByActorIdLoader> {
+		&self.emote_set_activity_by_actor_id_loader
 	}
 }
 

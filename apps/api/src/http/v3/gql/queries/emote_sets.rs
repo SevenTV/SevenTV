@@ -64,21 +64,21 @@ impl EmoteSet {
 	}
 }
 
-#[derive(Debug, Clone, Default, SimpleObject)]
+#[derive(Debug, Clone, Default, SimpleObject, serde::Deserialize, serde::Serialize)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct ActiveEmote {
-	id: EmoteObjectId,
-	name: String,
-	flags: ActiveEmoteFlagModel,
+	pub id: EmoteObjectId,
+	pub name: String,
+	pub flags: ActiveEmoteFlagModel,
 	// timestamp
 	// data
 	// actor
-	origin_id: Option<ObjectId<()>>,
+	pub origin_id: Option<ObjectId<()>>,
 
 	#[graphql(skip)]
-	emote_id: EmoteId,
+	pub emote_id: EmoteId,
 	#[graphql(skip)]
-	actor_id: Option<UserId>,
+	pub actor_id: Option<UserId>,
 }
 
 impl ActiveEmote {

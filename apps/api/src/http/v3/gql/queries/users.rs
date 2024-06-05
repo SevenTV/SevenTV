@@ -134,8 +134,17 @@ impl User {
 		Ok(emotes.into_iter().map(|e| Emote::from_db(global, e)).collect())
 	}
 
-	async fn activity(&self) -> Result<Vec<AuditLog>, ApiError> {
-		Err(ApiError::NOT_IMPLEMENTED)
+	async fn activity<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<AuditLog>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let activities = global
+			.emote_set_activity_by_actor_id_loader()
+			.load(self.id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.unwrap_or_default();
+
+		Ok(activities.into_iter().map(AuditLog::from_db_emote_set).collect())
 	}
 
 	async fn connections(&self) -> Vec<UserConnection> {

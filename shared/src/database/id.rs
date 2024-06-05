@@ -52,8 +52,8 @@ impl<S> Id<S> {
 		Self::from_ulid(ulid::Ulid::new())
 	}
 
-	pub fn with_timestamp_ms(timestamp_ms: u64) -> Self {
-		Self::with_timestamp(chrono::Utc.timestamp_millis_opt(timestamp_ms as i64).unwrap())
+	pub fn with_timestamp_ms(timestamp_ms: i64) -> Self {
+		Self::with_timestamp(chrono::Utc.timestamp_millis_opt(timestamp_ms).unwrap())
 	}
 
 	pub fn with_timestamp(timestamp: chrono::DateTime<chrono::Utc>) -> Self {

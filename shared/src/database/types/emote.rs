@@ -19,7 +19,8 @@ pub struct Emote {
 	pub image_set: ImageSet,
 	pub flags: EmoteFlags,
 	pub attribution: Vec<EmoteAttribution>,
-	pub replaced_by: Option<EmoteId>,
+	pub merged_into: Option<EmoteId>,
+	pub merged_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl Collection for Emote {
