@@ -335,6 +335,7 @@ pub async fn create_user_presence(
 	Path(id): Path<UserId>,
 	Json(_presence): Json<PresenceModel>,
 ) -> Result<impl IntoResponse, ApiError> {
+	// TODO: decide what to do with this
 	Ok(ApiError::NOT_IMPLEMENTED)
 }
 
@@ -508,5 +509,6 @@ pub async fn update_user_connection_by_id(
 	Json(body): Json<UpdateUserConnectionBody>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let _ = global;
+	// TODO: implement
 	Ok(ApiError::NOT_IMPLEMENTED)
 }

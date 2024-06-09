@@ -131,5 +131,6 @@ async fn logout(
 #[tracing::instrument]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/manual.route.go#L41
 async fn manual() -> Result<impl IntoResponse, ApiError> {
+	// TODO: decide what to do here
 	Ok(ApiError::NOT_IMPLEMENTED)
 }

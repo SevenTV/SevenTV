@@ -98,6 +98,7 @@ impl Emote {
 	}
 
 	async fn channels(&self, ctx: &Context<'_>, page: u32, limit: u32) -> Result<UserSearchResult, ApiError> {
+		// TODO: implement
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
@@ -107,6 +108,7 @@ impl Emote {
 	}
 
 	async fn trending(&self) -> Result<u32, ApiError> {
+		// TODO: implement
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
@@ -298,6 +300,7 @@ impl EmotesQuery {
 		filter: Option<EmoteSearchFilter>,
 		sort: Option<EmoteSearchSort>,
 	) -> Result<Vec<Emote>, ApiError> {
+		// TODO: implement
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 }

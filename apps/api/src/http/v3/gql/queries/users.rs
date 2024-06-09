@@ -103,6 +103,7 @@ impl User {
 	}
 
 	async fn cosmetics(&self) -> Result<Vec<UserCosmetic>, ApiError> {
+		// TODO: entitlements required
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
@@ -476,6 +477,7 @@ impl UsersQuery {
 		page: Option<u32>,
 		limit: Option<u32>,
 	) -> Result<UserPartial, ApiError> {
+		// TODO: implement
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
