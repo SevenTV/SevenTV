@@ -191,6 +191,25 @@ impl Role {
 		perm
 	}
 
+	pub fn to_ticket_permission(&self) -> database::AllowDeny<database::TicketPermission> {
+		let mut perm = AllowDeny::default();
+
+		if self.allowed.contains(RolePermission::CreateReport) {
+			perm.allow(database::TicketPermission::Create);
+		}
+		if self.allowed.contains(RolePermission::ManageReports) {
+			perm.allow(database::TicketPermission::Admin);
+		}
+		if self.denied.contains(RolePermission::CreateReport) {
+			perm.deny(database::TicketPermission::Create);
+		}
+		if self.denied.contains(RolePermission::ManageReports) {
+			perm.deny(database::TicketPermission::Admin);
+		}
+
+		perm
+	}
+
 	pub fn to_admin_permission(&self) -> database::AllowDeny<database::AdminPermission> {
 		let mut perm = AllowDeny::default();
 
@@ -213,6 +232,7 @@ impl Role {
 			paint: self.to_paint_permission(),
 			user: self.to_user_permission(),
 			feature: self.to_feature_permission(),
+			ticket: self.to_ticket_permission(),
 			admin: self.to_admin_permission(),
 			..Default::default()
 		}

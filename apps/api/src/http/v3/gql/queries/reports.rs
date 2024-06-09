@@ -133,7 +133,7 @@ impl From<ReportStatus> for TicketStatus {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl ReportsQuery {
-	#[graphql(guard = "PermissionGuard::new(TicketPermission::Read)")]
+	#[graphql(guard = "PermissionGuard::one(TicketPermission::Read)")]
 	async fn reports<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -218,7 +218,7 @@ impl ReportsQuery {
 			.collect())
 	}
 
-	#[graphql(guard = "PermissionGuard::new(TicketPermission::Read)")]
+	#[graphql(guard = "PermissionGuard::one(TicketPermission::Read)")]
 	async fn report<'ctx>(&self, ctx: &Context<'ctx>, id: TicketObjectId) -> Result<Option<Report>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

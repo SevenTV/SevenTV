@@ -102,8 +102,11 @@ impl BitMask for EmotePermission {
 
 #[bitmask(u8)]
 pub enum RolePermission {
-	Assign = 1,
-	Admin = 2,
+	Create = 1,
+	Delete = 2,
+	Edit = 4,
+	Assign = 8,
+	Admin = 16,
 }
 
 impl BitMask for RolePermission {
@@ -144,7 +147,10 @@ impl Default for EmoteSetPermission {
 
 #[bitmask(u8)]
 pub enum BadgePermission {
-	Admin = 1,
+	Create = 1,
+	Delete = 2,
+	Edit = 4,
+	Admin = 8,
 }
 
 impl BitMask for BadgePermission {
@@ -163,7 +169,10 @@ impl Default for BadgePermission {
 
 #[bitmask(u8)]
 pub enum PaintPermission {
-	Admin = 1,
+	Create = 1,
+	Delete = 2,
+	Edit = 4,
+	Admin = 8,
 }
 
 impl BitMask for PaintPermission {

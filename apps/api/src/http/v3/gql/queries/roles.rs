@@ -134,30 +134,30 @@ impl RolePermission {
 			if value.badge.allow.contains(database::BadgePermission::Admin)
 				&& value.paint.allow.contains(database::PaintPermission::Admin)
 			{
-				allowed |= RolePermission::ManageCosmetics;
+				allowed |= Self::ManageCosmetics;
 			}
 
 			if value.badge.deny.contains(database::BadgePermission::Admin)
 				&& value.paint.deny.contains(database::PaintPermission::Admin)
 			{
-				denied |= RolePermission::ManageCosmetics;
+				denied |= Self::ManageCosmetics;
 			}
 		}
 
 		// User Permissions
 		{
 			if value.user.allow.contains(database::UserPermission::Ban) {
-				allowed |= RolePermission::ManageBans;
+				allowed |= Self::ManageBans;
 			}
 			if value.user.allow.contains(database::UserPermission::Admin) {
-				allowed |= RolePermission::ManageUsers;
+				allowed |= Self::ManageUsers;
 			}
 
 			if value.user.deny.contains(database::UserPermission::Ban) {
-				denied |= RolePermission::ManageBans;
+				denied |= Self::ManageBans;
 			}
 			if value.user.deny.contains(database::UserPermission::Admin) {
-				denied |= RolePermission::ManageUsers;
+				denied |= Self::ManageUsers;
 			}
 		}
 
@@ -168,7 +168,7 @@ impl RolePermission {
 				.allow
 				.contains(database::FeaturePermission::UseCustomProfilePicture)
 			{
-				allowed |= RolePermission::FeatureProfilePictureAnimation;
+				allowed |= Self::FeatureProfilePictureAnimation;
 			}
 
 			if value
@@ -176,18 +176,35 @@ impl RolePermission {
 				.deny
 				.contains(database::FeaturePermission::UseCustomProfilePicture)
 			{
-				denied |= RolePermission::FeatureProfilePictureAnimation;
+				denied |= Self::FeatureProfilePictureAnimation;
+			}
+		}
+
+		// Report Permissions
+		{
+			if value.ticket.allow.contains(database::TicketPermission::Create) {
+				allowed |= Self::CreateReport;
+			}
+			if value.ticket.allow.contains(database::TicketPermission::Edit) {
+				allowed |= Self::ManageReports;
+			}
+
+			if value.ticket.deny.contains(database::TicketPermission::Create) {
+				denied |= Self::CreateReport;
+			}
+			if value.ticket.deny.contains(database::TicketPermission::Edit) {
+				denied |= Self::ManageReports;
 			}
 		}
 
 		// Admin Permissions
 		{
 			if value.admin.allow.contains(database::AdminPermission::SuperAdmin) {
-				allowed |= RolePermission::SuperAdministrator;
+				allowed |= Self::SuperAdministrator;
 			}
 
 			if value.admin.deny.contains(database::AdminPermission::SuperAdmin) {
-				denied |= RolePermission::SuperAdministrator;
+				denied |= Self::SuperAdministrator;
 			}
 		}
 

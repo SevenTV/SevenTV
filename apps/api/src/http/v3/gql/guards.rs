@@ -8,13 +8,19 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 
 pub struct PermissionGuard {
-	pub permission: Permission,
+	pub permissions: Vec<Permission>,
 }
 
 impl PermissionGuard {
-	pub fn new(permission: impl Into<Permission>) -> Self {
+	pub fn one(permission: impl Into<Permission>) -> Self {
 		Self {
-			permission: permission.into(),
+			permissions: vec![permission.into()],
+		}
+	}
+
+	pub fn all(permissions: impl IntoIterator<Item = impl Into<Permission>>) -> Self {
+		Self {
+			permissions: permissions.into_iter().map(Into::into).collect(),
 		}
 	}
 }
@@ -52,9 +58,9 @@ impl Guard for PermissionGuard {
 				.collect::<Vec<_>>()
 		};
 
-		let permissions = user.compute_permissions(&roles);
+		let user_permissions = user.compute_permissions(&roles);
 
-		if !permissions.has(self.permission) {
+		if self.permissions.iter().any(|p| !user_permissions.has(*p)) {
 			return Err(ApiError::FORBIDDEN.into());
 		}
 

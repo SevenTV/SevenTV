@@ -126,7 +126,7 @@ impl MessagesQuery {
 		vec![]
 	}
 
-	#[graphql(guard = "PermissionGuard::new(TicketPermission::Read)")]
+	#[graphql(guard = "PermissionGuard::one(TicketPermission::Read)")]
 	async fn mod_requests<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
