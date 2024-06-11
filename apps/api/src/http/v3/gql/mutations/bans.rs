@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use mongodb::bson::doc;
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::{self, Collection, UserId, UserPermission};
 use shared::old_types::{BanEffect, BanObjectId, UserObjectId};
 
@@ -75,7 +76,13 @@ impl BansMutation {
 		}
 
 		let ban = database::UserBan::collection(global.db())
-			.find_one_and_update(doc! { "_id": ban_id.id() }, doc! { "$set": update }, None)
+			.find_one_and_update(
+				doc! { "_id": ban_id.id() },
+				doc! { "$set": update },
+				FindOneAndUpdateOptions::builder()
+					.return_document(ReturnDocument::After)
+					.build(),
+			)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

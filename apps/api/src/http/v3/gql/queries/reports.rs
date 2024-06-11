@@ -39,7 +39,7 @@ pub struct Report {
 }
 
 impl Report {
-	fn from_db(ticket: Ticket, members: Vec<TicketMember>, messages: Vec<TicketMessage>) -> Option<Self> {
+	pub fn from_db(ticket: Ticket, members: Vec<TicketMember>, messages: Vec<TicketMessage>) -> Option<Self> {
 		let TicketData::EmoteReport { emote_id } = ticket.data else {
 			return None;
 		};

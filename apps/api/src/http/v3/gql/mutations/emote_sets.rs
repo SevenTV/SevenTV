@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
+use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::{self, Collection, EmoteSetPermission, UserEditorState};
@@ -225,7 +225,7 @@ impl EmoteSetOps {
 				};
 
 				database::EmoteSetEmote::collection(global.db())
-					.insert_one(&emote_set_emote, None)
+					.insert_one_with_session(&emote_set_emote, None, &mut session)
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to insert emote set emote");
@@ -234,12 +234,13 @@ impl EmoteSetOps {
 			}
 			ListItemAction::Remove => {
 				database::EmoteSetEmote::collection(global.db())
-					.delete_one(
+					.delete_one_with_session(
 						doc! {
 							"emote_set_id": self._emote_set.id,
 							"emote_id": id.id(),
 						},
 						None,
+						&mut session,
 					)
 					.await
 					.map_err(|e| {
@@ -250,7 +251,7 @@ impl EmoteSetOps {
 			ListItemAction::Update => {
 				if let Some(name) = name {
 					database::EmoteSetEmote::collection(global.db())
-						.update_one(
+						.update_one_with_session(
 							doc! {
 								"emote_set_id": self._emote_set.id,
 								"emote_id": id.id(),
@@ -261,6 +262,7 @@ impl EmoteSetOps {
 								},
 							},
 							None,
+							&mut session,
 						)
 						.await
 						.map_err(|e| {
