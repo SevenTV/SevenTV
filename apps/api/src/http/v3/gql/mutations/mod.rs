@@ -2,6 +2,7 @@
 
 use async_graphql::MergedObject;
 
+mod bans;
 mod cosmetics;
 mod emote_sets;
 mod emotes;
@@ -12,6 +13,7 @@ mod users;
 
 #[derive(MergedObject, Default)]
 pub struct Mutation(
+	bans::BansMutation,
 	cosmetics::CosmeticsMutation,
 	emote_sets::EmoteSetsMutation,
 	emotes::EmotesMutation,

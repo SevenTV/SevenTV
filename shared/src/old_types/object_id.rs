@@ -3,8 +3,9 @@ use std::str::FromStr;
 
 use async_graphql::{InputValueError, Scalar, ScalarType};
 
-use crate::database::{Badge, Emote, EmoteSet, Id, Paint, Role, Ticket, User, UserId};
+use crate::database::{Badge, Emote, EmoteSet, Id, Paint, Role, Ticket, User, UserBan, UserId};
 
+pub type BanObjectId = ObjectId<UserBan>;
 pub type EmoteObjectId = ObjectId<Emote>;
 pub type UserObjectId = ObjectId<User>;
 pub type EmoteSetObjectId = ObjectId<EmoteSet>;

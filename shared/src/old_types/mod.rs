@@ -451,3 +451,37 @@ impl<'a> utoipa::ToSchema<'a> for EmoteSetFlagModel {
 		)
 	}
 }
+
+#[bitmask(i64)]
+// https://github.com/SevenTV/Common/blob/master/structures/v3/type.ban.go#L29
+pub enum BanEffect {
+	NoPermissions = 1 << 0,
+	NoAuth = 1 << 1,
+	NoOwnership = 1 << 2,
+	MemoryHole = 1 << 3,
+	BlockedIp = 1 << 4,
+}
+
+async_graphql::scalar!(BanEffect);
+
+impl Default for BanEffect {
+	fn default() -> Self {
+		BanEffect::none()
+	}
+}
+
+impl<'a> serde::Deserialize<'a> for BanEffect {
+	fn deserialize<D: serde::Deserializer<'a>>(deserializer: D) -> Result<BanEffect, D::Error> {
+		let bits = i64::deserialize(deserializer)?;
+		Ok(BanEffect::from(bits))
+	}
+}
+
+impl serde::Serialize for BanEffect {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		self.bits().serialize(serializer)
+	}
+}
