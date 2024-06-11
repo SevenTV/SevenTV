@@ -201,7 +201,7 @@ impl Job for UsersJob {
 
 		for editor in user.editors {
 			if let Some(editor_id) = editor.id {
-				let permissions = UserEditorPermissions {};
+				let permissions = UserEditorPermissions::default();
 
 				self.editors.push(UserEditor {
 					id: UserEditorId::new(),

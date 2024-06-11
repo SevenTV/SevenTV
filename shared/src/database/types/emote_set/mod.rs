@@ -25,7 +25,9 @@ pub struct EmoteSet {
 
 #[bitmask(u8)]
 pub enum EmoteSetFlags {
+	/// immutable, cannot be modified
 	Immutable = 1 << 0,
+	/// can only be modified by the owner
 	Privileged = 1 << 1,
 	Private = 1 << 2,
 	Published = 1 << 3,

@@ -283,6 +283,7 @@ impl Default for AdminPermission {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Permissions {
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
 	#[serde(default)]

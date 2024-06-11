@@ -29,9 +29,9 @@ pub struct Role {
 	invisible: bool,
 	// members
 	#[graphql(skip)]
-	allowed_db: RolePermission,
+	_allowed: RolePermission,
 	#[graphql(skip)]
-	denied_db: RolePermission,
+	_denied: RolePermission,
 }
 
 #[bitmask(i64)]
@@ -230,8 +230,8 @@ impl Role {
 			color: value.color,
 			position,
 			invisible: false,
-			allowed_db: allowed,
-			denied_db: denied,
+			_allowed: allowed,
+			_denied: denied,
 		}
 	}
 }
@@ -243,11 +243,11 @@ impl Role {
 	}
 
 	async fn allowed(&self) -> String {
-		self.allowed_db.bits().to_string()
+		self._allowed.bits().to_string()
 	}
 
 	async fn denied(&self) -> String {
-		self.denied_db.bits().to_string()
+		self._denied.bits().to_string()
 	}
 
 	// https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/resolvers/role/role.go#L19
