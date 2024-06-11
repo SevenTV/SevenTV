@@ -1,17 +1,15 @@
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::{
-	database::{
-		EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteId, EmoteSetActivity, EmoteSetActivityData,
-		EmoteSetActivityKind, EmoteSetId, EmoteSettingsChange, Id, UserId,
-	},
-	old_types::{EmoteFlagsModel, ObjectId, UserObjectId},
+use shared::database::{
+	EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteId, EmoteSetActivity, EmoteSetActivityData,
+	EmoteSetActivityKind, EmoteSetId, EmoteSettingsChange, Id, UserId,
 };
-
-use crate::{global::Global, http::error::ApiError};
+use shared::old_types::{EmoteFlagsModel, ObjectId, UserObjectId};
 
 use super::users::UserPartial;
+use crate::global::Global;
+use crate::http::error::ApiError;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/audit.gql
 

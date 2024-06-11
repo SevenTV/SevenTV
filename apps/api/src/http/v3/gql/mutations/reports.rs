@@ -2,11 +2,9 @@ use async_graphql::{InputObject, Object};
 use shared::database::TicketPermission;
 use shared::old_types::{ObjectId, TicketObjectId};
 
+use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::{
-	error::ApiError,
-	v3::gql::queries::{Report, ReportStatus},
-};
+use crate::http::v3::gql::queries::{Report, ReportStatus};
 
 #[derive(Default)]
 pub struct ReportsMutation;

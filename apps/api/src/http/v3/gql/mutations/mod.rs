@@ -11,8 +11,8 @@ mod roles;
 mod users;
 
 #[derive(MergedObject, Default)]
-pub struct Mutation (
-    cosmetics::CosmeticsMutation,
+pub struct Mutation(
+	cosmetics::CosmeticsMutation,
 	emote_sets::EmoteSetsMutation,
 	emotes::EmotesMutation,
 	messages::MessagesMutation,

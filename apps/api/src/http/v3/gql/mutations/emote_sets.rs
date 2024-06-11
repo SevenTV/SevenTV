@@ -103,7 +103,12 @@ pub struct EmoteSetOps {
 }
 
 impl EmoteSetOps {
-	async fn check_perms(&self, global: &Arc<Global>, auth_session: &AuthSession, editor_perm: EmoteSetPermission) -> Result<(), ApiError> {
+	async fn check_perms(
+		&self,
+		global: &Arc<Global>,
+		auth_session: &AuthSession,
+		editor_perm: EmoteSetPermission,
+	) -> Result<(), ApiError> {
 		let user = global
 			.user_by_id_loader()
 			.load(global, auth_session.user_id())

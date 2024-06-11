@@ -1,7 +1,8 @@
 use async_graphql::Object;
 use shared::old_types::{ObjectId, UserObjectId};
 
-use crate::http::{error::ApiError, v3::gql::queries::InboxMessage};
+use crate::http::error::ApiError;
+use crate::http::v3::gql::queries::InboxMessage;
 
 #[derive(Default)]
 pub struct MessagesMutation;
@@ -23,7 +24,7 @@ impl MessagesMutation {
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
-    async fn dismiss_void_target_mod_requests(&self, object: u32) -> Result<u32, ApiError> {
-        Err(ApiError::NOT_IMPLEMENTED)
-    }
+	async fn dismiss_void_target_mod_requests(&self, object: u32) -> Result<u32, ApiError> {
+		Err(ApiError::NOT_IMPLEMENTED)
+	}
 }

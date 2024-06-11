@@ -34,7 +34,9 @@ impl Job for EmotesJob {
 
 	async fn process(&mut self, emote: Self::T) -> ProcessOutcome {
 		for v in emote.versions {
-			if (v.state.lifecycle == EmoteLifecycle::Failed) || (v.state.lifecycle == EmoteLifecycle::Deleted && v.state.replace_id.is_none()) {
+			if (v.state.lifecycle == EmoteLifecycle::Failed)
+				|| (v.state.lifecycle == EmoteLifecycle::Deleted && v.state.replace_id.is_none())
+			{
 				continue;
 			}
 

@@ -6,9 +6,10 @@ use shared::database::{self, Collection, EmotePermission, UserEditorState};
 use shared::old_types::{EmoteFlagsModel, EmoteObjectId, UserObjectId};
 
 use crate::global::Global;
+use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::{error::ApiError, v3::gql::queries::Emote};
+use crate::http::v3::gql::queries::Emote;
 
 #[derive(Default)]
 pub struct EmotesMutation;
@@ -187,7 +188,7 @@ impl EmoteOps {
 			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-        // TODO: schedule emote merge job
+		// TODO: schedule emote merge job
 
 		Ok(Emote::from_db(global, emote))
 	}

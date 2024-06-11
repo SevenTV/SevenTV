@@ -31,13 +31,11 @@ pub struct UserEditorPermissions {
 
 impl UserEditorPermissions {
 	pub fn has_emote_set(&self, permission: EmoteSetPermission) -> bool {
-		self.emote_set.permission().contains(permission)
-			|| self.emote_set.permission().contains(EmoteSetPermission::Admin)
+		self.emote_set.permission().contains(permission) || self.emote_set.permission().contains(EmoteSetPermission::Admin)
 	}
 
 	pub fn has_emote(&self, permission: EmotePermission) -> bool {
-		self.emote.permission().contains(permission)
-			|| self.emote.permission().contains(EmotePermission::Admin)
+		self.emote.permission().contains(permission) || self.emote.permission().contains(EmotePermission::Admin)
 	}
 }
 

@@ -2,12 +2,10 @@ use async_graphql::{ComplexObject, InputObject, Object, SimpleObject};
 use shared::database::{Permission, RolePermission, UserPermission};
 use shared::old_types::{CosmeticKind, EmoteSetObjectId, ObjectId, RoleObjectId, UserObjectId};
 
+use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::gql::queries::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::http::{
-	error::ApiError,
-	v3::gql::queries::{UserConnection, UserEditor},
-};
 
 #[derive(Default)]
 pub struct UsersMutation;
