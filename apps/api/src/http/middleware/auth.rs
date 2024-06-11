@@ -6,7 +6,8 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use hyper::{header, StatusCode};
 use mongodb::bson::doc;
-use shared::database::{Collection, UserId, UserSession};
+use shared::database::{Collection, Permissions, User, UserId, UserSession};
+use tokio::sync::OnceCell;
 
 use super::cookies::Cookies;
 use crate::global::Global;
@@ -42,7 +43,14 @@ pub struct AuthMiddlewareService<S> {
 }
 
 #[derive(Debug, Clone)]
-pub enum AuthSession {
+pub struct AuthSession {
+	pub kind: AuthSessionKind,
+	/// lazy user data
+	cached_data: Arc<OnceCell<(User, Permissions)>>,
+}
+
+#[derive(Debug, Clone)]
+pub enum AuthSessionKind {
 	/// The user session
 	Session(UserSession),
 	/// Old user sessions, only user id available
@@ -51,10 +59,49 @@ pub enum AuthSession {
 
 impl AuthSession {
 	pub fn user_id(&self) -> UserId {
-		match self {
-			Self::Session(session) => session.user_id,
-			Self::Old(user_id) => *user_id,
+		match &self.kind {
+			AuthSessionKind::Session(session) => session.user_id,
+			AuthSessionKind::Old(user_id) => *user_id,
 		}
+	}
+
+	/// Lazy load user data
+	pub async fn user(&self, global: &Arc<Global>) -> Result<&(User, Permissions), ApiError> {
+		self.cached_data
+			.get_or_try_init(|| async {
+				let user = global
+					.user_by_id_loader()
+					.load(global, self.user_id())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::UNAUTHORIZED)?;
+
+				let global_config = global
+					.global_config_loader()
+					.load(())
+					.await
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+				let roles = {
+					let mut roles = global
+						.role_by_id_loader()
+						.load_many(user.entitled_cache.role_ids.iter().copied())
+						.await
+						.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+					global_config
+						.role_ids
+						.iter()
+						.filter_map(|id| roles.remove(id))
+						.collect::<Vec<_>>()
+				};
+
+				let permissions = user.compute_permissions(&roles);
+
+				Ok((user, permissions))
+			})
+			.await
 	}
 }
 
@@ -110,11 +157,17 @@ impl<S> AuthMiddlewareService<S> {
 							ApiError::new(StatusCode::UNAUTHORIZED, "session not found")
 						})?;
 
-					req.extensions_mut().insert(AuthSession::Session(session));
+					req.extensions_mut().insert(AuthSession {
+						kind: AuthSessionKind::Session(session),
+						cached_data: Arc::new(OnceCell::new()),
+					});
 				}
 				// old session
 				None => {
-					req.extensions_mut().insert(AuthSession::Old(jwt.user_id));
+					req.extensions_mut().insert(AuthSession {
+						kind: AuthSessionKind::Old(jwt.user_id),
+						cached_data: Arc::new(OnceCell::new()),
+					});
 				}
 			}
 		}

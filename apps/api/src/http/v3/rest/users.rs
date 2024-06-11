@@ -184,76 +184,60 @@ pub async fn upload_user_profile_picture(
 	auth_session: Option<Extension<AuthSession>>,
 	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
-	let authed_user_id = auth_session.ok_or(ApiError::UNAUTHORIZED)?.user_id();
+	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
 
-	let id = match id {
-		TargetUser::Me => authed_user_id,
+	let (authed_user, perms) = auth_session.user(&global).await?;
+
+	let user_id = match id {
+		TargetUser::Me => authed_user.id,
 		TargetUser::Other(id) => id,
 	};
 
-	let user = global
-		.user_by_id_loader()
-		.load(&global, id)
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::NOT_FOUND)?;
-
-	let authed_user = global
-		.user_by_id_loader()
-		.load(&global, authed_user_id)
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::UNAUTHORIZED)?;
-
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-	let roles = {
-		let mut roles = global
-			.role_by_id_loader()
-			.load_many(authed_user.entitled_cache.role_ids.iter().copied())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		global_config
-			.role_ids
-			.iter()
-			.filter_map(|id| roles.remove(id))
-			.collect::<Vec<_>>()
-	};
-
-	let permissions = authed_user.compute_permissions(&roles);
-
-	if authed_user_id == id {
+	let is_pending = if authed_user.id == user_id {
 		// When someone wants to change their own profile picture
-		if !permissions.has(FeaturePermission::UseCustomProfilePicture) {
+		if !perms.has(FeaturePermission::UseCustomProfilePicture) {
 			return Err(ApiError::FORBIDDEN);
 		}
+
+		matches!(
+			authed_user.style.active_profile_picture,
+			Some(ImageSet {
+				input: ImageSetInput::Pending { .. },
+				..
+			}),
+		)
 	} else {
 		// When someone wants to change another user's profile picture, they must have
 		// `UserPermission::Edit`
-		if !permissions.has(UserPermission::Edit) {
+		if !perms.has(UserPermission::Edit) {
 			return Err(ApiError::FORBIDDEN);
 		}
-	}
+
+		let user = global
+			.user_by_id_loader()
+			.load(&global, user_id)
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
+
+		matches!(
+			user.style.active_profile_picture,
+			Some(ImageSet {
+				input: ImageSetInput::Pending { .. },
+				..
+			}),
+		)
+	};
 
 	// check if user already has a pending profile picture change
-	if let Some(ImageSet {
-		input: ImageSetInput::Pending { .. },
-		..
-	}) = user.style.active_profile_picture
-	{
+	if is_pending {
 		return Err(ApiError::new_const(
 			StatusCode::CONFLICT,
 			"profile picture change already pending",
 		));
 	}
 
-	let input = match global.image_processor().upload_profile_picture(id, body).await {
+	let input = match global.image_processor().upload_profile_picture(user_id, body).await {
 		Ok(ProcessImageResponse {
 			id,
 			error: None,
@@ -299,7 +283,7 @@ pub async fn upload_user_profile_picture(
 	User::collection(global.db())
 		.update_one(
 			doc! {
-				"_id": user.id,
+				"_id": user_id,
 			},
 			doc! {
 				"$set": {

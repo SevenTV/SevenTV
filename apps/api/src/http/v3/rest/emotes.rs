@@ -64,39 +64,10 @@ pub async fn create_emote(
 
 	// TODO: validate emote name
 
-	let user_id = auth_session.ok_or(ApiError::UNAUTHORIZED)?.user_id();
+	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
+	let (user, perms) = auth_session.user(&global).await?;
 
-	let user = global
-		.user_by_id_loader()
-		.load(&global, user_id)
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::UNAUTHORIZED)?;
-
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-	let roles = {
-		let mut roles = global
-			.role_by_id_loader()
-			.load_many(user.entitled_cache.role_ids.iter().copied())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		global_config
-			.role_ids
-			.iter()
-			.filter_map(|id| roles.remove(id))
-			.collect::<Vec<_>>()
-	};
-
-	let permissions = user.compute_permissions(&roles);
-
-	if !permissions.has(EmotePermission::Upload) {
+	if !perms.has(EmotePermission::Upload) {
 		return Err(ApiError::FORBIDDEN);
 	}
 
@@ -149,7 +120,7 @@ pub async fn create_emote(
 
 	let emote = Emote {
 		id: emote_id,
-		owner_id: Some(user_id),
+		owner_id: Some(user.id),
 		default_name: emote_data.name,
 		tags: emote_data.tags,
 		animated: false, // will be set by the image processor callback

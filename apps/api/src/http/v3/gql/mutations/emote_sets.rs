@@ -42,35 +42,7 @@ impl EmoteSetsMutation {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let user = global
-			.user_by_id_loader()
-			.load(global, auth_session.user_id())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::UNAUTHORIZED)?;
-
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let roles = {
-			let mut roles = global
-				.role_by_id_loader()
-				.load_many(user.entitled_cache.role_ids.iter().copied())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-			global_config
-				.role_ids
-				.iter()
-				.filter_map(|id| roles.remove(id))
-				.collect::<Vec<_>>()
-		};
-
-		let permissions = user.compute_permissions(&roles);
+		let (_, perms) = auth_session.user(global).await?;
 
 		let editors = global
 			.user_editor_by_user_id_loader()
@@ -80,7 +52,7 @@ impl EmoteSetsMutation {
 			.unwrap_or_default();
 
 		if !(auth_session.user_id() == user_id.id()
-			|| permissions.has(EmoteSetPermission::Admin)
+			|| perms.has(EmoteSetPermission::Admin)
 			|| editors.iter().any(|editor| {
 				editor.state == UserEditorState::Accepted
 					&& editor.user_id == auth_session.user_id()

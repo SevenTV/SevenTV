@@ -13,7 +13,7 @@ use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Query;
-use crate::http::middleware::auth::{AuthSession, AUTH_COOKIE};
+use crate::http::middleware::auth::{AuthSession, AuthSessionKind, AUTH_COOKIE};
 use crate::http::middleware::cookies::Cookies;
 
 mod login;
@@ -94,7 +94,7 @@ async fn logout(
 	Extension(cookies): Extension<Cookies>,
 	session: Option<Extension<AuthSession>>,
 ) -> Result<impl IntoResponse, ApiError> {
-	if let Some(Extension(AuthSession::Session(session))) = session {
+	if let Some(AuthSessionKind::Session(session)) = session.map(|Extension(s)| s.kind) {
 		UserSession::collection(global.db())
 			.delete_one(
 				doc! {

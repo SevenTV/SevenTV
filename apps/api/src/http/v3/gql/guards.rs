@@ -30,35 +30,7 @@ impl Guard for PermissionGuard {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let user = global
-			.user_by_id_loader()
-			.load(global, auth_session.user_id())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::UNAUTHORIZED)?;
-
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let roles = {
-			let mut roles = global
-				.role_by_id_loader()
-				.load_many(user.entitled_cache.role_ids.iter().copied())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-			global_config
-				.role_ids
-				.iter()
-				.filter_map(|id| roles.remove(id))
-				.collect::<Vec<_>>()
-		};
-
-		let user_permissions = user.compute_permissions(&roles);
+		let (_, user_permissions) = auth_session.user(global).await?;
 
 		if self.permissions.iter().any(|p| !user_permissions.has(*p)) {
 			return Err(ApiError::FORBIDDEN.into());

@@ -1,7 +1,7 @@
 use bitmask_enum::bitmask;
 
 use super::UserId;
-use crate::database::{AllowDeny, BitMask, Collection, EmoteSetPermission, Id};
+use crate::database::{AllowDeny, BitMask, Collection, EmotePermission, EmoteSetPermission, Id};
 
 pub type UserEditorId = Id<UserEditor>;
 
@@ -24,12 +24,20 @@ pub struct UserEditorPermissions {
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
 	#[serde(default)]
 	pub emote_set: AllowDeny<EmoteSetPermission>,
+	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(default)]
+	pub emote: AllowDeny<EmotePermission>,
 }
 
 impl UserEditorPermissions {
 	pub fn has_emote_set(&self, permission: EmoteSetPermission) -> bool {
 		self.emote_set.permission().contains(permission)
 			|| self.emote_set.permission().contains(EmoteSetPermission::Admin)
+	}
+
+	pub fn has_emote(&self, permission: EmotePermission) -> bool {
+		self.emote.permission().contains(permission)
+			|| self.emote.permission().contains(EmotePermission::Admin)
 	}
 }
 
