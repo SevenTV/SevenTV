@@ -11,6 +11,7 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::{ActiveEmote, EmoteSet};
+use crate::http::v3::gql::types::ListItemAction;
 
 #[derive(Default)]
 pub struct EmoteSetsMutation;
@@ -158,14 +159,6 @@ impl EmoteSetOps {
 
 		Ok(())
 	}
-}
-
-#[derive(Enum, Copy, Clone, PartialEq, Eq, Debug)]
-#[graphql(rename_items = "SCREAMING_SNAKE_CASE")]
-pub enum ListItemAction {
-	Add,
-	Update,
-	Remove,
 }
 
 #[derive(InputObject)]

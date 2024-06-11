@@ -11,6 +11,7 @@ use crate::http::middleware::auth::AuthSession;
 mod guards;
 mod mutations;
 mod queries;
+mod types;
 
 pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
 	Router::new()
