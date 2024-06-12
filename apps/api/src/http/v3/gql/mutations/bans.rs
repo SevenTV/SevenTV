@@ -49,7 +49,10 @@ impl BansMutation {
 		database::UserBan::collection(global.db())
 			.insert_one(&ban, None)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert user ban");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		Ok(Some(Ban::from_db(ban)))
 	}
@@ -84,7 +87,10 @@ impl BansMutation {
 					.build(),
 			)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to update user ban");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		Ok(ban.map(Ban::from_db))
 	}

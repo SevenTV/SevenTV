@@ -49,7 +49,10 @@ impl ReportsMutation {
 		database::Ticket::collection(global.db())
 			.insert_one_with_session(&ticket, None, &mut session)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert ticket");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		let message = database::TicketMessage {
 			ticket_id: ticket.id,
@@ -61,7 +64,10 @@ impl ReportsMutation {
 		database::TicketMessage::collection(global.db())
 			.insert_one_with_session(&message, None, &mut session)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert ticket message");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		let member = database::TicketMember {
 			ticket_id: ticket.id,
@@ -74,7 +80,10 @@ impl ReportsMutation {
 		database::TicketMember::collection(global.db())
 			.insert_one_with_session(&member, None, &mut session)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert ticket member");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		session.commit_transaction().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to commit transaction");
@@ -126,7 +135,10 @@ impl ReportsMutation {
 				&mut session,
 			)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to update ticket");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		if let Some(assignee) = data.assignee {
@@ -166,7 +178,10 @@ impl ReportsMutation {
 			database::TicketMessage::collection(global.db())
 				.insert_one_with_session(&message, None, &mut session)
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to insert ticket message");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
 		}
 
 		session.commit_transaction().await.map_err(|err| {

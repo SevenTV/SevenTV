@@ -25,7 +25,7 @@ pub struct Role {
 	pub description: Option<String>,
 	pub permissions: Permissions,
 	pub hoist: bool,
-	pub color: i32,
+	pub color: u32,
 	pub tags: Vec<String>,
 }
 

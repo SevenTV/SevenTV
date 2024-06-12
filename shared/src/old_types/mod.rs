@@ -16,10 +16,12 @@ use crate::database::{
 mod cosmetic;
 mod image;
 mod object_id;
+mod role_permission;
 
 pub use cosmetic::*;
 pub use image::*;
 pub use object_id::*;
+pub use role_permission::*;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(components(schemas(
