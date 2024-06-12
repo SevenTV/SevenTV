@@ -193,9 +193,10 @@ impl Default for PaintPermission {
 pub enum UserPermission {
 	Ban = 1,
 	Merge = 2,
-	Delete = 4,
-	Edit = 8,
-	Admin = 16,
+	Login = 4,
+	Delete = 8,
+	Edit = 16,
+	Admin = 32,
 }
 
 impl BitMask for UserPermission {

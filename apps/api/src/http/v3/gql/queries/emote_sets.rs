@@ -13,6 +13,7 @@ use super::users::UserPartial;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, virtual_user_set};
+use crate::user_permissions_loader::{load_user_and_permissions_by_id, load_users_permissions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
@@ -183,35 +184,11 @@ impl EmoteSet {
 			return Ok(600);
 		};
 
-		let user = global
-			.user_by_id_loader()
-			.load(global, owner_id.id())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		let (_, perms) = load_user_and_permissions_by_id(global, owner_id.id())
+			.await?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let roles = {
-			let mut roles = global
-				.role_by_id_loader()
-				.load_many(user.entitled_cache.role_ids.iter().copied())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-			global_config
-				.role_ids
-				.iter()
-				.filter_map(|id| roles.remove(id))
-				.collect::<Vec<_>>()
-		};
-
-		Ok(user.compute_permissions(&roles).emote_set_slots_limit.unwrap_or(600))
+		Ok(perms.emote_set_slots_limit.unwrap_or(600))
 	}
 
 	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
@@ -256,11 +233,8 @@ impl EmoteSetsQuery {
 			}
 			EmoteSetObjectId::VirtualId(VirtualId(user_id)) => {
 				// check if there is a user with the provided id
-				let user = global
-					.user_by_id_loader()
-					.load(global, user_id)
-					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				let (user, perms) = load_user_and_permissions_by_id(global, user_id)
+					.await?
 					.ok_or(ApiError::NOT_FOUND)?;
 
 				let user_connections = global
@@ -270,28 +244,7 @@ impl EmoteSetsQuery {
 					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 					.unwrap_or_default();
 
-				let global_config = global
-					.global_config_loader()
-					.load(())
-					.await
-					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-				let roles = {
-					let mut roles = global
-						.role_by_id_loader()
-						.load_many(user.entitled_cache.role_ids.iter().copied())
-						.await
-						.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-					global_config
-						.role_ids
-						.iter()
-						.filter_map(|id| roles.remove(id))
-						.collect::<Vec<_>>()
-				};
-
-				let slots = user.compute_permissions(&roles).emote_set_slots_limit.unwrap_or(600);
+				let slots = perms.emote_set_slots_limit.unwrap_or(600);
 
 				Ok(EmoteSet::virtual_set_for_user(user, user_connections, slots).await)
 			}
@@ -342,29 +295,14 @@ impl EmoteSetsQuery {
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let roles = {
-			let mut roles = global
-				.role_by_id_loader()
-				.load_many(users.values().flat_map(|user| user.entitled_cache.role_ids.iter().copied()))
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-			global_config
-				.role_ids
-				.iter()
-				.filter_map(|id| roles.remove(id))
-				.collect::<Vec<_>>()
-		};
+		let mut perms = load_users_permissions(global, users.values()).await?;
 
 		for (id, user) in users {
-			let slots = user.compute_permissions(&roles).emote_set_slots_limit.unwrap_or(600);
+			let slots = perms
+				.remove(&id)
+				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?
+				.emote_set_slots_limit
+				.unwrap_or(600);
 			let set =
 				EmoteSet::virtual_set_for_user(user, user_connections.get(&id).cloned().unwrap_or_default(), slots).await;
 			emote_sets.push(set);

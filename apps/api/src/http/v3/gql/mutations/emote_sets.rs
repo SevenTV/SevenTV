@@ -109,35 +109,7 @@ impl EmoteSetOps {
 		auth_session: &AuthSession,
 		editor_perm: EmoteSetPermission,
 	) -> Result<(), ApiError> {
-		let user = global
-			.user_by_id_loader()
-			.load(global, auth_session.user_id())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::UNAUTHORIZED)?;
-
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let roles = {
-			let mut roles = global
-				.role_by_id_loader()
-				.load_many(user.entitled_cache.role_ids.iter().copied())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-			global_config
-				.role_ids
-				.iter()
-				.filter_map(|id| roles.remove(id))
-				.collect::<Vec<_>>()
-		};
-
-		let permissions = user.compute_permissions(&roles);
+		let (_, perms) = auth_session.user(global).await?;
 
 		if let Some(owner_id) = self._emote_set.owner_id {
 			let editors = global
@@ -148,7 +120,7 @@ impl EmoteSetOps {
 				.unwrap_or_default();
 
 			if !(auth_session.user_id() == owner_id
-				|| permissions.has(EmoteSetPermission::Admin)
+				|| perms.has(EmoteSetPermission::Admin)
 				|| editors.iter().any(|editor| {
 					editor.state == UserEditorState::Accepted
 						&& editor.user_id == auth_session.user_id()
@@ -157,7 +129,7 @@ impl EmoteSetOps {
 				return Err(ApiError::FORBIDDEN);
 			}
 		} else {
-			if !permissions.has(EmoteSetPermission::Admin) {
+			if !perms.has(EmoteSetPermission::Admin) {
 				return Err(ApiError::FORBIDDEN);
 			}
 		}

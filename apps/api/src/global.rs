@@ -16,9 +16,11 @@ pub struct Global {
 	db: mongodb::Database,
 	clickhouse: clickhouse::Client,
 	http_client: reqwest::Client,
-	user_by_id_loader: dataloader::user::UserLoader,
 	image_processor: ImageProcessor,
+	user_by_id_loader: dataloader::user::UserLoader,
 	user_connection_by_user_id_loader: DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader>,
+	active_user_bans_by_user_id_loader: DataLoader<dataloader::user_ban::ActiveUserBanByUserIdLoader>,
+	user_ban_role_by_id_loader: DataLoader<dataloader::user_ban_role::UserBanRoleByIdLoader>,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
 	product_entitlement_group_by_id_loader: DataLoader<dataloader::product::ProductEntitlementGroupByIdLoader>,
 	role_by_id_loader: DataLoader<dataloader::role::RoleByIdLoader>,
@@ -58,6 +60,8 @@ impl Global {
 				.context("image processor setup")?,
 			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
 			user_connection_by_user_id_loader: dataloader::user_connection::UserConnectionByUserIdLoader::new(db.clone()),
+			active_user_bans_by_user_id_loader: dataloader::user_ban::ActiveUserBanByUserIdLoader::new(db.clone()),
+			user_ban_role_by_id_loader: dataloader::user_ban_role::UserBanRoleByIdLoader::new(db.clone()),
 			product_by_id_loader: dataloader::product::ProductByIdLoader::new(db.clone()),
 			product_entitlement_group_by_id_loader: dataloader::product::ProductEntitlementGroupByIdLoader::new(db.clone()),
 			role_by_id_loader: dataloader::role::RoleByIdLoader::new(db.clone()),
@@ -136,6 +140,16 @@ impl Global {
 		&self,
 	) -> &DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader> {
 		&self.user_connection_by_user_id_loader
+	}
+
+	/// The active user bans loader.
+	pub fn active_user_bans_by_user_id_loader(&self) -> &DataLoader<dataloader::user_ban::ActiveUserBanByUserIdLoader> {
+		&self.active_user_bans_by_user_id_loader
+	}
+
+	/// The user ban role loader.
+	pub fn user_ban_role_by_id_loader(&self) -> &DataLoader<dataloader::user_ban_role::UserBanRoleByIdLoader> {
+		&self.user_ban_role_by_id_loader
 	}
 
 	/// The product loader.

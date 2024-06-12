@@ -53,7 +53,7 @@ impl Job for RolesJob {
 					name: role.name,
 					description: None,
 					hoist: false,
-					color: role.color,
+					color: role.color as u32,
 					tags: vec![],
 				},
 				None,

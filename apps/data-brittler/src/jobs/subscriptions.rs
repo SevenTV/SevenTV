@@ -1,8 +1,7 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use chrono::{Days, Months};
-use shared::database::{Collection, Subscription, SubscriptionPeriod, SubscriptionStanding};
+use shared::database::{Collection, Subscription};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use shared::database::{Collection, UserBan};
+use shared::database::{Collection, Permissions, UserBan, UserBanRole, UserBanRoleId, UserPermission};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -8,6 +8,7 @@ use crate::types;
 
 pub struct BansJob {
 	global: Arc<Global>,
+	ban_role_id: UserBanRoleId,
 }
 
 impl Job for BansJob {
@@ -21,7 +22,21 @@ impl Job for BansJob {
 			UserBan::collection(global.target_db()).drop(None).await?;
 		}
 
-		Ok(Self { global })
+		UserBanRole::collection(global.target_db()).drop(None).await?;
+
+		let mut permissions = Permissions::default();
+		permissions.user.deny(UserPermission::Login);
+
+		let ban_role = UserBanRole {
+			name: "Default Banned".to_string(),
+			description: Some("Default role for banned users".to_string()),
+			permissions,
+			black_hole: true,
+			..Default::default()
+		};
+		UserBanRole::collection(global.target_db()).insert_one(&ban_role, None).await?;
+
+		Ok(Self { global, ban_role_id: ban_role.id })
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
@@ -41,6 +56,7 @@ impl Job for BansJob {
 					created_by_id: Some(ban.actor_id.into()),
 					reason: ban.reason,
 					expires_at: Some(ban.expire_at.into_chrono()),
+					role_id: self.ban_role_id,
 				},
 				None,
 			)

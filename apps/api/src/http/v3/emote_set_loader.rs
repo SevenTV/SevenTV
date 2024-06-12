@@ -30,40 +30,11 @@ pub async fn load_emote_set(
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-	let roles = {
-		let mut roles = global
-			.role_by_id_loader()
-			.load_many(users.values().flat_map(|user| user.entitled_cache.role_ids.iter().copied()))
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		global_config
-			.role_ids
-			.iter()
-			.filter_map(|id| roles.remove(id))
-			.collect::<Vec<_>>()
-	};
-
-	let users = users
-		.into_iter()
-		.map(|(id, user)| {
-			let permissions = user.compute_permissions(&roles);
-			(id, (user, permissions))
-		})
-		.collect::<HashMap<_, _>>();
-
 	let cdn_base_url = &global.config().api.cdn_base_url;
 
 	let users = users
 		.into_values()
-		.map(|(user, _)| {
+		.map(|user| {
 			// This api doesnt seem to return the user's badges and paints so
 			// we can ignore them.
 			let connections = connections.get(&user.id).cloned().unwrap_or_default();

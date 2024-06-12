@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use shared::database::{Collection, Platform, User, UserConnection, UserId, UserSession};
+use shared::database::{Collection, Platform, User, UserConnection, UserId, UserPermission, UserSession};
 
 use super::LoginRequest;
 use crate::connections;
@@ -11,6 +11,7 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AUTH_COOKIE;
 use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
+use crate::user_permissions_loader::load_user_permissions;
 
 const CSRF_COOKIE: &str = "seventv-csrf";
 
@@ -95,6 +96,12 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 		user
 	};
+
+	let permissions = load_user_permissions(global, &user).await?;
+
+	if !permissions.has(UserPermission::Login) {
+		return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
+	}
 
 	let connection = UserConnection::collection(global.db())
 		.find_one_and_update_with_session(

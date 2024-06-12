@@ -16,6 +16,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::types::UserEditorModelPermission;
+use crate::user_permissions_loader::load_users_permissions;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
 
@@ -250,37 +251,12 @@ impl UserPartial {
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let roles = {
-			let role_ids: Vec<_> = users
-				.iter()
-				.map(|(_, u)| u.entitled_cache.role_ids.iter().copied())
-				.flatten()
-				.collect();
-
-			let mut roles = global
-				.role_by_id_loader()
-				.load_many(role_ids)
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-			global_config
-				.role_ids
-				.iter()
-				.filter_map(|id| roles.remove(id))
-				.collect::<Vec<_>>()
-		};
+		let mut perms = load_users_permissions(global, users.values()).await?;
 
 		let mut result = Vec::new();
 
 		for (id, user) in users {
-			let permissions = user.compute_permissions(&roles);
+			let permissions = perms.remove(&id).ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 			let connections = all_connections.remove(&id).unwrap_or_default();
 			result.push(UserPartial::from_db(global, user, permissions, connections));
 		}

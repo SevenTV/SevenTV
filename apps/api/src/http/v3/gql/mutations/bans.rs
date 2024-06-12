@@ -38,11 +38,26 @@ impl BansMutation {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
+		let role = database::UserBanRole::collection(global.db())
+			.find_one(doc! {
+				"name": "Default Banned"
+			}, None)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to find default user ban role");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?
+			.ok_or_else(|| {
+				tracing::error!("failed to find default user ban role");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
 		let ban = database::UserBan {
 			user_id: victim_id.id(),
 			created_by_id: Some(auth_session.user_id()),
 			reason,
 			expires_at: expire_at,
+			role_id: role.id,
 			..Default::default()
 		};
 
@@ -125,7 +140,7 @@ impl Ban {
 
 impl Ban {
 	fn from_db(ban: database::UserBan) -> Self {
-		// 11
+		// default effects: 11
 		let effects = BanEffect::NoPermissions | BanEffect::NoAuth | BanEffect::MemoryHole;
 
 		Self {

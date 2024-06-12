@@ -1,4 +1,5 @@
 mod ban;
+mod ban_role;
 mod connection;
 mod editor;
 mod presence;
@@ -11,6 +12,7 @@ use std::sync::Arc;
 use hyper::StatusCode;
 
 pub use self::ban::*;
+pub use self::ban_role::*;
 pub use self::connection::*;
 pub use self::editor::*;
 pub use self::presence::*;

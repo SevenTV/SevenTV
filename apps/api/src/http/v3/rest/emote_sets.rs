@@ -13,6 +13,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, load_emote_set, virtual_user_set};
+use crate::user_permissions_loader::load_user_and_permissions_by_id;
 
 #[derive(OpenApi)]
 #[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSetModel)))]
@@ -77,11 +78,8 @@ pub async fn get_emote_set_by_id(
 			(emote_set, emote_set_emotes, owner)
 		}
 		EmoteSetObjectId::VirtualId(VirtualId(user_id)) => {
-			let user = global
-				.user_by_id_loader()
-				.load(&global, user_id)
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			let (user, perms) = load_user_and_permissions_by_id(&global, user_id)
+				.await?
 				.ok_or(ApiError::NOT_FOUND)?;
 
 			let conns = global
@@ -96,29 +94,7 @@ pub async fn get_emote_set_by_id(
 				.find(|c| c.main_connection)
 				.map(|u| u.platform_display_name.clone());
 
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-			let roles = {
-				let mut roles = global
-					.role_by_id_loader()
-					.load_many(user.entitled_cache.role_ids.iter().copied())
-					.await
-					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-				global_config
-					.role_ids
-					.iter()
-					.filter_map(|id| roles.remove(id))
-					.collect::<Vec<_>>()
-			};
-
-			let permissions = user.compute_permissions(&roles);
-			let slots = permissions.emote_set_count_limit.unwrap_or(600);
+			let slots = perms.emote_set_count_limit.unwrap_or(600);
 
 			let emote_set_emotes = get_virtual_set_emotes_for_user(&global, &user, slots).await?;
 

@@ -11,5 +11,7 @@ pub mod product;
 pub mod role;
 pub mod ticket;
 pub mod user;
+pub mod user_ban;
+pub mod user_ban_role;
 pub mod user_connection;
 pub mod user_editor;
