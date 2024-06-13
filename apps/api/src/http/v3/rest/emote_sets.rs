@@ -13,7 +13,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, load_emote_set, virtual_user_set};
-use crate::user_loader::{load_user, load_user_and_permissions};
+use crate::dataloader::user_loader::{load_user, load_user_and_permissions};
 
 #[derive(OpenApi)]
 #[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSetModel)))]

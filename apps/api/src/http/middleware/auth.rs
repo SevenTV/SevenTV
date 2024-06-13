@@ -13,7 +13,7 @@ use super::cookies::Cookies;
 use crate::global::Global;
 use crate::http::error::{map_result, ApiError, EitherApiError};
 use crate::jwt::{AuthJwtPayload, JwtState};
-use crate::user_loader::load_user_and_permissions;
+use crate::dataloader::user_loader::load_user_and_permissions;
 
 pub const AUTH_COOKIE: &str = "seventv-auth";
 

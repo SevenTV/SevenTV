@@ -7,7 +7,7 @@ use shared::old_types::UserPartialModel;
 use super::rest::types::EmotePartialModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::user_loader::load_users;
+use crate::dataloader::user_loader::load_users;
 
 pub async fn load_emote_set(
 	global: &Arc<Global>,

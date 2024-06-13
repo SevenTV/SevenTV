@@ -16,7 +16,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::types::UserEditorModelPermission;
-use crate::user_loader::load_users_and_permissions;
+use crate::dataloader::user_loader::load_users_and_permissions;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
 

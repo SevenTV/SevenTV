@@ -11,7 +11,7 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AUTH_COOKIE;
 use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
-use crate::user_loader::load_user_and_permissions;
+use crate::dataloader::user_loader::load_user_and_permissions;
 
 const CSRF_COOKIE: &str = "seventv-csrf";
 

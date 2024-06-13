@@ -23,7 +23,7 @@ use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::emote_set_loader::virtual_user_set;
-use crate::user_loader::{load_user, load_user_and_permissions};
+use crate::dataloader::user_loader::{load_user, load_user_and_permissions};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(

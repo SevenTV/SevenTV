@@ -13,7 +13,7 @@ use super::users::UserPartial;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, virtual_user_set};
-use crate::user_loader::{load_user_and_permissions, load_users_and_permissions};
+use crate::dataloader::user_loader::{load_user_and_permissions, load_users_and_permissions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
