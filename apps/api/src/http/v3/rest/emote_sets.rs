@@ -13,7 +13,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, load_emote_set, virtual_user_set};
-use crate::user_permissions_loader::load_user_and_permissions_by_id;
+use crate::user_loader::{load_user, load_user_and_permissions};
 
 #[derive(OpenApi)]
 #[openapi(paths(get_emote_set_by_id), components(schemas(EmoteSetModel)))]
@@ -65,11 +65,9 @@ pub async fn get_emote_set_by_id(
 						.await
 						.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 						.unwrap_or_default();
-					global
-						.user_by_id_loader()
-						.load(&global, owner)
-						.await
-						.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+
+					load_user(&global, owner)
+						.await?
 						.map(|u| UserPartialModel::from_db(u, conns, None, None, &global.config().api.cdn_base_url))
 				}
 				None => None,
@@ -78,7 +76,7 @@ pub async fn get_emote_set_by_id(
 			(emote_set, emote_set_emotes, owner)
 		}
 		EmoteSetObjectId::VirtualId(VirtualId(user_id)) => {
-			let (user, perms) = load_user_and_permissions_by_id(&global, user_id)
+			let (user, perms) = load_user_and_permissions(&global, user_id)
 				.await?
 				.ok_or(ApiError::NOT_FOUND)?;
 

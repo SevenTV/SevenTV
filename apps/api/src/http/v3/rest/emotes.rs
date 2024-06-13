@@ -15,6 +15,7 @@ use super::types::{EmoteModel, EmotePartialModel};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
+use crate::user_loader::load_user;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
@@ -178,12 +179,8 @@ pub async fn get_emote_by_id(
 				.await
 				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.unwrap_or_default();
-			global
-				.user_by_id_loader()
-				.load(&global, owner)
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.map(|u| (u, conns))
+
+			load_user(&global, owner).await?.map(|u| (u, conns))
 		}
 		None => None,
 	};

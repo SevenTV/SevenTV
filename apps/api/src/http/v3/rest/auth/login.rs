@@ -11,7 +11,7 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AUTH_COOKIE;
 use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
-use crate::user_permissions_loader::load_user_permissions;
+use crate::user_loader::load_user_and_permissions;
 
 const CSRF_COOKIE: &str = "seventv-csrf";
 
@@ -69,20 +69,15 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	})?;
 
 	let user = if let Some(user_id) = csrf_payload.user_id {
-		User::collection(global.db())
-			.find_one_with_session(
-				doc! {
-					"_id": user_id,
-				},
-				None,
-				&mut session,
-			)
-			.await
-			.map_err(|err| {
-				tracing::error!(error = %err, "failed to find user");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?
-			.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "user not found"))?
+		let (user, perms) = load_user_and_permissions(global, user_id)
+			.await?
+			.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "user not found"))?;
+
+		if !perms.has(UserPermission::Login) {
+			return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
+		}
+
+		user
 	} else {
 		let user = User::default();
 
@@ -96,12 +91,6 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 		user
 	};
-
-	let permissions = load_user_permissions(global, &user).await?;
-
-	if !permissions.has(UserPermission::Login) {
-		return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
-	}
 
 	let connection = UserConnection::collection(global.db())
 		.find_one_and_update_with_session(

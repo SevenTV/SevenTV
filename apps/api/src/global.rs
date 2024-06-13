@@ -17,7 +17,7 @@ pub struct Global {
 	clickhouse: clickhouse::Client,
 	http_client: reqwest::Client,
 	image_processor: ImageProcessor,
-	user_by_id_loader: dataloader::user::UserLoader,
+	user_by_id_loader: DataLoader<dataloader::user::UserLoader>,
 	user_connection_by_user_id_loader: DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader>,
 	active_user_bans_by_user_id_loader: DataLoader<dataloader::user_ban::ActiveUserBanByUserIdLoader>,
 	user_ban_role_by_id_loader: DataLoader<dataloader::user_ban_role::UserBanRoleByIdLoader>,
@@ -131,7 +131,7 @@ impl Global {
 	}
 
 	/// The user loader.
-	pub fn user_by_id_loader(&self) -> &dataloader::user::UserLoader {
+	pub fn user_by_id_loader(&self) -> &DataLoader<dataloader::user::UserLoader> {
 		&self.user_by_id_loader
 	}
 

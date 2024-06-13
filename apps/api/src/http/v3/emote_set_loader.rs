@@ -7,6 +7,7 @@ use shared::old_types::UserPartialModel;
 use super::rest::types::EmotePartialModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::user_loader::load_users;
 
 pub async fn load_emote_set(
 	global: &Arc<Global>,
@@ -18,11 +19,7 @@ pub async fn load_emote_set(
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-	let users = global
-		.user_by_id_loader()
-		.load_many(&global, emotes.values().filter_map(|emote| emote.owner_id))
-		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+	let users = load_users(global, emotes.values().filter_map(|emote| emote.owner_id)).await?;
 
 	let connections = global
 		.user_connection_by_user_id_loader()

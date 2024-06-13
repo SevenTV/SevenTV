@@ -37,7 +37,6 @@ pub struct User {
 	pub style: UserStyle,
 	pub active_emote_set_ids: Vec<EmoteSetId>,
 	pub grants: UserGrants,
-	pub entitled_cache: UserEntitledCache,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -54,7 +53,7 @@ impl User {
 		roles
 			.iter()
 			.filter_map(|role| {
-				if self.entitled_cache.role_ids.contains(&role.id) {
+				if self.grants.role_ids.contains(&role.id) {
 					Some(&role.permissions)
 				} else {
 					None
@@ -83,47 +82,4 @@ pub struct UserStyle {
 	pub active_paint_id: Option<PaintId>,
 	pub active_profile_picture: Option<ImageSet>,
 	pub all_profile_pictures: Vec<ImageSet>,
-}
-
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct UserEntitledCache {
-	pub role_ids: Vec<RoleId>,
-	pub badge_ids: Vec<BadgeId>,
-	pub emote_set_ids: Vec<EmoteSetId>,
-	pub paint_ids: Vec<PaintId>,
-	pub product_ids: Vec<ProductId>,
-	pub invalidated_at: mongodb::bson::DateTime,
-}
-
-impl Default for UserEntitledCache {
-	fn default() -> Self {
-		Self {
-			role_ids: Default::default(),
-			badge_ids: Default::default(),
-			emote_set_ids: Default::default(),
-			paint_ids: Default::default(),
-			product_ids: Default::default(),
-			invalidated_at: mongodb::bson::DateTime::now(),
-		}
-	}
-}
-
-impl UserEntitledCache {
-	pub fn dedup(&mut self) {
-		self.role_ids.sort_unstable();
-		self.role_ids.dedup();
-
-		self.badge_ids.sort_unstable();
-		self.badge_ids.dedup();
-
-		self.emote_set_ids.sort_unstable();
-		self.emote_set_ids.dedup();
-
-		self.paint_ids.sort_unstable();
-		self.paint_ids.dedup();
-
-		self.product_ids.sort_unstable();
-		self.product_ids.dedup();
-	}
 }

@@ -23,7 +23,7 @@ use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::emote_set_loader::virtual_user_set;
-use crate::user_permissions_loader::load_user_and_permissions_by_id;
+use crate::user_loader::{load_user, load_user_and_permissions};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -67,7 +67,9 @@ pub async fn get_user_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<UserId>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let (user, perms) = load_user_and_permissions_by_id(&global, id).await?.ok_or(ApiError::NOT_FOUND)?;
+	let (user, perms) = load_user_and_permissions(&global, id)
+		.await?
+		.ok_or(ApiError::NOT_FOUND)?;
 
 	let emote_sets = global
 		.emote_set_by_user_id_loader()
@@ -186,12 +188,7 @@ pub async fn upload_user_profile_picture(
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let user = global
-			.user_by_id_loader()
-			.load(&global, user_id)
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+		let user = load_user(&global, user_id).await?.ok_or(ApiError::NOT_FOUND)?;
 
 		matches!(
 			user.style.active_profile_picture,
@@ -331,7 +328,9 @@ pub async fn get_user_by_platform_id(
 		.ok_or(ApiError::NOT_FOUND)?;
 
 	// query the user
-	let (user, perms) = load_user_and_permissions_by_id(&global, connection.user_id).await?.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+	let (user, perms) = load_user_and_permissions(&global, connection.user_id)
+		.await?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let mut connection_model: UserConnectionModel = UserConnectionPartialModel::from(connection).into();
 

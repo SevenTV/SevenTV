@@ -33,7 +33,7 @@ impl BansMutation {
 		// check if victim exists
 		let _ = global
 			.user_by_id_loader()
-			.load(global, victim_id.id())
+			.load(victim_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;

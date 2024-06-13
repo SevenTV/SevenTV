@@ -13,7 +13,7 @@ use super::cookies::Cookies;
 use crate::global::Global;
 use crate::http::error::{map_result, ApiError, EitherApiError};
 use crate::jwt::{AuthJwtPayload, JwtState};
-use crate::user_permissions_loader::load_user_and_permissions_by_id;
+use crate::user_loader::load_user_and_permissions;
 
 pub const AUTH_COOKIE: &str = "seventv-auth";
 
@@ -70,7 +70,7 @@ impl AuthSession {
 	pub async fn user(&self, global: &Arc<Global>) -> Result<&(User, Permissions), ApiError> {
 		self.cached_data
 			.get_or_try_init(|| async {
-				Ok(load_user_and_permissions_by_id(global, self.user_id())
+				Ok(load_user_and_permissions(global, self.user_id())
 					.await?
 					.ok_or(ApiError::UNAUTHORIZED)?)
 			})

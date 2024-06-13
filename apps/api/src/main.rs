@@ -14,7 +14,7 @@ mod global;
 mod http;
 mod image_processor_callback;
 mod jwt;
-mod user_permissions_loader;
+mod user_loader;
 
 struct BootstrapWrapper(Config);
 

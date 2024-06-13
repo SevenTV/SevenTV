@@ -13,7 +13,7 @@ use super::users::UserPartial;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, virtual_user_set};
-use crate::user_permissions_loader::{load_user_and_permissions_by_id, load_users_permissions};
+use crate::user_loader::{load_user_and_permissions, load_users_and_permissions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
@@ -184,7 +184,7 @@ impl EmoteSet {
 			return Ok(600);
 		};
 
-		let (_, perms) = load_user_and_permissions_by_id(global, owner_id.id())
+		let (_, perms) = load_user_and_permissions(global, owner_id.id())
 			.await?
 			.ok_or(ApiError::NOT_FOUND)?;
 
@@ -233,7 +233,7 @@ impl EmoteSetsQuery {
 			}
 			EmoteSetObjectId::VirtualId(VirtualId(user_id)) => {
 				// check if there is a user with the provided id
-				let (user, perms) = load_user_and_permissions_by_id(global, user_id)
+				let (user, perms) = load_user_and_permissions(global, user_id)
 					.await?
 					.ok_or(ApiError::NOT_FOUND)?;
 
@@ -283,11 +283,7 @@ impl EmoteSetsQuery {
 			.collect();
 
 		// load users with ids for virtual sets
-		let users = global
-			.user_by_id_loader()
-			.load_many(global, virtual_user_ids)
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let users = load_users_and_permissions(global, virtual_user_ids).await?;
 
 		let user_connections = global
 			.user_connection_by_user_id_loader()
@@ -295,14 +291,8 @@ impl EmoteSetsQuery {
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let mut perms = load_users_permissions(global, users.values()).await?;
-
-		for (id, user) in users {
-			let slots = perms
-				.remove(&id)
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?
-				.emote_set_slots_limit
-				.unwrap_or(600);
+		for (id, (user, perms)) in users {
+			let slots = perms.emote_set_slots_limit.unwrap_or(600);
 			let set =
 				EmoteSet::virtual_set_for_user(user, user_connections.get(&id).cloned().unwrap_or_default(), slots).await;
 			emote_sets.push(set);

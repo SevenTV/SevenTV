@@ -113,7 +113,7 @@ impl UserPartialModel {
 				badge_id: value.style.active_badge_id,
 				badge,
 			},
-			role_ids: value.entitled_cache.role_ids.into_iter().collect(),
+			role_ids: value.grants.role_ids.into_iter().collect(),
 			connections: connections.into_iter().map(UserConnectionPartialModel::from).collect(),
 		}
 	}
