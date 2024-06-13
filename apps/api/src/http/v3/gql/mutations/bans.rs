@@ -39,9 +39,12 @@ impl BansMutation {
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let role = database::UserBanRole::collection(global.db())
-			.find_one(doc! {
-				"name": "Default Banned"
-			}, None)
+			.find_one(
+				doc! {
+					"name": "Default Banned"
+				},
+				None,
+			)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to find default user ban role");

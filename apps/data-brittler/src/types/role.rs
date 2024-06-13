@@ -1,5 +1,6 @@
 use mongodb::bson::oid::ObjectId;
-use shared::{database, old_types::RolePermission};
+use shared::database;
+use shared::old_types::RolePermission;
 
 // https://github.com/SevenTV/Common/blob/master/structures/v3/type.role.go
 

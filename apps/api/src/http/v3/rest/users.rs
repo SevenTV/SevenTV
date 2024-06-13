@@ -67,9 +67,7 @@ pub async fn get_user_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<UserId>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let (user, perms) = load_user_and_permissions(&global, id)
-		.await?
-		.ok_or(ApiError::NOT_FOUND)?;
+	let (user, perms) = load_user_and_permissions(&global, id).await?.ok_or(ApiError::NOT_FOUND)?;
 
 	let emote_sets = global
 		.emote_set_by_user_id_loader()

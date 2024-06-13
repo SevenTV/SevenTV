@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use async_graphql::{Context, InputObject, Object};
+use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::{self, Collection, RolePermission};
 use shared::old_types::RoleObjectId;
-use mongodb::bson::doc;
 
 use crate::global::Global;
 use crate::http::error::ApiError;

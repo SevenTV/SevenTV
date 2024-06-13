@@ -30,10 +30,10 @@ impl Loader for ActiveUserBanByUserIdLoader {
 					"user_id": {
 						"$in": keys,
 					},
-                    "$or": [
-                        { "expires_at": Option::<DateTime>::None },
-                        { "expires_at": { "$gt": chrono::Utc::now() } },
-                    ],
+					"$or": [
+						{ "expires_at": Option::<DateTime>::None },
+						{ "expires_at": { "$gt": chrono::Utc::now() } },
+					],
 				},
 				None,
 			)

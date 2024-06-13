@@ -233,9 +233,7 @@ impl EmoteSetsQuery {
 			}
 			EmoteSetObjectId::VirtualId(VirtualId(user_id)) => {
 				// check if there is a user with the provided id
-				let (user, perms) = load_user_and_permissions(global, user_id)
-					.await?
-					.ok_or(ApiError::NOT_FOUND)?;
+				let (user, perms) = load_user_and_permissions(global, user_id).await?.ok_or(ApiError::NOT_FOUND)?;
 
 				let user_connections = global
 					.user_connection_by_user_id_loader()

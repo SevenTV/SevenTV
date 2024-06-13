@@ -1,12 +1,15 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use shared::database::{Permissions, User, UserBan, UserId};
 
-use crate::{global::Global, http::error::ApiError};
+use crate::global::Global;
+use crate::http::error::ApiError;
 
 // Loading users is quite complex.
-// Loading a user always requires loading the user itself and their bans to see if they are black holed.
-// Loading user permissions requires loading the user, their bans, and their roles.
+// Loading a user always requires loading the user itself and their bans to see
+// if they are black holed. Loading user permissions requires loading the user,
+// their bans, and their roles.
 
 /// Internal helper function to load
 /// - users
@@ -39,7 +42,8 @@ async fn load_users_and_bans(
 		.into_iter()
 		.filter_map(|(id, user)| {
 			let user_bans = active_bans.remove(&id).unwrap_or_default();
-			// keep this user if all bans are not black holes (if there aren't any black holes)
+			// keep this user if all bans are not black holes (if there aren't any black
+			// holes)
 			user_bans
 				.iter()
 				.all(|b| ban_roles.get(&b.role_id).map(|r| !r.black_hole).unwrap_or(true))
@@ -101,7 +105,8 @@ async fn load_users_and_bans_and_permissions(
 		.into_iter()
 		.filter_map(|(id, user)| {
 			let user_bans = active_bans.remove(&id).unwrap_or_default();
-			// keep this user if all bans are not black holes (if there aren't any black holes)
+			// keep this user if all bans are not black holes (if there aren't any black
+			// holes)
 			user_bans
 				.iter()
 				.all(|b| ban_roles.get(&b.role_id).map(|r| !r.black_hole).unwrap_or(true))
@@ -157,7 +162,5 @@ pub async fn load_user_and_permissions(
 	global: &Arc<Global>,
 	user_id: UserId,
 ) -> Result<Option<(User, Permissions)>, ApiError> {
-	Ok(load_users_and_permissions(global, [user_id])
-		.await?
-		.remove(&user_id))
+	Ok(load_users_and_permissions(global, [user_id]).await?.remove(&user_id))
 }

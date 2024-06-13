@@ -34,9 +34,14 @@ impl Job for BansJob {
 			black_hole: true,
 			..Default::default()
 		};
-		UserBanRole::collection(global.target_db()).insert_one(&ban_role, None).await?;
+		UserBanRole::collection(global.target_db())
+			.insert_one(&ban_role, None)
+			.await?;
 
-		Ok(Self { global, ban_role_id: ban_role.id })
+		Ok(Self {
+			global,
+			ban_role_id: ban_role.id,
+		})
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {

@@ -222,7 +222,7 @@ impl RolePermission {
 		}
 	}
 
-    pub fn from_db(value: database::Permissions) -> (Self, Self) {
+	pub fn from_db(value: database::Permissions) -> (Self, Self) {
 		let mut allowed = RolePermission::none();
 		let mut denied = RolePermission::none();
 
