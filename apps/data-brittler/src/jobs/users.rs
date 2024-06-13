@@ -7,7 +7,7 @@ use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
 use shared::database::{
 	Collection, ImageSet, ImageSetInput, Platform, RoleId, User, UserConnection, UserConnectionId, UserEditor, UserEditorId,
-	UserEditorPermissions, UserEditorState, UserEntitledCache, UserGrants, UserSettings, UserStyle,
+	UserEditorPermissions, UserEditorState, UserGrants, UserSettings, UserStyle,
 };
 
 use super::{Job, ProcessOutcome};
@@ -136,7 +136,6 @@ impl Job for UsersJob {
 				role_ids: roles.into_iter().collect(),
 				..Default::default()
 			},
-			entitled_cache: UserEntitledCache::default(),
 		});
 
 		for (i, connection) in user.connections.into_iter().enumerate() {
