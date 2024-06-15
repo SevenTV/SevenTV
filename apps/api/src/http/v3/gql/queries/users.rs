@@ -173,7 +173,7 @@ pub struct UserEditor {
 }
 
 impl UserEditor {
-	fn from_db(value: shared::database::UserEditor, editor_of: bool) -> Option<Self> {
+	pub fn from_db(value: shared::database::UserEditor, editor_of: bool) -> Option<Self> {
 		if value.state != shared::database::UserEditorState::Accepted {
 			return None;
 		}
@@ -181,7 +181,7 @@ impl UserEditor {
 		Some(UserEditor {
 			id: editor_of.then_some(value.user_id.into()).unwrap_or(value.editor_id.into()),
 			added_at: value.id.timestamp(),
-			permissions: UserEditorModelPermission::ModifyEmotes | UserEditorModelPermission::ManageEmoteSets,
+			permissions: UserEditorModelPermission::from_db(&value.permissions),
 			visible: true,
 		})
 	}
@@ -335,7 +335,7 @@ pub struct UserConnection {
 }
 
 impl UserConnection {
-	fn from_db(value: shared::database::UserConnection, slots: u16) -> Self {
+	pub fn from_db(value: shared::database::UserConnection, slots: u16) -> Self {
 		Self {
 			id: value.platform_id,
 			platform: value.platform.into(),

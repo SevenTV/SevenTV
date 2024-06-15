@@ -2,7 +2,7 @@
 //! both REST and GraphQL endpoints.
 
 use bitmask_enum::bitmask;
-use shared::database::EmoteFlags;
+use shared::database::{EmoteFlags, EmotePermission, EmoteSetPermission, UserEditorPermissions};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(components(schemas(
@@ -67,7 +67,7 @@ impl EmoteVersionState {
 async_graphql::scalar!(EmoteVersionState);
 
 // https://github.com/SevenTV/Common/blob/master/structures/v3/type.user.go#L220
-#[bitmask(i32)]
+#[bitmask(u32)]
 pub enum UserEditorModelPermission {
 	ModifyEmotes = 1 << 0,
 	UsePrivateEmotes = 1 << 1,
@@ -77,6 +77,36 @@ pub enum UserEditorModelPermission {
 	ManageBilling = 1 << 5,
 	ManageEditors = 1 << 6,
 	ViewMessages = 1 << 7,
+}
+
+impl UserEditorModelPermission {
+	pub fn from_db(value: &UserEditorPermissions) -> Self {
+		let mut perms = Self::none();
+
+		if value.has_emote_set(EmoteSetPermission::Edit) {
+			perms |= Self::ManageEmoteSets;
+		}
+
+		if value.has_emote(EmotePermission::Edit) {
+			perms |= Self::ManageOwnedEmotes;
+		}
+
+		perms
+	}
+
+	pub fn to_db(&self) -> UserEditorPermissions {
+		let mut perms = UserEditorPermissions::default();
+
+		if self.contains(Self::ManageEmoteSets) {
+			perms.emote_set.allow(EmoteSetPermission::Edit);
+		}
+
+		if self.contains(Self::ManageOwnedEmotes) {
+			perms.emote.allow(EmotePermission::Edit);
+		}
+
+		perms
+	}
 }
 
 async_graphql::scalar!(UserEditorModelPermission);
@@ -101,7 +131,7 @@ impl<'a> serde::Deserialize<'a> for UserEditorModelPermission {
 	where
 		D: serde::Deserializer<'a>,
 	{
-		let bits = i32::deserialize(deserializer)?;
+		let bits = u32::deserialize(deserializer)?;
 		Ok(UserEditorModelPermission::from(bits))
 	}
 }

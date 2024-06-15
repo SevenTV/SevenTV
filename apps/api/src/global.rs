@@ -19,6 +19,7 @@ pub struct Global {
 	image_processor: ImageProcessor,
 	user_by_id_loader: DataLoader<dataloader::user::UserLoader>,
 	user_connection_by_user_id_loader: DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader>,
+	user_connection_by_platform_id_loader: DataLoader<dataloader::user_connection::UserConnectionByPlatformIdLoader>,
 	active_user_bans_by_user_id_loader: DataLoader<dataloader::user_ban::ActiveUserBanByUserIdLoader>,
 	user_ban_role_by_id_loader: DataLoader<dataloader::user_ban_role::UserBanRoleByIdLoader>,
 	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
@@ -60,6 +61,7 @@ impl Global {
 				.context("image processor setup")?,
 			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
 			user_connection_by_user_id_loader: dataloader::user_connection::UserConnectionByUserIdLoader::new(db.clone()),
+			user_connection_by_platform_id_loader: dataloader::user_connection::UserConnectionByPlatformIdLoader::new(db.clone()),
 			active_user_bans_by_user_id_loader: dataloader::user_ban::ActiveUserBanByUserIdLoader::new(db.clone()),
 			user_ban_role_by_id_loader: dataloader::user_ban_role::UserBanRoleByIdLoader::new(db.clone()),
 			product_by_id_loader: dataloader::product::ProductByIdLoader::new(db.clone()),
@@ -140,6 +142,13 @@ impl Global {
 		&self,
 	) -> &DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader> {
 		&self.user_connection_by_user_id_loader
+	}
+
+	/// The user connections by platform id loader.
+	pub fn user_connection_by_platform_id_loader(
+		&self,
+	) -> &DataLoader<dataloader::user_connection::UserConnectionByPlatformIdLoader> {
+		&self.user_connection_by_platform_id_loader
 	}
 
 	/// The active user bans loader.
