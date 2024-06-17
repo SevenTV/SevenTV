@@ -69,17 +69,7 @@ impl Job for CosmeticsJob {
 					Err(outcome) => return outcome,
 				};
 
-				let processor_request = ip.make_request(
-					Some(ip.make_input_upload(format!("/badge/{id}/input.{{ext}}"), image_data)),
-					ip.make_task(
-						ip.make_output(format!("/badge/{id}/{{scale}}x{{static}}.{{ext}}")),
-						ip.make_events(
-							image_processor::Subject::Badge(id),
-							[("badge_id".to_string(), id.to_string())].into_iter().collect(),
-						),
-					),
-				);
-				let input = match ip.send_req(processor_request).await {
+				let input = match ip.upload_badge(id, image_data).await {
 					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
 						return outcome.with_error(error::Error::ImageProcessor(error));
 					}
@@ -162,25 +152,7 @@ impl Job for CosmeticsJob {
 							Err(outcome) => return outcome,
 						};
 
-						let processor_request = ip.make_request(
-							Some(ip.make_input_upload(format!("/paint/{id}/layer/{layer_id}/input.{{ext}}"), image_data)),
-							ip.make_task(
-								scuffle_image_processor_proto::Output {
-									max_aspect_ratio: None,
-									..ip.make_output(format!("/paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
-								},
-								ip.make_events(
-									image_processor::Subject::Paint(id),
-									[
-										("paint_id".to_string(), id.to_string()),
-										("layer_id".to_string(), layer_id.to_string()),
-									]
-									.into_iter()
-									.collect(),
-								),
-							),
-						);
-						let input = match ip.send_req(processor_request).await {
+						let input = match ip.upload_paint_layer(id, layer_id, image_data).await {
 							Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
 								return outcome.with_error(error::Error::ImageProcessor(error));
 							}

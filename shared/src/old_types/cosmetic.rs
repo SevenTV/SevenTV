@@ -264,6 +264,15 @@ pub enum CosmeticPaintShape {
 	Ellipse,
 }
 
+impl From<CosmeticPaintShape> for PaintRadialGradientShape {
+	fn from(s: CosmeticPaintShape) -> Self {
+		match s {
+			CosmeticPaintShape::Circle => Self::Circle,
+			CosmeticPaintShape::Ellipse => Self::Ellipse,
+		}
+	}
+}
+
 async_graphql::scalar!(CosmeticPaintShape);
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]

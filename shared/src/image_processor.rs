@@ -263,7 +263,10 @@ impl ImageProcessor {
 		let req = self.make_request(
 			Some(self.make_input_upload(format!("/paint/{id}/layer/{layer_id}/input.{{ext}}"), data)),
 			self.make_task(
-				self.make_output(format!("/paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}")),
+				scuffle_image_processor_proto::Output {
+					max_aspect_ratio: None,
+					..self.make_output(format!("/paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
+				},
 				self.make_events(
 					Subject::Paint(id),
 					[
