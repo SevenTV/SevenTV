@@ -1,4 +1,6 @@
-use super::{ImageSet, UserId};
+use super::image_set::ImageSet;
+use super::user::UserId;
+use super::GenericCollection;
 use crate::database::{Collection, Id};
 
 pub type PageId = Id<Page>;
@@ -28,4 +30,8 @@ pub enum PageKind {
 	Support = 0,
 	Blog = 1,
 	General = 2,
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<Page>()]
 }

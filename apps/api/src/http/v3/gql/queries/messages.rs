@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use futures::StreamExt;
-use mongodb::bson::{doc, to_bson};
+use mongodb::bson::doc;
 use mongodb::options::FindOptions;
-use shared::database::{Collection, Ticket, TicketData, TicketMember, TicketMemberKind, TicketPermission, TicketStatus};
-use shared::old_types::{EmoteObjectId, ObjectId, TicketObjectId, UserObjectId};
+use shared::database::emote_moderation_request::{EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus};
+use shared::old_types::object_id::GqlObjectId;
+use shared::database::role::permissions::EmoteModerationRequestPermission;
+use shared::database::Collection;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -19,10 +21,10 @@ pub struct MessagesQuery;
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct InboxMessage {
-	id: ObjectId<()>,
+	id: GqlObjectId,
 	kind: MessageKind,
 	created_at: chrono::DateTime<chrono::Utc>,
-	author_id: Option<UserObjectId>,
+	author_id: Option<GqlObjectId>,
 	read: bool,
 	read_at: Option<chrono::DateTime<chrono::Utc>>,
 	subject: String,
@@ -36,42 +38,35 @@ pub struct InboxMessage {
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct ModRequestMessage {
-	id: TicketObjectId,
+	id: GqlObjectId,
 	kind: MessageKind,
 	// created_at
-	author_id: Option<UserObjectId>,
+	author_id: Option<GqlObjectId>,
 	read: bool,
 	read_at: Option<chrono::DateTime<chrono::Utc>>,
 	target_kind: u32,
-	target_id: EmoteObjectId,
+	target_id: GqlObjectId,
 	wish: String,
 	actor_country_name: String,
 	actor_country_code: String,
 }
 
 impl ModRequestMessage {
-	fn from_db(ticket: Ticket, members: Vec<TicketMember>) -> Self {
-		let op = members.iter().find(|m| m.kind == TicketMemberKind::Op);
-
+	fn from_db(mod_request: EmoteModerationRequest) -> Self {
 		Self {
-			id: ticket.id.into(),
+			id: mod_request.id.into(),
 			kind: MessageKind::ModRequest,
-			author_id: op.map(|m| m.user_id.into()),
-			read: ticket.status == TicketStatus::Fixed || ticket.status == TicketStatus::Closed,
+			author_id: Some(mod_request.user_id.into()),
+			read: mod_request.status == EmoteModerationRequestStatus::Approved || mod_request.status == EmoteModerationRequestStatus::Denied,
 			read_at: None,
 			target_kind: 2,
-			target_id: match ticket.data {
-				TicketData::EmoteListingRequest { emote_id } => emote_id.into(),
-				TicketData::EmotePersonalUseRequest { emote_id } => emote_id.into(),
-				_ => EmoteObjectId::default(),
-			},
-			wish: match ticket.data {
-				TicketData::EmoteListingRequest { .. } => "list".to_string(),
-				TicketData::EmotePersonalUseRequest { .. } => "personal_use".to_string(),
-				_ => String::new(),
+			target_id: mod_request.emote_id.into(),
+			wish: match mod_request.kind {
+				EmoteModerationRequestKind::PublicListing => "list".to_string(),
+				EmoteModerationRequestKind::PersonalUse => "personal_use".to_string(),
 			},
 			actor_country_name: String::new(),
-			actor_country_code: String::new(),
+			actor_country_code: mod_request.country_code.unwrap_or_default(),
 		}
 	}
 }
@@ -79,7 +74,7 @@ impl ModRequestMessage {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ModRequestMessage {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.id().timestamp()
+		self.id.0.timestamp()
 	}
 }
 
@@ -126,11 +121,11 @@ impl MessagesQuery {
 		vec![]
 	}
 
-	#[graphql(guard = "PermissionGuard::one(TicketPermission::Read)")]
+	#[graphql(guard = "PermissionGuard::one(EmoteModerationRequestPermission::Manage)")]
 	async fn mod_requests<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		after_id: Option<TicketObjectId>,
+		after_id: Option<GqlObjectId>,
 		limit: Option<u32>,
 		wish: Option<String>,
 		_country: Option<String>,
@@ -141,37 +136,31 @@ impl MessagesQuery {
 
 		// only return open tickets?
 		// not sure about this
-		search_args.insert(
-			"$or",
-			vec![
-				doc! { "status": to_bson(&TicketStatus::Pending).unwrap() },
-				doc! { "status": to_bson(&TicketStatus::InProgress).unwrap() },
-			],
-		);
+		search_args.insert("status", EmoteModerationRequestStatus::Pending as i32);
 
 		match wish.as_ref().map(|s| s.as_str()) {
 			Some("list") => {
-				search_args.insert("data.kind", "emote_listing_request");
+				search_args.insert("kind", EmoteModerationRequestKind::PublicListing as i32);
 			}
 			Some("personal_use") => {
-				search_args.insert("data.kind", "emote_personal_use_request");
+				search_args.insert("kind", EmoteModerationRequestKind::PersonalUse as i32);
 			}
 			None => {}
 			_ => return Err(ApiError::BAD_REQUEST),
 		}
 
-		let total = Ticket::collection(global.db())
+		let total = EmoteModerationRequest::collection(global.db())
 			.count_documents(search_args.clone(), None)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		if let Some(after_id) = after_id {
-			search_args.insert("_id", doc! { "$gt": after_id.id() });
+			search_args.insert("_id", doc! { "$gt": after_id.0 });
 		}
 
 		let limit = limit.unwrap_or(100).min(500);
 
-		let tickets: Vec<_> = Ticket::collection(global.db())
+		let mod_requests: Vec<_> = EmoteModerationRequest::collection(global.db())
 			.find(
 				search_args,
 				FindOptions::builder().limit(limit as i64).sort(doc! { "_id": -1 }).build(),
@@ -180,9 +169,9 @@ impl MessagesQuery {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.filter_map(|r| async move {
 				match r {
-					Ok(ticket) => Some(ticket),
+					Ok(mod_request) => Some(mod_request),
 					Err(e) => {
-						tracing::error!(error = %e, "failed to load ticket");
+						tracing::error!(error = %e, "failed to load mod request");
 						None
 					}
 				}
@@ -190,19 +179,7 @@ impl MessagesQuery {
 			.collect()
 			.await;
 
-		let mut all_members = global
-			.ticket_members_by_ticket_id_loader()
-			.load_many(tickets.iter().map(|t| t.id))
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let messages = tickets
-			.into_iter()
-			.map(|t| {
-				let members = all_members.remove(&t.id).unwrap_or_default();
-				ModRequestMessage::from_db(t, members)
-			})
-			.collect();
+		let messages = mod_requests.into_iter().map(ModRequestMessage::from_db).collect();
 
 		Ok(ModRequestMessageList { messages, total })
 	}

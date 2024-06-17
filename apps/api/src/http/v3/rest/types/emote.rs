@@ -1,5 +1,6 @@
-use shared::database::{Emote, EmoteFlags, EmoteId, UserId};
-use shared::old_types::{EmoteFlagsModel, ImageHost, UserPartialModel};
+use shared::database::emote::{Emote, EmoteFlags, EmoteId};
+use shared::old_types::image::{ImageHost, ImageHostKind};
+use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
 use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};
 
@@ -16,8 +17,6 @@ pub struct EmoteModel {
 	pub listed: bool,
 	pub animated: bool,
 	pub owner: Option<UserPartialModel>,
-	#[serde(skip)]
-	pub owner_id: UserId,
 	pub host: ImageHost,
 	pub versions: Vec<EmoteVersionModel>,
 }
@@ -35,7 +34,6 @@ impl EmoteModel {
 			state: partial.state.clone(),
 			listed: partial.listed,
 			animated: partial.animated,
-			owner_id: partial.owner.as_ref().map(|u| u.id).unwrap_or_default(),
 			owner: partial.owner,
 			host: partial.host.clone(),
 			versions: vec![EmoteVersionModel {
@@ -82,7 +80,7 @@ impl EmotePartialModel {
 			owner,
 			state: EmoteVersionState::from_db(&value.flags),
 			flags: value.flags.into(),
-			lifecycle: if value.merged_into.is_some() {
+			lifecycle: if value.merged.is_some() {
 				EmoteLifecycleModel::Deleted
 			} else if value.image_set.input.is_pending() {
 				EmoteLifecycleModel::Pending

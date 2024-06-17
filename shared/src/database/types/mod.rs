@@ -1,34 +1,20 @@
-#![allow(unused_imports, dead_code)]
-
-mod activity;
-mod automod;
-mod badge;
-mod emote;
-mod emote_set;
-mod global;
-mod image_set;
-mod json_string;
-mod page;
-mod paint;
-mod product;
-mod role;
-mod ticket;
-mod user;
-
-pub use self::activity::*;
-pub use self::automod::*;
-pub use self::badge::*;
-pub use self::emote::*;
-pub use self::emote_set::*;
-pub use self::global::*;
-pub use self::image_set::*;
-pub use self::json_string::*;
-pub use self::page::*;
-pub use self::paint::*;
-pub use self::product::*;
-pub use self::role::*;
-pub use self::ticket::*;
-pub use self::user::*;
+pub mod activity;
+pub mod automod;
+pub mod badge;
+pub mod duration;
+pub mod emote;
+pub mod emote_moderation_request;
+pub mod emote_set;
+pub mod entitlement;
+pub mod global;
+pub mod image_set;
+pub mod json_string;
+pub mod page;
+pub mod paint;
+pub mod product;
+pub mod role;
+pub mod ticket;
+pub mod user;
 
 pub trait Collection {
 	const COLLECTION_NAME: &'static str;
@@ -39,4 +25,63 @@ pub trait Collection {
 	{
 		db.collection(Self::COLLECTION_NAME)
 	}
+
+	fn indexes() -> Vec<mongodb::IndexModel> {
+		vec![]
+	}
+}
+
+struct GenericCollection {
+	name: &'static str,
+	indexes: Vec<mongodb::IndexModel>,
+}
+
+impl GenericCollection {
+	fn new<C: Collection>() -> Self {
+		Self {
+			name: C::COLLECTION_NAME,
+			indexes: C::indexes(),
+		}
+	}
+
+	async fn init(self, db: &mongodb::Database, session: &mut mongodb::ClientSession) -> anyhow::Result<()> {
+		let collection = db.collection::<()>(self.name);
+
+		for index in self.indexes {
+			collection.create_index_with_session(index, None, session).await?;
+		}
+
+		Ok(())
+	}
+}
+
+fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	std::iter::empty()
+		.chain(automod::collections())
+		.chain(badge::collections())
+		.chain(emote::collections())
+		.chain(emote_set::collections())
+		.chain(entitlement::collections())
+		.chain(global::collections())
+		.chain(page::collections())
+		.chain(paint::collections())
+		.chain(product::collections())
+		.chain(role::collections())
+		.chain(ticket::collections())
+		.chain(user::collections())
+		.chain(emote_moderation_request::collections())
+}
+
+pub(super) async fn init_database(db: &mongodb::Database) -> anyhow::Result<()> {
+	let mut session = db.collection::<()>("()").client().start_session(None).await?;
+
+	session.start_transaction(None).await?;
+
+	for collection in collections() {
+		collection.init(db, &mut session).await?;
+	}
+
+	session.commit_transaction().await?;
+
+	Ok(())
 }

@@ -7,21 +7,27 @@
 //! All other old types are defined in the respective application crates.
 
 use bitmask_enum::bitmask;
-
-use crate::database::{
-	self, BadgeId, EmoteSet, EmoteSetEmoteFlag, EmoteSetFlags, EmoteSetKind, PaintId, Platform, RoleId, User,
-	UserConnection, UserId,
+use cosmetic::{
+	CosmeticAvatarModel, CosmeticBadgeModel, CosmeticKind, CosmeticModelAvatar, CosmeticModelBadge, CosmeticModelPaint,
+	CosmeticPaintCanvasRepeat, CosmeticPaintFunction, CosmeticPaintGradient, CosmeticPaintGradientStop, CosmeticPaintModel,
+	CosmeticPaintShadow, CosmeticPaintShape, CosmeticPaintStroke, CosmeticPaintText, CosmeticPaintTextTransform,
 };
+use image::{ImageFile, ImageFormat, ImageHost};
 
-mod cosmetic;
-mod image;
-mod object_id;
-mod role_permission;
+use crate::database::badge::BadgeId;
+use crate::database::emote::EmoteFlags;
+use crate::database::emote_set::{EmoteSet, EmoteSetEmoteFlag, EmoteSetId, EmoteSetKind};
+use crate::database::global::GlobalConfig;
+use crate::database::paint::PaintId;
+use crate::database::role::permissions::UserPermission;
+use crate::database::role::RoleId;
+use crate::database::user::connection::{Platform, UserConnection};
+use crate::database::user::{FullUser, UserId};
 
-pub use cosmetic::*;
-pub use image::*;
-pub use object_id::*;
-pub use role_permission::*;
+pub mod cosmetic;
+pub mod image;
+pub mod object_id;
+pub mod role_permission;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(components(schemas(
@@ -86,35 +92,76 @@ pub struct UserPartialModel {
 
 impl UserPartialModel {
 	pub fn from_db(
-		value: User,
-		connections: Vec<UserConnection>,
+		user: FullUser,
+		global: &GlobalConfig,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
 		cdn_base_url: &str,
 	) -> Self {
-		let main_connection = connections.iter().find(|c| c.main_connection);
+		let main_connection = user.connections.first();
 
-		let avatar_url = value
-			.style
-			.active_profile_picture
-			.and_then(|s| s.outputs.iter().max_by_key(|i| i.size).map(|i| i.get_url(cdn_base_url)))
-			.or(main_connection.and_then(|c| c.platform_avatar_url.clone()));
+		let paint_id = user.style.active_paint_id.and_then(|id| {
+			if user.computed.permissions.has(UserPermission::UsePaint) && user.computed.entitlements.paints.contains(&id)
+			{
+				Some(id)
+			} else {
+				None
+			}
+		});
+
+		let badge_id = user.style.active_badge_id.and_then(|id| {
+			if user.computed.permissions.has(UserPermission::UseBadge) && user.computed.entitlements.badges.contains(&id)
+			{
+				Some(id)
+			} else {
+				None
+			}
+		});
+
+		let badge = badge.and_then(|badge| if Some(badge.id) == badge_id { Some(badge) } else { None });
+		let paint = paint.and_then(|paint| if Some(paint.id) == paint_id { Some(paint) } else { None });
+
+		let avatar_url = if user.computed.permissions.has(UserPermission::UseCustomProfilePicture) {
+			user.style
+				.active_profile_picture
+				.as_ref()
+				.and_then(|s| s.outputs.iter().max_by_key(|i| i.size).map(|i| i.get_url(cdn_base_url)))
+				.or(main_connection.and_then(|c| c.platform_avatar_url.clone()))
+		} else {
+			None
+		}
+		.unwrap_or_default();
 
 		UserPartialModel {
-			id: value.id,
+			id: user.id,
 			user_type: UserTypeModel::Regular,
 			username: main_connection.map(|c| c.platform_username.clone()).unwrap_or_default(),
 			display_name: main_connection.map(|c| c.platform_display_name.clone()).unwrap_or_default(),
-			avatar_url: avatar_url.unwrap_or_default(),
+			avatar_url,
 			style: UserStyle {
-				color: 0,
-				paint_id: value.style.active_paint_id,
+				color: user
+					.computed
+					.highest_role_color
+					.map(|color| i32::from_be_bytes(color.to_be_bytes()))
+					.unwrap_or(0),
+				paint_id,
 				paint,
-				badge_id: value.style.active_badge_id,
+				badge_id,
 				badge,
 			},
-			role_ids: value.grants.role_ids.into_iter().collect(),
-			connections: connections.into_iter().map(UserConnectionPartialModel::from).collect(),
+			role_ids: user.computed.entitlements.roles.iter().copied().collect(),
+			connections: user
+				.connections
+				.iter()
+				.cloned()
+				.map(|connection| {
+					UserConnectionPartialModel::from_db(
+						connection,
+						user.style.active_emote_set_id,
+						global.normal_emote_set_slot_capacity as i32,
+					)
+				})
+				.collect(),
 		}
 	}
 }
@@ -157,20 +204,19 @@ pub struct UserConnectionPartialModel {
 	pub display_name: String,
 	pub linked_at: u64,
 	pub emote_capacity: i32,
-	pub emote_set_id: VirtualId,
+	pub emote_set_id: Option<EmoteSetId>,
 }
 
-impl From<UserConnection> for UserConnectionPartialModel {
-	fn from(value: UserConnection) -> Self {
+impl UserConnectionPartialModel {
+	pub fn from_db(value: UserConnection, emote_set_id: Option<EmoteSetId>, emote_capacity: i32) -> Self {
 		Self {
 			id: value.platform_id,
 			platform: value.platform.into(),
 			username: value.platform_username,
 			display_name: value.platform_display_name,
-			linked_at: value.id.timestamp_ms(),
-			// TODO: get slots from permissions
-			emote_capacity: 600,
-			emote_set_id: VirtualId(value.user_id),
+			linked_at: value.linked_at.timestamp_millis() as u64,
+			emote_capacity,
+			emote_set_id,
 		}
 	}
 }
@@ -222,19 +268,19 @@ pub enum EmoteFlagsModel {
 	TwitchDisallowed = 1 << 24,
 }
 
-impl From<database::EmoteFlags> for EmoteFlagsModel {
-	fn from(value: database::EmoteFlags) -> Self {
+impl From<EmoteFlags> for EmoteFlagsModel {
+	fn from(value: EmoteFlags) -> Self {
 		let mut flags = Self::none();
 
-		if value.contains(database::EmoteFlags::Private) {
+		if value.contains(EmoteFlags::Private) {
 			flags |= Self::Private;
 		}
 
-		if value.contains(database::EmoteFlags::DefaultZeroWidth) {
+		if value.contains(EmoteFlags::DefaultZeroWidth) {
 			flags |= Self::ZeroWidth;
 		}
 
-		if value.contains(database::EmoteFlags::Nsfw) {
+		if value.contains(EmoteFlags::Nsfw) {
 			flags |= Self::Sexual;
 		}
 
@@ -386,16 +432,11 @@ impl EmoteSetFlagModel {
 	pub fn from_db(value: &EmoteSet) -> Self {
 		let mut flags = Self::none();
 
-		if value.kind == EmoteSetKind::Personal {
-			flags |= Self::Personal;
-		}
-
-		if value.flags.contains(EmoteSetFlags::Immutable) {
-			flags |= Self::Immutable;
-		}
-
-		if value.flags.contains(EmoteSetFlags::Privileged) {
-			flags |= Self::Privileged;
+		match value.kind {
+			EmoteSetKind::Global => flags |= Self::Privileged,
+			EmoteSetKind::Personal => flags |= Self::Personal,
+			EmoteSetKind::Special => flags |= Self::Commercial | Self::Privileged | Self::Immutable,
+			EmoteSetKind::Normal => {}
 		}
 
 		flags

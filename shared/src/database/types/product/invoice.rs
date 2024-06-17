@@ -1,5 +1,7 @@
-use super::{CustomerId, InvoiceId, InvoiceLineItemId, ProductRef};
-use crate::database::{Collection, PurchaseInventoryItemId, UserId};
+use super::{CustomerId, InvoiceId, InvoiceLineItemId, ProductId};
+use crate::database::types::GenericCollection;
+use crate::database::user::UserId;
+use crate::database::Collection;
 
 // An invoice that is generated for a purchase
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -16,7 +18,7 @@ pub struct Invoice {
 	pub user_id: UserId,
 	/// If this invoice was paid via a legacy payment
 	pub paypal_payment_ids: Vec<String>,
-	/// If the invoice was deleted
+	/// Status of the invoice
 	pub status: InvoiceStatus,
 	/// A note about the invoice
 	pub note: Option<String>,
@@ -62,24 +64,27 @@ pub struct InvoiceItem {
 	// This will be a line item id from stripe
 	pub id: InvoiceLineItemId,
 	// This is a stripe id for the product
-	pub product: ProductRef,
-	// User who the item is for, if the item was not immediately consumed by the buyer
-	// Then this item would have generated an inventory item for the user to claim at a later stage.
-	pub inventory_id: Option<PurchaseInventoryItemId>,
-	/// A note about the item
-	pub note: Option<String>,
-	// Other information about the item like quantity, price, subscription plan, etc.
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct InvoiceRef {
-	// The invoice id
-	pub id: InvoiceId,
-	// Optionally the item this reference refers to otherwise it is the whole invoice
-	pub item_id: InvoiceLineItemId,
+	pub product_id: ProductId,
 }
 
 impl Collection for Invoice {
 	const COLLECTION_NAME: &'static str = "invoices";
+
+	fn indexes() -> Vec<mongodb::IndexModel> {
+		vec![
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {"user_id": 1})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {"items.id": 1})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {"items.product_id": 1})
+				.build(),
+		]
+	}
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<Invoice>()]
 }

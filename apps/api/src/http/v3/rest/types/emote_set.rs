@@ -1,14 +1,15 @@
-use shared::database::{EmoteId, EmoteSet, EmoteSetEmote, EmoteSetFlags, EmoteSetId, UserId};
-use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel, EmoteSetObjectId, UserPartialModel};
+use shared::database::emote::EmoteId;
+use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetId, EmoteSetKind};
+use shared::database::user::UserId;
+use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel, UserPartialModel};
 
 use super::{is_default, EmotePartialModel};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L9
 pub struct EmoteSetModel {
-	pub id: EmoteSetObjectId,
+	pub id: EmoteSetId,
 	pub name: String,
 	pub flags: EmoteSetFlagModel,
 	pub tags: Vec<String>,
@@ -40,20 +41,36 @@ impl EmoteSetModel {
 			id: value.id.into(),
 			name: value.name,
 			tags: value.tags,
-			immutable: value.flags.contains(EmoteSetFlags::Immutable),
-			privileged: value.flags.contains(EmoteSetFlags::Privileged),
+			immutable: match value.kind {
+				EmoteSetKind::Special => true,
+				_ => false,
+			},
+			privileged: match value.kind {
+				EmoteSetKind::Special | EmoteSetKind::Global => true,
+				_ => false,
+			},
 			emote_count: emotes.len() as i32,
 			capacity: value.capacity as i32,
 			emotes,
-			origins: Vec::new(),
+			origins: value.origin_config.map_or_else(Vec::new, |config| {
+				config
+					.origins
+					.iter()
+					.enumerate()
+					.map(|(idx, origin)| EmoteSetOrigin {
+						id: origin.id.into(),
+						weight: idx as i32,
+						slices: Vec::new(),
+					})
+					.collect()
+			}),
 			owner,
 		}
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L23
 pub struct EmoteSetPartialModel {
 	pub id: EmoteSetId,
@@ -78,9 +95,8 @@ impl EmoteSetPartialModel {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L45
 pub struct ActiveEmoteModel {
 	pub id: EmoteId,
@@ -95,20 +111,19 @@ pub struct ActiveEmoteModel {
 impl ActiveEmoteModel {
 	pub fn from_db(value: EmoteSetEmote, data: Option<EmotePartialModel>) -> Self {
 		ActiveEmoteModel {
-			id: value.emote_id,
-			actor_id: value.added_by_id,
-			name: value.name,
+			id: value.id.into(),
+			actor_id: value.added_by_id.map(Into::into),
+			name: value.alias,
 			timestamp: value.id.timestamp_ms() as i64,
-			origin_id: None,
+			origin_id: value.origin_set_id.map(Into::into),
 			flags: value.flags.into(),
 			data,
 		}
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L64
 pub struct EmoteSetOrigin {
 	pub id: EmoteSetId,

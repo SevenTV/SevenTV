@@ -1,6 +1,7 @@
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Collection, GlobalConfig};
+use shared::database::global::GlobalConfig;
+use shared::database::Collection;
 
 pub struct GlobalConfigLoader {
 	db: mongodb::Database,

@@ -1,4 +1,8 @@
 use std::sync::Arc;
+use async_graphql::{ComplexObject, InputObject, Object, SimpleObject};
+use shared::database::role::permissions::PaintPermission;
+use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel};
+use shared::old_types::object_id::GqlObjectId;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
@@ -200,7 +204,7 @@ impl CosmeticPaintShadowInput {
 #[derive(SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct CosmeticOps {
-	id: PaintObjectId,
+	id: GqlObjectId,
 }
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]

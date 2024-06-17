@@ -11,7 +11,6 @@ pub mod emotes;
 pub mod entitlements;
 pub mod types;
 pub mod users;
-pub mod virtual_set;
 
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()

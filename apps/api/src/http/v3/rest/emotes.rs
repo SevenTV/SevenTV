@@ -8,14 +8,16 @@ use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
-use shared::database::{Collection, Emote, EmoteFlags, EmoteId, EmotePermission, ImageSet, ImageSetInput};
+use shared::database::emote::{Emote, EmoteFlags, EmoteId};
+use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::role::permissions::{EmotePermission, FlagPermission};
+use shared::database::Collection;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
 use super::types::{EmoteModel, EmotePartialModel};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-use crate::dataloader::user_loader::load_user;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
@@ -64,11 +66,12 @@ pub async fn create_emote(
 		.map_err(|_| ApiError::BAD_REQUEST)?;
 
 	// TODO: validate emote name
+	// 	 We have automod rules too!!
 
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
-	let (user, perms) = auth_session.user(&global).await?;
+	let user = auth_session.user(&global).await?;
 
-	if !perms.has(EmotePermission::Upload) {
+	if !user.computed.permissions.has(EmotePermission::Upload) {
 		return Err(ApiError::FORBIDDEN);
 	}
 
@@ -121,15 +124,14 @@ pub async fn create_emote(
 
 	let emote = Emote {
 		id: emote_id,
-		owner_id: Some(user.id),
+		owner_id: user.id,
 		default_name: emote_data.name,
 		tags: emote_data.tags,
 		animated: false, // will be set by the image processor callback
 		image_set: ImageSet { input, outputs: vec![] },
 		flags,
 		attribution: vec![],
-		merged_into: None,
-		merged_at: None,
+		merged: None,
 	};
 
 	Emote::collection(global.db())
@@ -163,6 +165,7 @@ pub async fn create_emote(
 pub async fn get_emote_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<EmoteId>,
+	auth_session: Option<Extension<AuthSession>>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let emote = global
 		.emote_by_id_loader()
@@ -171,22 +174,35 @@ pub async fn get_emote_by_id(
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found"))?;
 
-	let owner = match emote.owner_id {
-		Some(owner) => {
-			let conns = global
-				.user_connection_by_user_id_loader()
-				.load(owner)
-				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.unwrap_or_default();
+	let global_config = global
+		.global_config_loader()
+		.load(())
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-			load_user(&global, owner).await?.map(|u| (u, conns))
-		}
-		None => None,
+	let owner = global
+		.user_loader()
+		.load_fast(&global, &global_config.role_ids, emote.owner_id)
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+	let actor_id = auth_session.as_ref().map(|s| s.user_id());
+	let can_view_hidden = if let Some(session) = &auth_session {
+		session.can_view_hidden(&global).await?
+	} else {
+		false
 	};
 
-	let owner =
-		owner.map(|(owner, conns)| UserPartialModel::from_db(owner, conns, None, None, &global.config().api.cdn_origin));
+	let owner = owner
+		.and_then(|owner| {
+			if owner.computed.permissions.has(FlagPermission::Hidden) && Some(owner.id) != actor_id && !can_view_hidden {
+				None
+			} else {
+				Some(owner)
+			}
+		})
+		.map(|owner| UserPartialModel::from_db(owner, &global_config, None, None, &global.config().api.cdn_base_url));
 
 	Ok(Json(EmoteModel::from_db(emote, owner, &global.config().api.cdn_origin)))
 }

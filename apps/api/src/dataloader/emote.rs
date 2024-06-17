@@ -2,7 +2,9 @@ use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Collection, Emote, EmoteId, UserId};
+use shared::database::emote::{Emote, EmoteId};
+use shared::database::user::UserId;
+use shared::database::Collection;
 
 pub struct EmoteByIdLoader {
 	db: mongodb::Database,
@@ -76,9 +78,6 @@ impl Loader for EmoteByUserIdLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results
-			.into_iter()
-			.filter_map(|e| e.owner_id.is_some().then(|| e))
-			.into_group_map_by(|e| e.owner_id.unwrap()))
+		Ok(results.into_iter().into_group_map_by(|e| e.owner_id))
 	}
 }

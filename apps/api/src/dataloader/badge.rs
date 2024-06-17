@@ -1,7 +1,8 @@
 use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Badge, BadgeId, Collection};
+use shared::database::badge::{Badge, BadgeId};
+use shared::database::Collection;
 
 pub struct BadgeByIdLoader {
 	db: mongodb::Database,

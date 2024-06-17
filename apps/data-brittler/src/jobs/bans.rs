@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use shared::database::{Collection, Permissions, UserBan, UserBanRole, UserBanRoleId, UserPermission};
+use shared::database::{Collection, Permissions, UserBan, UserBanTemplate, UserBanTemplateId, UserPermission};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -8,7 +8,7 @@ use crate::types;
 
 pub struct BansJob {
 	global: Arc<Global>,
-	ban_role_id: UserBanRoleId,
+	ban_role_id: UserBanTemplateId,
 }
 
 impl Job for BansJob {
@@ -22,19 +22,19 @@ impl Job for BansJob {
 			UserBan::collection(global.target_db()).drop(None).await?;
 		}
 
-		UserBanRole::collection(global.target_db()).drop(None).await?;
+		UserBanTemplate::collection(global.target_db()).drop(None).await?;
 
 		let mut permissions = Permissions::default();
 		permissions.user.deny(UserPermission::Login);
 
-		let ban_role = UserBanRole {
+		let ban_role = UserBanTemplate {
 			name: "Default Banned".to_string(),
 			description: Some("Default role for banned users".to_string()),
 			permissions,
 			black_hole: true,
 			..Default::default()
 		};
-		UserBanRole::collection(global.target_db())
+		UserBanTemplate::collection(global.target_db())
 			.insert_one(&ban_role, None)
 			.await?;
 
@@ -61,7 +61,7 @@ impl Job for BansJob {
 					created_by_id: Some(ban.actor_id.into()),
 					reason: ban.reason,
 					expires_at: Some(ban.expire_at.into_chrono()),
-					role_id: self.ban_role_id,
+					template_id: self.ban_role_id,
 				},
 				None,
 			)

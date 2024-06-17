@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use scuffle_foundations::bootstrap::{bootstrap, Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::cli::Matches;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
@@ -14,6 +12,7 @@ mod global;
 mod http;
 mod image_processor_callback;
 mod jwt;
+mod utils;
 
 struct BootstrapWrapper(Config);
 
@@ -39,11 +38,9 @@ impl Bootstrap for BootstrapWrapper {
 async fn main(settings: Matches<BootstrapWrapper>) {
 	tracing::info!("starting api");
 
-	let global = Arc::new(
-		global::Global::new(settings.settings.0)
-			.await
-			.expect("failed to initialize global"),
-	);
+	let global = global::Global::new(settings.settings.0)
+		.await
+		.expect("failed to initialize global");
 
 	scuffle_foundations::telemetry::server::register_health_check(global.clone());
 

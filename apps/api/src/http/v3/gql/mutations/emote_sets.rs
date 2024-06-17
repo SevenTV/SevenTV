@@ -4,9 +4,12 @@ use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::{self, Collection, EmoteSetPermission, UserEditorState};
-use shared::old_types::{EmoteObjectId, EmoteSetObjectId, UserObjectId};
+use shared::database::role::permissions::EmoteSetPermission;
+use shared::database::user::editor::UserEditorState;
+use shared::database::{self, Collection};
+use shared::old_types::object_id::GqlObjectId;
 
+use crate::dataloader::user;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
@@ -19,12 +22,12 @@ pub struct EmoteSetsMutation;
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteSetsMutation {
-	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteSetObjectId) -> Result<Option<EmoteSetOps>, ApiError> {
+	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<EmoteSetOps>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_set = global
 			.emote_set_by_id_loader()
-			.load(id.id())
+			.load(id.0.cast())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -38,29 +41,39 @@ impl EmoteSetsMutation {
 	async fn create_emote_set<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		user_id: UserObjectId,
+		user_id: GqlObjectId,
 		data: CreateEmoteSetInput,
 	) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let (_, perms) = auth_session.user(global).await?;
+		let user = auth_session.user(global).await?;
+		let other_user = if user_id.0.cast() == user.id {
+			None
+		} else {
+			Some(
+				global
+					.user_loader()
+					.load(global, user_id.0.cast())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?,
+			)
+		};
 
-		let editors = global
-			.user_editor_by_user_id_loader()
-			.load(user_id.id())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
+		let target = other_user.as_ref().unwrap_or(&user);
 
-		if !(auth_session.user_id() == user_id.id()
-			|| perms.has(EmoteSetPermission::Admin)
-			|| editors.iter().any(|editor| {
-				editor.state == UserEditorState::Accepted
-					&& editor.user_id == auth_session.user_id()
-					&& editor.permissions.has_emote_set(EmoteSetPermission::Create)
-			})) {
-			return Err(ApiError::FORBIDDEN);
+		if target.id != user.id && !user.computed.permissions.has(EmoteSetPermission::Create) {
+			let editor = global
+				.user_editor_by_id_loader()
+				.load((user_id.0.cast(), user.id))
+				.await
+				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::FORBIDDEN)?;
+
+			if editor.state != UserEditorState::Accepted || !editor.permissions.has_emote_set(EmoteSetPermission::Create) {
+				return Err(ApiError::FORBIDDEN);
+			}
 		}
 
 		let mut flags = database::EmoteSetFlags::default();

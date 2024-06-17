@@ -1,12 +1,26 @@
 #![allow(dead_code)]
 
+use std::sync::Arc;
+
 use anyhow::Context as _;
 use scuffle_foundations::dataloader::DataLoader;
 use scuffle_foundations::telemetry::server::HealthCheck;
 use shared::image_processor::ImageProcessor;
 
 use crate::config::Config;
-use crate::dataloader;
+use crate::dataloader::activity::{EmoteActivityByEmoteIdLoader, EmoteSetActivityByActorIdLoader};
+use crate::dataloader::badge::BadgeByIdLoader;
+use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
+use crate::dataloader::emote_set::{EmoteSetByIdLoader, EmoteSetByUserIdLoader};
+use crate::dataloader::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
+use crate::dataloader::full_user::FullUserLoader;
+use crate::dataloader::global_config::GlobalConfigLoader;
+use crate::dataloader::paint::PaintByIdLoader;
+use crate::dataloader::product::ProductByIdLoader;
+use crate::dataloader::role::RoleByIdLoader;
+use crate::dataloader::ticket::TicketByIdLoader;
+use crate::dataloader::user::{UserByIdLoader, UserByPlatformIdLoader};
+use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByIdLoader, UserEditorByUserIdLoader};
 
 pub struct Global {
 	nats: async_nats::Client,
@@ -17,79 +31,75 @@ pub struct Global {
 	clickhouse: clickhouse::Client,
 	http_client: reqwest::Client,
 	image_processor: ImageProcessor,
-	user_by_id_loader: DataLoader<dataloader::user::UserLoader>,
-	user_connection_by_user_id_loader: DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader>,
-	user_connection_by_platform_id_loader: DataLoader<dataloader::user_connection::UserConnectionByPlatformIdLoader>,
-	active_user_bans_by_user_id_loader: DataLoader<dataloader::user_ban::ActiveUserBanByUserIdLoader>,
-	user_ban_role_by_id_loader: DataLoader<dataloader::user_ban_role::UserBanRoleByIdLoader>,
-	product_by_id_loader: DataLoader<dataloader::product::ProductByIdLoader>,
-	product_entitlement_group_by_id_loader: DataLoader<dataloader::product::ProductEntitlementGroupByIdLoader>,
-	role_by_id_loader: DataLoader<dataloader::role::RoleByIdLoader>,
-	paint_by_id_loader: DataLoader<dataloader::paint::PaintByIdLoader>,
-	badge_by_id_loader: DataLoader<dataloader::badge::BadgeByIdLoader>,
-	emote_by_id_loader: DataLoader<dataloader::emote::EmoteByIdLoader>,
-	emote_by_user_id_loader: DataLoader<dataloader::emote::EmoteByUserIdLoader>,
-	emote_set_by_id_loader: DataLoader<dataloader::emote_set::EmoteSetByIdLoader>,
-	emote_set_emote_by_id_loader: DataLoader<dataloader::emote_set::EmoteSetEmoteByIdLoader>,
-	emote_set_by_user_id_loader: DataLoader<dataloader::emote_set::EmoteSetByUserIdLoader>,
-	global_config_loader: DataLoader<dataloader::global_config::GlobalConfigLoader>,
-	user_editor_by_user_id_loader: DataLoader<dataloader::user_editor::UserEditorByUserIdLoader>,
-	user_editor_by_editor_id_loader: DataLoader<dataloader::user_editor::UserEditorByEditorIdLoader>,
-	ticket_by_id_loader: DataLoader<dataloader::ticket::TicketByIdLoader>,
-	ticket_members_by_ticket_id_loader: DataLoader<dataloader::ticket::TicketMembersByTicketIdLoader>,
-	ticket_messages_by_ticket_id_loader: DataLoader<dataloader::ticket::TicketMessagesByTicketIdLoader>,
-	emote_activity_by_emote_id_loader: DataLoader<dataloader::activity::EmoteActivityByEmoteIdLoader>,
-	emote_set_activity_by_actor_id_loader: DataLoader<dataloader::activity::EmoteSetActivityByActorIdLoader>,
+	product_by_id_loader: DataLoader<ProductByIdLoader>,
+	role_by_id_loader: DataLoader<RoleByIdLoader>,
+	paint_by_id_loader: DataLoader<PaintByIdLoader>,
+	badge_by_id_loader: DataLoader<BadgeByIdLoader>,
+	emote_by_id_loader: DataLoader<EmoteByIdLoader>,
+	emote_by_user_id_loader: DataLoader<EmoteByUserIdLoader>,
+	emote_set_by_id_loader: DataLoader<EmoteSetByIdLoader>,
+	emote_set_by_user_id_loader: DataLoader<EmoteSetByUserIdLoader>,
+	global_config_loader: DataLoader<GlobalConfigLoader>,
+	user_editor_by_user_id_loader: DataLoader<UserEditorByUserIdLoader>,
+	user_editor_by_editor_id_loader: DataLoader<UserEditorByEditorIdLoader>,
+	user_editor_by_id_loader: DataLoader<UserEditorByIdLoader>,
+	ticket_by_id_loader: DataLoader<TicketByIdLoader>,
+	emote_activity_by_emote_id_loader: DataLoader<EmoteActivityByEmoteIdLoader>,
+	emote_set_activity_by_actor_id_loader: DataLoader<EmoteSetActivityByActorIdLoader>,
+	entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
+	entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
+	user_by_id_loader: DataLoader<UserByIdLoader>,
+	user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
+	user_loader: FullUserLoader,
 }
 
 impl Global {
-	pub async fn new(config: Config) -> anyhow::Result<Self> {
+	pub async fn new(config: Config) -> anyhow::Result<Arc<Self>> {
 		let (nats, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
 		let mongo = shared::database::setup_database(&config.database)
 			.await
 			.context("database setup")?;
 
-		let db = mongo.default_database().unwrap_or_else(|| mongo.database("7tv"));
+		let db = mongo
+			.default_database()
+			.ok_or_else(|| anyhow::anyhow!("No default database"))?;
 
 		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
 
-		Ok(Self {
+		let image_processor = ImageProcessor::new(&config.api.image_processor)
+			.await
+			.context("image processor setup")?;
+
+		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			jetstream,
-			image_processor: ImageProcessor::new(&config.api.image_processor)
-				.await
-				.context("image processor setup")?,
-			user_by_id_loader: dataloader::user::UserLoader::new(db.clone()),
-			user_connection_by_user_id_loader: dataloader::user_connection::UserConnectionByUserIdLoader::new(db.clone()),
-			user_connection_by_platform_id_loader: dataloader::user_connection::UserConnectionByPlatformIdLoader::new(db.clone()),
-			active_user_bans_by_user_id_loader: dataloader::user_ban::ActiveUserBanByUserIdLoader::new(db.clone()),
-			user_ban_role_by_id_loader: dataloader::user_ban_role::UserBanRoleByIdLoader::new(db.clone()),
-			product_by_id_loader: dataloader::product::ProductByIdLoader::new(db.clone()),
-			product_entitlement_group_by_id_loader: dataloader::product::ProductEntitlementGroupByIdLoader::new(db.clone()),
-			role_by_id_loader: dataloader::role::RoleByIdLoader::new(db.clone()),
-			paint_by_id_loader: dataloader::paint::PaintByIdLoader::new(db.clone()),
-			badge_by_id_loader: dataloader::badge::BadgeByIdLoader::new(db.clone()),
-			emote_by_id_loader: dataloader::emote::EmoteByIdLoader::new(db.clone()),
-			emote_by_user_id_loader: dataloader::emote::EmoteByUserIdLoader::new(db.clone()),
-			emote_set_by_id_loader: dataloader::emote_set::EmoteSetByIdLoader::new(db.clone()),
-			emote_set_emote_by_id_loader: dataloader::emote_set::EmoteSetEmoteByIdLoader::new(db.clone()),
-			emote_set_by_user_id_loader: dataloader::emote_set::EmoteSetByUserIdLoader::new(db.clone()),
-			global_config_loader: dataloader::global_config::GlobalConfigLoader::new(db.clone()),
-			user_editor_by_user_id_loader: dataloader::user_editor::UserEditorByUserIdLoader::new(db.clone()),
-			user_editor_by_editor_id_loader: dataloader::user_editor::UserEditorByEditorIdLoader::new(db.clone()),
-			ticket_by_id_loader: dataloader::ticket::TicketByIdLoader::new(db.clone()),
-			ticket_members_by_ticket_id_loader: dataloader::ticket::TicketMembersByTicketIdLoader::new(db.clone()),
-			ticket_messages_by_ticket_id_loader: dataloader::ticket::TicketMessagesByTicketIdLoader::new(db.clone()),
-			emote_activity_by_emote_id_loader: dataloader::activity::EmoteActivityByEmoteIdLoader::new(clickhouse.clone()),
-			emote_set_activity_by_actor_id_loader: dataloader::activity::EmoteSetActivityByActorIdLoader::new(
-				clickhouse.clone(),
-			),
+			image_processor,
+			product_by_id_loader: ProductByIdLoader::new(db.clone()),
+			role_by_id_loader: RoleByIdLoader::new(db.clone()),
+			paint_by_id_loader: PaintByIdLoader::new(db.clone()),
+			badge_by_id_loader: BadgeByIdLoader::new(db.clone()),
+			emote_by_id_loader: EmoteByIdLoader::new(db.clone()),
+			emote_by_user_id_loader: EmoteByUserIdLoader::new(db.clone()),
+			emote_set_by_id_loader: EmoteSetByIdLoader::new(db.clone()),
+			emote_set_by_user_id_loader: EmoteSetByUserIdLoader::new(db.clone()),
+			global_config_loader: GlobalConfigLoader::new(db.clone()),
+			user_editor_by_user_id_loader: UserEditorByUserIdLoader::new(db.clone()),
+			user_editor_by_editor_id_loader: UserEditorByEditorIdLoader::new(db.clone()),
+			user_editor_by_id_loader: UserEditorByIdLoader::new(db.clone()),
+			ticket_by_id_loader: TicketByIdLoader::new(db.clone()),
+			emote_activity_by_emote_id_loader: EmoteActivityByEmoteIdLoader::new(clickhouse.clone()),
+			emote_set_activity_by_actor_id_loader: EmoteSetActivityByActorIdLoader::new(clickhouse.clone()),
+			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
+			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
+			user_by_id_loader: UserByIdLoader::new(db.clone()),
+			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			mongo,
 			db,
 			clickhouse,
 			config,
-		})
+			user_loader: FullUserLoader::new(weak.clone()),
+		}))
 	}
 
 	/// The NATS client.
@@ -132,127 +142,102 @@ impl Global {
 		&self.image_processor
 	}
 
-	/// The user loader.
-	pub fn user_by_id_loader(&self) -> &DataLoader<dataloader::user::UserLoader> {
-		&self.user_by_id_loader
-	}
-
-	/// The user connections loader.
-	pub fn user_connection_by_user_id_loader(
-		&self,
-	) -> &DataLoader<dataloader::user_connection::UserConnectionByUserIdLoader> {
-		&self.user_connection_by_user_id_loader
-	}
-
-	/// The user connections by platform id loader.
-	pub fn user_connection_by_platform_id_loader(
-		&self,
-	) -> &DataLoader<dataloader::user_connection::UserConnectionByPlatformIdLoader> {
-		&self.user_connection_by_platform_id_loader
-	}
-
-	/// The active user bans loader.
-	pub fn active_user_bans_by_user_id_loader(&self) -> &DataLoader<dataloader::user_ban::ActiveUserBanByUserIdLoader> {
-		&self.active_user_bans_by_user_id_loader
-	}
-
-	/// The user ban role loader.
-	pub fn user_ban_role_by_id_loader(&self) -> &DataLoader<dataloader::user_ban_role::UserBanRoleByIdLoader> {
-		&self.user_ban_role_by_id_loader
-	}
-
 	/// The product loader.
-	pub fn product_by_id_loader(&self) -> &DataLoader<dataloader::product::ProductByIdLoader> {
+	pub fn product_by_id_loader(&self) -> &DataLoader<ProductByIdLoader> {
 		&self.product_by_id_loader
 	}
 
-	/// The entitlement group loader.
-	pub fn product_entitlement_group_by_id_loader(
-		&self,
-	) -> &DataLoader<dataloader::product::ProductEntitlementGroupByIdLoader> {
-		&self.product_entitlement_group_by_id_loader
-	}
-
-	/// The role loader.
-	pub fn role_by_id_loader(&self) -> &DataLoader<dataloader::role::RoleByIdLoader> {
+	pub fn role_by_id_loader(&self) -> &DataLoader<RoleByIdLoader> {
 		&self.role_by_id_loader
 	}
 
 	/// The paint loader.
-	pub fn paint_by_id_loader(&self) -> &DataLoader<dataloader::paint::PaintByIdLoader> {
+	pub fn paint_by_id_loader(&self) -> &DataLoader<PaintByIdLoader> {
 		&self.paint_by_id_loader
 	}
 
 	/// The badge loader.
-	pub fn badge_by_id_loader(&self) -> &DataLoader<dataloader::badge::BadgeByIdLoader> {
+	pub fn badge_by_id_loader(&self) -> &DataLoader<BadgeByIdLoader> {
 		&self.badge_by_id_loader
 	}
 
 	/// The emote loader.
-	pub fn emote_by_id_loader(&self) -> &DataLoader<dataloader::emote::EmoteByIdLoader> {
+	pub fn emote_by_id_loader(&self) -> &DataLoader<EmoteByIdLoader> {
 		&self.emote_by_id_loader
 	}
 
 	/// The emote by user loader.
-	pub fn emote_by_user_id_loader(&self) -> &DataLoader<dataloader::emote::EmoteByUserIdLoader> {
+	pub fn emote_by_user_id_loader(&self) -> &DataLoader<EmoteByUserIdLoader> {
 		&self.emote_by_user_id_loader
 	}
 
 	/// The emote set loader.
-	pub fn emote_set_by_id_loader(&self) -> &DataLoader<dataloader::emote_set::EmoteSetByIdLoader> {
+	pub fn emote_set_by_id_loader(&self) -> &DataLoader<EmoteSetByIdLoader> {
 		&self.emote_set_by_id_loader
 	}
 
-	/// The emote set emote loader.
-	pub fn emote_set_emote_by_id_loader(&self) -> &DataLoader<dataloader::emote_set::EmoteSetEmoteByIdLoader> {
-		&self.emote_set_emote_by_id_loader
-	}
-
 	/// The emote set by user loader.
-	pub fn emote_set_by_user_id_loader(&self) -> &DataLoader<dataloader::emote_set::EmoteSetByUserIdLoader> {
+	pub fn emote_set_by_user_id_loader(&self) -> &DataLoader<EmoteSetByUserIdLoader> {
 		&self.emote_set_by_user_id_loader
 	}
 
 	/// The global config loader.
-	pub fn global_config_loader(&self) -> &DataLoader<dataloader::global_config::GlobalConfigLoader> {
+	pub fn global_config_loader(&self) -> &DataLoader<GlobalConfigLoader> {
 		&self.global_config_loader
 	}
 
 	/// The user editor by user loader.
-	pub fn user_editor_by_user_id_loader(&self) -> &DataLoader<dataloader::user_editor::UserEditorByUserIdLoader> {
+	pub fn user_editor_by_user_id_loader(&self) -> &DataLoader<UserEditorByUserIdLoader> {
 		&self.user_editor_by_user_id_loader
 	}
 
 	/// The user editor by editor loader.
-	pub fn user_editor_by_editor_id_loader(&self) -> &DataLoader<dataloader::user_editor::UserEditorByEditorIdLoader> {
+	pub fn user_editor_by_editor_id_loader(&self) -> &DataLoader<UserEditorByEditorIdLoader> {
 		&self.user_editor_by_editor_id_loader
 	}
 
+	pub fn user_editor_by_id_loader(&self) -> &DataLoader<UserEditorByIdLoader> {
+		&self.user_editor_by_id_loader
+	}
+
 	/// The ticket loader.
-	pub fn ticket_by_id_loader(&self) -> &DataLoader<dataloader::ticket::TicketByIdLoader> {
+	pub fn ticket_by_id_loader(&self) -> &DataLoader<TicketByIdLoader> {
 		&self.ticket_by_id_loader
 	}
 
-	/// The ticket members loader.
-	pub fn ticket_members_by_ticket_id_loader(&self) -> &DataLoader<dataloader::ticket::TicketMembersByTicketIdLoader> {
-		&self.ticket_members_by_ticket_id_loader
-	}
-
-	/// The ticket messages loader.
-	pub fn ticket_messages_by_ticket_id_loader(&self) -> &DataLoader<dataloader::ticket::TicketMessagesByTicketIdLoader> {
-		&self.ticket_messages_by_ticket_id_loader
-	}
-
 	/// The emote activity loader.
-	pub fn emote_activity_by_emote_id_loader(&self) -> &DataLoader<dataloader::activity::EmoteActivityByEmoteIdLoader> {
+	pub fn emote_activity_by_emote_id_loader(&self) -> &DataLoader<EmoteActivityByEmoteIdLoader> {
 		&self.emote_activity_by_emote_id_loader
 	}
 
 	/// The emote set activity loader.
-	pub fn emote_set_activity_by_actor_id_loader(
-		&self,
-	) -> &DataLoader<dataloader::activity::EmoteSetActivityByActorIdLoader> {
+	pub fn emote_set_activity_by_actor_id_loader(&self) -> &DataLoader<EmoteSetActivityByActorIdLoader> {
 		&self.emote_set_activity_by_actor_id_loader
+	}
+
+	/// The entitlement edge inbound loader.
+	pub fn entitlement_edge_inbound_loader(&self) -> &DataLoader<EntitlementEdgeInboundLoader> {
+		&self.entitlement_edge_inbound_loader
+	}
+
+	/// The entitlement edge outbound loader.
+	pub fn entitlement_edge_outbound_loader(&self) -> &DataLoader<EntitlementEdgeOutboundLoader> {
+		&self.entitlement_edge_outbound_loader
+	}
+
+	/// The user loader.
+	pub fn user_by_id_loader(&self) -> &DataLoader<UserByIdLoader> {
+		&self.user_by_id_loader
+	}
+
+	/// The user by platform ID loader.
+	pub fn user_by_platform_id_loader(&self) -> &DataLoader<UserByPlatformIdLoader> {
+		&self.user_by_platform_id_loader
+	}
+
+	/// The full user loader.
+	pub fn user_loader(&self) -> &FullUserLoader {
+		&self.user_loader
 	}
 }
 

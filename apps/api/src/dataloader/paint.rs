@@ -1,7 +1,8 @@
 use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Collection, Paint, PaintId};
+use shared::database::paint::{Paint, PaintId};
+use shared::database::Collection;
 
 pub struct PaintByIdLoader {
 	db: mongodb::Database,

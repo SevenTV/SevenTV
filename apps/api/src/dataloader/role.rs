@@ -1,7 +1,8 @@
 use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Collection, Role, RoleId};
+use shared::database::role::{Role, RoleId};
+use shared::database::Collection;
 
 pub struct RoleByIdLoader {
 	db: mongodb::Database,

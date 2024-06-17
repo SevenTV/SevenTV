@@ -4,13 +4,15 @@ use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use hyper::{header, StatusCode};
 use mongodb::bson::doc;
-use shared::database::{Collection, Permissions, User, UserId, UserSession};
+use shared::database::role::permissions::UserPermission;
+use shared::database::user::session::UserSession;
+use shared::database::user::{FullUser, UserId};
+use shared::database::Collection;
 use tokio::sync::OnceCell;
 
 use super::cookies::Cookies;
-use crate::dataloader::user_loader::load_user_and_permissions;
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{map_result, ApiError, EitherApiError};
 use crate::jwt::{AuthJwtPayload, JwtState};
 
 pub const AUTH_COOKIE: &str = "seventv-auth";
@@ -19,7 +21,7 @@ pub const AUTH_COOKIE: &str = "seventv-auth";
 pub struct AuthSession {
 	pub kind: AuthSessionKind,
 	/// lazy user data
-	cached_data: Arc<OnceCell<(User, Permissions)>>,
+	cached_data: Arc<OnceCell<FullUser>>,
 }
 
 #[derive(Debug, Clone)]
@@ -38,15 +40,22 @@ impl AuthSession {
 		}
 	}
 
-	/// Lazy load user data
-	pub async fn user(&self, global: &Arc<Global>) -> Result<&(User, Permissions), ApiError> {
+	pub async fn user(&self, global: &Arc<Global>) -> Result<&FullUser, ApiError> {
 		self.cached_data
 			.get_or_try_init(|| async {
-				Ok(load_user_and_permissions(global, self.user_id())
-					.await?
+				Ok(global
+					.user_loader()
+					.load(global, self.user_id())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::UNAUTHORIZED)?)
 			})
 			.await
+	}
+
+	pub async fn can_view_hidden(&self, global: &Arc<Global>) -> Result<bool, ApiError> {
+		let user = self.user(global).await?;
+		Ok(user.computed.permissions.has(UserPermission::ViewHidden))
 	}
 }
 

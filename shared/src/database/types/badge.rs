@@ -1,6 +1,5 @@
-use std::sync::Arc;
-
-use super::ImageSet;
+use super::image_set::ImageSet;
+use super::GenericCollection;
 use crate::database::{Collection, Id};
 
 pub type BadgeId = Id<Badge>;
@@ -18,4 +17,8 @@ pub struct Badge {
 
 impl Collection for Badge {
 	const COLLECTION_NAME: &'static str = "badges";
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<Badge>()]
 }

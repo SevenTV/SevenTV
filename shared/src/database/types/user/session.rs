@@ -1,4 +1,9 @@
+use std::time::Duration;
+
+use mongodb::options::IndexOptions;
+
 use super::UserId;
+use crate::database::types::GenericCollection;
 use crate::database::{Collection, Id};
 
 pub type UserSessionId = Id<UserSession>;
@@ -17,4 +22,24 @@ pub struct UserSession {
 
 impl Collection for UserSession {
 	const COLLECTION_NAME: &'static str = "user_sessions";
+
+	fn indexes() -> Vec<mongodb::IndexModel> {
+		vec![
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"user_id": 1,
+				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"expires_at": 1,
+				})
+				.options(IndexOptions::builder().expire_after(Duration::from_secs(0)).build())
+				.build(),
+		]
+	}
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<UserSession>()]
 }

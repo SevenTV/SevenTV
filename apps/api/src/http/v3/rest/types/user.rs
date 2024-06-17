@@ -1,5 +1,9 @@
-use shared::database::{RoleId, User, UserConnection, UserEditor, UserEditorState, UserId};
-use shared::old_types::{CosmeticBadgeModel, CosmeticPaintModel, UserPartialModel, UserStyle, UserTypeModel, VirtualId};
+use shared::database::global::GlobalConfig;
+use shared::database::role::RoleId;
+use shared::database::user::editor::{UserEditor, UserEditorState};
+use shared::database::user::{FullUser, UserId};
+use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticPaintModel};
+use shared::old_types::{UserPartialModel, UserStyle, UserTypeModel};
 
 use super::{is_default, EmoteSetPartialModel, UserConnectionModel};
 use crate::http::v3::types::UserEditorModelPermission;
@@ -33,16 +37,17 @@ pub struct UserModel {
 
 impl UserModel {
 	pub fn from_db(
-		value: User,
-		connections: Vec<UserConnection>,
+		user: FullUser,
+		global_config: &GlobalConfig,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
 		emote_sets: Vec<EmoteSetPartialModel>,
 		editors: Vec<UserEditorModel>,
 		cdn_base_url: &str,
 	) -> Self {
-		let created_at = value.id.timestamp_ms();
-		let partial = UserPartialModel::from_db(value, connections, paint, badge, cdn_base_url);
+		let created_at = user.id.timestamp_ms();
+		let active_emote_set_id = user.style.active_emote_set_id;
+		let partial = UserPartialModel::from_db(user, global_config, paint, badge, cdn_base_url);
 
 		Self {
 			id: partial.id,
@@ -66,7 +71,7 @@ impl UserModel {
 					display_name: p.display_name,
 					linked_at: p.linked_at,
 					emote_capacity: p.emote_capacity,
-					emote_set_id: VirtualId(partial.id),
+					emote_set_id: active_emote_set_id,
 					emote_set: None,
 					user: None,
 				})
@@ -94,7 +99,7 @@ impl UserEditorModel {
 
 		Some(Self {
 			id: value.editor_id,
-			added_at: value.id.timestamp_ms(),
+			added_at: value.added_at.timestamp_millis() as u64,
 			permissions: UserEditorModelPermission::ModifyEmotes | UserEditorModelPermission::ManageEmoteSets,
 			visible: true,
 		})

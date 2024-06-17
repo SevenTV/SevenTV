@@ -93,7 +93,7 @@ impl Job for EmoteSetsJob {
 				emote_set_id: emote_set.id.into(),
 				emote_id: emote_id.into(),
 				added_by_id: e.actor_id.map(Into::into),
-				name: emote_name,
+				alias: emote_name,
 				flags,
 			});
 		}

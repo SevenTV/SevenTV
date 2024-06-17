@@ -1,6 +1,8 @@
 use itertools::Itertools;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
-use shared::database::{EmoteActivity, EmoteId, EmoteSetActivity, UserId};
+use shared::database::activity::{EmoteActivity, EmoteSetActivity};
+use shared::database::emote::EmoteId;
+use shared::database::user::UserId;
 
 pub struct EmoteActivityByEmoteIdLoader {
 	db: clickhouse::Client,

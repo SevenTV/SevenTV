@@ -1,7 +1,9 @@
 use serde::Deserialize;
 
+use super::ban_template::UserBanTemplateId;
 use super::UserId;
-use crate::database::{Collection, Id, UserBanRoleId};
+use crate::database::role::permissions::Permissions;
+use crate::database::Id;
 
 pub type UserBanId = Id<UserBan>;
 
@@ -25,22 +27,26 @@ where
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserBan {
-	#[serde(rename = "_id")]
 	pub id: UserBanId,
-	pub user_id: UserId,
-	pub created_by_id: Option<UserId>,
+	pub created_by_id: UserId,
 	pub reason: String,
+	pub tags: Vec<String>,
 	#[serde(
 		serialize_with = "serialize_optional_datetime",
 		deserialize_with = "deserialize_optional_datetime"
 	)]
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
-	pub role_id: UserBanRoleId,
+	pub removed: Option<UserBanRemoved>,
+	pub permissions: Permissions,
+	pub template_id: Option<UserBanTemplateId>,
 }
 
-impl Collection for UserBan {
-	const COLLECTION_NAME: &'static str = "user_bans";
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct UserBanRemoved {
+	pub removed_at: chrono::DateTime<chrono::Utc>,
+	pub removed_by_id: UserId,
 }

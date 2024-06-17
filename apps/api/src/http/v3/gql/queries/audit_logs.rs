@@ -2,11 +2,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::{
-	Emote, EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteId, EmoteSetActivity, EmoteSetActivityData,
-	EmoteSetActivityKind, EmoteSetId, EmoteSettingsChange, Id, UserId,
+use shared::database::activity::{
+	EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteSetActivity, EmoteSetActivityData, EmoteSetActivityKind,
+	EmoteSettingsChange,
 };
-use shared::old_types::{EmoteFlagsModel, EmoteObjectId, ObjectId, UserObjectId};
+use shared::database::emote::EmoteId;
+use shared::database::emote_set::EmoteSetId;
+use shared::database::user::UserId;
+use shared::database::Id;
+use shared::old_types::object_id::GqlObjectId;
+use shared::old_types::EmoteFlagsModel;
 
 use super::users::UserPartial;
 use crate::global::Global;
@@ -17,11 +22,11 @@ use crate::http::error::ApiError;
 #[derive(Debug, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct AuditLog {
-	id: ObjectId<()>,
+	id: GqlObjectId,
 	// actor
-	actor_id: UserObjectId,
+	actor_id: GqlObjectId,
 	kind: AuditLogKind,
-	target_id: ObjectId<()>,
+	target_id: GqlObjectId,
 	target_kind: u32,
 	created_at: time::OffsetDateTime,
 	changes: Vec<AuditLogChange>,
@@ -32,7 +37,7 @@ pub struct AuditLog {
 impl AuditLog {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.actor_id.id())
+		Ok(UserPartial::load_from_db(global, self.actor_id.0.cast())
 			.await?
 			.unwrap_or_else(UserPartial::deleted_user))
 	}

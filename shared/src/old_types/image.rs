@@ -1,4 +1,5 @@
-use crate::database::{Image, ImageSet};
+use crate::database::image_set::{Image, ImageSet};
+use crate::database::Id;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(default)]

@@ -1,15 +1,8 @@
-use std::collections::HashMap;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not};
-
+use self::permissions::Permissions;
+use super::GenericCollection;
 use crate::database::{Collection, Id};
 
-mod permissions;
-
-use bitmask_enum::bitmask;
-use enum_impl::EnumImpl;
-
-pub use self::permissions::*;
-use super::{BadgeId, EmoteSetId, PaintId};
+pub mod permissions;
 
 pub type RoleId = Id<Role>;
 
@@ -18,17 +11,18 @@ pub type RoleId = Id<Role>;
 pub struct Role {
 	#[serde(rename = "_id")]
 	pub id: RoleId,
-	pub badge_ids: Vec<BadgeId>,
-	pub paint_ids: Vec<PaintId>,
-	pub emote_set_ids: Vec<EmoteSetId>,
 	pub name: String,
 	pub description: Option<String>,
+	pub tags: Vec<String>,
 	pub permissions: Permissions,
 	pub hoist: bool,
-	pub color: u32,
-	pub tags: Vec<String>,
+	pub color: Option<u32>,
 }
 
 impl Collection for Role {
 	const COLLECTION_NAME: &'static str = "roles";
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<Role>()]
 }

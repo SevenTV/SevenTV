@@ -1,26 +1,30 @@
-mod ban;
-mod ban_role;
-mod connection;
-mod editor;
-mod presence;
-mod relation;
-mod session;
-mod settings;
+pub mod ban;
+pub mod ban_template;
+pub mod connection;
+pub mod editor;
+pub mod presence;
+pub mod relation;
+pub mod session;
+pub mod settings;
 
-use std::sync::Arc;
+use ban::UserBan;
+use connection::UserConnection;
+use settings::UserSettings;
 
-use hyper::StatusCode;
-
-pub use self::ban::*;
-pub use self::ban_role::*;
-pub use self::connection::*;
-pub use self::editor::*;
-pub use self::presence::*;
-pub use self::relation::*;
-pub use self::session::*;
-pub use self::settings::*;
-use super::Permission;
-use super::{BadgeId, EmoteSetId, ImageSet, PaintId, Permissions, ProductId, Role, RoleId};
+use super::badge::BadgeId;
+use super::emote::EmoteId;
+use super::emote_set::EmoteSetId;
+use super::entitlement::{CalculatedEntitlements, EntitlementEdge, EntitlementGroupId};
+use super::image_set::ImageSet;
+use super::paint::PaintId;
+use super::product::promotion::PromotionId;
+use super::product::subscription_timeline::{
+	SubscriptionTimelineId, SubscriptionTimelinePeriodId, UserSubscriptionTimelineId,
+};
+use super::product::ProductId;
+use super::role::permissions::{Permission, Permissions, PermissionsExt};
+use super::role::RoleId;
+use super::GenericCollection;
 use crate::database::{Collection, Id};
 
 pub type UserId = Id<User>;
@@ -32,45 +36,113 @@ pub struct User {
 	pub id: UserId,
 	pub email: Option<String>,
 	pub email_verified: bool,
-	pub password_hash: Option<String>,
 	pub settings: UserSettings,
 	pub two_fa: Option<UserTwoFa>,
 	pub style: UserStyle,
-	pub active_emote_set_ids: Vec<EmoteSetId>,
-	pub grants: UserGrants,
+	pub connections: Vec<UserConnection>,
+	#[serde(default)]
+	pub search_index: UserSearchIndex,
+	pub bans: Vec<UserBan>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct UserGrants {
-	pub role_ids: Vec<RoleId>,
-	pub badge_ids: Vec<BadgeId>,
-	pub paint_ids: Vec<PaintId>,
-	pub emote_set_ids: Vec<EmoteSetId>,
+pub struct ActiveBans<'a>(Vec<&'a UserBan>);
+
+impl ActiveBans<'_> {
+	pub fn iter(&self) -> impl Iterator<Item = &UserBan> + '_ {
+		self.0.iter().copied()
+	}
+
+	pub fn permissions(&self) -> Permissions {
+		self.0.iter().fold(Permissions::default(), |mut perms, ban| {
+			perms.merge_ref(&ban.permissions);
+			perms
+		})
+	}
+
+	pub fn greatest_ban_for(&self, permission: Permission) -> Option<&UserBan> {
+		self.0
+			.iter()
+			.find(|ban| ban.permissions.denied_permission(permission))
+			.copied()
+	}
 }
 
 impl User {
-	pub fn compute_permissions(&self, roles: &[Role], default_perms: &Permissions) -> Permissions {
-		let mut permissions: Vec<&Permissions> = roles
+	pub fn active_bans(&self) -> Option<ActiveBans<'_>> {
+		let mut bans = self
+			.bans
 			.iter()
-			.filter_map(|role| {
-				if self.grants.role_ids.contains(&role.id) {
-					Some(&role.permissions)
-				} else {
-					None
-				}
+			.filter(|ban| {
+				ban.removed.is_none() && (ban.expires_at.is_none() || ban.expires_at.unwrap() > chrono::Utc::now())
 			})
-			.collect();
+			.collect::<Vec<_>>();
 
-		// prepend default permissions
-		permissions.insert(0, default_perms);
+		if bans.is_empty() {
+			return None;
+		}
 
-		permissions.into_iter().collect()
+		// sort bans that do not expire first, followed by bans that expire last
+
+		bans.sort_by(|a, b| match (a.expires_at, b.expires_at) {
+			(None, None) => std::cmp::Ordering::Equal,
+			(None, Some(_)) => std::cmp::Ordering::Less,
+			(Some(_), None) => std::cmp::Ordering::Greater,
+			(Some(a), Some(b)) => b.cmp(&a),
+		});
+
+		Some(ActiveBans(bans))
 	}
 }
 
 impl Collection for User {
 	const COLLECTION_NAME: &'static str = "users";
+
+	fn indexes() -> Vec<mongodb::IndexModel> {
+		vec![
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"style.active_emote_set_id": 1,
+				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"search_index.self_dirty": 1,
+				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"search_index.emotes_dirty": 1,
+				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"search_index.entitlements_dirty": 1,
+				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"search_index.emote_ids": 1,
+				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"search_index.entitlement_cache_keys": 1,
+				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"connections.platform": 1,
+					"connections.platform_id": 1,
+				})
+				.options(mongodb::options::IndexOptions::builder().unique(true).build())
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"bans.id": 1,
+				})
+				.build(),
+		]
+	}
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -86,6 +158,102 @@ pub struct UserTwoFa {
 pub struct UserStyle {
 	pub active_badge_id: Option<BadgeId>,
 	pub active_paint_id: Option<PaintId>,
+	pub active_emote_set_id: Option<EmoteSetId>,
 	pub active_profile_picture: Option<ImageSet>,
 	pub all_profile_pictures: Vec<ImageSet>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
+pub struct UserSearchIndex {
+	/// Each role has a rank, this is used for a search ordering
+	pub role_rank: i32,
+	/// If some property on the user has changed and we need to update the
+	/// search index
+	pub self_dirty: Option<Id<()>>,
+	/// If specifically the user's emotes have changed
+	pub emotes_dirty: Option<Id<()>>,
+	/// If specifically the user's entitlements have changed
+	pub entitlements_dirty: Option<Id<()>>,
+	/// The emote ids that the user has active
+	pub emote_ids: Vec<EmoteId>,
+	/// A set of keys that we use to determine if entitlements have changed
+	pub entitlement_cache_keys: Vec<EntitlementCacheKey>,
+	/// A cache of what badges the user is entitled to
+	pub entitled_badges: Vec<BadgeId>,
+	/// A cache of what paints the user is entitled to
+	pub entitled_paints: Vec<PaintId>,
+	/// A cache of what emote sets the user is entitled to
+	pub entitled_emote_set_ids: Vec<EmoteSetId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
+pub enum EntitlementCacheKey {
+	Role {
+		role_id: RoleId,
+	},
+	Product {
+		product_id: ProductId,
+	},
+	Promotion {
+		promotion_id: PromotionId,
+	},
+	SubscriptionTimeline {
+		subscription_timeline_id: SubscriptionTimelineId,
+	},
+	SubscriptionTimelinePeriod {
+		subscription_timeline_id: SubscriptionTimelineId,
+		period_id: SubscriptionTimelinePeriodId,
+	},
+	UserSubscriptionTimeline {
+		user_subscription_timeline_id: UserSubscriptionTimelineId,
+	},
+	EntitlementGroup {
+		entitlement_group_id: EntitlementGroupId,
+	},
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	std::iter::once(GenericCollection::new::<User>())
+		.chain(ban_template::collections())
+		.chain(editor::collections())
+		.chain(presence::collections())
+		.chain(relation::collections())
+		.chain(session::collections())
+}
+
+#[derive(Debug, Clone)]
+pub struct FullUser {
+	pub user: User,
+	pub computed: UserComputed,
+}
+
+impl std::ops::Deref for FullUser {
+	type Target = User;
+
+	fn deref(&self) -> &Self::Target {
+		&self.user
+	}
+}
+
+impl AsRef<User> for FullUser {
+	fn as_ref(&self) -> &User {
+		&self.user
+	}
+}
+
+impl AsRef<UserComputed> for FullUser {
+	fn as_ref(&self) -> &UserComputed {
+		&self.computed
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct UserComputed {
+	pub permissions: Permissions,
+	pub entitlements: CalculatedEntitlements,
+	pub highest_role_rank: i32,
+	pub highest_role_color: Option<u32>,
+	pub raw_entitlements: Option<Vec<EntitlementEdge>>,
 }

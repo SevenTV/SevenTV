@@ -1,58 +1,54 @@
-use super::{EmoteId, UserId};
+use super::emote::EmoteId;
+use super::emote_set::EmoteSetId;
+use super::product::InvoiceId;
+use super::user::UserId;
+use super::GenericCollection;
 use crate::database::{Collection, Id};
 
 #[derive(Debug, Clone, Default, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
-#[repr(u8)]
+#[repr(i32)]
 pub enum TicketPriority {
-	#[default]
 	Low = 0,
+	#[default]
 	Medium = 1,
 	High = 2,
 	Urgent = 3,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "snake_case", tag = "kind", content = "data")]
-pub enum TicketData {
-	EmoteReport {
-		emote_id: EmoteId,
-	},
-	UserReport {
-		user_id: UserId,
-	},
-	Billing,
-	EmoteListingRequest {
-		emote_id: EmoteId,
-	},
-	EmotePersonalUseRequest {
-		emote_id: EmoteId,
-	},
-	#[default]
-	Other,
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "snake_case", tag = "kind", content = "id")]
+pub enum TicketTarget {
+	User(UserId),
+	Emote(EmoteId),
+	EmoteSet(EmoteSetId),
+	Invoice(InvoiceId),
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
-#[repr(u8)]
-pub enum TicketStatus {
-	#[default]
-	Pending = 0,
-	InProgress = 1,
-	Fixed = 2,
-	Closed = 3,
+#[derive(Debug, Clone, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[repr(i32)]
+pub enum TicketKind {
+	Abuse = 0,
+	Billing = 1,
+	Generic = 2,
 }
 
 pub type TicketId = Id<Ticket>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ticket {
 	#[serde(rename = "_id")]
 	pub id: TicketId,
-	pub status: TicketStatus,
 	pub priority: TicketPriority,
+	pub members: Vec<TicketMember>,
 	pub title: String,
 	pub tags: Vec<String>,
-	pub data: TicketData,
+	pub country_code: Option<String>,
+	pub kind: TicketKind,
+	pub targets: Vec<TicketTarget>,
+	pub author_id: UserId,
+	pub open: bool,
+	pub locked: bool,
 }
 
 impl Collection for Ticket {
@@ -60,30 +56,21 @@ impl Collection for Ticket {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
-#[repr(u8)]
+#[repr(i32)]
 pub enum TicketMemberKind {
 	#[default]
-	Op = 0,
-	Member = 1,
-	Staff = 2,
+	Member = 0,
+	Assigned = 1,
+	Watcher = 2,
 }
-
-pub type TicketMemberId = Id<TicketMember>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct TicketMember {
-	#[serde(rename = "_id")]
-	pub id: TicketMemberId,
-	pub ticket_id: TicketId,
 	pub user_id: UserId,
 	pub kind: TicketMemberKind,
 	pub notifications: bool,
 	pub last_read: Option<TicketMessageId>,
-}
-
-impl Collection for TicketMember {
-	const COLLECTION_NAME: &'static str = "ticket_members";
 }
 
 pub type TicketMessageId = Id<TicketMessage>;
@@ -104,9 +91,23 @@ pub struct TicketMessage {
 pub struct TicketFile {
 	pub path: String,
 	pub mime: String,
-	pub size: u64,
+	pub size: i64,
 }
 
 impl Collection for TicketMessage {
 	const COLLECTION_NAME: &'static str = "ticket_messages";
+
+	fn indexes() -> Vec<mongodb::IndexModel> {
+		vec![
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"ticket_id": 1,
+				})
+				.build(),
+		]
+	}
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<Ticket>(), GenericCollection::new::<TicketMessage>()]
 }
