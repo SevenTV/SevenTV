@@ -4,7 +4,6 @@ use std::vec;
 
 use mongodb::bson::oid::ObjectId;
 use shared::database::{self, Badge, Collection, ImageSet, Paint, PaintLayerId};
-use shared::image_processor;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
