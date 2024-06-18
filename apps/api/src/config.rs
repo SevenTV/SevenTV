@@ -12,6 +12,9 @@ pub struct Api {
 	/// worker count
 	#[settings(default = 1)]
 	pub workers: usize,
+	/// website origin
+	#[settings(default = "https://7tv.app".into())]
+	pub website_origin: String,
 	/// cdn base url
 	#[settings(default = "https://cdn.7tv.app".into())]
 	pub cdn_base_url: String,
@@ -21,8 +24,6 @@ pub struct Api {
 	/// base url
 	#[settings(default = "https://7tv.io".into())]
 	pub base_url: String,
-	/// cors options
-	// pub cors: HttpCors,
 	/// connection config
 	pub connections: ConnectionsConfig,
 	/// jwt config
