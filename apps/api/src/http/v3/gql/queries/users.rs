@@ -446,7 +446,7 @@ impl UsersQuery {
 		page: Option<u32>,
 		limit: Option<u32>,
 	) -> Result<UserPartial, ApiError> {
-		// TODO: implement
+		// TODO: implement with typesense
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 

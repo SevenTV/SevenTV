@@ -195,6 +195,7 @@ impl EmoteOps {
 
 	#[graphql(guard = "PermissionGuard::one(EmotePermission::Admin)")]
 	async fn rerun(&self) -> Result<Option<Emote>, ApiError> {
+		// will be left unimplemented
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 }
