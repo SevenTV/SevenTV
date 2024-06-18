@@ -99,3 +99,80 @@ pub struct Extra {
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 }
+
+impl Extra {
+	fn any_run(&self) -> bool {
+		self.users
+		|| self.bans
+		|| self.emotes
+		|| self.emote_sets
+		|| self.cosmetics
+		|| self.roles
+		|| self.reports
+		|| self.audit_logs
+		|| self.messages
+		|| self.system
+		|| self.prices
+		|| self.subscriptions
+	}
+
+	pub fn should_run_users(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.users || !any_run && !self.skip_users
+	}
+
+	pub fn should_run_bans(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.bans || !any_run && !self.skip_bans
+	}
+
+	pub fn should_run_emotes(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.emotes || !any_run && !self.skip_emotes
+	}
+
+	pub fn should_run_emote_sets(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.emote_sets || !any_run && !self.skip_emote_sets
+	}
+
+	pub fn should_run_cosmetics(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.cosmetics || !any_run && !self.skip_cosmetics
+	}
+
+	pub fn should_run_roles(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.roles || !any_run && !self.skip_roles
+	}
+
+	pub fn should_run_reports(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.reports || !any_run && !self.skip_reports
+	}
+
+	pub fn should_run_audit_logs(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.audit_logs || !any_run && !self.skip_audit_logs
+	}
+
+	pub fn should_run_messages(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.messages || !any_run && !self.skip_messages
+	}
+
+	pub fn should_run_system(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.system || !any_run && !self.skip_system
+	}
+
+	pub fn should_run_prices(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.prices || !any_run && !self.skip_prices
+	}
+
+	pub fn should_run_subscriptions(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.subscriptions || !any_run && !self.skip_subscriptions
+	}
+}

@@ -168,19 +168,6 @@ pub trait Job: Sized {
 }
 
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
-	let any_run = global.config().users
-		|| global.config().bans
-		|| global.config().emotes
-		|| global.config().emote_sets
-		|| global.config().cosmetics
-		|| global.config().roles
-		|| global.config().reports
-		|| global.config().audit_logs
-		|| global.config().messages
-		|| global.config().system
-		|| global.config().prices
-		|| global.config().subscriptions;
-
 	let timer = Instant::now();
 
 	// This has to be here because it's these are target collections for multiple
@@ -196,76 +183,42 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		FuturesUnordered::new();
 
 	// ugly ass code
-	if let Some(j) = UsersJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().users || !any_run && !global.config().skip_users,
-	)? {
+	if let Some(j) = UsersJob::conditional_init_and_run(&global, global.config().should_run_users())? {
 		futures.push(j);
 	}
-	if let Some(j) = BansJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().bans || !any_run && !global.config().skip_bans,
-	)? {
+	if let Some(j) = BansJob::conditional_init_and_run(&global, global.config().should_run_bans())? {
 		futures.push(j);
 	}
-	if let Some(j) = EmotesJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().emotes || !any_run && !global.config().skip_emotes,
-	)? {
+	if let Some(j) = EmotesJob::conditional_init_and_run(&global, global.config().should_run_emotes())? {
 		futures.push(j);
 	}
-	if let Some(j) = EmoteSetsJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().emote_sets || !any_run && !global.config().skip_emote_sets,
-	)? {
+	if let Some(j) = EmoteSetsJob::conditional_init_and_run(&global, global.config().should_run_emote_sets())? {
 		futures.push(j);
 	}
-	if let Some(j) = CosmeticsJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().cosmetics || !any_run && !global.config().skip_cosmetics,
-	)? {
+	if let Some(j) = CosmeticsJob::conditional_init_and_run(&global, global.config().should_run_cosmetics())? {
 		futures.push(j);
 	}
-	if let Some(j) = RolesJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().roles || !any_run && !global.config().skip_roles,
-	)? {
+	if let Some(j) = RolesJob::conditional_init_and_run(&global, global.config().should_run_roles())? {
 		futures.push(j);
 	}
-	if let Some(j) = ReportsJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().reports || !any_run && !global.config().skip_reports,
-	)? {
+	if let Some(j) = ReportsJob::conditional_init_and_run(&global, global.config().should_run_reports())? {
 		futures.push(j);
 	}
-	if let Some(j) = AuditLogsJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().audit_logs || !any_run && !global.config().skip_audit_logs,
-	)? {
+	if let Some(j) = AuditLogsJob::conditional_init_and_run(&global, global.config().should_run_audit_logs())? {
 		futures.push(j);
 	}
-	if let Some(j) = MessagesJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().messages || !any_run && !global.config().skip_messages,
-	)? {
+	if let Some(j) = MessagesJob::conditional_init_and_run(&global, global.config().should_run_messages())? {
 		futures.push(j);
 	}
-	if let Some(j) = SystemJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().system || !any_run && !global.config().skip_system,
-	)? {
+	if let Some(j) = SystemJob::conditional_init_and_run(&global, global.config().should_run_system())? {
 		futures.push(j);
 	}
-	if let Some(j) = PricesJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().prices || !any_run && !global.config().skip_prices,
-	)? {
+	if let Some(j) = PricesJob::conditional_init_and_run(&global, global.config().should_run_prices())? {
 		futures.push(j);
 	}
-	if let Some(j) = subscriptions::SubscriptionsJob::conditional_init_and_run(
-		&global,
-		any_run && global.config().subscriptions || !any_run && !global.config().skip_subscriptions,
-	)? {
+	if let Some(j) =
+		subscriptions::SubscriptionsJob::conditional_init_and_run(&global, global.config().should_run_subscriptions())?
+	{
 		futures.push(j);
 	}
 
@@ -286,8 +239,6 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	}
 	.render_once()?;
 	tokio::fs::write(&global.config().report_path, report).await?;
-
-	scuffle_foundations::context::Handler::global().shutdown().await;
 
 	Ok(())
 }

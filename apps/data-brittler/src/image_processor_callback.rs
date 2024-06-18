@@ -18,6 +18,11 @@ const JETSTREAM_NAME: &str = "image-processor-callback";
 const JETSTREAM_CONSUMER_NAME: &str = "image-processor-callback-consumer";
 
 pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
+	if !global.config().should_run_cosmetics() {
+		tracing::info!("image processor callback job is disabled");
+		return Ok(());
+	}
+
 	let config = &global.config().extra.image_processor;
 
 	let subject = Subject::Wildcard.to_string(&config.event_queue_topic_prefix);
@@ -54,6 +59,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 
 	let mut processed_tasks = HashSet::new();
 
+	// until context is shutdown
 	while let Some(message) = consumer.next().with_context(context::Context::global()).await {
 		let message = message.context("consumer closed")?.context("failed to get message")?;
 
@@ -134,14 +140,14 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		// check if we should stop
 		// total_tasks is always sorted
 		let all_tasks = global.all_tasks().get();
-		tracing::info!(
-			"finished processing {}{} tasks",
-			processed_tasks.len(),
-			all_tasks.map(|t| format!("/{}", t.len())).unwrap_or_default()
-		);
-		if all_tasks.is_some_and(|all| all.iter().all(|id| processed_tasks.contains(id))) {
-			tracing::info!("received all task callbacks, stopping");
-			break;
+		if let Some(all_tasks) = all_tasks {
+			let missing: Vec<_> = all_tasks.iter().filter(|id| !processed_tasks.contains(*id)).collect();
+			if missing.is_empty() {
+				tracing::info!("received all task callbacks, stopping");
+				break;
+			} else {
+				tracing::info!("missing {} task callbacks", missing.len());
+			}
 		}
 	}
 
