@@ -42,7 +42,7 @@ async_graphql::scalar!(EmoteLifecycleModel);
 pub enum EmoteVersionState {
 	#[default]
 	Listed,
-	AllowPersonal,
+	Personal,
 	NoPersonal,
 }
 
@@ -51,7 +51,7 @@ impl EmoteVersionState {
 		let mut state = Vec::new();
 
 		if value.contains(EmoteFlags::ApprovedPersonal) && !value.contains(EmoteFlags::DeniedPersonal) {
-			state.push(Self::AllowPersonal);
+			state.push(Self::Personal);
 		} else if value.contains(EmoteFlags::DeniedPersonal) {
 			state.push(Self::NoPersonal);
 		}

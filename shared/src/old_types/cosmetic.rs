@@ -1,4 +1,4 @@
-use super::{is_default, ImageHost, ImageHostKind, UserPartialModel};
+use super::{is_default, ImageHost, UserPartialModel};
 use crate::database::{BadgeId, Paint, PaintId, PaintLayerType, PaintRadialGradientShape, PaintShadow, UserId};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -45,7 +45,7 @@ async_graphql::scalar!(CosmeticKind);
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
-#[graphql(name = "CosmeticPaint", rename_fields = "snake_case")]
+#[graphql(complex, name = "CosmeticPaint", rename_fields = "snake_case")]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/cosmetic.model.go#L29
 pub struct CosmeticPaintModel {
 	pub id: PaintId,
@@ -66,6 +66,13 @@ pub struct CosmeticPaintModel {
 	pub image_url: String,
 	#[graphql(deprecation)]
 	pub stops: Vec<CosmeticPaintGradientStop>,
+}
+
+#[async_graphql::ComplexObject]
+impl CosmeticPaintModel {
+	pub async fn kind(&self) -> CosmeticKind {
+		CosmeticKind::Paint
+	}
 }
 
 impl CosmeticPaintModel {
@@ -278,7 +285,7 @@ async_graphql::scalar!(CosmeticPaintShape);
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
-#[graphql(name = "CosmeticBadge", rename_fields = "snake_case")]
+#[graphql(complex, name = "CosmeticBadge", rename_fields = "snake_case")]
 pub struct CosmeticBadgeModel {
 	pub id: BadgeId,
 	pub name: String,
@@ -287,10 +294,17 @@ pub struct CosmeticBadgeModel {
 	pub host: ImageHost,
 }
 
+#[async_graphql::ComplexObject]
+impl CosmeticBadgeModel {
+	pub async fn kind(&self) -> CosmeticKind {
+		CosmeticKind::Badge
+	}
+}
+
 impl CosmeticBadgeModel {
 	pub fn from_db(value: crate::database::Badge, cdn_base_url: &str) -> Option<Self> {
 		let id = value.id.cast();
-		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url, ImageHostKind::Badge, &id);
+		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url);
 
 		Some(Self {
 			id,

@@ -1,4 +1,4 @@
-use crate::database::{Id, Image, ImageSet};
+use crate::database::{Image, ImageSet};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(default)]
@@ -11,25 +11,28 @@ pub struct ImageHost {
 	pub files: Vec<ImageFile>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ImageHostKind {
-	Badge,
-	Emote,
-	Paint,
-	ProfilePicture,
-}
-
 impl ImageHost {
-	pub fn from_image_set<T>(image_set: &ImageSet, cdn_base_url: &str, kind: ImageHostKind, id: &Id<T>) -> Self {
+	pub fn from_image_set(image_set: &ImageSet, cdn_base_url: &str) -> Self {
+		let url = image_set.outputs.first().and_then(|i| {
+			let path = i.path.clone();
+			// keep everything until last '/'
+			let split = path.split('/').collect::<Vec<_>>();
+			Some(format!("{cdn_base_url}/{}", split.split_last()?.1.join("/")))
+		});
+
+		let animated = image_set.outputs.iter().any(|i| i.frame_count > 1);
+
+		let files = image_set
+			.outputs
+			.iter()
+			.filter(|i| (i.frame_count > 1) == animated)
+			// Filter out any images with formats that should not be returned by the v3 api
+			.filter(|i| ImageFormat::from_mime(&i.mime).is_some())
+			.map(Into::into);
+
 		Self {
-			url: kind.create_base_url(cdn_base_url, id),
-			files: image_set
-				.outputs
-				.iter()
-				// Filter out any images with formats that should not be returned by the v3 api
-				.filter(|i| ImageFormat::from_mime(&i.mime).is_some())
-				.map(Into::into)
-				.collect(),
+			url: url.unwrap_or_default(),
+			files: files.collect(),
 		}
 	}
 }
@@ -47,23 +50,6 @@ impl ImageHost {
 	}
 }
 
-impl ImageHostKind {
-	pub fn create_base_url<T>(&self, base: &str, id: &Id<T>) -> String {
-		format!("{base}/{self}/{id}")
-	}
-}
-
-impl std::fmt::Display for ImageHostKind {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Self::Badge => write!(f, "badge"),
-			Self::Emote => write!(f, "emote"),
-			Self::ProfilePicture => write!(f, "profile-picture"),
-			Self::Paint => write!(f, "paint"),
-		}
-	}
-}
-
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema, async_graphql::SimpleObject)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
@@ -71,7 +57,6 @@ impl std::fmt::Display for ImageHostKind {
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L52
 pub struct ImageFile {
 	pub name: String,
-	pub static_name: String,
 	pub width: u32,
 	pub height: u32,
 	pub frame_count: u32,
@@ -86,7 +71,6 @@ impl From<&Image> for ImageFile {
 		let name = name.split('/').last().unwrap_or(&name).to_string();
 
 		Self {
-			static_name: name.replace("x.", "x_static."),
 			name,
 			width: value.width,
 			height: value.height,

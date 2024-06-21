@@ -13,6 +13,7 @@ pub struct UserPresence {
 	pub platform_room_id: String,
 	pub authentic: bool,
 	pub ip_address: std::net::IpAddr,
+	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub last_seen_at: chrono::DateTime<chrono::Utc>,
 }
 

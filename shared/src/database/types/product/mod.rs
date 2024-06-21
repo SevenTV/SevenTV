@@ -322,8 +322,10 @@ pub enum ProductEntitlementGroupEvaluationCondition {
 	// for the entire period, but their renew interval is larger than the period)
 	SubscriptionPeriod {
 		/// The start of the period
+		#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 		start: chrono::DateTime<chrono::Utc>,
 		/// The end of the period
+		#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 		end: chrono::DateTime<chrono::Utc>,
 	},
 }

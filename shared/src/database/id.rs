@@ -102,6 +102,10 @@ impl<S> Id<S> {
 		self.0.is_nil()
 	}
 
+	pub const fn is_one(&self) -> bool {
+		self.0.0 == 1
+	}
+
 	pub const fn timestamp_ms(&self) -> u64 {
 		self.0.timestamp_ms()
 	}

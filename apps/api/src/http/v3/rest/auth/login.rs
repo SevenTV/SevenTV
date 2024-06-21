@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use shared::database::{Collection, Platform, User, UserConnection, UserId, UserPermission, UserSession};
+use shared::database::{Collection, Platform, User, UserConnection, UserConnectionId, UserId, UserPermission, UserSession};
 
 use super::LoginRequest;
 use crate::connections;
+use crate::dataloader::user_loader::load_user_and_permissions;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AUTH_COOKIE;
 use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
-use crate::dataloader::user_loader::load_user_and_permissions;
 
 const CSRF_COOKIE: &str = "seventv-csrf";
 
@@ -45,7 +45,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	// exchange code for access token
 	let token = connections::exchange_code(
 		global,
-		query.platform,
+		query.platform.into(),
 		&code,
 		format!(
 			"{}/v3/auth?callback=true&platform={}",
@@ -56,7 +56,13 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	.await?;
 
 	// query user data from platform
-	let user_data = connections::get_user_data(global, query.platform, &token.access_token).await?;
+	let user_data = connections::get_user_data(global, query.platform.into(), &token.access_token).await?;
+
+	let user_connection = global
+		.user_connection_by_platform_id_loader()
+		.load(user_data.id.clone())
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let mut session = global.mongo().start_session(None).await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start session");
@@ -67,35 +73,58 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		tracing::error!(error = %err, "failed to start transaction");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
+	
+	let user_id = match (user_connection, csrf_payload.user_id) {
+		(Some(user_connection), Some(user_id)) if user_connection.user_id != user_id => {
+			return Err(ApiError::new_const(
+				StatusCode::BAD_REQUEST,
+				"connection already paired with another user",
+			));
+		},
+		(None, None) => {
+			// create new user
 
-	let user = if let Some(user_id) = csrf_payload.user_id {
-		let (user, perms) = load_user_and_permissions(global, user_id)
-			.await?
-			.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "user not found"))?;
+			let user = User::default();
 
-		if !perms.has(UserPermission::Login) {
-			return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
-		}
+			User::collection(global.db())
+				.insert_one_with_session(&user, None, &mut session)
+				.await
+				.map_err(|err| {
+					tracing::error!(error = %err, "failed to insert user");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
 
-		user
-	} else {
-		let user = User::default();
+			user.id
+		},
+		(user_connection, user_id) => {
+			if let Some(user_connection) = &user_connection {
+				if !user_connection.allow_login {
+					return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
+				}
+			}
 
-		User::collection(global.db())
-			.insert_one_with_session(&user, None, &mut session)
-			.await
-			.map_err(|err| {
-				tracing::error!(error = %err, "failed to insert user");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+			// not both can be none because of the match arm above
+			let user_id = user_connection.map(|c| c.user_id).or(user_id).unwrap();
 
-		user
+			let (user, perms) = load_user_and_permissions(global, user_id)
+				.await?
+				.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "user not found"))?;
+
+			// if !perms.has(UserPermission::Login) {
+			// 	return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
+			// }
+
+			user.id
+		},
 	};
 
-	let connection = UserConnection::collection(global.db())
-		.find_one_and_update_with_session(
+	let platform: Platform = query.platform.into();
+	let platform = to_bson(&platform).expect("failed to convert platform to bson");
+
+	UserConnection::collection(global.db())
+		.update_one_with_session(
 			doc! {
-				"platform": to_bson(&query.platform).expect("failed to convert platform to bson"),
+				"platform": platform.clone(),
 				"platform_id": &user_data.id,
 			},
 			doc! {
@@ -103,55 +132,32 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 					"platform_username": &user_data.username,
 					"platform_display_name": &user_data.display_name,
 					"platform_avatar_url": &user_data.avatar,
-					"updated_at": chrono::Utc::now(),
 				},
-				"$setOnInsert": to_bson(&UserConnection {
-					user_id: user.id,
-					main_connection: csrf_payload.user_id.is_none(),
-					platform: query.platform,
-					platform_id: user_data.id,
-					platform_username: user_data.username,
-					platform_display_name: user_data.display_name,
-					platform_avatar_url: user_data.avatar,
-					allow_login: true,
-					..Default::default()
-				}).expect("failed to convert user connection to bson"),
+				"$setOnInsert": {
+					"id": UserConnectionId::new(),
+					"user_id": user_id,
+					"main_connection": csrf_payload.user_id.is_none(),
+					"platform": platform,
+					"platform_id": user_data.id,
+					"allow_login": true,
+				},
 			},
 			Some(
-				mongodb::options::FindOneAndUpdateOptions::builder()
+				mongodb::options::UpdateOptions::builder()
 					.upsert(true)
-					.return_document(mongodb::options::ReturnDocument::After)
 					.build(),
 			),
 			&mut session,
 		)
 		.await
 		.map_err(|err| {
-			tracing::error!(error = %err, "failed to find user connection");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?
-		.ok_or_else(|| {
-			tracing::error!("user connection failed to be created");
+			tracing::error!(error = %err, "failed to update user connection");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-	if connection.user_id != user.id {
-		return Err(ApiError::new_const(
-			StatusCode::BAD_REQUEST,
-			"connection already paired with another user",
-		));
-	}
-
-	if connection.allow_login && csrf_payload.user_id.is_none() {
-		return Err(ApiError::new_const(
-			StatusCode::UNAUTHORIZED,
-			"connection is not allowed to login",
-		));
-	}
-
 	let user_session = if csrf_payload.user_id.is_none() {
 		let user_session = UserSession {
-			user_id: user.id,
+			user_id: user_id,
 			// TODO maybe allow for this to be configurable
 			expires_at: chrono::Utc::now() + chrono::Duration::days(30),
 			last_used_at: chrono::Utc::now(),

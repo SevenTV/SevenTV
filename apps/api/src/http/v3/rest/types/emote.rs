@@ -1,5 +1,5 @@
 use shared::database::{Emote, EmoteFlags, EmoteId, UserId};
-use shared::old_types::{EmoteFlagsModel, ImageHost, ImageHostKind, UserPartialModel};
+use shared::old_types::{EmoteFlagsModel, ImageHost, UserPartialModel};
 
 use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};
 
@@ -90,7 +90,7 @@ impl EmotePartialModel {
 				EmoteLifecycleModel::Live
 			},
 			listed: value.flags.contains(EmoteFlags::PublicListed),
-			host: ImageHost::from_image_set(&value.image_set, cdn_base_url, ImageHostKind::Emote, &value.id),
+			host: ImageHost::from_image_set(&value.image_set, cdn_base_url),
 		}
 	}
 }

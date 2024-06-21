@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
-use shared::database::{Collection, Emote, EmoteFlags, ImageSet, ImageSetInput};
+use shared::database::{Collection, Emote, EmoteFlags, ImageSet, ImageSetInput, UserId};
 use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
@@ -33,6 +33,8 @@ impl Job for EmotesJob {
 	}
 
 	async fn process(&mut self, emote: Self::T) -> ProcessOutcome {
+		let owner_id = UserId::from(emote.owner_id);
+
 		for v in emote.versions {
 			if (v.state.lifecycle == EmoteLifecycle::Failed)
 				|| (v.state.lifecycle == EmoteLifecycle::Deleted && v.state.replace_id.is_none())
@@ -50,6 +52,12 @@ impl Job for EmotesJob {
 			if emote.flags.contains(EmoteFlagsModel::Sexual) {
 				flags |= EmoteFlags::Nsfw;
 			}
+			if v.state.listed {
+				flags |= EmoteFlags::PublicListed;
+			}
+			if v.state.allow_personal {
+				flags |= EmoteFlags::ApprovedPersonal;
+			}
 
 			let image_set = ImageSet {
 				input: ImageSetInput::Image(v.input_file.into()),
@@ -58,7 +66,7 @@ impl Job for EmotesJob {
 
 			self.emotes.push(Emote {
 				id: v.id.into(),
-				owner_id: Some(emote.owner_id.into()),
+				owner_id: (!owner_id.is_nil() && !owner_id.is_one()).then_some(owner_id),
 				default_name: v.name.unwrap_or_else(|| emote.name.clone()),
 				tags: emote.tags.clone(),
 				animated: v.animated,

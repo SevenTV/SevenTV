@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
-use shared::old_types::{EmoteFlagsModel, EmoteObjectId, ImageHost, ImageHostKind, UserObjectId};
+use shared::old_types::{EmoteFlagsModel, EmoteObjectId, ImageHost, UserObjectId};
 
 use super::audit_logs::AuditLog;
 use super::reports::Report;
@@ -46,8 +46,6 @@ impl Emote {
 		let host = ImageHost::from_image_set(
 			&value.image_set,
 			&global.config().api.cdn_base_url,
-			ImageHostKind::Emote,
-			&value.id,
 		);
 		let state = EmoteVersionState::from_db(&value.flags);
 		let listed = value.flags.contains(shared::database::EmoteFlags::PublicListed);
@@ -94,12 +92,18 @@ impl Emote {
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_from_db(global, self.owner_id.id()).await
+		Ok(UserPartial::load_from_db(global, self.owner_id.id()).await.unwrap_or_else(|_| UserPartial::deleted_user()))
 	}
 
-	async fn channels(&self, ctx: &Context<'_>, page: u32, limit: u32) -> Result<UserSearchResult, ApiError> {
+	async fn channels(
+		&self,
+		ctx: &Context<'_>,
+		page: Option<u32>,
+		limit: Option<u32>,
+	) -> Result<UserSearchResult, ApiError> {
 		// TODO: implement with typesense
-		Err(ApiError::NOT_IMPLEMENTED)
+		// Err(ApiError::NOT_IMPLEMENTED)
+		Ok(UserSearchResult::default())
 	}
 
 	async fn common_names(&self) -> Vec<EmoteCommonName> {
@@ -107,22 +111,31 @@ impl Emote {
 		vec![]
 	}
 
-	async fn trending(&self) -> Result<u32, ApiError> {
+	async fn trending(&self) -> Result<Option<u32>, ApiError> {
 		// TODO: implement with clickhouse
-		Err(ApiError::NOT_IMPLEMENTED)
+		// Err(ApiError::NOT_IMPLEMENTED)
+		Ok(None)
 	}
 
-	async fn activity<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<AuditLog>, ApiError> {
+	async fn activity<'ctx>(&self, ctx: &Context<'ctx>, limit: Option<u32>) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let activities = global
-			.emote_activity_by_emote_id_loader()
-			.load(self.id.id())
+			.clickhouse()
+			.query("SELECT * FROM emote_activities WHERE emote_id = ? ORDER BY timestamp DESC LIMIT ?")
+			.bind(self.id.id().as_uuid())
+			.bind(limit.unwrap_or(100))
+			.fetch_all()
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
+			.map_err(|err| {
+				tracing::error!("failed to load emote activity: {err}");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
-		Ok(activities.into_iter().map(AuditLog::from_db_emote).collect())
+		Ok(activities
+			.into_iter()
+			.map(AuditLog::from_db_emote)
+			.collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {
@@ -173,7 +186,7 @@ impl EmotePartial {
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_from_db(global, self.owner_id.id()).await
+		Ok(UserPartial::load_from_db(global, self.owner_id.id()).await.unwrap_or_else(|_| UserPartial::deleted_user()))
 	}
 }
 
@@ -295,11 +308,12 @@ impl EmotesQuery {
 	async fn emotes(
 		&self,
 		ctx: &Context<'_>,
+		query: String,
 		page: Option<u32>,
 		limit: Option<u32>,
 		filter: Option<EmoteSearchFilter>,
 		sort: Option<EmoteSearchSort>,
-	) -> Result<Vec<Emote>, ApiError> {
+	) -> Result<EmoteSearchResult, ApiError> {
 		// TODO: implement with typesense
 		Err(ApiError::NOT_IMPLEMENTED)
 	}

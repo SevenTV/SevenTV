@@ -9,7 +9,9 @@ pub struct UserSession {
 	#[serde(rename = "_id")]
 	pub id: UserSessionId,
 	pub user_id: UserId,
+	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub expires_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub last_used_at: chrono::DateTime<chrono::Utc>,
 }
 

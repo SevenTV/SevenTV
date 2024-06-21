@@ -1,11 +1,12 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
 use shared::database::{
-	EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteId, EmoteSetActivity, EmoteSetActivityData,
+	Emote, EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteId, EmoteSetActivity, EmoteSetActivityData,
 	EmoteSetActivityKind, EmoteSetId, EmoteSettingsChange, Id, UserId,
 };
-use shared::old_types::{EmoteFlagsModel, ObjectId, UserObjectId};
+use shared::old_types::{EmoteFlagsModel, EmoteObjectId, ObjectId, UserObjectId};
 
 use super::users::UserPartial;
 use crate::global::Global;
@@ -112,16 +113,18 @@ impl AuditLog {
 		}
 	}
 
-	pub fn from_db_emote_set(activity: EmoteSetActivity) -> Self {
+	pub fn from_db_emote_set(activity: EmoteSetActivity, emotes: &HashMap<EmoteId, Emote>) -> Self {
+		let actor_id = activity.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into();
+
 		let changes = activity
 			.data
-			.and_then(AuditLogChange::from_db_emote_set)
+			.and_then(|c| AuditLogChange::from_db_emote_set(c, actor_id, activity.timestamp, emotes))
 			.map(|c| vec![c])
 			.unwrap_or_default();
 
 		Self {
 			id: Id::<()>::with_timestamp_ms(activity.timestamp.unix_timestamp() * 1000).into(),
-			actor_id: activity.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into(),
+			actor_id,
 			kind: activity.kind.into(),
 			target_id: EmoteSetId::from(activity.emote_set_id).cast().into(),
 			target_kind: 3,
@@ -230,7 +233,12 @@ impl AuditLogChange {
 		}
 	}
 
-	pub fn from_db_emote_set(data: EmoteSetActivityData) -> Option<Self> {
+	pub fn from_db_emote_set(
+		data: EmoteSetActivityData,
+		actor_id: UserObjectId,
+		timestamp: time::OffsetDateTime,
+		emotes: &HashMap<EmoteId, Emote>,
+	) -> Option<Self> {
 		match data {
 			EmoteSetActivityData::ChangeName { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
@@ -244,8 +252,32 @@ impl AuditLogChange {
 				key: "emotes".to_string(),
 				value: None,
 				array_value: Some(AuditLogChangeArray {
-					added: added.into_iter().map(|id| ArbitraryMap::Emote { emote_id: id }).collect(),
-					removed: removed.into_iter().map(|id| ArbitraryMap::Emote { emote_id: id }).collect(),
+					added: added
+						.into_iter()
+						.filter_map(|id| {
+							let emote = emotes.get(&id)?;
+							Some(ArbitraryMap::Emote {
+								id: id.into(),
+								actor_id,
+								flags: EmoteFlagsModel::none(),
+								name: emote.default_name.clone(),
+								timestamp,
+							})
+						})
+						.collect(),
+					removed: removed
+						.into_iter()
+						.filter_map(|id| {
+							let emote = emotes.get(&id)?;
+							Some(ArbitraryMap::Emote {
+								id: id.into(),
+								actor_id,
+								flags: EmoteFlagsModel::none(),
+								name: emote.default_name.clone(),
+								timestamp,
+							})
+						})
+						.collect(),
 					updated: vec![],
 				}),
 			}),
@@ -284,7 +316,11 @@ pub struct AuditLogChangeArray {
 #[serde(untagged)]
 pub enum ArbitraryMap {
 	Emote {
-		emote_id: EmoteId,
+		id: EmoteObjectId,
+		actor_id: UserObjectId,
+		flags: EmoteFlagsModel,
+		name: String,
+		timestamp: time::OffsetDateTime,
 	},
 	EmoteVersionState {
 		n: EmoteVersionStateChange,
@@ -316,9 +352,13 @@ impl ScalarType for ArbitraryMap {
 
 	fn to_value(&self) -> async_graphql::Value {
 		let map = match self {
-			Self::Emote { emote_id } => {
+			Self::Emote { id, actor_id, flags, name, timestamp } => {
 				indexmap::indexmap! {
-					async_graphql::Name::new("emote_id") => async_graphql::Value::String(emote_id.to_string()),
+					async_graphql::Name::new("id") => async_graphql::Value::String(id.to_string()),
+					async_graphql::Name::new("actor_id") => async_graphql::Value::String(actor_id.to_string()),
+					async_graphql::Name::new("flags") => async_graphql::Value::Number(async_graphql::Number::from(flags.bits())),
+					async_graphql::Name::new("name") => async_graphql::Value::String(name.clone()),
+					async_graphql::Name::new("timestamp") => async_graphql::Value::String(timestamp.to_string()),
 				}
 			}
 			Self::EmoteVersionState { n, o, p } => {

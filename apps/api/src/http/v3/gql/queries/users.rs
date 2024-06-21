@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
 use mongodb::bson::{doc, to_bson};
-use shared::database::{self, Collection, UserId};
+use shared::database::{self, Collection, EmoteSetActivity, EmoteSetActivityData, UserId};
 use shared::old_types::{
 	BadgeObjectId, CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel, EmoteSetObjectId, ObjectId, PaintObjectId,
 	RoleObjectId, UserConnectionPlatformModel, UserObjectId, UserTypeModel, VirtualId,
@@ -12,11 +12,11 @@ use super::audit_logs::AuditLog;
 use super::emote_sets::EmoteSet;
 use super::emotes::Emote;
 use super::reports::Report;
+use crate::dataloader::user_loader::load_users_and_permissions;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::types::UserEditorModelPermission;
-use crate::dataloader::user_loader::load_users_and_permissions;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
 
@@ -48,6 +48,8 @@ pub struct User {
 	inbox_unread_count: u32,
 	// reports
 	#[graphql(skip)]
+	db_user: shared::database::User,
+	#[graphql(skip)]
 	db_permissions: shared::database::Permissions,
 	#[graphql(skip)]
 	db_connections: Vec<shared::database::UserConnection>,
@@ -65,6 +67,7 @@ impl From<UserPartial> for User {
 			style: partial.style,
 			roles: partial.roles,
 			inbox_unread_count: 0,
+			db_user: partial.db_user,
 			db_permissions: partial.db_permissions,
 			db_connections: partial.db_connections,
 		}
@@ -90,7 +93,7 @@ impl User {
 		Ok(editors.into_iter().filter_map(|e| UserEditor::from_db(e, false)).collect())
 	}
 
-	async fn editors_of<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
+	async fn editor_of<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let editors = global
@@ -118,9 +121,19 @@ impl User {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
-		// TODO: query entitleled sets too
+		let mut emote_sets: Vec<_> = emote_sets.into_iter().map(|e| EmoteSet::from_db(e)).collect();
 
-		Ok(emote_sets.into_iter().map(|e| EmoteSet::from_db(e)).collect())
+		// add virtual user set
+		let virtual_set = EmoteSet::virtual_set_for_user(
+			self.db_user.clone(),
+			self.db_connections.clone(),
+			self.db_permissions.emote_set_slots_limit.unwrap_or(600),
+		)
+		.await;
+
+		emote_sets.push(virtual_set);
+
+		Ok(emote_sets)
 	}
 
 	async fn owned_emotes<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Emote>, ApiError> {
@@ -136,17 +149,40 @@ impl User {
 		Ok(emotes.into_iter().map(|e| Emote::from_db(global, e)).collect())
 	}
 
-	async fn activity<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<AuditLog>, ApiError> {
+	async fn activity<'ctx>(&self, ctx: &Context<'ctx>, limit: Option<u32>) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let activities = global
-			.emote_set_activity_by_actor_id_loader()
-			.load(self.id.id())
+		let activities: Vec<EmoteSetActivity> = global
+			.clickhouse()
+			.query("SELECT * FROM emote_set_activities WHERE actor_id = ? ORDER BY timestamp DESC LIMIT ?")
+			.bind(self.id.id().as_uuid())
+			.bind(limit.unwrap_or(100))
+			.fetch_all()
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
+			.map_err(|err| {
+				tracing::error!("failed to load emote activity: {err}");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
-		Ok(activities.into_iter().map(AuditLog::from_db_emote_set).collect())
+		let mut emote_ids = vec![];
+
+		for a in &activities {
+			if let Some(EmoteSetActivityData::ChangeEmotes { added, removed }) = &a.data {
+				emote_ids.extend(added);
+				emote_ids.extend(removed);
+			}
+		}
+
+		let emotes = global
+			.emote_by_id_loader()
+			.load_many(emote_ids)
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		Ok(activities
+			.into_iter()
+			.map(|a| AuditLog::from_db_emote_set(a, &emotes))
+			.collect())
 	}
 
 	async fn connections(&self) -> Vec<UserConnection> {
@@ -219,12 +255,24 @@ pub struct UserPartial {
 	// connections
 	// emote_sets
 	#[graphql(skip)]
+	db_user: shared::database::User,
+	#[graphql(skip)]
 	db_permissions: shared::database::Permissions,
 	#[graphql(skip)]
 	db_connections: Vec<shared::database::UserConnection>,
 }
 
 impl UserPartial {
+	pub fn deleted_user() -> Self {
+		Self {
+			id: UserObjectId::Id(UserId::nil()),
+			user_type: UserTypeModel::Regular,
+			username: "*DeletedUser".to_string(),
+			display_name: "*DeletedUser".to_string(),
+			..Default::default()
+		}
+	}
+
 	pub async fn load_from_db(global: &Arc<Global>, id: UserId) -> Result<Self, ApiError> {
 		Self::load_many_from_db(global, [id])
 			.await?
@@ -268,6 +316,7 @@ impl UserPartial {
 		let avatar_url = user
 			.style
 			.active_profile_picture
+			.as_ref()
 			.and_then(|s| {
 				s.outputs
 					.iter()
@@ -285,10 +334,11 @@ impl UserPartial {
 			biography: String::new(),
 			style: UserStyle {
 				color: 0,
-				paint_id: user.style.active_paint_id.map(Into::into),
-				badge_id: user.style.active_badge_id.map(Into::into),
+				paint_id: user.style.active_paint_id.clone().map(Into::into),
+				badge_id: user.style.active_badge_id.clone().map(Into::into),
 			},
-			roles: user.grants.role_ids.into_iter().map(Into::into).collect(),
+			roles: user.grants.role_ids.iter().copied().map(Into::into).collect(),
+			db_user: user,
 			db_permissions: permissions,
 			db_connections: connections,
 		}
@@ -318,7 +368,19 @@ impl UserPartial {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
-		Ok(emote_sets.into_iter().map(|e| EmoteSet::from_db(e)).collect())
+		let mut emote_sets: Vec<_> = emote_sets.into_iter().map(|e| EmoteSet::from_db(e)).collect();
+
+		// add virtual user set
+		let virtual_set = EmoteSet::virtual_set_for_user(
+			self.db_user.clone(),
+			self.db_connections.clone(),
+			self.db_permissions.emote_set_slots_limit.unwrap_or(600),
+		)
+		.await;
+
+		emote_sets.push(virtual_set);
+
+		Ok(emote_sets)
 	}
 }
 

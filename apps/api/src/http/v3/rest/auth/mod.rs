@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::sync::Arc;
 
 use axum::body::Body;
@@ -29,9 +30,37 @@ pub fn routes() -> Router<Arc<Global>> {
 		.route("/manual", get(manual))
 }
 
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum LoginRequestPlatform {
+	Twitch,
+	Discord,
+	Youtube,
+}
+
+impl From<LoginRequestPlatform> for Platform {
+	fn from(platform: LoginRequestPlatform) -> Self {
+		match platform {
+			LoginRequestPlatform::Twitch => Platform::Twitch,
+			LoginRequestPlatform::Discord => Platform::Discord,
+			LoginRequestPlatform::Youtube => Platform::Google,
+		}
+	}
+}
+
+impl Display for LoginRequestPlatform {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			LoginRequestPlatform::Twitch => write!(f, "twitch"),
+			LoginRequestPlatform::Discord => write!(f, "discord"),
+			LoginRequestPlatform::Youtube => write!(f, "youtube"),
+		}
+	}
+}
+
 #[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct LoginRequest {
-	pub platform: Platform,
+	pub platform: LoginRequestPlatform,
 	#[serde(default)]
 	pub callback: bool,
 	#[serde(default)]
@@ -66,7 +95,7 @@ async fn login(
 		handle_login_callback(&global, query, &cookies).await?
 	} else {
 		let user_id = session.map(|s| s.user_id());
-		handle_login(&global, user_id, query.platform, &cookies)?
+		handle_login(&global, user_id, query.platform.into(), &cookies)?
 	};
 
 	Response::builder()
