@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::ErrorExtensionValues;
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 use axum::Json;
 use hyper::StatusCode;
 
@@ -65,24 +65,5 @@ impl From<ApiError> for async_graphql::Error {
 			source: Some(Arc::new(value)),
 			extensions: Some(extensions),
 		}
-	}
-}
-
-pub enum EitherApiError<S> {
-	Other(S),
-	Api(ApiError),
-}
-
-pub fn map_result<E>(res: Result<Response, EitherApiError<E>>) -> Result<Response, E> {
-	match res {
-		Ok(res) => Ok(res),
-		Err(EitherApiError::Other(err)) => Err(err),
-		Err(EitherApiError::Api(err)) => Ok(err.into_response()),
-	}
-}
-
-impl<S> From<ApiError> for EitherApiError<S> {
-	fn from(err: ApiError) -> Self {
-		Self::Api(err)
 	}
 }
