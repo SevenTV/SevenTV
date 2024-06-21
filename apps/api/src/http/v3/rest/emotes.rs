@@ -54,7 +54,7 @@ pub struct XEmoteData {
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L58
 pub async fn create_emote(
 	State(global): State<Arc<Global>>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 	headers: HeaderMap,
 	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {

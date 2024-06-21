@@ -12,7 +12,6 @@ use tower_http::trace::TraceLayer;
 use tracing::Span;
 
 use self::error::ApiError;
-use self::middleware::auth::AuthMiddleware;
 use self::middleware::cookies::CookieMiddleware;
 use crate::global::Global;
 
@@ -64,8 +63,7 @@ fn routes(global: Arc<Global>) -> Router {
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
 				.layer(PropagateRequestIdLayer::x_request_id())
-				.layer(CookieMiddleware)
-				.layer(AuthMiddleware::new(global)),
+				.layer(CookieMiddleware),
 		)
 }
 

@@ -88,7 +88,7 @@ pub struct LoginRequest {
 async fn login(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	session: Option<Extension<AuthSession>>,
+	session: Option<AuthSession>,
 	Query(query): Query<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let location = if query.callback {
@@ -121,9 +121,9 @@ async fn login(
 async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	session: Option<Extension<AuthSession>>,
+	session: Option<AuthSession>,
 ) -> Result<impl IntoResponse, ApiError> {
-	if let Some(AuthSessionKind::Session(session)) = session.map(|Extension(s)| s.kind) {
+	if let Some(AuthSessionKind::Session(session)) = session.map(|s| s.kind) {
 		UserSession::collection(global.db())
 			.delete_one(
 				doc! {

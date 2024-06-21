@@ -40,11 +40,11 @@ pub struct Docs;
 #[utoipa::path(post, path = "/v3/gql", tag = "gql")]
 pub async fn graphql_handler(
 	schema: Extension<V3Schema>,
-	auth: Option<Extension<AuthSession>>,
+	auth: Option<AuthSession>,
 	req: async_graphql_axum::GraphQLRequest,
 ) -> async_graphql_axum::GraphQLResponse {
 	let mut req = req.into_inner();
-	if let Some(Extension(session)) = auth {
+	if let Some(session) = auth {
 		req = req.data(session);
 	}
 	schema.execute(req).await.into()
