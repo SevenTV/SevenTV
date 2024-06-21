@@ -31,5 +31,5 @@ pub struct XEntitlementData {}
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/entitlements/entitlements.create.go#L34
 pub async fn create_entitlement() -> Result<impl IntoResponse, ApiError> {
 	// This endpoint was previously only used by admins.
-	Ok(ApiError::GONE)
+	Ok(ApiError::NOT_IMPLEMENTED)
 }
