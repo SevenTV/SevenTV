@@ -118,7 +118,7 @@ pub async fn get_user_by_id(
 			.into_iter()
 			.filter_map(|editor| UserEditorModel::from_db(editor))
 			.collect(),
-		&global.config().api.cdn_base_url,
+		&global.config().api.cdn_origin,
 	);
 
 	old_model.connections.iter_mut().for_each(|conn| {
@@ -381,7 +381,7 @@ pub async fn get_user_by_platform_id(
 		None,
 		emote_sets,
 		editors,
-		&global.config().api.cdn_base_url,
+		&global.config().api.cdn_origin,
 	);
 
 	connection_model.user = Some(user_full);

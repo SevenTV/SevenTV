@@ -111,7 +111,7 @@ async fn load_users_and_bans_and_permissions(
 				.iter()
 				.all(|b| ban_roles.get(&b.role_id).map(|r| !r.black_hole).unwrap_or(true))
 				.then(|| {
-					let mut perms = user.compute_permissions(&roles);
+					let mut perms = user.compute_permissions(&roles, &global_config.default_permissions);
 
 					let user_ban_roles_perms: Permissions = active_bans
 						.remove(&id)

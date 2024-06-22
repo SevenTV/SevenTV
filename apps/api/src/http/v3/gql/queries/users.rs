@@ -227,7 +227,7 @@ impl UserEditor {
 impl UserEditor {
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.id.id()).await?)
+		Ok(UserPartial::load_from_db(global, self.id.id()).await?.unwrap_or_else(UserPartial::deleted_user))
 	}
 }
 
@@ -273,12 +273,8 @@ impl UserPartial {
 		}
 	}
 
-	pub async fn load_from_db(global: &Arc<Global>, id: UserId) -> Result<Self, ApiError> {
-		Self::load_many_from_db(global, [id])
-			.await?
-			.into_iter()
-			.next()
-			.ok_or(ApiError::NOT_FOUND)
+	pub async fn load_from_db(global: &Arc<Global>, id: UserId) -> Result<Option<Self>, ApiError> {
+		Ok(Self::load_many_from_db(global, [id]).await?.into_iter().next())
 	}
 
 	pub async fn load_many_from_db(
@@ -321,7 +317,7 @@ impl UserPartial {
 				s.outputs
 					.iter()
 					.max_by_key(|i| i.size)
-					.map(|i| i.get_url(&global.config().api.cdn_base_url))
+					.map(|i| i.get_url(&global.config().api.cdn_origin))
 			})
 			.or(main_connection.and_then(|c| c.platform_avatar_url.clone()));
 
@@ -434,7 +430,7 @@ impl UserStyle {
 			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_base_url)))
+			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_origin)))
 	}
 
 	async fn badge<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<CosmeticBadgeModel>, ApiError> {
@@ -449,7 +445,7 @@ impl UserStyle {
 			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_base_url)))
+			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_origin)))
 	}
 }
 
@@ -468,12 +464,12 @@ impl UsersQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let id = session.user_id();
-		Ok(Some(UserPartial::load_from_db(global, id).await?.into()))
+		Ok(UserPartial::load_from_db(global, id).await?.map(Into::into))
 	}
 
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>, id: UserObjectId) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, id.id()).await?.into())
+		Ok(UserPartial::load_from_db(global, id.id()).await?.unwrap_or_else(UserPartial::deleted_user).into())
 	}
 
 	async fn user_by_connection<'ctx>(
@@ -498,7 +494,7 @@ impl UsersQuery {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		Ok(UserPartial::load_from_db(global, connection.user_id).await?.into())
+		Ok(UserPartial::load_from_db(global, connection.user_id).await?.unwrap_or_else(UserPartial::deleted_user).into())
 	}
 
 	async fn users<'ctx>(

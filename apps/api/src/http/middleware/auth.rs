@@ -74,8 +74,10 @@ where
 			return Err(ApiError::new(StatusCode::UNAUTHORIZED, "missing token"));
 		};
 
+		let token = token.trim_matches('\"');
+
 		let jwt = AuthJwtPayload::verify(&global, token).ok_or_else(|| {
-			cookies.remove(AUTH_COOKIE);
+			cookies.remove(&global, AUTH_COOKIE);
 			ApiError::new(StatusCode::UNAUTHORIZED, "invalid token")
 		})?;
 
@@ -105,7 +107,7 @@ where
 						ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, "failed to find user session")
 					})?
 					.ok_or_else(|| {
-						cookies.remove(AUTH_COOKIE);
+						cookies.remove(&global, AUTH_COOKIE);
 						ApiError::new(StatusCode::UNAUTHORIZED, "session not found")
 					})?;
 

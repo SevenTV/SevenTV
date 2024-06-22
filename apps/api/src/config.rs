@@ -17,13 +17,13 @@ pub struct Api {
 	pub website_origin: String,
 	/// cdn base url
 	#[settings(default = "https://cdn.7tv.app".into())]
-	pub cdn_base_url: String,
+	pub cdn_origin: String,
 	/// public domain
 	#[settings(default = "7tv.io".into())]
 	pub domain: String,
 	/// base url
 	#[settings(default = "https://7tv.io".into())]
-	pub base_url: String,
+	pub api_origin: String,
 	/// connection config
 	pub connections: ConnectionsConfig,
 	/// jwt config
@@ -47,9 +47,6 @@ pub struct JwtConfig {
 #[auto_settings]
 #[serde(default)]
 pub struct ConnectionsConfig {
-	/// Callback URL
-	#[settings(default = "https://7tv.app/auth/callback".into())]
-	pub callback_url: String,
 	/// Twitch connection
 	pub twitch: ConnectionConfig,
 	/// Discord connection

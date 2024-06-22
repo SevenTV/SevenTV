@@ -49,7 +49,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		&code,
 		format!(
 			"{}/v3/auth?callback=true&platform={}",
-			global.config().api.base_url,
+			global.config().api.api_origin,
 			query.platform
 		),
 	)
@@ -110,9 +110,9 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				.await?
 				.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "user not found"))?;
 
-			// if !perms.has(UserPermission::Login) {
-			// 	return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
-			// }
+			if !perms.has(UserPermission::Login) {
+				return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
+			}
 
 			user.id
 		},
@@ -198,15 +198,16 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			})?;
 
 		cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
+		cookies.remove(&global, CSRF_COOKIE);
 
 		format!(
-			"{}?platform={}&token={}",
-			global.config().api.connections.callback_url,
+			"{}/auth/callback?platform={}&token={}",
+			global.config().api.website_origin,
 			query.platform,
 			token
 		)
 	} else {
-		format!("{}?platform={}", global.config().api.connections.callback_url, query.platform)
+		format!("{}/auth/callback?platform={}", global.config().api.website_origin, query.platform)
 	};
 
 	Ok(redirect_url)
@@ -245,7 +246,7 @@ pub fn handle_login(
 		config.client_id,
 		urlencoding::encode(&format!(
 			"{}/v3/auth?callback=true&platform={}",
-			global.config().api.base_url,
+			global.config().api.api_origin,
 			platform
 		)),
 		urlencoding::encode(scope),

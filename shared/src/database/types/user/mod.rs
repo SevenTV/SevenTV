@@ -19,6 +19,7 @@ pub use self::presence::*;
 pub use self::relation::*;
 pub use self::session::*;
 pub use self::settings::*;
+use super::Permission;
 use super::{BadgeId, EmoteSetId, ImageSet, PaintId, Permissions, ProductId, Role, RoleId};
 use crate::database::{Collection, Id};
 
@@ -49,8 +50,8 @@ pub struct UserGrants {
 }
 
 impl User {
-	pub fn compute_permissions(&self, roles: &[Role]) -> Permissions {
-		roles
+	pub fn compute_permissions(&self, roles: &[Role], default_perms: &Permissions) -> Permissions {
+		let mut permissions: Vec<&Permissions> = roles
 			.iter()
 			.filter_map(|role| {
 				if self.grants.role_ids.contains(&role.id) {
@@ -59,7 +60,12 @@ impl User {
 					None
 				}
 			})
-			.collect()
+			.collect();
+
+		// prepend default permissions
+		permissions.insert(0, default_perms);
+
+		permissions.into_iter().collect()
 	}
 }
 

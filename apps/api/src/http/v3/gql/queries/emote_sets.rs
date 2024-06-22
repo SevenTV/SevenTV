@@ -10,10 +10,10 @@ use shared::old_types::{
 
 use super::emotes::{Emote, EmotePartial};
 use super::users::UserPartial;
+use crate::dataloader::user_loader::{load_user_and_permissions, load_users_and_permissions};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::emote_set_loader::{get_virtual_set_emotes_for_user, virtual_user_set};
-use crate::dataloader::user_loader::{load_user_and_permissions, load_users_and_permissions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
@@ -108,17 +108,19 @@ impl ActiveEmote {
 			.emote_by_id_loader()
 			.load(self.emote_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		Ok(Emote::from_db(global, emote).into())
+		Ok(emote
+			.map(|e| Emote::from_db(global, e))
+			.unwrap_or_else(Emote::deleted_emote)
+			.into())
 	}
 
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		if let Some(actor_id) = self.actor_id {
-			Ok(Some(UserPartial::load_from_db(global, actor_id).await?))
+			Ok(UserPartial::load_from_db(global, actor_id).await?)
 		} else {
 			Ok(None)
 		}
@@ -184,11 +186,9 @@ impl EmoteSet {
 			return Ok(600);
 		};
 
-		let (_, perms) = load_user_and_permissions(global, owner_id.id())
-			.await?
-			.ok_or(ApiError::NOT_FOUND)?;
+		let perms = load_user_and_permissions(global, owner_id.id()).await?.map(|(_, p)| p);
 
-		Ok(perms.emote_set_slots_limit.unwrap_or(600))
+		Ok(perms.and_then(|p| p.emote_set_slots_limit).unwrap_or(600))
 	}
 
 	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
@@ -197,7 +197,7 @@ impl EmoteSet {
 		};
 
 		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(Some(UserPartial::load_from_db(global, id.id()).await?))
+		Ok(UserPartial::load_from_db(global, id.id()).await?)
 	}
 }
 

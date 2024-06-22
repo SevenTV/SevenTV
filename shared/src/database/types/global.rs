@@ -1,4 +1,4 @@
-use super::{EmoteSetId, RoleId};
+use super::{EmoteSetId, Permissions, RoleId};
 use crate::database::{Collection, Id};
 
 pub type GlobalConfigId = Id<GlobalConfig>;
@@ -11,6 +11,7 @@ pub struct GlobalConfig {
 	pub alerts: GlobalConfigAlerts,
 	pub emote_set_ids: Vec<EmoteSetId>,
 	pub role_ids: Vec<RoleId>,
+	pub default_permissions: Permissions,
 }
 
 impl Collection for GlobalConfig {

@@ -68,7 +68,7 @@ pub async fn get_emote_set_by_id(
 
 					load_user(&global, owner)
 						.await?
-						.map(|u| UserPartialModel::from_db(u, conns, None, None, &global.config().api.cdn_base_url))
+						.map(|u| UserPartialModel::from_db(u, conns, None, None, &global.config().api.cdn_origin))
 				}
 				None => None,
 			};
@@ -104,7 +104,7 @@ pub async fn get_emote_set_by_id(
 					conns,
 					None,
 					None,
-					&global.config().api.cdn_base_url,
+					&global.config().api.cdn_origin,
 				)),
 			)
 		}

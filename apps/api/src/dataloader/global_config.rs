@@ -21,7 +21,7 @@ impl Loader for GlobalConfigLoader {
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
-		let config: GlobalConfig = Self::Value::collection(&self.db)
+		let config: GlobalConfig = GlobalConfig::collection(&self.db)
 			.find_one(None, None)
 			.await
 			.map_err(|err| {

@@ -141,7 +141,7 @@ pub async fn create_emote(
 		})?;
 
 	// we don't have to return the owner here
-	let emote = EmotePartialModel::from_db(emote, None, &global.config().api.cdn_base_url);
+	let emote = EmotePartialModel::from_db(emote, None, &global.config().api.cdn_origin);
 
 	Ok((StatusCode::CREATED, Json(emote)))
 }
@@ -186,7 +186,7 @@ pub async fn get_emote_by_id(
 	};
 
 	let owner =
-		owner.map(|(owner, conns)| UserPartialModel::from_db(owner, conns, None, None, &global.config().api.cdn_base_url));
+		owner.map(|(owner, conns)| UserPartialModel::from_db(owner, conns, None, None, &global.config().api.cdn_origin));
 
-	Ok(Json(EmoteModel::from_db(emote, owner, &global.config().api.cdn_base_url)))
+	Ok(Json(EmoteModel::from_db(emote, owner, &global.config().api.cdn_origin)))
 }

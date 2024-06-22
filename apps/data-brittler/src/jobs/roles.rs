@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use mongodb::bson::doc;
+use mongodb::bson::{doc, to_bson};
 use mongodb::options::UpdateOptions;
-use shared::database::{Collection, GlobalConfig, GlobalConfigId, Role, RoleId};
+use shared::database::{Collection, GlobalConfig, GlobalConfigAlerts, GlobalConfigId, Role, RoleId};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
+use crate::jobs::system::default_perms;
 use crate::types;
 
 pub struct RolesJob {
@@ -83,8 +84,9 @@ impl Job for RolesJob {
 					},
 					"$setOnInsert": {
 						"_id": GlobalConfigId::nil(),
-						"alerts": [],
+						"alerts": to_bson(&GlobalConfigAlerts::default()).unwrap(),
 						"emote_set_ids": [],
+						"default_permissions": to_bson(&default_perms()).unwrap(),
 					},
 				},
 				UpdateOptions::builder().upsert(true).build(),

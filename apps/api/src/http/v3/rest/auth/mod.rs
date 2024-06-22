@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use axum::body::Body;
 use axum::extract::State;
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum::{Extension, Router};
 use hyper::StatusCode;
@@ -98,14 +98,7 @@ async fn login(
 		handle_login(&global, user_id, query.platform.into(), &cookies)?
 	};
 
-	Response::builder()
-		.header(hyper::header::LOCATION, location)
-		.status(StatusCode::SEE_OTHER)
-		.body(Body::empty())
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to create response");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
+	Ok(Redirect::to(&location))
 }
 
 #[utoipa::path(
@@ -121,9 +114,10 @@ async fn login(
 async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	session: Option<AuthSession>,
+	session: AuthSession,
 ) -> Result<impl IntoResponse, ApiError> {
-	if let Some(AuthSessionKind::Session(session)) = session.map(|s| s.kind) {
+	// new session
+	if let AuthSessionKind::Session(session) = session.kind {
 		UserSession::collection(global.db())
 			.delete_one(
 				doc! {
@@ -138,7 +132,7 @@ async fn logout(
 			})?;
 	}
 
-	cookies.remove(AUTH_COOKIE);
+	cookies.remove(&global, AUTH_COOKIE);
 
 	Response::builder()
 		.status(StatusCode::NO_CONTENT)

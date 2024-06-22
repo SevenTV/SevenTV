@@ -22,17 +22,21 @@ impl ImageHost {
 
 		let animated = image_set.outputs.iter().any(|i| i.frame_count > 1);
 
-		let files = image_set
+		let mut files: Vec<ImageFile> = image_set
 			.outputs
 			.iter()
 			.filter(|i| (i.frame_count > 1) == animated)
 			// Filter out any images with formats that should not be returned by the v3 api
 			.filter(|i| ImageFormat::from_mime(&i.mime).is_some())
-			.map(Into::into);
+			.map(Into::into)
+			.collect();
+
+		// sort by format, then name (scale)
+		files.sort_by(|a, b| a.format.cmp(&b.format).then_with(|| a.name.cmp(&b.name)));
 
 		Self {
 			url: url.unwrap_or_default(),
-			files: files.collect(),
+			files,
 		}
 	}
 }
@@ -87,7 +91,9 @@ impl From<Image> for ImageFile {
 	}
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(
+	Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, utoipa::ToSchema,
+)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L63
 pub enum ImageFormat {

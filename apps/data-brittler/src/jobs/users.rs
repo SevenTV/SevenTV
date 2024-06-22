@@ -104,7 +104,7 @@ impl Job for UsersJob {
 			// 	outputs: vec![],
 			// }),
 			Some(types::UserAvatar::Pending { .. }) => {
-				outcome.errors.push(error::Error::NotImplemented("pending avatar"));
+				// TODO: implement?
 				None
 			}
 			_ => None,

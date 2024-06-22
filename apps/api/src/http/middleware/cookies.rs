@@ -26,8 +26,11 @@ impl Cookies {
 		self.0.lock().unwrap().get(name).cloned()
 	}
 
-	pub fn remove(&self, name: impl Into<Cookie<'static>>) {
-		self.0.lock().unwrap().remove(name);
+	pub fn remove(&self, global: &Arc<Global>, name: impl Into<Cookie<'static>>) {
+		let mut cookie: Cookie = name.into();
+		cookie.set_domain(format!(".{}", global.config().api.domain));
+		cookie.set_path("/");
+		self.0.lock().unwrap().remove(cookie);
 	}
 }
 

@@ -29,7 +29,7 @@ pub async fn get_virtual_rest_set_for_user(
 			user_connections,
 			None,
 			None,
-			&global.config().api.cdn_base_url,
+			&global.config().api.cdn_origin,
 		)),
 	))
 }

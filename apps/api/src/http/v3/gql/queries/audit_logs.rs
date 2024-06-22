@@ -32,7 +32,9 @@ pub struct AuditLog {
 impl AuditLog {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		UserPartial::load_from_db(global, self.actor_id.id()).await
+		Ok(UserPartial::load_from_db(global, self.actor_id.id())
+			.await?
+			.unwrap_or_else(UserPartial::deleted_user))
 	}
 }
 
@@ -352,7 +354,13 @@ impl ScalarType for ArbitraryMap {
 
 	fn to_value(&self) -> async_graphql::Value {
 		let map = match self {
-			Self::Emote { id, actor_id, flags, name, timestamp } => {
+			Self::Emote {
+				id,
+				actor_id,
+				flags,
+				name,
+				timestamp,
+			} => {
 				indexmap::indexmap! {
 					async_graphql::Name::new("id") => async_graphql::Value::String(id.to_string()),
 					async_graphql::Name::new("actor_id") => async_graphql::Value::String(actor_id.to_string()),

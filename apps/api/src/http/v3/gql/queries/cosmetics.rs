@@ -40,7 +40,7 @@ impl CosmeticsQuery {
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()
-			.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_base_url))
+			.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_origin))
 			.collect();
 
 		let badges = global
@@ -49,7 +49,7 @@ impl CosmeticsQuery {
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()
-			.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_base_url))
+			.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_origin))
 			.collect();
 
 		Ok(CosmeticsQueryResponse { paints, badges })

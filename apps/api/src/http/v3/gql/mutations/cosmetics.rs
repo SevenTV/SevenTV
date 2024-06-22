@@ -240,6 +240,6 @@ impl CosmeticOps {
 			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		CosmeticPaintModel::from_db(paint, &global.config().api.cdn_base_url).ok_or(ApiError::INTERNAL_SERVER_ERROR)
+		CosmeticPaintModel::from_db(paint, &global.config().api.cdn_origin).ok_or(ApiError::INTERNAL_SERVER_ERROR)
 	}
 }

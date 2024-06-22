@@ -27,7 +27,7 @@ pub async fn load_emote_set(
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-	let cdn_base_url = &global.config().api.cdn_base_url;
+	let cdn_base_url = &global.config().api.cdn_origin;
 
 	let users = users
 		.into_values()
@@ -47,7 +47,7 @@ pub async fn load_emote_set(
 
 			Some((
 				id,
-				EmotePartialModel::from_db(emote, owner, &global.config().api.cdn_base_url),
+				EmotePartialModel::from_db(emote, owner, &global.config().api.cdn_origin),
 			))
 		})
 		.collect::<HashMap<_, _>>();

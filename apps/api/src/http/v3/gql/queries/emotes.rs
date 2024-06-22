@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
+use shared::database::EmoteId;
 use shared::old_types::{EmoteFlagsModel, EmoteObjectId, ImageHost, UserObjectId};
 
 use super::audit_logs::AuditLog;
@@ -45,7 +46,7 @@ impl Emote {
 	pub fn from_db(global: &Arc<Global>, value: shared::database::Emote) -> Self {
 		let host = ImageHost::from_image_set(
 			&value.image_set,
-			&global.config().api.cdn_base_url,
+			&global.config().api.cdn_origin,
 		);
 		let state = EmoteVersionState::from_db(&value.flags);
 		let listed = value.flags.contains(shared::database::EmoteFlags::PublicListed);
@@ -81,6 +82,15 @@ impl Emote {
 			personal_use: value.flags.contains(shared::database::EmoteFlags::ApprovedPersonal),
 		}
 	}
+
+	pub fn deleted_emote() -> Self {
+		Self {
+			id: EmoteObjectId::Id(EmoteId::nil()),
+			name: "*DeletedEmote".to_string(),
+			lifecycle: EmoteLifecycleModel::Deleted,
+			..Default::default()
+		}
+	}
 }
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/resolvers/emote/emote.go
@@ -92,7 +102,7 @@ impl Emote {
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.owner_id.id()).await.unwrap_or_else(|_| UserPartial::deleted_user()))
+		Ok(UserPartial::load_from_db(global, self.owner_id.id()).await?.unwrap_or_else(UserPartial::deleted_user))
 	}
 
 	async fn channels(
@@ -186,7 +196,7 @@ impl EmotePartial {
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.owner_id.id()).await.unwrap_or_else(|_| UserPartial::deleted_user()))
+		Ok(UserPartial::load_from_db(global, self.owner_id.id()).await?.unwrap_or_else(UserPartial::deleted_user))
 	}
 }
 

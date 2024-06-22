@@ -338,12 +338,18 @@ impl RolePermission {
 			if value.ticket.allow.contains(database::TicketPermission::Create) {
 				allowed |= Self::CreateReport;
 			}
+			if value.ticket.allow.contains(database::TicketPermission::Message) {
+				allowed |= Self::SendMessages;
+			}
 			if value.ticket.allow.contains(database::TicketPermission::Edit) {
 				allowed |= Self::ManageReports;
 			}
 
 			if value.ticket.deny.contains(database::TicketPermission::Create) {
 				denied |= Self::CreateReport;
+			}
+			if value.ticket.deny.contains(database::TicketPermission::Message) {
+				denied |= Self::SendMessages;
 			}
 			if value.ticket.deny.contains(database::TicketPermission::Edit) {
 				denied |= Self::ManageReports;

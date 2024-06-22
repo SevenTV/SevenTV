@@ -208,7 +208,7 @@ impl From<Platform> for UserConnectionPlatformModel {
 	}
 }
 
-async_graphql::scalar!(UserConnectionPlatformModel);
+async_graphql::scalar!(UserConnectionPlatformModel, "ConnectionPlatform");
 
 #[bitmask(u32)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L63

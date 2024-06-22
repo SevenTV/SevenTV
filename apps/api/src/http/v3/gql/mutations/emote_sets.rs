@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
+use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::{self, Collection, EmoteSetPermission, UserEditorState};
@@ -188,11 +189,32 @@ impl EmoteSetOps {
 					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::NOT_FOUND)?;
 
+				let name = name.unwrap_or(emote.default_name);
+
+				// check for conflicts
+				let res = database::EmoteSetEmote::collection(global.db())
+					.find_one_with_session(doc! {
+						"emote_set_id": self._emote_set.id,
+						"$or": [
+							{ "emote_id": id.id() },
+							{ "name": &name },
+						],
+					}, None, &mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to find emote set emote");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				if res.is_some() {
+					return Err(ApiError::new_const(StatusCode::CONFLICT, "this emote is already in the set or has a conflicting name"));
+				}
+
 				let emote_set_emote = database::EmoteSetEmote {
 					emote_set_id: self._emote_set.id,
 					emote_id: id.id(),
 					added_by_id: Some(auth_session.user_id()),
-					name: name.unwrap_or(emote.default_name),
+					name,
 					..Default::default()
 				};
 
@@ -205,7 +227,7 @@ impl EmoteSetOps {
 					})?;
 			}
 			ListItemAction::Remove => {
-				database::EmoteSetEmote::collection(global.db())
+				let res = database::EmoteSetEmote::collection(global.db())
 					.delete_one_with_session(
 						doc! {
 							"emote_set_id": self._emote_set.id,
@@ -219,6 +241,10 @@ impl EmoteSetOps {
 						tracing::error!(error = %e, "failed to delete emote set emote");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
+
+				if res.deleted_count == 0 {
+					return Err(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"));
+				}
 			}
 			ListItemAction::Update => {
 				if let Some(name) = name {
@@ -245,17 +271,17 @@ impl EmoteSetOps {
 			}
 		}
 
+		session.commit_transaction().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		let active_emotes = global
 			.emote_set_emote_by_id_loader()
 			.load(self._emote_set.id)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
-
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
 
 		Ok(active_emotes.into_iter().map(|e| ActiveEmote::from_db(e)).collect())
 	}

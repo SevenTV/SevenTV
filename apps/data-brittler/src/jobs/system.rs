@@ -1,12 +1,40 @@
 use std::sync::Arc;
 
-use mongodb::bson::doc;
+use mongodb::bson::{doc, to_bson};
 use mongodb::options::UpdateOptions;
-use shared::database::{Collection, EmoteSetId, GlobalConfig, GlobalConfigId};
+use shared::database::{
+	Collection, EmotePermission, EmoteSetId, EmoteSetPermission, FeaturePermission, GlobalConfig, GlobalConfigAlerts, GlobalConfigId, Permissions, TicketPermission, UserPermission
+};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::types;
+
+pub fn default_perms() -> Permissions {
+	let mut perms = Permissions::default();
+
+	perms.apply(EmotePermission::Upload.into());
+	perms.apply(EmotePermission::Edit.into());
+
+	perms.apply(EmoteSetPermission::Create.into());
+	perms.apply(EmoteSetPermission::Delete.into());
+	perms.apply(EmoteSetPermission::Edit.into());
+
+	perms.apply(UserPermission::Login.into());
+	perms.apply(UserPermission::Edit.into());
+
+	perms.apply(FeaturePermission::UseBadge.into());
+	perms.apply(FeaturePermission::UsePaint.into());
+	perms.apply(FeaturePermission::UsePersonalEmoteSet.into());
+
+	perms.apply(TicketPermission::Create.into());
+	perms.apply(TicketPermission::Message.into());
+
+	perms.emote_set_count_limit = Some(10);
+	perms.emote_set_slots_limit = Some(600);
+
+	perms
+}
 
 pub struct SystemJob {
 	global: Arc<Global>,
@@ -39,8 +67,9 @@ impl Job for SystemJob {
 					},
 					"$setOnInsert": {
 						"_id": GlobalConfigId::nil(),
-						"alerts": [],
+						"alerts": to_bson(&GlobalConfigAlerts::default()).unwrap(),
 						"role_ids": [],
+						"default_permissions": to_bson(&default_perms()).unwrap(),
 					},
 				},
 				UpdateOptions::builder().upsert(true).build(),

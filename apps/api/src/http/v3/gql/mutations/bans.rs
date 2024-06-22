@@ -132,12 +132,12 @@ pub struct Ban {
 impl Ban {
 	async fn victim<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.victim_id.id()).await?.into())
+		Ok(UserPartial::load_from_db(global, self.victim_id.id()).await?.unwrap_or_else(UserPartial::deleted_user).into())
 	}
 
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.actor_id.id()).await?.into())
+		Ok(UserPartial::load_from_db(global, self.actor_id.id()).await?.unwrap_or_else(UserPartial::deleted_user).into())
 	}
 }
 

@@ -64,6 +64,13 @@ impl UserOps {
 		})?;
 
 		if let Some(emote_set_id) = data.emote_set_id {
+			// check if set exists
+			global.emote_set_by_id_loader()
+				.load(emote_set_id.id())
+				.await
+				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::NOT_FOUND)?;
+
 			database::User::collection(global.db())
 				.update_one_with_session(
 					doc! {
