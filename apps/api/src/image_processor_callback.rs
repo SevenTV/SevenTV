@@ -172,6 +172,9 @@ async fn handle_success(
 			// https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline
 			let aggregation = vec![
 				doc! {
+					"$unset": {
+						"style.active_profile_picture.input.task_id": "",
+					},
 					"$set": {
 						"style.active_profile_picture.input.width": input.width,
 						"style.active_profile_picture.input.height": input.height,
@@ -213,6 +216,9 @@ async fn handle_success(
 						"data.layers.id": layer_id,
 					},
 					doc! {
+						"$unset": {
+							"data.layers.$.data.input.task_id": "",
+						},
 						"$set": {
 							"data.layers.$.data.input.width": input.width,
 							"data.layers.$.data.input.height": input.height,

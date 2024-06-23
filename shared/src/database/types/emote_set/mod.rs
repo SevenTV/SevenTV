@@ -62,9 +62,10 @@ impl Collection for EmoteSet {
 	const COLLECTION_NAME: &'static str = "emote_sets";
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[repr(u8)]
 pub enum EmoteSetKind {
 	#[default]
-	Normal,
-	Personal,
+	Normal = 0,
+	Personal = 1,
 }

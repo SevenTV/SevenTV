@@ -170,16 +170,6 @@ impl EmoteSetOps {
 
 		self.check_perms(global, auth_session, EmoteSetPermission::Edit).await?;
 
-		let mut session = global.mongo().start_session(None).await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction(None).await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
 		match action {
 			ListItemAction::Add => {
 				let emote = global
@@ -193,13 +183,13 @@ impl EmoteSetOps {
 
 				// check for conflicts
 				let res = database::EmoteSetEmote::collection(global.db())
-					.find_one_with_session(doc! {
+					.find_one(doc! {
 						"emote_set_id": self._emote_set.id,
 						"$or": [
 							{ "emote_id": id.id() },
 							{ "name": &name },
 						],
-					}, None, &mut session)
+					}, None)
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to find emote set emote");
@@ -219,7 +209,7 @@ impl EmoteSetOps {
 				};
 
 				database::EmoteSetEmote::collection(global.db())
-					.insert_one_with_session(&emote_set_emote, None, &mut session)
+					.insert_one(&emote_set_emote, None)
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to insert emote set emote");
@@ -228,13 +218,12 @@ impl EmoteSetOps {
 			}
 			ListItemAction::Remove => {
 				let res = database::EmoteSetEmote::collection(global.db())
-					.delete_one_with_session(
+					.delete_one(
 						doc! {
 							"emote_set_id": self._emote_set.id,
 							"emote_id": id.id(),
 						},
 						None,
-						&mut session,
 					)
 					.await
 					.map_err(|e| {
@@ -249,7 +238,7 @@ impl EmoteSetOps {
 			ListItemAction::Update => {
 				if let Some(name) = name {
 					database::EmoteSetEmote::collection(global.db())
-						.update_one_with_session(
+						.update_one(
 							doc! {
 								"emote_set_id": self._emote_set.id,
 								"emote_id": id.id(),
@@ -260,7 +249,6 @@ impl EmoteSetOps {
 								},
 							},
 							None,
-							&mut session,
 						)
 						.await
 						.map_err(|e| {
@@ -270,11 +258,6 @@ impl EmoteSetOps {
 				}
 			}
 		}
-
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
 
 		let active_emotes = global
 			.emote_set_emote_by_id_loader()
