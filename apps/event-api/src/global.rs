@@ -1,19 +1,17 @@
 use std::sync::Arc;
 
 use anyhow::Context as _;
-use scuffle_utils::context::Context;
+use scuffle_foundations::telemetry::server::HealthCheck;
 
 use crate::config::Config;
-use crate::{metrics, subscription};
+use crate::subscription;
 
 pub struct Global {
-	ctx: Context,
 	nats: async_nats::Client,
 	config: Config,
 	subscription_manager: subscription::SubscriptionManager,
 	active_connections: Arc<std::sync::atomic::AtomicUsize>,
 	http_client: reqwest::Client,
-	metrics: Arc<metrics::Metrics>,
 }
 
 /// An atomic ticket.
@@ -40,21 +38,12 @@ impl Drop for AtomicTicket {
 }
 
 impl Global {
-	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
+	pub async fn new(config: Config) -> anyhow::Result<Self> {
 		let (nats, _) = shared::nats::setup_nats("event-api", &config.nats)
 			.await
 			.context("nats connect")?;
 
 		Ok(Self {
-			metrics: Arc::new(metrics::new(
-				config
-					.metrics
-					.labels
-					.iter()
-					.map(|x| (x.key.clone(), x.value.clone()))
-					.collect(),
-			)),
-			ctx,
 			nats,
 			config,
 			subscription_manager: Default::default(),
@@ -78,11 +67,6 @@ impl Global {
 		&self.subscription_manager
 	}
 
-	/// The global context.
-	pub fn ctx(&self) -> &Context {
-		&self.ctx
-	}
-
 	/// The NATS client.
 	pub fn nats(&self) -> &async_nats::Client {
 		&self.nats
@@ -98,8 +82,23 @@ impl Global {
 		&self.http_client
 	}
 
-	/// Global metrics.
-	pub fn metrics(&self) -> &Arc<metrics::Metrics> {
-		&self.metrics
+	// /// Global metrics.
+	// pub fn metrics(&self) -> &Arc<metrics::Metrics> {
+	// 	&self.metrics
+	// }
+}
+
+impl HealthCheck for Global {
+	fn check(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = bool> + Send + '_>> {
+		Box::pin(async {
+			tracing::info!("running health check");
+
+			if !matches!(self.nats().connection_state(), async_nats::connection::State::Connected) {
+				tracing::error!("nats not connected");
+				return false;
+			}
+
+			true
+		})
 	}
 }

@@ -6,8 +6,8 @@ license = "Apache-2.0 with Commons Clause"
 
 [dependencies]
 tokio = { version = "1.35", features = ["full"] }
-scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext" }
-scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext", features = ["client"] }
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
+scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["client"] }
 prost = "0.12.6"
 tonic = { version = "0.11" }
 
@@ -21,14 +21,8 @@ async-graphql-axum = "7.0.5"
 async-trait = "0.1.79"
 async-nats = "0.35.0"
 anyhow = "1"
-http-body-util = "0.1"
-hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"] }
-rustls-pemfile = "2"
-rustls = "0.23"
-tokio-rustls = "0.26"
 jwt-next = "0.17.0"
 hmac = "0.12.1"
-hyper-tungstenite = "0.13"
 http-body = "1.0"
 cookie = { version = "0.18.0", features = ["percent-encode"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
@@ -39,21 +33,12 @@ chrono = { version = "0.4", features = ["serde"] }
 time = { version = "0.3.36", features = ["serde"] } # clickhouse is cringe and uses time instead of chrono
 sha2 = "0.10"
 urlencoding = "2"
-url = "2"
 futures = "0.3"
 reqwest = { version = "0.12.1", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
-scopeguard = "1.1"
 rand = "0.8"
-memory-stats = "1"
-cap = "0.1"
-tikv-jemallocator = { version = "0.5", features = ["background_threads"] }
-fnv = "1"
 pin-project = "1"
 thiserror = "1"
 utoipa = { version = "4.2", features = ["repr"] }
-tokio-util = "0.7"
-zen-engine = "0.20"
-zen-expression = "0.20"
 itertools = "0.12"
 mongodb = { version = "2.8", features = ["tokio-runtime", "bson-chrono-0_4"]}
 clickhouse = "0.11.6"

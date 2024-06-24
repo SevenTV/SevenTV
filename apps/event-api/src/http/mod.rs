@@ -1,55 +1,82 @@
 use std::sync::Arc;
 
-use hyper::body::Incoming;
+use anyhow::Context;
+use axum::extract::{MatchedPath, Request};
+use axum::Router;
+use axum::response::Response;
 use hyper::StatusCode;
-use scuffle_utils::http::router::builder::RouterBuilder;
-use scuffle_utils::http::router::middleware::CorsMiddleware;
-use scuffle_utils::http::router::Router;
-use scuffle_utils::http::{error_handler, RouteError};
-use shared::http::{empty_body, Body};
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use tower::ServiceBuilder;
+use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
+use tower_http::trace::TraceLayer;
+use tracing::Span;
 
-use self::error::EventError;
 use crate::global::Global;
 
-mod error;
 pub mod socket;
 pub mod v3;
 
-fn routes(global: &Arc<Global>) -> RouterBuilder<Incoming, Body, RouteError<EventError>> {
-	let weak = Arc::downgrade(global);
+#[derive(Clone)]
+struct TraceRequestId;
 
-	let mut builder = Router::builder()
-		.data(weak)
-		.error_handler(|req, err| async move { error_handler(req, err).await.map(Body::Left) });
-
-	if let Some(cors) = &global.config().api.cors {
-		builder = builder.middleware(CorsMiddleware::new(&cors.clone().into_options(empty_body)));
+impl MakeRequestId for TraceRequestId {
+	fn make_request_id<B>(&mut self, _: &hyper::Request<B>) -> Option<RequestId> {
+		tracing::Span::current()
+			.trace_id()
+			.and_then(|id| id.to_string().parse().ok())
+			.map(RequestId::new)
 	}
+}
 
-	builder
-		// Handle the v3 API, we have to use a wildcard because of the path format.
-		.any("/v3*", v3::handle)
-		// Not found handler.
-		.not_found(|_| async move { Err((StatusCode::NOT_FOUND, "not found").into()) })
+fn routes(global: &Arc<Global>) -> Router {
+	Router::new()
+		.nest("/v3", v3::routes())
+		.with_state(Arc::clone(global))
+		.fallback(not_found)
+		.layer(
+			ServiceBuilder::new()
+				.layer(
+					TraceLayer::new_for_http()
+						.make_span_with(|req: &Request| {
+							let matched_path = req.extensions().get::<MatchedPath>().map(MatchedPath::as_str);
+
+							let span = tracing::info_span!(
+								"request",
+								"request.method" = %req.method(),
+								"request.uri" = %req.uri(),
+								"request.matched_path" = %matched_path.unwrap_or("<not found>"),
+								"response.status_code" = tracing::field::Empty,
+							);
+
+							span.make_root();
+
+							span
+						})
+						.on_response(|res: &Response, _, span: &Span| {
+							span.record("response.status_code", &res.status().as_u16());
+						}),
+				)
+				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
+				.layer(PropagateRequestIdLayer::x_request_id()),
+		)
+}
+
+async fn not_found() -> (StatusCode, &'static str) {
+	(StatusCode::NOT_FOUND, "not found")
 }
 
 #[tracing::instrument(name = "api", level = "info", skip(global))]
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let config = global.config();
 
-	let accept_connection_fn = |_| {
-		if let Some(limit) = global.config().api.connection_limit {
-			let active = global.active_connections();
-			if active >= limit {
-				tracing::debug!("connection limit reached");
-				return false;
-			}
-		}
+	let mut server = scuffle_foundations::http::server::Server::builder()
+		.bind(config.api.bind)
+		.build(routes(&global))
+		.context("failed to build HTTP server")?;
 
-		true
-	};
+	server.start().await.context("failed to start HTTP server")?;
 
-	shared::http::run(global.ctx(), &config.api.http, routes(&global).build(), accept_connection_fn).await?;
+	server.wait().await.context("HTTP server failed")?;
 
 	Ok(())
 }

@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 use std::pin::Pin;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
-use http_body_util::{Full, StreamBody};
-use hyper::body::Incoming;
-use hyper_tungstenite::tungstenite::protocol::WebSocketConfig;
-use scuffle_utils::context::ContextExt;
-use scuffle_utils::http::ext::{OptionExt, ResultExt};
-use scuffle_utils::http::router::ext::RequestExt;
-use scuffle_utils::http::RouteError;
+use axum::extract::{ws, RawQuery, Request, State, WebSocketUpgrade};
+use axum::http::header::HeaderMap;
+use axum::http::HeaderValue;
+use axum::response::{IntoResponse, Response, Sse};
+use axum::routing::any;
+use axum::Router;
+use parser::{parse_json_subscriptions, parse_query_uri};
+use scuffle_foundations::context::ContextFutExt;
 use shared::database::Id;
+use shared::event_api::payload::Subscribe;
 use shared::event_api::types::{CloseCode, Opcode};
 use shared::event_api::{payload, Message, MessageData, MessagePayload};
 use tokio::time::Instant;
@@ -17,11 +19,8 @@ use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 
 use self::dedupe::Dedupe;
-use self::parser::parse_query;
 use self::topic_map::TopicMap;
-use super::error::EventError;
 use super::socket::Socket;
-use super::Body;
 use crate::global::{AtomicTicket, Global};
 use crate::http::v3::error::ConnectionError;
 use crate::http::v3::topic_map::Subscription;
@@ -37,77 +36,90 @@ const MAX_CONDITIONS: usize = 10;
 const MAX_CONDITION_KEY_LEN: usize = 64;
 const MAX_CONDITION_VALUE_LEN: usize = 128;
 
-/// Handle a request to the v3 API.
-pub async fn handle(mut req: hyper::Request<Incoming>) -> Result<hyper::Response<Body>, RouteError<EventError>> {
-	let global = req
-		.data::<Weak<Global>>()
-		.expect("global missing")
-		.upgrade()
-		.map_err_route((hyper::StatusCode::INTERNAL_SERVER_ERROR, "shutdown"))?;
+pub fn routes() -> Router<Arc<Global>> {
+	Router::new().route("/", any(handle)).route("/*any", any(handle))
+}
 
-	// Get a connection ticket, this is used to track the number of active
-	// connections.
+async fn handle(
+	State(global): State<Arc<Global>>,
+	RawQuery(query): RawQuery,
+	headers: HeaderMap,
+	upgrade: Option<WebSocketUpgrade>,
+	req: Request,
+) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
 	let (ticket, active) = global.inc_active_connections();
 	if let Some(limit) = global.config().api.connection_limit {
 		// if we exceed the connection limit, we return a 503.
 		if active >= limit {
 			tracing::debug!("connection limit reached: {} >= {limit}", active);
-			return Ok(hyper::Response::builder()
-				.status(hyper::StatusCode::SERVICE_UNAVAILABLE)
-				.body(Body::Left(Full::default()))
-				.expect("failed to build response"));
+			return Err((hyper::StatusCode::SERVICE_UNAVAILABLE, "connection limit reached"));
 		}
 	}
 
 	// Parse the initial subscriptions from the path.
-	let initial_subs = if req.uri().path().contains('@') {
+	let initial_subs = if let Some(query) = query.as_ref().and_then(|q| q.contains('@').then(|| q)) {
 		Some(parser::parse_path_subscriptions(
-			&urlencoding::decode(req.uri().path()).unwrap_or_default(),
+			&urlencoding::decode(query).unwrap_or_default(),
 		))
 	} else {
-		parse_query(&req).map_ignore_err_route((hyper::StatusCode::BAD_REQUEST, "failed to parse query"))?
+		headers
+			.get("x-7tv-query")
+			.and_then(|v| v.to_str().ok().map(|s| s.to_string()))
+			.or_else(|| parse_query_uri(query))
+			.map(|q| parse_json_subscriptions(&q))
+			.transpose()
+			.map_err(|e| (hyper::StatusCode::BAD_REQUEST, "failed to parse query"))?
 	};
 
-	// Handle the websocket upgrade.
-	if hyper_tungstenite::is_upgrade_request(&req) {
-		let (response, websocket) = hyper_tungstenite::upgrade(
-			&mut req,
-			Some(WebSocketConfig {
-				max_frame_size: Some(1024 * 16),
-				max_message_size: Some(1024 * 18),
-				write_buffer_size: 1024 * 16,
-				..Default::default()
-			}),
-		)
-		.map_err_route((hyper::StatusCode::INTERNAL_SERVER_ERROR, "failed to upgrade websocket"))?;
-
-		global.metrics().incr_current_websocket_connections();
-		let socket = Connection::new(Socket::websocket(websocket), global, initial_subs, ticket);
-
-		tokio::spawn(socket.serve());
-
-		Ok(response.map(Body::Left))
+	if let Some(upgrade) = upgrade {
+		Ok(handle_ws(State(global), initial_subs, ticket, upgrade).await)
 	} else if req.method() == hyper::Method::GET {
-		// Handle the SSE request.
-		let (sender, response) = tokio::sync::mpsc::channel(1);
-
-		let response = Body::Right(StreamBody::new(ReceiverStream::new(response)));
-
-		global.metrics().incr_current_event_streams();
-		let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket);
-
-		tokio::spawn(socket.serve());
-
-		Ok(hyper::Response::builder()
-			.header("Content-Type", "text/event-stream")
-			.header("Cache-Control", "no-cache")
-			.header("X-Accel-Buffering", "no")
-			.body(response)
-			.expect("failed to build response"))
+		handle_sse(State(global), initial_subs, ticket).await
 	} else {
-		// Return a 405 for any other method.
-		Err((hyper::StatusCode::METHOD_NOT_ALLOWED, "method not allowed").into())
+		Err((hyper::StatusCode::METHOD_NOT_ALLOWED, "method not allowed"))
 	}
+}
+
+async fn handle_ws(
+	State(global): State<Arc<Global>>,
+	initial_subs: Option<Vec<Subscribe>>,
+	ticket: AtomicTicket,
+	upgrade: WebSocketUpgrade,
+) -> Response<axum::body::Body> {
+	upgrade
+		.max_frame_size(1024 * 16)
+		.max_message_size(1024 * 18)
+		.write_buffer_size(1024 * 16)
+		.on_upgrade(|ws| async {
+			// global.metrics().incr_current_websocket_connections();
+			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket);
+
+			tokio::spawn(socket.serve());
+		})
+}
+
+async fn handle_sse(
+	State(global): State<Arc<Global>>,
+	initial_subs: Option<Vec<Subscribe>>,
+	ticket: AtomicTicket,
+) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
+	// Handle the SSE request.
+	let (sender, response) = tokio::sync::mpsc::channel(1);
+
+	let response = Sse::new(ReceiverStream::new(response));
+
+	// global.metrics().incr_current_event_streams();
+	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket);
+
+	tokio::spawn(socket.serve());
+
+	let mut res = response.into_response();
+
+	res.headers_mut()
+		.append("Cache-Control", HeaderValue::from_static("no-cache"));
+	res.headers_mut().append("X-Accel-Buffering", HeaderValue::from_static("no"));
+
+	Ok(res)
 }
 
 struct Connection {
@@ -148,16 +160,16 @@ impl Drop for Connection {
 	fn drop(&mut self) {
 		match &self.socket {
 			Socket::WebSocket(_) => {
-				self.global.metrics().decr_current_websocket_connections();
-				self.global
-					.metrics()
-					.observe_connection_duration_seconds_websocket(self.start.elapsed().as_secs_f64());
+				// self.global.metrics().decr_current_websocket_connections();
+				// self.global
+				// 	.metrics()
+				// 	.observe_connection_duration_seconds_websocket(self.start.elapsed().as_secs_f64());
 			}
 			Socket::Sse(_) => {
-				self.global.metrics().decr_current_event_streams();
-				self.global
-					.metrics()
-					.observe_connection_duration_seconds_event_stream(self.start.elapsed().as_secs_f64());
+				// self.global.metrics().decr_current_event_streams();
+				// self.global
+				// 	.metrics()
+				// 	.observe_connection_duration_seconds_event_stream(self.start.elapsed().as_secs_f64());
 			}
 		}
 	}
@@ -194,7 +206,7 @@ impl Connection {
 
 	/// The entry point for the socket.
 	async fn serve(mut self) {
-		let ctx = self.global.ctx().clone();
+		let ctx = scuffle_foundations::context::Context::global();
 
 		// Send the hello message.
 		match self
@@ -208,22 +220,22 @@ impl Connection {
 					population: self.global.active_connections() as i32,
 				}),
 			})
-			.context(&ctx)
+			.with_context(&ctx)
 			.await
 		{
-			Ok(Ok(_)) => {}
-			Ok(Err(err)) => {
+			Some(Ok(_)) => {}
+			Some(Err(err)) => {
 				tracing::error!("socket error: {:?}", err);
 				return;
 			}
-			Err(_) => {
+			None => {
 				return;
 			}
 		}
 
 		// The main loop for the socket.
-		while match self.cycle().context(&ctx).await {
-			Ok(Ok(_)) => true,
+		while match self.cycle().with_context(&ctx).await {
+			Some(Ok(_)) => true,
 			r => {
 				let err = r.unwrap_or(Err(ConnectionError::GlobalClosed)).unwrap_err();
 
@@ -261,10 +273,10 @@ impl Connection {
 
 				match self.socket {
 					Socket::Sse(_) => {
-						self.global.metrics().observe_client_close_event_stream(err.as_str());
+						// self.global.metrics().observe_client_close_event_stream(err.as_str());
 					}
 					Socket::WebSocket(_) => {
-						self.global.metrics().observe_client_close_websocket(err.as_str());
+						// self.global.metrics().observe_client_close_websocket(err.as_str());
 					}
 				}
 				false
@@ -319,7 +331,7 @@ impl Connection {
 	/// Send a message to the client.
 	async fn send_message(&mut self, data: impl MessagePayload + serde::Serialize) -> Result<(), ConnectionError> {
 		self.seq += 1;
-		self.global.metrics().observe_server_command(data.opcode());
+		// self.global.metrics().observe_server_command(data.opcode());
 		self.socket.send(Message::new(data, self.seq - 1)).await?;
 		Ok(())
 	}
@@ -461,7 +473,7 @@ impl Connection {
 
 	/// Handle a message from the client.
 	async fn handle_message(&mut self, msg: Message) -> Result<(), ConnectionError> {
-		self.global.metrics().observe_client_command(msg.opcode);
+		// self.global.metrics().observe_client_command(msg.opcode);
 
 		// We match on the opcode so that we can deserialize the data into the correct
 		// type.
@@ -589,20 +601,21 @@ impl Connection {
 				let msg = r?;
 
 				let msg = match msg {
-					hyper_tungstenite::tungstenite::Message::Close(frame) => {
+					ws::Message::Close(frame) => {
 						tracing::debug!("received close message");
 						return Err(ConnectionError::ClientClosed(frame.map(|f| f.code)));
 					}
-					hyper_tungstenite::tungstenite::Message::Ping(payload) => {
+					ws::Message::Ping(payload) => {
 						tracing::debug!("received ping message");
-						self.socket.send(hyper_tungstenite::tungstenite::Message::Pong(payload)).await?;
+						let answer = ws::Message::Pong(payload);
+						self.socket.send(answer).await?;
 						return Ok(());
 					}
-					hyper_tungstenite::tungstenite::Message::Text(txt) => {
+					ws::Message::Text(txt) => {
 						tracing::debug!("received text message");
 						txt.into()
 					}
-					hyper_tungstenite::tungstenite::Message::Binary(bin) => {
+					ws::Message::Binary(bin) => {
 						tracing::debug!("received binary message");
 						bin
 					}

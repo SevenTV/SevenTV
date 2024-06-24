@@ -6,8 +6,6 @@ use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::Histogram;
 use prometheus_client::registry::Registry;
 use shared::event_api::types::Opcode;
-use shared::metrics::memory::MemoryMetrics;
-use shared::metrics::{self, MetricsProvider, DEFAULT_HISTOGRAM_BUCKETS};
 
 use self::labels::{
 	ClientClose, Command, ConnectionDuration, CurrentConnection, NatsEvent, TotalSubscription, UniqueSubscriptions,

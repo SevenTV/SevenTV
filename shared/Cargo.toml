@@ -16,7 +16,7 @@ anyhow = "1.0"
 hyper = { version = "1", features = ["server", "http1", "http2"] }
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["tokio", "server", "http1", "http2"] }
-scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext" }
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
 once_cell = "1.19"
 tracing-subscriber = { version = "0.3", features = [
     "fmt",
@@ -48,6 +48,6 @@ trust-dns-resolver = "0.23"
 futures = "0.3"
 async-stripe = { version = "0.37.0", features = ["runtime-tokio-hyper-rustls"] }
 async-graphql = { version = "7.0.5", default-features = false }
-scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "troy/image-processor-ext", features = ["client"] }
+scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["client"] }
 humantime-serde = "1"
 bytes = "1.6.0"

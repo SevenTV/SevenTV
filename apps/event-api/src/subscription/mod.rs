@@ -91,6 +91,8 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 	// use case.
 	let mut subscriptions = fnv::FnvHashMap::default();
 
+	let ctx = scuffle_foundations::context::Context::global();
+
 	loop {
 		tokio::select! {
 			Some(event) = events_rx.recv() => {
@@ -101,21 +103,21 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 								let (btx, brx) = broadcast::channel(16);
 
 								if tx.send(brx).is_ok() {
-									global.metrics().incr_total_subscriptions();
+									// global.metrics().incr_total_subscriptions();
 									entry.insert(btx);
 								}
 							}
 							std::collections::hash_map::Entry::Occupied(entry) => {
 								if tx.send(entry.get().subscribe()).is_ok() {
-									global.metrics().incr_total_subscriptions();
+									// global.metrics().incr_total_subscriptions();
 								}
 							},
 						}
 
-						global.metrics().set_unique_subscriptions(subscriptions.len(), subscriptions.capacity());
+						// global.metrics().set_unique_subscriptions(subscriptions.len(), subscriptions.capacity());
 					}
 					Event::Unsubscribe { topic } => {
-						global.metrics().decr_total_subscriptions();
+						// global.metrics().decr_total_subscriptions();
 						match subscriptions.entry(topic) {
 							std::collections::hash_map::Entry::Occupied(entry) => {
 								if entry.get().receiver_count() == 0 {
@@ -125,7 +127,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 							std::collections::hash_map::Entry::Vacant(_) => {}
 						}
 
-						global.metrics().set_unique_subscriptions(subscriptions.len(), subscriptions.capacity());
+						// global.metrics().set_unique_subscriptions(subscriptions.len(), subscriptions.capacity());
 					}
 				}
 			}
@@ -187,9 +189,9 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 						}
 
 						if missed {
-							global.metrics().observe_nats_event_miss();
+							// global.metrics().observe_nats_event_miss();
 						} else {
-							global.metrics().observe_nats_event_hit();
+							// global.metrics().observe_nats_event_hit();
 						}
 					},
 					None => {
@@ -198,7 +200,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 					}
 				}
 			}
-			_ = global.ctx().done() => {
+			_ = ctx.done() => {
 				break;
 			}
 		}

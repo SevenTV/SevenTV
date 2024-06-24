@@ -1,30 +1,11 @@
 use std::collections::HashMap;
 
-use hyper::body::Incoming;
 use shared::event_api::payload;
 
-const QUERY_HEADER_KEY: &str = "x-7tv-query";
-
-/// Parses the query from the request, either from the `x-7tv-query` header or
-/// the `q` query parameter.
-pub fn parse_query(req: &hyper::Request<Incoming>) -> Result<Option<Vec<payload::Subscribe>>, serde_json::Error> {
-	parse_query_header(req)
-		.or_else(|| parse_query_uri(req))
-		.map(|query| parse_json_subscriptions(&query))
-		.transpose()
-}
-
-/// Try parse the query from the header `x-7tv-query`.
-fn parse_query_header(req: &hyper::Request<Incoming>) -> Option<String> {
-	req.headers()
-		.get(QUERY_HEADER_KEY)
-		.and_then(|v| v.to_str().ok().map(ToOwned::to_owned))
-}
-
 /// Try parse the query from the query parameter `q`.
-fn parse_query_uri(req: &hyper::Request<Incoming>) -> Option<String> {
-	req.uri()
-		.query()
+pub fn parse_query_uri(query: Option<String>) -> Option<String> {
+	query
+		.as_ref()
 		.map(|q| url::form_urlencoded::parse(q.as_bytes()))
 		.and_then(|mut uri| uri.find(|(key, _)| key == "q").map(|(_, value)| value.to_string()))
 }
