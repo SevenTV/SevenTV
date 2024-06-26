@@ -101,7 +101,7 @@ impl UserPartialModel {
 		let main_connection = user.connections.first();
 
 		let paint_id = user.style.active_paint_id.and_then(|id| {
-			if user.computed.permissions.has(UserPermission::UsePaint) && user.computed.entitlements.paints.contains(&id)
+			if user.has(UserPermission::UsePaint) && user.computed.entitlements.paints.contains(&id)
 			{
 				Some(id)
 			} else {
@@ -110,7 +110,7 @@ impl UserPartialModel {
 		});
 
 		let badge_id = user.style.active_badge_id.and_then(|id| {
-			if user.computed.permissions.has(UserPermission::UseBadge) && user.computed.entitlements.badges.contains(&id)
+			if user.has(UserPermission::UseBadge) && user.computed.entitlements.badges.contains(&id)
 			{
 				Some(id)
 			} else {
@@ -121,7 +121,7 @@ impl UserPartialModel {
 		let badge = badge.and_then(|badge| if Some(badge.id) == badge_id { Some(badge) } else { None });
 		let paint = paint.and_then(|paint| if Some(paint.id) == paint_id { Some(paint) } else { None });
 
-		let avatar_url = if user.computed.permissions.has(UserPermission::UseCustomProfilePicture) {
+		let avatar_url = if user.has(UserPermission::UseCustomProfilePicture) {
 			user.style
 				.active_profile_picture
 				.as_ref()

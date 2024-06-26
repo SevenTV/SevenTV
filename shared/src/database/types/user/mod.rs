@@ -248,7 +248,7 @@ impl std::ops::Deref for FullUserRef<'_> {
 
 impl PermissionsExt for FullUser {
 	fn has(&self, permission: impl Into<Permission>) -> bool {
-		self.computed.permissions.has(permission)
+		self.has(permission)
 	}
 
 	fn denied(&self, permission: impl Into<Permission>) -> bool {

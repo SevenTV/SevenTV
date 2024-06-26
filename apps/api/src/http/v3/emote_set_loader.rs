@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use shared::database::emote_set::EmoteSetEmote;
 use shared::database::global::GlobalConfig;
-use shared::database::role::permissions::FlagPermission;
+use shared::database::role::permissions::{FlagPermission, PermissionsExt};
 use shared::database::user::UserId;
 use shared::old_types::UserPartialModel;
 
@@ -34,7 +34,7 @@ pub async fn load_emote_set(
 
 	let users = users
 		.into_values()
-		.filter(|user| Some(user.id) == actor_id || !user.computed.permissions.has(FlagPermission::Hidden) || view_hidden)
+		.filter(|user| Some(user.id) == actor_id || !user.has(FlagPermission::Hidden) || view_hidden)
 		.map(|user| {
 			// This api doesnt seem to return the user's badges and paints so
 			// we can ignore them.

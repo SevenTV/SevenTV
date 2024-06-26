@@ -149,7 +149,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		unreachable!("user should be created or loaded");
 	};
 
-	if !full_user.computed.permissions.has(UserPermission::Login) {
+	if !full_user.has(UserPermission::Login) {
 		return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
 	}
 

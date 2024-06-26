@@ -6,7 +6,7 @@ use axum::routing::get;
 use axum::{Extension, Json, Router};
 use hyper::StatusCode;
 use shared::database::emote_set::EmoteSetId;
-use shared::database::role::permissions::FlagPermission;
+use shared::database::role::permissions::{FlagPermission, PermissionsExt};
 use shared::old_types::UserPartialModel;
 use utoipa::OpenApi;
 
@@ -67,7 +67,7 @@ pub async fn get_emote_set_by_id(
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.and_then(|owner| {
-				if owner.computed.permissions.has(FlagPermission::Hidden) && Some(owner.id) != actor_id {
+				if owner.has(FlagPermission::Hidden) && Some(owner.id) != actor_id {
 					None
 				} else {
 					Some(owner)

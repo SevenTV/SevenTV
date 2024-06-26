@@ -50,7 +50,7 @@ impl EmoteSetModel {
 				_ => false,
 			},
 			emote_count: emotes.len() as i32,
-			capacity: value.capacity as i32,
+			capacity: value.capacity.unwrap_or(i32::MAX) as i32,
 			emotes,
 			origins: value.origin_config.map_or_else(Vec::new, |config| {
 				config
@@ -88,7 +88,7 @@ impl EmoteSetPartialModel {
 			flags: EmoteSetFlagModel::from_db(&value),
 			id: value.id,
 			name: value.name,
-			capacity: value.capacity as i32,
+			capacity: value.capacity.unwrap_or(i32::MAX) as i32,
 			tags: value.tags,
 			owner,
 		}

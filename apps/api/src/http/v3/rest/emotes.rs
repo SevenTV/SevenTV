@@ -10,7 +10,7 @@ use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
-use shared::database::role::permissions::{EmotePermission, FlagPermission};
+use shared::database::role::permissions::{EmotePermission, FlagPermission, PermissionsExt};
 use shared::database::Collection;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
@@ -71,7 +71,7 @@ pub async fn create_emote(
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
 	let user = auth_session.user(&global).await?;
 
-	if !user.computed.permissions.has(EmotePermission::Upload) {
+	if !user.has(EmotePermission::Upload) {
 		return Err(ApiError::FORBIDDEN);
 	}
 
@@ -196,7 +196,7 @@ pub async fn get_emote_by_id(
 
 	let owner = owner
 		.and_then(|owner| {
-			if owner.computed.permissions.has(FlagPermission::Hidden) && Some(owner.id) != actor_id && !can_view_hidden {
+			if owner.has(FlagPermission::Hidden) && Some(owner.id) != actor_id && !can_view_hidden {
 				None
 			} else {
 				Some(owner)

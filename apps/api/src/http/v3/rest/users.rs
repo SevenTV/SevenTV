@@ -11,7 +11,7 @@ use mongodb::bson::{doc, to_bson};
 use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
 use serde::Deserialize;
 use shared::database::image_set::{ImageSet, ImageSetInput};
-use shared::database::role::permissions::{FlagPermission, UserPermission};
+use shared::database::role::permissions::{FlagPermission, PermissionsExt, UserPermission};
 use shared::database::user::connection::Platform;
 use shared::database::user::editor::EditorUserPermission;
 use shared::database::user::{User, UserId};
@@ -77,7 +77,7 @@ pub async fn get_user_by_id(
 
 	let actor_id = auth_session.as_ref().map(|s| s.user_id());
 
-	if user.computed.permissions.has(FlagPermission::Hidden) && Some(user.id) != actor_id {
+	if user.has(FlagPermission::Hidden) && Some(user.id) != actor_id {
 		return Err(ApiError::NOT_FOUND);
 	}
 
@@ -206,7 +206,7 @@ pub async fn upload_user_profile_picture(
 		));
 	}
 
-	if other_user.is_some() && !user.computed.permissions.has(UserPermission::ManageAny) {
+	if other_user.is_some() && !user.has(UserPermission::ManageAny) {
 		if !global.user_editor_by_id_loader().load((
 			target_user.id,
 			user.id,
@@ -359,7 +359,7 @@ pub async fn get_user_by_platform_id(
 		false
 	};
 
-	if user.computed.permissions.has(FlagPermission::Hidden) && Some(user.id) != actor_id && !can_view_hidden {
+	if user.has(FlagPermission::Hidden) && Some(user.id) != actor_id && !can_view_hidden {
 		return Err(ApiError::NOT_FOUND);
 	}
 
