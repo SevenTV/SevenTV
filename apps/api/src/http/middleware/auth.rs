@@ -12,7 +12,7 @@ use tokio::sync::OnceCell;
 
 use super::cookies::Cookies;
 use crate::global::Global;
-use crate::http::error::{map_result, ApiError, EitherApiError};
+use crate::http::error::ApiError;
 use crate::jwt::{AuthJwtPayload, JwtState};
 
 pub const AUTH_COOKIE: &str = "seventv-auth";

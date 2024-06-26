@@ -5,7 +5,7 @@ use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::role::permissions::{
-	EmotePermission, EmoteSetPermission, FeaturePermission, Permissions, UserPermission,
+	EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission
 };
 use shared::database::user::ban::UserBan;
 use shared::database::user::User;
@@ -22,9 +22,32 @@ use crate::http::v3::gql::queries::{User as GqlUser, UserPartial};
 #[derive(Default)]
 pub struct BansMutation;
 
+fn ban_effect_to_permissions(effects: BanEffect) -> Permissions {
+	let mut perms = Permissions::default();
+
+	if effects.contains(BanEffect::MemoryHole) {
+		// Hide the user because of memory hole
+		perms.allow(FlagPermission::Hidden);
+	}
+
+	if effects.contains(BanEffect::NoAuth) | effects.contains(BanEffect::BlockedIp) {
+		// Remove all permissions
+		perms.deny(UserPermission::Login);
+	}
+
+	if effects.contains(BanEffect::NoPermissions) {
+		// Remove all permissions
+		perms.deny(EmotePermission::all_flags());
+		perms.deny(EmoteSetPermission::all_flags());
+		perms.deny(UserPermission::all_flags() & !UserPermission::Login);
+	}
+
+	perms
+}
+
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl BansMutation {
-	#[graphql(guard = "PermissionGuard::one(UserPermission::Ban)")]
+	#[graphql(guard = "PermissionGuard::one(UserPermission::Moderate)")]
 	async fn create_ban<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -63,28 +86,7 @@ impl BansMutation {
 			reason,
 			tags: vec![],
 			removed: None,
-			permissions: {
-				let mut perms = Permissions::default();
-
-				if effects.contains(BanEffect::MemoryHole) {
-					// Hide the user because of memory hole
-					perms.allow(UserPermission::Hidden);
-				}
-
-				if effects.contains(BanEffect::NoAuth) | effects.contains(BanEffect::BlockedIp) {
-					// Remove all permissions
-					perms.deny(UserPermission::Login);
-				}
-
-				if effects.contains(BanEffect::NoPermissions) {
-					// Remove all permissions
-					perms.deny(EmotePermission::all_flags());
-					perms.deny(EmoteSetPermission::all_flags());
-					perms.deny(FeaturePermission::all_flags());
-				}
-
-				perms
-			},
+			permissions: ban_effect_to_permissions(effects),
 		};
 
 		User::collection(global.db())
@@ -109,7 +111,7 @@ impl BansMutation {
 		Ok(Some(Ban::from_db(victim_id, ban)))
 	}
 
-	#[graphql(guard = "PermissionGuard::one(UserPermission::Ban)")]
+	#[graphql(guard = "PermissionGuard::one(UserPermission::Moderate)")]
 	async fn edit_ban<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -131,24 +133,7 @@ impl BansMutation {
 		}
 
 		if let Some(effects) = effects {
-			let mut perms = Permissions::default();
-
-			if effects.contains(BanEffect::MemoryHole) {
-				// Hide the user because of memory hole
-				perms.allow(UserPermission::Hidden);
-			}
-
-			if effects.contains(BanEffect::NoAuth) | effects.contains(BanEffect::BlockedIp) {
-				// Remove all permissions
-				perms.deny(UserPermission::Login);
-			}
-
-			if effects.contains(BanEffect::NoPermissions) {
-				// Remove all permissions
-				perms.deny(EmotePermission::all_flags());
-				perms.deny(EmoteSetPermission::all_flags());
-				perms.deny(FeaturePermission::all_flags());
-			}
+			let perms = ban_effect_to_permissions(effects);
 
 			update.insert("bans.$.permissions", to_bson(&perms).unwrap());
 		}
@@ -209,18 +194,19 @@ impl Ban {
 	fn from_db(user_id: GqlObjectId, ban: UserBan) -> Self {
 		let mut effects = BanEffect::none();
 
-		if ban.permissions.has(UserPermission::Hidden) {
+		if ban.permissions.has(FlagPermission::Hidden) {
 			effects |= BanEffect::MemoryHole;
 		}
 
-		if ban.permissions.denied(UserPermission::Login) {
+		if ban.permissions.has(UserPermission::Login) {
 			effects |= BanEffect::NoAuth;
 		}
 
-		if ban.permissions.denied(EmotePermission::all_flags())
-			&& ban.permissions.denied(EmoteSetPermission::all_flags())
-			&& ban.permissions.denied(FeaturePermission::all_flags())
-		{
+		if ban.permissions.has_all([
+			EmotePermission::all_flags().into(),
+			EmoteSetPermission::all_flags().into(),
+			(UserPermission::all_flags() & !UserPermission::Login).into(),
+		]) {
 			effects |= BanEffect::NoPermissions;
 		}
 

@@ -10,7 +10,6 @@ use shared::database::{Collection, Id};
 
 use super::LoginRequest;
 use crate::connections;
-use crate::dataloader::user_loader::load_user_and_permissions;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AUTH_COOKIE;
@@ -62,11 +61,10 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	// query user data from platform
 	let user_data = connections::get_user_data(global, query.platform.into(), &token.access_token).await?;
 
-	let user_connection = global
-		.user_connection_by_platform_id_loader()
-		.load(user_data.id.clone())
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+	let user = global.user_by_platform_id_loader().load((query.platform.into(), user_data.id)).await.map_err(|_| {
+		tracing::error!("failed to load user by platform id");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
 
 	let mut session = global.mongo().start_session(None).await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start session");
@@ -77,39 +75,6 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		tracing::error!(error = %err, "failed to start transaction");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
-	
-	let user_id = match (user_connection, csrf_payload.user_id) {
-		(Some(user_connection), Some(user_id)) if user_connection.user_id != user_id => {
-			return Err(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
-				"connection already paired with another user",
-			));
-		},
-		(None, None) => {
-			// create new user
-
-	let mut user = User::collection(global.db())
-		.find_one_and_update_with_session(
-			doc! {
-				"connections.platform": query.platform,
-				"connections.platform_id": &user_data.id,
-			},
-			doc! {
-				"$set": {
-					"connections.$.platform_username": &user_data.username,
-					"connections.$.platform_display_name": &user_data.display_name,
-					"connections.$.platform_avatar_url": &user_data.avatar,
-					"connections.$.updated_at": chrono::Utc::now(),
-				},
-			},
-			None,
-			&mut session,
-		)
-		.await
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to find user");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
 
 	match (user, csrf_payload.user_id) {
 		(Some(user), Some(user_id)) => {
@@ -124,7 +89,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			let connection = user
 				.connections
 				.iter()
-				.find(|c| c.platform == query.platform && c.platform_id == user_data.id)
+				.find(|c| c.platform == query.platform.into() && c.platform_id == user_data.id)
 				.ok_or_else(|| {
 					tracing::error!("connection not found");
 					ApiError::INTERNAL_SERVER_ERROR
@@ -141,7 +106,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			// New user creation
 			user = Some(User {
 				connections: vec![UserConnection {
-					platform: query.platform,
+					platform: query.platform.into(),
 					platform_id: user_data.id,
 					platform_username: user_data.username,
 					platform_display_name: user_data.display_name,
@@ -163,13 +128,6 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		}
 		_ => {}
 	};
-
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let full_user = if let Some(user) = user {
 		// This is correct for users that just got created aswell, as this will simply
@@ -198,7 +156,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	let logged_connection = full_user
 		.connections
 		.iter()
-		.find(|c| c.platform == query.platform && c.platform_id == user_data.id);
+		.find(|c| c.platform == query.platform.into() && c.platform_id == user_data.id);
 
 	if let Some(logged_connection) = logged_connection {
 		if logged_connection.platform_avatar_url != user_data.avatar
@@ -210,7 +168,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				.update_one_with_session(
 					doc! {
 						"_id": full_user.user.id,
-						"connections.platform": query.platform,
+						"connections.platform": to_bson(&Platform::from(query.platform)).unwrap(),
 						"connections.platform_id": user_data.id,
 					},
 					doc! {
@@ -246,7 +204,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				doc! {
 					"$push": {
 						"connections": to_bson(&UserConnection {
-							platform: query.platform,
+							platform: query.platform.into(),
 							platform_id: user_data.id,
 							platform_username: user_data.username,
 							platform_display_name: user_data.display_name,

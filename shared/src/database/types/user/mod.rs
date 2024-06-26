@@ -62,7 +62,7 @@ impl ActiveBans<'_> {
 	pub fn greatest_ban_for(&self, permission: Permission) -> Option<&UserBan> {
 		self.0
 			.iter()
-			.find(|ban| ban.permissions.denied_permission(permission))
+			.find(|ban| ban.permissions.denied(permission))
 			.copied()
 	}
 }
@@ -227,6 +227,33 @@ pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
 pub struct FullUser {
 	pub user: User,
 	pub computed: UserComputed,
+}
+
+#[derive(Debug, Clone)]
+pub enum FullUserRef<'a> {
+	Owned(FullUser),
+	Ref(&'a FullUser),
+}
+
+impl std::ops::Deref for FullUserRef<'_> {
+	type Target = FullUser;
+
+	fn deref(&self) -> &Self::Target {
+		match self {
+			Self::Owned(user) => user,
+			Self::Ref(user) => user,
+		}
+	}
+}
+
+impl PermissionsExt for FullUser {
+	fn has(&self, permission: impl Into<Permission>) -> bool {
+		self.computed.permissions.has(permission)
+	}
+
+	fn denied(&self, permission: impl Into<Permission>) -> bool {
+		self.computed.permissions.denied(permission)
+	}
 }
 
 impl std::ops::Deref for FullUser {

@@ -1,5 +1,5 @@
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
-use shared::old_types::image::{ImageHost, ImageHostKind};
+use shared::old_types::image::ImageHost;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
 use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};

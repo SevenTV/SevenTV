@@ -428,6 +428,14 @@ pub struct Permissions {
 	#[serde(default)]
 	pub emote_moderation_request_limit: Option<i32>,
 
+	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(default)]
+	pub emote_set_capacity: Option<i32>,
+
+	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(default)]
+	pub personal_emote_set_capacity: Option<i32>,
+
 	#[serde(flatten)]
 	pub unknown: HashMap<String, serde_json::Value>,
 }
@@ -485,10 +493,6 @@ impl Permissions {
 		}
 	}
 
-	pub fn denied(&self, permission: impl Into<Permission>) -> bool {
-		self.denied_permission(permission)
-	}
-
 	pub fn denied_emote(&self, permission: EmotePermission) -> bool {
 		!self.is_admin() && !self.emote.permission().contains(EmotePermission::Admin) && self.emote.deny.contains(permission)
 	}
@@ -535,10 +539,6 @@ impl Permissions {
 
 	pub fn denied_admin(&self, permission: AdminPermission) -> bool {
 		!self.admin.permission().contains(AdminPermission::SuperAdmin) && self.admin.deny.contains(permission)
-	}
-
-	pub fn has(&self, permission: impl Into<Permission>) -> bool {
-		self.has_permission(permission)
 	}
 
 	pub fn has_emote(&self, permission: EmotePermission) -> bool {
@@ -681,29 +681,29 @@ pub enum Permission {
 }
 
 pub trait PermissionsExt {
-	fn has_permission(&self, permission: impl Into<Permission>) -> bool;
+	fn has(&self, permission: impl Into<Permission>) -> bool;
 
-	fn denied_permission(&self, permission: impl Into<Permission>) -> bool;
+	fn denied(&self, permission: impl Into<Permission>) -> bool;
 
-	fn has_any_permission(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
-		permission.into_iter().any(|permission| self.has_permission(permission))
+	fn has_any(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
+		permission.into_iter().any(|permission| self.has(permission))
 	}
 
-	fn has_all_permissions(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
-		permission.into_iter().all(|permission| self.has_permission(permission))
+	fn has_all(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
+		permission.into_iter().all(|permission| self.has(permission))
 	}
 
-	fn denied_any_permission(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
-		permission.into_iter().any(|permission| self.denied_permission(permission))
+	fn denied_any(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
+		permission.into_iter().any(|permission| self.denied(permission))
 	}
 
-	fn denied_all_permissions(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
-		permission.into_iter().all(|permission| self.denied_permission(permission))
+	fn denied_all(&self, permission: impl IntoIterator<Item = Permission>) -> bool {
+		permission.into_iter().all(|permission| self.denied(permission))
 	}
 }
 
 impl PermissionsExt for Permissions {
-	fn has_permission(&self, permission: impl Into<Permission>) -> bool {
+	fn has(&self, permission: impl Into<Permission>) -> bool {
 		match permission.into() {
 			Permission::Emote(perm) => self.has_emote(perm),
 			Permission::Role(perm) => self.has_role(perm),
@@ -719,7 +719,7 @@ impl PermissionsExt for Permissions {
 		}
 	}
 
-	fn denied_permission(&self, permission: impl Into<Permission>) -> bool {
+	fn denied(&self, permission: impl Into<Permission>) -> bool {
 		match permission.into() {
 			Permission::Emote(perm) => self.denied_emote(perm),
 			Permission::Role(perm) => self.denied_role(perm),

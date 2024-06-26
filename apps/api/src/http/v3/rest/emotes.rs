@@ -202,7 +202,7 @@ pub async fn get_emote_by_id(
 				Some(owner)
 			}
 		})
-		.map(|owner| UserPartialModel::from_db(owner, &global_config, None, None, &global.config().api.cdn_base_url));
+		.map(|owner| UserPartialModel::from_db(owner, &global_config, None, None, &global.config().api.cdn_origin));
 
 	Ok(Json(EmoteModel::from_db(emote, owner, &global.config().api.cdn_origin)))
 }

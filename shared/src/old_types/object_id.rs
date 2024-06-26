@@ -8,6 +8,12 @@ use crate::database::Id;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct GqlObjectId(pub Id<()>);
 
+impl GqlObjectId {
+	pub fn id<T>(self) -> Id<T> {
+		self.0.cast()
+	}
+}
+
 impl<T> From<Id<T>> for GqlObjectId {
 	fn from(id: Id<T>) -> Self {
 		Self(id.cast())

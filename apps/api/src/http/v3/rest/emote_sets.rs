@@ -73,7 +73,7 @@ pub async fn get_emote_set_by_id(
 					Some(owner)
 				}
 			})
-			.map(|owner| UserPartialModel::from_db(owner, &global_config, None, None, &global.config().api.cdn_base_url)),
+			.map(|owner| UserPartialModel::from_db(owner, &global_config, None, None, &global.config().api.cdn_origin)),
 		None => None,
 	};
 

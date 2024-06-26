@@ -265,10 +265,10 @@ impl RolePermission {
 
 		// Cosmetics Permissions
 		{
-			if value.has_any_permission([BadgePermission::Admin.into(), PaintPermission::Admin.into()]) {
+			if value.has_any([BadgePermission::Admin.into(), PaintPermission::Admin.into()]) {
 				allowed |= Self::ManageCosmetics;
 			}
-			if value.denied_any_permission([BadgePermission::Admin.into(), PaintPermission::Admin.into()]) {
+			if value.denied_any([BadgePermission::Admin.into(), PaintPermission::Admin.into()]) {
 				denied |= Self::ManageCosmetics;
 			}
 		}

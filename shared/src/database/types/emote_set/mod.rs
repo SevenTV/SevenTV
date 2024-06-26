@@ -20,7 +20,7 @@ pub struct EmoteSet {
 	pub description: Option<String>,
 	pub tags: Vec<String>,
 	pub emotes: Vec<EmoteSetEmote>,
-	pub capacity: i32,
+	pub capacity: Option<i32>,
 	pub owner_id: Option<UserId>,
 	pub origin_config: Option<EmoteSetOriginConfig>,
 	pub kind: EmoteSetKind,

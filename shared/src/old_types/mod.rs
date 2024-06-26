@@ -19,7 +19,7 @@ use crate::database::emote::EmoteFlags;
 use crate::database::emote_set::{EmoteSet, EmoteSetEmoteFlag, EmoteSetId, EmoteSetKind};
 use crate::database::global::GlobalConfig;
 use crate::database::paint::PaintId;
-use crate::database::role::permissions::UserPermission;
+use crate::database::role::permissions::{PermissionsExt, UserPermission};
 use crate::database::role::RoleId;
 use crate::database::user::connection::{Platform, UserConnection};
 use crate::database::user::{FullUser, UserId};

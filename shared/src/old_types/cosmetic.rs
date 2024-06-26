@@ -1,4 +1,3 @@
-use super::image::ImageHostKind;
 use super::{is_default, ImageHost, UserPartialModel};
 use crate::database::badge::{Badge, BadgeId};
 use crate::database::paint::{Paint, PaintId, PaintLayerType, PaintRadialGradientShape, PaintShadow};

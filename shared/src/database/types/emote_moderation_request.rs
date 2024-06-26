@@ -1,3 +1,5 @@
+use mongodb::options::IndexOptions;
+
 use super::emote::EmoteId;
 use super::user::UserId;
 use super::{Collection, GenericCollection};
@@ -42,10 +44,17 @@ impl Collection for EmoteModerationRequest {
 		vec![
 			mongodb::IndexModel::builder()
 				.keys(mongodb::bson::doc! {
-					"user_id": 1,
 					"kind": 1,
+					"user_id": 1,
 					"status": 1,
 				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"kind": 1,
+					"emote_id": 1,
+				})
+				.options(IndexOptions::builder().unique(true).build())
 				.build(),
 		]
 	}

@@ -108,6 +108,8 @@ pub enum EditorUserPermission {
 	ManageProfile = 8,
 	/// Allows the editor to manage the user's editors
 	ManageEditors = 16,
+	/// Manage personal emote set
+	ManagePersonalEmoteSet = 32,
 }
 
 impl_bits!(EditorUserPermission);
