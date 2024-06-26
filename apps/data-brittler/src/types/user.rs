@@ -1,5 +1,5 @@
 use mongodb::bson::oid::ObjectId;
-use shared::database::Platform;
+use shared::database;
 
 use super::ImageFile;
 
@@ -40,7 +40,7 @@ pub struct UserEditor {
 	#[serde(default)]
 	pub id: Option<ObjectId>,
 	#[serde(default)]
-	pub permissions: u32,
+	pub permissions: i32,
 	#[serde(default)]
 	pub visible: bool,
 	#[serde(default)]
@@ -56,8 +56,7 @@ pub struct UserConnection {
 	pub platform: ConnectionPlatform,
 	#[serde(default)]
 	pub linked_at: super::DateTime,
-	#[serde(default, deserialize_with = "super::unsigned_int")]
-	pub emote_slots: u32,
+	pub emote_slots: i32,
 	pub emote_set_id: Option<ObjectId>,
 }
 
@@ -97,7 +96,7 @@ pub enum ConnectionPlatform {
 	},
 }
 
-impl From<ConnectionPlatform> for Platform {
+impl From<ConnectionPlatform> for database::user::connection::Platform {
 	fn from(value: ConnectionPlatform) -> Self {
 		match value {
 			ConnectionPlatform::Twitch { .. } => Self::Twitch,

@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
-use shared::database::{Collection, Permissions, UserBan, UserBanTemplate, UserBanTemplateId, UserPermission};
+use mongodb::bson::{doc, to_bson};
+use shared::database::role::permissions::{Permissions, UserPermission};
+use shared::database::user::ban::UserBan;
+use shared::database::user::{User, UserId};
+use shared::database::Collection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -8,7 +12,6 @@ use crate::types;
 
 pub struct BansJob {
 	global: Arc<Global>,
-	ban_role_id: UserBanTemplateId,
 }
 
 impl Job for BansJob {
@@ -17,31 +20,7 @@ impl Job for BansJob {
 	const NAME: &'static str = "transfer_bans";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			tracing::info!("dropping user_bans collection");
-			UserBan::collection(global.target_db()).drop(None).await?;
-		}
-
-		UserBanTemplate::collection(global.target_db()).drop(None).await?;
-
-		let mut permissions = Permissions::default();
-		permissions.user.deny(UserPermission::Login);
-
-		let ban_role = UserBanTemplate {
-			name: "Default Banned".to_string(),
-			description: Some("Default role for banned users".to_string()),
-			permissions,
-			black_hole: true,
-			..Default::default()
-		};
-		UserBanTemplate::collection(global.target_db())
-			.insert_one(&ban_role, None)
-			.await?;
-
-		Ok(Self {
-			global,
-			ban_role_id: ban_role.id,
-		})
+		Ok(Self { global })
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
@@ -49,19 +28,41 @@ impl Job for BansJob {
 	}
 
 	async fn process(&mut self, ban: Self::T) -> ProcessOutcome {
+		// wait for users job to finish
+		if self.global.config().should_run_users() {
+			self.global.users_job_finish().notified().await;
+			tracing::info!("users job finished");
+		}
+
 		let mut outcome = ProcessOutcome::default();
 
-		// TODO: effects
+		let mut permissions = Permissions::default();
+		permissions.user.deny(UserPermission::Login);
 
-		match UserBan::collection(self.global.target_db())
-			.insert_one(
-				UserBan {
-					id: ban.id.into(),
-					user_id: ban.victim_id.into(),
-					created_by_id: Some(ban.actor_id.into()),
-					reason: ban.reason,
-					expires_at: Some(ban.expire_at.into_chrono()),
-					template_id: self.ban_role_id,
+		let user_ban = UserBan {
+			id: ban.id.into(),
+			created_by_id: ban.actor_id.into(),
+			reason: ban.reason,
+			tags: vec![],
+			expires_at: Some(ban.expire_at.into_chrono()),
+			removed: None,
+			permissions,
+			template_id: None,
+		};
+
+		let user_ban = to_bson(&user_ban).expect("failed to serialize ban");
+
+		let user_id: UserId = ban.victim_id.into();
+
+		match User::collection(self.global.target_db())
+			.update_one(
+				doc! {
+					"_id": user_id,
+				},
+				doc! {
+					"$push": {
+						"bans": user_ban,
+					},
 				},
 				None,
 			)

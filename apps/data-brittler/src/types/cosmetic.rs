@@ -37,7 +37,7 @@ pub enum PaintData {
 		stops: Vec<GradientStop>,
 		repeat: bool,
 		angle: i32,
-		shape: database::PaintRadialGradientShape,
+		shape: database::paint::PaintRadialGradientShape,
 	},
 	Url {
 		image_url: Option<String>,
@@ -50,7 +50,7 @@ pub struct GradientStop {
 	pub color: i32,
 }
 
-impl From<GradientStop> for database::PaintGradientStop {
+impl From<GradientStop> for database::paint::PaintGradientStop {
 	fn from(value: GradientStop) -> Self {
 		Self {
 			at: value.at,
@@ -67,7 +67,7 @@ pub struct PaintDropShadow {
 	pub color: i32,
 }
 
-impl From<PaintDropShadow> for database::PaintShadow {
+impl From<PaintDropShadow> for database::paint::PaintShadow {
 	fn from(value: PaintDropShadow) -> Self {
 		Self {
 			color: value.color as u32,

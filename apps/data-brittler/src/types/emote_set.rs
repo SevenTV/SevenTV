@@ -7,8 +7,7 @@ pub struct EmoteSet {
 	pub id: ObjectId,
 	pub owner_id: ObjectId,
 	pub name: String,
-	#[serde(deserialize_with = "super::unsigned_int")]
-	pub capacity: u32,
+	pub capacity: i32,
 	#[serde(default)]
 	pub immutable: bool,
 	#[serde(default)]

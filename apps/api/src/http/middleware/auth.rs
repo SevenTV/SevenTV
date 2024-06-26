@@ -4,7 +4,7 @@ use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use hyper::{header, StatusCode};
 use mongodb::bson::doc;
-use shared::database::role::permissions::UserPermission;
+use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::session::UserSession;
 use shared::database::user::{FullUser, UserId};
 use shared::database::Collection;
@@ -55,7 +55,7 @@ impl AuthSession {
 
 	pub async fn can_view_hidden(&self, global: &Arc<Global>) -> Result<bool, ApiError> {
 		let user = self.user(global).await?;
-		Ok(user.has(UserPermission::ViewHidden))
+		Ok(user.computed.permissions.has(UserPermission::ViewHidden))
 	}
 }
 

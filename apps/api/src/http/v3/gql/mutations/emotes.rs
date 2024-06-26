@@ -162,7 +162,7 @@ impl EmoteOps {
 	async fn merge<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		target_id: EmoteObjectId,
+		target_id: GqlObjectId,
 		_reason: Option<String>,
 	) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;

@@ -3,7 +3,10 @@ use std::sync::Arc;
 use std::vec;
 
 use mongodb::bson::oid::ObjectId;
-use shared::database::{self, Badge, Collection, ImageSet, Paint, PaintLayerId};
+use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::{self, Collection};
+use shared::database::badge::Badge;
+use shared::database::paint::{Paint, PaintLayer, PaintLayerId, PaintLayerType};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -83,7 +86,7 @@ impl Job for CosmeticsJob {
 						error: None,
 					}) => {
 						self.all_tasks.insert(id.clone());
-						database::ImageSetInput::Pending {
+						ImageSetInput::Pending {
 							task_id: id,
 							path: path.path,
 							mime: content_type,
@@ -125,7 +128,7 @@ impl Job for CosmeticsJob {
 				let layer = match data {
 					types::PaintData::LinearGradient {
 						stops, repeat, angle, ..
-					} => Some(database::PaintLayerType::LinearGradient {
+					} => Some(PaintLayerType::LinearGradient {
 						angle,
 						repeating: repeat,
 						stops: stops.into_iter().map(Into::into).collect(),
@@ -136,7 +139,7 @@ impl Job for CosmeticsJob {
 						angle,
 						shape,
 						..
-					} => Some(database::PaintLayerType::RadialGradient {
+					} => Some(PaintLayerType::RadialGradient {
 						angle,
 						repeating: repeat,
 						stops: stops.into_iter().map(Into::into).collect(),
@@ -166,7 +169,7 @@ impl Job for CosmeticsJob {
 								error: None,
 							}) => {
 								self.all_tasks.insert(id.clone());
-								database::ImageSetInput::Pending {
+								ImageSetInput::Pending {
 									task_id: id,
 									path: path.path,
 									mime: content_type,
@@ -177,7 +180,7 @@ impl Job for CosmeticsJob {
 							_ => return outcome.with_error(error::Error::NotImplemented("missing image upload info")),
 						};
 
-						Some(database::PaintLayerType::Image(ImageSet {
+						Some(PaintLayerType::Image(ImageSet {
 							input,
 							..Default::default()
 						}))
@@ -185,10 +188,10 @@ impl Job for CosmeticsJob {
 					types::PaintData::Url { image_url: None, .. } => None,
 				};
 
-				let paint_data = database::PaintData {
+				let paint_data = database::paint::PaintData {
 					layers: layer
 						.map(|ty| {
-							vec![database::PaintLayer {
+							vec![PaintLayer {
 								id: layer_id,
 								ty,
 								..Default::default()

@@ -248,7 +248,7 @@ fn compute_highest_role_color(
 	role_order: &[RoleId],
 	roles: &HashMap<RoleId, Role>,
 	user_roles: &HashSet<RoleId>,
-) -> Option<u32> {
+) -> Option<i32> {
 	role_order
 		.iter()
 		.rev()

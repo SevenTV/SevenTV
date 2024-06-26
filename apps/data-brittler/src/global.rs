@@ -17,6 +17,7 @@ pub struct Global {
 	_nats: async_nats::Client,
 	jetstream: async_nats::jetstream::Context,
 	all_tasks: tokio::sync::OnceCell<HashSet<String>>,
+	users_job_finish: tokio::sync::Notify,
 }
 
 impl Global {
@@ -57,6 +58,7 @@ impl Global {
 			_nats: nats,
 			jetstream,
 			all_tasks: tokio::sync::OnceCell::new(),
+			users_job_finish: tokio::sync::Notify::new(),
 		})
 	}
 
@@ -98,5 +100,9 @@ impl Global {
 
 	pub fn all_tasks(&self) -> &tokio::sync::OnceCell<HashSet<String>> {
 		&self.all_tasks
+	}
+
+	pub fn users_job_finish(&self) -> &tokio::sync::Notify {
+		&self.users_job_finish
 	}
 }

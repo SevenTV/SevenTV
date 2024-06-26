@@ -281,6 +281,6 @@ pub struct UserComputed {
 	pub permissions: Permissions,
 	pub entitlements: CalculatedEntitlements,
 	pub highest_role_rank: i32,
-	pub highest_role_color: Option<u32>,
+	pub highest_role_color: Option<i32>,
 	pub raw_entitlements: Option<Vec<EntitlementEdge>>,
 }

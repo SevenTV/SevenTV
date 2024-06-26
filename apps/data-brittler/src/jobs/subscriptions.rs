@@ -1,15 +1,13 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::{Collection, Subscription};
-
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
 
 pub struct SubscriptionsJob {
 	global: Arc<Global>,
-	subscriptions: Vec<Subscription>,
+	// subscriptions: Vec<Subscription>,
 }
 
 impl Job for SubscriptionsJob {
@@ -20,12 +18,12 @@ impl Job for SubscriptionsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping subscriptions");
-			Subscription::collection(global.target_db()).drop(None).await?;
+			// Subscription::collection(global.target_db()).drop(None).await?;
 		}
 
 		Ok(Self {
 			global,
-			subscriptions: vec![],
+			// subscriptions: vec![],
 		})
 	}
 
@@ -97,18 +95,18 @@ impl Job for SubscriptionsJob {
 
 		let mut outcome = ProcessOutcome::default();
 
-		match Subscription::collection(self.global.target_db())
-			.insert_many(&self.subscriptions, None)
-			.await
-		{
-			Ok(res) => {
-				outcome.inserted_rows += res.inserted_ids.len() as u64;
-				if res.inserted_ids.len() != self.subscriptions.len() {
-					outcome.errors.push(error::Error::InsertMany);
-				}
-			}
-			Err(e) => outcome.errors.push(e.into()),
-		}
+		// match Subscription::collection(self.global.target_db())
+		// 	.insert_many(&self.subscriptions, None)
+		// 	.await
+		// {
+		// 	Ok(res) => {
+		// 		outcome.inserted_rows += res.inserted_ids.len() as u64;
+		// 		if res.inserted_ids.len() != self.subscriptions.len() {
+		// 			outcome.errors.push(error::Error::InsertMany);
+		// 		}
+		// 	}
+		// 	Err(e) => outcome.errors.push(e.into()),
+		// }
 
 		outcome
 	}

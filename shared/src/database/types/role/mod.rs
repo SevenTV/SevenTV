@@ -16,7 +16,7 @@ pub struct Role {
 	pub tags: Vec<String>,
 	pub permissions: Permissions,
 	pub hoist: bool,
-	pub color: Option<u32>,
+	pub color: Option<i32>,
 }
 
 impl Collection for Role {

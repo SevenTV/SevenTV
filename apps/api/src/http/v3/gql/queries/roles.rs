@@ -3,8 +3,10 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use futures::StreamExt;
 use mongodb::bson::doc;
-use shared::database::{self, Collection, GlobalConfig};
-use shared::old_types::{RoleObjectId, RolePermission};
+use shared::database::global::GlobalConfig;
+use shared::database::Collection;
+use shared::old_types::object_id::GqlObjectId;
+use shared::old_types::role_permission::RolePermission;
 
 use super::users::User;
 use crate::global::Global;
@@ -15,12 +17,12 @@ use crate::http::error::ApiError;
 #[derive(Default)]
 pub struct RolesQuery;
 
-#[derive(Debug, Clone, Default, SimpleObject)]
+#[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Role {
-	id: RoleObjectId,
+	id: GqlObjectId,
 	name: String,
-	color: u32,
+	color: i32,
 	// allowed
 	// denied
 	position: u32,
@@ -34,7 +36,7 @@ pub struct Role {
 }
 
 impl Role {
-	pub fn from_db(value: database::Role, global_config: &GlobalConfig) -> Self {
+	pub fn from_db(value: shared::database::role::Role, global_config: &GlobalConfig) -> Self {
 		let (allowed, denied) = RolePermission::from_db(value.permissions);
 
 		let position = global_config.role_ids.iter().position(|id| *id == value.id).unwrap_or(0) as u32;
@@ -42,7 +44,7 @@ impl Role {
 		Self {
 			id: value.id.into(),
 			name: value.name,
-			color: value.color,
+			color: value.color.unwrap_or_default(),
 			position,
 			invisible: false,
 			_allowed: allowed,
@@ -54,7 +56,7 @@ impl Role {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl Role {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.id().timestamp()
+		self.id.0.timestamp()
 	}
 
 	async fn allowed(&self) -> String {
@@ -84,7 +86,7 @@ impl RolesQuery {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let roles = database::Role::collection(global.db())
+		let roles = shared::database::role::Role::collection(global.db())
 			.find(doc! {}, None)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
@@ -103,7 +105,7 @@ impl RolesQuery {
 		Ok(roles)
 	}
 
-	async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: RoleObjectId) -> Result<Option<Role>, ApiError> {
+	async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Role>, ApiError> {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let global_config = global
@@ -115,7 +117,7 @@ impl RolesQuery {
 
 		let role = global
 			.role_by_id_loader()
-			.load(id.id())
+			.load(id.0.cast())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

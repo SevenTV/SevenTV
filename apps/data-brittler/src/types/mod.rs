@@ -75,14 +75,6 @@ where
 	if s.is_empty() { Ok(None) } else { Ok(Some(s)) }
 }
 
-fn unsigned_int<'de, D>(deserializer: D) -> Result<u32, D::Error>
-where
-	D: Deserializer<'de>,
-{
-	let i = i32::deserialize(deserializer)?;
-	Ok(i.max(0) as u32)
-}
-
 fn null_to_default<'de, T, D>(deserializer: D) -> Result<T, D::Error>
 where
 	T: Default + Deserialize<'de>,

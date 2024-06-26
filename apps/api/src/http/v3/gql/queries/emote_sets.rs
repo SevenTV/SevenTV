@@ -10,7 +10,6 @@ use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
 use super::emotes::{Emote, EmotePartial};
 use super::users::UserPartial;
-use crate::dataloader::user_loader::{load_user_and_permissions, load_users_and_permissions};
 use crate::global::Global;
 use crate::http::error::ApiError;
 
@@ -45,7 +44,7 @@ impl EmoteSet {
 			origins: Vec::new(),
 			emotes: value.emotes,
 			owner_id: value.owner_id.map(Into::into),
-			capacity: value.capacity,
+			capacity: value.capacity.unwrap_or_default(),
 		}
 	}
 }
@@ -101,11 +100,16 @@ impl ActiveEmote {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		if let Some(actor_id) = self.actor_id {
-			Ok(UserPartial::load_from_db(global, actor_id).await?)
-		} else {
-			Ok(None)
-		}
+		let Some(actor_id) = self.actor_id else {
+			return Ok(None);
+		};
+
+		Ok(global
+			.user_by_id_loader()
+			.load(actor_id)
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into())))
 	}
 }
 
@@ -135,8 +139,14 @@ impl EmoteSet {
 			return Ok(None);
 		};
 
-		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(Some(UserPartial::load_from_db(global, id.0.cast()).await?))
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		Ok(global
+			.user_by_id_loader()
+			.load(id.0.cast())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into())))
 	}
 }
 

@@ -6,7 +6,7 @@ use shared::database::activity::{
 	EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteSetActivity, EmoteSetActivityData, EmoteSetActivityKind,
 	EmoteSettingsChange,
 };
-use shared::database::emote::EmoteId;
+use shared::database::emote::{Emote, EmoteId};
 use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
 use shared::database::Id;
@@ -37,8 +37,13 @@ pub struct AuditLog {
 impl AuditLog {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.actor_id.0.cast())
-			.await?
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.actor_id.0.cast())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
 }
@@ -112,7 +117,7 @@ impl AuditLog {
 			id: Id::<()>::with_timestamp_ms(activity.timestamp.unix_timestamp() * 1000).into(),
 			actor_id: activity.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into(),
 			kind: activity.kind.into(),
-			target_id: EmoteId::from(activity.emote_id).cast().into(),
+			target_id: EmoteId::from(activity.emote_id).into(),
 			target_kind: 2,
 			created_at: activity.timestamp,
 			changes,
@@ -133,7 +138,7 @@ impl AuditLog {
 			id: Id::<()>::with_timestamp_ms(activity.timestamp.unix_timestamp() * 1000).into(),
 			actor_id,
 			kind: activity.kind.into(),
-			target_id: EmoteSetId::from(activity.emote_set_id).cast().into(),
+			target_id: EmoteSetId::from(activity.emote_set_id).into(),
 			target_kind: 3,
 			created_at: activity.timestamp,
 			changes,
@@ -242,7 +247,7 @@ impl AuditLogChange {
 
 	pub fn from_db_emote_set(
 		data: EmoteSetActivityData,
-		actor_id: UserObjectId,
+		actor_id: GqlObjectId,
 		timestamp: time::OffsetDateTime,
 		emotes: &HashMap<EmoteId, Emote>,
 	) -> Option<Self> {
@@ -323,8 +328,8 @@ pub struct AuditLogChangeArray {
 #[serde(untagged)]
 pub enum ArbitraryMap {
 	Emote {
-		id: EmoteObjectId,
-		actor_id: UserObjectId,
+		id: GqlObjectId,
+		actor_id: GqlObjectId,
 		flags: EmoteFlagsModel,
 		name: String,
 		timestamp: time::OffsetDateTime,

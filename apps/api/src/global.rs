@@ -18,7 +18,7 @@ use crate::dataloader::global_config::GlobalConfigLoader;
 use crate::dataloader::paint::PaintByIdLoader;
 use crate::dataloader::product::ProductByIdLoader;
 use crate::dataloader::role::RoleByIdLoader;
-use crate::dataloader::ticket::TicketByIdLoader;
+use crate::dataloader::ticket::{TicketByIdLoader, TicketMessagesByTicketIdLoader};
 use crate::dataloader::user::{UserByIdLoader, UserByPlatformIdLoader};
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByIdLoader, UserEditorByUserIdLoader};
 
@@ -44,6 +44,7 @@ pub struct Global {
 	user_editor_by_editor_id_loader: DataLoader<UserEditorByEditorIdLoader>,
 	user_editor_by_id_loader: DataLoader<UserEditorByIdLoader>,
 	ticket_by_id_loader: DataLoader<TicketByIdLoader>,
+	ticket_messages_by_ticket_id_loader: DataLoader<TicketMessagesByTicketIdLoader>,
 	emote_activity_by_emote_id_loader: DataLoader<EmoteActivityByEmoteIdLoader>,
 	emote_set_activity_by_actor_id_loader: DataLoader<EmoteSetActivityByActorIdLoader>,
 	entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
@@ -87,6 +88,7 @@ impl Global {
 			user_editor_by_editor_id_loader: UserEditorByEditorIdLoader::new(db.clone()),
 			user_editor_by_id_loader: UserEditorByIdLoader::new(db.clone()),
 			ticket_by_id_loader: TicketByIdLoader::new(db.clone()),
+			ticket_messages_by_ticket_id_loader: TicketMessagesByTicketIdLoader::new(db.clone()),
 			emote_activity_by_emote_id_loader: EmoteActivityByEmoteIdLoader::new(clickhouse.clone()),
 			emote_set_activity_by_actor_id_loader: EmoteSetActivityByActorIdLoader::new(clickhouse.clone()),
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
@@ -203,6 +205,11 @@ impl Global {
 	/// The ticket loader.
 	pub fn ticket_by_id_loader(&self) -> &DataLoader<TicketByIdLoader> {
 		&self.ticket_by_id_loader
+	}
+
+	/// The ticket messages loader.
+	pub fn ticket_messages_by_ticket_id_loader(&self) -> &DataLoader<TicketMessagesByTicketIdLoader> {
+		&self.ticket_messages_by_ticket_id_loader
 	}
 
 	/// The emote activity loader.

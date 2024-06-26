@@ -2,10 +2,9 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::bson::{doc, to_bson};
-use shared::database::{self, Collection, Permission, RolePermission, UserPermission};
-use shared::old_types::{CosmeticKind, EmoteSetObjectId, ObjectId, RoleObjectId, UserObjectId};
+use shared::database::role::permissions::UserPermission;
+use shared::old_types::object_id::GqlObjectId;
 
-use crate::dataloader::user_loader::load_user_and_permissions;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
@@ -19,7 +18,7 @@ pub struct UsersMutation;
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl UsersMutation {
-	async fn user(&self, id: UserObjectId) -> UserOps {
+	async fn user(&self, id: GqlObjectId) -> UserOps {
 		UserOps { id }
 	}
 }
@@ -27,7 +26,7 @@ impl UsersMutation {
 #[derive(SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct UserOps {
-	id: UserObjectId,
+	id: GqlObjectId,
 }
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
@@ -133,7 +132,7 @@ impl UserOps {
 	async fn editors(
 		&self,
 		ctx: &Context<'_>,
-		editor_id: UserObjectId,
+		editor_id: GqlObjectId,
 		data: UserEditorUpdate,
 	) -> Result<Option<Vec<Option<UserEditor>>>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;

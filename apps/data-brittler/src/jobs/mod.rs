@@ -6,7 +6,7 @@ use anyhow::Context;
 use futures::stream::FuturesUnordered;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
-use shared::database::{Collection, Ticket, TicketMember, TicketMessage};
+use shared::database::Collection;
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -169,15 +169,6 @@ pub trait Job: Sized {
 
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let timer = Instant::now();
-
-	// This has to be here because it's these are target collections for multiple
-	// jobs
-	if global.config().truncate && global.config().reports && global.config().messages {
-		tracing::info!("dropping tickets, ticket_members and ticket_messages collections");
-		Ticket::collection(global.target_db()).drop(None).await?;
-		TicketMember::collection(global.target_db()).drop(None).await?;
-		TicketMessage::collection(global.target_db()).drop(None).await?;
-	}
 
 	let futures: FuturesUnordered<Pin<Box<dyn Future<Output = anyhow::Result<JobOutcome>> + Send>>> =
 		FuturesUnordered::new();

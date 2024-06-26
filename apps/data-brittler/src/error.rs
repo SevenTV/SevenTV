@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use mongodb::bson::oid::ObjectId;
-use shared::database::Platform;
+use shared::database::user::connection::Platform;
 
 use crate::types;
 

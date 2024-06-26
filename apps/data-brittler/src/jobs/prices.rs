@@ -1,16 +1,13 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use fnv::FnvHashMap;
-use shared::database::{Collection, Product, ProductKind, ProductPrice};
-
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
 
 pub struct PricesJob {
 	global: Arc<Global>,
-	products: FnvHashMap<stripe::ProductId, Product>,
+	// products: FnvHashMap<stripe::ProductId, Product>,
 }
 
 impl Job for PricesJob {
@@ -21,12 +18,11 @@ impl Job for PricesJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping products collection");
-			Product::collection(global.target_db()).drop(None).await?;
 		}
 
 		Ok(Self {
 			global,
-			products: FnvHashMap::default(),
+			// products: FnvHashMap::default(),
 		})
 	}
 
@@ -56,11 +52,11 @@ impl Job for PricesJob {
 		};
 		let product = price.product.expect("no product found");
 
-		let kind = if price.recurring.is_some() {
-			ProductKind::Subscription
-		} else {
-			ProductKind::OneTimePurchase
-		};
+		// let kind = if price.recurring.is_some() {
+		// 	ProductKind::Subscription
+		// } else {
+		// 	ProductKind::OneTimePurchase
+		// };
 
 		// let entry = self.products.entry(product.id()).or_insert(Product {
 		// 	id: product.id(),
@@ -79,18 +75,18 @@ impl Job for PricesJob {
 
 		let mut outcome = ProcessOutcome::default();
 
-		match Product::collection(self.global.target_db())
-			.insert_many(self.products.values(), None)
-			.await
-		{
-			Ok(res) => {
-				outcome.inserted_rows += res.inserted_ids.len() as u64;
-				if res.inserted_ids.len() != self.products.len() {
-					outcome.errors.push(error::Error::InsertMany);
-				}
-			}
-			Err(e) => outcome.errors.push(e.into()),
-		}
+		// match Product::collection(self.global.target_db())
+		// 	.insert_many(self.products.values(), None)
+		// 	.await
+		// {
+		// 	Ok(res) => {
+		// 		outcome.inserted_rows += res.inserted_ids.len() as u64;
+		// 		if res.inserted_ids.len() != self.products.len() {
+		// 			outcome.errors.push(error::Error::InsertMany);
+		// 		}
+		// 	}
+		// 	Err(e) => outcome.errors.push(e.into()),
+		// }
 
 		outcome
 	}

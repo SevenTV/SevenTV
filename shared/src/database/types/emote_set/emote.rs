@@ -9,6 +9,7 @@ use crate::database::user::UserId;
 pub struct EmoteSetEmote {
 	pub id: EmoteId,
 	pub alias: String,
+	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
 	pub flags: EmoteSetEmoteFlag,
 	#[serde(skip_serializing_if = "Option::is_none")]

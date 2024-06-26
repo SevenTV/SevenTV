@@ -165,4 +165,5 @@ pub enum TicketActivityKind {
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub enum TicketActivityData {
 	ChangeAssignees { added: Vec<UserId>, removed: Vec<UserId> },
+	ChangeOpen { old: bool, new: bool },
 }

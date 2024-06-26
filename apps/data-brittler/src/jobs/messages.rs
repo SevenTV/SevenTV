@@ -4,9 +4,10 @@ use fnv::FnvHashMap;
 use futures::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
-use shared::database::{
-	Collection, Ticket, TicketData, TicketMember, TicketMemberId, TicketMemberKind, TicketPriority, TicketStatus,
+use shared::database::emote_moderation_request::{
+	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
+use shared::database::Collection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -15,9 +16,7 @@ use crate::{error, types};
 pub struct MessagesJob {
 	global: Arc<Global>,
 	read: FnvHashMap<ObjectId, bool>,
-
-	tickets: Vec<Ticket>,
-	ticket_members: Vec<TicketMember>,
+	mod_requests: Vec<EmoteModerationRequest>,
 }
 
 impl Job for MessagesJob {
@@ -41,8 +40,7 @@ impl Job for MessagesJob {
 		Ok(Self {
 			global,
 			read,
-			tickets: vec![],
-			ticket_members: vec![],
+			mod_requests: vec![],
 		})
 	}
 
@@ -55,68 +53,57 @@ impl Job for MessagesJob {
 
 		let id = message.id.into();
 
-		let (data, title) = match message.data {
+		let (kind, emote_id, country_code) = match message.data {
 			types::MessageData::EmoteRequest {
 				target_id,
 				wish: Some(types::EmoteWish::List),
+				actor_country_code,
 			} => (
-				TicketData::EmoteListingRequest {
-					emote_id: target_id.into(),
-				},
-				"Public Listing Request".to_string(),
+				EmoteModerationRequestKind::PublicListing,
+				target_id.into(),
+				actor_country_code,
 			),
 			types::MessageData::EmoteRequest {
 				target_id,
 				wish: Some(types::EmoteWish::PersonalUse),
-			} => (
-				TicketData::EmotePersonalUseRequest {
-					emote_id: target_id.into(),
-				},
-				"Personal Use Request".to_string(),
-			),
+				actor_country_code,
+			} => (EmoteModerationRequestKind::PersonalUse, target_id.into(), actor_country_code),
 			// inbox messages are not tickets
 			_ => return outcome,
 		};
 
 		let status = match self.read.get(&message.id) {
-			Some(true) => TicketStatus::Fixed,
-			Some(false) => TicketStatus::Pending,
-			None => TicketStatus::InProgress,
+			Some(true) => EmoteModerationRequestStatus::Approved,
+			_ => EmoteModerationRequestStatus::Pending,
 		};
 
-		self.tickets.push(Ticket {
+		self.mod_requests.push(EmoteModerationRequest {
 			id,
-			status,
-			priority: TicketPriority::Low,
-			title: title.clone(),
-			tags: vec![],
-			data,
-		});
-
-		self.ticket_members.push(TicketMember {
-			id: TicketMemberId::new(),
-			ticket_id: id,
 			user_id: message.author_id.into(),
-			kind: TicketMemberKind::Op,
-			notifications: true,
-			last_read: None,
+			kind,
+			reason: None,
+			emote_id,
+			status,
+			country_code,
+			assigned_to: vec![],
+			priority: 0,
 		});
 
-		if self.tickets.len() > 50_000 {
-			let insert_options = InsertManyOptions::builder().ordered(false).build();
-			let tickets = Ticket::collection(self.global.target_db());
-
-			let Ok(res) = tickets.insert_many(&self.tickets, insert_options.clone()).await else {
+		if self.mod_requests.len() > 50_000 {
+			let Ok(res) = EmoteModerationRequest::collection(self.global.target_db())
+				.insert_many(&self.mod_requests, InsertManyOptions::builder().ordered(false).build())
+				.await
+			else {
 				outcome.errors.push(error::Error::InsertMany);
 				return outcome;
 			};
 
 			outcome.inserted_rows += res.inserted_ids.len() as u64;
-			if res.inserted_ids.len() != self.tickets.len() {
+			if res.inserted_ids.len() != self.mod_requests.len() {
 				outcome.errors.push(error::Error::InsertMany);
 			}
 
-			self.tickets.clear();
+			self.mod_requests.clear();
 		}
 
 		outcome
@@ -127,28 +114,17 @@ impl Job for MessagesJob {
 
 		let mut outcome = ProcessOutcome::default();
 
-		let insert_options = InsertManyOptions::builder().ordered(false).build();
-		let tickets = Ticket::collection(self.global.target_db());
-		let ticket_members = TicketMember::collection(self.global.target_db());
-
-		let res = tokio::join!(
-			tickets.insert_many(&self.tickets, insert_options.clone()),
-			ticket_members.insert_many(&self.ticket_members, insert_options.clone()),
-		);
-		let res = vec![res.0, res.1]
-			.into_iter()
-			.zip(vec![self.tickets.len(), self.ticket_members.len()]);
-
-		for (res, len) in res {
-			match res {
-				Ok(res) => {
-					outcome.inserted_rows += res.inserted_ids.len() as u64;
-					if res.inserted_ids.len() != len {
-						outcome.errors.push(error::Error::InsertMany);
-					}
+		match EmoteModerationRequest::collection(self.global.target_db())
+			.insert_many(&self.mod_requests, InsertManyOptions::builder().ordered(false).build())
+			.await
+		{
+			Ok(res) => {
+				outcome.inserted_rows += res.inserted_ids.len() as u64;
+				if res.inserted_ids.len() != self.mod_requests.len() {
+					outcome.errors.push(error::Error::InsertMany);
 				}
-				Err(e) => outcome.errors.push(e.into()),
 			}
+			Err(e) => outcome.errors.push(e.into()),
 		}
 
 		outcome

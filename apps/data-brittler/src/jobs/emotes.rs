@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
-use shared::database::{Collection, Emote, EmoteFlags, ImageSet, ImageSetInput, UserId};
+use shared::database::emote::{Emote, EmoteFlags, EmoteMerged};
+use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::user::UserId;
+use shared::database::Collection;
 use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
@@ -66,15 +69,19 @@ impl Job for EmotesJob {
 
 			self.emotes.push(Emote {
 				id: v.id.into(),
-				owner_id: (!owner_id.is_nil() && !owner_id.is_one()).then_some(owner_id),
+				owner_id: (!owner_id.is_nil() && !owner_id.is_one())
+					.then_some(owner_id)
+					.unwrap_or(UserId::nil()),
 				default_name: v.name.unwrap_or_else(|| emote.name.clone()),
 				tags: emote.tags.clone(),
 				animated: v.animated,
 				image_set,
 				flags,
 				attribution: vec![],
-				merged_into: v.state.replace_id.map(Into::into),
-				merged_at: None,
+				merged: v.state.replace_id.map(|id| EmoteMerged {
+					target_id: id.into(),
+					at: chrono::Utc::now(),
+				}),
 			});
 		}
 

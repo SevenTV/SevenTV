@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
-use shared::old_types::image::{ImageHost, ImageHostKind};
+use shared::database::emote::EmoteId;
+use shared::database::user::UserId;
+use shared::old_types::image::ImageHost;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
@@ -45,10 +47,7 @@ pub struct Emote {
 
 impl Emote {
 	pub fn from_db(global: &Arc<Global>, value: shared::database::emote::Emote) -> Self {
-		let host = ImageHost::from_image_set(
-			&value.image_set,
-			&global.config().api.cdn_origin,
-		);
+		let host = ImageHost::from_image_set(&value.image_set, &global.config().api.cdn_origin);
 		let state = EmoteVersionState::from_db(&value.flags);
 		let listed = value.flags.contains(shared::database::emote::EmoteFlags::PublicListed);
 		let lifecycle = if value.merged.is_some() {
@@ -86,10 +85,18 @@ impl Emote {
 
 	pub fn deleted_emote() -> Self {
 		Self {
-			id: EmoteObjectId::Id(EmoteId::nil()),
+			id: GqlObjectId(EmoteId::nil().cast()),
 			name: "*DeletedEmote".to_string(),
 			lifecycle: EmoteLifecycleModel::Deleted,
-			..Default::default()
+			flags: EmoteFlagsModel::none(),
+			tags: vec![],
+			animated: false,
+			owner_id: GqlObjectId(UserId::nil().cast()),
+			host: ImageHost::default(),
+			versions: vec![],
+			state: vec![],
+			listed: false,
+			personal_use: false,
 		}
 	}
 }
@@ -103,7 +110,14 @@ impl Emote {
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.owner_id.0.cast()).await?.unwrap_or_else(UserPartial::deleted_user))
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.owner_id.0.cast())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
+			.unwrap_or_else(UserPartial::deleted_user))
 	}
 
 	async fn channels(
@@ -134,7 +148,7 @@ impl Emote {
 		let activities = global
 			.clickhouse()
 			.query("SELECT * FROM emote_activities WHERE emote_id = ? ORDER BY timestamp DESC LIMIT ?")
-			.bind(self.id.id().as_uuid())
+			.bind(self.id.0.as_uuid())
 			.bind(limit.unwrap_or(100))
 			.fetch_all()
 			.await
@@ -143,10 +157,7 @@ impl Emote {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		Ok(activities
-			.into_iter()
-			.map(AuditLog::from_db_emote)
-			.collect())
+		Ok(activities.into_iter().map(AuditLog::from_db_emote).collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {
@@ -197,7 +208,14 @@ impl EmotePartial {
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.owner_id.0.cast()).await?.unwrap_or_else(UserPartial::deleted_user))
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.owner_id.0.cast())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
+			.unwrap_or_else(UserPartial::deleted_user))
 	}
 }
 
@@ -296,11 +314,7 @@ impl EmotesQuery {
 	}
 
 	#[graphql(name = "emotesByID")]
-	async fn emotes_by_id<'ctx>(
-		&self,
-		ctx: &Context<'ctx>,
-		list: Vec<GqlObjectId>,
-	) -> Result<Vec<EmotePartial>, ApiError> {
+	async fn emotes_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<GqlObjectId>) -> Result<Vec<EmotePartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		if list.len() > 1000 {

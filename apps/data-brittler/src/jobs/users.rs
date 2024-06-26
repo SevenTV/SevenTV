@@ -5,10 +5,13 @@ use fnv::{FnvHashMap, FnvHashSet};
 use futures::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
-use shared::database::{
-	Collection, ImageSet, ImageSetInput, Platform, RoleId, User, UserConnection, UserConnectionId, UserEditor, UserEditorId,
-	UserEditorPermissions, UserEditorState, UserGrants, UserSettings, UserStyle,
-};
+use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::role::RoleId;
+use shared::database::user::connection::{Platform, UserConnection};
+use shared::database::user::editor::{UserEditor, UserEditorPermissions, UserEditorState};
+use shared::database::user::settings::UserSettings;
+use shared::database::user::{User, UserSearchIndex, UserStyle};
+use shared::database::Collection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -19,7 +22,6 @@ pub struct UsersJob {
 	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,
 	all_connections: FnvHashSet<(Platform, String)>,
 	users: Vec<User>,
-	connections: Vec<UserConnection>,
 	editors: Vec<UserEditor>,
 }
 
@@ -32,7 +34,6 @@ impl Job for UsersJob {
 		if global.config().truncate {
 			tracing::info!("dropping users and user_connections collections");
 			User::collection(global.target_db()).drop(None).await?;
-			UserConnection::collection(global.target_db()).drop(None).await?;
 			UserEditor::collection(global.target_db()).drop(None).await?;
 		}
 
@@ -59,7 +60,6 @@ impl Job for UsersJob {
 			entitlements,
 			all_connections: FnvHashSet::default(),
 			users: vec![],
-			connections: vec![],
 			editors: vec![],
 		})
 	}
@@ -68,7 +68,7 @@ impl Job for UsersJob {
 		self.global.source_db().collection("users")
 	}
 
-	async fn process(&mut self, mut user: Self::T) -> ProcessOutcome {
+	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
 		let mut outcome = ProcessOutcome::default();
 
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
@@ -110,37 +110,16 @@ impl Job for UsersJob {
 			_ => None,
 		};
 
-		user.connections.sort_by(|a, b| a.platform.cmp(&b.platform));
-		let active_emote_set_ids = user
+		let active_emote_set_id = user
 			.connections
 			.iter()
-			.filter_map(|c| c.emote_set_id)
-			.map(Into::into)
-			.collect();
+			.filter(|c| c.emote_set_id.is_some())
+			.min_by(|a, b| a.platform.cmp(&b.platform))
+			.map(|c| c.emote_set_id.unwrap().into());
 
-		self.users.push(User {
-			id: user.id.into(),
-			email: user.email,
-			email_verified: false,
-			password_hash: None,
-			settings: UserSettings::default(),
-			two_fa: None,
-			style: UserStyle {
-				active_badge_id: active_badge_id.map(Into::into),
-				active_paint_id: active_paint_id.map(Into::into),
-				active_profile_picture: active_profile_picture.clone(),
-				all_profile_pictures: active_profile_picture.map(|p| vec![p]).unwrap_or_default(),
-			},
-			active_emote_set_ids,
-			grants: UserGrants {
-				role_ids: roles.into_iter().collect(),
-				..Default::default()
-			},
-		});
+		let mut connections = vec![];
 
-		for (i, connection) in user.connections.into_iter().enumerate() {
-			let id = UserConnectionId::with_timestamp(connection.linked_at.into_chrono());
-
+		for connection in user.connections {
 			let (platform, platform_id, platform_username, platform_display_name, platform_avatar_url) =
 				match connection.platform {
 					types::ConnectionPlatform::Twitch {
@@ -180,15 +159,16 @@ impl Job for UsersJob {
 				};
 
 			if self.all_connections.insert((platform, platform_id.clone())) {
-				self.connections.push(UserConnection {
-					id,
-					user_id: user.id.into(),
-					main_connection: i == 0,
+				let linked_at = connection.linked_at.into_chrono();
+
+				connections.push(UserConnection {
 					platform,
 					platform_id,
 					platform_username,
 					platform_display_name,
 					platform_avatar_url,
+					updated_at: linked_at,
+					linked_at,
 					allow_login: true,
 				});
 			} else {
@@ -198,18 +178,36 @@ impl Job for UsersJob {
 			}
 		}
 
+		self.users.push(User {
+			id: user.id.into(),
+			email: user.email,
+			email_verified: false,
+			settings: UserSettings::default(),
+			two_fa: None,
+			style: UserStyle {
+				active_badge_id: active_badge_id.map(Into::into),
+				active_paint_id: active_paint_id.map(Into::into),
+				active_emote_set_id,
+				active_profile_picture: active_profile_picture.clone(),
+				all_profile_pictures: active_profile_picture.map(|p| vec![p]).unwrap_or_default(),
+			},
+			connections,
+			search_index: UserSearchIndex::default(),
+			bans: vec![],
+		});
+
 		for editor in user.editors {
 			if let Some(editor_id) = editor.id {
 				let permissions = UserEditorPermissions::default();
 
 				self.editors.push(UserEditor {
-					id: UserEditorId::new(),
 					user_id: user.id.into(),
 					editor_id: editor_id.into(),
 					state: UserEditorState::Accepted,
 					notes: None,
 					permissions,
-					added_by_id: Some(user.id.into()),
+					added_by_id: user.id.into(),
+					added_at: editor.added_at.into_chrono(),
 				});
 			}
 		}
@@ -224,18 +222,13 @@ impl Job for UsersJob {
 
 		let insert_options = InsertManyOptions::builder().ordered(false).build();
 		let users = User::collection(self.global.target_db());
-		let connections = UserConnection::collection(self.global.target_db());
 		let editors = UserEditor::collection(self.global.target_db());
 
 		let res = tokio::join!(
 			users.insert_many(&self.users, insert_options.clone()),
-			connections.insert_many(&self.connections, insert_options.clone()),
 			editors.insert_many(&self.editors, insert_options),
 		);
-		let res =
-			vec![res.0, res.1, res.2]
-				.into_iter()
-				.zip(vec![self.users.len(), self.connections.len(), self.editors.len()]);
+		let res = vec![res.0, res.1].into_iter().zip(vec![self.users.len(), self.editors.len()]);
 
 		for (res, len) in res {
 			match res {
@@ -248,6 +241,8 @@ impl Job for UsersJob {
 				Err(e) => outcome.errors.push(e.into()),
 			}
 		}
+
+		self.global.users_job_finish().notify_waiters();
 
 		outcome
 	}

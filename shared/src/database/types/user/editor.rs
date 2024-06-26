@@ -18,6 +18,7 @@ pub struct UserEditor {
 	pub notes: Option<String>,
 	pub permissions: UserEditorPermissions,
 	pub added_by_id: UserId,
+	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
 }
 

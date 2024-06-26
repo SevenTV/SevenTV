@@ -181,12 +181,28 @@ pub struct Ban {
 impl Ban {
 	async fn victim<'ctx>(&self, ctx: &Context<'ctx>) -> Result<GqlUser, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.victim_id.0.cast()).await?.unwrap_or_else(UserPartial::deleted_user).into())
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.victim_id.0.cast())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
+			.unwrap_or_else(UserPartial::deleted_user)
+			.into())
 	}
 
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<GqlUser, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.actor_id.0.cast()).await?.unwrap_or_else(UserPartial::deleted_user).into())
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.actor_id.0.cast())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
+			.unwrap_or_else(UserPartial::deleted_user)
+			.into())
 	}
 }
 

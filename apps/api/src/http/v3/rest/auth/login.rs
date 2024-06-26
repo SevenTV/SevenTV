@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use shared::database::role::permissions::UserPermission;
+use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::{User, UserId};
@@ -45,10 +45,12 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		.filter(|payload| payload.validate_random(&state).unwrap_or_default())
 		.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "invalid csrf"))?;
 
+	let platform = Platform::from(query.platform);
+
 	// exchange code for access token
 	let token = connections::exchange_code(
 		global,
-		query.platform.into(),
+		platform,
 		&code,
 		format!(
 			"{}/v3/auth?callback=true&platform={}",
@@ -59,12 +61,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	.await?;
 
 	// query user data from platform
-	let user_data = connections::get_user_data(global, query.platform.into(), &token.access_token).await?;
-
-	let user = global.user_by_platform_id_loader().load((query.platform.into(), user_data.id)).await.map_err(|_| {
-		tracing::error!("failed to load user by platform id");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+	let user_data = connections::get_user_data(global, platform, &token.access_token).await?;
 
 	let mut session = global.mongo().start_session(None).await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start session");
@@ -76,7 +73,30 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
 
-	match (user, csrf_payload.user_id) {
+	let mut user = User::collection(global.db())
+		.find_one_and_update_with_session(
+			doc! {
+				"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
+				"connections.platform_id": &user_data.id,
+			},
+			doc! {
+				"$set": {
+					"connections.$.platform_username": &user_data.username,
+					"connections.$.platform_display_name": &user_data.display_name,
+					"connections.$.platform_avatar_url": &user_data.avatar,
+					"connections.$.updated_at": chrono::Utc::now(),
+				},
+			},
+			None,
+			&mut session,
+		)
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to find user");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+	match (&user, csrf_payload.user_id) {
 		(Some(user), Some(user_id)) => {
 			if user.id != user_id {
 				return Err(ApiError::new_const(
@@ -89,7 +109,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			let connection = user
 				.connections
 				.iter()
-				.find(|c| c.platform == query.platform.into() && c.platform_id == user_data.id)
+				.find(|c| c.platform == platform && c.platform_id == user_data.id)
 				.ok_or_else(|| {
 					tracing::error!("connection not found");
 					ApiError::INTERNAL_SERVER_ERROR
@@ -106,11 +126,11 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			// New user creation
 			user = Some(User {
 				connections: vec![UserConnection {
-					platform: query.platform.into(),
-					platform_id: user_data.id,
-					platform_username: user_data.username,
-					platform_display_name: user_data.display_name,
-					platform_avatar_url: user_data.avatar,
+					platform,
+					platform_id: user_data.id.clone(),
+					platform_username: user_data.username.clone(),
+					platform_display_name: user_data.display_name.clone(),
+					platform_avatar_url: user_data.avatar.clone(),
 					allow_login: true,
 					updated_at: chrono::Utc::now(),
 					..Default::default()
@@ -149,14 +169,14 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		unreachable!("user should be created or loaded");
 	};
 
-	if !full_user.has(UserPermission::Login) {
+	if !full_user.computed.permissions.has(UserPermission::Login) {
 		return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
 	}
 
 	let logged_connection = full_user
 		.connections
 		.iter()
-		.find(|c| c.platform == query.platform.into() && c.platform_id == user_data.id);
+		.find(|c| c.platform == platform && c.platform_id == user_data.id);
 
 	if let Some(logged_connection) = logged_connection {
 		if logged_connection.platform_avatar_url != user_data.avatar
@@ -168,7 +188,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				.update_one_with_session(
 					doc! {
 						"_id": full_user.user.id,
-						"connections.platform": to_bson(&Platform::from(query.platform)).unwrap(),
+						"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
 						"connections.platform_id": user_data.id,
 					},
 					doc! {
@@ -178,7 +198,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 							"connections.$.platform_avatar_url": &user_data.avatar,
 							"connections.$.updated_at": chrono::Utc::now(),
 							// This will trigger a search engine update
-							"search_index.self_dirty": Id::new(),
+							"search_index.self_dirty": Id::<()>::new(),
 						},
 					},
 					None,
@@ -204,7 +224,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				doc! {
 					"$push": {
 						"connections": to_bson(&UserConnection {
-							platform: query.platform.into(),
+							platform,
 							platform_id: user_data.id,
 							platform_username: user_data.username,
 							platform_display_name: user_data.display_name,
@@ -215,7 +235,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 						}).unwrap(),
 					},
 					"$set": {
-						"search_index.self_dirty": Id::new(),
+						"search_index.self_dirty": Id::<()>::new(),
 					},
 				},
 				None,
