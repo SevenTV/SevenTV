@@ -31,7 +31,7 @@ impl EmoteSetsMutation {
 
 		let emote_set = global
 			.emote_set_by_id_loader()
-			.load(id.0.cast())
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -52,13 +52,13 @@ impl EmoteSetsMutation {
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let user = auth_session.user(global).await?;
-		let other_user = if user_id.0.cast() == user.id {
+		let other_user = if user_id.id() == user.id {
 			None
 		} else {
 			Some(
 				global
 					.user_loader()
-					.load(global, user_id.0.cast())
+					.load(global, user_id.id())
 					.await
 					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?,
@@ -74,7 +74,7 @@ impl EmoteSetsMutation {
 		if target.id != user.id && !user.has(EmoteSetPermission::ManageAny) {
 			let editor = global
 				.user_editor_by_id_loader()
-				.load((user_id.0.cast(), user.id))
+				.load((user_id.id(), user.id))
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "you are not an editor for this user"))?;

@@ -17,22 +17,23 @@ pub struct Global {
 	_nats: async_nats::Client,
 	jetstream: async_nats::jetstream::Context,
 	all_tasks: tokio::sync::OnceCell<HashSet<String>>,
-	users_job_finish: tokio::sync::Notify,
+	users_job_token: tokio_util::sync::CancellationToken,
+	entitlement_job_token: tokio_util::sync::CancellationToken,
 }
 
 impl Global {
 	pub async fn new(config: Config) -> anyhow::Result<Self> {
 		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
 
-		let mongo_source = shared::database::setup_database(&config.main_source_database)
+		let mongo_source = shared::database::setup_database(&config.main_source_database, false)
 			.await
 			.context("source database setup")?;
 
-		let mongo_egvault_source = shared::database::setup_database(&config.egvault_source_database)
+		let mongo_egvault_source = shared::database::setup_database(&config.egvault_source_database, false)
 			.await
 			.context("egvault source database setup")?;
 
-		let mongo_target = shared::database::setup_database(&config.target_database)
+		let mongo_target = shared::database::setup_and_init_database(&config.target_database)
 			.await
 			.context("target database setup")?;
 
@@ -58,7 +59,8 @@ impl Global {
 			_nats: nats,
 			jetstream,
 			all_tasks: tokio::sync::OnceCell::new(),
-			users_job_finish: tokio::sync::Notify::new(),
+			users_job_token: tokio_util::sync::CancellationToken::new(),
+			entitlement_job_token: tokio_util::sync::CancellationToken::new(),
 		})
 	}
 
@@ -102,7 +104,11 @@ impl Global {
 		&self.all_tasks
 	}
 
-	pub fn users_job_finish(&self) -> &tokio::sync::Notify {
-		&self.users_job_finish
+	pub fn users_job_token(&self) -> &tokio_util::sync::CancellationToken {
+		&self.users_job_token
+	}
+
+	pub fn entitlement_job_token(&self) -> &tokio_util::sync::CancellationToken {
+		&self.entitlement_job_token
 	}
 }

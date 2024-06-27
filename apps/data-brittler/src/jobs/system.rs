@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
+use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::UpdateOptions;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
-use shared::database::{Collection, Id};
+use shared::database::Collection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -36,11 +37,11 @@ impl Job for SystemJob {
 			.update_one(
 				doc! {},
 				doc! {
-					"$addToSet": {
-						"emote_set_ids": emote_set_id,
+					"$set": {
+						"emote_set_id": emote_set_id,
 					},
 					"$setOnInsert": {
-						"_id": Id::<()>::nil().as_uuid(),
+						"_id": Option::<ObjectId>::None,
 						"alerts": to_bson(&GlobalConfigAlerts::default()).unwrap(),
 						"role_ids": [],
 						"automod_rule_ids": [],

@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::bson::doc;
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use shared::database::emote::{Emote as DbEmote, EmoteFlags};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorState};
 use shared::database::Collection;
-use shared::database::emote::Emote as DbEmote;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
@@ -44,7 +45,6 @@ pub struct EmoteOps {
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteOps {
-	#[graphql(guard = "PermissionGuard::one(EmotePermission::Edit)")]
 	async fn update<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -69,22 +69,24 @@ impl EmoteOps {
 			}
 		}
 
-		// TODO(troy): resume work from here
-
 		if params.deleted.is_some_and(|d| d) {
-			if !perms.has(EmotePermission::Delete) {
+			if !user.has(EmotePermission::Delete) {
 				return Err(ApiError::FORBIDDEN);
 			}
 
-			let emote = database::Emote::collection(global.db())
-				.find_one_and_delete(doc! { "_id": self.id.id() }, None)
+			// TODO: don't allow deletion of emotes that are in use
+
+			let emote = shared::database::emote::Emote::collection(global.db())
+				.find_one_and_delete(doc! { "_id": self.id.0 }, None)
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?;
 
+			// TODO: delete files from s3
+
 			Ok(Emote::from_db(global, emote))
 		} else {
-			if !perms.has(EmotePermission::Edit) {
+			if !user.has(EmotePermission::Edit) {
 				return Err(ApiError::FORBIDDEN);
 			}
 
@@ -102,51 +104,57 @@ impl EmoteOps {
 
 			if let Some(input_flags) = params.flags {
 				if input_flags.contains(EmoteFlagsModel::Private) {
-					flags |= database::EmoteFlags::Private;
-					flags &= !database::EmoteFlags::PublicListed;
+					flags |= EmoteFlags::Private;
+					flags &= !EmoteFlags::PublicListed;
 				} else {
-					flags &= !database::EmoteFlags::Private;
-					flags |= database::EmoteFlags::PublicListed;
+					flags &= !EmoteFlags::Private;
+					flags |= EmoteFlags::PublicListed;
 				}
 
 				if input_flags.contains(EmoteFlagsModel::ZeroWidth) {
-					flags |= database::EmoteFlags::DefaultZeroWidth;
+					flags |= EmoteFlags::DefaultZeroWidth;
 				} else {
-					flags &= !database::EmoteFlags::DefaultZeroWidth;
+					flags &= !EmoteFlags::DefaultZeroWidth;
 				}
 			}
 
-			// changing visibility and owner requires admin perms
-			if perms.has(EmotePermission::Admin) {
+			// changing visibility and owner requires manage any perms
+			if user.has(EmotePermission::ManageAny) {
 				if let Some(listed) = params.listed {
 					if listed {
-						flags |= database::EmoteFlags::PublicListed;
-						flags &= !database::EmoteFlags::Private;
+						flags |= EmoteFlags::PublicListed;
+						flags &= !EmoteFlags::Private;
 					} else {
-						flags &= !database::EmoteFlags::PublicListed;
-						flags |= database::EmoteFlags::Private;
+						flags &= !EmoteFlags::PublicListed;
+						flags |= EmoteFlags::Private;
 					}
 				}
 
 				if let Some(personal_use) = params.personal_use {
 					if personal_use {
-						flags |= database::EmoteFlags::ApprovedPersonal;
-						flags &= !database::EmoteFlags::DeniedPersonal;
+						flags |= EmoteFlags::ApprovedPersonal;
+						flags &= !EmoteFlags::DeniedPersonal;
 					} else {
-						flags &= !database::EmoteFlags::ApprovedPersonal;
-						flags |= database::EmoteFlags::DeniedPersonal;
+						flags &= !EmoteFlags::ApprovedPersonal;
+						flags |= EmoteFlags::DeniedPersonal;
 					}
 				}
 
 				if let Some(owner_id) = params.owner_id {
-					update.insert("owner_id", owner_id.id());
+					update.insert("owner_id", owner_id.0);
 				}
 			}
 
-			update.insert("flags", flags.bits() as u32);
+			update.insert("flags", flags.bits());
 
-			let emote = database::Emote::collection(global.db())
-				.find_one_and_update(doc! { "_id": self.id.id() }, doc! { "$set": update }, None)
+			let emote = shared::database::emote::Emote::collection(global.db())
+				.find_one_and_update(
+					doc! { "_id": self.id.0 },
+					doc! { "$set": update },
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::After)
+						.build(),
+				)
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to update emote");
@@ -158,7 +166,7 @@ impl EmoteOps {
 		}
 	}
 
-	#[graphql(guard = "PermissionGuard::one(EmotePermission::Admin)")]
+	#[graphql(guard = "PermissionGuard::one(EmotePermission::Merge)")]
 	async fn merge<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -167,15 +175,15 @@ impl EmoteOps {
 	) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let emote = database::Emote::collection(global.db())
+		let emote = shared::database::emote::Emote::collection(global.db())
 			.find_one_and_update(
-				doc! { "_id": self.id.id() },
+				doc! { "_id": self.id.0 },
 				doc! {
 					"$set": {
-						"merged_into": target_id.id(),
+						"merged.target_id": target_id.0,
 					},
 					"$currentDate": {
-						"merged_at": { "$type": "date" },
+						"merged.at": { "$type": "date" },
 					},
 				},
 				None,

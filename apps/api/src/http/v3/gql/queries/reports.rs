@@ -97,7 +97,7 @@ impl Report {
 
 		Ok(global
 			.user_by_id_loader()
-			.load(self.actor_id.0.cast())
+			.load(self.actor_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into()))
@@ -110,7 +110,7 @@ impl Report {
 
 		Ok(global
 			.user_by_id_loader()
-			.load_many(self.assignee_ids.iter().map(|i| i.0.cast()))
+			.load_many(self.assignee_ids.iter().map(|i| i.id()))
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()
@@ -241,7 +241,7 @@ impl ReportsQuery {
 
 		let messages = global
 			.ticket_messages_by_ticket_id_loader()
-			.load(id.0.cast())
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();

@@ -2,10 +2,16 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use async_graphql::{Context, InputObject, Object};
-use mongodb::bson::doc;
+use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::{self, Collection, TicketMember, TicketMemberKind, TicketPermission, TicketStatus, UserId};
-use shared::old_types::{EmoteObjectId, TicketObjectId};
+use shared::database::role::permissions::TicketPermission;
+use shared::database::ticket::{
+	Ticket, TicketId, TicketKind, TicketMember, TicketMemberKind, TicketMessage, TicketMessageId, TicketPriority,
+	TicketTarget,
+};
+use shared::database::user::UserId;
+use shared::database::Collection;
+use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -33,35 +39,22 @@ impl ReportsMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
+		let ticket_id = TicketId::new();
+
 		session.start_transaction(None).await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start transaction");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let ticket = database::Ticket {
-			title: data.subject,
-			data: database::TicketData::EmoteReport {
-				emote_id: data.target_id.id(),
-			},
-			..Default::default()
-		};
-
-		database::Ticket::collection(global.db())
-			.insert_one_with_session(&ticket, None, &mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert ticket");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		let message = database::TicketMessage {
-			ticket_id: ticket.id,
+		let message = TicketMessage {
+			id: TicketMessageId::new(),
+			ticket_id,
 			user_id: auth_sesion.user_id(),
 			content: data.body,
-			..Default::default()
+			files: vec![],
 		};
 
-		database::TicketMessage::collection(global.db())
+		TicketMessage::collection(global.db())
 			.insert_one_with_session(&message, None, &mut session)
 			.await
 			.map_err(|e| {
@@ -69,19 +62,32 @@ impl ReportsMutation {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		let member = database::TicketMember {
-			ticket_id: ticket.id,
+		let member = TicketMember {
 			user_id: auth_sesion.user_id(),
+			kind: TicketMemberKind::Member,
 			notifications: true,
 			last_read: Some(message.id),
-			..Default::default()
 		};
 
-		database::TicketMember::collection(global.db())
-			.insert_one_with_session(&member, None, &mut session)
+		let ticket = Ticket {
+			id: ticket_id,
+			priority: TicketPriority::Medium,
+			members: vec![member],
+			title: data.subject,
+			tags: vec![],
+			country_code: None, // TODO
+			kind: TicketKind::Abuse,
+			targets: vec![TicketTarget::Emote(data.target_id.id())],
+			author_id: auth_sesion.user_id(),
+			open: true,
+			locked: false,
+		};
+
+		Ticket::collection(global.db())
+			.insert_one_with_session(&ticket, None, &mut session)
 			.await
 			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert ticket member");
+				tracing::error!(error = %e, "failed to insert ticket");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
@@ -90,14 +96,14 @@ impl ReportsMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		Report::from_db(ticket, vec![member], vec![message]).ok_or(ApiError::INTERNAL_SERVER_ERROR)
+		Report::from_db(ticket, vec![message]).ok_or(ApiError::INTERNAL_SERVER_ERROR)
 	}
 
-	#[graphql(guard = "PermissionGuard::one(TicketPermission::Edit)")]
+	#[graphql(guard = "PermissionGuard::all([TicketPermission::ManageAbuse, TicketPermission::ManageGeneric])")]
 	async fn edit_report<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		report_id: TicketObjectId,
+		report_id: GqlObjectId,
 		data: EditReportInput,
 	) -> Result<Report, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -115,20 +121,43 @@ impl ReportsMutation {
 		})?;
 
 		let mut update = doc! {};
+		let mut push_update = doc! {};
+		let mut pull_update = doc! {};
 
 		if let Some(priority) = data.priority {
-			let priority = (priority > 3).then(|| 3).unwrap_or(priority);
-			update.insert("priority", priority);
+			update.insert(
+				"priority",
+				priority.clamp(TicketPriority::Low as i32, TicketPriority::Urgent as i32),
+			);
 		}
 
 		if let Some(status) = data.status {
-			update.insert("status", TicketStatus::from(status) as u32);
+			update.insert("open", status == ReportStatus::Open || status == ReportStatus::Assigned);
 		}
 
-		let ticket = database::Ticket::collection(global.db())
+		if let Some(assignee) = data.assignee {
+			let mut chars = assignee.chars();
+			match (chars.next(), UserId::from_str(chars.as_str())) {
+				(Some('+'), Ok(user_id)) => {
+					let member = TicketMember {
+						user_id,
+						kind: TicketMemberKind::Assigned,
+						notifications: true,
+						last_read: None,
+					};
+					push_update.insert("members", to_bson(&member).expect("failed to convert member to bson"));
+				}
+				(Some('-'), Ok(user_id)) => {
+					pull_update.insert("members", doc! { "user_id": user_id });
+				}
+				_ => return Err(ApiError::BAD_REQUEST),
+			}
+		}
+
+		let ticket = Ticket::collection(global.db())
 			.find_one_and_update_with_session(
-				doc! { "_id": report_id.id() },
-				doc! { "$set": update },
+				doc! { "_id": report_id.0 },
+				doc! { "$set": update, "$push": push_update, "$pull": pull_update },
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
 					.build(),
@@ -141,41 +170,16 @@ impl ReportsMutation {
 			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		if let Some(assignee) = data.assignee {
-			let mut chars = assignee.chars();
-			match (chars.next(), UserId::from_str(chars.as_str())) {
-				(Some('+'), Ok(user_id)) => {
-					let member = TicketMember {
-						ticket_id: ticket.id,
-						user_id,
-						kind: TicketMemberKind::Staff,
-						notifications: true,
-						..Default::default()
-					};
-					database::TicketMember::collection(global.db())
-						.insert_one_with_session(member, None, &mut session)
-						.await
-						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-				}
-				(Some('-'), Ok(user_id)) => {
-					database::TicketMember::collection(global.db())
-						.delete_one_with_session(doc! { "ticket_id": ticket.id, "user_id": user_id }, None, &mut session)
-						.await
-						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-				}
-				_ => return Err(ApiError::BAD_REQUEST),
-			}
-		}
-
 		if let Some(note) = data.note {
-			let message = database::TicketMessage {
+			let message = TicketMessage {
+				id: TicketMessageId::new(),
 				ticket_id: ticket.id,
 				user_id: auth_sesion.user_id(),
 				content: note.content.unwrap_or_default(),
-				..Default::default()
+				files: vec![],
 			};
 
-			database::TicketMessage::collection(global.db())
+			TicketMessage::collection(global.db())
 				.insert_one_with_session(&message, None, &mut session)
 				.await
 				.map_err(|e| {
@@ -189,13 +193,6 @@ impl ReportsMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let members = global
-			.ticket_members_by_ticket_id_loader()
-			.load(ticket.id)
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
-
 		let messages = global
 			.ticket_messages_by_ticket_id_loader()
 			.load(ticket.id)
@@ -203,15 +200,15 @@ impl ReportsMutation {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
-		Report::from_db(ticket, members, messages).ok_or(ApiError::INTERNAL_SERVER_ERROR)
+		Report::from_db(ticket, messages).ok_or(ApiError::INTERNAL_SERVER_ERROR)
 	}
 }
 
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CreateReportInput {
-	target_kind: u32,
-	target_id: EmoteObjectId,
+	target_kind: i32,
+	target_id: GqlObjectId,
 	subject: String,
 	body: String,
 }
@@ -219,7 +216,7 @@ pub struct CreateReportInput {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EditReportInput {
-	priority: Option<u32>,
+	priority: Option<i32>,
 	status: Option<ReportStatus>,
 	assignee: Option<String>,
 	note: Option<EditReportNoteInput>,

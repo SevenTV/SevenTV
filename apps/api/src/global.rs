@@ -57,7 +57,7 @@ pub struct Global {
 impl Global {
 	pub async fn new(config: Config) -> anyhow::Result<Arc<Self>> {
 		let (nats, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
-		let mongo = shared::database::setup_database(&config.database)
+		let mongo = shared::database::setup_and_init_database(&config.database)
 			.await
 			.context("database setup")?;
 

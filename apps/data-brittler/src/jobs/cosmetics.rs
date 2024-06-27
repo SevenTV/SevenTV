@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
 
+use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::{self, Collection};
@@ -42,8 +43,8 @@ impl Job for CosmeticsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping paints and badges collections");
-			Paint::collection(global.target_db()).drop(None).await?;
-			Badge::collection(global.target_db()).drop(None).await?;
+			Paint::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			Badge::collection(global.target_db()).delete_many(doc! {}, None).await?;
 		}
 
 		Ok(Self {

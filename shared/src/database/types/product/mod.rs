@@ -161,16 +161,8 @@ pub struct Product {
 	pub name: String,
 	pub description: Option<String>,
 	pub recurring: Option<DurationUnit>,
-	pub default_currency: CurrencyCode,
-	pub currency_prices: HashMap<CurrencyCode, u64>,
-}
-
-#[derive(Debug, Clone, serde_enum_str::Serialize_enum_str, serde_enum_str::Deserialize_enum_str, PartialEq, Eq, Hash)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum CurrencyCode {
-	Eur,
-	#[serde(other)]
-	Other(String),
+	pub default_currency: stripe::Currency,
+	pub currency_prices: HashMap<stripe::Currency, u64>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

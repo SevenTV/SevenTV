@@ -98,7 +98,7 @@ impl UserEditorModel {
 		}
 
 		Some(Self {
-			id: value.editor_id,
+			id: value.id.editor_id,
 			added_at: value.added_at.timestamp_millis() as u64,
 			permissions: UserEditorModelPermission::ModifyEmotes | UserEditorModelPermission::ManageEmoteSets,
 			visible: true,

@@ -134,7 +134,7 @@ impl Collection for User {
 					"connections.platform": 1,
 					"connections.platform_id": 1,
 				})
-				.options(mongodb::options::IndexOptions::builder().unique(true).build())
+				.options(mongodb::options::IndexOptions::builder().unique(true).sparse(true).build())
 				.build(),
 			mongodb::IndexModel::builder()
 				.keys(mongodb::bson::doc! {
@@ -248,7 +248,7 @@ impl std::ops::Deref for FullUserRef<'_> {
 
 impl PermissionsExt for FullUser {
 	fn has(&self, permission: impl Into<Permission>) -> bool {
-		self.has(permission)
+		self.computed.permissions.has(permission)
 	}
 
 	fn denied(&self, permission: impl Into<Permission>) -> bool {

@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use futures::StreamExt;
 use mongodb::bson::doc;
 use shared::database::global::GlobalConfig;
+use shared::database::role::RoleId;
 use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::role_permission::RolePermission;
@@ -86,23 +88,31 @@ impl RolesQuery {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let roles = shared::database::role::Role::collection(global.db())
+		let mut roles = shared::database::role::Role::collection(global.db())
 			.find(doc! {}, None)
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.filter_map(|r| async {
 				match r {
-					Ok(role) => Some(Role::from_db(role, &global_config)),
+					Ok(role) => Some((role.id, Role::from_db(role, &global_config))),
 					Err(e) => {
 						tracing::error!(error = %e, "failed to load role");
 						None
 					}
 				}
 			})
-			.collect()
+			.collect::<HashMap<RoleId, Role>>()
 			.await;
 
-		Ok(roles)
+		let mut sorted_roles = vec![];
+
+		for role_id in global_config.role_ids {
+			if let Some(role) = roles.remove(&role_id) {
+				sorted_roles.push(role);
+			}
+		}
+
+		Ok(sorted_roles)
 	}
 
 	async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Role>, ApiError> {
@@ -117,7 +127,7 @@ impl RolesQuery {
 
 		let role = global
 			.role_by_id_loader()
-			.load(id.0.cast())
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

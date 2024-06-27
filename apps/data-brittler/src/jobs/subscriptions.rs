@@ -13,12 +13,12 @@ pub struct SubscriptionsJob {
 impl Job for SubscriptionsJob {
 	type T = types::Subscription;
 
-	const NAME: &'static str = "transfer_stripe";
+	const NAME: &'static str = "transfer_subscriptions";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping subscriptions");
-			// Subscription::collection(global.target_db()).drop(None).await?;
+			// Subscription::collection(global.target_db()).delete_many(doc! {}, None).await?;
 		}
 
 		Ok(Self {
@@ -91,7 +91,7 @@ impl Job for SubscriptionsJob {
 	}
 
 	async fn finish(self) -> ProcessOutcome {
-		tracing::info!("finishing stripe job");
+		tracing::info!("finishing subscriptions job");
 
 		let mut outcome = ProcessOutcome::default();
 

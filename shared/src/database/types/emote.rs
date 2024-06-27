@@ -53,7 +53,7 @@ impl Collection for Emote {
 	}
 }
 
-#[bitmask(u8)]
+#[bitmask(i32)]
 pub enum EmoteFlags {
 	PublicListed = 1 << 0,
 	Private = 1 << 1,
@@ -83,7 +83,7 @@ impl<'a> serde::Deserialize<'a> for EmoteFlags {
 	where
 		D: serde::Deserializer<'a>,
 	{
-		let bits = u8::deserialize(deserializer)?;
+		let bits = i32::deserialize(deserializer)?;
 		Ok(EmoteFlags::from(bits))
 	}
 }

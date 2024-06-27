@@ -56,6 +56,11 @@ pub struct Extra {
 	/// Skip emote sets job
 	pub skip_emote_sets: bool,
 
+	/// Run entitlments job
+	pub entitlements: bool,
+	/// Skip entitlements job
+	pub skip_entitlements: bool,
+
 	/// Run cosmetics job
 	pub cosmetics: bool,
 	/// Skip cosmetics job
@@ -106,6 +111,7 @@ impl Extra {
 		|| self.bans
 		|| self.emotes
 		|| self.emote_sets
+		|| self.entitlements
 		|| self.cosmetics
 		|| self.roles
 		|| self.reports
@@ -134,6 +140,11 @@ impl Extra {
 	pub fn should_run_emote_sets(&self) -> bool {
 		let any_run = self.any_run();
 		any_run && self.emote_sets || !any_run && !self.skip_emote_sets
+	}
+
+	pub fn should_run_entitlements(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.entitlements || !any_run && !self.skip_entitlements
 	}
 
 	pub fn should_run_cosmetics(&self) -> bool {

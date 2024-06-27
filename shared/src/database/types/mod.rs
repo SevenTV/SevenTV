@@ -44,11 +44,11 @@ impl GenericCollection {
 		}
 	}
 
-	async fn init(self, db: &mongodb::Database, session: &mut mongodb::ClientSession) -> anyhow::Result<()> {
+	async fn init(self, db: &mongodb::Database) -> anyhow::Result<()> {
 		let collection = db.collection::<()>(self.name);
 
 		for index in self.indexes {
-			collection.create_index_with_session(index, None, session).await?;
+			collection.create_index(index, None).await?;
 		}
 
 		Ok(())
@@ -73,15 +73,9 @@ fn collections() -> impl IntoIterator<Item = GenericCollection> {
 }
 
 pub(super) async fn init_database(db: &mongodb::Database) -> anyhow::Result<()> {
-	let mut session = db.collection::<()>("()").client().start_session(None).await?;
-
-	session.start_transaction(None).await?;
-
 	for collection in collections() {
-		collection.init(db, &mut session).await?;
+		collection.init(db).await?;
 	}
-
-	session.commit_transaction().await?;
 
 	Ok(())
 }

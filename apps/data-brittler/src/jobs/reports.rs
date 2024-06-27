@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use fnv::FnvHashSet;
+use mongodb::bson::doc;
 use mongodb::options::InsertManyOptions;
 use shared::database::ticket::{
 	Ticket, TicketId, TicketKind, TicketMember, TicketMemberKind, TicketMessage, TicketMessageId, TicketPriority,
@@ -29,8 +30,8 @@ impl Job for ReportsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping tickets and ticket_messages collections");
-			Ticket::collection(global.target_db()).drop(None).await?;
-			TicketMessage::collection(global.target_db()).drop(None).await?;
+			Ticket::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			TicketMessage::collection(global.target_db()).delete_many(doc! {}, None).await?;
 		}
 
 		Ok(Self {

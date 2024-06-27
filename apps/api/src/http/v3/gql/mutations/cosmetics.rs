@@ -219,13 +219,13 @@ impl CosmeticOps {
 
 		let _ = global
 			.paint_by_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let name = definition.name.clone();
-		let data = definition.into_db(self.id.0.cast(), global).await?;
+		let data = definition.into_db(self.id.id(), global).await?;
 		let update = to_bson(&data).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let paint = Paint::collection(global.db())

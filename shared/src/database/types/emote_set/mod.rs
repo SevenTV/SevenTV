@@ -43,14 +43,14 @@ impl Collection for EmoteSet {
 				.build(),
 			mongodb::IndexModel::builder()
 				.keys(mongodb::bson::doc! {
-					"id": 1,
+					"_id": 1,
 					"emotes.id": 1,
 				})
 				.options(mongodb::options::IndexOptions::builder().unique(true).build())
 				.build(),
 			mongodb::IndexModel::builder()
 				.keys(mongodb::bson::doc! {
-					"id": 1,
+					"_id": 1,
 					"emotes.alias": 1,
 				})
 				.options(mongodb::options::IndexOptions::builder().unique(true).build())

@@ -87,7 +87,7 @@ impl ActiveEmote {
 
 		let emote = global
 			.emote_by_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -143,7 +143,7 @@ impl EmoteSet {
 
 		Ok(global
 			.user_by_id_loader()
-			.load(id.0.cast())
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into())))
@@ -171,7 +171,7 @@ impl EmoteSetsQuery {
 
 		let emote_set = global
 			.emote_set_by_id_loader()
-			.load(id.0.cast())
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
@@ -190,7 +190,7 @@ impl EmoteSetsQuery {
 
 		let emote_sets: Vec<_> = global
 			.emote_set_by_id_loader()
-			.load_many(list.into_iter().map(|id| id.0.cast()))
+			.load_many(list.into_iter().map(|id| id.id()))
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()

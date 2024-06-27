@@ -40,7 +40,7 @@ impl AuditLog {
 
 		Ok(global
 			.user_by_id_loader()
-			.load(self.actor_id.0.cast())
+			.load(self.actor_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into()))

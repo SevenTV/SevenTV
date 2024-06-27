@@ -2,6 +2,6 @@
 #[serde(deny_unknown_fields)]
 #[serde(tag = "unit", content = "count")]
 pub enum DurationUnit {
-	Days(u32),
-	Months(u32),
+	Days(u64),
+	Months(u64),
 }

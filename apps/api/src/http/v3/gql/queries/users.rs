@@ -4,6 +4,7 @@ use async_graphql::{ComplexObject, Context, Object};
 use data_source::UserDataSource;
 use mongodb::bson::doc;
 use shared::database::activity::EmoteSetActivityData;
+use shared::database::global::GlobalConfig;
 use shared::database::user::UserId;
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
@@ -37,7 +38,7 @@ pub struct User {
 	// created_at
 	avatar_url: String,
 	biography: String,
-	style: UserStyle,
+	// style
 
 	// editors
 	// editor_of
@@ -63,7 +64,6 @@ impl From<UserPartial> for User {
 			display_name: partial.display_name,
 			avatar_url: partial.avatar_url,
 			biography: partial.biography,
-			style: partial.style,
 			inbox_unread_count: 0,
 			db: partial.db,
 		}
@@ -76,12 +76,28 @@ impl User {
 		self.id.0.timestamp()
 	}
 
+	async fn style<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserStyle, ApiError> {
+		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let mut guard = self.db.write().await;
+
+		let Some(full) = guard.full(global).await.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)? else {
+			return Ok(UserStyle::default());
+		};
+
+		Ok(UserStyle {
+			color: full.computed.highest_role_color.unwrap_or_default(),
+			paint_id: full.user.style.active_paint_id.map(Into::into),
+			badge_id: full.user.style.active_badge_id.map(Into::into),
+		})
+	}
+
 	async fn editors<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let editors = global
 			.user_editor_by_user_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -94,7 +110,7 @@ impl User {
 
 		let editors = global
 			.user_editor_by_editor_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -106,7 +122,9 @@ impl User {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let mut guard = self.db.write().await;
-		let full = guard.full(global).await?;
+		let Some(full) = guard.full(global).await? else {
+			return Ok(vec![]);
+		};
 
 		let paints = full
 			.computed
@@ -139,15 +157,11 @@ impl User {
 
 		let mut guard = self.db.write().await;
 
-		Ok(guard
-			.full(global)
-			.await?
-			.computed
-			.entitlements
-			.roles
-			.iter()
-			.map(|r| (*r).into())
-			.collect())
+		let Some(full) = guard.full(global).await? else {
+			return Ok(vec![]);
+		};
+
+		Ok(full.computed.entitlements.roles.iter().map(|r| (*r).into()).collect())
 	}
 
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
@@ -155,7 +169,7 @@ impl User {
 
 		let emote_sets = global
 			.emote_set_by_user_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -168,7 +182,7 @@ impl User {
 
 		let emotes = global
 			.emote_by_user_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -181,7 +195,7 @@ impl User {
 
 		let activities = global
 			.emote_set_activity_by_actor_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -203,27 +217,29 @@ impl User {
 
 		Ok(activities
 			.into_iter()
+			.take(limit.unwrap_or(100) as usize)
 			.map(|a| AuditLog::from_db_emote_set(a, &emotes))
 			.collect())
 	}
 
-	async fn connections(&self) -> Vec<UserConnection> {
-		self.db
-			.read()
+	async fn connections<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserConnection>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let global_config = global
+			.global_config_loader()
+			.load(())
 			.await
-			.user()
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let guard = self.db.read().await;
+		let user = guard.user();
+
+		Ok(user
 			.connections
 			.iter()
-			.map(|c| UserConnection {
-				id: c.platform_id.clone(),
-				platform: c.platform.into(),
-				username: c.platform_username.clone(),
-				display_name: c.platform_display_name.clone(),
-				linked_at: c.linked_at,
-				emote_capacity: todo!(),
-				emote_set_id: todo!(),
-			})
-			.collect()
+			.map(|c| UserConnection::from_db(c.clone(), &user.style, &global_config))
+			.collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {
@@ -249,7 +265,7 @@ impl UserEditor {
 		}
 
 		Some(UserEditor {
-			id: editor_of.then_some(value.user_id.into()).unwrap_or(value.editor_id.into()),
+			id: editor_of.then_some(value.id.user_id.into()).unwrap_or(value.id.editor_id.into()),
 			added_at: value.added_at,
 			permissions: UserEditorModelPermission::from_db(&value.permissions),
 			visible: true,
@@ -264,7 +280,7 @@ impl UserEditor {
 
 		Ok(global
 			.user_by_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into()))
@@ -291,7 +307,7 @@ pub struct UserPartial {
 	// created_at
 	avatar_url: String,
 	biography: String,
-	style: UserStyle,
+	// style
 	// roles
 	// connections
 	// emote_sets
@@ -308,11 +324,6 @@ impl UserPartial {
 			display_name: "*DeletedUser".to_string(),
 			avatar_url: String::new(),
 			biography: String::new(),
-			style: UserStyle {
-				color: 0,
-				paint_id: None,
-				badge_id: None,
-			},
 			db: Arc::new(RwLock::new(shared::database::user::User::default().into())),
 		}
 	}
@@ -341,11 +352,6 @@ impl UserPartial {
 			display_name: main_connection.map(|c| c.platform_display_name.clone()).unwrap_or_default(),
 			avatar_url: avatar_url.unwrap_or_default(),
 			biography: String::new(),
-			style: UserStyle {
-				color: 0,
-				paint_id: user.style.active_paint_id.clone().map(Into::into),
-				badge_id: user.style.active_badge_id.clone().map(Into::into),
-			},
 			db: Arc::new(RwLock::new(source)),
 		}
 	}
@@ -357,39 +363,52 @@ impl UserPartial {
 		self.id.0.timestamp()
 	}
 
+	async fn style<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserStyle, ApiError> {
+		let global = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let mut guard = self.db.write().await;
+
+		let Some(full) = guard.full(global).await.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)? else {
+			return Ok(UserStyle::default());
+		};
+
+		Ok(UserStyle {
+			color: full.computed.highest_role_color.unwrap_or_default(),
+			paint_id: full.user.style.active_paint_id.map(Into::into),
+			badge_id: full.user.style.active_badge_id.map(Into::into),
+		})
+	}
+
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<GqlObjectId>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let mut guard = self.db.write().await;
 
-		Ok(guard
-			.full(global)
-			.await?
-			.computed
-			.entitlements
-			.roles
-			.iter()
-			.map(|r| (*r).into())
-			.collect())
+		let Some(user) = guard.full(global).await? else {
+			return Ok(vec![]);
+		};
+
+		Ok(user.computed.entitlements.roles.iter().map(|r| (*r).into()).collect())
 	}
 
-	async fn connections(&self) -> Vec<UserConnection> {
-		self.db
-			.read()
+	async fn connections<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserConnection>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let global_config = global
+			.global_config_loader()
+			.load(())
 			.await
-			.user()
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let guard = self.db.read().await;
+		let user = guard.user();
+
+		Ok(user
 			.connections
 			.iter()
-			.map(|c| UserConnection {
-				id: c.platform_id.clone(),
-				platform: c.platform.into(),
-				username: c.platform_username.clone(),
-				display_name: c.platform_display_name.clone(),
-				linked_at: c.linked_at,
-				emote_capacity: todo!(),
-				emote_set_id: todo!(),
-			})
-			.collect()
+			.map(|c| UserConnection::from_db(c.clone(), &user.style, &global_config))
+			.collect())
 	}
 
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
@@ -397,7 +416,7 @@ impl UserPartial {
 
 		let emote_sets = global
 			.emote_set_by_user_id_loader()
-			.load(self.id.0.cast())
+			.load(self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
@@ -406,7 +425,7 @@ impl UserPartial {
 	}
 }
 
-#[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct UserConnection {
 	id: String,
@@ -416,6 +435,24 @@ pub struct UserConnection {
 	linked_at: chrono::DateTime<chrono::Utc>,
 	emote_capacity: i32,
 	emote_set_id: Option<GqlObjectId>,
+}
+
+impl UserConnection {
+	pub fn from_db(
+		connection: shared::database::user::connection::UserConnection,
+		style: &shared::database::user::UserStyle,
+		global_config: &GlobalConfig,
+	) -> Self {
+		Self {
+			id: connection.platform_id,
+			platform: connection.platform.into(),
+			username: connection.platform_username,
+			display_name: connection.platform_display_name,
+			linked_at: connection.linked_at,
+			emote_capacity: global_config.normal_emote_set_slot_capacity,
+			emote_set_id: style.active_emote_set_id.map(Into::into),
+		}
+	}
 }
 
 #[derive(Debug, Clone, Default, async_graphql::SimpleObject)]
@@ -439,7 +476,7 @@ impl UserStyle {
 
 		Ok(global
 			.paint_by_id_loader()
-			.load(id.0.cast())
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_origin)))
@@ -454,7 +491,7 @@ impl UserStyle {
 
 		Ok(global
 			.badge_by_id_loader()
-			.load(id.0.cast())
+			.load(id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_origin)))
@@ -490,7 +527,7 @@ impl UsersQuery {
 
 		let user = global
 			.user_loader()
-			.load(global, id.0.cast())
+			.load(global, id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into()))
@@ -537,7 +574,7 @@ impl UsersQuery {
 
 		let users = global
 			.user_loader()
-			.load_many(global, list.into_iter().map(|id| id.0.cast()))
+			.load_many(global, list.into_iter().map(|id| id.id()))
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()

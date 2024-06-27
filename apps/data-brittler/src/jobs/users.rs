@@ -3,12 +3,13 @@ use std::sync::Arc;
 use anyhow::Context;
 use fnv::{FnvHashMap, FnvHashSet};
 use futures::TryStreamExt;
+use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::image_set::{ImageSet, ImageSetInput};
-use shared::database::role::RoleId;
 use shared::database::user::connection::{Platform, UserConnection};
-use shared::database::user::editor::{UserEditor, UserEditorPermissions, UserEditorState};
+use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorPermissions, UserEditorState};
 use shared::database::user::settings::UserSettings;
 use shared::database::user::{User, UserSearchIndex, UserStyle};
 use shared::database::Collection;
@@ -23,6 +24,7 @@ pub struct UsersJob {
 	all_connections: FnvHashSet<(Platform, String)>,
 	users: Vec<User>,
 	editors: Vec<UserEditor>,
+	edges: FnvHashSet<EntitlementEdge>,
 }
 
 impl Job for UsersJob {
@@ -33,8 +35,8 @@ impl Job for UsersJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping users and user_connections collections");
-			User::collection(global.target_db()).drop(None).await?;
-			UserEditor::collection(global.target_db()).drop(None).await?;
+			User::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			UserEditor::collection(global.target_db()).delete_many(doc! {}, None).await?;
 		}
 
 		tracing::info!("querying all entitlements");
@@ -61,6 +63,7 @@ impl Job for UsersJob {
 			all_connections: FnvHashSet::default(),
 			users: vec![],
 			editors: vec![],
+			edges: FnvHashSet::default(),
 		})
 	}
 
@@ -69,18 +72,13 @@ impl Job for UsersJob {
 	}
 
 	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
+		if self.global.config().should_run_entitlements() {
+			self.global.entitlement_job_token().cancelled().await;
+		}
+
 		let mut outcome = ProcessOutcome::default();
 
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
-
-		let mut roles = FnvHashSet::default();
-
-		for role_id in entitlements.iter().filter_map(|e| match &e.data {
-			types::EntitlementData::Role { ref_id } => Some(ref_id),
-			_ => None,
-		}) {
-			roles.insert(RoleId::from(*role_id));
-		}
 
 		let active_badge_id = entitlements
 			.iter()
@@ -201,8 +199,10 @@ impl Job for UsersJob {
 				let permissions = UserEditorPermissions::default();
 
 				self.editors.push(UserEditor {
-					user_id: user.id.into(),
-					editor_id: editor_id.into(),
+					id: UserEditorId {
+						user_id: user.id.into(),
+						editor_id: editor_id.into(),
+					},
 					state: UserEditorState::Accepted,
 					notes: None,
 					permissions,
@@ -210,6 +210,16 @@ impl Job for UsersJob {
 					added_at: editor.added_at.into_chrono(),
 				});
 			}
+		}
+
+		for role in user.role_ids {
+			self.edges.insert(EntitlementEdge {
+				id: EntitlementEdgeId {
+					from: EntitlementEdgeKind::User { user_id: user.id.into() },
+					to: EntitlementEdgeKind::Role { role_id: role.into() },
+					managed_by: None,
+				},
+			});
 		}
 
 		outcome
@@ -223,12 +233,14 @@ impl Job for UsersJob {
 		let insert_options = InsertManyOptions::builder().ordered(false).build();
 		let users = User::collection(self.global.target_db());
 		let editors = UserEditor::collection(self.global.target_db());
+		let edges = EntitlementEdge::collection(self.global.target_db());
 
 		let res = tokio::join!(
 			users.insert_many(&self.users, insert_options.clone()),
-			editors.insert_many(&self.editors, insert_options),
+			editors.insert_many(&self.editors, insert_options.clone()),
+			edges.insert_many(&self.edges, insert_options),
 		);
-		let res = vec![res.0, res.1].into_iter().zip(vec![self.users.len(), self.editors.len()]);
+		let res = vec![res.0, res.1, res.2].into_iter().zip(vec![self.users.len(), self.editors.len(), self.edges.len()]);
 
 		for (res, len) in res {
 			match res {
@@ -242,7 +254,7 @@ impl Job for UsersJob {
 			}
 		}
 
-		self.global.users_job_finish().notify_waiters();
+		self.global.users_job_token().cancel();
 
 		outcome
 	}

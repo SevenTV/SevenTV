@@ -63,7 +63,7 @@ impl BansMutation {
 		// check if victim exists
 		let victim = global
 			.user_loader()
-			.load(global, victim_id.0.cast())
+			.load(global, victim_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
@@ -158,7 +158,7 @@ impl BansMutation {
 
 		Ok(Some(Ban::from_db(
 			user.id.into(),
-			user.bans.iter().find(|ban| ban.id == ban_id.0.cast()).unwrap().clone(),
+			user.bans.iter().find(|ban| ban.id == ban_id.id()).unwrap().clone(),
 		)))
 	}
 }
@@ -184,7 +184,7 @@ impl Ban {
 
 		Ok(global
 			.user_by_id_loader()
-			.load(self.victim_id.0.cast())
+			.load(self.victim_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into()))
@@ -197,7 +197,7 @@ impl Ban {
 
 		Ok(global
 			.user_by_id_loader()
-			.load(self.actor_id.0.cast())
+			.load(self.actor_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into()))

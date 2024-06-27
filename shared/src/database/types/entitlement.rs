@@ -75,14 +75,17 @@ pub enum EntitlementEdgeManagedBy {
 	},
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EntitlementEdge {
-	#[serde(rename = "_id.from")]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct EntitlementEdgeId {
 	pub from: EntitlementEdgeKind,
-	#[serde(rename = "_id.to")]
 	pub to: EntitlementEdgeKind,
-	#[serde(rename = "_id.managed_by")]
 	pub managed_by: Option<EntitlementEdgeManagedBy>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct EntitlementEdge {
+	#[serde(rename = "_id")]
+	pub id: EntitlementEdgeId,
 }
 
 impl Collection for EntitlementEdge {
@@ -116,8 +119,8 @@ impl GraphEdge for EntitlementEdge {
 
 	fn edge_next(&self, direction: crate::database::graph::Direction) -> impl IntoIterator<Item = Self::Key> {
 		match direction {
-			crate::database::graph::Direction::Inbound => std::iter::once(self.from.clone()),
-			crate::database::graph::Direction::Outbound => std::iter::once(self.to.clone()),
+			crate::database::graph::Direction::Inbound => std::iter::once(self.id.from.clone()),
+			crate::database::graph::Direction::Outbound => std::iter::once(self.id.to.clone()),
 		}
 	}
 }
@@ -155,7 +158,7 @@ impl GraphKey for EntitlementEdgeKind {
 
 impl EntitlementEdge {
 	pub fn new(from: EntitlementEdgeKind, to: EntitlementEdgeKind, managed_by: Option<EntitlementEdgeManagedBy>) -> Self {
-		Self { from, to, managed_by }
+		Self { id: EntitlementEdgeId { from, to, managed_by } }
 	}
 }
 
@@ -204,7 +207,7 @@ impl CalculatedEntitlements {
 		let mut user_subscription_timelines = HashSet::new();
 		let mut entitlement_groups = HashSet::new();
 
-		edges.iter().for_each(|edge| match &edge.to {
+		edges.iter().for_each(|edge| match &edge.id.to {
 			EntitlementEdgeKind::Role { role_id } => {
 				roles.insert(role_id.clone());
 			}

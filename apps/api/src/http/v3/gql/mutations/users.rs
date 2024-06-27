@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::bson::{doc, to_bson};
-use shared::database::role::permissions::UserPermission;
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateOptions};
+use shared::database::role::permissions::{PermissionsExt, RolePermission, UserPermission};
+use shared::database::user::User;
+use shared::database::Collection;
+use shared::old_types::cosmetic::CosmeticKind;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -31,7 +35,6 @@ pub struct UserOps {
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl UserOps {
-	#[graphql(guard = "PermissionGuard::one(UserPermission::Edit)")]
 	async fn connections<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -42,93 +45,68 @@ impl UserOps {
 
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let (_, authed_user_perms) = auth_session.user(global).await?;
+		let user = auth_session.user(global).await?;
 
-		if !(auth_session.user_id() == self.id.id() || authed_user_perms.has(UserPermission::Admin)) {
+		if !(auth_session.user_id() == self.id.id() || user.has(UserPermission::ManageAny)) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let (_, perms) = load_user_and_permissions(global, self.id.id())
-			.await?
-			.ok_or(ApiError::NOT_FOUND)?;
+		let global_config = global
+			.global_config_loader()
+			.load(())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let mut session = global.mongo().start_session(None).await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction(None).await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		let mut update = doc! {};
+		let mut update_pull = doc! {};
 
 		if let Some(emote_set_id) = data.emote_set_id {
 			// check if set exists
-			global.emote_set_by_id_loader()
+			global
+				.emote_set_by_id_loader()
 				.load(emote_set_id.id())
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?;
 
-			database::User::collection(global.db())
-				.update_one_with_session(
-					doc! {
-						"_id": self.id.id(),
-					},
-					doc! {
-						"$set": {
-							"active_emote_set_ids": vec![emote_set_id.id()],
-						},
-					},
-					None,
-					&mut session,
-				)
-				.await
-				.map_err(|err| {
-					tracing::error!(error = %err, "failed to update user");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
+			update.insert("style.active_emote_set_id", emote_set_id.0);
 		}
 
 		if let Some(true) = data.unlink {
-			database::UserConnection::collection(global.db())
-				.delete_one_with_session(
-					doc! {
-						"platform_id": id,
-					},
-					None,
-					&mut session,
-				)
-				.await
-				.map_err(|err| {
-					tracing::error!(error = %err, "failed to delete connection");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
+			update_pull.insert("connections", doc! { "platform_id": id });
 		}
 
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let connections = global
-			.user_connection_by_user_id_loader()
-			.load(self.id.id())
+		let Some(user) = User::collection(global.db())
+			.find_one_and_update(
+				doc! {
+					"_id": self.id.0,
+				},
+				doc! {
+					"$set": update,
+					"$pull": update_pull,
+				},
+				FindOneAndUpdateOptions::builder()
+					.return_document(ReturnDocument::After)
+					.build(),
+			)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
-
-		let slots = perms.emote_set_slots_limit.unwrap_or(600);
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to update user");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?
+		else {
+			return Ok(None);
+		};
 
 		Ok(Some(
-			connections
+			user.connections
 				.into_iter()
-				.map(|c| Some(UserConnection::from_db(c, slots)))
+				.map(|c| Some(UserConnection::from_db(c, &user.style, &global_config)))
 				.collect(),
 		))
 	}
 
-	#[graphql(guard = "PermissionGuard::one(UserPermission::Edit)")]
 	async fn editors(
 		&self,
 		ctx: &Context<'_>,
@@ -139,19 +117,20 @@ impl UserOps {
 
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let (_, authed_user_perms) = auth_session.user(global).await?;
+		let user = auth_session.user(global).await?;
 
-		if !(auth_session.user_id() == self.id.id() || authed_user_perms.has(UserPermission::Admin)) {
+		if !(auth_session.user_id() == self.id.id() || user.has(UserPermission::ManageAny)) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
 		if let Some(permissions) = data.permissions {
 			if permissions == UserEditorModelPermission::none() {
-				database::UserEditor::collection(global.db())
+				// Remove editor
+				shared::database::user::editor::UserEditor::collection(global.db())
 					.delete_one(
 						doc! {
-							"user_id": self.id.id(),
-							"editor_id": editor_id.id(),
+							"user_id": self.id.0,
+							"editor_id": editor_id.0,
 						},
 						None,
 					)
@@ -161,18 +140,21 @@ impl UserOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 			} else {
-				database::UserEditor::collection(global.db())
+				// Add or update editor
+				shared::database::user::editor::UserEditor::collection(global.db())
 					.update_one(
 						doc! {
-							"user_id": self.id.id(),
-							"editor_id": editor_id.id(),
+							"user_id": self.id.0,
+							"editor_id": editor_id.0,
 						},
 						doc! {
 							"$set": {
 								"permissions": to_bson(&permissions.to_db()).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
 							},
 						},
-						None,
+						UpdateOptions::builder()
+							.upsert(user.has(UserPermission::InviteEditors))
+							.build(),
 					)
 					.await
 					.map_err(|err| {
@@ -198,16 +180,13 @@ impl UserOps {
 		))
 	}
 
-	#[graphql(guard = "PermissionGuard::one(UserPermission::Edit)")]
 	async fn cosmetics(&self, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
 		// TODO: entitlements required
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
-	#[graphql(
-		guard = "PermissionGuard::all([Permission::from(RolePermission::Assign), Permission::from(UserPermission::Edit)])"
-	)]
-	async fn roles(&self, action: ListItemAction) -> Result<RoleObjectId, ApiError> {
+	#[graphql(guard = "PermissionGuard::one(RolePermission::Assign)")]
+	async fn roles(&self, action: ListItemAction) -> Result<GqlObjectId, ApiError> {
 		// TODO: entitlements required
 		Err(ApiError::NOT_IMPLEMENTED)
 	}
@@ -216,7 +195,7 @@ impl UserOps {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct UserConnectionUpdate {
-	emote_set_id: Option<EmoteSetObjectId>,
+	emote_set_id: Option<GqlObjectId>,
 	unlink: Option<bool>,
 }
 
@@ -230,7 +209,7 @@ pub struct UserEditorUpdate {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct UserCosmeticUpdate {
-	id: ObjectId<()>,
+	id: GqlObjectId,
 	kind: CosmeticKind,
 	selected: bool,
 }

@@ -30,8 +30,7 @@ impl Job for BansJob {
 	async fn process(&mut self, ban: Self::T) -> ProcessOutcome {
 		// wait for users job to finish
 		if self.global.config().should_run_users() {
-			self.global.users_job_finish().notified().await;
-			tracing::info!("users job finished");
+			self.global.users_job_token().cancelled().await;
 		}
 
 		let mut outcome = ProcessOutcome::default();

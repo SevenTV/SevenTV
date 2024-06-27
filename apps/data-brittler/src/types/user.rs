@@ -56,7 +56,6 @@ pub struct UserConnection {
 	pub platform: ConnectionPlatform,
 	#[serde(default)]
 	pub linked_at: super::DateTime,
-	pub emote_slots: i32,
 	pub emote_set_id: Option<ObjectId>,
 }
 

@@ -1,7 +1,7 @@
 use bitmask_enum::bitmask;
 
 use crate::database::role::permissions::{
-	AdminPermission, AllowDeny, BadgePermission, EmotePermission, EmoteSetPermission, PaintPermission, Permissions, PermissionsExt, ReportPermission, RolePermission as NewRolePermissions, TicketPermission, UserPermission
+	AdminPermission, AllowDeny, BadgePermission, EmotePermission, EmoteSetPermission, PaintPermission, Permissions, PermissionsExt, RolePermission as NewRolePermissions, TicketPermission, UserPermission
 };
 
 #[bitmask(u64)]
@@ -297,19 +297,19 @@ impl RolePermission {
 			}
 		}
 
-		// Report Permissions
+		// Ticket Permissions
 		{
-			if value.has(ReportPermission::Create) {
+			if value.has(TicketPermission::Create) {
 				allowed |= Self::CreateReport;
 			}
-			if value.has(ReportPermission::Manage) {
+			if value.has(TicketPermission::ManageAbuse) && value.has(TicketPermission::ManageGeneric) {
 				allowed |= Self::ManageReports;
 			}
 
-			if value.denied(ReportPermission::Create) {
+			if value.denied(TicketPermission::Create) {
 				denied |= Self::CreateReport;
 			}
-			if value.denied(ReportPermission::Manage) {
+			if value.denied(TicketPermission::ManageAbuse) || value.denied(TicketPermission::ManageGeneric) {
 				denied |= Self::ManageReports;
 			}
 		}

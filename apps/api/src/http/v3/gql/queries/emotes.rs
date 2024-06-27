@@ -113,7 +113,7 @@ impl Emote {
 
 		Ok(global
 			.user_by_id_loader()
-			.load(self.owner_id.0.cast())
+			.load(self.owner_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into()))
@@ -211,7 +211,7 @@ impl EmotePartial {
 
 		Ok(global
 			.user_by_id_loader()
-			.load(self.owner_id.0.cast())
+			.load(self.owner_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u.into()))
@@ -306,7 +306,7 @@ impl EmotesQuery {
 
 		let emote = global
 			.emote_by_id_loader()
-			.load(id.0.cast())
+			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -323,7 +323,7 @@ impl EmotesQuery {
 
 		let emote = global
 			.emote_by_id_loader()
-			.load_many(list.into_iter().map(|i| i.0.cast()))
+			.load_many(list.into_iter().map(|i| i.id()))
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 

@@ -3,10 +3,10 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Context;
+use entitlements::EntitlementsJob;
 use futures::stream::FuturesUnordered;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
-use shared::database::Collection;
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -30,6 +30,7 @@ pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
+pub mod entitlements;
 pub mod messages;
 pub mod prices;
 pub mod reports;
@@ -184,6 +185,9 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		futures.push(j);
 	}
 	if let Some(j) = EmoteSetsJob::conditional_init_and_run(&global, global.config().should_run_emote_sets())? {
+		futures.push(j);
+	}
+	if let Some(j) = EntitlementsJob::conditional_init_and_run(&global, global.config().should_run_entitlements())? {
 		futures.push(j);
 	}
 	if let Some(j) = CosmeticsJob::conditional_init_and_run(&global, global.config().should_run_cosmetics())? {

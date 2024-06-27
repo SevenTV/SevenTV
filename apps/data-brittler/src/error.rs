@@ -34,6 +34,8 @@ pub enum Error {
 	InvalidStripeId(String),
 	#[error("{0}")]
 	Stripe(#[from] stripe::StripeError),
+	#[error("invalid recurring interval")]
+	InvalidRecurringInterval(stripe::RecurringInterval),
 
 	#[error("reqwest error")]
 	Reqwest(#[from] reqwest::Error),
@@ -67,6 +69,7 @@ impl Error {
 			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
+			Self::InvalidRecurringInterval(_) => "InvalidRecurringInterval",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
 			Self::Reqwest(_) => "Reqwest",
 			Self::ImageDownload { .. } => "ImageDownload",

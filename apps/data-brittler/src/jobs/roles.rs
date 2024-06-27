@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
+use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::UpdateOptions;
+use shared::database::emote_set::EmoteSetId;
 use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
 use shared::database::role::{Role, RoleId};
-use shared::database::{Collection, Id};
+use shared::database::Collection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -23,7 +25,7 @@ impl Job for RolesJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping roles collection");
-			Role::collection(global.target_db()).drop(None).await?;
+			Role::collection(global.target_db()).delete_many(doc! {}, None).await?;
 		}
 
 		Ok(RolesJob {
@@ -77,13 +79,13 @@ impl Job for RolesJob {
 			.update_one(
 				doc! {},
 				doc! {
-					"$addToSet": {
+					"$set": {
 						"role_ids": role_ids,
 					},
 					"$setOnInsert": {
-						"_id": Id::<()>::nil().as_uuid(),
+						"_id": Option::<ObjectId>::None,
 						"alerts": to_bson(&GlobalConfigAlerts::default()).unwrap(),
-						"emote_set_ids": [],
+						"emote_set_id": EmoteSetId::nil().as_uuid(),
 						"automod_rule_ids": [],
 						"normal_emote_set_slot_capacity": 600,
 						"personal_emote_set_slot_capacity": 5,

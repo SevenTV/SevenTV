@@ -41,7 +41,7 @@ impl Loader for EntitlementEdgeInboundLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().into_group_map_by(|edge| edge.to.clone()))
+		Ok(results.into_iter().into_group_map_by(|edge| edge.id.to.clone()))
 	}
 }
 
@@ -79,7 +79,7 @@ impl Loader for EntitlementEdgeOutboundLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().into_group_map_by(|edge| edge.from.clone()))
+		Ok(results.into_iter().into_group_map_by(|edge| edge.id.from.clone()))
 	}
 }
 

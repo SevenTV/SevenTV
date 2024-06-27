@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use mongodb::bson::doc;
 use mongodb::options::InsertManyOptions;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
 use shared::database::Collection;
@@ -22,7 +23,7 @@ impl Job for EmoteSetsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping emote_sets and emote_set_emotes collections");
-			EmoteSet::collection(global.target_db()).drop(None).await?;
+			EmoteSet::collection(global.target_db()).delete_many(doc! {}, None).await?;
 		}
 
 		Ok(Self {

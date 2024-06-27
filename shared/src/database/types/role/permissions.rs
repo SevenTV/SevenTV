@@ -253,22 +253,22 @@ pub enum UserPermission {
 	/// profile picture of other users but they may not be able to use it
 	UseCustomProfilePicture = 8,
 	/// Use personal emote sets
-	UsePersonalEmoteSet = 8,
+	UsePersonalEmoteSet = 16,
 	/// Use badges
-	UseBadge = 16,
+	UseBadge = 32,
 	/// Use paints
-	UsePaint = 32,
+	UsePaint = 64,
 	/// Allows the user to use special emote sets
-	UseSpecialEmoteSet = 64,
+	UseSpecialEmoteSet = 128,
 
 	/// Allows the user to manage other users
-	ManageAny = 128,
+	ManageAny = 256,
 
 	/// Allows the user to moderate other users (ban, unban, etc.)
-	Moderate = 256,
+	Moderate = 512,
 
 	/// View hidden users
-	ViewHidden = 512,
+	ViewHidden = 1028,
 }
 
 impl BitMask for UserPermission {
@@ -338,30 +338,6 @@ impl Default for EmoteModerationRequestPermission {
 }
 
 #[bitmask(i32)]
-pub enum ReportPermission {
-	/// Grants all permissions
-	Admin = 1,
-	/// Allows the user to create reports
-	Create = 2,
-	/// Allows the user to manage reports
-	Manage = 4,
-}
-
-impl BitMask for ReportPermission {
-	type Bits = i32;
-
-	fn bits(&self) -> Self::Bits {
-		self.bits()
-	}
-}
-
-impl Default for ReportPermission {
-	fn default() -> Self {
-		Self::none()
-	}
-}
-
-#[bitmask(i32)]
 pub enum AdminPermission {
 	/// Grants all permissions
 	Admin = 1,
@@ -410,9 +386,6 @@ pub struct Permissions {
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
 	#[serde(default)]
 	pub emote_moderation_request: AllowDeny<EmoteModerationRequestPermission>,
-	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
-	#[serde(default)]
-	pub report: AllowDeny<ReportPermission>,
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
 	#[serde(default)]
 	pub admin: AllowDeny<AdminPermission>,
@@ -471,7 +444,6 @@ impl Permissions {
 			Permission::User(perm) => self.user.allow(perm),
 			Permission::Ticket(perm) => self.ticket.allow(perm),
 			Permission::EmoteModerationRequest(perm) => self.emote_moderation_request.allow(perm),
-			Permission::Report(perm) => self.report.allow(perm),
 			Permission::Admin(perm) => self.admin.allow(perm),
 			Permission::Flags(perm) => self.flags.allow(perm),
 		}
@@ -487,7 +459,6 @@ impl Permissions {
 			Permission::User(perm) => self.user.deny(perm),
 			Permission::Ticket(perm) => self.ticket.deny(perm),
 			Permission::EmoteModerationRequest(perm) => self.emote_moderation_request.deny(perm),
-			Permission::Report(perm) => self.report.deny(perm),
 			Permission::Admin(perm) => self.admin.deny(perm),
 			Permission::Flags(perm) => self.flags.deny(perm),
 		}
@@ -529,12 +500,6 @@ impl Permissions {
 		!self.is_admin()
 			&& !self.emote_moderation_request.permission().contains(EmoteModerationRequestPermission::Admin)
 			&& self.emote_moderation_request.deny.contains(permission)
-	}
-
-	pub fn denied_report(&self, permission: ReportPermission) -> bool {
-		!self.is_admin()
-			&& !self.report.permission().contains(ReportPermission::Admin)
-			&& self.report.deny.contains(permission)
 	}
 
 	pub fn denied_admin(&self, permission: AdminPermission) -> bool {
@@ -587,12 +552,6 @@ impl Permissions {
 		self.is_admin()
 			|| self.emote_moderation_request.permission().contains(permission)
 			|| self.emote_moderation_request.permission().contains(EmoteModerationRequestPermission::Admin)
-	}
-
-	pub fn has_report(&self, permission: ReportPermission) -> bool {
-		self.is_admin()
-			|| self.report.permission().contains(permission)
-			|| self.report.permission().contains(ReportPermission::Admin)
 	}
 
 	pub fn has_admin(&self, permission: AdminPermission) -> bool {
@@ -673,8 +632,6 @@ pub enum Permission {
 	#[enum_impl(impl from)]
 	EmoteModerationRequest(EmoteModerationRequestPermission),
 	#[enum_impl(impl from)]
-	Report(ReportPermission),
-	#[enum_impl(impl from)]
 	Admin(AdminPermission),
 	#[enum_impl(impl from)]
 	Flags(FlagPermission),
@@ -713,7 +670,6 @@ impl PermissionsExt for Permissions {
 			Permission::User(perm) => self.has_user(perm),
 			Permission::Ticket(perm) => self.has_ticket(perm),
 			Permission::EmoteModerationRequest(perm) => self.has_emote_moderation_request(perm),
-			Permission::Report(perm) => self.has_report(perm),
 			Permission::Admin(perm) => self.has_admin(perm),
 			Permission::Flags(perm) => self.has_flags(perm),
 		}
@@ -729,7 +685,6 @@ impl PermissionsExt for Permissions {
 			Permission::User(perm) => self.denied_user(perm),
 			Permission::Ticket(perm) => self.denied_ticket(perm),
 			Permission::EmoteModerationRequest(perm) => self.denied_emote_moderation_request(perm),
-			Permission::Report(perm) => self.denied_report(perm),
 			Permission::Admin(perm) => self.denied_admin(perm),
 			Permission::Flags(perm) => self.denied_flags(perm),
 		}

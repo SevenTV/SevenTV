@@ -40,7 +40,7 @@ impl Loader for UserEditorByUserIdLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.user_id))
+		Ok(results.into_iter().into_group_map_by(|r| r.id.user_id))
 	}
 }
 
@@ -76,7 +76,7 @@ impl Loader for UserEditorByEditorIdLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.editor_id))
+		Ok(results.into_iter().into_group_map_by(|r| r.id.editor_id))
 	}
 }
 
@@ -117,6 +117,6 @@ impl Loader for UserEditorByIdLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().map(|r| ((r.user_id, r.editor_id), r)).collect())
+		Ok(results.into_iter().map(|r| ((r.id.user_id, r.id.editor_id), r)).collect())
 	}
 }

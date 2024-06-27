@@ -5,15 +5,16 @@ use crate::database::types::GenericCollection;
 use crate::database::Collection;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-pub struct UserEditorId {}
+pub struct UserEditorId {
+	pub user_id: UserId,
+	pub editor_id: UserId,
+}
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditor {
-	#[serde(rename = "_id.user_id")]
-	pub user_id: UserId,
-	#[serde(rename = "_id.editor_id")]
-	pub editor_id: UserId,
+	#[serde(rename = "_id")]
+	pub id: UserEditorId,
 	pub state: UserEditorState,
 	pub notes: Option<String>,
 	pub permissions: UserEditorPermissions,

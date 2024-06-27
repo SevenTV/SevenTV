@@ -23,24 +23,26 @@ impl From<FullUser> for UserDataSource {
 }
 
 impl UserDataSource {
-	pub async fn full(&mut self, global: &Arc<Global>) -> Result<&FullUser, ApiError> {
+	pub async fn full(&mut self, global: &Arc<Global>) -> Result<Option<&FullUser>, ApiError> {
 		match self {
 			UserDataSource::User(u) => {
-				let full = global
+				let Some(full) = global
 					.user_loader()
 					.load(global, u.id)
 					.await
 					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::NOT_FOUND)?;
+				else {
+					return Ok(None);
+				};
 				*self = UserDataSource::Full(full);
 				let full = if let UserDataSource::Full(full) = self {
 					full
 				} else {
 					unreachable!()
 				};
-				Ok(full)
+				Ok(Some(full))
 			}
-			UserDataSource::Full(u) => Ok(u),
+			UserDataSource::Full(u) => Ok(Some(u)),
 		}
 	}
 

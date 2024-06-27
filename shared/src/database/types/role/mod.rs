@@ -6,7 +6,7 @@ pub mod permissions;
 
 pub type RoleId = Id<Role>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Role {
 	#[serde(rename = "_id")]
