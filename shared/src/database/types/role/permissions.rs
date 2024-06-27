@@ -498,7 +498,10 @@ impl Permissions {
 
 	pub fn denied_emote_moderation_request(&self, permission: EmoteModerationRequestPermission) -> bool {
 		!self.is_admin()
-			&& !self.emote_moderation_request.permission().contains(EmoteModerationRequestPermission::Admin)
+			&& !self
+				.emote_moderation_request
+				.permission()
+				.contains(EmoteModerationRequestPermission::Admin)
 			&& self.emote_moderation_request.deny.contains(permission)
 	}
 
@@ -551,7 +554,10 @@ impl Permissions {
 	pub fn has_emote_moderation_request(&self, permission: EmoteModerationRequestPermission) -> bool {
 		self.is_admin()
 			|| self.emote_moderation_request.permission().contains(permission)
-			|| self.emote_moderation_request.permission().contains(EmoteModerationRequestPermission::Admin)
+			|| self
+				.emote_moderation_request
+				.permission()
+				.contains(EmoteModerationRequestPermission::Admin)
 	}
 
 	pub fn has_admin(&self, permission: AdminPermission) -> bool {

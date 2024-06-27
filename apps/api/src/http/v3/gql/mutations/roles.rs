@@ -13,7 +13,7 @@ use shared::old_types::object_id::GqlObjectId;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::queries::Role;
+use crate::http::v3::gql::queries::role::Role;
 
 #[derive(Default)]
 pub struct RolesMutation;

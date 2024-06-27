@@ -195,11 +195,7 @@ pub async fn upload_user_profile_picture(
 
 	let target_user = other_user.as_ref().unwrap_or(&user);
 
-	if target_user
-		.computed
-		.permissions
-		.has(UserPermission::UseCustomProfilePicture)
-	{
+	if target_user.computed.permissions.has(UserPermission::UseCustomProfilePicture) {
 		return Err(ApiError::new_const(
 			StatusCode::FORBIDDEN,
 			"user cannot set custom profile picture",
@@ -207,10 +203,14 @@ pub async fn upload_user_profile_picture(
 	}
 
 	if other_user.is_some() && !user.has(UserPermission::ManageAny) {
-		if !global.user_editor_by_id_loader().load((
-			target_user.id,
-			user.id,
-		)).await.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?.map(|editor| editor.permissions.has_user(EditorUserPermission::ManageProfile)).unwrap_or_default() {
+		if !global
+			.user_editor_by_id_loader()
+			.load((target_user.id, user.id))
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|editor| editor.permissions.has_user(EditorUserPermission::ManageProfile))
+			.unwrap_or_default()
+		{
 			return Err(ApiError::new_const(
 				StatusCode::FORBIDDEN,
 				"user cannot edit other user's profile picture",

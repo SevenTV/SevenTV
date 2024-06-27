@@ -4,10 +4,10 @@ use std::vec;
 
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
-use shared::database::image_set::{ImageSet, ImageSetInput};
-use shared::database::{self, Collection};
 use shared::database::badge::Badge;
+use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintLayer, PaintLayerId, PaintLayerType};
+use shared::database::{self, Collection};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;

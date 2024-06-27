@@ -2,7 +2,7 @@ use async_graphql::Object;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::http::error::ApiError;
-use crate::http::v3::gql::queries::InboxMessage;
+use crate::http::v3::gql::queries::message::InboxMessage;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/resolvers/mutation/mutation.messages.go
 

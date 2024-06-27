@@ -8,8 +8,8 @@ use shared::database::user::UserId;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
-use super::emotes::{Emote, EmotePartial};
-use super::users::UserPartial;
+use super::emote::{Emote, EmotePartial};
+use super::user::UserPartial;
 use crate::global::Global;
 use crate::http::error::ApiError;
 

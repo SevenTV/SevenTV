@@ -17,7 +17,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::queries::{Report, ReportStatus};
+use crate::http::v3::gql::queries::report::{Report, ReportStatus};
 
 #[derive(Default)]
 pub struct ReportsMutation;
@@ -207,7 +207,7 @@ impl ReportsMutation {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CreateReportInput {
-	target_kind: i32,
+	target_kind: u32,
 	target_id: GqlObjectId,
 	subject: String,
 	body: String,

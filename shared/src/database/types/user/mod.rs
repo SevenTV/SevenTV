@@ -60,10 +60,7 @@ impl ActiveBans<'_> {
 	}
 
 	pub fn greatest_ban_for(&self, permission: Permission) -> Option<&UserBan> {
-		self.0
-			.iter()
-			.find(|ban| ban.permissions.denied(permission))
-			.copied()
+		self.0.iter().find(|ban| ban.permissions.denied(permission)).copied()
 	}
 }
 

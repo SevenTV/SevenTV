@@ -1,10 +1,7 @@
 use std::convert::Infallible;
 
 use axum::extract::ws;
-use axum::extract::ws::CloseCode as WsCloseCode;
-use axum::extract::ws::CloseFrame;
-use axum::extract::ws::Message as WsMessage;
-use axum::extract::ws::WebSocket;
+use axum::extract::ws::{CloseCode as WsCloseCode, CloseFrame, Message as WsMessage, WebSocket};
 use axum::response::sse::Event;
 use shared::event_api::types::CloseCode;
 use shared::event_api::{Message, MessagePayload};
@@ -15,8 +12,8 @@ pub enum Socket {
 	Sse(tokio::sync::mpsc::Sender<Result<Event, Infallible>>),
 }
 
-// /// Internally a websocket is a state machine, so we have to keep track of the
-// /// state.
+// /// Internally a websocket is a state machine, so we have to keep track of
+// the /// state.
 // pub enum WebSocket {
 // 	Pending(HyperWebsocket),
 // 	Ready(HyperWebsocketStream),
@@ -40,8 +37,8 @@ pub enum Socket {
 
 // 	/// Send a message over the websocket, this will wait for the websocket to
 // 	/// be ready.
-// 	pub async fn send(&mut self, data: impl SocketMessage) -> Result<(), axum::Error> {
-// 		// Wait for the websocket to be ready.
+// 	pub async fn send(&mut self, data: impl SocketMessage) -> Result<(),
+// axum::Error> { 		// Wait for the websocket to be ready.
 // 		self.ready().await?;
 
 // 		match self {
@@ -71,8 +68,8 @@ pub enum Socket {
 
 // 	/// Close the websocket, if the websocket is not ready, this will wait for
 // 	/// it to be ready.
-// 	pub async fn close(&mut self, close: Option<CloseFrame<'_>>) -> Result<(), axum::Error> {
-// 		// Wait for the websocket to be ready.
+// 	pub async fn close(&mut self, close: Option<CloseFrame<'_>>) -> Result<(),
+// axum::Error> { 		// Wait for the websocket to be ready.
 // 		self.ready().await?;
 
 // 		match self {

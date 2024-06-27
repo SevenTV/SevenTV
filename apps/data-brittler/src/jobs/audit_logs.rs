@@ -321,10 +321,12 @@ impl Job for AuditLogsJob {
 							old: status.old == ReportStatus::Open,
 							new: status.new == ReportStatus::Open,
 						},
-						AuditLogChange::ReportAssignees(assignees) => database::activity::TicketActivityData::ChangeAssignees {
-							added: assignees.added.into_iter().map(|id| id.into()).collect(),
-							removed: assignees.removed.into_iter().map(|id| id.into()).collect(),
-						},
+						AuditLogChange::ReportAssignees(assignees) => {
+							database::activity::TicketActivityData::ChangeAssignees {
+								added: assignees.added.into_iter().map(|id| id.into()).collect(),
+								removed: assignees.removed.into_iter().map(|id| id.into()).collect(),
+							}
+						}
 						_ => unimplemented!(),
 					})
 					.map(Some)

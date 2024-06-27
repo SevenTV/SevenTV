@@ -10,7 +10,7 @@ use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::role_permission::RolePermission;
 
-use super::users::User;
+use super::user::User;
 use crate::global::Global;
 use crate::http::error::ApiError;
 

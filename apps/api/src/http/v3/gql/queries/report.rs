@@ -4,15 +4,12 @@ use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use futures::StreamExt;
 use mongodb::bson::doc;
 use mongodb::options::FindOptions;
-use shared::database::ticket::{TicketKind, TicketTarget};
-use shared::database::{
-	role::permissions::TicketPermission,
-	ticket::{Ticket, TicketMemberKind, TicketMessage},
-	Collection,
-};
+use shared::database::role::permissions::TicketPermission;
+use shared::database::ticket::{Ticket, TicketKind, TicketMemberKind, TicketMessage, TicketTarget};
+use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 
-use super::users::{User, UserPartial};
+use super::user::{User, UserPartial};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::PermissionGuard;

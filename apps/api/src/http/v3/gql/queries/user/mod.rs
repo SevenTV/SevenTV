@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
-use data_source::UserDataSource;
 use mongodb::bson::doc;
 use shared::database::activity::EmoteSetActivityData;
 use shared::database::global::GlobalConfig;
@@ -11,10 +10,11 @@ use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{UserConnectionPlatformModel, UserTypeModel};
 use tokio::sync::RwLock;
 
-use super::audit_logs::AuditLog;
-use super::emote_sets::EmoteSet;
-use super::emotes::Emote;
-use super::reports::Report;
+use self::data_source::UserDataSource;
+use super::audit_log::AuditLog;
+use super::emote::Emote;
+use super::emote_set::EmoteSet;
+use super::report::Report;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;

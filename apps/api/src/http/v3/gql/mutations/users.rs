@@ -13,7 +13,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::queries::{UserConnection, UserEditor};
+use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
 use crate::http::v3::types::UserEditorModelPermission;
 

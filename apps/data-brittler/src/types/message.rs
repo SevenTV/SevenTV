@@ -22,8 +22,15 @@ pub enum MessageKind {
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
 pub enum MessageData {
-	InboxData { subject: String, content: String },
-	EmoteRequest { target_id: ObjectId, wish: Option<EmoteWish>, actor_country_code: Option<String> },
+	InboxData {
+		subject: String,
+		content: String,
+	},
+	EmoteRequest {
+		target_id: ObjectId,
+		wish: Option<EmoteWish>,
+		actor_country_code: Option<String>,
+	},
 }
 
 #[derive(Debug, serde::Deserialize)]

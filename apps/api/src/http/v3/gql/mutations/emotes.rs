@@ -14,7 +14,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::queries::Emote;
+use crate::http::v3::gql::queries::emote::Emote;
 
 #[derive(Default)]
 pub struct EmotesMutation;

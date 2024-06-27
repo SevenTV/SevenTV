@@ -9,13 +9,12 @@ use mongodb::bson::{doc, to_bson};
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
-use shared::database::paint::Paint;
 use shared::database::badge::Badge;
 use shared::database::emote::Emote;
 use shared::database::image_set::Image;
-use shared::database::paint::PaintLayerId;
-use shared::database::Collection;
+use shared::database::paint::{Paint, PaintLayerId};
 use shared::database::user::User;
+use shared::database::Collection;
 use shared::image_processor::Subject;
 
 use crate::global::Global;

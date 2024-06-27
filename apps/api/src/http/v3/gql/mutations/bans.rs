@@ -5,7 +5,7 @@ use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::role::permissions::{
-	EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission
+	EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
 };
 use shared::database::user::ban::UserBan;
 use shared::database::user::User;
@@ -17,7 +17,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::queries::{User as GqlUser, UserPartial};
+use crate::http::v3::gql::queries::user::{User as GqlUser, UserPartial};
 
 #[derive(Default)]
 pub struct BansMutation;

@@ -1,4 +1,5 @@
-use std::{net::SocketAddr, time::Duration};
+use std::net::SocketAddr;
+use std::time::Duration;
 
 use scuffle_foundations::settings::auto_settings;
 
