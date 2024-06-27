@@ -31,7 +31,9 @@ impl Job for ReportsJob {
 		if global.config().truncate {
 			tracing::info!("dropping tickets and ticket_messages collections");
 			Ticket::collection(global.target_db()).delete_many(doc! {}, None).await?;
-			TicketMessage::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			TicketMessage::collection(global.target_db())
+				.delete_many(doc! {}, None)
+				.await?;
 		}
 
 		Ok(Self {

@@ -1,7 +1,7 @@
-use fnv::FnvHashSet;
-use mongodb::bson::doc;
 use std::sync::Arc;
 
+use fnv::FnvHashSet;
+use mongodb::bson::doc;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::Collection;
 
@@ -28,7 +28,10 @@ impl Job for EntitlementsJob {
 				.await?;
 		}
 
-		Ok(Self { global, edges: FnvHashSet::default() })
+		Ok(Self {
+			global,
+			edges: FnvHashSet::default(),
+		})
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
@@ -77,7 +80,7 @@ impl Job for EntitlementsJob {
 			Err(e) => outcome.errors.push(e.into()),
 		}
 
-        self.global.entitlement_job_token().cancel();
+		self.global.entitlement_job_token().cancel();
 
 		outcome
 	}

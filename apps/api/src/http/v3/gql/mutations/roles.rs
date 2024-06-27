@@ -5,9 +5,9 @@ use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::global::GlobalConfig;
+use shared::database::role::permissions::RolePermission;
 use shared::database::role::RoleId;
 use shared::database::Collection;
-use shared::database::role::permissions::RolePermission;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -158,8 +158,10 @@ impl RolesMutation {
 
 				update.insert(
 					"permissions",
-					to_bson(&shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied))
-						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
+					to_bson(&shared::old_types::role_permission::RolePermission::to_new_permissions(
+						allowed, denied,
+					))
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
 				);
 			}
 			(None, None) => {}

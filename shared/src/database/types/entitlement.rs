@@ -158,7 +158,9 @@ impl GraphKey for EntitlementEdgeKind {
 
 impl EntitlementEdge {
 	pub fn new(from: EntitlementEdgeKind, to: EntitlementEdgeKind, managed_by: Option<EntitlementEdgeManagedBy>) -> Self {
-		Self { id: EntitlementEdgeId { from, to, managed_by } }
+		Self {
+			id: EntitlementEdgeId { from, to, managed_by },
+		}
 	}
 }
 

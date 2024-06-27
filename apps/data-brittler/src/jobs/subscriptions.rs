@@ -18,7 +18,8 @@ impl Job for SubscriptionsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping subscriptions");
-			// Subscription::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			// Subscription::collection(global.target_db()).delete_many(doc! {},
+			// None).await?;
 		}
 
 		Ok(Self {

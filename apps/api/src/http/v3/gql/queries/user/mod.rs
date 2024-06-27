@@ -265,7 +265,9 @@ impl UserEditor {
 		}
 
 		Some(UserEditor {
-			id: editor_of.then_some(value.id.user_id.into()).unwrap_or(value.id.editor_id.into()),
+			id: editor_of
+				.then_some(value.id.user_id.into())
+				.unwrap_or(value.id.editor_id.into()),
 			added_at: value.added_at,
 			permissions: UserEditorModelPermission::from_db(&value.permissions),
 			visible: true,

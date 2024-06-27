@@ -240,7 +240,9 @@ impl Job for UsersJob {
 			editors.insert_many(&self.editors, insert_options.clone()),
 			edges.insert_many(&self.edges, insert_options),
 		);
-		let res = vec![res.0, res.1, res.2].into_iter().zip(vec![self.users.len(), self.editors.len(), self.edges.len()]);
+		let res = vec![res.0, res.1, res.2]
+			.into_iter()
+			.zip(vec![self.users.len(), self.editors.len(), self.edges.len()]);
 
 		for (res, len) in res {
 			match res {
