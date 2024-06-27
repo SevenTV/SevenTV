@@ -4,10 +4,12 @@ use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use futures::StreamExt;
 use mongodb::bson::doc;
 use mongodb::options::FindOptions;
-use shared::database::emote_moderation_request::{EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus};
-use shared::old_types::object_id::GqlObjectId;
+use shared::database::emote_moderation_request::{
+	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
+};
 use shared::database::role::permissions::EmoteModerationRequestPermission;
 use shared::database::Collection;
+use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -57,7 +59,8 @@ impl ModRequestMessage {
 			id: mod_request.id.into(),
 			kind: MessageKind::ModRequest,
 			author_id: Some(mod_request.user_id.into()),
-			read: mod_request.status == EmoteModerationRequestStatus::Approved || mod_request.status == EmoteModerationRequestStatus::Denied,
+			read: mod_request.status == EmoteModerationRequestStatus::Approved
+				|| mod_request.status == EmoteModerationRequestStatus::Denied,
 			read_at: None,
 			target_kind: 2,
 			target_id: mod_request.emote_id.into(),

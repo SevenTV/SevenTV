@@ -1,7 +1,8 @@
 use bitmask_enum::bitmask;
 
 use crate::database::role::permissions::{
-	AdminPermission, AllowDeny, BadgePermission, EmotePermission, EmoteSetPermission, PaintPermission, Permissions, PermissionsExt, ReportPermission, RolePermission as NewRolePermissions, TicketPermission, UserPermission
+	AdminPermission, AllowDeny, BadgePermission, EmotePermission, EmoteSetPermission, PaintPermission, Permissions,
+	PermissionsExt, ReportPermission, RolePermission as NewRolePermissions, TicketPermission, UserPermission,
 };
 
 #[bitmask(u64)]

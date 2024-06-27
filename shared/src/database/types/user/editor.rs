@@ -35,7 +35,7 @@ macro_rules! impl_bits {
 				self.bits() == 0
 			}
 		}
-		
+
 		impl serde::Serialize for $bits {
 			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 			where
@@ -44,7 +44,7 @@ macro_rules! impl_bits {
 				serde::Serialize::serialize(&self.bits(), serializer)
 			}
 		}
-		
+
 		impl<'de> serde::Deserialize<'de> for $bits {
 			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 			where

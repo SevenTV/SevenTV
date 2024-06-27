@@ -1,14 +1,16 @@
 use std::sync::Arc;
-use async_graphql::{ComplexObject, InputObject, Object, SimpleObject, Context};
+
+use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
+use hyper::StatusCode;
+use mongodb::bson::{doc, to_bson};
 use shared::database::image_set::{ImageSet, ImageSetInput};
-use shared::database::paint::{Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow};
+use shared::database::paint::{
+	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
+};
 use shared::database::role::permissions::PaintPermission;
 use shared::database::Collection;
 use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape};
 use shared::old_types::object_id::GqlObjectId;
-
-use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -20,7 +22,11 @@ pub struct CosmeticsMutation;
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl CosmeticsMutation {
 	#[graphql(guard = "PermissionGuard::one(PaintPermission::Manage)")]
-	async fn create_cosmetic_paint<'ctx>(&self, ctx: &Context<'ctx>, definition: CosmeticPaintInput) -> Result<GqlObjectId, ApiError> {
+	async fn create_cosmetic_paint<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		definition: CosmeticPaintInput,
+	) -> Result<GqlObjectId, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let id = PaintId::new();
@@ -32,13 +38,10 @@ impl CosmeticsMutation {
 			..Default::default()
 		};
 
-		Paint::collection(global.db())
-			.insert_one(paint, None)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert paint");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+		Paint::collection(global.db()).insert_one(paint, None).await.map_err(|e| {
+			tracing::error!(error = %e, "failed to insert paint");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 		Ok(id.into())
 	}
@@ -111,16 +114,16 @@ impl CosmeticPaintInput {
 						Err(e) => {
 							tracing::error!(error = ?e, "failed to read image data");
 							return Err(ApiError::INTERNAL_SERVER_ERROR);
-						},
+						}
 					},
 					Ok(res) => {
 						tracing::error!(status = ?res.status(), "failed to request image url");
 						return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "failed to request image url"));
-					},
+					}
 					Err(e) => {
 						tracing::error!(error = ?e, "failed to request image url");
 						return Err(ApiError::INTERNAL_SERVER_ERROR);
-					},
+					}
 				};
 
 				let input = match global
@@ -130,7 +133,10 @@ impl CosmeticPaintInput {
 				{
 					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
 						tracing::error!(error = ?error, "failed to start processing image");
-						return Err(ApiError::new_const(StatusCode::INTERNAL_SERVER_ERROR, "image processor error"));
+						return Err(ApiError::new_const(
+							StatusCode::INTERNAL_SERVER_ERROR,
+							"image processor error",
+						));
 					}
 					Ok(scuffle_image_processor_proto::ProcessImageResponse {
 						id,
@@ -149,9 +155,17 @@ impl CosmeticPaintInput {
 					},
 					Err(e) => {
 						tracing::error!(error = ?e, "failed to start send image processor request");
-						return Err(ApiError::new_const(StatusCode::INTERNAL_SERVER_ERROR, "image processor error"));
-					},
-					_ => return Err(ApiError::new_const(StatusCode::INTERNAL_SERVER_ERROR, "image processor error")),
+						return Err(ApiError::new_const(
+							StatusCode::INTERNAL_SERVER_ERROR,
+							"image processor error",
+						));
+					}
+					_ => {
+						return Err(ApiError::new_const(
+							StatusCode::INTERNAL_SERVER_ERROR,
+							"image processor error",
+						));
+					}
 				};
 
 				PaintLayerType::Image(ImageSet {

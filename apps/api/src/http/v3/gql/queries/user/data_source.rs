@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use shared::database::user::{FullUser, User};
 
-use crate::{global::Global, http::error::ApiError};
+use crate::global::Global;
+use crate::http::error::ApiError;
 
 #[derive(Debug, Clone)]
 pub enum UserDataSource {

@@ -103,17 +103,16 @@ pub struct Extra {
 impl Extra {
 	fn any_run(&self) -> bool {
 		self.users
-		|| self.bans
-		|| self.emotes
-		|| self.emote_sets
-		|| self.cosmetics
-		|| self.roles
-		|| self.reports
-		|| self.audit_logs
-		|| self.messages
-		|| self.system
-		|| self.prices
-		|| self.subscriptions
+			|| self.bans || self.emotes
+			|| self.emote_sets
+			|| self.cosmetics
+			|| self.roles
+			|| self.reports
+			|| self.audit_logs
+			|| self.messages
+			|| self.system
+			|| self.prices
+			|| self.subscriptions
 	}
 
 	pub fn should_run_users(&self) -> bool {

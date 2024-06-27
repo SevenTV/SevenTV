@@ -13,7 +13,7 @@ use shared::database::Id;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
-use super::users::UserPartial;
+use super::user::UserPartial;
 use crate::global::Global;
 use crate::http::error::ApiError;
 

@@ -163,13 +163,15 @@ impl Drop for Connection {
 				// self.global.metrics().decr_current_websocket_connections();
 				// self.global
 				// 	.metrics()
-				// 	.observe_connection_duration_seconds_websocket(self.start.elapsed().as_secs_f64());
+				// 	.observe_connection_duration_seconds_websocket(self.start.
+				// elapsed().as_secs_f64());
 			}
 			Socket::Sse(_) => {
 				// self.global.metrics().decr_current_event_streams();
 				// self.global
 				// 	.metrics()
-				// 	.observe_connection_duration_seconds_event_stream(self.start.elapsed().as_secs_f64());
+				// 	.observe_connection_duration_seconds_event_stream(self.start.
+				// elapsed().as_secs_f64());
 			}
 		}
 	}
@@ -273,10 +275,12 @@ impl Connection {
 
 				match self.socket {
 					Socket::Sse(_) => {
-						// self.global.metrics().observe_client_close_event_stream(err.as_str());
+						// self.global.metrics().
+						// observe_client_close_event_stream(err.as_str());
 					}
 					Socket::WebSocket(_) => {
-						// self.global.metrics().observe_client_close_websocket(err.as_str());
+						// self.global.metrics().
+						// observe_client_close_websocket(err.as_str());
 					}
 				}
 				false

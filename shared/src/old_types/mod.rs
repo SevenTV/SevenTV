@@ -101,8 +101,7 @@ impl UserPartialModel {
 		let main_connection = user.connections.first();
 
 		let paint_id = user.style.active_paint_id.and_then(|id| {
-			if user.has(UserPermission::UsePaint) && user.computed.entitlements.paints.contains(&id)
-			{
+			if user.has(UserPermission::UsePaint) && user.computed.entitlements.paints.contains(&id) {
 				Some(id)
 			} else {
 				None
@@ -110,8 +109,7 @@ impl UserPartialModel {
 		});
 
 		let badge_id = user.style.active_badge_id.and_then(|id| {
-			if user.has(UserPermission::UseBadge) && user.computed.entitlements.badges.contains(&id)
-			{
+			if user.has(UserPermission::UseBadge) && user.computed.entitlements.badges.contains(&id) {
 				Some(id)
 			} else {
 				None

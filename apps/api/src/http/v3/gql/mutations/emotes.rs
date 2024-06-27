@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::bson::doc;
+use shared::database::emote::Emote as DbEmote;
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorState};
 use shared::database::Collection;
-use shared::database::emote::Emote as DbEmote;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
@@ -13,7 +13,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::queries::Emote;
+use crate::http::v3::gql::queries::emote::Emote;
 
 #[derive(Default)]
 pub struct EmotesMutation;

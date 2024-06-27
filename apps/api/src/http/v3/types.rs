@@ -3,7 +3,9 @@
 
 use bitmask_enum::bitmask;
 use shared::database::emote::EmoteFlags;
-use shared::database::user::editor::{EditorEmotePermission, EditorEmoteSetPermission, EditorUserPermission, UserEditorPermissions};
+use shared::database::user::editor::{
+	EditorEmotePermission, EditorEmoteSetPermission, EditorUserPermission, UserEditorPermissions,
+};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(components(schemas(

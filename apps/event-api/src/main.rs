@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
 use config::Config;
-use scuffle_foundations::{
-	bootstrap::{bootstrap, Bootstrap, RuntimeSettings},
-	settings::cli::Matches,
-	telemetry::settings::TelemetrySettings,
-};
+use scuffle_foundations::bootstrap::{bootstrap, Bootstrap, RuntimeSettings};
+use scuffle_foundations::settings::cli::Matches;
+use scuffle_foundations::telemetry::settings::TelemetrySettings;
 use tokio::signal::unix::SignalKind;
 
 mod config;

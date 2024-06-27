@@ -306,7 +306,11 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			token
 		)
 	} else {
-		format!("{}/auth/callback?platform={}", global.config().api.website_origin, query.platform)
+		format!(
+			"{}/auth/callback?platform={}",
+			global.config().api.website_origin,
+			query.platform
+		)
 	};
 
 	Ok(redirect_url)

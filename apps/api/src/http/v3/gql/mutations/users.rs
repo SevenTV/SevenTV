@@ -9,7 +9,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::queries::{UserConnection, UserEditor};
+use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
 use crate::http::v3::types::UserEditorModelPermission;
 
@@ -64,7 +64,8 @@ impl UserOps {
 
 		if let Some(emote_set_id) = data.emote_set_id {
 			// check if set exists
-			global.emote_set_by_id_loader()
+			global
+				.emote_set_by_id_loader()
 				.load(emote_set_id.id())
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
