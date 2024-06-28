@@ -1,9 +1,13 @@
 use std::sync::Arc;
+use std::future::IntoFuture;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use mongodb::bson::doc;
+use mongodb::options::FindOptions;
+use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::role_permission::RolePermission;
+use futures::{TryFutureExt, TryStreamExt};
 
 use super::user::User;
 use crate::global::Global;
@@ -74,15 +78,18 @@ impl RolesQuery {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		Ok(global
-			.all_roles_loader()
-			.load(())
+		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(global.db())
+			.find(doc! {})
+			.with_options(FindOptions::builder().sort(doc! { "rank": -1 }).build())
+			.into_future()
+			.and_then(|f| f.try_collect())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?
-			.into_iter()
-			.map(Role::from_db)
-			.collect())
+			.map_err(|err| {
+				tracing::error!("failed to load: {err}");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		Ok(roles.into_iter().map(Role::from_db).collect())
 	}
 
 	async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Role>, ApiError> {

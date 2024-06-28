@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use mongodb::bson::doc;
@@ -10,6 +11,7 @@ use crate::types;
 
 pub struct RolesJob {
 	global: Arc<Global>,
+	ranks: HashSet<i32>,
 }
 
 impl Job for RolesJob {
@@ -25,6 +27,7 @@ impl Job for RolesJob {
 
 		Ok(RolesJob {
 			global,
+			ranks: HashSet::new(),
 		})
 	}
 
@@ -37,7 +40,11 @@ impl Job for RolesJob {
 
 		let id = role.id.into();
 
-		let rank = role.position.try_into().unwrap_or(i16::MAX);
+		let mut rank = role.position.try_into().unwrap_or(i32::MAX);
+
+		while !self.ranks.insert(rank) {
+			rank += 1;
+		}
 
 		match Role::collection(self.global.target_db())
 			.insert_one(Role {
@@ -48,7 +55,7 @@ impl Job for RolesJob {
 				tags: vec![],
 				hoist: false,
 				color: Some(role.color),
-				rank: rank as i32,
+				rank,
 			})
 			.await
 		{

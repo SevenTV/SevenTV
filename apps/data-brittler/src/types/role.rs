@@ -9,7 +9,7 @@ pub struct Role {
 	#[serde(rename = "_id")]
 	pub id: ObjectId,
 	pub name: String,
-	pub position: u32,
+	pub position: i32,
 	pub color: i32,
 	#[serde(default)]
 	pub allowed: RolePermission,

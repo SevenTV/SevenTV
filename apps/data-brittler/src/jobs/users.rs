@@ -35,7 +35,7 @@ impl Job for UsersJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("dropping users and user_connections collections");
+			tracing::info!("dropping users and user_editors collections");
 			User::collection(global.target_db()).delete_many(doc! {}).await?;
 			UserEditor::collection(global.target_db()).delete_many(doc! {}).await?;
 		}

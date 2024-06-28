@@ -68,11 +68,7 @@ impl FullUserLoader {
 	}
 
 	/// Performs a fast user load fetching using the cache'ed data
-	pub async fn load_fast(
-		&self,
-		global: &Arc<Global>,
-		user_id: UserId,
-	) -> Result<Option<FullUser>, ()> {
+	pub async fn load_fast(&self, global: &Arc<Global>, user_id: UserId) -> Result<Option<FullUser>, ()> {
 		self.load_fast_many(global, std::iter::once(user_id))
 			.await
 			.map(|mut users| users.remove(&user_id))
@@ -123,7 +119,13 @@ impl FullUserLoader {
 			})
 			.collect::<HashMap<_, _>>();
 
-		let roles: Vec<_> = global.role_by_id_loader().load_many(role_ids.iter().copied()).await?.into_values().collect();
+		let mut roles: Vec<_> = global
+			.role_by_id_loader()
+			.load_many(role_ids.iter().copied())
+			.await?
+			.into_values()
+			.collect();
+		roles.sort_by_key(|r| r.rank);
 
 		for user in users.values_mut() {
 			user.computed.permissions = compute_permissions(&roles, &user.computed.entitlements.roles);
@@ -132,8 +134,7 @@ impl FullUserLoader {
 			}
 
 			user.computed.highest_role_rank = compute_highest_role_rank(&roles, &user.computed.entitlements.roles);
-			user.computed.highest_role_color =
-				compute_highest_role_color(&roles, &user.computed.entitlements.roles);
+			user.computed.highest_role_color = compute_highest_role_color(&roles, &user.computed.entitlements.roles);
 		}
 
 		Ok(users)
@@ -201,7 +202,13 @@ impl Loader for UserComputedLoader {
 			})
 			.collect::<HashMap<_, _>>();
 
-		let roles: Vec<_> = global.role_by_id_loader().load_many(role_ids.into_iter()).await?.into_values().collect();
+		let mut roles: Vec<_> = global
+			.role_by_id_loader()
+			.load_many(role_ids.into_iter())
+			.await?
+			.into_values()
+			.collect();
+		roles.sort_by_key(|r| r.rank);
 
 		for user in result.values_mut() {
 			user.permissions = compute_permissions(&roles, &user.entitlements.roles);
@@ -213,8 +220,8 @@ impl Loader for UserComputedLoader {
 	}
 }
 
-fn compute_permissions(roles: &[Role], user_roles: &HashSet<RoleId>) -> Permissions {
-	roles
+fn compute_permissions(sorted_roles: &[Role], user_roles: &HashSet<RoleId>) -> Permissions {
+	sorted_roles
 		.into_iter()
 		.filter(|role| user_roles.contains(&role.id))
 		.map(|role| &role.permissions)
@@ -224,14 +231,13 @@ fn compute_permissions(roles: &[Role], user_roles: &HashSet<RoleId>) -> Permissi
 		})
 }
 
-fn compute_highest_role_rank(roles: &[Role], user_roles: &HashSet<RoleId>) -> i32 {
-	roles
+fn compute_highest_role_rank(sorted_roles: &[Role], user_roles: &HashSet<RoleId>) -> i32 {
+	sorted_roles
 		.into_iter()
-		.enumerate()
 		.rev()
-		.find_map(|(idx, role)| {
+		.find_map(|role| {
 			if user_roles.contains(&role.id) {
-				Some(idx as i32)
+				Some(role.rank)
 			} else {
 				None
 			}
@@ -239,11 +245,8 @@ fn compute_highest_role_rank(roles: &[Role], user_roles: &HashSet<RoleId>) -> i3
 		.unwrap_or(-1)
 }
 
-fn compute_highest_role_color(
-	roles: &[Role],
-	user_roles: &HashSet<RoleId>,
-) -> Option<i32> {
-	roles
+fn compute_highest_role_color(sorted_roles: &[Role], user_roles: &HashSet<RoleId>) -> Option<i32> {
+	sorted_roles
 		.into_iter()
 		.rev()
 		.filter(|role| user_roles.contains(&role.id))

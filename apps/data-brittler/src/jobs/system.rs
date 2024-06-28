@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use mongodb::bson::doc;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
 use shared::database::Collection;
@@ -18,6 +19,10 @@ impl Job for SystemJob {
 	const NAME: &'static str = "transfer_system";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+		if global.config().truncate {
+			GlobalConfig::collection(global.target_db()).delete_many(doc! {}).await?;
+		}
+
 		Ok(Self { global })
 	}
 

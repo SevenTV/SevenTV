@@ -155,28 +155,23 @@ impl User {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<GqlObjectId>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let roles = global
-			.all_roles_loader()
-			.load(())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 		let mut guard = self.db.write().await;
 
 		let Some(full) = guard.full(global).await? else {
 			return Ok(vec![]);
 		};
 
-		let mut sorted_roles = vec![];
+		let mut roles: Vec<_> = global
+			.role_by_id_loader()
+			.load_many(full.computed.entitlements.roles.iter().copied())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.into_values()
+			.collect();
+		roles.sort_by_key(|r| r.rank);
+		roles.reverse();
 
-		for role in roles {
-			if full.computed.entitlements.roles.contains(&role.id) {
-				sorted_roles.push(role.id);
-			}
-		}
-
-		Ok(sorted_roles.iter().map(|r| (*r).into()).collect())
+		Ok(roles.into_iter().map(|r| r.id.into()).collect())
 	}
 
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
@@ -399,28 +394,24 @@ impl UserPartial {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<GqlObjectId>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let roles = global
-			.all_roles_loader()
-			.load(())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 		let mut guard = self.db.write().await;
 
 		let Some(full) = guard.full(global).await? else {
 			return Ok(vec![]);
 		};
 
-		let mut sorted_roles = vec![];
+		let mut roles: Vec<_> = global
+			.role_by_id_loader()
+			.load_many(full.computed.entitlements.roles.iter().copied())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.into_values()
+			.collect();
 
-		for role in roles {
-			if full.computed.entitlements.roles.contains(&role.id) {
-				sorted_roles.push(role.id);
-			}
-		}
+		roles.sort_by_key(|r| r.rank);
+		roles.reverse();
 
-		Ok(sorted_roles.iter().map(|r| (*r).into()).collect())
+		Ok(roles.into_iter().map(|r| r.id.into()).collect())
 	}
 
 	async fn connections<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserConnection>, ApiError> {
