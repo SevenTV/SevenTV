@@ -77,7 +77,7 @@ impl EmoteOps {
 			// TODO: don't allow deletion of emotes that are in use
 
 			let emote = shared::database::emote::Emote::collection(global.db())
-				.find_one_and_delete(doc! { "_id": self.id.0 }, None)
+				.find_one_and_delete(doc! { "_id": self.id.0 })
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?;
@@ -148,9 +148,8 @@ impl EmoteOps {
 			update.insert("flags", flags.bits());
 
 			let emote = shared::database::emote::Emote::collection(global.db())
-				.find_one_and_update(
-					doc! { "_id": self.id.0 },
-					doc! { "$set": update },
+				.find_one_and_update(doc! { "_id": self.id.0 }, doc! { "$set": update })
+				.with_options(
 					FindOneAndUpdateOptions::builder()
 						.return_document(ReturnDocument::After)
 						.build(),
@@ -186,7 +185,6 @@ impl EmoteOps {
 						"merged.at": { "$type": "date" },
 					},
 				},
-				None,
 			)
 			.await
 			.map_err(|e| {

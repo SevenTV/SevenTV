@@ -1,3 +1,6 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use mongodb::bson::to_bson;
@@ -27,14 +30,12 @@ impl Loader for EntitlementEdgeInboundLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id.to": {
-						"$in": to_bson(&keys).unwrap(),
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id.to": {
+					"$in": to_bson(&keys).unwrap(),
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {
@@ -65,14 +66,12 @@ impl Loader for EntitlementEdgeOutboundLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id.from": {
-						"$in": to_bson(&keys).unwrap(),
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id.from": {
+					"$in": to_bson(&keys).unwrap(),
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {

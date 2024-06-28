@@ -63,7 +63,6 @@ impl Job for BansJob {
 						"bans": user_ban,
 					},
 				},
-				None,
 			)
 			.await
 		{

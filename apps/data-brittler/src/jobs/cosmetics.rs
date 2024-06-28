@@ -43,8 +43,8 @@ impl Job for CosmeticsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping paints and badges collections");
-			Paint::collection(global.target_db()).delete_many(doc! {}, None).await?;
-			Badge::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			Paint::collection(global.target_db()).delete_many(doc! {}).await?;
+			Badge::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		Ok(Self {
@@ -105,16 +105,13 @@ impl Job for CosmeticsJob {
 
 				let tags = tag.map(|t| vec![t]).unwrap_or_default();
 				match Badge::collection(self.global.target_db())
-					.insert_one(
-						Badge {
-							id: cosmetic.id.into(),
-							name: cosmetic.name,
-							description: tooltip,
-							tags,
-							image_set,
-						},
-						None,
-					)
+					.insert_one(Badge {
+						id: cosmetic.id.into(),
+						name: cosmetic.name,
+						description: tooltip,
+						tags,
+						image_set,
+					})
 					.await
 				{
 					Ok(_) => outcome.inserted_rows += 1,
@@ -203,16 +200,13 @@ impl Job for CosmeticsJob {
 				};
 
 				match Paint::collection(self.global.target_db())
-					.insert_one(
-						Paint {
-							id,
-							name: cosmetic.name,
-							description: String::new(),
-							tags: vec![],
-							data: paint_data,
-						},
-						None,
-					)
+					.insert_one(Paint {
+						id,
+						name: cosmetic.name,
+						description: String::new(),
+						tags: vec![],
+						data: paint_data,
+					})
 					.await
 				{
 					Ok(_) => outcome.inserted_rows += 1,

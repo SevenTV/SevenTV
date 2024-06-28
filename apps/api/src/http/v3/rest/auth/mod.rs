@@ -121,12 +121,9 @@ async fn logout(
 	// new session
 	if let AuthSessionKind::Session(session) = session.kind {
 		UserSession::collection(global.db())
-			.delete_one(
-				doc! {
-					"_id": session.id,
-				},
-				None,
-			)
+			.delete_one(doc! {
+				"_id": session.id,
+			})
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to delete session");

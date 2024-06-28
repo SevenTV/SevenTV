@@ -181,10 +181,8 @@ impl ReportsQuery {
 		}
 
 		let tickets: Vec<_> = Ticket::collection(global.db())
-			.find(
-				search_args,
-				FindOptions::builder().limit(limit as i64).sort(doc! { "_id": -1 }).build(),
-			)
+			.find(search_args)
+			.with_options(FindOptions::builder().limit(limit as i64).sort(doc! { "_id": -1 }).build())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.filter_map(|r| async move {
@@ -219,14 +217,11 @@ impl ReportsQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let Some(ticket) = Ticket::collection(global.db())
-			.find_one(
-				doc! {
-					"_id": id.0,
-					"kind": TicketKind::Abuse as i32,
-					"targets.kind": "emote",
-				},
-				None,
-			)
+			.find_one(doc! {
+				"_id": id.0,
+				"kind": TicketKind::Abuse as i32,
+				"targets.kind": "emote",
+			})
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to load ticket");

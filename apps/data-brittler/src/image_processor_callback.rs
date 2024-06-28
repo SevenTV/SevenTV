@@ -200,7 +200,6 @@ async fn handle_success(
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -237,7 +236,6 @@ async fn handle_success(
 						"_id": id,
 					},
 					aggregation,
-					None,
 				)
 				.await?;
 		}
@@ -258,7 +256,6 @@ async fn handle_success(
 							"data.layers.$.data.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -276,7 +273,6 @@ async fn handle_success(
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -302,18 +298,14 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 							"data.layers": { "id": layer_id },
 						},
 					},
-					None,
 				)
 				.await?;
 		}
 		Subject::Badge(id) => {
 			Badge::collection(global.target_db())
-				.delete_one(
-					doc! {
-						"_id": id,
-					},
-					None,
-				)
+				.delete_one(doc! {
+					"_id": id,
+				})
 				.await?;
 		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),

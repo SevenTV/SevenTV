@@ -1,3 +1,4 @@
+use std::future::IntoFuture;
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -35,15 +36,15 @@ impl Job for UsersJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping users and user_connections collections");
-			User::collection(global.target_db()).delete_many(doc! {}, None).await?;
-			UserEditor::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			User::collection(global.target_db()).delete_many(doc! {}).await?;
+			UserEditor::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		tracing::info!("querying all entitlements");
 		let mut entitlements_cursor = global
 			.source_db()
 			.collection::<types::Entitlement>("entitlements")
-			.find(None, None)
+			.find(doc! {})
 			.await?;
 		let mut entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>> = FnvHashMap::default();
 		while let Some(entitlement) = entitlements_cursor
@@ -236,9 +237,15 @@ impl Job for UsersJob {
 		let edges = EntitlementEdge::collection(self.global.target_db());
 
 		let res = tokio::join!(
-			users.insert_many(&self.users, insert_options.clone()),
-			editors.insert_many(&self.editors, insert_options.clone()),
-			edges.insert_many(&self.edges, insert_options),
+			users
+				.insert_many(&self.users)
+				.with_options(insert_options.clone())
+				.into_future(),
+			editors
+				.insert_many(&self.editors)
+				.with_options(insert_options.clone())
+				.into_future(),
+			edges.insert_many(&self.edges).with_options(insert_options).into_future(),
 		);
 		let res = vec![res.0, res.1, res.2]
 			.into_iter()

@@ -1,3 +1,6 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
@@ -26,14 +29,12 @@ impl Loader for UserEditorByUserIdLoader {
 		tracing::Span::current().make_root();
 
 		let results: Self::Value = UserEditor::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id.user_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id.user_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {
@@ -62,14 +63,12 @@ impl Loader for UserEditorByEditorIdLoader {
 	#[tracing::instrument(name = "UserEditorByEditorIdLoader::load", skip(self), fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Self::Value = UserEditor::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id.editor_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id.editor_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {
@@ -98,19 +97,17 @@ impl Loader for UserEditorByIdLoader {
 	#[tracing::instrument(name = "UserEditorByIdLoader::load", skip(self), fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<Self::Value> = UserEditor::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id": {
-						"$in": keys.iter().map(|(user_id, editor_id)| {
-							mongodb::bson::doc! {
-								"user_id": user_id,
-								"editor_id": editor_id,
-							}
-						}).collect::<Vec<_>>(),
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id": {
+					"$in": keys.iter().map(|(user_id, editor_id)| {
+						doc! {
+							"user_id": user_id,
+							"editor_id": editor_id,
+						}
+					}).collect::<Vec<_>>(),
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {

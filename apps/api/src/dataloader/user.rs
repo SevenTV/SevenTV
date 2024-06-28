@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use std::future::IntoFuture;
 
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use mongodb::options::FindOptions;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
@@ -28,20 +30,19 @@ impl Loader for UserByIdLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<User> = User::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id": {
-						"$in": keys,
-					}
-				},
-				Some(
-					FindOptions::builder()
-						.projection(mongodb::bson::doc! {
-							"search_index.emote_ids": 0,
-						})
-						.build(),
-				),
+			.find(doc! {
+				"_id": {
+					"$in": keys,
+				}
+			})
+			.with_options(
+				FindOptions::builder()
+					.projection(doc! {
+						"search_index.emote_ids": 0,
+					})
+					.build(),
 			)
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {
@@ -72,17 +73,15 @@ impl Loader for UserByPlatformIdLoader {
 		tracing::Span::current().make_root();
 
 		let users: Vec<User> = User::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"$or": keys.into_iter().map(|(platform, id)| {
-						mongodb::bson::doc! {
-							"connections.platform": platform as i32,
-							"connections.platform_id": id,
-						}
-					}).collect::<Vec<_>>(),
-				},
-				None,
-			)
+			.find(doc! {
+				"$or": keys.into_iter().map(|(platform, id)| {
+					doc! {
+						"connections.platform": platform as i32,
+						"connections.platform_id": id,
+					}
+				}).collect::<Vec<_>>(),
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {

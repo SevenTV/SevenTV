@@ -134,13 +134,10 @@ pub async fn create_emote(
 		merged: None,
 	};
 
-	Emote::collection(global.db())
-		.insert_one(emote.clone(), None)
-		.await
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert emote");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+	Emote::collection(global.db()).insert_one(&emote).await.map_err(|err| {
+		tracing::error!(error = %err, "failed to insert emote");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
 
 	// we don't have to return the owner here
 	let emote = EmotePartialModel::from_db(emote, None, &global.config().api.cdn_origin);

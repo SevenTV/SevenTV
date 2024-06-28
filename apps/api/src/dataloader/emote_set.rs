@@ -1,3 +1,6 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
@@ -26,14 +29,12 @@ impl Loader for EmoteSetByIdLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<Self::Value> = EmoteSet::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {
@@ -62,14 +63,12 @@ impl Loader for EmoteSetByUserIdLoader {
 	#[tracing::instrument(name = "EmoteSetByUserIdLoader::load", skip(self), fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<EmoteSet> = EmoteSet::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"owner_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"owner_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {

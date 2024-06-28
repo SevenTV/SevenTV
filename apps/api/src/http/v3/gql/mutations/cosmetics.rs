@@ -38,7 +38,7 @@ impl CosmeticsMutation {
 			..Default::default()
 		};
 
-		Paint::collection(global.db()).insert_one(paint, None).await.map_err(|e| {
+		Paint::collection(global.db()).insert_one(paint).await.map_err(|e| {
 			tracing::error!(error = %e, "failed to insert paint");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -249,7 +249,6 @@ impl CosmeticOps {
 					"name": name,
 					"data": update,
 				} },
-				None,
 			)
 			.await
 			.map_err(|e| {

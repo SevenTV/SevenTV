@@ -49,8 +49,8 @@ impl Job for SystemJob {
 						"personal_emote_set_slot_capacity": 5,
 					},
 				},
-				UpdateOptions::builder().upsert(true).build(),
 			)
+			.with_options(UpdateOptions::builder().upsert(true).build())
 			.await
 		{
 			Ok(_) => outcome.inserted_rows += 1,

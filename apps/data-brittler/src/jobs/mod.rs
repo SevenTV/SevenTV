@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Context;
+use bson::doc;
 use entitlements::EntitlementsJob;
 use futures::stream::FuturesUnordered;
 use futures::{Future, TryStreamExt};
@@ -74,9 +75,9 @@ impl AddAssign<ProcessOutcome> for JobOutcome {
 	}
 }
 
-pub trait Job: Sized {
+pub trait Job: Sized + Send + Sync {
 	const NAME: &'static str;
-	type T: serde::de::DeserializeOwned;
+	type T: serde::de::DeserializeOwned + Send + Sync;
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self>;
 
@@ -108,7 +109,7 @@ pub trait Job: Sized {
 		let collection = self.collection().await;
 
 		// count
-		let count = collection.count_documents(None, None).await?;
+		let count = collection.count_documents(doc! {}).await?;
 		let tenth = count / 10;
 		tracing::info!("found {} documents", Number::from(count));
 
@@ -120,7 +121,7 @@ pub trait Job: Sized {
 			processed_documents: 0,
 			inserted_rows: 0,
 		};
-		let mut documents = collection.find(None, None).await.context("failed to query documents")?;
+		let mut documents = collection.find(doc! {}).await.context("failed to query documents")?;
 
 		while let Some(r) = documents.try_next().await.transpose() {
 			if scuffle_foundations::context::Context::global().is_done() {

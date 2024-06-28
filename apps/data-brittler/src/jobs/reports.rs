@@ -1,3 +1,4 @@
+use std::future::IntoFuture;
 use std::sync::Arc;
 
 use fnv::FnvHashSet;
@@ -30,10 +31,8 @@ impl Job for ReportsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping tickets and ticket_messages collections");
-			Ticket::collection(global.target_db()).delete_many(doc! {}, None).await?;
-			TicketMessage::collection(global.target_db())
-				.delete_many(doc! {}, None)
-				.await?;
+			Ticket::collection(global.target_db()).delete_many(doc! {}).await?;
+			TicketMessage::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		Ok(Self {
@@ -113,8 +112,14 @@ impl Job for ReportsJob {
 		let ticket_messages = TicketMessage::collection(self.global.target_db());
 
 		let res = tokio::join!(
-			tickets.insert_many(&self.tickets, insert_options.clone()),
-			ticket_messages.insert_many(&self.ticket_messages, insert_options.clone()),
+			tickets
+				.insert_many(&self.tickets)
+				.with_options(insert_options.clone())
+				.into_future(),
+			ticket_messages
+				.insert_many(&self.ticket_messages)
+				.with_options(insert_options.clone())
+				.into_future(),
 		);
 		let res = vec![res.0, res.1]
 			.into_iter()

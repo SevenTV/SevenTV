@@ -103,13 +103,13 @@ where
 								"last_used_at": chrono::Utc::now(),
 							},
 						},
-						Some(
-							mongodb::options::FindOneAndUpdateOptions::builder()
-								.return_document(mongodb::options::ReturnDocument::After)
-								.upsert(false)
-								.build(),
-						),
 					)
+					.with_options(Some(
+						mongodb::options::FindOneAndUpdateOptions::builder()
+							.return_document(mongodb::options::ReturnDocument::After)
+							.upsert(false)
+							.build(),
+					))
 					.await
 					.map_err(|err| {
 						tracing::error!(error = %err, "failed to find user session");

@@ -153,7 +153,7 @@ impl MessagesQuery {
 		}
 
 		let total = EmoteModerationRequest::collection(global.db())
-			.count_documents(search_args.clone(), None)
+			.count_documents(search_args.clone())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -164,10 +164,8 @@ impl MessagesQuery {
 		let limit = limit.unwrap_or(100).min(500);
 
 		let mod_requests: Vec<_> = EmoteModerationRequest::collection(global.db())
-			.find(
-				search_args,
-				FindOptions::builder().limit(limit as i64).sort(doc! { "_id": -1 }).build(),
-			)
+			.find(search_args)
+			.with_options(FindOptions::builder().limit(limit as i64).sort(doc! { "_id": -1 }).build())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.filter_map(|r| async move {

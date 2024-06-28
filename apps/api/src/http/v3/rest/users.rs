@@ -284,7 +284,6 @@ pub async fn upload_user_profile_picture(
 					"style.active_profile_picture": image_set,
 				}
 			},
-			None,
 		)
 		.await
 		.map_err(|err| {

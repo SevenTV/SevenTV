@@ -56,10 +56,10 @@ impl Job for SubscriptionsJob {
 		};
 
 		// let (state, standing) = match sub.cycle.status {
-		// 	types::SubscriptionCycleStatus::Ongoing => (SubscriptionState::Active, None),
-		// 	types::SubscriptionCycleStatus::Ended => (SubscriptionState::Ended, None),
-		// 	types::SubscriptionCycleStatus::Canceled => (SubscriptionState::Active,
-		// Some(SubscriptionStanding::Canceled)), };
+		// 	types::SubscriptionCycleStatus::Ongoing => (SubscriptionState::Active,
+		// None), 	types::SubscriptionCycleStatus::Ended => (SubscriptionState::Ended,
+		// None), 	types::SubscriptionCycleStatus::Canceled =>
+		// (SubscriptionState::Active, Some(SubscriptionStanding::Canceled)), };
 
 		// let end = match sub.cycle.unit {
 		// 	types::SubscriptionCycleUnit::Year =>

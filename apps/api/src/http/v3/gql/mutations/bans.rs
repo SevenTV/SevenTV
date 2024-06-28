@@ -100,7 +100,6 @@ impl BansMutation {
 						"search_index.self_dirty": Id::<()>::new(),
 					},
 				},
-				None,
 			)
 			.await
 			.map_err(|e| {
@@ -141,9 +140,8 @@ impl BansMutation {
 		update.insert("search_index.self_dirty", Id::<()>::new());
 
 		let user = User::collection(global.db())
-			.find_one_and_update(
-				doc! { "bans.id": ban_id.0 },
-				doc! { "$set": update },
+			.find_one_and_update(doc! { "bans.id": ban_id.0 }, doc! { "$set": update })
+			.with_options(
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
 					.projection(doc! { "search_index": 0 })

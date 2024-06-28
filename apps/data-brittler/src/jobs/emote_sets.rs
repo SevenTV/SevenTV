@@ -23,7 +23,7 @@ impl Job for EmoteSetsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping emote_sets and emote_set_emotes collections");
-			EmoteSet::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			EmoteSet::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		Ok(Self {
@@ -100,7 +100,8 @@ impl Job for EmoteSetsJob {
 		let mut outcome = ProcessOutcome::default();
 
 		match EmoteSet::collection(self.global.target_db())
-			.insert_many(&self.emote_sets, InsertManyOptions::builder().ordered(false).build())
+			.insert_many(&self.emote_sets)
+			.with_options(InsertManyOptions::builder().ordered(false).build())
 			.await
 		{
 			Ok(res) => {

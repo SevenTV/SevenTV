@@ -86,6 +86,8 @@ impl UserOps {
 					"$set": update,
 					"$pull": update_pull,
 				},
+			)
+			.with_options(
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
 					.build(),
@@ -127,13 +129,10 @@ impl UserOps {
 			if permissions == UserEditorModelPermission::none() {
 				// Remove editor
 				shared::database::user::editor::UserEditor::collection(global.db())
-					.delete_one(
-						doc! {
-							"user_id": self.id.0,
-							"editor_id": editor_id.0,
-						},
-						None,
-					)
+					.delete_one(doc! {
+						"user_id": self.id.0,
+						"editor_id": editor_id.0,
+					})
 					.await
 					.map_err(|err| {
 						tracing::error!(error = %err, "failed to delete editor");
@@ -152,6 +151,8 @@ impl UserOps {
 								"permissions": to_bson(&permissions.to_db()).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
 							},
 						},
+					)
+					.with_options(
 						UpdateOptions::builder()
 							.upsert(user.has(UserPermission::InviteEditors))
 							.build(),

@@ -89,7 +89,7 @@ impl RolesQuery {
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let mut roles = shared::database::role::Role::collection(global.db())
-			.find(doc! {}, None)
+			.find(doc! {})
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.filter_map(|r| async {

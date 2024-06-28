@@ -167,7 +167,6 @@ async fn handle_success(
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -207,7 +206,6 @@ async fn handle_success(
 						"_id": id,
 					},
 					aggregation,
-					None,
 				)
 				.await?;
 		}
@@ -231,7 +229,6 @@ async fn handle_success(
 							"data.layers.$.data.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -249,7 +246,6 @@ async fn handle_success(
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -263,17 +259,14 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 	match subject {
 		Subject::Emote(id) => {
 			Emote::collection(global.db())
-				.delete_one(
-					doc! {
-						"_id": id,
-					},
-					None,
-				)
+				.delete_one(doc! {
+					"_id": id,
+				})
 				.await?;
 		}
 		Subject::ProfilePicture(id) => {
 			User::collection(global.db())
-				.update_one(doc! { "_id": id }, doc! { "style.active_profile_picture": null }, None)
+				.update_one(doc! { "_id": id }, doc! { "style.active_profile_picture": null })
 				.await?;
 		}
 		Subject::Paint(id) => {
@@ -290,18 +283,14 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 							"data.layers": { "id": layer_id },
 						},
 					},
-					None,
 				)
 				.await?;
 		}
 		Subject::Badge(id) => {
 			Badge::collection(global.db())
-				.delete_one(
-					doc! {
-						"_id": id,
-					},
-					None,
-				)
+				.delete_one(doc! {
+					"_id": id,
+				})
 				.await?;
 		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),

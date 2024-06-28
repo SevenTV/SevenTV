@@ -92,7 +92,7 @@ impl<'a> serde::Deserialize<'a> for EmoteFlags {
 #[serde(deny_unknown_fields)]
 pub struct EmoteAttribution {
 	pub user_id: UserId,
-	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+	#[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
 }
 

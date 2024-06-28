@@ -1,3 +1,6 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
@@ -26,14 +29,12 @@ impl Loader for ProductByIdLoader {
 		let keys = keys.into_iter().map(|k| k.to_string()).collect::<Vec<_>>();
 
 		let results: Vec<Self::Value> = Product::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {

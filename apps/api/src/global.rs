@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use anyhow::Context as _;
+use bson::doc;
 use scuffle_foundations::dataloader::DataLoader;
 use scuffle_foundations::telemetry::server::HealthCheck;
 use shared::image_processor::ImageProcessor;
@@ -253,7 +254,7 @@ impl HealthCheck for Global {
 		Box::pin(async {
 			tracing::info!("running health check");
 
-			if !match self.db().run_command(mongodb::bson::doc! { "ping": 1 }, None).await {
+			if !match self.db().run_command(doc! { "ping": 1 }).await {
 				Ok(r) => r.get_bool("ok").unwrap_or(false),
 				Err(err) => {
 					tracing::error!(%err, "failed to ping database");

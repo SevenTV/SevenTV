@@ -170,8 +170,8 @@ impl Drop for Connection {
 				// self.global.metrics().decr_current_event_streams();
 				// self.global
 				// 	.metrics()
-				// 	.observe_connection_duration_seconds_event_stream(self.start.
-				// elapsed().as_secs_f64());
+				// 	.observe_connection_duration_seconds_event_stream(self.
+				// start. elapsed().as_secs_f64());
 			}
 		}
 	}

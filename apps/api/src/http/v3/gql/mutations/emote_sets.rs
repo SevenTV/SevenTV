@@ -125,7 +125,7 @@ impl EmoteSetsMutation {
 		};
 
 		DbEmoteSet::collection(global.db())
-			.insert_one(&emote_set, None)
+			.insert_one(&emote_set)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert emote set");
@@ -316,12 +316,12 @@ impl EmoteSetOps {
 					));
 				}
 
-				let mut session = global.mongo().start_session(None).await.map_err(|e| {
+				let mut session = global.mongo().start_session().await.map_err(|e| {
 					tracing::error!(error = %e, "failed to start session");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
 
-				session.start_transaction(None).await.map_err(|e| {
+				session.start_transaction().await.map_err(|e| {
 					tracing::error!(error = %e, "failed to start transaction");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
@@ -336,7 +336,7 @@ impl EmoteSetOps {
 						let inserted_id = EmoteModerationRequestId::new();
 
 						let result = EmoteModerationRequest::collection(global.db())
-							.find_one_and_update_with_session(
+							.find_one_and_update(
 								doc! {
 									"kind": to_bson(&EmoteModerationRequestKind::PersonalUse).unwrap(),
 									"emote_id": emote.id,
@@ -354,9 +354,9 @@ impl EmoteSetOps {
 										user_id: user.id,
 									}).unwrap(),
 								},
-								Some(FindOneAndUpdateOptions::builder().upsert(true).build()),
-								&mut session,
 							)
+							.with_options(FindOneAndUpdateOptions::builder().upsert(true).build())
+							.session(&mut session)
 							.await
 							.map_err(|e| {
 								tracing::error!(error = %e, "failed to insert moderation request");
@@ -370,15 +370,12 @@ impl EmoteSetOps {
 						// We only care to check if this is the result we just inserted
 						if result.id == inserted_id {
 							let count = EmoteModerationRequest::collection(global.db())
-								.count_documents_with_session(
-									doc! {
-										"kind": to_bson(&EmoteModerationRequestKind::PersonalUse).unwrap(),
-										"user_id": user.id,
-										"status": to_bson(&EmoteModerationRequestStatus::Pending).unwrap(),
-									},
-									None,
-									&mut session,
-								)
+								.count_documents(doc! {
+									"kind": to_bson(&EmoteModerationRequestKind::PersonalUse).unwrap(),
+									"user_id": user.id,
+									"status": to_bson(&EmoteModerationRequestStatus::Pending).unwrap(),
+								})
+								.session(&mut session)
 								.await
 								.map_err(|e| {
 									tracing::error!(error = %e, "failed to count moderation requests");
@@ -403,7 +400,7 @@ impl EmoteSetOps {
 				};
 
 				let emote_set = DbEmoteSet::collection(global.db())
-					.find_one_and_update_with_session(
+					.find_one_and_update(
 						doc! {
 							"_id": self.emote_set.id,
 						},
@@ -412,13 +409,13 @@ impl EmoteSetOps {
 								"emotes": to_bson(&emote_set_emote).unwrap(),
 							},
 						},
-						Some(
-							FindOneAndUpdateOptions::builder()
-								.return_document(ReturnDocument::After)
-								.build(),
-						),
-						&mut session,
 					)
+					.with_options(
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.session(&mut session)
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to add emote to set");
@@ -458,11 +455,11 @@ impl EmoteSetOps {
 								},
 							},
 						},
-						Some(
-							FindOneAndUpdateOptions::builder()
-								.return_document(ReturnDocument::After)
-								.build(),
-						),
+					)
+					.with_options(
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
 					)
 					.await
 					.map_err(|e| {
@@ -516,11 +513,11 @@ impl EmoteSetOps {
 								"emotes.$.alias": name,
 							},
 						},
-						Some(
-							FindOneAndUpdateOptions::builder()
-								.return_document(ReturnDocument::After)
-								.build(),
-						),
+					)
+					.with_options(
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
 					)
 					.await
 					.map_err(|e| {
@@ -587,9 +584,8 @@ impl EmoteSetOps {
 		}
 
 		let emote_set = DbEmoteSet::collection(global.db())
-			.find_one_and_update(
-				doc! { "_id": self.emote_set.id },
-				doc! { "$set": update },
+			.find_one_and_update(doc! { "_id": self.emote_set.id }, doc! { "$set": update })
+			.with_options(
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
 					.build(),
@@ -623,7 +619,7 @@ impl EmoteSetOps {
 		}
 
 		let res = DbEmoteSet::collection(global.db())
-			.delete_one(doc! { "_id": self.emote_set.id }, None)
+			.delete_one(doc! { "_id": self.emote_set.id })
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to delete emote set");

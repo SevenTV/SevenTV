@@ -63,18 +63,18 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	// query user data from platform
 	let user_data = connections::get_user_data(global, platform, &token.access_token).await?;
 
-	let mut session = global.mongo().start_session(None).await.map_err(|err| {
+	let mut session = global.mongo().start_session().await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start session");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
 
-	session.start_transaction(None).await.map_err(|err| {
+	session.start_transaction().await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start transaction");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
 
 	let mut user = User::collection(global.db())
-		.find_one_and_update_with_session(
+		.find_one_and_update(
 			doc! {
 				"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
 				"connections.platform_id": &user_data.id,
@@ -87,9 +87,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 					"connections.$.updated_at": chrono::Utc::now(),
 				},
 			},
-			None,
-			&mut session,
 		)
+		.session(&mut session)
 		.await
 		.map_err(|err| {
 			tracing::error!(error = %err, "failed to find user");
@@ -139,7 +138,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			});
 
 			User::collection(global.db())
-				.insert_one_with_session(user.as_ref().unwrap(), None, &mut session)
+				.insert_one(user.as_ref().unwrap())
+				.session(&mut session)
 				.await
 				.map_err(|err| {
 					tracing::error!(error = %err, "failed to insert user");
@@ -185,7 +185,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		{
 			// Update user connection
 			if User::collection(global.db())
-				.update_one_with_session(
+				.update_one(
 					doc! {
 						"_id": full_user.user.id,
 						"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
@@ -201,15 +201,15 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 							"search_index.self_dirty": Id::<()>::new(),
 						},
 					},
-					None,
-					&mut session,
 				)
+				.session(&mut session)
 				.await
 				.map_err(|err| {
 					tracing::error!(error = %err, "failed to update user");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
-				.matched_count == 0
+				.matched_count
+				== 0
 			{
 				tracing::error!("failed to update user, no matched count");
 				return Err(ApiError::INTERNAL_SERVER_ERROR);
@@ -217,7 +217,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		}
 	} else {
 		if User::collection(global.db())
-			.update_one_with_session(
+			.update_one(
 				doc! {
 					"_id": full_user.user.id,
 				},
@@ -238,9 +238,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 						"search_index.self_dirty": Id::<()>::new(),
 					},
 				},
-				None,
-				&mut session,
 			)
+			.session(&mut session)
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to update user");
@@ -264,7 +263,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		};
 
 		UserSession::collection(global.db())
-			.insert_one_with_session(&user_session, None, &mut session)
+			.insert_one(&user_session)
+			.session(&mut session)
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to insert user session");

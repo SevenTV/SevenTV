@@ -1,3 +1,6 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::global::GlobalConfig;
@@ -23,7 +26,8 @@ impl Loader for GlobalConfigLoader {
 		tracing::Span::current().make_root();
 
 		let config: GlobalConfig = GlobalConfig::collection(&self.db)
-			.find_one(None, None)
+			.find_one(doc! {})
+			.into_future()
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");

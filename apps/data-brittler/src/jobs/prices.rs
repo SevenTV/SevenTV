@@ -25,7 +25,7 @@ impl Job for PricesJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping products collection");
-			Product::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			Product::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		Ok(Self {
@@ -110,7 +110,8 @@ impl Job for PricesJob {
 		let mut outcome = ProcessOutcome::default();
 
 		match Product::collection(self.global.target_db())
-			.insert_many(&self.products, None)
+			.insert_many(&self.products)
+			.with_options(mongodb::options::InsertManyOptions::builder().ordered(false).build())
 			.await
 		{
 			Ok(res) => {

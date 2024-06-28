@@ -16,7 +16,7 @@ pub mod role;
 pub mod ticket;
 pub mod user;
 
-pub trait Collection {
+pub trait Collection: Send + Sync {
 	const COLLECTION_NAME: &'static str;
 
 	fn collection(db: &mongodb::Database) -> mongodb::Collection<Self>
@@ -48,7 +48,7 @@ impl GenericCollection {
 		let collection = db.collection::<()>(self.name);
 
 		for index in self.indexes {
-			collection.create_index(index, None).await?;
+			collection.create_index(index).await?;
 		}
 
 		Ok(())

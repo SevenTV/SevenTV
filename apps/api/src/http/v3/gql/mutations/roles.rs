@@ -39,29 +39,31 @@ impl RolesMutation {
 			color: Some(data.color),
 		};
 
-		let mut session = global.mongo().start_session(None).await.map_err(|err| {
+		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		session.start_transaction(None).await.map_err(|err| {
+		session.start_transaction().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start transaction");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
 		let global_config = GlobalConfig::collection(global.db())
-			.find_one_and_update_with_session(
+			.find_one_and_update(
 				doc! {},
 				doc! {
 					"$push": {
 						"role_ids": role.id,
 					}
 				},
+			)
+			.with_options(
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
 					.build(),
-				&mut session,
 			)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update global config");
@@ -70,7 +72,8 @@ impl RolesMutation {
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 		shared::database::role::Role::collection(global.db())
-			.insert_one_with_session(&role, None, &mut session)
+			.insert_one(&role)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert role");
@@ -94,12 +97,12 @@ impl RolesMutation {
 	) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let mut session = global.mongo().start_session(None).await.map_err(|err| {
+		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		session.start_transaction(None).await.map_err(|err| {
+		session.start_transaction().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start transaction");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -113,7 +116,7 @@ impl RolesMutation {
 		}
 
 		let global_config = GlobalConfig::collection(global.db())
-			.find_one_and_update_with_session(
+			.find_one_and_update(
 				doc! {},
 				vec![
 					doc! {
@@ -127,11 +130,13 @@ impl RolesMutation {
 						}
 					},
 				],
+			)
+			.with_options(
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
 					.build(),
-				&mut session,
 			)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update global config");
@@ -174,18 +179,20 @@ impl RolesMutation {
 		}
 
 		let role = shared::database::role::Role::collection(global.db())
-			.find_one_and_update_with_session(
+			.find_one_and_update(
 				doc! {
 					"_id": role_id.0,
 				},
 				doc! {
 					"$set": update,
 				},
+			)
+			.with_options(
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
 					.build(),
-				&mut session,
 			)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update role");
@@ -206,12 +213,9 @@ impl RolesMutation {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let res = shared::database::role::Role::collection(global.db())
-			.delete_one(
-				doc! {
-					"_id": role_id.0,
-				},
-				None,
-			)
+			.delete_one(doc! {
+				"_id": role_id.0,
+			})
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to delete role");

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use fnv::FnvHashSet;
 use mongodb::bson::doc;
+use mongodb::options::InsertManyOptions;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::Collection;
 
@@ -23,9 +24,7 @@ impl Job for EntitlementsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping entitlements");
-			EntitlementEdge::collection(global.target_db())
-				.delete_many(doc! {}, None)
-				.await?;
+			EntitlementEdge::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		Ok(Self {
@@ -68,7 +67,8 @@ impl Job for EntitlementsJob {
 		let mut outcome = ProcessOutcome::default();
 
 		match EntitlementEdge::collection(self.global.target_db())
-			.insert_many(&self.edges, None)
+			.insert_many(&self.edges)
+			.with_options(InsertManyOptions::builder().ordered(false).build())
 			.await
 		{
 			Ok(res) => {

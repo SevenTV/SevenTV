@@ -34,14 +34,14 @@ impl ReportsMutation {
 
 		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo().start_session(None).await.map_err(|err| {
+		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
 		let ticket_id = TicketId::new();
 
-		session.start_transaction(None).await.map_err(|err| {
+		session.start_transaction().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start transaction");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -55,7 +55,8 @@ impl ReportsMutation {
 		};
 
 		TicketMessage::collection(global.db())
-			.insert_one_with_session(&message, None, &mut session)
+			.insert_one(&message)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert ticket message");
@@ -84,7 +85,8 @@ impl ReportsMutation {
 		};
 
 		Ticket::collection(global.db())
-			.insert_one_with_session(&ticket, None, &mut session)
+			.insert_one(&ticket)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert ticket");
@@ -110,12 +112,12 @@ impl ReportsMutation {
 
 		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo().start_session(None).await.map_err(|err| {
+		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		session.start_transaction(None).await.map_err(|err| {
+		session.start_transaction().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start transaction");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -155,14 +157,16 @@ impl ReportsMutation {
 		}
 
 		let ticket = Ticket::collection(global.db())
-			.find_one_and_update_with_session(
+			.find_one_and_update(
 				doc! { "_id": report_id.0 },
 				doc! { "$set": update, "$push": push_update, "$pull": pull_update },
+			)
+			.with_options(
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
 					.build(),
-				&mut session,
 			)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update ticket");
@@ -180,7 +184,8 @@ impl ReportsMutation {
 			};
 
 			TicketMessage::collection(global.db())
-				.insert_one_with_session(&message, None, &mut session)
+				.insert_one(&message)
+				.session(&mut session)
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to insert ticket message");

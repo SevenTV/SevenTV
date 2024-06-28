@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bson::doc;
 use fnv::FnvHashMap;
 use futures::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
@@ -31,7 +32,7 @@ impl Job for MessagesJob {
 		let mut cursor = global
 			.source_db()
 			.collection::<types::MessageRead>("messages_read")
-			.find(None, None)
+			.find(doc! {})
 			.await?;
 		while let Some(message) = cursor.try_next().await? {
 			read.insert(message.message_id, message.read);
@@ -91,7 +92,8 @@ impl Job for MessagesJob {
 
 		if self.mod_requests.len() > 50_000 {
 			let Ok(res) = EmoteModerationRequest::collection(self.global.target_db())
-				.insert_many(&self.mod_requests, InsertManyOptions::builder().ordered(false).build())
+				.insert_many(&self.mod_requests)
+				.with_options(InsertManyOptions::builder().ordered(false).build())
 				.await
 			else {
 				outcome.errors.push(error::Error::InsertMany);
@@ -115,7 +117,8 @@ impl Job for MessagesJob {
 		let mut outcome = ProcessOutcome::default();
 
 		match EmoteModerationRequest::collection(self.global.target_db())
-			.insert_many(&self.mod_requests, InsertManyOptions::builder().ordered(false).build())
+			.insert_many(&self.mod_requests)
+			.with_options(InsertManyOptions::builder().ordered(false).build())
 			.await
 		{
 			Ok(res) => {

@@ -26,7 +26,7 @@ impl Job for EmotesJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping emotes collection");
-			Emote::collection(global.target_db()).delete_many(doc! {}, None).await?;
+			Emote::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		Ok(Self { global, emotes: vec![] })
@@ -95,7 +95,8 @@ impl Job for EmotesJob {
 		let mut outcome = ProcessOutcome::default();
 
 		let res = Emote::collection(self.global.target_db())
-			.insert_many(&self.emotes, InsertManyOptions::builder().ordered(false).build())
+			.insert_many(&self.emotes)
+			.with_options(InsertManyOptions::builder().ordered(false).build())
 			.await;
 
 		match res {
