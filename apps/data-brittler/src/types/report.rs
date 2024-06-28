@@ -1,6 +1,5 @@
 use mongodb::bson::oid::ObjectId;
 use serde::Deserialize;
-use shared::database;
 
 #[derive(Debug, Deserialize)]
 pub struct Report {
@@ -16,18 +15,9 @@ pub struct Report {
 	pub closed_at: Option<super::DateTime>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum ReportStatus {
 	Open,
 	Closed,
-}
-
-impl From<ReportStatus> for database::TicketStatus {
-	fn from(value: ReportStatus) -> Self {
-		match value {
-			ReportStatus::Open => database::TicketStatus::Pending,
-			ReportStatus::Closed => database::TicketStatus::Fixed,
-		}
-	}
 }

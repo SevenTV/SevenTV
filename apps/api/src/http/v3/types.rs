@@ -2,7 +2,10 @@
 //! both REST and GraphQL endpoints.
 
 use bitmask_enum::bitmask;
-use shared::database::{EmoteFlags, EmotePermission, EmoteSetPermission, UserEditorPermissions};
+use shared::database::emote::EmoteFlags;
+use shared::database::user::editor::{
+	EditorEmotePermission, EditorEmoteSetPermission, EditorUserPermission, UserEditorPermissions,
+};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(components(schemas(
@@ -83,12 +86,22 @@ impl UserEditorModelPermission {
 	pub fn from_db(value: &UserEditorPermissions) -> Self {
 		let mut perms = Self::none();
 
-		if value.has_emote_set(EmoteSetPermission::Edit) {
-			perms |= Self::ManageEmoteSets;
+		if value.has_emote_set(EditorEmoteSetPermission::Create) || value.has_emote_set(EditorEmoteSetPermission::Manage) {
+			perms |= Self::ManageEmoteSets | Self::ModifyEmotes;
 		}
 
-		if value.has_emote(EmotePermission::Edit) {
+		if value.has_emote(EditorEmotePermission::Manage) || value.has_emote(EditorEmotePermission::Create) {
 			perms |= Self::ManageOwnedEmotes;
+		}
+
+		if value.has_user(EditorUserPermission::ManageBilling) {
+			perms |= Self::ManageBilling;
+		}
+		if value.has_user(EditorUserPermission::ManageProfile) {
+			perms |= Self::ManageProfile;
+		}
+		if value.has_user(EditorUserPermission::ManageEditors) {
+			perms |= Self::ManageEditors;
 		}
 
 		perms
@@ -98,11 +111,23 @@ impl UserEditorModelPermission {
 		let mut perms = UserEditorPermissions::default();
 
 		if self.contains(Self::ManageEmoteSets) {
-			perms.emote_set.allow(EmoteSetPermission::Edit);
+			perms.emote_set |= EditorEmoteSetPermission::Create | EditorEmoteSetPermission::Manage;
 		}
 
 		if self.contains(Self::ManageOwnedEmotes) {
-			perms.emote.allow(EmotePermission::Edit);
+			perms.emote |= EditorEmotePermission::Create | EditorEmotePermission::Manage;
+		}
+
+		if self.contains(Self::ManageBilling) {
+			perms.user |= EditorUserPermission::ManageBilling;
+		}
+
+		if self.contains(Self::ManageProfile) {
+			perms.user |= EditorUserPermission::ManageProfile;
+		}
+
+		if self.contains(Self::ManageEditors) {
+			perms.user |= EditorUserPermission::ManageEditors;
 		}
 
 		perms

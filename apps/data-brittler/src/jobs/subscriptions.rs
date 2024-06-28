@@ -1,31 +1,30 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::{Collection, Subscription};
-
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
 
 pub struct SubscriptionsJob {
 	global: Arc<Global>,
-	subscriptions: Vec<Subscription>,
+	// subscriptions: Vec<Subscription>,
 }
 
 impl Job for SubscriptionsJob {
 	type T = types::Subscription;
 
-	const NAME: &'static str = "transfer_stripe";
+	const NAME: &'static str = "transfer_subscriptions";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping subscriptions");
-			Subscription::collection(global.target_db()).drop(None).await?;
+			// Subscription::collection(global.target_db()).delete_many(doc! {},
+			// None).await?;
 		}
 
 		Ok(Self {
 			global,
-			subscriptions: vec![],
+			// subscriptions: vec![],
 		})
 	}
 
@@ -57,10 +56,10 @@ impl Job for SubscriptionsJob {
 		};
 
 		// let (state, standing) = match sub.cycle.status {
-		// 	types::SubscriptionCycleStatus::Ongoing => (SubscriptionState::Active, None),
-		// 	types::SubscriptionCycleStatus::Ended => (SubscriptionState::Ended, None),
-		// 	types::SubscriptionCycleStatus::Canceled => (SubscriptionState::Active,
-		// Some(SubscriptionStanding::Canceled)), };
+		// 	types::SubscriptionCycleStatus::Ongoing => (SubscriptionState::Active,
+		// None), 	types::SubscriptionCycleStatus::Ended => (SubscriptionState::Ended,
+		// None), 	types::SubscriptionCycleStatus::Canceled =>
+		// (SubscriptionState::Active, Some(SubscriptionStanding::Canceled)), };
 
 		// let end = match sub.cycle.unit {
 		// 	types::SubscriptionCycleUnit::Year =>
@@ -93,22 +92,22 @@ impl Job for SubscriptionsJob {
 	}
 
 	async fn finish(self) -> ProcessOutcome {
-		tracing::info!("finishing stripe job");
+		tracing::info!("finishing subscriptions job");
 
 		let mut outcome = ProcessOutcome::default();
 
-		match Subscription::collection(self.global.target_db())
-			.insert_many(&self.subscriptions, None)
-			.await
-		{
-			Ok(res) => {
-				outcome.inserted_rows += res.inserted_ids.len() as u64;
-				if res.inserted_ids.len() != self.subscriptions.len() {
-					outcome.errors.push(error::Error::InsertMany);
-				}
-			}
-			Err(e) => outcome.errors.push(e.into()),
-		}
+		// match Subscription::collection(self.global.target_db())
+		// 	.insert_many(&self.subscriptions, None)
+		// 	.await
+		// {
+		// 	Ok(res) => {
+		// 		outcome.inserted_rows += res.inserted_ids.len() as u64;
+		// 		if res.inserted_ids.len() != self.subscriptions.len() {
+		// 			outcome.errors.push(error::Error::InsertMany);
+		// 		}
+		// 	}
+		// 	Err(e) => outcome.errors.push(e.into()),
+		// }
 
 		outcome
 	}

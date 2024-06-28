@@ -1,7 +1,8 @@
 use clickhouse::Row;
 
-use super::{EmoteId, RoleId, UserId};
-use crate::database;
+use super::emote::EmoteId;
+use super::role::RoleId;
+use super::user::UserId;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Row)]
 pub struct EmoteActivity {
@@ -163,12 +164,6 @@ pub enum TicketActivityKind {
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub enum TicketActivityData {
-	ChangeStatus {
-		old: database::TicketStatus,
-		new: database::TicketStatus,
-	},
-	ChangeAssignees {
-		added: Vec<UserId>,
-		removed: Vec<UserId>,
-	},
+	ChangeAssignees { added: Vec<UserId>, removed: Vec<UserId> },
+	ChangeOpen { old: bool, new: bool },
 }

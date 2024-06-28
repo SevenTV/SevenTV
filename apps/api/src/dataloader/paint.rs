@@ -1,7 +1,11 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Collection, Paint, PaintId};
+use shared::database::paint::{Paint, PaintId};
+use shared::database::Collection;
 
 pub struct PaintByIdLoader {
 	db: mongodb::Database,
@@ -23,14 +27,12 @@ impl Loader for PaintByIdLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<Self::Value> = Paint::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {

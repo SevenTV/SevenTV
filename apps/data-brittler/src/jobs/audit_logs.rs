@@ -2,23 +2,27 @@ use std::mem;
 use std::sync::Arc;
 
 use clickhouse::Row;
-use shared::database::{self, EmoteId, EmoteSetId, TicketId, UserId};
+use shared::database;
+use shared::database::emote::EmoteId;
+use shared::database::emote_set::EmoteSetId;
+use shared::database::ticket::TicketId;
+use shared::database::user::UserId;
 use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
 use crate::error;
 use crate::global::Global;
-use crate::types::{self, AuditLogChange, AuditLogChangeArray, AuditLogKind};
+use crate::types::{self, AuditLogChange, AuditLogChangeArray, AuditLogKind, ReportStatus};
 
 const BATCH_SIZE: u32 = 100_000;
 
 pub struct AuditLogsJob {
 	global: Arc<Global>,
 	i: u32,
-	emote_activity_writer: clickhouse::insert::Insert<database::EmoteActivity>,
-	emote_set_activity_writer: clickhouse::insert::Insert<database::EmoteSetActivity>,
-	user_activity_writer: clickhouse::insert::Insert<database::UserActivity>,
-	ticket_activity_writer: clickhouse::insert::Insert<database::TicketActivity>,
+	emote_activity_writer: clickhouse::insert::Insert<database::activity::EmoteActivity>,
+	emote_set_activity_writer: clickhouse::insert::Insert<database::activity::EmoteSetActivity>,
+	user_activity_writer: clickhouse::insert::Insert<database::activity::UserActivity>,
+	ticket_activity_writer: clickhouse::insert::Insert<database::activity::TicketActivity>,
 }
 
 async fn renew_writer<T: Row>(
@@ -91,11 +95,11 @@ impl Job for AuditLogsJob {
 			| AuditLogKind::MergeEmote
 			| AuditLogKind::DeleteEmote => {
 				let kind = match audit_log.kind {
-					AuditLogKind::CreateEmote => database::EmoteActivityKind::Upload,
-					AuditLogKind::ProcessEmote => database::EmoteActivityKind::Process,
-					AuditLogKind::UpdateEmote => database::EmoteActivityKind::Edit,
-					AuditLogKind::MergeEmote => database::EmoteActivityKind::Merge,
-					AuditLogKind::DeleteEmote => database::EmoteActivityKind::Delete,
+					AuditLogKind::CreateEmote => database::activity::EmoteActivityKind::Upload,
+					AuditLogKind::ProcessEmote => database::activity::EmoteActivityKind::Process,
+					AuditLogKind::UpdateEmote => database::activity::EmoteActivityKind::Edit,
+					AuditLogKind::MergeEmote => database::activity::EmoteActivityKind::Merge,
+					AuditLogKind::DeleteEmote => database::activity::EmoteActivityKind::Delete,
 					_ => unreachable!(),
 				};
 
@@ -104,39 +108,39 @@ impl Job for AuditLogsJob {
 					.into_iter()
 					.filter_map(|c| {
 						match c {
-							AuditLogChange::Name(names) => Some(database::EmoteActivityData::ChangeName {
+							AuditLogChange::Name(names) => Some(database::activity::EmoteActivityData::ChangeName {
 								old: names.old,
 								new: names.new,
 							}),
 							AuditLogChange::EmoteVersions(AuditLogChangeArray { updated, .. }) => {
 								let old = updated.iter().map(|u| &u.old).fold(
-									database::EmoteSettingsChange::default(),
-									|sum, c| database::EmoteSettingsChange {
+									database::activity::EmoteSettingsChange::default(),
+									|sum, c| database::activity::EmoteSettingsChange {
 										public_listed: sum.public_listed.or(c.listed),
 										approved_personal: sum.approved_personal.or(c.allow_personal),
 										..Default::default()
 									},
 								);
 								let new = updated.iter().map(|u| &u.new).fold(
-									database::EmoteSettingsChange::default(),
-									|sum, c| database::EmoteSettingsChange {
+									database::activity::EmoteSettingsChange::default(),
+									|sum, c| database::activity::EmoteSettingsChange {
 										public_listed: sum.public_listed.or(c.listed),
 										approved_personal: sum.approved_personal.or(c.allow_personal),
 										..Default::default()
 									},
 								);
-								Some(database::EmoteActivityData::ChangeSettings { old, new })
+								Some(database::activity::EmoteActivityData::ChangeSettings { old, new })
 							}
 							AuditLogChange::NewEmoteId(emote_id) => emote_id
 								.new
 								.into_inner()
-								.map(|id| database::EmoteActivityData::Merge { new_emote_id: id.into() }),
-							AuditLogChange::Tags(tags) => Some(database::EmoteActivityData::ChangeTags {
+								.map(|id| database::activity::EmoteActivityData::Merge { new_emote_id: id.into() }),
+							AuditLogChange::Tags(tags) => Some(database::activity::EmoteActivityData::ChangeTags {
 								new: tags.new,
 								old: tags.old,
 							}),
 							AuditLogChange::Flags(flags) => {
-								let mut old = database::EmoteSettingsChange::default();
+								let mut old = database::activity::EmoteSettingsChange::default();
 								if flags.old.contains(EmoteFlagsModel::Sexual) {
 									old.nsfw = Some(true);
 								}
@@ -147,7 +151,7 @@ impl Job for AuditLogsJob {
 									old.default_zero_width = Some(true);
 								}
 
-								let mut new = database::EmoteSettingsChange::default();
+								let mut new = database::activity::EmoteSettingsChange::default();
 								if flags.new.contains(EmoteFlagsModel::Sexual) {
 									new.nsfw = Some(true);
 								}
@@ -158,11 +162,11 @@ impl Job for AuditLogsJob {
 									new.default_zero_width = Some(true);
 								}
 
-								Some(database::EmoteActivityData::ChangeSettings { old, new })
+								Some(database::activity::EmoteActivityData::ChangeSettings { old, new })
 							}
 							AuditLogChange::Owner(owner) => {
 								if let (Some(old), Some(new)) = (owner.old.into_inner(), owner.new.into_inner()) {
-									Some(database::EmoteActivityData::ChangeOwner {
+									Some(database::activity::EmoteActivityData::ChangeOwner {
 										old: old.into(),
 										new: new.into(),
 									})
@@ -182,7 +186,7 @@ impl Job for AuditLogsJob {
 				}
 
 				for data in changes {
-					let activity = database::EmoteActivity {
+					let activity = database::activity::EmoteActivity {
 						emote_id: EmoteId::from(audit_log.target_id).as_uuid(),
 						actor_id: Some(UserId::from(audit_log.actor_id).as_uuid()),
 						kind,
@@ -198,9 +202,9 @@ impl Job for AuditLogsJob {
 			}
 			AuditLogKind::CreateEmoteSet | AuditLogKind::UpdateEmoteSet | AuditLogKind::DeleteEmoteSet => {
 				let kind = match audit_log.kind {
-					AuditLogKind::CreateEmoteSet => database::EmoteSetActivityKind::Create,
-					AuditLogKind::UpdateEmoteSet => database::EmoteSetActivityKind::Edit,
-					AuditLogKind::DeleteEmoteSet => database::EmoteSetActivityKind::Delete,
+					AuditLogKind::CreateEmoteSet => database::activity::EmoteSetActivityKind::Create,
+					AuditLogKind::UpdateEmoteSet => database::activity::EmoteSetActivityKind::Edit,
+					AuditLogKind::DeleteEmoteSet => database::activity::EmoteSetActivityKind::Delete,
 					_ => unreachable!(),
 				};
 
@@ -208,25 +212,25 @@ impl Job for AuditLogsJob {
 					.changes
 					.into_iter()
 					.map(|c| match c {
-						AuditLogChange::Name(names) => database::EmoteSetActivityData::ChangeName {
+						AuditLogChange::Name(names) => database::activity::EmoteSetActivityData::ChangeName {
 							old: names.old,
 							new: names.new,
 						},
 						AuditLogChange::EmoteSetCapacity(c) => {
-							let old = database::EmoteSetSettingsChange {
+							let old = database::activity::EmoteSetSettingsChange {
 								capacity: Some(c.old as u32),
 								..Default::default()
 							};
-							let new = database::EmoteSetSettingsChange {
+							let new = database::activity::EmoteSetSettingsChange {
 								capacity: Some(c.new as u32),
 								..Default::default()
 							};
-							database::EmoteSetActivityData::ChangeSettings { old, new }
+							database::activity::EmoteSetActivityData::ChangeSettings { old, new }
 						}
 						AuditLogChange::EmoteSetEmotes(emotes) => {
 							let added = emotes.added.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect();
 							let removed = emotes.removed.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect();
-							database::EmoteSetActivityData::ChangeEmotes { added, removed }
+							database::activity::EmoteSetActivityData::ChangeEmotes { added, removed }
 						}
 						_ => unimplemented!(),
 					})
@@ -238,7 +242,7 @@ impl Job for AuditLogsJob {
 				}
 
 				for data in changes {
-					let activity = database::EmoteSetActivity {
+					let activity = database::activity::EmoteSetActivity {
 						emote_set_id: EmoteSetId::from(audit_log.target_id).as_uuid(),
 						actor_id: Some(UserId::from(audit_log.actor_id).as_uuid()),
 						kind,
@@ -258,11 +262,11 @@ impl Job for AuditLogsJob {
 			| AuditLogKind::BanUser
 			| AuditLogKind::UnbanUser => {
 				let kind = match audit_log.kind {
-					AuditLogKind::CreateUser => database::UserActivityKind::Register,
-					AuditLogKind::EditUser => database::UserActivityKind::Edit,
-					AuditLogKind::DeleteUser => database::UserActivityKind::Delete,
-					AuditLogKind::BanUser => database::UserActivityKind::Ban,
-					AuditLogKind::UnbanUser => database::UserActivityKind::Unban,
+					AuditLogKind::CreateUser => database::activity::UserActivityKind::Register,
+					AuditLogKind::EditUser => database::activity::UserActivityKind::Edit,
+					AuditLogKind::DeleteUser => database::activity::UserActivityKind::Delete,
+					AuditLogKind::BanUser => database::activity::UserActivityKind::Ban,
+					AuditLogKind::UnbanUser => database::activity::UserActivityKind::Unban,
 					_ => unreachable!(),
 				};
 
@@ -270,11 +274,11 @@ impl Job for AuditLogsJob {
 					.changes
 					.into_iter()
 					.map(|c| match c {
-						AuditLogChange::UserEditors(editors) => database::UserActivityData::ChangeEditors {
+						AuditLogChange::UserEditors(editors) => database::activity::UserActivityData::ChangeEditors {
 							added: editors.added.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect(),
 							removed: editors.removed.into_iter().filter_map(|e| e.id).map(|id| id.into()).collect(),
 						},
-						AuditLogChange::UserRoles(roles) => database::UserActivityData::ChangeRoles {
+						AuditLogChange::UserRoles(roles) => database::activity::UserActivityData::ChangeRoles {
 							added: roles.added.into_iter().flatten().map(|id| id.into()).collect(),
 							removed: roles.removed.into_iter().flatten().map(|id| id.into()).collect(),
 						},
@@ -288,7 +292,7 @@ impl Job for AuditLogsJob {
 				}
 
 				for data in changes {
-					let activity = database::UserActivity {
+					let activity = database::activity::UserActivity {
 						user_id: UserId::from(audit_log.target_id).as_uuid(),
 						actor_id: Some(UserId::from(audit_log.actor_id).as_uuid()),
 						kind,
@@ -304,8 +308,8 @@ impl Job for AuditLogsJob {
 			}
 			AuditLogKind::CreateReport | AuditLogKind::UpdateReport => {
 				let kind = match audit_log.kind {
-					AuditLogKind::CreateReport => database::TicketActivityKind::Create,
-					AuditLogKind::UpdateReport => database::TicketActivityKind::Edit,
+					AuditLogKind::CreateReport => database::activity::TicketActivityKind::Create,
+					AuditLogKind::UpdateReport => database::activity::TicketActivityKind::Edit,
 					_ => unreachable!(),
 				};
 
@@ -313,14 +317,16 @@ impl Job for AuditLogsJob {
 					.changes
 					.into_iter()
 					.map(|c| match c {
-						AuditLogChange::ReportStatus(status) => database::TicketActivityData::ChangeStatus {
-							old: status.old.into(),
-							new: status.new.into(),
+						AuditLogChange::ReportStatus(status) => database::activity::TicketActivityData::ChangeOpen {
+							old: status.old == ReportStatus::Open,
+							new: status.new == ReportStatus::Open,
 						},
-						AuditLogChange::ReportAssignees(assignees) => database::TicketActivityData::ChangeAssignees {
-							added: assignees.added.into_iter().map(|id| id.into()).collect(),
-							removed: assignees.removed.into_iter().map(|id| id.into()).collect(),
-						},
+						AuditLogChange::ReportAssignees(assignees) => {
+							database::activity::TicketActivityData::ChangeAssignees {
+								added: assignees.added.into_iter().map(|id| id.into()).collect(),
+								removed: assignees.removed.into_iter().map(|id| id.into()).collect(),
+							}
+						}
 						_ => unimplemented!(),
 					})
 					.map(Some)
@@ -331,7 +337,7 @@ impl Job for AuditLogsJob {
 				}
 
 				for data in changes {
-					let activity = database::TicketActivity {
+					let activity = database::activity::TicketActivity {
 						ticket_id: TicketId::from(audit_log.target_id).as_uuid(),
 						actor_id: Some(UserId::from(audit_log.actor_id).as_uuid()),
 						kind,

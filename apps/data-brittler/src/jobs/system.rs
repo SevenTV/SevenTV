@@ -1,40 +1,15 @@
 use std::sync::Arc;
 
+use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::UpdateOptions;
-use shared::database::{
-	Collection, EmotePermission, EmoteSetId, EmoteSetPermission, FeaturePermission, GlobalConfig, GlobalConfigAlerts, GlobalConfigId, Permissions, TicketPermission, UserPermission
-};
+use shared::database::emote_set::EmoteSetId;
+use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
+use shared::database::Collection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::types;
-
-pub fn default_perms() -> Permissions {
-	let mut perms = Permissions::default();
-
-	perms.apply(EmotePermission::Upload.into());
-	perms.apply(EmotePermission::Edit.into());
-
-	perms.apply(EmoteSetPermission::Create.into());
-	perms.apply(EmoteSetPermission::Delete.into());
-	perms.apply(EmoteSetPermission::Edit.into());
-
-	perms.apply(UserPermission::Login.into());
-	perms.apply(UserPermission::Edit.into());
-
-	perms.apply(FeaturePermission::UseBadge.into());
-	perms.apply(FeaturePermission::UsePaint.into());
-	perms.apply(FeaturePermission::UsePersonalEmoteSet.into());
-
-	perms.apply(TicketPermission::Create.into());
-	perms.apply(TicketPermission::Message.into());
-
-	perms.emote_set_count_limit = Some(10);
-	perms.emote_set_slots_limit = Some(600);
-
-	perms
-}
 
 pub struct SystemJob {
 	global: Arc<Global>,
@@ -62,18 +37,20 @@ impl Job for SystemJob {
 			.update_one(
 				doc! {},
 				doc! {
-					"$addToSet": {
-						"emote_set_ids": emote_set_id,
+					"$set": {
+						"emote_set_id": emote_set_id,
 					},
 					"$setOnInsert": {
-						"_id": GlobalConfigId::nil(),
+						"_id": Option::<ObjectId>::None,
 						"alerts": to_bson(&GlobalConfigAlerts::default()).unwrap(),
 						"role_ids": [],
-						"default_permissions": to_bson(&default_perms()).unwrap(),
+						"automod_rule_ids": [],
+						"normal_emote_set_slot_capacity": 600,
+						"personal_emote_set_slot_capacity": 5,
 					},
 				},
-				UpdateOptions::builder().upsert(true).build(),
 			)
+			.with_options(UpdateOptions::builder().upsert(true).build())
 			.await
 		{
 			Ok(_) => outcome.inserted_rows += 1,

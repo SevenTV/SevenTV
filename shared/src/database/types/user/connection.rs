@@ -1,34 +1,37 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use super::UserId;
-use crate::database::{Collection, Id};
+use mongodb::bson::Bson;
 
-pub type UserConnectionId = Id<UserConnection>;
-
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserConnection {
-	#[serde(rename = "_id")]
-	pub id: UserConnectionId,
-	pub user_id: UserId,
-	pub main_connection: bool,
 	pub platform: Platform,
 	pub platform_id: String,
 	pub platform_username: String,
 	pub platform_display_name: String,
 	pub platform_avatar_url: Option<String>,
+	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+	pub linked_at: chrono::DateTime<chrono::Utc>,
 	pub allow_login: bool,
 }
 
 #[derive(Debug, Clone, Copy, Hash, Default, PartialEq, Eq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
-#[repr(u8)]
+#[repr(i32)]
 pub enum Platform {
 	#[default]
 	Twitch = 0,
 	Discord = 1,
 	Google = 2,
 	Kick = 3,
+}
+
+impl From<Platform> for Bson {
+	fn from(value: Platform) -> Self {
+		Bson::Int32(value as i32)
+	}
 }
 
 impl FromStr for Platform {
@@ -54,8 +57,4 @@ impl Display for Platform {
 			Self::Kick => write!(f, "kick"),
 		}
 	}
-}
-
-impl Collection for UserConnection {
-	const COLLECTION_NAME: &'static str = "user_connections";
 }

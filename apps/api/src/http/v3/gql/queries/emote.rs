@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
-use shared::database::EmoteId;
-use shared::old_types::{EmoteFlagsModel, EmoteObjectId, ImageHost, UserObjectId};
+use shared::database::emote::EmoteId;
+use shared::database::user::UserId;
+use shared::old_types::image::ImageHost;
+use shared::old_types::object_id::GqlObjectId;
+use shared::old_types::EmoteFlagsModel;
 
-use super::audit_logs::AuditLog;
-use super::reports::Report;
-use super::users::{UserPartial, UserSearchResult};
+use super::audit_log::AuditLog;
+use super::report::Report;
+use super::user::{UserPartial, UserSearchResult};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};
@@ -17,17 +20,17 @@ pub struct EmotesQuery;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emotes.gql
 
-#[derive(Debug, Clone, Default, SimpleObject)]
+#[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Emote {
-	id: EmoteObjectId,
+	id: GqlObjectId,
 	name: String,
 	flags: EmoteFlagsModel,
 	lifecycle: EmoteLifecycleModel,
 	tags: Vec<String>,
 	animated: bool,
 	// created_at
-	owner_id: UserObjectId,
+	owner_id: GqlObjectId,
 	// owner
 
 	// channels
@@ -43,14 +46,11 @@ pub struct Emote {
 }
 
 impl Emote {
-	pub fn from_db(global: &Arc<Global>, value: shared::database::Emote) -> Self {
-		let host = ImageHost::from_image_set(
-			&value.image_set,
-			&global.config().api.cdn_origin,
-		);
+	pub fn from_db(global: &Arc<Global>, value: shared::database::emote::Emote) -> Self {
+		let host = ImageHost::from_image_set(&value.image_set, &global.config().api.cdn_origin);
 		let state = EmoteVersionState::from_db(&value.flags);
-		let listed = value.flags.contains(shared::database::EmoteFlags::PublicListed);
-		let lifecycle = if value.merged_into.is_some() {
+		let listed = value.flags.contains(shared::database::emote::EmoteFlags::PublicListed);
+		let lifecycle = if value.merged.is_some() {
 			EmoteLifecycleModel::Deleted
 		} else if value.image_set.input.is_pending() {
 			EmoteLifecycleModel::Pending
@@ -65,7 +65,7 @@ impl Emote {
 			lifecycle,
 			tags: value.tags,
 			animated: value.animated,
-			owner_id: value.owner_id.map(Into::into).unwrap_or_default(),
+			owner_id: value.owner_id.into(),
 			host: host.clone(),
 			versions: vec![EmoteVersion {
 				id: value.id.into(),
@@ -79,16 +79,24 @@ impl Emote {
 			}],
 			state,
 			listed,
-			personal_use: value.flags.contains(shared::database::EmoteFlags::ApprovedPersonal),
+			personal_use: value.flags.contains(shared::database::emote::EmoteFlags::ApprovedPersonal),
 		}
 	}
 
 	pub fn deleted_emote() -> Self {
 		Self {
-			id: EmoteObjectId::Id(EmoteId::nil()),
+			id: GqlObjectId(EmoteId::nil().cast()),
 			name: "*DeletedEmote".to_string(),
 			lifecycle: EmoteLifecycleModel::Deleted,
-			..Default::default()
+			flags: EmoteFlagsModel::none(),
+			tags: vec![],
+			animated: false,
+			owner_id: GqlObjectId(UserId::nil().cast()),
+			host: ImageHost::default(),
+			versions: vec![],
+			state: vec![],
+			listed: false,
+			personal_use: false,
 		}
 	}
 }
@@ -97,12 +105,19 @@ impl Emote {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl Emote {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.id().timestamp()
+		self.id.0.timestamp()
 	}
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.owner_id.id()).await?.unwrap_or_else(UserPartial::deleted_user))
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.owner_id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
+			.unwrap_or_else(UserPartial::deleted_user))
 	}
 
 	async fn channels(
@@ -133,7 +148,7 @@ impl Emote {
 		let activities = global
 			.clickhouse()
 			.query("SELECT * FROM emote_activities WHERE emote_id = ? ORDER BY timestamp DESC LIMIT ?")
-			.bind(self.id.id().as_uuid())
+			.bind(self.id.0.as_uuid())
 			.bind(limit.unwrap_or(100))
 			.fetch_all()
 			.await
@@ -142,10 +157,7 @@ impl Emote {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		Ok(activities
-			.into_iter()
-			.map(AuditLog::from_db_emote)
-			.collect())
+		Ok(activities.into_iter().map(AuditLog::from_db_emote).collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {
@@ -154,17 +166,17 @@ impl Emote {
 	}
 }
 
-#[derive(Debug, Clone, Default, SimpleObject)]
+#[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmotePartial {
-	id: EmoteObjectId,
+	id: GqlObjectId,
 	name: String,
 	flags: EmoteFlagsModel,
 	lifecycle: EmoteLifecycleModel,
 	tags: Vec<String>,
 	animated: bool,
 	// created_at
-	owner_id: UserObjectId,
+	owner_id: GqlObjectId,
 	// owner
 	host: ImageHost,
 	state: Vec<EmoteVersionState>,
@@ -191,19 +203,26 @@ impl From<Emote> for EmotePartial {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmotePartial {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.id().timestamp()
+		self.id.0.timestamp()
 	}
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.owner_id.id()).await?.unwrap_or_else(UserPartial::deleted_user))
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.owner_id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
+			.unwrap_or_else(UserPartial::deleted_user))
 	}
 }
 
-#[derive(Debug, Clone, Default, SimpleObject)]
+#[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct EmoteVersion {
-	id: EmoteObjectId,
+	id: GqlObjectId,
 	name: String,
 	description: String,
 	// created_at
@@ -217,7 +236,7 @@ pub struct EmoteVersion {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmoteVersion {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.id().timestamp()
+		self.id.0.timestamp()
 	}
 }
 
@@ -279,7 +298,7 @@ pub struct EmoteSearchResult {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmotesQuery {
-	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteObjectId) -> Result<Option<Emote>, ApiError> {
+	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| {
 			tracing::error!("failed to get global from context");
 			ApiError::INTERNAL_SERVER_ERROR
@@ -295,11 +314,7 @@ impl EmotesQuery {
 	}
 
 	#[graphql(name = "emotesByID")]
-	async fn emotes_by_id<'ctx>(
-		&self,
-		ctx: &Context<'ctx>,
-		list: Vec<EmoteObjectId>,
-	) -> Result<Vec<EmotePartial>, ApiError> {
+	async fn emotes_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<GqlObjectId>) -> Result<Vec<EmotePartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		if list.len() > 1000 {

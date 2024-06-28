@@ -8,7 +8,9 @@ use axum::routing::{get, post};
 use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::database::{Collection, Platform, UserSession};
+use shared::database::user::connection::Platform;
+use shared::database::user::session::UserSession;
+use shared::database::Collection;
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
@@ -119,12 +121,9 @@ async fn logout(
 	// new session
 	if let AuthSessionKind::Session(session) = session.kind {
 		UserSession::collection(global.db())
-			.delete_one(
-				doc! {
-					"_id": session.id,
-				},
-				None,
-			)
+			.delete_one(doc! {
+				"_id": session.id,
+			})
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to delete session");

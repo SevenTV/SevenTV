@@ -29,5 +29,8 @@ pub enum EntitlementData {
 		selected: bool,
 	},
 	Subscription {},
-	EmoteSet {},
+	EmoteSet {
+		#[serde(rename = "ref")]
+		ref_id: ObjectId,
+	},
 }

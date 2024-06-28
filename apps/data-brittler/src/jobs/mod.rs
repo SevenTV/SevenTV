@@ -3,10 +3,11 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Context;
+use bson::doc;
+use entitlements::EntitlementsJob;
 use futures::stream::FuturesUnordered;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
-use shared::database::{Collection, Ticket, TicketMember, TicketMessage};
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -30,6 +31,7 @@ pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
+pub mod entitlements;
 pub mod messages;
 pub mod prices;
 pub mod reports;
@@ -73,9 +75,9 @@ impl AddAssign<ProcessOutcome> for JobOutcome {
 	}
 }
 
-pub trait Job: Sized {
+pub trait Job: Sized + Send + Sync {
 	const NAME: &'static str;
-	type T: serde::de::DeserializeOwned;
+	type T: serde::de::DeserializeOwned + Send + Sync;
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self>;
 
@@ -107,7 +109,7 @@ pub trait Job: Sized {
 		let collection = self.collection().await;
 
 		// count
-		let count = collection.count_documents(None, None).await?;
+		let count = collection.count_documents(doc! {}).await?;
 		let tenth = count / 10;
 		tracing::info!("found {} documents", Number::from(count));
 
@@ -119,7 +121,7 @@ pub trait Job: Sized {
 			processed_documents: 0,
 			inserted_rows: 0,
 		};
-		let mut documents = collection.find(None, None).await.context("failed to query documents")?;
+		let mut documents = collection.find(doc! {}).await.context("failed to query documents")?;
 
 		while let Some(r) = documents.try_next().await.transpose() {
 			if scuffle_foundations::context::Context::global().is_done() {
@@ -170,15 +172,6 @@ pub trait Job: Sized {
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let timer = Instant::now();
 
-	// This has to be here because it's these are target collections for multiple
-	// jobs
-	if global.config().truncate && global.config().reports && global.config().messages {
-		tracing::info!("dropping tickets, ticket_members and ticket_messages collections");
-		Ticket::collection(global.target_db()).drop(None).await?;
-		TicketMember::collection(global.target_db()).drop(None).await?;
-		TicketMessage::collection(global.target_db()).drop(None).await?;
-	}
-
 	let futures: FuturesUnordered<Pin<Box<dyn Future<Output = anyhow::Result<JobOutcome>> + Send>>> =
 		FuturesUnordered::new();
 
@@ -193,6 +186,9 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		futures.push(j);
 	}
 	if let Some(j) = EmoteSetsJob::conditional_init_and_run(&global, global.config().should_run_emote_sets())? {
+		futures.push(j);
+	}
+	if let Some(j) = EntitlementsJob::conditional_init_and_run(&global, global.config().should_run_entitlements())? {
 		futures.push(j);
 	}
 	if let Some(j) = CosmeticsJob::conditional_init_and_run(&global, global.config().should_run_cosmetics())? {

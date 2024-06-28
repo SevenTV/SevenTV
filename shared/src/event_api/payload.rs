@@ -9,7 +9,8 @@ use std::collections::HashMap;
 // it rather than silently ignoring it, and potentially causing issues.
 use super::types::{self, ChangeMap, CloseCode, EventType, SessionEffect};
 use super::MessagePayload;
-use crate::database::{Id, UserId};
+use crate::database::user::UserId;
+use crate::database::Id;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]

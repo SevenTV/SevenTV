@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
-use super::ImageSet;
+use super::image_set::ImageSet;
+use super::GenericCollection;
 use crate::database::{Collection, Id};
 
 pub type PaintId = Id<Paint>;
@@ -97,4 +95,8 @@ pub struct PaintShadow {
 	pub offset_x: f64,
 	pub offset_y: f64,
 	pub blur: f64,
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<Paint>()]
 }

@@ -1,7 +1,11 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Collection, Role, RoleId};
+use shared::database::role::{Role, RoleId};
+use shared::database::Collection;
 
 pub struct RoleByIdLoader {
 	db: mongodb::Database,
@@ -23,14 +27,12 @@ impl Loader for RoleByIdLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<Self::Value> = Role::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {

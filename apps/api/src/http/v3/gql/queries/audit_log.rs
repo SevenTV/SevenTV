@@ -2,13 +2,18 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::{
-	Emote, EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteId, EmoteSetActivity, EmoteSetActivityData,
-	EmoteSetActivityKind, EmoteSetId, EmoteSettingsChange, Id, UserId,
+use shared::database::activity::{
+	EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteSetActivity, EmoteSetActivityData, EmoteSetActivityKind,
+	EmoteSettingsChange,
 };
-use shared::old_types::{EmoteFlagsModel, EmoteObjectId, ObjectId, UserObjectId};
+use shared::database::emote::{Emote, EmoteId};
+use shared::database::emote_set::EmoteSetId;
+use shared::database::user::UserId;
+use shared::database::Id;
+use shared::old_types::object_id::GqlObjectId;
+use shared::old_types::EmoteFlagsModel;
 
-use super::users::UserPartial;
+use super::user::UserPartial;
 use crate::global::Global;
 use crate::http::error::ApiError;
 
@@ -17,11 +22,11 @@ use crate::http::error::ApiError;
 #[derive(Debug, SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct AuditLog {
-	id: ObjectId<()>,
+	id: GqlObjectId,
 	// actor
-	actor_id: UserObjectId,
+	actor_id: GqlObjectId,
 	kind: AuditLogKind,
-	target_id: ObjectId<()>,
+	target_id: GqlObjectId,
 	target_kind: u32,
 	created_at: time::OffsetDateTime,
 	changes: Vec<AuditLogChange>,
@@ -32,8 +37,13 @@ pub struct AuditLog {
 impl AuditLog {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.actor_id.id())
-			.await?
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.actor_id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
 }
@@ -107,7 +117,7 @@ impl AuditLog {
 			id: Id::<()>::with_timestamp_ms(activity.timestamp.unix_timestamp() * 1000).into(),
 			actor_id: activity.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into(),
 			kind: activity.kind.into(),
-			target_id: EmoteId::from(activity.emote_id).cast().into(),
+			target_id: EmoteId::from(activity.emote_id).into(),
 			target_kind: 2,
 			created_at: activity.timestamp,
 			changes,
@@ -128,7 +138,7 @@ impl AuditLog {
 			id: Id::<()>::with_timestamp_ms(activity.timestamp.unix_timestamp() * 1000).into(),
 			actor_id,
 			kind: activity.kind.into(),
-			target_id: EmoteSetId::from(activity.emote_set_id).cast().into(),
+			target_id: EmoteSetId::from(activity.emote_set_id).into(),
 			target_kind: 3,
 			created_at: activity.timestamp,
 			changes,
@@ -237,7 +247,7 @@ impl AuditLogChange {
 
 	pub fn from_db_emote_set(
 		data: EmoteSetActivityData,
-		actor_id: UserObjectId,
+		actor_id: GqlObjectId,
 		timestamp: time::OffsetDateTime,
 		emotes: &HashMap<EmoteId, Emote>,
 	) -> Option<Self> {
@@ -318,8 +328,8 @@ pub struct AuditLogChangeArray {
 #[serde(untagged)]
 pub enum ArbitraryMap {
 	Emote {
-		id: EmoteObjectId,
-		actor_id: UserObjectId,
+		id: GqlObjectId,
+		actor_id: GqlObjectId,
 		flags: EmoteFlagsModel,
 		name: String,
 		timestamp: time::OffsetDateTime,

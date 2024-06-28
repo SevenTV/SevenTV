@@ -3,8 +3,14 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use shared::database::{self, Collection, ImageSet, PaintData, PaintId, PaintLayer, PaintLayerId, PaintPermission};
-use shared::old_types::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape, PaintObjectId};
+use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::paint::{
+	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
+};
+use shared::database::role::permissions::PaintPermission;
+use shared::database::Collection;
+use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape};
+use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -15,31 +21,32 @@ pub struct CosmeticsMutation;
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl CosmeticsMutation {
-	#[graphql(guard = "PermissionGuard::one(PaintPermission::Create)")]
-	async fn create_cosmetic_paint<'ctx>(&self, ctx: &Context<'ctx>, definition: CosmeticPaintInput) -> Result<PaintObjectId, ApiError> {
+	#[graphql(guard = "PermissionGuard::one(PaintPermission::Manage)")]
+	async fn create_cosmetic_paint<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		definition: CosmeticPaintInput,
+	) -> Result<GqlObjectId, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let id = PaintId::new();
 
-		let paint = database::Paint {
+		let paint = Paint {
 			id,
 			name: definition.name.clone(),
 			data: definition.into_db(id, global).await?,
 			..Default::default()
 		};
 
-		database::Paint::collection(global.db())
-			.insert_one(paint, None)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert paint");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+		Paint::collection(global.db()).insert_one(paint).await.map_err(|e| {
+			tracing::error!(error = %e, "failed to insert paint");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 		Ok(id.into())
 	}
 
-	async fn cosmetics(&self, id: PaintObjectId) -> CosmeticOps {
+	async fn cosmetics(&self, id: GqlObjectId) -> CosmeticOps {
 		CosmeticOps { id }
 	}
 }
@@ -59,7 +66,7 @@ pub struct CosmeticPaintInput {
 }
 
 impl CosmeticPaintInput {
-	async fn into_db(self, paint_id: PaintId, global: &Arc<Global>) -> Result<database::PaintData, ApiError> {
+	async fn into_db(self, paint_id: PaintId, global: &Arc<Global>) -> Result<PaintData, ApiError> {
 		let layer_id = PaintLayerId::new();
 
 		let ty = match self.function {
@@ -67,13 +74,13 @@ impl CosmeticPaintInput {
 				let stops = self
 					.stops
 					.iter()
-					.map(|stop| database::PaintGradientStop {
+					.map(|stop| PaintGradientStop {
 						at: stop.at,
 						color: stop.color,
 					})
 					.collect();
 
-				database::PaintLayerType::LinearGradient {
+				PaintLayerType::LinearGradient {
 					angle: self.angle.unwrap_or(0) as i32,
 					repeating: self.repeat,
 					stops,
@@ -83,13 +90,13 @@ impl CosmeticPaintInput {
 				let stops = self
 					.stops
 					.iter()
-					.map(|stop| database::PaintGradientStop {
+					.map(|stop| PaintGradientStop {
 						at: stop.at,
 						color: stop.color,
 					})
 					.collect();
 
-				database::PaintLayerType::RadialGradient {
+				PaintLayerType::RadialGradient {
 					angle: self.angle.unwrap_or(0) as i32,
 					repeating: self.repeat,
 					shape: self.shape.unwrap_or(CosmeticPaintShape::Ellipse).into(),
@@ -107,16 +114,16 @@ impl CosmeticPaintInput {
 						Err(e) => {
 							tracing::error!(error = ?e, "failed to read image data");
 							return Err(ApiError::INTERNAL_SERVER_ERROR);
-						},
+						}
 					},
 					Ok(res) => {
 						tracing::error!(status = ?res.status(), "failed to request image url");
 						return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "failed to request image url"));
-					},
+					}
 					Err(e) => {
 						tracing::error!(error = ?e, "failed to request image url");
 						return Err(ApiError::INTERNAL_SERVER_ERROR);
-					},
+					}
 				};
 
 				let input = match global
@@ -126,7 +133,10 @@ impl CosmeticPaintInput {
 				{
 					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
 						tracing::error!(error = ?error, "failed to start processing image");
-						return Err(ApiError::new_const(StatusCode::INTERNAL_SERVER_ERROR, "image processor error"));
+						return Err(ApiError::new_const(
+							StatusCode::INTERNAL_SERVER_ERROR,
+							"image processor error",
+						));
 					}
 					Ok(scuffle_image_processor_proto::ProcessImageResponse {
 						id,
@@ -137,20 +147,28 @@ impl CosmeticPaintInput {
 								size,
 							}),
 						error: None,
-					}) => database::ImageSetInput::Pending {
+					}) => ImageSetInput::Pending {
 						task_id: id,
 						path: path.path,
 						mime: content_type,
-						size: size,
+						size,
 					},
 					Err(e) => {
 						tracing::error!(error = ?e, "failed to start send image processor request");
-						return Err(ApiError::new_const(StatusCode::INTERNAL_SERVER_ERROR, "image processor error"));
-					},
-					_ => return Err(ApiError::new_const(StatusCode::INTERNAL_SERVER_ERROR, "image processor error")),
+						return Err(ApiError::new_const(
+							StatusCode::INTERNAL_SERVER_ERROR,
+							"image processor error",
+						));
+					}
+					_ => {
+						return Err(ApiError::new_const(
+							StatusCode::INTERNAL_SERVER_ERROR,
+							"image processor error",
+						));
+					}
 				};
 
-				database::PaintLayerType::Image(ImageSet {
+				PaintLayerType::Image(ImageSet {
 					input,
 					..Default::default()
 				})
@@ -187,8 +205,8 @@ pub struct CosmeticPaintShadowInput {
 }
 
 impl CosmeticPaintShadowInput {
-	pub fn to_db(&self) -> database::PaintShadow {
-		database::PaintShadow {
+	pub fn to_db(&self) -> PaintShadow {
+		PaintShadow {
 			color: self.color,
 			offset_x: self.x_offset,
 			offset_y: self.y_offset,
@@ -200,12 +218,12 @@ impl CosmeticPaintShadowInput {
 #[derive(SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct CosmeticOps {
-	id: PaintObjectId,
+	id: GqlObjectId,
 }
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl CosmeticOps {
-	#[graphql(guard = "PermissionGuard::one(PaintPermission::Edit)")]
+	#[graphql(guard = "PermissionGuard::one(PaintPermission::Manage)")]
 	async fn update_paint<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -224,14 +242,13 @@ impl CosmeticOps {
 		let data = definition.into_db(self.id.id(), global).await?;
 		let update = to_bson(&data).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let paint = database::Paint::collection(global.db())
+		let paint = Paint::collection(global.db())
 			.find_one_and_update(
-				doc! { "_id": self.id.id() },
+				doc! { "_id": self.id.0 },
 				doc! { "$set": {
 					"name": name,
 					"data": update,
 				} },
-				None,
 			)
 			.await
 			.map_err(|e| {

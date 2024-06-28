@@ -1,41 +1,142 @@
 use bitmask_enum::bitmask;
 
 use super::UserId;
-use crate::database::{AllowDeny, BitMask, Collection, EmotePermission, EmoteSetPermission, Id};
+use crate::database::types::GenericCollection;
+use crate::database::Collection;
 
-pub type UserEditorId = Id<UserEditor>;
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+pub struct UserEditorId {
+	pub user_id: UserId,
+	pub editor_id: UserId,
+}
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditor {
 	#[serde(rename = "_id")]
 	pub id: UserEditorId,
-	pub user_id: UserId,
-	pub editor_id: UserId,
 	pub state: UserEditorState,
 	pub notes: Option<String>,
 	pub permissions: UserEditorPermissions,
-	pub added_by_id: Option<UserId>,
+	pub added_by_id: UserId,
+	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+	pub added_at: chrono::DateTime<chrono::Utc>,
+}
+
+macro_rules! impl_bits {
+	($bits:ty) => {
+		impl Default for $bits {
+			fn default() -> Self {
+				Self::none()
+			}
+		}
+
+		impl $bits {
+			pub const fn is_empty(&self) -> bool {
+				self.bits() == 0
+			}
+		}
+
+		impl serde::Serialize for $bits {
+			fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+			where
+				S: serde::Serializer,
+			{
+				serde::Serialize::serialize(&self.bits(), serializer)
+			}
+		}
+
+		impl<'de> serde::Deserialize<'de> for $bits {
+			fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+			where
+				D: serde::Deserializer<'de>,
+			{
+				let bits = i32::deserialize(deserializer)?;
+				Ok(Self::from(bits))
+			}
+		}
+	};
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditorPermissions {
-	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	#[serde(skip_serializing_if = "EditorEmoteSetPermission::is_empty")]
 	#[serde(default)]
-	pub emote_set: AllowDeny<EmoteSetPermission>,
-	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
+	pub emote_set: EditorEmoteSetPermission,
+	#[serde(skip_serializing_if = "EditorEmotePermission::is_empty")]
 	#[serde(default)]
-	pub emote: AllowDeny<EmotePermission>,
+	pub emote: EditorEmotePermission,
+	#[serde(skip_serializing_if = "EditorUserPermission::is_empty")]
+	#[serde(default)]
+	pub user: EditorUserPermission,
 }
 
+#[bitmask(i32)]
+pub enum EditorEmoteSetPermission {
+	/// Grants all permissions
+	Admin = 1,
+	/// Allows the user to manage the editor's emote sets
+	Manage = 2,
+	/// Allows the user to create new emote sets on behalf of the user
+	Create = 4,
+}
+
+impl_bits!(EditorEmoteSetPermission);
+
+#[bitmask(i32)]
+pub enum EditorEmotePermission {
+	/// Grants all permissions
+	Admin = 1,
+	/// Allows the user to manage the editor's emotes
+	Manage = 2,
+	/// Allows the user to create new emotes on behalf of the user
+	Create = 4,
+	/// Allows the user to transfer emotes to other users
+	Transfer = 8,
+}
+
+impl_bits!(EditorEmotePermission);
+
+#[bitmask(i32)]
+pub enum EditorUserPermission {
+	// Grants all permissions for every category
+	SuperAdmin = 1,
+	/// Grants all permissions
+	Admin = 2,
+	/// Allows the editor to manage billing information
+	ManageBilling = 4,
+	/// Allows the editor to manage the user's profile
+	ManageProfile = 8,
+	/// Allows the editor to manage the user's editors
+	ManageEditors = 16,
+	/// Manage personal emote set
+	ManagePersonalEmoteSet = 32,
+}
+
+impl_bits!(EditorUserPermission);
+
 impl UserEditorPermissions {
-	pub fn has_emote_set(&self, permission: EmoteSetPermission) -> bool {
-		self.emote_set.permission().contains(permission) || self.emote_set.permission().contains(EmoteSetPermission::Admin)
+	pub fn has_emote_set(&self, permission: EditorEmoteSetPermission) -> bool {
+		self.emote_set.contains(permission)
+			|| self.emote_set.contains(EditorEmoteSetPermission::Admin)
+			|| self.user.contains(EditorUserPermission::SuperAdmin)
 	}
 
-	pub fn has_emote(&self, permission: EmotePermission) -> bool {
-		self.emote.permission().contains(permission) || self.emote.permission().contains(EmotePermission::Admin)
+	pub fn has_emote(&self, permission: EditorEmotePermission) -> bool {
+		self.emote.contains(permission)
+			|| self.emote.contains(EditorEmotePermission::Admin)
+			|| self.user.contains(EditorUserPermission::SuperAdmin)
+	}
+
+	pub fn has_user(&self, permission: EditorUserPermission) -> bool {
+		if permission.contains(EditorUserPermission::SuperAdmin) {
+			return self.user.contains(EditorUserPermission::SuperAdmin);
+		}
+
+		self.user.contains(permission)
+			|| self.user.contains(EditorUserPermission::Admin)
+			|| self.user.contains(EditorUserPermission::SuperAdmin)
 	}
 }
 
@@ -50,4 +151,25 @@ pub enum UserEditorState {
 
 impl Collection for UserEditor {
 	const COLLECTION_NAME: &'static str = "user_editors";
+
+	fn indexes() -> Vec<mongodb::IndexModel> {
+		vec![
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"_id.user_id": 1,
+					"_id.editor_id": 1,
+				})
+				.build(),
+			mongodb::IndexModel::builder()
+				.keys(mongodb::bson::doc! {
+					"_id.editor_id": 1,
+					"_id.user_id": 1,
+				})
+				.build(),
+		]
+	}
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<UserEditor>()]
 }

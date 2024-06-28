@@ -1,7 +1,11 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Badge, BadgeId, Collection};
+use shared::database::badge::{Badge, BadgeId};
+use shared::database::Collection;
 
 pub struct BadgeByIdLoader {
 	db: mongodb::Database,
@@ -23,14 +27,12 @@ impl Loader for BadgeByIdLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<Self::Value> = Self::Value::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {

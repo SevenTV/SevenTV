@@ -2,8 +2,12 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
 
+use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
-use shared::database::{self, Badge, Collection, ImageSet, Paint, PaintLayerId};
+use shared::database::badge::Badge;
+use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::paint::{Paint, PaintLayer, PaintLayerId, PaintLayerType};
+use shared::database::{self, Collection};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -39,8 +43,8 @@ impl Job for CosmeticsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping paints and badges collections");
-			Paint::collection(global.target_db()).drop(None).await?;
-			Badge::collection(global.target_db()).drop(None).await?;
+			Paint::collection(global.target_db()).delete_many(doc! {}).await?;
+			Badge::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		Ok(Self {
@@ -83,7 +87,7 @@ impl Job for CosmeticsJob {
 						error: None,
 					}) => {
 						self.all_tasks.insert(id.clone());
-						database::ImageSetInput::Pending {
+						ImageSetInput::Pending {
 							task_id: id,
 							path: path.path,
 							mime: content_type,
@@ -101,16 +105,13 @@ impl Job for CosmeticsJob {
 
 				let tags = tag.map(|t| vec![t]).unwrap_or_default();
 				match Badge::collection(self.global.target_db())
-					.insert_one(
-						Badge {
-							id: cosmetic.id.into(),
-							name: cosmetic.name,
-							description: tooltip,
-							tags,
-							image_set,
-						},
-						None,
-					)
+					.insert_one(Badge {
+						id: cosmetic.id.into(),
+						name: cosmetic.name,
+						description: tooltip,
+						tags,
+						image_set,
+					})
 					.await
 				{
 					Ok(_) => outcome.inserted_rows += 1,
@@ -125,7 +126,7 @@ impl Job for CosmeticsJob {
 				let layer = match data {
 					types::PaintData::LinearGradient {
 						stops, repeat, angle, ..
-					} => Some(database::PaintLayerType::LinearGradient {
+					} => Some(PaintLayerType::LinearGradient {
 						angle,
 						repeating: repeat,
 						stops: stops.into_iter().map(Into::into).collect(),
@@ -136,7 +137,7 @@ impl Job for CosmeticsJob {
 						angle,
 						shape,
 						..
-					} => Some(database::PaintLayerType::RadialGradient {
+					} => Some(PaintLayerType::RadialGradient {
 						angle,
 						repeating: repeat,
 						stops: stops.into_iter().map(Into::into).collect(),
@@ -166,7 +167,7 @@ impl Job for CosmeticsJob {
 								error: None,
 							}) => {
 								self.all_tasks.insert(id.clone());
-								database::ImageSetInput::Pending {
+								ImageSetInput::Pending {
 									task_id: id,
 									path: path.path,
 									mime: content_type,
@@ -177,7 +178,7 @@ impl Job for CosmeticsJob {
 							_ => return outcome.with_error(error::Error::NotImplemented("missing image upload info")),
 						};
 
-						Some(database::PaintLayerType::Image(ImageSet {
+						Some(PaintLayerType::Image(ImageSet {
 							input,
 							..Default::default()
 						}))
@@ -185,10 +186,10 @@ impl Job for CosmeticsJob {
 					types::PaintData::Url { image_url: None, .. } => None,
 				};
 
-				let paint_data = database::PaintData {
+				let paint_data = database::paint::PaintData {
 					layers: layer
 						.map(|ty| {
-							vec![database::PaintLayer {
+							vec![PaintLayer {
 								id: layer_id,
 								ty,
 								..Default::default()
@@ -199,16 +200,13 @@ impl Job for CosmeticsJob {
 				};
 
 				match Paint::collection(self.global.target_db())
-					.insert_one(
-						Paint {
-							id,
-							name: cosmetic.name,
-							description: String::new(),
-							tags: vec![],
-							data: paint_data,
-						},
-						None,
-					)
+					.insert_one(Paint {
+						id,
+						name: cosmetic.name,
+						description: String::new(),
+						tags: vec![],
+						data: paint_data,
+					})
 					.await
 				{
 					Ok(_) => outcome.inserted_rows += 1,

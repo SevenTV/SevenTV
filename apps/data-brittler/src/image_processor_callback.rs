@@ -9,7 +9,12 @@ use mongodb::bson::{doc, to_bson};
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
-use shared::database::{Badge, Collection, Emote, Image, Paint, PaintLayerId, User};
+use shared::database::badge::Badge;
+use shared::database::emote::Emote;
+use shared::database::image_set::Image;
+use shared::database::paint::{Paint, PaintLayerId};
+use shared::database::user::User;
+use shared::database::Collection;
 use shared::image_processor::Subject;
 
 use crate::global::Global;
@@ -195,7 +200,6 @@ async fn handle_success(
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -232,7 +236,6 @@ async fn handle_success(
 						"_id": id,
 					},
 					aggregation,
-					None,
 				)
 				.await?;
 		}
@@ -253,7 +256,6 @@ async fn handle_success(
 							"data.layers.$.data.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -271,7 +273,6 @@ async fn handle_success(
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
-					None,
 				)
 				.await?;
 		}
@@ -297,18 +298,14 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 							"data.layers": { "id": layer_id },
 						},
 					},
-					None,
 				)
 				.await?;
 		}
 		Subject::Badge(id) => {
 			Badge::collection(global.target_db())
-				.delete_one(
-					doc! {
-						"_id": id,
-					},
-					None,
-				)
+				.delete_one(doc! {
+					"_id": id,
+				})
 				.await?;
 		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),

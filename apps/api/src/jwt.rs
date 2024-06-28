@@ -6,7 +6,8 @@ use hmac::{Hmac, Mac};
 use jwt_next::{Claims, Header, RegisteredClaims, SignWithKey, Token, VerifyWithKey};
 use mongodb::bson::oid::ObjectId;
 use sha2::Sha256;
-use shared::database::{UserId, UserSession, UserSessionId};
+use shared::database::user::session::{UserSession, UserSessionId};
+use shared::database::user::UserId;
 
 use crate::global::Global;
 

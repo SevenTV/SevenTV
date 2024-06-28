@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
+use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::UpdateOptions;
-use shared::database::{Collection, GlobalConfig, GlobalConfigAlerts, GlobalConfigId, Role, RoleId};
+use shared::database::emote_set::EmoteSetId;
+use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
+use shared::database::role::{Role, RoleId};
+use shared::database::Collection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
-use crate::jobs::system::default_perms;
 use crate::types;
 
 pub struct RolesJob {
@@ -22,7 +25,7 @@ impl Job for RolesJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping roles collection");
-			Role::collection(global.target_db()).drop(None).await?;
+			Role::collection(global.target_db()).delete_many(doc! {}).await?;
 		}
 
 		Ok(RolesJob {
@@ -44,21 +47,15 @@ impl Job for RolesJob {
 		self.all_roles.push((id, priority));
 
 		match Role::collection(self.global.target_db())
-			.insert_one(
-				Role {
-					id,
-					badge_ids: vec![],
-					paint_ids: vec![],
-					emote_set_ids: vec![],
-					permissions: role.to_new_permissions(),
-					name: role.name,
-					description: None,
-					hoist: false,
-					color: role.color as u32,
-					tags: vec![],
-				},
-				None,
-			)
+			.insert_one(Role {
+				id,
+				permissions: role.to_new_permissions(),
+				name: role.name,
+				description: None,
+				tags: vec![],
+				hoist: false,
+				color: Some(role.color),
+			})
 			.await
 		{
 			Ok(_) => outcome.inserted_rows += 1,
@@ -83,14 +80,16 @@ impl Job for RolesJob {
 						"role_ids": role_ids,
 					},
 					"$setOnInsert": {
-						"_id": GlobalConfigId::nil(),
+						"_id": Option::<ObjectId>::None,
 						"alerts": to_bson(&GlobalConfigAlerts::default()).unwrap(),
-						"emote_set_ids": [],
-						"default_permissions": to_bson(&default_perms()).unwrap(),
+						"emote_set_id": EmoteSetId::nil().as_uuid(),
+						"automod_rule_ids": [],
+						"normal_emote_set_slot_capacity": 600,
+						"personal_emote_set_slot_capacity": 5,
 					},
 				},
-				UpdateOptions::builder().upsert(true).build(),
 			)
+			.with_options(UpdateOptions::builder().upsert(true).build())
 			.await
 		{
 			Ok(_) => outcome.inserted_rows += 1,

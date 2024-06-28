@@ -1,4 +1,5 @@
-use super::UserId;
+use super::user::UserId;
+use super::GenericCollection;
 use crate::database::{Collection, Id};
 
 pub type AutomodRuleId = Id<AutomodRule>;
@@ -11,8 +12,7 @@ pub struct AutomodRule {
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
-	pub priority: i16,
-	pub added_by: Option<UserId>,
+	pub added_by: UserId,
 	pub kind: AutomodRuleKind,
 	pub enabled: bool,
 	pub words: Vec<String>,
@@ -38,4 +38,8 @@ pub enum AutomodRuleKind {
 pub enum AutomodRuleAction {
 	Timeout(i64),
 	Ban(i64),
+}
+
+pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+	[GenericCollection::new::<AutomodRule>()]
 }

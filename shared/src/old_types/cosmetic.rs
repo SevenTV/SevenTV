@@ -1,5 +1,7 @@
 use super::{is_default, ImageHost, UserPartialModel};
-use crate::database::{BadgeId, Paint, PaintId, PaintLayerType, PaintRadialGradientShape, PaintShadow, UserId};
+use crate::database::badge::{Badge, BadgeId};
+use crate::database::paint::{Paint, PaintId, PaintLayerType, PaintRadialGradientShape, PaintShadow};
+use crate::database::user::UserId;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -302,7 +304,7 @@ impl CosmeticBadgeModel {
 }
 
 impl CosmeticBadgeModel {
-	pub fn from_db(value: crate::database::Badge, cdn_base_url: &str) -> Option<Self> {
+	pub fn from_db(value: Badge, cdn_base_url: &str) -> Option<Self> {
 		let id = value.id.cast();
 		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url);
 

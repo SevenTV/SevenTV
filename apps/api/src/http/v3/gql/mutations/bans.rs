@@ -1,29 +1,59 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
-use mongodb::bson::doc;
+use hyper::StatusCode;
+use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::{self, Collection, UserId, UserPermission};
-use shared::old_types::{BanEffect, BanObjectId, UserObjectId};
+use shared::database::role::permissions::{
+	EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
+};
+use shared::database::user::ban::UserBan;
+use shared::database::user::User;
+use shared::database::{Collection, Id};
+use shared::old_types::object_id::GqlObjectId;
+use shared::old_types::BanEffect;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::gql::queries::{User, UserPartial};
+use crate::http::v3::gql::queries::user::{User as GqlUser, UserPartial};
 
 #[derive(Default)]
 pub struct BansMutation;
 
+fn ban_effect_to_permissions(effects: BanEffect) -> Permissions {
+	let mut perms = Permissions::default();
+
+	if effects.contains(BanEffect::MemoryHole) {
+		// Hide the user because of memory hole
+		perms.allow(FlagPermission::Hidden);
+	}
+
+	if effects.contains(BanEffect::NoAuth) | effects.contains(BanEffect::BlockedIp) {
+		// Remove all permissions
+		perms.deny(UserPermission::Login);
+	}
+
+	if effects.contains(BanEffect::NoPermissions) {
+		// Remove all permissions
+		perms.deny(EmotePermission::all_flags());
+		perms.deny(EmoteSetPermission::all_flags());
+		perms.deny(UserPermission::all_flags() & !UserPermission::Login);
+	}
+
+	perms
+}
+
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl BansMutation {
-	#[graphql(guard = "PermissionGuard::one(UserPermission::Ban)")]
+	#[graphql(guard = "PermissionGuard::one(UserPermission::Moderate)")]
 	async fn create_ban<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		victim_id: UserObjectId,
+		victim_id: GqlObjectId,
 		reason: String,
-		_effects: BanEffect,
+		effects: BanEffect,
 		expire_at: Option<chrono::DateTime<chrono::Utc>>,
 		_anonymous: Option<bool>,
 	) -> Result<Option<Ban>, ApiError> {
@@ -31,57 +61,62 @@ impl BansMutation {
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		// check if victim exists
-		let _ = global
-			.user_by_id_loader()
-			.load(victim_id.id())
+		let victim = global
+			.user_loader()
+			.load(global, victim_id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
 
-		let role = database::UserBanRole::collection(global.db())
-			.find_one(
+		let actor = auth_session.user(&global).await?;
+		if actor.id == victim.id {
+			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "cannot ban yourself"));
+		} else if actor.computed.highest_role_rank <= victim.computed.highest_role_rank {
+			return Err(ApiError::new_const(
+				StatusCode::FORBIDDEN,
+				"can only ban users with lower roles",
+			));
+		}
+
+		let ban = UserBan {
+			id: Default::default(),
+			template_id: None,
+			expires_at: expire_at,
+			created_by_id: actor.id,
+			reason,
+			tags: vec![],
+			removed: None,
+			permissions: ban_effect_to_permissions(effects),
+		};
+
+		User::collection(global.db())
+			.update_one(
+				doc! { "_id": victim.id },
 				doc! {
-					"name": "Default Banned"
+					"$push": {
+						"bans": to_bson(&ban).unwrap(),
+					},
+					"$set": {
+						"search_index.self_dirty": Id::<()>::new(),
+					},
 				},
-				None,
 			)
 			.await
 			.map_err(|e| {
-				tracing::error!(error = %e, "failed to find default user ban role");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?
-			.ok_or_else(|| {
-				tracing::error!("failed to find default user ban role");
+				tracing::error!(error = %e, "failed to update user permissions");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		let ban = database::UserBan {
-			user_id: victim_id.id(),
-			created_by_id: Some(auth_session.user_id()),
-			reason,
-			expires_at: expire_at,
-			role_id: role.id,
-			..Default::default()
-		};
-
-		database::UserBan::collection(global.db())
-			.insert_one(&ban, None)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert user ban");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		Ok(Some(Ban::from_db(ban)))
+		Ok(Some(Ban::from_db(victim_id, ban)))
 	}
 
-	#[graphql(guard = "PermissionGuard::one(UserPermission::Ban)")]
+	#[graphql(guard = "PermissionGuard::one(UserPermission::Moderate)")]
 	async fn edit_ban<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		ban_id: BanObjectId,
+		ban_id: GqlObjectId,
 		reason: Option<String>,
-		_effects: Option<BanEffect>,
+		effects: Option<BanEffect>,
 		expire_at: Option<chrono::DateTime<chrono::Utc>>,
 	) -> Result<Option<Ban>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -89,62 +124,105 @@ impl BansMutation {
 		let mut update = doc! {};
 
 		if let Some(reason) = reason {
-			update.insert("reason", reason);
+			update.insert("bans.$.reason", reason);
 		}
 
 		if let Some(expire_at) = expire_at {
-			update.insert("expires_at", expire_at);
+			update.insert("bans.$.expires_at", expire_at);
 		}
 
-		let ban = database::UserBan::collection(global.db())
-			.find_one_and_update(
-				doc! { "_id": ban_id.id() },
-				doc! { "$set": update },
+		if let Some(effects) = effects {
+			let perms = ban_effect_to_permissions(effects);
+
+			update.insert("bans.$.permissions", to_bson(&perms).unwrap());
+		}
+
+		update.insert("search_index.self_dirty", Id::<()>::new());
+
+		let user = User::collection(global.db())
+			.find_one_and_update(doc! { "bans.id": ban_id.0 }, doc! { "$set": update })
+			.with_options(
 				FindOneAndUpdateOptions::builder()
 					.return_document(ReturnDocument::After)
+					.projection(doc! { "search_index": 0 })
 					.build(),
 			)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update user ban");
 				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+			})?
+			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "ban not found"))?;
 
-		Ok(ban.map(Ban::from_db))
+		Ok(Some(Ban::from_db(
+			user.id.into(),
+			user.bans.iter().find(|ban| ban.id == ban_id.id()).unwrap().clone(),
+		)))
 	}
 }
 
 #[derive(SimpleObject)]
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct Ban {
-	id: BanObjectId,
+	id: GqlObjectId,
 	reason: String,
 	effects: BanEffect,
 	expire_at: chrono::DateTime<chrono::Utc>,
 	created_at: chrono::DateTime<chrono::Utc>,
-	victim_id: UserObjectId,
+	victim_id: GqlObjectId,
 	// victim
-	actor_id: UserObjectId,
+	actor_id: GqlObjectId,
 	// actor
 }
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl Ban {
-	async fn victim<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
+	async fn victim<'ctx>(&self, ctx: &Context<'ctx>) -> Result<GqlUser, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.victim_id.id()).await?.unwrap_or_else(UserPartial::deleted_user).into())
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.victim_id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
+			.unwrap_or_else(UserPartial::deleted_user)
+			.into())
 	}
 
-	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
+	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<GqlUser, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		Ok(UserPartial::load_from_db(global, self.actor_id.id()).await?.unwrap_or_else(UserPartial::deleted_user).into())
+
+		Ok(global
+			.user_by_id_loader()
+			.load(self.actor_id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u.into()))
+			.unwrap_or_else(UserPartial::deleted_user)
+			.into())
 	}
 }
 
 impl Ban {
-	fn from_db(ban: database::UserBan) -> Self {
-		// default effects: 11
-		let effects = BanEffect::NoPermissions | BanEffect::NoAuth | BanEffect::MemoryHole;
+	fn from_db(user_id: GqlObjectId, ban: UserBan) -> Self {
+		let mut effects = BanEffect::none();
+
+		if ban.permissions.has(FlagPermission::Hidden) {
+			effects |= BanEffect::MemoryHole;
+		}
+
+		if ban.permissions.has(UserPermission::Login) {
+			effects |= BanEffect::NoAuth;
+		}
+
+		if ban.permissions.has_all([
+			EmotePermission::all_flags().into(),
+			EmoteSetPermission::all_flags().into(),
+			(UserPermission::all_flags() & !UserPermission::Login).into(),
+		]) {
+			effects |= BanEffect::NoPermissions;
+		}
 
 		Self {
 			id: ban.id.into(),
@@ -152,8 +230,8 @@ impl Ban {
 			effects,
 			expire_at: ban.expires_at.unwrap_or_default(),
 			created_at: ban.id.timestamp(),
-			victim_id: ban.user_id.into(),
-			actor_id: ban.created_by_id.unwrap_or(UserId::nil()).into(),
+			victim_id: user_id.into(),
+			actor_id: ban.created_by_id.into(),
 		}
 	}
 }

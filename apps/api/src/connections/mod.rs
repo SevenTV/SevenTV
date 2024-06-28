@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use shared::database::Platform;
+use shared::database::user::connection::Platform;
 
 use crate::global::Global;
 use crate::http::error::ApiError;

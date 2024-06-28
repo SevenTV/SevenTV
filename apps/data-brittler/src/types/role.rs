@@ -1,6 +1,6 @@
 use mongodb::bson::oid::ObjectId;
 use shared::database;
-use shared::old_types::RolePermission;
+use shared::old_types::role_permission::RolePermission;
 
 // https://github.com/SevenTV/Common/blob/master/structures/v3/type.role.go
 
@@ -19,7 +19,7 @@ pub struct Role {
 }
 
 impl Role {
-	pub fn to_new_permissions(&self) -> database::Permissions {
+	pub fn to_new_permissions(&self) -> database::role::permissions::Permissions {
 		RolePermission::to_new_permissions(self.allowed, self.denied)
 	}
 }

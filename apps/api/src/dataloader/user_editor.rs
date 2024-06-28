@@ -1,8 +1,13 @@
+use std::future::IntoFuture;
+
+use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::{Collection, UserEditor, UserId};
+use shared::database::user::editor::UserEditor;
+use shared::database::user::UserId;
+use shared::database::Collection;
 
 pub struct UserEditorByUserIdLoader {
 	pub db: mongodb::Database,
@@ -24,21 +29,19 @@ impl Loader for UserEditorByUserIdLoader {
 		tracing::Span::current().make_root();
 
 		let results: Self::Value = UserEditor::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"user_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id.user_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.user_id))
+		Ok(results.into_iter().into_group_map_by(|r| r.id.user_id))
 	}
 }
 
@@ -60,20 +63,57 @@ impl Loader for UserEditorByEditorIdLoader {
 	#[tracing::instrument(name = "UserEditorByEditorIdLoader::load", skip(self), fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Self::Value = UserEditor::collection(&self.db)
-			.find(
-				mongodb::bson::doc! {
-					"editor_id": {
-						"$in": keys,
-					}
-				},
-				None,
-			)
+			.find(doc! {
+				"_id.editor_id": {
+					"$in": keys,
+				}
+			})
+			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.editor_id))
+		Ok(results.into_iter().into_group_map_by(|r| r.id.editor_id))
+	}
+}
+
+pub struct UserEditorByIdLoader {
+	pub db: mongodb::Database,
+}
+
+impl UserEditorByIdLoader {
+	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
+		DataLoader::new("UserEditorByIdLoader", Self { db })
+	}
+}
+
+impl Loader for UserEditorByIdLoader {
+	type Error = ();
+	type Key = (UserId, UserId);
+	type Value = UserEditor;
+
+	#[tracing::instrument(name = "UserEditorByIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		let results: Vec<Self::Value> = UserEditor::collection(&self.db)
+			.find(doc! {
+				"_id": {
+					"$in": keys.iter().map(|(user_id, editor_id)| {
+						doc! {
+							"user_id": user_id,
+							"editor_id": editor_id,
+						}
+					}).collect::<Vec<_>>(),
+				}
+			})
+			.into_future()
+			.and_then(|f| f.try_collect())
+			.await
+			.map_err(|err| {
+				tracing::error!("failed to load: {err}");
+			})?;
+
+		Ok(results.into_iter().map(|r| ((r.id.user_id, r.id.editor_id), r)).collect())
 	}
 }

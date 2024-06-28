@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_graphql::{Context, Object};
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::old_types::{CosmeticBadgeModel, CosmeticPaintModel, ObjectId};
+use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticPaintModel};
+use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -25,7 +26,7 @@ impl CosmeticsQuery {
 	async fn cosmetics<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		list: Option<Vec<ObjectId<()>>>,
+		list: Option<Vec<GqlObjectId>>,
 	) -> Result<CosmeticsQueryResponse, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let list = list.unwrap_or_default();
@@ -36,7 +37,7 @@ impl CosmeticsQuery {
 
 		let paints = global
 			.paint_by_id_loader()
-			.load_many(list.clone().into_iter().map(|id| id.id().cast()))
+			.load_many(list.clone().into_iter().map(|id| id.id()))
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()
@@ -45,7 +46,7 @@ impl CosmeticsQuery {
 
 		let badges = global
 			.badge_by_id_loader()
-			.load_many(list.into_iter().map(|id| id.id().cast()))
+			.load_many(list.into_iter().map(|id| id.id()))
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()

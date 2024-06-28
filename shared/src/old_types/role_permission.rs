@@ -1,6 +1,9 @@
 use bitmask_enum::bitmask;
 
-use crate::database::{self, AllowDeny};
+use crate::database::role::permissions::{
+	AdminPermission, AllowDeny, BadgePermission, EmotePermission, EmoteSetPermission, PaintPermission, Permissions,
+	PermissionsExt, RolePermission as NewRolePermissions, TicketPermission, UserPermission,
+};
 
 #[bitmask(u64)]
 // https://github.com/SevenTV/Common/blob/master/structures/v3/type.role.go#L37
@@ -50,319 +53,274 @@ impl<'a> serde::Deserialize<'a> for RolePermission {
 }
 
 impl RolePermission {
-	pub fn to_emote_permissions(allowed: Self, denied: Self) -> AllowDeny<database::EmotePermission> {
+	pub fn to_emote_permissions(allowed: Self, denied: Self) -> AllowDeny<EmotePermission> {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::CreateEmote) {
-			perm.allow(database::EmotePermission::Upload);
+			perm.allow(EmotePermission::Upload);
 		}
 		if allowed.contains(RolePermission::EditEmote) {
-			perm.allow(database::EmotePermission::Edit);
-			perm.allow(database::EmotePermission::Delete);
+			perm.allow(EmotePermission::Edit);
+			perm.allow(EmotePermission::Delete);
 		}
 		if allowed.contains(RolePermission::EditAnyEmote) {
-			perm.allow(database::EmotePermission::Admin);
+			perm.allow(EmotePermission::Admin);
 		}
 		if denied.contains(RolePermission::CreateEmote) {
-			perm.deny(database::EmotePermission::Upload);
+			perm.deny(EmotePermission::Upload);
 		}
 		if denied.contains(RolePermission::EditEmote) {
-			perm.deny(database::EmotePermission::Edit);
-			perm.deny(database::EmotePermission::Delete);
+			perm.deny(EmotePermission::Edit);
+			perm.deny(EmotePermission::Delete);
 		}
 		if denied.contains(RolePermission::EditAnyEmote) {
-			perm.deny(database::EmotePermission::Admin);
+			perm.deny(EmotePermission::Admin);
 		}
 
 		perm
 	}
 
-	pub fn to_role_permissions(allowed: Self, denied: Self) -> AllowDeny<database::RolePermission> {
+	pub fn to_role_permissions(allowed: Self, denied: Self) -> AllowDeny<NewRolePermissions> {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::ManageRoles) {
-			perm.allow(database::RolePermission::Admin);
+			perm.allow(NewRolePermissions::Admin);
 		}
 		if denied.contains(RolePermission::ManageRoles) {
-			perm.deny(database::RolePermission::Admin);
+			perm.deny(NewRolePermissions::Admin);
 		}
 
 		perm
 	}
 
-	pub fn to_emote_set_permission(allowed: Self, denied: Self) -> AllowDeny<database::EmoteSetPermission> {
+	pub fn to_emote_set_permission(allowed: Self, denied: Self) -> AllowDeny<EmoteSetPermission> {
 		let mut perm = AllowDeny::default();
 
-		if allowed.contains(RolePermission::CreateEmoteSet) {
-			perm.allow(database::EmoteSetPermission::Create);
-		}
-		if allowed.contains(RolePermission::EditEmoteSet) {
-			perm.allow(database::EmoteSetPermission::Edit);
-			perm.allow(database::EmoteSetPermission::Delete);
+		if allowed.intersects(RolePermission::CreateEmoteSet | RolePermission::EditEmoteSet) {
+			perm.allow(EmoteSetPermission::Manage);
 		}
 		if allowed.contains(RolePermission::EditAnyEmoteSet) {
-			perm.allow(database::EmoteSetPermission::Admin);
+			perm.allow(EmoteSetPermission::ManageAny);
 		}
-		if denied.contains(RolePermission::CreateEmoteSet) {
-			perm.deny(database::EmoteSetPermission::Create);
-		}
-		if denied.contains(RolePermission::EditEmoteSet) {
-			perm.deny(database::EmoteSetPermission::Edit);
-			perm.deny(database::EmoteSetPermission::Delete);
+		if denied.intersects(RolePermission::CreateEmoteSet | RolePermission::EditEmoteSet) {
+			perm.deny(EmoteSetPermission::Manage);
 		}
 		if denied.contains(RolePermission::EditAnyEmoteSet) {
-			perm.deny(database::EmoteSetPermission::Admin);
+			perm.deny(EmoteSetPermission::ManageAny);
 		}
 
 		perm
 	}
 
-	pub fn to_badge_permission(allowed: Self, denied: Self) -> AllowDeny<database::BadgePermission> {
+	pub fn to_badge_permission(allowed: Self, denied: Self) -> AllowDeny<BadgePermission> {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::ManageCosmetics) {
-			perm.allow(database::BadgePermission::Admin);
+			perm.allow(BadgePermission::Admin);
 		}
 		if denied.contains(RolePermission::ManageCosmetics) {
-			perm.deny(database::BadgePermission::Admin);
+			perm.deny(BadgePermission::Admin);
 		}
 
 		perm
 	}
 
-	pub fn to_paint_permission(allowed: Self, denied: Self) -> AllowDeny<database::PaintPermission> {
+	pub fn to_paint_permission(allowed: Self, denied: Self) -> AllowDeny<PaintPermission> {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::ManageCosmetics) {
-			perm.allow(database::PaintPermission::Admin);
+			perm.allow(PaintPermission::Admin);
 		}
 		if denied.contains(RolePermission::ManageCosmetics) {
-			perm.deny(database::PaintPermission::Admin);
+			perm.deny(PaintPermission::Admin);
 		}
 
 		perm
 	}
 
-	pub fn to_user_permission(allowed: Self, denied: Self) -> database::AllowDeny<database::UserPermission> {
+	pub fn to_user_permission(allowed: Self, denied: Self) -> AllowDeny<UserPermission> {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::ManageBans) {
-			perm.allow(database::UserPermission::Ban);
+			perm.allow(UserPermission::Moderate);
 		}
 		if allowed.contains(RolePermission::ManageUsers) {
-			perm.allow(database::UserPermission::Admin);
+			perm.allow(UserPermission::ManageAny);
 		}
 		if denied.contains(RolePermission::ManageBans) {
-			perm.deny(database::UserPermission::Ban);
+			perm.deny(UserPermission::Moderate);
 		}
 		if denied.contains(RolePermission::ManageUsers) {
-			perm.deny(database::UserPermission::Admin);
+			perm.deny(UserPermission::ManageAny);
 		}
-
-		perm
-	}
-
-	pub fn to_feature_permission(allowed: Self, denied: Self) -> database::AllowDeny<database::FeaturePermission> {
-		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::FeatureProfilePictureAnimation) {
-			perm.allow(database::FeaturePermission::UseCustomProfilePicture);
+			perm.allow(UserPermission::UseCustomProfilePicture);
 		}
 		if denied.contains(RolePermission::FeatureProfilePictureAnimation) {
-			perm.deny(database::FeaturePermission::UseCustomProfilePicture);
+			perm.deny(UserPermission::UseCustomProfilePicture);
 		}
 
 		perm
 	}
 
-	pub fn to_ticket_permission(allowed: Self, denied: Self) -> database::AllowDeny<database::TicketPermission> {
+	pub fn to_ticket_permission(allowed: Self, denied: Self) -> AllowDeny<TicketPermission> {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::CreateReport) {
-			perm.allow(database::TicketPermission::Create);
+			perm.allow(TicketPermission::Create);
 		}
 		if allowed.contains(RolePermission::ManageReports) {
-			perm.allow(database::TicketPermission::Admin);
+			perm.allow(TicketPermission::Admin);
 		}
 		if denied.contains(RolePermission::CreateReport) {
-			perm.deny(database::TicketPermission::Create);
+			perm.deny(TicketPermission::Create);
 		}
 		if denied.contains(RolePermission::ManageReports) {
-			perm.deny(database::TicketPermission::Admin);
+			perm.deny(TicketPermission::Admin);
 		}
 
 		perm
 	}
 
-	pub fn to_admin_permission(allowed: Self, denied: Self) -> database::AllowDeny<database::AdminPermission> {
+	pub fn to_admin_permission(allowed: Self, denied: Self) -> AllowDeny<AdminPermission> {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::SuperAdministrator) {
-			perm.allow(database::AdminPermission::SuperAdmin);
+			perm.allow(AdminPermission::SuperAdmin);
 		}
 		if denied.contains(RolePermission::SuperAdministrator) {
-			perm.deny(database::AdminPermission::SuperAdmin);
+			perm.deny(AdminPermission::SuperAdmin);
 		}
 
 		perm
 	}
 
-	pub fn to_new_permissions(allowed: Self, denied: Self) -> database::Permissions {
-		database::Permissions {
+	pub fn to_new_permissions(allowed: Self, denied: Self) -> Permissions {
+		Permissions {
 			emote: Self::to_emote_permissions(allowed, denied),
 			role: Self::to_role_permissions(allowed, denied),
 			emote_set: Self::to_emote_set_permission(allowed, denied),
 			badge: Self::to_badge_permission(allowed, denied),
 			paint: Self::to_paint_permission(allowed, denied),
 			user: Self::to_user_permission(allowed, denied),
-			feature: Self::to_feature_permission(allowed, denied),
 			ticket: Self::to_ticket_permission(allowed, denied),
 			admin: Self::to_admin_permission(allowed, denied),
 			..Default::default()
 		}
 	}
 
-	pub fn from_db(value: database::Permissions) -> (Self, Self) {
+	pub fn from_db(value: Permissions) -> (Self, Self) {
 		let mut allowed = RolePermission::none();
 		let mut denied = RolePermission::none();
 
 		// Emote Permissions
 		{
-			if value.emote.allow.contains(database::EmotePermission::Upload) {
+			if value.has(EmotePermission::Upload) {
 				allowed |= Self::CreateEmote;
 			}
-			if value.emote.allow.contains(database::EmotePermission::Edit) {
+			if value.has(EmotePermission::Edit) {
 				allowed |= Self::EditEmote;
 			}
-			if value.emote.allow.contains(database::EmotePermission::Admin) {
+			if value.has(EmotePermission::Admin) {
 				allowed |= Self::EditAnyEmote;
 			}
 
-			if value.emote.deny.contains(database::EmotePermission::Upload) {
+			if value.denied(EmotePermission::Upload) {
 				denied |= Self::CreateEmote;
 			}
-			if value.emote.deny.contains(database::EmotePermission::Edit) {
+			if value.denied(EmotePermission::Edit) {
 				denied |= Self::EditEmote;
 			}
-			if value.emote.deny.contains(database::EmotePermission::Admin) {
+			if value.denied(EmotePermission::Admin) {
 				denied |= Self::EditAnyEmote;
 			}
 		}
 
 		// Role Permissions
 		{
-			if value.role.allow.contains(database::RolePermission::Admin) {
+			if value.has(NewRolePermissions::Admin) {
 				allowed |= Self::ManageRoles;
 			}
-			if value.role.deny.contains(database::RolePermission::Admin) {
+			if value.denied(NewRolePermissions::Admin) {
 				denied |= Self::ManageRoles;
 			}
 		}
 
 		// Emote Set Permissions
 		{
-			if value.emote_set.allow.contains(database::EmoteSetPermission::Create) {
-				allowed |= Self::CreateEmoteSet;
+			if value.has(EmoteSetPermission::Manage) {
+				allowed |= Self::CreateEmoteSet | Self::EditEmoteSet;
 			}
-			if value.emote_set.allow.contains(database::EmoteSetPermission::Edit) {
-				allowed |= Self::EditEmoteSet;
-			}
-			if value.emote_set.allow.contains(database::EmoteSetPermission::Admin) {
+			if value.has(EmoteSetPermission::ManageAny) {
 				allowed |= Self::EditAnyEmoteSet;
 			}
 
-			if value.emote_set.deny.contains(database::EmoteSetPermission::Create) {
-				denied |= Self::CreateEmoteSet;
+			if value.denied(EmoteSetPermission::Manage) {
+				denied |= Self::CreateEmoteSet | Self::EditEmoteSet;
 			}
-			if value.emote_set.deny.contains(database::EmoteSetPermission::Edit) {
-				denied |= Self::EditEmoteSet;
-			}
-			if value.emote_set.deny.contains(database::EmoteSetPermission::Admin) {
+			if value.denied(EmoteSetPermission::ManageAny) {
 				denied |= Self::EditAnyEmoteSet;
 			}
 		}
 
 		// Cosmetics Permissions
 		{
-			if value.badge.allow.contains(database::BadgePermission::Admin)
-				&& value.paint.allow.contains(database::PaintPermission::Admin)
-			{
+			if value.has_any([BadgePermission::Admin.into(), PaintPermission::Admin.into()]) {
 				allowed |= Self::ManageCosmetics;
 			}
-
-			if value.badge.deny.contains(database::BadgePermission::Admin)
-				&& value.paint.deny.contains(database::PaintPermission::Admin)
-			{
+			if value.denied_any([BadgePermission::Admin.into(), PaintPermission::Admin.into()]) {
 				denied |= Self::ManageCosmetics;
 			}
 		}
 
 		// User Permissions
 		{
-			if value.user.allow.contains(database::UserPermission::Ban) {
+			if value.has(UserPermission::Moderate) {
 				allowed |= Self::ManageBans;
 			}
-			if value.user.allow.contains(database::UserPermission::Admin) {
+			if value.has(UserPermission::ManageAny) {
 				allowed |= Self::ManageUsers;
 			}
 
-			if value.user.deny.contains(database::UserPermission::Ban) {
+			if value.denied(UserPermission::Moderate) {
 				denied |= Self::ManageBans;
 			}
-			if value.user.deny.contains(database::UserPermission::Admin) {
+			if value.denied(UserPermission::ManageAny) {
 				denied |= Self::ManageUsers;
 			}
-		}
 
-		// Feature Permissions
-		{
-			if value
-				.feature
-				.allow
-				.contains(database::FeaturePermission::UseCustomProfilePicture)
-			{
+			if value.has(UserPermission::UseCustomProfilePicture) {
 				allowed |= Self::FeatureProfilePictureAnimation;
 			}
-
-			if value
-				.feature
-				.deny
-				.contains(database::FeaturePermission::UseCustomProfilePicture)
-			{
+			if value.has(UserPermission::UseCustomProfilePicture) {
 				denied |= Self::FeatureProfilePictureAnimation;
 			}
 		}
 
-		// Report Permissions
+		// Ticket Permissions
 		{
-			if value.ticket.allow.contains(database::TicketPermission::Create) {
+			if value.has(TicketPermission::Create) {
 				allowed |= Self::CreateReport;
 			}
-			if value.ticket.allow.contains(database::TicketPermission::Message) {
-				allowed |= Self::SendMessages;
-			}
-			if value.ticket.allow.contains(database::TicketPermission::Edit) {
+			if value.has(TicketPermission::ManageAbuse) && value.has(TicketPermission::ManageGeneric) {
 				allowed |= Self::ManageReports;
 			}
 
-			if value.ticket.deny.contains(database::TicketPermission::Create) {
+			if value.denied(TicketPermission::Create) {
 				denied |= Self::CreateReport;
 			}
-			if value.ticket.deny.contains(database::TicketPermission::Message) {
-				denied |= Self::SendMessages;
-			}
-			if value.ticket.deny.contains(database::TicketPermission::Edit) {
+			if value.denied(TicketPermission::ManageAbuse) || value.denied(TicketPermission::ManageGeneric) {
 				denied |= Self::ManageReports;
 			}
 		}
 
 		// Admin Permissions
 		{
-			if value.admin.allow.contains(database::AdminPermission::SuperAdmin) {
+			if value.has(AdminPermission::SuperAdmin) {
 				allowed |= Self::SuperAdministrator;
 			}
-
-			if value.admin.deny.contains(database::AdminPermission::SuperAdmin) {
+			if value.has(AdminPermission::SuperAdmin) {
 				denied |= Self::SuperAdministrator;
 			}
 		}

@@ -1,4 +1,4 @@
-use shared::database::RoleId;
+use shared::database::role::RoleId;
 
 use super::is_default;
 

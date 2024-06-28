@@ -7,7 +7,11 @@ use scuffle_image_processor_proto::image_processor_client::ImageProcessorClient;
 use scuffle_image_processor_proto::{self as image_processor};
 
 use crate::config::ImageProcessorConfig;
-use crate::database::{BadgeId, EmoteId, Id, PaintId, PaintLayerId, UserId};
+use crate::database::badge::BadgeId;
+use crate::database::emote::EmoteId;
+use crate::database::paint::{PaintId, PaintLayerId};
+use crate::database::user::UserId;
+use crate::database::Id;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Subject {
