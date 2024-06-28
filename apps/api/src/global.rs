@@ -18,7 +18,7 @@ use crate::dataloader::full_user::FullUserLoader;
 use crate::dataloader::global_config::GlobalConfigLoader;
 use crate::dataloader::paint::PaintByIdLoader;
 use crate::dataloader::product::ProductByIdLoader;
-use crate::dataloader::role::RoleByIdLoader;
+use crate::dataloader::role::{AllRolesLoader, RoleByIdLoader};
 use crate::dataloader::ticket::{TicketByIdLoader, TicketMessagesByTicketIdLoader};
 use crate::dataloader::user::{UserByIdLoader, UserByPlatformIdLoader};
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByIdLoader, UserEditorByUserIdLoader};
@@ -34,6 +34,7 @@ pub struct Global {
 	image_processor: ImageProcessor,
 	product_by_id_loader: DataLoader<ProductByIdLoader>,
 	role_by_id_loader: DataLoader<RoleByIdLoader>,
+	all_roles_loader: DataLoader<AllRolesLoader>,
 	paint_by_id_loader: DataLoader<PaintByIdLoader>,
 	badge_by_id_loader: DataLoader<BadgeByIdLoader>,
 	emote_by_id_loader: DataLoader<EmoteByIdLoader>,
@@ -78,6 +79,7 @@ impl Global {
 			image_processor,
 			product_by_id_loader: ProductByIdLoader::new(db.clone()),
 			role_by_id_loader: RoleByIdLoader::new(db.clone()),
+			all_roles_loader: AllRolesLoader::new(db.clone()),
 			paint_by_id_loader: PaintByIdLoader::new(db.clone()),
 			badge_by_id_loader: BadgeByIdLoader::new(db.clone()),
 			emote_by_id_loader: EmoteByIdLoader::new(db.clone()),
@@ -150,8 +152,14 @@ impl Global {
 		&self.product_by_id_loader
 	}
 
+	/// The role loader.
 	pub fn role_by_id_loader(&self) -> &DataLoader<RoleByIdLoader> {
 		&self.role_by_id_loader
+	}
+
+	/// The all roles loader.
+	pub fn all_roles_loader(&self) -> &DataLoader<AllRolesLoader> {
+		&self.all_roles_loader
 	}
 
 	/// The paint loader.

@@ -1,11 +1,7 @@
 use std::sync::Arc;
 
-use mongodb::bson::oid::ObjectId;
-use mongodb::bson::{doc, to_bson};
-use mongodb::options::UpdateOptions;
-use shared::database::emote_set::EmoteSetId;
-use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
-use shared::database::role::{Role, RoleId};
+use mongodb::bson::doc;
+use shared::database::role::Role;
 use shared::database::Collection;
 
 use super::{Job, ProcessOutcome};
@@ -14,7 +10,6 @@ use crate::types;
 
 pub struct RolesJob {
 	global: Arc<Global>,
-	all_roles: Vec<(RoleId, i16)>,
 }
 
 impl Job for RolesJob {
@@ -30,7 +25,6 @@ impl Job for RolesJob {
 
 		Ok(RolesJob {
 			global,
-			all_roles: Vec::new(),
 		})
 	}
 
@@ -43,8 +37,7 @@ impl Job for RolesJob {
 
 		let id = role.id.into();
 
-		let priority = role.position.try_into().unwrap_or(i16::MAX);
-		self.all_roles.push((id, priority));
+		let rank = role.position.try_into().unwrap_or(i16::MAX);
 
 		match Role::collection(self.global.target_db())
 			.insert_one(Role {
@@ -55,41 +48,8 @@ impl Job for RolesJob {
 				tags: vec![],
 				hoist: false,
 				color: Some(role.color),
+				rank: rank as i32,
 			})
-			.await
-		{
-			Ok(_) => outcome.inserted_rows += 1,
-			Err(e) => outcome.errors.push(e.into()),
-		}
-
-		outcome
-	}
-
-	async fn finish(mut self) -> ProcessOutcome {
-		self.all_roles.sort_by_key(|(_, p)| *p);
-
-		let role_ids: Vec<RoleId> = self.all_roles.into_iter().map(|(id, _)| id).collect();
-
-		let mut outcome = ProcessOutcome::default();
-
-		match GlobalConfig::collection(self.global.target_db())
-			.update_one(
-				doc! {},
-				doc! {
-					"$set": {
-						"role_ids": role_ids,
-					},
-					"$setOnInsert": {
-						"_id": Option::<ObjectId>::None,
-						"alerts": to_bson(&GlobalConfigAlerts::default()).unwrap(),
-						"emote_set_id": EmoteSetId::nil().as_uuid(),
-						"automod_rule_ids": [],
-						"normal_emote_set_slot_capacity": 600,
-						"personal_emote_set_slot_capacity": 5,
-					},
-				},
-			)
-			.with_options(UpdateOptions::builder().upsert(true).build())
 			.await
 		{
 			Ok(_) => outcome.inserted_rows += 1,

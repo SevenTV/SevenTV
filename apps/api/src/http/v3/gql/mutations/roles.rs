@@ -4,7 +4,6 @@ use async_graphql::{Context, InputObject, Object};
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::global::GlobalConfig;
 use shared::database::role::permissions::RolePermission;
 use shared::database::role::RoleId;
 use shared::database::Collection;
@@ -24,6 +23,8 @@ impl RolesMutation {
 	async fn create_role<'ctx>(&self, ctx: &Context<'ctx>, data: CreateRoleInput) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
+		// TODO: check permissions
+
 		let allowed: u64 = data.allowed.parse().map_err(|_| ApiError::BAD_REQUEST)?;
 		let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
 		let denied: u64 = data.denied.parse().map_err(|_| ApiError::BAD_REQUEST)?;
@@ -37,55 +38,18 @@ impl RolesMutation {
 			permissions: shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied),
 			hoist: false,
 			color: Some(data.color),
+			rank: 0,
 		};
-
-		let mut session = global.mongo().start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let global_config = GlobalConfig::collection(global.db())
-			.find_one_and_update(
-				doc! {},
-				doc! {
-					"$push": {
-						"role_ids": role.id,
-					}
-				},
-			)
-			.with_options(
-				FindOneAndUpdateOptions::builder()
-					.return_document(ReturnDocument::After)
-					.build(),
-			)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update global config");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 		shared::database::role::Role::collection(global.db())
 			.insert_one(&role)
-			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert role");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		Ok(Role::from_db(role, &global_config))
+		Ok(Role::from_db(role))
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
@@ -97,6 +61,8 @@ impl RolesMutation {
 	) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
+		// TODO: check permissions
+
 		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
@@ -106,43 +72,6 @@ impl RolesMutation {
 			tracing::error!(error = %err, "failed to start transaction");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
-
-		let mut role_ids_push = doc! {
-			"$each": [role_id.0],
-		};
-
-		if let Some(position) = data.position {
-			role_ids_push.insert("$position", position);
-		}
-
-		let global_config = GlobalConfig::collection(global.db())
-			.find_one_and_update(
-				doc! {},
-				vec![
-					doc! {
-						"$pull": {
-							"role_ids": role_id.0,
-						}
-					},
-					doc! {
-						"$push": {
-							"role_ids": role_ids_push,
-						}
-					},
-				],
-			)
-			.with_options(
-				FindOneAndUpdateOptions::builder()
-					.return_document(ReturnDocument::After)
-					.build(),
-			)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update global config");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let mut update = doc! {};
 
@@ -205,7 +134,7 @@ impl RolesMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		Ok(Role::from_db(role, &global_config))
+		Ok(Role::from_db(role))
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]

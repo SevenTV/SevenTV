@@ -181,13 +181,85 @@ impl UserOps {
 		))
 	}
 
-	async fn cosmetics(&self, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
-		// TODO: entitlements required
-		Err(ApiError::NOT_IMPLEMENTED)
+	async fn cosmetics<'ctx>(&self, ctx: &Context<'ctx>, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+
+		let authed_user = auth_session.user(global).await?;
+
+		if !(auth_session.user_id() == self.id.id() || authed_user.has(UserPermission::ManageAny)) {
+			return Err(ApiError::FORBIDDEN);
+		}
+
+		if !update.selected {
+			return Ok(true);
+		}
+
+		let user = global
+			.user_loader()
+			.load(global, self.id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
+
+		match update.kind {
+			CosmeticKind::Paint => {
+				// check if user has badge
+				if !user.computed.entitlements.paints.contains(&update.id.id()) {
+					return Err(ApiError::FORBIDDEN);
+				}
+
+				let res = User::collection(global.db())
+					.update_one(
+						doc! {
+							"_id": self.id.0,
+						},
+						doc! {
+							"$set": {
+								"style.active_paint_id": update.id.0,
+							}
+						},
+					)
+					.await
+					.map_err(|err| {
+						tracing::error!(error = %err, "failed to update user");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				Ok(res.modified_count == 1)
+			}
+			CosmeticKind::Badge => {
+				// check if user has paint
+				if !user.computed.entitlements.badges.contains(&update.id.id()) {
+					return Err(ApiError::FORBIDDEN);
+				}
+
+				let res = User::collection(global.db())
+					.update_one(
+						doc! {
+							"_id": self.id.0,
+						},
+						doc! {
+							"$set": {
+								"style.active_badge_id": update.id.0,
+							}
+						},
+					)
+					.await
+					.map_err(|err| {
+						tracing::error!(error = %err, "failed to update user");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				Ok(res.modified_count == 1)
+			}
+			CosmeticKind::Avatar => Err(ApiError::NOT_IMPLEMENTED),
+		}
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Assign)")]
-	async fn roles(&self, action: ListItemAction) -> Result<GqlObjectId, ApiError> {
+	async fn roles(&self, _action: ListItemAction) -> Result<GqlObjectId, ApiError> {
 		// TODO: entitlements required
 		Err(ApiError::NOT_IMPLEMENTED)
 	}

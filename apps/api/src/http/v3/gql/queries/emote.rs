@@ -122,9 +122,9 @@ impl Emote {
 
 	async fn channels(
 		&self,
-		ctx: &Context<'_>,
-		page: Option<u32>,
-		limit: Option<u32>,
+		_ctx: &Context<'_>,
+		_page: Option<u32>,
+		_limit: Option<u32>,
 	) -> Result<UserSearchResult, ApiError> {
 		// TODO: implement with typesense
 		// Err(ApiError::NOT_IMPLEMENTED)
@@ -132,7 +132,7 @@ impl Emote {
 	}
 
 	async fn common_names(&self) -> Vec<EmoteCommonName> {
-		// not implemented
+		// won't be implemented
 		vec![]
 	}
 
@@ -161,7 +161,7 @@ impl Emote {
 	}
 
 	async fn reports(&self) -> Vec<Report> {
-		// not implemented
+		// won't be implemented
 		vec![]
 	}
 }
@@ -332,12 +332,12 @@ impl EmotesQuery {
 
 	async fn emotes(
 		&self,
-		ctx: &Context<'_>,
-		query: String,
-		page: Option<u32>,
-		limit: Option<u32>,
-		filter: Option<EmoteSearchFilter>,
-		sort: Option<EmoteSearchSort>,
+		_ctx: &Context<'_>,
+		_query: String,
+		_page: Option<u32>,
+		_limit: Option<u32>,
+		_filter: Option<EmoteSearchFilter>,
+		_sort: Option<EmoteSearchSort>,
 	) -> Result<EmoteSearchResult, ApiError> {
 		// TODO: implement with typesense
 		Err(ApiError::NOT_IMPLEMENTED)

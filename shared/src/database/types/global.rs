@@ -1,6 +1,5 @@
 use super::automod::AutomodRuleId;
 use super::emote_set::EmoteSetId;
-use super::role::RoleId;
 use super::GenericCollection;
 use crate::database::Collection;
 
@@ -13,7 +12,6 @@ pub struct GlobalConfig {
 	pub id: GlobalConfigId,
 	pub alerts: GlobalConfigAlerts,
 	pub emote_set_id: EmoteSetId,
-	pub role_ids: Vec<RoleId>,
 	pub automod_rule_ids: Vec<AutomodRuleId>,
 	pub normal_emote_set_slot_capacity: i32,
 	pub personal_emote_set_slot_capacity: i32,

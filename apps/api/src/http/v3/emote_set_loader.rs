@@ -26,7 +26,7 @@ pub async fn load_emote_set(
 
 	let users = global
 		.user_loader()
-		.load_fast_many(global, &global_config.role_ids, emotes.values().map(|emote| emote.owner_id))
+		.load_fast_many(global, emotes.values().map(|emote| emote.owner_id))
 		.await
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

@@ -155,13 +155,28 @@ impl User {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<GqlObjectId>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
+		let roles = global
+			.all_roles_loader()
+			.load(())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
 		let mut guard = self.db.write().await;
 
 		let Some(full) = guard.full(global).await? else {
 			return Ok(vec![]);
 		};
 
-		Ok(full.computed.entitlements.roles.iter().map(|r| (*r).into()).collect())
+		let mut sorted_roles = vec![];
+
+		for role in roles {
+			if full.computed.entitlements.roles.contains(&role.id) {
+				sorted_roles.push(role.id);
+			}
+		}
+
+		Ok(sorted_roles.iter().map(|r| (*r).into()).collect())
 	}
 
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
@@ -384,13 +399,28 @@ impl UserPartial {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<GqlObjectId>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
+		let roles = global
+			.all_roles_loader()
+			.load(())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
 		let mut guard = self.db.write().await;
 
-		let Some(user) = guard.full(global).await? else {
+		let Some(full) = guard.full(global).await? else {
 			return Ok(vec![]);
 		};
 
-		Ok(user.computed.entitlements.roles.iter().map(|r| (*r).into()).collect())
+		let mut sorted_roles = vec![];
+
+		for role in roles {
+			if full.computed.entitlements.roles.contains(&role.id) {
+				sorted_roles.push(role.id);
+			}
+		}
+
+		Ok(sorted_roles.iter().map(|r| (*r).into()).collect())
 	}
 
 	async fn connections<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserConnection>, ApiError> {
@@ -561,10 +591,10 @@ impl UsersQuery {
 
 	async fn users<'ctx>(
 		&self,
-		ctx: &Context<'ctx>,
-		query: String,
-		page: Option<u32>,
-		limit: Option<u32>,
+		_ctx: &Context<'ctx>,
+		_query: String,
+		_page: Option<u32>,
+		_limit: Option<u32>,
 	) -> Result<UserPartial, ApiError> {
 		// TODO: implement with typesense
 		Err(ApiError::NOT_IMPLEMENTED)

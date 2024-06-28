@@ -1,12 +1,7 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
-use futures::StreamExt;
 use mongodb::bson::doc;
-use shared::database::global::GlobalConfig;
-use shared::database::role::RoleId;
-use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::role_permission::RolePermission;
 
@@ -27,7 +22,7 @@ pub struct Role {
 	color: i32,
 	// allowed
 	// denied
-	position: u32,
+	position: i32,
 	// created_at
 	invisible: bool,
 	// members
@@ -38,16 +33,14 @@ pub struct Role {
 }
 
 impl Role {
-	pub fn from_db(value: shared::database::role::Role, global_config: &GlobalConfig) -> Self {
+	pub fn from_db(value: shared::database::role::Role) -> Self {
 		let (allowed, denied) = RolePermission::from_db(value.permissions);
-
-		let position = global_config.role_ids.iter().position(|id| *id == value.id).unwrap_or(0) as u32;
 
 		Self {
 			id: value.id.into(),
 			name: value.name,
 			color: value.color.unwrap_or_default(),
-			position,
+			position: value.rank,
 			invisible: false,
 			_allowed: allowed,
 			_denied: denied,
@@ -81,49 +74,19 @@ impl RolesQuery {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let global_config = global
-			.global_config_loader()
+		Ok(global
+			.all_roles_loader()
 			.load(())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let mut roles = shared::database::role::Role::collection(global.db())
-			.find(doc! {})
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.filter_map(|r| async {
-				match r {
-					Ok(role) => Some((role.id, Role::from_db(role, &global_config))),
-					Err(e) => {
-						tracing::error!(error = %e, "failed to load role");
-						None
-					}
-				}
-			})
-			.collect::<HashMap<RoleId, Role>>()
-			.await;
-
-		let mut sorted_roles = vec![];
-
-		for role_id in global_config.role_ids {
-			if let Some(role) = roles.remove(&role_id) {
-				sorted_roles.push(role);
-			}
-		}
-
-		Ok(sorted_roles)
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?
+			.into_iter()
+			.map(Role::from_db)
+			.collect())
 	}
 
 	async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Role>, ApiError> {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let role = global
 			.role_by_id_loader()
@@ -131,6 +94,6 @@ impl RolesQuery {
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		Ok(role.map(|r| Role::from_db(r, &global_config)))
+		Ok(role.map(|r| Role::from_db(r)))
 	}
 }

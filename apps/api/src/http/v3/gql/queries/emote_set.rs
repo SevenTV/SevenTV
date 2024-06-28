@@ -115,15 +115,10 @@ impl ActiveEmote {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmoteSet {
-	async fn emotes(&self, limit: Option<u32>, origins: Option<bool>) -> Result<Vec<ActiveEmote>, ApiError> {
+	async fn emotes(&self, limit: Option<u32>, _origins: Option<bool>) -> Result<Vec<ActiveEmote>, ApiError> {
 		Ok(self
 			.emotes
 			.iter()
-			.filter(|emote| match origins {
-				Some(true) => emote.origin_set_id.is_some(),
-				Some(false) => emote.origin_set_id.is_none(),
-				None => true,
-			})
 			.take(limit.unwrap_or(100000) as usize)
 			.cloned()
 			.map(|emote| ActiveEmote::from_db(emote))

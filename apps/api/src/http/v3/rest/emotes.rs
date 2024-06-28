@@ -180,7 +180,7 @@ pub async fn get_emote_by_id(
 
 	let owner = global
 		.user_loader()
-		.load_fast(&global, &global_config.role_ids, emote.owner_id)
+		.load_fast(&global, emote.owner_id)
 		.await
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
