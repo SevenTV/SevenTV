@@ -78,6 +78,12 @@ impl<T: BitMask> AllowDeny<T> {
 	}
 }
 
+impl<T: BitMask + PartialOrd> PartialOrd for AllowDeny<T> {
+	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+		self.permission().partial_cmp(&other.permission())
+	}
+}
+
 #[bitmask(i32)]
 pub enum EmotePermission {
 	/// Grants all permissions
@@ -580,6 +586,35 @@ impl Permissions {
 
 	pub fn denied_flags(&self, permission: FlagPermission) -> bool {
 		self.flags.deny.contains(permission)
+	}
+}
+
+impl PartialOrd for Permissions {
+	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+		let cmp = [
+			self.emote.partial_cmp(&other.emote)?,
+			self.role.partial_cmp(&other.role)?,
+			self.emote_set.partial_cmp(&other.emote_set)?,
+			self.badge.partial_cmp(&other.badge)?,
+			self.paint.partial_cmp(&other.paint)?,
+			self.user.partial_cmp(&other.user)?,
+			self.ticket.partial_cmp(&other.ticket)?,
+			self.emote_moderation_request.partial_cmp(&other.emote_moderation_request)?,
+			self.admin.partial_cmp(&other.admin)?,
+			self.flags.partial_cmp(&other.flags)?,
+			self.emote_moderation_request_priority.partial_cmp(&other.emote_moderation_request_priority)?,
+			self.emote_moderation_request_limit.partial_cmp(&other.emote_moderation_request_limit)?,
+			self.emote_set_capacity.partial_cmp(&other.emote_set_capacity)?,
+			self.personal_emote_set_capacity.partial_cmp(&other.personal_emote_set_capacity)?,
+		];
+
+		if cmp.iter().any(|c| *c == std::cmp::Ordering::Greater) { // all greater
+			Some(std::cmp::Ordering::Greater)
+		} else if cmp.iter().all(|c| *c == std::cmp::Ordering::Equal) { // nothing greater & all equal
+			Some(std::cmp::Ordering::Equal)
+		} else { // nothing greater & at least one less
+			Some(std::cmp::Ordering::Less)
+		}
 	}
 }
 

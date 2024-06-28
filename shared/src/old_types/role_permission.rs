@@ -1,8 +1,8 @@
 use bitmask_enum::bitmask;
 
 use crate::database::role::permissions::{
-	AdminPermission, AllowDeny, BadgePermission, EmotePermission, EmoteSetPermission, PaintPermission, Permissions,
-	PermissionsExt, RolePermission as NewRolePermissions, TicketPermission, UserPermission,
+	AdminPermission, AllowDeny, BadgePermission, EmoteModerationRequestPermission, EmotePermission, EmoteSetPermission,
+	PaintPermission, Permissions, PermissionsExt, RolePermission as NewRolePermissions, TicketPermission, UserPermission,
 };
 
 #[bitmask(u64)]
@@ -14,11 +14,11 @@ pub enum RolePermission {
 	EditEmoteSet = 1 << 3,
 
 	CreateReport = 1 << 13,
-	SendMessages = 1 << 14,
+	SendMessages = 1 << 14, // unused
 
-	FeatureZeroWidthEmoteType = 1 << 23,
+	FeatureZeroWidthEmoteType = 1 << 23, // unused
 	FeatureProfilePictureAnimation = 1 << 24,
-	FeatureMessagingPriority = 1 << 25,
+	FeatureMessagingPriority = 1 << 25, // unused
 
 	ManageBans = 1 << 30,
 	ManageRoles = 1 << 31,
@@ -28,13 +28,13 @@ pub enum RolePermission {
 	EditAnyEmote = 1 << 41,
 	EditAnyEmoteSet = 1 << 42,
 
-	BypassPrivacy = 1 << 48,
+	BypassPrivacy = 1 << 48, // unused
 
-	ManageContent = 1 << 54,
-	ManageStack = 1 << 55,
+	ManageContent = 1 << 54, // unused
+	ManageStack = 1 << 55,   // unused
 	ManageCosmetics = 1 << 56,
-	RunJobs = 1 << 57,
-	ManageEntitlements = 1 << 58,
+	RunJobs = 1 << 57,            // unused
+	ManageEntitlements = 1 << 58, // unused
 
 	SuperAdministrator = 1 << 62,
 }
@@ -64,7 +64,7 @@ impl RolePermission {
 			perm.allow(EmotePermission::Delete);
 		}
 		if allowed.contains(RolePermission::EditAnyEmote) {
-			perm.allow(EmotePermission::Admin);
+			perm.allow(EmotePermission::ManageAny);
 		}
 		if denied.contains(RolePermission::CreateEmote) {
 			perm.deny(EmotePermission::Upload);
@@ -74,7 +74,7 @@ impl RolePermission {
 			perm.deny(EmotePermission::Delete);
 		}
 		if denied.contains(RolePermission::EditAnyEmote) {
-			perm.deny(EmotePermission::Admin);
+			perm.deny(EmotePermission::ManageAny);
 		}
 
 		perm
@@ -84,10 +84,10 @@ impl RolePermission {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::ManageRoles) {
-			perm.allow(NewRolePermissions::Admin);
+			perm.allow(NewRolePermissions::Manage);
 		}
 		if denied.contains(RolePermission::ManageRoles) {
-			perm.deny(NewRolePermissions::Admin);
+			perm.deny(NewRolePermissions::Manage);
 		}
 
 		perm
@@ -116,10 +116,10 @@ impl RolePermission {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::ManageCosmetics) {
-			perm.allow(BadgePermission::Admin);
+			perm.allow(BadgePermission::Manage);
 		}
 		if denied.contains(RolePermission::ManageCosmetics) {
-			perm.deny(BadgePermission::Admin);
+			perm.deny(BadgePermission::Manage);
 		}
 
 		perm
@@ -129,10 +129,10 @@ impl RolePermission {
 		let mut perm = AllowDeny::default();
 
 		if allowed.contains(RolePermission::ManageCosmetics) {
-			perm.allow(PaintPermission::Admin);
+			perm.allow(PaintPermission::Manage);
 		}
 		if denied.contains(RolePermission::ManageCosmetics) {
-			perm.deny(PaintPermission::Admin);
+			perm.deny(PaintPermission::Manage);
 		}
 
 		perm
@@ -171,13 +171,29 @@ impl RolePermission {
 			perm.allow(TicketPermission::Create);
 		}
 		if allowed.contains(RolePermission::ManageReports) {
-			perm.allow(TicketPermission::Admin);
+			perm.allow(TicketPermission::ManageAbuse);
+			perm.allow(TicketPermission::ManageGeneric);
 		}
 		if denied.contains(RolePermission::CreateReport) {
 			perm.deny(TicketPermission::Create);
 		}
 		if denied.contains(RolePermission::ManageReports) {
-			perm.deny(TicketPermission::Admin);
+			perm.deny(TicketPermission::ManageAbuse);
+			perm.deny(TicketPermission::ManageGeneric);
+		}
+
+		perm
+	}
+
+	pub fn to_emote_moderation_request(allowed: Self, denied: Self) -> AllowDeny<EmoteModerationRequestPermission> {
+		let mut perm = AllowDeny::default();
+
+		// there was no permission in the old system for that
+		if allowed.contains(RolePermission::EditAnyEmote) {
+			perm.allow(EmoteModerationRequestPermission::Manage);
+		}
+		if denied.contains(RolePermission::EditAnyEmote) {
+			perm.deny(EmoteModerationRequestPermission::Manage);
 		}
 
 		perm
@@ -205,6 +221,7 @@ impl RolePermission {
 			paint: Self::to_paint_permission(allowed, denied),
 			user: Self::to_user_permission(allowed, denied),
 			ticket: Self::to_ticket_permission(allowed, denied),
+			emote_moderation_request: Self::to_emote_moderation_request(allowed, denied),
 			admin: Self::to_admin_permission(allowed, denied),
 			..Default::default()
 		}
@@ -222,7 +239,7 @@ impl RolePermission {
 			if value.has(EmotePermission::Edit) {
 				allowed |= Self::EditEmote;
 			}
-			if value.has(EmotePermission::Admin) {
+			if value.has(EmotePermission::ManageAny) {
 				allowed |= Self::EditAnyEmote;
 			}
 
@@ -232,17 +249,17 @@ impl RolePermission {
 			if value.denied(EmotePermission::Edit) {
 				denied |= Self::EditEmote;
 			}
-			if value.denied(EmotePermission::Admin) {
+			if value.denied(EmotePermission::ManageAny) {
 				denied |= Self::EditAnyEmote;
 			}
 		}
 
 		// Role Permissions
 		{
-			if value.has(NewRolePermissions::Admin) {
+			if value.has(NewRolePermissions::Manage) {
 				allowed |= Self::ManageRoles;
 			}
-			if value.denied(NewRolePermissions::Admin) {
+			if value.denied(NewRolePermissions::Manage) {
 				denied |= Self::ManageRoles;
 			}
 		}
@@ -266,10 +283,10 @@ impl RolePermission {
 
 		// Cosmetics Permissions
 		{
-			if value.has_any([BadgePermission::Admin.into(), PaintPermission::Admin.into()]) {
+			if value.has_any([BadgePermission::Manage.into(), PaintPermission::Manage.into()]) {
 				allowed |= Self::ManageCosmetics;
 			}
-			if value.denied_any([BadgePermission::Admin.into(), PaintPermission::Admin.into()]) {
+			if value.denied_any([BadgePermission::Manage.into(), PaintPermission::Manage.into()]) {
 				denied |= Self::ManageCosmetics;
 			}
 		}
@@ -282,6 +299,9 @@ impl RolePermission {
 			if value.has(UserPermission::ManageAny) {
 				allowed |= Self::ManageUsers;
 			}
+			if value.has(UserPermission::UseCustomProfilePicture) {
+				allowed |= Self::FeatureProfilePictureAnimation;
+			}
 
 			if value.denied(UserPermission::Moderate) {
 				denied |= Self::ManageBans;
@@ -289,11 +309,7 @@ impl RolePermission {
 			if value.denied(UserPermission::ManageAny) {
 				denied |= Self::ManageUsers;
 			}
-
-			if value.has(UserPermission::UseCustomProfilePicture) {
-				allowed |= Self::FeatureProfilePictureAnimation;
-			}
-			if value.has(UserPermission::UseCustomProfilePicture) {
+			if value.denied(UserPermission::UseCustomProfilePicture) {
 				denied |= Self::FeatureProfilePictureAnimation;
 			}
 		}
@@ -303,14 +319,14 @@ impl RolePermission {
 			if value.has(TicketPermission::Create) {
 				allowed |= Self::CreateReport;
 			}
-			if value.has(TicketPermission::ManageAbuse) && value.has(TicketPermission::ManageGeneric) {
+			if value.has_all([TicketPermission::ManageAbuse.into(), TicketPermission::ManageGeneric.into()]) {
 				allowed |= Self::ManageReports;
 			}
 
 			if value.denied(TicketPermission::Create) {
 				denied |= Self::CreateReport;
 			}
-			if value.denied(TicketPermission::ManageAbuse) || value.denied(TicketPermission::ManageGeneric) {
+			if value.denied_any([TicketPermission::ManageAbuse.into(), TicketPermission::ManageGeneric.into()]) {
 				denied |= Self::ManageReports;
 			}
 		}
@@ -320,7 +336,7 @@ impl RolePermission {
 			if value.has(AdminPermission::SuperAdmin) {
 				allowed |= Self::SuperAdministrator;
 			}
-			if value.has(AdminPermission::SuperAdmin) {
+			if value.denied(AdminPermission::SuperAdmin) {
 				denied |= Self::SuperAdministrator;
 			}
 		}

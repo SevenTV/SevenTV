@@ -1,16 +1,19 @@
+use std::future::IntoFuture;
 use std::sync::Arc;
 
 use async_graphql::{Context, InputObject, Object};
+use futures::{TryFutureExt, TryStreamExt};
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::role::permissions::RolePermission;
+use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
+use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission};
 use shared::database::role::RoleId;
 use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::role::Role;
 
@@ -22,23 +25,47 @@ impl RolesMutation {
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
 	async fn create_role<'ctx>(&self, ctx: &Context<'ctx>, data: CreateRoleInput) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		// TODO: check permissions
+		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let allowed: u64 = data.allowed.parse().map_err(|_| ApiError::BAD_REQUEST)?;
 		let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
 		let denied: u64 = data.denied.parse().map_err(|_| ApiError::BAD_REQUEST)?;
 		let denied = shared::old_types::role_permission::RolePermission::from(denied);
 
+		let role_permissions = shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied);
+
+		if role_permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
+			return Err(ApiError::FORBIDDEN);
+		}
+
+		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(global.db())
+			.find(doc! {})
+			.with_options(FindOptions::builder().sort(doc! { "rank": 1 }).build())
+			.into_future()
+			.and_then(|f| f.try_collect())
+			.await
+			.map_err(|err| {
+				tracing::error!("failed to load: {err}");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		let mut rank = 0;
+
+		while roles.iter().any(|r| r.rank == rank) {
+			rank += 1;
+		}
+
 		let role = shared::database::role::Role {
 			id: RoleId::new(),
 			name: data.name,
 			description: None,
 			tags: vec![],
-			permissions: shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied),
+			permissions: role_permissions,
 			hoist: false,
 			color: Some(data.color),
-			rank: 0,
+			rank,
 		};
 
 		shared::database::role::Role::collection(global.db())
@@ -60,8 +87,9 @@ impl RolesMutation {
 		data: EditRoleInput,
 	) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		// TODO: check permissions
+		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
@@ -90,12 +118,16 @@ impl RolesMutation {
 				let denied: u64 = denied.parse().map_err(|_| ApiError::BAD_REQUEST)?;
 				let denied = shared::old_types::role_permission::RolePermission::from(denied);
 
+				let role_permissions =
+					shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied);
+
+				if role_permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
+					return Err(ApiError::FORBIDDEN);
+				}
+
 				update.insert(
 					"permissions",
-					to_bson(&shared::old_types::role_permission::RolePermission::to_new_permissions(
-						allowed, denied,
-					))
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
+					to_bson(&role_permissions).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
 				);
 			}
 			(None, None) => {}
@@ -140,6 +172,15 @@ impl RolesMutation {
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
 	async fn delete_role<'ctx>(&self, ctx: &Context<'ctx>, role_id: GqlObjectId) -> Result<String, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+
+		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
+
+		let role = global.role_by_id_loader().load(role_id.id()).await.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?.ok_or(ApiError::NOT_FOUND)?;
+
+		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
+			return Err(ApiError::FORBIDDEN);
+		}
 
 		let res = shared::database::role::Role::collection(global.db())
 			.delete_one(doc! {
