@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateOptions};
-use shared::database::role::permissions::{PermissionsExt, RolePermission, UserPermission};
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
 use shared::database::user::User;
 use shared::database::Collection;
 use shared::old_types::cosmetic::CosmeticKind;
@@ -259,9 +260,91 @@ impl UserOps {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Assign)")]
-	async fn roles(&self, _action: ListItemAction) -> Result<GqlObjectId, ApiError> {
-		// TODO: entitlements required
-		Err(ApiError::NOT_IMPLEMENTED)
+	async fn roles<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		role_id: GqlObjectId,
+		action: ListItemAction,
+	) -> Result<Vec<GqlObjectId>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+
+		let user = auth_session.user(global).await?;
+
+		let role = global
+			.role_by_id_loader()
+			.load(role_id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
+
+		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
+			return Err(ApiError::FORBIDDEN);
+		}
+
+		match action {
+			ListItemAction::Add => {
+				if user.computed.entitlements.roles.contains(&role_id.id()) {
+					return Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect());
+				}
+
+				let edge = EntitlementEdge {
+					id: EntitlementEdgeId {
+						from: EntitlementEdgeKind::User { user_id: self.id.id() },
+						to: EntitlementEdgeKind::Role { role_id: role_id.id() },
+						managed_by: None,
+					},
+				};
+
+				EntitlementEdge::collection(global.db())
+					.insert_one(&edge)
+					.await
+					.map_err(|err| {
+						tracing::error!(error = %err, "failed to insert entitlement edge");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				Ok(user
+					.computed
+					.entitlements
+					.roles
+					.iter()
+					.copied()
+					.chain(std::iter::once(role_id.id()))
+					.map(Into::into)
+					.collect())
+			}
+			ListItemAction::Remove => {
+				let from = EntitlementEdgeKind::User { user_id: self.id.id() };
+				let to = EntitlementEdgeKind::Role { role_id: role_id.id() };
+
+				let res = EntitlementEdge::collection(global.db())
+					.delete_one(doc! {
+						"_id.from": to_bson(&from).expect("failed to convert to bson"),
+						"_id.to": to_bson(&to).expect("failed to convert to bson"),
+					})
+					.await
+					.map_err(|err| {
+						tracing::error!(error = %err, "failed to delete entitlement edge");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				if res.deleted_count == 1 {
+					Ok(user
+						.computed
+						.entitlements
+						.roles
+						.iter()
+						.copied()
+						.filter(|id| *id != role_id.id())
+						.map(Into::into)
+						.collect())
+				} else {
+					Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect())
+				}
+			}
+			ListItemAction::Update => Err(ApiError::NOT_IMPLEMENTED),
+		}
 	}
 }
 

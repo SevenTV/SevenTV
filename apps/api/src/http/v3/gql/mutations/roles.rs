@@ -192,6 +192,8 @@ impl RolesMutation {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
+		// TODO: remove entitlement edges
+
 		if res.deleted_count == 1 {
 			Ok(String::new())
 		} else {
