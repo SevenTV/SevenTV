@@ -5,6 +5,7 @@ use scuffle_foundations::settings::cli::Matches;
 use tokio::signal::unix::SignalKind;
 
 mod config;
+mod download_cosmetics;
 mod error;
 mod format;
 mod global;
@@ -58,15 +59,27 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 			.ok();
 	});
 
-	let joined_jobs = futures::future::join(jobs::run(global.clone()), image_processor_callback::run(global.clone()));
+	if global.config().download_cosmetics {
+		let job = download_cosmetics::run(global.clone());
 
-	tokio::select! {
-		r = joined_jobs => match r {
-			(Err(e), _) => tracing::error!(error = %e, "failed to run jobs"),
-			(_, Err(e)) => tracing::error!(error = %e, "failed to run image processor callback"),
-			_ => {},
-		},
-		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
+		tokio::select! {
+			r = job => match r {
+				Ok(_) => {},
+				Err(e) => tracing::error!(error = %e, "failed to run job"),
+			},
+			_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
+		}
+	} else {
+		let joined_jobs = futures::future::join(jobs::run(global.clone()), image_processor_callback::run(global.clone()));
+	
+		tokio::select! {
+			r = joined_jobs => match r {
+				(Err(e), _) => tracing::error!(error = %e, "failed to run jobs"),
+				(_, Err(e)) => tracing::error!(error = %e, "failed to run image processor callback"),
+				_ => {},
+			},
+			_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
+		}
 	}
 
 	tracing::info!("stopping data-brittler");

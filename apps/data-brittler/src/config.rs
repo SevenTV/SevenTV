@@ -36,6 +36,9 @@ pub struct Extra {
 	/// image processor config
 	pub image_processor: ImageProcessorConfig,
 
+	/// Only download cosmetics images, don't run jobs
+	pub download_cosmetics: bool,
+
 	/// Run users job
 	pub users: bool,
 	/// Skip users job
