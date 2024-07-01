@@ -64,7 +64,7 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 
 		tokio::select! {
 			r = job => match r {
-				Ok(_) => {},
+				Ok(_) => tracing::info!("finished running cosmetics download job"),
 				Err(e) => tracing::error!(error = %e, "failed to run job"),
 			},
 			_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),

@@ -2,8 +2,8 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
 
+use bson::oid::ObjectId;
 use mongodb::bson::doc;
-use mongodb::bson::oid::ObjectId;
 use shared::database::badge::Badge;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintLayer, PaintLayerId, PaintLayerType};
@@ -11,7 +11,7 @@ use shared::database::{self, Collection};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
-use crate::{error, types};
+use crate::{download_cosmetics, error, types};
 
 pub struct CosmeticsJob {
 	global: Arc<Global>,
@@ -20,18 +20,14 @@ pub struct CosmeticsJob {
 
 impl CosmeticsJob {
 	async fn request_image(&self, cosmetic_id: ObjectId, url: &str) -> Result<bytes::Bytes, ProcessOutcome> {
-		tracing::info!(url = %url, "requesting image");
-		match self.global.http_client().get(url).send().await {
-			Ok(res) if res.status().is_success() => match res.bytes().await {
-				Ok(bytes) => Ok(bytes),
-				Err(e) => Err(ProcessOutcome::error(e)),
-			},
-			Ok(res) => Err(ProcessOutcome::error(error::Error::ImageDownload {
-				cosmetic_id,
-				status: res.status(),
-			})),
-			Err(e) => Err(ProcessOutcome::error(e)),
-		}
+		download_cosmetics::request_image(&self.global, url)
+			.await
+			.map_err(|e| match e {
+				download_cosmetics::RequestImageError::Reqwest(e) => ProcessOutcome::error(e),
+				download_cosmetics::RequestImageError::Status(status) => {
+					ProcessOutcome::error(error::Error::ImageDownload { cosmetic_id, status })
+				}
+			})
 	}
 }
 
