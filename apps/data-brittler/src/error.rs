@@ -39,6 +39,8 @@ pub enum Error {
 
 	#[error("reqwest error")]
 	Reqwest(#[from] reqwest::Error),
+	#[error("failed to read image")]
+	Io(#[from] std::io::Error),
 	#[error("failed to download image")]
 	ImageDownload {
 		cosmetic_id: ObjectId,
@@ -72,6 +74,7 @@ impl Error {
 			Self::InvalidRecurringInterval(_) => "InvalidRecurringInterval",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
 			Self::Reqwest(_) => "Reqwest",
+			Self::Io(_) => "Io",
 			Self::ImageDownload { .. } => "ImageDownload",
 			Self::Grpc(_) => "Grpc",
 			Self::ImageProcessor(_) => "ImageProcessor",

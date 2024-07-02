@@ -153,8 +153,6 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 			} else {
 				tracing::info!("missing {} task callbacks", missing.len());
 			}
-		} else {
-			tracing::info!("all tasks is empty");
 		}
 	}
 

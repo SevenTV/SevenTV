@@ -36,7 +36,6 @@ pub mod messages;
 pub mod prices;
 pub mod reports;
 pub mod roles;
-pub mod subscriptions;
 pub mod system;
 pub mod users;
 
@@ -210,11 +209,6 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		futures.push(j);
 	}
 	if let Some(j) = PricesJob::conditional_init_and_run(&global, global.config().should_run_prices())? {
-		futures.push(j);
-	}
-	if let Some(j) =
-		subscriptions::SubscriptionsJob::conditional_init_and_run(&global, global.config().should_run_subscriptions())?
-	{
 		futures.push(j);
 	}
 

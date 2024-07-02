@@ -8,6 +8,7 @@ use shared::database::badge::Badge;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintLayer, PaintLayerId, PaintLayerType};
 use shared::database::{self, Collection};
+use tokio::io;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -62,10 +63,19 @@ impl Job for CosmeticsJob {
 			types::CosmeticData::Badge { tooltip, tag } => {
 				let id = cosmetic.id.into();
 
-				let download_url = format!("https://cdn.7tv.app/badge/{}/2x", cosmetic.id);
-				let image_data = match self.request_image(cosmetic.id, &download_url).await {
-					Ok(data) => data,
-					Err(outcome) => return outcome,
+				let image_data = match tokio::fs::read(format!("local/cosmetics/{}", cosmetic.id)).await {
+					Ok(data) => bytes::Bytes::from(data),
+					Err(e) => {
+						if let io::ErrorKind::NotFound = e.kind() {
+							let download_url = format!("https://cdn.7tv.app/badge/{}/2x", cosmetic.id);
+							match self.request_image(cosmetic.id, &download_url).await {
+								Ok(data) => data,
+								Err(outcome) => return outcome,
+							}
+						} else {
+							return outcome.with_error(e);
+						}
+					}
 				};
 
 				let input = match ip.upload_badge(id, image_data).await {
@@ -143,9 +153,18 @@ impl Job for CosmeticsJob {
 						image_url: Some(image_url),
 						..
 					} => {
-						let image_data = match self.request_image(cosmetic.id, &image_url).await {
-							Ok(data) => data,
-							Err(outcome) => return outcome,
+						let image_data = match tokio::fs::read(format!("local/cosmetics/{}", cosmetic.id)).await {
+							Ok(data) => bytes::Bytes::from(data),
+							Err(e) => {
+								if let io::ErrorKind::NotFound = e.kind() {
+									match self.request_image(cosmetic.id, &image_url).await {
+										Ok(data) => data,
+										Err(outcome) => return outcome,
+									}
+								} else {
+									return outcome.with_error(e);
+								}
+							}
 						};
 
 						let input = match ip.upload_paint_layer(id, layer_id, image_data).await {

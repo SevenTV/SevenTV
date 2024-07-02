@@ -99,11 +99,6 @@ pub struct Extra {
 	/// Skip products job
 	pub skip_prices: bool,
 
-	/// Run subscriptions job
-	pub subscriptions: bool,
-	/// Skip subscriptions job
-	pub skip_subscriptions: bool,
-
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 }
@@ -122,7 +117,6 @@ impl Extra {
 			|| self.messages
 			|| self.system
 			|| self.prices
-			|| self.subscriptions
 	}
 
 	pub fn should_run_users(&self) -> bool {
@@ -183,10 +177,5 @@ impl Extra {
 	pub fn should_run_prices(&self) -> bool {
 		let any_run = self.any_run();
 		any_run && self.prices || !any_run && !self.skip_prices
-	}
-
-	pub fn should_run_subscriptions(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.subscriptions || !any_run && !self.skip_subscriptions
 	}
 }
