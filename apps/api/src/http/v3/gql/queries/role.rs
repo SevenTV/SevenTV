@@ -5,7 +5,7 @@ use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use futures::{TryFutureExt, TryStreamExt};
 use mongodb::bson::doc;
 use mongodb::options::FindOptions;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::role_permission::RolePermission;
 
@@ -99,7 +99,7 @@ impl RolesQuery {
 			.role_by_id_loader()
 			.load(id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(role.map(|r| Role::from_db(r)))
 	}

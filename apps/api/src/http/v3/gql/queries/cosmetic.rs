@@ -7,7 +7,7 @@ use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::badge::Badge;
 use shared::database::paint::Paint;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
 
@@ -75,7 +75,7 @@ impl CosmeticsQuery {
 				.paint_by_id_loader()
 				.load_many(list.clone().into_iter().map(|id| id.id()))
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.into_values()
 				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_origin))
 				.collect();
@@ -84,7 +84,7 @@ impl CosmeticsQuery {
 				.badge_by_id_loader()
 				.load_many(list.into_iter().map(|id| id.id()))
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.into_values()
 				.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_origin))
 				.collect();

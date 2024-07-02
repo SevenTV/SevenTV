@@ -7,7 +7,7 @@ pub struct ImageSet {
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(untagged)]
+#[serde(tag = "type")]
 pub enum ImageSetInput {
 	Pending {
 		task_id: String,

@@ -1,14 +1,16 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 
-use scuffle_foundations::dataloader::{DataLoader, Loader};
+use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
+use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
 use shared::database::role::permissions::Permissions;
 use shared::database::role::{Role, RoleId};
+use shared::database::user::ban::ActiveBans;
 use shared::database::user::{FullUser, User, UserComputed, UserId};
 
-use super::entitlement_edge::EntitlementEdgeGraphTraverse;
 use crate::global::Global;
 
 pub struct FullUserLoader {
@@ -36,20 +38,36 @@ impl FullUserLoader {
 		user_ids: impl IntoIterator<Item = UserId>,
 	) -> Result<HashMap<UserId, FullUser>, ()> {
 		let users = global.user_by_id_loader().load_many(user_ids).await?;
-		self.load_user_many(users.into_values()).await
+		self.load_user_many(global, users.into_values()).await
 	}
 
 	/// Performs a full user load fetching all necessary data using the graph
-	pub async fn load_user(&self, user: User) -> Result<FullUser, ()> {
+	pub async fn load_user(&self, global: &Arc<Global>, user: User) -> Result<FullUser, ()> {
 		let id = user.id;
-		self.load_user_many(std::iter::once(user)).await?.remove(&id).ok_or(())
+		self.load_user_many(global, std::iter::once(user))
+			.await?
+			.remove(&id)
+			.ok_or(())
 	}
 
 	/// Performs a full user load fetching all necessary data using the graph
-	pub async fn load_user_many(&self, user: impl IntoIterator<Item = User>) -> Result<HashMap<UserId, FullUser>, ()> {
+	pub async fn load_user_many(
+		&self,
+		global: &Arc<Global>,
+		user: impl IntoIterator<Item = User>,
+	) -> Result<HashMap<UserId, FullUser>, ()> {
 		let users = user.into_iter().collect::<Vec<_>>();
 
 		let computed = self.computed_loader.load_many(users.iter().map(|user| user.id)).await?;
+
+		let bans = global
+			.user_ban_by_user_id_loader()
+			.load_many(
+				users
+					.iter()
+					.filter_map(|user| if user.has_bans { Some(user.id) } else { None }),
+			)
+			.await?;
 
 		Ok(users
 			.into_iter()
@@ -58,7 +76,7 @@ impl FullUserLoader {
 					return None;
 				};
 
-				if let Some(active_bans) = user.active_bans() {
+				if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(&bans)) {
 					computed.permissions.merge(active_bans.permissions());
 				}
 
@@ -107,10 +125,11 @@ impl FullUserLoader {
 				let id = user.id;
 				let computed = UserComputed {
 					permissions: Permissions::default(),
-					entitlements: CalculatedEntitlements::new_from_cache(&user.search_index),
+					entitlements: CalculatedEntitlements::new(user.cached_entitlements.iter().cloned()),
 					highest_role_rank: -1,
 					highest_role_color: None,
 					raw_entitlements: None,
+					roles: vec![],
 				};
 
 				role_ids.extend(computed.entitlements.roles.iter().cloned());
@@ -125,16 +144,31 @@ impl FullUserLoader {
 			.await?
 			.into_values()
 			.collect();
+
+		let bans = global
+			.user_ban_by_user_id_loader()
+			.load_many(
+				users
+					.values()
+					.filter_map(|user| if user.has_bans { Some(user.id) } else { None }),
+			)
+			.await?;
+
 		roles.sort_by_key(|r| r.rank);
 
 		for user in users.values_mut() {
 			user.computed.permissions = compute_permissions(&roles, &user.computed.entitlements.roles);
-			if let Some(active_bans) = user.user.active_bans() {
+			if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(&bans)) {
 				user.computed.permissions.merge(active_bans.permissions());
 			}
 
 			user.computed.highest_role_rank = compute_highest_role_rank(&roles, &user.computed.entitlements.roles);
 			user.computed.highest_role_color = compute_highest_role_color(&roles, &user.computed.entitlements.roles);
+			user.computed.roles = roles
+				.iter()
+				.map(|r| r.id)
+				.filter(|r| user.computed.entitlements.roles.contains(r))
+				.collect();
 		}
 
 		Ok(users)
@@ -143,21 +177,37 @@ impl FullUserLoader {
 
 struct UserComputedLoader {
 	global: Weak<Global>,
+	config: BatcherConfig,
 }
 
 impl UserComputedLoader {
 	pub fn new(global: Weak<Global>) -> DataLoader<Self> {
-		DataLoader::new("UserComputedLoader", Self { global })
+		Self::new_with_config(
+			global,
+			BatcherConfig {
+				name: "UserComputedLoader".to_string(),
+				concurrency: 50,
+				max_batch_size: 1_000,
+				sleep_duration: std::time::Duration::from_millis(5),
+			},
+		)
+	}
+
+	pub fn new_with_config(global: Weak<Global>, config: BatcherConfig) -> DataLoader<Self> {
+		DataLoader::new(Self { global, config })
 	}
 }
 
 impl Loader for UserComputedLoader {
-	type Error = ();
 	type Key = UserId;
 	type Value = UserComputed;
 
-	#[tracing::instrument(name = "UserComputedLoader::load", skip(self), fields(key_count = keys.len()))]
-	async fn load(&self, keys: Vec<Self::Key>) -> Result<HashMap<Self::Key, Self::Value>, Self::Error> {
+	fn config(&self) -> BatcherConfig {
+		self.config.clone()
+	}
+
+	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let global = &self.global.upgrade().ok_or(())?;
 
 		let traverse = &EntitlementEdgeGraphTraverse {
@@ -185,7 +235,7 @@ impl Loader for UserComputedLoader {
 		let mut result = result
 			.into_iter()
 			.map(|(id, raw_entitlements)| {
-				let entitlements = CalculatedEntitlements::new(&raw_entitlements);
+				let entitlements = CalculatedEntitlements::new(raw_entitlements.iter().map(|e| e.id.to.clone()));
 
 				role_ids.extend(entitlements.roles.iter().cloned());
 
@@ -196,6 +246,7 @@ impl Loader for UserComputedLoader {
 						entitlements,
 						highest_role_rank: -1,
 						highest_role_color: None,
+						roles: vec![],
 						raw_entitlements: Some(raw_entitlements),
 					},
 				)
@@ -214,6 +265,11 @@ impl Loader for UserComputedLoader {
 			user.permissions = compute_permissions(&roles, &user.entitlements.roles);
 			user.highest_role_rank = compute_highest_role_rank(&roles, &user.entitlements.roles);
 			user.highest_role_color = compute_highest_role_color(&roles, &user.entitlements.roles);
+			user.roles = roles
+				.iter()
+				.map(|r| r.id)
+				.filter(|r| user.entitlements.roles.contains(r))
+				.collect();
 		}
 
 		Ok(result)

@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use async_graphql::{Context, InputObject, Object};
+use chrono::Utc;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogTicketData};
@@ -11,7 +12,7 @@ use shared::database::ticket::{
 	TicketTarget,
 };
 use shared::database::user::UserId;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -53,6 +54,8 @@ impl ReportsMutation {
 			user_id: auth_sesion.user_id(),
 			content: data.body,
 			files: vec![],
+			search_updated_at: None,
+			updated_at: Utc::now(),
 		};
 
 		TicketMessage::collection(global.db())
@@ -83,6 +86,8 @@ impl ReportsMutation {
 			author_id: auth_sesion.user_id(),
 			open: true,
 			locked: false,
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		};
 
 		Ticket::collection(global.db())
@@ -102,6 +107,8 @@ impl ReportsMutation {
 					target_id: ticket.id,
 					data: AuditLogTicketData::Create,
 				},
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
 			})
 			.session(&mut session)
 			.await
@@ -133,7 +140,7 @@ impl ReportsMutation {
 			.ticket_by_id_loader()
 			.load(report_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let mut session = global.mongo().start_session().await.map_err(|err| {
@@ -173,6 +180,8 @@ impl ReportsMutation {
 								new: new,
 							},
 						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -203,6 +212,8 @@ impl ReportsMutation {
 								target_id: report_id.id(),
 								data: AuditLogTicketData::AddMember { member: user_id },
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await
@@ -222,6 +233,8 @@ impl ReportsMutation {
 								target_id: report_id.id(),
 								data: AuditLogTicketData::RemoveMember { member: user_id },
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await
@@ -233,6 +246,8 @@ impl ReportsMutation {
 				_ => return Err(ApiError::BAD_REQUEST),
 			}
 		}
+
+		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
 		let ticket = Ticket::collection(global.db())
 			.find_one_and_update(
@@ -255,6 +270,8 @@ impl ReportsMutation {
 				user_id: auth_sesion.user_id(),
 				content: note.content.unwrap_or_default(),
 				files: vec![],
+				search_updated_at: None,
+				updated_at: Utc::now(),
 			};
 
 			TicketMessage::collection(global.db())
@@ -272,12 +289,7 @@ impl ReportsMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let messages = global
-			.ticket_messages_by_ticket_id_loader()
-			.load(ticket.id)
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
+		let messages = todo!("load messages");
 
 		Report::from_db(ticket, messages).ok_or(ApiError::INTERNAL_SERVER_ERROR)
 	}

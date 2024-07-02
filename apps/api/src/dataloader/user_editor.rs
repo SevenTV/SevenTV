@@ -3,31 +3,45 @@ use std::future::IntoFuture;
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::user::editor::UserEditor;
 use shared::database::user::UserId;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 
 pub struct UserEditorByUserIdLoader {
-	pub db: mongodb::Database,
+	db: mongodb::Database,
+	config: BatcherConfig,
 }
 
 impl UserEditorByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new("UserEditorByUserIdLoader", Self { db })
+		Self::new_with_config(
+			db,
+			BatcherConfig {
+				name: "UserEditorByUserIdLoader".to_string(),
+				concurrency: 50,
+				max_batch_size: 1_000,
+				sleep_duration: std::time::Duration::from_millis(5),
+			},
+		)
+	}
+
+	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
+		DataLoader::new(Self { db, config })
 	}
 }
 
 impl Loader for UserEditorByUserIdLoader {
-	type Error = ();
 	type Key = UserId;
 	type Value = Vec<UserEditor>;
 
-	#[tracing::instrument(name = "UserEditorByUserIdLoader::load", skip(self), fields(key_count = keys.len()))]
-	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		tracing::Span::current().make_root();
+	fn config(&self) -> BatcherConfig {
+		self.config.clone()
+	}
 
+	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Self::Value = UserEditor::collection(&self.db)
 			.find(doc! {
 				"_id.user_id": {
@@ -46,21 +60,37 @@ impl Loader for UserEditorByUserIdLoader {
 }
 
 pub struct UserEditorByEditorIdLoader {
-	pub db: mongodb::Database,
+	db: mongodb::Database,
+	config: BatcherConfig,
 }
 
 impl UserEditorByEditorIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new("UserEditorByEditorIdLoader", Self { db })
+		Self::new_with_config(
+			db,
+			BatcherConfig {
+				name: "UserEditorByEditorIdLoader".to_string(),
+				concurrency: 50,
+				max_batch_size: 1_000,
+				sleep_duration: std::time::Duration::from_millis(5),
+			},
+		)
+	}
+
+	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
+		DataLoader::new(Self { db, config })
 	}
 }
 
 impl Loader for UserEditorByEditorIdLoader {
-	type Error = ();
 	type Key = UserId;
 	type Value = Vec<UserEditor>;
 
-	#[tracing::instrument(name = "UserEditorByEditorIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	fn config(&self) -> BatcherConfig {
+		self.config.clone()
+	}
+
+	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Self::Value = UserEditor::collection(&self.db)
 			.find(doc! {
@@ -76,44 +106,5 @@ impl Loader for UserEditorByEditorIdLoader {
 			})?;
 
 		Ok(results.into_iter().into_group_map_by(|r| r.id.editor_id))
-	}
-}
-
-pub struct UserEditorByIdLoader {
-	pub db: mongodb::Database,
-}
-
-impl UserEditorByIdLoader {
-	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new("UserEditorByIdLoader", Self { db })
-	}
-}
-
-impl Loader for UserEditorByIdLoader {
-	type Error = ();
-	type Key = (UserId, UserId);
-	type Value = UserEditor;
-
-	#[tracing::instrument(name = "UserEditorByIdLoader::load", skip(self), fields(key_count = keys.len()))]
-	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let results: Vec<Self::Value> = UserEditor::collection(&self.db)
-			.find(doc! {
-				"_id": {
-					"$in": keys.iter().map(|(user_id, editor_id)| {
-						doc! {
-							"user_id": user_id,
-							"editor_id": editor_id,
-						}
-					}).collect::<Vec<_>>(),
-				}
-			})
-			.into_future()
-			.and_then(|f| f.try_collect())
-			.await
-			.map_err(|err| {
-				tracing::error!("failed to load: {err}");
-			})?;
-
-		Ok(results.into_iter().map(|r| ((r.id.user_id, r.id.editor_id), r)).collect())
 	}
 }

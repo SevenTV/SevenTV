@@ -4,25 +4,32 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use bson::doc;
-use scuffle_foundations::dataloader::DataLoader;
+use scuffle_foundations::batcher::dataloader::DataLoader;
 use scuffle_foundations::telemetry::server::HealthCheck;
+use shared::database::audit_log::AuditLog;
+use shared::database::badge::Badge;
+use shared::database::emote::Emote;
+use shared::database::emote_set::EmoteSet;
+use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
+use shared::database::global::GlobalConfig;
+use shared::database::loader::LoaderById;
+use shared::database::paint::Paint;
+use shared::database::product::Product;
+use shared::database::role::Role;
+use shared::database::ticket::Ticket;
+use shared::database::user::ban::UserBan;
+use shared::database::user::editor::UserEditor;
+use shared::database::user::User;
 use shared::image_processor::ImageProcessor;
 
 use crate::config::Config;
-use crate::dataloader::audit_log::{AuditLogByActorIdLoader, AuditLogByTargetIdLoader};
-use crate::dataloader::badge::BadgeByIdLoader;
-use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
-use crate::dataloader::emote_set::{EmoteSetByIdLoader, EmoteSetByUserIdLoader};
-use crate::dataloader::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
+use crate::dataloader::emote::EmoteByUserIdLoader;
+use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
-use crate::dataloader::global_config::GlobalConfigLoader;
-use crate::dataloader::paint::PaintByIdLoader;
-use crate::dataloader::product::ProductByIdLoader;
-use crate::dataloader::role::RoleByIdLoader;
-use crate::dataloader::ticket::{TicketByIdLoader, TicketMessagesByTicketIdLoader};
-use crate::dataloader::user::{UserByIdLoader, UserByPlatformIdLoader};
-use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByIdLoader, UserEditorByUserIdLoader};
 use crate::event_api::EventApi;
+use crate::dataloader::user::UserByPlatformIdLoader;
+use crate::dataloader::user_bans::UserBanByUserIdLoader;
+use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
 
 pub struct Global {
 	nats: async_nats::Client,
@@ -34,27 +41,28 @@ pub struct Global {
 	http_client: reqwest::Client,
 	event_api: EventApi,
 	image_processor: ImageProcessor,
-	product_by_id_loader: DataLoader<ProductByIdLoader>,
-	role_by_id_loader: DataLoader<RoleByIdLoader>,
-	paint_by_id_loader: DataLoader<PaintByIdLoader>,
-	badge_by_id_loader: DataLoader<BadgeByIdLoader>,
-	emote_by_id_loader: DataLoader<EmoteByIdLoader>,
+	audit_log_by_id_loader: DataLoader<LoaderById<AuditLog>>,
+	product_by_id_loader: DataLoader<LoaderById<Product>>,
+	role_by_id_loader: DataLoader<LoaderById<Role>>,
+	paint_by_id_loader: DataLoader<LoaderById<Paint>>,
+	badge_by_id_loader: DataLoader<LoaderById<Badge>>,
+	emote_by_id_loader: DataLoader<LoaderById<Emote>>,
 	emote_by_user_id_loader: DataLoader<EmoteByUserIdLoader>,
-	emote_set_by_id_loader: DataLoader<EmoteSetByIdLoader>,
+	emote_set_by_id_loader: DataLoader<LoaderById<EmoteSet>>,
 	emote_set_by_user_id_loader: DataLoader<EmoteSetByUserIdLoader>,
-	global_config_loader: DataLoader<GlobalConfigLoader>,
+	global_config_loader: DataLoader<LoaderById<GlobalConfig>>,
 	user_editor_by_user_id_loader: DataLoader<UserEditorByUserIdLoader>,
 	user_editor_by_editor_id_loader: DataLoader<UserEditorByEditorIdLoader>,
-	user_editor_by_id_loader: DataLoader<UserEditorByIdLoader>,
-	ticket_by_id_loader: DataLoader<TicketByIdLoader>,
-	ticket_messages_by_ticket_id_loader: DataLoader<TicketMessagesByTicketIdLoader>,
-	audit_log_by_target_id_loader: DataLoader<AuditLogByTargetIdLoader>,
-	audit_log_by_actor_id_loader: DataLoader<AuditLogByActorIdLoader>,
+	user_editor_by_id_loader: DataLoader<LoaderById<UserEditor>>,
+	ticket_by_id_loader: DataLoader<LoaderById<Ticket>>,
 	entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
 	entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
-	user_by_id_loader: DataLoader<UserByIdLoader>,
+	user_by_id_loader: DataLoader<LoaderById<User>>,
 	user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
+	user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
+	user_ban_by_user_id_loader: DataLoader<UserBanByUserIdLoader>,
 	user_loader: FullUserLoader,
+	typesense: typesense_codegen::apis::configuration::Configuration,
 }
 
 impl Global {
@@ -76,32 +84,43 @@ impl Global {
 			.await
 			.context("image processor setup")?;
 
+		let typesense = typesense_codegen::apis::configuration::Configuration {
+			base_path: config.typesense.uri.clone(),
+			api_key: config
+				.typesense
+				.api_key
+				.clone()
+				.map(|key| typesense_codegen::apis::configuration::ApiKey { key, prefix: None }),
+			..Default::default()
+		};
+
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			jetstream,
 			event_api,
 			image_processor,
-			product_by_id_loader: ProductByIdLoader::new(db.clone()),
-			role_by_id_loader: RoleByIdLoader::new(db.clone()),
-			paint_by_id_loader: PaintByIdLoader::new(db.clone()),
-			badge_by_id_loader: BadgeByIdLoader::new(db.clone()),
-			emote_by_id_loader: EmoteByIdLoader::new(db.clone()),
+			audit_log_by_id_loader: LoaderById::new(db.clone()),
+			product_by_id_loader: LoaderById::new(db.clone()),
+			role_by_id_loader: LoaderById::new(db.clone()),
+			paint_by_id_loader: LoaderById::new(db.clone()),
+			badge_by_id_loader: LoaderById::new(db.clone()),
+			emote_by_id_loader: LoaderById::new(db.clone()),
 			emote_by_user_id_loader: EmoteByUserIdLoader::new(db.clone()),
-			emote_set_by_id_loader: EmoteSetByIdLoader::new(db.clone()),
+			emote_set_by_id_loader: LoaderById::new(db.clone()),
 			emote_set_by_user_id_loader: EmoteSetByUserIdLoader::new(db.clone()),
-			global_config_loader: GlobalConfigLoader::new(db.clone()),
+			global_config_loader: LoaderById::new(db.clone()),
 			user_editor_by_user_id_loader: UserEditorByUserIdLoader::new(db.clone()),
 			user_editor_by_editor_id_loader: UserEditorByEditorIdLoader::new(db.clone()),
-			user_editor_by_id_loader: UserEditorByIdLoader::new(db.clone()),
-			ticket_by_id_loader: TicketByIdLoader::new(db.clone()),
-			ticket_messages_by_ticket_id_loader: TicketMessagesByTicketIdLoader::new(db.clone()),
-			audit_log_by_target_id_loader: AuditLogByTargetIdLoader::new(db.clone()),
-			audit_log_by_actor_id_loader: AuditLogByActorIdLoader::new(db.clone()),
+			user_editor_by_id_loader: LoaderById::new(db.clone()),
+			ticket_by_id_loader: LoaderById::new(db.clone()),
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
 			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
-			user_by_id_loader: UserByIdLoader::new(db.clone()),
+			user_by_id_loader: LoaderById::new(db.clone()),
 			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),
+			user_ban_by_id_loader: LoaderById::new(db.clone()),
+			user_ban_by_user_id_loader: UserBanByUserIdLoader::new(db.clone()),
 			http_client: reqwest::Client::new(),
+			typesense,
 			mongo,
 			db,
 			clickhouse,
@@ -155,28 +174,33 @@ impl Global {
 		&self.image_processor
 	}
 
+	/// The audit log loader.
+	pub fn audit_log_by_id_loader(&self) -> &DataLoader<LoaderById<AuditLog>> {
+		&self.audit_log_by_id_loader
+	}
+
 	/// The product loader.
-	pub fn product_by_id_loader(&self) -> &DataLoader<ProductByIdLoader> {
+	pub fn product_by_id_loader(&self) -> &DataLoader<LoaderById<Product>> {
 		&self.product_by_id_loader
 	}
 
 	/// The role loader.
-	pub fn role_by_id_loader(&self) -> &DataLoader<RoleByIdLoader> {
+	pub fn role_by_id_loader(&self) -> &DataLoader<LoaderById<Role>> {
 		&self.role_by_id_loader
 	}
 
 	/// The paint loader.
-	pub fn paint_by_id_loader(&self) -> &DataLoader<PaintByIdLoader> {
+	pub fn paint_by_id_loader(&self) -> &DataLoader<LoaderById<Paint>> {
 		&self.paint_by_id_loader
 	}
 
 	/// The badge loader.
-	pub fn badge_by_id_loader(&self) -> &DataLoader<BadgeByIdLoader> {
+	pub fn badge_by_id_loader(&self) -> &DataLoader<LoaderById<Badge>> {
 		&self.badge_by_id_loader
 	}
 
 	/// The emote loader.
-	pub fn emote_by_id_loader(&self) -> &DataLoader<EmoteByIdLoader> {
+	pub fn emote_by_id_loader(&self) -> &DataLoader<LoaderById<Emote>> {
 		&self.emote_by_id_loader
 	}
 
@@ -186,7 +210,7 @@ impl Global {
 	}
 
 	/// The emote set loader.
-	pub fn emote_set_by_id_loader(&self) -> &DataLoader<EmoteSetByIdLoader> {
+	pub fn emote_set_by_id_loader(&self) -> &DataLoader<LoaderById<EmoteSet>> {
 		&self.emote_set_by_id_loader
 	}
 
@@ -196,7 +220,7 @@ impl Global {
 	}
 
 	/// The global config loader.
-	pub fn global_config_loader(&self) -> &DataLoader<GlobalConfigLoader> {
+	pub fn global_config_loader(&self) -> &DataLoader<LoaderById<GlobalConfig>> {
 		&self.global_config_loader
 	}
 
@@ -210,28 +234,13 @@ impl Global {
 		&self.user_editor_by_editor_id_loader
 	}
 
-	pub fn user_editor_by_id_loader(&self) -> &DataLoader<UserEditorByIdLoader> {
+	pub fn user_editor_by_id_loader(&self) -> &DataLoader<LoaderById<UserEditor>> {
 		&self.user_editor_by_id_loader
 	}
 
 	/// The ticket loader.
-	pub fn ticket_by_id_loader(&self) -> &DataLoader<TicketByIdLoader> {
+	pub fn ticket_by_id_loader(&self) -> &DataLoader<LoaderById<Ticket>> {
 		&self.ticket_by_id_loader
-	}
-
-	/// The ticket messages loader.
-	pub fn ticket_messages_by_ticket_id_loader(&self) -> &DataLoader<TicketMessagesByTicketIdLoader> {
-		&self.ticket_messages_by_ticket_id_loader
-	}
-
-	/// The audit log by target id loader.
-	pub fn audit_log_by_target_id_loader(&self) -> &DataLoader<AuditLogByTargetIdLoader> {
-		&self.audit_log_by_target_id_loader
-	}
-
-	/// The audit log by actor loader.
-	pub fn audit_log_by_actor_id_loader(&self) -> &DataLoader<AuditLogByActorIdLoader> {
-		&self.audit_log_by_actor_id_loader
 	}
 
 	/// The entitlement edge inbound loader.
@@ -245,7 +254,7 @@ impl Global {
 	}
 
 	/// The user loader.
-	pub fn user_by_id_loader(&self) -> &DataLoader<UserByIdLoader> {
+	pub fn user_by_id_loader(&self) -> &DataLoader<LoaderById<User>> {
 		&self.user_by_id_loader
 	}
 
@@ -254,9 +263,24 @@ impl Global {
 		&self.user_by_platform_id_loader
 	}
 
+	/// The user ban loader.
+	pub fn user_ban_by_id_loader(&self) -> &DataLoader<LoaderById<UserBan>> {
+		&self.user_ban_by_id_loader
+	}
+
+	/// The user ban by user ID loader.
+	pub fn user_ban_by_user_id_loader(&self) -> &DataLoader<UserBanByUserIdLoader> {
+		&self.user_ban_by_user_id_loader
+	}
+
 	/// The full user loader.
 	pub fn user_loader(&self) -> &FullUserLoader {
 		&self.user_loader
+	}
+
+	/// The typesense client.
+	pub fn typesense(&self) -> &typesense_codegen::apis::configuration::Configuration {
+		&self.typesense
 	}
 }
 

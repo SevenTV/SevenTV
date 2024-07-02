@@ -89,7 +89,7 @@ impl ActiveEmote {
 			.emote_by_id_loader()
 			.load(self.id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(emote
 			.map(|e| Emote::from_db(global, e))
@@ -105,11 +105,11 @@ impl ActiveEmote {
 		};
 
 		Ok(global
-			.user_by_id_loader()
-			.load(actor_id)
+			.user_loader()
+			.load_fast(global, actor_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u.into())))
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u)))
 	}
 }
 
@@ -137,11 +137,11 @@ impl EmoteSet {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_by_id_loader()
-			.load(id.id())
+			.user_loader()
+			.load_fast(global, id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u.into())))
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u)))
 	}
 }
 
@@ -168,7 +168,7 @@ impl EmoteSetsQuery {
 			.emote_set_by_id_loader()
 			.load(id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		Ok(EmoteSet::from_db(emote_set))
@@ -187,7 +187,7 @@ impl EmoteSetsQuery {
 			.emote_set_by_id_loader()
 			.load_many(list.into_iter().map(|id| id.id()))
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()
 			.map(EmoteSet::from_db)
 			.collect();
@@ -204,14 +204,14 @@ impl EmoteSetsQuery {
 					.global_config_loader()
 					.load(())
 					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 				let global_set = global
 					.emote_set_by_id_loader()
 					.load(global_config.emote_set_id)
 					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::NOT_FOUND)?;
 
 				Ok(EmoteSet::from_db(global_set))

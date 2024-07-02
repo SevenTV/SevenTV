@@ -4,7 +4,7 @@ use mongodb::options::InsertManyOptions;
 use shared::database::emote::{Emote, EmoteFlags, EmoteMerged};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::user::UserId;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
@@ -66,6 +66,12 @@ impl Job for EmotesJob {
 				flags |= EmoteFlags::ApprovedPersonal;
 			}
 
+			if v.animated {
+				flags |= EmoteFlags::Animated;
+			}
+
+			let aspect_ratio = v.input_file.width as f64 / v.input_file.height as f64;
+
 			let image_set = ImageSet {
 				input: ImageSetInput::Image(v.input_file.into()),
 				outputs: v.image_files.into_iter().map(Into::into).collect(),
@@ -78,9 +84,12 @@ impl Job for EmotesJob {
 					.unwrap_or(UserId::nil()),
 				default_name: v.name.unwrap_or_else(|| emote.name.clone()),
 				tags: emote.tags.clone(),
-				animated: v.animated,
+				aspect_ratio,
 				image_set,
 				flags,
+				scores: Default::default(),
+				search_updated_at: None,
+				updated_at: chrono::Utc::now(),
 				attribution: vec![],
 				merged: v.state.replace_id.map(|id| EmoteMerged {
 					target_id: id.into(),

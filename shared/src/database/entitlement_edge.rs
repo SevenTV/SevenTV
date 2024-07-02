@@ -4,11 +4,13 @@ use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use mongodb::bson::to_bson;
-use scuffle_foundations::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
+use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeKind};
-use shared::database::graph::GraphTraverse;
-use shared::database::Collection;
+
+use crate::database::entitlement::{EntitlementEdge, EntitlementEdgeKind};
+use crate::database::graph::GraphTraverse;
+use crate::database::MongoCollection;
 
 pub struct EntitlementEdgeInboundLoader {
 	db: mongodb::Database,
@@ -16,16 +18,15 @@ pub struct EntitlementEdgeInboundLoader {
 
 impl EntitlementEdgeInboundLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new("EntitlementEdgeInboundLoader", Self { db })
+		DataLoader::new(Self { db })
 	}
 }
 
 impl Loader for EntitlementEdgeInboundLoader {
-	type Error = ();
 	type Key = EntitlementEdgeKind;
 	type Value = Vec<EntitlementEdge>;
 
-	#[tracing::instrument(name = "UserByIdLoader::load", skip(self), fields(key_count = keys.len()))]
+	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
@@ -48,23 +49,37 @@ impl Loader for EntitlementEdgeInboundLoader {
 
 pub struct EntitlementEdgeOutboundLoader {
 	db: mongodb::Database,
+	config: BatcherConfig,
 }
 
 impl EntitlementEdgeOutboundLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		DataLoader::new("EntitlementEdgeOutboundLoader", Self { db })
+		Self::new_with_config(
+			db,
+			BatcherConfig {
+				name: format!("EntitlementEdgeOutboundLoader"),
+				concurrency: 50,
+				max_batch_size: 1_000,
+				sleep_duration: std::time::Duration::from_millis(5),
+			},
+		)
+	}
+
+	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
+		DataLoader::new(Self { db, config })
 	}
 }
 
 impl Loader for EntitlementEdgeOutboundLoader {
-	type Error = ();
 	type Key = EntitlementEdgeKind;
 	type Value = Vec<EntitlementEdge>;
 
-	#[tracing::instrument(name = "UserByIdLoader::load", skip(self), fields(key_count = keys.len()))]
-	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		tracing::Span::current().make_root();
+	fn config(&self) -> BatcherConfig {
+		self.config.clone()
+	}
 
+	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
+	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
 			.find(doc! {
 				"_id.from": {
@@ -93,18 +108,18 @@ impl GraphTraverse for EntitlementEdgeGraphTraverse<'_> {
 
 	async fn fetch_edges(
 		&self,
-		direction: shared::database::graph::Direction,
-		nodes: &[<Self::Edge as shared::database::graph::GraphEdge>::Key],
+		direction: crate::database::graph::Direction,
+		nodes: &[<Self::Edge as crate::database::graph::GraphEdge>::Key],
 	) -> Result<Vec<Self::Edge>, Self::Error> {
 		match direction {
-			shared::database::graph::Direction::Inbound => Ok(self
+			crate::database::graph::Direction::Inbound => Ok(self
 				.inbound_loader
 				.load_many(nodes.into_iter().cloned())
 				.await?
 				.into_values()
 				.flatten()
 				.collect()),
-			shared::database::graph::Direction::Outbound => Ok(self
+			crate::database::graph::Direction::Outbound => Ok(self
 				.outbound_loader
 				.load_many(nodes.into_iter().cloned())
 				.await?

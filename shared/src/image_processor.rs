@@ -138,6 +138,7 @@ impl ImageProcessor {
 			drive_path: Some(image_processor::DrivePath {
 				drive: self.input_drive_name.clone(),
 				path: input_path,
+				acl: Some("private".to_string()),
 			}),
 			binary: data.to_vec(),
 			..Default::default()
@@ -149,7 +150,9 @@ impl ImageProcessor {
 			drive_path: Some(image_processor::DrivePath {
 				drive: self.output_drive_name.clone(),
 				path: output_path,
+				acl: Some("public-read".to_string()),
 			}),
+			input_reupload_path: None,
 			formats: vec![
 				OutputFormatOptions {
 					format: OutputFormat::WebpAnim as i32,

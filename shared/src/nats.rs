@@ -1,14 +1,14 @@
-use std::time::Duration;
-
 use anyhow::Context;
 use async_nats::ServerAddr;
 
-use crate::config::Nats;
+use crate::config::NatsConfig;
 
-pub async fn setup_nats(name: &str, config: &Nats) -> anyhow::Result<(async_nats::Client, async_nats::jetstream::Context)> {
+pub async fn setup_nats(
+	name: &str,
+	config: &NatsConfig,
+) -> anyhow::Result<(async_nats::Client, async_nats::jetstream::Context)> {
 	let nats = {
 		let mut options = async_nats::ConnectOptions::new()
-			.connection_timeout(Duration::from_secs(5))
 			.name(name)
 			.retry_on_initial_connect();
 

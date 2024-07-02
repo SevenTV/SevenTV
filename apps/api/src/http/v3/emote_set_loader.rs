@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use shared::database::emote_set::EmoteSetEmote;
-use shared::database::global::GlobalConfig;
 use shared::database::role::permissions::{FlagPermission, PermissionsExt};
 use shared::database::user::UserId;
 use shared::old_types::UserPartialModel;
@@ -13,7 +12,6 @@ use crate::http::error::ApiError;
 
 pub async fn load_emote_set(
 	global: &Arc<Global>,
-	global_config: &GlobalConfig,
 	emote_set_emotes: Vec<EmoteSetEmote>,
 	actor_id: Option<UserId>,
 	view_hidden: bool,
@@ -28,7 +26,7 @@ pub async fn load_emote_set(
 		.user_loader()
 		.load_fast_many(global, emotes.values().map(|emote| emote.owner_id))
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let cdn_base_url = &global.config().api.cdn_origin;
 
@@ -38,7 +36,7 @@ pub async fn load_emote_set(
 		.map(|user| {
 			// This api doesnt seem to return the user's badges and paints so
 			// we can ignore them.
-			UserPartialModel::from_db(user, &global_config, None, None, cdn_base_url)
+			UserPartialModel::from_db(user, None, None, cdn_base_url)
 		})
 		.map(|user| (user.id, user))
 		.collect::<HashMap<_, _>>();

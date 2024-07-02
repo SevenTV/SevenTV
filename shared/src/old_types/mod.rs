@@ -17,7 +17,6 @@ use image::{ImageFile, ImageFormat, ImageHost};
 use crate::database::badge::BadgeId;
 use crate::database::emote::EmoteFlags;
 use crate::database::emote_set::{EmoteSet, EmoteSetEmoteFlag, EmoteSetId, EmoteSetKind};
-use crate::database::global::GlobalConfig;
 use crate::database::paint::PaintId;
 use crate::database::role::permissions::{PermissionsExt, UserPermission};
 use crate::database::role::RoleId;
@@ -93,7 +92,6 @@ pub struct UserPartialModel {
 impl UserPartialModel {
 	pub fn from_db(
 		user: FullUser,
-		global: &GlobalConfig,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
 		cdn_base_url: &str,
@@ -156,7 +154,7 @@ impl UserPartialModel {
 					UserConnectionPartialModel::from_db(
 						connection,
 						user.style.active_emote_set_id,
-						global.normal_emote_set_slot_capacity as i32,
+						user.computed.permissions.emote_set_capacity.unwrap_or_default(),
 					)
 				})
 				.collect(),

@@ -7,7 +7,7 @@ use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::{User, UserId};
-use shared::database::{Collection, Id};
+use shared::database::MongoCollection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::{UserConnectionPartialModel, UserPartialModel};
 
@@ -159,15 +159,15 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		// database.
 		global
 			.user_loader()
-			.load_user(user)
+			.load_user(global, user)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 	} else if let Some(user_id) = csrf_payload.user_id {
 		global
 			.user_loader()
 			.load(global, user_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or_else(|| ApiError::new_const(StatusCode::BAD_REQUEST, "user not found"))?
 	} else {
 		unreachable!("user should be created or loaded");
@@ -202,7 +202,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 							"connections.$.platform_avatar_url": &user_data.avatar,
 							"connections.$.updated_at": chrono::Utc::now(),
 							// This will trigger a search engine update
-							"search_index.self_dirty": Id::<()>::new(),
+							"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
 						},
 					},
 				)
@@ -212,7 +212,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 					tracing::error!(error = %err, "failed to update user");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
-				.matched_count == 0
+				.matched_count
+				== 0
 			{
 				tracing::error!("failed to update user, no matched count");
 				return Err(ApiError::INTERNAL_SERVER_ERROR);
@@ -240,7 +241,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 						"connections": to_bson(&new_connection).expect("failed to convert to bson"),
 					},
 					"$set": {
-						"search_index.self_dirty": Id::<()>::new(),
+						"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
 					},
 				},
 			)
@@ -253,13 +254,6 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			.modified_count
 			> 0
 		{
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 			global
 				.event_api()
 				.dispatch_event(
@@ -269,7 +263,6 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 						kind: ObjectKind::User,
 						actor: Some(UserPartialModel::from_db(
 							full_user.clone(),
-							&global_config,
 							None,
 							None,
 							&global.config().api.cdn_origin,
@@ -281,7 +274,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 							value: serde_json::to_value(UserConnectionModel::from(UserConnectionPartialModel::from_db(
 								new_connection,
 								full_user.style.active_emote_set_id,
-								global_config.normal_emote_set_slot_capacity,
+								full_user.computed.permissions.emote_set_capacity.unwrap_or_default(),
 							)))
 							.map_err(|e| {
 								tracing::error!(error = %e, "failed to serialize user connection");
@@ -335,6 +328,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				target_id: full_user.id,
 				data: AuditLogUserData::Login { platform },
 			},
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		})
 		.session(&mut session)
 		.await
@@ -394,7 +389,9 @@ pub fn handle_login(
 		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config().api.connections.twitch),
 		Platform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config().api.connections.discord),
 		Platform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config().api.connections.google),
-		_ => return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform")),
+		_ => {
+			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform"));
+		}
 	};
 
 	let csrf = CsrfJwtPayload::new(user_id);

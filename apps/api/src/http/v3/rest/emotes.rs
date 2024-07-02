@@ -12,7 +12,7 @@ use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, Aud
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::role::permissions::{EmotePermission, FlagPermission, PermissionsExt};
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
 use super::types::{EmoteModel, EmotePartialModel};
@@ -128,11 +128,14 @@ pub async fn create_emote(
 		owner_id: user.id,
 		default_name: emote_data.name,
 		tags: emote_data.tags,
-		animated: false, // will be set by the image processor callback
 		image_set: ImageSet { input, outputs: vec![] },
 		flags,
 		attribution: vec![],
 		merged: None,
+		aspect_ratio: -1.0,
+		scores: Default::default(),
+		search_updated_at: None,
+		updated_at: chrono::Utc::now(),
 	};
 
 	let mut session = global.mongo().start_session().await.map_err(|e| {
@@ -162,6 +165,8 @@ pub async fn create_emote(
 				target_id: emote.id,
 				data: AuditLogEmoteData::Upload,
 			},
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		})
 		.session(&mut session)
 		.await
@@ -207,18 +212,11 @@ pub async fn get_emote_by_id(
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found"))?;
 
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 	let owner = global
 		.user_loader()
 		.load_fast(&global, emote.owner_id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let actor_id = auth_session.as_ref().map(|s| s.user_id());
 	let can_view_hidden = if let Some(session) = &auth_session {
@@ -235,7 +233,7 @@ pub async fn get_emote_by_id(
 				Some(owner)
 			}
 		})
-		.map(|owner| UserPartialModel::from_db(owner, &global_config, None, None, &global.config().api.cdn_origin));
+		.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config().api.cdn_origin));
 
 	Ok(Json(EmoteModel::from_db(emote, owner, &global.config().api.cdn_origin)))
 }

@@ -68,7 +68,7 @@ async fn handle(
 			.or_else(|| parse_query_uri(query))
 			.map(|q| parse_json_subscriptions(&q))
 			.transpose()
-			.map_err(|e| (hyper::StatusCode::BAD_REQUEST, "failed to parse query"))?
+			.map_err(|_| (hyper::StatusCode::BAD_REQUEST, "failed to parse query"))?
 	};
 
 	if let Some(upgrade) = upgrade {
@@ -190,8 +190,8 @@ impl Connection {
 			seq: 0,
 			heartbeat_count: 0,
 			id: Id::new(),
-			// We jitter the TTL to prevent all connections from expiring at the same time, which would cause a thundering
-			// herd.
+			// We jitter the TTL to prevent all connections from expiring at the same time, which
+			// would cause a thundering herd.
 			ttl: Box::pin(tokio::time::sleep(jitter(global.config().api.ttl))),
 			topics: TopicMap::default(),
 			// Same as above for the heartbeat interval.

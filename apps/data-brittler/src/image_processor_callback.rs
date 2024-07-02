@@ -11,10 +11,10 @@ use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
 use shared::database::badge::Badge;
 use shared::database::emote::Emote;
-use shared::database::image_set::Image;
+use shared::database::image_set::{Image, ImageSetInput};
 use shared::database::paint::{Paint, PaintLayerId};
 use shared::database::user::User;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::image_processor::Subject;
 
 use crate::global::Global;
@@ -28,7 +28,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		return Ok(());
 	}
 
-	let config = &global.config().extra.image_processor;
+	let config = &global.config().image_processor;
 
 	let subject = Subject::Wildcard.to_string(&config.event_queue_topic_prefix);
 
@@ -69,10 +69,8 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		let message = message.context("consumer closed")?.context("failed to get message")?;
 
 		// decode
-		let subject = match Subject::from_string(
-			&message.subject,
-			&global.config().extra.image_processor.event_queue_topic_prefix,
-		) {
+		let subject = match Subject::from_string(&message.subject, &global.config().image_processor.event_queue_topic_prefix)
+		{
 			Ok(subject) => subject,
 			Err(err) => {
 				tracing::warn!(error = %err, subject = %message.subject, "failed to decode subject");
@@ -173,7 +171,7 @@ async fn handle_success(
 		.files
 		.into_iter()
 		.map(|i| Image {
-			path: i.path,
+			path: i.path.map(|p| p.path).unwrap_or_default(),
 			mime: i.content_type,
 			size: i.size as u64,
 			width: i.width,
@@ -192,9 +190,14 @@ async fn handle_success(
 					doc! {
 						"$set": {
 							"animated": animated,
-							"image_set.input.width": input.width,
-							"image_set.input.height": input.height,
-							"image_set.input.frame_count": input.frame_count,
+							"image_set.input": to_bson(&ImageSetInput::Image(Image {
+								frame_count: input.frame_count,
+								width: input.width,
+								height: input.height,
+								path: input.path.map(|p| p.path).unwrap_or_default(),
+								mime: input.content_type,
+								size: input.size as u64,
+							}))?,
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
@@ -208,9 +211,14 @@ async fn handle_success(
 			let aggregation = vec![
 				doc! {
 					"$set": {
-						"style.active_profile_picture.input.width": input.width,
-						"style.active_profile_picture.input.height": input.height,
-						"style.active_profile_picture.input.frame_count": input.frame_count,
+						"style.active_profile_picture.input": to_bson(&ImageSetInput::Image(Image {
+							frame_count: input.frame_count,
+							width: input.width,
+							height: input.height,
+							path: input.path.map(|p| p.path).unwrap_or_default(),
+							mime: input.content_type,
+							size: input.size as u64,
+						}))?,
 						"style.active_profile_picture.outputs": outputs,
 					},
 				},
@@ -248,9 +256,14 @@ async fn handle_success(
 					},
 					doc! {
 						"$set": {
-							"data.layers.$.data.input.width": input.width,
-							"data.layers.$.data.input.height": input.height,
-							"data.layers.$.data.input.frame_count": input.frame_count,
+							"data.layers.$.data.input": to_bson(&ImageSetInput::Image(Image {
+								frame_count: input.frame_count,
+								width: input.width,
+								height: input.height,
+								path: input.path.map(|p| p.path).unwrap_or_default(),
+								mime: input.content_type,
+								size: input.size as u64,
+							}))?,
 							"data.layers.$.data.outputs": to_bson(&outputs)?,
 						},
 					},
@@ -265,9 +278,14 @@ async fn handle_success(
 					},
 					doc! {
 						"$set": {
-							"image_set.input.width": input.width,
-							"image_set.input.height": input.height,
-							"image_set.input.frame_count": input.frame_count,
+							"image_set.input": to_bson(&ImageSetInput::Image(Image {
+								frame_count: input.frame_count,
+								width: input.width,
+								height: input.height,
+								path: input.path.map(|p| p.path).unwrap_or_default(),
+								mime: input.content_type,
+								size: input.size as u64,
+							}))?,
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},

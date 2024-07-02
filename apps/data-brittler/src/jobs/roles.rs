@@ -2,7 +2,8 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use shared::database::role::Role;
-use shared::database::Collection;
+use shared::database::user::UserId;
+use shared::database::MongoCollection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -59,6 +60,10 @@ impl Job for RolesJob {
 				hoist: false,
 				color: Some(role.color),
 				rank,
+				applied_rank: None,
+				search_updated_at: None,
+				created_by: UserId::nil(),
+				updated_at: chrono::Utc::now(),
 			})
 			.await
 		{

@@ -16,8 +16,8 @@ use shared::database::emote::Emote;
 use shared::database::image_set::Image;
 use shared::database::paint::{Paint, PaintLayerId};
 use shared::database::user::User;
-use shared::database::Collection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::database::MongoCollection;
 use shared::image_processor::Subject;
 use shared::old_types::UserPartialModel;
 
@@ -28,7 +28,7 @@ const JETSTREAM_NAME: &str = "image-processor-callback";
 const JETSTREAM_CONSUMER_NAME: &str = "image-processor-callback-consumer";
 
 pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
-	let config = &global.config().extra.api.image_processor;
+	let config = &global.config().api.image_processor;
 
 	let subject = Subject::Wildcard.to_string(&config.event_queue_topic_prefix);
 
@@ -68,7 +68,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		// decode
 		let subject = match Subject::from_string(
 			&message.subject,
-			&global.config().extra.api.image_processor.event_queue_topic_prefix,
+			&global.config().api.image_processor.event_queue_topic_prefix,
 		) {
 			Ok(subject) => subject,
 			Err(err) => {
@@ -147,7 +147,10 @@ async fn handle_success(
 		.files
 		.into_iter()
 		.map(|i| Image {
-			path: i.path,
+			path: match i.path {
+				Some(path) => path.path,
+				None => "".to_string(),
+			},
 			mime: i.content_type,
 			size: i.size as u64,
 			width: i.width,
@@ -189,17 +192,11 @@ async fn handle_success(
 						target_id: id,
 						data: AuditLogEmoteData::Process,
 					},
+					updated_at: chrono::Utc::now(),
+					search_updated_at: None,
 				})
 				.session(&mut session)
 				.await?;
-
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.ok()
-				.flatten()
-				.context("failed to load global config")?;
 
 			let actor = global
 				.user_loader()
@@ -207,7 +204,7 @@ async fn handle_success(
 				.await
 				.ok()
 				.context("failed to query owner")?
-				.map(|u| UserPartialModel::from_db(u, &global_config, None, None, &global.config().api.cdn_origin));
+				.map(|u| UserPartialModel::from_db(u, None, None, &global.config().api.cdn_origin));
 
 			let change = ChangeField {
 				key: "lifecycle".to_string(),
@@ -389,21 +386,13 @@ async fn handle_fail(
 			.await?;
 
 		if let Some(emote) = emote {
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.ok()
-				.flatten()
-				.context("failed to load global config")?;
-
 			let actor = global
 				.user_loader()
 				.load_fast(global, emote.owner_id)
 				.await
 				.ok()
 				.context("failed to query owner")?
-				.map(|u| UserPartialModel::from_db(u, &global_config, None, None, &global.config().api.cdn_origin));
+				.map(|u| UserPartialModel::from_db(u, None, None, &global.config().api.cdn_origin));
 
 			let change = ChangeField {
 				key: "lifecycle".to_string(),

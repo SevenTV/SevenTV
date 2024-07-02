@@ -12,11 +12,12 @@ use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorPermissions, UserEditorState};
 use shared::database::user::settings::UserSettings;
-use shared::database::user::{User, UserSearchIndex, UserStyle};
-use shared::database::Collection;
+use shared::database::user::{User, UserId, UserStyle};
+use shared::database::MongoCollection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
+use crate::types::EntitlementData;
 use crate::{error, types};
 
 pub struct UsersJob {
@@ -24,7 +25,7 @@ pub struct UsersJob {
 	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,
 	all_connections: FnvHashSet<(Platform, String)>,
 	users: Vec<User>,
-	editors: Vec<UserEditor>,
+	editors: FnvHashMap<(UserId, UserId), UserEditor>,
 	edges: FnvHashSet<EntitlementEdge>,
 }
 
@@ -36,17 +37,29 @@ impl Job for UsersJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping users and user_editors collections");
+
 			User::collection(global.target_db()).drop().await?;
 			let indexes = User::indexes();
 			if !indexes.is_empty() {
 				User::collection(global.target_db()).create_indexes(indexes).await?;
 			}
+
 			UserEditor::collection(global.target_db()).drop().await?;
 			let indexes = UserEditor::indexes();
 			if !indexes.is_empty() {
 				UserEditor::collection(global.target_db()).create_indexes(indexes).await?;
 			}
+
+			// delete all role entitlements
+			EntitlementEdge::collection(global.target_db())
+				.delete_many(doc! {
+					"_id.from.kind": "user",
+					"_id.to.kind": "role",
+				})
+				.await?;
 		}
+
+		let mut edges = FnvHashSet::default();
 
 		tracing::info!("querying all entitlements");
 		let mut entitlements_cursor = global
@@ -62,6 +75,16 @@ impl Job for UsersJob {
 		{
 			// Ignore all entitlements without a user_id
 			if let Some(user_id) = entitlement.user_id {
+				if let EntitlementData::Role { ref_id } = entitlement.data {
+					edges.insert(EntitlementEdge {
+						id: EntitlementEdgeId {
+							from: EntitlementEdgeKind::User { user_id: user_id.into() },
+							to: EntitlementEdgeKind::Role { role_id: ref_id.into() },
+							managed_by: None,
+						},
+					});
+				}
+
 				entitlements.entry(user_id).or_default().push(entitlement);
 			}
 		}
@@ -71,8 +94,8 @@ impl Job for UsersJob {
 			entitlements,
 			all_connections: FnvHashSet::default(),
 			users: vec![],
-			editors: vec![],
-			edges: FnvHashSet::default(),
+			editors: FnvHashMap::default(),
+			edges,
 		})
 	}
 
@@ -199,25 +222,34 @@ impl Job for UsersJob {
 				all_profile_pictures: active_profile_picture.map(|p| vec![p]).unwrap_or_default(),
 			},
 			connections,
-			search_index: UserSearchIndex::default(),
-			bans: vec![],
+			cached_active_emotes: vec![],
+			cached_entitlements: vec![],
+			cached_role_rank: -1,
+			has_bans: false,
+			search_updated_at: None,
+			updated_at: chrono::Utc::now(),
 		});
 
 		for editor in user.editors {
 			if let Some(editor_id) = editor.id {
 				let permissions = UserEditorPermissions::default();
 
-				self.editors.push(UserEditor {
-					id: UserEditorId {
-						user_id: user.id.into(),
-						editor_id: editor_id.into(),
+				let user_id = user.id.into();
+				let editor_id = editor_id.into();
+
+				self.editors.insert(
+					(user_id, editor_id),
+					UserEditor {
+						id: UserEditorId { user_id, editor_id },
+						state: UserEditorState::Accepted,
+						notes: None,
+						permissions,
+						added_by_id: user.id.into(),
+						added_at: editor.added_at.into_chrono(),
+						search_updated_at: None,
+						updated_at: chrono::Utc::now(),
 					},
-					state: UserEditorState::Accepted,
-					notes: None,
-					permissions,
-					added_by_id: user.id.into(),
-					added_at: editor.added_at.into_chrono(),
-				});
+				);
 			}
 		}
 
@@ -251,7 +283,7 @@ impl Job for UsersJob {
 				.with_options(insert_options.clone())
 				.into_future(),
 			editors
-				.insert_many(&self.editors)
+				.insert_many(self.editors.values())
 				.with_options(insert_options.clone())
 				.into_future(),
 			edges.insert_many(&self.edges).with_options(insert_options).into_future(),

@@ -34,11 +34,11 @@ impl AuditLog {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_by_id_loader()
-			.load(self.actor_id.id())
+			.user_loader()
+			.load_fast(global, self.actor_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u.into()))
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
 }

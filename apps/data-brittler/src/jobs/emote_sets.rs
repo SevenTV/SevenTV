@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
 use super::{Job, ProcessOutcome};
@@ -95,6 +95,9 @@ impl Job for EmoteSetsJob {
 			owner_id: Some(emote_set.owner_id.into()),
 			origin_config: None,
 			kind,
+			emotes_changed_since_reindex: true,
+			search_updated_at: None,
+			updated_at: chrono::Utc::now(),
 		});
 
 		if self.emote_sets.len() >= BATCH_SIZE {

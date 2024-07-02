@@ -11,9 +11,9 @@ pub struct UserConnection {
 	pub platform_username: String,
 	pub platform_display_name: String,
 	pub platform_avatar_url: Option<String>,
-	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+	#[serde(with = "crate::database::serde")]
 	pub linked_at: chrono::DateTime<chrono::Utc>,
 	pub allow_login: bool,
 }

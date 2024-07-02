@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use shared::database::emote::EmoteId;
 use shared::database::user::UserId;
-use shared::database::{self, audit_log, Collection};
+use shared::database::{self, audit_log, MongoCollection};
 use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
@@ -327,6 +327,8 @@ impl Job for AuditLogsJob {
 				id: database::audit_log::AuditLogId::with_timestamp(audit_log.id.timestamp().to_chrono()),
 				actor_id: Some(UserId::from(audit_log.actor_id)),
 				data,
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
 			});
 		}
 

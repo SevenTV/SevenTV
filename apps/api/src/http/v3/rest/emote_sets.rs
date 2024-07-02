@@ -51,13 +51,6 @@ pub async fn get_emote_set_by_id(
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote set not found"))?;
 
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 	let actor_id = auth_session.as_ref().map(|s| s.user_id());
 
 	let owner = match emote_set.owner_id {
@@ -65,7 +58,7 @@ pub async fn get_emote_set_by_id(
 			.user_loader()
 			.load_fast(&global, owner_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.and_then(|owner| {
 				if owner.has(FlagPermission::Hidden) && Some(owner.id) != actor_id {
 					None
@@ -73,18 +66,11 @@ pub async fn get_emote_set_by_id(
 					Some(owner)
 				}
 			})
-			.map(|owner| UserPartialModel::from_db(owner, &global_config, None, None, &global.config().api.cdn_origin)),
+			.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config().api.cdn_origin)),
 		None => None,
 	};
 
-	let emotes = load_emote_set(
-		&global,
-		&global_config,
-		std::mem::take(&mut emote_set.emotes),
-		actor_id,
-		false,
-	)
-	.await?;
+	let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), actor_id, false).await?;
 
 	Ok(Json(EmoteSetModel::from_db(emote_set, emotes, owner)))
 }

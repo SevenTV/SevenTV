@@ -1,4 +1,3 @@
-use shared::database::global::GlobalConfig;
 use shared::database::role::RoleId;
 use shared::database::user::editor::{UserEditor, UserEditorState};
 use shared::database::user::{FullUser, UserId};
@@ -38,7 +37,6 @@ pub struct UserModel {
 impl UserModel {
 	pub fn from_db(
 		user: FullUser,
-		global_config: &GlobalConfig,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
 		emote_sets: Vec<EmoteSetPartialModel>,
@@ -47,7 +45,7 @@ impl UserModel {
 	) -> Self {
 		let created_at = user.id.timestamp_ms();
 		let active_emote_set_id = user.style.active_emote_set_id;
-		let partial = UserPartialModel::from_db(user, global_config, paint, badge, cdn_base_url);
+		let partial = UserPartialModel::from_db(user, paint, badge, cdn_base_url);
 
 		Self {
 			id: partial.id,

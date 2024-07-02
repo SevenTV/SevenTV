@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
+use chrono::Utc;
 use hyper::StatusCode;
 use itertools::Itertools;
 use mongodb::bson::{doc, to_bson};
@@ -12,10 +13,10 @@ use shared::database::emote_moderation_request::{
 };
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetEmote, EmoteSetKind};
 use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, UserPermission};
-use shared::database::user::editor::{EditorEmoteSetPermission, EditorUserPermission, UserEditorState};
+use shared::database::user::editor::{EditorEmoteSetPermission, EditorUserPermission, UserEditorId, UserEditorState};
 use shared::database::user::FullUserRef;
-use shared::database::Collection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::UserPartialModel;
 
@@ -39,7 +40,7 @@ impl EmoteSetsMutation {
 			.emote_set_by_id_loader()
 			.load(id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(emote_set.map(|s| EmoteSetOps {
 			id: s.id.into(),
@@ -66,7 +67,7 @@ impl EmoteSetsMutation {
 					.user_loader()
 					.load(global, user_id.id())
 					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?,
 			)
 		};
@@ -83,9 +84,12 @@ impl EmoteSetsMutation {
 		if target.id != user.id && !user.has(EmoteSetPermission::ManageAny) {
 			let editor = global
 				.user_editor_by_id_loader()
-				.load((user_id.id(), user.id))
+				.load(UserEditorId {
+					user_id: user.id,
+					editor_id: user_id.id(),
+				})
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::new_const(
 					StatusCode::NOT_FOUND,
 					"you are not an editor for this user",
@@ -127,6 +131,9 @@ impl EmoteSetsMutation {
 			kind: EmoteSetKind::Normal,
 			origin_config: None,
 			tags: vec![],
+			updated_at: Utc::now(),
+			search_updated_at: None,
+			emotes_changed_since_reindex: false,
 		};
 
 		let mut session = global.mongo().start_session().await.map_err(|e| {
@@ -156,6 +163,8 @@ impl EmoteSetsMutation {
 					target_id: emote_set.id,
 					data: AuditLogEmoteSetData::Create,
 				},
+				updated_at: Utc::now(),
+				search_updated_at: None,
 			})
 			.session(&mut session)
 			.await
@@ -228,7 +237,7 @@ impl EmoteSetOps {
 							.user_loader()
 							.load(global, owner_id)
 							.await
-							.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+							.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 							.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "owner not found"))?,
 					)
 				}
@@ -246,9 +255,12 @@ impl EmoteSetOps {
 					{
 						let editor = global
 							.user_editor_by_id_loader()
-							.load((owner_id, user.id))
+							.load(UserEditorId {
+								user_id: owner_id,
+								editor_id: user.id,
+							})
 							.await
-							.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+							.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 							.ok_or(ApiError::new_const(
 								StatusCode::NOT_FOUND,
 								"you are not an editor for this user",
@@ -274,9 +286,12 @@ impl EmoteSetOps {
 					if target.id != user.id && !user.has(EmoteSetPermission::ManageAny) {
 						let editor = global
 							.user_editor_by_id_loader()
-							.load((owner_id, user.id))
+							.load(UserEditorId {
+								user_id: owner_id,
+								editor_id: user.id,
+							})
 							.await
-							.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+							.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 							.ok_or(ApiError::new_const(
 								StatusCode::NOT_FOUND,
 								"you are not an editor for this user",
@@ -329,13 +344,6 @@ impl EmoteSetOps {
 		self.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
 			.await?;
 
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 		let mut session = global.mongo().start_session().await.map_err(|e| {
 			tracing::error!(error = %e, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
@@ -358,7 +366,7 @@ impl EmoteSetOps {
 					.emote_by_id_loader()
 					.load(id.id())
 					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::NOT_FOUND)?;
 
 				let alias = name.unwrap_or_else(|| emote.default_name.clone());
@@ -396,6 +404,8 @@ impl EmoteSetOps {
 										reason: Some("User requested to add emote to a personal set".to_string()),
 										status: EmoteModerationRequestStatus::Pending,
 										user_id: user.id,
+										search_updated_at: None,
+										updated_at: Utc::now(),
 									}).unwrap(),
 								},
 							)
@@ -450,6 +460,10 @@ impl EmoteSetOps {
 							"_id": self.emote_set.id,
 						},
 						doc! {
+							"$set": {
+								"emotes_changed_since_reindex": true,
+								"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
+							},
 							"$push": {
 								"emotes": to_bson(&emote_set_emote).unwrap(),
 							},
@@ -481,6 +495,8 @@ impl EmoteSetOps {
 								alias,
 							},
 						},
+						updated_at: Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -507,7 +523,6 @@ impl EmoteSetOps {
 							kind: ObjectKind::EmoteSet,
 							actor: Some(UserPartialModel::from_db(
 								user.clone(),
-								&global_config,
 								None,
 								None,
 								&global.config().api.cdn_origin,
@@ -543,8 +558,13 @@ impl EmoteSetOps {
 					.find_one_and_update(
 						doc! {
 							"_id": self.emote_set.id,
+							"emotes.id": id.0,
 						},
 						doc! {
+							"$set": {
+								"emotes_changed_since_reindex": true,
+								"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
+							},
 							"$pull": {
 								"emotes": {
 									"id": id.0,
@@ -569,6 +589,8 @@ impl EmoteSetOps {
 							target_id: self.emote_set.id,
 							data: AuditLogEmoteSetData::RemoveEmote { emote_id: id.id() },
 						},
+						updated_at: Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -604,7 +626,6 @@ impl EmoteSetOps {
 							kind: ObjectKind::EmoteSet,
 							actor: Some(UserPartialModel::from_db(
 								user.clone(),
-								&global_config,
 								None,
 								None,
 								&global.config().api.cdn_origin,
@@ -643,7 +664,7 @@ impl EmoteSetOps {
 						.emote_by_id_loader()
 						.load(id.id())
 						.await
-						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+						.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 						.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found"))?;
 
 					emote.default_name
@@ -671,6 +692,8 @@ impl EmoteSetOps {
 						doc! {
 							"$set": {
 								"emotes.$.alias": &name,
+								"emotes_changed_since_reindex": true,
+								"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
 							},
 						},
 					)
@@ -695,6 +718,8 @@ impl EmoteSetOps {
 								new_name: name.clone(),
 							},
 						},
+						updated_at: Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -738,7 +763,6 @@ impl EmoteSetOps {
 							kind: ObjectKind::EmoteSet,
 							actor: Some(UserPartialModel::from_db(
 								user.clone(),
-								&global_config,
 								None,
 								None,
 								&global.config().api.cdn_origin,
@@ -813,6 +837,8 @@ impl EmoteSetOps {
 							new: name.clone(),
 						},
 					},
+					updated_at: Utc::now(),
+					search_updated_at: None,
 				})
 				.session(&mut session)
 				.await
@@ -869,6 +895,8 @@ impl EmoteSetOps {
 							new: Some(capacity as i32),
 						},
 					},
+					updated_at: Utc::now(),
+					search_updated_at: None,
 				})
 				.session(&mut session)
 				.await
@@ -893,6 +921,8 @@ impl EmoteSetOps {
 			));
 		}
 
+		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
+
 		let emote_set = DbEmoteSet::collection(global.db())
 			.find_one_and_update(doc! { "_id": self.emote_set.id }, doc! { "$set": update })
 			.session(&mut session)
@@ -910,13 +940,6 @@ impl EmoteSetOps {
 		})?;
 
 		if !changes.is_empty() {
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 			global
 				.event_api()
 				.dispatch_event(
@@ -926,7 +949,6 @@ impl EmoteSetOps {
 						kind: ObjectKind::EmoteSet,
 						actor: Some(UserPartialModel::from_db(
 							auth_session.user(global).await?.clone(),
-							&global_config,
 							None,
 							None,
 							&global.config().api.cdn_origin,
@@ -992,6 +1014,8 @@ impl EmoteSetOps {
 						target_id: self.emote_set.id,
 						data: AuditLogEmoteSetData::Delete,
 					},
+					updated_at: Utc::now(),
+					search_updated_at: None,
 				})
 				.session(&mut session)
 				.await
@@ -1000,19 +1024,11 @@ impl EmoteSetOps {
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
 
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 			let body = ChangeMap {
 				id: self.emote_set.id.cast(),
 				kind: ObjectKind::EmoteSet,
 				actor: Some(UserPartialModel::from_db(
 					auth_session.user(global).await?.clone(),
-					&global_config,
 					None,
 					None,
 					&global.config().api.cdn_origin,

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use shared::database::duration::DurationUnit;
 use shared::database::product::Product;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use stripe::{Recurring, RecurringInterval};
 
 use super::{Job, ProcessOutcome};
@@ -69,12 +69,17 @@ impl Job for PricesJob {
 				interval: RecurringInterval::Day,
 				interval_count,
 				..
-			}) => Some(DurationUnit::Days(interval_count)),
+			}) => Some(DurationUnit::Days(interval_count as i32)),
 			Some(Recurring {
 				interval: RecurringInterval::Month,
 				interval_count,
 				..
-			}) => Some(DurationUnit::Months(interval_count)),
+			}) => Some(DurationUnit::Months(interval_count as i32)),
+			Some(Recurring {
+				interval: RecurringInterval::Year,
+				interval_count,
+				..
+			}) => Some(DurationUnit::Months((interval_count * 12) as i32)),
 			Some(Recurring { interval, .. }) => {
 				outcome.errors.push(error::Error::InvalidRecurringInterval(interval));
 				return outcome;
@@ -86,14 +91,14 @@ impl Job for PricesJob {
 
 		let currency = price.currency.expect("no currency found");
 		let unit_amount = price.unit_amount.expect("no unit amount found");
-		currency_prices.insert(currency, unit_amount.max(0) as u64);
+		currency_prices.insert(currency, unit_amount.max(0) as i32);
 
 		let currency_options = price.currency_options.expect("no currency options found");
 		for (currency, unit_amount) in currency_options
 			.into_iter()
 			.filter_map(|(c, o)| o.unit_amount.map(|a| (c, a)))
 		{
-			currency_prices.insert(currency, unit_amount.max(0) as u64);
+			currency_prices.insert(currency, unit_amount.max(0) as i32);
 		}
 
 		self.products.push(Product {
@@ -103,6 +108,9 @@ impl Job for PricesJob {
 			recurring,
 			default_currency: currency,
 			currency_prices,
+			created_at: chrono::Utc::now(),
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		});
 
 		outcome

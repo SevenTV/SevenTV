@@ -1,7 +1,9 @@
 use std::net::SocketAddr;
 
+use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
-use shared::config::{DatabaseConfig, ImageProcessorConfig};
+use scuffle_foundations::telemetry::settings::TelemetrySettings;
+use shared::config::{DatabaseConfig, ImageProcessorConfig, NatsConfig, TypesenseConfig};
 
 #[auto_settings]
 #[serde(default)]
@@ -71,7 +73,7 @@ pub struct ConnectionConfig {
 
 #[auto_settings]
 #[serde(default)]
-pub struct Extra {
+pub struct Config {
 	/// API configuration
 	pub api: Api,
 
@@ -80,6 +82,28 @@ pub struct Extra {
 
 	/// Database configuration
 	pub clickhouse: DatabaseConfig,
+
+	/// NATs configuration
+	pub nats: NatsConfig,
+
+	/// Typesense configuration
+	pub typesense: TypesenseConfig,
+
+	/// Telemetry configuration
+	pub telemetry: TelemetrySettings,
+
+	/// Runtime configuration
+	pub runtime: RuntimeSettings,
 }
 
-pub type Config = shared::config::Config<Extra>;
+impl Bootstrap for Config {
+	type Settings = Self;
+
+	fn telemetry_config(&self) -> Option<TelemetrySettings> {
+		Some(self.telemetry.clone())
+	}
+
+	fn runtime_mode(&self) -> RuntimeSettings {
+		self.runtime.clone()
+	}
+}

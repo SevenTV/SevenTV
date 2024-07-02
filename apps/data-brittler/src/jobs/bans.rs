@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use mongodb::bson::{doc, to_bson};
+use mongodb::bson::doc;
 use shared::database::role::permissions::{Permissions, UserPermission};
 use shared::database::user::ban::UserBan;
 use shared::database::user::{User, UserId};
-use shared::database::Collection;
+use shared::database::MongoCollection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -20,6 +20,15 @@ impl Job for BansJob {
 	const NAME: &'static str = "transfer_bans";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+		if global.config().truncate {
+			tracing::info!("dropping user_bans collections");
+			UserBan::collection(global.target_db()).drop().await?;
+			let indexes = UserBan::indexes();
+			if !indexes.is_empty() {
+				UserBan::collection(global.target_db()).create_indexes(indexes).await?;
+			}
+		}
+
 		Ok(Self { global })
 	}
 
@@ -47,9 +56,10 @@ impl Job for BansJob {
 			removed: None,
 			permissions,
 			template_id: None,
+			user_id: ban.victim_id.into(),
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		};
-
-		let user_ban = to_bson(&user_ban).expect("failed to serialize ban");
 
 		let user_id: UserId = ban.victim_id.into();
 
@@ -59,13 +69,18 @@ impl Job for BansJob {
 					"_id": user_id,
 				},
 				doc! {
-					"$push": {
-						"bans": user_ban,
+					"$set": {
+						"has_bans": true,
 					},
 				},
 			)
 			.await
 		{
+			Ok(_) => outcome.inserted_rows += 1,
+			Err(e) => outcome.errors.push(e.into()),
+		}
+
+		match UserBan::collection(self.global.target_db()).insert_one(user_ban).await {
 			Ok(_) => outcome.inserted_rows += 1,
 			Err(e) => outcome.errors.push(e.into()),
 		}

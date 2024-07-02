@@ -8,7 +8,7 @@ use shared::database::paint::{
 	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
 };
 use shared::database::role::permissions::PaintPermission;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape};
 use shared::old_types::object_id::GqlObjectId;
 
@@ -35,6 +35,8 @@ impl CosmeticsMutation {
 			id,
 			name: definition.name.clone(),
 			data: definition.into_db(id, global).await?,
+			search_updated_at: None,
+			updated_at: chrono::Utc::now(),
 			..Default::default()
 		};
 
@@ -108,6 +110,10 @@ impl CosmeticPaintInput {
 					return Err(ApiError::BAD_REQUEST);
 				};
 
+				// TODO(troy): This allows for anyone to pass any url and we will blindly do a
+				// GET request against it We need to make sure the URL does not go to any
+				// internal services or other places that we don't want and we need to make
+				// sure that the file isnt too big.
 				let image_data = match global.http_client().get(image_url).send().await {
 					Ok(res) if res.status().is_success() => match res.bytes().await {
 						Ok(bytes) => bytes,
@@ -235,12 +241,15 @@ impl CosmeticOps {
 			.paint_by_id_loader()
 			.load(self.id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let name = definition.name.clone();
 		let data = definition.into_db(self.id.id(), global).await?;
-		let update = to_bson(&data).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let update = to_bson(&data).map_err(|err| {
+			tracing::error!(error = %err, "failed to serialize paint data");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 		let paint = Paint::collection(global.db())
 			.find_one_and_update(
@@ -248,6 +257,7 @@ impl CosmeticOps {
 				doc! { "$set": {
 					"name": name,
 					"data": update,
+					"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
 				} },
 			)
 			.await

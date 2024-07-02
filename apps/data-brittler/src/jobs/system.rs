@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use shared::database::emote_set::EmoteSetId;
 use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
-use shared::database::Collection;
+use shared::database::MongoCollection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -43,8 +43,6 @@ impl Job for SystemJob {
 			alerts: GlobalConfigAlerts::default(),
 			emote_set_id,
 			automod_rule_ids: vec![],
-			normal_emote_set_slot_capacity: 600,
-			personal_emote_set_slot_capacity: 5,
 		};
 		match GlobalConfig::collection(self.global.target_db()).insert_one(config).await {
 			Ok(_) => outcome.inserted_rows += 1,

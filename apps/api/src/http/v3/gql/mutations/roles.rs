@@ -8,7 +8,7 @@ use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission};
 use shared::database::role::RoleId;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -66,6 +66,10 @@ impl RolesMutation {
 			hoist: false,
 			color: Some(data.color),
 			rank,
+			created_by: user.id,
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
+			applied_rank: None,
 		};
 
 		shared::database::role::Role::collection(global.db())
@@ -127,7 +131,10 @@ impl RolesMutation {
 
 				update.insert(
 					"permissions",
-					to_bson(&role_permissions).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
+					to_bson(&role_permissions).map_err(|err| {
+						tracing::error!(error = %err, "failed to serialize role permissions");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?,
 				);
 			}
 			(None, None) => {}
@@ -138,6 +145,8 @@ impl RolesMutation {
 				));
 			}
 		}
+
+		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
 		let role = shared::database::role::Role::collection(global.db())
 			.find_one_and_update(
@@ -180,7 +189,7 @@ impl RolesMutation {
 			.role_by_id_loader()
 			.load(role_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {

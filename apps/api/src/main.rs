@@ -1,6 +1,5 @@
-use scuffle_foundations::bootstrap::{bootstrap, Bootstrap, RuntimeSettings};
+use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::settings::cli::Matches;
-use scuffle_foundations::telemetry::settings::TelemetrySettings;
 use tokio::signal::unix::SignalKind;
 
 use crate::config::Config;
@@ -13,32 +12,14 @@ mod global;
 mod http;
 mod image_processor_callback;
 mod jwt;
-
-struct BootstrapWrapper(Config);
-
-impl From<Config> for BootstrapWrapper {
-	fn from(config: Config) -> Self {
-		Self(config)
-	}
-}
-
-impl Bootstrap for BootstrapWrapper {
-	type Settings = Config;
-
-	fn telemetry_config(&self) -> Option<TelemetrySettings> {
-		Some(self.0.telemetry.clone())
-	}
-
-	fn runtime_mode(&self) -> RuntimeSettings {
-		self.0.runtime.clone()
-	}
-}
+mod utils;
+mod mongo_updater;
 
 #[bootstrap]
-async fn main(settings: Matches<BootstrapWrapper>) {
+async fn main(settings: Matches<Config>) {
 	tracing::info!("starting api");
 
-	let global = global::Global::new(settings.settings.0)
+	let global = global::Global::new(settings.settings)
 		.await
 		.expect("failed to initialize global");
 

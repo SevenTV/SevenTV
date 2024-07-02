@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
+use chrono::Utc;
 use mongodb::bson::doc;
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
-use shared::database::user::editor::{EditorEmotePermission, UserEditorState};
-use shared::database::Collection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType};
+use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
+use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
@@ -30,7 +31,7 @@ impl EmotesMutation {
 			.emote_by_id_loader()
 			.load(id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		Ok(EmoteOps { id, emote: emote })
@@ -61,9 +62,12 @@ impl EmoteOps {
 		if user.id != self.emote.owner_id && !user.has(EmotePermission::ManageAny) {
 			let editor = global
 				.user_editor_by_id_loader()
-				.load((self.emote.owner_id, user.id))
+				.load(UserEditorId {
+					user_id: self.emote.owner_id,
+					editor_id: user.id,
+				})
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::FORBIDDEN)?;
 
 			if editor.state != UserEditorState::Accepted || !editor.permissions.has_emote(EditorEmotePermission::Manage) {
@@ -95,7 +99,10 @@ impl EmoteOps {
 				.find_one_and_delete(doc! { "_id": self.id.0 })
 				.session(&mut session)
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|err| {
+					tracing::error!(error = %err, "failed to delete emote");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?
 				.ok_or(ApiError::NOT_FOUND)?;
 
 			AuditLog::collection(global.db())
@@ -106,6 +113,8 @@ impl EmoteOps {
 						target_id: emote.id,
 						data: AuditLogEmoteData::Delete,
 					},
+					updated_at: chrono::Utc::now(),
+					search_updated_at: None,
 				})
 				.session(&mut session)
 				.await
@@ -138,6 +147,8 @@ impl EmoteOps {
 								new: name.clone(),
 							},
 						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -223,6 +234,8 @@ impl EmoteOps {
 									new: owner_id.id(),
 								},
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await
@@ -255,6 +268,8 @@ impl EmoteOps {
 								new: flags,
 							},
 						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -286,6 +301,8 @@ impl EmoteOps {
 								new: tags.clone(),
 							},
 						},
+						updated_at: Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -301,6 +318,8 @@ impl EmoteOps {
 					..Default::default()
 				});
 			}
+
+			update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
 			let emote = shared::database::emote::Emote::collection(global.db())
 				.find_one_and_update(doc! { "_id": self.id.0 }, doc! { "$set": update })
@@ -334,19 +353,11 @@ impl EmoteOps {
 			}
 
 			if !changes.is_empty() {
-				let global_config = global
-					.global_config_loader()
-					.load(())
-					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 				let body = ChangeMap {
 					id: self.id.id(),
 					kind: shared::event_api::types::ObjectKind::Emote,
 					actor: Some(UserPartialModel::from_db(
 						user.clone(),
-						&global_config,
 						None,
 						None,
 						&global.config().api.cdn_origin,
@@ -396,9 +407,8 @@ impl EmoteOps {
 				doc! {
 					"$set": {
 						"merged.target_id": target_id.0,
-					},
-					"$currentDate": {
-						"merged.at": { "$type": "date" },
+						"merged.at": Some(bson::DateTime::from(chrono::Utc::now())),
+						"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
 					},
 				},
 			)
@@ -420,6 +430,8 @@ impl EmoteOps {
 						new_emote_id: target_id.id(),
 					},
 				},
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
 			})
 			.session(&mut session)
 			.await

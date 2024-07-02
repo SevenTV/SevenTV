@@ -12,13 +12,14 @@ use super::product::subscription_timeline::{
 };
 use super::product::{InvoiceId, InvoiceLineItemId, ProductId};
 use super::role::RoleId;
-use super::user::{EntitlementCacheKey, UserId, UserSearchIndex};
-use super::{Collection, GenericCollection};
+use super::user::UserId;
+use super::{MongoCollection, MongoGenericCollection};
 use crate::database::graph::{GraphEdge, GraphKey};
 use crate::database::Id;
+use crate::typesense::types::impl_typesense_type;
 
 /// https://www.mermaidchart.com/raw/db698878-667d-4aac-a7c7-6c310120ff35?version=v0.1&format=svg
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum EntitlementEdgeKind {
 	User {
@@ -36,12 +37,14 @@ pub enum EntitlementEdgeKind {
 	EmoteSet {
 		emote_id: EmoteSetId,
 	},
-	Product {
+	StaticProduct {
 		product_id: ProductId,
 	},
-	SubscriptionTimelinePeriod {
+	SubscriptionTimeline {
 		subscription_timeline_id: SubscriptionTimelineId,
-		period_id: SubscriptionTimelinePeriodId,
+	},
+	SubscriptionTimelinePeriod {
+		subscription_timeline_period_id: SubscriptionTimelinePeriodId,
 	},
 	Promotion {
 		promotion_id: PromotionId,
@@ -50,10 +53,130 @@ pub enum EntitlementEdgeKind {
 		user_subscription_timeline_id: UserSubscriptionTimelineId,
 	},
 	EntitlementGroup {
-		entitlement_group_id: Id<EntitlementGroup>,
+		entitlement_group_id: EntitlementGroupId,
 	},
 	GlobalDefaultEntitlementGroup,
 }
+
+impl std::fmt::Display for EntitlementEdgeKind {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			EntitlementEdgeKind::User { user_id } => write!(f, "user:{}", user_id),
+			EntitlementEdgeKind::Role { role_id } => write!(f, "role:{}", role_id),
+			EntitlementEdgeKind::Badge { badge_id } => write!(f, "badge:{}", badge_id),
+			EntitlementEdgeKind::Paint { paint_id } => write!(f, "paint:{}", paint_id),
+			EntitlementEdgeKind::EmoteSet { emote_id } => write!(f, "emote_set:{}", emote_id),
+			EntitlementEdgeKind::StaticProduct { product_id } => write!(f, "static_product:{}", product_id),
+			EntitlementEdgeKind::SubscriptionTimelinePeriod {
+				subscription_timeline_period_id,
+			} => write!(f, "subscription_timeline_period:{}", subscription_timeline_period_id),
+			EntitlementEdgeKind::SubscriptionTimeline {
+				subscription_timeline_id,
+			} => write!(f, "subscription_timeline:{}", subscription_timeline_id),
+			EntitlementEdgeKind::Promotion { promotion_id } => write!(f, "promotion:{}", promotion_id),
+			EntitlementEdgeKind::UserSubscriptionTimeline {
+				user_subscription_timeline_id,
+			} => write!(f, "user_subscription_timeline:{}", user_subscription_timeline_id),
+			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
+				write!(f, "entitlement_group:{}", entitlement_group_id)
+			}
+			EntitlementEdgeKind::GlobalDefaultEntitlementGroup => write!(f, "global_default_entitlement_group"),
+		}
+	}
+}
+
+impl std::str::FromStr for EntitlementEdgeKind {
+	type Err = &'static str;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		let parts: Vec<&str> = s.splitn(2, ':').collect();
+		if parts.len() < 2 {
+			return Err("invalid format");
+		}
+
+		let kind = match parts[0] {
+			"user" => EntitlementEdgeKind::User {
+				user_id: parts[1].parse().map_err(|_| "invalid user id")?,
+			},
+			"role" => EntitlementEdgeKind::Role {
+				role_id: parts[1].parse().map_err(|_| "invalid role id")?,
+			},
+			"badge" => EntitlementEdgeKind::Badge {
+				badge_id: parts[1].parse().map_err(|_| "invalid badge id")?,
+			},
+			"paint" => EntitlementEdgeKind::Paint {
+				paint_id: parts[1].parse().map_err(|_| "invalid paint id")?,
+			},
+			"emote_set" => EntitlementEdgeKind::EmoteSet {
+				emote_id: parts[1].parse().map_err(|_| "invalid emote set id")?,
+			},
+			"static_product" => EntitlementEdgeKind::StaticProduct {
+				product_id: parts[1].parse().map_err(|_| "invalid product id")?,
+			},
+			"subscription_timeline_period" => EntitlementEdgeKind::SubscriptionTimelinePeriod {
+				subscription_timeline_period_id: parts[1].parse().map_err(|_| "invalid subscription timeline period id")?,
+			},
+			"subscription_timeline" => EntitlementEdgeKind::SubscriptionTimeline {
+				subscription_timeline_id: parts[1].parse().map_err(|_| "invalid subscription timeline id")?,
+			},
+			"promotion" => EntitlementEdgeKind::Promotion {
+				promotion_id: parts[1].parse().map_err(|_| "invalid promotion id")?,
+			},
+			"user_subscription_timeline" => EntitlementEdgeKind::UserSubscriptionTimeline {
+				user_subscription_timeline_id: parts[1].parse().map_err(|_| "invalid user subscription timeline id")?,
+			},
+			"entitlement_group" => EntitlementEdgeKind::EntitlementGroup {
+				entitlement_group_id: parts[1].parse().map_err(|_| "invalid entitlement group id")?,
+			},
+			"global_default_entitlement_group" => EntitlementEdgeKind::GlobalDefaultEntitlementGroup,
+			_ => return Err("invalid kind"),
+		};
+
+		Ok(kind)
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct EntitlementEdgeKindString(pub EntitlementEdgeKind);
+
+impl From<EntitlementEdgeKindString> for EntitlementEdgeKind {
+	fn from(s: EntitlementEdgeKindString) -> Self {
+		s.0
+	}
+}
+
+impl From<EntitlementEdgeKind> for EntitlementEdgeKindString {
+	fn from(k: EntitlementEdgeKind) -> Self {
+		Self(k)
+	}
+}
+
+impl std::fmt::Display for EntitlementEdgeKindString {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		self.0.fmt(f)
+	}
+}
+
+impl Serialize for EntitlementEdgeKindString {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		self.to_string().serialize(serializer)
+	}
+}
+
+impl<'de> Deserialize<'de> for EntitlementEdgeKindString {
+	fn deserialize<D>(deserializer: D) -> Result<EntitlementEdgeKindString, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		let s = String::deserialize(deserializer)?;
+		Ok(EntitlementEdgeKindString(s.parse().map_err(serde::de::Error::custom)?))
+	}
+}
+
+impl_typesense_type!(EntitlementEdgeKindString, String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EntitlementEdgeManagedBy {
@@ -75,6 +198,23 @@ pub enum EntitlementEdgeManagedBy {
 	},
 }
 
+impl std::fmt::Display for EntitlementEdgeManagedBy {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::GiftCode { gift_id } => write!(f, "gift_code:{gift_id}"),
+			Self::RedeemCode { redeem_code_id } => write!(f, "redeem_code:{redeem_code_id}"),
+			Self::Promotion { promotion } => write!(f, "promotion:{promotion}"),
+			Self::UserSubscriptionTimeline {
+				user_subscription_timeline_id,
+			} => write!(f, "user_subscription_timeline:{user_subscription_timeline_id}"),
+			Self::InvoiceLineItem {
+				invoice_id,
+				line_item_id,
+			} => write!(f, "invoice:{invoice_id}:{line_item_id}"),
+		}
+	}
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct EntitlementEdgeId {
 	pub from: EntitlementEdgeKind,
@@ -82,36 +222,16 @@ pub struct EntitlementEdgeId {
 	pub managed_by: Option<EntitlementEdgeManagedBy>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, MongoCollection)]
+#[mongo(collection_name = "entitlement_edges")]
+#[mongo(index(fields("_id.from" = 1, "_id.to" = 1)))]
+#[mongo(index(fields("_id.to" = 1, "_id.from" = 1)))]
+#[mongo(index(fields("_id.managed_by" = 1)))]
+#[serde(deny_unknown_fields)]
 pub struct EntitlementEdge {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: EntitlementEdgeId,
-}
-
-impl Collection for EntitlementEdge {
-	const COLLECTION_NAME: &'static str = "entitlement_edges";
-
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"_id.from": 1,
-					"_id.to": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"_id.to": 1,
-					"_id.from": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"_id.managed_by": 1,
-				})
-				.build(),
-		]
-	}
 }
 
 impl GraphEdge for EntitlementEdge {
@@ -131,13 +251,14 @@ impl GraphKey for EntitlementEdgeKind {
 			self,
 			Self::UserSubscriptionTimeline { .. }
 				| Self::Promotion { .. }
-				| Self::Product { .. }
+				| Self::StaticProduct { .. }
 				| Self::SubscriptionTimelinePeriod { .. }
 				| Self::Badge { .. }
 				| Self::Paint { .. }
 				| Self::EmoteSet { .. }
 				| Self::Role { .. }
 				| Self::EntitlementGroup { .. }
+				| Self::SubscriptionTimeline { .. }
 		)
 	}
 
@@ -146,7 +267,7 @@ impl GraphKey for EntitlementEdgeKind {
 			self,
 			Self::User { .. }
 				| Self::Role { .. }
-				| Self::Product { .. }
+				| Self::StaticProduct { .. }
 				| Self::Promotion { .. }
 				| Self::SubscriptionTimelinePeriod { .. }
 				| Self::UserSubscriptionTimeline { .. }
@@ -166,21 +287,28 @@ impl EntitlementEdge {
 
 pub type EntitlementGroupId = Id<EntitlementGroup>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, MongoCollection)]
+#[mongo(collection_name = "entitlement_groups")]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[serde(deny_unknown_fields)]
 pub struct EntitlementGroup {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
 	pub id: EntitlementGroupId,
 	pub name: String,
 	pub description: Option<String>,
+	pub tags: Vec<String>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl Collection for EntitlementGroup {
-	const COLLECTION_NAME: &'static str = "entitlement_groups";
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	[
-		GenericCollection::new::<EntitlementEdge>(),
-		GenericCollection::new::<EntitlementGroup>(),
+		MongoGenericCollection::new::<EntitlementEdge>(),
+		MongoGenericCollection::new::<EntitlementGroup>(),
 	]
 }
 
@@ -190,57 +318,62 @@ pub struct CalculatedEntitlements {
 	pub badges: HashSet<BadgeId>,
 	pub paints: HashSet<PaintId>,
 	pub emote_sets: HashSet<EmoteSetId>,
-	pub products: HashSet<ProductId>,
+	pub static_products: HashSet<ProductId>,
 	pub promotions: HashSet<PromotionId>,
 	pub user_subscription_timelines: HashSet<UserSubscriptionTimelineId>,
-	pub subscription_timelines: HashSet<(SubscriptionTimelineId, SubscriptionTimelinePeriodId)>,
+	pub subscription_periods_timelines: HashSet<SubscriptionTimelinePeriodId>,
 	pub entitlement_groups: HashSet<EntitlementGroupId>,
 }
 
 impl CalculatedEntitlements {
-	pub fn new(edges: &[EntitlementEdge]) -> Self {
+	pub fn new(edges: impl IntoIterator<Item = EntitlementEdgeKind>) -> Self {
 		let mut roles = HashSet::new();
 		let mut badges = HashSet::new();
 		let mut paints = HashSet::new();
 		let mut emote_sets = HashSet::new();
-		let mut products = HashSet::new();
+		let mut static_products = HashSet::new();
+		let mut subscription_timeline_periods = HashSet::new();
 		let mut subscription_timelines = HashSet::new();
 		let mut promotions = HashSet::new();
 		let mut user_subscription_timelines = HashSet::new();
 		let mut entitlement_groups = HashSet::new();
 
-		edges.iter().for_each(|edge| match &edge.id.to {
+		edges.into_iter().for_each(|to| match to {
 			EntitlementEdgeKind::Role { role_id } => {
-				roles.insert(role_id.clone());
+				roles.insert(role_id);
 			}
 			EntitlementEdgeKind::Badge { badge_id } => {
-				badges.insert(badge_id.clone());
+				badges.insert(badge_id);
 			}
 			EntitlementEdgeKind::Paint { paint_id } => {
-				paints.insert(paint_id.clone());
+				paints.insert(paint_id);
 			}
 			EntitlementEdgeKind::EmoteSet { emote_id } => {
-				emote_sets.insert(emote_id.clone());
+				emote_sets.insert(emote_id);
 			}
-			EntitlementEdgeKind::Product { product_id } => {
-				products.insert(product_id.clone());
+			EntitlementEdgeKind::StaticProduct { product_id } => {
+				static_products.insert(product_id);
 			}
 			EntitlementEdgeKind::SubscriptionTimelinePeriod {
-				subscription_timeline_id,
-				period_id,
+				subscription_timeline_period_id,
 			} => {
-				subscription_timelines.insert((subscription_timeline_id.clone(), period_id.clone()));
+				subscription_timeline_periods.insert(subscription_timeline_period_id);
+			}
+			EntitlementEdgeKind::SubscriptionTimeline {
+				subscription_timeline_id,
+			} => {
+				subscription_timelines.insert(subscription_timeline_id);
 			}
 			EntitlementEdgeKind::Promotion { promotion_id } => {
-				promotions.insert(promotion_id.clone());
+				promotions.insert(promotion_id);
 			}
 			EntitlementEdgeKind::UserSubscriptionTimeline {
 				user_subscription_timeline_id,
 			} => {
-				user_subscription_timelines.insert(user_subscription_timeline_id.clone());
+				user_subscription_timelines.insert(user_subscription_timeline_id);
 			}
 			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
-				entitlement_groups.insert(entitlement_group_id.clone());
+				entitlement_groups.insert(entitlement_group_id);
 			}
 			EntitlementEdgeKind::User { .. } => {
 				tracing::warn!("user entitlements are not supported in this context")
@@ -253,59 +386,8 @@ impl CalculatedEntitlements {
 			badges,
 			paints,
 			emote_sets,
-			products,
-			subscription_timelines,
-			promotions,
-			user_subscription_timelines,
-			entitlement_groups,
-		}
-	}
-
-	pub fn new_from_cache(cache: &UserSearchIndex) -> Self {
-		let mut roles = HashSet::new();
-		let badges = HashSet::from_iter(cache.entitled_badges.iter().cloned());
-		let paints = HashSet::from_iter(cache.entitled_paints.iter().cloned());
-		let emote_sets = HashSet::from_iter(cache.entitled_emote_set_ids.iter().cloned());
-		let mut products = HashSet::new();
-		let mut subscription_timelines = HashSet::new();
-		let mut promotions = HashSet::new();
-		let mut user_subscription_timelines = HashSet::new();
-		let mut entitlement_groups = HashSet::new();
-
-		cache.entitlement_cache_keys.iter().for_each(|key| match key {
-			EntitlementCacheKey::Role { role_id } => {
-				roles.insert(role_id.clone());
-			}
-			EntitlementCacheKey::Product { product_id } => {
-				products.insert(product_id.clone());
-			}
-			EntitlementCacheKey::Promotion { promotion_id } => {
-				promotions.insert(promotion_id.clone());
-			}
-			EntitlementCacheKey::SubscriptionTimeline { .. } => {}
-			EntitlementCacheKey::SubscriptionTimelinePeriod {
-				subscription_timeline_id,
-				period_id,
-			} => {
-				subscription_timelines.insert((subscription_timeline_id.clone(), period_id.clone()));
-			}
-			EntitlementCacheKey::UserSubscriptionTimeline {
-				user_subscription_timeline_id,
-			} => {
-				user_subscription_timelines.insert(user_subscription_timeline_id.clone());
-			}
-			EntitlementCacheKey::EntitlementGroup { entitlement_group_id } => {
-				entitlement_groups.insert(entitlement_group_id.clone());
-			}
-		});
-
-		Self {
-			roles,
-			badges,
-			paints,
-			emote_sets,
-			products,
-			subscription_timelines,
+			static_products,
+			subscription_periods_timelines: subscription_timeline_periods,
 			promotions,
 			user_subscription_timelines,
 			entitlement_groups,

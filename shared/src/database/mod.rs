@@ -1,5 +1,8 @@
+pub mod entitlement_edge;
 pub mod graph;
 mod id;
+pub mod loader;
+pub mod serde;
 mod types;
 
 pub use id::*;
@@ -21,7 +24,7 @@ pub async fn setup_database(config: &DatabaseConfig, init_db: bool) -> anyhow::R
 		.ok_or_else(|| anyhow::anyhow!("No default database"))?;
 
 	if init_db {
-		init_database(&db).await?;
+		init_mongo(&db).await?;
 	}
 
 	Ok(client)

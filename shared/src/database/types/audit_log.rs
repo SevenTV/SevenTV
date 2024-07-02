@@ -4,41 +4,30 @@ use super::role::RoleId;
 use super::ticket::TicketId;
 use super::user::connection::Platform;
 use super::user::UserId;
-use super::{Collection, GenericCollection};
+use super::{MongoCollection, MongoGenericCollection};
 use crate::database::Id;
 
 pub type AuditLogId = Id<AuditLog>;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
+#[mongo(collection_name = "audit_logs")]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct AuditLog {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: AuditLogId,
 	pub actor_id: Option<UserId>,
 	pub data: AuditLogData,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl Collection for AuditLog {
-	const COLLECTION_NAME: &'static str = "audit_logs";
-
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"actor_id": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"data.target_id": 1,
-				})
-				.build(),
-		]
-	}
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	[GenericCollection::new::<AuditLog>()]
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	[MongoGenericCollection::new::<AuditLog>()]
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

@@ -8,8 +8,8 @@ license = "Apache-2.0 with Commons Clause"
 tokio = { version = "1.38", features = ["full"] }
 scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
 scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["client"] }
-prost = "0.12.6"
-tonic = { version = "0.11" }
+prost = "0.13"
+tonic = { version = "0.12" }
 
 serde = { version = "1.0", features = ["derive"] }
 bitmask-enum = "2"
@@ -42,11 +42,14 @@ utoipa = { version = "4.2", features = ["repr"] }
 itertools = "0.13"
 mongodb = "3.0"
 bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
-clickhouse = "0.11.6"
+clickhouse = "0.12"
+typesense_codegen = { git = "https://github.com/typesense/typesense-rust.git" }
 
 tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
 axum = "0.7"
 tower = "0.4"
+
+typed-builder = "0.19.1"
 
 shared = { workspace = true }
 

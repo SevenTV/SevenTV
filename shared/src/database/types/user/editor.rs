@@ -1,26 +1,59 @@
 use bitmask_enum::bitmask;
 
 use super::UserId;
-use crate::database::types::GenericCollection;
-use crate::database::Collection;
+use crate::database::types::MongoGenericCollection;
+use crate::database::MongoCollection;
+use crate::typesense::types::impl_typesense_type;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Copy, Default, serde::Deserialize, serde::Serialize, Hash, PartialEq, Eq)]
 pub struct UserEditorId {
 	pub user_id: UserId,
 	pub editor_id: UserId,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+impl std::fmt::Display for UserEditorId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}:{}", self.user_id, self.editor_id)
+	}
+}
+
+impl std::str::FromStr for UserEditorId {
+	type Err = &'static str;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		let parts = s.split(':').collect::<Vec<_>>();
+		if parts.len() != 2 {
+			return Err("invalid user editor id");
+		}
+
+		Ok(Self {
+			user_id: parts[0].parse().map_err(|_| "invalid user id")?,
+			editor_id: parts[1].parse().map_err(|_| "invalid editor id")?,
+		})
+	}
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "user_editors")]
+#[mongo(index(fields("_id.user_id" = 1, "_id.editor_id" = 1)))]
+#[mongo(index(fields("_id.editor_id" = 1, "_id.user_id" = 1)))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct UserEditor {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: UserEditorId,
 	pub state: UserEditorState,
 	pub notes: Option<String>,
 	pub permissions: UserEditorPermissions,
 	pub added_by_id: UserId,
-	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+	#[serde(with = "crate::database::serde")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 macro_rules! impl_bits {
@@ -141,7 +174,7 @@ impl UserEditorPermissions {
 }
 
 #[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr, PartialEq, Eq)]
-#[repr(u8)]
+#[repr(i32)]
 pub enum UserEditorState {
 	#[default]
 	Pending = 0,
@@ -149,27 +182,8 @@ pub enum UserEditorState {
 	Rejected = 2,
 }
 
-impl Collection for UserEditor {
-	const COLLECTION_NAME: &'static str = "user_editors";
+impl_typesense_type!(UserEditorState, Int32);
 
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"_id.user_id": 1,
-					"_id.editor_id": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"_id.editor_id": 1,
-					"_id.user_id": 1,
-				})
-				.build(),
-		]
-	}
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	[GenericCollection::new::<UserEditor>()]
+pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	[MongoGenericCollection::new::<UserEditor>()]
 }

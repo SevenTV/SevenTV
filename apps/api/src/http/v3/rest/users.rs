@@ -13,9 +13,9 @@ use serde::Deserialize;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::role::permissions::{FlagPermission, PermissionsExt, UserPermission};
 use shared::database::user::connection::Platform;
-use shared::database::user::editor::EditorUserPermission;
+use shared::database::user::editor::{EditorUserPermission, UserEditorId};
 use shared::database::user::{User, UserId};
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::UserConnectionPartialModel;
 
 use super::types::{EmoteSetModel, EmoteSetPartialModel, PresenceModel, UserConnectionModel, UserEditorModel, UserModel};
@@ -72,7 +72,7 @@ pub async fn get_user_by_id(
 		.user_loader()
 		.load(&global, id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::NOT_FOUND)?;
 
 	let actor_id = auth_session.as_ref().map(|s| s.user_id());
@@ -80,13 +80,6 @@ pub async fn get_user_by_id(
 	if user.has(FlagPermission::Hidden) && Some(user.id) != actor_id {
 		return Err(ApiError::NOT_FOUND);
 	}
-
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let emote_sets = global
 		.emote_set_by_user_id_loader()
@@ -107,14 +100,13 @@ pub async fn get_user_by_id(
 			.emote_set_by_id_loader()
 			.load(emote_set_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 	} else {
 		None
 	};
 
 	let mut old_model = UserModel::from_db(
 		user,
-		&global_config,
 		None,
 		None,
 		emote_sets
@@ -129,14 +121,7 @@ pub async fn get_user_by_id(
 	);
 
 	if let Some(mut active_emote_set) = active_emote_set {
-		let emotes = load_emote_set(
-			&global,
-			&global_config,
-			std::mem::take(&mut active_emote_set.emotes),
-			actor_id,
-			false,
-		)
-		.await?;
+		let emotes = load_emote_set(&global, std::mem::take(&mut active_emote_set.emotes), actor_id, false).await?;
 		let model = EmoteSetModel::from_db(active_emote_set, emotes, None);
 
 		// TODO: this seems a bit excessive im not sure if we need to do this as it
@@ -188,7 +173,7 @@ pub async fn upload_user_profile_picture(
 				.user_loader()
 				.load(&global, id)
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?,
 		),
 	};
@@ -205,9 +190,12 @@ pub async fn upload_user_profile_picture(
 	if other_user.is_some() && !user.has(UserPermission::ManageAny) {
 		if !global
 			.user_editor_by_id_loader()
-			.load((target_user.id, user.id))
+			.load(UserEditorId {
+				user_id: target_user.id,
+				editor_id: user.id,
+			})
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|editor| editor.permissions.has_user(EditorUserPermission::ManageProfile))
 			.unwrap_or_default()
 		{
@@ -282,6 +270,7 @@ pub async fn upload_user_profile_picture(
 			doc! {
 				"$set": {
 					"style.active_profile_picture": image_set,
+					"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
 				}
 			},
 		)
@@ -341,15 +330,16 @@ pub async fn get_user_by_platform_id(
 	let user = global
 		.user_loader()
 		.load_user(
+			&global,
 			global
 				.user_by_platform_id_loader()
 				.load((platform, platform_id.clone()))
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?,
 		)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let actor_id = auth_session.as_ref().map(|s| s.user_id());
 	let can_view_hidden = if let Some(session) = &auth_session {
@@ -368,17 +358,10 @@ pub async fn get_user_by_platform_id(
 		.find(|c| c.platform == platform && c.platform_id == platform_id)
 		.ok_or(ApiError::NOT_FOUND)?;
 
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 	let mut connection_model: UserConnectionModel = UserConnectionPartialModel::from_db(
 		connection.clone(),
 		user.style.active_emote_set_id,
-		global_config.normal_emote_set_slot_capacity as i32,
+		user.computed.permissions.emote_set_capacity.unwrap_or_default().max(0),
 	)
 	.into();
 
@@ -386,7 +369,7 @@ pub async fn get_user_by_platform_id(
 		.user_editor_by_user_id_loader()
 		.load(user.id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default()
 		.into_iter()
 		.filter_map(|e| UserEditorModel::from_db(e))
@@ -397,7 +380,7 @@ pub async fn get_user_by_platform_id(
 		.emote_set_by_user_id_loader()
 		.load(user.id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default()
 		.into_iter()
 		.map(|s| EmoteSetPartialModel::from_db(s, None))
@@ -410,30 +393,15 @@ pub async fn get_user_by_platform_id(
 			.emote_set_by_id_loader()
 			.load(emote_set_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		{
-			let emotes = load_emote_set(
-				&global,
-				&global_config,
-				std::mem::take(&mut emote_set.emotes),
-				actor_id,
-				can_view_hidden,
-			)
-			.await?;
+			let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), actor_id, can_view_hidden).await?;
 			let user_virtual_set = EmoteSetModel::from_db(emote_set, emotes, None);
 			connection_model.emote_set = Some(user_virtual_set);
 		}
 	};
 
-	let user_full = UserModel::from_db(
-		user,
-		&global_config,
-		None,
-		None,
-		emote_sets,
-		editors,
-		&global.config().api.cdn_origin,
-	);
+	let user_full = UserModel::from_db(user, None, None, emote_sets, editors, &global.config().api.cdn_origin);
 
 	connection_model.user = Some(user_full);
 

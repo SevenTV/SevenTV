@@ -8,8 +8,8 @@ use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUs
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
 use shared::database::user::User;
-use shared::database::Collection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::database::MongoCollection;
 use shared::old_types::cosmetic::CosmeticKind;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::UserPartialModel;
@@ -65,13 +65,6 @@ impl UserOps {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 		let mut update = doc! {};
 		let mut update_pull = doc! {};
 
@@ -81,7 +74,7 @@ impl UserOps {
 				.emote_set_by_id_loader()
 				.load(emote_set_id.id())
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?;
 
 			update.insert("style.active_emote_set_id", emote_set_id.0);
@@ -94,6 +87,8 @@ impl UserOps {
 		if let Some(true) = data.unlink {
 			update_pull.insert("connections", doc! { "platform_id": &id });
 		}
+
+		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
 		let Some(user) = User::collection(global.db())
 			.find_one_and_update(
@@ -131,7 +126,6 @@ impl UserOps {
 						kind: ObjectKind::User,
 						actor: Some(UserPartialModel::from_db(
 							authed_user.clone(),
-							&global_config,
 							None,
 							None,
 							&global.config().api.cdn_origin,
@@ -166,7 +160,7 @@ impl UserOps {
 					})?;
 
 					if let Some(set) = set {
-						let emotes = load_emote_set(global, &global_config, set.emotes.clone(), None, false)
+						let emotes = load_emote_set(global, set.emotes.clone(), None, false)
 							.await
 							.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -183,7 +177,7 @@ impl UserOps {
 			})?;
 
 			let new_set_id = emote_set.id;
-			let emotes = load_emote_set(global, &global_config, emote_set.emotes.clone(), None, false)
+			let emotes = load_emote_set(global, emote_set.emotes.clone(), None, false)
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 			let new_set = EmoteSetModel::from_db(emote_set, emotes, None);
@@ -224,7 +218,6 @@ impl UserOps {
 							kind: ObjectKind::User,
 							actor: Some(UserPartialModel::from_db(
 								authed_user.clone(),
-								&global_config,
 								None,
 								None,
 								&global.config().api.cdn_origin,
@@ -248,10 +241,13 @@ impl UserOps {
 			}
 		}
 
+		let full_user = global.user_loader().load_fast_user(global, user).await.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
 		Ok(Some(
-			user.connections
-				.into_iter()
-				.map(|c| Some(UserConnection::from_db(c, &user.style, &global_config)))
+			full_user.connections
+				.iter()
+				.cloned()
+				.map(|c| Some(UserConnection::from_db(full_user.computed.permissions.emote_set_capacity.unwrap_or_default(), c, &full_user.style)))
 				.collect(),
 		))
 	}
@@ -308,6 +304,8 @@ impl UserOps {
 									editor_id: editor_id.id(),
 								},
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await
@@ -326,7 +324,10 @@ impl UserOps {
 						},
 						doc! {
 							"$set": {
-								"permissions": to_bson(&permissions.to_db()).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
+								"permissions": to_bson(&permissions.to_db()).map_err(|err| {
+									tracing::error!(error = %err, "failed to serialize permissions");
+									ApiError::INTERNAL_SERVER_ERROR
+								})?,
 							},
 						},
 					)
@@ -350,6 +351,8 @@ impl UserOps {
 									editor_id: editor_id.id(),
 								},
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await
@@ -370,7 +373,7 @@ impl UserOps {
 			.user_editor_by_user_id_loader()
 			.load(self.id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
 		Ok(Some(
@@ -401,7 +404,7 @@ impl UserOps {
 			.user_loader()
 			.load(global, self.id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let mut changes = vec![];
@@ -535,13 +538,6 @@ impl UserOps {
 		};
 
 		if let Ok(true) = result {
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 			global
 				.event_api()
 				.dispatch_event(
@@ -551,7 +547,6 @@ impl UserOps {
 						kind: ObjectKind::User,
 						actor: Some(UserPartialModel::from_db(
 							authed_user.clone(),
-							&global_config,
 							None,
 							None,
 							&global.config().api.cdn_origin,
@@ -596,26 +591,18 @@ impl UserOps {
 			.role_by_id_loader()
 			.load(role_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 		let mut changes = ChangeMap {
 			id: self.id.0.cast(),
 			kind: ObjectKind::User,
 			actor: Some(UserPartialModel::from_db(
 				auth_session.user(global).await?.clone(),
-				&global_config,
 				None,
 				None,
 				&global.config().api.cdn_origin,
@@ -664,6 +651,8 @@ impl UserOps {
 							target_id: self.id.id(),
 							data: AuditLogUserData::AddRole { role_id: role_id.id() },
 						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -714,6 +703,8 @@ impl UserOps {
 								target_id: self.id.id(),
 								data: AuditLogUserData::RemoveRole { role_id: role_id.id() },
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await

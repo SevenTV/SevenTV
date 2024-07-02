@@ -1,22 +1,26 @@
 use super::image_set::ImageSet;
-use super::GenericCollection;
-use crate::database::{Collection, Id};
+use super::user::UserId;
+use super::MongoGenericCollection;
+use crate::database::{Id, MongoCollection};
 
 pub type PaintId = Id<Paint>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "paints")]
 #[serde(deny_unknown_fields)]
 pub struct Paint {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: PaintId,
 	pub name: String,
 	pub description: String,
 	pub tags: Vec<String>,
 	pub data: PaintData,
-}
-
-impl Collection for Paint {
-	const COLLECTION_NAME: &'static str = "paints";
+	pub created_by: UserId,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
@@ -97,6 +101,6 @@ pub struct PaintShadow {
 	pub blur: f64,
 }
 
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	[GenericCollection::new::<Paint>()]
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	[MongoGenericCollection::new::<Paint>()]
 }

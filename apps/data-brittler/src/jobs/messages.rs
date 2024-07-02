@@ -2,22 +2,26 @@ use std::mem;
 use std::sync::Arc;
 
 use bson::doc;
-use fnv::FnvHashMap;
+use fnv::{FnvHashMap, FnvHashSet};
 use futures::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
+use shared::database::emote::EmoteId;
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
-use shared::database::Collection;
+use shared::database::MongoCollection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
 
+const BATCH_SIZE: usize = 50_000;
+
 pub struct MessagesJob {
 	global: Arc<Global>,
 	read: FnvHashMap<ObjectId, bool>,
+	dedupe_mod_requests: FnvHashSet<(EmoteId, EmoteModerationRequestKind)>,
 	mod_requests: Vec<EmoteModerationRequest>,
 }
 
@@ -50,7 +54,8 @@ impl Job for MessagesJob {
 		Ok(Self {
 			global,
 			read,
-			mod_requests: vec![],
+			dedupe_mod_requests: FnvHashSet::default(),
+			mod_requests: Vec::new(),
 		})
 	}
 
@@ -87,31 +92,41 @@ impl Job for MessagesJob {
 			_ => EmoteModerationRequestStatus::Pending,
 		};
 
-		self.mod_requests.push(EmoteModerationRequest {
-			id,
-			user_id: message.author_id.into(),
-			kind,
-			reason: None,
-			emote_id,
-			status,
-			country_code,
-			assigned_to: vec![],
-			priority: 0,
-		});
+		if self.dedupe_mod_requests.insert((emote_id, kind)) {
+			self.mod_requests.push(EmoteModerationRequest {
+				id,
+				user_id: message.author_id.into(),
+				kind,
+				reason: None,
+				emote_id,
+				status,
+				country_code,
+				assigned_to: vec![],
+				priority: 0,
+				search_updated_at: None,
+				updated_at: chrono::Utc::now(),
+			});
+		} else {
+			// Happens too often, so we just ignore it
 
-		if self.mod_requests.len() > 50_000 {
-			let Ok(res) = EmoteModerationRequest::collection(self.global.target_db())
+			// outcome.errors.push(error::Error::DuplicateEmoteModRequest {
+			// 	emote_id: mod_request.emote_id,
+			// 	kind: mod_request.kind,
+			// });
+		}
+
+		if self.mod_requests.len() >= BATCH_SIZE {
+			match EmoteModerationRequest::collection(self.global.target_db())
 				.insert_many(mem::take(&mut self.mod_requests))
-				.with_options(InsertManyOptions::builder().ordered(false).build())
 				.await
-			else {
-				outcome.errors.push(error::Error::InsertMany);
-				return outcome;
-			};
-
-			outcome.inserted_rows += res.inserted_ids.len() as u64;
-			if res.inserted_ids.len() != self.mod_requests.len() {
-				outcome.errors.push(error::Error::InsertMany);
+			{
+				Ok(res) => {
+					outcome.inserted_rows += res.inserted_ids.len() as u64;
+					if res.inserted_ids.len() < BATCH_SIZE {
+						return outcome.with_error(error::Error::InsertMany);
+					}
+				}
+				Err(e) => return outcome.with_error(e),
 			}
 		}
 
@@ -124,7 +139,7 @@ impl Job for MessagesJob {
 		let mut outcome = ProcessOutcome::default();
 
 		match EmoteModerationRequest::collection(self.global.target_db())
-			.insert_many(&self.mod_requests)
+		.insert_many(&self.mod_requests)
 			.with_options(InsertManyOptions::builder().ordered(false).build())
 			.await
 		{

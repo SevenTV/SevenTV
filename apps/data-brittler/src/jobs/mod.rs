@@ -169,6 +169,8 @@ pub trait Job: Sized + Send + Sync {
 }
 
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
+	tracing::info!("starting jobs");
+
 	let timer = Instant::now();
 
 	let futures: FuturesUnordered<Pin<Box<dyn Future<Output = anyhow::Result<JobOutcome>> + Send>>> =

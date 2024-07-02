@@ -37,6 +37,12 @@ pub enum Error {
 	#[error("invalid recurring interval")]
 	InvalidRecurringInterval(stripe::RecurringInterval),
 
+	// #[error("duplicate emote moderation request")]
+	// DuplicateEmoteModRequest {
+	// 	emote_id: EmoteId,
+	// 	kind: EmoteModerationRequestKind,
+	// },
+
 	#[error("reqwest error")]
 	Reqwest(#[from] reqwest::Error),
 	#[error("failed to read image")]
@@ -72,6 +78,7 @@ impl Error {
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
 			Self::InvalidRecurringInterval(_) => "InvalidRecurringInterval",
+			// Self::DuplicateEmoteModRequest { .. } => "DuplicateEmoteModRequest",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
 			Self::Reqwest(_) => "Reqwest",
 			Self::Io(_) => "Io",
@@ -98,6 +105,7 @@ impl Error {
 			Self::InvalidStripeId(id) => format!("id: {}", id),
 			Self::ImageProcessor(e) => e.message.clone(),
 			Self::ImageDownload { cosmetic_id, status } => format!("cosmetic id: {}, status: {}", cosmetic_id, status),
+			// Self::DuplicateEmoteModRequest { emote_id, kind } => format!("emote id: {}, kind: {:?}", emote_id, kind),
 			Self::NotImplemented(msg) => msg.to_string(),
 			e => format!("{:?}", e),
 		}

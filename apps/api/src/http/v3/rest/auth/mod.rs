@@ -11,7 +11,7 @@ use mongodb::bson::doc;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
@@ -150,6 +150,8 @@ async fn logout(
 				target_id: auth_session.user_id(),
 				data: AuditLogUserData::Logout,
 			},
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		})
 		.session(&mut session)
 		.await

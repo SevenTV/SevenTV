@@ -7,7 +7,7 @@ use mongodb::bson::doc;
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::session::UserSession;
 use shared::database::user::{FullUser, UserId};
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use tokio::sync::OnceCell;
 
 use super::cookies::Cookies;
@@ -47,7 +47,7 @@ impl AuthSession {
 					.user_loader()
 					.load(global, self.user_id())
 					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::UNAUTHORIZED)?)
 			})
 			.await

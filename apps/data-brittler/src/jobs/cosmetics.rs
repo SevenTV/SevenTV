@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::vec;
+use std::{io, vec};
 
 use bson::oid::ObjectId;
 use shared::database::badge::Badge;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintLayer, PaintLayerId, PaintLayerType};
-use shared::database::{self, Collection};
-use tokio::io;
+use shared::database::user::UserId;
+use shared::database::{self, MongoCollection};
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -108,7 +108,9 @@ impl Job for CosmeticsJob {
 						}
 					}
 					Err(e) => return outcome.with_error(e),
-					_ => return outcome.with_error(error::Error::NotImplemented("missing image upload info")),
+					_ => {
+						return outcome.with_error(error::Error::NotImplemented("missing image upload info"));
+					}
 				};
 
 				let image_set = ImageSet {
@@ -121,9 +123,12 @@ impl Job for CosmeticsJob {
 					.insert_one(Badge {
 						id: cosmetic.id.into(),
 						name: cosmetic.name,
-						description: tooltip,
+						description: Some(tooltip),
 						tags,
 						image_set,
+						updated_at: chrono::Utc::now(),
+						created_by_id: UserId::nil(),
+						search_updated_at: None,
 					})
 					.await
 				{
@@ -228,6 +233,9 @@ impl Job for CosmeticsJob {
 						description: String::new(),
 						tags: vec![],
 						data: paint_data,
+						created_by: UserId::nil(),
+						search_updated_at: None,
+						updated_at: chrono::Utc::now(),
 					})
 					.await
 				{

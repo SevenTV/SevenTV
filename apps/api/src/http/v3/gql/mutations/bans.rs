@@ -6,11 +6,11 @@ use mongodb::bson::{doc, to_bson};
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogUserData};
 use shared::database::role::permissions::{
-	EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
+	AdminPermission, EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
 };
 use shared::database::user::ban::UserBan;
 use shared::database::user::User;
-use shared::database::{Collection, Id};
+use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::BanEffect;
 
@@ -66,13 +66,15 @@ impl BansMutation {
 			.user_loader()
 			.load(global, victim_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
 
 		let actor = auth_session.user(&global).await?;
 		if actor.id == victim.id {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "cannot ban yourself"));
-		} else if actor.computed.highest_role_rank <= victim.computed.highest_role_rank {
+		} else if actor.computed.highest_role_rank <= victim.computed.highest_role_rank
+			&& !actor.has(AdminPermission::SuperAdmin)
+		{
 			return Err(ApiError::new_const(
 				StatusCode::FORBIDDEN,
 				"can only ban users with lower roles",
@@ -81,6 +83,7 @@ impl BansMutation {
 
 		let ban = UserBan {
 			id: Default::default(),
+			user_id: victim.id,
 			template_id: None,
 			expires_at: expire_at,
 			created_by_id: actor.id,
@@ -88,6 +91,8 @@ impl BansMutation {
 			tags: vec![],
 			removed: None,
 			permissions: ban_effect_to_permissions(effects),
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		};
 
 		let mut session = global.mongo().start_session().await.map_err(|err| {
@@ -104,11 +109,9 @@ impl BansMutation {
 			.update_one(
 				doc! { "_id": victim.id },
 				doc! {
-					"$push": {
-						"bans": to_bson(&ban).unwrap(),
-					},
 					"$set": {
-						"search_index.self_dirty": Id::<()>::new(),
+						"has_bans": true,
+						"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
 					},
 				},
 			)
@@ -116,6 +119,15 @@ impl BansMutation {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update user permissions");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		UserBan::collection(global.db())
+			.insert_one(&ban)
+			.session(&mut session)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert user ban");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
@@ -128,6 +140,8 @@ impl BansMutation {
 						target_id: victim.id,
 						data: AuditLogUserData::Ban,
 					},
+					updated_at: chrono::Utc::now(),
+					search_updated_at: None,
 				})
 				.session(&mut session)
 				.await
@@ -159,25 +173,24 @@ impl BansMutation {
 		let mut update = doc! {};
 
 		if let Some(reason) = reason {
-			update.insert("bans.$.reason", reason);
+			update.insert("reason", reason);
 		}
 
 		if let Some(expire_at) = expire_at {
-			update.insert("bans.$.expires_at", expire_at);
+			update.insert("expires_at", expire_at);
 		}
 
 		if let Some(effects) = effects {
 			let perms = ban_effect_to_permissions(effects);
 
-			update.insert("bans.$.permissions", to_bson(&perms).unwrap());
+			update.insert("permissions", to_bson(&perms).unwrap());
 		}
 
-		update.insert("search_index.self_dirty", Id::<()>::new());
+		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
-		let user = User::collection(global.db())
-			.find_one_and_update(doc! { "bans.id": ban_id.0 }, doc! { "$set": update })
+		let ban = UserBan::collection(global.db())
+			.find_one_and_update(doc! { "_id": ban_id.id::<()>() }, doc! { "$set": update })
 			.return_document(ReturnDocument::After)
-			.projection(doc! { "search_index": 0 })
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update user ban");
@@ -185,10 +198,7 @@ impl BansMutation {
 			})?
 			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "ban not found"))?;
 
-		Ok(Some(Ban::from_db(
-			user.id.into(),
-			user.bans.iter().find(|ban| ban.id == ban_id.id()).unwrap().clone(),
-		)))
+		Ok(Some(Ban::from_db(ban.user_id.into(), ban)))
 	}
 }
 
@@ -212,11 +222,11 @@ impl Ban {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_by_id_loader()
-			.load(self.victim_id.id())
+			.user_loader()
+			.load_fast(global, self.victim_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u.into()))
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())
 	}
@@ -225,11 +235,11 @@ impl Ban {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_by_id_loader()
-			.load(self.actor_id.id())
+			.user_loader()
+			.load(global, self.actor_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u.into()))
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())
 	}

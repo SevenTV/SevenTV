@@ -1,13 +1,22 @@
+use super::codes::DiscountCodeId;
 use super::{CustomerId, InvoiceId, InvoiceLineItemId, ProductId};
-use crate::database::types::GenericCollection;
+use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
-use crate::database::Collection;
+use crate::database::MongoCollection;
+use crate::typesense::types::impl_typesense_type;
 
 // An invoice that is generated for a purchase
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
+#[mongo(collection_name = "invoices")]
+#[mongo(index(fields(user_id = 1)))]
+#[mongo(index(fields("items.id" = 1)))]
+#[mongo(index(fields("items.product_id" = 1)))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct Invoice {
 	/// This ID will be the stripe ID for the invoice
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: InvoiceId,
 	/// These items will be the stripe line items for the invoice
@@ -22,10 +31,19 @@ pub struct Invoice {
 	pub status: InvoiceStatus,
 	/// A note about the invoice
 	pub note: Option<String>,
+	#[serde(with = "crate::database::serde")]
+	/// Created at
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	/// Updated at
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	/// Search updated at
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
-#[repr(u8)]
+#[repr(i32)]
 pub enum InvoiceStatus {
 	Draft = 0,
 	Open = 1,
@@ -33,6 +51,8 @@ pub enum InvoiceStatus {
 	Uncollectible = 3,
 	Void = 4,
 }
+
+impl_typesense_type!(InvoiceStatus, Int32);
 
 impl From<InvoiceStatus> for stripe::InvoiceStatus {
 	fn from(value: InvoiceStatus) -> Self {
@@ -65,26 +85,10 @@ pub struct InvoiceItem {
 	pub id: InvoiceLineItemId,
 	// This is a stripe id for the product
 	pub product_id: ProductId,
+	// The discount codes that were applied to this item
+	pub discount_codes: Vec<DiscountCodeId>,
 }
 
-impl Collection for Invoice {
-	const COLLECTION_NAME: &'static str = "invoices";
-
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {"user_id": 1})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {"items.id": 1})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {"items.product_id": 1})
-				.build(),
-		]
-	}
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	[GenericCollection::new::<Invoice>()]
+pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	[MongoGenericCollection::new::<Invoice>()]
 }

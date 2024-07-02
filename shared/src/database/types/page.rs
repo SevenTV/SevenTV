@@ -1,13 +1,16 @@
 use super::image_set::ImageSet;
 use super::user::UserId;
-use super::GenericCollection;
-use crate::database::{Collection, Id};
+use super::MongoGenericCollection;
+use crate::database::{Id, MongoCollection};
+use crate::typesense::types::impl_typesense_type;
 
 pub type PageId = Id<Page>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "pages")]
 #[serde(deny_unknown_fields)]
 pub struct Page {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: PageId,
 	pub kind: PageKind,
@@ -15,12 +18,13 @@ pub struct Page {
 	pub slug: String,
 	pub content_md: String,
 	pub keywords: Vec<String>,
+	pub tags: Vec<String>,
 	pub author_ids: Vec<UserId>,
 	pub image_sets: Vec<ImageSet>,
-}
-
-impl Collection for Page {
-	const COLLECTION_NAME: &'static str = "pages";
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, Default, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
@@ -32,6 +36,8 @@ pub enum PageKind {
 	General = 2,
 }
 
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	[GenericCollection::new::<Page>()]
+impl_typesense_type!(PageKind, Int32);
+
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	[MongoGenericCollection::new::<Page>()]
 }
