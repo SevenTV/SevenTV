@@ -233,7 +233,7 @@ impl User {
 		for a in &audit_logs {
 			match a.data {
 				AuditLogData::EmoteSet {
-					data: AuditLogEmoteSetData::AddEmote { emote_id },
+					data: AuditLogEmoteSetData::AddEmote { emote_id, .. },
 					..
 				}
 				| AuditLogData::EmoteSet {

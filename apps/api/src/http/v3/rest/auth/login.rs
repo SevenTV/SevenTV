@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
@@ -208,8 +209,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 					tracing::error!(error = %err, "failed to update user");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
-				.matched_count
-				== 0
+				.matched_count == 0
 			{
 				tracing::error!("failed to update user, no matched count");
 				return Err(ApiError::INTERNAL_SERVER_ERROR);
@@ -275,6 +275,22 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	} else {
 		None
 	};
+
+	AuditLog::collection(global.db())
+		.insert_one(AuditLog {
+			id: AuditLogId::new(),
+			actor_id: Some(full_user.id),
+			data: AuditLogData::User {
+				target_id: full_user.id,
+				data: AuditLogUserData::Login { platform },
+			},
+		})
+		.session(&mut session)
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to insert audit log");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 	session.commit_transaction().await.map_err(|err| {
 		tracing::error!(error = %err, "failed to commit transaction");

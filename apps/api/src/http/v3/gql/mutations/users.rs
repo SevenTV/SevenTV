@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::bson::{doc, to_bson};
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateOptions};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
 use shared::database::user::User;
@@ -126,22 +127,53 @@ impl UserOps {
 			return Err(ApiError::FORBIDDEN);
 		}
 
+		let mut session = global.mongo().start_session().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		if let Some(permissions) = data.permissions {
 			if permissions == UserEditorModelPermission::none() {
 				// Remove editor
-				shared::database::user::editor::UserEditor::collection(global.db())
+				let res = shared::database::user::editor::UserEditor::collection(global.db())
 					.delete_one(doc! {
 						"user_id": self.id.0,
 						"editor_id": editor_id.0,
 					})
+					.session(&mut session)
 					.await
 					.map_err(|err| {
 						tracing::error!(error = %err, "failed to delete editor");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
+
+				if res.deleted_count > 0 {
+					AuditLog::collection(global.db())
+						.insert_one(AuditLog {
+							id: AuditLogId::new(),
+							actor_id: Some(auth_session.user_id()),
+							data: AuditLogData::User {
+								target_id: self.id.id(),
+								data: AuditLogUserData::RemoveEditor {
+									editor_id: editor_id.id(),
+								},
+							},
+						})
+						.session(&mut session)
+						.await
+						.map_err(|err| {
+							tracing::error!(error = %err, "failed to insert audit log");
+							ApiError::INTERNAL_SERVER_ERROR
+						})?;
+				}
 			} else {
 				// Add or update editor
-				shared::database::user::editor::UserEditor::collection(global.db())
+				let res = shared::database::user::editor::UserEditor::collection(global.db())
 					.update_one(
 						doc! {
 							"user_id": self.id.0,
@@ -153,18 +185,41 @@ impl UserOps {
 							},
 						},
 					)
-					.with_options(
-						UpdateOptions::builder()
-							.upsert(user.has(UserPermission::InviteEditors))
-							.build(),
-					)
+					.upsert(user.has(UserPermission::InviteEditors))
+					.session(&mut session)
 					.await
 					.map_err(|err| {
 						tracing::error!(error = %err, "failed to update editor");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
+
+				// inserted
+				if res.matched_count == 0 {
+					AuditLog::collection(global.db())
+						.insert_one(AuditLog {
+							id: AuditLogId::new(),
+							actor_id: Some(auth_session.user_id()),
+							data: AuditLogData::User {
+								target_id: self.id.id(),
+								data: AuditLogUserData::AddEditor {
+									editor_id: editor_id.id(),
+								},
+							},
+						})
+						.session(&mut session)
+						.await
+						.map_err(|err| {
+							tracing::error!(error = %err, "failed to insert audit log");
+							ApiError::INTERNAL_SERVER_ERROR
+						})?;
+				}
 			}
 		}
+
+		session.commit_transaction().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 		let editors = global
 			.user_editor_by_user_id_loader()
@@ -282,7 +337,17 @@ impl UserOps {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		match action {
+		let mut session = global.mongo().start_session().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		let roles = match action {
 			ListItemAction::Add => {
 				if user.computed.entitlements.roles.contains(&role_id.id()) {
 					return Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect());
@@ -298,21 +363,37 @@ impl UserOps {
 
 				EntitlementEdge::collection(global.db())
 					.insert_one(&edge)
+					.session(&mut session)
 					.await
 					.map_err(|err| {
 						tracing::error!(error = %err, "failed to insert entitlement edge");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				Ok(user
-					.computed
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(auth_session.user_id()),
+						data: AuditLogData::User {
+							target_id: self.id.id(),
+							data: AuditLogUserData::AddRole { role_id: role_id.id() },
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|err| {
+						tracing::error!(error = %err, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				user.computed
 					.entitlements
 					.roles
 					.iter()
 					.copied()
 					.chain(std::iter::once(role_id.id()))
 					.map(Into::into)
-					.collect())
+					.collect()
 			}
 			ListItemAction::Remove => {
 				let from = EntitlementEdgeKind::User { user_id: self.id.id() };
@@ -323,28 +404,51 @@ impl UserOps {
 						"_id.from": to_bson(&from).expect("failed to convert to bson"),
 						"_id.to": to_bson(&to).expect("failed to convert to bson"),
 					})
+					.session(&mut session)
 					.await
 					.map_err(|err| {
 						tracing::error!(error = %err, "failed to delete entitlement edge");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				if res.deleted_count == 1 {
-					Ok(user
-						.computed
+				if res.deleted_count > 0 {
+					AuditLog::collection(global.db())
+						.insert_one(AuditLog {
+							id: AuditLogId::new(),
+							actor_id: Some(auth_session.user_id()),
+							data: AuditLogData::User {
+								target_id: self.id.id(),
+								data: AuditLogUserData::RemoveRole { role_id: role_id.id() },
+							},
+						})
+						.session(&mut session)
+						.await
+						.map_err(|err| {
+							tracing::error!(error = %err, "failed to insert audit log");
+							ApiError::INTERNAL_SERVER_ERROR
+						})?;
+
+					user.computed
 						.entitlements
 						.roles
 						.iter()
 						.copied()
 						.filter(|id| *id != role_id.id())
 						.map(Into::into)
-						.collect())
+						.collect()
 				} else {
-					Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect())
+					user.computed.entitlements.roles.iter().copied().map(Into::into).collect()
 				}
 			}
-			ListItemAction::Update => Err(ApiError::NOT_IMPLEMENTED),
-		}
+			ListItemAction::Update => return Err(ApiError::NOT_IMPLEMENTED),
+		};
+
+		session.commit_transaction().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		Ok(roles)
 	}
 }
 

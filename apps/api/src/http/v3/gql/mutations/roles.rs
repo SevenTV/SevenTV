@@ -194,7 +194,7 @@ impl RolesMutation {
 
 		// TODO: remove entitlement edges
 
-		if res.deleted_count == 1 {
+		if res.deleted_count > 0 {
 			Ok(String::new())
 		} else {
 			Err(ApiError::NOT_FOUND)

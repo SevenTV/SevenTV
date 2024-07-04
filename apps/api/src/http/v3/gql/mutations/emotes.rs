@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::bson::doc;
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::ReturnDocument;
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorState};
@@ -69,6 +70,16 @@ impl EmoteOps {
 			}
 		}
 
+		let mut session = global.mongo().start_session().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		if params.deleted.is_some_and(|d| d) {
 			if !user.has(EmotePermission::Delete) {
 				return Err(ApiError::FORBIDDEN);
@@ -78,9 +89,26 @@ impl EmoteOps {
 
 			let emote = shared::database::emote::Emote::collection(global.db())
 				.find_one_and_delete(doc! { "_id": self.id.0 })
+				.session(&mut session)
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?;
+
+			AuditLog::collection(global.db())
+				.insert_one(AuditLog {
+					id: AuditLogId::new(),
+					actor_id: Some(user.id),
+					data: AuditLogData::Emote {
+						target_id: emote.id,
+						data: AuditLogEmoteData::Delete,
+					},
+				})
+				.session(&mut session)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to insert audit log");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
 
 			// TODO: delete files from s3
 
@@ -93,11 +121,46 @@ impl EmoteOps {
 			let mut update = doc! {};
 
 			if let Some(name) = params.name.or(params.version_name) {
-				update.insert("default_name", name);
+				update.insert("default_name", &name);
+
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(user.id),
+						data: AuditLogData::Emote {
+							target_id: self.id.id(),
+							data: AuditLogEmoteData::ChangeName {
+								old: self.emote.default_name.clone(),
+								new: name,
+							},
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
 			}
 
 			if let Some(tags) = params.tags {
-				update.insert("tags", tags);
+				update.insert("tags", &tags);
+
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(user.id),
+						data: AuditLogData::Emote {
+							target_id: self.id.id(),
+							data: AuditLogEmoteData::ChangeTags { old: self.emote.tags.clone(), new: tags },
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
 			}
 
 			let mut flags = self.emote.flags;
@@ -142,24 +205,66 @@ impl EmoteOps {
 
 				if let Some(owner_id) = params.owner_id {
 					update.insert("owner_id", owner_id.0);
+
+					AuditLog::collection(global.db())
+						.insert_one(AuditLog {
+							id: AuditLogId::new(),
+							actor_id: Some(user.id),
+							data: AuditLogData::Emote {
+								target_id: self.id.id(),
+								data: AuditLogEmoteData::ChangeOwner {
+									old: self.emote.owner_id,
+									new: owner_id.id(),
+								},
+							},
+						})
+						.session(&mut session)
+						.await
+						.map_err(|e| {
+							tracing::error!(error = %e, "failed to insert audit log");
+							ApiError::INTERNAL_SERVER_ERROR
+						})?;
 				}
 			}
 
-			update.insert("flags", flags.bits());
+			if flags != self.emote.flags {
+				update.insert("flags", flags.bits());
+
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(user.id),
+						data: AuditLogData::Emote {
+							target_id: self.id.id(),
+							data: AuditLogEmoteData::ChangeFlags {
+								old: self.emote.flags,
+								new: flags,
+							},
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+			}
 
 			let emote = shared::database::emote::Emote::collection(global.db())
 				.find_one_and_update(doc! { "_id": self.id.0 }, doc! { "$set": update })
-				.with_options(
-					FindOneAndUpdateOptions::builder()
-						.return_document(ReturnDocument::After)
-						.build(),
-				)
+				.return_document(ReturnDocument::After)
+				.session(&mut session)
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to update emote");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
 				.ok_or(ApiError::NOT_FOUND)?;
+
+			session.commit_transaction().await.map_err(|e| {
+				tracing::error!(error = %e, "failed to commit transaction");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 			Ok(Emote::from_db(global, emote))
 		}
@@ -174,6 +279,18 @@ impl EmoteOps {
 	) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+
+		let mut session = global.mongo().start_session().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		let emote = shared::database::emote::Emote::collection(global.db())
 			.find_one_and_update(
 				doc! { "_id": self.id.0 },
@@ -186,6 +303,7 @@ impl EmoteOps {
 					},
 				},
 			)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update emote");
@@ -193,8 +311,29 @@ impl EmoteOps {
 			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
+		AuditLog::collection(global.db())
+			.insert_one(AuditLog {
+				id: AuditLogId::new(),
+				actor_id: Some(auth_session.user_id()),
+				data: AuditLogData::Emote {
+					target_id: self.id.id(),
+					data: AuditLogEmoteData::Merge { new_emote_id: target_id.id() },
+				},
+			})
+			.session(&mut session)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert audit log");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
 		// TODO: schedule emote merge job
 
+		session.commit_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+		
 		Ok(Emote::from_db(global, emote))
 	}
 

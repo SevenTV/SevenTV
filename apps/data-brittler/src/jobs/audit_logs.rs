@@ -83,53 +83,49 @@ impl Job for AuditLogsJob {
 							}
 						}
 						AuditLogChange::EmoteVersions(AuditLogChangeArray { updated, .. }) => {
-							let old = updated.iter().map(|u| &u.old).fold(
-								database::audit_log::EmoteSettingsChange::default(),
-								|sum, c| database::audit_log::EmoteSettingsChange {
-									public_listed: sum.public_listed.or(c.listed),
-									approved_personal: sum.approved_personal.or(c.allow_personal),
-									..Default::default()
-								},
-							);
-							let new = updated.iter().map(|u| &u.new).fold(
-								database::audit_log::EmoteSettingsChange::default(),
-								|sum, c| database::audit_log::EmoteSettingsChange {
-									public_listed: sum.public_listed.or(c.listed),
-									approved_personal: sum.approved_personal.or(c.allow_personal),
-									..Default::default()
-								},
-							);
+							let old = updated
+								.iter()
+								.map(|u| &u.old)
+								.fold(database::emote::EmoteFlags::default(), |sum, c| {
+									sum | database::emote::EmoteFlags::from(c)
+								});
+							let new = updated
+								.iter()
+								.map(|u| &u.new)
+								.fold(database::emote::EmoteFlags::default(), |sum, c| {
+									sum | database::emote::EmoteFlags::from(c)
+								});
 							data.push(database::audit_log::AuditLogData::Emote {
 								target_id: audit_log.target_id.into(),
-								data: database::audit_log::AuditLogEmoteData::ChangeSettings { old, new },
+								data: database::audit_log::AuditLogEmoteData::ChangeFlags { old, new },
 							});
 						}
 						AuditLogChange::Flags(flags) => {
-							let mut old = database::audit_log::EmoteSettingsChange::default();
+							let mut old = database::emote::EmoteFlags::none();
 							if flags.old.contains(EmoteFlagsModel::Sexual) {
-								old.nsfw = Some(true);
+								old |= database::emote::EmoteFlags::Nsfw;
 							}
 							if flags.old.contains(EmoteFlagsModel::Private) {
-								old.private = Some(true);
+								old |= database::emote::EmoteFlags::Private;
 							}
 							if flags.old.contains(EmoteFlagsModel::ZeroWidth) {
-								old.default_zero_width = Some(true);
+								old |= database::emote::EmoteFlags::DefaultZeroWidth;
 							}
 
-							let mut new = database::audit_log::EmoteSettingsChange::default();
+							let mut new = database::emote::EmoteFlags::none();
 							if flags.new.contains(EmoteFlagsModel::Sexual) {
-								new.nsfw = Some(true);
+								new |= database::emote::EmoteFlags::Nsfw;
 							}
 							if flags.new.contains(EmoteFlagsModel::Private) {
-								new.private = Some(true);
+								new |= database::emote::EmoteFlags::Private;
 							}
 							if flags.new.contains(EmoteFlagsModel::ZeroWidth) {
-								new.default_zero_width = Some(true);
+								new |= database::emote::EmoteFlags::DefaultZeroWidth;
 							}
 
 							data.push(database::audit_log::AuditLogData::Emote {
 								target_id: audit_log.target_id.into(),
-								data: database::audit_log::AuditLogEmoteData::ChangeSettings { old, new },
+								data: database::audit_log::AuditLogEmoteData::ChangeFlags { old, new },
 							});
 						}
 						AuditLogChange::Tags(tags) => data.push(database::audit_log::AuditLogData::Emote {
@@ -181,24 +177,28 @@ impl Job for AuditLogsJob {
 							},
 						}),
 						AuditLogChange::EmoteSetCapacity(c) => {
-							let old = database::audit_log::EmoteSetSettingsChange {
-								capacity: Some(c.old as u32),
-								..Default::default()
-							};
-							let new = database::audit_log::EmoteSetSettingsChange {
-								capacity: Some(c.new as u32),
-								..Default::default()
-							};
-							data.push(database::audit_log::AuditLogData::EmoteSet {
-								target_id: audit_log.target_id.into(),
-								data: database::audit_log::AuditLogEmoteSetData::ChangeSettings { old, new },
-							});
-						}
-						AuditLogChange::EmoteSetEmotes(emotes) => {
-							for emote_id in emotes.added.into_iter().filter_map(|e| e.id.map(EmoteId::from)) {
+							if c.old != c.new {
 								data.push(database::audit_log::AuditLogData::EmoteSet {
 									target_id: audit_log.target_id.into(),
-									data: audit_log::AuditLogEmoteSetData::AddEmote { emote_id },
+									data: database::audit_log::AuditLogEmoteSetData::ChangeCapacity {
+										old: Some(c.old),
+										new: Some(c.new),
+									},
+								});
+							}
+						}
+						AuditLogChange::EmoteSetEmotes(emotes) => {
+							for (emote_id, alias) in emotes
+								.added
+								.into_iter()
+								.filter_map(|e| e.id.map(|id| (EmoteId::from(id), e.name)))
+							{
+								data.push(database::audit_log::AuditLogData::EmoteSet {
+									target_id: audit_log.target_id.into(),
+									data: audit_log::AuditLogEmoteSetData::AddEmote {
+										emote_id,
+										alias: alias.unwrap_or_default(),
+									},
 								});
 							}
 							for emote_id in emotes.removed.into_iter().filter_map(|e| e.id.map(EmoteId::from)) {
@@ -229,10 +229,8 @@ impl Job for AuditLogsJob {
 					}
 				}
 			}
-			AuditLogKind::CreateUser => data.push(database::audit_log::AuditLogData::User {
-				target_id: audit_log.target_id.into(),
-				data: database::audit_log::AuditLogUserData::Register,
-			}),
+			// we don't need this event because we can see when the user was created using the user id
+			AuditLogKind::CreateUser => {}
 			AuditLogKind::EditUser => {
 				for change in audit_log.changes {
 					match change {
@@ -292,22 +290,30 @@ impl Job for AuditLogsJob {
 				for change in audit_log.changes {
 					match change {
 						AuditLogChange::ReportStatus(status) => {
-							data.push(database::audit_log::AuditLogData::Ticket {
-								target_id: audit_log.target_id.into(),
-								data: database::audit_log::AuditLogTicketData::ChangeOpen {
-									old: status.old == ReportStatus::Open,
-									new: status.new == ReportStatus::Open,
-								},
-							});
+							let old = status.old == ReportStatus::Open;
+							let new = status.new == ReportStatus::Open;
+
+							if new != old {
+								data.push(database::audit_log::AuditLogData::Ticket {
+									target_id: audit_log.target_id.into(),
+									data: database::audit_log::AuditLogTicketData::ChangeOpen { old, new },
+								});
+							}
 						}
 						AuditLogChange::ReportAssignees(assignees) => {
-							data.push(database::audit_log::AuditLogData::Ticket {
-								target_id: audit_log.target_id.into(),
-								data: database::audit_log::AuditLogTicketData::ChangeAssignees {
-									added: assignees.added.into_iter().map(|id| id.into()).collect(),
-									removed: assignees.removed.into_iter().map(|id| id.into()).collect(),
-								},
-							});
+							for member in assignees.added {
+								data.push(database::audit_log::AuditLogData::Ticket {
+									target_id: audit_log.target_id.into(),
+									data: database::audit_log::AuditLogTicketData::AddMember { member: member.into() },
+								});
+							}
+
+							for member in assignees.removed {
+								data.push(database::audit_log::AuditLogData::Ticket {
+									target_id: audit_log.target_id.into(),
+									data: database::audit_log::AuditLogTicketData::RemoveMember { member: member.into() },
+								});
+							}
 						}
 						_ => unimplemented!(),
 					}

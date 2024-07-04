@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::audit_log::{AuditLogEmoteData, AuditLogEmoteSetData, AuditLogUserData, EmoteSettingsChange};
-use shared::database::emote::{Emote, EmoteId};
+use shared::database::audit_log::{AuditLogEmoteData, AuditLogEmoteSetData, AuditLogUserData};
+use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::user::UserId;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
@@ -142,24 +142,6 @@ impl AuditLog {
 	}
 }
 
-fn emote_settings_change_to_flags(value: EmoteSettingsChange) -> EmoteFlagsModel {
-	let mut flags = EmoteFlagsModel::default();
-
-	if let Some(true) = value.private {
-		flags |= EmoteFlagsModel::Private;
-	}
-
-	if let Some(true) = value.nsfw {
-		flags |= EmoteFlagsModel::Sexual;
-	}
-
-	if let Some(true) = value.default_zero_width {
-		flags |= EmoteFlagsModel::ZeroWidth;
-	}
-
-	flags
-}
-
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct EmoteVersionStateChange {
 	#[serde(skip_serializing_if = "Option::is_none")]
@@ -168,11 +150,11 @@ pub struct EmoteVersionStateChange {
 	pub allow_personal: Option<bool>,
 }
 
-impl From<EmoteSettingsChange> for EmoteVersionStateChange {
-	fn from(value: EmoteSettingsChange) -> Self {
+impl From<EmoteFlags> for EmoteVersionStateChange {
+	fn from(value: EmoteFlags) -> Self {
 		Self {
-			listed: value.public_listed,
-			allow_personal: value.approved_personal,
+			listed: Some(value.contains(EmoteFlags::PublicListed)),
+			allow_personal: Some(value.contains(EmoteFlags::ApprovedPersonal)),
 		}
 	}
 }
@@ -202,9 +184,9 @@ impl AuditLogChange {
 				value: Some(ArbitraryMap::StringVecValue { n: new, o: old, p: 0 }),
 				array_value: None,
 			}),
-			AuditLogEmoteData::ChangeSettings { old, new } => {
-				if (new.approved_personal.is_some() && old.approved_personal.is_some())
-					|| (new.public_listed.is_some() && old.public_listed.is_some())
+			AuditLogEmoteData::ChangeFlags { old, new } => {
+				if (new.contains(EmoteFlags::ApprovedPersonal) && old.contains(EmoteFlags::ApprovedPersonal))
+					|| (new.contains(EmoteFlags::PublicListed) && old.contains(EmoteFlags::PublicListed))
 				{
 					Some(Self {
 						format: AuditLogChangeFormat::ArrayValue,
@@ -221,8 +203,8 @@ impl AuditLogChange {
 						}),
 					})
 				} else {
-					let old_flags = emote_settings_change_to_flags(old);
-					let new_flags = emote_settings_change_to_flags(new);
+					let old_flags: EmoteFlagsModel = old.into();
+					let new_flags: EmoteFlagsModel = new.into();
 
 					Some(Self {
 						format: AuditLogChangeFormat::SingleValue,
@@ -253,26 +235,22 @@ impl AuditLogChange {
 				value: Some(ArbitraryMap::StringValue { n: new, o: old, p: 0 }),
 				array_value: None,
 			}),
-			AuditLogEmoteSetData::AddEmote { emote_id } => {
-				let emote = emotes.get(&emote_id)?;
-
-				Some(Self {
-					format: AuditLogChangeFormat::ArrayValue,
-					key: "emotes".to_string(),
-					value: None,
-					array_value: Some(AuditLogChangeArray {
-						added: vec![ArbitraryMap::Emote {
-							id: emote_id.into(),
-							actor_id,
-							flags: EmoteFlagsModel::none(),
-							name: emote.default_name.clone(),
-							timestamp,
-						}],
-						removed: vec![],
-						updated: vec![],
-					}),
-				})
-			}
+			AuditLogEmoteSetData::AddEmote { emote_id, alias } => Some(Self {
+				format: AuditLogChangeFormat::ArrayValue,
+				key: "emotes".to_string(),
+				value: None,
+				array_value: Some(AuditLogChangeArray {
+					added: vec![ArbitraryMap::Emote {
+						id: emote_id.into(),
+						actor_id,
+						flags: EmoteFlagsModel::none(),
+						name: alias,
+						timestamp,
+					}],
+					removed: vec![],
+					updated: vec![],
+				}),
+			}),
 			AuditLogEmoteSetData::RemoveEmote { emote_id } => {
 				let emote = emotes.get(&emote_id)?;
 

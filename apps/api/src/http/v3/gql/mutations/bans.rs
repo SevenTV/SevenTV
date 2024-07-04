@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::ReturnDocument;
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogUserData};
 use shared::database::role::permissions::{
 	EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
 };
@@ -89,7 +90,17 @@ impl BansMutation {
 			permissions: ban_effect_to_permissions(effects),
 		};
 
-		User::collection(global.db())
+		let mut session = global.mongo().start_session().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		let res = User::collection(global.db())
 			.update_one(
 				doc! { "_id": victim.id },
 				doc! {
@@ -101,11 +112,35 @@ impl BansMutation {
 					},
 				},
 			)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update user permissions");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
+
+		if res.modified_count > 0 {
+			AuditLog::collection(global.db())
+				.insert_one(AuditLog {
+					id: Default::default(),
+					actor_id: Some(actor.id),
+					data: AuditLogData::User {
+						target_id: victim.id,
+						data: AuditLogUserData::Ban,
+					},
+				})
+				.session(&mut session)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to insert audit log");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+		}
+
+		session.commit_transaction().await.map_err(|err| {
+			tracing::error!(error = %err, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 		Ok(Some(Ban::from_db(victim_id, ban)))
 	}
@@ -141,12 +176,8 @@ impl BansMutation {
 
 		let user = User::collection(global.db())
 			.find_one_and_update(doc! { "bans.id": ban_id.0 }, doc! { "$set": update })
-			.with_options(
-				FindOneAndUpdateOptions::builder()
-					.return_document(ReturnDocument::After)
-					.projection(doc! { "search_index": 0 })
-					.build(),
-			)
+			.return_document(ReturnDocument::After)
+			.projection(doc! { "search_index": 0 })
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update user ban");
