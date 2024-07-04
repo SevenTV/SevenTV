@@ -152,7 +152,10 @@ impl EmoteOps {
 						actor_id: Some(user.id),
 						data: AuditLogData::Emote {
 							target_id: self.id.id(),
-							data: AuditLogEmoteData::ChangeTags { old: self.emote.tags.clone(), new: tags },
+							data: AuditLogEmoteData::ChangeTags {
+								old: self.emote.tags.clone(),
+								new: tags,
+							},
 						},
 					})
 					.session(&mut session)
@@ -317,7 +320,9 @@ impl EmoteOps {
 				actor_id: Some(auth_session.user_id()),
 				data: AuditLogData::Emote {
 					target_id: self.id.id(),
-					data: AuditLogEmoteData::Merge { new_emote_id: target_id.id() },
+					data: AuditLogEmoteData::Merge {
+						new_emote_id: target_id.id(),
+					},
 				},
 			})
 			.session(&mut session)
@@ -333,7 +338,7 @@ impl EmoteOps {
 			tracing::error!(error = %e, "failed to commit transaction");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
-		
+
 		Ok(Emote::from_db(global, emote))
 	}
 

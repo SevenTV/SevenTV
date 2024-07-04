@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::mem;
+use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};

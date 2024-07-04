@@ -771,20 +771,20 @@ impl EmoteSetOps {
 
 		if res.deleted_count > 0 {
 			AuditLog::collection(global.db())
-			.insert_one(AuditLog {
-				id: AuditLogId::new(),
-				actor_id: Some(auth_session.user_id()),
-				data: AuditLogData::EmoteSet {
-					target_id: self.emote_set.id,
-					data: AuditLogEmoteSetData::Delete,
-				},
-			})
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert audit log");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+				.insert_one(AuditLog {
+					id: AuditLogId::new(),
+					actor_id: Some(auth_session.user_id()),
+					data: AuditLogData::EmoteSet {
+						target_id: self.emote_set.id,
+						data: AuditLogEmoteSetData::Delete,
+					},
+				})
+				.session(&mut session)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to insert audit log");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
 		}
 
 		session.commit_transaction().await.map_err(|e| {

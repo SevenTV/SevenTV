@@ -54,13 +54,14 @@ impl Job for PricesJob {
 			return outcome;
 		};
 
-		let price = match stripe::Price::retrieve(self.global.stripe_client(), &price_id, &["product", "currency_options"]).await {
-			Ok(price) => price,
-			Err(e) => {
-				outcome.errors.push(e.into());
-				return outcome;
-			}
-		};
+		let price =
+			match stripe::Price::retrieve(self.global.stripe_client(), &price_id, &["product", "currency_options"]).await {
+				Ok(price) => price,
+				Err(e) => {
+					outcome.errors.push(e.into());
+					return outcome;
+				}
+			};
 		let product = price.product.and_then(|p| p.into_object()).expect("no product found");
 
 		let recurring = match price.recurring {

@@ -1,5 +1,6 @@
 use mongodb::bson::oid::ObjectId;
-use shared::{database::emote::EmoteFlags, old_types::EmoteFlagsModel};
+use shared::database::emote::EmoteFlags;
+use shared::old_types::EmoteFlagsModel;
 
 use crate::types;
 

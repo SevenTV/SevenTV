@@ -1,5 +1,3 @@
-use crate::database::Id;
-
 use super::emote::{EmoteFlags, EmoteId};
 use super::emote_set::EmoteSetId;
 use super::role::RoleId;
@@ -7,6 +5,7 @@ use super::ticket::TicketId;
 use super::user::connection::Platform;
 use super::user::UserId;
 use super::{Collection, GenericCollection};
+use crate::database::Id;
 
 pub type AuditLogId = Id<AuditLog>;
 
@@ -68,25 +67,11 @@ pub enum AuditLogData {
 pub enum AuditLogEmoteData {
 	Upload,
 	Process,
-	ChangeName {
-		old: String,
-		new: String,
-	},
-	Merge {
-		new_emote_id: EmoteId,
-	},
-	ChangeOwner {
-		old: UserId,
-		new: UserId,
-	},
-	ChangeTags {
-		old: Vec<String>,
-		new: Vec<String>,
-	},
-	ChangeFlags {
-		old: EmoteFlags,
-		new: EmoteFlags,
-	},
+	ChangeName { old: String, new: String },
+	Merge { new_emote_id: EmoteId },
+	ChangeOwner { old: UserId, new: UserId },
+	ChangeTags { old: Vec<String>, new: Vec<String> },
+	ChangeFlags { old: EmoteFlags, new: EmoteFlags },
 	Delete,
 }
 
@@ -124,9 +109,7 @@ pub enum AuditLogEmoteSetData {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AuditLogUserData {
-	Login {
-		platform: Platform,
-	},
+	Login { platform: Platform },
 	Logout,
 	AddEditor { editor_id: UserId },
 	RemoveEditor { editor_id: UserId },

@@ -22,9 +22,7 @@ impl Job for SystemJob {
 			GlobalConfig::collection(global.target_db()).drop().await?;
 			let indexes = GlobalConfig::indexes();
 			if !indexes.is_empty() {
-				GlobalConfig::collection(global.target_db())
-					.create_indexes(indexes)
-					.await?;
+				GlobalConfig::collection(global.target_db()).create_indexes(indexes).await?;
 			}
 		}
 

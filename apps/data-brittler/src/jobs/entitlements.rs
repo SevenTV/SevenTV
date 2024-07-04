@@ -26,7 +26,9 @@ impl Job for EntitlementsJob {
 			EntitlementEdge::collection(global.target_db()).drop().await?;
 			let indexes = EntitlementEdge::indexes();
 			if !indexes.is_empty() {
-				EntitlementEdge::collection(global.target_db()).create_indexes(indexes).await?;
+				EntitlementEdge::collection(global.target_db())
+					.create_indexes(indexes)
+					.await?;
 			}
 		}
 

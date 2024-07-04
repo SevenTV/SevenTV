@@ -5,12 +5,12 @@ use futures::TryStreamExt;
 use mongodb::bson::doc;
 use tokio::io::AsyncWriteExt;
 
-use crate::{
-	global::Global,
-	types::{self, Cosmetic, PaintData},
-};
+use crate::global::Global;
+use crate::types::{self, Cosmetic, PaintData};
 
-/// In case you run into rate limiting problems with imgur, you can run this first to request and store all image files before issuing the processing jobs.
+/// In case you run into rate limiting problems with imgur, you can run this
+/// first to request and store all image files before issuing the processing
+/// jobs.
 
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let mut cosmetics = global
@@ -26,10 +26,10 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 			break;
 		}
 
-        let id = c.id;
+		let id = c.id;
 		if let Err(e) = process_cosmetic(&global, c).await {
-            tracing::error!(id = %id, error = %e, "failed to process cosmetic");
-        }
+			tracing::error!(id = %id, error = %e, "failed to process cosmetic");
+		}
 	}
 
 	Ok(())
@@ -56,7 +56,7 @@ pub async fn request_image(global: &Arc<Global>, url: &str) -> Result<bytes::Byt
 }
 
 async fn process_cosmetic(global: &Arc<Global>, c: Cosmetic) -> anyhow::Result<()> {
-    tokio::fs::create_dir_all("local/cosmetics").await?;
+	tokio::fs::create_dir_all("local/cosmetics").await?;
 
 	let download_url = match c.data {
 		types::CosmeticData::Badge { .. } => format!("https://cdn.7tv.app/badge/{}/2x", c.id),
@@ -69,19 +69,19 @@ async fn process_cosmetic(global: &Arc<Global>, c: Cosmetic) -> anyhow::Result<(
 		_ => return Ok(()),
 	};
 
-    tracing::debug!(cosmetic_id = %c.id, "processing cosmetic");
+	tracing::debug!(cosmetic_id = %c.id, "processing cosmetic");
 
-    let image = request_image(&global, &download_url).await?;
-    let path = format!("local/cosmetics/{}", c.id);
+	let image = request_image(&global, &download_url).await?;
+	let path = format!("local/cosmetics/{}", c.id);
 
-    tokio::fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)
-        .open(&path)
-        .await?
-        .write_all(&image)
-        .await?;
+	tokio::fs::OpenOptions::new()
+		.create(true)
+		.write(true)
+		.truncate(true)
+		.open(&path)
+		.await?
+		.write_all(&image)
+		.await?;
 
 	Ok(())
 }
