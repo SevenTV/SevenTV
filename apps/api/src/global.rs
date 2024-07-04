@@ -9,7 +9,7 @@ use scuffle_foundations::telemetry::server::HealthCheck;
 use shared::image_processor::ImageProcessor;
 
 use crate::config::Config;
-use crate::dataloader::activity::{EmoteActivityByEmoteIdLoader, EmoteSetActivityByActorIdLoader};
+use crate::dataloader::audit_log::{AuditLogByActorIdLoader, AuditLogByTargetIdLoader};
 use crate::dataloader::badge::BadgeByIdLoader;
 use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
 use crate::dataloader::emote_set::{EmoteSetByIdLoader, EmoteSetByUserIdLoader};
@@ -46,8 +46,8 @@ pub struct Global {
 	user_editor_by_id_loader: DataLoader<UserEditorByIdLoader>,
 	ticket_by_id_loader: DataLoader<TicketByIdLoader>,
 	ticket_messages_by_ticket_id_loader: DataLoader<TicketMessagesByTicketIdLoader>,
-	emote_activity_by_emote_id_loader: DataLoader<EmoteActivityByEmoteIdLoader>,
-	emote_set_activity_by_actor_id_loader: DataLoader<EmoteSetActivityByActorIdLoader>,
+	audit_log_by_target_id_loader: DataLoader<AuditLogByTargetIdLoader>,
+	audit_log_by_actor_id_loader: DataLoader<AuditLogByActorIdLoader>,
 	entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
 	entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
 	user_by_id_loader: DataLoader<UserByIdLoader>,
@@ -90,8 +90,8 @@ impl Global {
 			user_editor_by_id_loader: UserEditorByIdLoader::new(db.clone()),
 			ticket_by_id_loader: TicketByIdLoader::new(db.clone()),
 			ticket_messages_by_ticket_id_loader: TicketMessagesByTicketIdLoader::new(db.clone()),
-			emote_activity_by_emote_id_loader: EmoteActivityByEmoteIdLoader::new(clickhouse.clone()),
-			emote_set_activity_by_actor_id_loader: EmoteSetActivityByActorIdLoader::new(clickhouse.clone()),
+			audit_log_by_target_id_loader: AuditLogByTargetIdLoader::new(db.clone()),
+			audit_log_by_actor_id_loader: AuditLogByActorIdLoader::new(db.clone()),
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
 			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
 			user_by_id_loader: UserByIdLoader::new(db.clone()),
@@ -214,14 +214,14 @@ impl Global {
 		&self.ticket_messages_by_ticket_id_loader
 	}
 
-	/// The emote activity loader.
-	pub fn emote_activity_by_emote_id_loader(&self) -> &DataLoader<EmoteActivityByEmoteIdLoader> {
-		&self.emote_activity_by_emote_id_loader
+	/// The audit log by target id loader.
+	pub fn audit_log_by_target_id_loader(&self) -> &DataLoader<AuditLogByTargetIdLoader> {
+		&self.audit_log_by_target_id_loader
 	}
 
-	/// The emote set activity loader.
-	pub fn emote_set_activity_by_actor_id_loader(&self) -> &DataLoader<EmoteSetActivityByActorIdLoader> {
-		&self.emote_set_activity_by_actor_id_loader
+	/// The audit log by actor loader.
+	pub fn audit_log_by_actor_id_loader(&self) -> &DataLoader<AuditLogByActorIdLoader> {
+		&self.audit_log_by_actor_id_loader
 	}
 
 	/// The entitlement edge inbound loader.

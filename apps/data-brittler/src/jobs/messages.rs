@@ -1,3 +1,4 @@
+use std::mem;
 use std::sync::Arc;
 
 use bson::doc;
@@ -26,6 +27,14 @@ impl Job for MessagesJob {
 	const NAME: &'static str = "transfer_messages";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+		EmoteModerationRequest::collection(global.target_db()).drop().await?;
+		let indexes = EmoteModerationRequest::indexes();
+		if !indexes.is_empty() {
+			EmoteModerationRequest::collection(global.target_db())
+				.create_indexes(indexes)
+				.await?;
+		}
+
 		let mut read = FnvHashMap::default();
 
 		tracing::info!("loading messages_read collection");
@@ -92,7 +101,7 @@ impl Job for MessagesJob {
 
 		if self.mod_requests.len() > 50_000 {
 			let Ok(res) = EmoteModerationRequest::collection(self.global.target_db())
-				.insert_many(&self.mod_requests)
+				.insert_many(mem::take(&mut self.mod_requests))
 				.with_options(InsertManyOptions::builder().ordered(false).build())
 				.await
 			else {
@@ -104,8 +113,6 @@ impl Job for MessagesJob {
 			if res.inserted_ids.len() != self.mod_requests.len() {
 				outcome.errors.push(error::Error::InsertMany);
 			}
-
-			self.mod_requests.clear();
 		}
 
 		outcome

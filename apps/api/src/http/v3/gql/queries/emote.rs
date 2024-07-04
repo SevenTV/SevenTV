@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
@@ -146,18 +147,17 @@ impl Emote {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let activities = global
-			.clickhouse()
-			.query("SELECT * FROM emote_activities WHERE emote_id = ? ORDER BY timestamp DESC LIMIT ?")
-			.bind(self.id.0.as_uuid())
-			.bind(limit.unwrap_or(100))
-			.fetch_all()
+			.audit_log_by_target_id_loader()
+			.load(self.id.id())
 			.await
-			.map_err(|err| {
-				tracing::error!("failed to load emote activity: {err}");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.unwrap_or_default();
 
-		Ok(activities.into_iter().map(AuditLog::from_db_emote).collect())
+		Ok(activities
+			.into_iter()
+			.take(limit.unwrap_or(100) as usize)
+			.filter_map(|l| AuditLog::from_db(l, &HashMap::new()))
+			.collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {

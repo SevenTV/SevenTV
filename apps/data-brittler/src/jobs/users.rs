@@ -36,8 +36,16 @@ impl Job for UsersJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping users and user_editors collections");
-			User::collection(global.target_db()).delete_many(doc! {}).await?;
-			UserEditor::collection(global.target_db()).delete_many(doc! {}).await?;
+			User::collection(global.target_db()).drop().await?;
+			let indexes = User::indexes();
+			if !indexes.is_empty() {
+				User::collection(global.target_db()).create_indexes(indexes).await?;
+			}
+			UserEditor::collection(global.target_db()).drop().await?;
+			let indexes = UserEditor::indexes();
+			if !indexes.is_empty() {
+				UserEditor::collection(global.target_db()).create_indexes(indexes).await?;
+			}
 		}
 
 		tracing::info!("querying all entitlements");

@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::vec;
 
 use bson::oid::ObjectId;
-use mongodb::bson::doc;
 use shared::database::badge::Badge;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintLayer, PaintLayerId, PaintLayerType};
@@ -40,8 +39,16 @@ impl Job for CosmeticsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping paints and badges collections");
-			Paint::collection(global.target_db()).delete_many(doc! {}).await?;
-			Badge::collection(global.target_db()).delete_many(doc! {}).await?;
+			Paint::collection(global.target_db()).drop().await?;
+			let indexes = Paint::indexes();
+			if !indexes.is_empty() {
+				Paint::collection(global.target_db()).create_indexes(indexes).await?;
+			}
+			Badge::collection(global.target_db()).drop().await?;
+			let indexes = Badge::indexes();
+			if !indexes.is_empty() {
+				Badge::collection(global.target_db()).create_indexes(indexes).await?;
+			}
 		}
 
 		Ok(Self {

@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use mongodb::bson::doc;
 use shared::database::role::Role;
 use shared::database::Collection;
 
@@ -22,7 +21,11 @@ impl Job for RolesJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping roles collection");
-			Role::collection(global.target_db()).delete_many(doc! {}).await?;
+			Role::collection(global.target_db()).drop().await?;
+			let indexes = Role::indexes();
+			if !indexes.is_empty() {
+				Role::collection(global.target_db()).create_indexes(indexes).await?;
+			}
 		}
 
 		Ok(RolesJob {

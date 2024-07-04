@@ -2,14 +2,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::activity::{
-	EmoteActivity, EmoteActivityData, EmoteActivityKind, EmoteSetActivity, EmoteSetActivityData, EmoteSetActivityKind,
-	EmoteSettingsChange,
-};
+use shared::database::audit_log::{AuditLogEmoteData, AuditLogEmoteSetData, AuditLogUserData, EmoteSettingsChange};
 use shared::database::emote::{Emote, EmoteId};
-use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
-use shared::database::Id;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
@@ -28,7 +23,7 @@ pub struct AuditLog {
 	kind: AuditLogKind,
 	target_id: GqlObjectId,
 	target_kind: u32,
-	created_at: time::OffsetDateTime,
+	created_at: chrono::DateTime<chrono::Utc>,
 	changes: Vec<AuditLogChange>,
 	reason: String,
 }
@@ -83,67 +78,67 @@ pub enum AuditLogKind {
 
 async_graphql::scalar!(AuditLogKind);
 
-impl From<EmoteActivityKind> for AuditLogKind {
-	fn from(value: EmoteActivityKind) -> Self {
-		match value {
-			EmoteActivityKind::Upload => Self::CreateEmote,
-			EmoteActivityKind::Process => Self::ProcessEmote,
-			EmoteActivityKind::Edit => Self::UpdateEmote,
-			EmoteActivityKind::Merge => Self::MergeEmote,
-			EmoteActivityKind::Delete => Self::DeleteEmote,
-		}
-	}
-}
-
-impl From<EmoteSetActivityKind> for AuditLogKind {
-	fn from(value: EmoteSetActivityKind) -> Self {
-		match value {
-			EmoteSetActivityKind::Create => Self::CreateEmoteSet,
-			EmoteSetActivityKind::Edit => Self::UpdateEmoteSet,
-			EmoteSetActivityKind::Delete => Self::DeleteEmoteSet,
-		}
-	}
-}
-
 impl AuditLog {
-	pub fn from_db_emote(activity: EmoteActivity) -> Self {
-		let changes = activity
-			.data
-			.and_then(AuditLogChange::from_db_emote)
-			.map(|c| vec![c])
-			.unwrap_or_default();
+	pub fn from_db(audit_log: shared::database::audit_log::AuditLog, emotes: &HashMap<EmoteId, Emote>) -> Option<Self> {
+		let actor_id = audit_log.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into();
 
-		Self {
-			id: Id::<()>::with_timestamp_ms(activity.timestamp.unix_timestamp() * 1000).into(),
-			actor_id: activity.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into(),
-			kind: activity.kind.into(),
-			target_id: EmoteId::from(activity.emote_id).into(),
-			target_kind: 2,
-			created_at: activity.timestamp,
-			changes,
-			reason: String::new(),
-		}
-	}
+		let (kind, target_id, target_kind, changes) = match audit_log.data {
+			shared::database::audit_log::AuditLogData::Emote {
+				target_id,
+				data: AuditLogEmoteData::Upload,
+			} => (AuditLogKind::CreateEmote, target_id.into(), 2, vec![]),
+			shared::database::audit_log::AuditLogData::Emote {
+				target_id,
+				data: AuditLogEmoteData::Process,
+			} => (AuditLogKind::ProcessEmote, target_id.into(), 2, vec![]),
+			shared::database::audit_log::AuditLogData::Emote {
+				target_id,
+				data: AuditLogEmoteData::Delete,
+			} => (AuditLogKind::DeleteEmote, target_id.into(), 2, vec![]),
+			shared::database::audit_log::AuditLogData::Emote { target_id, data } => (
+				AuditLogKind::UpdateEmote,
+				target_id.into(),
+				2,
+				vec![AuditLogChange::from_db_emote(data)?],
+			),
+			shared::database::audit_log::AuditLogData::EmoteSet {
+				target_id,
+				data: AuditLogEmoteSetData::Create,
+			} => (AuditLogKind::CreateEmoteSet, target_id.into(), 3, vec![]),
+			shared::database::audit_log::AuditLogData::EmoteSet {
+				target_id,
+				data: AuditLogEmoteSetData::Delete,
+			} => (AuditLogKind::DeleteEmoteSet, target_id.into(), 3, vec![]),
+			shared::database::audit_log::AuditLogData::EmoteSet { target_id, data } => (
+				AuditLogKind::UpdateEmoteSet,
+				target_id.into(),
+				3,
+				vec![AuditLogChange::from_db_emote_set(
+					data,
+					actor_id,
+					audit_log.id.timestamp(),
+					emotes,
+				)?],
+			),
+			shared::database::audit_log::AuditLogData::User { target_id, data } => (
+				AuditLogKind::EditUser,
+				target_id.into(),
+				1,
+				vec![AuditLogChange::from_db_user(data, audit_log.id.timestamp())?],
+			),
+			_ => return None,
+		};
 
-	pub fn from_db_emote_set(activity: EmoteSetActivity, emotes: &HashMap<EmoteId, Emote>) -> Self {
-		let actor_id = activity.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into();
-
-		let changes = activity
-			.data
-			.and_then(|c| AuditLogChange::from_db_emote_set(c, actor_id, activity.timestamp, emotes))
-			.map(|c| vec![c])
-			.unwrap_or_default();
-
-		Self {
-			id: Id::<()>::with_timestamp_ms(activity.timestamp.unix_timestamp() * 1000).into(),
+		Some(Self {
+			id: audit_log.id.into(),
 			actor_id,
-			kind: activity.kind.into(),
-			target_id: EmoteSetId::from(activity.emote_set_id).into(),
-			target_kind: 3,
-			created_at: activity.timestamp,
+			kind,
+			target_id,
+			target_kind,
+			created_at: audit_log.id.timestamp(),
 			changes,
 			reason: String::new(),
-		}
+		})
 	}
 }
 
@@ -183,15 +178,15 @@ impl From<EmoteSettingsChange> for EmoteVersionStateChange {
 }
 
 impl AuditLogChange {
-	pub fn from_db_emote(data: EmoteActivityData) -> Option<Self> {
+	pub fn from_db_emote(data: AuditLogEmoteData) -> Option<Self> {
 		match data {
-			EmoteActivityData::ChangeName { old, new } => Some(Self {
+			AuditLogEmoteData::ChangeName { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
 				key: "name".to_string(),
 				value: Some(ArbitraryMap::StringValue { n: new, o: old, p: 0 }),
 				array_value: None,
 			}),
-			EmoteActivityData::ChangeOwner { old, new } => Some(Self {
+			AuditLogEmoteData::ChangeOwner { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
 				key: "owner_id".to_string(),
 				value: Some(ArbitraryMap::StringValue {
@@ -201,13 +196,13 @@ impl AuditLogChange {
 				}),
 				array_value: None,
 			}),
-			EmoteActivityData::ChangeTags { old, new } => Some(Self {
+			AuditLogEmoteData::ChangeTags { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
 				key: "tags".to_string(),
 				value: Some(ArbitraryMap::StringVecValue { n: new, o: old, p: 0 }),
 				array_value: None,
 			}),
-			EmoteActivityData::ChangeSettings { old, new } => {
+			AuditLogEmoteData::ChangeSettings { old, new } => {
 				if (new.approved_personal.is_some() && old.approved_personal.is_some())
 					|| (new.public_listed.is_some() && old.public_listed.is_some())
 				{
@@ -246,50 +241,121 @@ impl AuditLogChange {
 	}
 
 	pub fn from_db_emote_set(
-		data: EmoteSetActivityData,
+		data: AuditLogEmoteSetData,
 		actor_id: GqlObjectId,
-		timestamp: time::OffsetDateTime,
+		timestamp: chrono::DateTime<chrono::Utc>,
 		emotes: &HashMap<EmoteId, Emote>,
 	) -> Option<Self> {
 		match data {
-			EmoteSetActivityData::ChangeName { old, new } => Some(Self {
+			AuditLogEmoteSetData::ChangeName { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
 				key: "name".to_string(),
 				value: Some(ArbitraryMap::StringValue { n: new, o: old, p: 0 }),
 				array_value: None,
 			}),
-			EmoteSetActivityData::ChangeSettings { .. } => None,
-			EmoteSetActivityData::ChangeEmotes { added, removed } => Some(Self {
+			AuditLogEmoteSetData::AddEmote { emote_id } => {
+				let emote = emotes.get(&emote_id)?;
+
+				Some(Self {
+					format: AuditLogChangeFormat::ArrayValue,
+					key: "emotes".to_string(),
+					value: None,
+					array_value: Some(AuditLogChangeArray {
+						added: vec![ArbitraryMap::Emote {
+							id: emote_id.into(),
+							actor_id,
+							flags: EmoteFlagsModel::none(),
+							name: emote.default_name.clone(),
+							timestamp,
+						}],
+						removed: vec![],
+						updated: vec![],
+					}),
+				})
+			}
+			AuditLogEmoteSetData::RemoveEmote { emote_id } => {
+				let emote = emotes.get(&emote_id)?;
+
+				Some(Self {
+					format: AuditLogChangeFormat::ArrayValue,
+					key: "emotes".to_string(),
+					value: None,
+					array_value: Some(AuditLogChangeArray {
+						added: vec![],
+						removed: vec![ArbitraryMap::Emote {
+							id: emote_id.into(),
+							actor_id,
+							flags: EmoteFlagsModel::none(),
+							name: emote.default_name.clone(),
+							timestamp,
+						}],
+						updated: vec![],
+					}),
+				})
+			}
+			AuditLogEmoteSetData::RenameEmote {
+				emote_id,
+				old_name,
+				new_name,
+			} => Some(Self {
 				format: AuditLogChangeFormat::ArrayValue,
 				key: "emotes".to_string(),
 				value: None,
 				array_value: Some(AuditLogChangeArray {
-					added: added
-						.into_iter()
-						.filter_map(|id| {
-							let emote = emotes.get(&id)?;
-							Some(ArbitraryMap::Emote {
-								id: id.into(),
-								actor_id,
-								flags: EmoteFlagsModel::none(),
-								name: emote.default_name.clone(),
-								timestamp,
-							})
-						})
-						.collect(),
-					removed: removed
-						.into_iter()
-						.filter_map(|id| {
-							let emote = emotes.get(&id)?;
-							Some(ArbitraryMap::Emote {
-								id: id.into(),
-								actor_id,
-								flags: EmoteFlagsModel::none(),
-								name: emote.default_name.clone(),
-								timestamp,
-							})
-						})
-						.collect(),
+					added: vec![],
+					removed: vec![],
+					updated: vec![ArbitraryMap::Nested {
+						o: Box::new(ArbitraryMap::Emote {
+							id: emote_id.into(),
+							actor_id,
+							flags: EmoteFlagsModel::none(),
+							name: old_name,
+							timestamp,
+						}),
+						n: Box::new(ArbitraryMap::Emote {
+							id: emote_id.into(),
+							actor_id,
+							flags: EmoteFlagsModel::none(),
+							name: new_name,
+							timestamp,
+						}),
+						p: 0,
+					}],
+				}),
+			}),
+			_ => None,
+		}
+	}
+
+	pub fn from_db_user(data: AuditLogUserData, timestamp: chrono::DateTime<chrono::Utc>) -> Option<Self> {
+		match data {
+			AuditLogUserData::AddEditor { editor_id } => Some(Self {
+				format: AuditLogChangeFormat::ArrayValue,
+				key: "editors".to_string(),
+				value: None,
+				array_value: Some(AuditLogChangeArray {
+					added: vec![ArbitraryMap::Editor {
+						id: editor_id.into(),
+						added_at: timestamp,
+						permissions: 0,
+						visible: true,
+					}],
+					removed: vec![],
+					updated: vec![],
+				}),
+			}),
+			AuditLogUserData::RemoveEditor { editor_id } => Some(Self {
+				format: AuditLogChangeFormat::ArrayValue,
+				key: "editors".to_string(),
+				value: None,
+				array_value: Some(AuditLogChangeArray {
+					added: vec![],
+					removed: vec![ArbitraryMap::Editor {
+						id: editor_id.into(),
+						added_at: timestamp,
+						permissions: 0,
+						visible: true,
+					}],
 					updated: vec![],
 				}),
 			}),
@@ -332,11 +398,22 @@ pub enum ArbitraryMap {
 		actor_id: GqlObjectId,
 		flags: EmoteFlagsModel,
 		name: String,
-		timestamp: time::OffsetDateTime,
+		timestamp: chrono::DateTime<chrono::Utc>,
 	},
 	EmoteVersionState {
 		n: EmoteVersionStateChange,
 		o: EmoteVersionStateChange,
+		p: u32,
+	},
+	Editor {
+		id: GqlObjectId,
+		added_at: chrono::DateTime<chrono::Utc>,
+		permissions: u32,
+		visible: bool,
+	},
+	Nested {
+		n: Box<ArbitraryMap>,
+		o: Box<ArbitraryMap>,
 		p: u32,
 	},
 	StringVecValue {
@@ -379,6 +456,19 @@ impl ScalarType for ArbitraryMap {
 					async_graphql::Name::new("timestamp") => async_graphql::Value::String(timestamp.to_string()),
 				}
 			}
+			Self::Editor {
+				id,
+				added_at,
+				permissions,
+				visible,
+			} => {
+				indexmap::indexmap! {
+					async_graphql::Name::new("id") => async_graphql::Value::String(id.to_string()),
+					async_graphql::Name::new("added_at") => async_graphql::Value::String(added_at.to_string()),
+					async_graphql::Name::new("permissions") => async_graphql::Value::Number(async_graphql::Number::from(*permissions)),
+					async_graphql::Name::new("visible") => async_graphql::Value::Boolean(*visible),
+				}
+			}
 			Self::EmoteVersionState { n, o, p } => {
 				let mut new: indexmap::IndexMap<async_graphql::Name, async_graphql::Value> = indexmap::IndexMap::new();
 				if let Some(listed) = n.listed {
@@ -399,6 +489,16 @@ impl ScalarType for ArbitraryMap {
 				indexmap::indexmap! {
 					async_graphql::Name::new("n") => async_graphql::Value::Object(new),
 					async_graphql::Name::new("o") => async_graphql::Value::Object(old),
+					async_graphql::Name::new("p") => async_graphql::Value::Number(async_graphql::Number::from(*p)),
+				}
+			}
+			Self::Nested { n, o, p } => {
+				let n = n.to_value();
+				let o = o.to_value();
+
+				indexmap::indexmap! {
+					async_graphql::Name::new("n") => n,
+					async_graphql::Name::new("o") => o,
 					async_graphql::Name::new("p") => async_graphql::Value::Number(async_graphql::Number::from(*p)),
 				}
 			}

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use mongodb::bson::doc;
 use shared::database::duration::DurationUnit;
 use shared::database::product::Product;
 use shared::database::Collection;
@@ -25,7 +24,11 @@ impl Job for PricesJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping products collection");
-			Product::collection(global.target_db()).delete_many(doc! {}).await?;
+			Product::collection(global.target_db()).drop().await?;
+			let indexes = Product::indexes();
+			if !indexes.is_empty() {
+				Product::collection(global.target_db()).create_indexes(indexes).await?;
+			}
 		}
 
 		Ok(Self {
@@ -51,7 +54,7 @@ impl Job for PricesJob {
 			return outcome;
 		};
 
-		let price = match stripe::Price::retrieve(self.global.stripe_client(), &price_id, &["data.product"]).await {
+		let price = match stripe::Price::retrieve(self.global.stripe_client(), &price_id, &["product", "currency_options"]).await {
 			Ok(price) => price,
 			Err(e) => {
 				outcome.errors.push(e.into());

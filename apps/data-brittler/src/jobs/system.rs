@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use mongodb::bson::doc;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
 use shared::database::Collection;
@@ -20,7 +19,13 @@ impl Job for SystemJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			GlobalConfig::collection(global.target_db()).delete_many(doc! {}).await?;
+			GlobalConfig::collection(global.target_db()).drop().await?;
+			let indexes = GlobalConfig::indexes();
+			if !indexes.is_empty() {
+				GlobalConfig::collection(global.target_db())
+					.create_indexes(indexes)
+					.await?;
+			}
 		}
 
 		Ok(Self { global })

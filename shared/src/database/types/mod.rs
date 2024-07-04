@@ -1,4 +1,4 @@
-pub mod activity;
+pub mod audit_log;
 pub mod automod;
 pub mod badge;
 pub mod duration;
@@ -57,6 +57,7 @@ impl GenericCollection {
 
 fn collections() -> impl IntoIterator<Item = GenericCollection> {
 	std::iter::empty()
+		.chain(audit_log::collections())
 		.chain(automod::collections())
 		.chain(badge::collections())
 		.chain(emote::collections())

@@ -2,7 +2,6 @@ use std::future::IntoFuture;
 use std::sync::Arc;
 
 use fnv::FnvHashSet;
-use mongodb::bson::doc;
 use mongodb::options::InsertManyOptions;
 use shared::database::ticket::{
 	Ticket, TicketId, TicketKind, TicketMember, TicketMemberKind, TicketMessage, TicketMessageId, TicketPriority,
@@ -31,8 +30,16 @@ impl Job for ReportsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping tickets and ticket_messages collections");
-			Ticket::collection(global.target_db()).delete_many(doc! {}).await?;
-			TicketMessage::collection(global.target_db()).delete_many(doc! {}).await?;
+			Ticket::collection(global.target_db()).drop().await?;
+			let indexes = Ticket::indexes();
+			if !indexes.is_empty() {
+				Ticket::collection(global.target_db()).create_indexes(indexes).await?;
+			}
+			TicketMessage::collection(global.target_db()).drop().await?;
+			let indexes = TicketMessage::indexes();
+			if !indexes.is_empty() {
+				TicketMessage::collection(global.target_db()).create_indexes(indexes).await?;
+			}
 		}
 
 		Ok(Self {

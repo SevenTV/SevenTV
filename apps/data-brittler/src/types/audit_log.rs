@@ -34,7 +34,7 @@ pub enum AuditLogChange {
 	EmoteSetEmotes(AuditLogChangeArray<types::EmoteSetEmote>),
 
 	#[serde(rename = "versions")]
-	EmoteVersions(AuditLogChangeArray<AuditLogChangeSingleValue<EmoteVersionStateChange>>),
+	EmoteVersions(AuditLogChangeArray<EmoteVersionStateChange>),
 	#[serde(rename = "new_emote_id")]
 	NewEmoteId(AuditLogChangeSingleValue<ObjectIdWrapper>),
 	#[serde(rename = "tags")]
@@ -86,7 +86,7 @@ pub struct AuditLogChangeArray<T> {
 	#[serde(default = "Vec::new")]
 	pub removed: Vec<T>,
 	#[serde(default = "Vec::new")]
-	pub updated: Vec<T>,
+	pub updated: Vec<AuditLogChangeSingleValue<T>>,
 }
 
 // https://github.com/SevenTV/Common/blob/master/structures/v3/type.audit.go#L21

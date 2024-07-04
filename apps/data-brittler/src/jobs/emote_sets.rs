@@ -1,6 +1,6 @@
 use std::sync::Arc;
+use std::mem;
 
-use mongodb::bson::doc;
 use mongodb::options::InsertManyOptions;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
 use shared::database::Collection;
@@ -9,6 +9,8 @@ use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
+
+const BATCH_SIZE: usize = 50_000;
 
 pub struct EmoteSetsJob {
 	global: Arc<Global>,
@@ -22,8 +24,12 @@ impl Job for EmoteSetsJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("dropping emote_sets and emote_set_emotes collections");
-			EmoteSet::collection(global.target_db()).delete_many(doc! {}).await?;
+			tracing::info!("dropping emote_sets collections");
+			EmoteSet::collection(global.target_db()).drop().await?;
+			let indexes = EmoteSet::indexes();
+			if !indexes.is_empty() {
+				EmoteSet::collection(global.target_db()).create_indexes(indexes).await?;
+			}
 		}
 
 		Ok(Self {
@@ -90,6 +96,21 @@ impl Job for EmoteSetsJob {
 			origin_config: None,
 			kind,
 		});
+
+		if self.emote_sets.len() >= BATCH_SIZE {
+			match EmoteSet::collection(self.global.target_db())
+				.insert_many(mem::take(&mut self.emote_sets))
+				.await
+			{
+				Ok(res) => {
+					outcome.inserted_rows += res.inserted_ids.len() as u64;
+					if res.inserted_ids.len() < BATCH_SIZE {
+						return outcome.with_error(error::Error::InsertMany);
+					}
+				}
+				Err(e) => return outcome.with_error(e),
+			}
+		}
 
 		outcome
 	}

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use fnv::FnvHashSet;
-use mongodb::bson::doc;
 use mongodb::options::InsertManyOptions;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::Collection;
@@ -24,7 +23,11 @@ impl Job for EntitlementsJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping entitlements");
-			EntitlementEdge::collection(global.target_db()).delete_many(doc! {}).await?;
+			EntitlementEdge::collection(global.target_db()).drop().await?;
+			let indexes = EntitlementEdge::indexes();
+			if !indexes.is_empty() {
+				EntitlementEdge::collection(global.target_db()).create_indexes(indexes).await?;
+			}
 		}
 
 		Ok(Self {

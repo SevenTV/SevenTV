@@ -1,10 +1,13 @@
+use std::future::IntoFuture;
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
+use futures::{TryFutureExt, TryStreamExt};
 use mongodb::bson::doc;
-use shared::database::activity::EmoteSetActivityData;
+use shared::database::audit_log::{AuditLogData, AuditLogEmoteSetData};
 use shared::database::global::GlobalConfig;
 use shared::database::user::UserId;
+use shared::database::Collection;
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{UserConnectionPlatformModel, UserTypeModel};
@@ -203,19 +206,43 @@ impl User {
 	async fn activity<'ctx>(&self, ctx: &Context<'ctx>, limit: Option<u32>) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let activities = global
-			.emote_set_activity_by_actor_id_loader()
-			.load(self.id.id())
+		let Some(emote_set_id) = self.db.read().await.user().style.active_emote_set_id else {
+			return Ok(vec![]);
+		};
+
+		let audit_logs: Vec<_> = shared::database::audit_log::AuditLog::collection(global.db())
+			.find(doc! {
+				"$or": [
+					{ "data.kind": "user", "data.data.kind": "add_editor", "data.target_id": self.id.0 },
+					{ "data.kind": "user", "data.data.kind": "remove_editor", "data.target_id": self.id.0 },
+					{ "data.kind": "emote_set", "data.target_id": emote_set_id },
+				]
+			})
+			.sort(doc! { "_id": -1 })
+			.limit(limit.unwrap_or(100) as i64)
+			.into_future()
+			.and_then(|f| f.try_collect())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
+			.map_err(|e| {
+				tracing::error!(%e, "failed to query audit logs");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		let mut emote_ids = vec![];
 
-		for a in &activities {
-			if let Some(EmoteSetActivityData::ChangeEmotes { added, removed }) = &a.data {
-				emote_ids.extend(added);
-				emote_ids.extend(removed);
+		for a in &audit_logs {
+			match a.data {
+				AuditLogData::EmoteSet {
+					data: AuditLogEmoteSetData::AddEmote { emote_id },
+					..
+				}
+				| AuditLogData::EmoteSet {
+					data: AuditLogEmoteSetData::RemoveEmote { emote_id },
+					..
+				} => {
+					emote_ids.push(emote_id);
+				}
+				_ => {}
 			}
 		}
 
@@ -225,11 +252,7 @@ impl User {
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		Ok(activities
-			.into_iter()
-			.take(limit.unwrap_or(100) as usize)
-			.map(|a| AuditLog::from_db_emote_set(a, &emotes))
-			.collect())
+		Ok(audit_logs.into_iter().filter_map(|l| AuditLog::from_db(l, &emotes)).collect())
 	}
 
 	async fn connections<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserConnection>, ApiError> {

@@ -1,4 +1,4 @@
-pub mod activity;
+pub mod audit_log;
 pub mod badge;
 pub mod emote;
 pub mod emote_set;
