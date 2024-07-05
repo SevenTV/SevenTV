@@ -1,11 +1,11 @@
-use crate::database::Id;
-
-use super::emote::EmoteId;
+use super::emote::{EmoteFlags, EmoteId};
 use super::emote_set::EmoteSetId;
 use super::role::RoleId;
 use super::ticket::TicketId;
+use super::user::connection::Platform;
 use super::user::UserId;
 use super::{Collection, GenericCollection};
+use crate::database::Id;
 
 pub type AuditLogId = Id<AuditLog>;
 
@@ -67,25 +67,11 @@ pub enum AuditLogData {
 pub enum AuditLogEmoteData {
 	Upload,
 	Process,
-	ChangeName {
-		old: String,
-		new: String,
-	},
-	Merge {
-		new_emote_id: EmoteId,
-	},
-	ChangeOwner {
-		old: UserId,
-		new: UserId,
-	},
-	ChangeTags {
-		new: Vec<String>,
-		old: Vec<String>,
-	},
-	ChangeSettings {
-		old: EmoteSettingsChange,
-		new: EmoteSettingsChange,
-	},
+	ChangeName { old: String, new: String },
+	Merge { new_emote_id: EmoteId },
+	ChangeOwner { old: UserId, new: UserId },
+	ChangeTags { old: Vec<String>, new: Vec<String> },
+	ChangeFlags { old: EmoteFlags, new: EmoteFlags },
 	Delete,
 }
 
@@ -101,12 +87,13 @@ pub enum AuditLogEmoteSetData {
 		added: Vec<String>,
 		removed: Vec<String>,
 	},
-	ChangeSettings {
-		old: EmoteSetSettingsChange,
-		new: EmoteSetSettingsChange,
+	ChangeCapacity {
+		old: Option<i32>,
+		new: Option<i32>,
 	},
 	AddEmote {
 		emote_id: EmoteId,
+		alias: String,
 	},
 	RemoveEmote {
 		emote_id: EmoteId,
@@ -122,8 +109,7 @@ pub enum AuditLogEmoteSetData {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AuditLogUserData {
-	Register,
-	Login,
+	Login { platform: Platform },
 	Logout,
 	AddEditor { editor_id: UserId },
 	RemoveEditor { editor_id: UserId },
@@ -139,34 +125,7 @@ pub enum AuditLogUserData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AuditLogTicketData {
 	Create,
-	ChangeAssignees { added: Vec<UserId>, removed: Vec<UserId> },
+	AddMember { member: UserId },
+	RemoveMember { member: UserId },
 	ChangeOpen { old: bool, new: bool },
-	Delete,
-}
-
-// same as database::EmoteSettings but different
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
-#[serde(deny_unknown_fields)]
-pub struct EmoteSettingsChange {
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub public_listed: Option<bool>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub private: Option<bool>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub nsfw: Option<bool>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub default_zero_width: Option<bool>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub approved_personal: Option<bool>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
-#[serde(default)]
-pub struct EmoteSetSettingsChange {
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub capacity: Option<u32>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub privileged: Option<bool>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub immutable: Option<bool>,
 }

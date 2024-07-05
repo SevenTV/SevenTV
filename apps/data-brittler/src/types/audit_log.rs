@@ -1,4 +1,5 @@
 use mongodb::bson::oid::ObjectId;
+use shared::database::emote::EmoteFlags;
 use shared::old_types::EmoteFlagsModel;
 
 use crate::types;
@@ -20,6 +21,27 @@ pub struct AuditLog {
 pub struct EmoteVersionStateChange {
 	pub listed: Option<bool>,
 	pub allow_personal: Option<bool>,
+}
+
+impl From<&EmoteVersionStateChange> for EmoteFlags {
+	fn from(value: &EmoteVersionStateChange) -> Self {
+		let mut flags = EmoteFlags::none();
+		if let Some(true) = value.listed {
+			flags |= EmoteFlags::PublicListed;
+		}
+		match value.allow_personal {
+			Some(true) => {
+				flags |= EmoteFlags::ApprovedPersonal;
+				flags &= !EmoteFlags::DeniedPersonal;
+			}
+			Some(false) => {
+				flags |= EmoteFlags::DeniedPersonal;
+				flags &= !EmoteFlags::ApprovedPersonal;
+			}
+			None => {}
+		}
+		flags
+	}
 }
 
 #[derive(Debug, serde::Deserialize)]

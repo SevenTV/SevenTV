@@ -176,7 +176,12 @@ impl RolesMutation {
 
 		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let role = global.role_by_id_loader().load(role_id.id()).await.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?.ok_or(ApiError::NOT_FOUND)?;
+		let role = global
+			.role_by_id_loader()
+			.load(role_id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
 
 		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
 			return Err(ApiError::FORBIDDEN);
@@ -194,7 +199,7 @@ impl RolesMutation {
 
 		// TODO: remove entitlement edges
 
-		if res.deleted_count == 1 {
+		if res.deleted_count > 0 {
 			Ok(String::new())
 		} else {
 			Err(ApiError::NOT_FOUND)

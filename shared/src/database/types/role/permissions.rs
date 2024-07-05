@@ -602,17 +602,23 @@ impl PartialOrd for Permissions {
 			self.emote_moderation_request.partial_cmp(&other.emote_moderation_request)?,
 			self.admin.partial_cmp(&other.admin)?,
 			self.flags.partial_cmp(&other.flags)?,
-			self.emote_moderation_request_priority.partial_cmp(&other.emote_moderation_request_priority)?,
-			self.emote_moderation_request_limit.partial_cmp(&other.emote_moderation_request_limit)?,
+			self.emote_moderation_request_priority
+				.partial_cmp(&other.emote_moderation_request_priority)?,
+			self.emote_moderation_request_limit
+				.partial_cmp(&other.emote_moderation_request_limit)?,
 			self.emote_set_capacity.partial_cmp(&other.emote_set_capacity)?,
-			self.personal_emote_set_capacity.partial_cmp(&other.personal_emote_set_capacity)?,
+			self.personal_emote_set_capacity
+				.partial_cmp(&other.personal_emote_set_capacity)?,
 		];
 
-		if cmp.iter().any(|c| *c == std::cmp::Ordering::Greater) { // all greater
+		if cmp.iter().any(|c| *c == std::cmp::Ordering::Greater) {
+			// all greater
 			Some(std::cmp::Ordering::Greater)
-		} else if cmp.iter().all(|c| *c == std::cmp::Ordering::Equal) { // nothing greater & all equal
+		} else if cmp.iter().all(|c| *c == std::cmp::Ordering::Equal) {
+			// nothing greater & all equal
 			Some(std::cmp::Ordering::Equal)
-		} else { // nothing greater & at least one less
+		} else {
+			// nothing greater & at least one less
 			Some(std::cmp::Ordering::Less)
 		}
 	}

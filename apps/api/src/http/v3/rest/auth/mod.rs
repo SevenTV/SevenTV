@@ -8,6 +8,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
 use shared::database::Collection;
@@ -116,10 +117,20 @@ async fn login(
 async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	session: AuthSession,
+	auth_session: AuthSession,
 ) -> Result<impl IntoResponse, ApiError> {
-	// new session
-	if let AuthSessionKind::Session(session) = session.kind {
+	let mut session = global.mongo().start_session().await.map_err(|err| {
+		tracing::error!(error = %err, "failed to start session");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	session.start_transaction().await.map_err(|err| {
+		tracing::error!(error = %err, "failed to start transaction");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	// is a new session
+	if let AuthSessionKind::Session(session) = &auth_session.kind {
 		UserSession::collection(global.db())
 			.delete_one(doc! {
 				"_id": session.id,
@@ -130,6 +141,27 @@ async fn logout(
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 	}
+
+	AuditLog::collection(global.db())
+		.insert_one(AuditLog {
+			id: AuditLogId::new(),
+			actor_id: Some(auth_session.user_id()),
+			data: AuditLogData::User {
+				target_id: auth_session.user_id(),
+				data: AuditLogUserData::Logout,
+			},
+		})
+		.session(&mut session)
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to insert audit log");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+	session.commit_transaction().await.map_err(|err| {
+		tracing::error!(error = %err, "failed to commit transaction");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
 
 	cookies.remove(&global, AUTH_COOKIE);
 

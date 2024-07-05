@@ -71,7 +71,7 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 		}
 	} else {
 		let joined_jobs = futures::future::join(jobs::run(global.clone()), image_processor_callback::run(global.clone()));
-	
+
 		tokio::select! {
 			r = joined_jobs => match r {
 				(Err(e), _) => tracing::error!(error = %e, "failed to run jobs"),

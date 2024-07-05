@@ -8,6 +8,7 @@ use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::role::permissions::{EmotePermission, FlagPermission, PermissionsExt};
@@ -134,8 +135,43 @@ pub async fn create_emote(
 		merged: None,
 	};
 
-	Emote::collection(global.db()).insert_one(&emote).await.map_err(|err| {
-		tracing::error!(error = %err, "failed to insert emote");
+	let mut session = global.mongo().start_session().await.map_err(|e| {
+		tracing::error!(error = %e, "failed to start session");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	session.start_transaction().await.map_err(|e| {
+		tracing::error!(error = %e, "failed to start transaction");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	Emote::collection(global.db())
+		.insert_one(&emote)
+		.session(&mut session)
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to insert emote");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+	AuditLog::collection(global.db())
+		.insert_one(AuditLog {
+			id: AuditLogId::new(),
+			actor_id: Some(user.id),
+			data: AuditLogData::Emote {
+				target_id: emote.id,
+				data: AuditLogEmoteData::Upload,
+			},
+		})
+		.session(&mut session)
+		.await
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to insert audit log");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+	session.commit_transaction().await.map_err(|e| {
+		tracing::error!(error = %e, "failed to commit transaction");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
 

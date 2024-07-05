@@ -9,6 +9,7 @@ use mongodb::bson::{doc, to_bson};
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
 use shared::database::badge::Badge;
 use shared::database::emote::Emote;
 use shared::database::image_set::Image;
@@ -151,6 +152,9 @@ async fn handle_success(
 		})
 		.collect();
 
+	let mut session = global.mongo().start_session().await?;
+	session.start_transaction().await?;
+
 	match subject {
 		Subject::Emote(id) => {
 			Emote::collection(global.db())
@@ -168,6 +172,19 @@ async fn handle_success(
 						},
 					},
 				)
+				.session(&mut session)
+				.await?;
+
+			AuditLog::collection(global.db())
+				.insert_one(AuditLog {
+					id: AuditLogId::new(),
+					actor_id: None,
+					data: AuditLogData::Emote {
+						target_id: id,
+						data: AuditLogEmoteData::Process,
+					},
+				})
+				.session(&mut session)
 				.await?;
 		}
 		Subject::ProfilePicture(id) => {
@@ -207,6 +224,7 @@ async fn handle_success(
 					},
 					aggregation,
 				)
+				.session(&mut session)
 				.await?;
 		}
 		Subject::Paint(id) => {
@@ -230,6 +248,7 @@ async fn handle_success(
 						},
 					},
 				)
+				.session(&mut session)
 				.await?;
 		}
 		Subject::Badge(id) => {
@@ -247,10 +266,13 @@ async fn handle_success(
 						},
 					},
 				)
+				.session(&mut session)
 				.await?;
 		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
+
+	session.commit_transaction().await?;
 
 	Ok(())
 }

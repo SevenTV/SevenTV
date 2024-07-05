@@ -1,13 +1,13 @@
-use std::sync::Arc;
 use std::future::IntoFuture;
+use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
+use futures::{TryFutureExt, TryStreamExt};
 use mongodb::bson::doc;
 use mongodb::options::FindOptions;
 use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::role_permission::RolePermission;
-use futures::{TryFutureExt, TryStreamExt};
 
 use super::user::User;
 use crate::global::Global;

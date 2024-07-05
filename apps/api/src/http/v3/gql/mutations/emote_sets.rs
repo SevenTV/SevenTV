@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::ReturnDocument;
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
 use shared::database::emote::EmoteFlags;
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
@@ -124,13 +125,45 @@ impl EmoteSetsMutation {
 			tags: vec![],
 		};
 
+		let mut session = global.mongo().start_session().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		DbEmoteSet::collection(global.db())
 			.insert_one(&emote_set)
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert emote set");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
+
+		AuditLog::collection(global.db())
+			.insert_one(AuditLog {
+				id: AuditLogId::new(),
+				actor_id: Some(user.id),
+				data: AuditLogData::EmoteSet {
+					target_id: emote_set.id,
+					data: AuditLogEmoteSetData::Create,
+				},
+			})
+			.session(&mut session)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert audit log");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		session.commit_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 		Ok(EmoteSet::from_db(emote_set))
 	}
@@ -292,6 +325,16 @@ impl EmoteSetOps {
 		self.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
 			.await?;
 
+		let mut session = global.mongo().start_session().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		let emote_set = match action {
 			ListItemAction::Add => {
 				if let Some(capacity) = self.emote_set.capacity {
@@ -315,16 +358,6 @@ impl EmoteSetOps {
 						"this emote is already in the set or has a conflicting name",
 					));
 				}
-
-				let mut session = global.mongo().start_session().await.map_err(|e| {
-					tracing::error!(error = %e, "failed to start session");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
-				session.start_transaction().await.map_err(|e| {
-					tracing::error!(error = %e, "failed to start transaction");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
 
 				if matches!(self.emote_set.kind, EmoteSetKind::Personal) {
 					if emote.flags.contains(EmoteFlags::DeniedPersonal) {
@@ -355,7 +388,7 @@ impl EmoteSetOps {
 									}).unwrap(),
 								},
 							)
-							.with_options(FindOneAndUpdateOptions::builder().upsert(true).build())
+							.upsert(true)
 							.session(&mut session)
 							.await
 							.map_err(|e| {
@@ -395,7 +428,7 @@ impl EmoteSetOps {
 				let emote_set_emote = EmoteSetEmote {
 					id: id.id(),
 					added_by_id: Some(auth_session.user_id()),
-					alias,
+					alias: alias.clone(),
 					..Default::default()
 				};
 
@@ -410,11 +443,7 @@ impl EmoteSetOps {
 							},
 						},
 					)
-					.with_options(
-						FindOneAndUpdateOptions::builder()
-							.return_document(ReturnDocument::After)
-							.build(),
-					)
+					.return_document(ReturnDocument::After)
 					.session(&mut session)
 					.await
 					.map_err(|e| {
@@ -429,10 +458,24 @@ impl EmoteSetOps {
 					}
 				}
 
-				session.commit_transaction().await.map_err(|e| {
-					tracing::error!(error = %e, "failed to commit transaction");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(auth_session.user_id()),
+						data: AuditLogData::EmoteSet {
+							target_id: self.emote_set.id,
+							data: AuditLogEmoteSetData::AddEmote {
+								emote_id: id.id(),
+								alias,
+							},
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
 
 				emote_set
 			}
@@ -443,7 +486,7 @@ impl EmoteSetOps {
 					.find(|e| e.id == id.id())
 					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"))?;
 
-				DbEmoteSet::collection(global.db())
+				let emote_set = DbEmoteSet::collection(global.db())
 					.find_one_and_update(
 						doc! {
 							"_id": self.emote_set.id,
@@ -456,17 +499,32 @@ impl EmoteSetOps {
 							},
 						},
 					)
-					.with_options(
-						FindOneAndUpdateOptions::builder()
-							.return_document(ReturnDocument::After)
-							.build(),
-					)
+					.session(&mut session)
+					.return_document(ReturnDocument::After)
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to remove emote from set");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?
-					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote set not found"))?
+					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote set not found"))?;
+
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(auth_session.user_id()),
+						data: AuditLogData::EmoteSet {
+							target_id: self.emote_set.id,
+							data: AuditLogEmoteSetData::RemoveEmote { emote_id: id.id() },
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				emote_set
 			}
 			ListItemAction::Update => {
 				let emote_set_emote = self
@@ -502,7 +560,7 @@ impl EmoteSetOps {
 						"emote with this name already exists in set",
 					))?;
 
-				DbEmoteSet::collection(global.db())
+				let emote_set = DbEmoteSet::collection(global.db())
 					.find_one_and_update(
 						doc! {
 							"_id": self.emote_set.id,
@@ -510,23 +568,47 @@ impl EmoteSetOps {
 						},
 						doc! {
 							"$set": {
-								"emotes.$.alias": name,
+								"emotes.$.alias": &name,
 							},
 						},
 					)
-					.with_options(
-						FindOneAndUpdateOptions::builder()
-							.return_document(ReturnDocument::After)
-							.build(),
-					)
+					.session(&mut session)
+					.return_document(ReturnDocument::After)
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to update emote in set");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?
-					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote set not found"))?
+					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote set not found"))?;
+
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(auth_session.user_id()),
+						data: AuditLogData::EmoteSet {
+							target_id: self.emote_set.id,
+							data: AuditLogEmoteSetData::RenameEmote {
+								emote_id: id.id(),
+								old_name: emote_set_emote.alias.clone(),
+								new_name: name,
+							},
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				emote_set
 			}
 		};
+
+		session.commit_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 		Ok(emote_set.emotes.into_iter().map(ActiveEmote::from_db).collect())
 	}
@@ -540,11 +622,40 @@ impl EmoteSetOps {
 			.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
 			.await?;
 
+		let mut session = global.mongo().start_session().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		let mut update = doc! {};
 
 		if let Some(name) = data.name {
 			// TODO validate this name
-			update.insert("name", name);
+			update.insert("name", &name);
+
+			AuditLog::collection(global.db())
+				.insert_one(AuditLog {
+					id: AuditLogId::new(),
+					actor_id: Some(auth_session.user_id()),
+					data: AuditLogData::EmoteSet {
+						target_id: self.emote_set.id,
+						data: AuditLogEmoteSetData::ChangeName {
+							old: self.emote_set.name.clone(),
+							new: name,
+						},
+					},
+				})
+				.session(&mut session)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to insert audit log");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
 		}
 
 		if let Some(capacity) = data.capacity {
@@ -574,6 +685,25 @@ impl EmoteSetOps {
 			}
 
 			update.insert("capacity", capacity as i32);
+
+			AuditLog::collection(global.db())
+				.insert_one(AuditLog {
+					id: AuditLogId::new(),
+					actor_id: Some(auth_session.user_id()),
+					data: AuditLogData::EmoteSet {
+						target_id: self.emote_set.id,
+						data: AuditLogEmoteSetData::ChangeCapacity {
+							old: self.emote_set.capacity,
+							new: Some(capacity as i32),
+						},
+					},
+				})
+				.session(&mut session)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to insert audit log");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
 		}
 
 		if data.origins.is_some() {
@@ -585,17 +715,19 @@ impl EmoteSetOps {
 
 		let emote_set = DbEmoteSet::collection(global.db())
 			.find_one_and_update(doc! { "_id": self.emote_set.id }, doc! { "$set": update })
-			.with_options(
-				FindOneAndUpdateOptions::builder()
-					.return_document(ReturnDocument::After)
-					.build(),
-			)
+			.session(&mut session)
+			.return_document(ReturnDocument::After)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update emote set");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+		session.commit_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 		Ok(EmoteSet::from_db(emote_set))
 	}
@@ -618,14 +750,48 @@ impl EmoteSetOps {
 			));
 		}
 
+		let mut session = global.mongo().start_session().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start session");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		session.start_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to start transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
 		let res = DbEmoteSet::collection(global.db())
 			.delete_one(doc! { "_id": self.emote_set.id })
+			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to delete emote set");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		Ok(res.deleted_count == 1)
+		if res.deleted_count > 0 {
+			AuditLog::collection(global.db())
+				.insert_one(AuditLog {
+					id: AuditLogId::new(),
+					actor_id: Some(auth_session.user_id()),
+					data: AuditLogData::EmoteSet {
+						target_id: self.emote_set.id,
+						data: AuditLogEmoteSetData::Delete,
+					},
+				})
+				.session(&mut session)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to insert audit log");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+		}
+
+		session.commit_transaction().await.map_err(|e| {
+			tracing::error!(error = %e, "failed to commit transaction");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+		Ok(res.deleted_count > 0)
 	}
 }

@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use async_graphql::{Context, InputObject, Object};
 use mongodb::bson::{doc, to_bson};
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::ReturnDocument;
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogTicketData};
 use shared::database::role::permissions::TicketPermission;
 use shared::database::ticket::{
 	Ticket, TicketId, TicketKind, TicketMember, TicketMemberKind, TicketMessage, TicketMessageId, TicketPriority,
@@ -93,6 +94,22 @@ impl ReportsMutation {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
+		AuditLog::collection(global.db())
+			.insert_one(AuditLog {
+				id: AuditLogId::new(),
+				actor_id: Some(auth_sesion.user_id()),
+				data: AuditLogData::Ticket {
+					target_id: ticket.id,
+					data: AuditLogTicketData::Create,
+				},
+			})
+			.session(&mut session)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert audit log");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
 		session.commit_transaction().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to commit transaction");
 			ApiError::INTERNAL_SERVER_ERROR
@@ -111,6 +128,13 @@ impl ReportsMutation {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+
+		let ticket = global
+			.ticket_by_id_loader()
+			.load(report_id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
 
 		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
@@ -134,7 +158,29 @@ impl ReportsMutation {
 		}
 
 		if let Some(status) = data.status {
-			update.insert("open", status == ReportStatus::Open || status == ReportStatus::Assigned);
+			let new = status == ReportStatus::Open || status == ReportStatus::Assigned;
+			update.insert("open", new);
+
+			if new != ticket.open {
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(auth_sesion.user_id()),
+						data: AuditLogData::Ticket {
+							target_id: report_id.id(),
+							data: AuditLogTicketData::ChangeOpen {
+								old: ticket.open,
+								new: new,
+							},
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+			}
 		}
 
 		if let Some(assignee) = data.assignee {
@@ -148,9 +194,41 @@ impl ReportsMutation {
 						last_read: None,
 					};
 					push_update.insert("members", to_bson(&member).expect("failed to convert member to bson"));
+
+					AuditLog::collection(global.db())
+						.insert_one(AuditLog {
+							id: AuditLogId::new(),
+							actor_id: Some(auth_sesion.user_id()),
+							data: AuditLogData::Ticket {
+								target_id: report_id.id(),
+								data: AuditLogTicketData::AddMember { member: user_id },
+							},
+						})
+						.session(&mut session)
+						.await
+						.map_err(|e| {
+							tracing::error!(error = %e, "failed to insert audit log");
+							ApiError::INTERNAL_SERVER_ERROR
+						})?;
 				}
 				(Some('-'), Ok(user_id)) => {
 					pull_update.insert("members", doc! { "user_id": user_id });
+
+					AuditLog::collection(global.db())
+						.insert_one(AuditLog {
+							id: AuditLogId::new(),
+							actor_id: Some(auth_sesion.user_id()),
+							data: AuditLogData::Ticket {
+								target_id: report_id.id(),
+								data: AuditLogTicketData::RemoveMember { member: user_id },
+							},
+						})
+						.session(&mut session)
+						.await
+						.map_err(|e| {
+							tracing::error!(error = %e, "failed to insert audit log");
+							ApiError::INTERNAL_SERVER_ERROR
+						})?;
 				}
 				_ => return Err(ApiError::BAD_REQUEST),
 			}
@@ -161,11 +239,7 @@ impl ReportsMutation {
 				doc! { "_id": report_id.0 },
 				doc! { "$set": update, "$push": push_update, "$pull": pull_update },
 			)
-			.with_options(
-				FindOneAndUpdateOptions::builder()
-					.return_document(ReturnDocument::After)
-					.build(),
-			)
+			.return_document(ReturnDocument::After)
 			.session(&mut session)
 			.await
 			.map_err(|e| {
