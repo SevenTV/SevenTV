@@ -309,7 +309,7 @@ fn is_false(v: &bool) -> bool {
 	!*v
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChangeMap {
 	#[serde(default)]
@@ -341,7 +341,7 @@ pub struct ChangeMap {
 	pub object: serde_json::Value,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChangeField {
 	pub key: String,
@@ -359,9 +359,10 @@ pub struct ChangeField {
 	pub value: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 pub enum ObjectKind {
+	#[default]
 	User = 1,
 	Emote = 2,
 	EmoteSet = 3,
@@ -430,12 +431,13 @@ impl<'a> serde::Deserialize<'a> for ObjectKind {
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum ChangeFieldType {
 	String,
 	Number,
 	Bool,
 	Object,
+	#[default]
 	Empty,
 }
 

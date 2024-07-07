@@ -22,6 +22,7 @@ use crate::dataloader::role::RoleByIdLoader;
 use crate::dataloader::ticket::{TicketByIdLoader, TicketMessagesByTicketIdLoader};
 use crate::dataloader::user::{UserByIdLoader, UserByPlatformIdLoader};
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByIdLoader, UserEditorByUserIdLoader};
+use crate::event_api::EventApi;
 
 pub struct Global {
 	nats: async_nats::Client,
@@ -31,6 +32,7 @@ pub struct Global {
 	db: mongodb::Database,
 	clickhouse: clickhouse::Client,
 	http_client: reqwest::Client,
+	event_api: EventApi,
 	image_processor: ImageProcessor,
 	product_by_id_loader: DataLoader<ProductByIdLoader>,
 	role_by_id_loader: DataLoader<RoleByIdLoader>,
@@ -67,6 +69,8 @@ impl Global {
 			.ok_or_else(|| anyhow::anyhow!("No default database"))?;
 
 		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
+		
+		let event_api = EventApi::new(nats.clone());
 
 		let image_processor = ImageProcessor::new(&config.api.image_processor)
 			.await
@@ -75,6 +79,7 @@ impl Global {
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			jetstream,
+			event_api,
 			image_processor,
 			product_by_id_loader: ProductByIdLoader::new(db.clone()),
 			role_by_id_loader: RoleByIdLoader::new(db.clone()),
@@ -138,6 +143,11 @@ impl Global {
 	/// Global HTTP client.
 	pub fn http_client(&self) -> &reqwest::Client {
 		&self.http_client
+	}
+
+	/// The event API.
+	pub fn event_api(&self) -> &EventApi {
+		&self.event_api
 	}
 
 	/// Image processor.

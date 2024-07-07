@@ -8,8 +8,9 @@ use shared::database::emote::{Emote as DbEmote, EmoteFlags};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorState};
 use shared::database::Collection;
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType};
 use shared::old_types::object_id::GqlObjectId;
-use shared::old_types::EmoteFlagsModel;
+use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -69,6 +70,9 @@ impl EmoteOps {
 				return Err(ApiError::FORBIDDEN);
 			}
 		}
+
+		let mut changes = vec![];
+		let mut nested_changes = vec![];
 
 		let mut session = global.mongo().start_session().await.map_err(|e| {
 			tracing::error!(error = %e, "failed to start session");
@@ -131,7 +135,7 @@ impl EmoteOps {
 							target_id: self.id.id(),
 							data: AuditLogEmoteData::ChangeName {
 								old: self.emote.default_name.clone(),
-								new: name,
+								new: name.clone(),
 							},
 						},
 					})
@@ -141,29 +145,16 @@ impl EmoteOps {
 						tracing::error!(error = %e, "failed to insert audit log");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
-			}
 
-			if let Some(tags) = params.tags {
-				update.insert("tags", &tags);
-
-				AuditLog::collection(global.db())
-					.insert_one(AuditLog {
-						id: AuditLogId::new(),
-						actor_id: Some(user.id),
-						data: AuditLogData::Emote {
-							target_id: self.id.id(),
-							data: AuditLogEmoteData::ChangeTags {
-								old: self.emote.tags.clone(),
-								new: tags,
-							},
-						},
-					})
-					.session(&mut session)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to insert audit log");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
+				let change = ChangeField {
+					key: "name".to_string(),
+					ty: ChangeFieldType::String,
+					old_value: self.emote.default_name.clone().into(),
+					value: name.into(),
+					..Default::default()
+				};
+				changes.push(change.clone());
+				nested_changes.push(change);
 			}
 
 			let mut flags = self.emote.flags;
@@ -193,6 +184,18 @@ impl EmoteOps {
 					} else {
 						flags &= !EmoteFlags::PublicListed;
 						flags |= EmoteFlags::Private;
+					}
+
+					if self.emote.flags.contains(EmoteFlags::PublicListed) != listed {
+						let change = ChangeField {
+							key: "listed".to_string(),
+							ty: ChangeFieldType::Bool,
+							old_value: self.emote.flags.contains(EmoteFlags::PublicListed).into(),
+							value: listed.into(),
+							..Default::default()
+						};
+						changes.push(change.clone());
+						nested_changes.push(change);
 					}
 				}
 
@@ -227,6 +230,14 @@ impl EmoteOps {
 							tracing::error!(error = %e, "failed to insert audit log");
 							ApiError::INTERNAL_SERVER_ERROR
 						})?;
+
+					changes.push(ChangeField {
+						key: "owner_id".to_string(),
+						ty: ChangeFieldType::String,
+						old_value: self.emote.owner_id.to_string().into(),
+						value: owner_id.0.to_string().into(),
+						..Default::default()
+					});
 				}
 			}
 
@@ -251,6 +262,44 @@ impl EmoteOps {
 						tracing::error!(error = %e, "failed to insert audit log");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
+
+				changes.push(ChangeField {
+					key: "flags".to_string(),
+					ty: ChangeFieldType::Number,
+					old_value: self.emote.flags.bits().into(),
+					value: flags.bits().into(),
+					..Default::default()
+				});
+			}
+
+			if let Some(tags) = params.tags {
+				update.insert("tags", &tags);
+
+				AuditLog::collection(global.db())
+					.insert_one(AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(user.id),
+						data: AuditLogData::Emote {
+							target_id: self.id.id(),
+							data: AuditLogEmoteData::ChangeTags {
+								old: self.emote.tags.clone(),
+								new: tags.clone(),
+							},
+						},
+					})
+					.session(&mut session)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				changes.push(ChangeField {
+					key: "tags".to_string(),
+					old_value: self.emote.tags.clone().into(),
+					value: tags.into(),
+					..Default::default()
+				});
 			}
 
 			let emote = shared::database::emote::Emote::collection(global.db())
@@ -268,6 +317,53 @@ impl EmoteOps {
 				tracing::error!(error = %e, "failed to commit transaction");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
+
+			if !nested_changes.is_empty() {
+				let nested_changes = serde_json::to_value(nested_changes).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize nested changes");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+
+				changes.push(ChangeField {
+					key: "versions".to_string(),
+					nested: true,
+					index: Some(0),
+					value: nested_changes,
+					..Default::default()
+				});
+			}
+
+			if !changes.is_empty() {
+				let global_config = global
+					.global_config_loader()
+					.load(())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+				let body = ChangeMap {
+					id: self.id.id(),
+					kind: shared::event_api::types::ObjectKind::Emote,
+					actor: Some(UserPartialModel::from_db(
+						user.clone(),
+						&global_config,
+						None,
+						None,
+						&global.config().api.cdn_origin,
+					)),
+					updated: changes,
+					..Default::default()
+				};
+
+				global
+					.event_api()
+					.dispatch_event(EventType::UpdateEmote, body, Some(("object_id", self.id.0.to_string())))
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to dispatch event");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+			}
 
 			Ok(Emote::from_db(global, emote))
 		}

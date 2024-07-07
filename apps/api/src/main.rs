@@ -8,11 +8,11 @@ use crate::config::Config;
 mod config;
 mod connections;
 mod dataloader;
+mod event_api;
 mod global;
 mod http;
 mod image_processor_callback;
 mod jwt;
-mod utils;
 
 struct BootstrapWrapper(Config);
 

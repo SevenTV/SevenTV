@@ -14,7 +14,9 @@ use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, Us
 use shared::database::user::editor::{EditorEmoteSetPermission, EditorUserPermission, UserEditorState};
 use shared::database::user::FullUserRef;
 use shared::database::Collection;
+use shared::event_api::types::{ChangeMap, EventType, ObjectKind};
 use shared::old_types::object_id::GqlObjectId;
+use shared::old_types::UserPartialModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -785,6 +787,35 @@ impl EmoteSetOps {
 					tracing::error!(error = %e, "failed to insert audit log");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
+
+			let global_config = global
+				.global_config_loader()
+				.load(())
+				.await
+				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+			let body = ChangeMap {
+				id: self.emote_set.id.cast(),
+				kind: ObjectKind::EmoteSet,
+				actor: Some(UserPartialModel::from_db(
+					auth_session.user(global).await?.clone(),
+					&global_config,
+					None,
+					None,
+					&global.config().api.cdn_origin,
+				)),
+				..Default::default()
+			};
+
+			global.event_api().dispatch_event(
+				EventType::DeleteEmoteSet,
+				body,
+				Some(("object_id", self.emote_set.id.to_string())),
+			).await.map_err(|e| {
+				tracing::error!(error = %e, "failed to dispatch event");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 		}
 
 		session.commit_transaction().await.map_err(|e| {
