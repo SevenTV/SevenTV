@@ -6,6 +6,7 @@ use anyhow::Context;
 use async_nats::jetstream::{consumer, stream};
 use futures::StreamExt;
 use mongodb::bson::{doc, to_bson};
+use mongodb::options::ReturnDocument;
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
@@ -16,9 +17,12 @@ use shared::database::image_set::Image;
 use shared::database::paint::{Paint, PaintLayerId};
 use shared::database::user::User;
 use shared::database::Collection;
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::image_processor::Subject;
+use shared::old_types::UserPartialModel;
 
 use crate::global::Global;
+use crate::http::v3::types::EmoteLifecycleModel;
 
 const JETSTREAM_NAME: &str = "image-processor-callback";
 const JETSTREAM_CONSUMER_NAME: &str = "image-processor-callback-consumer";
@@ -157,8 +161,8 @@ async fn handle_success(
 
 	match subject {
 		Subject::Emote(id) => {
-			Emote::collection(global.db())
-				.update_one(
+			let emote = Emote::collection(global.db())
+				.find_one_and_update(
 					doc! {
 						"_id": id,
 					},
@@ -173,7 +177,9 @@ async fn handle_success(
 					},
 				)
 				.session(&mut session)
-				.await?;
+				.return_document(ReturnDocument::After)
+				.await?
+				.context("emote not found")?;
 
 			AuditLog::collection(global.db())
 				.insert_one(AuditLog {
@@ -185,6 +191,54 @@ async fn handle_success(
 					},
 				})
 				.session(&mut session)
+				.await?;
+
+			let global_config = global
+				.global_config_loader()
+				.load(())
+				.await
+				.ok()
+				.flatten()
+				.context("failed to load global config")?;
+
+			let actor = global
+				.user_loader()
+				.load_fast(global, emote.owner_id)
+				.await
+				.ok()
+				.context("failed to query owner")?
+				.map(|u| UserPartialModel::from_db(u, &global_config, None, None, &global.config().api.cdn_origin));
+
+			let change = ChangeField {
+				key: "lifecycle".to_string(),
+				ty: ChangeFieldType::Number,
+				old_value: (EmoteLifecycleModel::Processing as i32).into(),
+				value: (EmoteLifecycleModel::Live as i32).into(),
+				..Default::default()
+			};
+
+			global
+				.event_api()
+				.dispatch_event(
+					EventType::UpdateEmote,
+					ChangeMap {
+						id: id.cast(),
+						kind: ObjectKind::Emote,
+						actor,
+						updated: vec![
+							change.clone(),
+							ChangeField {
+								key: "versions".to_string(),
+								index: Some(0),
+								nested: true,
+								value: serde_json::to_value(vec![change])?,
+								..Default::default()
+							},
+						],
+						..Default::default()
+					},
+					Some(("object_id", id.to_string())),
+				)
 				.await?;
 		}
 		Subject::ProfilePicture(id) => {
@@ -325,9 +379,79 @@ async fn handle_fail(
 	global: &Arc<Global>,
 	subject: Subject,
 	metadata: HashMap<String, String>,
-	_event: event_callback::Fail,
+	event: event_callback::Fail,
 ) -> anyhow::Result<()> {
-	handle_abort(global, subject, metadata).await?;
+	if let Subject::Emote(id) = subject {
+		let emote = Emote::collection(global.db())
+			.find_one_and_delete(doc! {
+				"_id": id,
+			})
+			.await?;
+
+		if let Some(emote) = emote {
+			let global_config = global
+				.global_config_loader()
+				.load(())
+				.await
+				.ok()
+				.flatten()
+				.context("failed to load global config")?;
+
+			let actor = global
+				.user_loader()
+				.load_fast(global, emote.owner_id)
+				.await
+				.ok()
+				.context("failed to query owner")?
+				.map(|u| UserPartialModel::from_db(u, &global_config, None, None, &global.config().api.cdn_origin));
+
+			let change = ChangeField {
+				key: "lifecycle".to_string(),
+				ty: ChangeFieldType::Number,
+				old_value: (EmoteLifecycleModel::Processing as i32).into(),
+				value: (EmoteLifecycleModel::Failed as i32).into(),
+				..Default::default()
+			};
+
+			global
+				.event_api()
+				.dispatch_event(
+					EventType::UpdateEmote,
+					ChangeMap {
+						id: id.cast(),
+						kind: ObjectKind::Emote,
+						actor,
+						updated: vec![
+							change.clone(),
+							ChangeField {
+								key: "versions".to_string(),
+								index: Some(0),
+								nested: true,
+								value: serde_json::to_value(vec![change])?,
+								..Default::default()
+							},
+							ChangeField {
+								key: "versions".to_string(),
+								index: Some(0),
+								nested: true,
+								value: serde_json::to_value(vec![ChangeField {
+									key: "error".to_string(),
+									ty: ChangeFieldType::String,
+									value: event.error.map(|e| e.message).unwrap_or_default().into(),
+									..Default::default()
+								}])?,
+								..Default::default()
+							},
+						],
+						..Default::default()
+					},
+					Some(("object_id", id.to_string())),
+				)
+				.await?;
+		}
+	} else {
+		handle_abort(global, subject, metadata).await?;
+	}
 
 	// Notify user of failure with reason
 

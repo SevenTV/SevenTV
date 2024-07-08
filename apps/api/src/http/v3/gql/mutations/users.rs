@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
+use itertools::Itertools;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
@@ -57,6 +58,13 @@ impl UserOps {
 			return Err(ApiError::FORBIDDEN);
 		}
 
+		let old_user = global
+			.user_loader()
+			.load(global, self.id.id())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
+
 		let global_config = global
 			.global_config_loader()
 			.load(())
@@ -84,7 +92,7 @@ impl UserOps {
 		};
 
 		if let Some(true) = data.unlink {
-			update_pull.insert("connections", doc! { "platform_id": id });
+			update_pull.insert("connections", doc! { "platform_id": &id });
 		}
 
 		let Some(user) = User::collection(global.db())
@@ -97,7 +105,7 @@ impl UserOps {
 					"$pull": update_pull,
 				},
 			)
-			.return_document(ReturnDocument::After)
+			.return_document(ReturnDocument::Before)
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to update user");
@@ -107,9 +115,50 @@ impl UserOps {
 			return Ok(None);
 		};
 
-		// holy shit
+		if let Some(true) = data.unlink {
+			let (index, connection) = old_user
+				.connections
+				.iter()
+				.find_position(|c| c.platform_id == id)
+				.ok_or(ApiError::NOT_FOUND)?;
+
+			global
+				.event_api()
+				.dispatch_event(
+					EventType::UpdateUser,
+					ChangeMap {
+						id: self.id.0.cast(),
+						kind: ObjectKind::User,
+						actor: Some(UserPartialModel::from_db(
+							authed_user.clone(),
+							&global_config,
+							None,
+							None,
+							&global.config().api.cdn_origin,
+						)),
+						pulled: vec![ChangeField {
+							key: "connections".to_string(),
+							ty: ChangeFieldType::Object,
+							index: Some(index),
+							value: serde_json::to_value(connection).map_err(|e| {
+								tracing::error!(error = %e, "failed to serialize value");
+								ApiError::INTERNAL_SERVER_ERROR
+							})?,
+							..Default::default()
+						}],
+						..Default::default()
+					},
+					Some(("object_id", self.id.0.to_string())),
+				)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to dispatch event");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+		}
+
 		if let Some(emote_set) = emote_set {
-			let old_set = match user.style.active_emote_set_id {
+			let old_set = match old_user.style.active_emote_set_id {
 				Some(id) => {
 					let set = global.emote_set_by_id_loader().load(id).await.map_err(|_| {
 						tracing::error!("failed to load old emote set");
@@ -355,12 +404,30 @@ impl UserOps {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		match update.kind {
+		let mut changes = vec![];
+
+		let result = match update.kind {
 			CosmeticKind::Paint => {
-				// check if user has badge
+				// check if user has paint
 				if !user.computed.entitlements.paints.contains(&update.id.id()) {
 					return Err(ApiError::FORBIDDEN);
 				}
+
+				let old_paint = match user.style.active_paint_id {
+					Some(paint_id) => global
+						.paint_by_id_loader()
+						.load(paint_id)
+						.await
+						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
+					None => None,
+				};
+
+				let paint = global
+					.paint_by_id_loader()
+					.load(update.id.id())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::NOT_FOUND)?;
 
 				let res = User::collection(global.db())
 					.update_one(
@@ -379,6 +446,27 @@ impl UserOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
+				changes.push(ChangeField {
+					key: "paint_id".to_string(),
+					ty: ChangeFieldType::String,
+					value: update.id.0.to_string().into(),
+					old_value: user.style.active_paint_id.map(|id| id.to_string()).into(),
+					..Default::default()
+				});
+				changes.push(ChangeField {
+					key: "paint".to_string(),
+					ty: ChangeFieldType::Object,
+					value: serde_json::to_value(paint).map_err(|e| {
+						tracing::error!(error = %e, "failed to serialize value");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?,
+					old_value: serde_json::to_value(old_paint).map_err(|e| {
+						tracing::error!(error = %e, "failed to serialize value");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?,
+					..Default::default()
+				});
+
 				Ok(res.modified_count == 1)
 			}
 			CosmeticKind::Badge => {
@@ -386,6 +474,22 @@ impl UserOps {
 				if !user.computed.entitlements.badges.contains(&update.id.id()) {
 					return Err(ApiError::FORBIDDEN);
 				}
+
+				let old_badge = match user.style.active_badge_id {
+					Some(badge_id) => global
+						.badge_by_id_loader()
+						.load(badge_id)
+						.await
+						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
+					None => None,
+				};
+
+				let badge = global
+					.badge_by_id_loader()
+					.load(update.id.id())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.ok_or(ApiError::NOT_FOUND)?;
 
 				let res = User::collection(global.db())
 					.update_one(
@@ -404,10 +508,76 @@ impl UserOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
+				changes.push(ChangeField {
+					key: "badge_id".to_string(),
+					ty: ChangeFieldType::String,
+					value: update.id.0.to_string().into(),
+					old_value: user.style.active_badge_id.map(|id| id.to_string()).into(),
+					..Default::default()
+				});
+				changes.push(ChangeField {
+					key: "badge".to_string(),
+					ty: ChangeFieldType::Object,
+					value: serde_json::to_value(badge).map_err(|e| {
+						tracing::error!(error = %e, "failed to serialize value");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?,
+					old_value: serde_json::to_value(old_badge).map_err(|e| {
+						tracing::error!(error = %e, "failed to serialize value");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?,
+					..Default::default()
+				});
+
 				Ok(res.modified_count == 1)
 			}
 			CosmeticKind::Avatar => Err(ApiError::NOT_IMPLEMENTED),
+		};
+
+		if let Ok(true) = result {
+			let global_config = global
+				.global_config_loader()
+				.load(())
+				.await
+				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+			global
+				.event_api()
+				.dispatch_event(
+					EventType::UpdateUser,
+					ChangeMap {
+						id: self.id.0.cast(),
+						kind: ObjectKind::User,
+						actor: Some(UserPartialModel::from_db(
+							authed_user.clone(),
+							&global_config,
+							None,
+							None,
+							&global.config().api.cdn_origin,
+						)),
+						updated: vec![ChangeField {
+							key: "style".to_string(),
+							ty: ChangeFieldType::Object,
+							nested: true,
+							value: serde_json::to_value(changes).map_err(|e| {
+								tracing::error!(error = %e, "failed to serialize value");
+								ApiError::INTERNAL_SERVER_ERROR
+							})?,
+							..Default::default()
+						}],
+						..Default::default()
+					},
+					Some(("object_id", self.id.0.to_string())),
+				)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to dispatch event");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
 		}
+
+		result
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Assign)")]
