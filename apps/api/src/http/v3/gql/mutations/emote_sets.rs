@@ -400,6 +400,7 @@ impl EmoteSetOps {
 								},
 							)
 							.upsert(true)
+							.return_document(ReturnDocument::After)
 							.session(&mut session)
 							.await
 							.map_err(|e| {
@@ -608,11 +609,11 @@ impl EmoteSetOps {
 								None,
 								&global.config().api.cdn_origin,
 							)),
-							pushed: vec![ChangeField {
+							pulled: vec![ChangeField {
 								key: "emotes".to_string(),
 								index: Some(index),
 								ty: ChangeFieldType::Object,
-								value: active_emote,
+								old_value: active_emote,
 								..Default::default()
 							}],
 							..Default::default()

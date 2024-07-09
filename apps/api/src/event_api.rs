@@ -13,6 +13,7 @@ use shared::event_api::{
 
 pub struct EventApi {
 	nats: async_nats::Client,
+	prefix: String,
 	sequence: AtomicU64,
 }
 
@@ -25,10 +26,11 @@ pub enum EventApiError {
 }
 
 impl EventApi {
-	pub fn new(nats: async_nats::Client) -> Self {
+	pub fn new(nats: async_nats::Client, prefix: &str) -> Self {
 		Self {
 			nats,
 			sequence: AtomicU64::new(0),
+			prefix: prefix.to_string(),
 		}
 	}
 
@@ -39,6 +41,7 @@ impl EventApi {
 		condition: Option<(&'static str, String)>,
 	) -> Result<(), EventApiError> {
 		let mut nats_subject = vec![];
+		nats_subject.push(self.prefix.clone());
 		nats_subject.push("events.op.dispatch.type".to_string());
 		nats_subject.push(ty.to_string());
 
@@ -77,6 +80,8 @@ impl EventApi {
 			},
 			self.sequence.fetch_add(1, Ordering::SeqCst),
 		);
+
+		tracing::debug!(subject = %nats_subject, message = ?message, "dispatching event");
 
 		self.nats
 			.publish(nats_subject, serde_json::to_string(&message)?.into_bytes().into())

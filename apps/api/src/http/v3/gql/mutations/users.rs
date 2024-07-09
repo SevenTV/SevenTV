@@ -105,7 +105,7 @@ impl UserOps {
 					"$pull": update_pull,
 				},
 			)
-			.return_document(ReturnDocument::Before)
+			.return_document(ReturnDocument::After)
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to update user");

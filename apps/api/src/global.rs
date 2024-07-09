@@ -70,7 +70,7 @@ impl Global {
 
 		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
 		
-		let event_api = EventApi::new(nats.clone());
+		let event_api = EventApi::new(nats.clone(), &config.api.nats_event_subject);
 
 		let image_processor = ImageProcessor::new(&config.api.image_processor)
 			.await
