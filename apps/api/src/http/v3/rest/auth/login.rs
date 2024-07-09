@@ -8,6 +8,8 @@ use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::{User, UserId};
 use shared::database::{Collection, Id};
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::old_types::{UserConnectionPartialModel, UserPartialModel};
 
 use super::LoginRequest;
 use crate::connections;
@@ -15,6 +17,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AUTH_COOKIE;
 use crate::http::middleware::cookies::{new_cookie, Cookies};
+use crate::http::v3::rest::types::UserConnectionModel;
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
 
 const CSRF_COOKIE: &str = "seventv-csrf";
@@ -216,6 +219,17 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			}
 		}
 	} else {
+		let new_connection = UserConnection {
+			platform,
+			platform_id: user_data.id,
+			platform_username: user_data.username,
+			platform_display_name: user_data.display_name,
+			platform_avatar_url: user_data.avatar,
+			allow_login: true,
+			updated_at: chrono::Utc::now(),
+			linked_at: chrono::Utc::now(),
+		};
+
 		if User::collection(global.db())
 			.update_one(
 				doc! {
@@ -223,16 +237,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				},
 				doc! {
 					"$push": {
-						"connections": to_bson(&UserConnection {
-							platform,
-							platform_id: user_data.id,
-							platform_username: user_data.username,
-							platform_display_name: user_data.display_name,
-							platform_avatar_url: user_data.avatar,
-							allow_login: true,
-							updated_at: chrono::Utc::now(),
-							linked_at: chrono::Utc::now(),
-						}).unwrap(),
+						"connections": to_bson(&new_connection).expect("failed to convert to bson"),
 					},
 					"$set": {
 						"search_index.self_dirty": Id::<()>::new(),
@@ -246,8 +251,54 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				ApiError::INTERNAL_SERVER_ERROR
 			})?
 			.modified_count
-			== 0
+			> 0
 		{
+			let global_config = global
+				.global_config_loader()
+				.load(())
+				.await
+				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+			global
+				.event_api()
+				.dispatch_event(
+					EventType::UpdateUser,
+					ChangeMap {
+						id: full_user.id.cast(),
+						kind: ObjectKind::User,
+						actor: Some(UserPartialModel::from_db(
+							full_user.clone(),
+							&global_config,
+							None,
+							None,
+							&global.config().api.cdn_origin,
+						)),
+						pushed: vec![ChangeField {
+							key: "connections".to_string(),
+							ty: ChangeFieldType::Object,
+							index: Some(full_user.connections.len()),
+							value: serde_json::to_value(UserConnectionModel::from(UserConnectionPartialModel::from_db(
+								new_connection,
+								full_user.style.active_emote_set_id,
+								global_config.normal_emote_set_slot_capacity,
+							)))
+							.map_err(|e| {
+								tracing::error!(error = %e, "failed to serialize user connection");
+								ApiError::INTERNAL_SERVER_ERROR
+							})?,
+							..Default::default()
+						}],
+						..Default::default()
+					},
+					full_user.id,
+				)
+				.await
+				.map_err(|err| {
+					tracing::error!(error = %err, "failed to dispatch event");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+		} else {
 			tracing::error!("failed to insert user connection, no modified count");
 			return Err(ApiError::INTERNAL_SERVER_ERROR);
 		}

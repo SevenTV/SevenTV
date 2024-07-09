@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
+use itertools::Itertools;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
@@ -14,7 +15,9 @@ use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, Us
 use shared::database::user::editor::{EditorEmoteSetPermission, EditorUserPermission, UserEditorState};
 use shared::database::user::FullUserRef;
 use shared::database::Collection;
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::object_id::GqlObjectId;
+use shared::old_types::UserPartialModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -22,6 +25,7 @@ use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
 use crate::http::v3::gql::types::ListItemAction;
+use crate::http::v3::rest::types::{ActiveEmoteModel, EmotePartialModel};
 
 #[derive(Default)]
 pub struct EmoteSetsMutation;
@@ -325,6 +329,13 @@ impl EmoteSetOps {
 		self.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
 			.await?;
 
+		let global_config = global
+			.global_config_loader()
+			.load(())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
 		let mut session = global.mongo().start_session().await.map_err(|e| {
 			tracing::error!(error = %e, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
@@ -350,7 +361,7 @@ impl EmoteSetOps {
 					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::NOT_FOUND)?;
 
-				let alias = name.unwrap_or(emote.default_name);
+				let alias = name.unwrap_or_else(|| emote.default_name.clone());
 
 				if self.emote_set.emotes.iter().any(|e| e.alias == alias || e.id == id.id()) {
 					return Err(ApiError::new_const(
@@ -389,6 +400,7 @@ impl EmoteSetOps {
 								},
 							)
 							.upsert(true)
+							.return_document(ReturnDocument::After)
 							.session(&mut session)
 							.await
 							.map_err(|e| {
@@ -477,13 +489,54 @@ impl EmoteSetOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
+				let active_emote = ActiveEmoteModel::from_db(
+					emote_set_emote,
+					Some(EmotePartialModel::from_db(emote, None, &global.config().api.cdn_origin)),
+				);
+				let active_emote = serde_json::to_value(active_emote).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize emote");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+
+				global
+					.event_api()
+					.dispatch_event(
+						EventType::UpdateEmoteSet,
+						ChangeMap {
+							id: self.emote_set.id.cast(),
+							kind: ObjectKind::EmoteSet,
+							actor: Some(UserPartialModel::from_db(
+								user.clone(),
+								&global_config,
+								None,
+								None,
+								&global.config().api.cdn_origin,
+							)),
+							pushed: vec![ChangeField {
+								key: "emotes".to_string(),
+								index: Some(emote_set.emotes.len()),
+								ty: ChangeFieldType::Object,
+								value: active_emote,
+								..Default::default()
+							}],
+							..Default::default()
+						},
+						self.emote_set.id,
+					)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to dispatch event");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
 				emote_set
 			}
 			ListItemAction::Remove => {
-				self.emote_set
+				let (index, active_emote) = self
+					.emote_set
 					.emotes
 					.iter()
-					.find(|e| e.id == id.id())
+					.find_position(|e| e.id == id.id())
 					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"))?;
 
 				let emote_set = DbEmoteSet::collection(global.db())
@@ -524,14 +577,63 @@ impl EmoteSetOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
+				let active_emote = ActiveEmoteModel::from_db(
+					active_emote.clone(),
+					Some(EmotePartialModel::from_db(
+						global
+							.emote_by_id_loader()
+							.load(id.id())
+							.await
+							.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+							.ok_or(ApiError::NOT_FOUND)?,
+						None,
+						&global.config().api.cdn_origin,
+					)),
+				);
+				let active_emote = serde_json::to_value(active_emote).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize emote");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+
+				global
+					.event_api()
+					.dispatch_event(
+						EventType::UpdateEmoteSet,
+						ChangeMap {
+							id: self.emote_set.id.cast(),
+							kind: ObjectKind::EmoteSet,
+							actor: Some(UserPartialModel::from_db(
+								user.clone(),
+								&global_config,
+								None,
+								None,
+								&global.config().api.cdn_origin,
+							)),
+							pulled: vec![ChangeField {
+								key: "emotes".to_string(),
+								index: Some(index),
+								ty: ChangeFieldType::Object,
+								old_value: active_emote,
+								..Default::default()
+							}],
+							..Default::default()
+						},
+						self.emote_set.id,
+					)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to dispatch event");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
 				emote_set
 			}
 			ListItemAction::Update => {
-				let emote_set_emote = self
+				let (index, emote_set_emote) = self
 					.emote_set
 					.emotes
 					.iter()
-					.find(|e| e.id == id.id())
+					.find_position(|e| e.id == id.id())
 					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"))?;
 
 				let name = if let Some(name) = name {
@@ -590,7 +692,7 @@ impl EmoteSetOps {
 							data: AuditLogEmoteSetData::RenameEmote {
 								emote_id: id.id(),
 								old_name: emote_set_emote.alias.clone(),
-								new_name: name,
+								new_name: name.clone(),
 							},
 						},
 					})
@@ -598,6 +700,66 @@ impl EmoteSetOps {
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to insert audit log");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
+
+				let old_active_emote = ActiveEmoteModel::from_db(
+					emote_set_emote.clone(),
+					Some(EmotePartialModel::from_db(
+						global
+							.emote_by_id_loader()
+							.load(id.id())
+							.await
+							.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+							.ok_or(ApiError::NOT_FOUND)?,
+						None,
+						&global.config().api.cdn_origin,
+					)),
+				);
+
+				let mut new_active_emote = old_active_emote.clone();
+				new_active_emote.name = name.clone();
+
+				let old_active_emote = serde_json::to_value(old_active_emote).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize emote");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+				let new_active_emote = serde_json::to_value(new_active_emote).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize emote");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+
+				global
+					.event_api()
+					.dispatch_event(
+						EventType::UpdateEmoteSet,
+						ChangeMap {
+							id: self.emote_set.id.cast(),
+							kind: ObjectKind::EmoteSet,
+							actor: Some(UserPartialModel::from_db(
+								user.clone(),
+								&global_config,
+								None,
+								None,
+								&global.config().api.cdn_origin,
+							)),
+							updated: vec![
+								ChangeField {
+									key: "emotes".to_string(),
+									index: Some(index),
+									ty: ChangeFieldType::Object,
+									old_value: old_active_emote,
+									value: new_active_emote,
+									..Default::default()
+								}
+							],
+							..Default::default()
+						},
+						self.emote_set.id,
+					)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to dispatch event");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
@@ -621,6 +783,8 @@ impl EmoteSetOps {
 		let target = self
 			.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
 			.await?;
+
+		let mut changes = vec![];
 
 		let mut session = global.mongo().start_session().await.map_err(|e| {
 			tracing::error!(error = %e, "failed to start session");
@@ -646,7 +810,7 @@ impl EmoteSetOps {
 						target_id: self.emote_set.id,
 						data: AuditLogEmoteSetData::ChangeName {
 							old: self.emote_set.name.clone(),
-							new: name,
+							new: name.clone(),
 						},
 					},
 				})
@@ -656,6 +820,14 @@ impl EmoteSetOps {
 					tracing::error!(error = %e, "failed to insert audit log");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
+
+			changes.push(ChangeField {
+				key: "name".to_string(),
+				ty: ChangeFieldType::String,
+				old_value: self.emote_set.name.clone().into(),
+				value: name.into(),
+				..Default::default()
+			});
 		}
 
 		if let Some(capacity) = data.capacity {
@@ -704,6 +876,14 @@ impl EmoteSetOps {
 					tracing::error!(error = %e, "failed to insert audit log");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
+
+			changes.push(ChangeField {
+				key: "capacity".to_string(),
+				ty: ChangeFieldType::Number,
+				old_value: self.emote_set.capacity.into(),
+				value: capacity.into(),
+				..Default::default()
+			});
 		}
 
 		if data.origins.is_some() {
@@ -728,6 +908,40 @@ impl EmoteSetOps {
 			tracing::error!(error = %e, "failed to commit transaction");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
+
+		if !changes.is_empty() {
+			let global_config = global
+				.global_config_loader()
+				.load(())
+				.await
+				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+			global
+				.event_api()
+				.dispatch_event(
+					EventType::UpdateEmoteSet,
+					ChangeMap {
+						id: self.id.0,
+						kind: ObjectKind::EmoteSet,
+						actor: Some(UserPartialModel::from_db(
+							auth_session.user(global).await?.clone(),
+							&global_config,
+							None,
+							None,
+							&global.config().api.cdn_origin,
+						)),
+						updated: changes,
+						..Default::default()
+					},
+					self.emote_set.id,
+				)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to dispatch event");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+		}
 
 		Ok(EmoteSet::from_db(emote_set))
 	}
@@ -783,6 +997,39 @@ impl EmoteSetOps {
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to insert audit log");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+
+			let global_config = global
+				.global_config_loader()
+				.load(())
+				.await
+				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+			let body = ChangeMap {
+				id: self.emote_set.id.cast(),
+				kind: ObjectKind::EmoteSet,
+				actor: Some(UserPartialModel::from_db(
+					auth_session.user(global).await?.clone(),
+					&global_config,
+					None,
+					None,
+					&global.config().api.cdn_origin,
+				)),
+				..Default::default()
+			};
+
+			global
+				.event_api()
+				.dispatch_event(
+					EventType::DeleteEmoteSet,
+					body,
+					self.emote_set.id,
+				)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to dispatch event");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
 		}

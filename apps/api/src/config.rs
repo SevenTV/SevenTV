@@ -30,6 +30,9 @@ pub struct Api {
 	pub jwt: JwtConfig,
 	/// image processor config
 	pub image_processor: ImageProcessorConfig,
+	/// Event API nats prefix
+	#[settings(default = "api.events".into())]
+	pub nats_event_subject: String,
 }
 
 #[auto_settings]
