@@ -148,7 +148,7 @@ impl UserOps {
 						}],
 						..Default::default()
 					},
-					Some(("object_id", self.id.0.to_string())),
+					self.id.0,
 				)
 				.await
 				.map_err(|e| {
@@ -238,7 +238,7 @@ impl UserOps {
 							}],
 							..Default::default()
 						},
-						Some(("object_id", self.id.0.to_string())),
+						self.id.0,
 					)
 					.await
 					.map_err(|e| {
@@ -568,7 +568,7 @@ impl UserOps {
 						}],
 						..Default::default()
 					},
-					Some(("object_id", self.id.0.to_string())),
+					self.id.0,
 				)
 				.await
 				.map_err(|e| {
@@ -752,7 +752,7 @@ impl UserOps {
 
 		global
 			.event_api()
-			.dispatch_event(EventType::UpdateUser, changes, Some(("object_id", self.id.0.to_string())))
+			.dispatch_event(EventType::UpdateUser, changes, self.id.0)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to dispatch event");

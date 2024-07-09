@@ -291,7 +291,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 						}],
 						..Default::default()
 					},
-					Some(("object_id", full_user.id.to_string())),
+					full_user.id,
 				)
 				.await
 				.map_err(|err| {

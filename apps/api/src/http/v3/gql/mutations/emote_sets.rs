@@ -521,7 +521,7 @@ impl EmoteSetOps {
 							}],
 							..Default::default()
 						},
-						Some(("object_id", self.emote_set.id.to_string())),
+						self.emote_set.id,
 					)
 					.await
 					.map_err(|e| {
@@ -618,7 +618,7 @@ impl EmoteSetOps {
 							}],
 							..Default::default()
 						},
-						Some(("object_id", self.emote_set.id.to_string())),
+						self.emote_set.id,
 					)
 					.await
 					.map_err(|e| {
@@ -755,7 +755,7 @@ impl EmoteSetOps {
 							],
 							..Default::default()
 						},
-						Some(("object_id", self.emote_set.id.to_string())),
+						self.emote_set.id,
 					)
 					.await
 					.map_err(|e| {
@@ -934,7 +934,7 @@ impl EmoteSetOps {
 						updated: changes,
 						..Default::default()
 					},
-					Some(("object_id", self.emote_set.id.to_string())),
+					self.emote_set.id,
 				)
 				.await
 				.map_err(|e| {
@@ -1025,7 +1025,7 @@ impl EmoteSetOps {
 				.dispatch_event(
 					EventType::DeleteEmoteSet,
 					body,
-					Some(("object_id", self.emote_set.id.to_string())),
+					self.emote_set.id,
 				)
 				.await
 				.map_err(|e| {

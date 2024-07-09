@@ -357,7 +357,7 @@ impl EmoteOps {
 
 				global
 					.event_api()
-					.dispatch_event(EventType::UpdateEmote, body, Some(("object_id", self.id.0.to_string())))
+					.dispatch_event(EventType::UpdateEmote, body, self.id.0)
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to dispatch event");

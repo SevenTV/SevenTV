@@ -237,7 +237,7 @@ async fn handle_success(
 						],
 						..Default::default()
 					},
-					Some(("object_id", id.to_string())),
+					id,
 				)
 				.await?;
 		}
@@ -445,7 +445,7 @@ async fn handle_fail(
 						],
 						..Default::default()
 					},
-					Some(("object_id", id.to_string())),
+					id,
 				)
 				.await?;
 		}

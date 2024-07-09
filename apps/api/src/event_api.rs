@@ -5,11 +5,11 @@ use std::{
 };
 
 use sha2::Digest;
-use shared::event_api::{
+use shared::{database::Id, event_api::{
 	payload::Dispatch,
 	types::{ChangeMap, EventType},
 	Message,
-};
+}};
 
 pub struct EventApi {
 	nats: async_nats::Client,
@@ -34,33 +34,27 @@ impl EventApi {
 		}
 	}
 
-	pub async fn dispatch_event(
+	pub async fn dispatch_event<S>(
 		&self,
 		ty: EventType,
 		body: ChangeMap,
-		condition: Option<(&'static str, String)>,
+		condition_object_id: Id<S>,
 	) -> Result<(), EventApiError> {
 		let mut nats_subject = vec![];
 		nats_subject.push(self.prefix.clone());
 		nats_subject.push("events.op.dispatch.type".to_string());
 		nats_subject.push(ty.to_string());
 
-		if let Some((k, v)) = &condition {
-			let mut hasher = sha2::Sha256::new();
+		let mut hasher = sha2::Sha256::new();
 
-			hasher.update(k);
-			hasher.update(v);
+		hasher.update("object_id");
+		hasher.update(condition_object_id.to_string());
 
-            let cond_hash = hex::encode(hasher.finalize());
+		let cond_hash = hex::encode(hasher.finalize());
 
-			nats_subject.push(cond_hash);
-		}
+		nats_subject.push(cond_hash);
 
 		let nats_subject = nats_subject.join(".");
-
-		let condition = condition
-			.map(|c| vec![iter::once((c.0.to_string(), c.1)).collect()])
-			.unwrap_or_default();
 
 		let mut hasher = DefaultHasher::new();
 		hasher.write(&body.id.into_bytes());
@@ -75,7 +69,7 @@ impl EventApi {
 				hash: Some(hash as u32),
 				effect: None,
 				matches: vec![],
-				condition,
+				condition: vec![iter::once(("object_id".to_string(), condition_object_id.to_string())).collect()],
 				whisper: None,
 			},
 			self.sequence.fetch_add(1, Ordering::SeqCst),
