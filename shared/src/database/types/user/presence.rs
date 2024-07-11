@@ -1,14 +1,17 @@
 use std::time::Duration;
 
+use derive_builder::Builder;
+
 use super::connection::Platform;
 use super::UserId;
 use crate::database::types::GenericCollection;
 use crate::database::{Collection, Id};
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct UserPresence {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: Id<UserPresence>,
 	pub platform: Platform,
 	pub platform_room_id: String,
@@ -16,6 +19,7 @@ pub struct UserPresence {
 	pub authentic: bool,
 
 	pub ip_address: std::net::IpAddr,
+	#[builder(default)]
 	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub expires_at: chrono::DateTime<chrono::Utc>,
 }

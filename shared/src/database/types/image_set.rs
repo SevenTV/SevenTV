@@ -1,4 +1,6 @@
-#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
+use derive_builder::Builder;
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct ImageSet {
 	pub input: ImageSetInput,
@@ -35,7 +37,7 @@ impl Default for ImageSetInput {
 	}
 }
 
-#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Image {
 	pub path: String,

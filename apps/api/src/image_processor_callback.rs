@@ -17,7 +17,7 @@ use shared::database::image_set::Image;
 use shared::database::paint::{Paint, PaintLayerId};
 use shared::database::user::User;
 use shared::database::Collection;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::event_api::types::{ChangeFieldBuilder, ChangeFieldType, ChangeMapBuilder, EventType, ObjectKind};
 use shared::image_processor::Subject;
 use shared::old_types::UserPartialModel;
 
@@ -209,34 +209,34 @@ async fn handle_success(
 				.context("failed to query owner")?
 				.map(|u| UserPartialModel::from_db(u, &global_config, None, None, &global.config().api.cdn_origin));
 
-			let change = ChangeField {
-				key: "lifecycle".to_string(),
-				ty: ChangeFieldType::Number,
-				old_value: (EmoteLifecycleModel::Processing as i32).into(),
-				value: (EmoteLifecycleModel::Live as i32).into(),
-				..Default::default()
-			};
+			let change = ChangeFieldBuilder::default()
+				.key("lifecycle")
+				.ty(ChangeFieldType::Number)
+				.old_value(EmoteLifecycleModel::Processing as i32)
+				.value(EmoteLifecycleModel::Live as i32)
+				.build()
+				.unwrap();
 
 			global
 				.event_api()
 				.dispatch_event(
 					EventType::UpdateEmote,
-					ChangeMap {
-						id: id.cast(),
-						kind: ObjectKind::Emote,
-						actor,
-						updated: vec![
+					ChangeMapBuilder::default()
+						.id(id.cast())
+						.kind(ObjectKind::Emote)
+						.actor(actor)
+						.updated(vec![
 							change.clone(),
-							ChangeField {
-								key: "versions".to_string(),
-								index: Some(0),
-								nested: true,
-								value: serde_json::to_value(vec![change])?,
-								..Default::default()
-							},
-						],
-						..Default::default()
-					},
+							ChangeFieldBuilder::default()
+								.key("versions")
+								.index(0)
+								.nested(true)
+								.value(serde_json::to_value(vec![change])?)
+								.build()
+								.unwrap(),
+						])
+						.build()
+						.unwrap(),
 					id,
 				)
 				.await?;
@@ -405,46 +405,46 @@ async fn handle_fail(
 				.context("failed to query owner")?
 				.map(|u| UserPartialModel::from_db(u, &global_config, None, None, &global.config().api.cdn_origin));
 
-			let change = ChangeField {
-				key: "lifecycle".to_string(),
-				ty: ChangeFieldType::Number,
-				old_value: (EmoteLifecycleModel::Processing as i32).into(),
-				value: (EmoteLifecycleModel::Failed as i32).into(),
-				..Default::default()
-			};
+			let change = ChangeFieldBuilder::default()
+				.key("lifecycle")
+				.ty(ChangeFieldType::Number)
+				.old_value(EmoteLifecycleModel::Processing as i32)
+				.value(EmoteLifecycleModel::Failed as i32)
+				.build()
+				.unwrap();
 
 			global
 				.event_api()
 				.dispatch_event(
 					EventType::UpdateEmote,
-					ChangeMap {
-						id: id.cast(),
-						kind: ObjectKind::Emote,
-						actor,
-						updated: vec![
+					ChangeMapBuilder::default()
+						.id(id.cast())
+						.kind(ObjectKind::Emote)
+						.actor(actor)
+						.updated(vec![
 							change.clone(),
-							ChangeField {
-								key: "versions".to_string(),
-								index: Some(0),
-								nested: true,
-								value: serde_json::to_value(vec![change])?,
-								..Default::default()
-							},
-							ChangeField {
-								key: "versions".to_string(),
-								index: Some(0),
-								nested: true,
-								value: serde_json::to_value(vec![ChangeField {
-									key: "error".to_string(),
-									ty: ChangeFieldType::String,
-									value: event.error.map(|e| e.message).unwrap_or_default().into(),
-									..Default::default()
-								}])?,
-								..Default::default()
-							},
-						],
-						..Default::default()
-					},
+							ChangeFieldBuilder::default()
+								.key("versions")
+								.index(0)
+								.nested(true)
+								.value(serde_json::to_value(vec![change])?)
+								.build()
+								.unwrap(),
+							ChangeFieldBuilder::default()
+								.key("versions")
+								.index(0)
+								.nested(true)
+								.value(serde_json::to_value(vec![ChangeFieldBuilder::default()
+									.key("error")
+									.ty(ChangeFieldType::String)
+									.value(event.error.map(|e| e.message).unwrap_or_default())
+									.build()
+									.unwrap()])?)
+								.build()
+								.unwrap(),
+						])
+						.build()
+						.unwrap(),
 					id,
 				)
 				.await?;

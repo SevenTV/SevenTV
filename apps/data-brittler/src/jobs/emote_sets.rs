@@ -2,7 +2,7 @@ use std::mem;
 use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
-use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
+use shared::database::emote_set::{EmoteSet, EmoteSetBuilder, EmoteSetEmoteBuilder, EmoteSetEmoteFlag, EmoteSetKind};
 use shared::database::Collection;
 use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
@@ -75,27 +75,30 @@ impl Job for EmoteSetsJob {
 				continue;
 			};
 
-			emotes.push(EmoteSetEmote {
-				id: emote_id.into(),
-				alias: emote_name,
-				added_at: e.timestamp.map(|t| t.into_chrono()).unwrap_or_default(),
-				flags,
-				added_by_id: e.actor_id.map(Into::into),
-				origin_set_id: None,
-			});
+			emotes.push(
+				EmoteSetEmoteBuilder::default()
+					.id(emote_id.into())
+					.alias(emote_name)
+					.added_at(e.timestamp.map(|t| t.into_chrono()).unwrap_or_default())
+					.flags(flags)
+					.added_by_id(e.actor_id.map(Into::into))
+					.build()
+					.unwrap(),
+			);
 		}
 
-		self.emote_sets.push(EmoteSet {
-			id: emote_set.id.into(),
-			name: emote_set.name,
-			description: None,
-			tags: emote_set.tags,
-			emotes,
-			capacity: Some(emote_set.capacity),
-			owner_id: Some(emote_set.owner_id.into()),
-			origin_config: None,
-			kind,
-		});
+		self.emote_sets.push(
+			EmoteSetBuilder::default()
+				.id(emote_set.id.into())
+				.name(emote_set.name)
+				.tags(emote_set.tags)
+				.emotes(emotes)
+				.capacity(Some(emote_set.capacity))
+				.owner_id(Some(emote_set.owner_id.into()))
+				.kind(kind)
+				.build()
+				.unwrap(),
+		);
 
 		if self.emote_sets.len() >= BATCH_SIZE {
 			match EmoteSet::collection(self.global.target_db())

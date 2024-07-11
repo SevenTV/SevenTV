@@ -1,3 +1,4 @@
+use derive_builder::Builder;
 use mongodb::options::IndexOptions;
 
 use self::permissions::Permissions;
@@ -8,16 +9,21 @@ pub mod permissions;
 
 pub type RoleId = Id<Role>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Role {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: RoleId,
 	pub name: String,
+	#[builder(default)]
 	pub description: Option<String>,
+	#[builder(default)]
 	pub tags: Vec<String>,
 	pub permissions: Permissions,
+	#[builder(default = "false")]
 	pub hoist: bool,
+	#[builder(default)]
 	pub color: Option<i32>,
 	pub rank: i32,
 }

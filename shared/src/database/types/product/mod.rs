@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use derive_builder::Builder;
+
 use super::duration::DurationUnit;
 use super::{Collection, GenericCollection};
 
@@ -153,19 +155,22 @@ stripe_id!(InvoiceLineItemId, stripe::InvoiceLineItemId);
 stripe_id!(CustomerId, stripe::CustomerId);
 
 // An item that can be purchased
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Product {
 	#[serde(rename = "_id")]
 	pub id: ProductId,
 	pub name: String,
+	#[builder(default)]
 	pub description: Option<String>,
+	#[builder(default)]
 	pub recurring: Option<DurationUnit>,
 	pub default_currency: stripe::Currency,
+	#[builder(default)]
 	pub currency_prices: HashMap<stripe::Currency, u64>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct TimePeriod {
 	pub start: chrono::DateTime<chrono::Utc>,

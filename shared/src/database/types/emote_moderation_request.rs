@@ -1,4 +1,5 @@
 use mongodb::options::IndexOptions;
+use derive_builder::Builder;
 
 use super::emote::EmoteId;
 use super::user::UserId;
@@ -22,17 +23,21 @@ pub enum EmoteModerationRequestStatus {
 
 pub type EmoteModerationRequestId = Id<EmoteModerationRequest>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteModerationRequest {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: EmoteModerationRequestId,
 	pub user_id: UserId,
 	pub kind: EmoteModerationRequestKind,
+	#[builder(default)]
 	pub reason: Option<String>,
 	pub emote_id: EmoteId,
 	pub status: EmoteModerationRequestStatus,
+	#[builder(default)]
 	pub country_code: Option<String>,
+	#[builder(default)]
 	pub assigned_to: Vec<UserId>,
 	pub priority: i32,
 }

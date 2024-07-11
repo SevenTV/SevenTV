@@ -10,12 +10,12 @@ use shared::database::emote::EmoteFlags;
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
-use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetEmote, EmoteSetKind};
+use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetBuilder, EmoteSetEmoteBuilder, EmoteSetKind};
 use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, UserPermission};
 use shared::database::user::editor::{EditorEmoteSetPermission, EditorUserPermission, UserEditorState};
 use shared::database::user::FullUserRef;
 use shared::database::Collection;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::event_api::types::{ChangeFieldBuilder, ChangeFieldType, ChangeMapBuilder, EventType, ObjectKind};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::UserPartialModel;
 
@@ -117,17 +117,15 @@ impl EmoteSetsMutation {
 			));
 		}
 
-		let emote_set = DbEmoteSet {
-			id: Default::default(),
-			owner_id: Some(user_id.id()),
-			name: data.name,
-			capacity: Some(capacity),
-			description: None,
-			emotes: vec![],
-			kind: EmoteSetKind::Normal,
-			origin_config: None,
-			tags: vec![],
-		};
+		let emote_set = EmoteSetBuilder::default()
+			.owner_id(Some(user_id.id()))
+			.name(data.name)
+			.capacity(Some(capacity))
+			.build()
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to build emote set");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		let mut session = global.mongo().start_session().await.map_err(|e| {
 			tracing::error!(error = %e, "failed to start session");
@@ -437,12 +435,14 @@ impl EmoteSetOps {
 					}
 				}
 
-				let emote_set_emote = EmoteSetEmote {
-					id: id.id(),
-					added_by_id: Some(auth_session.user_id()),
-					alias: alias.clone(),
-					..Default::default()
-				};
+				let emote_set_emote = EmoteSetEmoteBuilder::default()
+					.alias(alias.clone())
+					.added_by_id(Some(auth_session.user_id()))
+					.build()
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to build emote set emote");
+						ApiError::INTERNAL_SERVER_ERROR
+					})?;
 
 				let emote_set = DbEmoteSet::collection(global.db())
 					.find_one_and_update(
@@ -502,25 +502,25 @@ impl EmoteSetOps {
 					.event_api()
 					.dispatch_event(
 						EventType::UpdateEmoteSet,
-						ChangeMap {
-							id: self.emote_set.id.cast(),
-							kind: ObjectKind::EmoteSet,
-							actor: Some(UserPartialModel::from_db(
+						ChangeMapBuilder::default()
+							.id(self.emote_set.id.cast())
+							.kind(ObjectKind::EmoteSet)
+							.actor(Some(UserPartialModel::from_db(
 								user.clone(),
 								&global_config,
 								None,
 								None,
 								&global.config().api.cdn_origin,
-							)),
-							pushed: vec![ChangeField {
-								key: "emotes".to_string(),
-								index: Some(emote_set.emotes.len()),
-								ty: ChangeFieldType::Object,
-								value: active_emote,
-								..Default::default()
-							}],
-							..Default::default()
-						},
+							)))
+							.pushed(vec![ChangeFieldBuilder::default()
+								.key("emotes")
+								.index(emote_set.emotes.len())
+								.ty(ChangeFieldType::Object)
+								.value(active_emote)
+								.build()
+								.unwrap()])
+							.build()
+							.unwrap(),
 						self.emote_set.id,
 					)
 					.await
@@ -599,25 +599,25 @@ impl EmoteSetOps {
 					.event_api()
 					.dispatch_event(
 						EventType::UpdateEmoteSet,
-						ChangeMap {
-							id: self.emote_set.id.cast(),
-							kind: ObjectKind::EmoteSet,
-							actor: Some(UserPartialModel::from_db(
+						ChangeMapBuilder::default()
+							.id(self.emote_set.id.cast())
+							.kind(ObjectKind::EmoteSet)
+							.actor(Some(UserPartialModel::from_db(
 								user.clone(),
 								&global_config,
 								None,
 								None,
 								&global.config().api.cdn_origin,
-							)),
-							pulled: vec![ChangeField {
-								key: "emotes".to_string(),
-								index: Some(index),
-								ty: ChangeFieldType::Object,
-								old_value: active_emote,
-								..Default::default()
-							}],
-							..Default::default()
-						},
+							)))
+							.pulled(vec![ChangeFieldBuilder::default()
+								.key("emotes")
+								.index(index)
+								.ty(ChangeFieldType::Object)
+								.old_value(active_emote)
+								.build()
+								.unwrap()])
+							.build()
+							.unwrap(),
 						self.emote_set.id,
 					)
 					.await
@@ -733,28 +733,26 @@ impl EmoteSetOps {
 					.event_api()
 					.dispatch_event(
 						EventType::UpdateEmoteSet,
-						ChangeMap {
-							id: self.emote_set.id.cast(),
-							kind: ObjectKind::EmoteSet,
-							actor: Some(UserPartialModel::from_db(
+						ChangeMapBuilder::default()
+							.id(self.emote_set.id.cast())
+							.kind(ObjectKind::EmoteSet)
+							.actor(Some(UserPartialModel::from_db(
 								user.clone(),
 								&global_config,
 								None,
 								None,
 								&global.config().api.cdn_origin,
-							)),
-							updated: vec![
-								ChangeField {
-									key: "emotes".to_string(),
-									index: Some(index),
-									ty: ChangeFieldType::Object,
-									old_value: old_active_emote,
-									value: new_active_emote,
-									..Default::default()
-								}
-							],
-							..Default::default()
-						},
+							)))
+							.updated(vec![ChangeFieldBuilder::default()
+								.key("emotes")
+								.index(index)
+								.ty(ChangeFieldType::Object)
+								.old_value(old_active_emote)
+								.value(new_active_emote)
+								.build()
+								.unwrap()])
+							.build()
+							.unwrap(),
 						self.emote_set.id,
 					)
 					.await
@@ -821,13 +819,15 @@ impl EmoteSetOps {
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
 
-			changes.push(ChangeField {
-				key: "name".to_string(),
-				ty: ChangeFieldType::String,
-				old_value: self.emote_set.name.clone().into(),
-				value: name.into(),
-				..Default::default()
-			});
+			changes.push(
+				ChangeFieldBuilder::default()
+					.key("name")
+					.ty(ChangeFieldType::String)
+					.old_value(self.emote_set.name.clone())
+					.value(name)
+					.build()
+					.unwrap(),
+			);
 		}
 
 		if let Some(capacity) = data.capacity {
@@ -877,13 +877,15 @@ impl EmoteSetOps {
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
 
-			changes.push(ChangeField {
-				key: "capacity".to_string(),
-				ty: ChangeFieldType::Number,
-				old_value: self.emote_set.capacity.into(),
-				value: capacity.into(),
-				..Default::default()
-			});
+			changes.push(
+				ChangeFieldBuilder::default()
+					.key("capacity")
+					.ty(ChangeFieldType::Number)
+					.old_value(self.emote_set.capacity)
+					.value(capacity)
+					.build()
+					.unwrap(),
+			);
 		}
 
 		if data.origins.is_some() {
@@ -921,19 +923,19 @@ impl EmoteSetOps {
 				.event_api()
 				.dispatch_event(
 					EventType::UpdateEmoteSet,
-					ChangeMap {
-						id: self.id.0,
-						kind: ObjectKind::EmoteSet,
-						actor: Some(UserPartialModel::from_db(
+					ChangeMapBuilder::default()
+						.id(self.id.0)
+						.kind(ObjectKind::EmoteSet)
+						.actor(Some(UserPartialModel::from_db(
 							auth_session.user(global).await?.clone(),
 							&global_config,
 							None,
 							None,
 							&global.config().api.cdn_origin,
-						)),
-						updated: changes,
-						..Default::default()
-					},
+						)))
+						.updated(changes)
+						.build()
+						.unwrap(),
 					self.emote_set.id,
 				)
 				.await
@@ -1007,26 +1009,22 @@ impl EmoteSetOps {
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-			let body = ChangeMap {
-				id: self.emote_set.id.cast(),
-				kind: ObjectKind::EmoteSet,
-				actor: Some(UserPartialModel::from_db(
+			let body = ChangeMapBuilder::default()
+				.id(self.emote_set.id.cast())
+				.kind(ObjectKind::EmoteSet)
+				.actor(Some(UserPartialModel::from_db(
 					auth_session.user(global).await?.clone(),
 					&global_config,
 					None,
 					None,
 					&global.config().api.cdn_origin,
-				)),
-				..Default::default()
-			};
+				)))
+				.build()
+				.unwrap();
 
 			global
 				.event_api()
-				.dispatch_event(
-					EventType::DeleteEmoteSet,
-					body,
-					self.emote_set.id,
-				)
+				.dispatch_event(EventType::DeleteEmoteSet, body, self.emote_set.id)
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to dispatch event");

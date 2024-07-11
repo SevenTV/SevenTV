@@ -1,3 +1,4 @@
+use derive_builder::Builder;
 use serde::Deserialize;
 
 use super::ban_template::UserBanTemplateId;
@@ -27,24 +28,29 @@ where
 	}
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct UserBan {
+	#[builder(default)]
 	pub id: UserBanId,
 	pub created_by_id: UserId,
 	pub reason: String,
+	#[builder(default)]
 	pub tags: Vec<String>,
+	#[builder(default)]
 	#[serde(
 		serialize_with = "serialize_optional_datetime",
 		deserialize_with = "deserialize_optional_datetime"
 	)]
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
+	#[builder(default)]
 	pub removed: Option<UserBanRemoved>,
 	pub permissions: Permissions,
+	#[builder(default)]
 	pub template_id: Option<UserBanTemplateId>,
 }
 
-#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct UserBanRemoved {
 	pub removed_at: chrono::DateTime<chrono::Utc>,

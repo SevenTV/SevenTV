@@ -1,3 +1,5 @@
+use derive_builder::Builder;
+
 use super::{ProductId, TimePeriod};
 use crate::database::duration::DurationUnit;
 use crate::database::types::GenericCollection;
@@ -6,9 +8,10 @@ use crate::database::{Collection, Id};
 
 pub type SubscriptionTimelineId = Id<SubscriptionTimeline>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 pub struct SubscriptionTimeline {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: SubscriptionTimelineId,
 	/// The ids of the products that this timeline is associated with
 	/// for this timeline the periods of time where you had one of these
@@ -18,6 +21,7 @@ pub struct SubscriptionTimeline {
 	/// 4 months long.
 	pub product_ids: Vec<ProductId>,
 	pub name: String,
+	#[builder(default)]
 	pub description: Option<String>,
 	pub periods: Vec<SubscriptionTimelinePeriod>,
 }

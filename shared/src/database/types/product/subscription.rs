@@ -1,9 +1,11 @@
+use derive_builder::Builder;
+
 use super::{ProductId, SubscriptionId};
 use crate::database::types::GenericCollection;
 use crate::database::user::UserId;
 use crate::database::{Collection, Id};
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Subscription {
 	#[serde(rename = "_id")]
@@ -14,9 +16,10 @@ pub struct Subscription {
 
 pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionPeriod {
+	#[builder(default)]
 	pub id: SubscriptionPeriodId,
 	pub start: chrono::DateTime<chrono::Utc>,
 	pub end: chrono::DateTime<chrono::Utc>,

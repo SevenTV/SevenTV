@@ -1,20 +1,24 @@
+use derive_builder::Builder;
+
 use super::UserId;
 use crate::database::types::GenericCollection;
 use crate::database::Collection;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 pub struct UserRelationId {
 	pub user_id: UserId,
 	pub other_user_id: UserId,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct UserRelation {
 	#[serde(rename = "_id")]
 	pub id: UserRelationId,
 	pub kind: UserRelationKind,
+	#[builder(default)]
 	pub notes: String,
+	#[builder(default)]
 	pub muted: Option<MutedState>,
 }
 

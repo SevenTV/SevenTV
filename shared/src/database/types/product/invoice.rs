@@ -1,10 +1,12 @@
+use derive_builder::Builder;
+
 use super::{CustomerId, InvoiceId, InvoiceLineItemId, ProductId};
 use crate::database::types::GenericCollection;
 use crate::database::user::UserId;
 use crate::database::Collection;
 
 // An invoice that is generated for a purchase
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Invoice {
 	/// This ID will be the stripe ID for the invoice
@@ -17,10 +19,12 @@ pub struct Invoice {
 	/// User who the invoice is for
 	pub user_id: UserId,
 	/// If this invoice was paid via a legacy payment
+	#[builder(default)]
 	pub paypal_payment_ids: Vec<String>,
 	/// Status of the invoice
 	pub status: InvoiceStatus,
 	/// A note about the invoice
+	#[builder(default)]
 	pub note: Option<String>,
 }
 

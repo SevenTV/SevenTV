@@ -4,11 +4,11 @@ use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
-use shared::database::user::connection::{Platform, UserConnection};
+use shared::database::user::connection::{Platform, UserConnection, UserConnectionBuilder};
 use shared::database::user::session::UserSession;
-use shared::database::user::{User, UserId};
+use shared::database::user::{User, UserBuilder, UserId};
 use shared::database::{Collection, Id};
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::event_api::types::{ChangeFieldBuilder, ChangeFieldType, ChangeMapBuilder, EventType, ObjectKind};
 use shared::old_types::{UserConnectionPartialModel, UserPartialModel};
 
 use super::LoginRequest;
@@ -127,19 +127,16 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		}
 		(None, None) => {
 			// New user creation
-			user = Some(User {
-				connections: vec![UserConnection {
-					platform,
-					platform_id: user_data.id.clone(),
-					platform_username: user_data.username.clone(),
-					platform_display_name: user_data.display_name.clone(),
-					platform_avatar_url: user_data.avatar.clone(),
-					allow_login: true,
-					updated_at: chrono::Utc::now(),
-					linked_at: chrono::Utc::now(),
-				}],
-				..Default::default()
-			});
+
+			let new_connection = UserConnectionBuilder::default()
+				.platform(platform)
+				.platform_id(user_data.id.clone())
+				.platform_username(user_data.username.clone())
+				.platform_display_name(user_data.display_name.clone())
+				.platform_avatar_url(user_data.avatar.clone())
+				.build()
+				.unwrap();
+			user = Some(UserBuilder::default().connections(vec![new_connection]).build().unwrap());
 
 			User::collection(global.db())
 				.insert_one(user.as_ref().unwrap())
@@ -264,33 +261,36 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				.event_api()
 				.dispatch_event(
 					EventType::UpdateUser,
-					ChangeMap {
-						id: full_user.id.cast(),
-						kind: ObjectKind::User,
-						actor: Some(UserPartialModel::from_db(
+					ChangeMapBuilder::default()
+						.id(full_user.id.cast())
+						.kind(ObjectKind::User)
+						.actor(Some(UserPartialModel::from_db(
 							full_user.clone(),
 							&global_config,
 							None,
 							None,
 							&global.config().api.cdn_origin,
-						)),
-						pushed: vec![ChangeField {
-							key: "connections".to_string(),
-							ty: ChangeFieldType::Object,
-							index: Some(full_user.connections.len()),
-							value: serde_json::to_value(UserConnectionModel::from(UserConnectionPartialModel::from_db(
-								new_connection,
-								full_user.style.active_emote_set_id,
-								global_config.normal_emote_set_slot_capacity,
-							)))
-							.map_err(|e| {
-								tracing::error!(error = %e, "failed to serialize user connection");
-								ApiError::INTERNAL_SERVER_ERROR
-							})?,
-							..Default::default()
-						}],
-						..Default::default()
-					},
+						)))
+						.pushed(vec![ChangeFieldBuilder::default()
+							.key("connections")
+							.ty(ChangeFieldType::Object)
+							.nested(true)
+							.index(full_user.connections.len())
+							.value(
+								serde_json::to_value(UserConnectionModel::from(UserConnectionPartialModel::from_db(
+									new_connection,
+									full_user.style.active_emote_set_id,
+									global_config.normal_emote_set_slot_capacity,
+								)))
+								.map_err(|e| {
+									tracing::error!(error = %e, "failed to serialize user connection");
+									ApiError::INTERNAL_SERVER_ERROR
+								})?,
+							)
+							.build()
+							.unwrap()])
+						.build()
+						.unwrap(),
 					full_user.id,
 				)
 				.await

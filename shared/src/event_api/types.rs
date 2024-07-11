@@ -1,8 +1,8 @@
-// use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode as
-// WsCloseCode;
-
 // See the comment on the `payload.rs` file for a description of what this file
 // is.
+
+use derive_builder::Builder;
+
 use super::payload::{Subscribe, Unsubscribe};
 use crate::database::Id;
 use crate::old_types::UserPartialModel;
@@ -309,7 +309,8 @@ fn is_false(v: &bool) -> bool {
 	!*v
 }
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, Builder)]
+#[builder(default)]
 #[serde(deny_unknown_fields)]
 pub struct ChangeMap {
 	#[serde(default)]
@@ -338,14 +339,18 @@ pub struct ChangeMap {
 	pub pulled: Vec<ChangeField>,
 	#[serde(skip_serializing_if = "serde_json::Value::is_null")]
 	#[serde(default)]
+	#[builder(setter(into))]
 	pub object: serde_json::Value,
 }
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, Builder)]
+#[builder(default)]
 #[serde(deny_unknown_fields)]
 pub struct ChangeField {
+	#[builder(setter(into))]
 	pub key: String,
 	#[serde(default)]
+	#[builder(setter(strip_option))]
 	pub index: Option<usize>,
 	#[serde(skip_serializing_if = "is_false")]
 	#[serde(default)]
@@ -354,8 +359,10 @@ pub struct ChangeField {
 	pub ty: ChangeFieldType,
 	#[serde(skip_serializing_if = "serde_json::Value::is_null")]
 	#[serde(default)]
+	#[builder(setter(into))]
 	pub old_value: serde_json::Value,
 	#[serde(default)]
+	#[builder(setter(into))]
 	pub value: serde_json::Value,
 }
 

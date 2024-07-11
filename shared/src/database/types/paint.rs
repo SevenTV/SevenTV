@@ -1,16 +1,21 @@
+use derive_builder::Builder;
+
 use super::image_set::ImageSet;
 use super::GenericCollection;
 use crate::database::{Collection, Id};
 
 pub type PaintId = Id<Paint>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Paint {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: PaintId,
 	pub name: String,
-	pub description: String,
+	#[builder(default)]
+	pub description: Option<String>,
+	#[builder(default)]
 	pub tags: Vec<String>,
 	pub data: PaintData,
 }
@@ -19,21 +24,25 @@ impl Collection for Paint {
 	const COLLECTION_NAME: &'static str = "paints";
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct PaintData {
+	#[builder(default)]
 	pub layers: Vec<PaintLayer>,
+	#[builder(default)]
 	pub shadows: Vec<PaintShadow>,
 }
 
 pub type PaintLayerId = Id<PaintLayer>;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct PaintLayer {
+	#[builder(default)]
 	pub id: PaintLayerId,
 	#[serde(flatten)]
 	pub ty: PaintLayerType,
+	#[builder(default = "1.0")]
 	pub opacity: f64,
 }
 
@@ -72,7 +81,7 @@ impl Default for PaintLayerType {
 	}
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct PaintGradientStop {
 	pub at: f64,
@@ -88,7 +97,7 @@ pub enum PaintRadialGradientShape {
 	Circle,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct PaintShadow {
 	pub color: u32,

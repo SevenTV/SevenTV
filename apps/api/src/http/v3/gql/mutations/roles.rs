@@ -7,7 +7,7 @@ use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
 use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission};
-use shared::database::role::RoleId;
+use shared::database::role::RoleBuilder;
 use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 
@@ -57,16 +57,16 @@ impl RolesMutation {
 			rank += 1;
 		}
 
-		let role = shared::database::role::Role {
-			id: RoleId::new(),
-			name: data.name,
-			description: None,
-			tags: vec![],
-			permissions: role_permissions,
-			hoist: false,
-			color: Some(data.color),
-			rank,
-		};
+		let role = RoleBuilder::default()
+			.name(data.name)
+			.permissions(role_permissions)
+			.color(Some(data.color))
+			.rank(rank)
+			.build()
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to build role");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		shared::database::role::Role::collection(global.db())
 			.insert_one(&role)

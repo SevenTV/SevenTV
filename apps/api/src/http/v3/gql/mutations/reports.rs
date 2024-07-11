@@ -7,8 +7,7 @@ use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogTicketData};
 use shared::database::role::permissions::TicketPermission;
 use shared::database::ticket::{
-	Ticket, TicketId, TicketKind, TicketMember, TicketMemberKind, TicketMessage, TicketMessageId, TicketPriority,
-	TicketTarget,
+	Ticket, TicketBuilder, TicketId, TicketKind, TicketMember, TicketMemberBuilder, TicketMemberKind, TicketMessage, TicketMessageBuilder, TicketMessageId, TicketPriority, TicketTarget
 };
 use shared::database::user::UserId;
 use shared::database::Collection;
@@ -47,13 +46,15 @@ impl ReportsMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let message = TicketMessage {
-			id: TicketMessageId::new(),
-			ticket_id,
-			user_id: auth_sesion.user_id(),
-			content: data.body,
-			files: vec![],
-		};
+		let message = TicketMessageBuilder::default()
+			.ticket_id(ticket_id)
+			.user_id(auth_sesion.user_id())
+			.content(data.body)
+			.build()
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to build ticket message");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		TicketMessage::collection(global.db())
 			.insert_one(&message)
@@ -64,26 +65,28 @@ impl ReportsMutation {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		let member = TicketMember {
-			user_id: auth_sesion.user_id(),
-			kind: TicketMemberKind::Member,
-			notifications: true,
-			last_read: Some(message.id),
-		};
+		let member = TicketMemberBuilder::default()
+			.user_id(auth_sesion.user_id())
+			.kind(TicketMemberKind::Member)
+			.last_read(Some(message.id))
+			.build()
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to build ticket member");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
-		let ticket = Ticket {
-			id: ticket_id,
-			priority: TicketPriority::Medium,
-			members: vec![member],
-			title: data.subject,
-			tags: vec![],
-			country_code: None, // TODO
-			kind: TicketKind::Abuse,
-			targets: vec![TicketTarget::Emote(data.target_id.id())],
-			author_id: auth_sesion.user_id(),
-			open: true,
-			locked: false,
-		};
+		let ticket = TicketBuilder::default()
+			.id(ticket_id)
+			.members(vec![member])
+			.title(data.subject)
+			.kind(TicketKind::Abuse)
+			.targets(vec![TicketTarget::Emote(data.target_id.id())])
+			.author_id(auth_sesion.user_id())
+			.build()
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to build ticket");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		Ticket::collection(global.db())
 			.insert_one(&ticket)

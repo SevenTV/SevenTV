@@ -9,6 +9,7 @@ pub mod settings;
 
 use ban::UserBan;
 use connection::UserConnection;
+use derive_builder::Builder;
 use settings::UserSettings;
 
 use super::badge::BadgeId;
@@ -29,19 +30,27 @@ use crate::database::{Collection, Id};
 
 pub type UserId = Id<User>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct User {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: UserId,
+	#[builder(default)]
 	pub email: Option<String>,
+	#[builder(default)]
 	pub email_verified: bool,
+	#[builder(default)]
 	pub settings: UserSettings,
+	#[builder(default)]
 	pub two_fa: Option<UserTwoFa>,
+	#[builder(default)]
 	pub style: UserStyle,
 	pub connections: Vec<UserConnection>,
+	#[builder(default)]
 	#[serde(default)]
 	pub search_index: UserSearchIndex,
+	#[builder(default)]
 	pub bans: Vec<UserBan>,
 }
 
@@ -142,7 +151,7 @@ impl Collection for User {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct UserTwoFa {
 	pub flags: i32,
@@ -150,7 +159,8 @@ pub struct UserTwoFa {
 	pub recovery_codes: Vec<i32>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, Builder)]
+#[builder(default)]
 #[serde(deny_unknown_fields)]
 pub struct UserStyle {
 	pub active_badge_id: Option<BadgeId>,
@@ -160,9 +170,10 @@ pub struct UserStyle {
 	pub all_profile_pictures: Vec<ImageSet>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 #[serde(default)]
+#[builder(default)]
 pub struct UserSearchIndex {
 	/// Each role has a rank, this is used for a search ordering
 	pub role_rank: i32,

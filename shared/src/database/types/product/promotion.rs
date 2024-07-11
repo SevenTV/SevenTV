@@ -1,16 +1,21 @@
+use derive_builder::Builder;
+
 use super::{ProductId, TimePeriod};
 use crate::database::types::GenericCollection;
 use crate::database::{Collection, Id};
 
 pub type PromotionId = Id<Promotion>;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Promotion {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: PromotionId,
 	pub name: String,
+	#[builder(default)]
 	pub description: Option<String>,
+	#[builder(default)]
 	pub tags: Vec<String>,
 	pub products: Vec<PromotionProduct>,
 	pub time_period: TimePeriod,
@@ -26,7 +31,7 @@ pub enum PromotionTrigger {
 	GiftRedeem,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 pub struct PromotionProduct {
 	pub id: ProductId,
 	pub unit_value: u32,

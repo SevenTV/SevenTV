@@ -1,4 +1,5 @@
 use bitmask_enum::bitmask;
+use derive_builder::Builder;
 
 use super::image_set::ImageSet;
 use super::user::UserId;
@@ -7,25 +8,31 @@ use crate::database::{Collection, Id};
 
 pub type EmoteId = Id<Emote>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Emote {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: EmoteId,
 	pub owner_id: UserId,
 	pub default_name: String,
+	#[builder(default)]
 	pub tags: Vec<String>,
 	pub animated: bool,
 	pub image_set: ImageSet,
+	#[builder(default)]
 	pub flags: EmoteFlags,
+	#[builder(default)]
 	pub attribution: Vec<EmoteAttribution>,
+	#[builder(default)]
 	pub merged: Option<EmoteMerged>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteMerged {
 	pub target_id: EmoteId,
+	#[builder(default)]
 	pub at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -88,10 +95,11 @@ impl<'a> serde::Deserialize<'a> for EmoteFlags {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteAttribution {
 	pub user_id: UserId,
+	#[builder(default)]
 	#[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
 }

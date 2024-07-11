@@ -9,7 +9,7 @@ use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, Entitlem
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
 use shared::database::user::User;
 use shared::database::Collection;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::event_api::types::{ChangeFieldBuilder, ChangeFieldType, ChangeMapBuilder, EventType, ObjectKind};
 use shared::old_types::cosmetic::CosmeticKind;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::UserPartialModel;
@@ -126,28 +126,28 @@ impl UserOps {
 				.event_api()
 				.dispatch_event(
 					EventType::UpdateUser,
-					ChangeMap {
-						id: self.id.0.cast(),
-						kind: ObjectKind::User,
-						actor: Some(UserPartialModel::from_db(
+					ChangeMapBuilder::default()
+						.id(self.id.0.cast())
+						.kind(ObjectKind::User)
+						.actor(Some(UserPartialModel::from_db(
 							authed_user.clone(),
 							&global_config,
 							None,
 							None,
 							&global.config().api.cdn_origin,
-						)),
-						pulled: vec![ChangeField {
-							key: "connections".to_string(),
-							ty: ChangeFieldType::Object,
-							index: Some(index),
-							value: serde_json::to_value(connection).map_err(|e| {
+						)))
+						.pulled(vec![ChangeFieldBuilder::default()
+							.key("connections")
+							.ty(ChangeFieldType::Object)
+							.index(index)
+							.value(serde_json::to_value(connection).map_err(|e| {
 								tracing::error!(error = %e, "failed to serialize value");
 								ApiError::INTERNAL_SERVER_ERROR
-							})?,
-							..Default::default()
-						}],
-						..Default::default()
-					},
+							})?)
+							.build()
+							.unwrap()])
+						.build()
+						.unwrap(),
 					self.id.0,
 				)
 				.await
@@ -194,20 +194,20 @@ impl UserOps {
 
 			for i in 0..user.connections.len() {
 				let value = vec![
-					ChangeField {
-						key: "emote_set".to_string(),
-						ty: ChangeFieldType::Object,
-						old_value: old_set.clone(),
-						value: new_set.clone(),
-						..Default::default()
-					},
-					ChangeField {
-						key: "emote_set_id".to_string(),
-						ty: ChangeFieldType::String,
-						old_value: user.style.active_emote_set_id.map(|id| id.to_string()).into(),
-						value: new_set_id.to_string().into(),
-						..Default::default()
-					},
+					ChangeFieldBuilder::default()
+						.key("emote_set")
+						.ty(ChangeFieldType::Object)
+						.old_value(old_set.clone())
+						.value(new_set.clone())
+						.build()
+						.unwrap(),
+					ChangeFieldBuilder::default()
+						.key("emote_set_id")
+						.ty(ChangeFieldType::String)
+						.old_value(user.style.active_emote_set_id.map(|id| id.to_string()))
+						.value(new_set_id.to_string())
+						.build()
+						.unwrap(),
 				];
 
 				let value = serde_json::to_value(value).map_err(|e| {
@@ -219,25 +219,25 @@ impl UserOps {
 					.event_api()
 					.dispatch_event(
 						EventType::UpdateUser,
-						ChangeMap {
-							id: self.id.0.cast(),
-							kind: ObjectKind::User,
-							actor: Some(UserPartialModel::from_db(
+						ChangeMapBuilder::default()
+							.id(self.id.0.cast())
+							.kind(ObjectKind::User)
+							.actor(Some(UserPartialModel::from_db(
 								authed_user.clone(),
 								&global_config,
 								None,
 								None,
 								&global.config().api.cdn_origin,
-							)),
-							updated: vec![ChangeField {
-								key: "connections".to_string(),
-								index: Some(i),
-								nested: true,
-								value,
-								..Default::default()
-							}],
-							..Default::default()
-						},
+							)))
+							.updated(vec![ChangeFieldBuilder::default()
+								.key("connections")
+								.index(i)
+								.nested(true)
+								.value(value)
+								.build()
+								.unwrap()])
+							.build()
+							.unwrap(),
 						self.id.0,
 					)
 					.await
@@ -446,26 +446,26 @@ impl UserOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				changes.push(ChangeField {
-					key: "paint_id".to_string(),
-					ty: ChangeFieldType::String,
-					value: update.id.0.to_string().into(),
-					old_value: user.style.active_paint_id.map(|id| id.to_string()).into(),
-					..Default::default()
-				});
-				changes.push(ChangeField {
-					key: "paint".to_string(),
-					ty: ChangeFieldType::Object,
-					value: serde_json::to_value(paint).map_err(|e| {
+				changes.push(ChangeFieldBuilder::default()
+					.key("paint_id")
+					.ty(ChangeFieldType::String)
+					.value(update.id.0.to_string())
+					.old_value(user.style.active_paint_id.map(|id| id.to_string()))
+					.build()
+					.unwrap());
+				changes.push(ChangeFieldBuilder::default()
+					.key("paint")
+					.ty(ChangeFieldType::Object)
+					.value(serde_json::to_value(paint).map_err(|e| {
 						tracing::error!(error = %e, "failed to serialize value");
 						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-					old_value: serde_json::to_value(old_paint).map_err(|e| {
+					})?)
+					.old_value(serde_json::to_value(old_paint).map_err(|e| {
 						tracing::error!(error = %e, "failed to serialize value");
 						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-					..Default::default()
-				});
+					})?)
+					.build()
+					.unwrap());
 
 				Ok(res.modified_count == 1)
 			}
@@ -508,26 +508,26 @@ impl UserOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				changes.push(ChangeField {
-					key: "badge_id".to_string(),
-					ty: ChangeFieldType::String,
-					value: update.id.0.to_string().into(),
-					old_value: user.style.active_badge_id.map(|id| id.to_string()).into(),
-					..Default::default()
-				});
-				changes.push(ChangeField {
-					key: "badge".to_string(),
-					ty: ChangeFieldType::Object,
-					value: serde_json::to_value(badge).map_err(|e| {
+				changes.push(ChangeFieldBuilder::default()
+					.key("badge_id")
+					.ty(ChangeFieldType::String)
+					.value(update.id.0.to_string())
+					.old_value(user.style.active_badge_id.map(|id| id.to_string()))
+					.build()
+					.unwrap());
+				changes.push(ChangeFieldBuilder::default()
+					.key("badge")
+					.ty(ChangeFieldType::Object)
+					.value(serde_json::to_value(badge).map_err(|e| {
 						tracing::error!(error = %e, "failed to serialize value");
 						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-					old_value: serde_json::to_value(old_badge).map_err(|e| {
+					})?)
+					.old_value(serde_json::to_value(old_badge).map_err(|e| {
 						tracing::error!(error = %e, "failed to serialize value");
 						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-					..Default::default()
-				});
+					})?)
+					.build()
+					.unwrap());
 
 				Ok(res.modified_count == 1)
 			}
@@ -546,28 +546,28 @@ impl UserOps {
 				.event_api()
 				.dispatch_event(
 					EventType::UpdateUser,
-					ChangeMap {
-						id: self.id.0.cast(),
-						kind: ObjectKind::User,
-						actor: Some(UserPartialModel::from_db(
+					ChangeMapBuilder::default()
+						.id(self.id.0.cast())
+						.kind(ObjectKind::User)
+						.actor(Some(UserPartialModel::from_db(
 							authed_user.clone(),
 							&global_config,
 							None,
 							None,
 							&global.config().api.cdn_origin,
-						)),
-						updated: vec![ChangeField {
-							key: "style".to_string(),
-							ty: ChangeFieldType::Object,
-							nested: true,
-							value: serde_json::to_value(changes).map_err(|e| {
+						)))
+						.updated(vec![ChangeFieldBuilder::default()
+							.key("style")
+							.ty(ChangeFieldType::Object)
+							.nested(true)
+							.value(serde_json::to_value(changes).map_err(|e| {
 								tracing::error!(error = %e, "failed to serialize value");
 								ApiError::INTERNAL_SERVER_ERROR
-							})?,
-							..Default::default()
-						}],
-						..Default::default()
-					},
+							})?)
+							.build()
+							.unwrap()])
+						.build()
+						.unwrap(),
 					self.id.0,
 				)
 				.await
@@ -610,18 +610,18 @@ impl UserOps {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let mut changes = ChangeMap {
-			id: self.id.0.cast(),
-			kind: ObjectKind::User,
-			actor: Some(UserPartialModel::from_db(
+		let mut changes = ChangeMapBuilder::default()
+			.id(self.id.0.cast())
+			.kind(ObjectKind::User)
+			.actor(Some(UserPartialModel::from_db(
 				auth_session.user(global).await?.clone(),
 				&global_config,
 				None,
 				None,
 				&global.config().api.cdn_origin,
-			)),
-			..Default::default()
-		};
+			)))
+			.build()
+			.unwrap();
 
 		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
@@ -672,13 +672,15 @@ impl UserOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				changes.pushed.push(ChangeField {
-					key: "role_ids".to_string(),
-					ty: ChangeFieldType::String,
-					index: Some(role.rank as usize),
-					value: role_id.0.to_string().into(),
-					..Default::default()
-				});
+				changes.pushed.push(
+					ChangeFieldBuilder::default()
+						.key("role_ids")
+						.ty(ChangeFieldType::String)
+						.index(role.rank as usize)
+						.value(role_id.0.to_string())
+						.build()
+						.unwrap(),
+				);
 
 				user.computed
 					.entitlements
@@ -722,13 +724,15 @@ impl UserOps {
 							ApiError::INTERNAL_SERVER_ERROR
 						})?;
 
-					changes.pulled.push(ChangeField {
-						key: "role_ids".to_string(),
-						ty: ChangeFieldType::String,
-						index: Some(role.rank as usize),
-						value: role_id.0.to_string().into(),
-						..Default::default()
-					});
+					changes.pulled.push(
+						ChangeFieldBuilder::default()
+							.key("role_ids")
+							.ty(ChangeFieldType::String)
+							.index(role.rank as usize)
+							.value(role_id.0.to_string())
+							.build()
+							.unwrap(),
+					);
 
 					user.computed
 						.entitlements

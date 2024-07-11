@@ -3,9 +3,9 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::bson::{doc, to_bson};
-use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::image_set::{ImageSetBuilder, ImageSetInput};
 use shared::database::paint::{
-	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
+	Paint, PaintBuilder, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
 };
 use shared::database::role::permissions::PaintPermission;
 use shared::database::Collection;
@@ -31,12 +31,15 @@ impl CosmeticsMutation {
 
 		let id = PaintId::new();
 
-		let paint = Paint {
-			id,
-			name: definition.name.clone(),
-			data: definition.into_db(id, global).await?,
-			..Default::default()
-		};
+		let paint = PaintBuilder::default()
+			.id(id)
+			.name(definition.name.clone())
+			.data(definition.into_db(id, global).await?)
+			.build()
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to build paint");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		Paint::collection(global.db()).insert_one(paint).await.map_err(|e| {
 			tracing::error!(error = %e, "failed to insert paint");
@@ -168,10 +171,7 @@ impl CosmeticPaintInput {
 					}
 				};
 
-				PaintLayerType::Image(ImageSet {
-					input,
-					..Default::default()
-				})
+				PaintLayerType::Image(ImageSetBuilder::default().input(input).build().unwrap())
 			}
 		};
 

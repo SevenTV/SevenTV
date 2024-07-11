@@ -1,3 +1,4 @@
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::codes::{DiscountCodeId, GiftCodeId, RedeemCodeId};
@@ -45,11 +46,12 @@ impl ProductEdgeKind {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Builder)]
 /// A product edge is used to determine dependencies between invoice line items
 /// and whatever they end up being used for.
 pub struct ProductEdge {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: Id<ProductEdge>,
 	pub from: ProductEdgeKind,
 	pub to: ProductEdgeKind,

@@ -1,3 +1,4 @@
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::TimePeriod;
@@ -7,14 +8,17 @@ use crate::database::{Collection, Id};
 
 pub type GiftCodeId = Id<GiftCode>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct GiftCode {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: GiftCodeId,
 	pub code: String,
+	#[builder(default)]
 	pub message: Option<String>,
 	pub purchased_by: UserId,
+	#[builder(default)]
 	pub redeemed_by: Option<UserId>,
 }
 

@@ -1,3 +1,5 @@
+use derive_builder::Builder;
+
 use super::EmoteSetId;
 use crate::database::emote::EmoteId;
 
@@ -9,17 +11,17 @@ pub enum EmoteSetOriginError {
 	MaxDepthExceeded(String),
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetOriginConfig {
 	pub origins: Vec<EmoteSetOrigin>,
-	// Specify a limit on the number of emotes imported.
+	/// Specify a limit on the number of emotes imported.
 	pub limit: usize,
-	// A list of emotes that are removed from every upstream set before computing the final set.
+	/// A list of emotes that are removed from every upstream set before computing the final set.
 	pub purge: Vec<EmoteSetEmoteRef>,
 	pub auto_resync: bool,
 	pub needs_resync: bool,
-	// Cycle was detected in the origin configuration, on this emote set id.
+	/// Cycle was detected in the origin configuration, on this emote set id.
 	pub error: Option<EmoteSetOriginError>,
 }
 

@@ -1,24 +1,27 @@
 use bitmask_enum::bitmask;
+use derive_builder::Builder;
 
 use super::UserId;
 use crate::database::types::GenericCollection;
 use crate::database::Collection;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 pub struct UserEditorId {
 	pub user_id: UserId,
 	pub editor_id: UserId,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditor {
 	#[serde(rename = "_id")]
 	pub id: UserEditorId,
 	pub state: UserEditorState,
+	#[builder(default)]
 	pub notes: Option<String>,
 	pub permissions: UserEditorPermissions,
 	pub added_by_id: UserId,
+	#[builder(default)]
 	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
 }
@@ -58,7 +61,8 @@ macro_rules! impl_bits {
 	};
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, Builder)]
+#[builder(default)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditorPermissions {
 	#[serde(skip_serializing_if = "EditorEmoteSetPermission::is_empty")]

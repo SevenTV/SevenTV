@@ -359,7 +359,13 @@ impl UserPartial {
 			display_name: "*DeletedUser".to_string(),
 			avatar_url: String::new(),
 			biography: String::new(),
-			db: Arc::new(RwLock::new(shared::database::user::User::default().into())),
+			db: Arc::new(RwLock::new(
+				shared::database::user::UserBuilder::default()
+					.connections(vec![])
+					.build()
+					.unwrap()
+					.into(),
+			)),
 		}
 	}
 

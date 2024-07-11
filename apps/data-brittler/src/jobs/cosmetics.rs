@@ -4,7 +4,7 @@ use std::vec;
 
 use bson::oid::ObjectId;
 use shared::database::badge::Badge;
-use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::image_set::{ImageSetBuilder, ImageSetInput};
 use shared::database::paint::{Paint, PaintLayer, PaintLayerId, PaintLayerType};
 use shared::database::{self, Collection};
 use tokio::io;
@@ -111,17 +111,14 @@ impl Job for CosmeticsJob {
 					_ => return outcome.with_error(error::Error::NotImplemented("missing image upload info")),
 				};
 
-				let image_set = ImageSet {
-					input,
-					..Default::default()
-				};
+				let image_set = ImageSetBuilder::default().input(input).build().unwrap();
 
 				let tags = tag.map(|t| vec![t]).unwrap_or_default();
 				match Badge::collection(self.global.target_db())
 					.insert_one(Badge {
 						id: cosmetic.id.into(),
 						name: cosmetic.name,
-						description: tooltip,
+						description: (!tooltip.trim().is_empty()).then_some(tooltip),
 						tags,
 						image_set,
 					})
@@ -200,10 +197,7 @@ impl Job for CosmeticsJob {
 							_ => return outcome.with_error(error::Error::NotImplemented("missing image upload info")),
 						};
 
-						Some(PaintLayerType::Image(ImageSet {
-							input,
-							..Default::default()
-						}))
+						Some(PaintLayerType::Image(ImageSetBuilder::default().input(input).build().unwrap()))
 					}
 					types::PaintData::Url { image_url: None, .. } => None,
 				};
@@ -225,7 +219,7 @@ impl Job for CosmeticsJob {
 					.insert_one(Paint {
 						id,
 						name: cosmetic.name,
-						description: String::new(),
+						description: None,
 						tags: vec![],
 						data: paint_data,
 					})

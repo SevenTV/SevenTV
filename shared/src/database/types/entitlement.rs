@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
+use derive_builder::Builder;
 
 use super::badge::BadgeId;
 use super::emote_set::EmoteSetId;
@@ -75,14 +76,15 @@ pub enum EntitlementEdgeManagedBy {
 	},
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Builder)]
 pub struct EntitlementEdgeId {
 	pub from: EntitlementEdgeKind,
 	pub to: EntitlementEdgeKind,
+	#[builder(default)]
 	pub managed_by: Option<EntitlementEdgeManagedBy>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Builder)]
 pub struct EntitlementEdge {
 	#[serde(rename = "_id")]
 	pub id: EntitlementEdgeId,
@@ -166,10 +168,12 @@ impl EntitlementEdge {
 
 pub type EntitlementGroupId = Id<EntitlementGroup>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Builder)]
 pub struct EntitlementGroup {
+	#[builder(default)]
 	pub id: EntitlementGroupId,
 	pub name: String,
+	#[builder(default)]
 	pub description: Option<String>,
 }
 

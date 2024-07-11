@@ -1,3 +1,5 @@
+use derive_builder::Builder;
+
 use super::emote::EmoteId;
 use super::emote_set::EmoteSetId;
 use super::product::InvoiceId;
@@ -34,20 +36,27 @@ pub enum TicketKind {
 
 pub type TicketId = Id<Ticket>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct Ticket {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: TicketId,
+	#[builder(default)]
 	pub priority: TicketPriority,
 	pub members: Vec<TicketMember>,
 	pub title: String,
+	#[builder(default)]
 	pub tags: Vec<String>,
+	#[builder(default)]
 	pub country_code: Option<String>,
 	pub kind: TicketKind,
+	#[builder(default)]
 	pub targets: Vec<TicketTarget>,
 	pub author_id: UserId,
+	#[builder(default = "true")]
 	pub open: bool,
+	#[builder(default = "false")]
 	pub locked: bool,
 }
 
@@ -64,29 +73,34 @@ pub enum TicketMemberKind {
 	Watcher = 2,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct TicketMember {
 	pub user_id: UserId,
+	#[builder(default)]
 	pub kind: TicketMemberKind,
+	#[builder(default = "true")]
 	pub notifications: bool,
+	#[builder(default)]
 	pub last_read: Option<TicketMessageId>,
 }
 
 pub type TicketMessageId = Id<TicketMessage>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct TicketMessage {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: TicketMessageId,
 	pub ticket_id: TicketId,
 	pub user_id: UserId,
 	pub content: String,
+	#[builder(default)]
 	pub files: Vec<TicketFile>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct TicketFile {
 	pub path: String,

@@ -8,7 +8,7 @@ use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogUserData};
 use shared::database::role::permissions::{
 	EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
 };
-use shared::database::user::ban::UserBan;
+use shared::database::user::ban::{UserBan, UserBanBuilder};
 use shared::database::user::User;
 use shared::database::{Collection, Id};
 use shared::old_types::object_id::GqlObjectId;
@@ -79,16 +79,16 @@ impl BansMutation {
 			));
 		}
 
-		let ban = UserBan {
-			id: Default::default(),
-			template_id: None,
-			expires_at: expire_at,
-			created_by_id: actor.id,
-			reason,
-			tags: vec![],
-			removed: None,
-			permissions: ban_effect_to_permissions(effects),
-		};
+		let ban = UserBanBuilder::default()
+			.expires_at(expire_at)
+			.created_by_id(actor.id)
+			.reason(reason)
+			.permissions(ban_effect_to_permissions(effects))
+			.build()
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to build ban");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
 		let mut session = global.mongo().start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");

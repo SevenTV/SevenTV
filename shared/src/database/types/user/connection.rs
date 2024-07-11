@@ -1,20 +1,25 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
+use derive_builder::Builder;
 use mongodb::bson::Bson;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct UserConnection {
 	pub platform: Platform,
 	pub platform_id: String,
 	pub platform_username: String,
 	pub platform_display_name: String,
+	#[builder(default)]
 	pub platform_avatar_url: Option<String>,
+	#[builder(default)]
 	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[builder(default)]
 	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub linked_at: chrono::DateTime<chrono::Utc>,
+	#[builder(default = "true")]
 	pub allow_login: bool,
 }
 

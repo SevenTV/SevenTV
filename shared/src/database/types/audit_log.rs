@@ -1,3 +1,5 @@
+use derive_builder::Builder;
+
 use super::emote::{EmoteFlags, EmoteId};
 use super::emote_set::EmoteSetId;
 use super::role::RoleId;
@@ -9,10 +11,11 @@ use crate::database::Id;
 
 pub type AuditLogId = Id<AuditLog>;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct AuditLog {
 	#[serde(rename = "_id")]
+	#[builder(default)]
 	pub id: AuditLogId,
 	pub actor_id: Option<UserId>,
 	pub data: AuditLogData,

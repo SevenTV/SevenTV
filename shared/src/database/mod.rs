@@ -1,8 +1,10 @@
 pub mod graph;
 mod id;
+mod transaction;
 mod types;
 
 pub use id::*;
+pub use transaction::*;
 pub use types::*;
 
 use crate::config::DatabaseConfig;

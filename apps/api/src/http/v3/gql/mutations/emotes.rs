@@ -8,7 +8,7 @@ use shared::database::emote::{Emote as DbEmote, EmoteFlags};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorState};
 use shared::database::Collection;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType};
+use shared::event_api::types::{ChangeFieldBuilder, ChangeFieldType, ChangeMapBuilder, EventType, ObjectKind};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
@@ -146,13 +146,13 @@ impl EmoteOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				let change = ChangeField {
-					key: "name".to_string(),
-					ty: ChangeFieldType::String,
-					old_value: self.emote.default_name.clone().into(),
-					value: name.into(),
-					..Default::default()
-				};
+				let change = ChangeFieldBuilder::default()
+					.key("name")
+					.ty(ChangeFieldType::String)
+					.old_value(self.emote.default_name.clone())
+					.value(name)
+					.build()
+					.unwrap();
 				changes.push(change.clone());
 				nested_changes.push(change);
 			}
@@ -187,13 +187,13 @@ impl EmoteOps {
 					}
 
 					if self.emote.flags.contains(EmoteFlags::PublicListed) != listed {
-						let change = ChangeField {
-							key: "listed".to_string(),
-							ty: ChangeFieldType::Bool,
-							old_value: self.emote.flags.contains(EmoteFlags::PublicListed).into(),
-							value: listed.into(),
-							..Default::default()
-						};
+						let change = ChangeFieldBuilder::default()
+							.key("listed")
+							.ty(ChangeFieldType::Bool)
+							.old_value(self.emote.flags.contains(EmoteFlags::PublicListed))
+							.value(listed)
+							.build()
+							.unwrap();
 						changes.push(change.clone());
 						nested_changes.push(change);
 					}
@@ -231,13 +231,13 @@ impl EmoteOps {
 							ApiError::INTERNAL_SERVER_ERROR
 						})?;
 
-					changes.push(ChangeField {
-						key: "owner_id".to_string(),
-						ty: ChangeFieldType::String,
-						old_value: self.emote.owner_id.to_string().into(),
-						value: owner_id.0.to_string().into(),
-						..Default::default()
-					});
+					changes.push(ChangeFieldBuilder::default()
+						.key("owner_id")
+						.ty(ChangeFieldType::String)
+						.old_value(self.emote.owner_id.to_string())
+						.value(owner_id.0.to_string())
+						.build()
+						.unwrap());
 				}
 			}
 
@@ -263,13 +263,13 @@ impl EmoteOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				changes.push(ChangeField {
-					key: "flags".to_string(),
-					ty: ChangeFieldType::Number,
-					old_value: self.emote.flags.bits().into(),
-					value: flags.bits().into(),
-					..Default::default()
-				});
+				changes.push(ChangeFieldBuilder::default()
+					.key("flags")
+					.ty(ChangeFieldType::Number)
+					.old_value(self.emote.flags.bits())
+					.value(flags.bits())
+					.build()
+					.unwrap());
 			}
 
 			if let Some(tags) = params.tags {
@@ -294,12 +294,12 @@ impl EmoteOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				changes.push(ChangeField {
-					key: "tags".to_string(),
-					old_value: self.emote.tags.clone().into(),
-					value: tags.into(),
-					..Default::default()
-				});
+				changes.push(ChangeFieldBuilder::default()
+					.key("tags")
+					.old_value(self.emote.tags.clone())
+					.value(tags)
+					.build()
+					.unwrap());
 			}
 
 			let emote = shared::database::emote::Emote::collection(global.db())
@@ -324,13 +324,13 @@ impl EmoteOps {
 					ApiError::INTERNAL_SERVER_ERROR
 				})?;
 
-				changes.push(ChangeField {
-					key: "versions".to_string(),
-					nested: true,
-					index: Some(0),
-					value: nested_changes,
-					..Default::default()
-				});
+				changes.push(ChangeFieldBuilder::default()
+					.key("versions")
+					.nested(true)
+					.index(0)
+					.value(nested_changes)
+					.build()
+					.unwrap());
 			}
 
 			if !changes.is_empty() {
@@ -341,19 +341,19 @@ impl EmoteOps {
 					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-				let body = ChangeMap {
-					id: self.id.id(),
-					kind: shared::event_api::types::ObjectKind::Emote,
-					actor: Some(UserPartialModel::from_db(
+				let body = ChangeMapBuilder::default()
+					.id(self.id.0)
+					.kind(ObjectKind::Emote)
+					.actor(Some(UserPartialModel::from_db(
 						user.clone(),
 						&global_config,
 						None,
 						None,
 						&global.config().api.cdn_origin,
-					)),
-					updated: changes,
-					..Default::default()
-				};
+					)))
+					.updated(changes)
+					.build()
+					.unwrap();
 
 				global
 					.event_api()

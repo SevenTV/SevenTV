@@ -1,20 +1,26 @@
 use bitmask_enum::bitmask;
+use derive_builder::Builder;
 
 use super::EmoteSetId;
 use crate::database::emote::EmoteId;
 use crate::database::user::UserId;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Builder)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetEmote {
+	#[builder(default)]
 	pub id: EmoteId,
 	pub alias: String,
+	#[builder(default)]
 	#[serde(with = "mongodb::bson::serde_helpers::chrono_datetime_as_bson_datetime")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
+	#[builder(default)]
 	pub flags: EmoteSetEmoteFlag,
+	#[builder(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
 	#[serde(default)]
 	pub added_by_id: Option<UserId>,
+	#[builder(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
 	#[serde(default)]
 	pub origin_set_id: Option<EmoteSetId>,
