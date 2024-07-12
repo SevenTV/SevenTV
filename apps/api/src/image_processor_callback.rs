@@ -16,7 +16,7 @@ use shared::database::emote::Emote;
 use shared::database::image_set::Image;
 use shared::database::paint::{Paint, PaintLayerId};
 use shared::database::user::User;
-use shared::database::Collection;
+use shared::database::{with_transaction, Collection};
 use shared::event_api::types::{ChangeFieldBuilder, ChangeFieldType, ChangeMapBuilder, EventType, ObjectKind};
 use shared::image_processor::Subject;
 use shared::old_types::UserPartialModel;
@@ -156,42 +156,48 @@ async fn handle_success(
 		})
 		.collect();
 
-	let mut session = global.mongo().start_session().await?;
-	session.start_transaction().await?;
+	let outputs = to_bson(&outputs)?;
+
+	let db = global.db().clone();
 
 	match subject {
 		Subject::Emote(id) => {
-			let emote = Emote::collection(global.db())
-				.find_one_and_update(
-					doc! {
-						"_id": id,
-					},
-					doc! {
-						"$set": {
-							"animated": animated,
-							"image_set.input.width": input.width,
-							"image_set.input.height": input.height,
-							"image_set.input.frame_count": input.frame_count,
-							"image_set.outputs": to_bson(&outputs)?,
-						},
-					},
-				)
-				.session(&mut session)
-				.return_document(ReturnDocument::After)
-				.await?
-				.context("emote not found")?;
+			let emote = with_transaction(global.mongo(), move |session| {
+				Box::pin(async {
+					AuditLog::collection(&db)
+						.insert_one(AuditLog {
+							id: AuditLogId::new(),
+							actor_id: None,
+							data: AuditLogData::Emote {
+								target_id: id,
+								data: AuditLogEmoteData::Process,
+							},
+						})
+						.session(session)
+						.await?;
 
-			AuditLog::collection(global.db())
-				.insert_one(AuditLog {
-					id: AuditLogId::new(),
-					actor_id: None,
-					data: AuditLogData::Emote {
-						target_id: id,
-						data: AuditLogEmoteData::Process,
-					},
+					Emote::collection(&db)
+						.find_one_and_update(
+							doc! {
+								"_id": id,
+							},
+							doc! {
+								"$set": {
+									"animated": animated,
+									"image_set.input.width": input.width,
+									"image_set.input.height": input.height,
+									"image_set.input.frame_count": input.frame_count,
+									"image_set.outputs": &outputs,
+								},
+							},
+						)
+						.session(session)
+						.return_document(ReturnDocument::After)
+						.await
 				})
-				.session(&mut session)
-				.await?;
+			})
+			.await?
+			.context("emote not found")?;
 
 			let global_config = global
 				.global_config_loader()
@@ -242,8 +248,6 @@ async fn handle_success(
 				.await?;
 		}
 		Subject::ProfilePicture(id) => {
-			let outputs = to_bson(&outputs)?;
-
 			// https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline
 			let aggregation = vec![
 				doc! {
@@ -278,7 +282,6 @@ async fn handle_success(
 					},
 					aggregation,
 				)
-				.session(&mut session)
 				.await?;
 		}
 		Subject::Paint(id) => {
@@ -298,11 +301,10 @@ async fn handle_success(
 							"data.layers.$.data.input.width": input.width,
 							"data.layers.$.data.input.height": input.height,
 							"data.layers.$.data.input.frame_count": input.frame_count,
-							"data.layers.$.data.outputs": to_bson(&outputs)?,
+							"data.layers.$.data.outputs": outputs,
 						},
 					},
 				)
-				.session(&mut session)
 				.await?;
 		}
 		Subject::Badge(id) => {
@@ -316,17 +318,14 @@ async fn handle_success(
 							"image_set.input.width": input.width,
 							"image_set.input.height": input.height,
 							"image_set.input.frame_count": input.frame_count,
-							"image_set.outputs": to_bson(&outputs)?,
+							"image_set.outputs": outputs,
 						},
 					},
 				)
-				.session(&mut session)
 				.await?;
 		}
 		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
-
-	session.commit_transaction().await?;
 
 	Ok(())
 }
