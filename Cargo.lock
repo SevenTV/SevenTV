@@ -4291,6 +4291,7 @@ dependencies = [
  "serde-enum-str",
  "serde_json",
  "serde_repr",
+ "spin",
  "thiserror",
  "time",
  "tokio",

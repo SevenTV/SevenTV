@@ -16,7 +16,7 @@ use shared::database::emote::Emote;
 use shared::database::image_set::Image;
 use shared::database::paint::{Paint, PaintLayerId};
 use shared::database::user::User;
-use shared::database::{with_transaction, Collection};
+use shared::database::{ClientExt, Collection};
 use shared::event_api::types::{ChangeFieldBuilder, ChangeFieldType, ChangeMapBuilder, EventType, ObjectKind};
 use shared::image_processor::Subject;
 use shared::old_types::UserPartialModel;
@@ -158,46 +158,48 @@ async fn handle_success(
 
 	let outputs = to_bson(&outputs)?;
 
-	let db = global.db().clone();
-
 	match subject {
 		Subject::Emote(id) => {
-			let emote = with_transaction(global.mongo(), move |session| {
-				Box::pin(async {
-					AuditLog::collection(&db)
-						.insert_one(AuditLog {
-							id: AuditLogId::new(),
-							actor_id: None,
-							data: AuditLogData::Emote {
-								target_id: id,
-								data: AuditLogEmoteData::Process,
-							},
-						})
-						.session(session)
-						.await?;
+			let emote = global
+				.mongo()
+				.with_transaction(|mut session| {
+					let outputs = &outputs;
 
-					Emote::collection(&db)
-						.find_one_and_update(
-							doc! {
-								"_id": id,
-							},
-							doc! {
-								"$set": {
-									"animated": animated,
-									"image_set.input.width": input.width,
-									"image_set.input.height": input.height,
-									"image_set.input.frame_count": input.frame_count,
-									"image_set.outputs": &outputs,
+					async move {
+						AuditLog::collection(&global.db())
+							.insert_one(AuditLog {
+								id: AuditLogId::new(),
+								actor_id: None,
+								data: AuditLogData::Emote {
+									target_id: id,
+									data: AuditLogEmoteData::Process,
 								},
-							},
-						)
-						.session(session)
-						.return_document(ReturnDocument::After)
-						.await
+							})
+							.session(session.get().as_mut())
+							.await?;
+
+						Emote::collection(&global.db())
+							.find_one_and_update(
+								doc! {
+									"_id": id,
+								},
+								doc! {
+									"$set": {
+										"animated": animated,
+										"image_set.input.width": input.width,
+										"image_set.input.height": input.height,
+										"image_set.input.frame_count": input.frame_count,
+										"image_set.outputs": &outputs,
+									},
+								},
+							)
+							.session(session.get().as_mut())
+							.return_document(ReturnDocument::After)
+							.await
+					}
 				})
-			})
-			.await?
-			.context("emote not found")?;
+				.await?
+				.context("emote not found")?;
 
 			let global_config = global
 				.global_config_loader()
