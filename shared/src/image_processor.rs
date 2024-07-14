@@ -138,6 +138,7 @@ impl ImageProcessor {
 			drive_path: Some(image_processor::DrivePath {
 				drive: self.input_drive_name.clone(),
 				path: input_path,
+				..Default::default()
 			}),
 			binary: data.to_vec(),
 			..Default::default()
@@ -149,6 +150,7 @@ impl ImageProcessor {
 			drive_path: Some(image_processor::DrivePath {
 				drive: self.output_drive_name.clone(),
 				path: output_path,
+				..Default::default()
 			}),
 			formats: vec![
 				OutputFormatOptions {

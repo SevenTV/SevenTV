@@ -244,7 +244,7 @@ pub async fn upload_user_profile_picture(
 			task_id: id,
 			path: path.path,
 			mime: content_type,
-			size,
+			size: size as i64,
 		},
 		Ok(ProcessImageResponse { error: Some(err), .. }) => {
 			// At this point if we get a decode error then the image is invalid

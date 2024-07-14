@@ -104,7 +104,7 @@ impl Job for CosmeticsJob {
 							task_id: id,
 							path: path.path,
 							mime: content_type,
-							size: size,
+							size: size as i64,
 						}
 					}
 					Err(e) => return outcome.with_error(e),

@@ -36,13 +36,11 @@ serde_repr = "0.1"
 tokio-util = "0.7"
 bitmask-enum = "2"
 enum-impl = "0.1"
-clickhouse = { version = "0.11.6", features = ["uuid", "time"] }
-time = "0.3.36"
 uuid = { version = "1.9.1", features = ["serde"] }
 mongodb = "3.0"
 bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
 ulid = { version = "1.1", features = ["serde", "uuid"] }
-tonic = { version = "0.11", features = ["tls"]}
+tonic = { version = "0.12", features = ["tls"]}
 http = { version = "1.1" }
 tower = "0.4"
 trust-dns-resolver = "0.23"

@@ -61,10 +61,10 @@ impl ImageHost {
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L52
 pub struct ImageFile {
 	pub name: String,
-	pub width: u32,
-	pub height: u32,
-	pub frame_count: u32,
-	pub size: u64,
+	pub width: i32,
+	pub height: i32,
+	pub frame_count: i32,
+	pub size: i64,
 	pub format: ImageFormat,
 }
 

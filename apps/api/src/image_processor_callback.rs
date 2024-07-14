@@ -146,15 +146,26 @@ async fn handle_success(
 	let outputs: Vec<_> = event
 		.files
 		.into_iter()
-		.map(|i| Image {
-			path: i.path,
+		.filter_map(|i| i.path.map(|p| Image {
+			path: p.path,
 			mime: i.content_type,
-			size: i.size as u64,
-			width: i.width,
-			height: i.height,
-			frame_count: i.frame_count,
-		})
+			size: i.size as i64,
+			width: i.width as i32,
+			height: i.height as i32,
+			frame_count: i.frame_count as i32,
+		}))
 		.collect();
+
+	let input = event.input_metadata.and_then(|m| m.path.map(|p| {
+		Image {
+			path: p.path,
+			mime: m.content_type,
+			size: m.size as i64,
+			width: m.width as i32,
+			height: m.height as i32,
+			frame_count: m.frame_count as i32,
+		}
+	}));
 
 	let outputs = to_bson(&outputs)?;
 
@@ -186,9 +197,7 @@ async fn handle_success(
 								doc! {
 									"$set": {
 										"animated": animated,
-										"image_set.input.width": input.width,
-										"image_set.input.height": input.height,
-										"image_set.input.frame_count": input.frame_count,
+										"image_set.input": to_bson(&input)?,
 										"image_set.outputs": &outputs,
 									},
 								},
@@ -253,13 +262,8 @@ async fn handle_success(
 			// https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline
 			let aggregation = vec![
 				doc! {
-					"$unset": {
-						"style.active_profile_picture.input.task_id": "",
-					},
 					"$set": {
-						"style.active_profile_picture.input.width": input.width,
-						"style.active_profile_picture.input.height": input.height,
-						"style.active_profile_picture.input.frame_count": input.frame_count,
+						"style.active_profile_picture.input": to_bson(&input)?,
 						"style.active_profile_picture.outputs": outputs,
 					},
 				},
@@ -296,14 +300,9 @@ async fn handle_success(
 						"data.layers.id": layer_id,
 					},
 					doc! {
-						"$unset": {
-							"data.layers.$.data.input.task_id": "",
-						},
 						"$set": {
-							"data.layers.$.data.input.width": input.width,
-							"data.layers.$.data.input.height": input.height,
-							"data.layers.$.data.input.frame_count": input.frame_count,
-							"data.layers.$.data.outputs": outputs,
+							"data.layers.$.data.input": to_bson(&input)?,
+							"data.layers.$.data.outputs": to_bson(&outputs)?,
 						},
 					},
 				)
@@ -317,10 +316,8 @@ async fn handle_success(
 					},
 					doc! {
 						"$set": {
-							"image_set.input.width": input.width,
-							"image_set.input.height": input.height,
-							"image_set.input.frame_count": input.frame_count,
-							"image_set.outputs": outputs,
+							"image_set.input": to_bson(&input)?,
+							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
 				)

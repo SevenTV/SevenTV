@@ -34,9 +34,9 @@ scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.gi
     "client",
     "serde",
 ] }
-tonic = "0.11"
+tonic = "0.12"
 async-nats = "0.35.1"
-prost = "0.12.6"
+prost = "0.13"
 
 cap = "0.1"
 

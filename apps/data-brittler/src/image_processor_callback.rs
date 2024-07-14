@@ -172,15 +172,26 @@ async fn handle_success(
 	let outputs: Vec<_> = event
 		.files
 		.into_iter()
-		.map(|i| Image {
-			path: i.path,
+		.filter_map(|i| i.path.map(|p| Image {
+			path: p.path,
 			mime: i.content_type,
-			size: i.size as u64,
+			size: i.size as i64,
 			width: i.width,
 			height: i.height,
 			frame_count: i.frame_count,
-		})
+		}))
 		.collect();
+
+	let input = event.input_metadata.and_then(|m| m.path.map(|p| {
+		Image {
+			path: p.path,
+			mime: m.content_type,
+			size: m.size as i64,
+			width: m.width,
+			height: m.height,
+			frame_count: m.frame_count,
+		}
+	}));
 
 	match subject {
 		Subject::Emote(id) => {
@@ -192,9 +203,7 @@ async fn handle_success(
 					doc! {
 						"$set": {
 							"animated": animated,
-							"image_set.input.width": input.width,
-							"image_set.input.height": input.height,
-							"image_set.input.frame_count": input.frame_count,
+							"image_set.input": to_bson(&input)?,
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},
@@ -208,9 +217,7 @@ async fn handle_success(
 			let aggregation = vec![
 				doc! {
 					"$set": {
-						"style.active_profile_picture.input.width": input.width,
-						"style.active_profile_picture.input.height": input.height,
-						"style.active_profile_picture.input.frame_count": input.frame_count,
+						"style.active_profile_picture.input": to_bson(&input)?,
 						"style.active_profile_picture.outputs": outputs,
 					},
 				},
@@ -248,9 +255,7 @@ async fn handle_success(
 					},
 					doc! {
 						"$set": {
-							"data.layers.$.data.input.width": input.width,
-							"data.layers.$.data.input.height": input.height,
-							"data.layers.$.data.input.frame_count": input.frame_count,
+							"data.layers.$.data.input": to_bson(&input)?,
 							"data.layers.$.data.outputs": to_bson(&outputs)?,
 						},
 					},
@@ -265,9 +270,7 @@ async fn handle_success(
 					},
 					doc! {
 						"$set": {
-							"image_set.input.width": input.width,
-							"image_set.input.height": input.height,
-							"image_set.input.frame_count": input.frame_count,
+							"image_set.input": to_bson(&input)?,
 							"image_set.outputs": to_bson(&outputs)?,
 						},
 					},

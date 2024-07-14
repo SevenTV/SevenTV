@@ -15,7 +15,7 @@ pub enum ImageSetInput {
 		task_id: String,
 		path: String,
 		mime: String,
-		size: u64,
+		size: i64,
 	},
 	Image(Image),
 }
@@ -32,7 +32,7 @@ impl Default for ImageSetInput {
 			task_id: String::default(),
 			path: String::default(),
 			mime: String::default(),
-			size: u64::default(),
+			size: i64::default(),
 		}
 	}
 }
@@ -42,10 +42,10 @@ impl Default for ImageSetInput {
 pub struct Image {
 	pub path: String,
 	pub mime: String,
-	pub size: u64,
-	pub width: u32,
-	pub height: u32,
-	pub frame_count: u32,
+	pub size: i64,
+	pub width: i32,
+	pub height: i32,
+	pub frame_count: i32,
 }
 
 impl Image {
