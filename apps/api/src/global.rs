@@ -26,10 +26,10 @@ use crate::config::Config;
 use crate::dataloader::emote::EmoteByUserIdLoader;
 use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
-use crate::event_api::EventApi;
 use crate::dataloader::user::UserByPlatformIdLoader;
 use crate::dataloader::user_bans::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
+use crate::event_api::EventApi;
 
 pub struct Global {
 	nats: async_nats::Client,
@@ -77,7 +77,7 @@ impl Global {
 			.ok_or_else(|| anyhow::anyhow!("No default database"))?;
 
 		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
-		
+
 		let event_api = EventApi::new(nats.clone(), &config.api.nats_event_subject);
 
 		let image_processor = ImageProcessor::new(&config.api.image_processor)

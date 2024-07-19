@@ -1,4 +1,4 @@
-use std::sync::Arc; 
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -122,9 +122,7 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 		Duration::from_secs(5),
 		global.jetstream().get_or_create_stream(stream::Config {
 			name: "mongo-typesense".to_string(),
-			subjects: vec![
-				format!("{}.>", global.config().triggers.topic),
-			],
+			subjects: vec![format!("{}.>", global.config().triggers.topic)],
 			retention: stream::RetentionPolicy::Interest,
 			duplicate_window: Duration::from_secs(60),
 			max_age: Duration::from_secs(60 * 60 * 24), // messages older than 24 hours are dropped
@@ -134,7 +132,6 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 	.await
 	.context("create stream timeout")?
 	.context("create stream")?;
-
 
 	let handlers = spawn_handler!((global, stream) => {
 		crate::types::mongo::DiscountCode,
@@ -199,7 +196,12 @@ async fn setup<M: SupportedMongoCollection>(
 				ack_wait: Duration::from_secs(30),
 				inactive_threshold: Duration::from_secs(60 * 60 * 24),
 				max_deliver: 5,
-				filter_subject: format!("{}.{}.{}", global.config().triggers.topic, global.config().triggers.seventv_database, M::COLLECTION_NAME),
+				filter_subject: format!(
+					"{}.{}.{}",
+					global.config().triggers.topic,
+					global.config().triggers.seventv_database,
+					M::COLLECTION_NAME
+				),
 				..Default::default()
 			},
 		),
@@ -208,16 +210,12 @@ async fn setup<M: SupportedMongoCollection>(
 	.context("create consumer timeout")?
 	.context("create consumer")?;
 
-
 	let ctx = scuffle_foundations::context::Context::global();
 
-	let mut messages = tokio::time::timeout(
-		Duration::from_secs(5),
-		consumer.messages()
-	)
-	.await
-	.context("get messages timeout")?
-	.context("get messages")?;
+	let mut messages = tokio::time::timeout(Duration::from_secs(5), consumer.messages())
+		.await
+		.context("get messages timeout")?
+		.context("get messages")?;
 
 	while let Some(Some(ticket)) = global.aquire_ticket().with_context(&ctx).await {
 		let Some(Some(message)) = messages

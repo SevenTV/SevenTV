@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherError, BatcherNormalMode};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
 pub struct MongoUpdater(Batcher<Inner>);
@@ -22,9 +21,8 @@ impl MongoUpdater {
 		filter: bson::Document,
 		update: bson::Document,
 		many: bool,
-		events: Option<MongoReqEvents>,
 	) -> Result<bool, BatcherError<MongoOpError>> {
-		self.bulk(Some(MongoReq::update::<M>(filter, update, many, events)))
+		self.bulk(Some(MongoReq::update::<M>(filter, update, many)))
 			.await
 			.pop()
 			.ok_or(BatcherError::MissingResult)?
@@ -34,16 +32,15 @@ impl MongoUpdater {
 		&self,
 		filter: bson::Document,
 		many: bool,
-		events: Option<MongoReqEvents>,
 	) -> Result<bool, BatcherError<MongoOpError>> {
-		self.bulk(Some(MongoReq::delete::<M>(filter, many, events)))
+		self.bulk(Some(MongoReq::delete::<M>(filter, many)))
 			.await
 			.pop()
 			.ok_or(BatcherError::MissingResult)?
 	}
 
-	pub async fn insert<M: MongoCollection + serde::Serialize>(&self, data: M, events: Option<MongoReqEvents>) -> Result<bool, BatcherError<MongoOpError>> {
-		self.bulk(Some(MongoReq::insert::<M>(data, events)))
+	pub async fn insert<M: MongoCollection + serde::Serialize>(&self, data: M) -> Result<bool, BatcherError<MongoOpError>> {
+		self.bulk(Some(MongoReq::insert::<M>(data)))
 			.await
 			.pop()
 			.ok_or(BatcherError::MissingResult)?
@@ -75,43 +72,27 @@ pub enum MongoOpError {
 pub struct MongoReq {
 	collection: &'static str,
 	op: MongoOp,
-	events: Option<MongoReqEvents>,
-}
-
-#[derive(Debug, Clone)]
-pub struct MongoReqEvents {
-	pub performed_by: EventPerformedBy,
-	pub reason: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub enum EventPerformedBy {
-	System,
-	User(UserId),
 }
 
 impl MongoReq {
-	pub fn insert<M: MongoCollection + serde::Serialize>(data: M, events: Option<MongoReqEvents>) -> Self {
+	pub fn insert<M: MongoCollection + serde::Serialize>(data: M) -> Self {
 		Self {
 			collection: M::COLLECTION_NAME,
 			op: MongoOp::Insert(bson::to_document(&data).map_err(MongoOpError::Serialize).unwrap()),
-			events,
 		}
 	}
 
-	pub fn update<M: MongoCollection>(filter: bson::Document, update: bson::Document, many: bool, events: Option<MongoReqEvents>) -> Self {
+	pub fn update<M: MongoCollection>(filter: bson::Document, update: bson::Document, many: bool) -> Self {
 		Self {
 			collection: M::COLLECTION_NAME,
 			op: MongoOp::Update { filter, update, many },
-			events,
 		}
 	}
 
-	pub fn delete<M: MongoCollection>(filter: bson::Document, many: bool, events: Option<MongoReqEvents>) -> Self {
+	pub fn delete<M: MongoCollection>(filter: bson::Document, many: bool) -> Self {
 		Self {
 			collection: M::COLLECTION_NAME,
 			op: MongoOp::Delete { filter, many },
-			events,
 		}
 	}
 }

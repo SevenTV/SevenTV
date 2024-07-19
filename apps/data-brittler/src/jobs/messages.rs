@@ -139,7 +139,7 @@ impl Job for MessagesJob {
 		let mut outcome = ProcessOutcome::default();
 
 		match EmoteModerationRequest::collection(self.global.target_db())
-		.insert_many(&self.mod_requests)
+			.insert_many(&self.mod_requests)
 			.with_options(InsertManyOptions::builder().ordered(false).build())
 			.await
 		{

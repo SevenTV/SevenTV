@@ -73,6 +73,18 @@ pub struct ConnectionConfig {
 
 #[auto_settings]
 #[serde(default)]
+pub struct ChangeStreamConfig {
+	/// Change Stream Prefix
+	#[settings(default = "seventv".into())]
+	pub prefix: String,
+
+	/// The number of pending acks to buffer
+	#[settings(default = 1000)]
+	pub back_pressure_limit: usize,
+}
+
+#[auto_settings]
+#[serde(default)]
 pub struct Config {
 	/// API configuration
 	pub api: Api,

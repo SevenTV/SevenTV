@@ -28,24 +28,6 @@ impl MongoUpdater {
 			.ok_or(BatcherError::MissingResult)?
 	}
 
-	pub async fn delete<M: MongoCollection>(
-		&self,
-		filter: bson::Document,
-		many: bool,
-	) -> Result<bool, BatcherError<MongoOpError>> {
-		self.bulk(Some(MongoReq::delete::<M>(filter, many)))
-			.await
-			.pop()
-			.ok_or(BatcherError::MissingResult)?
-	}
-
-	pub async fn insert<M: MongoCollection + serde::Serialize>(&self, data: M) -> Result<bool, BatcherError<MongoOpError>> {
-		self.bulk(Some(MongoReq::insert::<M>(data)))
-			.await
-			.pop()
-			.ok_or(BatcherError::MissingResult)?
-	}
-
 	pub async fn bulk(
 		&self,
 		requests: impl IntoIterator<Item = MongoReq> + Send,
@@ -75,38 +57,19 @@ pub struct MongoReq {
 }
 
 impl MongoReq {
-	pub fn insert<M: MongoCollection + serde::Serialize>(data: M) -> Self {
-		Self {
-			collection: M::COLLECTION_NAME,
-			op: MongoOp::Insert(bson::to_document(&data).map_err(MongoOpError::Serialize).unwrap()),
-		}
-	}
-
 	pub fn update<M: MongoCollection>(filter: bson::Document, update: bson::Document, many: bool) -> Self {
 		Self {
 			collection: M::COLLECTION_NAME,
 			op: MongoOp::Update { filter, update, many },
 		}
 	}
-
-	pub fn delete<M: MongoCollection>(filter: bson::Document, many: bool) -> Self {
-		Self {
-			collection: M::COLLECTION_NAME,
-			op: MongoOp::Delete { filter, many },
-		}
-	}
 }
 
 #[derive(Debug, Clone)]
 enum MongoOp {
-	Insert(bson::Document),
 	Update {
 		filter: bson::Document,
 		update: bson::Document,
-		many: bool,
-	},
-	Delete {
-		filter: bson::Document,
 		many: bool,
 	},
 }
@@ -140,19 +103,10 @@ impl BatchOperation for Inner {
 				let idx = collections[&req.collection] as u32;
 
 				Ok::<_, MongoOpError>(match req.op {
-					MongoOp::Insert(data) => bson::doc! {
-						"insert": idx,
-						"document": bson::to_bson(&data)?,
-					},
 					MongoOp::Update { filter, update, many } => bson::doc! {
 						"update": idx,
 						"filter": filter,
 						"updateMods": update,
-						"multi": many,
-					},
-					MongoOp::Delete { filter, many } => bson::doc! {
-						"delete": idx,
-						"filter": filter,
 						"multi": many,
 					},
 				})

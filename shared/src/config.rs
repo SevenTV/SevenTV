@@ -96,7 +96,9 @@ pub struct EventStreamConfig {
 	#[settings(default = 1000)]
 	pub ack_capacity: usize,
 
-	/// The prefix to use for the streams created by this application, will be prepended with a hyphen (if not already present and the stream name is not empty)
+	/// The prefix to use for the streams created by this application, will be
+	/// prepended with a hyphen (if not already present and the stream name is
+	/// not empty)
 	#[settings(default = "seventv".into())]
 	pub stream_prefix: String,
 }

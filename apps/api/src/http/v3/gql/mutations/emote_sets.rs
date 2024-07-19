@@ -15,8 +15,8 @@ use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetEmote, EmoteSe
 use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, UserPermission};
 use shared::database::user::editor::{EditorEmoteSetPermission, EditorUserPermission, UserEditorId, UserEditorState};
 use shared::database::user::FullUserRef;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::database::MongoCollection;
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::UserPartialModel;
 
@@ -767,16 +767,14 @@ impl EmoteSetOps {
 								None,
 								&global.config().api.cdn_origin,
 							)),
-							updated: vec![
-								ChangeField {
-									key: "emotes".to_string(),
-									index: Some(index),
-									ty: ChangeFieldType::Object,
-									old_value: old_active_emote,
-									value: new_active_emote,
-									..Default::default()
-								}
-							],
+							updated: vec![ChangeField {
+								key: "emotes".to_string(),
+								index: Some(index),
+								ty: ChangeFieldType::Object,
+								old_value: old_active_emote,
+								value: new_active_emote,
+								..Default::default()
+							}],
 							..Default::default()
 						},
 						self.emote_set.id,
@@ -1038,11 +1036,7 @@ impl EmoteSetOps {
 
 			global
 				.event_api()
-				.dispatch_event(
-					EventType::DeleteEmoteSet,
-					body,
-					self.emote_set.id,
-				)
+				.dispatch_event(EventType::DeleteEmoteSet, body, self.emote_set.id)
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to dispatch event");

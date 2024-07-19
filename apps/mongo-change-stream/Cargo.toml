@@ -1,0 +1,15 @@
+[package]
+name = "mongo-change-stream"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+mongodb = "3.0"
+bson = "2"
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+tracing = "0.1"
+anyhow = "1"
+async-nats = "0.35.1"
+shared = { workspace = true }

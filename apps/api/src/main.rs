@@ -12,8 +12,9 @@ mod global;
 mod http;
 mod image_processor_callback;
 mod jwt;
-mod utils;
 mod mongo_updater;
+mod queries;
+mod utils;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {

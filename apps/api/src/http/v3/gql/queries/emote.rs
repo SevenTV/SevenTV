@@ -412,7 +412,10 @@ impl EmotesQuery {
 
 		let limit = limit.unwrap_or(30);
 		if limit > 100 {
-			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "limit cannot be greater than 100"));
+			return Err(ApiError::new_const(
+				StatusCode::BAD_REQUEST,
+				"limit cannot be greater than 100",
+			));
 		}
 
 		if page.is_some_and(|p| p * limit > 10000) {
@@ -489,7 +492,11 @@ impl EmotesQuery {
 			query_by_weights.push(1);
 		}
 
-		let options = options.query_by(query_by).filter_by(filters.join(" && ")).query_by_weights(query_by_weights).build();
+		let options = options
+			.query_by(query_by)
+			.filter_by(filters.join(" && "))
+			.query_by_weights(query_by_weights)
+			.build();
 
 		let result = search::<shared::typesense::types::emote::Emote>(global, options)
 			.await

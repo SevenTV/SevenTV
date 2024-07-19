@@ -353,7 +353,6 @@ impl Global {
 			std::sync::atomic::Ordering::Relaxed,
 		);
 
-
 		state.nats_healthy && state.db_healthy && state.typesense_healthy
 	}
 

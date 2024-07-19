@@ -42,7 +42,6 @@ pub enum Error {
 	// 	emote_id: EmoteId,
 	// 	kind: EmoteModerationRequestKind,
 	// },
-
 	#[error("reqwest error")]
 	Reqwest(#[from] reqwest::Error),
 	#[error("failed to read image")]

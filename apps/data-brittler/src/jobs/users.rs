@@ -274,7 +274,8 @@ impl Job for UsersJob {
 		let insert_options = InsertManyOptions::builder().ordered(false).build();
 		let users = User::collection(self.global.target_db());
 		let editors = UserEditor::collection(self.global.target_db());
-		// TODO: in case of truncate = true, we have to wait for the entitlements job to finish truncating otherwise we will loose the edges here
+		// TODO: in case of truncate = true, we have to wait for the entitlements job to
+		// finish truncating otherwise we will loose the edges here
 		let edges = EntitlementEdge::collection(self.global.target_db());
 
 		let res = tokio::join!(

@@ -16,8 +16,8 @@ use shared::database::emote::Emote;
 use shared::database::image_set::Image;
 use shared::database::paint::{Paint, PaintLayerId};
 use shared::database::user::User;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::database::MongoCollection;
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::image_processor::Subject;
 use shared::old_types::UserPartialModel;
 

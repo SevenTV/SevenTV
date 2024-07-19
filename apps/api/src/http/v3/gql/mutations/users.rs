@@ -8,8 +8,8 @@ use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUs
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
 use shared::database::user::User;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::database::MongoCollection;
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::cosmetic::CosmeticKind;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::UserPartialModel;
@@ -241,13 +241,24 @@ impl UserOps {
 			}
 		}
 
-		let full_user = global.user_loader().load_fast_user(global, user).await.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+		let full_user = global
+			.user_loader()
+			.load_fast_user(global, user)
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(Some(
-			full_user.connections
+			full_user
+				.connections
 				.iter()
 				.cloned()
-				.map(|c| Some(UserConnection::from_db(full_user.computed.permissions.emote_set_capacity.unwrap_or_default(), c, &full_user.style)))
+				.map(|c| {
+					Some(UserConnection::from_db(
+						full_user.computed.permissions.emote_set_capacity.unwrap_or_default(),
+						c,
+						&full_user.style,
+					))
+				})
 				.collect(),
 		))
 	}

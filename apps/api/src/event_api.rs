@@ -1,15 +1,12 @@
-use std::{
-	hash::{DefaultHasher, Hash, Hasher},
-	iter,
-	sync::atomic::{AtomicU64, Ordering},
-};
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::iter;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use sha2::Digest;
-use shared::{database::Id, event_api::{
-	payload::Dispatch,
-	types::{ChangeMap, EventType},
-	Message,
-}};
+use shared::database::Id;
+use shared::event_api::payload::Dispatch;
+use shared::event_api::types::{ChangeMap, EventType};
+use shared::event_api::Message;
 
 pub struct EventApi {
 	nats: async_nats::Client,

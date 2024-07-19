@@ -1,16 +1,14 @@
 use anyhow::Context;
 use async_nats::ServerAddr;
 
-use crate::config::NatsConfig;
+use crate::{config::NatsConfig, database};
 
 pub async fn setup_nats(
 	name: &str,
 	config: &NatsConfig,
 ) -> anyhow::Result<(async_nats::Client, async_nats::jetstream::Context)> {
 	let nats = {
-		let mut options = async_nats::ConnectOptions::new()
-			.name(name)
-			.retry_on_initial_connect();
+		let mut options = async_nats::ConnectOptions::new().name(name).retry_on_initial_connect();
 
 		if let Some(user) = &config.username {
 			options = options.user_and_password(user.clone(), config.password.clone().unwrap_or_default())
@@ -44,4 +42,29 @@ pub async fn setup_nats(
 	let jetstream = async_nats::jetstream::new(nats.clone());
 
 	Ok((nats, jetstream))
+}
+
+#[derive(Debug, Clone)]
+pub struct ChangeStreamSubject(String);
+
+fn escape_prefix(prefix: &str) -> String {
+	prefix.trim_end_matches('-').replace('.', "_")
+}
+
+impl ChangeStreamSubject {
+	pub fn new(prefix: &str) -> Self {
+		Self(format!("{}-MongoChangeStream", escape_prefix(prefix))) 
+	}
+
+	pub fn name(&self) -> String {
+		self.0.clone()
+	}
+
+	pub fn wildcard(&self) -> String {
+		format!("{}.>", self.0)
+	}
+
+	pub fn collection(&self, database: &str, collection: &str) -> String {
+		format!("{}.{}.{}", self.0, database, collection)
+	}
 }

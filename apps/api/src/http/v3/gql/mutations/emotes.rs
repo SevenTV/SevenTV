@@ -7,9 +7,9 @@ use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
 use shared::database::MongoCollection;
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 

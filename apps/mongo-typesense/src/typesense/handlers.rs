@@ -390,9 +390,8 @@ impl SupportedMongoCollection for mongo::User {
 				false,
 			)
 			.await
-			.context("failed to update user")? {
-			
-		}
+			.context("failed to update user")?
+		{}
 
 		Ok(())
 	}

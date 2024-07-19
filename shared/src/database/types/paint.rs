@@ -7,6 +7,8 @@ pub type PaintId = Id<Paint>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "paints")]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = 1)))]
 #[serde(deny_unknown_fields)]
 pub struct Paint {
 	#[mongo(id)]
@@ -36,7 +38,6 @@ pub type PaintLayerId = Id<PaintLayer>;
 #[serde(deny_unknown_fields)]
 pub struct PaintLayer {
 	pub id: PaintLayerId,
-	#[serde(flatten)]
 	pub ty: PaintLayerType,
 	pub opacity: f64,
 }
