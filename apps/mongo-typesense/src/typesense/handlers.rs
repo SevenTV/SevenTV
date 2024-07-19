@@ -110,7 +110,7 @@ macro_rules! default_impl {
 				_: ChangeStreamEvent<Document>,
 			) -> anyhow::Result<()> {
 				typesense_codegen::apis::documents_api::delete_document(
-					global.typesense(),
+					&global.typesense,
 					<$typesense_collection as TypesenseCollection>::COLLECTION_NAME,
 					&id.to_string(),
 				)
@@ -121,7 +121,7 @@ macro_rules! default_impl {
 
 			#[tracing::instrument(skip_all, fields(id))]
 			async fn handle_any(global: &Arc<Global>, id: Self::Id, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-				let Ok(Some(data)) = global.$batcher().loader.load(id.clone()).await else {
+				let Ok(Some(data)) = global.$batcher.loader.load(id.clone()).await else {
 					anyhow::bail!("failed to load data");
 				};
 
@@ -131,13 +131,13 @@ macro_rules! default_impl {
 
 				let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
-				global.$batcher().inserter.execute(data.into()).await?;
+				global.$batcher.inserter.execute(data.into()).await?;
 
 				let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
 				// Perhaps this could be a batcher?
 				global
-					.updater()
+					.updater
 					.update::<$mongo_collection>(
 						bson::doc! { "_id": id, "updated_at": updated_at },
 						bson::doc! { "$set": { "search_updated_at": now } },
@@ -197,7 +197,7 @@ impl SupportedMongoCollection for mongo::UserEditor {
 	#[tracing::instrument(skip_all, fields(user_id = %id.user_id, editor_id = %id.editor_id))]
 	async fn handle_delete(global: &Arc<Global>, id: UserEditorId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::UserEditor::COLLECTION_NAME,
 			&TypesenseString(id).to_string(),
 		)
@@ -208,7 +208,7 @@ impl SupportedMongoCollection for mongo::UserEditor {
 
 	#[tracing::instrument(skip_all, fields(user_id = %id.user_id, editor_id = %id.editor_id))]
 	async fn handle_any(global: &Arc<Global>, id: UserEditorId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.user_editor_batcher().loader.load(id).await else {
+		let Ok(Some(data)) = global.user_editor_batcher.loader.load(id).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -218,11 +218,11 @@ impl SupportedMongoCollection for mongo::UserEditor {
 
 		let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
-		global.user_editor_batcher().inserter.execute(data.into()).await?;
+		global.user_editor_batcher.inserter.execute(data.into()).await?;
 		let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
 		global
-			.updater()
+			.updater
 			.update::<mongo::UserEditor>(
 				bson::doc! { "_id": bson::to_bson(&id)?, "updated_at": updated_at },
 				bson::doc! { "$set": { "search_updated_at": now } },
@@ -238,7 +238,7 @@ impl SupportedMongoCollection for mongo::UserEditor {
 impl SupportedMongoCollection for mongo::UserRelation {
 	async fn handle_delete(global: &Arc<Global>, id: UserRelationId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::UserRelation::COLLECTION_NAME,
 			&TypesenseString(id).to_string(),
 		)
@@ -249,7 +249,7 @@ impl SupportedMongoCollection for mongo::UserRelation {
 
 	#[tracing::instrument(skip_all, fields(user_id = %id.user_id, other_user_id = %id.other_user_id))]
 	async fn handle_any(global: &Arc<Global>, id: UserRelationId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.user_relation_batcher().loader.load(id).await else {
+		let Ok(Some(data)) = global.user_relation_batcher.loader.load(id).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -258,11 +258,11 @@ impl SupportedMongoCollection for mongo::UserRelation {
 		}
 
 		let updated_at = bson::DateTime::from_chrono(data.updated_at);
-		global.user_relation_batcher().inserter.execute(data.into()).await?;
+		global.user_relation_batcher.inserter.execute(data.into()).await?;
 		let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
 		global
-			.updater()
+			.updater
 			.update::<mongo::UserRelation>(
 				bson::doc! { "_id": bson::to_bson(&id)?, "updated_at": updated_at },
 				bson::doc! { "$set": { "search_updated_at": now } },
@@ -278,7 +278,7 @@ impl SupportedMongoCollection for mongo::UserRelation {
 impl SupportedMongoCollection for mongo::User {
 	async fn handle_delete(global: &Arc<Global>, id: UserId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::User::COLLECTION_NAME,
 			&id.to_string(),
 		)
@@ -289,7 +289,7 @@ impl SupportedMongoCollection for mongo::User {
 
 	#[tracing::instrument(skip_all, fields(id))]
 	async fn handle_any(global: &Arc<Global>, id: UserId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(mut data)) = global.user_batcher().loader.load(id).await else {
+		let Ok(Some(mut data)) = global.user_batcher.loader.load(id).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -297,9 +297,9 @@ impl SupportedMongoCollection for mongo::User {
 			return Ok(());
 		}
 
-		let traverse = &EntitlementEdgeGraphTraverse {
-			inbound_loader: global.entitlement_inbound_loader(),
-			outbound_loader: global.entitlement_outbound_loader(),
+		let traverse = EntitlementEdgeGraphTraverse {
+			inbound_loader: &global.entitlement_inbound_loader,
+			outbound_loader: &global.entitlement_outbound_loader,
 		};
 
 		let granted_entitlements = traverse
@@ -315,7 +315,7 @@ impl SupportedMongoCollection for mongo::User {
 
 		let emote_set = if let Some(active_emote_set_id) = data.style.active_emote_set_id {
 			global
-				.emote_set_batcher()
+				.emote_set_batcher
 				.loader
 				.load(active_emote_set_id)
 				.await
@@ -325,7 +325,7 @@ impl SupportedMongoCollection for mongo::User {
 		};
 
 		let roles = global
-			.role_batcher()
+			.role_batcher
 			.loader
 			.load_many(granted_entitlements.iter().filter_map(|edge| match edge.id.to {
 				EntitlementEdgeKind::Role { role_id } => Some(role_id),
@@ -369,7 +369,7 @@ impl SupportedMongoCollection for mongo::User {
 		let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
 		global
-			.user_batcher()
+			.user_batcher
 			.inserter
 			.execute(typesense::User::from_db(
 				data,
@@ -383,7 +383,7 @@ impl SupportedMongoCollection for mongo::User {
 			.await?;
 
 		if global
-			.updater()
+			.updater
 			.update::<mongo::User>(
 				bson::doc! { "_id": id, "updated_at": updated_at },
 				bson::doc! { "$set": update },
@@ -493,7 +493,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 		};
 
 		global
-			.updater()
+			.updater
 			.bulk(updates)
 			.await
 			.into_iter()
@@ -507,7 +507,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 impl SupportedMongoCollection for mongo::Product {
 	async fn handle_delete(global: &Arc<Global>, id: ProductId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::Product::COLLECTION_NAME,
 			&id.to_string(),
 		)
@@ -518,7 +518,7 @@ impl SupportedMongoCollection for mongo::Product {
 
 	#[tracing::instrument(skip_all, fields(id))]
 	async fn handle_any(global: &Arc<Global>, id: ProductId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.product_batcher().loader.load(id.clone()).await else {
+		let Ok(Some(data)) = global.product_batcher.loader.load(id.clone()).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -529,14 +529,14 @@ impl SupportedMongoCollection for mongo::Product {
 		let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
 		let granted_entitlements = global
-			.entitlement_outbound_loader()
+			.entitlement_outbound_loader
 			.load(EntitlementEdgeKind::StaticProduct { product_id: id.clone() })
 			.await
 			.map_err(|()| anyhow::anyhow!("failed to load entitlements"))?
 			.unwrap_or_default();
 
 		global
-			.product_batcher()
+			.product_batcher
 			.inserter
 			.execute(typesense::Product::from_db(
 				data,
@@ -547,7 +547,7 @@ impl SupportedMongoCollection for mongo::Product {
 		let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
 		global
-			.updater()
+			.updater
 			.update::<mongo::Product>(
 				bson::doc! { "_id": id, "updated_at": updated_at },
 				bson::doc! { "$set": { "search_updated_at": now } },
@@ -563,7 +563,7 @@ impl SupportedMongoCollection for mongo::Product {
 impl SupportedMongoCollection for mongo::Promotion {
 	async fn handle_delete(global: &Arc<Global>, id: PromotionId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::Promotion::COLLECTION_NAME,
 			&id.to_string(),
 		)
@@ -574,7 +574,7 @@ impl SupportedMongoCollection for mongo::Promotion {
 
 	#[tracing::instrument(skip_all, fields(id))]
 	async fn handle_any(global: &Arc<Global>, id: PromotionId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.promotion_batcher().loader.load(id.clone()).await else {
+		let Ok(Some(data)) = global.promotion_batcher.loader.load(id.clone()).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -585,7 +585,7 @@ impl SupportedMongoCollection for mongo::Promotion {
 		let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
 		let granted_entitlements = global
-			.entitlement_outbound_loader()
+			.entitlement_outbound_loader
 			.load(EntitlementEdgeKind::Promotion {
 				promotion_id: id.clone(),
 			})
@@ -594,7 +594,7 @@ impl SupportedMongoCollection for mongo::Promotion {
 			.unwrap_or_default();
 
 		global
-			.promotion_batcher()
+			.promotion_batcher
 			.inserter
 			.execute(typesense::Promotion::from_db(
 				data,
@@ -605,7 +605,7 @@ impl SupportedMongoCollection for mongo::Promotion {
 		let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
 		global
-			.updater()
+			.updater
 			.update::<mongo::Promotion>(
 				bson::doc! { "_id": id, "updated_at": updated_at },
 				bson::doc! { "$set": { "search_updated_at": now } },
@@ -621,7 +621,7 @@ impl SupportedMongoCollection for mongo::Promotion {
 impl SupportedMongoCollection for mongo::Role {
 	async fn handle_delete(global: &Arc<Global>, id: RoleId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::Role::COLLECTION_NAME,
 			&id.to_string(),
 		)
@@ -632,7 +632,7 @@ impl SupportedMongoCollection for mongo::Role {
 
 	#[tracing::instrument(skip_all, fields(id))]
 	async fn handle_any(global: &Arc<Global>, id: RoleId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.role_batcher().loader.load(id.clone()).await else {
+		let Ok(Some(data)) = global.role_batcher.loader.load(id.clone()).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -648,14 +648,14 @@ impl SupportedMongoCollection for mongo::Role {
 		};
 
 		let granted_entitlements = global
-			.entitlement_outbound_loader()
+			.entitlement_outbound_loader
 			.load(EntitlementEdgeKind::Role { role_id: id.clone() })
 			.await
 			.map_err(|()| anyhow::anyhow!("failed to load entitlements"))?
 			.unwrap_or_default();
 
 		global
-			.role_batcher()
+			.role_batcher
 			.inserter
 			.execute(typesense::Role::from_db(
 				data,
@@ -687,7 +687,7 @@ impl SupportedMongoCollection for mongo::Role {
 		};
 
 		global
-			.updater()
+			.updater
 			.bulk(updates)
 			.await
 			.into_iter()
@@ -705,7 +705,7 @@ impl SupportedMongoCollection for mongo::SubscriptionTimelinePeriod {
 		_: ChangeStreamEvent<Document>,
 	) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::SubscriptionTimelinePeriod::COLLECTION_NAME,
 			&id.to_string(),
 		)
@@ -720,7 +720,7 @@ impl SupportedMongoCollection for mongo::SubscriptionTimelinePeriod {
 		id: SubscriptionTimelinePeriodId,
 		_: ChangeStreamEvent<Document>,
 	) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.subscription_timeline_period_batcher().loader.load(id).await else {
+		let Ok(Some(data)) = global.subscription_timeline_period_batcher.loader.load(id).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -731,7 +731,7 @@ impl SupportedMongoCollection for mongo::SubscriptionTimelinePeriod {
 		let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
 		let granted_entitlements = global
-			.entitlement_outbound_loader()
+			.entitlement_outbound_loader
 			.load(EntitlementEdgeKind::SubscriptionTimelinePeriod {
 				subscription_timeline_period_id: id,
 			})
@@ -740,7 +740,7 @@ impl SupportedMongoCollection for mongo::SubscriptionTimelinePeriod {
 			.unwrap_or_default();
 
 		global
-			.subscription_timeline_period_batcher()
+			.subscription_timeline_period_batcher
 			.inserter
 			.execute(typesense::SubscriptionTimelinePeriod::from_db(
 				data,
@@ -751,7 +751,7 @@ impl SupportedMongoCollection for mongo::SubscriptionTimelinePeriod {
 		let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
 		global
-			.updater()
+			.updater
 			.update::<mongo::SubscriptionTimelinePeriod>(
 				bson::doc! { "_id": id, "updated_at": updated_at },
 				bson::doc! { "$set": { "search_updated_at": now } },
@@ -771,7 +771,7 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 		_: ChangeStreamEvent<Document>,
 	) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::EntitlementGroup::COLLECTION_NAME,
 			&id.to_string(),
 		)
@@ -782,7 +782,7 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 
 	#[tracing::instrument(skip_all, fields(id))]
 	async fn handle_any(global: &Arc<Global>, id: EntitlementGroupId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.entitlement_group_batcher().loader.load(id).await else {
+		let Ok(Some(data)) = global.entitlement_group_batcher.loader.load(id).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -793,7 +793,7 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 		let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
 		let granted_entitlements = global
-			.entitlement_outbound_loader()
+			.entitlement_outbound_loader
 			.load(EntitlementEdgeKind::EntitlementGroup {
 				entitlement_group_id: id,
 			})
@@ -802,7 +802,7 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 			.unwrap_or_default();
 
 		global
-			.entitlement_group_batcher()
+			.entitlement_group_batcher
 			.inserter
 			.execute(typesense::EntitlementGroup::from_db(
 				data,
@@ -813,7 +813,7 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 		let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
 		global
-			.updater()
+			.updater
 			.update::<mongo::EntitlementGroup>(
 				bson::doc! { "_id": id, "updated_at": updated_at },
 				bson::doc! { "$set": { "search_updated_at": now } },
@@ -829,7 +829,7 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 impl SupportedMongoCollection for mongo::EmoteSet {
 	async fn handle_delete(global: &Arc<Global>, id: EmoteSetId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
-			global.typesense(),
+			&global.typesense,
 			typesense::EmoteSet::COLLECTION_NAME,
 			&id.to_string(),
 		)
@@ -840,7 +840,7 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 
 	#[tracing::instrument(skip_all, fields(id))]
 	async fn handle_any(global: &Arc<Global>, id: EmoteSetId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.emote_set_batcher().loader.load(id.clone()).await else {
+		let Ok(Some(data)) = global.emote_set_batcher.loader.load(id.clone()).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -851,7 +851,7 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 		let emotes_changed = data.emotes_changed_since_reindex;
 		let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
-		global.emote_set_batcher().inserter.execute(data.into()).await?;
+		global.emote_set_batcher.inserter.execute(data.into()).await?;
 
 		let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
@@ -882,7 +882,7 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 		};
 
 		global
-			.updater()
+			.updater
 			.bulk(updates)
 			.await
 			.into_iter()

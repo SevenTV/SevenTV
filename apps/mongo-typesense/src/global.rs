@@ -14,43 +14,44 @@ use crate::config::Config;
 use crate::types::*;
 
 pub struct Global {
-	nats: async_nats::Client,
-	jetstream: async_nats::jetstream::Context,
-	database: mongodb::Database,
-	config: Config,
-	typesense: typesense_codegen::apis::configuration::Configuration,
-	audit_log_batcher: CollectionBatcher<mongo::AuditLog, typesense::AuditLog>, // 1
-	user_batcher: CollectionBatcher<mongo::User, typesense::User>,
-	automod_rule_batcher: CollectionBatcher<mongo::AutomodRule, typesense::AutomodRule>, // 2
-	badge_batcher: CollectionBatcher<mongo::Badge, typesense::Badge>,
-	emote_batcher: CollectionBatcher<mongo::Emote, typesense::Emote>,
-	emote_moderation_request_batcher: CollectionBatcher<mongo::EmoteModerationRequest, typesense::EmoteModerationRequest>,
-	emote_set_batcher: CollectionBatcher<mongo::EmoteSet, typesense::EmoteSet>,
-	page_batcher: CollectionBatcher<mongo::Page, typesense::Page>,
-	paint_batcher: CollectionBatcher<mongo::Paint, typesense::Paint>,
-	role_batcher: CollectionBatcher<mongo::Role, typesense::Role>,
-	ticket_batcher: CollectionBatcher<mongo::Ticket, typesense::Ticket>,
-	ticket_message_batcher: CollectionBatcher<mongo::TicketMessage, typesense::TicketMessage>,
-	discount_code_batcher: CollectionBatcher<mongo::DiscountCode, typesense::DiscountCode>,
-	gift_code_batcher: CollectionBatcher<mongo::GiftCode, typesense::GiftCode>,
-	redeem_code_batcher: CollectionBatcher<mongo::RedeemCode, typesense::RedeemCode>,
-	special_event_batcher: CollectionBatcher<mongo::SpecialEvent, typesense::SpecialEvent>,
-	invoice_batcher: CollectionBatcher<mongo::Invoice, typesense::Invoice>,
-	product_batcher: CollectionBatcher<mongo::Product, typesense::Product>,
-	promotion_batcher: CollectionBatcher<mongo::Promotion, typesense::Promotion>,
-	subscription_timeline_batcher: CollectionBatcher<mongo::SubscriptionTimeline, typesense::SubscriptionTimeline>,
-	subscription_timeline_period_batcher:
+	pub nats: async_nats::Client,
+	pub jetstream: async_nats::jetstream::Context,
+	pub database: mongodb::Database,
+	pub config: Config,
+	pub typesense: typesense_codegen::apis::configuration::Configuration,
+	pub audit_log_batcher: CollectionBatcher<mongo::AuditLog, typesense::AuditLog>, // 1
+	pub user_batcher: CollectionBatcher<mongo::User, typesense::User>,
+	pub automod_rule_batcher: CollectionBatcher<mongo::AutomodRule, typesense::AutomodRule>, // 2
+	pub badge_batcher: CollectionBatcher<mongo::Badge, typesense::Badge>,
+	pub emote_batcher: CollectionBatcher<mongo::Emote, typesense::Emote>,
+	pub emote_moderation_request_batcher:
+		CollectionBatcher<mongo::EmoteModerationRequest, typesense::EmoteModerationRequest>,
+	pub emote_set_batcher: CollectionBatcher<mongo::EmoteSet, typesense::EmoteSet>,
+	pub page_batcher: CollectionBatcher<mongo::Page, typesense::Page>,
+	pub paint_batcher: CollectionBatcher<mongo::Paint, typesense::Paint>,
+	pub role_batcher: CollectionBatcher<mongo::Role, typesense::Role>,
+	pub ticket_batcher: CollectionBatcher<mongo::Ticket, typesense::Ticket>,
+	pub ticket_message_batcher: CollectionBatcher<mongo::TicketMessage, typesense::TicketMessage>,
+	pub discount_code_batcher: CollectionBatcher<mongo::DiscountCode, typesense::DiscountCode>,
+	pub gift_code_batcher: CollectionBatcher<mongo::GiftCode, typesense::GiftCode>,
+	pub redeem_code_batcher: CollectionBatcher<mongo::RedeemCode, typesense::RedeemCode>,
+	pub special_event_batcher: CollectionBatcher<mongo::SpecialEvent, typesense::SpecialEvent>,
+	pub invoice_batcher: CollectionBatcher<mongo::Invoice, typesense::Invoice>,
+	pub product_batcher: CollectionBatcher<mongo::Product, typesense::Product>,
+	pub promotion_batcher: CollectionBatcher<mongo::Promotion, typesense::Promotion>,
+	pub subscription_timeline_batcher: CollectionBatcher<mongo::SubscriptionTimeline, typesense::SubscriptionTimeline>,
+	pub subscription_timeline_period_batcher:
 		CollectionBatcher<mongo::SubscriptionTimelinePeriod, typesense::SubscriptionTimelinePeriod>,
-	subscription_credit_batcher: CollectionBatcher<mongo::SubscriptionCredit, typesense::SubscriptionCredit>,
-	subscription_period_batcher: CollectionBatcher<mongo::SubscriptionPeriod, typesense::SubscriptionPeriod>,
-	user_ban_template_batcher: CollectionBatcher<mongo::UserBanTemplate, typesense::UserBanTemplate>,
-	user_ban_batcher: CollectionBatcher<mongo::UserBan, typesense::UserBan>,
-	user_editor_batcher: CollectionBatcher<mongo::UserEditor, typesense::UserEditor>,
-	user_relation_batcher: CollectionBatcher<mongo::UserRelation, typesense::UserRelation>,
-	entitlement_group_batcher: CollectionBatcher<mongo::EntitlementGroup, typesense::EntitlementGroup>, // 7
-	entitlement_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
-	entitlement_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
-	updater: MongoUpdater,
+	pub subscription_credit_batcher: CollectionBatcher<mongo::SubscriptionCredit, typesense::SubscriptionCredit>,
+	pub subscription_period_batcher: CollectionBatcher<mongo::SubscriptionPeriod, typesense::SubscriptionPeriod>,
+	pub user_ban_template_batcher: CollectionBatcher<mongo::UserBanTemplate, typesense::UserBanTemplate>,
+	pub user_ban_batcher: CollectionBatcher<mongo::UserBan, typesense::UserBan>,
+	pub user_editor_batcher: CollectionBatcher<mongo::UserEditor, typesense::UserEditor>,
+	pub user_relation_batcher: CollectionBatcher<mongo::UserRelation, typesense::UserRelation>,
+	pub entitlement_group_batcher: CollectionBatcher<mongo::EntitlementGroup, typesense::EntitlementGroup>, // 7
+	pub entitlement_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
+	pub entitlement_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
+	pub updater: MongoUpdater,
 	is_healthy: AtomicBool,
 	request_count: AtomicUsize,
 	health_state: tokio::sync::Mutex<HealthCheckState>,
@@ -139,160 +140,6 @@ impl Global {
 		})
 	}
 
-	pub fn nats(&self) -> &async_nats::Client {
-		&self.nats
-	}
-
-	pub fn jetstream(&self) -> &async_nats::jetstream::Context {
-		&self.jetstream
-	}
-
-	pub fn db(&self) -> &mongodb::Database {
-		&self.database
-	}
-
-	pub fn config(&self) -> &Config {
-		&self.config
-	}
-
-	pub fn typesense(&self) -> &typesense_codegen::apis::configuration::Configuration {
-		&self.typesense
-	}
-
-	pub fn audit_log_batcher(&self) -> &CollectionBatcher<mongo::AuditLog, typesense::AuditLog> {
-		&self.audit_log_batcher
-	}
-
-	pub fn user_batcher(&self) -> &CollectionBatcher<mongo::User, typesense::User> {
-		&self.user_batcher
-	}
-
-	pub fn automod_rule_batcher(&self) -> &CollectionBatcher<mongo::AutomodRule, typesense::AutomodRule> {
-		&self.automod_rule_batcher
-	}
-
-	pub fn badge_batcher(&self) -> &CollectionBatcher<mongo::Badge, typesense::Badge> {
-		&self.badge_batcher
-	}
-
-	pub fn emote_batcher(&self) -> &CollectionBatcher<mongo::Emote, typesense::Emote> {
-		&self.emote_batcher
-	}
-
-	pub fn emote_moderation_request_batcher(
-		&self,
-	) -> &CollectionBatcher<mongo::EmoteModerationRequest, typesense::EmoteModerationRequest> {
-		&self.emote_moderation_request_batcher
-	}
-
-	pub fn emote_set_batcher(&self) -> &CollectionBatcher<mongo::EmoteSet, typesense::EmoteSet> {
-		&self.emote_set_batcher
-	}
-
-	pub fn page_batcher(&self) -> &CollectionBatcher<mongo::Page, typesense::Page> {
-		&self.page_batcher
-	}
-
-	pub fn paint_batcher(&self) -> &CollectionBatcher<mongo::Paint, typesense::Paint> {
-		&self.paint_batcher
-	}
-
-	pub fn role_batcher(&self) -> &CollectionBatcher<mongo::Role, typesense::Role> {
-		&self.role_batcher
-	}
-
-	pub fn ticket_batcher(&self) -> &CollectionBatcher<mongo::Ticket, typesense::Ticket> {
-		&self.ticket_batcher
-	}
-
-	pub fn ticket_message_batcher(&self) -> &CollectionBatcher<mongo::TicketMessage, typesense::TicketMessage> {
-		&self.ticket_message_batcher
-	}
-
-	pub fn discount_code_batcher(&self) -> &CollectionBatcher<mongo::DiscountCode, typesense::DiscountCode> {
-		&self.discount_code_batcher
-	}
-
-	pub fn gift_code_batcher(&self) -> &CollectionBatcher<mongo::GiftCode, typesense::GiftCode> {
-		&self.gift_code_batcher
-	}
-
-	pub fn redeem_code_batcher(&self) -> &CollectionBatcher<mongo::RedeemCode, typesense::RedeemCode> {
-		&self.redeem_code_batcher
-	}
-
-	pub fn special_event_batcher(&self) -> &CollectionBatcher<mongo::SpecialEvent, typesense::SpecialEvent> {
-		&self.special_event_batcher
-	}
-
-	pub fn invoice_batcher(&self) -> &CollectionBatcher<mongo::Invoice, typesense::Invoice> {
-		&self.invoice_batcher
-	}
-
-	pub fn product_batcher(&self) -> &CollectionBatcher<mongo::Product, typesense::Product> {
-		&self.product_batcher
-	}
-
-	pub fn promotion_batcher(&self) -> &CollectionBatcher<mongo::Promotion, typesense::Promotion> {
-		&self.promotion_batcher
-	}
-
-	pub fn subscription_timeline_batcher(
-		&self,
-	) -> &CollectionBatcher<mongo::SubscriptionTimeline, typesense::SubscriptionTimeline> {
-		&self.subscription_timeline_batcher
-	}
-
-	pub fn subscription_timeline_period_batcher(
-		&self,
-	) -> &CollectionBatcher<mongo::SubscriptionTimelinePeriod, typesense::SubscriptionTimelinePeriod> {
-		&self.subscription_timeline_period_batcher
-	}
-
-	pub fn subscription_credit_batcher(
-		&self,
-	) -> &CollectionBatcher<mongo::SubscriptionCredit, typesense::SubscriptionCredit> {
-		&self.subscription_credit_batcher
-	}
-
-	pub fn subscription_period_batcher(
-		&self,
-	) -> &CollectionBatcher<mongo::SubscriptionPeriod, typesense::SubscriptionPeriod> {
-		&self.subscription_period_batcher
-	}
-
-	pub fn user_ban_template_batcher(&self) -> &CollectionBatcher<mongo::UserBanTemplate, typesense::UserBanTemplate> {
-		&self.user_ban_template_batcher
-	}
-
-	pub fn user_ban_batcher(&self) -> &CollectionBatcher<mongo::UserBan, typesense::UserBan> {
-		&self.user_ban_batcher
-	}
-
-	pub fn user_editor_batcher(&self) -> &CollectionBatcher<mongo::UserEditor, typesense::UserEditor> {
-		&self.user_editor_batcher
-	}
-
-	pub fn user_relation_batcher(&self) -> &CollectionBatcher<mongo::UserRelation, typesense::UserRelation> {
-		&self.user_relation_batcher
-	}
-
-	pub fn entitlement_group_batcher(&self) -> &CollectionBatcher<mongo::EntitlementGroup, typesense::EntitlementGroup> {
-		&self.entitlement_group_batcher
-	}
-
-	pub fn entitlement_inbound_loader(&self) -> &DataLoader<EntitlementEdgeInboundLoader> {
-		&self.entitlement_inbound_loader
-	}
-
-	pub fn entitlement_outbound_loader(&self) -> &DataLoader<EntitlementEdgeOutboundLoader> {
-		&self.entitlement_outbound_loader
-	}
-
-	pub fn updater(&self) -> &MongoUpdater {
-		&self.updater
-	}
-
 	pub fn report_error(&self) {
 		self.is_healthy.store(false, std::sync::atomic::Ordering::Relaxed);
 	}
@@ -320,19 +167,19 @@ impl Global {
 
 		tracing::info!("running health check");
 
-		state.nats_healthy = matches!(self.nats().connection_state(), async_nats::connection::State::Connected);
+		state.nats_healthy = matches!(self.nats.connection_state(), async_nats::connection::State::Connected);
 		if !state.nats_healthy {
 			tracing::error!("nats not healthy");
 		}
 
-		state.db_healthy = match self.db().run_command(bson::doc! { "ping": 1 }).await {
+		state.db_healthy = match self.database.run_command(bson::doc! { "ping": 1 }).await {
 			Ok(_) => true,
 			Err(e) => {
 				tracing::error!("mongo not healthy: {e}");
 				false
 			}
 		};
-		state.typesense_healthy = match typesense_codegen::apis::health_api::health(self.typesense()).await {
+		state.typesense_healthy = match typesense_codegen::apis::health_api::health(&self.typesense).await {
 			Ok(r) => {
 				if r.ok {
 					true

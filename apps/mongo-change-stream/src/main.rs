@@ -1,35 +1,15 @@
 use std::sync::Arc;
 
-use scuffle_foundations::{bootstrap::{bootstrap, Bootstrap}, context::Context, settings::{auto_settings, cli::Matches}};
-use shared::config::{DatabaseConfig, NatsConfig};
+use scuffle_foundations::bootstrap::bootstrap;
+use scuffle_foundations::context::Context;
+use scuffle_foundations::settings::cli::Matches;
 use tokio::signal::unix::SignalKind;
 
+use self::config::Config;
+
+mod config;
 mod global;
 mod stream;
-
-#[auto_settings]
-struct Config {
-	database: DatabaseConfig,
-	nats: NatsConfig,
-	telementry: scuffle_foundations::telemetry::settings::TelemetrySettings,
-	stream_name: String,
-	nats_prefix: String,
-}
-
-impl Bootstrap for Config {
-	type Settings = Self;
-
-	fn runtime_mode(&self) -> scuffle_foundations::bootstrap::RuntimeSettings {
-		scuffle_foundations::bootstrap::RuntimeSettings::Steal {
-			threads: 1,
-			name: "mongo-change-stream".to_string(),
-		}
-	}
-
-	fn telemetry_config(&self) -> Option<scuffle_foundations::telemetry::settings::TelemetrySettings> {
-		Some(self.telementry.clone())
-	}
-}
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) -> anyhow::Result<()> {
@@ -49,7 +29,7 @@ async fn main(settings: Matches<Config>) -> anyhow::Result<()> {
 
 	let handler = scuffle_foundations::context::Handler::global();
 
-	let shutdown = tokio::spawn(async move {
+	let mut shutdown = tokio::spawn(async move {
 		signal.recv().await;
 		tracing::info!("received shutdown signal, waiting for jobs to finish");
 		handler.cancel();
@@ -68,30 +48,51 @@ async fn main(settings: Matches<Config>) -> anyhow::Result<()> {
 		}
 	});
 
-	let triggers = tokio::spawn(stream::start(global.clone()));
+	let mut last_failure: Option<std::time::Instant> = None;
+	let mut failure_count = 0;
 
-	tokio::select! {
-		r = shutdown => {
-			if let Err(e) = r {
-				tracing::error!("shutdown error: {:#}", e);
-			} else {
-				tracing::info!("shutdown complete");
+	loop {
+		let stream = tokio::spawn(stream::start(global.clone()));
+
+		tokio::select! {
+			r = &mut shutdown => {
+				if let Err(e) = r {
+					tracing::error!("shutdown error: {:#}", e);
+				} else {
+					tracing::info!("shutdown complete");
+				}
+			}
+			r = stream => {
+				match r {
+					Ok(Ok(())) if !Context::global().is_done() => {
+						tracing::error!("mongo stream stopped, without error, attempting to restart");
+
+						if let Some(ts) = last_failure {
+							if ts.elapsed() < std::time::Duration::from_secs(30) && failure_count > 5 {
+								tracing::warn!("mongo stream stopped, without error, but within 30 seconds of last failure, delaying restart");
+								tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+							} else {
+								failure_count = 0;
+							}
+						}
+
+						last_failure = Some(std::time::Instant::now());
+						failure_count += 1;
+
+						continue;
+					}
+					Ok(Err(e)) => {
+						tracing::error!("mongo stream error: {:#}", e);
+					}
+					Err(e) => {
+						tracing::error!("mongo stream error: {:#}", e);
+					}
+					Ok(Ok(())) => {}
+				}
 			}
 		}
-		r = triggers => {
-			match r {
-				Ok(Ok(())) if !Context::global().is_done() => {
-					tracing::warn!("mongo change stream stopped");
-				}
-				Ok(Err(e)) => {
-					tracing::error!("mongo change stream error: {:#}", e);
-				}
-				Err(e) => {
-					tracing::error!("mongo change stream error: {:#}", e);
-				}
-				Ok(Ok(())) => {}
-			}
-		}
+
+		break;
 	}
 
 	tracing::info!("stopping mongo change stream");

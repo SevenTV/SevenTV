@@ -11,6 +11,7 @@ use scuffle_foundations::context::ContextFutExt;
 use scuffle_foundations::telemetry::metrics::metrics;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::MongoCollection;
+use shared::nats::ChangeStreamSubject;
 use typesense::{EventStatus, OperationType};
 
 use crate::global::Global;
@@ -98,14 +99,15 @@ mod typesense {
 }
 
 macro_rules! spawn_handler {
-	(($global:ident, $stream:ident) => { $($ty:ty),* $(,)? }) => {
+	(($global:ident, $stream:ident, $subject:ident) => { $($ty:ty),* $(,)? }) => {
 		{
 			let mut handlers = Vec::new();
 			$(
 				let global = $global.clone();
 				let stream = $stream.clone();
+				let subject = $subject.clone();
 				handlers.push(tokio::spawn(async move {
-					setup::<$ty>(global, stream).await.context(<$ty>::COLLECTION_NAME)
+					setup::<$ty>(global, stream, subject).await.context(<$ty>::COLLECTION_NAME)
 				}));
 			)*
 			handlers
@@ -114,26 +116,33 @@ macro_rules! spawn_handler {
 }
 
 pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
-	shared::typesense::types::init_typesense(global.typesense())
+	shared::typesense::types::init_typesense(&global.typesense)
 		.await
 		.context("failed to initialize typesense")?;
 
-	let stream = tokio::time::timeout(
-		Duration::from_secs(5),
-		global.jetstream().get_or_create_stream(stream::Config {
-			name: "mongo-typesense".to_string(),
-			subjects: vec![format!("{}.>", global.config().triggers.topic)],
-			retention: stream::RetentionPolicy::Interest,
-			duplicate_window: Duration::from_secs(60),
-			max_age: Duration::from_secs(60 * 60 * 24), // messages older than 24 hours are dropped
-			..Default::default()
-		}),
-	)
-	.await
-	.context("create stream timeout")?
-	.context("create stream")?;
+	let subject = shared::nats::ChangeStreamSubject::new(&global.config.triggers.nats_prefix);
 
-	let handlers = spawn_handler!((global, stream) => {
+	let config = stream::Config {
+		name: subject.name(),
+		subjects: vec![subject.wildcard()],
+		retention: stream::RetentionPolicy::Interest,
+		duplicate_window: Duration::from_secs(60),
+		max_age: Duration::from_secs(60 * 60 * 24), // messages older than 24 hours are dropped
+		max_bytes: 1024 * 1024 * 1024 * 100,        // 100GB max
+		..Default::default()
+	};
+
+	let stream = tokio::time::timeout(Duration::from_secs(5), global.jetstream.get_or_create_stream(config.clone()))
+		.await
+		.context("create stream timeout")?
+		.context("create stream")?;
+
+	tokio::time::timeout(Duration::from_secs(5), global.jetstream.update_stream(config.clone()))
+		.await
+		.context("update stream timeout")?
+		.context("update stream")?;
+
+	let handlers = spawn_handler!((global, stream, subject) => {
 		crate::types::mongo::DiscountCode,
 		crate::types::mongo::GiftCode,
 		crate::types::mongo::RedeemCode,
@@ -181,34 +190,34 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 async fn setup<M: SupportedMongoCollection>(
 	global: Arc<Global>,
 	stream: async_nats::jetstream::stream::Stream,
+	subject: ChangeStreamSubject,
 ) -> anyhow::Result<()> {
-	let name = format!("{}::{}", global.config().triggers.seventv_database, M::COLLECTION_NAME);
+	let name = format!("{}::{}", global.config.triggers.seventv_database, M::COLLECTION_NAME);
+
+	let config = async_nats::jetstream::consumer::pull::Config {
+		name: Some(name.clone()),
+		durable_name: Some(name.clone()),
+		max_ack_pending: 1_000_000,
+		ack_policy: async_nats::jetstream::consumer::AckPolicy::Explicit,
+		ack_wait: Duration::from_secs(30),
+		inactive_threshold: Duration::from_secs(60 * 60 * 24),
+		max_deliver: 5,
+		filter_subject: subject.topic(&global.config.triggers.seventv_database, M::COLLECTION_NAME),
+		..Default::default()
+	};
 
 	let consumer = tokio::time::timeout(
 		Duration::from_secs(5),
-		stream.get_or_create_consumer(
-			&name.clone(),
-			async_nats::jetstream::consumer::pull::Config {
-				name: Some(name.clone()),
-				durable_name: Some(name.clone()),
-				max_ack_pending: 1_000_000,
-				ack_policy: async_nats::jetstream::consumer::AckPolicy::Explicit,
-				ack_wait: Duration::from_secs(30),
-				inactive_threshold: Duration::from_secs(60 * 60 * 24),
-				max_deliver: 5,
-				filter_subject: format!(
-					"{}.{}.{}",
-					global.config().triggers.topic,
-					global.config().triggers.seventv_database,
-					M::COLLECTION_NAME
-				),
-				..Default::default()
-			},
-		),
+		stream.get_or_create_consumer(&name.clone(), config.clone()),
 	)
 	.await
 	.context("create consumer timeout")?
 	.context("create consumer")?;
+
+	tokio::time::timeout(Duration::from_secs(5), stream.update_consumer(config.clone()))
+		.await
+		.context("update consumer timeout")?
+		.context("update consumer")?;
 
 	let ctx = scuffle_foundations::context::Context::global();
 

@@ -1,7 +1,8 @@
 use anyhow::Context;
 use async_nats::ServerAddr;
 
-use crate::{config::NatsConfig, database};
+use crate::config::NatsConfig;
+use crate::database;
 
 pub async fn setup_nats(
 	name: &str,
@@ -53,7 +54,7 @@ fn escape_prefix(prefix: &str) -> String {
 
 impl ChangeStreamSubject {
 	pub fn new(prefix: &str) -> Self {
-		Self(format!("{}-MongoChangeStream", escape_prefix(prefix))) 
+		Self(format!("{}::MongoChangeStream", escape_prefix(prefix)))
 	}
 
 	pub fn name(&self) -> String {
@@ -64,7 +65,7 @@ impl ChangeStreamSubject {
 		format!("{}.>", self.0)
 	}
 
-	pub fn collection(&self, database: &str, collection: &str) -> String {
+	pub fn topic(&self, database: &str, collection: &str) -> String {
 		format!("{}.{}.{}", self.0, database, collection)
 	}
 }

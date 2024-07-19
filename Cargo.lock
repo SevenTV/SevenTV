@@ -2530,11 +2530,17 @@ dependencies = [
  "anyhow",
  "async-nats",
  "bson",
+ "bytes",
+ "fnv",
  "futures",
  "mongodb",
  "scuffle-foundations",
+ "serde",
+ "serde_json",
  "shared",
+ "thiserror",
  "tokio",
+ "tokio-stream",
  "tracing",
 ]
 
