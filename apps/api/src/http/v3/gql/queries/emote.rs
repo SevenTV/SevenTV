@@ -49,7 +49,7 @@ pub struct Emote {
 
 impl Emote {
 	pub fn from_db(global: &Arc<Global>, value: shared::database::emote::Emote) -> Self {
-		let host = ImageHost::from_image_set(&value.image_set, &global.config().api.cdn_origin);
+		let host = ImageHost::from_image_set(&value.image_set, &global.config.api.cdn_origin);
 		let state = EmoteVersionState::from_db(&value.flags);
 		let listed = value.flags.contains(shared::database::emote::EmoteFlags::PublicListed);
 		let lifecycle = if value.merged.is_some() {
@@ -114,7 +114,7 @@ impl Emote {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast(global, self.owner_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -158,7 +158,7 @@ impl Emote {
 			})?;
 
 		let users = global
-			.user_loader()
+			.user_loader
 			.load_fast_many(global, result.hits.iter().copied())
 			.await
 			.map_err(|()| {
@@ -208,7 +208,7 @@ impl Emote {
 			})?;
 
 		let logs = global
-			.audit_log_by_id_loader()
+			.audit_log_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
 			.map_err(|()| {
@@ -272,7 +272,7 @@ impl EmotePartial {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast(global, self.owner_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -367,7 +367,7 @@ impl EmotesQuery {
 		})?;
 
 		let emote = global
-			.emote_by_id_loader()
+			.emote_by_id_loader
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -384,7 +384,7 @@ impl EmotesQuery {
 		}
 
 		let emote = global
-			.emote_by_id_loader()
+			.emote_by_id_loader
 			.load_many(list.into_iter().map(|i| i.id()))
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -506,7 +506,7 @@ impl EmotesQuery {
 			})?;
 
 		let emotes = global
-			.emote_by_id_loader()
+			.emote_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
 			.map_err(|()| {

@@ -70,19 +70,19 @@ pub async fn exchange_code(
 	redirect_uri: String,
 ) -> Result<TokenResponse, ConnectionError> {
 	let (endpoint, config) = match platform {
-		Platform::Twitch => ("https://id.twitch.tv/oauth2/token", &global.config().api.connections.twitch),
+		Platform::Twitch => ("https://id.twitch.tv/oauth2/token", &global.config.api.connections.twitch),
 		Platform::Discord => (
 			"https://discord.com/api/v10/oauth2/token",
-			&global.config().api.connections.discord,
+			&global.config.api.connections.discord,
 		),
-		Platform::Google => ("https://oauth2.googleapis.com/token", &global.config().api.connections.google),
+		Platform::Google => ("https://oauth2.googleapis.com/token", &global.config.api.connections.google),
 		_ => return Err(ConnectionError::UnsupportedPlatform),
 	};
 
 	tracing::Span::current().record("endpoint", &endpoint);
 
 	let res = global
-		.http_client()
+		.http_client
 		.post(endpoint)
 		.form(&TokenRequest {
 			grant_type: "authorization_code".to_string(),
@@ -129,8 +129,8 @@ pub async fn get_user_data(
 	access_token: &str,
 ) -> Result<PlatformUserData, ConnectionError> {
 	match platform {
-		Platform::Discord => discord::get_user_data(access_token).await.map(Into::into),
-		Platform::Google => google::get_user_data(access_token).await.map(Into::into),
+		Platform::Discord => discord::get_user_data(global, access_token).await.map(Into::into),
+		Platform::Google => google::get_user_data(global, access_token).await.map(Into::into),
 		Platform::Twitch => twitch::get_user_data(global, access_token).await.map(Into::into),
 		_ => Err(ConnectionError::UnsupportedPlatform),
 	}

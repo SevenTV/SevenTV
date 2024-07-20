@@ -58,8 +58,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		&code,
 		format!(
 			"{}/v3/auth?callback=true&platform={}",
-			global.config().api.api_origin,
-			query.platform
+			global.config.api.api_origin, query.platform
 		),
 	)
 	.await?;
@@ -67,7 +66,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	// query user data from platform
 	let user_data = connections::get_user_data(global, platform, &token.access_token).await?;
 
-	let mut session = global.mongo().start_session().await.map_err(|err| {
+	let mut session = global.mongo.start_session().await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start session");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
@@ -77,7 +76,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
 
-	let mut user = User::collection(global.db())
+	let mut user = User::collection(&global.db)
 		.find_one_and_update(
 			doc! {
 				"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
@@ -141,7 +140,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				..Default::default()
 			});
 
-			User::collection(global.db())
+			User::collection(&global.db)
 				.insert_one(user.as_ref().unwrap())
 				.session(&mut session)
 				.await
@@ -158,13 +157,13 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		// load the default entitlements, as the user does not exist yet in the
 		// database.
 		global
-			.user_loader()
+			.user_loader
 			.load_user(global, user)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 	} else if let Some(user_id) = csrf_payload.user_id {
 		global
-			.user_loader()
+			.user_loader
 			.load(global, user_id)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -188,7 +187,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			|| logged_connection.platform_display_name != user_data.display_name
 		{
 			// Update user connection
-			if User::collection(global.db())
+			if User::collection(&global.db)
 				.update_one(
 					doc! {
 						"_id": full_user.user.id,
@@ -231,7 +230,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			linked_at: chrono::Utc::now(),
 		};
 
-		if User::collection(global.db())
+		if User::collection(&global.db)
 			.update_one(
 				doc! {
 					"_id": full_user.user.id,
@@ -255,7 +254,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			> 0
 		{
 			global
-				.event_api()
+				.event_api
 				.dispatch_event(
 					EventType::UpdateUser,
 					ChangeMap {
@@ -265,7 +264,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 							full_user.clone(),
 							None,
 							None,
-							&global.config().api.cdn_origin,
+							&global.config.api.cdn_origin,
 						)),
 						pushed: vec![ChangeField {
 							key: "connections".to_string(),
@@ -306,7 +305,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			last_used_at: chrono::Utc::now(),
 		};
 
-		UserSession::collection(global.db())
+		UserSession::collection(&global.db)
 			.insert_one(&user_session)
 			.session(&mut session)
 			.await
@@ -320,7 +319,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		None
 	};
 
-	AuditLog::collection(global.db())
+	AuditLog::collection(&global.db)
 		.insert_one(AuditLog {
 			id: AuditLogId::new(),
 			actor_id: Some(full_user.id),
@@ -363,15 +362,12 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 		format!(
 			"{}/auth/callback?platform={}&token={}",
-			global.config().api.website_origin,
-			query.platform,
-			token
+			global.config.api.website_origin, query.platform, token
 		)
 	} else {
 		format!(
 			"{}/auth/callback?platform={}",
-			global.config().api.website_origin,
-			query.platform
+			global.config.api.website_origin, query.platform
 		)
 	};
 
@@ -386,9 +382,9 @@ pub fn handle_login(
 ) -> Result<String, ApiError> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
-		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config().api.connections.twitch),
-		Platform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config().api.connections.discord),
-		Platform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config().api.connections.google),
+		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.api.connections.twitch),
+		Platform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config.api.connections.discord),
+		Platform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.api.connections.google),
 		_ => {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform"));
 		}
@@ -413,8 +409,7 @@ pub fn handle_login(
 		config.client_id,
 		urlencoding::encode(&format!(
 			"{}/v3/auth?callback=true&platform={}",
-			global.config().api.api_origin,
-			platform
+			global.config.api.api_origin, platform
 		)),
 		urlencoding::encode(scope),
 		csrf.random()

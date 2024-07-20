@@ -69,7 +69,7 @@ pub async fn get_user_by_id(
 	auth_session: Option<Extension<AuthSession>>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let user = global
-		.user_loader()
+		.user_loader
 		.load(&global, id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -82,14 +82,14 @@ pub async fn get_user_by_id(
 	}
 
 	let emote_sets = global
-		.emote_set_by_user_id_loader()
+		.emote_set_by_user_id_loader
 		.load(user.id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default();
 
 	let editors = global
-		.user_editor_by_user_id_loader()
+		.user_editor_by_user_id_loader
 		.load(user.id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -97,7 +97,7 @@ pub async fn get_user_by_id(
 
 	let active_emote_set = if let Some(emote_set_id) = user.style.active_emote_set_id {
 		global
-			.emote_set_by_id_loader()
+			.emote_set_by_id_loader
 			.load(emote_set_id)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -117,7 +117,7 @@ pub async fn get_user_by_id(
 			.into_iter()
 			.filter_map(|editor| UserEditorModel::from_db(editor))
 			.collect(),
-		&global.config().api.cdn_origin,
+		&global.config.api.cdn_origin,
 	);
 
 	if let Some(mut active_emote_set) = active_emote_set {
@@ -170,7 +170,7 @@ pub async fn upload_user_profile_picture(
 		TargetUser::Me => None,
 		TargetUser::Other(id) => Some(
 			global
-				.user_loader()
+				.user_loader
 				.load(&global, id)
 				.await
 				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -189,7 +189,7 @@ pub async fn upload_user_profile_picture(
 
 	if other_user.is_some() && !user.has(UserPermission::ManageAny) {
 		if !global
-			.user_editor_by_id_loader()
+			.user_editor_by_id_loader
 			.load(UserEditorId {
 				user_id: target_user.id,
 				editor_id: user.id,
@@ -206,20 +206,14 @@ pub async fn upload_user_profile_picture(
 		}
 	}
 
-	if matches!(
-		target_user.style.active_profile_picture,
-		Some(ImageSet {
-			input: ImageSetInput::Pending { .. },
-			..
-		}),
-	) {
+	if target_user.style.pending_profile_picture.is_some() {
 		return Err(ApiError::new_const(
 			StatusCode::CONFLICT,
 			"profile picture change already pending",
 		));
 	}
 
-	let input = match global.image_processor().upload_profile_picture(target_user.id, body).await {
+	let input = match global.image_processor.upload_profile_picture(target_user.id, body).await {
 		Ok(ProcessImageResponse {
 			id,
 			error: None,
@@ -262,7 +256,7 @@ pub async fn upload_user_profile_picture(
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
 
-	User::collection(global.db())
+	User::collection(&global.db)
 		.update_one(
 			doc! {
 				"_id": target_user.id,
@@ -328,11 +322,11 @@ pub async fn get_user_by_platform_id(
 	let platform = Platform::from_str(&platform.to_lowercase()).map_err(|_| ApiError::BAD_REQUEST)?;
 
 	let user = global
-		.user_loader()
+		.user_loader
 		.load_user(
 			&global,
 			global
-				.user_by_platform_id_loader()
+				.user_by_platform_id_loader
 				.load((platform, platform_id.clone()))
 				.await
 				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -366,7 +360,7 @@ pub async fn get_user_by_platform_id(
 	.into();
 
 	let editors = global
-		.user_editor_by_user_id_loader()
+		.user_editor_by_user_id_loader
 		.load(user.id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -377,7 +371,7 @@ pub async fn get_user_by_platform_id(
 
 	// query user emote sets
 	let emote_sets = global
-		.emote_set_by_user_id_loader()
+		.emote_set_by_user_id_loader
 		.load(user.id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -390,7 +384,7 @@ pub async fn get_user_by_platform_id(
 
 	if let Some(emote_set_id) = connection_model.emote_set_id {
 		if let Some(mut emote_set) = global
-			.emote_set_by_id_loader()
+			.emote_set_by_id_loader
 			.load(emote_set_id)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -401,7 +395,7 @@ pub async fn get_user_by_platform_id(
 		}
 	};
 
-	let user_full = UserModel::from_db(user, None, None, emote_sets, editors, &global.config().api.cdn_origin);
+	let user_full = UserModel::from_db(user, None, None, emote_sets, editors, &global.config.api.cdn_origin);
 
 	connection_model.user = Some(user_full);
 

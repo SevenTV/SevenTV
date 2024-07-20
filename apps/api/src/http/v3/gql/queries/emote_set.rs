@@ -86,7 +86,7 @@ impl ActiveEmote {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote = global
-			.emote_by_id_loader()
+			.emote_by_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -105,7 +105,7 @@ impl ActiveEmote {
 		};
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast(global, actor_id)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -137,7 +137,7 @@ impl EmoteSet {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast(global, id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -165,7 +165,7 @@ impl EmoteSetsQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_set = global
-			.emote_set_by_id_loader()
+			.emote_set_by_id_loader
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -184,7 +184,7 @@ impl EmoteSetsQuery {
 		}
 
 		let emote_sets: Vec<_> = global
-			.emote_set_by_id_loader()
+			.emote_set_by_id_loader
 			.load_many(list.into_iter().map(|id| id.id()))
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -201,14 +201,14 @@ impl EmoteSetsQuery {
 		match name {
 			EmoteSetName::Global => {
 				let global_config = global
-					.global_config_loader()
+					.global_config_loader
 					.load(())
 					.await
 					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
 				let global_set = global
-					.emote_set_by_id_loader()
+					.emote_set_by_id_loader
 					.load(global_config.emote_set_id)
 					.await
 					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?

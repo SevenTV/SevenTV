@@ -28,12 +28,12 @@ const JETSTREAM_NAME: &str = "image-processor-callback";
 const JETSTREAM_CONSUMER_NAME: &str = "image-processor-callback-consumer";
 
 pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
-	let config = &global.config().api.image_processor;
+	let config = &global.config.api.image_processor;
 
 	let subject = Subject::Wildcard.to_string(&config.event_queue_topic_prefix);
 
 	let stream = global
-		.jetstream()
+		.jetstream
 		.get_or_create_stream(stream::Config {
 			name: JETSTREAM_NAME.to_string(),
 			max_consumers: 1,
@@ -66,21 +66,19 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		let message = message.context("consumer closed")?.context("failed to get message")?;
 
 		// decode
-		let subject = match Subject::from_string(
-			&message.subject,
-			&global.config().api.image_processor.event_queue_topic_prefix,
-		) {
-			Ok(subject) => subject,
-			Err(err) => {
-				tracing::warn!(error = %err, subject = %message.subject, "failed to decode subject");
-				message
-					.ack()
-					.await
-					.map_err(|e| anyhow::anyhow!(e))
-					.context("failed to ack message")?;
-				continue;
-			}
-		};
+		let subject =
+			match Subject::from_string(&message.subject, &global.config.api.image_processor.event_queue_topic_prefix) {
+				Ok(subject) => subject,
+				Err(err) => {
+					tracing::warn!(error = %err, subject = %message.subject, "failed to decode subject");
+					message
+						.ack()
+						.await
+						.map_err(|e| anyhow::anyhow!(e))
+						.context("failed to ack message")?;
+					continue;
+				}
+			};
 
 		let event_callback = match EventCallback::decode(message.payload.as_ref()) {
 			Ok(callback) => callback,
@@ -159,12 +157,12 @@ async fn handle_success(
 		})
 		.collect();
 
-	let mut session = global.mongo().start_session().await?;
+	let mut session = global.mongo.start_session().await?;
 	session.start_transaction().await?;
 
 	match subject {
 		Subject::Emote(id) => {
-			let emote = Emote::collection(global.db())
+			let emote = Emote::collection(&global.db)
 				.find_one_and_update(
 					doc! {
 						"_id": id,
@@ -184,7 +182,7 @@ async fn handle_success(
 				.await?
 				.context("emote not found")?;
 
-			AuditLog::collection(global.db())
+			AuditLog::collection(&global.db)
 				.insert_one(AuditLog {
 					id: AuditLogId::new(),
 					actor_id: None,
@@ -199,12 +197,12 @@ async fn handle_success(
 				.await?;
 
 			let actor = global
-				.user_loader()
+				.user_loader
 				.load_fast(global, emote.owner_id)
 				.await
 				.ok()
 				.context("failed to query owner")?
-				.map(|u| UserPartialModel::from_db(u, None, None, &global.config().api.cdn_origin));
+				.map(|u| UserPartialModel::from_db(u, None, None, &global.config.api.cdn_origin));
 
 			let change = ChangeField {
 				key: "lifecycle".to_string(),
@@ -215,7 +213,7 @@ async fn handle_success(
 			};
 
 			global
-				.event_api()
+				.event_api
 				.dispatch_event(
 					EventType::UpdateEmote,
 					ChangeMap {
@@ -268,7 +266,7 @@ async fn handle_success(
 				},
 			];
 
-			User::collection(global.db())
+			User::collection(&global.db)
 				.update_one(
 					doc! {
 						"_id": id,
@@ -281,7 +279,7 @@ async fn handle_success(
 		Subject::Paint(id) => {
 			let layer_id: PaintLayerId = metadata.get("layer_id").context("missing layer_id")?.parse()?;
 
-			Paint::collection(global.db())
+			Paint::collection(&global.db)
 				.update_one(
 					doc! {
 						"_id": id,
@@ -303,7 +301,7 @@ async fn handle_success(
 				.await?;
 		}
 		Subject::Badge(id) => {
-			Badge::collection(global.db())
+			Badge::collection(&global.db)
 				.update_one(
 					doc! {
 						"_id": id,
@@ -331,21 +329,21 @@ async fn handle_success(
 async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>) -> anyhow::Result<()> {
 	match subject {
 		Subject::Emote(id) => {
-			Emote::collection(global.db())
+			Emote::collection(&global.db)
 				.delete_one(doc! {
 					"_id": id,
 				})
 				.await?;
 		}
 		Subject::ProfilePicture(id) => {
-			User::collection(global.db())
+			User::collection(&global.db)
 				.update_one(doc! { "_id": id }, doc! { "style.active_profile_picture": null })
 				.await?;
 		}
 		Subject::Paint(id) => {
 			let layer_id: PaintLayerId = metadata.get("layer_id").context("missing layer_id")?.parse()?;
 
-			Paint::collection(global.db())
+			Paint::collection(&global.db)
 				.update_one(
 					doc! {
 						"_id": id,
@@ -360,7 +358,7 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 				.await?;
 		}
 		Subject::Badge(id) => {
-			Badge::collection(global.db())
+			Badge::collection(&global.db)
 				.delete_one(doc! {
 					"_id": id,
 				})
@@ -379,7 +377,7 @@ async fn handle_fail(
 	event: event_callback::Fail,
 ) -> anyhow::Result<()> {
 	if let Subject::Emote(id) = subject {
-		let emote = Emote::collection(global.db())
+		let emote = Emote::collection(&global.db)
 			.find_one_and_delete(doc! {
 				"_id": id,
 			})
@@ -387,12 +385,12 @@ async fn handle_fail(
 
 		if let Some(emote) = emote {
 			let actor = global
-				.user_loader()
+				.user_loader
 				.load_fast(global, emote.owner_id)
 				.await
 				.ok()
 				.context("failed to query owner")?
-				.map(|u| UserPartialModel::from_db(u, None, None, &global.config().api.cdn_origin));
+				.map(|u| UserPartialModel::from_db(u, None, None, &global.config.api.cdn_origin));
 
 			let change = ChangeField {
 				key: "lifecycle".to_string(),
@@ -403,7 +401,7 @@ async fn handle_fail(
 			};
 
 			global
-				.event_api()
+				.event_api
 				.dispatch_event(
 					EventType::UpdateEmote,
 					ChangeMap {

@@ -56,7 +56,7 @@ pub async fn search<T: TypesenseCollection>(
 	}
 
 	let resp = typesense_codegen::apis::documents_api::search_collection::<SearchHit<T>>(
-		global.typesense(),
+		&global.typesense,
 		T::COLLECTION_NAME,
 		SearchParameters {
 			q: options.query,

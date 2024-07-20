@@ -26,43 +26,45 @@ use crate::config::Config;
 use crate::dataloader::emote::EmoteByUserIdLoader;
 use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
+use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
 use crate::dataloader::user::UserByPlatformIdLoader;
 use crate::dataloader::user_bans::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
 use crate::event_api::EventApi;
 
 pub struct Global {
-	nats: async_nats::Client,
-	jetstream: async_nats::jetstream::Context,
-	config: Config,
-	mongo: mongodb::Client,
-	db: mongodb::Database,
-	clickhouse: clickhouse::Client,
-	http_client: reqwest::Client,
-	event_api: EventApi,
-	image_processor: ImageProcessor,
-	audit_log_by_id_loader: DataLoader<LoaderById<AuditLog>>,
-	product_by_id_loader: DataLoader<LoaderById<Product>>,
-	role_by_id_loader: DataLoader<LoaderById<Role>>,
-	paint_by_id_loader: DataLoader<LoaderById<Paint>>,
-	badge_by_id_loader: DataLoader<LoaderById<Badge>>,
-	emote_by_id_loader: DataLoader<LoaderById<Emote>>,
-	emote_by_user_id_loader: DataLoader<EmoteByUserIdLoader>,
-	emote_set_by_id_loader: DataLoader<LoaderById<EmoteSet>>,
-	emote_set_by_user_id_loader: DataLoader<EmoteSetByUserIdLoader>,
-	global_config_loader: DataLoader<LoaderById<GlobalConfig>>,
-	user_editor_by_user_id_loader: DataLoader<UserEditorByUserIdLoader>,
-	user_editor_by_editor_id_loader: DataLoader<UserEditorByEditorIdLoader>,
-	user_editor_by_id_loader: DataLoader<LoaderById<UserEditor>>,
-	ticket_by_id_loader: DataLoader<LoaderById<Ticket>>,
-	entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
-	entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
-	user_by_id_loader: DataLoader<LoaderById<User>>,
-	user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
-	user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
-	user_ban_by_user_id_loader: DataLoader<UserBanByUserIdLoader>,
-	user_loader: FullUserLoader,
-	typesense: typesense_codegen::apis::configuration::Configuration,
+	pub nats: async_nats::Client,
+	pub jetstream: async_nats::jetstream::Context,
+	pub config: Config,
+	pub mongo: mongodb::Client,
+	pub db: mongodb::Database,
+	pub clickhouse: clickhouse::Client,
+	pub http_client: reqwest::Client,
+	pub event_api: EventApi,
+	pub image_processor: ImageProcessor,
+	pub audit_log_by_id_loader: DataLoader<LoaderById<AuditLog>>,
+	pub product_by_id_loader: DataLoader<LoaderById<Product>>,
+	pub role_by_id_loader: DataLoader<LoaderById<Role>>,
+	pub paint_by_id_loader: DataLoader<LoaderById<Paint>>,
+	pub badge_by_id_loader: DataLoader<LoaderById<Badge>>,
+	pub emote_by_id_loader: DataLoader<LoaderById<Emote>>,
+	pub emote_by_user_id_loader: DataLoader<EmoteByUserIdLoader>,
+	pub emote_set_by_id_loader: DataLoader<LoaderById<EmoteSet>>,
+	pub emote_set_by_user_id_loader: DataLoader<EmoteSetByUserIdLoader>,
+	pub global_config_loader: DataLoader<LoaderById<GlobalConfig>>,
+	pub user_editor_by_user_id_loader: DataLoader<UserEditorByUserIdLoader>,
+	pub user_editor_by_editor_id_loader: DataLoader<UserEditorByEditorIdLoader>,
+	pub user_editor_by_id_loader: DataLoader<LoaderById<UserEditor>>,
+	pub ticket_by_id_loader: DataLoader<LoaderById<Ticket>>,
+	pub ticket_message_by_ticket_id_loader: DataLoader<TicketMessageByTicketIdLoader>,
+	pub entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
+	pub entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
+	pub user_by_id_loader: DataLoader<LoaderById<User>>,
+	pub user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
+	pub user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
+	pub user_ban_by_user_id_loader: DataLoader<UserBanByUserIdLoader>,
+	pub user_loader: FullUserLoader,
+	pub typesense: typesense_codegen::apis::configuration::Configuration,
 }
 
 impl Global {
@@ -113,6 +115,7 @@ impl Global {
 			user_editor_by_editor_id_loader: UserEditorByEditorIdLoader::new(db.clone()),
 			user_editor_by_id_loader: LoaderById::new(db.clone()),
 			ticket_by_id_loader: LoaderById::new(db.clone()),
+			ticket_message_by_ticket_id_loader: TicketMessageByTicketIdLoader::new(db.clone()),
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
 			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
 			user_by_id_loader: LoaderById::new(db.clone()),
@@ -128,160 +131,6 @@ impl Global {
 			user_loader: FullUserLoader::new(weak.clone()),
 		}))
 	}
-
-	/// The NATS client.
-	pub fn nats(&self) -> &async_nats::Client {
-		&self.nats
-	}
-
-	/// The NATS JetStream context.
-	pub fn jetstream(&self) -> &async_nats::jetstream::Context {
-		&self.jetstream
-	}
-
-	/// The MongoDB database.
-	pub fn db(&self) -> &mongodb::Database {
-		&self.db
-	}
-
-	/// The MongoDB client.
-	pub fn mongo(&self) -> &mongodb::Client {
-		&self.mongo
-	}
-
-	/// The ClickHouse client.
-	pub fn clickhouse(&self) -> &clickhouse::Client {
-		&self.clickhouse
-	}
-
-	/// The configuration.
-	pub fn config(&self) -> &Config {
-		&self.config
-	}
-
-	/// Global HTTP client.
-	pub fn http_client(&self) -> &reqwest::Client {
-		&self.http_client
-	}
-
-	/// The event API.
-	pub fn event_api(&self) -> &EventApi {
-		&self.event_api
-	}
-
-	/// Image processor.
-	pub fn image_processor(&self) -> &ImageProcessor {
-		&self.image_processor
-	}
-
-	/// The audit log loader.
-	pub fn audit_log_by_id_loader(&self) -> &DataLoader<LoaderById<AuditLog>> {
-		&self.audit_log_by_id_loader
-	}
-
-	/// The product loader.
-	pub fn product_by_id_loader(&self) -> &DataLoader<LoaderById<Product>> {
-		&self.product_by_id_loader
-	}
-
-	/// The role loader.
-	pub fn role_by_id_loader(&self) -> &DataLoader<LoaderById<Role>> {
-		&self.role_by_id_loader
-	}
-
-	/// The paint loader.
-	pub fn paint_by_id_loader(&self) -> &DataLoader<LoaderById<Paint>> {
-		&self.paint_by_id_loader
-	}
-
-	/// The badge loader.
-	pub fn badge_by_id_loader(&self) -> &DataLoader<LoaderById<Badge>> {
-		&self.badge_by_id_loader
-	}
-
-	/// The emote loader.
-	pub fn emote_by_id_loader(&self) -> &DataLoader<LoaderById<Emote>> {
-		&self.emote_by_id_loader
-	}
-
-	/// The emote by user loader.
-	pub fn emote_by_user_id_loader(&self) -> &DataLoader<EmoteByUserIdLoader> {
-		&self.emote_by_user_id_loader
-	}
-
-	/// The emote set loader.
-	pub fn emote_set_by_id_loader(&self) -> &DataLoader<LoaderById<EmoteSet>> {
-		&self.emote_set_by_id_loader
-	}
-
-	/// The emote set by user loader.
-	pub fn emote_set_by_user_id_loader(&self) -> &DataLoader<EmoteSetByUserIdLoader> {
-		&self.emote_set_by_user_id_loader
-	}
-
-	/// The global config loader.
-	pub fn global_config_loader(&self) -> &DataLoader<LoaderById<GlobalConfig>> {
-		&self.global_config_loader
-	}
-
-	/// The user editor by user loader.
-	pub fn user_editor_by_user_id_loader(&self) -> &DataLoader<UserEditorByUserIdLoader> {
-		&self.user_editor_by_user_id_loader
-	}
-
-	/// The user editor by editor loader.
-	pub fn user_editor_by_editor_id_loader(&self) -> &DataLoader<UserEditorByEditorIdLoader> {
-		&self.user_editor_by_editor_id_loader
-	}
-
-	pub fn user_editor_by_id_loader(&self) -> &DataLoader<LoaderById<UserEditor>> {
-		&self.user_editor_by_id_loader
-	}
-
-	/// The ticket loader.
-	pub fn ticket_by_id_loader(&self) -> &DataLoader<LoaderById<Ticket>> {
-		&self.ticket_by_id_loader
-	}
-
-	/// The entitlement edge inbound loader.
-	pub fn entitlement_edge_inbound_loader(&self) -> &DataLoader<EntitlementEdgeInboundLoader> {
-		&self.entitlement_edge_inbound_loader
-	}
-
-	/// The entitlement edge outbound loader.
-	pub fn entitlement_edge_outbound_loader(&self) -> &DataLoader<EntitlementEdgeOutboundLoader> {
-		&self.entitlement_edge_outbound_loader
-	}
-
-	/// The user loader.
-	pub fn user_by_id_loader(&self) -> &DataLoader<LoaderById<User>> {
-		&self.user_by_id_loader
-	}
-
-	/// The user by platform ID loader.
-	pub fn user_by_platform_id_loader(&self) -> &DataLoader<UserByPlatformIdLoader> {
-		&self.user_by_platform_id_loader
-	}
-
-	/// The user ban loader.
-	pub fn user_ban_by_id_loader(&self) -> &DataLoader<LoaderById<UserBan>> {
-		&self.user_ban_by_id_loader
-	}
-
-	/// The user ban by user ID loader.
-	pub fn user_ban_by_user_id_loader(&self) -> &DataLoader<UserBanByUserIdLoader> {
-		&self.user_ban_by_user_id_loader
-	}
-
-	/// The full user loader.
-	pub fn user_loader(&self) -> &FullUserLoader {
-		&self.user_loader
-	}
-
-	/// The typesense client.
-	pub fn typesense(&self) -> &typesense_codegen::apis::configuration::Configuration {
-		&self.typesense
-	}
 }
 
 impl HealthCheck for Global {
@@ -289,7 +138,7 @@ impl HealthCheck for Global {
 		Box::pin(async {
 			tracing::info!("running health check");
 
-			if !match self.db().run_command(doc! { "ping": 1 }).await {
+			if !match self.db.run_command(doc! { "ping": 1 }).await {
 				Ok(r) => r.get_bool("ok").unwrap_or(false),
 				Err(err) => {
 					tracing::error!(%err, "failed to ping database");
@@ -300,7 +149,7 @@ impl HealthCheck for Global {
 				return false;
 			}
 
-			if !matches!(self.nats().connection_state(), async_nats::connection::State::Connected) {
+			if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
 				tracing::error!("nats not connected");
 				return false;
 			}

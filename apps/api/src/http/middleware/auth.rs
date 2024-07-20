@@ -44,7 +44,7 @@ impl AuthSession {
 		self.cached_data
 			.get_or_try_init(|| async {
 				Ok(global
-					.user_loader()
+					.user_loader
 					.load(global, self.user_id())
 					.await
 					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -92,7 +92,7 @@ where
 
 		match jwt.session_id {
 			Some(session_id) => {
-				let session = UserSession::collection(global.db())
+				let session = UserSession::collection(&global.db)
 					.find_one_and_update(
 						doc! {
 							"_id": session_id,

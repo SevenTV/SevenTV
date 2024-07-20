@@ -84,7 +84,7 @@ impl User {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let editors = global
-			.user_editor_by_user_id_loader()
+			.user_editor_by_user_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -97,7 +97,7 @@ impl User {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let editors = global
-			.user_editor_by_editor_id_loader()
+			.user_editor_by_editor_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -143,7 +143,7 @@ impl User {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_sets = global
-			.emote_set_by_user_id_loader()
+			.emote_set_by_user_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -156,7 +156,7 @@ impl User {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emotes = global
-			.emote_by_user_id_loader()
+			.emote_by_user_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -226,7 +226,7 @@ impl UserEditor {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast(global, self.id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -286,7 +286,7 @@ impl UserPartial {
 				s.outputs
 					.iter()
 					.max_by_key(|i| i.size)
-					.map(|i| i.get_url(&global.config().api.cdn_origin))
+					.map(|i| i.get_url(&global.config.api.cdn_origin))
 			})
 			.or(main_connection.and_then(|c| c.platform_avatar_url.clone()));
 
@@ -342,7 +342,7 @@ impl UserPartial {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote_sets = global
-			.emote_set_by_user_id_loader()
+			.emote_set_by_user_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -402,11 +402,11 @@ impl UserStyle {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.paint_by_id_loader()
+			.paint_by_id_loader
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_origin)))
+			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin)))
 	}
 
 	async fn badge<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<CosmeticBadgeModel>, ApiError> {
@@ -417,11 +417,11 @@ impl UserStyle {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.badge_by_id_loader()
+			.badge_by_id_loader
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_origin)))
+			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin)))
 	}
 }
 
@@ -440,7 +440,7 @@ impl UsersQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let user = global
-			.user_loader()
+			.user_loader
 			.load(global, session.user_id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -453,7 +453,7 @@ impl UsersQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let user = global
-			.user_loader()
+			.user_loader
 			.load(global, id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -474,7 +474,7 @@ impl UsersQuery {
 		let platform = shared::database::user::connection::Platform::from(platform);
 
 		let user = match global
-			.user_by_platform_id_loader()
+			.user_by_platform_id_loader
 			.load((platform, id))
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -484,7 +484,7 @@ impl UsersQuery {
 		};
 
 		let full_user = global
-			.user_loader()
+			.user_loader
 			.load_fast_user(&global, user)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -535,7 +535,7 @@ impl UsersQuery {
 			})?;
 
 		let users = global
-			.user_loader()
+			.user_loader
 			.load_fast_many(global, result.hits.iter().copied())
 			.await
 			.map_err(|()| {
@@ -560,7 +560,7 @@ impl UsersQuery {
 		}
 
 		let users = global
-			.user_loader()
+			.user_loader
 			.load_many(global, list.into_iter().map(|id| id.id()))
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?

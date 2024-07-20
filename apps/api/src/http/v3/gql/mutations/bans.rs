@@ -63,7 +63,7 @@ impl BansMutation {
 
 		// check if victim exists
 		let victim = global
-			.user_loader()
+			.user_loader
 			.load(global, victim_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -95,7 +95,7 @@ impl BansMutation {
 			search_updated_at: None,
 		};
 
-		let mut session = global.mongo().start_session().await.map_err(|err| {
+		let mut session = global.mongo.start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -105,7 +105,7 @@ impl BansMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let res = User::collection(global.db())
+		let res = User::collection(&global.db)
 			.update_one(
 				doc! { "_id": victim.id },
 				doc! {
@@ -122,7 +122,7 @@ impl BansMutation {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		UserBan::collection(global.db())
+		UserBan::collection(&global.db)
 			.insert_one(&ban)
 			.session(&mut session)
 			.await
@@ -132,7 +132,7 @@ impl BansMutation {
 			})?;
 
 		if res.modified_count > 0 {
-			AuditLog::collection(global.db())
+			AuditLog::collection(&global.db)
 				.insert_one(AuditLog {
 					id: Default::default(),
 					actor_id: Some(actor.id),
@@ -188,7 +188,7 @@ impl BansMutation {
 
 		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
-		let ban = UserBan::collection(global.db())
+		let ban = UserBan::collection(&global.db)
 			.find_one_and_update(doc! { "_id": ban_id.id::<()>() }, doc! { "$set": update })
 			.return_document(ReturnDocument::After)
 			.await
@@ -222,7 +222,7 @@ impl Ban {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast(global, self.victim_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -235,7 +235,7 @@ impl Ban {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load(global, self.actor_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?

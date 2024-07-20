@@ -3,18 +3,19 @@ pub mod ban_template;
 pub mod connection;
 pub mod editor;
 pub mod presence;
+pub mod profile_picture;
 pub mod relation;
 pub mod session;
 pub mod settings;
 
 use connection::UserConnection;
+use profile_picture::UserProfilePictureId;
 use settings::UserSettings;
 
 use super::badge::BadgeId;
 use super::emote::EmoteId;
 use super::emote_set::EmoteSetId;
 use super::entitlement::{CalculatedEntitlements, EntitlementEdge, EntitlementEdgeKind};
-use super::image_set::ImageSet;
 use super::paint::PaintId;
 use super::role::permissions::{Permission, Permissions, PermissionsExt};
 use super::role::RoleId;
@@ -69,8 +70,8 @@ pub struct UserStyle {
 	pub active_badge_id: Option<BadgeId>,
 	pub active_paint_id: Option<PaintId>,
 	pub active_emote_set_id: Option<EmoteSetId>,
-	pub active_profile_picture: Option<ImageSet>,
-	pub all_profile_pictures: Vec<ImageSet>,
+	pub active_profile_picture: Option<UserProfilePictureId>,
+	pub pending_profile_picture: Option<UserProfilePictureId>,
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
@@ -80,6 +81,7 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 		.chain(presence::collections())
 		.chain(relation::collections())
 		.chain(session::collections())
+		.chain(profile_picture::collections())
 }
 
 #[derive(Debug, Clone, Default)]
@@ -92,6 +94,15 @@ pub struct FullUser {
 pub enum FullUserRef<'a> {
 	Owned(FullUser),
 	Ref(&'a FullUser),
+}
+
+impl AsRef<FullUser> for FullUserRef<'_> {
+	fn as_ref(&self) -> &FullUser {
+		match self {
+			Self::Owned(user) => user,
+			Self::Ref(user) => user,
+		}
+	}
 }
 
 impl std::ops::Deref for FullUserRef<'_> {

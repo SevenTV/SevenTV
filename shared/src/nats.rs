@@ -2,7 +2,6 @@ use anyhow::Context;
 use async_nats::ServerAddr;
 
 use crate::config::NatsConfig;
-use crate::database;
 
 pub async fn setup_nats(
 	name: &str,

@@ -39,7 +39,7 @@ impl CosmeticsQuery {
 		if list.len() == 0 {
 			// return all cosmetics when empty list is provided
 
-			let paints = Paint::collection(global.db())
+			let paints = Paint::collection(&global.db)
 				.find(doc! {})
 				.into_future()
 				.and_then(|f| f.try_collect::<Vec<Paint>>())
@@ -49,10 +49,10 @@ impl CosmeticsQuery {
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
 				.into_iter()
-				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_origin))
+				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
 				.collect();
 
-			let badges = Badge::collection(global.db())
+			let badges = Badge::collection(&global.db)
 				.find(doc! {})
 				.into_future()
 				.and_then(|f| f.try_collect::<Vec<Badge>>())
@@ -62,7 +62,7 @@ impl CosmeticsQuery {
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
 				.into_iter()
-				.filter_map(|b: Badge| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_origin))
+				.filter_map(|b: Badge| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
 				.collect();
 
 			Ok(CosmeticsQueryResponse { paints, badges })
@@ -72,21 +72,21 @@ impl CosmeticsQuery {
 			}
 
 			let paints = global
-				.paint_by_id_loader()
+				.paint_by_id_loader
 				.load_many(list.clone().into_iter().map(|id| id.id()))
 				.await
 				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.into_values()
-				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config().api.cdn_origin))
+				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
 				.collect();
 
 			let badges = global
-				.badge_by_id_loader()
+				.badge_by_id_loader
 				.load_many(list.into_iter().map(|id| id.id()))
 				.await
 				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.into_values()
-				.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config().api.cdn_origin))
+				.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
 				.collect();
 
 			Ok(CosmeticsQueryResponse { paints, badges })

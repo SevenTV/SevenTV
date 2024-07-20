@@ -28,7 +28,7 @@ impl EmotesMutation {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let emote = global
-			.emote_by_id_loader()
+			.emote_by_id_loader
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -61,7 +61,7 @@ impl EmoteOps {
 
 		if user.id != self.emote.owner_id && !user.has(EmotePermission::ManageAny) {
 			let editor = global
-				.user_editor_by_id_loader()
+				.user_editor_by_id_loader
 				.load(UserEditorId {
 					user_id: self.emote.owner_id,
 					editor_id: user.id,
@@ -78,7 +78,7 @@ impl EmoteOps {
 		let mut changes = vec![];
 		let mut nested_changes = vec![];
 
-		let mut session = global.mongo().start_session().await.map_err(|e| {
+		let mut session = global.mongo.start_session().await.map_err(|e| {
 			tracing::error!(error = %e, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -95,7 +95,7 @@ impl EmoteOps {
 
 			// TODO: don't allow deletion of emotes that are in use
 
-			let emote = shared::database::emote::Emote::collection(global.db())
+			let emote = shared::database::emote::Emote::collection(&global.db)
 				.find_one_and_delete(doc! { "_id": self.id.0 })
 				.session(&mut session)
 				.await
@@ -105,7 +105,7 @@ impl EmoteOps {
 				})?
 				.ok_or(ApiError::NOT_FOUND)?;
 
-			AuditLog::collection(global.db())
+			AuditLog::collection(&global.db)
 				.insert_one(AuditLog {
 					id: AuditLogId::new(),
 					actor_id: Some(user.id),
@@ -136,7 +136,7 @@ impl EmoteOps {
 			if let Some(name) = params.name.or(params.version_name) {
 				update.insert("default_name", &name);
 
-				AuditLog::collection(global.db())
+				AuditLog::collection(&global.db)
 					.insert_one(AuditLog {
 						id: AuditLogId::new(),
 						actor_id: Some(user.id),
@@ -223,7 +223,7 @@ impl EmoteOps {
 				if let Some(owner_id) = params.owner_id {
 					update.insert("owner_id", owner_id.0);
 
-					AuditLog::collection(global.db())
+					AuditLog::collection(&global.db)
 						.insert_one(AuditLog {
 							id: AuditLogId::new(),
 							actor_id: Some(user.id),
@@ -257,7 +257,7 @@ impl EmoteOps {
 			if flags != self.emote.flags {
 				update.insert("flags", flags.bits());
 
-				AuditLog::collection(global.db())
+				AuditLog::collection(&global.db)
 					.insert_one(AuditLog {
 						id: AuditLogId::new(),
 						actor_id: Some(user.id),
@@ -290,7 +290,7 @@ impl EmoteOps {
 			if let Some(tags) = params.tags {
 				update.insert("tags", &tags);
 
-				AuditLog::collection(global.db())
+				AuditLog::collection(&global.db)
 					.insert_one(AuditLog {
 						id: AuditLogId::new(),
 						actor_id: Some(user.id),
@@ -321,7 +321,7 @@ impl EmoteOps {
 
 			update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
-			let emote = shared::database::emote::Emote::collection(global.db())
+			let emote = shared::database::emote::Emote::collection(&global.db)
 				.find_one_and_update(doc! { "_id": self.id.0 }, doc! { "$set": update })
 				.return_document(ReturnDocument::After)
 				.session(&mut session)
@@ -360,14 +360,14 @@ impl EmoteOps {
 						user.clone(),
 						None,
 						None,
-						&global.config().api.cdn_origin,
+						&global.config.api.cdn_origin,
 					)),
 					updated: changes,
 					..Default::default()
 				};
 
 				global
-					.event_api()
+					.event_api
 					.dispatch_event(EventType::UpdateEmote, body, self.id.0)
 					.await
 					.map_err(|e| {
@@ -391,7 +391,7 @@ impl EmoteOps {
 
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo().start_session().await.map_err(|e| {
+		let mut session = global.mongo.start_session().await.map_err(|e| {
 			tracing::error!(error = %e, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -401,7 +401,7 @@ impl EmoteOps {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let emote = shared::database::emote::Emote::collection(global.db())
+		let emote = shared::database::emote::Emote::collection(&global.db)
 			.find_one_and_update(
 				doc! { "_id": self.id.0 },
 				doc! {
@@ -420,7 +420,7 @@ impl EmoteOps {
 			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		AuditLog::collection(global.db())
+		AuditLog::collection(&global.db)
 			.insert_one(AuditLog {
 				id: AuditLogId::new(),
 				actor_id: Some(auth_session.user_id()),

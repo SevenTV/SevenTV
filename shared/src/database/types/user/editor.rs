@@ -105,6 +105,31 @@ pub struct UserEditorPermissions {
 	pub user: EditorUserPermission,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum EditorPermission {
+	User(EditorUserPermission),
+	EmoteSet(EditorEmoteSetPermission),
+	Emote(EditorEmotePermission),
+}
+
+impl From<EditorUserPermission> for EditorPermission {
+	fn from(value: EditorUserPermission) -> Self {
+		Self::User(value)
+	}
+}
+
+impl From<EditorEmoteSetPermission> for EditorPermission {
+	fn from(value: EditorEmoteSetPermission) -> Self {
+		Self::EmoteSet(value)
+	}
+}
+
+impl From<EditorEmotePermission> for EditorPermission {
+	fn from(value: EditorEmotePermission) -> Self {
+		Self::Emote(value)
+	}
+}
+
 #[bitmask(i32)]
 pub enum EditorEmoteSetPermission {
 	/// Grants all permissions
@@ -150,6 +175,14 @@ pub enum EditorUserPermission {
 impl_bits!(EditorUserPermission);
 
 impl UserEditorPermissions {
+	pub fn has(&self, permission: impl Into<EditorPermission>) -> bool {
+		match permission.into() {
+			EditorPermission::User(permission) => self.user.contains(permission),
+			EditorPermission::EmoteSet(permission) => self.emote_set.contains(permission),
+			EditorPermission::Emote(permission) => self.emote.contains(permission),
+		}
+	}
+
 	pub fn has_emote_set(&self, permission: EditorEmoteSetPermission) -> bool {
 		self.emote_set.contains(permission)
 			|| self.emote_set.contains(EditorEmoteSetPermission::Admin)

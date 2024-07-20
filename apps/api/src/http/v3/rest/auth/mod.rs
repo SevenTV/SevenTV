@@ -119,7 +119,7 @@ async fn logout(
 	Extension(cookies): Extension<Cookies>,
 	auth_session: AuthSession,
 ) -> Result<impl IntoResponse, ApiError> {
-	let mut session = global.mongo().start_session().await.map_err(|err| {
+	let mut session = global.mongo.start_session().await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start session");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
@@ -131,7 +131,7 @@ async fn logout(
 
 	// is a new session
 	if let AuthSessionKind::Session(session) = &auth_session.kind {
-		UserSession::collection(global.db())
+		UserSession::collection(&global.db)
 			.delete_one(doc! {
 				"_id": session.id,
 			})
@@ -142,7 +142,7 @@ async fn logout(
 			})?;
 	}
 
-	AuditLog::collection(global.db())
+	AuditLog::collection(&global.db)
 		.insert_one(AuditLog {
 			id: AuditLogId::new(),
 			actor_id: Some(auth_session.user_id()),

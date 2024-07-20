@@ -37,7 +37,7 @@ impl FullUserLoader {
 		global: &Arc<Global>,
 		user_ids: impl IntoIterator<Item = UserId>,
 	) -> Result<HashMap<UserId, FullUser>, ()> {
-		let users = global.user_by_id_loader().load_many(user_ids).await?;
+		let users = global.user_by_id_loader.load_many(user_ids).await?;
 		self.load_user_many(global, users.into_values()).await
 	}
 
@@ -61,7 +61,7 @@ impl FullUserLoader {
 		let computed = self.computed_loader.load_many(users.iter().map(|user| user.id)).await?;
 
 		let bans = global
-			.user_ban_by_user_id_loader()
+			.user_ban_by_user_id_loader
 			.load_many(
 				users
 					.iter()
@@ -98,7 +98,7 @@ impl FullUserLoader {
 		global: &Arc<Global>,
 		user_ids: impl IntoIterator<Item = UserId>,
 	) -> Result<HashMap<UserId, FullUser>, ()> {
-		let users = global.user_by_id_loader().load_many(user_ids).await?;
+		let users = global.user_by_id_loader.load_many(user_ids).await?;
 		self.load_fast_user_many(global, users.into_values()).await
 	}
 
@@ -139,14 +139,14 @@ impl FullUserLoader {
 			.collect::<HashMap<_, _>>();
 
 		let mut roles: Vec<_> = global
-			.role_by_id_loader()
+			.role_by_id_loader
 			.load_many(role_ids.iter().copied())
 			.await?
 			.into_values()
 			.collect();
 
 		let bans = global
-			.user_ban_by_user_id_loader()
+			.user_ban_by_user_id_loader
 			.load_many(
 				users
 					.values()
@@ -211,8 +211,8 @@ impl Loader for UserComputedLoader {
 		let global = &self.global.upgrade().ok_or(())?;
 
 		let traverse = &EntitlementEdgeGraphTraverse {
-			inbound_loader: global.entitlement_edge_inbound_loader(),
-			outbound_loader: global.entitlement_edge_outbound_loader(),
+			inbound_loader: &global.entitlement_edge_inbound_loader,
+			outbound_loader: &global.entitlement_edge_outbound_loader,
 		};
 
 		let result = futures::future::try_join_all(keys.into_iter().map(|user_id| async move {
@@ -254,7 +254,7 @@ impl Loader for UserComputedLoader {
 			.collect::<HashMap<_, _>>();
 
 		let mut roles: Vec<_> = global
-			.role_by_id_loader()
+			.role_by_id_loader
 			.load_many(role_ids.into_iter())
 			.await?
 			.into_values()

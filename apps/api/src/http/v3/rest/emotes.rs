@@ -78,7 +78,7 @@ pub async fn create_emote(
 
 	let emote_id = EmoteId::new();
 
-	let input = match global.image_processor().upload_emote(emote_id, body).await {
+	let input = match global.image_processor.upload_emote(emote_id, body).await {
 		Ok(ProcessImageResponse {
 			id,
 			error: None,
@@ -138,7 +138,7 @@ pub async fn create_emote(
 		updated_at: chrono::Utc::now(),
 	};
 
-	let mut session = global.mongo().start_session().await.map_err(|e| {
+	let mut session = global.mongo.start_session().await.map_err(|e| {
 		tracing::error!(error = %e, "failed to start session");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
@@ -148,7 +148,7 @@ pub async fn create_emote(
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
 
-	Emote::collection(global.db())
+	Emote::collection(&global.db)
 		.insert_one(&emote)
 		.session(&mut session)
 		.await
@@ -157,7 +157,7 @@ pub async fn create_emote(
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-	AuditLog::collection(global.db())
+	AuditLog::collection(&global.db)
 		.insert_one(AuditLog {
 			id: AuditLogId::new(),
 			actor_id: Some(user.id),
@@ -181,7 +181,7 @@ pub async fn create_emote(
 	})?;
 
 	// we don't have to return the owner here
-	let emote = EmotePartialModel::from_db(emote, None, &global.config().api.cdn_origin);
+	let emote = EmotePartialModel::from_db(emote, None, &global.config.api.cdn_origin);
 
 	Ok((StatusCode::CREATED, Json(emote)))
 }
@@ -206,14 +206,14 @@ pub async fn get_emote_by_id(
 	auth_session: Option<Extension<AuthSession>>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let emote = global
-		.emote_by_id_loader()
+		.emote_by_id_loader
 		.load(id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found"))?;
 
 	let owner = global
-		.user_loader()
+		.user_loader
 		.load_fast(&global, emote.owner_id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -233,7 +233,7 @@ pub async fn get_emote_by_id(
 				Some(owner)
 			}
 		})
-		.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config().api.cdn_origin));
+		.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config.api.cdn_origin));
 
-	Ok(Json(EmoteModel::from_db(emote, owner, &global.config().api.cdn_origin)))
+	Ok(Json(EmoteModel::from_db(emote, owner, &global.config.api.cdn_origin)))
 }

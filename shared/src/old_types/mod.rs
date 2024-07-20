@@ -21,6 +21,7 @@ use crate::database::paint::PaintId;
 use crate::database::role::permissions::{PermissionsExt, UserPermission};
 use crate::database::role::RoleId;
 use crate::database::user::connection::{Platform, UserConnection};
+use crate::database::user::profile_picture::UserProfilePicture;
 use crate::database::user::{FullUser, UserId};
 
 pub mod cosmetic;
@@ -94,6 +95,7 @@ impl UserPartialModel {
 		user: FullUser,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
+		profile_picture: Option<UserProfilePicture>,
 		cdn_base_url: &str,
 	) -> Self {
 		let main_connection = user.connections.first();
@@ -118,14 +120,19 @@ impl UserPartialModel {
 		let paint = paint.and_then(|paint| if Some(paint.id) == paint_id { Some(paint) } else { None });
 
 		let avatar_url = if user.has(UserPermission::UseCustomProfilePicture) {
-			user.style
-				.active_profile_picture
-				.as_ref()
-				.and_then(|s| s.outputs.iter().max_by_key(|i| i.size).map(|i| i.get_url(cdn_base_url)))
-				.or(main_connection.and_then(|c| c.platform_avatar_url.clone()))
+			profile_picture
+				.map(|p| {
+					p.image_set
+						.outputs
+						.iter()
+						.max_by_key(|i| i.height)
+						.map(|i| i.get_url(cdn_base_url))
+				})
+				.flatten()
 		} else {
 			None
 		}
+		.or(main_connection.and_then(|c| c.platform_avatar_url.clone()))
 		.unwrap_or_default();
 
 		UserPartialModel {

@@ -11,6 +11,7 @@ use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, Entitlem
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorPermissions, UserEditorState};
+use shared::database::user::profile_picture::UserProfilePicture;
 use shared::database::user::settings::UserSettings;
 use shared::database::user::{User, UserId, UserStyle};
 use shared::database::MongoCollection;
@@ -25,6 +26,7 @@ pub struct UsersJob {
 	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,
 	all_connections: FnvHashSet<(Platform, String)>,
 	users: Vec<User>,
+	profile_pictures: Vec<UserProfilePicture>,
 	editors: FnvHashMap<(UserId, UserId), UserEditor>,
 	edges: FnvHashSet<EntitlementEdge>,
 }
@@ -92,6 +94,7 @@ impl Job for UsersJob {
 		Ok(Self {
 			global,
 			entitlements,
+			profile_pictures: vec![],
 			all_connections: FnvHashSet::default(),
 			users: vec![],
 			editors: FnvHashMap::default(),
@@ -139,6 +142,14 @@ impl Job for UsersJob {
 			}
 			_ => None,
 		};
+
+		let profile_picture = active_profile_picture.map(|p| UserProfilePicture {
+			id: Default::default(),
+			user_id: user.id.into(),
+			image_set: p,
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
+		});
 
 		let active_emote_set_id = user
 			.connections
@@ -218,8 +229,8 @@ impl Job for UsersJob {
 				active_badge_id: active_badge_id.map(Into::into),
 				active_paint_id: active_paint_id.map(Into::into),
 				active_emote_set_id,
-				active_profile_picture: active_profile_picture.clone(),
-				all_profile_pictures: active_profile_picture.map(|p| vec![p]).unwrap_or_default(),
+				active_profile_picture: profile_picture.as_ref().map(|p| p.id),
+				pending_profile_picture: None,
 			},
 			connections,
 			cached_active_emotes: vec![],
@@ -229,6 +240,10 @@ impl Job for UsersJob {
 			search_updated_at: None,
 			updated_at: chrono::Utc::now(),
 		});
+
+		if let Some(profile_picture) = profile_picture {
+			self.profile_pictures.push(profile_picture);
+		}
 
 		for editor in user.editors {
 			if let Some(editor_id) = editor.id {
@@ -277,6 +292,7 @@ impl Job for UsersJob {
 		// TODO: in case of truncate = true, we have to wait for the entitlements job to
 		// finish truncating otherwise we will loose the edges here
 		let edges = EntitlementEdge::collection(self.global.target_db());
+		let profile_pictures = UserProfilePicture::collection(self.global.target_db());
 
 		let res = tokio::join!(
 			users
@@ -287,11 +303,21 @@ impl Job for UsersJob {
 				.insert_many(self.editors.values())
 				.with_options(insert_options.clone())
 				.into_future(),
-			edges.insert_many(&self.edges).with_options(insert_options).into_future(),
+			edges
+				.insert_many(&self.edges)
+				.with_options(insert_options.clone())
+				.into_future(),
+			profile_pictures
+				.insert_many(&self.profile_pictures)
+				.with_options(insert_options.clone())
+				.into_future(),
 		);
-		let res = vec![res.0, res.1, res.2]
-			.into_iter()
-			.zip(vec![self.users.len(), self.editors.len(), self.edges.len()]);
+		let res = vec![res.0, res.1, res.2, res.3].into_iter().zip(vec![
+			self.users.len(),
+			self.editors.len(),
+			self.edges.len(),
+			self.profile_pictures.len(),
+		]);
 
 		for (res, len) in res {
 			match res {

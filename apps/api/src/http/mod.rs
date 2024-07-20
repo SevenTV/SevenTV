@@ -79,11 +79,9 @@ pub async fn not_found() -> ApiError {
 
 #[tracing::instrument(name = "API", skip(global))]
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
-	let config = global.config();
-
 	let mut server = scuffle_foundations::http::server::Server::builder()
-		.bind(config.api.bind)
-		.with_workers(config.api.workers)
+		.bind(global.config.api.bind)
+		.with_workers(global.config.api.workers)
 		.build(routes(global))
 		.context("Failed to build HTTP server")?;
 

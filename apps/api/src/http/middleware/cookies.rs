@@ -28,7 +28,7 @@ impl Cookies {
 
 	pub fn remove(&self, global: &Arc<Global>, name: impl Into<Cookie<'static>>) {
 		let mut cookie: Cookie = name.into();
-		cookie.set_domain(format!(".{}", global.config().api.domain));
+		cookie.set_domain(format!(".{}", global.config.api.domain));
 		cookie.set_path("/");
 		self.0.lock().unwrap().remove(cookie);
 	}
@@ -37,7 +37,7 @@ impl Cookies {
 pub fn new_cookie<'c, C: Into<Cookie<'c>>>(global: &Arc<Global>, base: C) -> CookieBuilder<'c> {
 	Cookie::build(base)
 		.http_only(true)
-		.domain(format!(".{}", global.config().api.domain))
+		.domain(format!(".{}", global.config.api.domain))
 		.path("/")
 		.secure(true)
 		.same_site(cookie::SameSite::None)

@@ -40,7 +40,7 @@ impl RolesMutation {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(global.db())
+		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(&global.db)
 			.find(doc! {})
 			.with_options(FindOptions::builder().sort(doc! { "rank": 1 }).build())
 			.into_future()
@@ -72,7 +72,7 @@ impl RolesMutation {
 			applied_rank: None,
 		};
 
-		shared::database::role::Role::collection(global.db())
+		shared::database::role::Role::collection(&global.db)
 			.insert_one(&role)
 			.await
 			.map_err(|e| {
@@ -95,7 +95,7 @@ impl RolesMutation {
 
 		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo().start_session().await.map_err(|err| {
+		let mut session = global.mongo.start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -148,7 +148,7 @@ impl RolesMutation {
 
 		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
-		let role = shared::database::role::Role::collection(global.db())
+		let role = shared::database::role::Role::collection(&global.db)
 			.find_one_and_update(
 				doc! {
 					"_id": role_id.0,
@@ -186,7 +186,7 @@ impl RolesMutation {
 		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let role = global
-			.role_by_id_loader()
+			.role_by_id_loader
 			.load(role_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -196,7 +196,7 @@ impl RolesMutation {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let res = shared::database::role::Role::collection(global.db())
+		let res = shared::database::role::Role::collection(&global.db)
 			.delete_one(doc! {
 				"_id": role_id.0,
 			})

@@ -34,7 +34,7 @@ impl AuditLog {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast(global, self.actor_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?

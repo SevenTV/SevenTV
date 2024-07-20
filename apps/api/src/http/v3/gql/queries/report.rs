@@ -90,7 +90,7 @@ impl Report {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast(global, self.actor_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -103,7 +103,7 @@ impl Report {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_loader()
+			.user_loader
 			.load_fast_many(global, self.assignee_ids.iter().map(|i| i.id()))
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -147,7 +147,7 @@ impl ReportsQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let ticket = global
-			.ticket_by_id_loader()
+			.ticket_by_id_loader
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -157,7 +157,12 @@ impl ReportsQuery {
 			return Ok(None);
 		}
 
-		let messages = todo!("load messages");
+		let messages = global
+			.ticket_message_by_ticket_id_loader
+			.load(ticket.id)
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.unwrap_or_default();
 
 		Ok(Report::from_db(ticket, messages))
 	}

@@ -45,7 +45,7 @@ pub async fn get_emote_set_by_id(
 	auth_session: Option<Extension<AuthSession>>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let mut emote_set = global
-		.emote_set_by_id_loader()
+		.emote_set_by_id_loader
 		.load(id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -55,7 +55,7 @@ pub async fn get_emote_set_by_id(
 
 	let owner = match emote_set.owner_id {
 		Some(owner_id) => global
-			.user_loader()
+			.user_loader
 			.load_fast(&global, owner_id)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -66,7 +66,7 @@ pub async fn get_emote_set_by_id(
 					Some(owner)
 				}
 			})
-			.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config().api.cdn_origin)),
+			.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config.api.cdn_origin)),
 		None => None,
 	};
 

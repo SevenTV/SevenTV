@@ -105,7 +105,7 @@ impl MessagesQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let message = global
-			.global_config_loader()
+			.global_config_loader
 			.load(())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?

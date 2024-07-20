@@ -40,7 +40,7 @@ impl CosmeticsMutation {
 			..Default::default()
 		};
 
-		Paint::collection(global.db()).insert_one(paint).await.map_err(|e| {
+		Paint::collection(&global.db).insert_one(paint).await.map_err(|e| {
 			tracing::error!(error = %e, "failed to insert paint");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -114,7 +114,7 @@ impl CosmeticPaintInput {
 				// GET request against it We need to make sure the URL does not go to any
 				// internal services or other places that we don't want and we need to make
 				// sure that the file isnt too big.
-				let image_data = match global.http_client().get(image_url).send().await {
+				let image_data = match global.http_client.get(image_url).send().await {
 					Ok(res) if res.status().is_success() => match res.bytes().await {
 						Ok(bytes) => bytes,
 						Err(e) => {
@@ -133,7 +133,7 @@ impl CosmeticPaintInput {
 				};
 
 				let input = match global
-					.image_processor()
+					.image_processor
 					.upload_paint_layer(paint_id, layer_id, image_data)
 					.await
 				{
@@ -238,7 +238,7 @@ impl CosmeticOps {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let _ = global
-			.paint_by_id_loader()
+			.paint_by_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -251,7 +251,7 @@ impl CosmeticOps {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let paint = Paint::collection(global.db())
+		let paint = Paint::collection(&global.db)
 			.find_one_and_update(
 				doc! { "_id": self.id.0 },
 				doc! { "$set": {
@@ -267,6 +267,6 @@ impl CosmeticOps {
 			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		CosmeticPaintModel::from_db(paint, &global.config().api.cdn_origin).ok_or(ApiError::INTERNAL_SERVER_ERROR)
+		CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin).ok_or(ApiError::INTERNAL_SERVER_ERROR)
 	}
 }

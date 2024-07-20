@@ -17,18 +17,18 @@ pub async fn load_emote_set(
 	view_hidden: bool,
 ) -> Result<impl Iterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>, ApiError> {
 	let emotes = global
-		.emote_by_id_loader()
+		.emote_by_id_loader
 		.load_many(emote_set_emotes.iter().map(|emote| emote.id))
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let users = global
-		.user_loader()
+		.user_loader
 		.load_fast_many(global, emotes.values().map(|emote| emote.owner_id))
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-	let cdn_base_url = &global.config().api.cdn_origin;
+	let cdn_base_url = &global.config.api.cdn_origin;
 
 	let users = users
 		.into_values()
@@ -46,7 +46,7 @@ pub async fn load_emote_set(
 		.filter_map(|(id, emote)| {
 			let owner = users.get(&emote.owner_id).cloned();
 
-			Some((id, EmotePartialModel::from_db(emote, owner, &global.config().api.cdn_origin)))
+			Some((id, EmotePartialModel::from_db(emote, owner, &global.config.api.cdn_origin)))
 		})
 		.collect::<HashMap<_, _>>();
 

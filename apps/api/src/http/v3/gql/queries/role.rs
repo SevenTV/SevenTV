@@ -78,7 +78,7 @@ impl RolesQuery {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(global.db())
+		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(&global.db)
 			.find(doc! {})
 			.with_options(FindOptions::builder().sort(doc! { "rank": -1 }).build())
 			.into_future()
@@ -96,7 +96,7 @@ impl RolesQuery {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let role = global
-			.role_by_id_loader()
+			.role_by_id_loader
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;

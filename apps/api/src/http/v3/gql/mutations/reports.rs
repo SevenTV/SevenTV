@@ -36,7 +36,7 @@ impl ReportsMutation {
 
 		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo().start_session().await.map_err(|err| {
+		let mut session = global.mongo.start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -58,7 +58,7 @@ impl ReportsMutation {
 			updated_at: Utc::now(),
 		};
 
-		TicketMessage::collection(global.db())
+		TicketMessage::collection(&global.db)
 			.insert_one(&message)
 			.session(&mut session)
 			.await
@@ -90,7 +90,7 @@ impl ReportsMutation {
 			search_updated_at: None,
 		};
 
-		Ticket::collection(global.db())
+		Ticket::collection(&global.db)
 			.insert_one(&ticket)
 			.session(&mut session)
 			.await
@@ -99,7 +99,7 @@ impl ReportsMutation {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		AuditLog::collection(global.db())
+		AuditLog::collection(&global.db)
 			.insert_one(AuditLog {
 				id: AuditLogId::new(),
 				actor_id: Some(auth_sesion.user_id()),
@@ -137,13 +137,13 @@ impl ReportsMutation {
 		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let ticket = global
-			.ticket_by_id_loader()
+			.ticket_by_id_loader
 			.load(report_id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		let mut session = global.mongo().start_session().await.map_err(|err| {
+		let mut session = global.mongo.start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -169,7 +169,7 @@ impl ReportsMutation {
 			update.insert("open", new);
 
 			if new != ticket.open {
-				AuditLog::collection(global.db())
+				AuditLog::collection(&global.db)
 					.insert_one(AuditLog {
 						id: AuditLogId::new(),
 						actor_id: Some(auth_sesion.user_id()),
@@ -204,7 +204,7 @@ impl ReportsMutation {
 					};
 					push_update.insert("members", to_bson(&member).expect("failed to convert member to bson"));
 
-					AuditLog::collection(global.db())
+					AuditLog::collection(&global.db)
 						.insert_one(AuditLog {
 							id: AuditLogId::new(),
 							actor_id: Some(auth_sesion.user_id()),
@@ -225,7 +225,7 @@ impl ReportsMutation {
 				(Some('-'), Ok(user_id)) => {
 					pull_update.insert("members", doc! { "user_id": user_id });
 
-					AuditLog::collection(global.db())
+					AuditLog::collection(&global.db)
 						.insert_one(AuditLog {
 							id: AuditLogId::new(),
 							actor_id: Some(auth_sesion.user_id()),
@@ -249,7 +249,7 @@ impl ReportsMutation {
 
 		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
 
-		let ticket = Ticket::collection(global.db())
+		let ticket = Ticket::collection(&global.db)
 			.find_one_and_update(
 				doc! { "_id": report_id.0 },
 				doc! { "$set": update, "$push": push_update, "$pull": pull_update },
@@ -274,7 +274,7 @@ impl ReportsMutation {
 				updated_at: Utc::now(),
 			};
 
-			TicketMessage::collection(global.db())
+			TicketMessage::collection(&global.db)
 				.insert_one(&message)
 				.session(&mut session)
 				.await
@@ -289,7 +289,11 @@ impl ReportsMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let messages = todo!("load messages");
+		let messages = global
+			.ticket_message_by_ticket_id_loader
+			.load(ticket.id)
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Report::from_db(ticket, messages).ok_or(ApiError::INTERNAL_SERVER_ERROR)
 	}
