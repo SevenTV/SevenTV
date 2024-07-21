@@ -71,12 +71,12 @@ impl Job for BansJob {
 			.update_one(
 				filter::filter! {
 					User {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: user_id,
 					}
 				},
 				update::update! {
-					#[update(set)]
+					#[query(set)]
 					User {
 						has_bans: true,
 					}

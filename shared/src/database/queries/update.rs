@@ -31,6 +31,12 @@ macro_rules! impl_update_structs {
             }
         }
 
+        impl<T> From<Update<T>> for bson::Bson {
+            fn from(value: Update<T>) -> Self {
+                value.to_document().into()
+            }
+        }
+
         impl<T> Clone for Update<T> {
             fn clone(&self) -> Self {
                 Self {
@@ -67,6 +73,12 @@ macro_rules! impl_update_structs {
                     S: serde::Serializer,
                 {
                     self.0.serialize(serializer)
+                }
+            }
+
+            impl<T> From<$ty> for bson::Bson {
+                fn from(value: $ty) -> Self {
+                    value.0.into()
                 }
             }
 

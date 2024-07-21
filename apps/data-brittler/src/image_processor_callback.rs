@@ -185,9 +185,9 @@ async fn handle_success(
 		Subject::Emote(id) => {
 			let bit_update = if animated {
 				Some(update::update! {
-					#[update(bit)]
+					#[query(bit)]
 					Emote {
-						#[update(bit = "or")]
+						#[query(bit = "or")]
 						flags: EmoteFlags::Animated
 					}
 				})
@@ -199,13 +199,14 @@ async fn handle_success(
 				.update_one(
 					filter::filter! {
 						Emote {
-							#[filter(rename = "_id")]
+							#[query(rename = "_id")]
 							id: id,
 						}
 					},
 					update::update! {
-						#[update(set)]
+						#[query(set)]
 						Emote {
+							#[query(serde)]
 							image_set: ImageSet {
 								input: ImageSetInput::Image(Image {
 									frame_count: input.frame_count,
@@ -218,7 +219,7 @@ async fn handle_success(
 								outputs,
 							},
 						},
-						#[update(bit)]
+						#[query(bit)]
 						bit_update
 					},
 				)
@@ -260,7 +261,7 @@ async fn handle_success(
 				.update_one(
 					filter::filter! {
 						User {
-							#[filter(rename = "_id")]
+							#[query(rename = "_id")]
 							id: id,
 						}
 					},
@@ -275,11 +276,11 @@ async fn handle_success(
 				.update_one(
 					filter::filter! {
 						Paint {
-							#[filter(rename = "_id")]
+							#[query(rename = "_id")]
 							id: id,
-							#[filter(flatten)]
+							#[query(flatten)]
 							data: PaintData {
-								#[filter(flatten)]
+								#[query(flatten)]
 								layers: PaintLayer {
 									id: layer_id,
 								}
@@ -287,12 +288,13 @@ async fn handle_success(
 						}
 					},
 					update::update! {
-						#[update(set)]
+						#[query(set)]
 						Paint {
-							#[update(flatten)]
+							#[query(flatten)]
 							data: PaintData {
-								#[update(index = "$", flatten)]
+								#[query(index = "$", flatten)]
 								layers: PaintLayer {
+									#[query(serde)]
 									ty: PaintLayerType::Image(ImageSet {
 										input: ImageSetInput::Image(Image {
 											frame_count: input.frame_count,
@@ -316,13 +318,14 @@ async fn handle_success(
 				.update_one(
 					filter::filter! {
 						Badge {
-							#[filter(rename = "_id")]
+							#[query(rename = "_id")]
 							id: id,
 						}
 					},
 					update::update! {
-						#[update(set)]
+						#[query(set)]
 						Badge {
+							#[query(serde)]
 							image_set: ImageSet {
 								input: ImageSetInput::Image(Image {
 									frame_count: input.frame_count,
@@ -354,11 +357,11 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 				.update_one(
 					filter::filter! {
 						Paint {
-							#[filter(rename = "_id")]
+							#[query(rename = "_id")]
 							id: id,
-							#[filter(flatten)]
+							#[query(flatten)]
 							data: PaintData {
-								#[filter(flatten)]
+								#[query(flatten)]
 								layers: PaintLayer {
 									id: layer_id,
 								}
@@ -366,9 +369,9 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 						}
 					},
 					update::update! {
-						#[update(pull)]
+						#[query(pull)]
 						Paint {
-							#[update(flatten)]
+							#[query(flatten)]
 							data: PaintData {
 								layers: PaintLayer {
 									id: layer_id,
@@ -383,7 +386,7 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 			Badge::collection(global.target_db())
 				.delete_one(filter::filter! {
 					Badge {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: id,
 					}
 				})

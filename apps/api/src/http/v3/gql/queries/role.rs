@@ -5,6 +5,8 @@ use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use futures::{TryFutureExt, TryStreamExt};
 use mongodb::bson::doc;
 use mongodb::options::FindOptions;
+use shared::database::queries::filter;
+use shared::database::role::Role as DbRole;
 use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::role_permission::RolePermission;
@@ -78,8 +80,8 @@ impl RolesQuery {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
 		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(&global.db)
-			.find(doc! {})
+		let roles: Vec<DbRole> = DbRole::collection(&global.db)
+			.find(filter::filter!(DbRole {}))
 			.with_options(FindOptions::builder().sort(doc! { "rank": -1 }).build())
 			.into_future()
 			.and_then(|f| f.try_collect())

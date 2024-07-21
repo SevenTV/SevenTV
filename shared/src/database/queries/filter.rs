@@ -27,7 +27,7 @@ macro_rules! impl_filter_structs {
 			}
 
 			pub fn to_document(&self) -> bson::Document {
-				bson::doc! { $key: bson::to_bson(&self.0).expect("Failed to serialize") }
+				bson::doc! { $key: &self.0 }
 			}
 
 			pub fn merge(self, items: impl IntoIterator<Item = Self>) -> Self {
@@ -35,8 +35,8 @@ macro_rules! impl_filter_structs {
 			}
 		}
 
-		impl<T> From<&$ty> for bson::Bson {
-			fn from(value: &$ty) -> Self {
+		impl<T> From<$ty> for bson::Bson {
+			fn from(value: $ty) -> Self {
 				value.to_document().into()
 			}
 		}
@@ -112,8 +112,8 @@ impl<T> Filter<T> {
 	}
 }
 
-impl<T> From<&Filter<T>> for bson::Bson {
-	fn from(value: &Filter<T>) -> Self {
+impl<T> From<Filter<T>> for bson::Bson {
+	fn from(value: Filter<T>) -> Self {
 		match value {
 			Filter::And(value) => value.into(),
 			Filter::Or(value) => value.into(),
@@ -175,8 +175,8 @@ impl<T> Clone for Value<T> {
 	}
 }
 
-impl<T> From<&Value<T>> for bson::Bson {
-	fn from(value: &Value<T>) -> Self {
+impl<T> From<Value<T>> for bson::Bson {
+	fn from(value: Value<T>) -> Self {
 		value.to_document().into()
 	}
 }

@@ -50,6 +50,7 @@ pub struct EmoteScores {
 #[serde(deny_unknown_fields)]
 pub struct EmoteMerged {
 	pub target_id: EmoteId,
+	#[serde(with = "crate::database::serde")]
 	pub at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -67,6 +68,12 @@ pub enum EmoteFlags {
 impl Default for EmoteFlags {
 	fn default() -> Self {
 		Self::none()
+	}
+}
+
+impl From<EmoteFlags> for bson::Bson {
+	fn from(value: EmoteFlags) -> Self {
+		value.bits().into()
 	}
 }
 
@@ -93,7 +100,7 @@ impl<'a> serde::Deserialize<'a> for EmoteFlags {
 #[serde(deny_unknown_fields)]
 pub struct EmoteAttribution {
 	pub user_id: UserId,
-	#[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+	#[serde(with = "crate::database::serde")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
 }
 

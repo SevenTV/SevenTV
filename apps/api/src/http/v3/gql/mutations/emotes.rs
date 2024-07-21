@@ -99,7 +99,7 @@ impl EmoteOps {
 			let emote = shared::database::emote::Emote::collection(&global.db)
 				.find_one_and_delete(filter::filter! {
 					DbEmote {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: self.id.id(),
 					}
 				})
@@ -411,13 +411,14 @@ impl EmoteOps {
 			.find_one_and_update(
 				filter::filter! {
 					DbEmote {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: self.id.id(),
 					}
 				},
 				update::update! {
-					#[update(set)]
+					#[query(set)]
 					DbEmote {
+						#[query(serde)]
 						merged: EmoteMerged {
 							target_id: target_id.id(),
 							at: chrono::Utc::now(),

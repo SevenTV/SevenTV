@@ -7,6 +7,7 @@ use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::badge::Badge;
 use shared::database::paint::Paint;
+use shared::database::queries::filter;
 use shared::database::MongoCollection;
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
@@ -40,7 +41,7 @@ impl CosmeticsQuery {
 			// return all cosmetics when empty list is provided
 
 			let paints = Paint::collection(&global.db)
-				.find(doc! {})
+				.find(filter::filter!(Paint {}))
 				.into_future()
 				.and_then(|f| f.try_collect::<Vec<Paint>>())
 				.await
@@ -53,7 +54,7 @@ impl CosmeticsQuery {
 				.collect();
 
 			let badges = Badge::collection(&global.db)
-				.find(doc! {})
+				.find(filter::filter!(Badge {}))
 				.into_future()
 				.and_then(|f| f.try_collect::<Vec<Badge>>())
 				.await

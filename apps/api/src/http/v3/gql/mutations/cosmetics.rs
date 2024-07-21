@@ -251,14 +251,15 @@ impl CosmeticOps {
 			.find_one_and_update(
 				filter::filter! {
 					Paint {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: self.id.id(),
 					}
 				},
 				update::update! {
-					#[update(set)]
+					#[query(set)]
 					Paint {
-						name: name,
+						name,
+						#[query(serde)]
 						data,
 						updated_at: chrono::Utc::now(),
 					}

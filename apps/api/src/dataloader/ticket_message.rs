@@ -45,7 +45,7 @@ impl Loader for TicketMessageByTicketIdLoader {
 		let results: Vec<_> = TicketMessage::collection(&self.db)
 			.find(filter::filter! {
 				TicketMessage {
-					#[filter(selector = "in")]
+					#[query(selector = "in")]
 					ticket_id: keys,
 				}
 			})

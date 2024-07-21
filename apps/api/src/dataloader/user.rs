@@ -50,7 +50,7 @@ impl Loader for UserByPlatformIdLoader {
 			.find(filter::Filter::or(keys.into_iter().map(|(platform, platform_id)| {
 				filter::filter! {
 					User {
-						#[filter(flatten)]
+						#[query(flatten)]
 						connections: UserConnection {
 							platform,
 							platform_id,

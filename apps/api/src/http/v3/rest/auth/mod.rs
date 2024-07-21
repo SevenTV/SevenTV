@@ -135,7 +135,7 @@ async fn logout(
 		UserSession::collection(&global.db)
 			.delete_one(filter::filter! {
 				UserSession {
-					#[filter(rename = "_id")]
+					#[query(rename = "_id")]
 					id: session.id,
 				}
 			})

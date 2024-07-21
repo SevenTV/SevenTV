@@ -5,6 +5,8 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::Token;
 
+const ATTRIBUTE_NAME: &str = "query";
+
 use crate::mongo_filter_query;
 
 fn parse_mode(ast: &mut syn::Expr) -> Result<Mode, syn::Error> {
@@ -52,7 +54,7 @@ fn parse_mode(ast: &mut syn::Expr) -> Result<Mode, syn::Error> {
 
 	let query_attrs = attrs
 		.iter()
-		.filter(|attr| attr.meta.path().is_ident("update"))
+		.filter(|attr| attr.meta.path().is_ident(ATTRIBUTE_NAME))
 		.cloned()
 		.collect::<Vec<_>>();
 	attrs.retain(|attr| !query_attrs.contains(&attr));
@@ -257,6 +259,7 @@ struct Field {
 	position: Option<syn::Expr>,
 	slice: Option<syn::Expr>,
 	span: proc_macro2::Span,
+	serde: Option<Option<syn::Path>>,
 	bit_mode: Option<BitMode>,
 }
 
@@ -329,7 +332,7 @@ impl Field {
 		let attrs: Vec<_> = field
 			.attrs
 			.iter()
-			.filter(|attr| attr.meta.path().is_ident("update"))
+			.filter(|attr| attr.meta.path().is_ident(ATTRIBUTE_NAME))
 			.cloned()
 			.collect();
 
@@ -341,6 +344,7 @@ impl Field {
 		let mut position = None;
 		let mut slice = None;
 		let mut bit_mode = None;
+		let mut serde = None;
 		for attr in &attrs {
 			let syn::Meta::List(syn::MetaList { tokens, .. }) = attr.meta.clone() else {
 				return Err(syn::Error::new(attr.meta.span(), "Expected list meta"));
@@ -403,6 +407,18 @@ impl Field {
 					}
 
 					optional = true;
+				} else if meta.path.is_ident("serde") {
+					if serde.is_some() {
+						return Err(meta.error("duplicated `serde` attribute"));
+					}
+
+					if let Ok(lit) = meta.value() {
+						let value: syn::LitStr = lit.parse()?;
+						let path = syn::parse_str(&value.value())?;
+						serde = Some(Some(path));
+					} else {
+						serde = Some(None);
+					}
 				} else {
 					return Err(meta.error("unknown attribute"));
 				}
@@ -438,6 +454,7 @@ impl Field {
 			slice,
 			bit_mode,
 			optional,
+			serde,
 		})
 	}
 
@@ -449,10 +466,19 @@ impl Field {
 
 	fn bson_value(&self) -> proc_macro2::TokenStream {
 		let name = &self.name;
+
+		let value = match &self.serde {
+			Some(Some(serde)) => quote_spanned! { self.name.span() => {
+				#serde(&#name, bson::ser::Serializer::new()).expect("Failed to serialize")
+			} },
+			Some(None) => quote_spanned! { self.name.span() => bson::to_bson(&#name).expect("Failed to serialize") },
+			None => quote_spanned! { self.name.span() => bson::bson!(#name) },
+		};
+
 		let value = if self.optional {
-			quote_spanned! { name.span() => #name.map(|v| bson::to_bson(&v).expect("Failed to serialize")) }
+			quote_spanned! { name.span() => #name.map(|#name| #value) }
 		} else {
-			quote_spanned! { name.span() => Some(bson::to_bson(&#name).expect("Failed to serialize")) }
+			quote_spanned! { name.span() => Some(#value) }
 		};
 
 		if self.each || self.position.is_some() || self.slice.is_some() {

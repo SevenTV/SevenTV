@@ -108,7 +108,7 @@ impl RolesMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let role_permissions = match (data.allowed, data.denied) {
+		let permissions = match (data.allowed, data.denied) {
 			(Some(allowed), Some(denied)) => {
 				let allowed: u64 = allowed.parse().map_err(|_| ApiError::BAD_REQUEST)?;
 				let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
@@ -137,20 +137,20 @@ impl RolesMutation {
 			.find_one_and_update(
 				filter::filter! {
 					DbRole {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: role_id.id(),
 					}
 				},
 				update::update! {
-					#[update(set)]
+					#[query(set)]
 					DbRole {
-						#[update(optional)]
-						permissions: role_permissions,
-						#[update(optional)]
+						#[query(serde, optional)]
+						permissions,
+						#[query(optional)]
 						name: data.name,
-						#[update(optional)]
+						#[query(optional)]
 						color: data.color,
-						#[update(optional)]
+						#[query(optional)]
 						rank: data.position.map(|p| p as i32),
 						updated_at: chrono::Utc::now(),
 					}
@@ -198,7 +198,7 @@ impl RolesMutation {
 		let res = shared::database::role::Role::collection(&global.db)
 			.delete_one(filter::filter! {
 				DbRole {
-					#[filter(rename = "_id")]
+					#[query(rename = "_id")]
 					id: role_id.id(),
 				}
 			})

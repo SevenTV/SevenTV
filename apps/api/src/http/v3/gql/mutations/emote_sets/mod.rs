@@ -11,6 +11,7 @@ use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetKind};
+use shared::database::queries::filter;
 use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, UserPermission};
 use shared::database::user::editor::{
 	EditorEmoteSetPermission, EditorPermission, EditorUserPermission, UserEditorId, UserEditorState,
@@ -559,7 +560,7 @@ impl EmoteSetOps {
 		})?;
 
 		let res = DbEmoteSet::collection(&global.db)
-			.delete_one(doc! { "_id": self.emote_set.id })
+			.delete_one(filter::filter!(DbEmoteSet { _id: self.emote_set.id }))
 			.session(&mut session)
 			.await
 			.map_err(|e| {

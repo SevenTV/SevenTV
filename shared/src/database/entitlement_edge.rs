@@ -34,9 +34,9 @@ impl Loader for EntitlementEdgeInboundLoader {
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
 			.find(filter::filter! {
 				EntitlementEdge {
-					#[filter(rename = "_id", flatten)]
+					#[query(rename = "_id", flatten)]
 					id: EntitlementEdgeId {
-						#[filter(selector = "in")]
+						#[query(serde, selector = "in")]
 						to: keys,
 					},
 				}
@@ -88,9 +88,9 @@ impl Loader for EntitlementEdgeOutboundLoader {
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
 			.find(filter::filter! {
 				EntitlementEdge {
-					#[filter(rename = "_id", flatten)]
+					#[query(rename = "_id", flatten)]
 					id: EntitlementEdgeId {
-						#[filter(selector = "in")]
+						#[query(serde, selector = "in")]
 						from: keys,
 					},
 				}

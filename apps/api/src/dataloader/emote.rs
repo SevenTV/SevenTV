@@ -49,7 +49,7 @@ impl Loader for EmoteByUserIdLoader {
 		let results: Vec<_> = Emote::collection(&self.db)
 			.find(filter::filter! {
 				Emote {
-					#[filter(selector = "in")]
+					#[query(selector = "in")]
 					owner_id: keys,
 				}
 			})

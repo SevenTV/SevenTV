@@ -83,7 +83,7 @@ impl UserOps {
 
 		let update_pull = if let Some(true) = data.unlink {
 			Some(update::update! {
-				#[update(pull)]
+				#[query(pull)]
 				User {
 					connections: DbUserConnection {
 						platform_id: id,
@@ -98,21 +98,21 @@ impl UserOps {
 			.find_one_and_update(
 				filter::filter! {
 					User {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: self.id.id(),
 					}
 				},
 				update::update! {
-					#[update(set)]
+					#[query(set)]
 					User {
-						#[update(flatten)]
+						#[query(flatten)]
 						style: UserStyle {
-							#[filter(optional)]
+							#[query(optional)]
 							active_emote_set_id: data.emote_set_id.map(|id| id.id()),
 						},
 						updated_at: chrono::Utc::now(),
 					},
-					#[update(pull)]
+					#[query(pull)]
 					update_pull,
 				},
 			)
@@ -311,7 +311,7 @@ impl UserOps {
 				let res = DbUserEditor::collection(&global.db)
 					.delete_one(filter::filter! {
 						DbUserEditor {
-							#[filter(rename = "_id")]
+							#[query(serde, rename = "_id")]
 							id: UserEditorId {
 								user_id: self.id.id(),
 								editor_id: editor_id.id(),
@@ -352,7 +352,7 @@ impl UserOps {
 					.update_one(
 						filter::filter! {
 							DbUserEditor {
-								#[filter(rename = "_id")]
+								#[query(serde, rename = "_id")]
 								id: UserEditorId {
 									user_id: self.id.id(),
 									editor_id: editor_id.id(),
@@ -360,8 +360,9 @@ impl UserOps {
 							}
 						},
 						update::update! {
-							#[update(set)]
+							#[query(set)]
 							DbUserEditor {
+								#[query(serde)]
 								permissions: permissions.to_db(),
 								added_at: chrono::Utc::now(),
 							}
@@ -472,14 +473,14 @@ impl UserOps {
 					.update_one(
 						filter::filter! {
 							User {
-								#[filter(rename = "_id")]
+								#[query(rename = "_id")]
 								id: self.id.id(),
 							}
 						},
 						update::update! {
-							#[update(set)]
+							#[query(set)]
 							User {
-								#[update(flatten)]
+								#[query(flatten)]
 								style: UserStyle {
 									active_paint_id: update.id.id(),
 								}
@@ -541,14 +542,14 @@ impl UserOps {
 					.update_one(
 						filter::filter! {
 							User {
-								#[filter(rename = "_id")]
+								#[query(rename = "_id")]
 								id: self.id.id(),
 							}
 						},
 						update::update! {
-							#[update(set)]
+							#[query(set)]
 							User {
-								#[update(flatten)]
+								#[query(flatten)]
 								style: UserStyle {
 									active_badge_id: update.id.id(),
 								}
@@ -732,6 +733,7 @@ impl UserOps {
 				let res = EntitlementEdge::collection(&global.db)
 					.delete_one(filter::filter! {
 						EntitlementEdge {
+							#[query(serde)]
 							id: EntitlementEdgeId {
 								from: EntitlementEdgeKind::User { user_id: self.id.id() }.into(),
 								to: EntitlementEdgeKind::Role { role_id: role_id.id() }.into(),

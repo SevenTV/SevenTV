@@ -46,9 +46,9 @@ impl Loader for UserEditorByUserIdLoader {
 		let results: Self::Value = UserEditor::collection(&self.db)
 			.find(filter::filter! {
 				UserEditor {
-					#[filter(rename = "_id", flatten)]
+					#[query(rename = "_id", flatten)]
 					id: UserEditorId {
-						#[filter(selector = "in")]
+						#[query(selector = "in")]
 						user_id: keys,
 					},
 				}
@@ -100,9 +100,9 @@ impl Loader for UserEditorByEditorIdLoader {
 		let results: Self::Value = UserEditor::collection(&self.db)
 			.find(filter::filter! {
 				UserEditor {
-					#[filter(rename = "_id", flatten)]
+					#[query(rename = "_id", flatten)]
 					id: UserEditorId {
-						#[filter(selector = "in")]
+						#[query(selector = "in")]
 						editor_id: keys,
 					},
 				}

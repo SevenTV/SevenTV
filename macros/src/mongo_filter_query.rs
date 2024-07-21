@@ -3,6 +3,8 @@ use quote::{format_ident, quote, quote_spanned};
 use syn::parse::Parser;
 use syn::spanned::Spanned;
 
+const ATTRIBUTE_NAME: &str = "query";
+
 #[derive(Debug)]
 struct Struct {
 	path: syn::Path,
@@ -42,6 +44,7 @@ struct Field {
 	flatten: bool,
 	contains: bool,
 	elem_match: bool,
+	serde: Option<Option<syn::Path>>,
 	index: Option<syn::Expr>,
 }
 
@@ -92,7 +95,7 @@ impl Field {
 		let attrs: Vec<_> = field
 			.attrs
 			.iter()
-			.filter(|attr| attr.meta.path().is_ident("filter"))
+			.filter(|attr| attr.meta.path().is_ident(ATTRIBUTE_NAME))
 			.cloned()
 			.collect();
 
@@ -100,6 +103,7 @@ impl Field {
 		let mut flatten = false;
 		let mut contains = false;
 		let mut elem_match = false;
+		let mut serde = None;
 		let mut query_selector = None;
 		let mut index = None;
 		for attr in &attrs {
@@ -152,6 +156,18 @@ impl Field {
 						return Err(meta.error("duplicated `elem_match` attribute"));
 					}
 					elem_match = true;
+				} else if meta.path.is_ident("serde") {
+					if serde.is_some() {
+						return Err(meta.error("duplicated `serde` attribute"));
+					}
+
+					if let Ok(lit) = meta.value() {
+						let value: syn::LitStr = lit.parse()?;
+						let path = syn::parse_str(&value.value())?;
+						serde = Some(Some(path));
+					} else {
+						serde = Some(None);
+					}
 				} else {
 					return Err(meta.error("unknown attribute"));
 				}
@@ -175,6 +191,7 @@ impl Field {
 		Ok(Self {
 			name,
 			rename,
+			serde,
 			kind,
 			query_selector,
 			flatten,
@@ -192,7 +209,14 @@ impl Field {
 
 	fn bson_value(&self) -> proc_macro2::TokenStream {
 		let name = &self.name;
-		let value = quote_spanned! { self.name.span() => bson::to_bson(&#name).expect("Failed to serialize") };
+
+		let value = match &self.serde {
+			Some(Some(serde)) => quote_spanned! { self.name.span() => {
+				#serde(&#name, bson::ser::Serializer::new()).expect("Failed to serialize")
+			} },
+			Some(None) => quote_spanned! { self.name.span() => bson::to_bson(&#name).expect("Failed to serialize") },
+			None => quote_spanned! { self.name.span() => bson::bson!(#name) },
+		};
 
 		let value = if let Some(selector) = &self.query_selector {
 			let selector = match selector {

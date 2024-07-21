@@ -109,12 +109,12 @@ impl BansMutation {
 			.update_one(
 				filter::filter! {
 					User {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: victim.id,
 					}
 				},
 				update::update! {
-					#[update(set)]
+					#[query(set)]
 					User {
 						has_bans: true,
 						updated_at: chrono::Utc::now(),
@@ -180,20 +180,20 @@ impl BansMutation {
 			.find_one_and_update(
 				filter::filter! {
 					UserBan {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: ban_id.id(),
 					}
 				},
 				update::update! {
-					#[update(set)]
+					#[query(set)]
 					UserBan {
-						#[update(optional)]
+						#[query(optional)]
 						reason,
 						/// TODO(lennart): how do you convert a ban from a temporary to a permanent ban?
 						/// This value is optional but a null value means that the ban is permanent, and also means no change.
-						#[update(optional)]
+						#[query(optional)]
 						expires_at: expire_at,
-						#[update(optional)]
+						#[query(optional, serde)]
 						permissions: effects.map(ban_effect_to_permissions),
 						updated_at: chrono::Utc::now(),
 					}

@@ -80,7 +80,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		.find_one_and_update(
 			filter::filter! {
 				User {
-					#[filter(elem_match)]
+					#[query(elem_match)]
 					connections: UserConnection {
 						platform: platform.into(),
 						platform_id: user_data.id,
@@ -88,9 +88,9 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				}
 			},
 			update::update! {
-				#[update(set)]
+				#[query(set)]
 				User {
-					#[update(flatten, index = "$")]
+					#[query(flatten, index = "$")]
 					connections: UserConnection {
 						platform_username: user_data.username,
 						platform_display_name: user_data.display_name,
@@ -201,9 +201,9 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				.update_one(
 					filter::filter! {
 						User {
-							#[filter(rename = "_id")]
+							#[query(rename = "_id")]
 							id: full_user.user.id,
-							#[filter(elem_match)]
+							#[query(elem_match)]
 							connections: UserConnection {
 								platform: platform.into(),
 								platform_id: user_data.id,
@@ -211,9 +211,9 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 						}
 					},
 					update::update! {
-						#[update(set)]
+						#[query(set)]
 						User {
-							#[update(flatten, index = "$")]
+							#[query(flatten, index = "$")]
 							connections: UserConnection {
 								platform_username: user_data.username,
 								platform_display_name: user_data.display_name,
@@ -253,16 +253,17 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			.update_one(
 				filter::filter! {
 					User {
-						#[filter(rename = "_id")]
+						#[query(rename = "_id")]
 						id: full_user.user.id,
 					}
 				},
 				update::update! {
-					#[update(push)]
+					#[query(push)]
 					User {
+						#[query(serde)]
 						connections: new_connection,
 					},
-					#[update(set)]
+					#[query(set)]
 					User {
 						updated_at: chrono::Utc::now(),
 					}

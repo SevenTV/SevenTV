@@ -45,7 +45,7 @@ impl Loader for UserBanByUserIdLoader {
 		let results: Vec<_> = UserBan::collection(&self.db)
 			.find(filter::filter! {
 				UserBan {
-					#[filter(selector = "in")]
+					#[query(selector = "in")]
 					user_id: keys,
 				}
 			})
