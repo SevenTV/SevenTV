@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use mongodb::bson::doc;
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{Permissions, UserPermission};
 use shared::database::user::ban::UserBan;
 use shared::database::user::{User, UserId};
@@ -22,10 +23,13 @@ impl Job for BansJob {
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
 			tracing::info!("dropping user_bans collections");
-			UserBan::collection(global.target_db()).drop().await?;
+			UserBan::collection(global.target_db()).untyped().drop().await?;
 			let indexes = UserBan::indexes();
 			if !indexes.is_empty() {
-				UserBan::collection(global.target_db()).create_indexes(indexes).await?;
+				UserBan::collection(global.target_db())
+					.untyped()
+					.create_indexes(indexes)
+					.await?;
 			}
 		}
 
@@ -65,13 +69,17 @@ impl Job for BansJob {
 
 		match User::collection(self.global.target_db())
 			.update_one(
-				doc! {
-					"_id": user_id,
+				filter::filter! {
+					User {
+						#[filter(rename = "_id")]
+						id: user_id,
+					}
 				},
-				doc! {
-					"$set": {
-						"has_bans": true,
-					},
+				update::update! {
+					#[update(set)]
+					User {
+						has_bans: true,
+					}
 				},
 			)
 			.await

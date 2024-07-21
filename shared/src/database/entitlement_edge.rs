@@ -3,11 +3,12 @@ use std::future::IntoFuture;
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use mongodb::bson::to_bson;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 
+use super::entitlement::EntitlementEdgeId;
+use super::queries::filter;
 use crate::database::entitlement::{EntitlementEdge, EntitlementEdgeKind};
 use crate::database::graph::GraphTraverse;
 use crate::database::MongoCollection;
@@ -31,9 +32,13 @@ impl Loader for EntitlementEdgeInboundLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
-			.find(doc! {
-				"_id.to": {
-					"$in": to_bson(&keys).unwrap(),
+			.find(filter::filter! {
+				EntitlementEdge {
+					#[filter(rename = "_id", flatten)]
+					id: EntitlementEdgeId {
+						#[filter(selector = "in")]
+						to: keys,
+					},
 				}
 			})
 			.into_future()
@@ -81,9 +86,13 @@ impl Loader for EntitlementEdgeOutboundLoader {
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
-			.find(doc! {
-				"_id.from": {
-					"$in": to_bson(&keys).unwrap(),
+			.find(filter::filter! {
+				EntitlementEdge {
+					#[filter(rename = "_id", flatten)]
+					id: EntitlementEdgeId {
+						#[filter(selector = "in")]
+						from: keys,
+					},
 				}
 			})
 			.into_future()

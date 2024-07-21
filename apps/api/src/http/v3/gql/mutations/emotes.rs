@@ -5,7 +5,8 @@ use chrono::Utc;
 use mongodb::bson::doc;
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
-use shared::database::emote::{Emote as DbEmote, EmoteFlags};
+use shared::database::emote::{Emote as DbEmote, EmoteFlags, EmoteMerged};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
 use shared::database::MongoCollection;
@@ -96,7 +97,12 @@ impl EmoteOps {
 			// TODO: don't allow deletion of emotes that are in use
 
 			let emote = shared::database::emote::Emote::collection(&global.db)
-				.find_one_and_delete(doc! { "_id": self.id.0 })
+				.find_one_and_delete(filter::filter! {
+					DbEmote {
+						#[filter(rename = "_id")]
+						id: self.id.id(),
+					}
+				})
 				.session(&mut session)
 				.await
 				.map_err(|err| {
@@ -401,15 +407,23 @@ impl EmoteOps {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let emote = shared::database::emote::Emote::collection(&global.db)
+		let emote = DbEmote::collection(&global.db)
 			.find_one_and_update(
-				doc! { "_id": self.id.0 },
-				doc! {
-					"$set": {
-						"merged.target_id": target_id.0,
-						"merged.at": Some(bson::DateTime::from(chrono::Utc::now())),
-						"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
-					},
+				filter::filter! {
+					DbEmote {
+						#[filter(rename = "_id")]
+						id: self.id.id(),
+					}
+				},
+				update::update! {
+					#[update(set)]
+					DbEmote {
+						merged: EmoteMerged {
+							target_id: target_id.id(),
+							at: chrono::Utc::now(),
+						},
+						updated_at: chrono::Utc::now(),
+					}
 				},
 			)
 			.session(&mut session)

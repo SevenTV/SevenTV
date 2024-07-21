@@ -7,6 +7,7 @@ use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput}
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::emote::Emote;
+use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
@@ -46,9 +47,10 @@ impl Loader for EmoteByUserIdLoader {
 		tracing::Span::current().make_root();
 
 		let results: Vec<_> = Emote::collection(&self.db)
-			.find(doc! {
-				"owner_id": {
-					"$in": keys,
+			.find(filter::filter! {
+				Emote {
+					#[filter(selector = "in")]
+					owner_id: keys,
 				}
 			})
 			.into_future()

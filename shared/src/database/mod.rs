@@ -2,6 +2,7 @@ pub mod entitlement_edge;
 pub mod graph;
 mod id;
 pub mod loader;
+pub mod queries;
 pub mod serde;
 mod types;
 

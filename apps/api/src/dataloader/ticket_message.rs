@@ -5,6 +5,7 @@ use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
+use shared::database::queries::filter;
 use shared::database::ticket::{TicketId, TicketMessage};
 use shared::database::MongoCollection;
 
@@ -42,9 +43,10 @@ impl Loader for TicketMessageByTicketIdLoader {
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<_> = TicketMessage::collection(&self.db)
-			.find(doc! {
-				"ticket_id": {
-					"$in": keys,
+			.find(filter::filter! {
+				TicketMessage {
+					#[filter(selector = "in")]
+					ticket_id: keys,
 				}
 			})
 			.into_future()

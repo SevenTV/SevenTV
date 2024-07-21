@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use fnv::FnvHashSet;
-use mongodb::bson::doc;
 use mongodb::options::InsertManyOptions;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::MongoCollection;
@@ -22,21 +21,6 @@ impl Job for EntitlementsJob {
 	const NAME: &'static str = "transfer_entitlements";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			tracing::info!("dropping entitlements");
-
-			// delete all entitlements except for user to role (handled by the user job)
-			// mongodb doesnt seem to have a nice way of doing not and
-			EntitlementEdge::collection(global.target_db())
-				.delete_many(doc! {
-					"$or": [
-						{ "_id.from.kind": { "$ne": "user" } },
-						{ "_id.to.kind": { "$ne": "role" } },
-					]
-				})
-				.await?;
-		}
-
 		Ok(Self {
 			global,
 			edges: FnvHashSet::default(),

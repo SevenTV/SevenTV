@@ -6,6 +6,7 @@ use itertools::Itertools;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::emote_set::EmoteSet;
+use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
@@ -43,9 +44,10 @@ impl Loader for EmoteSetByUserIdLoader {
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<EmoteSet> = EmoteSet::collection(&self.db)
-			.find(doc! {
-				"owner_id": {
-					"$in": keys,
+			.find(filter::filter! {
+				EmoteSet {
+					#[filter(selector = "in")]
+					owner_id: keys,
 				}
 			})
 			.into_future()

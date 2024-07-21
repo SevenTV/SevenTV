@@ -10,9 +10,10 @@ use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
 use shared::database::badge::Badge;
-use shared::database::emote::Emote;
-use shared::database::image_set::{Image, ImageSetInput};
-use shared::database::paint::{Paint, PaintLayerId};
+use shared::database::emote::{Emote, EmoteFlags};
+use shared::database::image_set::{Image, ImageSet, ImageSetInput};
+use shared::database::paint::{Paint, PaintData, PaintLayer, PaintLayerId, PaintLayerType};
+use shared::database::queries::{filter, update};
 use shared::database::user::User;
 use shared::database::MongoCollection;
 use shared::image_processor::Subject;
@@ -182,24 +183,43 @@ async fn handle_success(
 
 	match subject {
 		Subject::Emote(id) => {
+			let bit_update = if animated {
+				Some(update::update! {
+					#[update(bit)]
+					Emote {
+						#[update(bit = "or")]
+						flags: EmoteFlags::Animated
+					}
+				})
+			} else {
+				None
+			};
+
 			Emote::collection(global.target_db())
 				.update_one(
-					doc! {
-						"_id": id,
+					filter::filter! {
+						Emote {
+							#[filter(rename = "_id")]
+							id: id,
+						}
 					},
-					doc! {
-						"$set": {
-							"animated": animated,
-							"image_set.input": to_bson(&ImageSetInput::Image(Image {
-								frame_count: input.frame_count,
-								width: input.width,
-								height: input.height,
-								path: input.path.map(|p| p.path).unwrap_or_default(),
-								mime: input.content_type,
-								size: input.size as u64,
-							}))?,
-							"image_set.outputs": to_bson(&outputs)?,
+					update::update! {
+						#[update(set)]
+						Emote {
+							image_set: ImageSet {
+								input: ImageSetInput::Image(Image {
+									frame_count: input.frame_count,
+									width: input.width,
+									height: input.height,
+									path: input.path.map(|p| p.path).unwrap_or_default(),
+									mime: input.content_type,
+									size: input.size as u64,
+								}),
+								outputs,
+							},
 						},
+						#[update(bit)]
+						bit_update
 					},
 				)
 				.await?;
@@ -238,8 +258,11 @@ async fn handle_success(
 
 			User::collection(global.target_db())
 				.update_one(
-					doc! {
-						"_id": id,
+					filter::filter! {
+						User {
+							#[filter(rename = "_id")]
+							id: id,
+						}
 					},
 					aggregation,
 				)
@@ -250,22 +273,40 @@ async fn handle_success(
 
 			Paint::collection(global.target_db())
 				.update_one(
-					doc! {
-						"_id": id,
-						"data.layers.id": layer_id,
+					filter::filter! {
+						Paint {
+							#[filter(rename = "_id")]
+							id: id,
+							#[filter(flatten)]
+							data: PaintData {
+								#[filter(flatten)]
+								layers: PaintLayer {
+									id: layer_id,
+								}
+							}
+						}
 					},
-					doc! {
-						"$set": {
-							"data.layers.$.data.input": to_bson(&ImageSetInput::Image(Image {
-								frame_count: input.frame_count,
-								width: input.width,
-								height: input.height,
-								path: input.path.map(|p| p.path).unwrap_or_default(),
-								mime: input.content_type,
-								size: input.size as u64,
-							}))?,
-							"data.layers.$.data.outputs": to_bson(&outputs)?,
-						},
+					update::update! {
+						#[update(set)]
+						Paint {
+							#[update(flatten)]
+							data: PaintData {
+								#[update(index = "$", flatten)]
+								layers: PaintLayer {
+									ty: PaintLayerType::Image(ImageSet {
+										input: ImageSetInput::Image(Image {
+											frame_count: input.frame_count,
+											width: input.width,
+											height: input.height,
+											path: input.path.map(|p| p.path).unwrap_or_default(),
+											mime: input.content_type,
+											size: input.size as u64,
+										}),
+										outputs,
+									}),
+								}
+							}
+						}
 					},
 				)
 				.await?;
@@ -273,21 +314,27 @@ async fn handle_success(
 		Subject::Badge(id) => {
 			Badge::collection(global.target_db())
 				.update_one(
-					doc! {
-						"_id": id,
+					filter::filter! {
+						Badge {
+							#[filter(rename = "_id")]
+							id: id,
+						}
 					},
-					doc! {
-						"$set": {
-							"image_set.input": to_bson(&ImageSetInput::Image(Image {
-								frame_count: input.frame_count,
-								width: input.width,
-								height: input.height,
-								path: input.path.map(|p| p.path).unwrap_or_default(),
-								mime: input.content_type,
-								size: input.size as u64,
-							}))?,
-							"image_set.outputs": to_bson(&outputs)?,
-						},
+					update::update! {
+						#[update(set)]
+						Badge {
+							image_set: ImageSet {
+								input: ImageSetInput::Image(Image {
+									frame_count: input.frame_count,
+									width: input.width,
+									height: input.height,
+									path: input.path.map(|p| p.path).unwrap_or_default(),
+									mime: input.content_type,
+									size: input.size as u64,
+								}),
+								outputs,
+							},
+						}
 					},
 				)
 				.await?;
@@ -305,13 +352,28 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 
 			Paint::collection(global.target_db())
 				.update_one(
-					doc! {
-						"_id": id,
-						"data.layers": { "id": layer_id },
+					filter::filter! {
+						Paint {
+							#[filter(rename = "_id")]
+							id: id,
+							#[filter(flatten)]
+							data: PaintData {
+								#[filter(flatten)]
+								layers: PaintLayer {
+									id: layer_id,
+								}
+							}
+						}
 					},
-					doc! {
-						"$pull": {
-							"data.layers": { "id": layer_id },
+					update::update! {
+						#[update(pull)]
+						Paint {
+							#[update(flatten)]
+							data: PaintData {
+								layers: PaintLayer {
+									id: layer_id,
+								}
+							}
 						},
 					},
 				)
@@ -319,8 +381,11 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 		}
 		Subject::Badge(id) => {
 			Badge::collection(global.target_db())
-				.delete_one(doc! {
-					"_id": id,
+				.delete_one(filter::filter! {
+					Badge {
+						#[filter(rename = "_id")]
+						id: id,
+					}
 				})
 				.await?;
 		}

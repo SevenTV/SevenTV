@@ -4,10 +4,11 @@ use std::sync::Arc;
 use async_graphql::{Context, InputObject, Object};
 use futures::{TryFutureExt, TryStreamExt};
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
+use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission};
-use shared::database::role::RoleId;
+use shared::database::role::{Role as DbRole, RoleId};
 use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 
@@ -41,7 +42,9 @@ impl RolesMutation {
 		}
 
 		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(&global.db)
-			.find(doc! {})
+			.find(filter::filter! {
+				DbRole {}
+			})
 			.with_options(FindOptions::builder().sort(doc! { "rank": 1 }).build())
 			.into_future()
 			.and_then(|f| f.try_collect())
@@ -105,17 +108,7 @@ impl RolesMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let mut update = doc! {};
-
-		if let Some(name) = data.name {
-			update.insert("name", name);
-		}
-
-		if let Some(color) = data.color {
-			update.insert("color", color);
-		}
-
-		match (data.allowed, data.denied) {
+		let role_permissions = match (data.allowed, data.denied) {
 			(Some(allowed), Some(denied)) => {
 				let allowed: u64 = allowed.parse().map_err(|_| ApiError::BAD_REQUEST)?;
 				let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
@@ -129,32 +122,38 @@ impl RolesMutation {
 					return Err(ApiError::FORBIDDEN);
 				}
 
-				update.insert(
-					"permissions",
-					to_bson(&role_permissions).map_err(|err| {
-						tracing::error!(error = %err, "failed to serialize role permissions");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-				);
+				Some(role_permissions)
 			}
-			(None, None) => {}
+			(None, None) => None,
 			_ => {
 				return Err(ApiError::new_const(
 					StatusCode::BAD_REQUEST,
 					"must provide both allowed and denied permissions",
 				));
 			}
-		}
-
-		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
+		};
 
 		let role = shared::database::role::Role::collection(&global.db)
 			.find_one_and_update(
-				doc! {
-					"_id": role_id.0,
+				filter::filter! {
+					DbRole {
+						#[filter(rename = "_id")]
+						id: role_id.id(),
+					}
 				},
-				doc! {
-					"$set": update,
+				update::update! {
+					#[update(set)]
+					DbRole {
+						#[update(optional)]
+						permissions: role_permissions,
+						#[update(optional)]
+						name: data.name,
+						#[update(optional)]
+						color: data.color,
+						#[update(optional)]
+						rank: data.position.map(|p| p as i32),
+						updated_at: chrono::Utc::now(),
+					}
 				},
 			)
 			.with_options(
@@ -197,8 +196,11 @@ impl RolesMutation {
 		}
 
 		let res = shared::database::role::Role::collection(&global.db)
-			.delete_one(doc! {
-				"_id": role_id.0,
+			.delete_one(filter::filter! {
+				DbRole {
+					#[filter(rename = "_id")]
+					id: role_id.id(),
+				}
 			})
 			.await
 			.map_err(|e| {

@@ -18,6 +18,8 @@ pub mod user;
 pub use macros::MongoCollection;
 pub use mongodb;
 
+use super::queries::{CollectionExt, TypedCollection};
+
 pub trait MongoCollection: Send + Sync {
 	type Id: std::fmt::Debug
 		+ Clone
@@ -33,11 +35,11 @@ pub trait MongoCollection: Send + Sync {
 
 	fn id(&self) -> Self::Id;
 
-	fn collection(db: &mongodb::Database) -> mongodb::Collection<Self>
+	fn collection(db: &mongodb::Database) -> TypedCollection<Self>
 	where
 		Self: Sized,
 	{
-		db.collection(Self::COLLECTION_NAME)
+		db.collection(Self::COLLECTION_NAME).typed()
 	}
 
 	fn indexes() -> Vec<mongodb::IndexModel> {

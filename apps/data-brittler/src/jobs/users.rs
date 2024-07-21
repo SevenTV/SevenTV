@@ -51,14 +51,6 @@ impl Job for UsersJob {
 			if !indexes.is_empty() {
 				UserEditor::collection(global.target_db()).create_indexes(indexes).await?;
 			}
-
-			// delete all role entitlements
-			EntitlementEdge::collection(global.target_db())
-				.delete_many(doc! {
-					"_id.from.kind": "user",
-					"_id.to.kind": "role",
-				})
-				.await?;
 		}
 
 		let mut edges = FnvHashSet::default();

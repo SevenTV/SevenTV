@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
@@ -78,17 +78,27 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 	let mut user = User::collection(&global.db)
 		.find_one_and_update(
-			doc! {
-				"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
-				"connections.platform_id": &user_data.id,
+			filter::filter! {
+				User {
+					#[filter(elem_match)]
+					connections: UserConnection {
+						platform: platform.into(),
+						platform_id: user_data.id,
+					}
+				}
 			},
-			doc! {
-				"$set": {
-					"connections.$.platform_username": &user_data.username,
-					"connections.$.platform_display_name": &user_data.display_name,
-					"connections.$.platform_avatar_url": &user_data.avatar,
-					"connections.$.updated_at": chrono::Utc::now(),
-				},
+			update::update! {
+				#[update(set)]
+				User {
+					#[update(flatten, index = "$")]
+					connections: UserConnection {
+						platform_username: user_data.username,
+						platform_display_name: user_data.display_name,
+						platform_avatar_url: user_data.avatar,
+						updated_at: chrono::Utc::now(),
+					},
+					updated_at: chrono::Utc::now(),
+				}
 			},
 		)
 		.session(&mut session)
@@ -189,20 +199,29 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			// Update user connection
 			if User::collection(&global.db)
 				.update_one(
-					doc! {
-						"_id": full_user.user.id,
-						"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
-						"connections.platform_id": user_data.id,
+					filter::filter! {
+						User {
+							#[filter(rename = "_id")]
+							id: full_user.user.id,
+							#[filter(elem_match)]
+							connections: UserConnection {
+								platform: platform.into(),
+								platform_id: user_data.id,
+							}
+						}
 					},
-					doc! {
-						"$set": {
-							"connections.$.platform_username": &user_data.username,
-							"connections.$.platform_display_name": &user_data.display_name,
-							"connections.$.platform_avatar_url": &user_data.avatar,
-							"connections.$.updated_at": chrono::Utc::now(),
-							// This will trigger a search engine update
-							"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
-						},
+					update::update! {
+						#[update(set)]
+						User {
+							#[update(flatten, index = "$")]
+							connections: UserConnection {
+								platform_username: user_data.username,
+								platform_display_name: user_data.display_name,
+								platform_avatar_url: user_data.avatar,
+								updated_at: chrono::Utc::now(),
+							},
+							updated_at: chrono::Utc::now(),
+						}
 					},
 				)
 				.session(&mut session)
@@ -232,16 +251,21 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 		if User::collection(&global.db)
 			.update_one(
-				doc! {
-					"_id": full_user.user.id,
+				filter::filter! {
+					User {
+						#[filter(rename = "_id")]
+						id: full_user.user.id,
+					}
 				},
-				doc! {
-					"$push": {
-						"connections": to_bson(&new_connection).expect("failed to convert to bson"),
+				update::update! {
+					#[update(push)]
+					User {
+						connections: new_connection,
 					},
-					"$set": {
-						"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
-					},
+					#[update(set)]
+					User {
+						updated_at: chrono::Utc::now(),
+					}
 				},
 			)
 			.session(&mut session)

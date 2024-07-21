@@ -1,10 +1,10 @@
 use std::future::IntoFuture;
 
-use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
+use shared::database::queries::filter;
 use shared::database::user::ban::UserBan;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
@@ -43,9 +43,10 @@ impl Loader for UserBanByUserIdLoader {
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Vec<_> = UserBan::collection(&self.db)
-			.find(doc! {
-				"user_id": {
-					"$in": keys,
+			.find(filter::filter! {
+				UserBan {
+					#[filter(selector = "in")]
+					user_id: keys,
 				}
 			})
 			.into_future()

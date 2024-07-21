@@ -6,7 +6,8 @@ use futures::{TryFutureExt, TryStreamExt};
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::user::connection::Platform;
+use shared::database::queries::filter;
+use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::User;
 use shared::database::MongoCollection;
 
@@ -46,14 +47,17 @@ impl Loader for UserByPlatformIdLoader {
 		tracing::Span::current().make_root();
 
 		let users: Vec<User> = User::collection(&self.db)
-			.find(doc! {
-				"$or": keys.into_iter().map(|(platform, id)| {
-					doc! {
-						"connections.platform": platform as i32,
-						"connections.platform_id": id,
+			.find(filter::Filter::or(keys.into_iter().map(|(platform, platform_id)| {
+				filter::filter! {
+					User {
+						#[filter(flatten)]
+						connections: UserConnection {
+							platform,
+							platform_id,
+						},
 					}
-				}).collect::<Vec<_>>(),
-			})
+				}
+			})))
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await

@@ -2,12 +2,14 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use itertools::Itertools;
-use mongodb::bson::{doc, to_bson};
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
-use shared::database::user::User;
+use shared::database::user::connection::UserConnection as DbUserConnection;
+use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId};
+use shared::database::user::{User, UserStyle};
 use shared::database::MongoCollection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::cosmetic::CosmeticKind;
@@ -65,9 +67,6 @@ impl UserOps {
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		let mut update = doc! {};
-		let mut update_pull = doc! {};
-
 		let emote_set = if let Some(emote_set_id) = data.emote_set_id {
 			// check if set exists
 			let emote_set = global
@@ -77,27 +76,44 @@ impl UserOps {
 				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?;
 
-			update.insert("style.active_emote_set_id", emote_set_id.0);
-
 			Some(emote_set)
 		} else {
 			None
 		};
 
-		if let Some(true) = data.unlink {
-			update_pull.insert("connections", doc! { "platform_id": &id });
-		}
-
-		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
+		let update_pull = if let Some(true) = data.unlink {
+			Some(update::update! {
+				#[update(pull)]
+				User {
+					connections: DbUserConnection {
+						platform_id: id,
+					}
+				}
+			})
+		} else {
+			None
+		};
 
 		let Some(user) = User::collection(&global.db)
 			.find_one_and_update(
-				doc! {
-					"_id": self.id.0,
+				filter::filter! {
+					User {
+						#[filter(rename = "_id")]
+						id: self.id.id(),
+					}
 				},
-				doc! {
-					"$set": update,
-					"$pull": update_pull,
+				update::update! {
+					#[update(set)]
+					User {
+						#[update(flatten)]
+						style: UserStyle {
+							#[filter(optional)]
+							active_emote_set_id: data.emote_set_id.map(|id| id.id()),
+						},
+						updated_at: chrono::Utc::now(),
+					},
+					#[update(pull)]
+					update_pull,
 				},
 			)
 			.return_document(ReturnDocument::After)
@@ -292,10 +308,15 @@ impl UserOps {
 		if let Some(permissions) = data.permissions {
 			if permissions == UserEditorModelPermission::none() {
 				// Remove editor
-				let res = shared::database::user::editor::UserEditor::collection(&global.db)
-					.delete_one(doc! {
-						"user_id": self.id.0,
-						"editor_id": editor_id.0,
+				let res = DbUserEditor::collection(&global.db)
+					.delete_one(filter::filter! {
+						DbUserEditor {
+							#[filter(rename = "_id")]
+							id: UserEditorId {
+								user_id: self.id.id(),
+								editor_id: editor_id.id(),
+							},
+						}
 					})
 					.session(&mut session)
 					.await
@@ -329,17 +350,21 @@ impl UserOps {
 				// Add or update editor
 				let res = shared::database::user::editor::UserEditor::collection(&global.db)
 					.update_one(
-						doc! {
-							"user_id": self.id.0,
-							"editor_id": editor_id.0,
+						filter::filter! {
+							DbUserEditor {
+								#[filter(rename = "_id")]
+								id: UserEditorId {
+									user_id: self.id.id(),
+									editor_id: editor_id.id(),
+								},
+							}
 						},
-						doc! {
-							"$set": {
-								"permissions": to_bson(&permissions.to_db()).map_err(|err| {
-									tracing::error!(error = %err, "failed to serialize permissions");
-									ApiError::INTERNAL_SERVER_ERROR
-								})?,
-							},
+						update::update! {
+							#[update(set)]
+							DbUserEditor {
+								permissions: permissions.to_db(),
+								added_at: chrono::Utc::now(),
+							}
 						},
 					)
 					.upsert(user.has(UserPermission::InviteEditors))
@@ -445,12 +470,19 @@ impl UserOps {
 
 				let res = User::collection(&global.db)
 					.update_one(
-						doc! {
-							"_id": self.id.0,
+						filter::filter! {
+							User {
+								#[filter(rename = "_id")]
+								id: self.id.id(),
+							}
 						},
-						doc! {
-							"$set": {
-								"style.active_paint_id": update.id.0,
+						update::update! {
+							#[update(set)]
+							User {
+								#[update(flatten)]
+								style: UserStyle {
+									active_paint_id: update.id.id(),
+								}
 							}
 						},
 					)
@@ -507,13 +539,20 @@ impl UserOps {
 
 				let res = User::collection(&global.db)
 					.update_one(
-						doc! {
-							"_id": self.id.0,
-						},
-						doc! {
-							"$set": {
-								"style.active_badge_id": update.id.0,
+						filter::filter! {
+							User {
+								#[filter(rename = "_id")]
+								id: self.id.id(),
 							}
+						},
+						update::update! {
+							#[update(set)]
+							User {
+								#[update(flatten)]
+								style: UserStyle {
+									active_badge_id: update.id.id(),
+								}
+							},
 						},
 					)
 					.await
@@ -690,13 +729,15 @@ impl UserOps {
 					.collect()
 			}
 			ListItemAction::Remove => {
-				let from = EntitlementEdgeKind::User { user_id: self.id.id() };
-				let to = EntitlementEdgeKind::Role { role_id: role_id.id() };
-
 				let res = EntitlementEdge::collection(&global.db)
-					.delete_one(doc! {
-						"_id.from": to_bson(&from).expect("failed to convert to bson"),
-						"_id.to": to_bson(&to).expect("failed to convert to bson"),
+					.delete_one(filter::filter! {
+						EntitlementEdge {
+							id: EntitlementEdgeId {
+								from: EntitlementEdgeKind::User { user_id: self.id.id() }.into(),
+								to: EntitlementEdgeKind::Role { role_id: role_id.id() }.into(),
+								managed_by: None,
+							}
+						}
 					})
 					.session(&mut session)
 					.await

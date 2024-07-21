@@ -45,7 +45,12 @@ impl<T: MongoCollection + DeserializeOwned + Clone + 'static> Loader for LoaderB
 
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		// We use an untyped find here because its not possible to do compile time macro
+		// checks if the type is generic. This is a limitation of rust macros. However
+		// this is entirely safe because every document is guaranteed to have an `_id`
+		// field and that field is always going to have a `T::Id` type.
 		let results: Vec<T> = T::collection(&self.db)
+			.untyped()
 			.find(bson::doc! {
 				"_id": {
 					"$in": bson::to_bson(&keys).unwrap(),

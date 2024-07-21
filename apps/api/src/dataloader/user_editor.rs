@@ -5,7 +5,8 @@ use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
-use shared::database::user::editor::UserEditor;
+use shared::database::queries::filter;
+use shared::database::user::editor::{UserEditor, UserEditorId};
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
@@ -43,9 +44,13 @@ impl Loader for UserEditorByUserIdLoader {
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Self::Value = UserEditor::collection(&self.db)
-			.find(doc! {
-				"_id.user_id": {
-					"$in": keys,
+			.find(filter::filter! {
+				UserEditor {
+					#[filter(rename = "_id", flatten)]
+					id: UserEditorId {
+						#[filter(selector = "in")]
+						user_id: keys,
+					},
 				}
 			})
 			.into_future()
@@ -93,9 +98,13 @@ impl Loader for UserEditorByEditorIdLoader {
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let results: Self::Value = UserEditor::collection(&self.db)
-			.find(doc! {
-				"_id.editor_id": {
-					"$in": keys,
+			.find(filter::filter! {
+				UserEditor {
+					#[filter(rename = "_id", flatten)]
+					id: UserEditorId {
+						#[filter(selector = "in")]
+						editor_id: keys,
+					},
 				}
 			})
 			.into_future()

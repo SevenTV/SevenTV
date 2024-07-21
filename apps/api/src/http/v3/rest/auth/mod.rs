@@ -9,6 +9,7 @@ use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
+use shared::database::queries::filter;
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
 use shared::database::MongoCollection;
@@ -132,8 +133,11 @@ async fn logout(
 	// is a new session
 	if let AuthSessionKind::Session(session) = &auth_session.kind {
 		UserSession::collection(&global.db)
-			.delete_one(doc! {
-				"_id": session.id,
+			.delete_one(filter::filter! {
+				UserSession {
+					#[filter(rename = "_id")]
+					id: session.id,
+				}
 			})
 			.await
 			.map_err(|err| {

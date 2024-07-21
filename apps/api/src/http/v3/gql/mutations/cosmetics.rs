@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{
 	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
 };
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::PaintPermission;
 use shared::database::MongoCollection;
 use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape};
@@ -246,19 +246,23 @@ impl CosmeticOps {
 
 		let name = definition.name.clone();
 		let data = definition.into_db(self.id.id(), global).await?;
-		let update = to_bson(&data).map_err(|err| {
-			tracing::error!(error = %err, "failed to serialize paint data");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
 
 		let paint = Paint::collection(&global.db)
 			.find_one_and_update(
-				doc! { "_id": self.id.0 },
-				doc! { "$set": {
-					"name": name,
-					"data": update,
-					"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
-				} },
+				filter::filter! {
+					Paint {
+						#[filter(rename = "_id")]
+						id: self.id.id(),
+					}
+				},
+				update::update! {
+					#[update(set)]
+					Paint {
+						name: name,
+						data,
+						updated_at: chrono::Utc::now(),
+					}
+				},
 			)
 			.await
 			.map_err(|e| {

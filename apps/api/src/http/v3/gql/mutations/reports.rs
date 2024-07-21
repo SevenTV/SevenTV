@@ -293,7 +293,8 @@ impl ReportsMutation {
 			.ticket_message_by_ticket_id_loader
 			.load(ticket.id)
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.unwrap_or_default();
 
 		Report::from_db(ticket, messages).ok_or(ApiError::INTERNAL_SERVER_ERROR)
 	}

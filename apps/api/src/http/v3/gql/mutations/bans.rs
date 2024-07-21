@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogUserData};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{
 	AdminPermission, EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
 };
@@ -107,12 +107,18 @@ impl BansMutation {
 
 		let res = User::collection(&global.db)
 			.update_one(
-				doc! { "_id": victim.id },
-				doc! {
-					"$set": {
-						"has_bans": true,
-						"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
-					},
+				filter::filter! {
+					User {
+						#[filter(rename = "_id")]
+						id: victim.id,
+					}
+				},
+				update::update! {
+					#[update(set)]
+					User {
+						has_bans: true,
+						updated_at: chrono::Utc::now(),
+					}
 				},
 			)
 			.session(&mut session)
@@ -170,26 +176,29 @@ impl BansMutation {
 	) -> Result<Option<Ban>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let mut update = doc! {};
-
-		if let Some(reason) = reason {
-			update.insert("reason", reason);
-		}
-
-		if let Some(expire_at) = expire_at {
-			update.insert("expires_at", expire_at);
-		}
-
-		if let Some(effects) = effects {
-			let perms = ban_effect_to_permissions(effects);
-
-			update.insert("permissions", to_bson(&perms).unwrap());
-		}
-
-		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
-
 		let ban = UserBan::collection(&global.db)
-			.find_one_and_update(doc! { "_id": ban_id.id::<()>() }, doc! { "$set": update })
+			.find_one_and_update(
+				filter::filter! {
+					UserBan {
+						#[filter(rename = "_id")]
+						id: ban_id.id(),
+					}
+				},
+				update::update! {
+					#[update(set)]
+					UserBan {
+						#[update(optional)]
+						reason,
+						/// TODO(lennart): how do you convert a ban from a temporary to a permanent ban?
+						/// This value is optional but a null value means that the ban is permanent, and also means no change.
+						#[update(optional)]
+						expires_at: expire_at,
+						#[update(optional)]
+						permissions: effects.map(ban_effect_to_permissions),
+						updated_at: chrono::Utc::now(),
+					}
+				},
+			)
 			.return_document(ReturnDocument::After)
 			.await
 			.map_err(|e| {
