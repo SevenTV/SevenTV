@@ -5,7 +5,7 @@ use std::time::Duration;
 use anyhow::Context;
 use async_nats::jetstream::{consumer, stream};
 use futures::StreamExt;
-use mongodb::bson::{doc, to_bson};
+use mongodb::bson::doc;
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
@@ -14,7 +14,8 @@ use shared::database::emote::{Emote, EmoteFlags};
 use shared::database::image_set::{Image, ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintData, PaintLayer, PaintLayerId, PaintLayerType};
 use shared::database::queries::{filter, update};
-use shared::database::user::User;
+use shared::database::user::profile_picture::UserProfilePicture;
+use shared::database::user::{User, UserStyle};
 use shared::database::MongoCollection;
 use shared::image_processor::Subject;
 
@@ -174,10 +175,10 @@ async fn handle_success(
 		.map(|i| Image {
 			path: i.path.map(|p| p.path).unwrap_or_default(),
 			mime: i.content_type,
-			size: i.size as u64,
-			width: i.width,
-			height: i.height,
-			frame_count: i.frame_count,
+			size: i.size as i64,
+			width: i.width as i32,
+			height: i.height as i32,
+			frame_count: i.frame_count as i32,
 		})
 		.collect();
 
@@ -209,12 +210,12 @@ async fn handle_success(
 							#[query(serde)]
 							image_set: ImageSet {
 								input: ImageSetInput::Image(Image {
-									frame_count: input.frame_count,
-									width: input.width,
-									height: input.height,
+									frame_count: input.frame_count as i32,
+									width: input.width as i32,
+									height: input.height as i32,
 									path: input.path.map(|p| p.path).unwrap_or_default(),
 									mime: input.content_type,
-									size: input.size as u64,
+									size: input.size as i64,
 								}),
 								outputs,
 							},
@@ -226,46 +227,56 @@ async fn handle_success(
 				.await?;
 		}
 		Subject::ProfilePicture(id) => {
-			let outputs = to_bson(&outputs)?;
-
-			// https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline
-			let aggregation = vec![
-				doc! {
-					"$set": {
-						"style.active_profile_picture.input": to_bson(&ImageSetInput::Image(Image {
-							frame_count: input.frame_count,
-							width: input.width,
-							height: input.height,
-							path: input.path.map(|p| p.path).unwrap_or_default(),
-							mime: input.content_type,
-							size: input.size as u64,
-						}))?,
-						"style.active_profile_picture.outputs": outputs,
+			let profile_picture = UserProfilePicture::collection(global.target_db())
+				.find_one_and_update(
+					filter::filter! {
+						UserProfilePicture {
+							#[query(rename = "_id")]
+							id,
+						}
 					},
-				},
-				// $push is not available in update pipelines
-				// so we have to use $concatArrays to append to an array
-				doc! {
-					"$set": {
-						"style.all_profile_pictures": {
-							"$concatArrays": [
-								"$style.all_profile_pictures",
-								["$style.active_profile_picture"]
-							],
-						},
+					update::update! {
+						#[query(set)]
+						UserProfilePicture {
+							#[query(serde)]
+							image_set: ImageSet {
+								input: ImageSetInput::Image(Image {
+									frame_count: input.frame_count as i32,
+									width: input.width as i32,
+									height: input.height as i32,
+									path: input.path.map(|p| p.path).unwrap_or_default(),
+									mime: input.content_type,
+									size: input.size as i64,
+								}),
+								outputs,
+							},
+						}
 					},
-				},
-			];
+				)
+				.await?
+				.ok_or_else(|| anyhow::anyhow!("failed to update user profile picture, no matching pfp found"))?;
 
 			User::collection(global.target_db())
 				.update_one(
 					filter::filter! {
 						User {
-							#[query(rename = "_id")]
-							id: id,
+							id: profile_picture.user_id,
+							#[query(flatten)]
+							style: UserStyle {
+								pending_profile_picture: Some(profile_picture.id),
+							},
 						}
 					},
-					aggregation,
+					update::update! {
+						#[query(set)]
+						User {
+							#[query(flatten)]
+							style: UserStyle {
+								active_profile_picture: Some(profile_picture.id),
+								pending_profile_picture: &None,
+							},
+						}
+					},
 				)
 				.await?;
 		}
@@ -297,12 +308,12 @@ async fn handle_success(
 									#[query(serde)]
 									ty: PaintLayerType::Image(ImageSet {
 										input: ImageSetInput::Image(Image {
-											frame_count: input.frame_count,
-											width: input.width,
-											height: input.height,
+											frame_count: input.frame_count as i32,
+											width: input.width as i32,
+											height: input.height as i32,
 											path: input.path.map(|p| p.path).unwrap_or_default(),
 											mime: input.content_type,
-											size: input.size as u64,
+											size: input.size as i64,
 										}),
 										outputs,
 									}),
@@ -328,12 +339,12 @@ async fn handle_success(
 							#[query(serde)]
 							image_set: ImageSet {
 								input: ImageSetInput::Image(Image {
-									frame_count: input.frame_count,
-									width: input.width,
-									height: input.height,
+									frame_count: input.frame_count as i32,
+									width: input.width as i32,
+									height: input.height as i32,
 									path: input.path.map(|p| p.path).unwrap_or_default(),
 									mime: input.content_type,
-									size: input.size as u64,
+									size: input.size as i64,
 								}),
 								outputs,
 							},

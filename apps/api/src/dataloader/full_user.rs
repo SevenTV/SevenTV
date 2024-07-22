@@ -6,7 +6,7 @@ use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
-use shared::database::role::permissions::Permissions;
+use shared::database::role::permissions::{Permissions, PermissionsExt, UserPermission};
 use shared::database::role::{Role, RoleId};
 use shared::database::user::ban::ActiveBans;
 use shared::database::user::{FullUser, User, UserComputed, UserId};
@@ -69,6 +69,19 @@ impl FullUserLoader {
 			)
 			.await?;
 
+		let profile_pictures = global
+			.user_profile_picture_id_loader
+			.load_many(users.iter().filter_map(|user| {
+				let computed = computed.get(&user.id)?;
+
+				if computed.permissions.has(UserPermission::UseCustomProfilePicture) {
+					user.style.active_profile_picture
+				} else {
+					None
+				}
+			}))
+			.await?;
+
 		Ok(users
 			.into_iter()
 			.filter_map(|user| {
@@ -80,7 +93,19 @@ impl FullUserLoader {
 					computed.permissions.merge(active_bans.permissions());
 				}
 
-				Some((user.id, FullUser { user, computed }))
+				let active_profile_picture = user
+					.style
+					.active_profile_picture
+					.and_then(|id| profile_pictures.get(&id).cloned());
+
+				Some((
+					user.id,
+					FullUser {
+						user,
+						computed,
+						active_profile_picture,
+					},
+				))
 			})
 			.collect())
 	}
@@ -134,7 +159,14 @@ impl FullUserLoader {
 
 				role_ids.extend(computed.entitlements.roles.iter().cloned());
 
-				(id, FullUser { user, computed })
+				(
+					id,
+					FullUser {
+						user,
+						computed,
+						active_profile_picture: None,
+					},
+				)
 			})
 			.collect::<HashMap<_, _>>();
 
@@ -154,6 +186,17 @@ impl FullUserLoader {
 			)
 			.await?;
 
+		let profile_pictures = global
+			.user_profile_picture_id_loader
+			.load_many(users.values().filter_map(|user| {
+				if user.computed.permissions.has(UserPermission::UseCustomProfilePicture) {
+					user.style.active_profile_picture
+				} else {
+					None
+				}
+			}))
+			.await?;
+
 		roles.sort_by_key(|r| r.rank);
 
 		for user in users.values_mut() {
@@ -169,6 +212,11 @@ impl FullUserLoader {
 				.map(|r| r.id)
 				.filter(|r| user.computed.entitlements.roles.contains(r))
 				.collect();
+
+			user.active_profile_picture = user
+				.style
+				.active_profile_picture
+				.and_then(|id| profile_pictures.get(&id).cloned());
 		}
 
 		Ok(users)

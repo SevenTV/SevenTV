@@ -159,58 +159,97 @@ use super::filter;
 pub use super::traits::__ArrayLike;
 
 impl<T> __AssertUpdateBounds<Set<T>, T> for T {}
+impl<T> __AssertUpdateBounds<Set<T>, T> for &T {}
 impl<T> __AssertUpdateBounds<Set<Option<T>>, Option<T>> for T {}
+impl<T> __AssertUpdateBounds<Set<Option<T>>, Option<T>> for &T {}
+impl<T> __AssertUpdateBounds<Set<Option<T>>, Option<T>> for Option<&T> {}
 impl<T> __AssertUpdateBoundsFlatten<Set<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<Set<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Set<T>, T> for Set<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Set<T>, T> for &Set<T> {}
 
 impl<T> __AssertUpdateBounds<Unset<T>, T> for bool {}
 impl<T> __AssertUpdateBoundsFlatten<Unset<T>, T> for bool {}
 impl<T> __AssertUpdateBoundsFlatten<Unset<T>, T> for Unset<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Unset<T>, T> for &Unset<T> {}
 
 impl<T> __AssertUpdateBounds<Inc<T>, T> for T {}
+impl<T> __AssertUpdateBounds<Inc<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Inc<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<Inc<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Inc<T>, T> for Inc<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Inc<T>, T> for &Inc<T> {}
 
 impl<T> __AssertUpdateBounds<Mul<T>, T> for T {}
+impl<T> __AssertUpdateBounds<Mul<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Mul<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<Mul<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Mul<T>, T> for Mul<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Mul<T>, T> for &Mul<T> {}
 
 impl<T> __AssertUpdateBounds<Max<T>, T> for T {}
+impl<T> __AssertUpdateBounds<Max<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Max<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<Max<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Max<T>, T> for Max<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Max<T>, T> for &Max<T> {}
 
 impl<T> __AssertUpdateBounds<Min<T>, T> for T {}
+impl<T> __AssertUpdateBounds<Min<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Min<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<Min<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Min<T>, T> for Min<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Min<T>, T> for &Min<T> {}
 
 impl<T> __AssertUpdateBounds<Push<T>, T> for T {}
+impl<T> __AssertUpdateBounds<Push<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Push<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<Push<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Push<T>, T> for Push<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Push<T>, T> for &Push<T> {}
 
 impl<T> __AssertUpdateBounds<AddToSet<T>, T> for T {}
+impl<T> __AssertUpdateBounds<AddToSet<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<AddToSet<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<AddToSet<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<AddToSet<T>, T> for AddToSet<T> {}
+impl<T> __AssertUpdateBoundsFlatten<AddToSet<T>, T> for &AddToSet<T> {}
 
 impl<T> __AssertUpdateBounds<Pull<T>, T> for T {}
+impl<T> __AssertUpdateBounds<Pull<T>, T> for &T {}
 impl<T> __AssertUpdateBounds<Pull<T>, T> for filter::Value<T> {}
+impl<T> __AssertUpdateBounds<Pull<T>, T> for &filter::Value<T> {}
 impl<T> __AssertUpdateBoundsFlatten<Pull<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<Pull<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Pull<T>, T> for filter::Value<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Pull<T>, T> for &filter::Value<T> {}
 impl<T> __AssertUpdateBoundsFlatten<Pull<T>, T> for Pull<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Pull<T>, T> for &Pull<T> {}
 
 impl<T> __AssertUpdateBounds<Pop<T>, T> for i32 {}
 impl<T> __AssertUpdateBoundsFlatten<Pop<T>, T> for i32 {}
 impl<T> __AssertUpdateBoundsFlatten<Pop<T>, T> for Pop<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Pop<T>, T> for &Pop<T> {}
 
 impl<T> __AssertUpdateBounds<PullAll<T>, T> for T {}
+impl<T> __AssertUpdateBounds<PullAll<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<PullAll<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<PullAll<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<PullAll<T>, T> for PullAll<T> {}
+impl<T> __AssertUpdateBoundsFlatten<PullAll<T>, T> for &PullAll<T> {}
 
 impl<T> __AssertUpdateBounds<Bit<T>, T> for T {}
+impl<T> __AssertUpdateBounds<Bit<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Bit<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<Bit<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Bit<T>, T> for Bit<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Bit<T>, T> for &Bit<T> {}
 
 impl<T> __AssertUpdateBounds<SetOnInsert<T>, T> for T {}
+impl<T> __AssertUpdateBounds<SetOnInsert<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<SetOnInsert<T>, T> for T {}
+impl<T> __AssertUpdateBoundsFlatten<SetOnInsert<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<SetOnInsert<T>, T> for SetOnInsert<T> {}
+impl<T> __AssertUpdateBoundsFlatten<SetOnInsert<T>, T> for &SetOnInsert<T> {}
 
 pub use macros::mongo_update_query as update;

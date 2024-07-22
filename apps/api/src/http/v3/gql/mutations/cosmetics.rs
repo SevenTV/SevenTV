@@ -157,7 +157,7 @@ impl CosmeticPaintInput {
 						task_id: id,
 						path: path.path,
 						mime: content_type,
-						size,
+						size: size as i64,
 					},
 					Err(e) => {
 						tracing::error!(error = ?e, "failed to start send image processor request");
@@ -174,10 +174,7 @@ impl CosmeticPaintInput {
 					}
 				};
 
-				PaintLayerType::Image(ImageSet {
-					input,
-					..Default::default()
-				})
+				PaintLayerType::Image(ImageSet { input, outputs: vec![] })
 			}
 		};
 

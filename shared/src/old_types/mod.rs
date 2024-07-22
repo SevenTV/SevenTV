@@ -21,7 +21,6 @@ use crate::database::paint::PaintId;
 use crate::database::role::permissions::{PermissionsExt, UserPermission};
 use crate::database::role::RoleId;
 use crate::database::user::connection::{Platform, UserConnection};
-use crate::database::user::profile_picture::UserProfilePicture;
 use crate::database::user::{FullUser, UserId};
 
 pub mod cosmetic;
@@ -95,7 +94,6 @@ impl UserPartialModel {
 		user: FullUser,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
-		profile_picture: Option<UserProfilePicture>,
 		cdn_base_url: &str,
 	) -> Self {
 		let main_connection = user.connections.first();
@@ -120,7 +118,8 @@ impl UserPartialModel {
 		let paint = paint.and_then(|paint| if Some(paint.id) == paint_id { Some(paint) } else { None });
 
 		let avatar_url = if user.has(UserPermission::UseCustomProfilePicture) {
-			profile_picture
+			user.active_profile_picture
+				.as_ref()
 				.map(|p| {
 					p.image_set
 						.outputs

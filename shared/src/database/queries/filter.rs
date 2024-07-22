@@ -212,15 +212,23 @@ pub use super::traits::__ArrayLike;
 /// This implies that for a filter of type `T`; `T` is a valid value as well as
 /// `Value<T>`
 impl<T> __AssertFilterBounds<T> for T {}
+impl<T> __AssertFilterBounds<T> for &T {}
 impl<T> __AssertFilterBoundsFlatten<T> for T {}
+impl<T> __AssertFilterBoundsFlatten<T> for &T {}
 impl<T> __AssertFilterBoundsFlatten<T> for Value<T> {}
+impl<T> __AssertFilterBoundsFlatten<T> for &Value<T> {}
 
 impl<T> __AssertFilterBounds<Option<T>> for T {}
-impl<T> __AssertFilterBoundsFlatten<Option<T>> for T {}
-impl<T> __AssertFilterBoundsFlatten<Option<T>> for Value<T> {}
+impl<T> __AssertFilterBounds<Option<T>> for &T {}
+impl<T> __AssertFilterBounds<Option<T>> for Option<&T> {}
 
 impl<T> __AssertFilterBounds<Vec<T>> for T {}
+impl<T> __AssertFilterBounds<Vec<T>> for &T {}
+impl<T> __AssertFilterBounds<Vec<T>> for &[T] {}
 impl<T> __AssertFilterBoundsFlatten<Vec<T>> for T {}
+impl<T> __AssertFilterBoundsFlatten<Vec<T>> for &T {}
+impl<T> __AssertFilterBoundsFlatten<Vec<T>> for &[T] {}
 impl<T> __AssertFilterBoundsFlatten<Vec<T>> for Value<T> {}
+impl<T> __AssertFilterBoundsFlatten<Vec<T>> for &Value<T> {}
 
 pub use macros::mongo_filter_query as filter;

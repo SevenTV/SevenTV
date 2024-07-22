@@ -5,17 +5,19 @@ use std::time::Duration;
 use anyhow::Context;
 use async_nats::jetstream::{consumer, stream};
 use futures::StreamExt;
-use mongodb::bson::{doc, to_bson};
+use mongodb::bson::doc;
 use mongodb::options::ReturnDocument;
 use prost::Message;
 use scuffle_foundations::context::{self, ContextFutExt};
 use scuffle_image_processor_proto::{event_callback, EventCallback};
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
 use shared::database::badge::Badge;
-use shared::database::emote::Emote;
-use shared::database::image_set::Image;
-use shared::database::paint::{Paint, PaintLayerId};
-use shared::database::user::User;
+use shared::database::emote::{Emote, EmoteFlags};
+use shared::database::image_set::{Image, ImageSet, ImageSetInput};
+use shared::database::paint::{Paint, PaintData, PaintLayer, PaintLayerId, PaintLayerType};
+use shared::database::queries::{filter, update};
+use shared::database::user::profile_picture::UserProfilePicture;
+use shared::database::user::{User, UserStyle};
 use shared::database::MongoCollection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::image_processor::Subject;
@@ -150,10 +152,10 @@ async fn handle_success(
 				None => "".to_string(),
 			},
 			mime: i.content_type,
-			size: i.size as u64,
-			width: i.width,
-			height: i.height,
-			frame_count: i.frame_count,
+			size: i.size as i64,
+			width: i.width as i32,
+			height: i.height as i32,
+			frame_count: i.frame_count as i32,
 		})
 		.collect();
 
@@ -162,19 +164,44 @@ async fn handle_success(
 
 	match subject {
 		Subject::Emote(id) => {
+			let bit_update = if animated {
+				Some(update::update! {
+					#[query(bit)]
+					Emote {
+						#[query(bit = "or")]
+						flags: EmoteFlags::Animated
+					}
+				})
+			} else {
+				None
+			};
+
 			let emote = Emote::collection(&global.db)
 				.find_one_and_update(
-					doc! {
-						"_id": id,
+					filter::filter! {
+						Emote {
+							#[query(rename = "_id")]
+							id: id,
+						}
 					},
-					doc! {
-						"$set": {
-							"animated": animated,
-							"image_set.input.width": input.width,
-							"image_set.input.height": input.height,
-							"image_set.input.frame_count": input.frame_count,
-							"image_set.outputs": to_bson(&outputs)?,
+					update::update! {
+						#[query(set)]
+						Emote {
+							#[query(serde)]
+							image_set: ImageSet {
+								input: ImageSetInput::Image(Image {
+									frame_count: input.frame_count as i32,
+									width: input.width as i32,
+									height: input.height as i32,
+									path: input.path.map(|p| p.path).unwrap_or_default(),
+									mime: input.content_type,
+									size: input.size as i64,
+								}),
+								outputs,
+							},
 						},
+						#[query(bit)]
+						bit_update
 					},
 				)
 				.session(&mut session)
@@ -237,64 +264,102 @@ async fn handle_success(
 				.await?;
 		}
 		Subject::ProfilePicture(id) => {
-			let outputs = to_bson(&outputs)?;
-
-			// https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline
-			let aggregation = vec![
-				doc! {
-					"$unset": {
-						"style.active_profile_picture.input.task_id": "",
+			let profile_picture = UserProfilePicture::collection(&global.db)
+				.find_one_and_update(
+					filter::filter! {
+						UserProfilePicture {
+							#[query(rename = "_id")]
+							id: id,
+						}
 					},
-					"$set": {
-						"style.active_profile_picture.input.width": input.width,
-						"style.active_profile_picture.input.height": input.height,
-						"style.active_profile_picture.input.frame_count": input.frame_count,
-						"style.active_profile_picture.outputs": outputs,
+					update::update! {
+						#[query(set)]
+						UserProfilePicture {
+							#[query(serde)]
+							image_set: ImageSet {
+								input: ImageSetInput::Image(Image {
+									frame_count: input.frame_count as i32,
+									width: input.width as i32,
+									height: input.height as i32,
+									path: input.path.map(|p| p.path).unwrap_or_default(),
+									mime: input.content_type,
+									size: input.size as i64,
+								}),
+								outputs,
+							},
+						}
 					},
-				},
-				// $push is not available in update pipelines
-				// so we have to use $concatArrays to append to an array
-				doc! {
-					"$set": {
-						"style.all_profile_pictures": {
-							"$concatArrays": [
-								"$style.all_profile_pictures",
-								["$style.active_profile_picture"]
-							],
-						},
-					},
-				},
-			];
-
-			User::collection(&global.db)
-				.update_one(
-					doc! {
-						"_id": id,
-					},
-					aggregation,
 				)
-				.session(&mut session)
 				.await?;
+
+			if let Some(profile_picture) = profile_picture {
+				User::collection(&global.db)
+					.update_one(
+						filter::filter! {
+							User {
+								#[query(rename = "_id")]
+								id: profile_picture.user_id,
+								#[query(flatten)]
+								style: UserStyle {
+									pending_profile_picture: Some(profile_picture.id),
+								}
+							}
+						},
+						update::update! {
+							#[query(set)]
+							User {
+								#[query(flatten)]
+								style: UserStyle {
+									active_profile_picture: Some(profile_picture.id),
+									pending_profile_picture: &None,
+								},
+							}
+						},
+					)
+					.await?;
+			}
 		}
 		Subject::Paint(id) => {
 			let layer_id: PaintLayerId = metadata.get("layer_id").context("missing layer_id")?.parse()?;
 
 			Paint::collection(&global.db)
 				.update_one(
-					doc! {
-						"_id": id,
-						"data.layers.id": layer_id,
+					filter::filter! {
+						Paint {
+							#[query(rename = "_id")]
+							id: id,
+							#[query(flatten)]
+							data: PaintData {
+								#[query(flatten)]
+								layers: PaintLayer {
+									#[query(rename = "_id")]
+									id: layer_id,
+								}
+							}
+						}
 					},
-					doc! {
-						"$unset": {
-							"data.layers.$.data.input.task_id": "",
-						},
-						"$set": {
-							"data.layers.$.data.input.width": input.width,
-							"data.layers.$.data.input.height": input.height,
-							"data.layers.$.data.input.frame_count": input.frame_count,
-							"data.layers.$.data.outputs": to_bson(&outputs)?,
-						},
+					update::update! {
+						#[query(set)]
+						Paint {
+							#[query(flatten)]
+							data: PaintData {
+								#[query(index = "$", flatten)]
+								layers: PaintLayer {
+									#[query(serde)]
+									ty: PaintLayerType::Image(ImageSet {
+										input: ImageSetInput::Image(Image {
+											frame_count: input.frame_count as i32,
+											width: input.width as i32,
+											height: input.height as i32,
+											path: input.path.map(|p| p.path).unwrap_or_default(),
+											mime: input.content_type,
+											size: input.size as i64,
+										}),
+										outputs,
+									})
+								}
+							}
+						}
 					},
 				)
 				.session(&mut session)
@@ -303,16 +368,28 @@ async fn handle_success(
 		Subject::Badge(id) => {
 			Badge::collection(&global.db)
 				.update_one(
-					doc! {
-						"_id": id,
+					filter::filter! {
+						Badge {
+							#[query(rename = "_id")]
+							id: id,
+						}
 					},
-					doc! {
-						"$set": {
-							"image_set.input.width": input.width,
-							"image_set.input.height": input.height,
-							"image_set.input.frame_count": input.frame_count,
-							"image_set.outputs": to_bson(&outputs)?,
-						},
+					update::update! {
+						#[query(set)]
+						Badge {
+							#[query(serde)]
+							image_set: ImageSet {
+								input: ImageSetInput::Image(Image {
+									frame_count: input.frame_count as i32,
+									width: input.width as i32,
+									height: input.height as i32,
+									path: input.path.map(|p| p.path).unwrap_or_default(),
+									mime: input.content_type,
+									size: input.size as i64,
+								}),
+								outputs,
+							},
+						}
 					},
 				)
 				.session(&mut session)
@@ -330,37 +407,89 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 	match subject {
 		Subject::Emote(id) => {
 			Emote::collection(&global.db)
-				.delete_one(doc! {
-					"_id": id,
+				.delete_one(filter::filter! {
+					Emote {
+						#[query(rename = "_id")]
+						id,
+					}
 				})
 				.await?;
 		}
 		Subject::ProfilePicture(id) => {
-			User::collection(&global.db)
-				.update_one(doc! { "_id": id }, doc! { "style.active_profile_picture": null })
+			let profile_picture = UserProfilePicture::collection(&global.db)
+				.find_one_and_delete(filter::filter! {
+					UserProfilePicture {
+						#[query(rename = "_id")]
+						id,
+					}
+				})
 				.await?;
+
+			if let Some(profile_picture) = profile_picture {
+				User::collection(&global.db)
+					.update_one(
+						filter::filter! {
+							User {
+								#[query(rename = "_id")]
+								id: profile_picture.user_id,
+								#[query(flatten)]
+								style: UserStyle {
+									pending_profile_picture: Some(profile_picture.id),
+								}
+							}
+						},
+						update::update! {
+							#[query(set)]
+							User {
+								#[query(flatten)]
+								style: UserStyle {
+									pending_profile_picture: &None,
+								},
+							}
+						},
+					)
+					.await?;
+			}
 		}
 		Subject::Paint(id) => {
 			let layer_id: PaintLayerId = metadata.get("layer_id").context("missing layer_id")?.parse()?;
 
 			Paint::collection(&global.db)
 				.update_one(
-					doc! {
-						"_id": id,
-						"data.layers": { "id": layer_id },
+					filter::filter! {
+						Paint {
+							#[query(rename = "_id")]
+							id: id,
+							#[query(flatten)]
+							data: PaintData {
+								#[query(flatten)]
+								layers: PaintLayer {
+									id: layer_id,
+								}
+							}
+						}
 					},
-					doc! {
-						"$pull": {
-							"data.layers": { "id": layer_id },
-						},
+					update::update! {
+						#[query(pull)]
+						Paint {
+							#[query(flatten)]
+							data: PaintData {
+								layers: PaintLayer {
+									id: layer_id,
+								}
+							}
+						}
 					},
 				)
 				.await?;
 		}
 		Subject::Badge(id) => {
 			Badge::collection(&global.db)
-				.delete_one(doc! {
-					"_id": id,
+				.delete_one(filter::filter! {
+					Badge {
+						#[query(rename = "_id")]
+						id: id,
+					}
 				})
 				.await?;
 		}
@@ -378,8 +507,11 @@ async fn handle_fail(
 ) -> anyhow::Result<()> {
 	if let Subject::Emote(id) = subject {
 		let emote = Emote::collection(&global.db)
-			.find_one_and_delete(doc! {
-				"_id": id,
+			.find_one_and_delete(filter::filter! {
+				Emote {
+					#[query(rename = "_id")]
+					id: id,
+				}
 			})
 			.await?;
 

@@ -118,4 +118,9 @@ impl<T: Send + Sync> TypedCollection<T> {
 		let filter = filter.into();
 		self.0.delete_one(filter.to_document())
 	}
+
+	pub fn count_documents(&self, filter: impl Into<filter::Filter<T>>) -> mongodb::action::CountDocuments<'_> {
+		let filter = filter.into();
+		self.0.count_documents(filter.to_document())
+	}
 }

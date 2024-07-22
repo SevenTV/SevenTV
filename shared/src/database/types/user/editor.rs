@@ -5,7 +5,7 @@ use crate::database::types::MongoGenericCollection;
 use crate::database::MongoCollection;
 use crate::typesense::types::impl_typesense_type;
 
-#[derive(Debug, Clone, Copy, Default, serde::Deserialize, serde::Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize, Hash, PartialEq, Eq)]
 pub struct UserEditorId {
 	pub user_id: UserId,
 	pub editor_id: UserId,
@@ -33,7 +33,7 @@ impl std::str::FromStr for UserEditorId {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "user_editors")]
 #[mongo(index(fields("_id.user_id" = 1, "_id.editor_id" = 1)))]
 #[mongo(index(fields("_id.editor_id" = 1, "_id.user_id" = 1)))]

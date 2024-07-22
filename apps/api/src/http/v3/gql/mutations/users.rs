@@ -86,7 +86,7 @@ impl UserOps {
 				#[query(pull)]
 				User {
 					connections: DbUserConnection {
-						platform_id: id,
+						platform_id: id.clone(),
 					}
 				}
 			})

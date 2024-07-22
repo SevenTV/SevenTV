@@ -10,13 +10,13 @@ use crate::config::ImageProcessorConfig;
 use crate::database::badge::BadgeId;
 use crate::database::emote::EmoteId;
 use crate::database::paint::{PaintId, PaintLayerId};
+use crate::database::user::profile_picture::UserProfilePictureId;
 use crate::database::user::UserId;
-use crate::database::Id;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Subject {
 	Emote(EmoteId),
-	ProfilePicture(UserId),
+	ProfilePicture(UserProfilePictureId),
 	Paint(PaintId),
 	Badge(BadgeId),
 	Wildcard,
@@ -241,19 +241,17 @@ impl ImageProcessor {
 
 	pub async fn upload_profile_picture(
 		&self,
-		id: UserId,
+		id: UserProfilePictureId,
+		user_id: UserId,
 		data: Bytes,
 	) -> tonic::Result<image_processor::ProcessImageResponse> {
-		// random id for the profile picture
-		let pp_id = Id::<()>::new();
-
 		let req = self.make_request(
-			Some(self.make_input_upload(format!("/user/{id}/profile-picture/{pp_id}/input.{{ext}}"), data)),
+			Some(self.make_input_upload(format!("/user/{user_id}/profile-picture/{id}/input.{{ext}}"), data)),
 			self.make_task(
-				self.make_output(format!("/user/{id}/profile-picture/{pp_id}/{{scale}}x{{static}}.{{ext}}")),
+				self.make_output(format!("/user/{user_id}/profile-picture/{id}/{{scale}}x{{static}}.{{ext}}")),
 				self.make_events(
 					Subject::ProfilePicture(id),
-					[("user_id".to_string(), id.to_string())].into_iter().collect(),
+					[("user_id".to_string(), user_id.to_string())].into_iter().collect(),
 				),
 			),
 		);

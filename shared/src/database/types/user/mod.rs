@@ -9,7 +9,7 @@ pub mod session;
 pub mod settings;
 
 use connection::UserConnection;
-use profile_picture::UserProfilePictureId;
+use profile_picture::{UserProfilePicture, UserProfilePictureId};
 use settings::UserSettings;
 
 use super::badge::BadgeId;
@@ -88,6 +88,7 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 pub struct FullUser {
 	pub user: User,
 	pub computed: UserComputed,
+	pub active_profile_picture: Option<UserProfilePicture>,
 }
 
 #[derive(Debug, Clone)]

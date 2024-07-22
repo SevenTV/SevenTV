@@ -104,7 +104,7 @@ impl Job for CosmeticsJob {
 							task_id: id,
 							path: path.path,
 							mime: content_type,
-							size: size,
+							size: size as i64,
 						}
 					}
 					Err(e) => return outcome.with_error(e),
@@ -113,10 +113,7 @@ impl Job for CosmeticsJob {
 					}
 				};
 
-				let image_set = ImageSet {
-					input,
-					..Default::default()
-				};
+				let image_set = ImageSet { input, outputs: vec![] };
 
 				let tags = tag.map(|t| vec![t]).unwrap_or_default();
 				match Badge::collection(self.global.target_db())
@@ -198,17 +195,14 @@ impl Job for CosmeticsJob {
 									task_id: id,
 									path: path.path,
 									mime: content_type,
-									size: size,
+									size: size as i64,
 								}
 							}
 							Err(e) => return outcome.with_error(e),
 							_ => return outcome.with_error(error::Error::NotImplemented("missing image upload info")),
 						};
 
-						Some(PaintLayerType::Image(ImageSet {
-							input,
-							..Default::default()
-						}))
+						Some(PaintLayerType::Image(ImageSet { input, outputs: vec![] }))
 					}
 					types::PaintData::Url { image_url: None, .. } => None,
 				};

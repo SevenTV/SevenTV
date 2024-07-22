@@ -7,14 +7,16 @@ use axum::response::IntoResponse;
 use axum::routing::{delete, get, patch, post, put};
 use axum::{Extension, Json, Router};
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
+use mongodb::bson::doc;
 use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
 use serde::Deserialize;
 use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{FlagPermission, PermissionsExt, UserPermission};
 use shared::database::user::connection::Platform;
 use shared::database::user::editor::{EditorUserPermission, UserEditorId};
-use shared::database::user::{User, UserId};
+use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
+use shared::database::user::{User, UserId, UserStyle};
 use shared::database::MongoCollection;
 use shared::old_types::UserConnectionPartialModel;
 
@@ -213,7 +215,13 @@ pub async fn upload_user_profile_picture(
 		));
 	}
 
-	let input = match global.image_processor.upload_profile_picture(target_user.id, body).await {
+	let profile_picture_id = UserProfilePictureId::new();
+
+	let input = match global
+		.image_processor
+		.upload_profile_picture(profile_picture_id, target_user.id, body)
+		.await
+	{
 		Ok(ProcessImageResponse {
 			id,
 			error: None,
@@ -226,7 +234,7 @@ pub async fn upload_user_profile_picture(
 			task_id: id,
 			path: path.path,
 			mime: content_type,
-			size,
+			size: size as i64,
 		},
 		Ok(ProcessImageResponse { error: Some(err), .. }) => {
 			// At this point if we get a decode error then the image is invalid
@@ -250,21 +258,36 @@ pub async fn upload_user_profile_picture(
 		}
 	};
 
-	let image_set = ImageSet { input, outputs: vec![] };
-	let image_set = to_bson(&image_set).map_err(|e| {
-		tracing::error!(error = %e, "failed to serialize image set");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+	UserProfilePicture::collection(&global.db)
+		.insert_one(UserProfilePicture {
+			id: profile_picture_id,
+			user_id: target_user.id,
+			image_set: ImageSet { input, outputs: vec![] },
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
+		})
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to insert profile picture");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 	User::collection(&global.db)
 		.update_one(
-			doc! {
-				"_id": target_user.id,
+			filter::filter! {
+				User {
+					#[query(rename = "_id")]
+					id: target_user.id,
+				}
 			},
-			doc! {
-				"$set": {
-					"style.active_profile_picture": image_set,
-					"updated_at": Some(bson::DateTime::from(chrono::Utc::now())),
+			update::update! {
+				#[query(set)]
+				User {
+					#[query(flatten)]
+					style: UserStyle {
+						active_profile_picture: Some(profile_picture_id),
+					},
+					updated_at: chrono::Utc::now(),
 				}
 			},
 		)

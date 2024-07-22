@@ -5,7 +5,7 @@ use crate::database::Id;
 
 pub type UserProfilePictureId = Id<UserProfilePicture>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "user_profile_pictures")]
 #[mongo(index(fields(user_id = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]

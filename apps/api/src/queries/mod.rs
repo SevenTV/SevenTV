@@ -1,10 +1,11 @@
+use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
 use futures::TryStreamExt;
 use mongodb::error::{TRANSIENT_TRANSACTION_ERROR, UNKNOWN_TRANSACTION_COMMIT_RESULT};
 use mongodb::results::{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult};
-use shared::database::audit_log::AuditLog;
+use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
 use spin::Mutex;
 
@@ -12,258 +13,6 @@ use crate::global::Global;
 
 /// TOOD(lennart): whatever this is supposed to be.
 type EmittedEvent = ();
-
-macro_rules! define_queries {
-	($name:ident, $options:ty, $output:ty, $fn:ident) => {
-		#[allow(dead_code, unused_variables)]
-		pub trait $name {
-			type Collection: MongoCollection + serde::de::DeserializeOwned;
-			type Filter<'a>: serde::Serialize + 'a
-			where
-				Self: 'a;
-
-			/// Filter to use for the fetch.
-			fn filter(&self) -> Self::Filter<'_>;
-
-			/// 	Options to use for the fetch.
-			fn options(&self) -> Option<$options> {
-				None
-			}
-
-			/// Executes the query using the given session.
-			fn execute<T: Send>(
-				&self,
-				session: &mut TransactionSession<T>,
-			) -> impl std::future::Future<Output = Result<$output, TransactionError<T>>> + Send
-			where
-				Self: Sized + Send + Sync,
-			{
-				session.$fn(self)
-			}
-		}
-	};
-	($name:ident, $options:ty, $output:ty, $fn:ident,update = $resp:ty) => {
-		#[allow(dead_code, unused_variables)]
-		pub trait $name {
-			type Collection: MongoCollection + serde::de::DeserializeOwned;
-			type Filter<'a>: serde::Serialize + 'a
-			where
-				Self: 'a;
-			type Update<'a>: serde::Serialize + 'a
-			where
-				Self: 'a;
-
-			/// Filter to use for the fetch.
-			fn filter(&self) -> Self::Filter<'_>;
-
-			/// Update's to apply
-			fn update(&self) -> Self::Update<'_>;
-
-			/// 	Options to use for the fetch.
-			fn options(&self) -> Option<$options> {
-				None
-			}
-
-			/// Events to emit
-			fn emit_events(&self, resp: $resp) -> impl IntoIterator<Item = EmittedEvent> {
-				std::iter::empty()
-			}
-
-			/// Audit logs to create
-			fn audit_logs(&self, resp: $resp) -> impl IntoIterator<Item = AuditLog> {
-				std::iter::empty()
-			}
-
-			/// Executes the query using the given session.
-			fn execute<T: Send>(
-				&self,
-				session: &mut TransactionSession<T>,
-			) -> impl std::future::Future<Output = Result<$output, TransactionError<T>>> + Send
-			where
-				Self: Sized + Send + Sync,
-			{
-				session.$fn(self)
-			}
-		}
-	};
-	($name:ident, $options:ty, $output:ty, $fn:ident,delete = $resp:ty) => {
-		#[allow(dead_code, unused_variables)]
-		pub trait $name {
-			type Collection: MongoCollection + serde::de::DeserializeOwned;
-			type Filter<'a>: serde::Serialize + 'a
-			where
-				Self: 'a;
-
-			/// Filter to use for the fetch.
-			fn filter(&self) -> Self::Filter<'_>;
-
-			/// 	Options to use for the fetch.
-			fn options(&self) -> Option<$options> {
-				None
-			}
-
-			/// Events to emit
-			fn emit_events(&self, resp: $resp) -> Vec<EmittedEvent> {
-				Vec::new()
-			}
-
-			/// Audit logs to create
-			fn audit_logs(&self, resp: $resp) -> Vec<AuditLog> {
-				Vec::new()
-			}
-
-			/// Executes the query using the given session.
-			fn execute<T: Send>(
-				&self,
-				session: &mut TransactionSession<T>,
-			) -> impl std::future::Future<Output = Result<$output, TransactionError<T>>> + Send
-			where
-				Self: Sized + Send + Sync,
-			{
-				session.$fn(self)
-			}
-		}
-	};
-}
-
-define_queries!(FindQuery, mongodb::options::FindOptions, Vec<Self::Collection>, find);
-
-define_queries!(CountQuery, mongodb::options::CountOptions, u64, count);
-
-define_queries!(
-	FindOneQuery,
-	mongodb::options::FindOneOptions,
-	Option<Self::Collection>,
-	find_one
-);
-
-define_queries!(
-	FindOneAndUpdateQuery,
-	mongodb::options::FindOneAndUpdateOptions,
-	Option<Self::Collection>,
-	find_one_and_update,
-	update = Option<&Self::Collection>
-);
-
-define_queries!(
-	UpdateQuery,
-	mongodb::options::UpdateOptions,
-	UpdateResult,
-	update,
-	update = &UpdateResult
-);
-
-define_queries!(
-	UpdateOneQuery,
-	mongodb::options::UpdateOptions,
-	UpdateResult,
-	update_one,
-	update = &UpdateResult
-);
-
-define_queries!(
-	DeleteQuery,
-	mongodb::options::DeleteOptions,
-	DeleteResult,
-	delete,
-	delete = &DeleteResult
-);
-
-define_queries!(
-	FindOneAndDeleteQuery,
-	mongodb::options::FindOneAndDeleteOptions,
-	Option<Self::Collection>,
-	find_one_and_delete,
-	delete = Option<&Self::Collection>
-);
-
-#[allow(dead_code, unused_variables)]
-pub trait InsertOneQuery {
-	type Collection: MongoCollection + serde::de::DeserializeOwned + serde::Serialize;
-
-	fn insert(&self) -> &Self::Collection;
-
-	fn options(&self) -> Option<mongodb::options::InsertOneOptions> {
-		None
-	}
-
-	fn audit_logs(&self, resp: &InsertOneResult) -> impl IntoIterator<Item = AuditLog> {
-		None
-	}
-
-	fn emit_events(&self, resp: &InsertOneResult) -> impl IntoIterator<Item = EmittedEvent> {
-		None
-	}
-
-	fn execute<T: Send>(
-		&self,
-		session: &mut TransactionSession<'_, T>,
-	) -> impl std::future::Future<Output = Result<InsertOneResult, TransactionError<T>>> + Send
-	where
-		Self: Sized + Send + Sync,
-	{
-		session.insert_one(self)
-	}
-}
-
-#[allow(dead_code, unused_variables)]
-pub trait InsertManyQuery {
-	type Collection: MongoCollection + serde::de::DeserializeOwned + serde::Serialize;
-
-	fn insert(&self) -> impl IntoIterator<Item = &Self::Collection>;
-
-	fn options(&self) -> Option<mongodb::options::InsertManyOptions> {
-		None
-	}
-
-	fn audit_logs(&self, resp: &InsertManyResult) -> impl IntoIterator<Item = AuditLog> {
-		None
-	}
-
-	fn emit_events(&self, resp: &InsertManyResult) -> impl IntoIterator<Item = EmittedEvent> {
-		None
-	}
-
-	fn execute<T: Send>(
-		&self,
-		session: &mut TransactionSession<'_, T>,
-	) -> impl std::future::Future<Output = Result<InsertManyResult, TransactionError<T>>> + Send
-	where
-		Self: Sized + Send + Sync,
-	{
-		session.insert_many(self)
-	}
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct MongoSet<T> {
-	#[serde(rename = "$set")]
-	pub set: T,
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct MongoSetOnInsert<T> {
-	#[serde(rename = "$setOnInsert")]
-	pub set_on_insert: T,
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct MongoPull<T> {
-	#[serde(rename = "$pull")]
-	pub pull: T,
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct MongoPush<T> {
-	#[serde(rename = "$push")]
-	pub push: T,
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct MongoIn<T> {
-	#[serde(rename = "$in")]
-	pub in_: T,
-}
 
 pub struct TransactionSession<'a, T>(Arc<Mutex<SessionInner<'a>>>, PhantomData<T>); //  
 
@@ -284,28 +33,32 @@ impl<'a, T> TransactionSession<'a, T> {
 }
 
 impl<T> TransactionSession<'_, T> {
-	pub async fn find<U: FindQuery>(&mut self, find: &U) -> Result<Vec<U::Collection>, TransactionError<T>> {
+	pub async fn find<U: MongoCollection + serde::de::DeserializeOwned>(
+		&mut self,
+		filter: filter::Filter<U>,
+		options: Option<mongodb::options::FindOptions>,
+	) -> Result<Vec<U>, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let filter = bson::to_document(&find.filter()).map_err(TransactionError::Filter)?;
-
-		let mut find = <U::Collection as MongoCollection>::collection(&this.global.db)
+		let mut find = U::collection(&this.global.db)
 			.find(filter)
-			.with_options(find.options())
+			.with_options(options)
 			.session(&mut this.session)
 			.await?;
 
 		Ok(find.stream(&mut this.session).try_collect().await?)
 	}
 
-	pub async fn find_one<U: FindOneQuery>(&mut self, find_one: &U) -> Result<Option<U::Collection>, TransactionError<T>> {
+	pub async fn find_one<U: MongoCollection + serde::de::DeserializeOwned>(
+		&mut self,
+		filter: filter::Filter<U>,
+		options: Option<mongodb::options::FindOneOptions>,
+	) -> Result<Option<U>, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let filter = bson::to_document(&find_one.filter()).map_err(TransactionError::Filter)?;
-
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
+		let result = U::collection(&this.global.db)
 			.find_one(filter)
-			.with_options(find_one.options())
+			.with_options(options)
 			.session(&mut this.session)
 			.await
 			.map_err(TransactionError::Mongo)?;
@@ -313,124 +66,100 @@ impl<T> TransactionSession<'_, T> {
 		Ok(result)
 	}
 
-	pub async fn find_one_and_update<U: FindOneAndUpdateQuery>(
+	pub async fn find_one_and_update<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
-		find_one_and_update: &U,
-	) -> Result<Option<U::Collection>, TransactionError<T>> {
+		filter: filter::Filter<U>,
+		update: update::Update<U>,
+		options: Option<mongodb::options::FindOneAndUpdateOptions>,
+	) -> Result<Option<U>, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let filter = bson::to_document(&find_one_and_update.filter()).map_err(TransactionError::Filter)?;
-		let update = bson::to_document(&find_one_and_update.update()).map_err(TransactionError::Update)?;
-
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
+		let result = U::collection(&this.global.db)
 			.find_one_and_update(filter, update)
+			.with_options(options)
 			.session(&mut this.session)
 			.await?;
-
-		AuditLog::collection(&this.global.db)
-			.insert_many(find_one_and_update.audit_logs(result.as_ref()))
-			.session(&mut this.session)
-			.await?;
-
-		this.events.extend(find_one_and_update.emit_events(result.as_ref()));
 
 		Ok(result)
 	}
 
-	pub async fn find_one_and_delete<U: FindOneAndDeleteQuery>(
+	pub async fn find_one_and_delete<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
-		find_one_and_delete: &U,
-	) -> Result<Option<U::Collection>, TransactionError<T>> {
+		filter: filter::Filter<U>,
+		options: Option<mongodb::options::FindOneAndDeleteOptions>,
+	) -> Result<Option<U>, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let filter = bson::to_document(&find_one_and_delete.filter()).map_err(TransactionError::Filter)?;
-
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
+		let result = U::collection(&this.global.db)
 			.find_one_and_delete(filter)
+			.with_options(options)
 			.session(&mut this.session)
 			.await
 			.map_err(TransactionError::Mongo)?;
 
-		AuditLog::collection(&this.global.db)
-			.insert_many(find_one_and_delete.audit_logs(result.as_ref()))
+		Ok(result)
+	}
+
+	pub async fn update<U: MongoCollection>(
+		&mut self,
+		filter: filter::Filter<U>,
+		update: update::Update<U>,
+		options: Option<mongodb::options::UpdateOptions>,
+	) -> Result<UpdateResult, TransactionError<T>> {
+		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
+
+		let result = U::collection(&this.global.db)
+			.update_many(filter, update)
+			.with_options(options)
 			.session(&mut this.session)
 			.await?;
-
-		this.events.extend(find_one_and_delete.emit_events(result.as_ref()));
 
 		Ok(result)
 	}
 
-	pub async fn update<U: UpdateQuery>(&mut self, update: &U) -> Result<UpdateResult, TransactionError<T>> {
+	pub async fn update_one<U: MongoCollection>(
+		&mut self,
+		filter: filter::Filter<U>,
+		update: update::Update<U>,
+		options: Option<mongodb::options::UpdateOptions>,
+	) -> Result<UpdateResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let filter = bson::to_document(&update.filter()).map_err(TransactionError::Filter)?;
-		let update_ = bson::to_document(&update.update()).map_err(TransactionError::Update)?;
-
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
-			.update_many(filter, update_)
+		let result = U::collection(&this.global.db)
+			.update_one(filter, update)
+			.with_options(options)
 			.session(&mut this.session)
 			.await?;
-
-		AuditLog::collection(&this.global.db)
-			.insert_many(update.audit_logs(&result))
-			.session(&mut this.session)
-			.await?;
-
-		this.events.extend(update.emit_events(&result));
 
 		Ok(result)
 	}
 
-	pub async fn update_one<U: UpdateOneQuery>(&mut self, update_one: &U) -> Result<UpdateResult, TransactionError<T>> {
+	pub async fn delete<U: MongoCollection>(
+		&mut self,
+		filter: filter::Filter<U>,
+		options: Option<mongodb::options::DeleteOptions>,
+	) -> Result<DeleteResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let filter = bson::to_document(&update_one.filter()).map_err(TransactionError::Filter)?;
-		let update_ = bson::to_document(&update_one.update()).map_err(TransactionError::Update)?;
-
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
-			.update_one(filter, update_)
-			.session(&mut this.session)
-			.await?;
-
-		AuditLog::collection(&this.global.db)
-			.insert_many(update_one.audit_logs(&result))
-			.session(&mut this.session)
-			.await?;
-
-		this.events.extend(update_one.emit_events(&result));
-
-		Ok(result)
-	}
-
-	pub async fn delete<U: DeleteQuery>(&mut self, delete: &U) -> Result<DeleteResult, TransactionError<T>> {
-		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
-
-		let filter = bson::to_document(&delete.filter()).map_err(TransactionError::Filter)?;
-
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
+		let result = U::collection(&this.global.db)
 			.delete_many(filter)
+			.with_options(options)
 			.session(&mut this.session)
 			.await?;
-
-		AuditLog::collection(&this.global.db)
-			.insert_many(delete.audit_logs(&result))
-			.session(&mut this.session)
-			.await?;
-
-		this.events.extend(delete.emit_events(&result));
 
 		Ok(result)
 	}
 
-	pub async fn count<U: CountQuery>(&mut self, count: &U) -> Result<u64, TransactionError<T>> {
+	pub async fn count<U: MongoCollection>(
+		&mut self,
+		filter: filter::Filter<U>,
+		options: Option<mongodb::options::CountOptions>,
+	) -> Result<u64, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let filter = bson::to_document(&count.filter()).map_err(TransactionError::Filter)?;
-
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
+		let result = U::collection(&this.global.db)
 			.count_documents(filter)
-			.with_options(count.options())
+			.with_options(options)
 			.session(&mut this.session)
 			.await
 			.map_err(TransactionError::Mongo)?;
@@ -438,46 +167,42 @@ impl<T> TransactionSession<'_, T> {
 		Ok(result)
 	}
 
-	pub async fn insert_one<U: InsertOneQuery>(&mut self, insert: &U) -> Result<InsertOneResult, TransactionError<T>> {
+	pub async fn insert_one<U: MongoCollection + serde::Serialize>(
+		&mut self,
+		insert: impl Borrow<U>,
+		options: Option<mongodb::options::InsertOneOptions>,
+	) -> Result<InsertOneResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
-			.insert_one(insert.insert())
-			.with_options(insert.options())
+		let result = U::collection(&this.global.db)
+			.insert_one(insert)
+			.with_options(options)
 			.session(&mut this.session)
-			.await
-			.map_err(TransactionError::Mongo)?;
-
-		AuditLog::collection(&this.global.db)
-			.insert_many(insert.audit_logs(&result))
-			.session(&mut this.session)
-			.await
-			.map_err(TransactionError::Mongo)?;
-
-		this.events.extend(insert.emit_events(&result));
+			.await?;
 
 		Ok(result)
 	}
 
-	pub async fn insert_many<U: InsertManyQuery>(&mut self, insert: &U) -> Result<InsertManyResult, TransactionError<T>> {
+	pub async fn insert_many<U: MongoCollection + serde::Serialize>(
+		&mut self,
+		items: impl IntoIterator<Item = impl Borrow<U>>,
+		options: Option<mongodb::options::InsertManyOptions>,
+	) -> Result<InsertManyResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
-		let result = <U::Collection as MongoCollection>::collection(&this.global.db)
-			.insert_many(insert.insert())
-			.with_options(insert.options())
+		let result = U::collection(&this.global.db)
+			.insert_many(items)
+			.with_options(options)
 			.session(&mut this.session)
-			.await
-			.map_err(TransactionError::Mongo)?;
-
-		AuditLog::collection(&this.global.db)
-			.insert_many(insert.audit_logs(&result))
-			.session(&mut this.session)
-			.await
-			.map_err(TransactionError::Mongo)?;
-
-		this.events.extend(insert.emit_events(&result));
+			.await?;
 
 		Ok(result)
+	}
+
+	pub fn register_event(&mut self, event: EmittedEvent) -> Result<(), TransactionError<T>> {
+		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
+		this.events.push(event);
+		Ok(())
 	}
 }
 
@@ -499,6 +224,8 @@ pub enum TransactionError<T> {
 	Update(bson::ser::Error),
 	#[error("custom error")]
 	Custom(T),
+	#[error("too many failures")]
+	TooManyFailures,
 }
 
 pub type TransactionResult<T> = Result<T, TransactionError<T>>;
@@ -546,7 +273,14 @@ where
 		events: Vec::new(),
 	})));
 
+	let mut retry_count = 0;
+
 	'retry_operation: loop {
+		if retry_count > 3 {
+			return Err(TransactionError::TooManyFailures);
+		}
+
+		retry_count += 1;
 		session.reset()?;
 		let result = (f.clone())(session.clone()).await;
 		let mut session_inner = session.0.try_lock().ok_or(TransactionError::SessionLocked)?;

@@ -7,7 +7,7 @@ use crate::database::{Id, MongoCollection};
 
 pub type EmoteId = Id<Emote>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "emotes")]
 #[mongo(index(fields(owner_id = 1)))]
 #[mongo(index(fields("merged.target_id" = 1)))]

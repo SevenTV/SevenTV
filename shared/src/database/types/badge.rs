@@ -5,7 +5,7 @@ use crate::database::{Id, MongoCollection};
 
 pub type BadgeId = Id<Badge>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "badges")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]

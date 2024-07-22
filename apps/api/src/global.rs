@@ -19,6 +19,7 @@ use shared::database::role::Role;
 use shared::database::ticket::Ticket;
 use shared::database::user::ban::UserBan;
 use shared::database::user::editor::UserEditor;
+use shared::database::user::profile_picture::UserProfilePicture;
 use shared::database::user::User;
 use shared::image_processor::ImageProcessor;
 
@@ -63,6 +64,7 @@ pub struct Global {
 	pub user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
 	pub user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
 	pub user_ban_by_user_id_loader: DataLoader<UserBanByUserIdLoader>,
+	pub user_profile_picture_id_loader: DataLoader<LoaderById<UserProfilePicture>>,
 	pub user_loader: FullUserLoader,
 	pub typesense: typesense_codegen::apis::configuration::Configuration,
 }
@@ -122,6 +124,7 @@ impl Global {
 			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),
 			user_ban_by_id_loader: LoaderById::new(db.clone()),
 			user_ban_by_user_id_loader: UserBanByUserIdLoader::new(db.clone()),
+			user_profile_picture_id_loader: LoaderById::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			typesense,
 			mongo,

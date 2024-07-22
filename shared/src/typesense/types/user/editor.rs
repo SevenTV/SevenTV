@@ -3,7 +3,7 @@ use crate::database::user::editor::{UserEditorId, UserEditorState};
 use crate::database::user::UserId;
 use crate::typesense::types::{TypesenseCollection, TypesenseGenericCollection, TypesenseString};
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, TypesenseCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, TypesenseCollection)]
 #[typesense(collection_name = "user_editors")]
 #[serde(deny_unknown_fields)]
 pub struct UserEditor {

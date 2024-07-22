@@ -76,10 +76,10 @@ impl From<&Image> for ImageFile {
 
 		Self {
 			name,
-			width: value.width,
-			height: value.height,
-			frame_count: value.frame_count,
-			size: value.size,
+			width: value.width as u32,
+			height: value.height as u32,
+			frame_count: value.frame_count as u32,
+			size: value.size as u64,
 			format: ImageFormat::from_mime(&value.mime).unwrap_or(ImageFormat::Webp),
 		}
 	}

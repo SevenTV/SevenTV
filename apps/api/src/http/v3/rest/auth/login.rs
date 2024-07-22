@@ -82,8 +82,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				User {
 					#[query(elem_match)]
 					connections: UserConnection {
-						platform: platform.into(),
-						platform_id: user_data.id,
+						platform,
+						platform_id: &user_data.id,
 					}
 				}
 			},
@@ -92,9 +92,9 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				User {
 					#[query(flatten, index = "$")]
 					connections: UserConnection {
-						platform_username: user_data.username,
-						platform_display_name: user_data.display_name,
-						platform_avatar_url: user_data.avatar,
+						platform_username: &user_data.username,
+						platform_display_name: &user_data.display_name,
+						platform_avatar_url: &user_data.avatar,
 						updated_at: chrono::Utc::now(),
 					},
 					updated_at: chrono::Utc::now(),
@@ -205,7 +205,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 							id: full_user.user.id,
 							#[query(elem_match)]
 							connections: UserConnection {
-								platform: platform.into(),
+								platform,
 								platform_id: user_data.id,
 							}
 						}
@@ -261,7 +261,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 					#[query(push)]
 					User {
 						#[query(serde)]
-						connections: new_connection,
+						connections: &new_connection,
 					},
 					#[query(set)]
 					User {
