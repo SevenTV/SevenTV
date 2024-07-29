@@ -10,11 +10,11 @@ mod dataloader;
 mod event_api;
 mod global;
 mod http;
-mod image_processor_callback;
+mod image_processor;
 mod jwt;
 mod mongo_updater;
-mod queries;
-mod utils;
+mod search;
+mod transactions;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
@@ -31,7 +31,7 @@ async fn main(settings: Matches<Config>) {
 		.with_signal(SignalKind::terminate());
 
 	let http_handle = tokio::spawn(http::run(global.clone()));
-	let image_processor_callback_handle = tokio::spawn(image_processor_callback::run(global.clone()));
+	let image_processor_handle = tokio::spawn(image_processor::run(global.clone()));
 
 	let handler = scuffle_foundations::context::Handler::global();
 
@@ -46,7 +46,7 @@ async fn main(settings: Matches<Config>) {
 
 	tokio::select! {
 		r = http_handle => tracing::warn!("http server exited: {:?}", r),
-		r = image_processor_callback_handle => tracing::warn!("image processor callback handler exited: {:?}", r),
+		r = image_processor_handle => tracing::warn!("image processor handler exited: {:?}", r),
 		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
 	}
 

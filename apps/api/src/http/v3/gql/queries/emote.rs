@@ -15,7 +15,7 @@ use super::user::{UserPartial, UserSearchResult};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};
-use crate::utils::{search, SearchOptions};
+use crate::search::{search, SearchOptions};
 
 #[derive(Default)]
 pub struct EmotesQuery;

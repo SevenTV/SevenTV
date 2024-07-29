@@ -32,7 +32,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 
 	let config = &global.config().image_processor;
 
-	let subject = Subject::Wildcard.to_string(&config.event_queue_topic_prefix);
+	let subject = Subject::wildcard(&config.event_queue_topic_prefix);
 
 	let stream = global
 		.jetstream()
@@ -280,9 +280,7 @@ async fn handle_success(
 				)
 				.await?;
 		}
-		Subject::Paint(id) => {
-			let layer_id: PaintLayerId = metadata.get("layer_id").context("missing layer_id")?.parse()?;
-
+		Subject::PaintLayer(id, layer_id) => {
 			Paint::collection(global.target_db())
 				.update_one(
 					filter::filter! {
@@ -353,7 +351,6 @@ async fn handle_success(
 				)
 				.await?;
 		}
-		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 	}
 
 	Ok(())
@@ -361,9 +358,7 @@ async fn handle_success(
 
 async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>) -> anyhow::Result<()> {
 	match subject {
-		Subject::Paint(id) => {
-			let layer_id: PaintLayerId = metadata.get("layer_id").context("missing layer_id")?.parse()?;
-
+		Subject::PaintLayer(id, layer_id) => {
 			Paint::collection(global.target_db())
 				.update_one(
 					filter::filter! {
@@ -403,7 +398,6 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 				})
 				.await?;
 		}
-		Subject::Wildcard => anyhow::bail!("received event for wildcard subject"),
 		_ => {}
 	}
 

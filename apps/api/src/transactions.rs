@@ -35,8 +35,8 @@ impl<'a, T> TransactionSession<'a, T> {
 impl<T> TransactionSession<'_, T> {
 	pub async fn find<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
-		filter: filter::Filter<U>,
-		options: Option<mongodb::options::FindOptions>,
+		filter: impl Into<filter::Filter<U>>,
+		options: impl Into<Option<mongodb::options::FindOptions>>,
 	) -> Result<Vec<U>, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -51,8 +51,8 @@ impl<T> TransactionSession<'_, T> {
 
 	pub async fn find_one<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
-		filter: filter::Filter<U>,
-		options: Option<mongodb::options::FindOneOptions>,
+		filter: impl Into<filter::Filter<U>>,
+		options: impl Into<Option<mongodb::options::FindOneOptions>>,
 	) -> Result<Option<U>, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -68,9 +68,9 @@ impl<T> TransactionSession<'_, T> {
 
 	pub async fn find_one_and_update<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
-		filter: filter::Filter<U>,
-		update: update::Update<U>,
-		options: Option<mongodb::options::FindOneAndUpdateOptions>,
+		filter: impl Into<filter::Filter<U>>,
+		update: impl Into<update::Update<U>>,
+		options: impl Into<Option<mongodb::options::FindOneAndUpdateOptions>>,
 	) -> Result<Option<U>, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -85,8 +85,8 @@ impl<T> TransactionSession<'_, T> {
 
 	pub async fn find_one_and_delete<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
-		filter: filter::Filter<U>,
-		options: Option<mongodb::options::FindOneAndDeleteOptions>,
+		filter: impl Into<filter::Filter<U>>,
+		options: impl Into<Option<mongodb::options::FindOneAndDeleteOptions>>,
 	) -> Result<Option<U>, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -102,9 +102,9 @@ impl<T> TransactionSession<'_, T> {
 
 	pub async fn update<U: MongoCollection>(
 		&mut self,
-		filter: filter::Filter<U>,
-		update: update::Update<U>,
-		options: Option<mongodb::options::UpdateOptions>,
+		filter: impl Into<filter::Filter<U>>,
+		update: impl Into<update::Update<U>>,
+		options: impl Into<Option<mongodb::options::UpdateOptions>>,
 	) -> Result<UpdateResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -119,9 +119,9 @@ impl<T> TransactionSession<'_, T> {
 
 	pub async fn update_one<U: MongoCollection>(
 		&mut self,
-		filter: filter::Filter<U>,
-		update: update::Update<U>,
-		options: Option<mongodb::options::UpdateOptions>,
+		filter: impl Into<filter::Filter<U>>,
+		update: impl Into<update::Update<U>>,
+		options: impl Into<Option<mongodb::options::UpdateOptions>>,
 	) -> Result<UpdateResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -136,8 +136,8 @@ impl<T> TransactionSession<'_, T> {
 
 	pub async fn delete<U: MongoCollection>(
 		&mut self,
-		filter: filter::Filter<U>,
-		options: Option<mongodb::options::DeleteOptions>,
+		filter: impl Into<filter::Filter<U>>,
+		options: impl Into<Option<mongodb::options::DeleteOptions>>,
 	) -> Result<DeleteResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -150,10 +150,26 @@ impl<T> TransactionSession<'_, T> {
 		Ok(result)
 	}
 
+	pub async fn delete_one<U: MongoCollection>(
+		&mut self,
+		filter: impl Into<filter::Filter<U>>,
+		options: impl Into<Option<mongodb::options::DeleteOptions>>,
+	) -> Result<DeleteResult, TransactionError<T>> {
+		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
+
+		let result = U::collection(&this.global.db)
+			.delete_one(filter)
+			.with_options(options)
+			.session(&mut this.session)
+			.await?;
+
+		Ok(result)
+	}
+
 	pub async fn count<U: MongoCollection>(
 		&mut self,
-		filter: filter::Filter<U>,
-		options: Option<mongodb::options::CountOptions>,
+		filter: impl Into<filter::Filter<U>>,
+		options: impl Into<Option<mongodb::options::CountOptions>>,
 	) -> Result<u64, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -170,7 +186,7 @@ impl<T> TransactionSession<'_, T> {
 	pub async fn insert_one<U: MongoCollection + serde::Serialize>(
 		&mut self,
 		insert: impl Borrow<U>,
-		options: Option<mongodb::options::InsertOneOptions>,
+		options: impl Into<Option<mongodb::options::InsertOneOptions>>,
 	) -> Result<InsertOneResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -186,7 +202,7 @@ impl<T> TransactionSession<'_, T> {
 	pub async fn insert_many<U: MongoCollection + serde::Serialize>(
 		&mut self,
 		items: impl IntoIterator<Item = impl Borrow<U>>,
-		options: Option<mongodb::options::InsertManyOptions>,
+		options: impl Into<Option<mongodb::options::InsertManyOptions>>,
 	) -> Result<InsertManyResult, TransactionError<T>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
@@ -242,6 +258,12 @@ pub struct TransactionOutput<T> {
 	pub aborted: bool,
 }
 
+impl<T> TransactionOutput<T> {
+	pub fn into_inner(self) -> T {
+		self.output
+	}
+}
+
 impl<T> std::ops::Deref for TransactionOutput<T> {
 	type Target = T;
 
@@ -289,6 +311,7 @@ where
 				match session_inner.session.commit_transaction().await {
 					Ok(()) => {
 						// todo emit events
+						session_inner.events.clear();
 						return Ok(TransactionOutput { output, aborted: false });
 					}
 					Err(err) => {

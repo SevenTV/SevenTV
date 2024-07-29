@@ -17,12 +17,15 @@ use crate::database::user::UserId;
 pub enum Subject {
 	Emote(EmoteId),
 	ProfilePicture(UserProfilePictureId),
-	Paint(PaintId),
+	PaintLayer(PaintId, PaintLayerId),
 	Badge(BadgeId),
-	Wildcard,
 }
 
 impl Subject {
+	pub fn wildcard(prefix: &str) -> String {
+		format!("{prefix}.>")
+	}
+
 	pub fn to_string(&self, prefix: &str) -> String {
 		let mut parts: Vec<String> = Vec::new();
 
@@ -39,16 +42,14 @@ impl Subject {
 				parts.push("profile-picture".to_string());
 				parts.push(id.to_string());
 			}
-			Self::Paint(id) => {
-				parts.push("paint".to_string());
+			Self::PaintLayer(id, layer_id) => {
+				parts.push("paint-layer".to_string());
 				parts.push(id.to_string());
+				parts.push(layer_id.to_string());
 			}
 			Self::Badge(id) => {
 				parts.push("badge".to_string());
 				parts.push(id.to_string());
-			}
-			Self::Wildcard => {
-				parts.push(">".to_string());
 			}
 		}
 
@@ -56,20 +57,15 @@ impl Subject {
 	}
 
 	pub fn from_string(s: &str, prefix: &str) -> anyhow::Result<Self> {
-		let mut parts = s.split('.');
+		let s = s.strip_prefix(prefix).context("missing prefix")?.trim_start_matches('.');
 
-		if !prefix.is_empty() {
-			if parts.next().context("no prefix")? != prefix {
-				anyhow::bail!("invalid prefix");
-			}
-		}
+		let parts = s.split('.').collect::<Vec<_>>();
 
-		match (parts.next().context("subject too short")?, parts.next()) {
-			("emote", Some(id)) => Ok(Self::Emote(id.parse()?)),
-			("profile-picture", Some(id)) => Ok(Self::ProfilePicture(id.parse()?)),
-			("paint", Some(id)) => Ok(Self::Paint(id.parse()?)),
-			("badge", Some(id)) => Ok(Self::Badge(id.parse()?)),
-			(">", None) => Ok(Self::Wildcard),
+		match parts.as_slice() {
+			["emote", id] => Ok(Self::Emote(id.parse()?)),
+			["profile-picture", id] => Ok(Self::ProfilePicture(id.parse()?)),
+			["paint-layer", id, layer_id] => Ok(Self::PaintLayer(id.parse()?, layer_id.parse()?)),
+			["badge", id] => Ok(Self::Badge(id.parse()?)),
 			_ => anyhow::bail!("invalid subject"),
 		}
 	}
@@ -273,7 +269,7 @@ impl ImageProcessor {
 					..self.make_output(format!("/paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
 				},
 				self.make_events(
-					Subject::Paint(id),
+					Subject::PaintLayer(id, layer_id),
 					[
 						("paint_id".to_string(), id.to_string()),
 						("layer_id".to_string(), layer_id.to_string()),
