@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use serde::Deserialize;
 
 use super::{ConnectionError, PlatformUserData};
+use crate::global::Global;
 
 #[derive(Debug, Deserialize)]
 pub struct DiscordUserData {
@@ -27,8 +30,9 @@ impl From<DiscordUserData> for PlatformUserData {
 	}
 }
 
-pub async fn get_user_data(access_token: &str) -> Result<DiscordUserData, ConnectionError> {
-	let res = reqwest::Client::new()
+pub async fn get_user_data(global: &Arc<Global>, access_token: &str) -> Result<DiscordUserData, ConnectionError> {
+	let res = global
+		.http_client
 		.get("https://discord.com/api/v10/users/@me")
 		.bearer_auth(access_token)
 		.send()

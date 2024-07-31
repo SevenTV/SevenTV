@@ -30,9 +30,10 @@ impl From<TwitchUserData> for PlatformUserData {
 }
 
 pub async fn get_user_data(global: &Arc<Global>, access_token: &str) -> Result<TwitchUserData, ConnectionError> {
-	let res = reqwest::Client::new()
+	let res = global
+		.http_client
 		.get("https://api.twitch.tv/helix/users")
-		.header("Client-Id", global.config().api.connections.twitch.client_id.clone())
+		.header("Client-Id", global.config.api.connections.twitch.client_id.clone())
 		.bearer_auth(access_token)
 		.send()
 		.await

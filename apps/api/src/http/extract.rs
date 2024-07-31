@@ -12,8 +12,8 @@ pub struct Path<T>(pub T);
 #[async_trait]
 impl<S, T> FromRequestParts<S> for Path<T>
 where
-	// these trait bounds are copied from `impl FromRequest for
-	// axum::extract::path::Path`
+	// these trait bounds are copied from `impl FromRequest
+	// for axum::extract::path::Path`
 	T: DeserializeOwned + Send,
 	S: Send + Sync,
 {
@@ -43,8 +43,8 @@ pub struct Query<T>(pub T);
 #[async_trait]
 impl<S, T> FromRequestParts<S> for Query<T>
 where
-	// these trait bounds are copied from `impl FromRequest for
-	// axum::extract::path::Path`
+	// these trait bounds are copied from `impl FromRequest
+	// for axum::extract::path::Path`
 	T: DeserializeOwned + Send,
 	S: Send + Sync,
 {

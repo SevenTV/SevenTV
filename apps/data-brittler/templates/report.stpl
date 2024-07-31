@@ -16,7 +16,8 @@ Average speed: `<%= (*total_documents as f64 / took_seconds) as u64 %> documents
 
 The following section shows problems that need manual fixing.
 
-<% for o in &outcomes { %><% if !o.errors.is_empty() { %>## `<%= o.job_name %>`
+<% for o in &outcomes { %><% if !o.errors.is_empty() { %>
+## `<%= o.job_name %>`
 
 | # | Problem | Description | Data |
 |---|---------|-------------|------|

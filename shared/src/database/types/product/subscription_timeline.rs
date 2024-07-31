@@ -1,13 +1,19 @@
 use super::{ProductId, TimePeriod};
 use crate::database::duration::DurationUnit;
-use crate::database::types::GenericCollection;
+use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
-use crate::database::{Collection, Id};
+use crate::database::{Id, MongoCollection};
 
 pub type SubscriptionTimelineId = Id<SubscriptionTimeline>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "subscription_timelines")]
+#[mongo(index(fields(product_ids = 1)))]
+#[mongo(index(fields("periods.id" = 1)))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 pub struct SubscriptionTimeline {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionTimelineId,
 	/// The ids of the products that this timeline is associated with
@@ -19,39 +25,36 @@ pub struct SubscriptionTimeline {
 	pub product_ids: Vec<ProductId>,
 	pub name: String,
 	pub description: Option<String>,
-	pub periods: Vec<SubscriptionTimelinePeriod>,
-}
-
-impl Collection for SubscriptionTimeline {
-	const COLLECTION_NAME: &'static str = "subscription_timelines";
-
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"product_ids": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"periods.id": 1,
-				})
-				.options(mongodb::options::IndexOptions::builder().unique(true).build())
-				.build(),
-		]
-	}
+	pub tags: Vec<String>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	pub created_by: UserId,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 pub type SubscriptionTimelinePeriodId = Id<SubscriptionTimelinePeriod>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "subscription_timeline_periods")]
+#[mongo(index(fields(timeline_id = 1)))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 
 pub struct SubscriptionTimelinePeriod {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
 	pub id: SubscriptionTimelinePeriodId,
+	pub timeline_id: SubscriptionTimelineId,
 	pub name: String,
 	pub description: Option<String>,
+	pub created_by: UserId,
 	pub condition: SubscriptionTimelinePeriodCondition,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
@@ -64,38 +67,29 @@ pub enum SubscriptionTimelinePeriodCondition {
 
 pub type UserSubscriptionTimelineId = Id<UserSubscriptionTimeline>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "user_subscription_timelines")]
+#[mongo(index(fields(subscription_timeline_id = 1)))]
+#[mongo(index(fields(user_id = 1)))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct UserSubscriptionTimeline {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: UserSubscriptionTimelineId,
 	pub subscription_timeline_id: SubscriptionTimelineId,
 	pub user_id: UserId,
 	pub periods: Vec<TimePeriod>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl Collection for UserSubscriptionTimeline {
-	const COLLECTION_NAME: &'static str = "user_subscription_timelines";
-
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"user_id": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"subscription_timeline_id": 1,
-				})
-				.build(),
-		]
-	}
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
+pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	[
-		GenericCollection::new::<SubscriptionTimeline>(),
-		GenericCollection::new::<UserSubscriptionTimeline>(),
+		MongoGenericCollection::new::<SubscriptionTimeline>(),
+		MongoGenericCollection::new::<UserSubscriptionTimeline>(),
 	]
 }

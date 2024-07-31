@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "apps/*",
+    "apps/*", "macros",
     "shared",
 ]
 
@@ -18,3 +18,4 @@ lto = "fat"
 
 [workspace.dependencies]
 shared = { path = "shared" }
+macros = { path = "macros" }

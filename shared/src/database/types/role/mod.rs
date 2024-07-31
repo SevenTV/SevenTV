@@ -1,42 +1,37 @@
-use mongodb::options::IndexOptions;
-
 use self::permissions::Permissions;
-use super::GenericCollection;
-use crate::database::{Collection, Id};
+use super::user::UserId;
+use super::MongoGenericCollection;
+use crate::database::{Id, MongoCollection};
 
 pub mod permissions;
 
 pub type RoleId = Id<Role>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "roles")]
+#[mongo(index(fields(rank = 1), unique))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct Role {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: RoleId,
 	pub name: String,
 	pub description: Option<String>,
 	pub tags: Vec<String>,
+	pub created_by: UserId,
 	pub permissions: Permissions,
 	pub hoist: bool,
 	pub color: Option<i32>,
 	pub rank: i32,
+	pub applied_rank: Option<i32>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl Collection for Role {
-	const COLLECTION_NAME: &'static str = "roles";
-
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"rank": 1,
-				})
-				.options(IndexOptions::builder().unique(true).build())
-				.build(),
-		]
-	}
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	[GenericCollection::new::<Role>()]
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	[MongoGenericCollection::new::<Role>()]
 }

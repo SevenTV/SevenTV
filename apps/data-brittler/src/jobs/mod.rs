@@ -1,13 +1,13 @@
 use std::ops::AddAssign;
-use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Context;
 use bson::doc;
 use entitlements::EntitlementsJob;
-use futures::stream::FuturesUnordered;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
+use shared::database::entitlement::EntitlementEdge;
+use shared::database::MongoCollection;
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -82,11 +82,11 @@ pub trait Job: Sized + Send + Sync {
 
 	#[tracing::instrument(name = "job", skip_all, fields(job = Self::NAME))]
 	fn conditional_init_and_run(
-		global: &Arc<Global>,
+		global: Arc<Global>,
 		should_run: bool,
-	) -> anyhow::Result<Option<Pin<Box<impl Future<Output = anyhow::Result<JobOutcome>>>>>> {
+	) -> anyhow::Result<Option<impl Future<Output = anyhow::Result<JobOutcome>>>> {
 		if should_run {
-			let fut = Box::pin(
+			Ok(Some(
 				async move {
 					match Self::new(global.clone()).await {
 						Ok(job) => job.run().await,
@@ -94,8 +94,7 @@ pub trait Job: Sized + Send + Sync {
 					}
 				}
 				.in_current_span(),
-			);
-			Ok(Some(fut))
+			))
 		} else {
 			tracing::info!("skipping {} job", Self::NAME);
 			Ok(None)
@@ -169,50 +168,57 @@ pub trait Job: Sized + Send + Sync {
 }
 
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
+	tracing::info!("starting jobs");
+
 	let timer = Instant::now();
 
-	let futures: FuturesUnordered<Pin<Box<dyn Future<Output = anyhow::Result<JobOutcome>> + Send>>> =
-		FuturesUnordered::new();
-
-	// ugly ass code
-	if let Some(j) = UsersJob::conditional_init_and_run(&global, global.config().should_run_users())? {
-		futures.push(j);
-	}
-	if let Some(j) = BansJob::conditional_init_and_run(&global, global.config().should_run_bans())? {
-		futures.push(j);
-	}
-	if let Some(j) = EmotesJob::conditional_init_and_run(&global, global.config().should_run_emotes())? {
-		futures.push(j);
-	}
-	if let Some(j) = EmoteSetsJob::conditional_init_and_run(&global, global.config().should_run_emote_sets())? {
-		futures.push(j);
-	}
-	if let Some(j) = EntitlementsJob::conditional_init_and_run(&global, global.config().should_run_entitlements())? {
-		futures.push(j);
-	}
-	if let Some(j) = CosmeticsJob::conditional_init_and_run(&global, global.config().should_run_cosmetics())? {
-		futures.push(j);
-	}
-	if let Some(j) = RolesJob::conditional_init_and_run(&global, global.config().should_run_roles())? {
-		futures.push(j);
-	}
-	if let Some(j) = ReportsJob::conditional_init_and_run(&global, global.config().should_run_reports())? {
-		futures.push(j);
-	}
-	if let Some(j) = AuditLogsJob::conditional_init_and_run(&global, global.config().should_run_audit_logs())? {
-		futures.push(j);
-	}
-	if let Some(j) = MessagesJob::conditional_init_and_run(&global, global.config().should_run_messages())? {
-		futures.push(j);
-	}
-	if let Some(j) = SystemJob::conditional_init_and_run(&global, global.config().should_run_system())? {
-		futures.push(j);
-	}
-	if let Some(j) = PricesJob::conditional_init_and_run(&global, global.config().should_run_prices())? {
-		futures.push(j);
+	if global.config().truncate {
+		tracing::info!("dropping entitlements");
+		EntitlementEdge::collection(global.target_db()).drop().await?;
 	}
 
-	let results: Vec<JobOutcome> = futures.try_collect().await?;
+	macro_rules! job {
+		(
+			$([$name:ident, $fn:ident]),+
+		) => {
+			{
+				let mut futures = Vec::new();
+
+				let wrap_future = |f: tokio::task::JoinHandle<anyhow::Result<JobOutcome>>| async move {
+					match f.await {
+						Ok(Ok(outcome)) => Ok(outcome),
+						Ok(Err(e)) => anyhow::bail!("job error: {:#}", e),
+						Err(e) => anyhow::bail!("job error: {:#}", e),
+					}
+				};
+
+				$(
+					if let Some(j) = $name::conditional_init_and_run(global.clone(), global.config().$fn())? {
+						futures.push(wrap_future(tokio::spawn(j)));
+					}
+				)+
+
+				futures
+			}
+		};
+	}
+
+	let futures = job! {
+		[UsersJob, should_run_users],
+		[BansJob, should_run_bans],
+		[EmotesJob, should_run_emotes],
+		[EmoteSetsJob, should_run_emote_sets],
+		[EntitlementsJob, should_run_entitlements],
+		[CosmeticsJob, should_run_cosmetics],
+		[RolesJob, should_run_roles],
+		[ReportsJob, should_run_reports],
+		[AuditLogsJob, should_run_audit_logs],
+		[MessagesJob, should_run_messages],
+		[SystemJob, should_run_system],
+		[PricesJob, should_run_prices]
+	};
+
+	let results: Vec<JobOutcome> = futures::future::try_join_all(futures).await?;
 
 	let took_seconds = timer.elapsed().as_secs_f64();
 

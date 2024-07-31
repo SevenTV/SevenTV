@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
-use futures::StreamExt;
 use mongodb::bson::doc;
-use mongodb::options::FindOptions;
 use shared::database::role::permissions::TicketPermission;
 use shared::database::ticket::{Ticket, TicketKind, TicketMemberKind, TicketMessage, TicketTarget};
-use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 
 use super::user::{User, UserPartial};
@@ -93,11 +90,11 @@ impl Report {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_by_id_loader()
-			.load(self.actor_id.id())
+			.user_loader
+			.load_fast(global, self.actor_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u.into()))
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())
 	}
@@ -106,12 +103,12 @@ impl Report {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		Ok(global
-			.user_by_id_loader()
-			.load_many(self.assignee_ids.iter().map(|i| i.id()))
+			.user_loader
+			.load_fast_many(global, self.assignee_ids.iter().map(|i| i.id()))
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()
-			.map(|u| UserPartial::from_db(global, u.into()))
+			.map(|u| UserPartial::from_db(global, u))
 			.map(Into::into)
 			.collect())
 	}
@@ -135,107 +132,36 @@ impl ReportsQuery {
 	#[graphql(guard = "PermissionGuard::one(TicketPermission::ManageAbuse)")]
 	async fn reports<'ctx>(
 		&self,
-		ctx: &Context<'ctx>,
-		status: Option<ReportStatus>,
-		limit: Option<u32>,
-		after_id: Option<GqlObjectId>,
-		before_id: Option<GqlObjectId>,
+		_ctx: &Context<'ctx>,
+		_status: Option<ReportStatus>,
+		_limit: Option<u32>,
+		_after_id: Option<GqlObjectId>,
+		_before_id: Option<GqlObjectId>,
 	) -> Result<Vec<Report>, ApiError> {
-		if let (Some(after_id), Some(before_id)) = (after_id.map(|i| i.0), before_id.map(|i| i.0)) {
-			if after_id > before_id {
-				return Err(ApiError::BAD_REQUEST);
-			}
-		}
-
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let limit = limit.unwrap_or(12).min(100);
-
-		let mut search_args = mongodb::bson::Document::new();
-		// only return emote reports
-		search_args.insert("kind", TicketKind::Abuse as i32);
-		search_args.insert("targets.kind", "emote");
-
-		let mut id_args = mongodb::bson::Document::new();
-
-		if let Some(after_id) = after_id {
-			id_args.insert("$gt", after_id.0);
-		}
-
-		if let Some(before_id) = before_id {
-			id_args.insert("$lt", before_id.0);
-		}
-
-		if id_args.len() > 0 {
-			search_args.insert("_id", id_args);
-		}
-
-		match status {
-			Some(ReportStatus::Open) => {
-				search_args.insert("open", true);
-			}
-			Some(ReportStatus::Closed) => {
-				search_args.insert("open", false);
-			}
-			_ => {}
-		}
-
-		let tickets: Vec<_> = Ticket::collection(global.db())
-			.find(search_args)
-			.with_options(FindOptions::builder().limit(limit as i64).sort(doc! { "_id": -1 }).build())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.filter_map(|r| async move {
-				match r {
-					Ok(ticket) => Some(ticket),
-					Err(e) => {
-						tracing::error!(error = %e, "failed to load ticket");
-						None
-					}
-				}
-			})
-			.collect()
-			.await;
-
-		let mut all_messages = global
-			.ticket_messages_by_ticket_id_loader()
-			.load_many(tickets.iter().map(|t| t.id))
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		Ok(tickets
-			.into_iter()
-			.filter_map(|t| {
-				let messages = all_messages.remove(&t.id).unwrap_or_default();
-				Report::from_db(t, messages)
-			})
-			.collect())
+		// TODO(troy): implement
+		Err(ApiError::NOT_IMPLEMENTED)
 	}
 
 	#[graphql(guard = "PermissionGuard::one(TicketPermission::ManageAbuse)")]
 	async fn report<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Report>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let Some(ticket) = Ticket::collection(global.db())
-			.find_one(doc! {
-				"_id": id.0,
-				"kind": TicketKind::Abuse as i32,
-				"targets.kind": "emote",
-			})
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to load ticket");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?
-		else {
-			return Ok(None);
-		};
-
-		let messages = global
-			.ticket_messages_by_ticket_id_loader()
+		let ticket = global
+			.ticket_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
+
+		if ticket.kind != TicketKind::Abuse && !ticket.targets.iter().any(|t| matches!(t, TicketTarget::Emote(_))) {
+			return Ok(None);
+		}
+
+		let messages = global
+			.ticket_message_by_ticket_id_loader
+			.load(ticket.id)
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
 		Ok(Report::from_db(ticket, messages))

@@ -1,4 +1,5 @@
-use crate::database::{Collection, Id};
+use crate::database::{Id, MongoCollection};
+use crate::typesense::types::impl_typesense_type;
 
 mod emote;
 mod origin;
@@ -7,13 +8,22 @@ pub use emote::*;
 pub use origin::*;
 
 use super::user::UserId;
-use super::GenericCollection;
+use super::MongoGenericCollection;
 
 pub type EmoteSetId = Id<EmoteSet>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "emote_sets")]
+#[mongo(index(fields("emotes.id" = 1)))]
+#[mongo(index(fields(owner_id = 1)))]
+#[mongo(index(fields(_id = 1, "emotes.id" = 1), unique))]
+#[mongo(index(fields(_id = 1, "emotes.alias" = 1), unique))]
+#[mongo(index(fields("origin_config.origins.id" = 1)))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSet {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: EmoteSetId,
 	pub name: String,
@@ -24,39 +34,11 @@ pub struct EmoteSet {
 	pub owner_id: Option<UserId>,
 	pub origin_config: Option<EmoteSetOriginConfig>,
 	pub kind: EmoteSetKind,
-}
-
-impl Collection for EmoteSet {
-	const COLLECTION_NAME: &'static str = "emote_sets";
-
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"owner_id": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"emotes.id": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"_id": 1,
-					"emotes.id": 1,
-				})
-				.options(mongodb::options::IndexOptions::builder().unique(true).build())
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"_id": 1,
-					"emotes.alias": 1,
-				})
-				.options(mongodb::options::IndexOptions::builder().unique(true).build())
-				.build(),
-		]
-	}
+	pub emotes_changed_since_reindex: bool,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
@@ -69,6 +51,8 @@ pub enum EmoteSetKind {
 	Special = 3,
 }
 
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	[GenericCollection::new::<EmoteSet>()]
+impl_typesense_type!(EmoteSetKind, Int32);
+
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	[MongoGenericCollection::new::<EmoteSet>()]
 }

@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use scuffle_foundations::bootstrap::{bootstrap, Bootstrap};
+use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::settings::cli::Matches;
 use tokio::signal::unix::SignalKind;
+
+use self::config::Config;
 
 mod config;
 mod download_cosmetics;
@@ -14,32 +16,12 @@ mod jobs;
 mod report;
 mod types;
 
-struct BootstrapWrapper(config::Config);
-
-impl From<config::Config> for BootstrapWrapper {
-	fn from(config: config::Config) -> Self {
-		Self(config)
-	}
-}
-
-impl Bootstrap for BootstrapWrapper {
-	type Settings = config::Config;
-
-	fn telemetry_config(&self) -> Option<scuffle_foundations::telemetry::settings::TelemetrySettings> {
-		Some(self.0.telemetry.clone())
-	}
-
-	fn runtime_mode(&self) -> scuffle_foundations::bootstrap::RuntimeSettings {
-		self.0.runtime.clone()
-	}
-}
-
 #[bootstrap]
-async fn main(settings: Matches<BootstrapWrapper>) {
+async fn main(settings: Matches<Config>) {
 	tracing::info!("starting data-brittler");
 
 	let global = Arc::new(
-		global::Global::new(settings.settings.0)
+		global::Global::new(settings.settings)
 			.await
 			.expect("failed to initialize global"),
 	);

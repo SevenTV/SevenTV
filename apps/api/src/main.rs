@@ -1,6 +1,5 @@
-use scuffle_foundations::bootstrap::{bootstrap, Bootstrap, RuntimeSettings};
+use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::settings::cli::Matches;
-use scuffle_foundations::telemetry::settings::TelemetrySettings;
 use tokio::signal::unix::SignalKind;
 
 use crate::config::Config;
@@ -11,34 +10,17 @@ mod dataloader;
 mod event_api;
 mod global;
 mod http;
-mod image_processor_callback;
+mod image_processor;
 mod jwt;
-
-struct BootstrapWrapper(Config);
-
-impl From<Config> for BootstrapWrapper {
-	fn from(config: Config) -> Self {
-		Self(config)
-	}
-}
-
-impl Bootstrap for BootstrapWrapper {
-	type Settings = Config;
-
-	fn telemetry_config(&self) -> Option<TelemetrySettings> {
-		Some(self.0.telemetry.clone())
-	}
-
-	fn runtime_mode(&self) -> RuntimeSettings {
-		self.0.runtime.clone()
-	}
-}
+mod mongo_updater;
+mod search;
+mod transactions;
 
 #[bootstrap]
-async fn main(settings: Matches<BootstrapWrapper>) {
+async fn main(settings: Matches<Config>) {
 	tracing::info!("starting api");
 
-	let global = global::Global::new(settings.settings.0)
+	let global = global::Global::new(settings.settings)
 		.await
 		.expect("failed to initialize global");
 
@@ -49,7 +31,7 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 		.with_signal(SignalKind::terminate());
 
 	let http_handle = tokio::spawn(http::run(global.clone()));
-	let image_processor_callback_handle = tokio::spawn(image_processor_callback::run(global.clone()));
+	let image_processor_handle = tokio::spawn(image_processor::run(global.clone()));
 
 	let handler = scuffle_foundations::context::Handler::global();
 
@@ -64,7 +46,7 @@ async fn main(settings: Matches<BootstrapWrapper>) {
 
 	tokio::select! {
 		r = http_handle => tracing::warn!("http server exited: {:?}", r),
-		r = image_processor_callback_handle => tracing::warn!("image processor callback handler exited: {:?}", r),
+		r = image_processor_handle => tracing::warn!("image processor handler exited: {:?}", r),
 		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
 	}
 

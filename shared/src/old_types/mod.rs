@@ -17,7 +17,6 @@ use image::{ImageFile, ImageFormat, ImageHost};
 use crate::database::badge::BadgeId;
 use crate::database::emote::EmoteFlags;
 use crate::database::emote_set::{EmoteSet, EmoteSetEmoteFlag, EmoteSetId, EmoteSetKind};
-use crate::database::global::GlobalConfig;
 use crate::database::paint::PaintId;
 use crate::database::role::permissions::{PermissionsExt, UserPermission};
 use crate::database::role::RoleId;
@@ -93,7 +92,6 @@ pub struct UserPartialModel {
 impl UserPartialModel {
 	pub fn from_db(
 		user: FullUser,
-		global: &GlobalConfig,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
 		cdn_base_url: &str,
@@ -120,14 +118,20 @@ impl UserPartialModel {
 		let paint = paint.and_then(|paint| if Some(paint.id) == paint_id { Some(paint) } else { None });
 
 		let avatar_url = if user.has(UserPermission::UseCustomProfilePicture) {
-			user.style
-				.active_profile_picture
+			user.active_profile_picture
 				.as_ref()
-				.and_then(|s| s.outputs.iter().max_by_key(|i| i.size).map(|i| i.get_url(cdn_base_url)))
-				.or(main_connection.and_then(|c| c.platform_avatar_url.clone()))
+				.map(|p| {
+					p.image_set
+						.outputs
+						.iter()
+						.max_by_key(|i| i.height)
+						.map(|i| i.get_url(cdn_base_url))
+				})
+				.flatten()
 		} else {
 			None
 		}
+		.or(main_connection.and_then(|c| c.platform_avatar_url.clone()))
 		.unwrap_or_default();
 
 		UserPartialModel {
@@ -156,7 +160,7 @@ impl UserPartialModel {
 					UserConnectionPartialModel::from_db(
 						connection,
 						user.style.active_emote_set_id,
-						global.normal_emote_set_slot_capacity as i32,
+						user.computed.permissions.emote_set_capacity.unwrap_or_default(),
 					)
 				})
 				.collect(),

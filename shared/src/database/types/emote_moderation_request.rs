@@ -1,16 +1,17 @@
-use mongodb::options::IndexOptions;
-
 use super::emote::EmoteId;
 use super::user::UserId;
-use super::{Collection, GenericCollection};
+use super::{MongoCollection, MongoGenericCollection};
 use crate::database::Id;
+use crate::typesense::types::impl_typesense_type;
 
-#[derive(Debug, Clone, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
 #[repr(i32)]
 pub enum EmoteModerationRequestKind {
 	PublicListing = 0,
 	PersonalUse = 1,
 }
+
+impl_typesense_type!(EmoteModerationRequestKind, Int32);
 
 #[derive(Debug, Clone, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
 #[repr(i32)]
@@ -20,11 +21,19 @@ pub enum EmoteModerationRequestStatus {
 	Denied = 2,
 }
 
+impl_typesense_type!(EmoteModerationRequestStatus, Int32);
+
 pub type EmoteModerationRequestId = Id<EmoteModerationRequest>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "emote_moderation_requests")]
+#[mongo(index(fields(kind = 1, user_id = 1, status = 1)))]
+#[mongo(index(fields(kind = 1, emote_id = 1), unique))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct EmoteModerationRequest {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: EmoteModerationRequestId,
 	pub user_id: UserId,
@@ -35,31 +44,12 @@ pub struct EmoteModerationRequest {
 	pub country_code: Option<String>,
 	pub assigned_to: Vec<UserId>,
 	pub priority: i32,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl Collection for EmoteModerationRequest {
-	const COLLECTION_NAME: &'static str = "emote_moderation_requests";
-
-	fn indexes() -> Vec<mongodb::IndexModel> {
-		vec![
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"kind": 1,
-					"user_id": 1,
-					"status": 1,
-				})
-				.build(),
-			mongodb::IndexModel::builder()
-				.keys(mongodb::bson::doc! {
-					"kind": 1,
-					"emote_id": 1,
-				})
-				.options(IndexOptions::builder().unique(true).build())
-				.build(),
-		]
-	}
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	std::iter::once(GenericCollection::new::<EmoteModerationRequest>())
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	std::iter::once(MongoGenericCollection::new::<EmoteModerationRequest>())
 }

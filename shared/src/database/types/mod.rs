@@ -8,7 +8,6 @@ pub mod emote_set;
 pub mod entitlement;
 pub mod global;
 pub mod image_set;
-pub mod json_string;
 pub mod page;
 pub mod paint;
 pub mod product;
@@ -16,14 +15,31 @@ pub mod role;
 pub mod ticket;
 pub mod user;
 
-pub trait Collection: Send + Sync {
+pub use macros::MongoCollection;
+pub use mongodb;
+
+use super::queries::{CollectionExt, TypedCollection};
+
+pub trait MongoCollection: Send + Sync {
+	type Id: std::fmt::Debug
+		+ Clone
+		+ Eq
+		+ std::hash::Hash
+		+ serde::Serialize
+		+ serde::de::DeserializeOwned
+		+ Send
+		+ Sync
+		+ 'static;
+
 	const COLLECTION_NAME: &'static str;
 
-	fn collection(db: &mongodb::Database) -> mongodb::Collection<Self>
+	fn id(&self) -> Self::Id;
+
+	fn collection(db: &mongodb::Database) -> TypedCollection<Self>
 	where
 		Self: Sized,
 	{
-		db.collection(Self::COLLECTION_NAME)
+		db.collection(Self::COLLECTION_NAME).typed()
 	}
 
 	fn indexes() -> Vec<mongodb::IndexModel> {
@@ -31,13 +47,13 @@ pub trait Collection: Send + Sync {
 	}
 }
 
-struct GenericCollection {
+struct MongoGenericCollection {
 	name: &'static str,
 	indexes: Vec<mongodb::IndexModel>,
 }
 
-impl GenericCollection {
-	fn new<C: Collection>() -> Self {
+impl MongoGenericCollection {
+	fn new<C: MongoCollection>() -> Self {
 		Self {
 			name: C::COLLECTION_NAME,
 			indexes: C::indexes(),
@@ -55,26 +71,26 @@ impl GenericCollection {
 	}
 }
 
-fn collections() -> impl IntoIterator<Item = GenericCollection> {
+fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	std::iter::empty()
-		.chain(audit_log::collections())
-		.chain(automod::collections())
-		.chain(badge::collections())
-		.chain(emote::collections())
-		.chain(emote_set::collections())
-		.chain(entitlement::collections())
-		.chain(global::collections())
-		.chain(page::collections())
-		.chain(paint::collections())
-		.chain(product::collections())
-		.chain(role::collections())
-		.chain(ticket::collections())
-		.chain(user::collections())
-		.chain(emote_moderation_request::collections())
+		.chain(audit_log::mongo_collections())
+		.chain(automod::mongo_collections())
+		.chain(badge::mongo_collections())
+		.chain(emote::mongo_collections())
+		.chain(emote_set::mongo_collections())
+		.chain(entitlement::mongo_collections())
+		.chain(global::mongo_collections())
+		.chain(page::mongo_collections())
+		.chain(paint::mongo_collections())
+		.chain(product::mongo_collections())
+		.chain(role::mongo_collections())
+		.chain(ticket::mongo_collections())
+		.chain(user::mongo_collections())
+		.chain(emote_moderation_request::mongo_collections())
 }
 
-pub(super) async fn init_database(db: &mongodb::Database) -> anyhow::Result<()> {
-	for collection in collections() {
+pub(super) async fn init_mongo(db: &mongodb::Database) -> anyhow::Result<()> {
+	for collection in mongo_collections() {
 		collection.init(db).await?;
 	}
 

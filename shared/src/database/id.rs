@@ -7,6 +7,12 @@ use mongodb::bson::Bson;
 
 pub struct Id<S = ()>(ulid::Ulid, std::marker::PhantomData<S>);
 
+impl<S> crate::typesense::types::TypesenseType for Id<S> {
+	fn typesense_type() -> crate::typesense::types::FieldType {
+		crate::typesense::types::FieldType::String
+	}
+}
+
 impl<S> fmt::Debug for Id<S> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.debug_tuple(std::any::type_name::<Self>()).field(&self.0).finish()

@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use serde::Deserialize;
 
 use super::{ConnectionError, PlatformUserData};
+use crate::global::Global;
 
 #[derive(Debug, Deserialize)]
 struct YoutubeResponse {
@@ -46,8 +49,9 @@ impl From<YoutubeUserData> for PlatformUserData {
 	}
 }
 
-pub async fn get_user_data(access_token: &str) -> Result<YoutubeUserData, ConnectionError> {
-	let res = reqwest::Client::new()
+pub async fn get_user_data(global: &Arc<Global>, access_token: &str) -> Result<YoutubeUserData, ConnectionError> {
+	let res = global
+		.http_client
 		.get("https://youtube.googleapis.com/youtube/v3/channels?part=snippet&mine=true")
 		.bearer_auth(access_token)
 		.send()

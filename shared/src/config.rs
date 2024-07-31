@@ -1,38 +1,8 @@
-use scuffle_foundations::bootstrap::RuntimeSettings;
-use scuffle_foundations::settings::{auto_settings, Settings};
-use scuffle_foundations::telemetry::settings::TelemetrySettings;
-
-#[auto_settings]
-pub struct Config<T: Settings + Default> {
-	/// Pod configuration
-	pub pod: Pod,
-	/// Nats configuration
-	pub nats: Nats,
-	/// Telemetry configuration
-	pub telemetry: TelemetrySettings,
-	/// Runtime configuration
-	pub runtime: RuntimeSettings,
-	#[serde(flatten)]
-	pub extra: T,
-}
-
-impl<E: Settings + Default> std::ops::Deref for Config<E> {
-	type Target = E;
-
-	fn deref(&self) -> &Self::Target {
-		&self.extra
-	}
-}
-
-impl<E: Settings + Default> std::ops::DerefMut for Config<E> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.extra
-	}
-}
+use scuffle_foundations::settings::auto_settings;
 
 #[auto_settings]
 #[serde(default)]
-pub struct Nats {
+pub struct NatsConfig {
 	/// The URI to use for connecting to Nats
 	#[settings(default = vec!["nats://localhost:4222".to_string()])]
 	pub servers: Vec<String>,
@@ -68,7 +38,7 @@ pub struct TlsConfig {
 
 #[auto_settings]
 #[serde(default)]
-pub struct Pod {
+pub struct PodConfig {
 	/// Pod name
 	pub name: String,
 }
@@ -102,4 +72,33 @@ pub struct ImageProcessorConfig {
 	/// Output Drive Name
 	#[settings(default = "s3".into())]
 	pub output_drive_name: String,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct TypesenseConfig {
+	/// The URI to use for connecting to Typesense
+	#[settings(default = "http://localhost:8108".into())]
+	pub uri: String,
+
+	/// The API key to use for authentication
+	pub api_key: Option<String>,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct EventStreamConfig {
+	/// Replica count for the stream (in nats terms)
+	#[settings(default = 1)]
+	pub replica_count: i32,
+
+	/// The number of pending acks to buffer
+	#[settings(default = 1000)]
+	pub ack_capacity: usize,
+
+	/// The prefix to use for the streams created by this application, will be
+	/// prepended with a hyphen (if not already present and the stream name is
+	/// not empty)
+	#[settings(default = "seventv".into())]
+	pub stream_prefix: String,
 }

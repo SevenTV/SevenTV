@@ -1,14 +1,7 @@
-pub mod audit_log;
-pub mod badge;
 pub mod emote;
 pub mod emote_set;
-pub mod entitlement_edge;
-pub mod file_set;
 pub mod full_user;
-pub mod global_config;
-pub mod paint;
-pub mod product;
-pub mod role;
-pub mod ticket;
+pub mod ticket_message;
 pub mod user;
+pub mod user_bans;
 pub mod user_editor;

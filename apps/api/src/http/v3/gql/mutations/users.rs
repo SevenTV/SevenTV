@@ -2,13 +2,15 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use itertools::Itertools;
-use mongodb::bson::{doc, to_bson};
 use mongodb::options::ReturnDocument;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
-use shared::database::user::User;
-use shared::database::Collection;
+use shared::database::user::connection::UserConnection as DbUserConnection;
+use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId};
+use shared::database::user::{User, UserStyle};
+use shared::database::MongoCollection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::cosmetic::CosmeticKind;
 use shared::old_types::object_id::GqlObjectId;
@@ -59,50 +61,59 @@ impl UserOps {
 		}
 
 		let old_user = global
-			.user_loader()
+			.user_loader
 			.load(global, self.id.id())
 			.await
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let mut update = doc! {};
-		let mut update_pull = doc! {};
-
 		let emote_set = if let Some(emote_set_id) = data.emote_set_id {
 			// check if set exists
 			let emote_set = global
-				.emote_set_by_id_loader()
+				.emote_set_by_id_loader
 				.load(emote_set_id.id())
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?;
-
-			update.insert("style.active_emote_set_id", emote_set_id.0);
 
 			Some(emote_set)
 		} else {
 			None
 		};
 
-		if let Some(true) = data.unlink {
-			update_pull.insert("connections", doc! { "platform_id": &id });
-		}
+		let update_pull = if let Some(true) = data.unlink {
+			Some(update::update! {
+				#[query(pull)]
+				User {
+					connections: DbUserConnection {
+						platform_id: id.clone(),
+					}
+				}
+			})
+		} else {
+			None
+		};
 
-		let Some(user) = User::collection(global.db())
+		let Some(user) = User::collection(&global.db)
 			.find_one_and_update(
-				doc! {
-					"_id": self.id.0,
+				filter::filter! {
+					User {
+						#[query(rename = "_id")]
+						id: self.id.id(),
+					}
 				},
-				doc! {
-					"$set": update,
-					"$pull": update_pull,
+				update::update! {
+					#[query(set)]
+					User {
+						#[query(flatten)]
+						style: UserStyle {
+							#[query(optional)]
+							active_emote_set_id: data.emote_set_id.map(|id| id.id()),
+						},
+						updated_at: chrono::Utc::now(),
+					},
+					#[query(pull)]
+					update_pull,
 				},
 			)
 			.return_document(ReturnDocument::After)
@@ -123,7 +134,7 @@ impl UserOps {
 				.ok_or(ApiError::NOT_FOUND)?;
 
 			global
-				.event_api()
+				.event_api
 				.dispatch_event(
 					EventType::UpdateUser,
 					ChangeMap {
@@ -131,10 +142,9 @@ impl UserOps {
 						kind: ObjectKind::User,
 						actor: Some(UserPartialModel::from_db(
 							authed_user.clone(),
-							&global_config,
 							None,
 							None,
-							&global.config().api.cdn_origin,
+							&global.config.api.cdn_origin,
 						)),
 						pulled: vec![ChangeField {
 							key: "connections".to_string(),
@@ -160,13 +170,13 @@ impl UserOps {
 		if let Some(emote_set) = emote_set {
 			let old_set = match old_user.style.active_emote_set_id {
 				Some(id) => {
-					let set = global.emote_set_by_id_loader().load(id).await.map_err(|_| {
+					let set = global.emote_set_by_id_loader.load(id).await.map_err(|_| {
 						tracing::error!("failed to load old emote set");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
 					if let Some(set) = set {
-						let emotes = load_emote_set(global, &global_config, set.emotes.clone(), None, false)
+						let emotes = load_emote_set(global, set.emotes.clone(), None, false)
 							.await
 							.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -183,7 +193,7 @@ impl UserOps {
 			})?;
 
 			let new_set_id = emote_set.id;
-			let emotes = load_emote_set(global, &global_config, emote_set.emotes.clone(), None, false)
+			let emotes = load_emote_set(global, emote_set.emotes.clone(), None, false)
 				.await
 				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 			let new_set = EmoteSetModel::from_db(emote_set, emotes, None);
@@ -216,7 +226,7 @@ impl UserOps {
 				})?;
 
 				global
-					.event_api()
+					.event_api
 					.dispatch_event(
 						EventType::UpdateUser,
 						ChangeMap {
@@ -224,10 +234,9 @@ impl UserOps {
 							kind: ObjectKind::User,
 							actor: Some(UserPartialModel::from_db(
 								authed_user.clone(),
-								&global_config,
 								None,
 								None,
-								&global.config().api.cdn_origin,
+								&global.config.api.cdn_origin,
 							)),
 							updated: vec![ChangeField {
 								key: "connections".to_string(),
@@ -248,10 +257,24 @@ impl UserOps {
 			}
 		}
 
+		let full_user = global
+			.user_loader
+			.load_fast_user(global, user)
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
 		Ok(Some(
-			user.connections
-				.into_iter()
-				.map(|c| Some(UserConnection::from_db(c, &user.style, &global_config)))
+			full_user
+				.connections
+				.iter()
+				.cloned()
+				.map(|c| {
+					Some(UserConnection::from_db(
+						full_user.computed.permissions.emote_set_capacity.unwrap_or_default(),
+						c,
+						&full_user.style,
+					))
+				})
 				.collect(),
 		))
 	}
@@ -272,7 +295,7 @@ impl UserOps {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let mut session = global.mongo().start_session().await.map_err(|err| {
+		let mut session = global.mongo.start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -285,10 +308,15 @@ impl UserOps {
 		if let Some(permissions) = data.permissions {
 			if permissions == UserEditorModelPermission::none() {
 				// Remove editor
-				let res = shared::database::user::editor::UserEditor::collection(global.db())
-					.delete_one(doc! {
-						"user_id": self.id.0,
-						"editor_id": editor_id.0,
+				let res = DbUserEditor::collection(&global.db)
+					.delete_one(filter::filter! {
+						DbUserEditor {
+							#[query(serde, rename = "_id")]
+							id: UserEditorId {
+								user_id: self.id.id(),
+								editor_id: editor_id.id(),
+							},
+						}
 					})
 					.session(&mut session)
 					.await
@@ -298,7 +326,7 @@ impl UserOps {
 					})?;
 
 				if res.deleted_count > 0 {
-					AuditLog::collection(global.db())
+					AuditLog::collection(&global.db)
 						.insert_one(AuditLog {
 							id: AuditLogId::new(),
 							actor_id: Some(auth_session.user_id()),
@@ -308,6 +336,8 @@ impl UserOps {
 									editor_id: editor_id.id(),
 								},
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await
@@ -318,16 +348,24 @@ impl UserOps {
 				}
 			} else {
 				// Add or update editor
-				let res = shared::database::user::editor::UserEditor::collection(global.db())
+				let res = shared::database::user::editor::UserEditor::collection(&global.db)
 					.update_one(
-						doc! {
-							"user_id": self.id.0,
-							"editor_id": editor_id.0,
+						filter::filter! {
+							DbUserEditor {
+								#[query(serde, rename = "_id")]
+								id: UserEditorId {
+									user_id: self.id.id(),
+									editor_id: editor_id.id(),
+								},
+							}
 						},
-						doc! {
-							"$set": {
-								"permissions": to_bson(&permissions.to_db()).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
-							},
+						update::update! {
+							#[query(set)]
+							DbUserEditor {
+								#[query(serde)]
+								permissions: permissions.to_db(),
+								added_at: chrono::Utc::now(),
+							}
 						},
 					)
 					.upsert(user.has(UserPermission::InviteEditors))
@@ -340,7 +378,7 @@ impl UserOps {
 
 				// inserted
 				if res.matched_count == 0 {
-					AuditLog::collection(global.db())
+					AuditLog::collection(&global.db)
 						.insert_one(AuditLog {
 							id: AuditLogId::new(),
 							actor_id: Some(auth_session.user_id()),
@@ -350,6 +388,8 @@ impl UserOps {
 									editor_id: editor_id.id(),
 								},
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await
@@ -367,10 +407,10 @@ impl UserOps {
 		})?;
 
 		let editors = global
-			.user_editor_by_user_id_loader()
+			.user_editor_by_user_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
 		Ok(Some(
@@ -398,10 +438,10 @@ impl UserOps {
 		}
 
 		let user = global
-			.user_loader()
+			.user_loader
 			.load(global, self.id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let mut changes = vec![];
@@ -415,7 +455,7 @@ impl UserOps {
 
 				let old_paint = match user.style.active_paint_id {
 					Some(paint_id) => global
-						.paint_by_id_loader()
+						.paint_by_id_loader
 						.load(paint_id)
 						.await
 						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
@@ -423,20 +463,27 @@ impl UserOps {
 				};
 
 				let paint = global
-					.paint_by_id_loader()
+					.paint_by_id_loader
 					.load(update.id.id())
 					.await
 					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::NOT_FOUND)?;
 
-				let res = User::collection(global.db())
+				let res = User::collection(&global.db)
 					.update_one(
-						doc! {
-							"_id": self.id.0,
+						filter::filter! {
+							User {
+								#[query(rename = "_id")]
+								id: self.id.id(),
+							}
 						},
-						doc! {
-							"$set": {
-								"style.active_paint_id": update.id.0,
+						update::update! {
+							#[query(set)]
+							User {
+								#[query(flatten)]
+								style: UserStyle {
+									active_paint_id: update.id.id(),
+								}
 							}
 						},
 					)
@@ -477,7 +524,7 @@ impl UserOps {
 
 				let old_badge = match user.style.active_badge_id {
 					Some(badge_id) => global
-						.badge_by_id_loader()
+						.badge_by_id_loader
 						.load(badge_id)
 						.await
 						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
@@ -485,21 +532,28 @@ impl UserOps {
 				};
 
 				let badge = global
-					.badge_by_id_loader()
+					.badge_by_id_loader
 					.load(update.id.id())
 					.await
 					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::NOT_FOUND)?;
 
-				let res = User::collection(global.db())
+				let res = User::collection(&global.db)
 					.update_one(
-						doc! {
-							"_id": self.id.0,
-						},
-						doc! {
-							"$set": {
-								"style.active_badge_id": update.id.0,
+						filter::filter! {
+							User {
+								#[query(rename = "_id")]
+								id: self.id.id(),
 							}
+						},
+						update::update! {
+							#[query(set)]
+							User {
+								#[query(flatten)]
+								style: UserStyle {
+									active_badge_id: update.id.id(),
+								}
+							},
 						},
 					)
 					.await
@@ -535,15 +589,8 @@ impl UserOps {
 		};
 
 		if let Ok(true) = result {
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 			global
-				.event_api()
+				.event_api
 				.dispatch_event(
 					EventType::UpdateUser,
 					ChangeMap {
@@ -551,10 +598,9 @@ impl UserOps {
 						kind: ObjectKind::User,
 						actor: Some(UserPartialModel::from_db(
 							authed_user.clone(),
-							&global_config,
 							None,
 							None,
-							&global.config().api.cdn_origin,
+							&global.config.api.cdn_origin,
 						)),
 						updated: vec![ChangeField {
 							key: "style".to_string(),
@@ -593,37 +639,29 @@ impl UserOps {
 		let user = auth_session.user(global).await?;
 
 		let role = global
-			.role_by_id_loader()
+			.role_by_id_loader
 			.load(role_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let global_config = global
-			.global_config_loader()
-			.load(())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 		let mut changes = ChangeMap {
 			id: self.id.0.cast(),
 			kind: ObjectKind::User,
 			actor: Some(UserPartialModel::from_db(
 				auth_session.user(global).await?.clone(),
-				&global_config,
 				None,
 				None,
-				&global.config().api.cdn_origin,
+				&global.config.api.cdn_origin,
 			)),
 			..Default::default()
 		};
 
-		let mut session = global.mongo().start_session().await.map_err(|err| {
+		let mut session = global.mongo.start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -647,7 +685,7 @@ impl UserOps {
 					},
 				};
 
-				EntitlementEdge::collection(global.db())
+				EntitlementEdge::collection(&global.db)
 					.insert_one(&edge)
 					.session(&mut session)
 					.await
@@ -656,7 +694,7 @@ impl UserOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				AuditLog::collection(global.db())
+				AuditLog::collection(&global.db)
 					.insert_one(AuditLog {
 						id: AuditLogId::new(),
 						actor_id: Some(auth_session.user_id()),
@@ -664,6 +702,8 @@ impl UserOps {
 							target_id: self.id.id(),
 							data: AuditLogUserData::AddRole { role_id: role_id.id() },
 						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
 					})
 					.session(&mut session)
 					.await
@@ -690,13 +730,16 @@ impl UserOps {
 					.collect()
 			}
 			ListItemAction::Remove => {
-				let from = EntitlementEdgeKind::User { user_id: self.id.id() };
-				let to = EntitlementEdgeKind::Role { role_id: role_id.id() };
-
-				let res = EntitlementEdge::collection(global.db())
-					.delete_one(doc! {
-						"_id.from": to_bson(&from).expect("failed to convert to bson"),
-						"_id.to": to_bson(&to).expect("failed to convert to bson"),
+				let res = EntitlementEdge::collection(&global.db)
+					.delete_one(filter::filter! {
+						EntitlementEdge {
+							#[query(serde)]
+							id: EntitlementEdgeId {
+								from: EntitlementEdgeKind::User { user_id: self.id.id() }.into(),
+								to: EntitlementEdgeKind::Role { role_id: role_id.id() }.into(),
+								managed_by: None,
+							}
+						}
 					})
 					.session(&mut session)
 					.await
@@ -706,7 +749,7 @@ impl UserOps {
 					})?;
 
 				if res.deleted_count > 0 {
-					AuditLog::collection(global.db())
+					AuditLog::collection(&global.db)
 						.insert_one(AuditLog {
 							id: AuditLogId::new(),
 							actor_id: Some(auth_session.user_id()),
@@ -714,6 +757,8 @@ impl UserOps {
 								target_id: self.id.id(),
 								data: AuditLogUserData::RemoveRole { role_id: role_id.id() },
 							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
 						})
 						.session(&mut session)
 						.await
@@ -751,7 +796,7 @@ impl UserOps {
 		})?;
 
 		global
-			.event_api()
+			.event_api
 			.dispatch_event(EventType::UpdateUser, changes, self.id.0)
 			.await
 			.map_err(|e| {

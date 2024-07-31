@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::{User, UserId};
-use shared::database::{Collection, Id};
+use shared::database::MongoCollection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::{UserConnectionPartialModel, UserPartialModel};
 
@@ -58,8 +58,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		&code,
 		format!(
 			"{}/v3/auth?callback=true&platform={}",
-			global.config().api.api_origin,
-			query.platform
+			global.config.api.api_origin, query.platform
 		),
 	)
 	.await?;
@@ -67,7 +66,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	// query user data from platform
 	let user_data = connections::get_user_data(global, platform, &token.access_token).await?;
 
-	let mut session = global.mongo().start_session().await.map_err(|err| {
+	let mut session = global.mongo.start_session().await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start session");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
@@ -77,19 +76,29 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
 
-	let mut user = User::collection(global.db())
+	let mut user = User::collection(&global.db)
 		.find_one_and_update(
-			doc! {
-				"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
-				"connections.platform_id": &user_data.id,
+			filter::filter! {
+				User {
+					#[query(elem_match)]
+					connections: UserConnection {
+						platform,
+						platform_id: &user_data.id,
+					}
+				}
 			},
-			doc! {
-				"$set": {
-					"connections.$.platform_username": &user_data.username,
-					"connections.$.platform_display_name": &user_data.display_name,
-					"connections.$.platform_avatar_url": &user_data.avatar,
-					"connections.$.updated_at": chrono::Utc::now(),
-				},
+			update::update! {
+				#[query(set)]
+				User {
+					#[query(flatten, index = "$")]
+					connections: UserConnection {
+						platform_username: &user_data.username,
+						platform_display_name: &user_data.display_name,
+						platform_avatar_url: &user_data.avatar,
+						updated_at: chrono::Utc::now(),
+					},
+					updated_at: chrono::Utc::now(),
+				}
 			},
 		)
 		.session(&mut session)
@@ -141,7 +150,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				..Default::default()
 			});
 
-			User::collection(global.db())
+			User::collection(&global.db)
 				.insert_one(user.as_ref().unwrap())
 				.session(&mut session)
 				.await
@@ -158,16 +167,16 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		// load the default entitlements, as the user does not exist yet in the
 		// database.
 		global
-			.user_loader()
-			.load_user(user)
+			.user_loader
+			.load_user(global, user)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 	} else if let Some(user_id) = csrf_payload.user_id {
 		global
-			.user_loader()
+			.user_loader
 			.load(global, user_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or_else(|| ApiError::new_const(StatusCode::BAD_REQUEST, "user not found"))?
 	} else {
 		unreachable!("user should be created or loaded");
@@ -188,22 +197,31 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			|| logged_connection.platform_display_name != user_data.display_name
 		{
 			// Update user connection
-			if User::collection(global.db())
+			if User::collection(&global.db)
 				.update_one(
-					doc! {
-						"_id": full_user.user.id,
-						"connections.platform": to_bson(&platform).expect("failed to convert to bson"),
-						"connections.platform_id": user_data.id,
+					filter::filter! {
+						User {
+							#[query(rename = "_id")]
+							id: full_user.user.id,
+							#[query(elem_match)]
+							connections: UserConnection {
+								platform,
+								platform_id: user_data.id,
+							}
+						}
 					},
-					doc! {
-						"$set": {
-							"connections.$.platform_username": &user_data.username,
-							"connections.$.platform_display_name": &user_data.display_name,
-							"connections.$.platform_avatar_url": &user_data.avatar,
-							"connections.$.updated_at": chrono::Utc::now(),
-							// This will trigger a search engine update
-							"search_index.self_dirty": Id::<()>::new(),
-						},
+					update::update! {
+						#[query(set)]
+						User {
+							#[query(flatten, index = "$")]
+							connections: UserConnection {
+								platform_username: user_data.username,
+								platform_display_name: user_data.display_name,
+								platform_avatar_url: user_data.avatar,
+								updated_at: chrono::Utc::now(),
+							},
+							updated_at: chrono::Utc::now(),
+						}
 					},
 				)
 				.session(&mut session)
@@ -230,18 +248,24 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			linked_at: chrono::Utc::now(),
 		};
 
-		if User::collection(global.db())
+		if User::collection(&global.db)
 			.update_one(
-				doc! {
-					"_id": full_user.user.id,
+				filter::filter! {
+					User {
+						#[query(rename = "_id")]
+						id: full_user.user.id,
+					}
 				},
-				doc! {
-					"$push": {
-						"connections": to_bson(&new_connection).expect("failed to convert to bson"),
+				update::update! {
+					#[query(push)]
+					User {
+						#[query(serde)]
+						connections: &new_connection,
 					},
-					"$set": {
-						"search_index.self_dirty": Id::<()>::new(),
-					},
+					#[query(set)]
+					User {
+						updated_at: chrono::Utc::now(),
+					}
 				},
 			)
 			.session(&mut session)
@@ -253,15 +277,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			.modified_count
 			> 0
 		{
-			let global_config = global
-				.global_config_loader()
-				.load(())
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 			global
-				.event_api()
+				.event_api
 				.dispatch_event(
 					EventType::UpdateUser,
 					ChangeMap {
@@ -269,10 +286,9 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 						kind: ObjectKind::User,
 						actor: Some(UserPartialModel::from_db(
 							full_user.clone(),
-							&global_config,
 							None,
 							None,
-							&global.config().api.cdn_origin,
+							&global.config.api.cdn_origin,
 						)),
 						pushed: vec![ChangeField {
 							key: "connections".to_string(),
@@ -281,7 +297,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 							value: serde_json::to_value(UserConnectionModel::from(UserConnectionPartialModel::from_db(
 								new_connection,
 								full_user.style.active_emote_set_id,
-								global_config.normal_emote_set_slot_capacity,
+								full_user.computed.permissions.emote_set_capacity.unwrap_or_default(),
 							)))
 							.map_err(|e| {
 								tracing::error!(error = %e, "failed to serialize user connection");
@@ -313,7 +329,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			last_used_at: chrono::Utc::now(),
 		};
 
-		UserSession::collection(global.db())
+		UserSession::collection(&global.db)
 			.insert_one(&user_session)
 			.session(&mut session)
 			.await
@@ -327,7 +343,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		None
 	};
 
-	AuditLog::collection(global.db())
+	AuditLog::collection(&global.db)
 		.insert_one(AuditLog {
 			id: AuditLogId::new(),
 			actor_id: Some(full_user.id),
@@ -335,6 +351,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				target_id: full_user.id,
 				data: AuditLogUserData::Login { platform },
 			},
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		})
 		.session(&mut session)
 		.await
@@ -368,15 +386,12 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 		format!(
 			"{}/auth/callback?platform={}&token={}",
-			global.config().api.website_origin,
-			query.platform,
-			token
+			global.config.api.website_origin, query.platform, token
 		)
 	} else {
 		format!(
 			"{}/auth/callback?platform={}",
-			global.config().api.website_origin,
-			query.platform
+			global.config.api.website_origin, query.platform
 		)
 	};
 
@@ -391,10 +406,12 @@ pub fn handle_login(
 ) -> Result<String, ApiError> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
-		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config().api.connections.twitch),
-		Platform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config().api.connections.discord),
-		Platform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config().api.connections.google),
-		_ => return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform")),
+		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.api.connections.twitch),
+		Platform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config.api.connections.discord),
+		Platform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.api.connections.google),
+		_ => {
+			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform"));
+		}
 	};
 
 	let csrf = CsrfJwtPayload::new(user_id);
@@ -416,8 +433,7 @@ pub fn handle_login(
 		config.client_id,
 		urlencoding::encode(&format!(
 			"{}/v3/auth?callback=true&platform={}",
-			global.config().api.api_origin,
-			platform
+			global.config.api.api_origin, platform
 		)),
 		urlencoding::encode(scope),
 		csrf.random()

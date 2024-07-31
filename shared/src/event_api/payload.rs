@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
 // There is a lot of code in this file. I will try to explain it as best as I can.
-// These are the structs that were used in the previous implementation of the event-api, for the payloads.
-// When events are dispatched on NATs or received from the websocket, they SHOULD be in the form of these structs.
-// All of these structs have #[serde(default)] and #[serde(deny_unknown_fields)], this is because if we receive a
-// payload, with a value we don't recognize rather than ignoring it (which was previously the case), we will now error.
-// The reason this is desirable is because if we made a mistake in one of the payloads here we would like to know about
-// it rather than silently ignoring it, and potentially causing issues.
+// These are the structs that were used in the previous implementation of the event-api, for
+// the payloads. When events are dispatched on NATs or received from the websocket, they SHOULD
+// be in the form of these structs. All of these structs have #[serde(default)] and
+// #[serde(deny_unknown_fields)], this is because if we receive a payload, with a value we
+// don't recognize rather than ignoring it (which was previously the case), we will now error.
+// The reason this is desirable is because if we made a mistake in one of the payloads here we
+// would like to know about it rather than silently ignoring it, and potentially causing
+// issues.
 use super::types::{self, ChangeMap, CloseCode, EventType, SessionEffect};
 use super::MessagePayload;
 use crate::database::user::UserId;

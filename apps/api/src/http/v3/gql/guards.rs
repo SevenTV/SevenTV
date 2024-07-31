@@ -26,13 +26,6 @@ impl PermissionGuard {
 			all: true,
 		}
 	}
-
-	pub fn any(permissions: impl IntoIterator<Item = impl Into<Permission>>) -> Self {
-		Self {
-			permissions: permissions.into_iter().map(Into::into).collect(),
-			all: false,
-		}
-	}
 }
 
 impl Guard for PermissionGuard {

@@ -8,7 +8,7 @@ use shared::database::ticket::{
 	TicketTarget,
 };
 use shared::database::user::UserId;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -67,6 +67,8 @@ impl Job for ReportsJob {
 			user_id: report.actor_id.into(),
 			content: report.body,
 			files: vec![],
+			search_updated_at: None,
+			updated_at: chrono::Utc::now(),
 		});
 
 		let mut members = vec![];
@@ -104,6 +106,8 @@ impl Job for ReportsJob {
 			author_id: report.actor_id.into(),
 			open: report.status == ReportStatus::Open,
 			locked: false,
+			search_updated_at: None,
+			updated_at: chrono::Utc::now(),
 		});
 
 		ProcessOutcome::default()

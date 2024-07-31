@@ -4,10 +4,12 @@ use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use hyper::{header, StatusCode};
 use mongodb::bson::doc;
+use mongodb::options::ReturnDocument;
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::session::UserSession;
 use shared::database::user::{FullUser, UserId};
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use tokio::sync::OnceCell;
 
 use super::cookies::Cookies;
@@ -44,10 +46,10 @@ impl AuthSession {
 		self.cached_data
 			.get_or_try_init(|| async {
 				Ok(global
-					.user_loader()
+					.user_loader
 					.load(global, self.user_id())
 					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 					.ok_or(ApiError::UNAUTHORIZED)?)
 			})
 			.await
@@ -92,24 +94,24 @@ where
 
 		match jwt.session_id {
 			Some(session_id) => {
-				let session = UserSession::collection(global.db())
+				let session = UserSession::collection(&global.db)
 					.find_one_and_update(
-						doc! {
-							"_id": session_id,
-							"expires_at": { "$gt": chrono::Utc::now() },
+						filter::filter! {
+							UserSession {
+								#[query(rename = "_id")]
+								id: session_id,
+								#[query(selector = "gt")]
+								expires_at: chrono::Utc::now(),
+							}
 						},
-						doc! {
-							"$set": {
-								"last_used_at": chrono::Utc::now(),
-							},
+						update::update! {
+							#[query(set)]
+							UserSession {
+								last_used_at: chrono::Utc::now(),
+							}
 						},
 					)
-					.with_options(Some(
-						mongodb::options::FindOneAndUpdateOptions::builder()
-							.return_document(mongodb::options::ReturnDocument::After)
-							.upsert(false)
-							.build(),
-					))
+					.return_document(ReturnDocument::After)
 					.await
 					.map_err(|err| {
 						tracing::error!(error = %err, "failed to find user session");

@@ -2,13 +2,13 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{
 	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
 };
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::PaintPermission;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape};
 use shared::old_types::object_id::GqlObjectId;
 
@@ -35,10 +35,12 @@ impl CosmeticsMutation {
 			id,
 			name: definition.name.clone(),
 			data: definition.into_db(id, global).await?,
+			search_updated_at: None,
+			updated_at: chrono::Utc::now(),
 			..Default::default()
 		};
 
-		Paint::collection(global.db()).insert_one(paint).await.map_err(|e| {
+		Paint::collection(&global.db).insert_one(paint).await.map_err(|e| {
 			tracing::error!(error = %e, "failed to insert paint");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -108,7 +110,11 @@ impl CosmeticPaintInput {
 					return Err(ApiError::BAD_REQUEST);
 				};
 
-				let image_data = match global.http_client().get(image_url).send().await {
+				// TODO(troy): This allows for anyone to pass any url and we will blindly do a
+				// GET request against it We need to make sure the URL does not go to any
+				// internal services or other places that we don't want and we need to make
+				// sure that the file isnt too big.
+				let image_data = match global.http_client.get(image_url).send().await {
 					Ok(res) if res.status().is_success() => match res.bytes().await {
 						Ok(bytes) => bytes,
 						Err(e) => {
@@ -127,7 +133,7 @@ impl CosmeticPaintInput {
 				};
 
 				let input = match global
-					.image_processor()
+					.image_processor
 					.upload_paint_layer(paint_id, layer_id, image_data)
 					.await
 				{
@@ -151,7 +157,7 @@ impl CosmeticPaintInput {
 						task_id: id,
 						path: path.path,
 						mime: content_type,
-						size,
+						size: size as i64,
 					},
 					Err(e) => {
 						tracing::error!(error = ?e, "failed to start send image processor request");
@@ -168,10 +174,7 @@ impl CosmeticPaintInput {
 					}
 				};
 
-				PaintLayerType::Image(ImageSet {
-					input,
-					..Default::default()
-				})
+				PaintLayerType::Image(ImageSet { input, outputs: vec![] })
 			}
 		};
 
@@ -232,23 +235,32 @@ impl CosmeticOps {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let _ = global
-			.paint_by_id_loader()
+			.paint_by_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let name = definition.name.clone();
 		let data = definition.into_db(self.id.id(), global).await?;
-		let update = to_bson(&data).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let paint = Paint::collection(global.db())
+		let paint = Paint::collection(&global.db)
 			.find_one_and_update(
-				doc! { "_id": self.id.0 },
-				doc! { "$set": {
-					"name": name,
-					"data": update,
-				} },
+				filter::filter! {
+					Paint {
+						#[query(rename = "_id")]
+						id: self.id.id(),
+					}
+				},
+				update::update! {
+					#[query(set)]
+					Paint {
+						name,
+						#[query(serde)]
+						data,
+						updated_at: chrono::Utc::now(),
+					}
+				},
 			)
 			.await
 			.map_err(|e| {
@@ -257,6 +269,6 @@ impl CosmeticOps {
 			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		CosmeticPaintModel::from_db(paint, &global.config().api.cdn_origin).ok_or(ApiError::INTERNAL_SERVER_ERROR)
+		CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin).ok_or(ApiError::INTERNAL_SERVER_ERROR)
 	}
 }

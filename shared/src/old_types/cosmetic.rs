@@ -312,7 +312,7 @@ impl CosmeticBadgeModel {
 			id,
 			name: value.name,
 			tag: value.tags.into_iter().next().unwrap_or_default(),
-			tooltip: value.description,
+			tooltip: value.description.unwrap_or_default(),
 			host,
 		})
 	}

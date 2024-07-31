@@ -1,24 +1,30 @@
 use super::image_set::ImageSet;
-use super::GenericCollection;
-use crate::database::{Collection, Id};
+use super::user::UserId;
+use super::MongoGenericCollection;
+use crate::database::{Id, MongoCollection};
 
 pub type BadgeId = Id<Badge>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[mongo(collection_name = "badges")]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct Badge {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: BadgeId,
 	pub name: String,
-	pub description: String,
+	pub description: Option<String>,
 	pub tags: Vec<String>,
 	pub image_set: ImageSet,
+	pub created_by_id: UserId,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl Collection for Badge {
-	const COLLECTION_NAME: &'static str = "badges";
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	[GenericCollection::new::<Badge>()]
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	[MongoGenericCollection::new::<Badge>()]
 }

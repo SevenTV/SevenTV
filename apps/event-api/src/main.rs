@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use config::Config;
-use scuffle_foundations::bootstrap::{bootstrap, Bootstrap, RuntimeSettings};
+use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::settings::cli::Matches;
-use scuffle_foundations::telemetry::settings::TelemetrySettings;
 use tokio::signal::unix::SignalKind;
 
 mod config;
@@ -13,32 +12,12 @@ mod http;
 mod subscription;
 mod utils;
 
-struct BootstrapWrapper(Config);
-
-impl From<Config> for BootstrapWrapper {
-	fn from(config: Config) -> Self {
-		Self(config)
-	}
-}
-
-impl Bootstrap for BootstrapWrapper {
-	type Settings = Config;
-
-	fn telemetry_config(&self) -> Option<TelemetrySettings> {
-		Some(self.0.telemetry.clone())
-	}
-
-	fn runtime_mode(&self) -> RuntimeSettings {
-		self.0.runtime.clone()
-	}
-}
-
 #[bootstrap]
-async fn main(settings: Matches<BootstrapWrapper>) {
+async fn main(settings: Matches<Config>) {
 	tracing::info!("starting event-api");
 
 	let global = Arc::new(
-		global::Global::new(settings.settings.0)
+		global::Global::new(settings.settings)
 			.await
 			.expect("failed to initialize global"),
 	);

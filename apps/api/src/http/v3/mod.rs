@@ -62,8 +62,8 @@ const ALLOWED_CORS_HEADERS: [&'static str; 8] = [
 ];
 
 fn cors_layer(global: &Arc<Global>) -> CorsLayer {
-	let website_origin = global.config().api.website_origin.clone();
-	let api_origin = global.config().api.api_origin.clone();
+	let website_origin = global.config.api.website_origin.clone();
+	let api_origin = global.config.api.api_origin.clone();
 	let allow_credentials = AllowCredentials::predicate(move |origin, _| {
 		origin
 			.to_str()

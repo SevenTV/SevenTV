@@ -1,4 +1,4 @@
-#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImageSet {
 	pub input: ImageSetInput,
@@ -7,13 +7,13 @@ pub struct ImageSet {
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
-#[serde(untagged)]
+#[serde(tag = "type")]
 pub enum ImageSetInput {
 	Pending {
 		task_id: String,
 		path: String,
 		mime: String,
-		size: u64,
+		size: i64,
 	},
 	Image(Image),
 }
@@ -24,26 +24,15 @@ impl ImageSetInput {
 	}
 }
 
-impl Default for ImageSetInput {
-	fn default() -> Self {
-		ImageSetInput::Pending {
-			task_id: String::default(),
-			path: String::default(),
-			mime: String::default(),
-			size: u64::default(),
-		}
-	}
-}
-
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Image {
 	pub path: String,
 	pub mime: String,
-	pub size: u64,
-	pub width: u32,
-	pub height: u32,
-	pub frame_count: u32,
+	pub size: i64,
+	pub width: i32,
+	pub height: i32,
+	pub frame_count: i32,
 }
 
 impl Image {

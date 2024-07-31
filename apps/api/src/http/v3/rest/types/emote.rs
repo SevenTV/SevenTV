@@ -75,7 +75,7 @@ impl EmotePartialModel {
 		Self {
 			id: value.id,
 			name: value.default_name,
-			animated: value.animated,
+			animated: value.flags.contains(EmoteFlags::Animated),
 			tags: value.tags,
 			owner,
 			state: EmoteVersionState::from_db(&value.flags),

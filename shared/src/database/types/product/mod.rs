@@ -1,17 +1,16 @@
 use std::collections::HashMap;
 
 use super::duration::DurationUnit;
-use super::{Collection, GenericCollection};
+use super::{MongoCollection, MongoGenericCollection};
 
 pub mod codes;
-pub mod edge;
 pub mod invoice;
 pub mod promotion;
 pub mod subscription;
 pub mod subscription_timeline;
 
 /// A helper macro used to define newtypes for stripe IDs
-macro_rules! stripe_id {
+macro_rules! stripe_type {
 	($name:ident, $inner:ty) => {
 		pub struct $name(pub $inner);
 
@@ -142,44 +141,63 @@ macro_rules! stripe_id {
 					Self::String(id.to_string())
 				}
 			}
+
+			impl crate::typesense::types::TypesenseType for $name {
+				fn typesense_type() -> crate::typesense::types::FieldType {
+					crate::typesense::types::FieldType::String
+				}
+			}
 		};
 	};
 }
 
-stripe_id!(ProductId, stripe::PriceId);
-stripe_id!(SubscriptionId, stripe::SubscriptionId);
-stripe_id!(InvoiceId, stripe::InvoiceId);
-stripe_id!(InvoiceLineItemId, stripe::InvoiceLineItemId);
-stripe_id!(CustomerId, stripe::CustomerId);
+stripe_type!(ProductId, stripe::PriceId);
+stripe_type!(SubscriptionId, stripe::SubscriptionId);
+stripe_type!(InvoiceId, stripe::InvoiceId);
+stripe_type!(InvoiceLineItemId, stripe::InvoiceLineItemId);
+stripe_type!(CustomerId, stripe::CustomerId);
+
+impl crate::typesense::types::TypesenseType for stripe::Currency {
+	fn typesense_type() -> crate::typesense::types::FieldType {
+		crate::typesense::types::FieldType::String
+	}
+}
 
 // An item that can be purchased
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
+#[mongo(collection_name = "products")]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct Product {
+	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: ProductId,
 	pub name: String,
 	pub description: Option<String>,
 	pub recurring: Option<DurationUnit>,
 	pub default_currency: stripe::Currency,
-	pub currency_prices: HashMap<stripe::Currency, u64>,
+	pub currency_prices: HashMap<stripe::Currency, i32>,
+	#[serde(with = "crate::database::serde")]
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TimePeriod {
+	#[serde(with = "crate::database::serde")]
 	pub start: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
 	pub end: chrono::DateTime<chrono::Utc>,
 }
 
-impl Collection for Product {
-	const COLLECTION_NAME: &'static str = "products";
-}
-
-pub(super) fn collections() -> impl IntoIterator<Item = GenericCollection> {
-	std::iter::once(GenericCollection::new::<Product>())
-		.chain(codes::collections())
-		.chain(edge::collections())
+pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
+	std::iter::once(MongoGenericCollection::new::<Product>())
+		.chain(codes::mongo_collections())
 		.chain(invoice::collections())
 		.chain(promotion::collections())
 		.chain(subscription::collections())

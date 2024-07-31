@@ -7,15 +7,17 @@ use axum::response::IntoResponse;
 use axum::routing::{delete, get, patch, post, put};
 use axum::{Extension, Json, Router};
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
+use mongodb::bson::doc;
 use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
 use serde::Deserialize;
 use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{FlagPermission, PermissionsExt, UserPermission};
 use shared::database::user::connection::Platform;
-use shared::database::user::editor::EditorUserPermission;
-use shared::database::user::{User, UserId};
-use shared::database::Collection;
+use shared::database::user::editor::{EditorUserPermission, UserEditorId};
+use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
+use shared::database::user::{User, UserId, UserStyle};
+use shared::database::MongoCollection;
 use shared::old_types::UserConnectionPartialModel;
 
 use super::types::{EmoteSetModel, EmoteSetPartialModel, PresenceModel, UserConnectionModel, UserEditorModel, UserModel};
@@ -69,10 +71,10 @@ pub async fn get_user_by_id(
 	auth_session: Option<Extension<AuthSession>>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let user = global
-		.user_loader()
+		.user_loader
 		.load(&global, id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::NOT_FOUND)?;
 
 	let actor_id = auth_session.as_ref().map(|s| s.user_id());
@@ -81,22 +83,15 @@ pub async fn get_user_by_id(
 		return Err(ApiError::NOT_FOUND);
 	}
 
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 	let emote_sets = global
-		.emote_set_by_user_id_loader()
+		.emote_set_by_user_id_loader
 		.load(user.id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default();
 
 	let editors = global
-		.user_editor_by_user_id_loader()
+		.user_editor_by_user_id_loader
 		.load(user.id)
 		.await
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -104,17 +99,16 @@ pub async fn get_user_by_id(
 
 	let active_emote_set = if let Some(emote_set_id) = user.style.active_emote_set_id {
 		global
-			.emote_set_by_id_loader()
+			.emote_set_by_id_loader
 			.load(emote_set_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 	} else {
 		None
 	};
 
 	let mut old_model = UserModel::from_db(
 		user,
-		&global_config,
 		None,
 		None,
 		emote_sets
@@ -125,18 +119,11 @@ pub async fn get_user_by_id(
 			.into_iter()
 			.filter_map(|editor| UserEditorModel::from_db(editor))
 			.collect(),
-		&global.config().api.cdn_origin,
+		&global.config.api.cdn_origin,
 	);
 
 	if let Some(mut active_emote_set) = active_emote_set {
-		let emotes = load_emote_set(
-			&global,
-			&global_config,
-			std::mem::take(&mut active_emote_set.emotes),
-			actor_id,
-			false,
-		)
-		.await?;
+		let emotes = load_emote_set(&global, std::mem::take(&mut active_emote_set.emotes), actor_id, false).await?;
 		let model = EmoteSetModel::from_db(active_emote_set, emotes, None);
 
 		// TODO: this seems a bit excessive im not sure if we need to do this as it
@@ -185,10 +172,10 @@ pub async fn upload_user_profile_picture(
 		TargetUser::Me => None,
 		TargetUser::Other(id) => Some(
 			global
-				.user_loader()
+				.user_loader
 				.load(&global, id)
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?,
 		),
 	};
@@ -204,10 +191,13 @@ pub async fn upload_user_profile_picture(
 
 	if other_user.is_some() && !user.has(UserPermission::ManageAny) {
 		if !global
-			.user_editor_by_id_loader()
-			.load((target_user.id, user.id))
+			.user_editor_by_id_loader
+			.load(UserEditorId {
+				user_id: target_user.id,
+				editor_id: user.id,
+			})
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|editor| editor.permissions.has_user(EditorUserPermission::ManageProfile))
 			.unwrap_or_default()
 		{
@@ -218,20 +208,20 @@ pub async fn upload_user_profile_picture(
 		}
 	}
 
-	if matches!(
-		target_user.style.active_profile_picture,
-		Some(ImageSet {
-			input: ImageSetInput::Pending { .. },
-			..
-		}),
-	) {
+	if target_user.style.pending_profile_picture.is_some() {
 		return Err(ApiError::new_const(
 			StatusCode::CONFLICT,
 			"profile picture change already pending",
 		));
 	}
 
-	let input = match global.image_processor().upload_profile_picture(target_user.id, body).await {
+	let profile_picture_id = UserProfilePictureId::new();
+
+	let input = match global
+		.image_processor
+		.upload_profile_picture(profile_picture_id, target_user.id, body)
+		.await
+	{
 		Ok(ProcessImageResponse {
 			id,
 			error: None,
@@ -244,7 +234,7 @@ pub async fn upload_user_profile_picture(
 			task_id: id,
 			path: path.path,
 			mime: content_type,
-			size,
+			size: size as i64,
 		},
 		Ok(ProcessImageResponse { error: Some(err), .. }) => {
 			// At this point if we get a decode error then the image is invalid
@@ -268,20 +258,36 @@ pub async fn upload_user_profile_picture(
 		}
 	};
 
-	let image_set = ImageSet { input, outputs: vec![] };
-	let image_set = to_bson(&image_set).map_err(|e| {
-		tracing::error!(error = %e, "failed to serialize image set");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+	UserProfilePicture::collection(&global.db)
+		.insert_one(UserProfilePicture {
+			id: profile_picture_id,
+			user_id: target_user.id,
+			image_set: ImageSet { input, outputs: vec![] },
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
+		})
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to insert profile picture");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
-	User::collection(global.db())
+	User::collection(&global.db)
 		.update_one(
-			doc! {
-				"_id": target_user.id,
+			filter::filter! {
+				User {
+					#[query(rename = "_id")]
+					id: target_user.id,
+				}
 			},
-			doc! {
-				"$set": {
-					"style.active_profile_picture": image_set,
+			update::update! {
+				#[query(set)]
+				User {
+					#[query(flatten)]
+					style: UserStyle {
+						active_profile_picture: Some(profile_picture_id),
+					},
+					updated_at: chrono::Utc::now(),
 				}
 			},
 		)
@@ -339,17 +345,18 @@ pub async fn get_user_by_platform_id(
 	let platform = Platform::from_str(&platform.to_lowercase()).map_err(|_| ApiError::BAD_REQUEST)?;
 
 	let user = global
-		.user_loader()
+		.user_loader
 		.load_user(
+			&global,
 			global
-				.user_by_platform_id_loader()
+				.user_by_platform_id_loader
 				.load((platform, platform_id.clone()))
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 				.ok_or(ApiError::NOT_FOUND)?,
 		)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	let actor_id = auth_session.as_ref().map(|s| s.user_id());
 	let can_view_hidden = if let Some(session) = &auth_session {
@@ -368,25 +375,18 @@ pub async fn get_user_by_platform_id(
 		.find(|c| c.platform == platform && c.platform_id == platform_id)
 		.ok_or(ApiError::NOT_FOUND)?;
 
-	let global_config = global
-		.global_config_loader()
-		.load(())
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
 	let mut connection_model: UserConnectionModel = UserConnectionPartialModel::from_db(
 		connection.clone(),
 		user.style.active_emote_set_id,
-		global_config.normal_emote_set_slot_capacity as i32,
+		user.computed.permissions.emote_set_capacity.unwrap_or_default().max(0),
 	)
 	.into();
 
 	let editors = global
-		.user_editor_by_user_id_loader()
+		.user_editor_by_user_id_loader
 		.load(user.id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default()
 		.into_iter()
 		.filter_map(|e| UserEditorModel::from_db(e))
@@ -394,10 +394,10 @@ pub async fn get_user_by_platform_id(
 
 	// query user emote sets
 	let emote_sets = global
-		.emote_set_by_user_id_loader()
+		.emote_set_by_user_id_loader
 		.load(user.id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default()
 		.into_iter()
 		.map(|s| EmoteSetPartialModel::from_db(s, None))
@@ -407,33 +407,18 @@ pub async fn get_user_by_platform_id(
 
 	if let Some(emote_set_id) = connection_model.emote_set_id {
 		if let Some(mut emote_set) = global
-			.emote_set_by_id_loader()
+			.emote_set_by_id_loader
 			.load(emote_set_id)
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		{
-			let emotes = load_emote_set(
-				&global,
-				&global_config,
-				std::mem::take(&mut emote_set.emotes),
-				actor_id,
-				can_view_hidden,
-			)
-			.await?;
+			let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), actor_id, can_view_hidden).await?;
 			let user_virtual_set = EmoteSetModel::from_db(emote_set, emotes, None);
 			connection_model.emote_set = Some(user_virtual_set);
 		}
 	};
 
-	let user_full = UserModel::from_db(
-		user,
-		&global_config,
-		None,
-		None,
-		emote_sets,
-		editors,
-		&global.config().api.cdn_origin,
-	);
+	let user_full = UserModel::from_db(user, None, None, emote_sets, editors, &global.config.api.cdn_origin);
 
 	connection_model.user = Some(user_full);
 

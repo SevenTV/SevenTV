@@ -4,11 +4,12 @@ use std::sync::Arc;
 use async_graphql::{Context, InputObject, Object};
 use futures::{TryFutureExt, TryStreamExt};
 use hyper::StatusCode;
-use mongodb::bson::{doc, to_bson};
+use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission};
-use shared::database::role::RoleId;
-use shared::database::Collection;
+use shared::database::role::{Role as DbRole, RoleId};
+use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -40,8 +41,10 @@ impl RolesMutation {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(global.db())
-			.find(doc! {})
+		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(&global.db)
+			.find(filter::filter! {
+				DbRole {}
+			})
 			.with_options(FindOptions::builder().sort(doc! { "rank": 1 }).build())
 			.into_future()
 			.and_then(|f| f.try_collect())
@@ -66,9 +69,13 @@ impl RolesMutation {
 			hoist: false,
 			color: Some(data.color),
 			rank,
+			created_by: user.id,
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
+			applied_rank: None,
 		};
 
-		shared::database::role::Role::collection(global.db())
+		shared::database::role::Role::collection(&global.db)
 			.insert_one(&role)
 			.await
 			.map_err(|e| {
@@ -91,7 +98,7 @@ impl RolesMutation {
 
 		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo().start_session().await.map_err(|err| {
+		let mut session = global.mongo.start_session().await.map_err(|err| {
 			tracing::error!(error = %err, "failed to start session");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
@@ -101,17 +108,7 @@ impl RolesMutation {
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-		let mut update = doc! {};
-
-		if let Some(name) = data.name {
-			update.insert("name", name);
-		}
-
-		if let Some(color) = data.color {
-			update.insert("color", color);
-		}
-
-		match (data.allowed, data.denied) {
+		let permissions = match (data.allowed, data.denied) {
 			(Some(allowed), Some(denied)) => {
 				let allowed: u64 = allowed.parse().map_err(|_| ApiError::BAD_REQUEST)?;
 				let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
@@ -125,27 +122,38 @@ impl RolesMutation {
 					return Err(ApiError::FORBIDDEN);
 				}
 
-				update.insert(
-					"permissions",
-					to_bson(&role_permissions).map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
-				);
+				Some(role_permissions)
 			}
-			(None, None) => {}
+			(None, None) => None,
 			_ => {
 				return Err(ApiError::new_const(
 					StatusCode::BAD_REQUEST,
 					"must provide both allowed and denied permissions",
 				));
 			}
-		}
+		};
 
-		let role = shared::database::role::Role::collection(global.db())
+		let role = shared::database::role::Role::collection(&global.db)
 			.find_one_and_update(
-				doc! {
-					"_id": role_id.0,
+				filter::filter! {
+					DbRole {
+						#[query(rename = "_id")]
+						id: role_id.id(),
+					}
 				},
-				doc! {
-					"$set": update,
+				update::update! {
+					#[query(set)]
+					DbRole {
+						#[query(serde, optional)]
+						permissions,
+						#[query(optional)]
+						name: data.name,
+						#[query(optional)]
+						color: data.color,
+						#[query(optional)]
+						rank: data.position.map(|p| p as i32),
+						updated_at: chrono::Utc::now(),
+					}
 				},
 			)
 			.with_options(
@@ -177,19 +185,22 @@ impl RolesMutation {
 		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let role = global
-			.role_by_id_loader()
+			.role_by_id_loader
 			.load(role_id.id())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let res = shared::database::role::Role::collection(global.db())
-			.delete_one(doc! {
-				"_id": role_id.0,
+		let res = shared::database::role::Role::collection(&global.db)
+			.delete_one(filter::filter! {
+				DbRole {
+					#[query(rename = "_id")]
+					id: role_id.id(),
+				}
 			})
 			.await
 			.map_err(|e| {

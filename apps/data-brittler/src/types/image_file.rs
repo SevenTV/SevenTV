@@ -20,10 +20,10 @@ impl From<ImageFile> for Image {
 		Self {
 			path: value.key,
 			mime: value.content_type,
-			size: value.size,
-			width: value.width,
-			height: value.height,
-			frame_count: value.frame_count,
+			size: value.size as i64,
+			width: value.width as i32,
+			height: value.height as i32,
+			frame_count: value.frame_count as i32,
 		}
 	}
 }

@@ -1,14 +1,11 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
-use futures::StreamExt;
 use mongodb::bson::doc;
-use mongodb::options::FindOptions;
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
 use shared::database::role::permissions::EmoteModerationRequestPermission;
-use shared::database::Collection;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -108,10 +105,10 @@ impl MessagesQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let message = global
-			.global_config_loader()
+			.global_config_loader
 			.load(())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?
 			.alerts
 			.message;
@@ -127,61 +124,13 @@ impl MessagesQuery {
 	#[graphql(guard = "PermissionGuard::one(EmoteModerationRequestPermission::Manage)")]
 	async fn mod_requests<'ctx>(
 		&self,
-		ctx: &Context<'ctx>,
-		after_id: Option<GqlObjectId>,
-		limit: Option<u32>,
-		wish: Option<String>,
+		_ctx: &Context<'ctx>,
+		_after_id: Option<GqlObjectId>,
+		_limit: Option<u32>,
+		_wish: Option<String>,
 		_country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let mut search_args = mongodb::bson::Document::new();
-
-		// only return open tickets?
-		// not sure about this
-		search_args.insert("status", EmoteModerationRequestStatus::Pending as i32);
-
-		match wish.as_ref().map(|s| s.as_str()) {
-			Some("list") => {
-				search_args.insert("kind", EmoteModerationRequestKind::PublicListing as i32);
-			}
-			Some("personal_use") => {
-				search_args.insert("kind", EmoteModerationRequestKind::PersonalUse as i32);
-			}
-			None => {}
-			_ => return Err(ApiError::BAD_REQUEST),
-		}
-
-		let total = EmoteModerationRequest::collection(global.db())
-			.count_documents(search_args.clone())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		if let Some(after_id) = after_id {
-			search_args.insert("_id", doc! { "$gt": after_id.0 });
-		}
-
-		let limit = limit.unwrap_or(100).min(500);
-
-		let mod_requests: Vec<_> = EmoteModerationRequest::collection(global.db())
-			.find(search_args)
-			.with_options(FindOptions::builder().limit(limit as i64).sort(doc! { "_id": -1 }).build())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.filter_map(|r| async move {
-				match r {
-					Ok(mod_request) => Some(mod_request),
-					Err(e) => {
-						tracing::error!(error = %e, "failed to load mod request");
-						None
-					}
-				}
-			})
-			.collect()
-			.await;
-
-		let messages = mod_requests.into_iter().map(ModRequestMessage::from_db).collect();
-
-		Ok(ModRequestMessageList { messages, total })
+		// TODO(troy): implement
+		Err(ApiError::NOT_IMPLEMENTED)
 	}
 }

@@ -9,9 +9,10 @@ use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
+use shared::database::queries::filter;
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
-use shared::database::Collection;
+use shared::database::MongoCollection;
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
@@ -119,7 +120,7 @@ async fn logout(
 	Extension(cookies): Extension<Cookies>,
 	auth_session: AuthSession,
 ) -> Result<impl IntoResponse, ApiError> {
-	let mut session = global.mongo().start_session().await.map_err(|err| {
+	let mut session = global.mongo.start_session().await.map_err(|err| {
 		tracing::error!(error = %err, "failed to start session");
 		ApiError::INTERNAL_SERVER_ERROR
 	})?;
@@ -131,9 +132,12 @@ async fn logout(
 
 	// is a new session
 	if let AuthSessionKind::Session(session) = &auth_session.kind {
-		UserSession::collection(global.db())
-			.delete_one(doc! {
-				"_id": session.id,
+		UserSession::collection(&global.db)
+			.delete_one(filter::filter! {
+				UserSession {
+					#[query(rename = "_id")]
+					id: session.id,
+				}
 			})
 			.await
 			.map_err(|err| {
@@ -142,7 +146,7 @@ async fn logout(
 			})?;
 	}
 
-	AuditLog::collection(global.db())
+	AuditLog::collection(&global.db)
 		.insert_one(AuditLog {
 			id: AuditLogId::new(),
 			actor_id: Some(auth_session.user_id()),
@@ -150,6 +154,8 @@ async fn logout(
 				target_id: auth_session.user_id(),
 				data: AuditLogUserData::Logout,
 			},
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
 		})
 		.session(&mut session)
 		.await

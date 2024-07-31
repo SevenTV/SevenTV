@@ -3,7 +3,7 @@ use std::sync::Arc;
 use fnv::FnvHashSet;
 use mongodb::options::InsertManyOptions;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
-use shared::database::Collection;
+use shared::database::MongoCollection;
 
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
@@ -21,17 +21,6 @@ impl Job for EntitlementsJob {
 	const NAME: &'static str = "transfer_entitlements";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			tracing::info!("dropping entitlements");
-			EntitlementEdge::collection(global.target_db()).drop().await?;
-			let indexes = EntitlementEdge::indexes();
-			if !indexes.is_empty() {
-				EntitlementEdge::collection(global.target_db())
-					.create_indexes(indexes)
-					.await?;
-			}
-		}
-
 		Ok(Self {
 			global,
 			edges: FnvHashSet::default(),
@@ -50,8 +39,8 @@ impl Job for EntitlementsJob {
 		let to = match entitlement.data {
 			EntitlementData::Badge { ref_id, .. } => EntitlementEdgeKind::Badge { badge_id: ref_id.into() },
 			EntitlementData::Paint { ref_id, .. } => EntitlementEdgeKind::Paint { paint_id: ref_id.into() },
-			EntitlementData::Role { ref_id } => EntitlementEdgeKind::Role { role_id: ref_id.into() },
 			EntitlementData::EmoteSet { ref_id } => EntitlementEdgeKind::EmoteSet { emote_id: ref_id.into() },
+			// ignore role entitlements because they are handled by the user job
 			_ => return ProcessOutcome::default(),
 		};
 

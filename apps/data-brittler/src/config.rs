@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
+use scuffle_foundations::bootstrap::Bootstrap;
 use scuffle_foundations::settings::auto_settings;
-use shared::config::{DatabaseConfig, ImageProcessorConfig};
-
-pub type Config = shared::config::Config<Extra>;
+use scuffle_foundations::telemetry::settings::{LoggingSettings, TelemetrySettings};
+use shared::config::{DatabaseConfig, ImageProcessorConfig, NatsConfig};
 
 #[auto_settings]
 #[serde(default)]
-pub struct Extra {
+pub struct Config {
 	/// Main source database configuration
 	#[settings(default = DatabaseConfig {
 		uri: "mongodb://localhost:27017/7tv".to_string(),
@@ -101,9 +101,26 @@ pub struct Extra {
 
 	/// Truncate tables before inserting data
 	pub truncate: bool,
+
+	/// NATs configuration
+	pub nats: NatsConfig,
+
+	/// Logging configuration
+	pub logging: LoggingSettings,
 }
 
-impl Extra {
+impl Bootstrap for Config {
+	type Settings = Self;
+
+	fn telemetry_config(&self) -> Option<TelemetrySettings> {
+		Some(TelemetrySettings {
+			logging: self.logging.clone(),
+			..Default::default()
+		})
+	}
+}
+
+impl Config {
 	fn any_run(&self) -> bool {
 		self.users
 			|| self.bans || self.emotes

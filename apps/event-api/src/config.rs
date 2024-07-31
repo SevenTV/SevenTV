@@ -1,13 +1,36 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
+use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
+use scuffle_foundations::telemetry::settings::TelemetrySettings;
+use shared::config::{NatsConfig, PodConfig};
 
 #[auto_settings]
 #[serde(default)]
-pub struct Extra {
+pub struct Config {
+	/// Pod configuration
+	pub pod: PodConfig,
+	/// Nats configuration
+	pub nats: NatsConfig,
+	/// Telemetry configuration
+	pub telemetry: TelemetrySettings,
+	/// Runtime configuration
+	pub runtime: RuntimeSettings,
 	/// Api configuration
 	pub api: Api,
+}
+
+impl Bootstrap for Config {
+	type Settings = Self;
+
+	fn telemetry_config(&self) -> Option<TelemetrySettings> {
+		Some(self.telemetry.clone())
+	}
+
+	fn runtime_mode(&self) -> RuntimeSettings {
+		self.runtime.clone()
+	}
 }
 
 #[auto_settings]
@@ -41,5 +64,3 @@ pub struct Api {
 	#[settings(default = "api.events".to_string())]
 	pub nats_event_subject: String,
 }
-
-pub type Config = shared::config::Config<Extra>;
