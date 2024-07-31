@@ -1,120 +1,132 @@
 use hyper::StatusCode;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
 use shared::database::emote::EmoteId;
-use shared::database::emote_set::{EmoteSet, EmoteSetId};
-use shared::database::user::{FullUser, UserId};
+use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
+use shared::database::queries::{filter, update};
+use shared::database::user::FullUser;
 
 use crate::http::error::ApiError;
-use crate::queries::{FindOneAndUpdateQuery, TransactionError, TransactionResult, TransactionSession};
+use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
-struct RemoveEmoteQuery {
-	filter: RemoveEmoteFilter,
-	update: RemoveEmoteUpdate,
-	actor: UserId,
-}
+// struct RemoveEmoteQuery {
+// 	filter: RemoveEmoteFilter,
+// 	update: RemoveEmoteUpdate,
+// 	actor: UserId,
+// }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct RemoveEmoteFilter {
-	id: EmoteSetId,
-	#[serde(rename = "emotes.id")]
-	emote_id: EmoteId,
-}
+// #[derive(Debug, serde::Serialize, serde::Deserialize)]
+// struct RemoveEmoteFilter {
+// 	id: EmoteSetId,
+// 	#[serde(rename = "emotes.id")]
+// 	emote_id: EmoteId,
+// }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct RemoveEmoteUpdate {
-	#[serde(rename = "$pull")]
-	pub pull: RemoveEmotePull,
-	#[serde(rename = "$set")]
-	pub set: RemoveEmoteSet,
-}
+// #[derive(Debug, serde::Serialize, serde::Deserialize)]
+// struct RemoveEmoteUpdate {
+// 	#[serde(rename = "$pull")]
+// 	pub pull: RemoveEmotePull,
+// 	#[serde(rename = "$set")]
+// 	pub set: RemoveEmoteSet,
+// }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct RemoveEmotePull {
-	pub emotes: EmotesId,
-}
+// #[derive(Debug, serde::Serialize, serde::Deserialize)]
+// struct RemoveEmotePull {
+// 	pub emotes: EmotesId,
+// }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct RemoveEmoteSet {
-	pub emotes_changed_since_reindex: bool,
-	#[serde(with = "shared::database::serde")]
-	pub updated_at: chrono::DateTime<chrono::Utc>,
-}
+// #[derive(Debug, serde::Serialize, serde::Deserialize)]
+// struct RemoveEmoteSet {
+// 	pub emotes_changed_since_reindex: bool,
+// 	#[serde(with = "shared::database::serde")]
+// 	pub updated_at: chrono::DateTime<chrono::Utc>,
+// }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct EmotesId {
-	pub id: EmoteId,
-}
+// #[derive(Debug, serde::Serialize, serde::Deserialize)]
+// struct EmotesId {
+// 	pub id: EmoteId,
+// }
 
-impl FindOneAndUpdateQuery for RemoveEmoteQuery {
-	type Collection = EmoteSet;
-	type Filter<'a> = &'a RemoveEmoteFilter;
-	type Update<'a> = &'a RemoveEmoteUpdate;
+// impl FindOneAndUpdateQuery for RemoveEmoteQuery {
+// 	type Collection = EmoteSet;
+// 	type Filter<'a> = &'a RemoveEmoteFilter;
+// 	type Update<'a> = &'a RemoveEmoteUpdate;
 
-	fn filter(&self) -> Self::Filter<'_> {
-		&self.filter
-	}
+// 	fn filter(&self) -> Self::Filter<'_> {
+// 		&self.filter
+// 	}
 
-	fn update(&self) -> Self::Update<'_> {
-		&self.update
-	}
+// 	fn update(&self) -> Self::Update<'_> {
+// 		&self.update
+// 	}
 
-	fn options(&self) -> Option<mongodb::options::FindOneAndUpdateOptions> {
-		Some(
-			mongodb::options::FindOneAndUpdateOptions::builder()
-				.return_document(mongodb::options::ReturnDocument::After)
-				.build(),
-		)
-	}
+// 	fn options(&self) -> Option<mongodb::options::FindOneAndUpdateOptions> {
+// 		Some(
+// 			mongodb::options::FindOneAndUpdateOptions::builder()
+// 				.return_document(mongodb::options::ReturnDocument::After)
+// 				.build(),
+// 		)
+// 	}
 
-	fn audit_logs(&self, resp: Option<&Self::Collection>) -> impl IntoIterator<Item = AuditLog> {
-		resp.map(|_| AuditLog {
-			id: AuditLogId::new(),
-			actor_id: Some(self.actor),
-			data: AuditLogData::EmoteSet {
-				target_id: self.filter.id,
-				data: AuditLogEmoteSetData::RemoveEmote {
-					emote_id: self.filter.emote_id,
-				},
-			},
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-		})
-	}
+// 	fn audit_logs(&self, resp: Option<&Self::Collection>) -> impl IntoIterator<Item = AuditLog> {
+// 		resp.map(|_| AuditLog {
+// 			id: AuditLogId::new(),
+// 			actor_id: Some(self.actor),
+// 			data: AuditLogData::EmoteSet {
+// 				target_id: self.filter.id,
+// 				data: AuditLogEmoteSetData::RemoveEmote {
+// 					emote_id: self.filter.emote_id,
+// 				},
+// 			},
+// 			updated_at: chrono::Utc::now(),
+// 			search_updated_at: None,
+// 		})
+// 	}
 
-	fn emit_events(&self, resp: Option<&Self::Collection>) -> impl IntoIterator<Item = ()> {
-		todo!("emit event for for remove emote from set");
-		None
-	}
-}
+// 	fn emit_events(&self, resp: Option<&Self::Collection>) -> impl IntoIterator<Item = ()> {
+// 		todo!("emit event for for remove emote from set");
+// 		None
+// 	}
+// }
 
 pub async fn emote_remove(
-	mut session: TransactionSession<'_, Result<EmoteSet, ApiError>>,
+	mut tx: TransactionSession<'_, ApiError>,
 	actor: &FullUser,
 	emote_set: &EmoteSet,
-	id: EmoteId,
-) -> TransactionResult<Result<EmoteSet, ApiError>> {
-	if !emote_set.emotes.iter().any(|e| e.id == id) {
+	emote_id: EmoteId,
+) -> TransactionResult<EmoteSet, ApiError> {
+	if !emote_set.emotes.iter().any(|e| e.id == emote_id) {
 		return Err(TransactionError::custom(ApiError::new_const(
 			StatusCode::NOT_FOUND,
 			"emote not found in set",
 		)));
 	}
 
-	let emote_set = session
-		.find_one_and_update(&RemoveEmoteQuery {
-			filter: RemoveEmoteFilter {
-				id: emote_set.id,
-				emote_id: id,
+	let emote_set = tx
+		.find_one_and_update(
+			filter::filter! {
+				EmoteSet {
+					#[query(rename = "_id")]
+					id: emote_set.id,
+					#[query(flatten)]
+					emotes: EmoteSetEmote {
+						id: emote_id,
+					},
+				}
 			},
-			update: RemoveEmoteUpdate {
-				pull: RemoveEmotePull { emotes: EmotesId { id } },
-				set: RemoveEmoteSet {
+			update::update! {
+				#[query(pull)]
+				EmoteSet {
+					emotes: EmoteSetEmote {
+						id: emote_id,
+					},
+				},
+				#[query(set)]
+				EmoteSet {
 					emotes_changed_since_reindex: true,
 					updated_at: chrono::Utc::now(),
 				},
 			},
-			actor: actor.id,
-		})
+			None,
+		)
 		.await?
 		.ok_or(TransactionError::custom(ApiError::new_const(
 			StatusCode::NOT_FOUND,
@@ -169,5 +181,5 @@ pub async fn emote_remove(
 	//         ApiError::INTERNAL_SERVER_ERROR
 	//     })?;
 
-	Ok(Ok(emote_set))
+	Ok(emote_set)
 }

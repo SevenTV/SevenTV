@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use scuffle_image_processor_proto::event_callback;
 use shared::database::queries::{filter, update};
 use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
@@ -11,11 +12,11 @@ use crate::transactions::{TransactionError, TransactionResult, TransactionSessio
 
 #[tracing::instrument(skip_all, fields(id = %id))]
 pub async fn handle_success(
-	mut tx: TransactionSession<'_, anyhow::Result<()>>,
+	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: UserProfilePictureId,
 	event: &event_callback::Success,
-) -> TransactionResult<anyhow::Result<()>> {
+) -> TransactionResult<(), anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::custom)?;
 
 	let Some(profile_picture) = tx
@@ -39,7 +40,7 @@ pub async fn handle_success(
 		.await?
 	else {
 		tracing::warn!("could not find profile picture");
-		return Ok(Ok(()));
+		return Ok(());
 	};
 
 	tx.update_one(
@@ -72,32 +73,32 @@ pub async fn handle_success(
 	// TODO(lennart): event emission
 	tx.register_event(());
 
-	Ok(Ok(()))
+	Ok(())
 }
 
 pub async fn handle_fail(
-	mut tx: TransactionSession<'_, anyhow::Result<()>>,
+	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: UserProfilePictureId,
 	event: &event_callback::Fail,
-) -> TransactionResult<anyhow::Result<()>> {
+) -> TransactionResult<(), anyhow::Error> {
 	todo!()
 }
 
 pub async fn handle_start(
-	mut tx: TransactionSession<'_, anyhow::Result<()>>,
+	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: UserProfilePictureId,
 	event: &event_callback::Start,
-) -> TransactionResult<anyhow::Result<()>> {
+) -> TransactionResult<(), anyhow::Error> {
 	todo!()
 }
 
 pub async fn handle_cancel(
-	mut tx: TransactionSession<'_, anyhow::Result<()>>,
+	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: UserProfilePictureId,
 	event: &event_callback::Cancel,
-) -> TransactionResult<anyhow::Result<()>> {
+) -> TransactionResult<(), anyhow::Error> {
 	todo!()
 }

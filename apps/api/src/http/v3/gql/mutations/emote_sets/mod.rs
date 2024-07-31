@@ -7,11 +7,11 @@ use emote_remove::emote_remove;
 use emote_update::emote_update;
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use mongodb::options::ReturnDocument;
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetKind};
-use shared::database::queries::filter;
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, UserPermission};
 use shared::database::user::editor::{
 	EditorEmoteSetPermission, EditorPermission, EditorUserPermission, UserEditorId, UserEditorState,
@@ -28,7 +28,7 @@ use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::queries::{with_transaction, TransactionOutput};
+use crate::transactions::{with_transaction, TransactionError};
 
 mod emote_add;
 mod emote_remove;
@@ -302,7 +302,7 @@ impl EmoteSetOps {
 	}
 }
 
-#[derive(InputObject)]
+#[derive(InputObject, Clone)]
 #[graphql(rename_fields = "snake_case")]
 pub struct UpdateEmoteSetInput {
 	name: Option<String>,
@@ -310,7 +310,7 @@ pub struct UpdateEmoteSetInput {
 	origins: Option<Vec<EmoteSetOriginInput>>,
 }
 
-#[derive(InputObject)]
+#[derive(InputObject, Clone)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EmoteSetOriginInput {
 	id: GqlObjectId,
@@ -340,26 +340,23 @@ impl EmoteSetOps {
 
 		let id: EmoteId = id.id();
 
-		let TransactionOutput { output, aborted } = with_transaction(&global, |session| async move {
+		let res = with_transaction(&global, |tx| async move {
 			match action {
-				ListItemAction::Add => emote_add(global, session, actor, target, &self.emote_set, id, name).await,
-				ListItemAction::Remove => emote_remove(session, actor, &self.emote_set, id).await,
-				ListItemAction::Update => emote_update(global, session, actor, &self.emote_set, id, name).await,
+				ListItemAction::Add => emote_add(global, tx, actor, target, &self.emote_set, id, name).await,
+				ListItemAction::Remove => emote_remove(tx, actor, &self.emote_set, id).await,
+				ListItemAction::Update => emote_update(global, tx, actor, &self.emote_set, id, name).await,
 			}
 		})
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		.await;
 
-		let emote_set = output?;
-		if aborted {
-			tracing::error!("transaction aborted, without an error");
-			return Err(ApiError::new_const(StatusCode::INTERNAL_SERVER_ERROR, "transaction aborted"));
+		match res {
+			Ok(emote_set) => Ok(emote_set.emotes.into_iter().map(ActiveEmote::from_db).collect()),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
 		}
-
-		Ok(emote_set.emotes.into_iter().map(ActiveEmote::from_db).collect())
 	}
 
 	#[graphql(guard = "PermissionGuard::one(EmoteSetPermission::Manage)")]
@@ -368,167 +365,178 @@ impl EmoteSetOps {
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let target = self
-			.check_perms(global, auth_session, EditorEmoteSetPermission::Manage.into())
+			.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
 			.await?;
 
-		let mut changes = vec![];
+		let res = with_transaction(global, |mut tx| async move {
+			let mut changes = vec![];
 
-		let mut session = global.mongo.start_session().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			let new_name = if let Some(name) = data.name {
+				// TODO validate this name
 
-		session.start_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let mut update = doc! {};
-
-		if let Some(name) = data.name {
-			// TODO validate this name
-			update.insert("name", &name);
-
-			AuditLog::collection(&global.db)
-				.insert_one(AuditLog {
-					id: AuditLogId::new(),
-					actor_id: Some(auth_session.user_id()),
-					data: AuditLogData::EmoteSet {
-						target_id: self.emote_set.id,
-						data: AuditLogEmoteSetData::ChangeName {
-							old: self.emote_set.name.clone(),
-							new: name.clone(),
+				tx.insert_one(
+					AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(auth_session.user_id()),
+						data: AuditLogData::EmoteSet {
+							target_id: self.emote_set.id,
+							data: AuditLogEmoteSetData::ChangeName {
+								old: self.emote_set.name.clone(),
+								new: name.clone(),
+							},
 						},
+						updated_at: Utc::now(),
+						search_updated_at: None,
 					},
-					updated_at: Utc::now(),
-					search_updated_at: None,
-				})
-				.session(&mut session)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to insert audit log");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
-			changes.push(ChangeField {
-				key: "name".to_string(),
-				ty: ChangeFieldType::String,
-				old_value: self.emote_set.name.clone().into(),
-				value: name.into(),
-				..Default::default()
-			});
-		}
-
-		if let Some(capacity) = data.capacity {
-			if capacity > i32::MAX as u32 {
-				return Err(ApiError::new_const(
-					StatusCode::BAD_REQUEST,
-					"emote set capacity is too large",
-				));
-			}
-
-			if capacity == 0 {
-				return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "emote set capacity cannot be 0"));
-			}
-
-			if capacity < self.emote_set.emotes.len() as u32 {
-				return Err(ApiError::new_const(
-					StatusCode::BAD_REQUEST,
-					"emote set capacity cannot be less than the number of emotes in the set",
-				));
-			}
-
-			if capacity as i32 > target.computed.permissions.emote_set_capacity.unwrap_or_default().max(0) {
-				return Err(ApiError::new_const(
-					StatusCode::BAD_REQUEST,
-					"emote set capacity cannot exceed user's capacity",
-				));
-			}
-
-			update.insert("capacity", capacity as i32);
-
-			AuditLog::collection(&global.db)
-				.insert_one(AuditLog {
-					id: AuditLogId::new(),
-					actor_id: Some(auth_session.user_id()),
-					data: AuditLogData::EmoteSet {
-						target_id: self.emote_set.id,
-						data: AuditLogEmoteSetData::ChangeCapacity {
-							old: self.emote_set.capacity,
-							new: Some(capacity as i32),
-						},
-					},
-					updated_at: Utc::now(),
-					search_updated_at: None,
-				})
-				.session(&mut session)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to insert audit log");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
-			changes.push(ChangeField {
-				key: "capacity".to_string(),
-				ty: ChangeFieldType::Number,
-				old_value: self.emote_set.capacity.into(),
-				value: capacity.into(),
-				..Default::default()
-			});
-		}
-
-		if data.origins.is_some() {
-			return Err(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
-				"legacy origins are not supported",
-			));
-		}
-
-		update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
-
-		let emote_set = DbEmoteSet::collection(&global.db)
-			.find_one_and_update(doc! { "_id": self.emote_set.id }, doc! { "$set": update })
-			.session(&mut session)
-			.return_document(ReturnDocument::After)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update emote set");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		session.commit_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		if !changes.is_empty() {
-			global
-				.event_api
-				.dispatch_event(
-					EventType::UpdateEmoteSet,
-					ChangeMap {
-						id: self.id.0,
-						kind: ObjectKind::EmoteSet,
-						actor: Some(UserPartialModel::from_db(
-							auth_session.user(global).await?.clone(),
-							None,
-							None,
-							&global.config.api.cdn_origin,
-						)),
-						updated: changes,
-						..Default::default()
-					},
-					self.emote_set.id,
+					None,
 				)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to dispatch event");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-		}
+				.await?;
 
-		Ok(EmoteSet::from_db(emote_set))
+				changes.push(ChangeField {
+					key: "name".to_string(),
+					ty: ChangeFieldType::String,
+					old_value: self.emote_set.name.clone().into(),
+					value: name.clone().into(),
+					..Default::default()
+				});
+
+				Some(name)
+			} else {
+				None
+			};
+
+			let new_capacity = if let Some(capacity) = data.capacity {
+				if capacity > i32::MAX as u32 {
+					return Err(TransactionError::custom(ApiError::new_const(
+						StatusCode::BAD_REQUEST,
+						"emote set capacity is too large",
+					)));
+				}
+
+				if capacity == 0 {
+					return Err(TransactionError::custom(ApiError::new_const(
+						StatusCode::BAD_REQUEST,
+						"emote set capacity cannot be 0",
+					)));
+				}
+
+				if capacity < self.emote_set.emotes.len() as u32 {
+					return Err(TransactionError::custom(ApiError::new_const(
+						StatusCode::BAD_REQUEST,
+						"emote set capacity cannot be less than the number of emotes in the set",
+					)));
+				}
+
+				if capacity as i32 > target.computed.permissions.emote_set_capacity.unwrap_or_default().max(0) {
+					return Err(TransactionError::custom(ApiError::new_const(
+						StatusCode::BAD_REQUEST,
+						"emote set capacity cannot exceed user's capacity",
+					)));
+				}
+
+				tx.insert_one(
+					AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(auth_session.user_id()),
+						data: AuditLogData::EmoteSet {
+							target_id: self.emote_set.id,
+							data: AuditLogEmoteSetData::ChangeCapacity {
+								old: self.emote_set.capacity,
+								new: Some(capacity as i32),
+							},
+						},
+						updated_at: Utc::now(),
+						search_updated_at: None,
+					},
+					None,
+				)
+				.await?;
+
+				changes.push(ChangeField {
+					key: "capacity".to_string(),
+					ty: ChangeFieldType::Number,
+					old_value: self.emote_set.capacity.into(),
+					value: capacity.into(),
+					..Default::default()
+				});
+
+				Some(capacity as i32)
+			} else {
+				None
+			};
+
+			if data.origins.is_some() {
+				return Err(TransactionError::custom(ApiError::new_const(
+					StatusCode::BAD_REQUEST,
+					"legacy origins are not supported",
+				)));
+			}
+
+			let emote_set = tx
+				.find_one_and_update(
+					filter::filter! {
+						DbEmoteSet {
+							#[query(rename = "_id")]
+							id: self.emote_set.id,
+						}
+					},
+					update::update! {
+						#[query(set)]
+						DbEmoteSet {
+							#[query(optional)]
+							name: new_name,
+							#[query(optional)]
+							capacity: new_capacity,
+							updated_at: chrono::Utc::now(),
+						}
+					},
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::After)
+						.build(),
+				)
+				.await?
+				.ok_or(ApiError::INTERNAL_SERVER_ERROR)
+				.map_err(TransactionError::custom)?;
+
+			if !changes.is_empty() {
+				global
+					.event_api
+					.dispatch_event(
+						EventType::UpdateEmoteSet,
+						ChangeMap {
+							id: self.id.0,
+							kind: ObjectKind::EmoteSet,
+							actor: Some(UserPartialModel::from_db(
+								auth_session.user(global).await.map_err(TransactionError::custom)?.clone(),
+								None,
+								None,
+								&global.config.api.cdn_origin,
+							)),
+							updated: changes,
+							..Default::default()
+						},
+						self.emote_set.id,
+					)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to dispatch event");
+						ApiError::INTERNAL_SERVER_ERROR
+					})
+					.map_err(TransactionError::custom)?;
+			}
+
+			Ok(emote_set)
+		})
+		.await;
+
+		match res {
+			Ok(emote_set) => Ok(EmoteSet::from_db(emote_set)),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
+		}
 	}
 
 	#[graphql(guard = "PermissionGuard::one(EmoteSetPermission::Manage)")]
@@ -549,71 +557,67 @@ impl EmoteSetOps {
 			));
 		}
 
-		let mut session = global.mongo.start_session().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		let res = with_transaction(global, |mut tx| async move {
+			let res = tx
+				.delete_one(
+					filter::filter!(DbEmoteSet {
+						#[query(rename = "_id")]
+						id: self.emote_set.id
+					}),
+					None,
+				)
+				.await?;
 
-		session.start_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let res = DbEmoteSet::collection(&global.db)
-			.delete_one(filter::filter!(DbEmoteSet { _id: self.emote_set.id }))
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to delete emote set");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		if res.deleted_count > 0 {
-			AuditLog::collection(&global.db)
-				.insert_one(AuditLog {
-					id: AuditLogId::new(),
-					actor_id: Some(auth_session.user_id()),
-					data: AuditLogData::EmoteSet {
-						target_id: self.emote_set.id,
-						data: AuditLogEmoteSetData::Delete,
+			if res.deleted_count > 0 {
+				tx.insert_one(
+					AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(auth_session.user_id()),
+						data: AuditLogData::EmoteSet {
+							target_id: self.emote_set.id,
+							data: AuditLogEmoteSetData::Delete,
+						},
+						updated_at: Utc::now(),
+						search_updated_at: None,
 					},
-					updated_at: Utc::now(),
-					search_updated_at: None,
-				})
-				.session(&mut session)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to insert audit log");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
-			let body = ChangeMap {
-				id: self.emote_set.id.cast(),
-				kind: ObjectKind::EmoteSet,
-				actor: Some(UserPartialModel::from_db(
-					auth_session.user(global).await?.clone(),
 					None,
-					None,
-					&global.config.api.cdn_origin,
-				)),
-				..Default::default()
-			};
+				)
+				.await?;
 
-			global
-				.event_api
-				.dispatch_event(EventType::DeleteEmoteSet, body, self.emote_set.id)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to dispatch event");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
+				let body = ChangeMap {
+					id: self.emote_set.id.cast(),
+					kind: ObjectKind::EmoteSet,
+					actor: Some(UserPartialModel::from_db(
+						auth_session.user(global).await.map_err(TransactionError::custom)?.clone(),
+						None,
+						None,
+						&global.config.api.cdn_origin,
+					)),
+					..Default::default()
+				};
+
+				global
+					.event_api
+					.dispatch_event(EventType::DeleteEmoteSet, body, self.emote_set.id)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to dispatch event");
+						ApiError::INTERNAL_SERVER_ERROR
+					})
+					.map_err(TransactionError::custom)?;
+			}
+
+			Ok(res.deleted_count > 0)
+		})
+		.await;
+
+		match res {
+			Ok(deleted) => Ok(deleted),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
 		}
-
-		session.commit_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		Ok(res.deleted_count > 0)
 	}
 }

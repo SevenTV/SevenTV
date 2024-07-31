@@ -10,11 +10,11 @@ use crate::global::Global;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn handle_success(
-	mut tx: TransactionSession<'_, anyhow::Result<()>>,
+	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: EmoteId,
 	event: &event_callback::Success,
-) -> TransactionResult<anyhow::Result<()>> {
+) -> TransactionResult<(), anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::custom)?;
 
 	let bit_update = if image_set.outputs.iter().any(|i| i.frame_count > 1) {
@@ -71,15 +71,15 @@ pub async fn handle_success(
 	// all events that were registered during this transaction.
 	tx.register_event(());
 
-	Ok(Ok(()))
+	Ok(())
 }
 
 pub async fn handle_fail(
-	mut tx: TransactionSession<'_, anyhow::Result<()>>,
+	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: EmoteId,
 	event: &event_callback::Fail,
-) -> TransactionResult<anyhow::Result<()>> {
+) -> TransactionResult<(), anyhow::Error> {
 	// TODO(troy): should we delete this emote?
 	// Perhaps it would be benificial to create an audit log entry for why this
 	// emote failed to process. and then set the state to failed stating this emote
@@ -99,25 +99,25 @@ pub async fn handle_fail(
 	// TODO(lennart): event emission
 	tx.register_event(());
 
-	Ok(Ok(()))
+	Ok(())
 }
 
 pub async fn handle_start(
-	mut tx: TransactionSession<'_, anyhow::Result<()>>,
+	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: EmoteId,
 	event: &event_callback::Start,
-) -> TransactionResult<anyhow::Result<()>> {
+) -> TransactionResult<(), anyhow::Error> {
 	// TODO(lennart): do we do anything here?
-	Ok(Ok(()))
+	Ok(())
 }
 
 pub async fn handle_cancel(
-	mut tx: TransactionSession<'_, anyhow::Result<()>>,
+	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: EmoteId,
 	event: &event_callback::Cancel,
-) -> TransactionResult<anyhow::Result<()>> {
+) -> TransactionResult<(), anyhow::Error> {
 	// TODO(lennart): do we do anything here?
-	Ok(Ok(()))
+	Ok(())
 }

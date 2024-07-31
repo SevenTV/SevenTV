@@ -29,6 +29,10 @@ macro_rules! impl_update_structs {
 
                 self
             }
+
+            pub fn extend_one(self, item: impl Into<Self>) -> Self {
+                self.extend(std::iter::once(item))
+            }
         }
 
         impl<T> From<Update<T>> for bson::Bson {

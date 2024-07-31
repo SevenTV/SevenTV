@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use chrono::Utc;
 use mongodb::bson::doc;
-use mongodb::options::ReturnDocument;
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags, EmoteMerged};
 use shared::database::queries::{filter, update};
@@ -19,6 +19,7 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::emote::Emote;
+use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
 pub struct EmotesMutation;
@@ -76,313 +77,329 @@ impl EmoteOps {
 			}
 		}
 
-		let mut changes = vec![];
-		let mut nested_changes = vec![];
-
-		let mut session = global.mongo.start_session().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
 		if params.deleted.is_some_and(|d| d) {
 			if !user.has(EmotePermission::Delete) {
 				return Err(ApiError::FORBIDDEN);
 			}
 
 			// TODO: don't allow deletion of emotes that are in use
-
-			let emote = shared::database::emote::Emote::collection(&global.db)
-				.find_one_and_delete(filter::filter! {
-					DbEmote {
-						#[query(rename = "_id")]
-						id: self.id.id(),
-					}
-				})
-				.session(&mut session)
-				.await
-				.map_err(|err| {
-					tracing::error!(error = %err, "failed to delete emote");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?
-				.ok_or(ApiError::NOT_FOUND)?;
-
-			AuditLog::collection(&global.db)
-				.insert_one(AuditLog {
-					id: AuditLogId::new(),
-					actor_id: Some(user.id),
-					data: AuditLogData::Emote {
-						target_id: emote.id,
-						data: AuditLogEmoteData::Delete,
-					},
-					updated_at: chrono::Utc::now(),
-					search_updated_at: None,
-				})
-				.session(&mut session)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to insert audit log");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
 			// TODO: delete files from s3
 
-			Ok(Emote::from_db(global, emote))
+			let res = with_transaction(global, |mut tx| async move {
+				let emote = tx
+					.find_one_and_delete(
+						filter::filter! {
+							DbEmote {
+								#[query(rename = "_id")]
+								id: self.id.id(),
+							}
+						},
+						None,
+					)
+					.await?
+					.ok_or(ApiError::NOT_FOUND)
+					.map_err(TransactionError::custom)?;
+
+				tx.insert_one(
+					AuditLog {
+						id: AuditLogId::new(),
+						actor_id: Some(user.id),
+						data: AuditLogData::Emote {
+							target_id: emote.id,
+							data: AuditLogEmoteData::Delete,
+						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
+					},
+					None,
+				)
+				.await?;
+
+				Ok(emote)
+			})
+			.await;
+
+			match res {
+				Ok(emote) => Ok(Emote::from_db(global, emote)),
+				Err(TransactionError::Custom(e)) => Err(e),
+				Err(e) => {
+					tracing::error!(error = %e, "transaction failed");
+					Err(ApiError::INTERNAL_SERVER_ERROR)
+				}
+			}
 		} else {
 			if !user.has(EmotePermission::Edit) {
 				return Err(ApiError::FORBIDDEN);
 			}
 
-			let mut update = doc! {};
+			let res = with_transaction(global, |mut tx| async move {
+				let mut changes = vec![];
+				let mut nested_changes = vec![];
 
-			if let Some(name) = params.name.or(params.version_name) {
-				update.insert("default_name", &name);
-
-				AuditLog::collection(&global.db)
-					.insert_one(AuditLog {
-						id: AuditLogId::new(),
-						actor_id: Some(user.id),
-						data: AuditLogData::Emote {
-							target_id: self.id.id(),
-							data: AuditLogEmoteData::ChangeName {
-								old: self.emote.default_name.clone(),
-								new: name.clone(),
-							},
-						},
-						updated_at: chrono::Utc::now(),
-						search_updated_at: None,
-					})
-					.session(&mut session)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to insert audit log");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-
-				let change = ChangeField {
-					key: "name".to_string(),
-					ty: ChangeFieldType::String,
-					old_value: self.emote.default_name.clone().into(),
-					value: name.into(),
-					..Default::default()
-				};
-				changes.push(change.clone());
-				nested_changes.push(change);
-			}
-
-			let mut flags = self.emote.flags;
-
-			if let Some(input_flags) = params.flags {
-				if input_flags.contains(EmoteFlagsModel::Private) {
-					flags |= EmoteFlags::Private;
-					flags &= !EmoteFlags::PublicListed;
-				} else {
-					flags &= !EmoteFlags::Private;
-					flags |= EmoteFlags::PublicListed;
-				}
-
-				if input_flags.contains(EmoteFlagsModel::ZeroWidth) {
-					flags |= EmoteFlags::DefaultZeroWidth;
-				} else {
-					flags &= !EmoteFlags::DefaultZeroWidth;
-				}
-			}
-
-			// changing visibility and owner requires manage any perms
-			if user.has(EmotePermission::ManageAny) {
-				if let Some(listed) = params.listed {
-					if listed {
-						flags |= EmoteFlags::PublicListed;
-						flags &= !EmoteFlags::Private;
-					} else {
-						flags &= !EmoteFlags::PublicListed;
-						flags |= EmoteFlags::Private;
-					}
-
-					if self.emote.flags.contains(EmoteFlags::PublicListed) != listed {
-						let change = ChangeField {
-							key: "listed".to_string(),
-							ty: ChangeFieldType::Bool,
-							old_value: self.emote.flags.contains(EmoteFlags::PublicListed).into(),
-							value: listed.into(),
-							..Default::default()
-						};
-						changes.push(change.clone());
-						nested_changes.push(change);
-					}
-				}
-
-				if let Some(personal_use) = params.personal_use {
-					if personal_use {
-						flags |= EmoteFlags::ApprovedPersonal;
-						flags &= !EmoteFlags::DeniedPersonal;
-					} else {
-						flags &= !EmoteFlags::ApprovedPersonal;
-						flags |= EmoteFlags::DeniedPersonal;
-					}
-				}
-
-				if let Some(owner_id) = params.owner_id {
-					update.insert("owner_id", owner_id.0);
-
-					AuditLog::collection(&global.db)
-						.insert_one(AuditLog {
+				let new_default_name = if let Some(name) = params.name.or(params.version_name) {
+					tx.insert_one(
+						AuditLog {
 							id: AuditLogId::new(),
 							actor_id: Some(user.id),
 							data: AuditLogData::Emote {
 								target_id: self.id.id(),
-								data: AuditLogEmoteData::ChangeOwner {
-									old: self.emote.owner_id,
-									new: owner_id.id(),
+								data: AuditLogEmoteData::ChangeName {
+									old: self.emote.default_name.clone(),
+									new: name.clone(),
 								},
 							},
 							updated_at: chrono::Utc::now(),
 							search_updated_at: None,
-						})
-						.session(&mut session)
-						.await
-						.map_err(|e| {
-							tracing::error!(error = %e, "failed to insert audit log");
-							ApiError::INTERNAL_SERVER_ERROR
-						})?;
+						},
+						None,
+					)
+					.await?;
+
+					let change = ChangeField {
+						key: "name".to_string(),
+						ty: ChangeFieldType::String,
+						old_value: self.emote.default_name.clone().into(),
+						value: name.clone().into(),
+						..Default::default()
+					};
+					changes.push(change.clone());
+					nested_changes.push(change);
+
+					Some(name)
+				} else {
+					None
+				};
+
+				let mut flags = self.emote.flags;
+
+				if let Some(input_flags) = params.flags {
+					if input_flags.contains(EmoteFlagsModel::Private) {
+						flags |= EmoteFlags::Private;
+						flags &= !EmoteFlags::PublicListed;
+					} else {
+						flags &= !EmoteFlags::Private;
+						flags |= EmoteFlags::PublicListed;
+					}
+
+					if input_flags.contains(EmoteFlagsModel::ZeroWidth) {
+						flags |= EmoteFlags::DefaultZeroWidth;
+					} else {
+						flags &= !EmoteFlags::DefaultZeroWidth;
+					}
+				}
+
+				// changing visibility and owner requires manage any perms
+				let new_owner_id = if user.has(EmotePermission::ManageAny) {
+					if let Some(listed) = params.listed {
+						if listed {
+							flags |= EmoteFlags::PublicListed;
+							flags &= !EmoteFlags::Private;
+						} else {
+							flags &= !EmoteFlags::PublicListed;
+							flags |= EmoteFlags::Private;
+						}
+
+						if self.emote.flags.contains(EmoteFlags::PublicListed) != listed {
+							let change = ChangeField {
+								key: "listed".to_string(),
+								ty: ChangeFieldType::Bool,
+								old_value: self.emote.flags.contains(EmoteFlags::PublicListed).into(),
+								value: listed.into(),
+								..Default::default()
+							};
+							changes.push(change.clone());
+							nested_changes.push(change);
+						}
+					}
+
+					if let Some(personal_use) = params.personal_use {
+						if personal_use {
+							flags |= EmoteFlags::ApprovedPersonal;
+							flags &= !EmoteFlags::DeniedPersonal;
+						} else {
+							flags &= !EmoteFlags::ApprovedPersonal;
+							flags |= EmoteFlags::DeniedPersonal;
+						}
+					}
+
+					if let Some(owner_id) = params.owner_id {
+						tx.insert_one(
+							AuditLog {
+								id: AuditLogId::new(),
+								actor_id: Some(user.id),
+								data: AuditLogData::Emote {
+									target_id: self.id.id(),
+									data: AuditLogEmoteData::ChangeOwner {
+										old: self.emote.owner_id,
+										new: owner_id.id(),
+									},
+								},
+								updated_at: chrono::Utc::now(),
+								search_updated_at: None,
+							},
+							None,
+						)
+						.await?;
+
+						changes.push(ChangeField {
+							key: "owner_id".to_string(),
+							ty: ChangeFieldType::String,
+							old_value: self.emote.owner_id.to_string().into(),
+							value: owner_id.0.to_string().into(),
+							..Default::default()
+						});
+
+						Some(owner_id.id())
+					} else {
+						None
+					}
+				} else {
+					None
+				};
+
+				let new_flags = if flags != self.emote.flags {
+					tx.insert_one(
+						AuditLog {
+							id: AuditLogId::new(),
+							actor_id: Some(user.id),
+							data: AuditLogData::Emote {
+								target_id: self.id.id(),
+								data: AuditLogEmoteData::ChangeFlags {
+									old: self.emote.flags,
+									new: flags,
+								},
+							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
+						},
+						None,
+					)
+					.await?;
 
 					changes.push(ChangeField {
-						key: "owner_id".to_string(),
-						ty: ChangeFieldType::String,
-						old_value: self.emote.owner_id.to_string().into(),
-						value: owner_id.0.to_string().into(),
+						key: "flags".to_string(),
+						ty: ChangeFieldType::Number,
+						old_value: self.emote.flags.bits().into(),
+						value: flags.bits().into(),
+						..Default::default()
+					});
+
+					Some(flags)
+				} else {
+					None
+				};
+
+				if let Some(tags) = &params.tags {
+					tx.insert_one(
+						AuditLog {
+							id: AuditLogId::new(),
+							actor_id: Some(user.id),
+							data: AuditLogData::Emote {
+								target_id: self.id.id(),
+								data: AuditLogEmoteData::ChangeTags {
+									old: self.emote.tags.clone(),
+									new: tags.clone(),
+								},
+							},
+							updated_at: Utc::now(),
+							search_updated_at: None,
+						},
+						None,
+					)
+					.await?;
+
+					changes.push(ChangeField {
+						key: "tags".to_string(),
+						old_value: self.emote.tags.clone().into(),
+						value: tags.clone().into(),
 						..Default::default()
 					});
 				}
-			}
 
-			if flags != self.emote.flags {
-				update.insert("flags", flags.bits());
-
-				AuditLog::collection(&global.db)
-					.insert_one(AuditLog {
-						id: AuditLogId::new(),
-						actor_id: Some(user.id),
-						data: AuditLogData::Emote {
-							target_id: self.id.id(),
-							data: AuditLogEmoteData::ChangeFlags {
-								old: self.emote.flags,
-								new: flags,
-							},
+				let emote = tx
+					.find_one_and_update(
+						filter::filter! {
+							DbEmote {
+								#[query(rename = "_id")]
+								id: self.id.id(),
+							}
 						},
-						updated_at: chrono::Utc::now(),
-						search_updated_at: None,
-					})
-					.session(&mut session)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to insert audit log");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-
-				changes.push(ChangeField {
-					key: "flags".to_string(),
-					ty: ChangeFieldType::Number,
-					old_value: self.emote.flags.bits().into(),
-					value: flags.bits().into(),
-					..Default::default()
-				});
-			}
-
-			if let Some(tags) = params.tags {
-				update.insert("tags", &tags);
-
-				AuditLog::collection(&global.db)
-					.insert_one(AuditLog {
-						id: AuditLogId::new(),
-						actor_id: Some(user.id),
-						data: AuditLogData::Emote {
-							target_id: self.id.id(),
-							data: AuditLogEmoteData::ChangeTags {
-								old: self.emote.tags.clone(),
-								new: tags.clone(),
-							},
+						update::update! {
+							#[query(set)]
+							DbEmote {
+								#[query(optional)]
+								default_name: new_default_name,
+								#[query(optional)]
+								owner_id: new_owner_id,
+								#[query(optional)]
+								flags: new_flags,
+								#[query(optional)]
+								tags: params.tags,
+								updated_at: chrono::Utc::now(),
+							}
 						},
-						updated_at: Utc::now(),
-						search_updated_at: None,
-					})
-					.session(&mut session)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to insert audit log");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or(ApiError::NOT_FOUND)
+					.map_err(TransactionError::custom)?;
 
-				changes.push(ChangeField {
-					key: "tags".to_string(),
-					old_value: self.emote.tags.clone().into(),
-					value: tags.into(),
-					..Default::default()
-				});
+				if !nested_changes.is_empty() {
+					let nested_changes = serde_json::to_value(nested_changes)
+						.map_err(|e| {
+							tracing::error!(error = %e, "failed to serialize nested changes");
+							ApiError::INTERNAL_SERVER_ERROR
+						})
+						.map_err(TransactionError::custom)?;
+
+					changes.push(ChangeField {
+						key: "versions".to_string(),
+						nested: true,
+						index: Some(0),
+						value: nested_changes,
+						..Default::default()
+					});
+				}
+
+				if !changes.is_empty() {
+					let body = ChangeMap {
+						id: self.id.id(),
+						kind: shared::event_api::types::ObjectKind::Emote,
+						actor: Some(UserPartialModel::from_db(
+							user.clone(),
+							None,
+							None,
+							&global.config.api.cdn_origin,
+						)),
+						updated: changes,
+						..Default::default()
+					};
+
+					global
+						.event_api
+						.dispatch_event(EventType::UpdateEmote, body, self.id.0)
+						.await
+						.map_err(|e| {
+							tracing::error!(error = %e, "failed to dispatch event");
+							ApiError::INTERNAL_SERVER_ERROR
+						})
+						.map_err(TransactionError::custom)?;
+				}
+
+				Ok(emote)
+			})
+			.await;
+
+			match res {
+				Ok(emote) => Ok(Emote::from_db(global, emote)),
+				Err(TransactionError::Custom(e)) => Err(e),
+				Err(e) => {
+					tracing::error!(error = %e, "transaction failed");
+					Err(ApiError::INTERNAL_SERVER_ERROR)
+				}
 			}
-
-			update.insert("updated_at", Some(bson::DateTime::from(chrono::Utc::now())));
-
-			let emote = shared::database::emote::Emote::collection(&global.db)
-				.find_one_and_update(doc! { "_id": self.id.0 }, doc! { "$set": update })
-				.return_document(ReturnDocument::After)
-				.session(&mut session)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to update emote");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?
-				.ok_or(ApiError::NOT_FOUND)?;
-
-			session.commit_transaction().await.map_err(|e| {
-				tracing::error!(error = %e, "failed to commit transaction");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-			if !nested_changes.is_empty() {
-				let nested_changes = serde_json::to_value(nested_changes).map_err(|e| {
-					tracing::error!(error = %e, "failed to serialize nested changes");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
-				changes.push(ChangeField {
-					key: "versions".to_string(),
-					nested: true,
-					index: Some(0),
-					value: nested_changes,
-					..Default::default()
-				});
-			}
-
-			if !changes.is_empty() {
-				let body = ChangeMap {
-					id: self.id.id(),
-					kind: shared::event_api::types::ObjectKind::Emote,
-					actor: Some(UserPartialModel::from_db(
-						user.clone(),
-						None,
-						None,
-						&global.config.api.cdn_origin,
-					)),
-					updated: changes,
-					..Default::default()
-				};
-
-				global
-					.event_api
-					.dispatch_event(EventType::UpdateEmote, body, self.id.0)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to dispatch event");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-			}
-
-			Ok(Emote::from_db(global, emote))
 		}
 	}
 

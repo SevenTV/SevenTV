@@ -4,6 +4,8 @@ use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use hyper::{header, StatusCode};
 use mongodb::bson::doc;
+use mongodb::options::ReturnDocument;
+use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::session::UserSession;
 use shared::database::user::{FullUser, UserId};
@@ -94,22 +96,22 @@ where
 			Some(session_id) => {
 				let session = UserSession::collection(&global.db)
 					.find_one_and_update(
-						doc! {
-							"_id": session_id,
-							"expires_at": { "$gt": chrono::Utc::now() },
+						filter::filter! {
+							UserSession {
+								#[query(rename = "_id")]
+								id: session_id,
+								#[query(selector = "gt")]
+								expires_at: chrono::Utc::now(),
+							}
 						},
-						doc! {
-							"$set": {
-								"last_used_at": chrono::Utc::now(),
-							},
+						update::update! {
+							#[query(set)]
+							UserSession {
+								last_used_at: chrono::Utc::now(),
+							}
 						},
 					)
-					.with_options(Some(
-						mongodb::options::FindOneAndUpdateOptions::builder()
-							.return_document(mongodb::options::ReturnDocument::After)
-							.upsert(false)
-							.build(),
-					))
+					.return_document(ReturnDocument::After)
 					.await
 					.map_err(|err| {
 						tracing::error!(error = %err, "failed to find user session");

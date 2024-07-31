@@ -16,6 +16,20 @@ pub enum TicketPriority {
 	Urgent = 3,
 }
 
+impl TryFrom<i32> for TicketPriority {
+	type Error = ();
+
+	fn try_from(value: i32) -> Result<Self, Self::Error> {
+		match value {
+			0 => Ok(Self::Low),
+			1 => Ok(Self::Medium),
+			2 => Ok(Self::High),
+			3 => Ok(Self::Urgent),
+			_ => Err(()),
+		}
+	}
+}
+
 impl_typesense_type!(TicketPriority, Int32);
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]

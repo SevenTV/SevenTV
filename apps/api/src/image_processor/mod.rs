@@ -130,15 +130,15 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 }
 
 fn event_to_image_set(event: &event_callback::Success) -> anyhow::Result<ImageSet> {
-	let input = event.input_metadata.context("missing input metadata")?;
+	let input = event.input_metadata.as_ref().context("missing input metadata")?;
 
 	Ok(ImageSet {
 		input: ImageSetInput::Image(Image {
 			frame_count: input.frame_count as i32,
 			width: input.width as i32,
 			height: input.height as i32,
-			path: input.path.map(|p| p.path).unwrap_or_default(),
-			mime: input.content_type,
+			path: input.path.as_ref().map(|p| p.path.clone()).unwrap_or_default(),
+			mime: input.content_type.clone(),
 			size: input.size as i64,
 		}),
 		outputs: event
@@ -146,7 +146,7 @@ fn event_to_image_set(event: &event_callback::Success) -> anyhow::Result<ImageSe
 			.iter()
 			.map(|file| Image {
 				path: file.path.clone().unwrap_or_default().path,
-				mime: file.content_type,
+				mime: file.content_type.clone(),
 				size: file.size as i64,
 				width: file.width as i32,
 				height: file.height as i32,
@@ -166,8 +166,7 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: &event_ca
 		}
 	})
 	.await
-	.context("transaction")?
-	.into_inner()
+	.context("transaction")
 }
 
 async fn handle_fail(global: &Arc<Global>, subject: Subject, event: &event_callback::Fail) -> anyhow::Result<()> {
@@ -180,8 +179,7 @@ async fn handle_fail(global: &Arc<Global>, subject: Subject, event: &event_callb
 		}
 	})
 	.await
-	.context("transaction")?
-	.into_inner()
+	.context("transaction")
 }
 
 async fn handle_start(global: &Arc<Global>, subject: Subject, event: &event_callback::Start) -> anyhow::Result<()> {
@@ -194,8 +192,7 @@ async fn handle_start(global: &Arc<Global>, subject: Subject, event: &event_call
 		}
 	})
 	.await
-	.context("transaction")?
-	.into_inner()
+	.context("transaction")
 }
 
 async fn handle_cancel(global: &Arc<Global>, subject: Subject, event: &event_callback::Cancel) -> anyhow::Result<()> {
@@ -208,6 +205,5 @@ async fn handle_cancel(global: &Arc<Global>, subject: Subject, event: &event_cal
 		}
 	})
 	.await
-	.context("transaction")?
-	.into_inner()
+	.context("transaction")
 }

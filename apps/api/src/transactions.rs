@@ -14,14 +14,14 @@ use crate::global::Global;
 /// TOOD(lennart): whatever this is supposed to be.
 type EmittedEvent = ();
 
-pub struct TransactionSession<'a, T>(Arc<Mutex<SessionInner<'a>>>, PhantomData<T>); //  
+pub struct TransactionSession<'a, E>(Arc<Mutex<SessionInner<'a>>>, PhantomData<E>);
 
-impl<'a, T> TransactionSession<'a, T> {
+impl<'a, E> TransactionSession<'a, E> {
 	fn new(inner: Arc<Mutex<SessionInner<'a>>>) -> Self {
 		Self(inner, PhantomData)
 	}
 
-	fn reset(&mut self) -> Result<(), TransactionError<T>> {
+	fn reset(&mut self) -> Result<(), TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		this.events.clear();
 		Ok(())
@@ -32,12 +32,12 @@ impl<'a, T> TransactionSession<'a, T> {
 	}
 }
 
-impl<T> TransactionSession<'_, T> {
+impl<E> TransactionSession<'_, E> {
 	pub async fn find<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
 		options: impl Into<Option<mongodb::options::FindOptions>>,
-	) -> Result<Vec<U>, TransactionError<T>> {
+	) -> Result<Vec<U>, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let mut find = U::collection(&this.global.db)
@@ -53,7 +53,7 @@ impl<T> TransactionSession<'_, T> {
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
 		options: impl Into<Option<mongodb::options::FindOneOptions>>,
-	) -> Result<Option<U>, TransactionError<T>> {
+	) -> Result<Option<U>, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -71,7 +71,7 @@ impl<T> TransactionSession<'_, T> {
 		filter: impl Into<filter::Filter<U>>,
 		update: impl Into<update::Update<U>>,
 		options: impl Into<Option<mongodb::options::FindOneAndUpdateOptions>>,
-	) -> Result<Option<U>, TransactionError<T>> {
+	) -> Result<Option<U>, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -87,7 +87,7 @@ impl<T> TransactionSession<'_, T> {
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
 		options: impl Into<Option<mongodb::options::FindOneAndDeleteOptions>>,
-	) -> Result<Option<U>, TransactionError<T>> {
+	) -> Result<Option<U>, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -105,7 +105,7 @@ impl<T> TransactionSession<'_, T> {
 		filter: impl Into<filter::Filter<U>>,
 		update: impl Into<update::Update<U>>,
 		options: impl Into<Option<mongodb::options::UpdateOptions>>,
-	) -> Result<UpdateResult, TransactionError<T>> {
+	) -> Result<UpdateResult, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -122,7 +122,7 @@ impl<T> TransactionSession<'_, T> {
 		filter: impl Into<filter::Filter<U>>,
 		update: impl Into<update::Update<U>>,
 		options: impl Into<Option<mongodb::options::UpdateOptions>>,
-	) -> Result<UpdateResult, TransactionError<T>> {
+	) -> Result<UpdateResult, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -138,7 +138,7 @@ impl<T> TransactionSession<'_, T> {
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
 		options: impl Into<Option<mongodb::options::DeleteOptions>>,
-	) -> Result<DeleteResult, TransactionError<T>> {
+	) -> Result<DeleteResult, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -154,7 +154,7 @@ impl<T> TransactionSession<'_, T> {
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
 		options: impl Into<Option<mongodb::options::DeleteOptions>>,
-	) -> Result<DeleteResult, TransactionError<T>> {
+	) -> Result<DeleteResult, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -170,7 +170,7 @@ impl<T> TransactionSession<'_, T> {
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
 		options: impl Into<Option<mongodb::options::CountOptions>>,
-	) -> Result<u64, TransactionError<T>> {
+	) -> Result<u64, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -187,7 +187,7 @@ impl<T> TransactionSession<'_, T> {
 		&mut self,
 		insert: impl Borrow<U>,
 		options: impl Into<Option<mongodb::options::InsertOneOptions>>,
-	) -> Result<InsertOneResult, TransactionError<T>> {
+	) -> Result<InsertOneResult, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -203,7 +203,7 @@ impl<T> TransactionSession<'_, T> {
 		&mut self,
 		items: impl IntoIterator<Item = impl Borrow<U>>,
 		options: impl Into<Option<mongodb::options::InsertManyOptions>>,
-	) -> Result<InsertManyResult, TransactionError<T>> {
+	) -> Result<InsertManyResult, TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 
 		let result = U::collection(&this.global.db)
@@ -215,7 +215,7 @@ impl<T> TransactionSession<'_, T> {
 		Ok(result)
 	}
 
-	pub fn register_event(&mut self, event: EmittedEvent) -> Result<(), TransactionError<T>> {
+	pub fn register_event(&mut self, event: EmittedEvent) -> Result<(), TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		this.events.push(event);
 		Ok(())
@@ -229,7 +229,7 @@ struct SessionInner<'a> {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum TransactionError<T> {
+pub enum TransactionError<E> {
 	#[error("mongo error: {0}")]
 	Mongo(#[from] mongodb::error::Error),
 	#[error("session locked after returning")]
@@ -239,52 +239,52 @@ pub enum TransactionError<T> {
 	#[error("modifier error: {0}")]
 	Update(bson::ser::Error),
 	#[error("custom error")]
-	Custom(T),
+	Custom(E),
 	#[error("too many failures")]
 	TooManyFailures,
 }
 
-pub type TransactionResult<T> = Result<T, TransactionError<T>>;
+pub type TransactionResult<T, E> = Result<T, TransactionError<E>>;
 
-impl<T, E> TransactionError<Result<T, E>> {
+impl<E> TransactionError<E> {
 	pub const fn custom(err: E) -> Self {
-		Self::Custom(Err(err))
+		Self::Custom(err)
 	}
 }
 
-#[derive(Debug, Clone)]
-pub struct TransactionOutput<T> {
-	pub output: T,
-	pub aborted: bool,
-}
+// #[derive(Debug, Clone)]
+// pub struct TransactionOutput<T> {
+// 	pub output: T,
+// 	pub aborted: bool,
+// }
 
-impl<T> TransactionOutput<T> {
-	pub fn into_inner(self) -> T {
-		self.output
-	}
-}
+// impl<T> TransactionOutput<T> {
+// 	pub fn into_inner(self) -> T {
+// 		self.output
+// 	}
+// }
 
-impl<T> std::ops::Deref for TransactionOutput<T> {
-	type Target = T;
+// impl<T> std::ops::Deref for TransactionOutput<T> {
+// 	type Target = T;
 
-	fn deref(&self) -> &Self::Target {
-		&self.output
-	}
-}
+// 	fn deref(&self) -> &Self::Target {
+// 		&self.output
+// 	}
+// }
 
-impl<T> std::ops::DerefMut for TransactionOutput<T> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.output
-	}
-}
+// impl<T> std::ops::DerefMut for TransactionOutput<T> {
+// 	fn deref_mut(&mut self) -> &mut Self::Target {
+// 		&mut self.output
+// 	}
+// }
 
-pub async fn with_transaction<'a, T, F, Fut>(
+pub async fn with_transaction<'a, T, E, F, Fut>(
 	global: &'a Arc<Global>,
 	f: F,
-) -> Result<TransactionOutput<T>, TransactionError<T>>
+) -> TransactionResult<T, E>
 where
-	F: FnOnce(TransactionSession<'a, T>) -> Fut + Clone + 'a,
-	Fut: std::future::Future<Output = Result<T, TransactionError<T>>> + 'a,
+	F: FnOnce(TransactionSession<'a, E>) -> Fut + Clone + 'a,
+	Fut: std::future::Future<Output = TransactionResult<T, E>> + 'a,
 {
 	let mut session = global.mongo.start_session().await?;
 	session.start_transaction().await?;
@@ -312,7 +312,7 @@ where
 					Ok(()) => {
 						// todo emit events
 						session_inner.events.clear();
-						return Ok(TransactionOutput { output, aborted: false });
+						return Ok(output);
 					}
 					Err(err) => {
 						if err.contains_label(UNKNOWN_TRANSACTION_COMMIT_RESULT) {
@@ -334,9 +334,9 @@ where
 
 				session_inner.session.abort_transaction().await?;
 
-				if let TransactionError::Custom(output) = err {
-					return Ok(TransactionOutput { output, aborted: true });
-				}
+				// if let TransactionError::Custom(output) = err {
+				// 	return Ok(TransactionOutput { output, aborted: true });
+				// }
 
 				return Err(err);
 			}
