@@ -355,10 +355,8 @@ pub fn mapper_struct(ast: syn::ExprStruct) -> Result<proc_macro2::TokenStream, s
 				field.query_selector,
 				Some(
 					QuerySelector::All(_)
-						| QuerySelector::In(_)
-						| QuerySelector::Nin(_)
-						| QuerySelector::Cin(_)
-						| QuerySelector::Cnin(_)
+						| QuerySelector::In(_) | QuerySelector::Nin(_)
+						| QuerySelector::Cin(_) | QuerySelector::Cnin(_)
 				)
 			);
 

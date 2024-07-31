@@ -282,7 +282,8 @@ impl UserPartial {
 			.active_profile_picture
 			.as_ref()
 			.and_then(|s| {
-				s.image_set.outputs
+				s.image_set
+					.outputs
 					.iter()
 					.max_by_key(|i| i.size)
 					.map(|i| i.get_url(&global.config.api.cdn_origin))

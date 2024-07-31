@@ -230,8 +230,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 					tracing::error!(error = %err, "failed to update user");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
-				.matched_count
-				== 0
+				.matched_count == 0
 			{
 				tracing::error!("failed to update user, no matched count");
 				return Err(ApiError::INTERNAL_SERVER_ERROR);

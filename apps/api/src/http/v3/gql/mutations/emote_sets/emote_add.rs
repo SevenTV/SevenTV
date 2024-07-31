@@ -60,40 +60,40 @@ pub async fn emote_add(
 			)));
 		} else if !emote.flags.contains(EmoteFlags::ApprovedPersonal) {
 			tx.find_one_and_update(
-					filter::filter! {
-						EmoteModerationRequest {
-							#[query(serde)]
-							kind: EmoteModerationRequestKind::PersonalUse,
-							emote_id: emote.id,
-						}
+				filter::filter! {
+					EmoteModerationRequest {
+						#[query(serde)]
+						kind: EmoteModerationRequestKind::PersonalUse,
+						emote_id: emote.id,
+					}
+				},
+				update::update! {
+					#[query(set_on_insert)]
+					EmoteModerationRequest {
+						id: EmoteModerationRequestId::new(),
+						user_id: actor.id,
+						kind: EmoteModerationRequestKind::PersonalUse,
+						reason: Some("User requested to add emote to a personal set".to_string()),
+						emote_id: emote.id,
+						status: EmoteModerationRequestStatus::Pending,
+						country_code: None::<String>,
+						assigned_to: vec![],
+						priority: actor
+							.computed
+							.permissions
+							.emote_moderation_request_priority
+							.unwrap_or_default(),
+						search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
+						updated_at: chrono::Utc::now(),
 					},
-					update::update! {
-						#[query(set_on_insert)]
-						EmoteModerationRequest {
-							id: EmoteModerationRequestId::new(),
-							user_id: actor.id,
-							kind: EmoteModerationRequestKind::PersonalUse,
-							reason: Some("User requested to add emote to a personal set".to_string()),
-							emote_id: emote.id,
-							status: EmoteModerationRequestStatus::Pending,
-							country_code: None::<String>,
-							assigned_to: vec![],
-							priority: actor
-								.computed
-								.permissions
-								.emote_moderation_request_priority
-								.unwrap_or_default(),
-							search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
-							updated_at: chrono::Utc::now(),
-						},
-					},
-					FindOneAndUpdateOptions::builder().upsert(true).build(),
-				)
-				.await?
-				.ok_or(TransactionError::custom(ApiError::new_const(
-					StatusCode::NOT_FOUND,
-					"emote moderation failed to insert",
-				)))?;
+				},
+				FindOneAndUpdateOptions::builder().upsert(true).build(),
+			)
+			.await?
+			.ok_or(TransactionError::custom(ApiError::new_const(
+				StatusCode::NOT_FOUND,
+				"emote moderation failed to insert",
+			)))?;
 
 			// TODO: add audit log for emote moderation request
 			// TODO: emit event for emote moderation request
@@ -231,7 +231,8 @@ pub async fn emote_add(
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to dispatch event");
 			ApiError::INTERNAL_SERVER_ERROR
-		}).map_err(TransactionError::custom)?;
+		})
+		.map_err(TransactionError::custom)?;
 
 	Ok(emote_set)
 }

@@ -278,10 +278,7 @@ impl<E> TransactionError<E> {
 // 	}
 // }
 
-pub async fn with_transaction<'a, T, E, F, Fut>(
-	global: &'a Arc<Global>,
-	f: F,
-) -> TransactionResult<T, E>
+pub async fn with_transaction<'a, T, E, F, Fut>(global: &'a Arc<Global>, f: F) -> TransactionResult<T, E>
 where
 	F: FnOnce(TransactionSession<'a, E>) -> Fut + Clone + 'a,
 	Fut: std::future::Future<Output = TransactionResult<T, E>> + 'a,

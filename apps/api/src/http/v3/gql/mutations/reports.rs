@@ -307,7 +307,7 @@ impl ReportsMutation {
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
 				Err(ApiError::INTERNAL_SERVER_ERROR)
-			},
+			}
 		}
 	}
 }
