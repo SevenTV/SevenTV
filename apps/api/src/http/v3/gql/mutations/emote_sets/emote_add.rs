@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
+use mongodb::options::FindOneAndUpdateOptions;
+use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
 use shared::database::emote::{EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
@@ -8,152 +10,13 @@ use shared::database::emote_moderation_request::{
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::old_types::UserPartialModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::v3::rest::types::{ActiveEmoteModel, EmotePartialModel};
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
-
-// struct CreateEmoteModerationRequestQuery {
-// 	filter: CreateEmoteModerationRequestFilter,
-// 	update: EmoteModerationRequest,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct CreateEmoteModerationRequestFilter {
-// 	kind: EmoteModerationRequestKind,
-// 	emote_id: EmoteId,
-// }
-
-// impl FindOneAndUpdateQuery for CreateEmoteModerationRequestQuery {
-// 	type Collection = EmoteModerationRequest;
-// 	type Filter<'a> = &'a CreateEmoteModerationRequestFilter;
-// 	type Update<'a> = MongoSetOnInsert<&'a EmoteModerationRequest>;
-
-// 	fn filter(&self) -> Self::Filter<'_> {
-// 		&self.filter
-// 	}
-
-// 	fn update(&self) -> Self::Update<'_> {
-// 		MongoSetOnInsert {
-// 			set_on_insert: &self.update,
-// 		}
-// 	}
-
-// 	fn options(&self) -> Option<mongodb::options::FindOneAndUpdateOptions> {
-// 		Some(
-// 			mongodb::options::FindOneAndUpdateOptions::builder()
-// 				.upsert(true)
-// 				.return_document(mongodb::options::ReturnDocument::After)
-// 				.build(),
-// 		)
-// 	}
-
-// 	fn audit_logs(
-// 		&self,
-// 		resp: Option<&Self::Collection>,
-// 	) -> impl IntoIterator<Item = shared::database::audit_log::AuditLog> {
-// 		todo!("add audit log for emote moderation request");
-// 		None
-// 	}
-
-// 	fn emit_events(&self, resp: Option<&Self::Collection>) -> impl IntoIterator<Item = ()> {
-// 		todo!("emit event for emote moderation request");
-// 		None
-// 	}
-// }
-
-// pub struct CountEmoteModerationRequestQuery {
-// 	filter: CountEmoteModerationRequestFilter,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct CountEmoteModerationRequestFilter {
-// 	kind: EmoteModerationRequestKind,
-// 	user_id: UserId,
-// 	status: EmoteModerationRequestStatus,
-// }
-
-// impl CountQuery for CountEmoteModerationRequestQuery {
-// 	type Collection = EmoteModerationRequest;
-// 	type Filter<'a> = &'a CountEmoteModerationRequestFilter;
-
-// 	fn filter(&self) -> Self::Filter<'_> {
-// 		&self.filter
-// 	}
-// }
-
-// pub struct UpdateEmoteSetQuery {
-// 	filter: UpdateEmoteSetFilter,
-// 	update: UpdateEmoteSetUpdate,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct UpdateEmoteSetFilter {
-// 	id: EmoteSetId,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct UpdateEmoteSetUpdate {
-// 	#[serde(rename = "$set")]
-// 	pub set: UpdateEmoteSetUpdateSet,
-// 	#[serde(rename = "$push")]
-// 	pub push: UpdateEmoteSetUpdatePush,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct UpdateEmoteSetUpdateSet {
-// 	pub emotes_changed_since_reindex: bool,
-// 	#[serde(with = "shared::database::serde")]
-// 	pub updated_at: chrono::DateTime<chrono::Utc>,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct UpdateEmoteSetUpdatePush {
-// 	pub emotes: EmoteSetEmote,
-// }
-
-// impl FindOneAndUpdateQuery for UpdateEmoteSetQuery {
-// 	type Collection = EmoteSet;
-// 	type Filter<'a> = &'a UpdateEmoteSetFilter;
-// 	type Update<'a> = &'a UpdateEmoteSetUpdate;
-
-// 	fn filter(&self) -> Self::Filter<'_> {
-// 		&self.filter
-// 	}
-
-// 	fn update(&self) -> Self::Update<'_> {
-// 		&self.update
-// 	}
-
-// 	fn options(&self) -> Option<mongodb::options::FindOneAndUpdateOptions> {
-// 		Some(
-// 			mongodb::options::FindOneAndUpdateOptions::builder()
-// 				.return_document(mongodb::options::ReturnDocument::After)
-// 				.build(),
-// 		)
-// 	}
-
-// 	fn audit_logs(&self, resp: Option<&Self::Collection>) -> impl IntoIterator<Item = AuditLog> {
-// 		resp.map(|_| AuditLog {
-// 			id: AuditLogId::new(),
-// 			actor_id: self.update.push.emotes.added_by_id,
-// 			data: AuditLogData::EmoteSet {
-// 				target_id: self.filter.id,
-// 				data: AuditLogEmoteSetData::AddEmote {
-// 					emote_id: self.update.push.emotes.id,
-// 					alias: self.update.push.emotes.alias.clone(),
-// 				},
-// 			},
-// 			updated_at: chrono::Utc::now(),
-// 			search_updated_at: None,
-// 		})
-// 	}
-
-// 	fn emit_events(&self, resp: Option<&Self::Collection>) -> impl IntoIterator<Item = ()> {
-// 		todo!("emit event for add emote to emote set");
-// 		None
-// 	}
-// }
 
 pub async fn emote_add(
 	global: &Arc<Global>,
@@ -196,10 +59,7 @@ pub async fn emote_add(
 				"emote is not allowed in personal emote sets",
 			)));
 		} else if !emote.flags.contains(EmoteFlags::ApprovedPersonal) {
-			let inserted_id = EmoteModerationRequestId::new();
-
-			let request = tx
-				.find_one_and_update(
+			tx.find_one_and_update(
 					filter::filter! {
 						EmoteModerationRequest {
 							#[query(serde)]
@@ -208,53 +68,56 @@ pub async fn emote_add(
 						}
 					},
 					update::update! {
-						#[query(set)]
+						#[query(set_on_insert)]
 						EmoteModerationRequest {
-							id: inserted_id,
-							emote_id: emote.id,
-							country_code: None::<String>,
-							#[query(serde)]
+							id: EmoteModerationRequestId::new(),
+							user_id: actor.id,
 							kind: EmoteModerationRequestKind::PersonalUse,
+							reason: Some("User requested to add emote to a personal set".to_string()),
+							emote_id: emote.id,
+							status: EmoteModerationRequestStatus::Pending,
+							country_code: None::<String>,
 							assigned_to: vec![],
 							priority: actor
 								.computed
 								.permissions
 								.emote_moderation_request_priority
 								.unwrap_or_default(),
-							reason: Some("User requested to add emote to a personal set".to_string()),
-							#[query(serde)]
-							status: EmoteModerationRequestStatus::Pending,
-							user_id: actor.id,
 							search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
 							updated_at: chrono::Utc::now(),
-						}
+						},
 					},
-					None,
+					FindOneAndUpdateOptions::builder().upsert(true).build(),
 				)
 				.await?
 				.ok_or(TransactionError::custom(ApiError::new_const(
 					StatusCode::NOT_FOUND,
-					"emote moderation request not found",
+					"emote moderation failed to insert",
 				)))?;
 
-			// We only care to check if this is the result we just inserted
-			if request.id == inserted_id {
-				let count = tx.count(filter::filter! {
-					EmoteModerationRequest {
-						#[query(serde)]
-						kind: EmoteModerationRequestKind::PersonalUse,
-						user_id: target.id,
-						#[query(serde)]
-						status: EmoteModerationRequestStatus::Pending,
-					}
-				}, None).await?;
+			// TODO: add audit log for emote moderation request
+			// TODO: emit event for emote moderation request
 
-				if count as i32 > target.computed.permissions.emote_moderation_request_limit.unwrap_or_default() {
-					return Err(TransactionError::custom(ApiError::new_const(
-						StatusCode::BAD_REQUEST,
-						"too many pending moderation requests",
-					)));
-				}
+			let count = tx
+				.count(
+					filter::filter! {
+						EmoteModerationRequest {
+							#[query(serde)]
+							kind: EmoteModerationRequestKind::PersonalUse,
+							user_id: target.id,
+							#[query(serde)]
+							status: EmoteModerationRequestStatus::Pending,
+						}
+					},
+					None,
+				)
+				.await?;
+
+			if count as i32 > target.computed.permissions.emote_moderation_request_limit.unwrap_or_default() {
+				return Err(TransactionError::custom(ApiError::new_const(
+					StatusCode::BAD_REQUEST,
+					"too many pending moderation requests",
+				)));
 			}
 		}
 	}
@@ -274,27 +137,33 @@ pub async fn emote_add(
 		origin_set_id: None,
 	};
 
-	let emote_set = tx.find_one_and_update(filter::filter! {
-		EmoteSet {
-			#[query(rename = "_id")]
-			id: emote_set.id,
-		}
-	}, update::update! {
-		#[query(set)]
-		EmoteSet {
-			emotes_changed_since_reindex: true,
-			updated_at: chrono::Utc::now(),
-		},
-		#[query(push)]
-		EmoteSet {
-			#[query(serde)]
-			emotes: emote_set_emote,
-		},
-	}, None).await?
-	.ok_or(TransactionError::custom(ApiError::new_const(
-		StatusCode::NOT_FOUND,
-		"emote set not found",
-	)))?;
+	let emote_set = tx
+		.find_one_and_update(
+			filter::filter! {
+				EmoteSet {
+					#[query(rename = "_id")]
+					id: emote_set.id,
+				}
+			},
+			update::update! {
+				#[query(set)]
+				EmoteSet {
+					emotes_changed_since_reindex: true,
+					updated_at: chrono::Utc::now(),
+				},
+				#[query(push)]
+				EmoteSet {
+					#[query(serde)]
+					emotes: &emote_set_emote,
+				},
+			},
+			None,
+		)
+		.await?
+		.ok_or(TransactionError::custom(ApiError::new_const(
+			StatusCode::NOT_FOUND,
+			"emote set not found",
+		)))?;
 
 	if let Some(capacity) = emote_set.capacity {
 		if emote_set.emotes.len() as i32 > capacity {
@@ -305,44 +174,64 @@ pub async fn emote_add(
 		}
 	}
 
-	// let active_emote = ActiveEmoteModel::from_db(
-	//     emote_set_emote,
-	//     Some(EmotePartialModel::from_db(emote, None,
-	// &global.config.api.cdn_origin)), );
-	// let active_emote = serde_json::to_value(active_emote).map_err(|e| {
-	//     tracing::error!(error = %e, "failed to serialize emote");
-	//     ApiError::INTERNAL_SERVER_ERROR
-	// })?;
+	tx.insert_one(
+		AuditLog {
+			id: AuditLogId::new(),
+			actor_id: emote_set_emote.added_by_id.clone(),
+			data: AuditLogData::EmoteSet {
+				target_id: emote_set.id,
+				data: AuditLogEmoteSetData::AddEmote {
+					emote_id: emote_set_emote.id.clone(),
+					alias: emote_set_emote.alias.clone(),
+				},
+			},
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
+		},
+		None,
+	)
+	.await?;
 
-	// global
-	//     .event_api
-	//     .dispatch_event(
-	//         EventType::UpdateEmoteSet,
-	//         ChangeMap {
-	//             id: self.emote_set.id.cast(),
-	//             kind: ObjectKind::EmoteSet,
-	//             actor: Some(UserPartialModel::from_db(
-	//                 user.clone(),
-	//                 None,
-	//                 None,
-	//                 &global.config.api.cdn_origin,
-	//             )),
-	//             pushed: vec![ChangeField {
-	//                 key: "emotes".to_string(),
-	//                 index: Some(emote_set.emotes.len()),
-	//                 ty: ChangeFieldType::Object,
-	//                 value: active_emote,
-	//                 ..Default::default()
-	//             }],
-	//             ..Default::default()
-	//         },
-	//         self.emote_set.id,
-	//     )
-	//     .await
-	//     .map_err(|e| {
-	//         tracing::error!(error = %e, "failed to dispatch event");
-	//         ApiError::INTERNAL_SERVER_ERROR
-	//     })?;
+	let active_emote = ActiveEmoteModel::from_db(
+		emote_set_emote,
+		Some(EmotePartialModel::from_db(emote, None, &global.config.api.cdn_origin)),
+	);
+	let active_emote = serde_json::to_value(active_emote)
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to serialize emote");
+			ApiError::INTERNAL_SERVER_ERROR
+		})
+		.map_err(TransactionError::custom)?;
+
+	global
+		.event_api
+		.dispatch_event(
+			EventType::UpdateEmoteSet,
+			ChangeMap {
+				id: emote_set.id.cast(),
+				kind: ObjectKind::EmoteSet,
+				actor: Some(UserPartialModel::from_db(
+					actor.clone(),
+					None,
+					None,
+					&global.config.api.cdn_origin,
+				)),
+				pushed: vec![ChangeField {
+					key: "emotes".to_string(),
+					index: Some(emote_set.emotes.len()),
+					ty: ChangeFieldType::Object,
+					value: active_emote,
+					..Default::default()
+				}],
+				..Default::default()
+			},
+			emote_set.id,
+		)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to dispatch event");
+			ApiError::INTERNAL_SERVER_ERROR
+		}).map_err(TransactionError::custom)?;
 
 	Ok(emote_set)
 }

@@ -343,7 +343,7 @@ impl EmoteSetOps {
 		let res = with_transaction(&global, |tx| async move {
 			match action {
 				ListItemAction::Add => emote_add(global, tx, actor, target, &self.emote_set, id, name).await,
-				ListItemAction::Remove => emote_remove(tx, actor, &self.emote_set, id).await,
+				ListItemAction::Remove => emote_remove(global, tx, actor, &self.emote_set, id).await,
 				ListItemAction::Update => emote_update(global, tx, actor, &self.emote_set, id, name).await,
 			}
 		})
