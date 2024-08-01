@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::options::ReturnDocument;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogUserData};
+use shared::database::event::{Event, EventData, EventUserBanData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{
 	AdminPermission, EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
@@ -19,6 +19,7 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::user::{User as GqlUser, UserPartial};
+use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
 pub struct BansMutation;
@@ -81,88 +82,71 @@ impl BansMutation {
 			));
 		}
 
-		let ban = UserBan {
-			id: Default::default(),
-			user_id: victim.id,
-			template_id: None,
-			expires_at: expire_at,
-			created_by_id: actor.id,
-			reason,
-			tags: vec![],
-			removed: None,
-			permissions: ban_effect_to_permissions(effects),
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-		};
+		let res = with_transaction(global, |mut tx| async move {
+			let ban = UserBan {
+				id: Default::default(),
+				user_id: victim.id,
+				template_id: None,
+				expires_at: expire_at,
+				created_by_id: actor.id,
+				reason,
+				tags: vec![],
+				removed: None,
+				permissions: ban_effect_to_permissions(effects),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			};
 
-		let mut session = global.mongo.start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let res = User::collection(&global.db)
-			.update_one(
-				filter::filter! {
-					User {
-						#[query(rename = "_id")]
-						id: victim.id,
-					}
-				},
-				update::update! {
-					#[query(set)]
-					User {
-						has_bans: true,
-						updated_at: chrono::Utc::now(),
-					}
-				},
-			)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update user permissions");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		UserBan::collection(&global.db)
-			.insert_one(&ban)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert user ban");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		if res.modified_count > 0 {
-			AuditLog::collection(&global.db)
-				.insert_one(AuditLog {
-					id: Default::default(),
-					actor_id: Some(actor.id),
-					data: AuditLogData::User {
-						target_id: victim.id,
-						data: AuditLogUserData::Ban,
+			let res = tx
+				.update_one(
+					filter::filter! {
+						User {
+							#[query(rename = "_id")]
+							id: victim.id,
+						}
 					},
-					updated_at: chrono::Utc::now(),
-					search_updated_at: None,
-				})
-				.session(&mut session)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to insert audit log");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
+					update::update! {
+						#[query(set)]
+						User {
+							has_bans: true,
+							updated_at: chrono::Utc::now(),
+						}
+					},
+					None,
+				)
+				.await?;
+
+			tx.insert_one::<UserBan>(&ban, None).await?;
+
+			if res.modified_count > 0 {
+				tx.insert_one(
+					Event {
+						id: Default::default(),
+						actor_id: Some(actor.id),
+						data: EventData::UserBan {
+							target_id: ban.id,
+							data: EventUserBanData::Ban,
+						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
+					},
+					None,
+				)
+				.await?;
+			}
+
+			Ok(ban)
+		})
+		.await;
+
+		match res {
+			Ok(ban) => Ok(Some(Ban::from_db(victim_id, ban))),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
 		}
-
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		Ok(Some(Ban::from_db(victim_id, ban)))
 	}
 
 	#[graphql(guard = "PermissionGuard::one(UserPermission::Moderate)")]
@@ -189,9 +173,6 @@ impl BansMutation {
 					UserBan {
 						#[query(optional)]
 						reason,
-						/// TODO(lennart): how do you convert a ban from a temporary to a permanent ban?
-						/// This value is optional but a null value means that the ban is permanent, and also means no change.
-						#[query(optional)]
 						expires_at: expire_at,
 						#[query(optional, serde)]
 						permissions: effects.map(ban_effect_to_permissions),

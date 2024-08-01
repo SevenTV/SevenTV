@@ -1,9 +1,7 @@
 use chrono::Utc;
 
 use super::{impl_typesense_type, TypesenseCollection, TypesenseGenericCollection};
-use crate::database::event::{
-	EventData, EventEmoteData, EventEmoteSetData, EventId, EventTicketData, EventUserData,
-};
+use crate::database::event::{EventData, EventEmoteData, EventEmoteSetData, EventId, EventTicketData, EventUserData};
 use crate::database::user::UserId;
 use crate::database::{self, Id};
 
@@ -97,21 +95,23 @@ fn split_kinds(data: EventData) -> (Id<()>, TargetKind, ActionKind) {
 				EventEmoteSetData::Delete { .. } => ActionKind::Delete,
 			},
 		),
+		// TODO
 		EventData::User { target_id, data } => (
 			target_id.cast(),
 			TargetKind::User,
-			match data {
-				EventUserData::Ban => ActionKind::UserBan,
-				EventUserData::Unban => ActionKind::UserUnban,
-				EventUserData::Login { .. } => ActionKind::UserLogin,
-				EventUserData::Logout => ActionKind::UserLogout,
-				EventUserData::AddEditor { .. }
-				| EventUserData::RemoveEditor { .. }
-				| EventUserData::AddRole { .. }
-				| EventUserData::RemoveRole { .. } => ActionKind::Modify,
-				EventUserData::Delete { .. } => ActionKind::Delete,
-				EventUserData::Merge { .. } => ActionKind::Merge,
-			},
+			// match data {
+			// 	EventUserData::Ban => ActionKind::UserBan,
+			// 	EventUserData::Unban => ActionKind::UserUnban,
+			// 	EventUserData::Login { .. } => ActionKind::UserLogin,
+			// 	EventUserData::Logout => ActionKind::UserLogout,
+			// 	EventUserData::AddEditor { .. }
+			// 	| EventUserData::RemoveEditor { .. }
+			// 	| EventUserData::AddRole { .. }
+			// 	| EventUserData::RemoveRole { .. } => ActionKind::Modify,
+			// 	EventUserData::Delete { .. } => ActionKind::Delete,
+			// 	EventUserData::Merge { .. } => ActionKind::Merge,
+			// },
+			ActionKind::Modify,
 		),
 		EventData::Ticket { target_id, data } => (
 			target_id.cast(),
@@ -123,6 +123,7 @@ fn split_kinds(data: EventData) -> (Id<()>, TargetKind, ActionKind) {
 				EventTicketData::Create { .. } => ActionKind::Create,
 			},
 		),
+		_ => todo!(),
 	}
 }
 

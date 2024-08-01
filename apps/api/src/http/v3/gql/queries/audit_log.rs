@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::event::{EventEmoteData, EventEmoteSetData, EventUserData};
+use shared::database::event::{EventEmoteData, EventEmoteSetData, EventUserEditorData, ImageProcessOutcome};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::user::UserId;
 use shared::old_types::object_id::GqlObjectId;
@@ -89,7 +89,7 @@ impl AuditLog {
 			} => (AuditLogKind::CreateEmote, target_id.into(), 2, vec![]),
 			shared::database::event::EventData::Emote {
 				target_id,
-				data: EventEmoteData::Process,
+				data: EventEmoteData::Process { outcome: ImageProcessOutcome::Success },
 			} => (AuditLogKind::ProcessEmote, target_id.into(), 2, vec![]),
 			shared::database::event::EventData::Emote {
 				target_id,
@@ -120,11 +120,11 @@ impl AuditLog {
 					emotes,
 				)?],
 			),
-			shared::database::event::EventData::User { target_id, data } => (
+			shared::database::event::EventData::UserEditor { target_id, data } => (
 				AuditLogKind::EditUser,
-				target_id.into(),
+				target_id.user_id.into(),
 				1,
-				vec![AuditLogChange::from_db_user(data, audit_log.id.timestamp())?],
+				vec![AuditLogChange::from_db_user_editor(data, audit_log.id.timestamp())?],
 			),
 			_ => return None,
 		};
@@ -305,9 +305,9 @@ impl AuditLogChange {
 		}
 	}
 
-	pub fn from_db_user(data: EventUserData, timestamp: chrono::DateTime<chrono::Utc>) -> Option<Self> {
+	pub fn from_db_user_editor(data: EventUserEditorData, timestamp: chrono::DateTime<chrono::Utc>) -> Option<Self> {
 		match data {
-			EventUserData::AddEditor { editor_id } => Some(Self {
+			EventUserEditorData::AddEditor { editor_id } => Some(Self {
 				format: AuditLogChangeFormat::ArrayValue,
 				key: "editors".to_string(),
 				value: None,
@@ -322,7 +322,7 @@ impl AuditLogChange {
 					updated: vec![],
 				}),
 			}),
-			EventUserData::RemoveEditor { editor_id } => Some(Self {
+			EventUserEditorData::RemoveEditor { editor_id } => Some(Self {
 				format: AuditLogChangeFormat::ArrayValue,
 				key: "editors".to_string(),
 				value: None,

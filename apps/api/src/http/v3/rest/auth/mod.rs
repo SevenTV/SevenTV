@@ -8,11 +8,10 @@ use axum::routing::{get, post};
 use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::database::event::{Event, EventData, EventId, EventUserData};
+use shared::database::event::{Event, EventData, EventId, EventUserSessionData};
 use shared::database::queries::filter;
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
-use shared::database::MongoCollection;
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
@@ -20,6 +19,7 @@ use crate::http::error::ApiError;
 use crate::http::extract::Query;
 use crate::http::middleware::auth::{AuthSession, AuthSessionKind, AUTH_COOKIE};
 use crate::http::middleware::cookies::Cookies;
+use crate::transactions::{with_transaction, TransactionError};
 
 mod login;
 
@@ -120,64 +120,58 @@ async fn logout(
 	Extension(cookies): Extension<Cookies>,
 	auth_session: AuthSession,
 ) -> Result<impl IntoResponse, ApiError> {
-	let mut session = global.mongo.start_session().await.map_err(|err| {
-		tracing::error!(error = %err, "failed to start session");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+	let res = with_transaction(&Arc::clone(&global), |mut tx| async move {
+		// is a new session
+		if let AuthSessionKind::Session(session) = &auth_session.kind {
+			let res = tx.delete_one(
+				filter::filter! {
+					UserSession {
+						#[query(rename = "_id")]
+						id: session.id,
+					}
+				},
+				None,
+			)
+			.await?;
 
-	session.start_transaction().await.map_err(|err| {
-		tracing::error!(error = %err, "failed to start transaction");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+			if res.deleted_count > 0 {
+				tx.insert_one(
+					Event {
+						id: EventId::new(),
+						actor_id: Some(auth_session.user_id()),
+						data: EventData::UserSession {
+							target_id: session.id,
+							data: EventUserSessionData::Delete,
+						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
+					},
+					None,
+				)
+				.await?;
+			}
+		}
 
-	// is a new session
-	if let AuthSessionKind::Session(session) = &auth_session.kind {
-		UserSession::collection(&global.db)
-			.delete_one(filter::filter! {
-				UserSession {
-					#[query(rename = "_id")]
-					id: session.id,
-				}
-			})
-			.await
+		cookies.remove(&global, AUTH_COOKIE);
+
+		Ok(())
+	})
+	.await;
+
+	match res {
+		Ok(_) => Response::builder()
+			.status(StatusCode::NO_CONTENT)
+			.body(Body::empty())
 			.map_err(|err| {
-				tracing::error!(error = %err, "failed to delete session");
+				tracing::error!(error = %err, "failed to create response");
 				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+			}),
+		Err(TransactionError::Custom(e)) => Err(e),
+		Err(e) => {
+			tracing::error!(error = %e, "transaction failed");
+			Err(ApiError::INTERNAL_SERVER_ERROR)
+		}
 	}
-
-	Event::collection(&global.db)
-		.insert_one(Event {
-			id: EventId::new(),
-			actor_id: Some(auth_session.user_id()),
-			data: EventData::User {
-				target_id: auth_session.user_id(),
-				data: EventUserData::Logout,
-			},
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-		})
-		.session(&mut session)
-		.await
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert event");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-	session.commit_transaction().await.map_err(|err| {
-		tracing::error!(error = %err, "failed to commit transaction");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
-
-	cookies.remove(&global, AUTH_COOKIE);
-
-	Response::builder()
-		.status(StatusCode::NO_CONTENT)
-		.body(Body::empty())
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to create response");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
 }
 
 #[utoipa::path(

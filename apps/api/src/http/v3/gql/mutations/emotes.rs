@@ -4,8 +4,8 @@ use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use chrono::Utc;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::event::{Event, EventData, EventEmoteData, EventId};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags, EmoteMerged};
+use shared::database::event::{Event, EventData, EventEmoteData, EventId};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
@@ -414,72 +414,63 @@ impl EmoteOps {
 
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo.start_session().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let emote = DbEmote::collection(&global.db)
-			.find_one_and_update(
-				filter::filter! {
-					DbEmote {
-						#[query(rename = "_id")]
-						id: self.id.id(),
-					}
-				},
-				update::update! {
-					#[query(set)]
-					DbEmote {
-						#[query(serde)]
-						merged: EmoteMerged {
-							target_id: target_id.id(),
-							at: chrono::Utc::now(),
-						},
-						updated_at: chrono::Utc::now(),
-					}
-				},
-			)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update emote");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?
-			.ok_or(ApiError::NOT_FOUND)?;
-
-		Event::collection(&global.db)
-			.insert_one(Event {
-				id: EventId::new(),
-				actor_id: Some(auth_session.user_id()),
-				data: EventData::Emote {
-					target_id: self.id.id(),
-					data: EventEmoteData::Merge {
-						new_emote_id: target_id.id(),
+		let res = with_transaction(global, |mut tx| async move {
+			let emote = tx
+				.find_one_and_update(
+					filter::filter! {
+						DbEmote {
+							#[query(rename = "_id")]
+							id: self.id.id(),
+						}
 					},
+					update::update! {
+						#[query(set)]
+						DbEmote {
+							#[query(serde)]
+							merged: EmoteMerged {
+								target_id: target_id.id(),
+								at: chrono::Utc::now(),
+							},
+							updated_at: chrono::Utc::now(),
+						}
+					},
+					None,
+				)
+				.await?
+				.ok_or(ApiError::NOT_FOUND)
+				.map_err(TransactionError::custom)?;
+
+			tx.insert_one(
+				Event {
+					id: EventId::new(),
+					actor_id: Some(auth_session.user_id()),
+					data: EventData::Emote {
+						target_id: self.id.id(),
+						data: EventEmoteData::Merge {
+							new_emote_id: target_id.id(),
+						},
+					},
+					updated_at: chrono::Utc::now(),
+					search_updated_at: None,
 				},
-				updated_at: chrono::Utc::now(),
-				search_updated_at: None,
-			})
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert event");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+				None,
+			)
+			.await?;
 
-		// TODO: schedule emote merge job
+			// TODO: schedule emote merge job
 
-		session.commit_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			Ok(emote)
+		})
+		.await;
 
-		Ok(Emote::from_db(global, emote))
+		match res {
+			Ok(emote) => Ok(Emote::from_db(global, emote)),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
+		}
 	}
 
 	#[graphql(guard = "PermissionGuard::one(EmotePermission::Admin)")]

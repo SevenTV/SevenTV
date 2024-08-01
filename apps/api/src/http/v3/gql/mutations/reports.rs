@@ -39,93 +39,73 @@ impl ReportsMutation {
 
 		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo.start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		let res = with_transaction(global, |mut tx| async move {
+			let ticket_id = TicketId::new();
 
-		let ticket_id = TicketId::new();
+			let message = TicketMessage {
+				id: TicketMessageId::new(),
+				ticket_id,
+				user_id: auth_sesion.user_id(),
+				content: data.body,
+				files: vec![],
+				search_updated_at: None,
+				updated_at: Utc::now(),
+			};
 
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			tx.insert_one::<TicketMessage>(&message, None).await?;
 
-		let message = TicketMessage {
-			id: TicketMessageId::new(),
-			ticket_id,
-			user_id: auth_sesion.user_id(),
-			content: data.body,
-			files: vec![],
-			search_updated_at: None,
-			updated_at: Utc::now(),
-		};
+			let member = TicketMember {
+				user_id: auth_sesion.user_id(),
+				kind: TicketMemberKind::Member,
+				notifications: true,
+				last_read: Some(message.id),
+			};
 
-		TicketMessage::collection(&global.db)
-			.insert_one(&message)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert ticket message");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		let member = TicketMember {
-			user_id: auth_sesion.user_id(),
-			kind: TicketMemberKind::Member,
-			notifications: true,
-			last_read: Some(message.id),
-		};
-
-		let ticket = Ticket {
-			id: ticket_id,
-			priority: TicketPriority::Medium,
-			members: vec![member],
-			title: data.subject,
-			tags: vec![],
-			country_code: None, // TODO
-			kind: TicketKind::Abuse,
-			targets: vec![TicketTarget::Emote(data.target_id.id())],
-			author_id: auth_sesion.user_id(),
-			open: true,
-			locked: false,
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-		};
-
-		Ticket::collection(&global.db)
-			.insert_one(&ticket)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert ticket");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		Event::collection(&global.db)
-			.insert_one(Event {
-				id: EventId::new(),
-				actor_id: Some(auth_sesion.user_id()),
-				data: EventData::Ticket {
-					target_id: ticket.id,
-					data: EventTicketData::Create,
-				},
+			let ticket = Ticket {
+				id: ticket_id,
+				priority: TicketPriority::Medium,
+				members: vec![member],
+				title: data.subject,
+				tags: vec![],
+				country_code: None, // TODO
+				kind: TicketKind::Abuse,
+				targets: vec![TicketTarget::Emote(data.target_id.id())],
+				author_id: auth_sesion.user_id(),
+				open: true,
+				locked: false,
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
-			})
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert event");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+			};
 
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			tx.insert_one::<Ticket>(&ticket, None).await?;
 
-		Report::from_db(ticket, vec![message]).ok_or(ApiError::INTERNAL_SERVER_ERROR)
+			tx.insert_one(
+				Event {
+					id: EventId::new(),
+					actor_id: Some(auth_sesion.user_id()),
+					data: EventData::Ticket {
+						target_id: ticket.id,
+						data: EventTicketData::Create,
+					},
+					updated_at: chrono::Utc::now(),
+					search_updated_at: None,
+				},
+				None,
+			)
+			.await?;
+
+			Ok((ticket, message))
+		})
+		.await;
+
+		match res {
+			Ok((ticket, message)) => Report::from_db(ticket, vec![message]).ok_or(ApiError::INTERNAL_SERVER_ERROR),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
+		}
 	}
 
 	#[graphql(guard = "PermissionGuard::all([TicketPermission::ManageAbuse, TicketPermission::ManageGeneric])")]

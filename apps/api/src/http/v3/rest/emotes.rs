@@ -8,17 +8,17 @@ use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
-use shared::database::event::{Event, EventData, EventEmoteData, EventId};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
+use shared::database::event::{Event, EventData, EventEmoteData, EventId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::role::permissions::{EmotePermission, FlagPermission, PermissionsExt};
-use shared::database::MongoCollection;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
 use super::types::{EmoteModel, EmotePartialModel};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
+use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
@@ -123,67 +123,55 @@ pub async fn create_emote(
 		flags |= EmoteFlags::Private;
 	}
 
-	let emote = Emote {
-		id: emote_id,
-		owner_id: user.id,
-		default_name: emote_data.name,
-		tags: emote_data.tags,
-		image_set: ImageSet { input, outputs: vec![] },
-		flags,
-		attribution: vec![],
-		merged: None,
-		aspect_ratio: -1.0,
-		scores: Default::default(),
-		search_updated_at: None,
-		updated_at: chrono::Utc::now(),
-	};
-
-	let mut session = global.mongo.start_session().await.map_err(|e| {
-		tracing::error!(error = %e, "failed to start session");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
-
-	session.start_transaction().await.map_err(|e| {
-		tracing::error!(error = %e, "failed to start transaction");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
-
-	Emote::collection(&global.db)
-		.insert_one(&emote)
-		.session(&mut session)
-		.await
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert emote");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-	Event::collection(&global.db)
-		.insert_one(Event {
-			id: EventId::new(),
-			actor_id: Some(user.id),
-			data: EventData::Emote {
-				target_id: emote.id,
-				data: EventEmoteData::Upload,
-			},
-			updated_at: chrono::Utc::now(),
+	let res = with_transaction(&global, |mut tx| async move {
+		let emote = Emote {
+			id: emote_id,
+			owner_id: user.id,
+			default_name: emote_data.name,
+			tags: emote_data.tags,
+			image_set: ImageSet { input, outputs: vec![] },
+			flags,
+			attribution: vec![],
+			merged: None,
+			aspect_ratio: -1.0,
+			scores: Default::default(),
 			search_updated_at: None,
-		})
-		.session(&mut session)
-		.await
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert event");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			updated_at: chrono::Utc::now(),
+		};
 
-	session.commit_transaction().await.map_err(|e| {
-		tracing::error!(error = %e, "failed to commit transaction");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+		tx.insert_one::<Emote>(&emote, None).await?;
 
-	// we don't have to return the owner here
-	let emote = EmotePartialModel::from_db(emote, None, &global.config.api.cdn_origin);
+		tx.insert_one(
+			Event {
+				id: EventId::new(),
+				actor_id: Some(user.id),
+				data: EventData::Emote {
+					target_id: emote.id,
+					data: EventEmoteData::Upload,
+				},
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			},
+			None,
+		)
+		.await?;
 
-	Ok((StatusCode::CREATED, Json(emote)))
+		Ok(emote)
+	})
+	.await;
+
+	match res {
+		Ok(emote) => {
+			// we don't have to return the owner here
+			let emote = EmotePartialModel::from_db(emote, None, &global.config.api.cdn_origin);
+			Ok((StatusCode::CREATED, Json(emote)))
+		}
+		Err(TransactionError::Custom(e)) => Err(e),
+		Err(e) => {
+			tracing::error!(error = %e, "transaction failed");
+			Err(ApiError::INTERNAL_SERVER_ERROR)
+		}
+	}
 }
 
 #[utoipa::path(

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use scuffle_image_processor_proto::event_callback;
-use shared::database::event::{Event, EventData, EventEmoteData, EventId};
+use shared::database::event::{Event, EventData, EventEmoteData, EventId, ImageProcessOutcome};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::queries::{filter, update};
 
@@ -56,7 +56,7 @@ pub async fn handle_success(
 			actor_id: None,
 			data: EventData::Emote {
 				target_id: id,
-				data: EventEmoteData::Process,
+				data: EventEmoteData::Process { outcome: ImageProcessOutcome::Success },
 			},
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,

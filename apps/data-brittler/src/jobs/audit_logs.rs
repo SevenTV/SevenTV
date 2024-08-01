@@ -2,6 +2,9 @@ use std::mem;
 use std::sync::Arc;
 
 use shared::database::emote::EmoteId;
+use shared::database::entitlement::{EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::user::ban::UserBanId;
+use shared::database::user::editor::UserEditorId;
 use shared::database::user::UserId;
 use shared::database::{self, event, MongoCollection};
 use shared::old_types::EmoteFlagsModel;
@@ -58,7 +61,7 @@ impl Job for AuditLogsJob {
 			}),
 			AuditLogKind::ProcessEmote => data.push(database::event::EventData::Emote {
 				target_id: audit_log.target_id.into(),
-				data: database::event::EventEmoteData::Process,
+				data: database::event::EventEmoteData::Process { outcome: event::ImageProcessOutcome::Success },
 			}),
 			AuditLogKind::UpdateEmote => {
 				for change in audit_log.changes {
@@ -236,34 +239,50 @@ impl Job for AuditLogsJob {
 					match change {
 						AuditLogChange::UserEditors(editors) => {
 							for editor in editors.added.into_iter().filter_map(|e| e.id) {
-								data.push(database::event::EventData::User {
-									target_id: audit_log.target_id.into(),
-									data: database::event::EventUserData::AddEditor {
-										editor_id: editor.into(),
+								let editor_id = UserEditorId {
+									user_id: audit_log.target_id.into(),
+									editor_id: editor.into(),
+								};
+
+								data.push(database::event::EventData::UserEditor {
+									target_id: editor_id,
+									data: database::event::EventUserEditorData::AddEditor {
+										editor_id: editor_id.editor_id,
 									},
 								});
 							}
 							for editor in editors.removed.into_iter().filter_map(|e| e.id) {
-								data.push(database::event::EventData::User {
-									target_id: audit_log.target_id.into(),
-									data: database::event::EventUserData::RemoveEditor {
-										editor_id: editor.into(),
+								let editor_id = UserEditorId {
+									user_id: audit_log.target_id.into(),
+									editor_id: editor.into(),
+								};
+
+								data.push(database::event::EventData::UserEditor {
+									target_id: editor_id,
+									data: database::event::EventUserEditorData::RemoveEditor {
+										editor_id: editor_id.editor_id,
 									},
 								});
 							}
 						}
 						AuditLogChange::UserRoles(roles) => {
 							for role in roles.added.into_iter().flatten() {
-								data.push(database::event::EventData::User {
-									target_id: audit_log.target_id.into(),
-									data: database::event::EventUserData::AddRole { role_id: role.into() },
-								});
+								let entitlement_edge_id = EntitlementEdgeId {
+									from: EntitlementEdgeKind::User { user_id: audit_log.target_id.into() },
+									to: EntitlementEdgeKind::Role { role_id: role.into() },
+									managed_by: None,
+								};
+
+								data.push(database::event::EventData::EntitlementEdge { target_id: entitlement_edge_id, data: event::EventEntitlementEdgeData::Create });
 							}
 							for role in roles.removed.into_iter().flatten() {
-								data.push(database::event::EventData::User {
-									target_id: audit_log.target_id.into(),
-									data: database::event::EventUserData::RemoveRole { role_id: role.into() },
-								});
+								let entitlement_edge_id = EntitlementEdgeId {
+									from: EntitlementEdgeKind::User { user_id: audit_log.target_id.into() },
+									to: EntitlementEdgeKind::Role { role_id: role.into() },
+									managed_by: None,
+								};
+
+								data.push(database::event::EventData::EntitlementEdge { target_id: entitlement_edge_id, data: event::EventEntitlementEdgeData::Delete });
 							}
 						}
 						_ => unimplemented!(),
@@ -274,13 +293,13 @@ impl Job for AuditLogsJob {
 				target_id: audit_log.target_id.into(),
 				data: database::event::EventUserData::Delete,
 			}),
-			AuditLogKind::BanUser => data.push(database::event::EventData::User {
-				target_id: audit_log.target_id.into(),
-				data: database::event::EventUserData::Ban,
+			AuditLogKind::BanUser => data.push(database::event::EventData::UserBan {
+				target_id: UserBanId::nil(), // TODO: how should we know this?
+				data: database::event::EventUserBanData::Ban,
 			}),
-			AuditLogKind::UnbanUser => data.push(database::event::EventData::User {
-				target_id: audit_log.target_id.into(),
-				data: database::event::EventUserData::Unban,
+			AuditLogKind::UnbanUser => data.push(database::event::EventData::UserBan {
+				target_id: UserBanId::nil(), // TODO: how should we know this?
+				data: database::event::EventUserBanData::Unban,
 			}),
 			AuditLogKind::CreateReport => data.push(database::event::EventData::Ticket {
 				target_id: audit_log.target_id.into(),

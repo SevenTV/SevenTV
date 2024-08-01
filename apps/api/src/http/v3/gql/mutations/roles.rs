@@ -98,16 +98,6 @@ impl RolesMutation {
 
 		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo.start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
 		let permissions = match (data.allowed, data.denied) {
 			(Some(allowed), Some(denied)) => {
 				let allowed: u64 = allowed.parse().map_err(|_| ApiError::BAD_REQUEST)?;
@@ -161,18 +151,12 @@ impl RolesMutation {
 					.return_document(ReturnDocument::After)
 					.build(),
 			)
-			.session(&mut session)
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update role");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
-
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
 
 		Ok(Role::from_db(role))
 	}

@@ -200,8 +200,8 @@ pub enum EventUserBanData {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum EventUserSessionData {
-	Login { platform: Platform },
-	Logout,
+	Create { platform: Platform },
+	Delete,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -268,4 +268,5 @@ pub enum EventRoleData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum EventEntitlementEdgeData {
 	Create,
+	Delete,
 }

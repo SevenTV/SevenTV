@@ -8,9 +8,9 @@ use emote_update::emote_update;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::event::{Event, EventData, EventEmoteSetData, EventId};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetKind};
+use shared::database::event::{Event, EventData, EventEmoteSetData, EventId};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, UserPermission};
 use shared::database::user::editor::{
@@ -127,64 +127,51 @@ impl EmoteSetsMutation {
 			));
 		}
 
-		let emote_set = DbEmoteSet {
-			id: Default::default(),
-			owner_id: Some(user_id.id()),
-			name: data.name,
-			capacity: Some(capacity),
-			description: None,
-			emotes: vec![],
-			kind: EmoteSetKind::Normal,
-			origin_config: None,
-			tags: vec![],
-			updated_at: Utc::now(),
-			search_updated_at: None,
-			emotes_changed_since_reindex: false,
-		};
-
-		let mut session = global.mongo.start_session().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		DbEmoteSet::collection(&global.db)
-			.insert_one(&emote_set)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert emote set");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		Event::collection(&global.db)
-			.insert_one(Event {
-				id: EventId::new(),
-				actor_id: Some(user.id),
-				data: EventData::EmoteSet {
-					target_id: emote_set.id,
-					data: EventEmoteSetData::Create,
-				},
+		let res = with_transaction(global, |mut tx| async move {
+			let emote_set = DbEmoteSet {
+				id: Default::default(),
+				owner_id: Some(user_id.id()),
+				name: data.name,
+				capacity: Some(capacity),
+				description: None,
+				emotes: vec![],
+				kind: EmoteSetKind::Normal,
+				origin_config: None,
+				tags: vec![],
 				updated_at: Utc::now(),
 				search_updated_at: None,
-			})
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert event");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+				emotes_changed_since_reindex: false,
+			};
 
-		session.commit_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			tx.insert_one::<DbEmoteSet>(&emote_set, None).await?;
 
-		Ok(EmoteSet::from_db(emote_set))
+			tx.insert_one(
+				Event {
+					id: EventId::new(),
+					actor_id: Some(user.id),
+					data: EventData::EmoteSet {
+						target_id: emote_set.id,
+						data: EventEmoteSetData::Create,
+					},
+					updated_at: Utc::now(),
+					search_updated_at: None,
+				},
+				None,
+			)
+			.await?;
+
+			Ok(emote_set)
+		})
+		.await;
+
+		match res {
+			Ok(emote_set) => Ok(EmoteSet::from_db(emote_set)),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
+		}
 	}
 }
 

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use itertools::Itertools;
-use mongodb::options::ReturnDocument;
-use shared::database::event::{Event, EventData, EventId, EventUserData};
+use mongodb::options::{ReturnDocument, UpdateOptions};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::event::{Event, EventData, EventEntitlementEdgeData, EventId, EventUserEditorData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
 use shared::database::user::connection::UserConnection as DbUserConnection;
@@ -25,6 +25,7 @@ use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
 use crate::http::v3::rest::types::EmoteSetModel;
 use crate::http::v3::types::UserEditorModelPermission;
+use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
 pub struct UsersMutation;
@@ -295,131 +296,155 @@ impl UserOps {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let mut session = global.mongo.start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		let res = with_transaction(global, |mut tx| async move {
+			if let Some(permissions) = data.permissions {
+				if permissions == UserEditorModelPermission::none() {
+					let editor_id = UserEditorId {
+						user_id: self.id.id(),
+						editor_id: editor_id.id(),
+					};
 
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		if let Some(permissions) = data.permissions {
-			if permissions == UserEditorModelPermission::none() {
-				// Remove editor
-				let res = DbUserEditor::collection(&global.db)
-					.delete_one(filter::filter! {
-						DbUserEditor {
-							#[query(serde, rename = "_id")]
-							id: UserEditorId {
-								user_id: self.id.id(),
-								editor_id: editor_id.id(),
+					// Remove editor
+					let res = tx
+						.delete_one(
+							filter::filter! {
+								DbUserEditor {
+									#[query(serde, rename = "_id")]
+									id: editor_id,
+								}
 							},
-						}
-					})
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to delete editor");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
+							None,
+						)
+						.await?;
 
-				if res.deleted_count > 0 {
-					Event::collection(&global.db)
-						.insert_one(Event {
-							id: EventId::new(),
-							actor_id: Some(auth_session.user_id()),
-							data: EventData::User {
-								target_id: self.id.id(),
-								data: EventUserData::RemoveEditor {
-									editor_id: editor_id.id(),
+					if res.deleted_count > 0 {
+						tx.insert_one(
+							Event {
+								id: EventId::new(),
+								actor_id: Some(auth_session.user_id()),
+								data: EventData::UserEditor {
+									target_id: editor_id,
+									data: EventUserEditorData::RemoveEditor {
+										editor_id: editor_id.editor_id,
+									},
 								},
+								updated_at: chrono::Utc::now(),
+								search_updated_at: None,
 							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						})
-						.session(&mut session)
-						.await
-						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert event");
-							ApiError::INTERNAL_SERVER_ERROR
-						})?;
-				}
-			} else {
-				// Add or update editor
-				let res = shared::database::user::editor::UserEditor::collection(&global.db)
-					.update_one(
-						filter::filter! {
-							DbUserEditor {
-								#[query(serde, rename = "_id")]
-								id: UserEditorId {
-									user_id: self.id.id(),
-									editor_id: editor_id.id(),
-								},
-							}
-						},
-						update::update! {
-							#[query(set)]
-							DbUserEditor {
-								#[query(serde)]
-								permissions: permissions.to_db(),
-								added_at: chrono::Utc::now(),
-							}
-						},
-					)
-					.upsert(user.has(UserPermission::InviteEditors))
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to update editor");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
+							None,
+						)
+						.await?;
+					}
+				} else {
+					// Add or update editor
+					let editor_id = UserEditorId {
+						user_id: self.id.id(),
+						editor_id: editor_id.id(),
+					};
 
-				// inserted
-				if res.matched_count == 0 {
-					Event::collection(&global.db)
-						.insert_one(Event {
-							id: EventId::new(),
-							actor_id: Some(auth_session.user_id()),
-							data: EventData::User {
-								target_id: self.id.id(),
-								data: EventUserData::AddEditor {
-									editor_id: editor_id.id(),
-								},
+					let permissions = permissions.to_db();
+
+					let res = tx
+						.update_one(
+							filter::filter! {
+								DbUserEditor {
+									#[query(serde, rename = "_id")]
+									id: editor_id,
+								}
 							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						})
-						.session(&mut session)
-						.await
-						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert event");
-							ApiError::INTERNAL_SERVER_ERROR
-						})?;
+							update::update! {
+								#[query(set)]
+								DbUserEditor {
+									#[query(serde)]
+									permissions: permissions,
+									updated_at: chrono::Utc::now(),
+								}
+								// TODO: fix set_on_insert
+								// #[query(set_on_insert)]
+								// DbUserEditor {
+								// 	id: editor_id,
+								// 	#[query(serde)]
+								// 	state: UserEditorState::Pending,
+								// 	notes: None,
+								// 	added_by_id: Some(auth_session.user_id()),
+								// 	added_at: chrono::Utc::now(),
+								// 	search_updated_at: None,
+								// }
+							},
+							UpdateOptions::builder()
+								.upsert(user.has(UserPermission::InviteEditors))
+								.build(),
+						)
+						.await?;
+
+					if res.matched_count == 1 {
+						// updated
+						tx.insert_one(
+							Event {
+								id: EventId::new(),
+								actor_id: Some(auth_session.user_id()),
+								data: EventData::UserEditor {
+									target_id: editor_id,
+									data: EventUserEditorData::EditPermissions {
+										old: todo!(),
+										new: permissions,
+									},
+								},
+								updated_at: chrono::Utc::now(),
+								search_updated_at: None,
+							},
+							None,
+						)
+						.await?;
+					} else if res.upserted_id.is_some() {
+						// inserted
+						tx.insert_one(
+							Event {
+								id: EventId::new(),
+								actor_id: Some(auth_session.user_id()),
+								data: EventData::UserEditor {
+									target_id: editor_id,
+									data: EventUserEditorData::AddEditor {
+										editor_id: editor_id.editor_id,
+									},
+								},
+								updated_at: chrono::Utc::now(),
+								search_updated_at: None,
+							},
+							None,
+						)
+						.await?;
+					}
 				}
 			}
+
+			Ok(())
+		})
+		.await;
+
+		match res {
+			Ok(_) => {
+				let editors = global
+					.user_editor_by_user_id_loader
+					.load(self.id.id())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.unwrap_or_default();
+
+				Ok(Some(
+					editors
+						.into_iter()
+						.filter_map(|e| UserEditor::from_db(e, false))
+						.map(Some)
+						.collect(),
+				))
+			}
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
 		}
-
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let editors = global
-			.user_editor_by_user_id_loader
-			.load(self.id.id())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
-
-		Ok(Some(
-			editors
-				.into_iter()
-				.filter_map(|e| UserEditor::from_db(e, false))
-				.map(Some)
-				.collect(),
-		))
 	}
 
 	async fn cosmetics<'ctx>(&self, ctx: &Context<'ctx>, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
@@ -661,113 +686,39 @@ impl UserOps {
 			..Default::default()
 		};
 
-		let mut session = global.mongo.start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		let res = with_transaction(global, |mut tx| async move {
+			let roles = match action {
+				ListItemAction::Add => {
+					if user.computed.entitlements.roles.contains(&role_id.id()) {
+						return Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect());
+					}
 
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let roles = match action {
-			ListItemAction::Add => {
-				if user.computed.entitlements.roles.contains(&role_id.id()) {
-					return Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect());
-				}
-
-				let edge = EntitlementEdge {
-					id: EntitlementEdgeId {
-						from: EntitlementEdgeKind::User { user_id: self.id.id() },
-						to: EntitlementEdgeKind::Role { role_id: role_id.id() },
-						managed_by: None,
-					},
-				};
-
-				EntitlementEdge::collection(&global.db)
-					.insert_one(&edge)
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to insert entitlement edge");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-
-				Event::collection(&global.db)
-					.insert_one(Event {
-						id: EventId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: EventData::User {
-							target_id: self.id.id(),
-							data: EventUserData::AddRole { role_id: role_id.id() },
+					let edge = EntitlementEdge {
+						id: EntitlementEdgeId {
+							from: EntitlementEdgeKind::User { user_id: self.id.id() },
+							to: EntitlementEdgeKind::Role { role_id: role_id.id() },
+							managed_by: None,
 						},
-						updated_at: chrono::Utc::now(),
-						search_updated_at: None,
-					})
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to insert event");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
+					};
 
-				changes.pushed.push(ChangeField {
-					key: "role_ids".to_string(),
-					ty: ChangeFieldType::String,
-					index: Some(role.rank as usize),
-					value: role_id.0.to_string().into(),
-					..Default::default()
-				});
+					tx.insert_one::<EntitlementEdge>(&edge, None).await?;
 
-				user.computed
-					.entitlements
-					.roles
-					.iter()
-					.copied()
-					.chain(std::iter::once(role_id.id()))
-					.map(Into::into)
-					.collect()
-			}
-			ListItemAction::Remove => {
-				let res = EntitlementEdge::collection(&global.db)
-					.delete_one(filter::filter! {
-						EntitlementEdge {
-							#[query(serde)]
-							id: EntitlementEdgeId {
-								from: EntitlementEdgeKind::User { user_id: self.id.id() }.into(),
-								to: EntitlementEdgeKind::Role { role_id: role_id.id() }.into(),
-								managed_by: None,
-							}
-						}
-					})
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to delete entitlement edge");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-
-				if res.deleted_count > 0 {
-					Event::collection(&global.db)
-						.insert_one(Event {
+					tx.insert_one(
+						Event {
 							id: EventId::new(),
 							actor_id: Some(auth_session.user_id()),
-							data: EventData::User {
-								target_id: self.id.id(),
-								data: EventUserData::RemoveRole { role_id: role_id.id() },
+							data: EventData::EntitlementEdge {
+								target_id: edge.id,
+								data: EventEntitlementEdgeData::Create,
 							},
 							updated_at: chrono::Utc::now(),
 							search_updated_at: None,
-						})
-						.session(&mut session)
-						.await
-						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert event");
-							ApiError::INTERNAL_SERVER_ERROR
-						})?;
+						},
+						None,
+					)
+					.await?;
 
-					changes.pulled.push(ChangeField {
+					changes.pushed.push(ChangeField {
 						key: "role_ids".to_string(),
 						ty: ChangeFieldType::String,
 						index: Some(role.rank as usize),
@@ -780,31 +731,87 @@ impl UserOps {
 						.roles
 						.iter()
 						.copied()
-						.filter(|id| *id != role_id.id())
+						.chain(std::iter::once(role_id.id()))
 						.map(Into::into)
 						.collect()
-				} else {
-					user.computed.entitlements.roles.iter().copied().map(Into::into).collect()
 				}
+				ListItemAction::Remove => {
+					if let Some(edge) = tx
+						.find_one_and_delete(
+							filter::filter! {
+								EntitlementEdge {
+									#[query(serde)]
+									id: EntitlementEdgeId {
+										from: EntitlementEdgeKind::User { user_id: self.id.id() }.into(),
+										to: EntitlementEdgeKind::Role { role_id: role_id.id() }.into(),
+										managed_by: None,
+									}
+								}
+							},
+							None,
+						)
+						.await?
+					{
+						tx.insert_one(
+							Event {
+								id: EventId::new(),
+								actor_id: Some(auth_session.user_id()),
+								data: EventData::EntitlementEdge {
+									target_id: edge.id,
+									data: EventEntitlementEdgeData::Delete,
+								},
+								updated_at: chrono::Utc::now(),
+								search_updated_at: None,
+							},
+							None,
+						)
+						.await?;
+
+						changes.pulled.push(ChangeField {
+							key: "role_ids".to_string(),
+							ty: ChangeFieldType::String,
+							index: Some(role.rank as usize),
+							value: role_id.0.to_string().into(),
+							..Default::default()
+						});
+
+						user.computed
+							.entitlements
+							.roles
+							.iter()
+							.copied()
+							.filter(|id| *id != role_id.id())
+							.map(Into::into)
+							.collect()
+					} else {
+						user.computed.entitlements.roles.iter().copied().map(Into::into).collect()
+					}
+				}
+				ListItemAction::Update => return Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED)),
+			};
+
+			global
+				.event_api
+				.dispatch_event(EventType::UpdateUser, changes, self.id.0)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to dispatch event");
+					ApiError::INTERNAL_SERVER_ERROR
+				})
+				.map_err(TransactionError::custom)?;
+
+			Ok(roles)
+		})
+		.await;
+
+		match res {
+			Ok(roles) => Ok(roles),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
 			}
-			ListItemAction::Update => return Err(ApiError::NOT_IMPLEMENTED),
-		};
-
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		global
-			.event_api
-			.dispatch_event(EventType::UpdateUser, changes, self.id.0)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to dispatch event");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		Ok(roles)
+		}
 	}
 }
 
