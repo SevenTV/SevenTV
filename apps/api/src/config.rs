@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::path::PathBuf;
 
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
@@ -86,6 +87,10 @@ pub struct ChangeStreamConfig {
 #[auto_settings]
 #[serde(default)]
 pub struct Config {
+	/// Export GQL schema
+	#[settings(default = None)]
+	pub export_schema_path: Option<PathBuf>,
+
 	/// API configuration
 	pub api: Api,
 

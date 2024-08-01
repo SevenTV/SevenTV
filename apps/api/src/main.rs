@@ -1,5 +1,7 @@
+use async_graphql::SDLExportOptions;
 use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::settings::cli::Matches;
+use tokio::fs;
 use tokio::signal::unix::SignalKind;
 
 use crate::config::Config;
@@ -18,6 +20,26 @@ mod transactions;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
+	if let Some(export_path) = settings.settings.export_schema_path {
+		fs::write(
+			&export_path,
+			http::v3::gql::schema(None).sdl_with_options(
+				SDLExportOptions::default()
+					.federation()
+					.include_specified_by()
+					.sorted_arguments()
+					.sorted_enum_items()
+					.sorted_fields(),
+			),
+		)
+		.await
+		.expect("failed to write schema path");
+
+		tracing::info!(path = ?export_path, "saved gql schema");
+
+		return;
+	}
+
 	tracing::info!("starting api");
 
 	let global = global::Global::new(settings.settings)

@@ -17,20 +17,24 @@ pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
 	Router::new()
 		.route("/", post(graphql_handler))
 		.route("/playground", get(playground))
-		.layer(Extension(schema(Arc::clone(global))))
+		.layer(Extension(schema(Some(Arc::clone(global)))))
 }
 
 pub type V3Schema = Schema<queries::Query, mutations::Mutation, EmptySubscription>;
 
-pub fn schema(global: Arc<Global>) -> V3Schema {
-	Schema::build(queries::Query::default(), mutations::Mutation::default(), EmptySubscription)
-		.data(global)
+pub fn schema(global: Option<Arc<Global>>) -> V3Schema {
+	let mut schema = Schema::build(queries::Query::default(), mutations::Mutation::default(), EmptySubscription)
 		.enable_federation()
 		.enable_subscription_in_federation()
 		.extension(extensions::Analyzer)
 		.extension(extensions::Tracing)
-		.limit_complexity(400) // We don't want to allow too complex queries to be executed
-		.finish()
+		.limit_complexity(400); // We don't want to allow too complex queries to be executed
+
+	if let Some(global) = global {
+		schema = schema.data(global);
+	}
+
+	schema.finish()
 }
 
 #[derive(utoipa::OpenApi)]
