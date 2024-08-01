@@ -8,7 +8,7 @@ use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
+use shared::database::event::{Event, EventData, EventEmoteData, EventId};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::role::permissions::{EmotePermission, FlagPermission, PermissionsExt};
@@ -157,13 +157,13 @@ pub async fn create_emote(
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-	AuditLog::collection(&global.db)
-		.insert_one(AuditLog {
-			id: AuditLogId::new(),
+	Event::collection(&global.db)
+		.insert_one(Event {
+			id: EventId::new(),
 			actor_id: Some(user.id),
-			data: AuditLogData::Emote {
+			data: EventData::Emote {
 				target_id: emote.id,
-				data: AuditLogEmoteData::Upload,
+				data: EventEmoteData::Upload,
 			},
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,
@@ -171,7 +171,7 @@ pub async fn create_emote(
 		.session(&mut session)
 		.await
 		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert audit log");
+			tracing::error!(error = %err, "failed to insert event");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use scuffle_image_processor_proto::event_callback;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
+use shared::database::event::{Event, EventData, EventEmoteData, EventId};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::queries::{filter, update};
 
@@ -51,12 +51,12 @@ pub async fn handle_success(
 	.await?;
 
 	tx.insert_one(
-		AuditLog {
-			id: AuditLogId::new(),
+		Event {
+			id: EventId::new(),
 			actor_id: None,
-			data: AuditLogData::Emote {
+			data: EventData::Emote {
 				target_id: id,
-				data: AuditLogEmoteData::Process,
+				data: EventEmoteData::Process,
 			},
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,

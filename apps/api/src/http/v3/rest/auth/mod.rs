@@ -8,7 +8,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
+use shared::database::event::{Event, EventData, EventId, EventUserData};
 use shared::database::queries::filter;
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
@@ -146,13 +146,13 @@ async fn logout(
 			})?;
 	}
 
-	AuditLog::collection(&global.db)
-		.insert_one(AuditLog {
-			id: AuditLogId::new(),
+	Event::collection(&global.db)
+		.insert_one(Event {
+			id: EventId::new(),
 			actor_id: Some(auth_session.user_id()),
-			data: AuditLogData::User {
+			data: EventData::User {
 				target_id: auth_session.user_id(),
-				data: AuditLogUserData::Logout,
+				data: EventUserData::Logout,
 			},
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,
@@ -160,7 +160,7 @@ async fn logout(
 		.session(&mut session)
 		.await
 		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert audit log");
+			tracing::error!(error = %err, "failed to insert event");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 

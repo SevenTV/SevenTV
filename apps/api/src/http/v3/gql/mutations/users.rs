@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use itertools::Itertools;
 use mongodb::options::ReturnDocument;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
+use shared::database::event::{Event, EventData, EventId, EventUserData};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
@@ -326,13 +326,13 @@ impl UserOps {
 					})?;
 
 				if res.deleted_count > 0 {
-					AuditLog::collection(&global.db)
-						.insert_one(AuditLog {
-							id: AuditLogId::new(),
+					Event::collection(&global.db)
+						.insert_one(Event {
+							id: EventId::new(),
 							actor_id: Some(auth_session.user_id()),
-							data: AuditLogData::User {
+							data: EventData::User {
 								target_id: self.id.id(),
-								data: AuditLogUserData::RemoveEditor {
+								data: EventUserData::RemoveEditor {
 									editor_id: editor_id.id(),
 								},
 							},
@@ -342,7 +342,7 @@ impl UserOps {
 						.session(&mut session)
 						.await
 						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert audit log");
+							tracing::error!(error = %err, "failed to insert event");
 							ApiError::INTERNAL_SERVER_ERROR
 						})?;
 				}
@@ -378,13 +378,13 @@ impl UserOps {
 
 				// inserted
 				if res.matched_count == 0 {
-					AuditLog::collection(&global.db)
-						.insert_one(AuditLog {
-							id: AuditLogId::new(),
+					Event::collection(&global.db)
+						.insert_one(Event {
+							id: EventId::new(),
 							actor_id: Some(auth_session.user_id()),
-							data: AuditLogData::User {
+							data: EventData::User {
 								target_id: self.id.id(),
-								data: AuditLogUserData::AddEditor {
+								data: EventUserData::AddEditor {
 									editor_id: editor_id.id(),
 								},
 							},
@@ -394,7 +394,7 @@ impl UserOps {
 						.session(&mut session)
 						.await
 						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert audit log");
+							tracing::error!(error = %err, "failed to insert event");
 							ApiError::INTERNAL_SERVER_ERROR
 						})?;
 				}
@@ -694,13 +694,13 @@ impl UserOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
-				AuditLog::collection(&global.db)
-					.insert_one(AuditLog {
-						id: AuditLogId::new(),
+				Event::collection(&global.db)
+					.insert_one(Event {
+						id: EventId::new(),
 						actor_id: Some(auth_session.user_id()),
-						data: AuditLogData::User {
+						data: EventData::User {
 							target_id: self.id.id(),
-							data: AuditLogUserData::AddRole { role_id: role_id.id() },
+							data: EventUserData::AddRole { role_id: role_id.id() },
 						},
 						updated_at: chrono::Utc::now(),
 						search_updated_at: None,
@@ -708,7 +708,7 @@ impl UserOps {
 					.session(&mut session)
 					.await
 					.map_err(|err| {
-						tracing::error!(error = %err, "failed to insert audit log");
+						tracing::error!(error = %err, "failed to insert event");
 						ApiError::INTERNAL_SERVER_ERROR
 					})?;
 
@@ -749,13 +749,13 @@ impl UserOps {
 					})?;
 
 				if res.deleted_count > 0 {
-					AuditLog::collection(&global.db)
-						.insert_one(AuditLog {
-							id: AuditLogId::new(),
+					Event::collection(&global.db)
+						.insert_one(Event {
+							id: EventId::new(),
 							actor_id: Some(auth_session.user_id()),
-							data: AuditLogData::User {
+							data: EventData::User {
 								target_id: self.id.id(),
-								data: AuditLogUserData::RemoveRole { role_id: role_id.id() },
+								data: EventUserData::RemoveRole { role_id: role_id.id() },
 							},
 							updated_at: chrono::Utc::now(),
 							search_updated_at: None,
@@ -763,7 +763,7 @@ impl UserOps {
 						.session(&mut session)
 						.await
 						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert audit log");
+							tracing::error!(error = %err, "failed to insert event");
 							ApiError::INTERNAL_SERVER_ERROR
 						})?;
 

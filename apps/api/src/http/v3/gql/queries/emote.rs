@@ -200,7 +200,7 @@ impl Emote {
 			.per_page(limit)
 			.build();
 
-		let result = search::<shared::typesense::types::audit_log::AuditLog>(global, options)
+		let result = search::<shared::typesense::types::audit_log::Event>(global, options)
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
@@ -212,7 +212,7 @@ impl Emote {
 			.load_many(result.hits.iter().copied())
 			.await
 			.map_err(|()| {
-				tracing::error!("failed to load audit logs");
+				tracing::error!("failed to load event");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 

@@ -19,7 +19,7 @@ pub struct Global {
 	pub database: mongodb::Database,
 	pub config: Config,
 	pub typesense: typesense_codegen::apis::configuration::Configuration,
-	pub audit_log_batcher: CollectionBatcher<mongo::AuditLog, typesense::AuditLog>, // 1
+	pub audit_log_batcher: CollectionBatcher<mongo::Event, typesense::Event>, // 1
 	pub user_batcher: CollectionBatcher<mongo::User, typesense::User>,
 	pub automod_rule_batcher: CollectionBatcher<mongo::AutomodRule, typesense::AutomodRule>, // 2
 	pub badge_batcher: CollectionBatcher<mongo::Badge, typesense::Badge>,

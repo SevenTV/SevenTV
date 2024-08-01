@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::audit_log::{AuditLogEmoteData, AuditLogEmoteSetData, AuditLogUserData};
+use shared::database::event::{EventEmoteData, EventEmoteSetData, EventUserData};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::user::UserId;
 use shared::old_types::object_id::GqlObjectId;
@@ -79,37 +79,37 @@ pub enum AuditLogKind {
 async_graphql::scalar!(AuditLogKind);
 
 impl AuditLog {
-	pub fn from_db(audit_log: shared::database::audit_log::AuditLog, emotes: &HashMap<EmoteId, Emote>) -> Option<Self> {
+	pub fn from_db(audit_log: shared::database::event::Event, emotes: &HashMap<EmoteId, Emote>) -> Option<Self> {
 		let actor_id = audit_log.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into();
 
 		let (kind, target_id, target_kind, changes) = match audit_log.data {
-			shared::database::audit_log::AuditLogData::Emote {
+			shared::database::event::EventData::Emote {
 				target_id,
-				data: AuditLogEmoteData::Upload,
+				data: EventEmoteData::Upload,
 			} => (AuditLogKind::CreateEmote, target_id.into(), 2, vec![]),
-			shared::database::audit_log::AuditLogData::Emote {
+			shared::database::event::EventData::Emote {
 				target_id,
-				data: AuditLogEmoteData::Process,
+				data: EventEmoteData::Process,
 			} => (AuditLogKind::ProcessEmote, target_id.into(), 2, vec![]),
-			shared::database::audit_log::AuditLogData::Emote {
+			shared::database::event::EventData::Emote {
 				target_id,
-				data: AuditLogEmoteData::Delete,
+				data: EventEmoteData::Delete,
 			} => (AuditLogKind::DeleteEmote, target_id.into(), 2, vec![]),
-			shared::database::audit_log::AuditLogData::Emote { target_id, data } => (
+			shared::database::event::EventData::Emote { target_id, data } => (
 				AuditLogKind::UpdateEmote,
 				target_id.into(),
 				2,
 				vec![AuditLogChange::from_db_emote(data)?],
 			),
-			shared::database::audit_log::AuditLogData::EmoteSet {
+			shared::database::event::EventData::EmoteSet {
 				target_id,
-				data: AuditLogEmoteSetData::Create,
+				data: EventEmoteSetData::Create,
 			} => (AuditLogKind::CreateEmoteSet, target_id.into(), 3, vec![]),
-			shared::database::audit_log::AuditLogData::EmoteSet {
+			shared::database::event::EventData::EmoteSet {
 				target_id,
-				data: AuditLogEmoteSetData::Delete,
+				data: EventEmoteSetData::Delete,
 			} => (AuditLogKind::DeleteEmoteSet, target_id.into(), 3, vec![]),
-			shared::database::audit_log::AuditLogData::EmoteSet { target_id, data } => (
+			shared::database::event::EventData::EmoteSet { target_id, data } => (
 				AuditLogKind::UpdateEmoteSet,
 				target_id.into(),
 				3,
@@ -120,7 +120,7 @@ impl AuditLog {
 					emotes,
 				)?],
 			),
-			shared::database::audit_log::AuditLogData::User { target_id, data } => (
+			shared::database::event::EventData::User { target_id, data } => (
 				AuditLogKind::EditUser,
 				target_id.into(),
 				1,
@@ -160,15 +160,15 @@ impl From<EmoteFlags> for EmoteVersionStateChange {
 }
 
 impl AuditLogChange {
-	pub fn from_db_emote(data: AuditLogEmoteData) -> Option<Self> {
+	pub fn from_db_emote(data: EventEmoteData) -> Option<Self> {
 		match data {
-			AuditLogEmoteData::ChangeName { old, new } => Some(Self {
+			EventEmoteData::ChangeName { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
 				key: "name".to_string(),
 				value: Some(ArbitraryMap::StringValue { n: new, o: old, p: 0 }),
 				array_value: None,
 			}),
-			AuditLogEmoteData::ChangeOwner { old, new } => Some(Self {
+			EventEmoteData::ChangeOwner { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
 				key: "owner_id".to_string(),
 				value: Some(ArbitraryMap::StringValue {
@@ -178,13 +178,13 @@ impl AuditLogChange {
 				}),
 				array_value: None,
 			}),
-			AuditLogEmoteData::ChangeTags { old, new } => Some(Self {
+			EventEmoteData::ChangeTags { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
 				key: "tags".to_string(),
 				value: Some(ArbitraryMap::StringVecValue { n: new, o: old, p: 0 }),
 				array_value: None,
 			}),
-			AuditLogEmoteData::ChangeFlags { old, new } => {
+			EventEmoteData::ChangeFlags { old, new } => {
 				if (new.contains(EmoteFlags::ApprovedPersonal) && old.contains(EmoteFlags::ApprovedPersonal))
 					|| (new.contains(EmoteFlags::PublicListed) && old.contains(EmoteFlags::PublicListed))
 				{
@@ -223,19 +223,19 @@ impl AuditLogChange {
 	}
 
 	pub fn from_db_emote_set(
-		data: AuditLogEmoteSetData,
+		data: EventEmoteSetData,
 		actor_id: GqlObjectId,
 		timestamp: chrono::DateTime<chrono::Utc>,
 		emotes: &HashMap<EmoteId, Emote>,
 	) -> Option<Self> {
 		match data {
-			AuditLogEmoteSetData::ChangeName { old, new } => Some(Self {
+			EventEmoteSetData::ChangeName { old, new } => Some(Self {
 				format: AuditLogChangeFormat::SingleValue,
 				key: "name".to_string(),
 				value: Some(ArbitraryMap::StringValue { n: new, o: old, p: 0 }),
 				array_value: None,
 			}),
-			AuditLogEmoteSetData::AddEmote { emote_id, alias } => Some(Self {
+			EventEmoteSetData::AddEmote { emote_id, alias } => Some(Self {
 				format: AuditLogChangeFormat::ArrayValue,
 				key: "emotes".to_string(),
 				value: None,
@@ -251,7 +251,7 @@ impl AuditLogChange {
 					updated: vec![],
 				}),
 			}),
-			AuditLogEmoteSetData::RemoveEmote { emote_id } => {
+			EventEmoteSetData::RemoveEmote { emote_id } => {
 				let emote = emotes.get(&emote_id)?;
 
 				Some(Self {
@@ -271,7 +271,7 @@ impl AuditLogChange {
 					}),
 				})
 			}
-			AuditLogEmoteSetData::RenameEmote {
+			EventEmoteSetData::RenameEmote {
 				emote_id,
 				old_name,
 				new_name,
@@ -305,9 +305,9 @@ impl AuditLogChange {
 		}
 	}
 
-	pub fn from_db_user(data: AuditLogUserData, timestamp: chrono::DateTime<chrono::Utc>) -> Option<Self> {
+	pub fn from_db_user(data: EventUserData, timestamp: chrono::DateTime<chrono::Utc>) -> Option<Self> {
 		match data {
-			AuditLogUserData::AddEditor { editor_id } => Some(Self {
+			EventUserData::AddEditor { editor_id } => Some(Self {
 				format: AuditLogChangeFormat::ArrayValue,
 				key: "editors".to_string(),
 				value: None,
@@ -322,7 +322,7 @@ impl AuditLogChange {
 					updated: vec![],
 				}),
 			}),
-			AuditLogUserData::RemoveEditor { editor_id } => Some(Self {
+			EventUserData::RemoveEditor { editor_id } => Some(Self {
 				format: AuditLogChangeFormat::ArrayValue,
 				key: "editors".to_string(),
 				value: None,

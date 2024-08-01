@@ -159,7 +159,7 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 		crate::types::mongo::UserEditor,
 		crate::types::mongo::UserRelation,
 		crate::types::mongo::User,
-		crate::types::mongo::AuditLog,
+		crate::types::mongo::Event,
 		crate::types::mongo::AutomodRule,
 		crate::types::mongo::Badge,
 		crate::types::mongo::EmoteModerationRequest,

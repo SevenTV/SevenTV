@@ -4,7 +4,7 @@ use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use chrono::Utc;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteData, AuditLogId};
+use shared::database::event::{Event, EventData, EventEmoteData, EventId};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags, EmoteMerged};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
@@ -101,12 +101,12 @@ impl EmoteOps {
 					.map_err(TransactionError::custom)?;
 
 				tx.insert_one(
-					AuditLog {
-						id: AuditLogId::new(),
+					Event {
+						id: EventId::new(),
 						actor_id: Some(user.id),
-						data: AuditLogData::Emote {
+						data: EventData::Emote {
 							target_id: emote.id,
-							data: AuditLogEmoteData::Delete,
+							data: EventEmoteData::Delete,
 						},
 						updated_at: chrono::Utc::now(),
 						search_updated_at: None,
@@ -138,12 +138,12 @@ impl EmoteOps {
 
 				let new_default_name = if let Some(name) = params.name.or(params.version_name) {
 					tx.insert_one(
-						AuditLog {
-							id: AuditLogId::new(),
+						Event {
+							id: EventId::new(),
 							actor_id: Some(user.id),
-							data: AuditLogData::Emote {
+							data: EventData::Emote {
 								target_id: self.id.id(),
-								data: AuditLogEmoteData::ChangeName {
+								data: EventEmoteData::ChangeName {
 									old: self.emote.default_name.clone(),
 									new: name.clone(),
 								},
@@ -224,12 +224,12 @@ impl EmoteOps {
 
 					if let Some(owner_id) = params.owner_id {
 						tx.insert_one(
-							AuditLog {
-								id: AuditLogId::new(),
+							Event {
+								id: EventId::new(),
 								actor_id: Some(user.id),
-								data: AuditLogData::Emote {
+								data: EventData::Emote {
 									target_id: self.id.id(),
-									data: AuditLogEmoteData::ChangeOwner {
+									data: EventEmoteData::ChangeOwner {
 										old: self.emote.owner_id,
 										new: owner_id.id(),
 									},
@@ -259,12 +259,12 @@ impl EmoteOps {
 
 				let new_flags = if flags != self.emote.flags {
 					tx.insert_one(
-						AuditLog {
-							id: AuditLogId::new(),
+						Event {
+							id: EventId::new(),
 							actor_id: Some(user.id),
-							data: AuditLogData::Emote {
+							data: EventData::Emote {
 								target_id: self.id.id(),
-								data: AuditLogEmoteData::ChangeFlags {
+								data: EventEmoteData::ChangeFlags {
 									old: self.emote.flags,
 									new: flags,
 								},
@@ -291,12 +291,12 @@ impl EmoteOps {
 
 				if let Some(tags) = &params.tags {
 					tx.insert_one(
-						AuditLog {
-							id: AuditLogId::new(),
+						Event {
+							id: EventId::new(),
 							actor_id: Some(user.id),
-							data: AuditLogData::Emote {
+							data: EventData::Emote {
 								target_id: self.id.id(),
-								data: AuditLogEmoteData::ChangeTags {
+								data: EventEmoteData::ChangeTags {
 									old: self.emote.tags.clone(),
 									new: tags.clone(),
 								},
@@ -452,13 +452,13 @@ impl EmoteOps {
 			})?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		AuditLog::collection(&global.db)
-			.insert_one(AuditLog {
-				id: AuditLogId::new(),
+		Event::collection(&global.db)
+			.insert_one(Event {
+				id: EventId::new(),
 				actor_id: Some(auth_session.user_id()),
-				data: AuditLogData::Emote {
+				data: EventData::Emote {
 					target_id: self.id.id(),
-					data: AuditLogEmoteData::Merge {
+					data: EventEmoteData::Merge {
 						new_emote_id: target_id.id(),
 					},
 				},
@@ -468,7 +468,7 @@ impl EmoteOps {
 			.session(&mut session)
 			.await
 			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert audit log");
+				tracing::error!(error = %e, "failed to insert event");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 

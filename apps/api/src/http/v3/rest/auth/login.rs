@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
+use shared::database::event::{Event, EventData, EventId, EventUserData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
@@ -343,13 +343,13 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		None
 	};
 
-	AuditLog::collection(&global.db)
-		.insert_one(AuditLog {
-			id: AuditLogId::new(),
+	Event::collection(&global.db)
+		.insert_one(Event {
+			id: EventId::new(),
 			actor_id: Some(full_user.id),
-			data: AuditLogData::User {
+			data: EventData::User {
 				target_id: full_user.id,
-				data: AuditLogUserData::Login { platform },
+				data: EventUserData::Login { platform },
 			},
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,
@@ -357,7 +357,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		.session(&mut session)
 		.await
 		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert audit log");
+			tracing::error!(error = %err, "failed to insert event");
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 

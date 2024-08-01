@@ -6,7 +6,7 @@ use chrono::Utc;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogTicketData};
+use shared::database::event::{Event, EventData, EventId, EventTicketData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::TicketPermission;
 use shared::database::ticket::{
@@ -102,13 +102,13 @@ impl ReportsMutation {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		AuditLog::collection(&global.db)
-			.insert_one(AuditLog {
-				id: AuditLogId::new(),
+		Event::collection(&global.db)
+			.insert_one(Event {
+				id: EventId::new(),
 				actor_id: Some(auth_sesion.user_id()),
-				data: AuditLogData::Ticket {
+				data: EventData::Ticket {
 					target_id: ticket.id,
-					data: AuditLogTicketData::Create,
+					data: EventTicketData::Create,
 				},
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
@@ -116,7 +116,7 @@ impl ReportsMutation {
 			.session(&mut session)
 			.await
 			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert audit log");
+				tracing::error!(error = %e, "failed to insert event");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
@@ -159,12 +159,12 @@ impl ReportsMutation {
 
 				if new != ticket.open {
 					tx.insert_one(
-						AuditLog {
-							id: AuditLogId::new(),
+						Event {
+							id: EventId::new(),
 							actor_id: Some(auth_sesion.user_id()),
-							data: AuditLogData::Ticket {
+							data: EventData::Ticket {
 								target_id: report_id.id(),
-								data: AuditLogTicketData::ChangeOpen {
+								data: EventTicketData::ChangeOpen {
 									old: ticket.open,
 									new: new,
 								},
@@ -206,12 +206,12 @@ impl ReportsMutation {
 						};
 
 						tx.insert_one(
-							AuditLog {
-								id: AuditLogId::new(),
+							Event {
+								id: EventId::new(),
 								actor_id: Some(auth_sesion.user_id()),
-								data: AuditLogData::Ticket {
+								data: EventData::Ticket {
 									target_id: report_id.id(),
-									data: AuditLogTicketData::AddMember { member: user_id },
+									data: EventTicketData::AddMember { member: user_id },
 								},
 								updated_at: chrono::Utc::now(),
 								search_updated_at: None,
@@ -230,12 +230,12 @@ impl ReportsMutation {
 					}
 					(Some('-'), Ok(user_id)) => {
 						tx.insert_one(
-							AuditLog {
-								id: AuditLogId::new(),
+							Event {
+								id: EventId::new(),
 								actor_id: Some(auth_sesion.user_id()),
-								data: AuditLogData::Ticket {
+								data: EventData::Ticket {
 									target_id: report_id.id(),
-									data: AuditLogTicketData::RemoveMember { member: user_id },
+									data: EventTicketData::RemoveMember { member: user_id },
 								},
 								updated_at: chrono::Utc::now(),
 								search_updated_at: None,

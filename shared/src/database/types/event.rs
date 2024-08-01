@@ -15,19 +15,19 @@ use super::user::UserId;
 use super::{MongoCollection, MongoGenericCollection};
 use crate::database::Id;
 
-pub type AuditLogId = Id<AuditLog>;
+pub type EventId = Id<Event>;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
-#[mongo(collection_name = "audit_logs")]
+#[mongo(collection_name = "events")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
-pub struct AuditLog {
+pub struct Event {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
-	pub id: AuditLogId,
+	pub id: EventId,
 	pub actor_id: Option<UserId>,
-	pub data: AuditLogData,
+	pub data: EventData,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
@@ -35,71 +35,80 @@ pub struct AuditLog {
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
-	[MongoGenericCollection::new::<AuditLog>()]
+	[MongoGenericCollection::new::<Event>()]
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogData {
+pub enum EventData {
 	Emote {
 		target_id: EmoteId,
-		data: AuditLogEmoteData,
+		data: EventEmoteData,
 	},
 	EmoteSet {
 		target_id: EmoteSetId,
-		data: AuditLogEmoteSetData,
+		data: EventEmoteSetData,
 	},
 	User {
 		target_id: UserId,
-		data: AuditLogUserData,
+		data: EventUserData,
 	},
 	UserEditor {
 		target_id: UserEditorId,
-		data: AuditLogUserEditorData,
+		data: EventUserEditorData,
 	},
 	UserBan {
 		target_id: UserBanId,
-		data: AuditLogUserBanData,
+		data: EventUserBanData,
 	},
 	UserSession {
 		target_id: UserSessionId,
-		data: AuditLogUserSessionData,
+		data: EventUserSessionData,
 	},
 	Ticket {
 		target_id: TicketId,
-		data: AuditLogTicketData,
+		data: EventTicketData,
 	},
 	TicketMessage {
 		target_id: TicketMessageId,
-		data: AuditLogTicketMessageData,
+		data: EventTicketMessageData,
 	},
 	EmoteModerationRequest {
 		target_id: EmoteModerationRequestId,
-		data: AuditLogEmoteModerationRequestData,
+		data: EventEmoteModerationRequestData,
 	},
 	Paint {
 		target_id: PaintId,
-		data: AuditLogPaintData,
+		data: EventPaintData,
 	},
 	Badge {
 		target_id: BadgeId,
-		data: AuditLogBadgeData,
+		data: EventBadgeData,
 	},
 	Role {
 		target_id: RoleId,
-		data: AuditLogRoleData,
+		data: EventRoleData,
 	},
 	EntitlementEdge {
 		target_id: EntitlementEdgeId,
-		data: AuditLogEntitlementEdgeData,
+		data: EventEntitlementEdgeData,
 	},
+}
+
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(i32)]
+pub enum ImageProcessOutcome {
+	Start = 0,
+	Success = 1,
+	Cancelled = 2,
+	Failed = 3,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogEmoteData {
+pub enum EventEmoteData {
 	Upload,
-	Process,
+	Process { outcome: ImageProcessOutcome },
 	ChangeName { old: String, new: String },
 	Merge { new_emote_id: EmoteId },
 	ChangeOwner { old: UserId, new: UserId },
@@ -110,7 +119,7 @@ pub enum AuditLogEmoteData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogEmoteSetData {
+pub enum EventEmoteSetData {
 	Create,
 	ChangeName {
 		old: String,
@@ -141,13 +150,13 @@ pub enum AuditLogEmoteSetData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogUserData {
+pub enum EventUserData {
 	Create,
 	ChangeActivePaint { paint_id: PaintId },
 	ChangeActiveBadge { badge_id: BadgeId },
 	ChangeActiveEmoteSet { emote_set_id: EmoteSetId },
 	UploadProfilePicture,
-	ProcessProfilePicture,
+	ProcessProfilePicture { outcome: ImageProcessOutcome },
 	AddConnection { platform: Platform },
 	RemoveConnection { platform: Platform },
 	Merge,
@@ -156,7 +165,7 @@ pub enum AuditLogUserData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogUserEditorData {
+pub enum EventUserEditorData {
 	AddEditor {
 		editor_id: UserId,
 	},
@@ -171,7 +180,7 @@ pub enum AuditLogUserEditorData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogUserBanData {
+pub enum EventUserBanData {
 	Ban,
 	ChangeReason {
 		old: String,
@@ -190,14 +199,14 @@ pub enum AuditLogUserBanData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogUserSessionData {
+pub enum EventUserSessionData {
 	Login { platform: Platform },
 	Logout,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogTicketData {
+pub enum EventTicketData {
 	Create,
 	AddMember { member: UserId },
 	RemoveMember { member: UserId },
@@ -206,35 +215,35 @@ pub enum AuditLogTicketData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogTicketMessageData {
+pub enum EventTicketMessageData {
 	Create,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogEmoteModerationRequestData {
+pub enum EventEmoteModerationRequestData {
 	Create,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogPaintData {
+pub enum EventPaintData {
 	Create,
-	Process,
+	Process { outcome: ImageProcessOutcome },
 	ChangeName { old: String, new: String },
 	ChangeData { old: PaintData, new: PaintData },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogBadgeData {
+pub enum EventBadgeData {
 	Create,
-	Process,
+	Process { outcome: ImageProcessOutcome },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogRoleData {
+pub enum EventRoleData {
 	Create,
 	ChangeName {
 		old: String,
@@ -257,6 +266,6 @@ pub enum AuditLogRoleData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AuditLogEntitlementEdgeData {
+pub enum EventEntitlementEdgeData {
 	Create,
 }

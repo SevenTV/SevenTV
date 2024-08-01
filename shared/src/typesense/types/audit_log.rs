@@ -1,17 +1,17 @@
 use chrono::Utc;
 
 use super::{impl_typesense_type, TypesenseCollection, TypesenseGenericCollection};
-use crate::database::audit_log::{
-	AuditLogData, AuditLogEmoteData, AuditLogEmoteSetData, AuditLogId, AuditLogTicketData, AuditLogUserData,
+use crate::database::event::{
+	EventData, EventEmoteData, EventEmoteSetData, EventId, EventTicketData, EventUserData,
 };
 use crate::database::user::UserId;
 use crate::database::{self, Id};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, TypesenseCollection)]
-#[typesense(collection_name = "audit_logs")]
+#[typesense(collection_name = "events")]
 #[serde(deny_unknown_fields)]
-pub struct AuditLog {
-	pub id: AuditLogId,
+pub struct Event {
+	pub id: EventId,
 	pub actor_id: Option<UserId>,
 	pub target_id: Id<()>,
 	pub kind: TargetKind,
@@ -21,8 +21,8 @@ pub struct AuditLog {
 	pub search_updated_at: i64,
 }
 
-impl From<database::audit_log::AuditLog> for AuditLog {
-	fn from(value: database::audit_log::AuditLog) -> Self {
+impl From<database::event::Event> for Event {
+	fn from(value: database::event::Event) -> Self {
 		let (target_id, kind, action) = split_kinds(value.data);
 
 		Self {
@@ -67,65 +67,65 @@ pub enum ActionKind {
 
 impl_typesense_type!(ActionKind, Int32);
 
-fn split_kinds(data: AuditLogData) -> (Id<()>, TargetKind, ActionKind) {
+fn split_kinds(data: EventData) -> (Id<()>, TargetKind, ActionKind) {
 	match data {
-		AuditLogData::Emote { target_id, data } => (
+		EventData::Emote { target_id, data } => (
 			target_id.cast(),
 			TargetKind::Emote,
 			match data {
-				AuditLogEmoteData::ChangeFlags { .. }
-				| AuditLogEmoteData::ChangeName { .. }
-				| AuditLogEmoteData::ChangeTags { .. }
-				| AuditLogEmoteData::ChangeOwner { .. } => ActionKind::Modify,
-				AuditLogEmoteData::Delete { .. } => ActionKind::Delete,
-				AuditLogEmoteData::Process { .. } => ActionKind::EmoteProcess,
-				AuditLogEmoteData::Upload { .. } => ActionKind::Create,
-				AuditLogEmoteData::Merge { .. } => ActionKind::Merge,
+				EventEmoteData::ChangeFlags { .. }
+				| EventEmoteData::ChangeName { .. }
+				| EventEmoteData::ChangeTags { .. }
+				| EventEmoteData::ChangeOwner { .. } => ActionKind::Modify,
+				EventEmoteData::Delete { .. } => ActionKind::Delete,
+				EventEmoteData::Process { .. } => ActionKind::EmoteProcess,
+				EventEmoteData::Upload { .. } => ActionKind::Create,
+				EventEmoteData::Merge { .. } => ActionKind::Merge,
 			},
 		),
-		AuditLogData::EmoteSet { target_id, data } => (
+		EventData::EmoteSet { target_id, data } => (
 			target_id.cast(),
 			TargetKind::EmoteSet,
 			match data {
-				AuditLogEmoteSetData::ChangeCapacity { .. }
-				| AuditLogEmoteSetData::ChangeName { .. }
-				| AuditLogEmoteSetData::ChangeTags { .. }
-				| AuditLogEmoteSetData::AddEmote { .. }
-				| AuditLogEmoteSetData::RemoveEmote { .. }
-				| AuditLogEmoteSetData::RenameEmote { .. } => ActionKind::Modify,
-				AuditLogEmoteSetData::Create { .. } => ActionKind::Create,
-				AuditLogEmoteSetData::Delete { .. } => ActionKind::Delete,
+				EventEmoteSetData::ChangeCapacity { .. }
+				| EventEmoteSetData::ChangeName { .. }
+				| EventEmoteSetData::ChangeTags { .. }
+				| EventEmoteSetData::AddEmote { .. }
+				| EventEmoteSetData::RemoveEmote { .. }
+				| EventEmoteSetData::RenameEmote { .. } => ActionKind::Modify,
+				EventEmoteSetData::Create { .. } => ActionKind::Create,
+				EventEmoteSetData::Delete { .. } => ActionKind::Delete,
 			},
 		),
-		AuditLogData::User { target_id, data } => (
+		EventData::User { target_id, data } => (
 			target_id.cast(),
 			TargetKind::User,
 			match data {
-				AuditLogUserData::Ban => ActionKind::UserBan,
-				AuditLogUserData::Unban => ActionKind::UserUnban,
-				AuditLogUserData::Login { .. } => ActionKind::UserLogin,
-				AuditLogUserData::Logout => ActionKind::UserLogout,
-				AuditLogUserData::AddEditor { .. }
-				| AuditLogUserData::RemoveEditor { .. }
-				| AuditLogUserData::AddRole { .. }
-				| AuditLogUserData::RemoveRole { .. } => ActionKind::Modify,
-				AuditLogUserData::Delete { .. } => ActionKind::Delete,
-				AuditLogUserData::Merge { .. } => ActionKind::Merge,
+				EventUserData::Ban => ActionKind::UserBan,
+				EventUserData::Unban => ActionKind::UserUnban,
+				EventUserData::Login { .. } => ActionKind::UserLogin,
+				EventUserData::Logout => ActionKind::UserLogout,
+				EventUserData::AddEditor { .. }
+				| EventUserData::RemoveEditor { .. }
+				| EventUserData::AddRole { .. }
+				| EventUserData::RemoveRole { .. } => ActionKind::Modify,
+				EventUserData::Delete { .. } => ActionKind::Delete,
+				EventUserData::Merge { .. } => ActionKind::Merge,
 			},
 		),
-		AuditLogData::Ticket { target_id, data } => (
+		EventData::Ticket { target_id, data } => (
 			target_id.cast(),
 			TargetKind::Ticket,
 			match data {
-				AuditLogTicketData::AddMember { .. }
-				| AuditLogTicketData::ChangeOpen { .. }
-				| AuditLogTicketData::RemoveMember { .. } => ActionKind::Modify,
-				AuditLogTicketData::Create { .. } => ActionKind::Create,
+				EventTicketData::AddMember { .. }
+				| EventTicketData::ChangeOpen { .. }
+				| EventTicketData::RemoveMember { .. } => ActionKind::Modify,
+				EventTicketData::Create { .. } => ActionKind::Create,
 			},
 		),
 	}
 }
 
 pub(super) fn typesense_collections() -> impl IntoIterator<Item = TypesenseGenericCollection> {
-	[TypesenseGenericCollection::new::<AuditLog>()]
+	[TypesenseGenericCollection::new::<Event>()]
 }

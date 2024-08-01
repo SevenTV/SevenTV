@@ -1,8 +1,8 @@
 use crate::database::{
-	audit_log::{
-		AuditLogBadgeData, AuditLogEmoteData, AuditLogEmoteModerationRequestData, AuditLogEmoteSetData,
-		AuditLogEntitlementEdgeData, AuditLogPaintData, AuditLogRoleData, AuditLogTicketData, AuditLogTicketMessageData,
-		AuditLogUserBanData, AuditLogUserData, AuditLogUserEditorData, AuditLogUserSessionData,
+	event::{
+		EventBadgeData, EventEmoteData, EventEmoteModerationRequestData, EventEmoteSetData,
+		EventEntitlementEdgeData, EventPaintData, EventRoleData, EventTicketData, EventTicketMessageData,
+		EventUserBanData, EventUserData, EventUserEditorData, EventUserSessionData,
 	},
 	badge::Badge,
 	emote::Emote,
@@ -15,57 +15,57 @@ use crate::database::{
 	user::{ban::UserBan, editor::UserEditor, session::UserSession, User},
 };
 
-pub enum Event {
+pub enum EventPayload {
 	Emote {
 		after: Emote,
-		data: AuditLogEmoteData,
+		data: EventEmoteData,
 	},
 	EmoteSet {
 		after: EmoteSet,
-		data: AuditLogEmoteSetData,
+		data: EventEmoteSetData,
 	},
 	User {
 		after: User,
-		data: AuditLogUserData,
+		data: EventUserData,
 	},
 	UserEditor {
 		after: UserEditor,
-		data: AuditLogUserEditorData,
+		data: EventUserEditorData,
 	},
 	UserBan {
 		after: UserBan,
-		data: AuditLogUserBanData,
+		data: EventUserBanData,
 	},
 	UserSession {
 		after: UserSession,
-		data: AuditLogUserSessionData,
+		data: EventUserSessionData,
 	},
 	Ticket {
 		after: Ticket,
-		data: AuditLogTicketData,
+		data: EventTicketData,
 	},
 	TicketMessage {
 		after: TicketMessage,
-		data: AuditLogTicketMessageData,
+		data: EventTicketMessageData,
 	},
 	EmoteModerationRequest {
 		after: EmoteModerationRequest,
-		data: AuditLogEmoteModerationRequestData,
+		data: EventEmoteModerationRequestData,
 	},
 	Paint {
 		after: Paint,
-		data: AuditLogPaintData,
+		data: EventPaintData,
 	},
 	Badge {
 		after: Badge,
-		data: AuditLogBadgeData,
+		data: EventBadgeData,
 	},
 	Role {
 		after: Role,
-		data: AuditLogRoleData,
+		data: EventRoleData,
 	},
 	EntitlementEdge {
 		after: EntitlementEdge,
-		data: AuditLogEntitlementEdgeData,
+		data: EventEntitlementEdgeData,
 	},
 }

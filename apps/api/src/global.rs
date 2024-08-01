@@ -6,7 +6,7 @@ use anyhow::Context as _;
 use bson::doc;
 use scuffle_foundations::batcher::dataloader::DataLoader;
 use scuffle_foundations::telemetry::server::HealthCheck;
-use shared::database::audit_log::AuditLog;
+use shared::database::event::Event;
 use shared::database::badge::Badge;
 use shared::database::emote::Emote;
 use shared::database::emote_set::EmoteSet;
@@ -43,7 +43,7 @@ pub struct Global {
 	pub http_client: reqwest::Client,
 	pub event_api: EventApi,
 	pub image_processor: ImageProcessor,
-	pub audit_log_by_id_loader: DataLoader<LoaderById<AuditLog>>,
+	pub audit_log_by_id_loader: DataLoader<LoaderById<Event>>,
 	pub product_by_id_loader: DataLoader<LoaderById<Product>>,
 	pub role_by_id_loader: DataLoader<LoaderById<Role>>,
 	pub paint_by_id_loader: DataLoader<LoaderById<Paint>>,

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use itertools::Itertools;
 use mongodb::options::FindOneAndUpdateOptions;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
+use shared::database::event::{Event, EventData, EventEmoteSetData, EventId};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
 use shared::database::queries::{filter, update};
@@ -66,12 +66,12 @@ pub async fn emote_remove(
 		)))?;
 
 	tx.insert_one(
-		AuditLog {
-			id: AuditLogId::new(),
+		Event {
+			id: EventId::new(),
 			actor_id: Some(actor.id),
-			data: AuditLogData::EmoteSet {
+			data: EventData::EmoteSet {
 				target_id: emote_set.id,
-				data: AuditLogEmoteSetData::RemoveEmote { emote_id },
+				data: EventEmoteSetData::RemoveEmote { emote_id },
 			},
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,

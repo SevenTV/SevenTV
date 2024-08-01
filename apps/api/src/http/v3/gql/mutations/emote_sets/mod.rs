@@ -8,7 +8,7 @@ use emote_update::emote_update;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
+use shared::database::event::{Event, EventData, EventEmoteSetData, EventId};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetKind};
 use shared::database::queries::{filter, update};
@@ -161,13 +161,13 @@ impl EmoteSetsMutation {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		AuditLog::collection(&global.db)
-			.insert_one(AuditLog {
-				id: AuditLogId::new(),
+		Event::collection(&global.db)
+			.insert_one(Event {
+				id: EventId::new(),
 				actor_id: Some(user.id),
-				data: AuditLogData::EmoteSet {
+				data: EventData::EmoteSet {
 					target_id: emote_set.id,
-					data: AuditLogEmoteSetData::Create,
+					data: EventEmoteSetData::Create,
 				},
 				updated_at: Utc::now(),
 				search_updated_at: None,
@@ -175,7 +175,7 @@ impl EmoteSetsMutation {
 			.session(&mut session)
 			.await
 			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert audit log");
+				tracing::error!(error = %e, "failed to insert event");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
@@ -375,12 +375,12 @@ impl EmoteSetOps {
 				// TODO validate this name
 
 				tx.insert_one(
-					AuditLog {
-						id: AuditLogId::new(),
+					Event {
+						id: EventId::new(),
 						actor_id: Some(auth_session.user_id()),
-						data: AuditLogData::EmoteSet {
+						data: EventData::EmoteSet {
 							target_id: self.emote_set.id,
-							data: AuditLogEmoteSetData::ChangeName {
+							data: EventEmoteSetData::ChangeName {
 								old: self.emote_set.name.clone(),
 								new: name.clone(),
 							},
@@ -435,12 +435,12 @@ impl EmoteSetOps {
 				}
 
 				tx.insert_one(
-					AuditLog {
-						id: AuditLogId::new(),
+					Event {
+						id: EventId::new(),
 						actor_id: Some(auth_session.user_id()),
-						data: AuditLogData::EmoteSet {
+						data: EventData::EmoteSet {
 							target_id: self.emote_set.id,
-							data: AuditLogEmoteSetData::ChangeCapacity {
+							data: EventEmoteSetData::ChangeCapacity {
 								old: self.emote_set.capacity,
 								new: Some(capacity as i32),
 							},
@@ -570,12 +570,12 @@ impl EmoteSetOps {
 
 			if res.deleted_count > 0 {
 				tx.insert_one(
-					AuditLog {
-						id: AuditLogId::new(),
+					Event {
+						id: EventId::new(),
 						actor_id: Some(auth_session.user_id()),
-						data: AuditLogData::EmoteSet {
+						data: EventData::EmoteSet {
 							target_id: self.emote_set.id,
-							data: AuditLogEmoteSetData::Delete,
+							data: EventEmoteSetData::Delete,
 						},
 						updated_at: Utc::now(),
 						search_updated_at: None,
