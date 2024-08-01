@@ -17,55 +17,55 @@ use crate::database::{
 
 pub enum Event {
 	Emote {
-		before: Emote,
+		after: Emote,
 		data: AuditLogEmoteData,
 	},
 	EmoteSet {
-		before: EmoteSet,
+		after: EmoteSet,
 		data: AuditLogEmoteSetData,
 	},
 	User {
-		before: User,
+		after: User,
 		data: AuditLogUserData,
 	},
 	UserEditor {
-		before: UserEditor,
+		after: UserEditor,
 		data: AuditLogUserEditorData,
 	},
 	UserBan {
-		before: UserBan,
+		after: UserBan,
 		data: AuditLogUserBanData,
 	},
 	UserSession {
-		before: UserSession,
+		after: UserSession,
 		data: AuditLogUserSessionData,
 	},
 	Ticket {
-		before: Ticket,
+		after: Ticket,
 		data: AuditLogTicketData,
 	},
 	TicketMessage {
-		before: TicketMessage,
+		after: TicketMessage,
 		data: AuditLogTicketMessageData,
 	},
 	EmoteModerationRequest {
-		before: EmoteModerationRequest,
+		after: EmoteModerationRequest,
 		data: AuditLogEmoteModerationRequestData,
 	},
 	Paint {
-		before: Paint,
+		after: Paint,
 		data: AuditLogPaintData,
 	},
 	Badge {
-		before: Badge,
+		after: Badge,
 		data: AuditLogBadgeData,
 	},
 	Role {
-		before: Role,
+		after: Role,
 		data: AuditLogRoleData,
 	},
 	EntitlementEdge {
-		before: EntitlementEdge,
+		after: EntitlementEdge,
 		data: AuditLogEntitlementEdgeData,
 	},
 }
