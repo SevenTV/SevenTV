@@ -1,7 +1,7 @@
 use chrono::Utc;
 
 use super::{impl_typesense_type, TypesenseCollection, TypesenseGenericCollection};
-use crate::database::event::{EventData, EventEmoteData, EventEmoteSetData, EventId, EventTicketData, EventUserData};
+use crate::database::event::{EventData, EventEmoteData, EventEmoteSetData, EventId, EventTicketData, EventUserData, EventUserSessionData};
 use crate::database::user::UserId;
 use crate::database::{self, Id};
 
@@ -42,7 +42,8 @@ pub enum TargetKind {
 	Emote = 0,
 	EmoteSet = 1,
 	User = 2,
-	Ticket = 3,
+	UserSession = 3,
+	Ticket = 4,
 }
 
 impl_typesense_type!(TargetKind, Int32);
@@ -56,11 +57,6 @@ pub enum ActionKind {
 	Merge = 3,
 
 	EmoteProcess = 4,
-
-	UserLogin = 5,
-	UserLogout = 6,
-	UserBan = 7,
-	UserUnban = 8,
 }
 
 impl_typesense_type!(ActionKind, Int32);
@@ -95,23 +91,23 @@ fn split_kinds(data: EventData) -> (Id<()>, TargetKind, ActionKind) {
 				EventEmoteSetData::Delete { .. } => ActionKind::Delete,
 			},
 		),
-		// TODO
 		EventData::User { target_id, data } => (
 			target_id.cast(),
 			TargetKind::User,
-			// match data {
-			// 	EventUserData::Ban => ActionKind::UserBan,
-			// 	EventUserData::Unban => ActionKind::UserUnban,
-			// 	EventUserData::Login { .. } => ActionKind::UserLogin,
-			// 	EventUserData::Logout => ActionKind::UserLogout,
-			// 	EventUserData::AddEditor { .. }
-			// 	| EventUserData::RemoveEditor { .. }
-			// 	| EventUserData::AddRole { .. }
-			// 	| EventUserData::RemoveRole { .. } => ActionKind::Modify,
-			// 	EventUserData::Delete { .. } => ActionKind::Delete,
-			// 	EventUserData::Merge { .. } => ActionKind::Merge,
-			// },
-			ActionKind::Modify,
+			match data {
+				EventUserData::Create => ActionKind::Create,
+				EventUserData::Merge { .. } => ActionKind::Merge,
+				EventUserData::Delete { .. } => ActionKind::Delete,
+				_ => ActionKind::Modify,
+			},
+		),
+		EventData::UserSession { target_id, data } => (
+			target_id.cast(),
+			TargetKind::UserSession,
+			match data {
+				EventUserSessionData::Create { .. } => ActionKind::Create,
+				EventUserSessionData::Delete { .. } => ActionKind::Delete,
+			},
 		),
 		EventData::Ticket { target_id, data } => (
 			target_id.cast(),

@@ -9,7 +9,6 @@ use shared::database::event::{Event, EventData, EventEmoteData, EventId};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
-use shared::database::MongoCollection;
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};

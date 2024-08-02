@@ -14,7 +14,6 @@ use shared::database::ticket::{
 	TicketTarget,
 };
 use shared::database::user::UserId;
-use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;

@@ -5,14 +5,16 @@ use std::sync::Arc;
 use futures::TryStreamExt;
 use mongodb::error::{TRANSIENT_TRANSACTION_ERROR, UNKNOWN_TRANSACTION_COMMIT_RESULT};
 use mongodb::results::{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult};
+use shared::database::event::Event;
 use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
+use shared::event::EventPayload;
 use spin::Mutex;
 
 use crate::global::Global;
 
 /// TOOD(lennart): whatever this is supposed to be.
-type EmittedEvent = ();
+type EmittedEvent = EventPayload;
 
 pub struct TransactionSession<'a, E>(Arc<Mutex<SessionInner<'a>>>, PhantomData<E>);
 
@@ -238,6 +240,10 @@ pub enum TransactionError<E> {
 	Filter(bson::ser::Error),
 	#[error("modifier error: {0}")]
 	Update(bson::ser::Error),
+	#[error("event serialize error: {0}")]
+	EventSerialize(#[from] serde_json::Error),
+	#[error("event publish error: {0}")]
+	EventPublish(#[from] async_nats::jetstream::context::PublishError),
 	#[error("custom error")]
 	Custom(E),
 	#[error("too many failures")]
@@ -251,32 +257,6 @@ impl<E> TransactionError<E> {
 		Self::Custom(err)
 	}
 }
-
-// #[derive(Debug, Clone)]
-// pub struct TransactionOutput<T> {
-// 	pub output: T,
-// 	pub aborted: bool,
-// }
-
-// impl<T> TransactionOutput<T> {
-// 	pub fn into_inner(self) -> T {
-// 		self.output
-// 	}
-// }
-
-// impl<T> std::ops::Deref for TransactionOutput<T> {
-// 	type Target = T;
-
-// 	fn deref(&self) -> &Self::Target {
-// 		&self.output
-// 	}
-// }
-
-// impl<T> std::ops::DerefMut for TransactionOutput<T> {
-// 	fn deref_mut(&mut self) -> &mut Self::Target {
-// 		&mut self.output
-// 	}
-// }
 
 pub async fn with_transaction<'a, T, E, F, Fut>(global: &'a Arc<Global>, f: F) -> TransactionResult<T, E>
 where
@@ -305,10 +285,19 @@ where
 		let mut session_inner = session.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		match result {
 			Ok(output) => 'retry_commit: loop {
+				for event in session_inner.events.clone() {
+					Event::collection(&global.db)
+						.insert_one(Event::from(event))
+						.session(&mut session_inner.session)
+						.await?;
+				}
+
 				match session_inner.session.commit_transaction().await {
-					Ok(()) => {
-						// todo emit events
-						session_inner.events.clear();
+					Ok(_) => {
+						for event in session_inner.events.drain(..) {
+							let payload = serde_json::to_vec(&event)?;
+							global.jetstream.publish(event.data.subject(), payload.into()).await?;
+						}
 						return Ok(output);
 					}
 					Err(err) => {
@@ -330,10 +319,6 @@ where
 				}
 
 				session_inner.session.abort_transaction().await?;
-
-				// if let TransactionError::Custom(output) = err {
-				// 	return Ok(TransactionOutput { output, aborted: true });
-				// }
 
 				return Err(err);
 			}
