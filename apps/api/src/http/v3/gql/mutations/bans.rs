@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::options::ReturnDocument;
-use shared::database::event::{Event, EventData, EventUserBanData};
+use shared::database::event::EventUserBanData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{
 	AdminPermission, EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
@@ -11,6 +11,7 @@ use shared::database::role::permissions::{
 use shared::database::user::ban::UserBan;
 use shared::database::user::User;
 use shared::database::MongoCollection;
+use shared::event::{EventPayload, EventPayloadData};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::BanEffect;
 
@@ -119,20 +120,14 @@ impl BansMutation {
 			tx.insert_one::<UserBan>(&ban, None).await?;
 
 			if res.modified_count > 0 {
-				tx.insert_one(
-					Event {
-						id: Default::default(),
-						actor_id: Some(actor.id),
-						data: EventData::UserBan {
-							target_id: ban.id,
-							data: EventUserBanData::Ban,
-						},
-						updated_at: chrono::Utc::now(),
-						search_updated_at: None,
+				tx.register_event(EventPayload {
+					actor_id: Some(actor.id),
+					data: EventPayloadData::UserBan {
+						after: ban.clone(),
+						data: EventUserBanData::Ban,
 					},
-					None,
-				)
-				.await?;
+					timestamp: chrono::Utc::now(),
+				})?;
 			}
 
 			Ok(ban)

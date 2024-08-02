@@ -10,14 +10,14 @@ use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetKind};
-use shared::database::event::{Event, EventData, EventEmoteSetData, EventId};
+use shared::database::event::EventEmoteSetData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, UserPermission};
 use shared::database::user::editor::{
 	EditorEmoteSetPermission, EditorPermission, EditorUserPermission, UserEditorId, UserEditorState,
 };
 use shared::database::user::FullUserRef;
-use shared::database::MongoCollection;
+use shared::event::{EventPayload, EventPayloadData};
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::UserPartialModel;
@@ -145,20 +145,14 @@ impl EmoteSetsMutation {
 
 			tx.insert_one::<DbEmoteSet>(&emote_set, None).await?;
 
-			tx.insert_one(
-				Event {
-					id: EventId::new(),
-					actor_id: Some(user.id),
-					data: EventData::EmoteSet {
-						target_id: emote_set.id,
-						data: EventEmoteSetData::Create,
-					},
-					updated_at: Utc::now(),
-					search_updated_at: None,
+			tx.register_event(EventPayload {
+				actor_id: Some(user.id),
+				data: EventPayloadData::EmoteSet {
+					after: emote_set.clone(),
+					data: EventEmoteSetData::Create,
 				},
-				None,
-			)
-			.await?;
+				timestamp: Utc::now(),
+			})?;
 
 			Ok(emote_set)
 		})
@@ -361,24 +355,6 @@ impl EmoteSetOps {
 			let new_name = if let Some(name) = data.name {
 				// TODO validate this name
 
-				tx.insert_one(
-					Event {
-						id: EventId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: EventData::EmoteSet {
-							target_id: self.emote_set.id,
-							data: EventEmoteSetData::ChangeName {
-								old: self.emote_set.name.clone(),
-								new: name.clone(),
-							},
-						},
-						updated_at: Utc::now(),
-						search_updated_at: None,
-					},
-					None,
-				)
-				.await?;
-
 				changes.push(ChangeField {
 					key: "name".to_string(),
 					ty: ChangeFieldType::String,
@@ -421,24 +397,6 @@ impl EmoteSetOps {
 					)));
 				}
 
-				tx.insert_one(
-					Event {
-						id: EventId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: EventData::EmoteSet {
-							target_id: self.emote_set.id,
-							data: EventEmoteSetData::ChangeCapacity {
-								old: self.emote_set.capacity,
-								new: Some(capacity as i32),
-							},
-						},
-						updated_at: Utc::now(),
-						search_updated_at: None,
-					},
-					None,
-				)
-				.await?;
-
 				changes.push(ChangeField {
 					key: "capacity".to_string(),
 					ty: ChangeFieldType::Number,
@@ -471,7 +429,7 @@ impl EmoteSetOps {
 						#[query(set)]
 						DbEmoteSet {
 							#[query(optional)]
-							name: new_name,
+							name: new_name.as_ref(),
 							#[query(optional)]
 							capacity: new_capacity,
 							updated_at: chrono::Utc::now(),
@@ -484,6 +442,34 @@ impl EmoteSetOps {
 				.await?
 				.ok_or(ApiError::INTERNAL_SERVER_ERROR)
 				.map_err(TransactionError::custom)?;
+
+			if let Some(new_name) = new_name {
+				tx.register_event(EventPayload {
+					actor_id: Some(auth_session.user_id()),
+					data: EventPayloadData::EmoteSet {
+						after: emote_set.clone(),
+						data: EventEmoteSetData::ChangeName {
+							old: self.emote_set.name.clone(),
+							new: new_name,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if let Some(new_capacity) = new_capacity {
+				tx.register_event(EventPayload {
+					actor_id: Some(auth_session.user_id()),
+					data: EventPayloadData::EmoteSet {
+						after: emote_set.clone(),
+						data: EventEmoteSetData::ChangeCapacity {
+							old: self.emote_set.capacity,
+							new: Some(new_capacity as i32),
+						},
+					},
+					timestamp: Utc::now(),
+				})?;
+			}
 
 			if !changes.is_empty() {
 				global
@@ -545,8 +531,8 @@ impl EmoteSetOps {
 		}
 
 		let res = with_transaction(global, |mut tx| async move {
-			let res = tx
-				.delete_one(
+			let emote_set = tx
+				.find_one_and_delete(
 					filter::filter!(DbEmoteSet {
 						#[query(rename = "_id")]
 						id: self.emote_set.id
@@ -555,21 +541,15 @@ impl EmoteSetOps {
 				)
 				.await?;
 
-			if res.deleted_count > 0 {
-				tx.insert_one(
-					Event {
-						id: EventId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: EventData::EmoteSet {
-							target_id: self.emote_set.id,
-							data: EventEmoteSetData::Delete,
-						},
-						updated_at: Utc::now(),
-						search_updated_at: None,
+			if let Some(emote_set) = emote_set {
+				tx.register_event(EventPayload {
+					actor_id: Some(auth_session.user_id()),
+					data: EventPayloadData::EmoteSet {
+						after: emote_set,
+						data: EventEmoteSetData::Delete,
 					},
-					None,
-				)
-				.await?;
+					timestamp: Utc::now(),
+				})?;
 
 				let body = ChangeMap {
 					id: self.emote_set.id.cast(),
@@ -592,9 +572,11 @@ impl EmoteSetOps {
 						ApiError::INTERNAL_SERVER_ERROR
 					})
 					.map_err(TransactionError::custom)?;
-			}
 
-			Ok(res.deleted_count > 0)
+				Ok(true)
+			} else {
+				Ok(false)
+			}
 		})
 		.await;
 

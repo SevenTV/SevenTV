@@ -1,3 +1,5 @@
+use scuffle_image_processor_proto::event_callback;
+
 use super::badge::BadgeId;
 use super::emote::{EmoteFlags, EmoteId};
 use super::emote_moderation_request::EmoteModerationRequestId;
@@ -6,10 +8,11 @@ use super::entitlement::EntitlementEdgeId;
 use super::paint::{PaintData, PaintId};
 use super::role::permissions::Permissions;
 use super::role::RoleId;
-use super::ticket::{TicketId, TicketMessageId};
+use super::ticket::{TicketId, TicketMessageId, TicketPriority};
 use super::user::ban::UserBanId;
 use super::user::connection::Platform;
 use super::user::editor::{UserEditorId, UserEditorPermissions};
+use super::user::profile_picture::UserProfilePictureId;
 use super::user::session::UserSessionId;
 use super::user::UserId;
 use super::{MongoCollection, MongoGenericCollection};
@@ -53,6 +56,10 @@ pub enum EventData {
 		target_id: UserId,
 		data: EventUserData,
 	},
+	UserProfilePicture {
+		target_id: UserProfilePictureId,
+		data: EventUserProfilePictureData,
+	},
 	UserEditor {
 		target_id: UserEditorId,
 		data: EventUserEditorData,
@@ -95,20 +102,20 @@ pub enum EventData {
 	},
 }
 
-#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
-#[repr(i32)]
-pub enum ImageProcessOutcome {
-	Start = 0,
-	Success = 1,
-	Cancelled = 2,
-	Failed = 3,
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ImageProcessorEvent {
+	Success(event_callback::Success),
+	Fail(event_callback::Fail),
+	Cancel(event_callback::Cancel),
+	Start(event_callback::Start),
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum EventEmoteData {
 	Upload,
-	Process { outcome: ImageProcessOutcome },
+	Process { event: ImageProcessorEvent },
 	ChangeName { old: String, new: String },
 	Merge { new_emote_id: EmoteId },
 	ChangeOwner { old: UserId, new: UserId },
@@ -155,12 +162,17 @@ pub enum EventUserData {
 	ChangeActivePaint { paint_id: PaintId },
 	ChangeActiveBadge { badge_id: BadgeId },
 	ChangeActiveEmoteSet { emote_set_id: EmoteSetId },
-	UploadProfilePicture,
-	ProcessProfilePicture { outcome: ImageProcessOutcome },
 	AddConnection { platform: Platform },
 	RemoveConnection { platform: Platform },
 	Merge,
 	Delete,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
+pub enum EventUserProfilePictureData {
+	Create,
+	Process { event: ImageProcessorEvent },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -211,6 +223,7 @@ pub enum EventTicketData {
 	AddMember { member: UserId },
 	RemoveMember { member: UserId },
 	ChangeOpen { old: bool, new: bool },
+	ChangePriority { old: TicketPriority, new: TicketPriority },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -229,7 +242,7 @@ pub enum EventEmoteModerationRequestData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum EventPaintData {
 	Create,
-	Process { outcome: ImageProcessOutcome },
+	Process { event: ImageProcessorEvent },
 	ChangeName { old: String, new: String },
 	ChangeData { old: PaintData, new: PaintData },
 }
@@ -238,29 +251,17 @@ pub enum EventPaintData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum EventBadgeData {
 	Create,
-	Process { outcome: ImageProcessOutcome },
+	Process { event: ImageProcessorEvent },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum EventRoleData {
 	Create,
-	ChangeName {
-		old: String,
-		new: String,
-	},
-	ChangeColor {
-		old: i32,
-		new: i32,
-	},
-	ChangePermissions {
-		old: Permissions,
-		new: Permissions,
-	},
-	ChangeRank {
-		old: i32,
-		new: i32,
-	},
+	ChangeName { old: String, new: String },
+	ChangeColor { old: i32, new: i32 },
+	ChangePermissions { old: Permissions, new: Permissions },
+	ChangeRank { old: i32, new: i32 },
 	Delete,
 }
 

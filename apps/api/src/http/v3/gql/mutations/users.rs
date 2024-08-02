@@ -2,15 +2,16 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use itertools::Itertools;
-use mongodb::options::{ReturnDocument, UpdateOptions};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
-use shared::database::event::{Event, EventData, EventEntitlementEdgeData, EventId, EventUserEditorData};
+use shared::database::event::{EventEntitlementEdgeData, EventUserEditorData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
 use shared::database::user::connection::UserConnection as DbUserConnection;
-use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId};
+use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId, UserEditorState};
 use shared::database::user::{User, UserStyle};
 use shared::database::MongoCollection;
+use shared::event::{EventPayload, EventPayloadData};
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::cosmetic::CosmeticKind;
 use shared::old_types::object_id::GqlObjectId;
@@ -306,7 +307,7 @@ impl UserOps {
 
 					// Remove editor
 					let res = tx
-						.delete_one(
+						.find_one_and_delete(
 							filter::filter! {
 								DbUserEditor {
 									#[query(serde, rename = "_id")]
@@ -317,23 +318,17 @@ impl UserOps {
 						)
 						.await?;
 
-					if res.deleted_count > 0 {
-						tx.insert_one(
-							Event {
-								id: EventId::new(),
-								actor_id: Some(auth_session.user_id()),
-								data: EventData::UserEditor {
-									target_id: editor_id,
-									data: EventUserEditorData::RemoveEditor {
-										editor_id: editor_id.editor_id,
-									},
+					if let Some(editor) = res {
+						tx.register_event(EventPayload {
+							actor_id: Some(auth_session.user_id()),
+							data: EventPayloadData::UserEditor {
+								after: editor,
+								data: EventUserEditorData::RemoveEditor {
+									editor_id: editor_id.editor_id,
 								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
 							},
-							None,
-						)
-						.await?;
+							timestamp: chrono::Utc::now(),
+						})?;
 					}
 				} else {
 					// Add or update editor
@@ -344,8 +339,8 @@ impl UserOps {
 
 					let permissions = permissions.to_db();
 
-					let res = tx
-						.update_one(
+					let editor = tx
+						.find_one_and_update(
 							filter::filter! {
 								DbUserEditor {
 									#[query(serde, rename = "_id")]
@@ -356,64 +351,58 @@ impl UserOps {
 								#[query(set)]
 								DbUserEditor {
 									#[query(serde)]
-									permissions: permissions,
+									permissions: permissions.clone(),
 									updated_at: chrono::Utc::now(),
 								}
-								// TODO: fix set_on_insert
-								// #[query(set_on_insert)]
-								// DbUserEditor {
-								// 	id: editor_id,
-								// 	#[query(serde)]
-								// 	state: UserEditorState::Pending,
-								// 	notes: None,
-								// 	added_by_id: Some(auth_session.user_id()),
-								// 	added_at: chrono::Utc::now(),
-								// 	search_updated_at: None,
-								// }
 							},
-							UpdateOptions::builder()
-								.upsert(user.has(UserPermission::InviteEditors))
+							FindOneAndUpdateOptions::builder()
+								.return_document(ReturnDocument::After)
 								.build(),
 						)
 						.await?;
 
-					if res.matched_count == 1 {
+					if let Some(editor) = editor {
 						// updated
-						tx.insert_one(
-							Event {
-								id: EventId::new(),
-								actor_id: Some(auth_session.user_id()),
-								data: EventData::UserEditor {
-									target_id: editor_id,
-									data: EventUserEditorData::EditPermissions {
-										old: todo!(),
-										new: permissions,
-									},
+						tx.register_event(EventPayload {
+							actor_id: Some(auth_session.user_id()),
+							data: EventPayloadData::UserEditor {
+								after: editor,
+								data: EventUserEditorData::EditPermissions {
+									old: todo!("query old permissions"),
+									new: permissions,
 								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
 							},
-							None,
-						)
-						.await?;
-					} else if res.upserted_id.is_some() {
-						// inserted
-						tx.insert_one(
-							Event {
-								id: EventId::new(),
-								actor_id: Some(auth_session.user_id()),
-								data: EventData::UserEditor {
-									target_id: editor_id,
-									data: EventUserEditorData::AddEditor {
-										editor_id: editor_id.editor_id,
-									},
+							timestamp: chrono::Utc::now(),
+						})?;
+					} else {
+						// didn't exist
+						if user.has(UserPermission::InviteEditors) {
+							return Err(TransactionError::custom(ApiError::FORBIDDEN));
+						}
+
+						let editor = DbUserEditor {
+							id: editor_id,
+							state: UserEditorState::Pending,
+							notes: None,
+							permissions: permissions.clone(),
+							added_by_id: auth_session.user_id(),
+							added_at: chrono::Utc::now(),
+							updated_at: chrono::Utc::now(),
+							search_updated_at: None,
+						};
+
+						tx.insert_one::<DbUserEditor>(&editor, None).await?;
+
+						tx.register_event(EventPayload {
+							actor_id: Some(auth_session.user_id()),
+							data: EventPayloadData::UserEditor {
+								after: editor,
+								data: EventUserEditorData::AddEditor {
+									editor_id: editor_id.editor_id,
 								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
 							},
-							None,
-						)
-						.await?;
+							timestamp: chrono::Utc::now(),
+						})?;
 					}
 				}
 			}
@@ -703,20 +692,14 @@ impl UserOps {
 
 					tx.insert_one::<EntitlementEdge>(&edge, None).await?;
 
-					tx.insert_one(
-						Event {
-							id: EventId::new(),
-							actor_id: Some(auth_session.user_id()),
-							data: EventData::EntitlementEdge {
-								target_id: edge.id,
-								data: EventEntitlementEdgeData::Create,
-							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
+					tx.register_event(EventPayload {
+						actor_id: Some(auth_session.user_id()),
+						data: EventPayloadData::EntitlementEdge {
+							after: edge,
+							data: EventEntitlementEdgeData::Create,
 						},
-						None,
-					)
-					.await?;
+						timestamp: chrono::Utc::now(),
+					})?;
 
 					changes.pushed.push(ChangeField {
 						key: "role_ids".to_string(),
@@ -752,20 +735,14 @@ impl UserOps {
 						)
 						.await?
 					{
-						tx.insert_one(
-							Event {
-								id: EventId::new(),
-								actor_id: Some(auth_session.user_id()),
-								data: EventData::EntitlementEdge {
-									target_id: edge.id,
-									data: EventEntitlementEdgeData::Delete,
-								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
+						tx.register_event(EventPayload {
+							actor_id: Some(auth_session.user_id()),
+							data: EventPayloadData::EntitlementEdge {
+								after: edge,
+								data: EventEntitlementEdgeData::Delete,
 							},
-							None,
-						)
-						.await?;
+							timestamp: chrono::Utc::now(),
+						})?;
 
 						changes.pulled.push(ChangeField {
 							key: "role_ids".to_string(),

@@ -39,10 +39,7 @@ impl Job for AuditLogsJob {
 			}
 		}
 
-		Ok(Self {
-			global,
-			events: vec![],
-		})
+		Ok(Self { global, events: vec![] })
 	}
 
 	async fn collection(&self) -> mongodb::Collection<Self::T> {
@@ -59,10 +56,16 @@ impl Job for AuditLogsJob {
 				target_id: audit_log.target_id.into(),
 				data: database::event::EventEmoteData::Upload,
 			}),
-			AuditLogKind::ProcessEmote => data.push(database::event::EventData::Emote {
-				target_id: audit_log.target_id.into(),
-				data: database::event::EventEmoteData::Process { outcome: event::ImageProcessOutcome::Success },
-			}),
+			AuditLogKind::ProcessEmote => {
+				// TODO: not enough information to create the event, ignore this?
+
+				// data.push(database::event::EventData::Emote {
+				// 	target_id: audit_log.target_id.into(),
+				// 	data: database::event::EventEmoteData::Process {
+				// 		event: event::ImageProcessorEvent::Success(event_callback::Success {}),
+				// 	},
+				// });
+			},
 			AuditLogKind::UpdateEmote => {
 				for change in audit_log.changes {
 					match change {
@@ -268,21 +271,31 @@ impl Job for AuditLogsJob {
 						AuditLogChange::UserRoles(roles) => {
 							for role in roles.added.into_iter().flatten() {
 								let entitlement_edge_id = EntitlementEdgeId {
-									from: EntitlementEdgeKind::User { user_id: audit_log.target_id.into() },
+									from: EntitlementEdgeKind::User {
+										user_id: audit_log.target_id.into(),
+									},
 									to: EntitlementEdgeKind::Role { role_id: role.into() },
 									managed_by: None,
 								};
 
-								data.push(database::event::EventData::EntitlementEdge { target_id: entitlement_edge_id, data: event::EventEntitlementEdgeData::Create });
+								data.push(database::event::EventData::EntitlementEdge {
+									target_id: entitlement_edge_id,
+									data: event::EventEntitlementEdgeData::Create,
+								});
 							}
 							for role in roles.removed.into_iter().flatten() {
 								let entitlement_edge_id = EntitlementEdgeId {
-									from: EntitlementEdgeKind::User { user_id: audit_log.target_id.into() },
+									from: EntitlementEdgeKind::User {
+										user_id: audit_log.target_id.into(),
+									},
 									to: EntitlementEdgeKind::Role { role_id: role.into() },
 									managed_by: None,
 								};
 
-								data.push(database::event::EventData::EntitlementEdge { target_id: entitlement_edge_id, data: event::EventEntitlementEdgeData::Delete });
+								data.push(database::event::EventData::EntitlementEdge {
+									target_id: entitlement_edge_id,
+									data: event::EventEntitlementEdgeData::Delete,
+								});
 							}
 						}
 						_ => unimplemented!(),

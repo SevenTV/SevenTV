@@ -3,11 +3,12 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use itertools::Itertools;
 use mongodb::options::FindOneAndUpdateOptions;
-use shared::database::event::{Event, EventData, EventEmoteSetData, EventId};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
+use shared::database::event::EventEmoteSetData;
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
+use shared::event::{EventPayload, EventPayloadData};
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::UserPartialModel;
 
@@ -87,24 +88,18 @@ pub async fn emote_update(
 			"emote not found in set",
 		)))?;
 
-	tx.insert_one(
-		Event {
-			id: EventId::new(),
-			actor_id: Some(actor.id),
-			data: EventData::EmoteSet {
-				target_id: emote_set.id,
-				data: EventEmoteSetData::RenameEmote {
-					emote_id,
-					old_name: emote_set_emote.alias.clone(),
-					new_name: new_name.clone(),
-				},
+	tx.register_event(EventPayload {
+		actor_id: Some(actor.id),
+		data: EventPayloadData::EmoteSet {
+			after: emote_set.clone(),
+			data: EventEmoteSetData::RenameEmote {
+				emote_id,
+				old_name: emote_set_emote.alias.clone(),
+				new_name: new_name.clone(),
 			},
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
 		},
-		None,
-	)
-	.await?;
+		timestamp: chrono::Utc::now(),
+	})?;
 
 	let old_active_emote = ActiveEmoteModel::from_db(
 		emote_set_emote.clone(),

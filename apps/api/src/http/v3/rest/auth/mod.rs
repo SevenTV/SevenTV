@@ -8,10 +8,11 @@ use axum::routing::{get, post};
 use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::database::event::{Event, EventData, EventId, EventUserSessionData};
+use shared::database::event::EventUserSessionData;
 use shared::database::queries::filter;
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
+use shared::event::{EventPayload, EventPayloadData};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
@@ -123,32 +124,27 @@ async fn logout(
 	let res = with_transaction(&Arc::clone(&global), |mut tx| async move {
 		// is a new session
 		if let AuthSessionKind::Session(session) = &auth_session.kind {
-			let res = tx.delete_one(
-				filter::filter! {
-					UserSession {
-						#[query(rename = "_id")]
-						id: session.id,
-					}
-				},
-				None,
-			)
-			.await?;
-
-			if res.deleted_count > 0 {
-				tx.insert_one(
-					Event {
-						id: EventId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: EventData::UserSession {
-							target_id: session.id,
-							data: EventUserSessionData::Delete,
-						},
-						updated_at: chrono::Utc::now(),
-						search_updated_at: None,
+			let user_session = tx
+				.find_one_and_delete(
+					filter::filter! {
+						UserSession {
+							#[query(rename = "_id")]
+							id: session.id,
+						}
 					},
 					None,
 				)
 				.await?;
+
+			if let Some(user_session) = user_session {
+				tx.register_event(EventPayload {
+					actor_id: Some(auth_session.user_id()),
+					data: EventPayloadData::UserSession {
+						after: user_session,
+						data: EventUserSessionData::Delete,
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
 			}
 		}
 

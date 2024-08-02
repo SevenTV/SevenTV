@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::event::{EventEmoteData, EventEmoteSetData, EventUserEditorData, ImageProcessOutcome};
+use shared::database::event::{EventEmoteData, EventEmoteSetData, EventUserEditorData, ImageProcessorEvent};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::user::UserId;
 use shared::old_types::object_id::GqlObjectId;
@@ -89,7 +89,7 @@ impl AuditLog {
 			} => (AuditLogKind::CreateEmote, target_id.into(), 2, vec![]),
 			shared::database::event::EventData::Emote {
 				target_id,
-				data: EventEmoteData::Process { outcome: ImageProcessOutcome::Success },
+				data: EventEmoteData::Process { event: ImageProcessorEvent::Success(_) },
 			} => (AuditLogKind::ProcessEmote, target_id.into(), 2, vec![]),
 			shared::database::event::EventData::Emote {
 				target_id,

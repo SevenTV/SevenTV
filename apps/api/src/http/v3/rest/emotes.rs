@@ -9,9 +9,10 @@ use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
-use shared::database::event::{Event, EventData, EventEmoteData, EventId};
+use shared::database::event::EventEmoteData;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::role::permissions::{EmotePermission, FlagPermission, PermissionsExt};
+use shared::event::{EventPayload, EventPayloadData};
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
 
 use super::types::{EmoteModel, EmotePartialModel};
@@ -141,20 +142,14 @@ pub async fn create_emote(
 
 		tx.insert_one::<Emote>(&emote, None).await?;
 
-		tx.insert_one(
-			Event {
-				id: EventId::new(),
-				actor_id: Some(user.id),
-				data: EventData::Emote {
-					target_id: emote.id,
-					data: EventEmoteData::Upload,
-				},
-				updated_at: chrono::Utc::now(),
-				search_updated_at: None,
+		tx.register_event(EventPayload {
+			actor_id: Some(user.id),
+			data: EventPayloadData::Emote {
+				after: emote.clone(),
+				data: EventEmoteData::Upload,
 			},
-			None,
-		)
-		.await?;
+			timestamp: chrono::Utc::now(),
+		})?;
 
 		Ok(emote)
 	})

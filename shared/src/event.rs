@@ -7,12 +7,12 @@ use crate::database::{
 	event::{
 		Event, EventBadgeData, EventData, EventEmoteData, EventEmoteModerationRequestData, EventEmoteSetData,
 		EventEntitlementEdgeData, EventId, EventPaintData, EventRoleData, EventTicketData, EventTicketMessageData,
-		EventUserBanData, EventUserData, EventUserEditorData, EventUserSessionData,
+		EventUserBanData, EventUserData, EventUserEditorData, EventUserProfilePictureData, EventUserSessionData,
 	},
 	paint::Paint,
 	role::Role,
 	ticket::{Ticket, TicketMessage},
-	user::{ban::UserBan, editor::UserEditor, session::UserSession, User, UserId},
+	user::{ban::UserBan, editor::UserEditor, profile_picture::UserProfilePicture, session::UserSession, User, UserId},
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -37,6 +37,10 @@ pub enum EventPayloadData {
 	User {
 		after: User,
 		data: EventUserData,
+	},
+	UserProfilePicture {
+		after: UserProfilePicture,
+		data: EventUserProfilePictureData,
 	},
 	UserEditor {
 		after: UserEditor,
@@ -86,6 +90,7 @@ impl EventPayloadData {
 			EventPayloadData::Emote { .. } => "emote",
 			EventPayloadData::EmoteSet { .. } => "emote_set",
 			EventPayloadData::User { .. } => "user",
+			EventPayloadData::UserProfilePicture { .. } => "user_profile_picture",
 			EventPayloadData::UserEditor { .. } => "user_editor",
 			EventPayloadData::UserBan { .. } => "user_ban",
 			EventPayloadData::UserSession { .. } => "user_session",
@@ -112,6 +117,10 @@ impl From<EventPayload> for Event {
 				data,
 			},
 			EventPayloadData::User { after, data } => EventData::User {
+				target_id: after.id,
+				data,
+			},
+			EventPayloadData::UserProfilePicture { after, data } => EventData::UserProfilePicture {
 				target_id: after.id,
 				data,
 			},

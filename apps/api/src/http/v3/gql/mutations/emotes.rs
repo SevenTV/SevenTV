@@ -5,10 +5,11 @@ use chrono::Utc;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags, EmoteMerged};
-use shared::database::event::{Event, EventData, EventEmoteData, EventId};
+use shared::database::event::EventEmoteData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
+use shared::event::{EventPayload, EventPayloadData};
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{EmoteFlagsModel, UserPartialModel};
@@ -99,20 +100,14 @@ impl EmoteOps {
 					.ok_or(ApiError::NOT_FOUND)
 					.map_err(TransactionError::custom)?;
 
-				tx.insert_one(
-					Event {
-						id: EventId::new(),
-						actor_id: Some(user.id),
-						data: EventData::Emote {
-							target_id: emote.id,
-							data: EventEmoteData::Delete,
-						},
-						updated_at: chrono::Utc::now(),
-						search_updated_at: None,
+				tx.register_event(EventPayload {
+					actor_id: Some(user.id),
+					data: EventPayloadData::Emote {
+						after: emote.clone(),
+						data: EventEmoteData::Delete,
 					},
-					None,
-				)
-				.await?;
+					timestamp: chrono::Utc::now(),
+				})?;
 
 				Ok(emote)
 			})
@@ -136,24 +131,6 @@ impl EmoteOps {
 				let mut nested_changes = vec![];
 
 				let new_default_name = if let Some(name) = params.name.or(params.version_name) {
-					tx.insert_one(
-						Event {
-							id: EventId::new(),
-							actor_id: Some(user.id),
-							data: EventData::Emote {
-								target_id: self.id.id(),
-								data: EventEmoteData::ChangeName {
-									old: self.emote.default_name.clone(),
-									new: name.clone(),
-								},
-							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						},
-						None,
-					)
-					.await?;
-
 					let change = ChangeField {
 						key: "name".to_string(),
 						ty: ChangeFieldType::String,
@@ -222,24 +199,6 @@ impl EmoteOps {
 					}
 
 					if let Some(owner_id) = params.owner_id {
-						tx.insert_one(
-							Event {
-								id: EventId::new(),
-								actor_id: Some(user.id),
-								data: EventData::Emote {
-									target_id: self.id.id(),
-									data: EventEmoteData::ChangeOwner {
-										old: self.emote.owner_id,
-										new: owner_id.id(),
-									},
-								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
-							},
-							None,
-						)
-						.await?;
-
 						changes.push(ChangeField {
 							key: "owner_id".to_string(),
 							ty: ChangeFieldType::String,
@@ -257,24 +216,6 @@ impl EmoteOps {
 				};
 
 				let new_flags = if flags != self.emote.flags {
-					tx.insert_one(
-						Event {
-							id: EventId::new(),
-							actor_id: Some(user.id),
-							data: EventData::Emote {
-								target_id: self.id.id(),
-								data: EventEmoteData::ChangeFlags {
-									old: self.emote.flags,
-									new: flags,
-								},
-							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						},
-						None,
-					)
-					.await?;
-
 					changes.push(ChangeField {
 						key: "flags".to_string(),
 						ty: ChangeFieldType::Number,
@@ -289,24 +230,6 @@ impl EmoteOps {
 				};
 
 				if let Some(tags) = &params.tags {
-					tx.insert_one(
-						Event {
-							id: EventId::new(),
-							actor_id: Some(user.id),
-							data: EventData::Emote {
-								target_id: self.id.id(),
-								data: EventEmoteData::ChangeTags {
-									old: self.emote.tags.clone(),
-									new: tags.clone(),
-								},
-							},
-							updated_at: Utc::now(),
-							search_updated_at: None,
-						},
-						None,
-					)
-					.await?;
-
 					changes.push(ChangeField {
 						key: "tags".to_string(),
 						old_value: self.emote.tags.clone().into(),
@@ -327,13 +250,13 @@ impl EmoteOps {
 							#[query(set)]
 							DbEmote {
 								#[query(optional)]
-								default_name: new_default_name,
+								default_name: new_default_name.as_ref(),
 								#[query(optional)]
 								owner_id: new_owner_id,
 								#[query(optional)]
 								flags: new_flags,
 								#[query(optional)]
-								tags: params.tags,
+								tags: params.tags.as_ref(),
 								updated_at: chrono::Utc::now(),
 							}
 						},
@@ -344,6 +267,62 @@ impl EmoteOps {
 					.await?
 					.ok_or(ApiError::NOT_FOUND)
 					.map_err(TransactionError::custom)?;
+
+				if let Some(new_default_name) = new_default_name {
+					tx.register_event(EventPayload {
+						actor_id: Some(user.id),
+						data: EventPayloadData::Emote {
+							after: emote.clone(),
+							data: EventEmoteData::ChangeName {
+								old: self.emote.default_name.clone(),
+								new: new_default_name,
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if let Some(new_owner_id) = new_owner_id {
+					tx.register_event(EventPayload {
+						actor_id: Some(user.id),
+						data: EventPayloadData::Emote {
+							after: emote.clone(),
+							data: EventEmoteData::ChangeOwner {
+								old: self.emote.owner_id,
+								new: new_owner_id,
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if let Some(new_flags) = new_flags {
+					tx.register_event(EventPayload {
+						actor_id: Some(user.id),
+						data: EventPayloadData::Emote {
+							after: emote.clone(),
+							data: EventEmoteData::ChangeFlags {
+								old: self.emote.flags,
+								new: new_flags,
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if let Some(new_tags) = params.tags {
+					tx.register_event(EventPayload {
+						actor_id: Some(user.id),
+						data: EventPayloadData::Emote {
+							after: emote.clone(),
+							data: EventEmoteData::ChangeTags {
+								old: self.emote.tags.clone(),
+								new: new_tags,
+							},
+						},
+						timestamp: Utc::now(),
+					})?;
+				}
 
 				if !nested_changes.is_empty() {
 					let nested_changes = serde_json::to_value(nested_changes)
@@ -439,22 +418,16 @@ impl EmoteOps {
 				.ok_or(ApiError::NOT_FOUND)
 				.map_err(TransactionError::custom)?;
 
-			tx.insert_one(
-				Event {
-					id: EventId::new(),
-					actor_id: Some(auth_session.user_id()),
-					data: EventData::Emote {
-						target_id: self.id.id(),
-						data: EventEmoteData::Merge {
-							new_emote_id: target_id.id(),
-						},
+			tx.register_event(EventPayload {
+				actor_id: Some(auth_session.user_id()),
+				data: EventPayloadData::Emote {
+					after: emote.clone(),
+					data: EventEmoteData::Merge {
+						new_emote_id: target_id.id(),
 					},
-					updated_at: chrono::Utc::now(),
-					search_updated_at: None,
 				},
-				None,
-			)
-			.await?;
+				timestamp: chrono::Utc::now(),
+			})?;
 
 			// TODO: schedule emote merge job
 

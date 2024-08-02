@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use shared::database::event::{Event, EventData, EventId, EventUserSessionData};
+use shared::database::event::EventUserSessionData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::{User, UserId};
+use shared::event::{EventPayload, EventPayloadData};
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::{UserConnectionPartialModel, UserPartialModel};
 
@@ -306,28 +307,24 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 			tx.insert_one::<UserSession>(&user_session, None).await?;
 
-			tx.insert_one(
-				Event {
-					id: EventId::new(),
-					actor_id: Some(full_user.id),
-					data: EventData::UserSession {
-						target_id: user_session.id,
-						data: EventUserSessionData::Create { platform },
-					},
-					updated_at: chrono::Utc::now(),
-					search_updated_at: None,
+			tx.register_event(EventPayload {
+				actor_id: Some(full_user.id),
+				data: EventPayloadData::UserSession {
+					after: user_session.clone(),
+					data: EventUserSessionData::Create { platform },
 				},
-				None,
-			)
-			.await?;
+				timestamp: chrono::Utc::now(),
+			})?;
 
 			// create jwt access token
 			let jwt = AuthJwtPayload::from(user_session.clone());
-			let token = jwt.serialize(global).ok_or_else(|| {
-				tracing::error!("failed to serialize jwt");
-				ApiError::INTERNAL_SERVER_ERROR
-			})
-			.map_err(TransactionError::custom)?;
+			let token = jwt
+				.serialize(global)
+				.ok_or_else(|| {
+					tracing::error!("failed to serialize jwt");
+					ApiError::INTERNAL_SERVER_ERROR
+				})
+				.map_err(TransactionError::custom)?;
 
 			// create cookie
 			let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(user_session.expires_at.timestamp())

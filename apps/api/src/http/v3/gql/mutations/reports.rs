@@ -6,7 +6,7 @@ use chrono::Utc;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::event::{Event, EventData, EventId, EventTicketData};
+use shared::database::event::{EventTicketData, EventTicketMessageData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::TicketPermission;
 use shared::database::ticket::{
@@ -14,6 +14,7 @@ use shared::database::ticket::{
 	TicketTarget,
 };
 use shared::database::user::UserId;
+use shared::event::{EventPayload, EventPayloadData};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -78,20 +79,14 @@ impl ReportsMutation {
 
 			tx.insert_one::<Ticket>(&ticket, None).await?;
 
-			tx.insert_one(
-				Event {
-					id: EventId::new(),
-					actor_id: Some(auth_sesion.user_id()),
-					data: EventData::Ticket {
-						target_id: ticket.id,
-						data: EventTicketData::Create,
-					},
-					updated_at: chrono::Utc::now(),
-					search_updated_at: None,
+			tx.register_event(EventPayload {
+				actor_id: Some(auth_sesion.user_id()),
+				data: EventPayloadData::Ticket {
+					after: ticket.clone(),
+					data: EventTicketData::Create,
 				},
-				None,
-			)
-			.await?;
+				timestamp: chrono::Utc::now(),
+			})?;
 
 			Ok((ticket, message))
 		})
@@ -126,37 +121,17 @@ impl ReportsMutation {
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let transaction_result = with_transaction(global, |mut tx| async move {
-			let priority = data
+			let new_priority = data
 				.priority
 				.map(|p| TicketPriority::try_from(p))
 				.transpose()
 				.map_err(|_| ApiError::new_const(StatusCode::BAD_REQUEST, "invalid ticket priority"))
 				.map_err(TransactionError::custom)?;
 
-			let open = if let Some(status) = data.status {
+			let new_open = if let Some(status) = data.status {
 				let new = status == ReportStatus::Open || status == ReportStatus::Assigned;
 
-				if new != ticket.open {
-					tx.insert_one(
-						Event {
-							id: EventId::new(),
-							actor_id: Some(auth_sesion.user_id()),
-							data: EventData::Ticket {
-								target_id: report_id.id(),
-								data: EventTicketData::ChangeOpen {
-									old: ticket.open,
-									new: new,
-								},
-							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						},
-						None,
-					)
-					.await?;
-				}
-
-				Some(new)
+				(new != ticket.open).then_some(new)
 			} else {
 				None
 			};
@@ -165,13 +140,15 @@ impl ReportsMutation {
 				#[query(set)]
 				Ticket {
 					#[query(optional)]
-					open,
+					open: new_open,
 					#[query(serde, optional)]
-					priority,
+					priority: new_priority.as_ref(),
 					updated_at: chrono::Utc::now(),
 				},
 			}
 			.into();
+
+			let mut event_ticket_data = None;
 
 			if let Some(assignee) = data.assignee {
 				let mut chars = assignee.chars();
@@ -184,20 +161,7 @@ impl ReportsMutation {
 							last_read: None,
 						};
 
-						tx.insert_one(
-							Event {
-								id: EventId::new(),
-								actor_id: Some(auth_sesion.user_id()),
-								data: EventData::Ticket {
-									target_id: report_id.id(),
-									data: EventTicketData::AddMember { member: user_id },
-								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
-							},
-							None,
-						)
-						.await?;
+						event_ticket_data = Some(EventTicketData::AddMember { member: user_id });
 
 						update = update.extend_one(update::update! {
 							#[query(push)]
@@ -208,20 +172,7 @@ impl ReportsMutation {
 						});
 					}
 					(Some('-'), Ok(user_id)) => {
-						tx.insert_one(
-							Event {
-								id: EventId::new(),
-								actor_id: Some(auth_sesion.user_id()),
-								data: EventData::Ticket {
-									target_id: report_id.id(),
-									data: EventTicketData::RemoveMember { member: user_id },
-								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
-							},
-							None,
-						)
-						.await?;
+						event_ticket_data = Some(EventTicketData::RemoveMember { member: user_id });
 
 						update = update.extend_one(update::update! {
 							#[query(pull)]
@@ -232,7 +183,7 @@ impl ReportsMutation {
 							},
 						});
 					}
-					_ => Err(TransactionError::custom(ApiError::BAD_REQUEST))?,
+					_ => return Err(TransactionError::custom(ApiError::BAD_REQUEST)),
 				}
 			}
 
@@ -253,6 +204,45 @@ impl ReportsMutation {
 				.ok_or(ApiError::NOT_FOUND)
 				.map_err(TransactionError::custom)?;
 
+			if let Some(new_priority) = new_priority {
+				tx.register_event(EventPayload {
+					actor_id: Some(auth_sesion.user_id()),
+					data: EventPayloadData::Ticket {
+						after: ticket.clone(),
+						data: EventTicketData::ChangePriority {
+							old: ticket.priority.clone(),
+							new: new_priority,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if let Some(new_open) = new_open {
+				tx.register_event(EventPayload {
+					actor_id: Some(auth_sesion.user_id()),
+					data: EventPayloadData::Ticket {
+						after: ticket.clone(),
+						data: EventTicketData::ChangeOpen {
+							old: ticket.open,
+							new: new_open,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if let Some(event_ticket_data) = event_ticket_data {
+				tx.register_event(EventPayload {
+					actor_id: Some(auth_sesion.user_id()),
+					data: EventPayloadData::Ticket {
+						after: ticket.clone(),
+						data: event_ticket_data,
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
 			if let Some(note) = data.note {
 				let message = TicketMessage {
 					id: TicketMessageId::new(),
@@ -264,7 +254,16 @@ impl ReportsMutation {
 					updated_at: Utc::now(),
 				};
 
-				tx.insert_one(message, None).await?;
+				tx.insert_one::<TicketMessage>(&message, None).await?;
+
+				tx.register_event(EventPayload {
+					actor_id: Some(auth_sesion.user_id()),
+					data: EventPayloadData::TicketMessage {
+						after: message,
+						data: EventTicketMessageData::Create,
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
 			}
 
 			Ok(ticket)

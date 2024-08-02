@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use futures::stream::FuturesUnordered;
 use futures::TryStreamExt;
 use mongodb::error::{TRANSIENT_TRANSACTION_ERROR, UNKNOWN_TRANSACTION_COMMIT_RESULT};
 use mongodb::results::{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult};
@@ -13,7 +14,6 @@ use spin::Mutex;
 
 use crate::global::Global;
 
-/// TOOD(lennart): whatever this is supposed to be.
 type EmittedEvent = EventPayload;
 
 pub struct TransactionSession<'a, E>(Arc<Mutex<SessionInner<'a>>>, PhantomData<E>);
@@ -236,10 +236,6 @@ pub enum TransactionError<E> {
 	Mongo(#[from] mongodb::error::Error),
 	#[error("session locked after returning")]
 	SessionLocked,
-	#[error("filter error: {0}")]
-	Filter(bson::ser::Error),
-	#[error("modifier error: {0}")]
-	Update(bson::ser::Error),
 	#[error("event serialize error: {0}")]
 	EventSerialize(#[from] serde_json::Error),
 	#[error("event publish error: {0}")]
@@ -294,10 +290,18 @@ where
 
 				match session_inner.session.commit_transaction().await {
 					Ok(_) => {
-						for event in session_inner.events.drain(..) {
-							let payload = serde_json::to_vec(&event)?;
-							global.jetstream.publish(event.data.subject(), payload.into()).await?;
-						}
+						let acks: FuturesUnordered<_> = session_inner
+							.events
+							.drain(..)
+							.map(|event| async move {
+								let payload = serde_json::to_vec(&event)?;
+								let ack = global.jetstream.publish(event.data.subject(), payload.into()).await?;
+								ack.await?;
+								Ok::<_, TransactionError<E>>(())
+							})
+							.collect();
+
+						acks.try_collect().await?;
 						return Ok(output);
 					}
 					Err(err) => {

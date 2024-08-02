@@ -2,14 +2,15 @@ use std::sync::Arc;
 
 use hyper::StatusCode;
 use mongodb::options::FindOneAndUpdateOptions;
-use shared::database::event::{Event, EventData, EventEmoteSetData, EventId};
 use shared::database::emote::{EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
+use shared::database::event::EventEmoteSetData;
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
+use shared::event::{EventPayload, EventPayloadData};
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::UserPartialModel;
 
@@ -174,23 +175,17 @@ pub async fn emote_add(
 		}
 	}
 
-	tx.insert_one(
-		Event {
-			id: EventId::new(),
-			actor_id: emote_set_emote.added_by_id.clone(),
-			data: EventData::EmoteSet {
-				target_id: emote_set.id,
-				data: EventEmoteSetData::AddEmote {
-					emote_id: emote_set_emote.id.clone(),
-					alias: emote_set_emote.alias.clone(),
-				},
+	tx.register_event(EventPayload {
+		actor_id: emote_set_emote.added_by_id.clone(),
+		data: EventPayloadData::EmoteSet {
+			after: emote_set.clone(),
+			data: EventEmoteSetData::AddEmote {
+				emote_id: emote_set_emote.id.clone(),
+				alias: emote_set_emote.alias.clone(),
 			},
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
 		},
-		None,
-	)
-	.await?;
+		timestamp: chrono::Utc::now(),
+	})?;
 
 	let active_emote = ActiveEmoteModel::from_db(
 		emote_set_emote,

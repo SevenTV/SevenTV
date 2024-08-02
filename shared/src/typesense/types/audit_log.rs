@@ -115,6 +115,7 @@ fn split_kinds(data: EventData) -> (Id<()>, TargetKind, ActionKind) {
 			match data {
 				EventTicketData::AddMember { .. }
 				| EventTicketData::ChangeOpen { .. }
+				| EventTicketData::ChangePriority { .. }
 				| EventTicketData::RemoveMember { .. } => ActionKind::Modify,
 				EventTicketData::Create { .. } => ActionKind::Create,
 			},
