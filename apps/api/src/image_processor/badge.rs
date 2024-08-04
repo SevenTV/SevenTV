@@ -52,7 +52,7 @@ pub async fn handle_success(
 			},
 		},
 		timestamp: chrono::Utc::now(),
-	});
+	})?;
 
 	Ok(())
 }

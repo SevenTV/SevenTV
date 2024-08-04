@@ -14,7 +14,6 @@ mod global;
 mod http;
 mod image_processor;
 mod jwt;
-mod mongo_updater;
 mod search;
 mod transactions;
 

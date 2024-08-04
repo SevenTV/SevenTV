@@ -203,6 +203,14 @@ impl UserOps {
 		}
 
 		let res = with_transaction(global, |mut tx| async move {
+			// load all editors, we have to do this to know the old permissions Sadge
+			let editors = global
+				.user_editor_by_user_id_loader
+				.load(user.id)
+				.await
+				.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+				.unwrap_or_default();
+
 			if let Some(permissions) = data.permissions {
 				if permissions == UserEditorModelPermission::none() {
 					let editor_id = UserEditorId {
@@ -236,6 +244,11 @@ impl UserOps {
 						})?;
 					}
 				} else {
+					let old_permissions = editors
+						.iter()
+						.find(|e| e.id.editor_id == editor_id.id())
+						.map(|e| e.permissions);
+
 					// Add or update editor
 					let editor_id = UserEditorId {
 						user_id: self.id.id(),
@@ -273,7 +286,7 @@ impl UserOps {
 							data: EventPayloadData::UserEditor {
 								after: editor,
 								data: EventUserEditorData::EditPermissions {
-									old: todo!("query old permissions"),
+									old: old_permissions.unwrap_or_default(),
 									new: permissions,
 								},
 							},
@@ -435,7 +448,8 @@ impl UserOps {
 				}
 				CosmeticKind::Avatar => Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED)),
 			}
-		}).await;
+		})
+		.await;
 
 		match res {
 			Ok(b) => Ok(b),

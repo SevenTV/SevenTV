@@ -91,7 +91,7 @@ macro_rules! impl_bits {
 	};
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Copy, Default)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditorPermissions {
 	#[serde(skip_serializing_if = "EditorEmoteSetPermission::is_empty")]
