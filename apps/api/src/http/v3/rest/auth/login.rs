@@ -1,15 +1,13 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use shared::database::event::EventUserSessionData;
+use shared::database::event::{EventUserData, EventUserSessionData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::{User, UserId};
 use shared::event::{EventPayload, EventPayloadData};
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
-use shared::old_types::{UserConnectionPartialModel, UserPartialModel};
 
 use super::LoginRequest;
 use crate::connections;
@@ -17,7 +15,6 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AUTH_COOKIE;
 use crate::http::middleware::cookies::{new_cookie, Cookies};
-use crate::http::v3::rest::types::UserConnectionModel;
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -142,7 +139,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				tx.insert_one::<User>(user.as_ref().unwrap(), None).await?;
 			}
 			_ => {}
-		};
+		}
 
 		let full_user = if let Some(user) = user {
 			// This is correct for users that just got created aswell, as this will simply
@@ -229,7 +226,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				linked_at: chrono::Utc::now(),
 			};
 
-			if tx
+			let res = tx
 				.update_one(
 					filter::filter! {
 						User {
@@ -250,46 +247,19 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 					},
 					None,
 				)
-				.await?
-				.modified_count > 0
-			{
-				global
-					.event_api
-					.dispatch_event(
-						EventType::UpdateUser,
-						ChangeMap {
-							id: full_user.id.cast(),
-							kind: ObjectKind::User,
-							actor: Some(UserPartialModel::from_db(
-								full_user.clone(),
-								None,
-								None,
-								&global.config.api.cdn_origin,
-							)),
-							pushed: vec![ChangeField {
-								key: "connections".to_string(),
-								ty: ChangeFieldType::Object,
-								index: Some(full_user.connections.len()),
-								value: serde_json::to_value(UserConnectionModel::from(UserConnectionPartialModel::from_db(
-									new_connection,
-									full_user.style.active_emote_set_id,
-									full_user.computed.permissions.emote_set_capacity.unwrap_or_default(),
-								)))
-								.map_err(|e| {
-									tracing::error!(error = %e, "failed to serialize user connection");
-									TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-								})?,
-								..Default::default()
-							}],
-							..Default::default()
+				.await?;
+
+			if res.modified_count > 0 {
+				tx.register_event(EventPayload {
+					actor_id: Some(full_user.id),
+					data: EventPayloadData::User {
+						after: full_user.user.clone(),
+						data: EventUserData::AddConnection {
+							platform: new_connection.platform,
 						},
-						full_user.id,
-					)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to dispatch event");
-						TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-					})?;
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
 			} else {
 				tracing::error!("failed to insert user connection, no modified count");
 				return Err(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR));

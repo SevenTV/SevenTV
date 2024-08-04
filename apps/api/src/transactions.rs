@@ -12,6 +12,7 @@ use shared::database::MongoCollection;
 use shared::event::EventPayload;
 use spin::Mutex;
 
+use crate::event_api::EventApiError;
 use crate::global::Global;
 
 type EmittedEvent = EventPayload;
@@ -240,6 +241,8 @@ pub enum TransactionError<E> {
 	EventSerialize(#[from] serde_json::Error),
 	#[error("event publish error: {0}")]
 	EventPublish(#[from] async_nats::jetstream::context::PublishError),
+	#[error("event api error: {0}")]
+	EventApi(#[from] EventApiError),
 	#[error("custom error")]
 	Custom(E),
 	#[error("too many failures")]
@@ -290,6 +293,8 @@ where
 
 				match session_inner.session.commit_transaction().await {
 					Ok(_) => {
+						global.event_api.dispatch_event(global, session_inner.events.iter().cloned()).await?;
+
 						let acks: FuturesUnordered<_> = session_inner
 							.events
 							.drain(..)

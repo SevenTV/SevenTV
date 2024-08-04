@@ -10,9 +10,8 @@ use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
 use shared::event::{EventPayload, EventPayloadData};
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType};
 use shared::old_types::object_id::GqlObjectId;
-use shared::old_types::{EmoteFlagsModel, UserPartialModel};
+use shared::old_types::EmoteFlagsModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -127,24 +126,7 @@ impl EmoteOps {
 			}
 
 			let res = with_transaction(global, |mut tx| async move {
-				let mut changes = vec![];
-				let mut nested_changes = vec![];
-
-				let new_default_name = if let Some(name) = params.name.or(params.version_name) {
-					let change = ChangeField {
-						key: "name".to_string(),
-						ty: ChangeFieldType::String,
-						old_value: self.emote.default_name.clone().into(),
-						value: name.clone().into(),
-						..Default::default()
-					};
-					changes.push(change.clone());
-					nested_changes.push(change);
-
-					Some(name)
-				} else {
-					None
-				};
+				let new_default_name = params.name.or(params.version_name);
 
 				let mut flags = self.emote.flags;
 
@@ -174,18 +156,6 @@ impl EmoteOps {
 							flags &= !EmoteFlags::PublicListed;
 							flags |= EmoteFlags::Private;
 						}
-
-						if self.emote.flags.contains(EmoteFlags::PublicListed) != listed {
-							let change = ChangeField {
-								key: "listed".to_string(),
-								ty: ChangeFieldType::Bool,
-								old_value: self.emote.flags.contains(EmoteFlags::PublicListed).into(),
-								value: listed.into(),
-								..Default::default()
-							};
-							changes.push(change.clone());
-							nested_changes.push(change);
-						}
 					}
 
 					if let Some(personal_use) = params.personal_use {
@@ -198,45 +168,12 @@ impl EmoteOps {
 						}
 					}
 
-					if let Some(owner_id) = params.owner_id {
-						changes.push(ChangeField {
-							key: "owner_id".to_string(),
-							ty: ChangeFieldType::String,
-							old_value: self.emote.owner_id.to_string().into(),
-							value: owner_id.0.to_string().into(),
-							..Default::default()
-						});
-
-						Some(owner_id.id())
-					} else {
-						None
-					}
+					params.owner_id.map(|id| id.id())
 				} else {
 					None
 				};
 
-				let new_flags = if flags != self.emote.flags {
-					changes.push(ChangeField {
-						key: "flags".to_string(),
-						ty: ChangeFieldType::Number,
-						old_value: self.emote.flags.bits().into(),
-						value: flags.bits().into(),
-						..Default::default()
-					});
-
-					Some(flags)
-				} else {
-					None
-				};
-
-				if let Some(tags) = &params.tags {
-					changes.push(ChangeField {
-						key: "tags".to_string(),
-						old_value: self.emote.tags.clone().into(),
-						value: tags.clone().into(),
-						..Default::default()
-					});
-				}
+				let new_flags = (flags != self.emote.flags).then_some(flags);
 
 				let emote = tx
 					.find_one_and_update(
@@ -322,48 +259,6 @@ impl EmoteOps {
 						},
 						timestamp: Utc::now(),
 					})?;
-				}
-
-				if !nested_changes.is_empty() {
-					let nested_changes = serde_json::to_value(nested_changes)
-						.map_err(|e| {
-							tracing::error!(error = %e, "failed to serialize nested changes");
-							ApiError::INTERNAL_SERVER_ERROR
-						})
-						.map_err(TransactionError::custom)?;
-
-					changes.push(ChangeField {
-						key: "versions".to_string(),
-						nested: true,
-						index: Some(0),
-						value: nested_changes,
-						..Default::default()
-					});
-				}
-
-				if !changes.is_empty() {
-					let body = ChangeMap {
-						id: self.id.id(),
-						kind: shared::event_api::types::ObjectKind::Emote,
-						actor: Some(UserPartialModel::from_db(
-							user.clone(),
-							None,
-							None,
-							&global.config.api.cdn_origin,
-						)),
-						updated: changes,
-						..Default::default()
-					};
-
-					global
-						.event_api
-						.dispatch_event(EventType::UpdateEmote, body, self.id.0)
-						.await
-						.map_err(|e| {
-							tracing::error!(error = %e, "failed to dispatch event");
-							ApiError::INTERNAL_SERVER_ERROR
-						})
-						.map_err(TransactionError::custom)?;
 				}
 
 				Ok(emote)

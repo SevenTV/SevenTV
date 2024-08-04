@@ -10,7 +10,7 @@ use super::role::permissions::Permissions;
 use super::role::RoleId;
 use super::ticket::{TicketId, TicketMessageId, TicketPriority};
 use super::user::ban::UserBanId;
-use super::user::connection::Platform;
+use super::user::connection::{Platform, UserConnection};
 use super::user::editor::{UserEditorId, UserEditorPermissions};
 use super::user::profile_picture::UserProfilePictureId;
 use super::user::session::UserSessionId;
@@ -149,8 +149,8 @@ pub enum EventEmoteSetData {
 	},
 	RenameEmote {
 		emote_id: EmoteId,
-		old_name: String,
-		new_name: String,
+		old_alias: String,
+		new_alias: String,
 	},
 	Delete,
 }
@@ -159,11 +159,11 @@ pub enum EventEmoteSetData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum EventUserData {
 	Create,
-	ChangeActivePaint { paint_id: PaintId },
-	ChangeActiveBadge { badge_id: BadgeId },
-	ChangeActiveEmoteSet { emote_set_id: EmoteSetId },
+	ChangeActivePaint { old: Option<PaintId>, new: Option<PaintId> },
+	ChangeActiveBadge { old: Option<BadgeId>, new: Option<BadgeId> },
+	ChangeActiveEmoteSet { old: Option<EmoteSetId>, new: Option<EmoteSetId> },
 	AddConnection { platform: Platform },
-	RemoveConnection { platform: Platform },
+	RemoveConnection { connection: UserConnection },
 	Merge,
 	Delete,
 }

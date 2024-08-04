@@ -11,12 +11,9 @@ use shared::database::event::EventEmoteSetData;
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
 use shared::event::{EventPayload, EventPayloadData};
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
-use shared::old_types::UserPartialModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::rest::types::{ActiveEmoteModel, EmotePartialModel};
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn emote_add(
@@ -186,48 +183,6 @@ pub async fn emote_add(
 		},
 		timestamp: chrono::Utc::now(),
 	})?;
-
-	let active_emote = ActiveEmoteModel::from_db(
-		emote_set_emote,
-		Some(EmotePartialModel::from_db(emote, None, &global.config.api.cdn_origin)),
-	);
-	let active_emote = serde_json::to_value(active_emote)
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to serialize emote");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
-		.map_err(TransactionError::custom)?;
-
-	global
-		.event_api
-		.dispatch_event(
-			EventType::UpdateEmoteSet,
-			ChangeMap {
-				id: emote_set.id.cast(),
-				kind: ObjectKind::EmoteSet,
-				actor: Some(UserPartialModel::from_db(
-					actor.clone(),
-					None,
-					None,
-					&global.config.api.cdn_origin,
-				)),
-				pushed: vec![ChangeField {
-					key: "emotes".to_string(),
-					index: Some(emote_set.emotes.len()),
-					ty: ChangeFieldType::Object,
-					value: active_emote,
-					..Default::default()
-				}],
-				..Default::default()
-			},
-			emote_set.id,
-		)
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to dispatch event");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
-		.map_err(TransactionError::custom)?;
 
 	Ok(emote_set)
 }

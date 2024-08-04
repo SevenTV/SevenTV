@@ -359,7 +359,7 @@ pub struct ChangeField {
 	pub value: serde_json::Value,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u16)]
 pub enum ObjectKind {
 	#[default]

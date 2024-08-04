@@ -225,8 +225,8 @@ impl Job for AuditLogsJob {
 									target_id: audit_log.target_id.into(),
 									data: event::EventEmoteSetData::RenameEmote {
 										emote_id,
-										old_name: update.old.name.unwrap(),
-										new_name: update.new.name.unwrap(),
+										old_alias: update.old.name.unwrap(),
+										new_alias: update.new.name.unwrap(),
 									},
 								});
 							}

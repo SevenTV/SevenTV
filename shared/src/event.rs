@@ -1,18 +1,22 @@
-use crate::database::{
-	badge::Badge,
-	emote::Emote,
-	emote_moderation_request::EmoteModerationRequest,
-	emote_set::EmoteSet,
-	entitlement::EntitlementEdge,
-	event::{
-		Event, EventBadgeData, EventData, EventEmoteData, EventEmoteModerationRequestData, EventEmoteSetData,
-		EventEntitlementEdgeData, EventId, EventPaintData, EventRoleData, EventTicketData, EventTicketMessageData,
-		EventUserBanData, EventUserData, EventUserEditorData, EventUserProfilePictureData, EventUserSessionData,
+use crate::{
+	database::{
+		badge::Badge,
+		emote::Emote,
+		emote_moderation_request::EmoteModerationRequest,
+		emote_set::EmoteSet,
+		entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind},
+		event::{
+			Event, EventBadgeData, EventData, EventEmoteData, EventEmoteModerationRequestData, EventEmoteSetData,
+			EventEntitlementEdgeData, EventId, EventPaintData, EventRoleData, EventTicketData, EventTicketMessageData,
+			EventUserBanData, EventUserData, EventUserEditorData, EventUserProfilePictureData, EventUserSessionData,
+		},
+		paint::Paint,
+		role::Role,
+		ticket::{Ticket, TicketMessage},
+		user::{ban::UserBan, editor::UserEditor, profile_picture::UserProfilePicture, session::UserSession, User, UserId},
+		Id,
 	},
-	paint::Paint,
-	role::Role,
-	ticket::{Ticket, TicketMessage},
-	user::{ban::UserBan, editor::UserEditor, profile_picture::UserProfilePicture, session::UserSession, User, UserId},
+	event_api,
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -102,6 +106,79 @@ impl EventPayloadData {
 			EventPayloadData::Role { .. } => "role",
 			EventPayloadData::EntitlementEdge { .. } => "entitlement_edge",
 		}
+	}
+
+	pub fn id(&self) -> Option<Id> {
+		let id = match self {
+			EventPayloadData::Emote { after, .. } => after.id.cast(),
+			EventPayloadData::EmoteSet { after, .. } => after.id.cast(),
+			EventPayloadData::User { after, .. } => after.id.cast(),
+			EventPayloadData::UserProfilePicture { after, .. } => after.id.cast(),
+			EventPayloadData::UserEditor { after, .. } => after.id.user_id.cast(),
+			EventPayloadData::UserBan { after, .. } => after.id.cast(),
+			EventPayloadData::UserSession { after, .. } => after.id.cast(),
+			EventPayloadData::Ticket { after, .. } => after.id.cast(),
+			EventPayloadData::TicketMessage { after, .. } => after.id.cast(),
+			EventPayloadData::EmoteModerationRequest { after, .. } => after.id.cast(),
+			EventPayloadData::Paint { after, .. } => after.id.cast(),
+			EventPayloadData::Badge { after, .. } => after.id.cast(),
+			EventPayloadData::Role { after, .. } => after.id.cast(),
+			// only for role assignments
+			EventPayloadData::EntitlementEdge {
+				after:
+					EntitlementEdge {
+						id:
+							EntitlementEdgeId {
+								from: EntitlementEdgeKind::User { user_id },
+								to: EntitlementEdgeKind::Role { .. },
+								..
+							},
+					},
+				..
+			} => user_id.cast(),
+			_ => return None,
+		};
+
+		Some(id)
+	}
+
+	pub fn event_api_kind(&self) -> event_api::types::ObjectKind {
+		match self {
+			EventPayloadData::Emote { .. } => event_api::types::ObjectKind::Emote,
+			EventPayloadData::EmoteSet { .. } => event_api::types::ObjectKind::EmoteSet,
+			EventPayloadData::User { .. } => event_api::types::ObjectKind::User,
+			EventPayloadData::UserProfilePicture { .. } => event_api::types::ObjectKind::User,
+			EventPayloadData::UserEditor { .. } => event_api::types::ObjectKind::User,
+			EventPayloadData::UserBan { .. } => event_api::types::ObjectKind::User,
+			EventPayloadData::UserSession { .. } => event_api::types::ObjectKind::User,
+			EventPayloadData::Ticket { .. } => event_api::types::ObjectKind::Report,
+			EventPayloadData::TicketMessage { .. } => event_api::types::ObjectKind::Report,
+			EventPayloadData::EmoteModerationRequest { .. } => event_api::types::ObjectKind::Message,
+			EventPayloadData::Paint { .. } => event_api::types::ObjectKind::Cosmetic,
+			EventPayloadData::Badge { .. } => event_api::types::ObjectKind::Cosmetic,
+			EventPayloadData::Role { .. } => event_api::types::ObjectKind::Role,
+			EventPayloadData::EntitlementEdge { .. } => event_api::types::ObjectKind::User,
+		}
+	}
+
+	pub fn event_api_event_type(&self) -> Option<event_api::types::EventType> {
+		let ty = match self {
+			EventPayloadData::Emote { .. } => event_api::types::EventType::UpdateEmote,
+			EventPayloadData::EmoteSet {
+				data: EventEmoteSetData::Delete,
+				..
+			} => event_api::types::EventType::DeleteEmoteSet,
+			EventPayloadData::EmoteSet { .. } => event_api::types::EventType::UpdateEmoteSet,
+			EventPayloadData::User { .. } => event_api::types::EventType::UpdateUser,
+			EventPayloadData::UserProfilePicture { .. } => event_api::types::EventType::UpdateUser,
+			EventPayloadData::UserEditor { .. } => event_api::types::EventType::UpdateUser,
+			EventPayloadData::UserBan { .. } => event_api::types::EventType::UpdateUser,
+			EventPayloadData::UserSession { .. } => event_api::types::EventType::UpdateUser,
+			EventPayloadData::EntitlementEdge { .. } => event_api::types::EventType::UpdateUser,
+			_ => return None,
+		};
+
+		Some(ty)
 	}
 }
 

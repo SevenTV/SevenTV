@@ -273,8 +273,8 @@ impl AuditLogChange {
 			}
 			EventEmoteSetData::RenameEmote {
 				emote_id,
-				old_name,
-				new_name,
+				old_alias: old_name,
+				new_alias: new_name,
 			} => Some(Self {
 				format: AuditLogChangeFormat::ArrayValue,
 				key: "emotes".to_string(),

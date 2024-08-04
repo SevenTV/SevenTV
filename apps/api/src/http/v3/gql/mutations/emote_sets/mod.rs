@@ -18,9 +18,7 @@ use shared::database::user::editor::{
 };
 use shared::database::user::FullUserRef;
 use shared::event::{EventPayload, EventPayloadData};
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
 use shared::old_types::object_id::GqlObjectId;
-use shared::old_types::UserPartialModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -324,7 +322,7 @@ impl EmoteSetOps {
 		let res = with_transaction(&global, |tx| async move {
 			match action {
 				ListItemAction::Add => emote_add(global, tx, actor, target, &self.emote_set, id, name).await,
-				ListItemAction::Remove => emote_remove(global, tx, actor, &self.emote_set, id).await,
+				ListItemAction::Remove => emote_remove(tx, actor, &self.emote_set, id).await,
 				ListItemAction::Update => emote_update(global, tx, actor, &self.emote_set, id, name).await,
 			}
 		})
@@ -350,23 +348,8 @@ impl EmoteSetOps {
 			.await?;
 
 		let res = with_transaction(global, |mut tx| async move {
-			let mut changes = vec![];
-
-			let new_name = if let Some(name) = data.name {
-				// TODO validate this name
-
-				changes.push(ChangeField {
-					key: "name".to_string(),
-					ty: ChangeFieldType::String,
-					old_value: self.emote_set.name.clone().into(),
-					value: name.clone().into(),
-					..Default::default()
-				});
-
-				Some(name)
-			} else {
-				None
-			};
+			// TODO validate this name
+			let new_name = data.name;
 
 			let new_capacity = if let Some(capacity) = data.capacity {
 				if capacity > i32::MAX as u32 {
@@ -396,14 +379,6 @@ impl EmoteSetOps {
 						"emote set capacity cannot exceed user's capacity",
 					)));
 				}
-
-				changes.push(ChangeField {
-					key: "capacity".to_string(),
-					ty: ChangeFieldType::Number,
-					old_value: self.emote_set.capacity.into(),
-					value: capacity.into(),
-					..Default::default()
-				});
 
 				Some(capacity as i32)
 			} else {
@@ -471,33 +446,6 @@ impl EmoteSetOps {
 				})?;
 			}
 
-			if !changes.is_empty() {
-				global
-					.event_api
-					.dispatch_event(
-						EventType::UpdateEmoteSet,
-						ChangeMap {
-							id: self.id.0,
-							kind: ObjectKind::EmoteSet,
-							actor: Some(UserPartialModel::from_db(
-								auth_session.user(global).await.map_err(TransactionError::custom)?.clone(),
-								None,
-								None,
-								&global.config.api.cdn_origin,
-							)),
-							updated: changes,
-							..Default::default()
-						},
-						self.emote_set.id,
-					)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to dispatch event");
-						ApiError::INTERNAL_SERVER_ERROR
-					})
-					.map_err(TransactionError::custom)?;
-			}
-
 			Ok(emote_set)
 		})
 		.await;
@@ -550,28 +498,6 @@ impl EmoteSetOps {
 					},
 					timestamp: Utc::now(),
 				})?;
-
-				let body = ChangeMap {
-					id: self.emote_set.id.cast(),
-					kind: ObjectKind::EmoteSet,
-					actor: Some(UserPartialModel::from_db(
-						auth_session.user(global).await.map_err(TransactionError::custom)?.clone(),
-						None,
-						None,
-						&global.config.api.cdn_origin,
-					)),
-					..Default::default()
-				};
-
-				global
-					.event_api
-					.dispatch_event(EventType::DeleteEmoteSet, body, self.emote_set.id)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to dispatch event");
-						ApiError::INTERNAL_SERVER_ERROR
-					})
-					.map_err(TransactionError::custom)?;
 
 				Ok(true)
 			} else {
