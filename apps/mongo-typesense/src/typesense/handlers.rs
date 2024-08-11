@@ -179,7 +179,7 @@ default_impl!(
 );
 default_impl!(user_ban_template_batcher, typesense::UserBanTemplate, mongo::UserBanTemplate);
 default_impl!(user_ban_batcher, typesense::UserBan, mongo::UserBan);
-default_impl!(audit_log_batcher, typesense::Event, mongo::Event);
+default_impl!(audit_log_batcher, typesense::Event, mongo::StoredEvent);
 default_impl!(automod_rule_batcher, typesense::AutomodRule, mongo::AutomodRule);
 default_impl!(badge_batcher, typesense::Badge, mongo::Badge);
 default_impl!(

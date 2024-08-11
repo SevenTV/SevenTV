@@ -1,7 +1,7 @@
 use chrono::Utc;
 
 use super::{impl_typesense_type, TypesenseCollection, TypesenseGenericCollection};
-use crate::database::event::{EventData, EventEmoteData, EventEmoteSetData, EventId, EventTicketData, EventUserData, EventUserSessionData};
+use crate::database::stored_event::{StoredEventData, StoredEventEmoteData, StoredEventEmoteSetData, StoredEventId, StoredEventTicketData, StoredEventUserData, StoredEventUserSessionData};
 use crate::database::user::UserId;
 use crate::database::{self, Id};
 
@@ -9,7 +9,7 @@ use crate::database::{self, Id};
 #[typesense(collection_name = "events")]
 #[serde(deny_unknown_fields)]
 pub struct Event {
-	pub id: EventId,
+	pub id: StoredEventId,
 	pub actor_id: Option<UserId>,
 	pub target_id: Id<()>,
 	pub kind: TargetKind,
@@ -19,8 +19,8 @@ pub struct Event {
 	pub search_updated_at: i64,
 }
 
-impl From<database::event::Event> for Event {
-	fn from(value: database::event::Event) -> Self {
+impl From<database::stored_event::StoredEvent> for Event {
+	fn from(value: database::stored_event::StoredEvent) -> Self {
 		let (target_id, kind, action) = split_kinds(value.data);
 
 		Self {
@@ -61,63 +61,63 @@ pub enum ActionKind {
 
 impl_typesense_type!(ActionKind, Int32);
 
-fn split_kinds(data: EventData) -> (Id<()>, TargetKind, ActionKind) {
+fn split_kinds(data: StoredEventData) -> (Id<()>, TargetKind, ActionKind) {
 	match data {
-		EventData::Emote { target_id, data } => (
+		StoredEventData::Emote { target_id, data } => (
 			target_id.cast(),
 			TargetKind::Emote,
 			match data {
-				EventEmoteData::ChangeFlags { .. }
-				| EventEmoteData::ChangeName { .. }
-				| EventEmoteData::ChangeTags { .. }
-				| EventEmoteData::ChangeOwner { .. } => ActionKind::Modify,
-				EventEmoteData::Delete { .. } => ActionKind::Delete,
-				EventEmoteData::Process { .. } => ActionKind::EmoteProcess,
-				EventEmoteData::Upload { .. } => ActionKind::Create,
-				EventEmoteData::Merge { .. } => ActionKind::Merge,
+				StoredEventEmoteData::ChangeFlags { .. }
+				| StoredEventEmoteData::ChangeName { .. }
+				| StoredEventEmoteData::ChangeTags { .. }
+				| StoredEventEmoteData::ChangeOwner { .. } => ActionKind::Modify,
+				StoredEventEmoteData::Delete { .. } => ActionKind::Delete,
+				StoredEventEmoteData::Process { .. } => ActionKind::EmoteProcess,
+				StoredEventEmoteData::Upload { .. } => ActionKind::Create,
+				StoredEventEmoteData::Merge { .. } => ActionKind::Merge,
 			},
 		),
-		EventData::EmoteSet { target_id, data } => (
+		StoredEventData::EmoteSet { target_id, data } => (
 			target_id.cast(),
 			TargetKind::EmoteSet,
 			match data {
-				EventEmoteSetData::ChangeCapacity { .. }
-				| EventEmoteSetData::ChangeName { .. }
-				| EventEmoteSetData::ChangeTags { .. }
-				| EventEmoteSetData::AddEmote { .. }
-				| EventEmoteSetData::RemoveEmote { .. }
-				| EventEmoteSetData::RenameEmote { .. } => ActionKind::Modify,
-				EventEmoteSetData::Create { .. } => ActionKind::Create,
-				EventEmoteSetData::Delete { .. } => ActionKind::Delete,
+				StoredEventEmoteSetData::ChangeCapacity { .. }
+				| StoredEventEmoteSetData::ChangeName { .. }
+				| StoredEventEmoteSetData::ChangeTags { .. }
+				| StoredEventEmoteSetData::AddEmote { .. }
+				| StoredEventEmoteSetData::RemoveEmote { .. }
+				| StoredEventEmoteSetData::RenameEmote { .. } => ActionKind::Modify,
+				StoredEventEmoteSetData::Create { .. } => ActionKind::Create,
+				StoredEventEmoteSetData::Delete { .. } => ActionKind::Delete,
 			},
 		),
-		EventData::User { target_id, data } => (
+		StoredEventData::User { target_id, data } => (
 			target_id.cast(),
 			TargetKind::User,
 			match data {
-				EventUserData::Create => ActionKind::Create,
-				EventUserData::Merge { .. } => ActionKind::Merge,
-				EventUserData::Delete { .. } => ActionKind::Delete,
+				StoredEventUserData::Create => ActionKind::Create,
+				StoredEventUserData::Merge { .. } => ActionKind::Merge,
+				StoredEventUserData::Delete { .. } => ActionKind::Delete,
 				_ => ActionKind::Modify,
 			},
 		),
-		EventData::UserSession { target_id, data } => (
+		StoredEventData::UserSession { target_id, data } => (
 			target_id.cast(),
 			TargetKind::UserSession,
 			match data {
-				EventUserSessionData::Create { .. } => ActionKind::Create,
-				EventUserSessionData::Delete { .. } => ActionKind::Delete,
+				StoredEventUserSessionData::Create { .. } => ActionKind::Create,
+				StoredEventUserSessionData::Delete { .. } => ActionKind::Delete,
 			},
 		),
-		EventData::Ticket { target_id, data } => (
+		StoredEventData::Ticket { target_id, data } => (
 			target_id.cast(),
 			TargetKind::Ticket,
 			match data {
-				EventTicketData::AddMember { .. }
-				| EventTicketData::ChangeOpen { .. }
-				| EventTicketData::ChangePriority { .. }
-				| EventTicketData::RemoveMember { .. } => ActionKind::Modify,
-				EventTicketData::Create { .. } => ActionKind::Create,
+				StoredEventTicketData::AddMember { .. }
+				| StoredEventTicketData::ChangeOpen { .. }
+				| StoredEventTicketData::ChangePriority { .. }
+				| StoredEventTicketData::RemoveMember { .. } => ActionKind::Modify,
+				StoredEventTicketData::Create { .. } => ActionKind::Create,
 			},
 		),
 		_ => todo!(),

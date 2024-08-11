@@ -2,20 +2,16 @@ use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use futures::stream::FuturesUnordered;
 use futures::TryStreamExt;
 use mongodb::error::{TRANSIENT_TRANSACTION_ERROR, UNKNOWN_TRANSACTION_COMMIT_RESULT};
 use mongodb::results::{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult};
-use shared::database::event::Event;
 use shared::database::queries::{filter, update};
+use shared::database::stored_event::StoredEvent;
 use shared::database::MongoCollection;
-use shared::event::EventPayload;
+use shared::event::{InternalEvent, InternalEventPayload};
 use spin::Mutex;
 
-use crate::event_api::EventApiError;
 use crate::global::Global;
-
-type EmittedEvent = EventPayload;
 
 pub struct TransactionSession<'a, E>(Arc<Mutex<SessionInner<'a>>>, PhantomData<E>);
 
@@ -218,7 +214,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	pub fn register_event(&mut self, event: EmittedEvent) -> Result<(), TransactionError<E>> {
+	pub fn register_event(&mut self, event: InternalEvent) -> Result<(), TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		this.events.push(event);
 		Ok(())
@@ -228,7 +224,7 @@ impl<E> TransactionSession<'_, E> {
 struct SessionInner<'a> {
 	global: &'a Arc<Global>,
 	session: mongodb::ClientSession,
-	events: Vec<EmittedEvent>,
+	events: Vec<InternalEvent>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -238,11 +234,9 @@ pub enum TransactionError<E> {
 	#[error("session locked after returning")]
 	SessionLocked,
 	#[error("event serialize error: {0}")]
-	EventSerialize(#[from] serde_json::Error),
+	EventSerialize(#[from] bincode::Error),
 	#[error("event publish error: {0}")]
-	EventPublish(#[from] async_nats::jetstream::context::PublishError),
-	#[error("event api error: {0}")]
-	EventApi(#[from] EventApiError),
+	EventPublish(#[from] async_nats::PublishError),
 	#[error("custom error")]
 	Custom(E),
 	#[error("too many failures")]
@@ -285,28 +279,18 @@ where
 		match result {
 			Ok(output) => 'retry_commit: loop {
 				for event in session_inner.events.clone() {
-					Event::collection(&global.db)
-						.insert_one(Event::from(event))
+					StoredEvent::collection(&global.db)
+						.insert_one(StoredEvent::from(event))
 						.session(&mut session_inner.session)
 						.await?;
 				}
 
 				match session_inner.session.commit_transaction().await {
 					Ok(_) => {
-						global.event_api.dispatch_event(global, session_inner.events.iter().cloned()).await?;
+						let payload = InternalEventPayload::new(session_inner.events.drain(..));
+						let payload = bincode::serialize(&payload)?;
+						global.nats.publish("api.events.v4", payload.into()).await?;
 
-						let acks: FuturesUnordered<_> = session_inner
-							.events
-							.drain(..)
-							.map(|event| async move {
-								let payload = serde_json::to_vec(&event)?;
-								let ack = global.jetstream.publish(event.data.subject(), payload.into()).await?;
-								ack.await?;
-								Ok::<_, TransactionError<E>>(())
-							})
-							.collect();
-
-						acks.try_collect().await?;
 						return Ok(output);
 					}
 					Err(err) => {

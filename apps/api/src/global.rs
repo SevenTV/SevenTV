@@ -6,7 +6,7 @@ use anyhow::Context as _;
 use bson::doc;
 use scuffle_foundations::batcher::dataloader::DataLoader;
 use scuffle_foundations::telemetry::server::HealthCheck;
-use shared::database::event::Event;
+use shared::database::stored_event::StoredEvent;
 use shared::database::badge::Badge;
 use shared::database::emote::Emote;
 use shared::database::emote_set::EmoteSet;
@@ -31,7 +31,6 @@ use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
 use crate::dataloader::user::UserByPlatformIdLoader;
 use crate::dataloader::user_bans::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
-use crate::event_api::EventApi;
 
 pub struct Global {
 	pub nats: async_nats::Client,
@@ -41,9 +40,8 @@ pub struct Global {
 	pub db: mongodb::Database,
 	pub clickhouse: clickhouse::Client,
 	pub http_client: reqwest::Client,
-	pub event_api: EventApi,
 	pub image_processor: ImageProcessor,
-	pub audit_log_by_id_loader: DataLoader<LoaderById<Event>>,
+	pub audit_log_by_id_loader: DataLoader<LoaderById<StoredEvent>>,
 	pub product_by_id_loader: DataLoader<LoaderById<Product>>,
 	pub role_by_id_loader: DataLoader<LoaderById<Role>>,
 	pub paint_by_id_loader: DataLoader<LoaderById<Paint>>,
@@ -82,8 +80,6 @@ impl Global {
 
 		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
 
-		let event_api = EventApi::new(nats.clone(), &config.api.nats_event_subject);
-
 		let image_processor = ImageProcessor::new(&config.api.image_processor)
 			.await
 			.context("image processor setup")?;
@@ -101,7 +97,6 @@ impl Global {
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			jetstream,
-			event_api,
 			image_processor,
 			audit_log_by_id_loader: LoaderById::new(db.clone()),
 			product_by_id_loader: LoaderById::new(db.clone()),

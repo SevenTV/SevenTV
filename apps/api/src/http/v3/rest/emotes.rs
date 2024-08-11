@@ -9,17 +9,18 @@ use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
-use shared::database::event::EventEmoteData;
+use shared::database::stored_event::StoredEventEmoteData;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::role::permissions::{EmotePermission, FlagPermission, PermissionsExt};
-use shared::event::{EventPayload, EventPayloadData};
-use shared::old_types::{EmoteFlagsModel, UserPartialModel};
+use shared::event::{InternalEvent, InternalEventData};
+use shared::old_types::{EmoteFlagsModel, EmotePartialModel, UserPartialModel};
 
-use super::types::{EmoteModel, EmotePartialModel};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::transactions::{with_transaction, TransactionError};
+
+use super::types::EmoteModel;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
@@ -142,11 +143,11 @@ pub async fn create_emote(
 
 		tx.insert_one::<Emote>(&emote, None).await?;
 
-		tx.register_event(EventPayload {
-			actor_id: Some(user.id),
-			data: EventPayloadData::Emote {
+		tx.register_event(InternalEvent {
+			actor: Some(user.clone()),
+			data: InternalEventData::Emote {
 				after: emote.clone(),
-				data: EventEmoteData::Upload,
+				data: StoredEventEmoteData::Upload,
 			},
 			timestamp: chrono::Utc::now(),
 		})?;

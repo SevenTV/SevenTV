@@ -63,4 +63,7 @@ pub struct Api {
 	/// Nats Event Subject
 	#[settings(default = "api.events".to_string())]
 	pub nats_event_subject: String,
+	/// Cdn Origin
+	#[settings(default = "https://cdn.7tv.app".to_string())]
+	pub cdn_origin: String,
 }

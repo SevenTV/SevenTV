@@ -3,9 +3,9 @@ use std::sync::Arc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
-use shared::database::event::{EventEmoteData, ImageProcessorEvent};
+use shared::database::stored_event::{StoredEventEmoteData, ImageProcessorEvent};
 use shared::database::queries::{filter, update};
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData};
 
 use super::event_to_image_set;
 use crate::global::Global;
@@ -55,11 +55,11 @@ pub async fn handle_success(
 		.await?
 		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
 
-	tx.register_event(EventPayload {
-		actor_id: None,
-		data: EventPayloadData::Emote {
+	tx.register_event(InternalEvent {
+		actor: None,
+		data: InternalEventData::Emote {
 			after,
-			data: EventEmoteData::Process {
+			data: StoredEventEmoteData::Process {
 				event: ImageProcessorEvent::Success(event.clone()),
 			},
 		},
@@ -90,11 +90,11 @@ pub async fn handle_fail(
 	.await?
 	.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
 
-	tx.register_event(EventPayload {
-		actor_id: None,
-		data: EventPayloadData::Emote {
+	tx.register_event(InternalEvent {
+		actor: None,
+		data: InternalEventData::Emote {
 			after,
-			data: EventEmoteData::Process {
+			data: StoredEventEmoteData::Process {
 				event: ImageProcessorEvent::Fail(event.clone()),
 			},
 		},
@@ -117,11 +117,11 @@ pub async fn handle_start(
 		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query emote")))?
 		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
 
-	tx.register_event(EventPayload {
-		actor_id: None,
-		data: EventPayloadData::Emote {
+	tx.register_event(InternalEvent {
+		actor: None,
+		data: InternalEventData::Emote {
 			after,
-			data: EventEmoteData::Process {
+			data: StoredEventEmoteData::Process {
 				event: ImageProcessorEvent::Start(event.clone()),
 			},
 		},
@@ -144,11 +144,11 @@ pub async fn handle_cancel(
 		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query emote")))?
 		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
 
-	tx.register_event(EventPayload {
-		actor_id: None,
-		data: EventPayloadData::Emote {
+	tx.register_event(InternalEvent {
+		actor: None,
+		data: InternalEventData::Emote {
 			after,
-			data: EventEmoteData::Process {
+			data: StoredEventEmoteData::Process {
 				event: ImageProcessorEvent::Cancel(event.clone()),
 			},
 		},

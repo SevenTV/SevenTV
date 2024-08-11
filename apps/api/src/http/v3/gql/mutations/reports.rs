@@ -6,7 +6,7 @@ use chrono::Utc;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::event::{EventTicketData, EventTicketMessageData};
+use shared::database::stored_event::StoredEventTicketMessageData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::TicketPermission;
 use shared::database::ticket::{
@@ -14,7 +14,7 @@ use shared::database::ticket::{
 	TicketTarget,
 };
 use shared::database::user::UserId;
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData, InternalEventTicketData};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -37,7 +37,7 @@ impl ReportsMutation {
 
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let ticket_id = TicketId::new();
@@ -45,7 +45,7 @@ impl ReportsMutation {
 			let message = TicketMessage {
 				id: TicketMessageId::new(),
 				ticket_id,
-				user_id: auth_sesion.user_id(),
+				user_id: auth_session.user_id(),
 				content: data.body,
 				files: vec![],
 				search_updated_at: None,
@@ -55,7 +55,7 @@ impl ReportsMutation {
 			tx.insert_one::<TicketMessage>(&message, None).await?;
 
 			let member = TicketMember {
-				user_id: auth_sesion.user_id(),
+				user_id: auth_session.user_id(),
 				kind: TicketMemberKind::Member,
 				notifications: true,
 				last_read: Some(message.id),
@@ -70,7 +70,7 @@ impl ReportsMutation {
 				country_code: None, // TODO
 				kind: TicketKind::Abuse,
 				targets: vec![TicketTarget::Emote(data.target_id.id())],
-				author_id: auth_sesion.user_id(),
+				author_id: auth_session.user_id(),
 				open: true,
 				locked: false,
 				updated_at: chrono::Utc::now(),
@@ -79,11 +79,11 @@ impl ReportsMutation {
 
 			tx.insert_one::<Ticket>(&ticket, None).await?;
 
-			tx.register_event(EventPayload {
-				actor_id: Some(auth_sesion.user_id()),
-				data: EventPayloadData::Ticket {
+			tx.register_event(InternalEvent {
+				actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+				data: InternalEventData::Ticket {
 					after: ticket.clone(),
-					data: EventTicketData::Create,
+					data: InternalEventTicketData::Create,
 				},
 				timestamp: chrono::Utc::now(),
 			})?;
@@ -111,7 +111,7 @@ impl ReportsMutation {
 	) -> Result<Report, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let ticket = global
 			.ticket_by_id_loader
@@ -161,7 +161,14 @@ impl ReportsMutation {
 							last_read: None,
 						};
 
-						event_ticket_data = Some(EventTicketData::AddMember { member: user_id });
+						let member_user = global
+							.user_loader
+							.load_fast(&global, user_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+
+						event_ticket_data = Some(InternalEventTicketData::AddMember { member: member_user.user });
 
 						update = update.extend_one(update::update! {
 							#[query(push)]
@@ -172,7 +179,14 @@ impl ReportsMutation {
 						});
 					}
 					(Some('-'), Ok(user_id)) => {
-						event_ticket_data = Some(EventTicketData::RemoveMember { member: user_id });
+						let member_user = global
+							.user_loader
+							.load_fast(&global, user_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+
+						event_ticket_data = Some(InternalEventTicketData::RemoveMember { member: member_user.user });
 
 						update = update.extend_one(update::update! {
 							#[query(pull)]
@@ -205,11 +219,11 @@ impl ReportsMutation {
 				.map_err(TransactionError::custom)?;
 
 			if let Some(new_priority) = new_priority {
-				tx.register_event(EventPayload {
-					actor_id: Some(auth_sesion.user_id()),
-					data: EventPayloadData::Ticket {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::Ticket {
 						after: ticket.clone(),
-						data: EventTicketData::ChangePriority {
+						data: InternalEventTicketData::ChangePriority {
 							old: ticket.priority.clone(),
 							new: new_priority,
 						},
@@ -219,11 +233,11 @@ impl ReportsMutation {
 			}
 
 			if let Some(new_open) = new_open {
-				tx.register_event(EventPayload {
-					actor_id: Some(auth_sesion.user_id()),
-					data: EventPayloadData::Ticket {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::Ticket {
 						after: ticket.clone(),
-						data: EventTicketData::ChangeOpen {
+						data: InternalEventTicketData::ChangeOpen {
 							old: ticket.open,
 							new: new_open,
 						},
@@ -233,9 +247,9 @@ impl ReportsMutation {
 			}
 
 			if let Some(event_ticket_data) = event_ticket_data {
-				tx.register_event(EventPayload {
-					actor_id: Some(auth_sesion.user_id()),
-					data: EventPayloadData::Ticket {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::Ticket {
 						after: ticket.clone(),
 						data: event_ticket_data,
 					},
@@ -247,7 +261,7 @@ impl ReportsMutation {
 				let message = TicketMessage {
 					id: TicketMessageId::new(),
 					ticket_id: ticket.id,
-					user_id: auth_sesion.user_id(),
+					user_id: auth_session.user_id(),
 					content: note.content.unwrap_or_default(),
 					files: vec![],
 					search_updated_at: None,
@@ -256,11 +270,11 @@ impl ReportsMutation {
 
 				tx.insert_one::<TicketMessage>(&message, None).await?;
 
-				tx.register_event(EventPayload {
-					actor_id: Some(auth_sesion.user_id()),
-					data: EventPayloadData::TicketMessage {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::TicketMessage {
 						after: message,
-						data: EventTicketMessageData::Create,
+						data: StoredEventTicketMessageData::Create,
 					},
 					timestamp: chrono::Utc::now(),
 				})?;

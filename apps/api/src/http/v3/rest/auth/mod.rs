@@ -8,11 +8,11 @@ use axum::routing::{get, post};
 use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::database::event::EventUserSessionData;
+use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::queries::filter;
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
@@ -137,11 +137,11 @@ async fn logout(
 				.await?;
 
 			if let Some(user_session) = user_session {
-				tx.register_event(EventPayload {
-					actor_id: Some(auth_session.user_id()),
-					data: EventPayloadData::UserSession {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(&global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::UserSession {
 						after: user_session,
-						data: EventUserSessionData::Delete,
+						data: StoredEventUserSessionData::Delete,
 					},
 					timestamp: chrono::Utc::now(),
 				})?;

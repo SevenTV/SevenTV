@@ -7,10 +7,9 @@ use axum::{Extension, Json, Router};
 use hyper::StatusCode;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::role::permissions::{FlagPermission, PermissionsExt};
-use shared::old_types::UserPartialModel;
+use shared::old_types::{EmoteSetModel, UserPartialModel};
 use utoipa::OpenApi;
 
-use super::types::EmoteSetModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;

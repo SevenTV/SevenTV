@@ -1,5 +1,5 @@
 pub mod mongo {
-	pub use shared::database::event::*;
+	pub use shared::database::stored_event::*;
 	pub use shared::database::automod::*;
 	pub use shared::database::badge::*;
 	pub use shared::database::emote::*;

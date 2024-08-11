@@ -3,16 +3,17 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
-use shared::database::event::{EventEntitlementEdgeData, EventUserData, EventUserEditorData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
+use shared::database::stored_event::StoredEventEntitlementEdgeData;
 use shared::database::user::connection::UserConnection as DbUserConnection;
 use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId, UserEditorState};
 use shared::database::user::{User, UserStyle};
 use shared::database::MongoCollection;
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData, InternalEventUserData, InternalEventUserEditorData};
 use shared::old_types::cosmetic::CosmeticKind;
 use shared::old_types::object_id::GqlObjectId;
+use shared::old_types::UserEditorModelPermission;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -20,7 +21,6 @@ use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::http::v3::types::UserEditorModelPermission;
 use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
@@ -126,24 +126,34 @@ impl UserOps {
 					.find(|c| c.platform_id == id)
 					.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-				tx.register_event(EventPayload {
-					actor_id: Some(authed_user.id),
-					data: EventPayloadData::User {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					data: InternalEventData::User {
 						after: user.clone(),
-						data: EventUserData::RemoveConnection { connection },
+						data: InternalEventUserData::RemoveConnection { connection },
 					},
 					timestamp: chrono::Utc::now(),
 				})?;
 			}
 
 			if let Some(emote_set) = emote_set {
-				tx.register_event(EventPayload {
-					actor_id: Some(authed_user.id),
-					data: EventPayloadData::User {
+				let old = if let Some(set_id) = old_user.user.style.active_emote_set_id {
+					global
+						.emote_set_by_id_loader
+						.load(set_id)
+						.await
+						.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+				} else {
+					None
+				};
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					data: InternalEventData::User {
 						after: user.clone(),
-						data: EventUserData::ChangeActiveEmoteSet {
-							old: old_user.user.style.active_emote_set_id,
-							new: Some(emote_set.id),
+						data: InternalEventUserData::ChangeActiveEmoteSet {
+							old,
+							new: Some(emote_set),
 						},
 					},
 					timestamp: chrono::Utc::now(),
@@ -232,12 +242,19 @@ impl UserOps {
 						.await?;
 
 					if let Some(editor) = res {
-						tx.register_event(EventPayload {
-							actor_id: Some(auth_session.user_id()),
-							data: EventPayloadData::UserEditor {
+						let editor_user = global
+							.user_loader
+							.load_fast(&global, editor.id.editor_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
+						tx.register_event(InternalEvent {
+							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							data: InternalEventData::UserEditor {
 								after: editor,
-								data: EventUserEditorData::RemoveEditor {
-									editor_id: editor_id.editor_id,
+								data: InternalEventUserEditorData::RemoveEditor {
+									editor: editor_user.user,
 								},
 							},
 							timestamp: chrono::Utc::now(),
@@ -281,13 +298,20 @@ impl UserOps {
 
 					if let Some(editor) = editor {
 						// updated
-						tx.register_event(EventPayload {
-							actor_id: Some(auth_session.user_id()),
-							data: EventPayloadData::UserEditor {
+						let editor_user = global
+							.user_loader
+							.load_fast(&global, editor.id.editor_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
+						tx.register_event(InternalEvent {
+							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							data: InternalEventData::UserEditor {
 								after: editor,
-								data: EventUserEditorData::EditPermissions {
+								data: InternalEventUserEditorData::EditPermissions {
 									old: old_permissions.unwrap_or_default(),
-									new: permissions,
+									editor: editor_user.user,
 								},
 							},
 							timestamp: chrono::Utc::now(),
@@ -309,14 +333,21 @@ impl UserOps {
 							search_updated_at: None,
 						};
 
+						let editor_user = global
+							.user_loader
+							.load_fast(&global, editor.id.editor_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
 						tx.insert_one::<DbUserEditor>(&editor, None).await?;
 
-						tx.register_event(EventPayload {
-							actor_id: Some(auth_session.user_id()),
-							data: EventPayloadData::UserEditor {
+						tx.register_event(InternalEvent {
+							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							data: InternalEventData::UserEditor {
 								after: editor,
-								data: EventUserEditorData::AddEditor {
-									editor_id: editor_id.editor_id,
+								data: InternalEventUserEditorData::AddEditor {
+									editor: editor_user.user,
 								},
 							},
 							timestamp: chrono::Utc::now(),
@@ -412,14 +443,31 @@ impl UserOps {
 						return Err(TransactionError::custom(ApiError::FORBIDDEN));
 					}
 
-					tx.register_event(EventPayload {
-						actor_id: Some(authed_user.id),
-						data: EventPayloadData::User {
+					let new = global
+						.badge_by_id_loader
+						.load(update.id.id())
+						.await
+						.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+						.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+
+					let old = if let Some(badge_id) = user.style.active_badge_id {
+						Some(
+							global
+								.badge_by_id_loader
+								.load(badge_id)
+								.await
+								.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+								.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?,
+						)
+					} else {
+						None
+					};
+
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						data: InternalEventData::User {
 							after: user.user.clone(),
-							data: EventUserData::ChangeActiveBadge {
-								old: user.style.active_badge_id,
-								new: Some(update.id.id()),
-							},
+							data: InternalEventUserData::ChangeActiveBadge { old, new: Some(new) },
 						},
 						timestamp: chrono::Utc::now(),
 					})?;
@@ -501,11 +549,11 @@ impl UserOps {
 
 					tx.insert_one::<EntitlementEdge>(&edge, None).await?;
 
-					tx.register_event(EventPayload {
-						actor_id: Some(auth_session.user_id()),
-						data: EventPayloadData::EntitlementEdge {
+					tx.register_event(InternalEvent {
+						actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+						data: InternalEventData::EntitlementEdge {
 							after: edge,
-							data: EventEntitlementEdgeData::Create,
+							data: StoredEventEntitlementEdgeData::Create,
 						},
 						timestamp: chrono::Utc::now(),
 					})?;
@@ -536,11 +584,11 @@ impl UserOps {
 						)
 						.await?
 					{
-						tx.register_event(EventPayload {
-							actor_id: Some(auth_session.user_id()),
-							data: EventPayloadData::EntitlementEdge {
+						tx.register_event(InternalEvent {
+							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							data: InternalEventData::EntitlementEdge {
 								after: edge,
-								data: EventEntitlementEdgeData::Delete,
+								data: StoredEventEntitlementEdgeData::Delete,
 							},
 							timestamp: chrono::Utc::now(),
 						})?;

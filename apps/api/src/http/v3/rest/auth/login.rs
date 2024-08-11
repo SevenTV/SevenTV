@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use shared::database::event::{EventUserData, EventUserSessionData};
+use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::{User, UserId};
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData, InternalEventUserData};
 
 use super::LoginRequest;
 use crate::connections;
@@ -250,12 +250,12 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				.await?;
 
 			if res.modified_count > 0 {
-				tx.register_event(EventPayload {
-					actor_id: Some(full_user.id),
-					data: EventPayloadData::User {
+				tx.register_event(InternalEvent {
+					actor: Some(full_user.clone()),
+					data: InternalEventData::User {
 						after: full_user.user.clone(),
-						data: EventUserData::AddConnection {
-							platform: new_connection.platform,
+						data: InternalEventUserData::AddConnection {
+							connection: new_connection,
 						},
 					},
 					timestamp: chrono::Utc::now(),
@@ -277,11 +277,11 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 			tx.insert_one::<UserSession>(&user_session, None).await?;
 
-			tx.register_event(EventPayload {
-				actor_id: Some(full_user.id),
-				data: EventPayloadData::UserSession {
+			tx.register_event(InternalEvent {
+				actor: Some(full_user.clone()),
+				data: InternalEventData::UserSession {
 					after: user_session.clone(),
-					data: EventUserSessionData::Create { platform },
+					data: StoredEventUserSessionData::Create { platform },
 				},
 				timestamp: chrono::Utc::now(),
 			})?;

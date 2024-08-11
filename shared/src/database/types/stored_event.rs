@@ -10,7 +10,7 @@ use super::role::permissions::Permissions;
 use super::role::RoleId;
 use super::ticket::{TicketId, TicketMessageId, TicketPriority};
 use super::user::ban::UserBanId;
-use super::user::connection::{Platform, UserConnection};
+use super::user::connection::Platform;
 use super::user::editor::{UserEditorId, UserEditorPermissions};
 use super::user::profile_picture::UserProfilePictureId;
 use super::user::session::UserSessionId;
@@ -18,19 +18,19 @@ use super::user::UserId;
 use super::{MongoCollection, MongoGenericCollection};
 use crate::database::Id;
 
-pub type EventId = Id<Event>;
+pub type StoredEventId = Id<StoredEvent>;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "events")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
-pub struct Event {
+pub struct StoredEvent {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
-	pub id: EventId,
+	pub id: StoredEventId,
 	pub actor_id: Option<UserId>,
-	pub data: EventData,
+	pub data: StoredEventData,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
@@ -38,67 +38,67 @@ pub struct Event {
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
-	[MongoGenericCollection::new::<Event>()]
+	[MongoGenericCollection::new::<StoredEvent>()]
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventData {
+pub enum StoredEventData {
 	Emote {
 		target_id: EmoteId,
-		data: EventEmoteData,
+		data: StoredEventEmoteData,
 	},
 	EmoteSet {
 		target_id: EmoteSetId,
-		data: EventEmoteSetData,
+		data: StoredEventEmoteSetData,
 	},
 	User {
 		target_id: UserId,
-		data: EventUserData,
+		data: StoredEventUserData,
 	},
 	UserProfilePicture {
 		target_id: UserProfilePictureId,
-		data: EventUserProfilePictureData,
+		data: StoredEventUserProfilePictureData,
 	},
 	UserEditor {
 		target_id: UserEditorId,
-		data: EventUserEditorData,
+		data: StoredEventUserEditorData,
 	},
 	UserBan {
 		target_id: UserBanId,
-		data: EventUserBanData,
+		data: StoredEventUserBanData,
 	},
 	UserSession {
 		target_id: UserSessionId,
-		data: EventUserSessionData,
+		data: StoredEventUserSessionData,
 	},
 	Ticket {
 		target_id: TicketId,
-		data: EventTicketData,
+		data: StoredEventTicketData,
 	},
 	TicketMessage {
 		target_id: TicketMessageId,
-		data: EventTicketMessageData,
+		data: StoredEventTicketMessageData,
 	},
 	EmoteModerationRequest {
 		target_id: EmoteModerationRequestId,
-		data: EventEmoteModerationRequestData,
+		data: StoredEventEmoteModerationRequestData,
 	},
 	Paint {
 		target_id: PaintId,
-		data: EventPaintData,
+		data: StoredEventPaintData,
 	},
 	Badge {
 		target_id: BadgeId,
-		data: EventBadgeData,
+		data: StoredEventBadgeData,
 	},
 	Role {
 		target_id: RoleId,
-		data: EventRoleData,
+		data: StoredEventRoleData,
 	},
 	EntitlementEdge {
 		target_id: EntitlementEdgeId,
-		data: EventEntitlementEdgeData,
+		data: StoredEventEntitlementEdgeData,
 	},
 }
 
@@ -113,7 +113,7 @@ pub enum ImageProcessorEvent {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventEmoteData {
+pub enum StoredEventEmoteData {
 	Upload,
 	Process { event: ImageProcessorEvent },
 	ChangeName { old: String, new: String },
@@ -126,7 +126,7 @@ pub enum EventEmoteData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventEmoteSetData {
+pub enum StoredEventEmoteSetData {
 	Create,
 	ChangeName {
 		old: String,
@@ -157,27 +157,27 @@ pub enum EventEmoteSetData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventUserData {
+pub enum StoredEventUserData {
 	Create,
 	ChangeActivePaint { old: Option<PaintId>, new: Option<PaintId> },
 	ChangeActiveBadge { old: Option<BadgeId>, new: Option<BadgeId> },
 	ChangeActiveEmoteSet { old: Option<EmoteSetId>, new: Option<EmoteSetId> },
 	AddConnection { platform: Platform },
-	RemoveConnection { connection: UserConnection },
+	RemoveConnection { platform: Platform },
 	Merge,
 	Delete,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventUserProfilePictureData {
+pub enum StoredEventUserProfilePictureData {
 	Create,
 	Process { event: ImageProcessorEvent },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventUserEditorData {
+pub enum StoredEventUserEditorData {
 	AddEditor {
 		editor_id: UserId,
 	},
@@ -192,7 +192,7 @@ pub enum EventUserEditorData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventUserBanData {
+pub enum StoredEventUserBanData {
 	Ban,
 	ChangeReason {
 		old: String,
@@ -211,14 +211,14 @@ pub enum EventUserBanData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventUserSessionData {
+pub enum StoredEventUserSessionData {
 	Create { platform: Platform },
 	Delete,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventTicketData {
+pub enum StoredEventTicketData {
 	Create,
 	AddMember { member: UserId },
 	RemoveMember { member: UserId },
@@ -228,19 +228,19 @@ pub enum EventTicketData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventTicketMessageData {
+pub enum StoredEventTicketMessageData {
 	Create,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventEmoteModerationRequestData {
+pub enum StoredEventEmoteModerationRequestData {
 	Create,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventPaintData {
+pub enum StoredEventPaintData {
 	Create,
 	Process { event: ImageProcessorEvent },
 	ChangeName { old: String, new: String },
@@ -249,14 +249,14 @@ pub enum EventPaintData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventBadgeData {
+pub enum StoredEventBadgeData {
 	Create,
 	Process { event: ImageProcessorEvent },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventRoleData {
+pub enum StoredEventRoleData {
 	Create,
 	ChangeName { old: String, new: String },
 	ChangeColor { old: i32, new: i32 },
@@ -267,7 +267,7 @@ pub enum EventRoleData {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
-pub enum EventEntitlementEdgeData {
+pub enum StoredEventEntitlementEdgeData {
 	Create,
 	Delete,
 }

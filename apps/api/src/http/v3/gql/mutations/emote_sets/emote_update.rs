@@ -4,10 +4,9 @@ use hyper::StatusCode;
 use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
-use shared::database::event::EventEmoteSetData;
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -21,28 +20,24 @@ pub async fn emote_update(
 	emote_id: EmoteId,
 	name: Option<String>,
 ) -> TransactionResult<EmoteSet, ApiError> {
-	let emote_set_emote = emote_set
+	let old_emote_set_emote = emote_set
 		.emotes
 		.iter()
 		.find(|e| e.id == emote_id)
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"))
 		.map_err(TransactionError::custom)?;
 
-	let new_name = if let Some(name) = name {
-		name
-	} else {
-		let emote = global
-			.emote_by_id_loader
-			.load(emote_id)
-			.await
-			.map_err(|()| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-			.ok_or(TransactionError::custom(ApiError::new_const(
-				StatusCode::NOT_FOUND,
-				"emote not found",
-			)))?;
+	let emote = global
+		.emote_by_id_loader
+		.load(emote_id)
+		.await
+		.map_err(|()| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+		.ok_or(TransactionError::custom(ApiError::new_const(
+			StatusCode::NOT_FOUND,
+			"emote not found",
+		)))?;
 
-		emote.default_name
-	};
+	let new_name = name.unwrap_or(emote.default_name.clone());
 
 	if emote_set.emotes.iter().any(|e| e.alias == new_name) {
 		return Err(TransactionError::custom(ApiError::new_const(
@@ -84,14 +79,24 @@ pub async fn emote_update(
 			"emote not found in set",
 		)))?;
 
-	tx.register_event(EventPayload {
-		actor_id: Some(actor.id),
-		data: EventPayloadData::EmoteSet {
+	let emote_set_emote = emote_set
+		.emotes
+		.iter()
+		.find(|e| e.id == emote_id)
+		.ok_or(ApiError::new_const(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			"emote not found in set",
+		))
+		.map_err(TransactionError::custom)?;
+
+	tx.register_event(InternalEvent {
+		actor: Some(actor.clone()),
+		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
-			data: EventEmoteSetData::RenameEmote {
-				emote_id,
-				old_alias: emote_set_emote.alias.clone(),
-				new_alias: new_name.clone(),
+			data: InternalEventEmoteSetData::RenameEmote {
+				emote,
+				emote_set_emote: emote_set_emote.clone(),
+				old_alias: old_emote_set_emote.alias.clone(),
 			},
 		},
 		timestamp: chrono::Utc::now(),

@@ -10,14 +10,13 @@ use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetKind};
-use shared::database::event::EventEmoteSetData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, UserPermission};
 use shared::database::user::editor::{
 	EditorEmoteSetPermission, EditorPermission, EditorUserPermission, UserEditorId, UserEditorState,
 };
 use shared::database::user::FullUserRef;
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -143,11 +142,11 @@ impl EmoteSetsMutation {
 
 			tx.insert_one::<DbEmoteSet>(&emote_set, None).await?;
 
-			tx.register_event(EventPayload {
-				actor_id: Some(user.id),
-				data: EventPayloadData::EmoteSet {
+			tx.register_event(InternalEvent {
+				actor: Some(user.clone()),
+				data: InternalEventData::EmoteSet {
 					after: emote_set.clone(),
-					data: EventEmoteSetData::Create,
+					data: InternalEventEmoteSetData::Create,
 				},
 				timestamp: Utc::now(),
 			})?;
@@ -322,7 +321,7 @@ impl EmoteSetOps {
 		let res = with_transaction(&global, |tx| async move {
 			match action {
 				ListItemAction::Add => emote_add(global, tx, actor, target, &self.emote_set, id, name).await,
-				ListItemAction::Remove => emote_remove(tx, actor, &self.emote_set, id).await,
+				ListItemAction::Remove => emote_remove(global, tx, actor, &self.emote_set, id).await,
 				ListItemAction::Update => emote_update(global, tx, actor, &self.emote_set, id, name).await,
 			}
 		})
@@ -419,11 +418,11 @@ impl EmoteSetOps {
 				.map_err(TransactionError::custom)?;
 
 			if let Some(new_name) = new_name {
-				tx.register_event(EventPayload {
-					actor_id: Some(auth_session.user_id()),
-					data: EventPayloadData::EmoteSet {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::EmoteSet {
 						after: emote_set.clone(),
-						data: EventEmoteSetData::ChangeName {
+						data: InternalEventEmoteSetData::ChangeName {
 							old: self.emote_set.name.clone(),
 							new: new_name,
 						},
@@ -433,11 +432,11 @@ impl EmoteSetOps {
 			}
 
 			if let Some(new_capacity) = new_capacity {
-				tx.register_event(EventPayload {
-					actor_id: Some(auth_session.user_id()),
-					data: EventPayloadData::EmoteSet {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::EmoteSet {
 						after: emote_set.clone(),
-						data: EventEmoteSetData::ChangeCapacity {
+						data: InternalEventEmoteSetData::ChangeCapacity {
 							old: self.emote_set.capacity,
 							new: Some(new_capacity as i32),
 						},
@@ -490,11 +489,11 @@ impl EmoteSetOps {
 				.await?;
 
 			if let Some(emote_set) = emote_set {
-				tx.register_event(EventPayload {
-					actor_id: Some(auth_session.user_id()),
-					data: EventPayloadData::EmoteSet {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::EmoteSet {
 						after: emote_set,
-						data: EventEmoteSetData::Delete,
+						data: InternalEventEmoteSetData::Delete,
 					},
 					timestamp: Utc::now(),
 				})?;

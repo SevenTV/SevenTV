@@ -5,11 +5,11 @@ use chrono::Utc;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags, EmoteMerged};
-use shared::database::event::EventEmoteData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
+use shared::database::stored_event::StoredEventEmoteData;
 use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
@@ -99,11 +99,11 @@ impl EmoteOps {
 					.ok_or(ApiError::NOT_FOUND)
 					.map_err(TransactionError::custom)?;
 
-				tx.register_event(EventPayload {
-					actor_id: Some(user.id),
-					data: EventPayloadData::Emote {
+				tx.register_event(InternalEvent {
+					actor: Some(user.clone()),
+					data: InternalEventData::Emote {
 						after: emote.clone(),
-						data: EventEmoteData::Delete,
+						data: StoredEventEmoteData::Delete,
 					},
 					timestamp: chrono::Utc::now(),
 				})?;
@@ -206,11 +206,11 @@ impl EmoteOps {
 					.map_err(TransactionError::custom)?;
 
 				if let Some(new_default_name) = new_default_name {
-					tx.register_event(EventPayload {
-						actor_id: Some(user.id),
-						data: EventPayloadData::Emote {
+					tx.register_event(InternalEvent {
+						actor: Some(user.clone()),
+						data: InternalEventData::Emote {
 							after: emote.clone(),
-							data: EventEmoteData::ChangeName {
+							data: StoredEventEmoteData::ChangeName {
 								old: self.emote.default_name.clone(),
 								new: new_default_name,
 							},
@@ -220,11 +220,11 @@ impl EmoteOps {
 				}
 
 				if let Some(new_owner_id) = new_owner_id {
-					tx.register_event(EventPayload {
-						actor_id: Some(user.id),
-						data: EventPayloadData::Emote {
+					tx.register_event(InternalEvent {
+						actor: Some(user.clone()),
+						data: InternalEventData::Emote {
 							after: emote.clone(),
-							data: EventEmoteData::ChangeOwner {
+							data: StoredEventEmoteData::ChangeOwner {
 								old: self.emote.owner_id,
 								new: new_owner_id,
 							},
@@ -234,11 +234,11 @@ impl EmoteOps {
 				}
 
 				if let Some(new_flags) = new_flags {
-					tx.register_event(EventPayload {
-						actor_id: Some(user.id),
-						data: EventPayloadData::Emote {
+					tx.register_event(InternalEvent {
+						actor: Some(user.clone()),
+						data: InternalEventData::Emote {
 							after: emote.clone(),
-							data: EventEmoteData::ChangeFlags {
+							data: StoredEventEmoteData::ChangeFlags {
 								old: self.emote.flags,
 								new: new_flags,
 							},
@@ -248,11 +248,11 @@ impl EmoteOps {
 				}
 
 				if let Some(new_tags) = params.tags {
-					tx.register_event(EventPayload {
-						actor_id: Some(user.id),
-						data: EventPayloadData::Emote {
+					tx.register_event(InternalEvent {
+						actor: Some(user.clone()),
+						data: InternalEventData::Emote {
 							after: emote.clone(),
-							data: EventEmoteData::ChangeTags {
+							data: StoredEventEmoteData::ChangeTags {
 								old: self.emote.tags.clone(),
 								new: new_tags,
 							},
@@ -313,11 +313,11 @@ impl EmoteOps {
 				.ok_or(ApiError::NOT_FOUND)
 				.map_err(TransactionError::custom)?;
 
-			tx.register_event(EventPayload {
-				actor_id: Some(auth_session.user_id()),
-				data: EventPayloadData::Emote {
+			tx.register_event(InternalEvent {
+				actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+				data: InternalEventData::Emote {
 					after: emote.clone(),
-					data: EventEmoteData::Merge {
+					data: StoredEventEmoteData::Merge {
 						new_emote_id: target_id.id(),
 					},
 				},

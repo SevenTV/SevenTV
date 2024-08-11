@@ -1,4 +1,4 @@
-pub mod event;
+pub mod stored_event;
 pub mod automod;
 pub mod badge;
 pub mod duration;
@@ -73,7 +73,7 @@ impl MongoGenericCollection {
 
 fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	std::iter::empty()
-		.chain(event::mongo_collections())
+		.chain(stored_event::mongo_collections())
 		.chain(automod::mongo_collections())
 		.chain(badge::mongo_collections())
 		.chain(emote::mongo_collections())

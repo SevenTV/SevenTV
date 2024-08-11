@@ -312,7 +312,7 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 	]
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct CalculatedEntitlements {
 	pub roles: HashSet<RoleId>,
 	pub badges: HashSet<BadgeId>,

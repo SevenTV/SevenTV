@@ -1,21 +1,41 @@
+use std::sync::Arc;
+
 use hyper::StatusCode;
 use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
-use shared::database::event::EventEmoteSetData;
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
+use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn emote_remove(
+	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	actor: &FullUser,
 	emote_set: &EmoteSet,
 	emote_id: EmoteId,
 ) -> TransactionResult<EmoteSet, ApiError> {
+	let old_emote_set_emote = emote_set
+		.emotes
+		.iter()
+		.find(|e| e.id == emote_id)
+		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"))
+		.map_err(TransactionError::custom)?;
+
+	let emote = global
+		.emote_by_id_loader
+		.load(emote_id)
+		.await
+		.map_err(|()| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+		.ok_or(TransactionError::custom(ApiError::new_const(
+			StatusCode::NOT_FOUND,
+			"emote not found",
+		)))?;
+
 	let emote_set = tx
 		.find_one_and_update(
 			filter::filter! {
@@ -51,11 +71,14 @@ pub async fn emote_remove(
 			"emote not found in set",
 		)))?;
 
-	tx.register_event(EventPayload {
-		actor_id: Some(actor.id),
-		data: EventPayloadData::EmoteSet {
+	tx.register_event(InternalEvent {
+		actor: Some(actor.clone()),
+		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
-			data: EventEmoteSetData::RemoveEmote { emote_id },
+			data: InternalEventEmoteSetData::RemoveEmote {
+				emote,
+				emote_set_emote: old_emote_set_emote.clone(),
+			},
 		},
 		timestamp: chrono::Utc::now(),
 	})?;

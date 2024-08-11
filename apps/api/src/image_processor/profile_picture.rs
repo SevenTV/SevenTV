@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
-use shared::database::event::{EventUserProfilePictureData, ImageProcessorEvent};
+use shared::database::stored_event::{StoredEventUserProfilePictureData, ImageProcessorEvent};
 use shared::database::queries::{filter, update};
 use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
 use shared::database::user::{User, UserStyle};
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData};
 
 use super::event_to_image_set;
 use crate::global::Global;
@@ -72,11 +72,11 @@ pub async fn handle_success(
 	)
 	.await?;
 
-	tx.register_event(EventPayload {
-		actor_id: None,
-		data: EventPayloadData::UserProfilePicture {
+	tx.register_event(InternalEvent {
+		actor: None,
+		data: InternalEventData::UserProfilePicture {
 			after: profile_picture,
-			data: EventUserProfilePictureData::Process {
+			data: StoredEventUserProfilePictureData::Process {
 				event: ImageProcessorEvent::Success(event.clone()),
 			},
 		},
@@ -99,11 +99,11 @@ pub async fn handle_fail(
 		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query profile picture")))?
 		.ok_or(TransactionError::custom(anyhow::anyhow!("profile picture not found")))?;
 
-	tx.register_event(EventPayload {
-		actor_id: None,
-		data: EventPayloadData::UserProfilePicture {
+	tx.register_event(InternalEvent {
+		actor: None,
+		data: InternalEventData::UserProfilePicture {
 			after,
-			data: EventUserProfilePictureData::Process {
+			data: StoredEventUserProfilePictureData::Process {
 				event: ImageProcessorEvent::Fail(event.clone()),
 			},
 		},
@@ -126,11 +126,11 @@ pub async fn handle_start(
 		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query profile picture")))?
 		.ok_or(TransactionError::custom(anyhow::anyhow!("profile picture not found")))?;
 
-	tx.register_event(EventPayload {
-		actor_id: None,
-		data: EventPayloadData::UserProfilePicture {
+	tx.register_event(InternalEvent {
+		actor: None,
+		data: InternalEventData::UserProfilePicture {
 			after,
-			data: EventUserProfilePictureData::Process {
+			data: StoredEventUserProfilePictureData::Process {
 				event: ImageProcessorEvent::Start(event.clone()),
 			},
 		},
@@ -153,11 +153,11 @@ pub async fn handle_cancel(
 		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query profile picture")))?
 		.ok_or(TransactionError::custom(anyhow::anyhow!("profile picture not found")))?;
 
-	tx.register_event(EventPayload {
-		actor_id: None,
-		data: EventPayloadData::UserProfilePicture {
+	tx.register_event(InternalEvent {
+		actor: None,
+		data: InternalEventData::UserProfilePicture {
 			after,
-			data: EventUserProfilePictureData::Process {
+			data: StoredEventUserProfilePictureData::Process {
 				event: ImageProcessorEvent::Cancel(event.clone()),
 			},
 		},

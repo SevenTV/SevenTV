@@ -1,19 +1,15 @@
-//! This module contains types that are only used in the REST API.
-
 mod emote;
-mod emote_set;
 mod entitlement;
 mod role;
-mod user;
-mod user_connection;
 mod user_presence;
 
 pub use emote::*;
-pub use emote_set::*;
 pub use entitlement::*;
 pub use role::*;
-pub use user::*;
-pub use user_connection::*;
+use shared::old_types::{
+	ActiveEmoteModel, EmoteLifecycleModel, EmotePartialModel, EmoteSetModel, EmoteSetOrigin, EmoteSetPartialModel,
+	EmoteVersionModel, EmoteVersionState, UserConnectionModel, UserEditorModel, UserEditorModelPermission, UserModel,
+};
 pub use user_presence::*;
 
 #[derive(utoipa::OpenApi)]
@@ -22,6 +18,8 @@ pub use user_presence::*;
 	EmoteModel,
 	EmotePartialModel,
 	EmoteVersionModel,
+	EmoteLifecycleModel,
+	EmoteVersionState,
 	// Emote Set
 	EmoteSetModel,
 	EmoteSetPartialModel,
@@ -41,6 +39,7 @@ pub use user_presence::*;
 	// User
 	UserModel,
 	UserEditorModel,
+    UserEditorModelPermission,
 )))]
 pub struct Docs;
 

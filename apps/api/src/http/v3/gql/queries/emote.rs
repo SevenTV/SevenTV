@@ -7,14 +7,13 @@ use shared::database::emote::EmoteId;
 use shared::database::user::UserId;
 use shared::old_types::image::ImageHost;
 use shared::old_types::object_id::GqlObjectId;
-use shared::old_types::EmoteFlagsModel;
+use shared::old_types::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState};
 
 use super::audit_log::AuditLog;
 use super::report::Report;
 use super::user::{UserPartial, UserSearchResult};
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};
 use crate::search::{search, SearchOptions};
 
 #[derive(Default)]

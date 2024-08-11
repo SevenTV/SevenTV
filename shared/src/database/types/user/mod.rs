@@ -84,7 +84,7 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 		.chain(profile_picture::collections())
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FullUser {
 	pub user: User,
 	pub computed: UserComputed,
@@ -147,7 +147,7 @@ impl AsRef<UserComputed> for FullUser {
 	}
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct UserComputed {
 	pub permissions: Permissions,
 	pub entitlements: CalculatedEntitlements,

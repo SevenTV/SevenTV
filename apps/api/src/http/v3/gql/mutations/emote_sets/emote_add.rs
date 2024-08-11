@@ -7,10 +7,9 @@ use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
-use shared::database::event::EventEmoteSetData;
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
-use shared::event::{EventPayload, EventPayloadData};
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -172,13 +171,13 @@ pub async fn emote_add(
 		}
 	}
 
-	tx.register_event(EventPayload {
-		actor_id: emote_set_emote.added_by_id.clone(),
-		data: EventPayloadData::EmoteSet {
+	tx.register_event(InternalEvent {
+		actor: Some(actor.clone()),
+		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
-			data: EventEmoteSetData::AddEmote {
-				emote_id: emote_set_emote.id.clone(),
-				alias: emote_set_emote.alias.clone(),
+			data: InternalEventEmoteSetData::AddEmote {
+				emote,
+				emote_set_emote,
 			},
 		},
 		timestamp: chrono::Utc::now(),

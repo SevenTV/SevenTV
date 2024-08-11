@@ -6,7 +6,7 @@ use shared::database::entitlement::{EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::user::ban::UserBanId;
 use shared::database::user::editor::UserEditorId;
 use shared::database::user::UserId;
-use shared::database::{self, event, MongoCollection};
+use shared::database::{self, stored_event, MongoCollection};
 use shared::old_types::EmoteFlagsModel;
 
 use super::{Job, ProcessOutcome};
@@ -18,7 +18,7 @@ const BATCH_SIZE: usize = 1_000_000;
 
 pub struct AuditLogsJob {
 	global: Arc<Global>,
-	events: Vec<database::event::Event>,
+	events: Vec<database::stored_event::StoredEvent>,
 }
 
 impl Job for AuditLogsJob {
@@ -30,10 +30,10 @@ impl Job for AuditLogsJob {
 		if global.config().truncate {
 			tracing::info!("truncating events collection");
 
-			database::event::Event::collection(global.target_db()).drop().await?;
-			let indexes = database::event::Event::indexes();
+			database::stored_event::StoredEvent::collection(global.target_db()).drop().await?;
+			let indexes = database::stored_event::StoredEvent::indexes();
 			if !indexes.is_empty() {
-				database::event::Event::collection(global.target_db())
+				database::stored_event::StoredEvent::collection(global.target_db())
 					.create_indexes(indexes)
 					.await?;
 			}
@@ -52,9 +52,9 @@ impl Job for AuditLogsJob {
 		let mut data = vec![];
 
 		match audit_log.kind {
-			AuditLogKind::CreateEmote => data.push(database::event::EventData::Emote {
+			AuditLogKind::CreateEmote => data.push(database::stored_event::StoredEventData::Emote {
 				target_id: audit_log.target_id.into(),
-				data: database::event::EventEmoteData::Upload,
+				data: database::stored_event::StoredEventEmoteData::Upload,
 			}),
 			AuditLogKind::ProcessEmote => {
 				// TODO: not enough information to create the event, ignore this?
@@ -70,9 +70,9 @@ impl Job for AuditLogsJob {
 				for change in audit_log.changes {
 					match change {
 						AuditLogChange::Name(names) => {
-							data.push(database::event::EventData::Emote {
+							data.push(database::stored_event::StoredEventData::Emote {
 								target_id: audit_log.target_id.into(),
-								data: database::event::EventEmoteData::ChangeName {
+								data: database::stored_event::StoredEventEmoteData::ChangeName {
 									old: names.old,
 									new: names.new,
 								},
@@ -80,9 +80,9 @@ impl Job for AuditLogsJob {
 						}
 						AuditLogChange::NewEmoteId(change) => {
 							if let Some(new_emote_id) = change.new.into_inner() {
-								data.push(database::event::EventData::Emote {
+								data.push(database::stored_event::StoredEventData::Emote {
 									target_id: audit_log.target_id.into(),
-									data: database::event::EventEmoteData::Merge {
+									data: database::stored_event::StoredEventEmoteData::Merge {
 										new_emote_id: new_emote_id.into(),
 									},
 								});
@@ -101,9 +101,9 @@ impl Job for AuditLogsJob {
 								.fold(database::emote::EmoteFlags::default(), |sum, c| {
 									sum | database::emote::EmoteFlags::from(c)
 								});
-							data.push(database::event::EventData::Emote {
+							data.push(database::stored_event::StoredEventData::Emote {
 								target_id: audit_log.target_id.into(),
-								data: database::event::EventEmoteData::ChangeFlags { old, new },
+								data: database::stored_event::StoredEventEmoteData::ChangeFlags { old, new },
 							});
 						}
 						AuditLogChange::Flags(flags) => {
@@ -129,23 +129,23 @@ impl Job for AuditLogsJob {
 								new |= database::emote::EmoteFlags::DefaultZeroWidth;
 							}
 
-							data.push(database::event::EventData::Emote {
+							data.push(database::stored_event::StoredEventData::Emote {
 								target_id: audit_log.target_id.into(),
-								data: database::event::EventEmoteData::ChangeFlags { old, new },
+								data: database::stored_event::StoredEventEmoteData::ChangeFlags { old, new },
 							});
 						}
-						AuditLogChange::Tags(tags) => data.push(database::event::EventData::Emote {
+						AuditLogChange::Tags(tags) => data.push(database::stored_event::StoredEventData::Emote {
 							target_id: audit_log.target_id.into(),
-							data: database::event::EventEmoteData::ChangeTags {
+							data: database::stored_event::StoredEventEmoteData::ChangeTags {
 								new: tags.new,
 								old: tags.old,
 							},
 						}),
 						AuditLogChange::Owner(owner) => {
 							if let (Some(old), Some(new)) = (owner.old.into_inner(), owner.new.into_inner()) {
-								data.push(database::event::EventData::Emote {
+								data.push(database::stored_event::StoredEventData::Emote {
 									target_id: audit_log.target_id.into(),
-									data: database::event::EventEmoteData::ChangeOwner {
+									data: database::stored_event::StoredEventEmoteData::ChangeOwner {
 										old: old.into(),
 										new: new.into(),
 									},
@@ -160,33 +160,33 @@ impl Job for AuditLogsJob {
 			}
 			// we don't know what it got merged into
 			AuditLogKind::MergeEmote => {}
-			AuditLogKind::DeleteEmote => data.push(database::event::EventData::Emote {
+			AuditLogKind::DeleteEmote => data.push(database::stored_event::StoredEventData::Emote {
 				target_id: audit_log.target_id.into(),
-				data: database::event::EventEmoteData::Delete,
+				data: database::stored_event::StoredEventEmoteData::Delete,
 			}),
-			AuditLogKind::CreateEmoteSet => data.push(database::event::EventData::EmoteSet {
+			AuditLogKind::CreateEmoteSet => data.push(database::stored_event::StoredEventData::EmoteSet {
 				target_id: audit_log.target_id.into(),
-				data: database::event::EventEmoteSetData::Create,
+				data: database::stored_event::StoredEventEmoteSetData::Create,
 			}),
-			AuditLogKind::DeleteEmoteSet => data.push(database::event::EventData::EmoteSet {
+			AuditLogKind::DeleteEmoteSet => data.push(database::stored_event::StoredEventData::EmoteSet {
 				target_id: audit_log.target_id.into(),
-				data: database::event::EventEmoteSetData::Delete,
+				data: database::stored_event::StoredEventEmoteSetData::Delete,
 			}),
 			AuditLogKind::UpdateEmoteSet => {
 				for change in audit_log.changes {
 					match change {
-						AuditLogChange::Name(names) => data.push(database::event::EventData::EmoteSet {
+						AuditLogChange::Name(names) => data.push(database::stored_event::StoredEventData::EmoteSet {
 							target_id: audit_log.target_id.into(),
-							data: database::event::EventEmoteSetData::ChangeName {
+							data: database::stored_event::StoredEventEmoteSetData::ChangeName {
 								old: names.old,
 								new: names.new,
 							},
 						}),
 						AuditLogChange::EmoteSetCapacity(c) => {
 							if c.old != c.new {
-								data.push(database::event::EventData::EmoteSet {
+								data.push(database::stored_event::StoredEventData::EmoteSet {
 									target_id: audit_log.target_id.into(),
-									data: database::event::EventEmoteSetData::ChangeCapacity {
+									data: database::stored_event::StoredEventEmoteSetData::ChangeCapacity {
 										old: Some(c.old),
 										new: Some(c.new),
 									},
@@ -199,18 +199,18 @@ impl Job for AuditLogsJob {
 								.into_iter()
 								.filter_map(|e| e.id.map(|id| (EmoteId::from(id), e.name)))
 							{
-								data.push(database::event::EventData::EmoteSet {
+								data.push(database::stored_event::StoredEventData::EmoteSet {
 									target_id: audit_log.target_id.into(),
-									data: event::EventEmoteSetData::AddEmote {
+									data: stored_event::StoredEventEmoteSetData::AddEmote {
 										emote_id,
 										alias: alias.unwrap_or_default(),
 									},
 								});
 							}
 							for emote_id in emotes.removed.into_iter().filter_map(|e| e.id.map(EmoteId::from)) {
-								data.push(database::event::EventData::EmoteSet {
+								data.push(database::stored_event::StoredEventData::EmoteSet {
 									target_id: audit_log.target_id.into(),
-									data: event::EventEmoteSetData::RemoveEmote { emote_id },
+									data: stored_event::StoredEventEmoteSetData::RemoveEmote { emote_id },
 								});
 							}
 							for update in emotes
@@ -221,9 +221,9 @@ impl Job for AuditLogsJob {
 							{
 								let emote_id = update.new.id.unwrap().into();
 
-								data.push(database::event::EventData::EmoteSet {
+								data.push(database::stored_event::StoredEventData::EmoteSet {
 									target_id: audit_log.target_id.into(),
-									data: event::EventEmoteSetData::RenameEmote {
+									data: stored_event::StoredEventEmoteSetData::RenameEmote {
 										emote_id,
 										old_alias: update.old.name.unwrap(),
 										new_alias: update.new.name.unwrap(),
@@ -247,9 +247,9 @@ impl Job for AuditLogsJob {
 									editor_id: editor.into(),
 								};
 
-								data.push(database::event::EventData::UserEditor {
+								data.push(database::stored_event::StoredEventData::UserEditor {
 									target_id: editor_id,
-									data: database::event::EventUserEditorData::AddEditor {
+									data: database::stored_event::StoredEventUserEditorData::AddEditor {
 										editor_id: editor_id.editor_id,
 									},
 								});
@@ -260,9 +260,9 @@ impl Job for AuditLogsJob {
 									editor_id: editor.into(),
 								};
 
-								data.push(database::event::EventData::UserEditor {
+								data.push(database::stored_event::StoredEventData::UserEditor {
 									target_id: editor_id,
-									data: database::event::EventUserEditorData::RemoveEditor {
+									data: database::stored_event::StoredEventUserEditorData::RemoveEditor {
 										editor_id: editor_id.editor_id,
 									},
 								});
@@ -278,9 +278,9 @@ impl Job for AuditLogsJob {
 									managed_by: None,
 								};
 
-								data.push(database::event::EventData::EntitlementEdge {
+								data.push(database::stored_event::StoredEventData::EntitlementEdge {
 									target_id: entitlement_edge_id,
-									data: event::EventEntitlementEdgeData::Create,
+									data: stored_event::StoredEventEntitlementEdgeData::Create,
 								});
 							}
 							for role in roles.removed.into_iter().flatten() {
@@ -292,9 +292,9 @@ impl Job for AuditLogsJob {
 									managed_by: None,
 								};
 
-								data.push(database::event::EventData::EntitlementEdge {
+								data.push(database::stored_event::StoredEventData::EntitlementEdge {
 									target_id: entitlement_edge_id,
-									data: event::EventEntitlementEdgeData::Delete,
+									data: stored_event::StoredEventEntitlementEdgeData::Delete,
 								});
 							}
 						}
@@ -302,21 +302,21 @@ impl Job for AuditLogsJob {
 					}
 				}
 			}
-			AuditLogKind::DeleteUser => data.push(database::event::EventData::User {
+			AuditLogKind::DeleteUser => data.push(database::stored_event::StoredEventData::User {
 				target_id: audit_log.target_id.into(),
-				data: database::event::EventUserData::Delete,
+				data: database::stored_event::StoredEventUserData::Delete,
 			}),
-			AuditLogKind::BanUser => data.push(database::event::EventData::UserBan {
+			AuditLogKind::BanUser => data.push(database::stored_event::StoredEventData::UserBan {
 				target_id: UserBanId::nil(), // TODO: how should we know this?
-				data: database::event::EventUserBanData::Ban,
+				data: database::stored_event::StoredEventUserBanData::Ban,
 			}),
-			AuditLogKind::UnbanUser => data.push(database::event::EventData::UserBan {
+			AuditLogKind::UnbanUser => data.push(database::stored_event::StoredEventData::UserBan {
 				target_id: UserBanId::nil(), // TODO: how should we know this?
-				data: database::event::EventUserBanData::Unban,
+				data: database::stored_event::StoredEventUserBanData::Unban,
 			}),
-			AuditLogKind::CreateReport => data.push(database::event::EventData::Ticket {
+			AuditLogKind::CreateReport => data.push(database::stored_event::StoredEventData::Ticket {
 				target_id: audit_log.target_id.into(),
-				data: database::event::EventTicketData::Create,
+				data: database::stored_event::StoredEventTicketData::Create,
 			}),
 			AuditLogKind::UpdateReport => {
 				for change in audit_log.changes {
@@ -326,24 +326,24 @@ impl Job for AuditLogsJob {
 							let new = status.new == ReportStatus::Open;
 
 							if new != old {
-								data.push(database::event::EventData::Ticket {
+								data.push(database::stored_event::StoredEventData::Ticket {
 									target_id: audit_log.target_id.into(),
-									data: database::event::EventTicketData::ChangeOpen { old, new },
+									data: database::stored_event::StoredEventTicketData::ChangeOpen { old, new },
 								});
 							}
 						}
 						AuditLogChange::ReportAssignees(assignees) => {
 							for member in assignees.added {
-								data.push(database::event::EventData::Ticket {
+								data.push(database::stored_event::StoredEventData::Ticket {
 									target_id: audit_log.target_id.into(),
-									data: database::event::EventTicketData::AddMember { member: member.into() },
+									data: database::stored_event::StoredEventTicketData::AddMember { member: member.into() },
 								});
 							}
 
 							for member in assignees.removed {
-								data.push(database::event::EventData::Ticket {
+								data.push(database::stored_event::StoredEventData::Ticket {
 									target_id: audit_log.target_id.into(),
-									data: database::event::EventTicketData::RemoveMember { member: member.into() },
+									data: database::stored_event::StoredEventTicketData::RemoveMember { member: member.into() },
 								});
 							}
 						}
@@ -355,8 +355,8 @@ impl Job for AuditLogsJob {
 		}
 
 		for data in data {
-			self.events.push(database::event::Event {
-				id: database::event::EventId::with_timestamp(audit_log.id.timestamp().to_chrono()),
+			self.events.push(database::stored_event::StoredEvent {
+				id: database::stored_event::StoredEventId::with_timestamp(audit_log.id.timestamp().to_chrono()),
 				actor_id: Some(UserId::from(audit_log.actor_id)),
 				data,
 				updated_at: chrono::Utc::now(),
@@ -365,7 +365,7 @@ impl Job for AuditLogsJob {
 		}
 
 		if self.events.len() >= BATCH_SIZE {
-			match database::event::Event::collection(self.global.target_db())
+			match database::stored_event::StoredEvent::collection(self.global.target_db())
 				.insert_many(mem::take(&mut self.events))
 				.await
 			{
@@ -383,7 +383,7 @@ impl Job for AuditLogsJob {
 	}
 
 	async fn finish(self) -> ProcessOutcome {
-		match database::event::Event::collection(self.global.target_db())
+		match database::stored_event::StoredEvent::collection(self.global.target_db())
 			.insert_many(&self.events)
 			.await
 		{
