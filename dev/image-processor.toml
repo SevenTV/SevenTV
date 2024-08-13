@@ -1,5 +1,5 @@
 [database]
-uri = "mongodb://mongodb:27017/image-processor"
+uri = "mongodb://mongodb:27017/image-processor?replicaSet=rs0"
 
 [[drives]]
 name = "seventv-cdn"

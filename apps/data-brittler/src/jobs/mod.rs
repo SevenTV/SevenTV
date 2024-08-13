@@ -225,7 +225,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let total_documents: u64 = results.iter().map(|o| o.processed_documents).sum();
 	let total_rows: u64 = results.iter().map(|o| o.inserted_rows).sum();
 
-	tracing::info!("writing report to {}", global.config().report_path.display());
+	tracing::info!("writing report");
 	let report = report::ReportTemplate {
 		outcomes: results,
 		took_seconds,
@@ -235,6 +235,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	}
 	.render_once()?;
 	tokio::fs::write(&global.config().report_path, report).await?;
+	tracing::info!("report written to {}", global.config().report_path.display());
 
 	Ok(())
 }

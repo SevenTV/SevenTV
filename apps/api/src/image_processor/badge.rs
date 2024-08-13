@@ -48,7 +48,7 @@ pub async fn handle_success(
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {
-				event: ImageProcessorEvent::Success(event.clone()),
+				event: ImageProcessorEvent::Success(Some(event.clone())),
 			},
 		},
 		timestamp: chrono::Utc::now(),

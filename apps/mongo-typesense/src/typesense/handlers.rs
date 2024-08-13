@@ -131,7 +131,11 @@ macro_rules! default_impl {
 
 				let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
-				global.$batcher.inserter.execute(data.into()).await?;
+				let Ok(data) = data.try_into() else {
+					return Ok(());
+				};
+
+				global.$batcher.inserter.execute(data).await?;
 
 				let now = bson::DateTime::from_chrono(chrono::Utc::now());
 

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use mongodb::options::FindOneAndUpdateOptions;
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::{EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
@@ -154,7 +154,9 @@ pub async fn emote_add(
 					emotes: &emote_set_emote,
 				},
 			},
-			None,
+			FindOneAndUpdateOptions::builder()
+				.return_document(ReturnDocument::After)
+				.build(),
 		)
 		.await?
 		.ok_or(TransactionError::custom(ApiError::new_const(

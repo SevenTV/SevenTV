@@ -77,7 +77,7 @@ pub async fn handle_success(
 		data: InternalEventData::UserProfilePicture {
 			after: profile_picture,
 			data: StoredEventUserProfilePictureData::Process {
-				event: ImageProcessorEvent::Success(event.clone()),
+				event: ImageProcessorEvent::Success(Some(event.clone())),
 			},
 		},
 		timestamp: chrono::Utc::now(),

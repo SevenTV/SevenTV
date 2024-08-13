@@ -105,7 +105,8 @@ pub enum StoredEventData {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ImageProcessorEvent {
-	Success(event_callback::Success),
+	/// The event callback is only None for old events
+	Success(Option<event_callback::Success>),
 	Fail(event_callback::Fail),
 	Cancel(event_callback::Cancel),
 	Start(event_callback::Start),

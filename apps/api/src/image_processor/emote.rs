@@ -60,7 +60,7 @@ pub async fn handle_success(
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {
-				event: ImageProcessorEvent::Success(event.clone()),
+				event: ImageProcessorEvent::Success(Some(event.clone())),
 			},
 		},
 		timestamp: chrono::Utc::now(),

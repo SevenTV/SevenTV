@@ -1,3 +1,5 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use anyhow::Context;
 use itertools::Itertools;
 
@@ -26,7 +28,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct InternalEventPayload {
 	pub events: Vec<InternalEvent>,
 }
@@ -38,7 +40,7 @@ impl InternalEventPayload {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct InternalEvent {
 	pub actor: Option<FullUser>,
 	pub data: InternalEventData,
@@ -397,7 +399,7 @@ impl From<InternalEventTicketData> for StoredEventTicketData {
 }
 
 impl InternalEventPayload {
-	pub fn into_old_messages(self, cdn_base_url: &str) -> anyhow::Result<Vec<event_api::Message<event_api::payload::Dispatch>>> {
+	pub fn into_old_messages(self, cdn_base_url: &str, seq: u64) -> anyhow::Result<Vec<event_api::Message<event_api::payload::Dispatch>>> {
 		let events = self.events.into_iter()
 			.filter_map(|e| {
 				Some((
@@ -498,7 +500,7 @@ impl InternalEventPayload {
 							.emotes
 							.into_iter()
 							.position(|e| e.id == emote.id)
-							.context("failed to find emote")?;
+							.context("failed to find emote in set")?;
 
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
@@ -516,14 +518,8 @@ impl InternalEventPayload {
 					}
 					InternalEventData::EmoteSet {
 						data: InternalEventEmoteSetData::RemoveEmote { emote, emote_set_emote },
-						after,
+						..
 					} => {
-						let index = after
-							.emotes
-							.into_iter()
-							.position(|e| e.id == emote.id)
-							.context("failed to find emote")?;
-
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
 							Some(EmotePartialModel::from_db(emote, None, cdn_base_url)),
@@ -532,7 +528,7 @@ impl InternalEventPayload {
 
 						pulled.push(ChangeField {
 							key: "emotes".to_string(),
-							index: Some(index),
+							index: Some(0),
 							ty: ChangeFieldType::Object,
 							old_value: active_emote,
 							..Default::default()
@@ -551,7 +547,7 @@ impl InternalEventPayload {
 							.emotes
 							.into_iter()
 							.position(|e| e.id == emote.id)
-							.context("failed to find emote")?;
+							.context("failed to find emote in set")?;
 
 						let new_active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
@@ -771,16 +767,22 @@ impl InternalEventPayload {
 				..Default::default()
 			};
 
+			let mut hasher = DefaultHasher::new();
+			hasher.write(&body.id.into_bytes());
+			hasher.write(body.kind.as_str().as_bytes());
+			body.object.hash(&mut hasher);
+			let hash = hasher.finish();
+
 			let dispatch = event_api::payload::Dispatch {
 				ty: event_type,
-				body,
-				hash: None,
+				hash: Some(hash as u32),
 				effect: None,
 				matches: vec![],
-				condition: vec![],
+				condition: vec![std::iter::once(("object_id".to_string(), body.id.to_string())).collect()],
 				whisper: None,
+				body,
 			};
-			messages.push(event_api::Message::new(dispatch, 0));
+			messages.push(event_api::Message::new(dispatch, seq));
 		}
 
 		Ok(messages)

@@ -7,7 +7,7 @@ use mongodb::error::{TRANSIENT_TRANSACTION_ERROR, UNKNOWN_TRANSACTION_COMMIT_RES
 use mongodb::results::{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult};
 use shared::database::queries::{filter, update};
 use shared::database::stored_event::StoredEvent;
-use shared::database::MongoCollection;
+use shared::database::{Id, MongoCollection};
 use shared::event::{InternalEvent, InternalEventPayload};
 use spin::Mutex;
 
@@ -256,6 +256,10 @@ where
 	F: FnOnce(TransactionSession<'a, E>) -> Fut + Clone + 'a,
 	Fut: std::future::Future<Output = TransactionResult<T, E>> + 'a,
 {
+	let tx_id = Id::<()>::new();
+
+	tracing::info!(id = %tx_id, "starting transaction");
+
 	let mut session = global.mongo.start_session().await?;
 	session.start_transaction().await?;
 
@@ -268,7 +272,7 @@ where
 	let mut retry_count = 0;
 
 	'retry_operation: loop {
-		tracing::info!(count = retry_count, "retrying operation");
+		tracing::info!(id = %tx_id, count = retry_count, "retrying operation");
 
 		if retry_count > 3 {
 			return Err(TransactionError::TooManyFailures);
@@ -280,26 +284,24 @@ where
 		let mut session_inner = session.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		match result {
 			Ok(output) => 'retry_commit: loop {
-				tracing::info!(count = retry_count, "retrying commit");
+				tracing::info!(id = %tx_id, count = retry_count, "retrying commit");
 
-				for event in session_inner.events.clone() {
-					StoredEvent::collection(&global.db)
-						.insert_one(StoredEvent::from(event))
-						.session(&mut session_inner.session)
-						.await?;
-				}
+				StoredEvent::collection(&global.db)
+					.insert_many(session_inner.events.iter().cloned().map(StoredEvent::from))
+					.session(&mut session_inner.session)
+					.await?;
 
 				match session_inner.session.commit_transaction().await {
 					Ok(_) => {
 						let payload = InternalEventPayload::new(session_inner.events.drain(..));
 						let payload = serde_json::to_vec(&payload)?;
-						tracing::info!("publishing events to nats");
+						tracing::info!(id = %tx_id, "publishing events to nats");
 						global.nats.publish("api.v4.events", payload.into()).await?;
 
 						return Ok(output);
 					}
 					Err(err) => {
-						tracing::warn!(error = %err, "transaction commit error");
+						tracing::warn!(id = %tx_id, error = %err, "transaction commit error");
 
 						if err.contains_label(UNKNOWN_TRANSACTION_COMMIT_RESULT) {
 							continue 'retry_commit;
@@ -312,7 +314,7 @@ where
 				}
 			},
 			Err(err) => {
-				tracing::warn!(error = %err);
+				tracing::warn!(id = %tx_id, error = %err);
 
 				if let TransactionError::Mongo(err) = &err {
 					if err.contains_label(TRANSIENT_TRANSACTION_ERROR) {
