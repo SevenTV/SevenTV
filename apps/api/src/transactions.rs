@@ -234,7 +234,7 @@ pub enum TransactionError<E> {
 	#[error("session locked after returning")]
 	SessionLocked,
 	#[error("event serialize error: {0}")]
-	EventSerialize(#[from] bincode::Error),
+	EventSerialize(#[from] serde_json::Error),
 	#[error("event publish error: {0}")]
 	EventPublish(#[from] async_nats::PublishError),
 	#[error("custom error")]
@@ -268,6 +268,8 @@ where
 	let mut retry_count = 0;
 
 	'retry_operation: loop {
+		tracing::info!(count = retry_count, "retrying operation");
+
 		if retry_count > 3 {
 			return Err(TransactionError::TooManyFailures);
 		}
@@ -278,6 +280,8 @@ where
 		let mut session_inner = session.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		match result {
 			Ok(output) => 'retry_commit: loop {
+				tracing::info!(count = retry_count, "retrying commit");
+
 				for event in session_inner.events.clone() {
 					StoredEvent::collection(&global.db)
 						.insert_one(StoredEvent::from(event))
@@ -288,12 +292,15 @@ where
 				match session_inner.session.commit_transaction().await {
 					Ok(_) => {
 						let payload = InternalEventPayload::new(session_inner.events.drain(..));
-						let payload = bincode::serialize(&payload)?;
-						global.nats.publish("api.events.v4", payload.into()).await?;
+						let payload = serde_json::to_vec(&payload)?;
+						tracing::info!("publishing events to nats");
+						global.nats.publish("api.v4.events", payload.into()).await?;
 
 						return Ok(output);
 					}
 					Err(err) => {
+						tracing::warn!(error = %err, "transaction commit error");
+
 						if err.contains_label(UNKNOWN_TRANSACTION_COMMIT_RESULT) {
 							continue 'retry_commit;
 						} else if err.contains_label(TRANSIENT_TRANSACTION_ERROR) {
@@ -305,6 +312,8 @@ where
 				}
 			},
 			Err(err) => {
+				tracing::warn!(error = %err);
+
 				if let TransactionError::Mongo(err) = &err {
 					if err.contains_label(TRANSIENT_TRANSACTION_ERROR) {
 						continue 'retry_operation;
