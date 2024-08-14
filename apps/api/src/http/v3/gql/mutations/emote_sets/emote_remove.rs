@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
+use itertools::Itertools;
 use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
@@ -19,10 +20,10 @@ pub async fn emote_remove(
 	emote_set: &EmoteSet,
 	emote_id: EmoteId,
 ) -> TransactionResult<EmoteSet, ApiError> {
-	let old_emote_set_emote = emote_set
+	let (index, old_emote_set_emote) = emote_set
 		.emotes
 		.iter()
-		.find(|e| e.id == emote_id)
+		.find_position(|e| e.id == emote_id)
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"))
 		.map_err(TransactionError::custom)?;
 
@@ -78,6 +79,7 @@ pub async fn emote_remove(
 			data: InternalEventEmoteSetData::RemoveEmote {
 				emote,
 				emote_set_emote: old_emote_set_emote.clone(),
+				index,
 			},
 		},
 		timestamp: chrono::Utc::now(),

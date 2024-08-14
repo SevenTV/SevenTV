@@ -31,11 +31,12 @@ use crate::{
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct InternalEventPayload {
 	pub events: Vec<InternalEvent>,
+	pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
 impl InternalEventPayload {
 	pub fn new(events: impl IntoIterator<Item = InternalEvent>) -> Self {
-		Self { events: events.into_iter().collect() }
+		Self { events: events.into_iter().collect(), timestamp: chrono::Utc::now() }
 	}
 }
 
@@ -288,6 +289,7 @@ pub enum InternalEventEmoteSetData {
 	RemoveEmote {
 		emote: Emote,
 		emote_set_emote: EmoteSetEmote,
+		index: usize,
 	},
 	RenameEmote {
 		emote: Emote,
@@ -517,7 +519,7 @@ impl InternalEventPayload {
 						});
 					}
 					InternalEventData::EmoteSet {
-						data: InternalEventEmoteSetData::RemoveEmote { emote, emote_set_emote },
+						data: InternalEventEmoteSetData::RemoveEmote { emote, emote_set_emote, index },
 						..
 					} => {
 						let active_emote = ActiveEmoteModel::from_db(
@@ -528,7 +530,7 @@ impl InternalEventPayload {
 
 						pulled.push(ChangeField {
 							key: "emotes".to_string(),
-							index: Some(0),
+							index: Some(index),
 							ty: ChangeFieldType::Object,
 							old_value: active_emote,
 							..Default::default()
@@ -768,9 +770,8 @@ impl InternalEventPayload {
 			};
 
 			let mut hasher = DefaultHasher::new();
-			hasher.write(&body.id.into_bytes());
-			hasher.write(body.kind.as_str().as_bytes());
-			body.object.hash(&mut hasher);
+			body.hash(&mut hasher);
+			self.timestamp.hash(&mut hasher);
 			let hash = hasher.finish();
 
 			let dispatch = event_api::payload::Dispatch {
