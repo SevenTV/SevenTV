@@ -137,7 +137,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 			message = sub.next() => {
 				match message {
 					Some(message) => {
-						let payload: InternalEventPayload = match serde_json::from_slice(&message.payload) {
+						let payload: InternalEventPayload = match rmp_serde::from_slice(&message.payload) {
 							Ok(payload) => payload,
 							Err(err) => {
 								tracing::warn!(err = ?err, "malformed message");

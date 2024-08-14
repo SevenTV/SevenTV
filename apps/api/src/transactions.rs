@@ -7,7 +7,7 @@ use mongodb::error::{TRANSIENT_TRANSACTION_ERROR, UNKNOWN_TRANSACTION_COMMIT_RES
 use mongodb::results::{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult};
 use shared::database::queries::{filter, update};
 use shared::database::stored_event::StoredEvent;
-use shared::database::{Id, MongoCollection};
+use shared::database::MongoCollection;
 use shared::event::{InternalEvent, InternalEventPayload};
 use spin::Mutex;
 
@@ -234,7 +234,7 @@ pub enum TransactionError<E> {
 	#[error("session locked after returning")]
 	SessionLocked,
 	#[error("event serialize error: {0}")]
-	EventSerialize(#[from] serde_json::Error),
+	EventSerialize(#[from] rmp_serde::encode::Error),
 	#[error("event publish error: {0}")]
 	EventPublish(#[from] async_nats::PublishError),
 	#[error("custom error")]
@@ -286,7 +286,8 @@ where
 				match session_inner.session.commit_transaction().await {
 					Ok(_) => {
 						let payload = InternalEventPayload::new(session_inner.events.drain(..));
-						let payload = serde_json::to_vec(&payload)?;
+						let payload = rmp_serde::to_vec_named(&payload)?;
+
 						global.nats.publish("api.v4.events", payload.into()).await?;
 
 						return Ok(output);

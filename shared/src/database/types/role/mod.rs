@@ -7,7 +7,7 @@ pub mod permissions;
 
 pub type RoleId = Id<Role>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "roles")]
 #[mongo(index(fields(rank = 1), unique))]
 #[mongo(index(fields(search_updated_at = 1)))]

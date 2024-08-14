@@ -5,7 +5,7 @@ use crate::database::{Id, MongoCollection};
 
 pub type PaintId = Id<Paint>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq)]
 #[mongo(collection_name = "paints")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = 1)))]
@@ -25,7 +25,7 @@ pub struct Paint {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PaintData {
 	pub layers: Vec<PaintLayer>,
@@ -34,7 +34,7 @@ pub struct PaintData {
 
 pub type PaintLayerId = Id<PaintLayer>;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PaintLayer {
 	pub id: PaintLayerId,
@@ -52,7 +52,7 @@ impl Default for PaintLayer {
 	}
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum PaintLayerType {
@@ -77,14 +77,14 @@ impl Default for PaintLayerType {
 	}
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PaintGradientStop {
 	pub at: f64,
 	pub color: u32,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum PaintRadialGradientShape {
@@ -93,7 +93,7 @@ pub enum PaintRadialGradientShape {
 	Circle,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PaintShadow {
 	pub color: u32,

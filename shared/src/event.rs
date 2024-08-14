@@ -27,7 +27,7 @@ use crate::{
 	event_api::{self, types::{ChangeField, ChangeFieldType}}, old_types::{ActiveEmoteModel, EmoteFlagsModel, EmotePartialModel, EmoteSetModel, UserConnectionModel, UserConnectionPartialModel, UserPartialModel},
 };
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct InternalEventPayload {
 	pub events: Vec<InternalEvent>,
@@ -40,7 +40,7 @@ impl InternalEventPayload {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct InternalEvent {
 	pub actor: Option<FullUser>,
@@ -48,7 +48,7 @@ pub struct InternalEvent {
 	pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventData {
 	Emote {
@@ -266,7 +266,7 @@ impl From<InternalEvent> for StoredEvent {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventEmoteSetData {
 	Create,
@@ -329,7 +329,7 @@ impl From<InternalEventEmoteSetData> for StoredEventEmoteSetData {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventUserData {
 	Create,
@@ -370,7 +370,7 @@ impl From<InternalEventUserData> for StoredEventUserData {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventUserEditorData {
 	AddEditor { editor: User },
@@ -378,7 +378,7 @@ pub enum InternalEventUserEditorData {
 	EditPermissions { editor: User, old: UserEditorPermissions },
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventTicketData {
 	Create,

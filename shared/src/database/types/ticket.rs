@@ -6,7 +6,7 @@ use super::MongoGenericCollection;
 use crate::database::{Id, MongoCollection};
 use crate::typesense::types::impl_typesense_type;
 
-#[derive(Debug, Clone, Default, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[derive(Debug, Clone, Default, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, PartialEq, Eq)]
 #[repr(i32)]
 pub enum TicketPriority {
 	Low = 0,
@@ -32,7 +32,7 @@ impl TryFrom<i32> for TicketPriority {
 
 impl_typesense_type!(TicketPriority, Int32);
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case", tag = "kind", content = "id")]
 pub enum TicketTarget {
 	User(UserId),
@@ -78,7 +78,7 @@ impl_typesense_type!(TicketKind, Int32);
 
 pub type TicketId = Id<Ticket>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "tickets")]
 #[serde(deny_unknown_fields)]
 pub struct Ticket {
@@ -110,7 +110,7 @@ pub enum TicketMemberKind {
 	Watcher = 2,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct TicketMember {
 	pub user_id: UserId,
@@ -121,7 +121,7 @@ pub struct TicketMember {
 
 pub type TicketMessageId = Id<TicketMessage>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "ticket_messages")]
 #[mongo(index(fields(ticket_id = 1)))]
 #[mongo(index(fields(user_id = 1)))]
@@ -140,7 +140,7 @@ pub struct TicketMessage {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct TicketFile {
 	pub path: String,

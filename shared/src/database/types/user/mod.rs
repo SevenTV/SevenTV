@@ -24,7 +24,7 @@ use crate::database::{Id, MongoCollection};
 
 pub type UserId = Id<User>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "users")]
 #[mongo(index(fields("connections.platform" = 1, "connections.platform_id" = 1), unique, sparse))]
 #[mongo(index(fields("connections.platform" = 1, "connections.platform_username" = 1)))]
@@ -56,7 +56,7 @@ pub struct User {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct UserTwoFa {
 	pub flags: i32,
@@ -64,7 +64,7 @@ pub struct UserTwoFa {
 	pub recovery_codes: Vec<i32>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct UserStyle {
 	pub active_badge_id: Option<BadgeId>,
@@ -84,7 +84,7 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 		.chain(profile_picture::collections())
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub struct FullUser {
 	pub user: User,
 	pub computed: UserComputed,
@@ -147,7 +147,7 @@ impl AsRef<UserComputed> for FullUser {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub struct UserComputed {
 	pub permissions: Permissions,
 	pub entitlements: CalculatedEntitlements,

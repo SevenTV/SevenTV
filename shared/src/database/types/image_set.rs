@@ -1,13 +1,13 @@
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ImageSet {
 	pub input: ImageSetInput,
 	pub outputs: Vec<Image>,
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-#[serde(tag = "type")]
+#[serde(rename_all = "snake_case", tag = "type")]
 pub enum ImageSetInput {
 	Pending {
 		task_id: String,
@@ -24,7 +24,7 @@ impl ImageSetInput {
 	}
 }
 
-#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Image {
 	pub path: String,

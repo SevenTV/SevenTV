@@ -25,7 +25,7 @@ impl_typesense_type!(EmoteModerationRequestStatus, Int32);
 
 pub type EmoteModerationRequestId = Id<EmoteModerationRequest>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "emote_moderation_requests")]
 #[mongo(index(fields(kind = 1, user_id = 1, status = 1)))]
 #[mongo(index(fields(kind = 1, emote_id = 1), unique))]
