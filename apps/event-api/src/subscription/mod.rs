@@ -151,6 +151,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 						match payload.into_old_messages(&global.config().api.cdn_origin, seq) {
 							Ok(messages) => {
 								for message in messages {
+									// There is always only one condition map
 									let Some(condition) = message.data.condition.first() else {
 										tracing::warn!("missing condition");
 										continue;

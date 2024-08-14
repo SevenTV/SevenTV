@@ -1,5 +1,7 @@
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::pin::Pin;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use axum::extract::{ws, RawQuery, Request, State, WebSocketUpgrade};
@@ -398,7 +400,14 @@ impl Connection {
 			.await?;
 		}
 
-		let topic = EventTopic::new(subscribe.ty, &subscribe.condition);
+		let mut condition = subscribe.condition.clone();
+		if let Entry::Occupied(mut id_condition) = condition.entry("object_id".to_string()) {
+			if let Ok(id) = Id::<()>::from_str(id_condition.get()) {
+				id_condition.insert(id.to_string());
+			}
+		}
+
+		let topic = EventTopic::new(subscribe.ty, &condition);
 		let topic_key = topic.as_key();
 		match self.topics.get_mut(&topic_key) {
 			Some(o) => {
