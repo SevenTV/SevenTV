@@ -562,12 +562,9 @@ impl Connection {
 	}
 
 	async fn handle_dispatch(&mut self, payload: &Message<payload::Dispatch>) -> Result<(), ConnectionError> {
-		tracing::info!("received dispatch: {:?}", payload);
-
 		// Check if the dispatch is a whisper to a connection.
 		if let Some(whisper) = &payload.data.whisper {
 			if &self.id.to_string() != whisper {
-				tracing::info!("skipping, whisper not for this connection");
 				return Ok(());
 			}
 		}
@@ -575,7 +572,6 @@ impl Connection {
 		// Check if the dispatch is a duplicate.
 		if let Some(hash) = payload.data.hash {
 			if !self.dedupe.insert(hash) {
-				tracing::info!("skipping, duplicate");
 				return Ok(());
 			}
 		}

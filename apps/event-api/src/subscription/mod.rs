@@ -101,8 +101,6 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 			Some(event) = events_rx.recv() => {
 				match event {
 					Event::Subscribe { topic, tx } => {
-						tracing::info!(topic = ?topic, "subscribed to event");
-
 						match subscriptions.entry(topic) {
 							std::collections::hash_map::Entry::Vacant(entry) => {
 								let (btx, brx) = broadcast::channel(16);
@@ -137,7 +135,6 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 				}
 			}
 			message = sub.next() => {
-				tracing::trace!("received message: {:?}", message);
 				match message {
 					Some(message) => {
 						let payload: InternalEventPayload = match serde_json::from_slice(&message.payload) {
@@ -187,7 +184,6 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 		
 									let mut missed = true;
 									for key in keys {
-										tracing::info!(key = ?key, "received event");
 										if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(key) {
 											if subscription.get().send(Arc::clone(&message)).is_err() {
 												subscription.remove();
