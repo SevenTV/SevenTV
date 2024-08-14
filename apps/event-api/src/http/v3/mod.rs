@@ -401,7 +401,10 @@ impl Connection {
 		}
 
 		let mut condition = subscribe.condition.clone();
+
+		// We have to parse the id here to convert old ids to new ones
 		if let Entry::Occupied(mut id_condition) = condition.entry("object_id".to_string()) {
+			// If the id is not a valid id, we just keep the orginal entry
 			if let Ok(id) = Id::<()>::from_str(id_condition.get()) {
 				id_condition.insert(id.to_string());
 			}
