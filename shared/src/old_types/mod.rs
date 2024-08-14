@@ -21,7 +21,10 @@ use crate::database::paint::PaintId;
 use crate::database::role::permissions::{PermissionsExt, UserPermission};
 use crate::database::role::RoleId;
 use crate::database::user::connection::{Platform, UserConnection};
-use crate::database::user::editor::{EditorEmotePermission, EditorEmoteSetPermission, EditorUserPermission, UserEditor, UserEditorPermissions, UserEditorState};
+use crate::database::user::editor::{
+	EditorEmotePermission, EditorEmoteSetPermission, EditorUserPermission, UserEditor, UserEditorPermissions,
+	UserEditorState,
+};
 use crate::database::user::{FullUser, UserId};
 
 pub mod cosmetic;

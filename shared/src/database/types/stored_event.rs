@@ -160,11 +160,24 @@ pub enum StoredEventEmoteSetData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum StoredEventUserData {
 	Create,
-	ChangeActivePaint { old: Option<PaintId>, new: Option<PaintId> },
-	ChangeActiveBadge { old: Option<BadgeId>, new: Option<BadgeId> },
-	ChangeActiveEmoteSet { old: Option<EmoteSetId>, new: Option<EmoteSetId> },
-	AddConnection { platform: Platform },
-	RemoveConnection { platform: Platform },
+	ChangeActivePaint {
+		old: Option<PaintId>,
+		new: Option<PaintId>,
+	},
+	ChangeActiveBadge {
+		old: Option<BadgeId>,
+		new: Option<BadgeId>,
+	},
+	ChangeActiveEmoteSet {
+		old: Option<EmoteSetId>,
+		new: Option<EmoteSetId>,
+	},
+	AddConnection {
+		platform: Platform,
+	},
+	RemoveConnection {
+		platform: Platform,
+	},
 	Merge,
 	Delete,
 }

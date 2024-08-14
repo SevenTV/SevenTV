@@ -1,4 +1,3 @@
-pub mod stored_event;
 pub mod automod;
 pub mod badge;
 pub mod duration;
@@ -12,6 +11,7 @@ pub mod page;
 pub mod paint;
 pub mod product;
 pub mod role;
+pub mod stored_event;
 pub mod ticket;
 pub mod user;
 

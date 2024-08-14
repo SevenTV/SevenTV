@@ -3,11 +3,11 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
 use hyper::StatusCode;
 use mongodb::options::ReturnDocument;
-use shared::database::stored_event::StoredEventUserBanData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{
 	AdminPermission, EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
 };
+use shared::database::stored_event::StoredEventUserBanData;
 use shared::database::user::ban::UserBan;
 use shared::database::user::User;
 use shared::database::MongoCollection;

@@ -177,10 +177,7 @@ pub async fn emote_add(
 		actor: Some(actor.clone()),
 		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
-			data: InternalEventEmoteSetData::AddEmote {
-				emote,
-				emote_set_emote,
-			},
+			data: InternalEventEmoteSetData::AddEmote { emote, emote_set_emote },
 		},
 		timestamp: chrono::Utc::now(),
 	})?;

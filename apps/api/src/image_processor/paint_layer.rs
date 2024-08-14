@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
-use shared::database::stored_event::{StoredEventPaintData, ImageProcessorEvent};
 use shared::database::paint::{Paint, PaintData, PaintId, PaintLayer, PaintLayerId, PaintLayerType};
 use shared::database::queries::{filter, update};
+use shared::database::stored_event::{ImageProcessorEvent, StoredEventPaintData};
 use shared::event::{InternalEvent, InternalEventData};
 
 use super::event_to_image_set;

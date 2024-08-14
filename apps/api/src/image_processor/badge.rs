@@ -4,8 +4,8 @@ use anyhow::Context;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
 use shared::database::badge::{Badge, BadgeId};
-use shared::database::stored_event::{StoredEventBadgeData, ImageProcessorEvent};
 use shared::database::queries::{filter, update};
+use shared::database::stored_event::{ImageProcessorEvent, StoredEventBadgeData};
 use shared::event::{InternalEvent, InternalEventData};
 
 use super::event_to_image_set;

@@ -1,5 +1,4 @@
 pub mod mongo {
-	pub use shared::database::stored_event::*;
 	pub use shared::database::automod::*;
 	pub use shared::database::badge::*;
 	pub use shared::database::emote::*;
@@ -15,6 +14,7 @@ pub mod mongo {
 	pub use shared::database::product::subscription_timeline::*;
 	pub use shared::database::product::*;
 	pub use shared::database::role::*;
+	pub use shared::database::stored_event::*;
 	pub use shared::database::ticket::*;
 	pub use shared::database::user::ban::*;
 	pub use shared::database::user::ban_template::*;

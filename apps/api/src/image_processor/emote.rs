@@ -3,8 +3,8 @@ use std::sync::Arc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
-use shared::database::stored_event::{StoredEventEmoteData, ImageProcessorEvent};
 use shared::database::queries::{filter, update};
+use shared::database::stored_event::{ImageProcessorEvent, StoredEventEmoteData};
 use shared::event::{InternalEvent, InternalEventData};
 
 use super::event_to_image_set;
@@ -78,17 +78,18 @@ pub async fn handle_fail(
 	// Perhaps it would be benificial to create an audit log entry for why this
 	// emote failed to process. and then set the state to failed stating this emote
 	// was deleted because ... (reason)
-	let after = tx.find_one_and_delete(
-		filter::filter! {
-			Emote {
-				#[query(rename = "_id")]
-				id,
-			}
-		},
-		None,
-	)
-	.await?
-	.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
+	let after = tx
+		.find_one_and_delete(
+			filter::filter! {
+				Emote {
+					#[query(rename = "_id")]
+					id,
+				}
+			},
+			None,
+		)
+		.await?
+		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,

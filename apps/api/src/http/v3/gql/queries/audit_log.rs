@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::stored_event::{StoredEventEmoteData, StoredEventEmoteSetData, StoredEventUserEditorData, ImageProcessorEvent};
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
+use shared::database::stored_event::{
+	ImageProcessorEvent, StoredEventEmoteData, StoredEventEmoteSetData, StoredEventUserEditorData,
+};
 use shared::database::user::UserId;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
@@ -79,7 +81,10 @@ pub enum AuditLogKind {
 async_graphql::scalar!(AuditLogKind);
 
 impl AuditLog {
-	pub fn from_db(audit_log: shared::database::stored_event::StoredEvent, emotes: &HashMap<EmoteId, Emote>) -> Option<Self> {
+	pub fn from_db(
+		audit_log: shared::database::stored_event::StoredEvent,
+		emotes: &HashMap<EmoteId, Emote>,
+	) -> Option<Self> {
 		let actor_id = audit_log.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into();
 
 		let (kind, target_id, target_kind, changes) = match audit_log.data {
@@ -89,7 +94,9 @@ impl AuditLog {
 			} => (AuditLogKind::CreateEmote, target_id.into(), 2, vec![]),
 			shared::database::stored_event::StoredEventData::Emote {
 				target_id,
-				data: StoredEventEmoteData::Process { event: ImageProcessorEvent::Success(_) },
+				data: StoredEventEmoteData::Process {
+					event: ImageProcessorEvent::Success(_),
+				},
 			} => (AuditLogKind::ProcessEmote, target_id.into(), 2, vec![]),
 			shared::database::stored_event::StoredEventData::Emote {
 				target_id,

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
-use shared::database::stored_event::{StoredEventUserProfilePictureData, ImageProcessorEvent};
 use shared::database::queries::{filter, update};
+use shared::database::stored_event::{ImageProcessorEvent, StoredEventUserProfilePictureData};
 use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
 use shared::database::user::{User, UserStyle};
 use shared::event::{InternalEvent, InternalEventData};

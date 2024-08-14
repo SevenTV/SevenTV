@@ -18,15 +18,16 @@ use shared::database::user::editor::{EditorUserPermission, UserEditorId};
 use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
 use shared::database::user::{User, UserId, UserStyle};
 use shared::database::MongoCollection;
-use shared::old_types::{EmoteSetModel, EmoteSetPartialModel, UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel};
+use shared::old_types::{
+	EmoteSetModel, EmoteSetPartialModel, UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel,
+};
 
+use super::types::PresenceModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::emote_set_loader::load_emote_set;
-
-use super::types::PresenceModel;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(

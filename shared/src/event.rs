@@ -3,28 +3,32 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use anyhow::Context;
 use itertools::Itertools;
 
-use crate::{
-	database::{
-		badge::Badge,
-		emote::{Emote, EmoteFlags},
-		emote_moderation_request::EmoteModerationRequest,
-		emote_set::{EmoteSet, EmoteSetEmote},
-		entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind},
-		paint::Paint,
-		role::Role,
-		stored_event::{
-			StoredEvent, StoredEventBadgeData, StoredEventData, StoredEventEmoteData, StoredEventEmoteModerationRequestData,
-			StoredEventEmoteSetData, StoredEventEntitlementEdgeData, StoredEventId, StoredEventPaintData,
-			StoredEventRoleData, StoredEventTicketData, StoredEventTicketMessageData, StoredEventUserBanData,
-			StoredEventUserData, StoredEventUserEditorData, StoredEventUserProfilePictureData, StoredEventUserSessionData,
-		},
-		ticket::{Ticket, TicketMessage, TicketPriority},
-		user::{
-			ban::UserBan, connection::UserConnection, editor::{UserEditor, UserEditorPermissions}, profile_picture::UserProfilePicture, session::UserSession, FullUser, User
-		},
-		Id,
-	},
-	event_api::{self, types::{ChangeField, ChangeFieldType}}, old_types::{ActiveEmoteModel, EmoteFlagsModel, EmotePartialModel, EmoteSetModel, UserConnectionModel, UserConnectionPartialModel, UserPartialModel},
+use crate::database::badge::Badge;
+use crate::database::emote::{Emote, EmoteFlags};
+use crate::database::emote_moderation_request::EmoteModerationRequest;
+use crate::database::emote_set::{EmoteSet, EmoteSetEmote};
+use crate::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use crate::database::paint::Paint;
+use crate::database::role::Role;
+use crate::database::stored_event::{
+	StoredEvent, StoredEventBadgeData, StoredEventData, StoredEventEmoteData, StoredEventEmoteModerationRequestData,
+	StoredEventEmoteSetData, StoredEventEntitlementEdgeData, StoredEventId, StoredEventPaintData, StoredEventRoleData,
+	StoredEventTicketData, StoredEventTicketMessageData, StoredEventUserBanData, StoredEventUserData,
+	StoredEventUserEditorData, StoredEventUserProfilePictureData, StoredEventUserSessionData,
+};
+use crate::database::ticket::{Ticket, TicketMessage, TicketPriority};
+use crate::database::user::ban::UserBan;
+use crate::database::user::connection::UserConnection;
+use crate::database::user::editor::{UserEditor, UserEditorPermissions};
+use crate::database::user::profile_picture::UserProfilePicture;
+use crate::database::user::session::UserSession;
+use crate::database::user::{FullUser, User};
+use crate::database::Id;
+use crate::event_api::types::{ChangeField, ChangeFieldType};
+use crate::event_api::{self};
+use crate::old_types::{
+	ActiveEmoteModel, EmoteFlagsModel, EmotePartialModel, EmoteSetModel, UserConnectionModel, UserConnectionPartialModel,
+	UserPartialModel,
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
@@ -36,7 +40,10 @@ pub struct InternalEventPayload {
 
 impl InternalEventPayload {
 	pub fn new(events: impl IntoIterator<Item = InternalEvent>) -> Self {
-		Self { events: events.into_iter().collect(), timestamp: chrono::Utc::now() }
+		Self {
+			events: events.into_iter().collect(),
+			timestamp: chrono::Utc::now(),
+		}
 	}
 }
 
@@ -401,8 +408,14 @@ impl From<InternalEventTicketData> for StoredEventTicketData {
 }
 
 impl InternalEventPayload {
-	pub fn into_old_messages(self, cdn_base_url: &str, seq: u64) -> anyhow::Result<Vec<event_api::Message<event_api::payload::Dispatch>>> {
-		let events = self.events.into_iter()
+	pub fn into_old_messages(
+		self,
+		cdn_base_url: &str,
+		seq: u64,
+	) -> anyhow::Result<Vec<event_api::Message<event_api::payload::Dispatch>>> {
+		let events = self
+			.events
+			.into_iter()
 			.filter_map(|e| {
 				Some((
 					e.data.event_api_event_type()?,
@@ -519,7 +532,12 @@ impl InternalEventPayload {
 						});
 					}
 					InternalEventData::EmoteSet {
-						data: InternalEventEmoteSetData::RemoveEmote { emote, emote_set_emote, index },
+						data:
+							InternalEventEmoteSetData::RemoveEmote {
+								emote,
+								emote_set_emote,
+								index,
+							},
 						..
 					} => {
 						let active_emote = ActiveEmoteModel::from_db(
@@ -617,7 +635,8 @@ impl InternalEventPayload {
 							after.style.active_emote_set_id,
 							0,
 						)))?;
-						// TODO: set to 0 for now, honestly we shouldnt care about this, nobody is listening to this event anyway
+						// TODO: set to 0 for now, honestly we shouldnt care about this, nobody is
+						// listening to this event anyway
 
 						pushed.push(ChangeField {
 							key: "connections".to_string(),
@@ -636,8 +655,9 @@ impl InternalEventPayload {
 							after.style.active_emote_set_id,
 							0,
 						)))?;
-						// TODO: set to 0 for now, honestly we shouldnt care about this, nobody is listening to this event anyway
-						// This is all pointless, you can't even remove a connection on the current website
+						// TODO: set to 0 for now, honestly we shouldnt care about this, nobody is
+						// listening to this event anyway This is all pointless, you can't even remove a
+						// connection on the current website
 
 						pulled.push(ChangeField {
 							key: "connections".to_string(),
@@ -651,7 +671,8 @@ impl InternalEventPayload {
 						after,
 						data: InternalEventUserData::ChangeActiveEmoteSet { old, new },
 					} => {
-						// we have to emit the event for every connection since you could have different sets for every connection before
+						// we have to emit the event for every connection since you could have different
+						// sets for every connection before
 
 						let old_set = old.map(|set| EmoteSetModel::from_db(set, std::iter::empty(), None));
 						let new_set = new.map(|set| EmoteSetModel::from_db(set, std::iter::empty(), None));
@@ -705,7 +726,7 @@ impl InternalEventPayload {
 							old_value: old.map(|p| p.id.to_string()).into(),
 							..Default::default()
 						});
-						
+
 						updated.push(ChangeField {
 							key: "style".to_string(),
 							ty: ChangeFieldType::Object,

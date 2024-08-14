@@ -83,10 +83,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 
 	// We subscribe to all events.
 	// The .> wildcard is used to subscribe to all events.
-	let mut sub = global
-		.nats()
-		.subscribe("api.v4.events")
-		.await?;
+	let mut sub = global.nats().subscribe("api.v4.events").await?;
 
 	// fnv::FnvHashMap is used because it is faster than the default HashMap for our
 	// use case.
@@ -153,9 +150,9 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 										tracing::warn!("missing condition");
 										continue;
 									};
-		
+
 									let topic = EventTopic::new(message.data.ty, condition);
-		
+
 									let mut keys = vec![topic.as_key()];
 									match keys[0].0 {
 										EventType::SystemAnnouncement => {
@@ -179,9 +176,9 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 										EventType::Whisper => {}
 										EventType::AnySystem | EventType::AnyEmote | EventType::AnyEmoteSet | EventType::AnyUser | EventType::AnyEntitlement | EventType::AnyCosmetic => {}
 									}
-		
+
 									let message = Arc::new(message);
-		
+
 									let mut missed = true;
 									for key in keys {
 										if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(key) {
@@ -192,7 +189,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 											}
 										}
 									}
-		
+
 									if missed {
 										// global.metrics().observe_nats_event_miss();
 									} else {

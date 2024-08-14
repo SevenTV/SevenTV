@@ -2,7 +2,9 @@ use chrono::Utc;
 
 use super::{impl_typesense_type, TypesenseCollection, TypesenseGenericCollection};
 use crate::database::stored_event::{
-	ImageProcessorEvent, StoredEventBadgeData, StoredEventData, StoredEventEmoteData, StoredEventEmoteModerationRequestData, StoredEventEmoteSetData, StoredEventId, StoredEventPaintData, StoredEventRoleData, StoredEventTicketData, StoredEventUserBanData, StoredEventUserData, StoredEventUserProfilePictureData, StoredEventUserSessionData
+	ImageProcessorEvent, StoredEventBadgeData, StoredEventData, StoredEventEmoteData, StoredEventEmoteModerationRequestData,
+	StoredEventEmoteSetData, StoredEventId, StoredEventPaintData, StoredEventRoleData, StoredEventTicketData,
+	StoredEventUserBanData, StoredEventUserData, StoredEventUserProfilePictureData, StoredEventUserSessionData,
 };
 use crate::database::user::UserId;
 use crate::database::{self, Id};
@@ -205,7 +207,7 @@ fn split_kinds(data: StoredEventData) -> Option<(Id<()>, TargetKind, ActionKind)
 			match data {
 				StoredEventEmoteModerationRequestData::Create { .. } => ActionKind::Create,
 			},
-		)
+		),
 	};
 
 	Some(res)

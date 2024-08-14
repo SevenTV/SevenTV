@@ -6,9 +6,9 @@ use chrono::Utc;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::stored_event::StoredEventTicketMessageData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::TicketPermission;
+use shared::database::stored_event::StoredEventTicketMessageData;
 use shared::database::ticket::{
 	Ticket, TicketId, TicketKind, TicketMember, TicketMemberKind, TicketMessage, TicketMessageId, TicketPriority,
 	TicketTarget,
@@ -168,7 +168,9 @@ impl ReportsMutation {
 							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 							.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-						event_ticket_data = Some(InternalEventTicketData::AddMember { member: member_user.user });
+						event_ticket_data = Some(InternalEventTicketData::AddMember {
+							member: member_user.user,
+						});
 
 						update = update.extend_one(update::update! {
 							#[query(push)]
@@ -186,7 +188,9 @@ impl ReportsMutation {
 							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 							.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-						event_ticket_data = Some(InternalEventTicketData::RemoveMember { member: member_user.user });
+						event_ticket_data = Some(InternalEventTicketData::RemoveMember {
+							member: member_user.user,
+						});
 
 						update = update.extend_one(update::update! {
 							#[query(pull)]

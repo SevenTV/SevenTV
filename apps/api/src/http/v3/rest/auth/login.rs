@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
+use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::{User, UserId};

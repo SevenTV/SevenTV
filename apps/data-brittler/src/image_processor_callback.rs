@@ -159,11 +159,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-async fn handle_success(
-	global: &Arc<Global>,
-	subject: Subject,
-	event: event_callback::Success,
-) -> anyhow::Result<()> {
+async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_callback::Success) -> anyhow::Result<()> {
 	let input = event.input_metadata.context("missing input metadata")?;
 
 	let animated = event.files.iter().any(|i| i.frame_count > 1);
@@ -403,11 +399,7 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject) -> anyhow::Result<
 	Ok(())
 }
 
-async fn handle_fail(
-	global: &Arc<Global>,
-	subject: Subject,
-	_event: event_callback::Fail,
-) -> anyhow::Result<()> {
+async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callback::Fail) -> anyhow::Result<()> {
 	handle_abort(global, subject).await?;
 
 	// Notify user of failure with reason
