@@ -207,7 +207,7 @@ impl Emote {
 			})?;
 
 		let logs = global
-			.audit_log_by_id_loader
+			.event_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
 			.map_err(|()| {
