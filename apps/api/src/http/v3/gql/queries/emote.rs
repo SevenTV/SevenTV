@@ -199,7 +199,7 @@ impl Emote {
 			.per_page(limit)
 			.build();
 
-		let result = search::<shared::typesense::types::audit_log::Event>(global, options)
+		let result = search::<shared::typesense::types::event::Event>(global, options)
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");

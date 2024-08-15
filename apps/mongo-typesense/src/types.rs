@@ -24,7 +24,7 @@ pub mod mongo {
 }
 
 pub mod typesense {
-	pub use shared::typesense::types::audit_log::*;
+	pub use shared::typesense::types::event::*;
 	pub use shared::typesense::types::automod::*;
 	pub use shared::typesense::types::badge::*;
 	pub use shared::typesense::types::emote::*;
