@@ -57,7 +57,7 @@ impl Role {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl Role {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
+		self.id.timestamp()
 	}
 
 	async fn allowed(&self) -> String {

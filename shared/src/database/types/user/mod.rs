@@ -45,6 +45,8 @@ pub struct User {
 	pub two_fa: Option<UserTwoFa>,
 	pub style: UserStyle,
 	pub connections: Vec<UserConnection>,
+	/// This user is an old user that has been migrated to a new user.
+	pub migrated: bool,
 	pub cached_role_rank: i32,
 	#[serde(default)]
 	pub cached_entitlements: Vec<EntitlementEdgeKind>,

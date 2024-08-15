@@ -74,7 +74,7 @@ impl ModRequestMessage {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ModRequestMessage {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
+		self.id.timestamp()
 	}
 }
 

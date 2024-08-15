@@ -135,6 +135,7 @@ impl EmoteSetsMutation {
 				kind: EmoteSetKind::Normal,
 				origin_config: None,
 				tags: vec![],
+				migrated: false,
 				updated_at: Utc::now(),
 				search_updated_at: None,
 				emotes_changed_since_reindex: false,

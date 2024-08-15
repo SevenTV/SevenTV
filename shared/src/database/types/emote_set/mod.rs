@@ -34,6 +34,8 @@ pub struct EmoteSet {
 	pub owner_id: Option<UserId>,
 	pub origin_config: Option<EmoteSetOriginConfig>,
 	pub kind: EmoteSetKind,
+	/// This emote set is an old emote set that has been migrated to a new emote set.
+	pub migrated: bool,
 	pub emotes_changed_since_reindex: bool,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,

@@ -50,6 +50,7 @@ impl Job for EmotesJob {
 			}
 
 			let mut flags = EmoteFlags::none();
+			flags |= EmoteFlags::Migrated;
 			if emote.flags.contains(EmoteFlagsModel::Private) {
 				flags |= EmoteFlags::Private;
 			}
@@ -65,7 +66,6 @@ impl Job for EmotesJob {
 			if v.state.allow_personal {
 				flags |= EmoteFlags::ApprovedPersonal;
 			}
-
 			if v.animated {
 				flags |= EmoteFlags::Animated;
 			}

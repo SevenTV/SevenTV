@@ -38,7 +38,10 @@ impl EmoteSet {
 	pub fn from_db(value: shared::database::emote_set::EmoteSet) -> Self {
 		Self {
 			flags: EmoteSetFlagModel::from_db(&value),
-			id: value.id.into(),
+			id: GqlObjectId {
+				id: value.id.cast(),
+				old: value.migrated,
+			},
 			name: value.name,
 			tags: value.tags,
 			origins: Vec::new(),
@@ -79,7 +82,7 @@ impl ActiveEmote {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ActiveEmote {
 	async fn timestamp(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
+		self.id.timestamp()
 	}
 
 	async fn data<'ctx>(&self, ctx: &Context<'ctx>) -> Result<EmotePartial, ApiError> {

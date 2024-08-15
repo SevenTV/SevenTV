@@ -68,7 +68,7 @@ impl From<UserPartial> for User {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl User {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
+		self.id.timestamp()
 	}
 
 	async fn style(&self) -> Result<UserStyle, ApiError> {
@@ -290,7 +290,10 @@ impl UserPartial {
 			.or(main_connection.and_then(|c| c.platform_avatar_url.clone()));
 
 		Self {
-			id: full_user.id.into(),
+			id: GqlObjectId {
+				id: full_user.id.cast(),
+				old: full_user.migrated,
+			},
 			user_type: UserTypeModel::Regular,
 			username: main_connection.map(|c| c.platform_username.clone()).unwrap_or_default(),
 			display_name: main_connection.map(|c| c.platform_display_name.clone()).unwrap_or_default(),
@@ -304,7 +307,7 @@ impl UserPartial {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserPartial {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
+		self.id.timestamp()
 	}
 
 	async fn style(&self) -> Result<UserStyle, ApiError> {

@@ -56,13 +56,15 @@ pub struct EmoteMerged {
 
 #[bitmask(i32)]
 pub enum EmoteFlags {
-	PublicListed = 1 << 0,
-	Private = 1 << 1,
-	Nsfw = 1 << 2,
-	DefaultZeroWidth = 1 << 3,
-	ApprovedPersonal = 1 << 4,
-	DeniedPersonal = 1 << 5,
-	Animated = 1 << 6,
+	/// This emote is an old emote that has been migrated to a new emote.
+	Migrated = 1 << 0,
+	PublicListed = 1 << 1,
+	Private = 1 << 2,
+	Nsfw = 1 << 3,
+	DefaultZeroWidth = 1 << 4,
+	ApprovedPersonal = 1 << 5,
+	DeniedPersonal = 1 << 6,
+	Animated = 1 << 7,
 }
 
 impl Default for EmoteFlags {

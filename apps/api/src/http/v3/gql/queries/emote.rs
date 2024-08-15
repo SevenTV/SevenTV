@@ -60,7 +60,10 @@ impl Emote {
 		};
 
 		Self {
-			id: value.id.into(),
+			id: GqlObjectId {
+				id: value.id.cast(),
+				old: value.flags.contains(shared::database::emote::EmoteFlags::Migrated),
+			},
 			name: value.default_name.clone(),
 			flags: value.flags.into(),
 			lifecycle,
@@ -86,13 +89,13 @@ impl Emote {
 
 	pub fn deleted_emote() -> Self {
 		Self {
-			id: GqlObjectId(EmoteId::nil().cast()),
+			id: GqlObjectId::old(EmoteId::nil().cast()),
 			name: "*DeletedEmote".to_string(),
 			lifecycle: EmoteLifecycleModel::Deleted,
 			flags: EmoteFlagsModel::none(),
 			tags: vec![],
 			animated: false,
-			owner_id: GqlObjectId(UserId::nil().cast()),
+			owner_id: GqlObjectId::old(UserId::nil().cast()),
 			host: ImageHost::default(),
 			versions: vec![],
 			state: vec![],
@@ -106,7 +109,7 @@ impl Emote {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl Emote {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
+		self.id.timestamp()
 	}
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
@@ -143,7 +146,7 @@ impl Emote {
 		let options = SearchOptions::builder()
 			.query("".to_owned())
 			.query_by(vec!["id".to_owned()])
-			.filter_by(format!("emotes: {}", self.id.0))
+			.filter_by(format!("emotes: {}", *self.id))
 			.sort_by(vec!["role_rank:desc".to_owned()])
 			.page(page)
 			.per_page(limit)
@@ -193,7 +196,7 @@ impl Emote {
 		let options = SearchOptions::builder()
 			.query("".to_owned())
 			.query_by(vec!["id".to_owned()])
-			.filter_by(format!("emotes: {}", self.id.0))
+			.filter_by(format!("emotes: {}", *self.id))
 			.sort_by(vec!["updated_at:desc".to_owned()])
 			.page(None)
 			.per_page(limit)
@@ -264,7 +267,7 @@ impl From<Emote> for EmotePartial {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmotePartial {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
+		self.id.timestamp()
 	}
 
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
@@ -297,7 +300,7 @@ pub struct EmoteVersion {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmoteVersion {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
+		self.id.timestamp()
 	}
 }
 
