@@ -32,6 +32,7 @@ impl<'a, E> TransactionSession<'a, E> {
 }
 
 impl<E> TransactionSession<'_, E> {
+	#[allow(unused)]
 	pub async fn find<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -48,6 +49,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(find.stream(&mut this.session).try_collect().await?)
 	}
 
+	#[allow(unused)]
 	pub async fn find_one<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -65,6 +67,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn find_one_and_update<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -82,6 +85,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn find_one_and_delete<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -99,6 +103,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn update<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -116,6 +121,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn update_one<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -133,6 +139,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn delete<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -149,6 +156,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn delete_one<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -165,6 +173,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn count<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -182,6 +191,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn insert_one<U: MongoCollection + serde::Serialize>(
 		&mut self,
 		insert: impl Borrow<U>,
@@ -198,6 +208,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn insert_many<U: MongoCollection + serde::Serialize>(
 		&mut self,
 		items: impl IntoIterator<Item = impl Borrow<U>>,
