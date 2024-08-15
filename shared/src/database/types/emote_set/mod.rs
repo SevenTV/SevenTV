@@ -12,7 +12,7 @@ use super::MongoGenericCollection;
 
 pub type EmoteSetId = Id<EmoteSet>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "emote_sets")]
 #[mongo(index(fields("emotes.id" = 1)))]
 #[mongo(index(fields(owner_id = 1)))]

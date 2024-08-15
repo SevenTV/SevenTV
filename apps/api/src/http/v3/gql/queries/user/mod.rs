@@ -6,7 +6,7 @@ use mongodb::bson::doc;
 use shared::database::user::{FullUser, UserId};
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
-use shared::old_types::{UserConnectionPlatformModel, UserTypeModel};
+use shared::old_types::{UserConnectionPlatformModel, UserEditorModelPermission, UserTypeModel};
 
 use super::audit_log::AuditLog;
 use super::emote::Emote;
@@ -15,7 +15,6 @@ use super::report::Report;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::types::UserEditorModelPermission;
 use crate::search::{search, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql

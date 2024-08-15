@@ -1,30 +1,27 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
-use itertools::Itertools;
-use mongodb::options::ReturnDocument;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
+use shared::database::stored_event::StoredEventEntitlementEdgeData;
 use shared::database::user::connection::UserConnection as DbUserConnection;
-use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId};
+use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId, UserEditorState};
 use shared::database::user::{User, UserStyle};
 use shared::database::MongoCollection;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::event::{InternalEvent, InternalEventData, InternalEventUserData, InternalEventUserEditorData};
 use shared::old_types::cosmetic::CosmeticKind;
 use shared::old_types::object_id::GqlObjectId;
-use shared::old_types::UserPartialModel;
+use shared::old_types::UserEditorModelPermission;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::emote_set_loader::load_emote_set;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::http::v3::rest::types::EmoteSetModel;
-use crate::http::v3::types::UserEditorModelPermission;
+use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
 pub struct UsersMutation;
@@ -60,223 +57,143 @@ impl UserOps {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let old_user = global
-			.user_loader
-			.load(global, self.id.id())
-			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
-
-		let emote_set = if let Some(emote_set_id) = data.emote_set_id {
-			// check if set exists
-			let emote_set = global
-				.emote_set_by_id_loader
-				.load(emote_set_id.id())
+		let res = with_transaction(global, |mut tx| async move {
+			let old_user = global
+				.user_loader
+				.load(global, self.id.id())
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::NOT_FOUND)?;
+				.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-			Some(emote_set)
-		} else {
-			None
-		};
+			let emote_set = if let Some(emote_set_id) = data.emote_set_id {
+				// check if set exists
+				let emote_set = global
+					.emote_set_by_id_loader
+					.load(emote_set_id.id())
+					.await
+					.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+					.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-		let update_pull = if let Some(true) = data.unlink {
-			Some(update::update! {
+				Some(emote_set)
+			} else {
+				None
+			};
+
+			let update_pull = data.unlink.is_some_and(|u| u).then_some(update::update! {
 				#[query(pull)]
 				User {
 					connections: DbUserConnection {
 						platform_id: id.clone(),
 					}
 				}
-			})
-		} else {
-			None
-		};
+			});
 
-		let Some(user) = User::collection(&global.db)
-			.find_one_and_update(
-				filter::filter! {
-					User {
-						#[query(rename = "_id")]
-						id: self.id.id(),
-					}
-				},
-				update::update! {
-					#[query(set)]
-					User {
-						#[query(flatten)]
-						style: UserStyle {
-							#[query(optional)]
-							active_emote_set_id: data.emote_set_id.map(|id| id.id()),
+			let Some(user) = tx
+				.find_one_and_update(
+					filter::filter! {
+						User {
+							#[query(rename = "_id")]
+							id: self.id.id(),
+						}
+					},
+					update::update! {
+						#[query(set)]
+						User {
+							#[query(flatten)]
+							style: UserStyle {
+								#[query(optional)]
+								active_emote_set_id: data.emote_set_id.map(|id| id.id()),
+							},
+							updated_at: chrono::Utc::now(),
 						},
-						updated_at: chrono::Utc::now(),
+						#[query(pull)]
+						update_pull,
 					},
-					#[query(pull)]
-					update_pull,
-				},
-			)
-			.return_document(ReturnDocument::After)
-			.await
-			.map_err(|err| {
-				tracing::error!(error = %err, "failed to update user");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?
-		else {
-			return Ok(None);
-		};
-
-		if let Some(true) = data.unlink {
-			let (index, connection) = old_user
-				.connections
-				.iter()
-				.find_position(|c| c.platform_id == id)
-				.ok_or(ApiError::NOT_FOUND)?;
-
-			global
-				.event_api
-				.dispatch_event(
-					EventType::UpdateUser,
-					ChangeMap {
-						id: self.id.0.cast(),
-						kind: ObjectKind::User,
-						actor: Some(UserPartialModel::from_db(
-							authed_user.clone(),
-							None,
-							None,
-							&global.config.api.cdn_origin,
-						)),
-						pulled: vec![ChangeField {
-							key: "connections".to_string(),
-							ty: ChangeFieldType::Object,
-							index: Some(index),
-							value: serde_json::to_value(connection).map_err(|e| {
-								tracing::error!(error = %e, "failed to serialize value");
-								ApiError::INTERNAL_SERVER_ERROR
-							})?,
-							..Default::default()
-						}],
-						..Default::default()
-					},
-					self.id.0,
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::After)
+						.build(),
 				)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to dispatch event");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-		}
-
-		if let Some(emote_set) = emote_set {
-			let old_set = match old_user.style.active_emote_set_id {
-				Some(id) => {
-					let set = global.emote_set_by_id_loader.load(id).await.map_err(|_| {
-						tracing::error!("failed to load old emote set");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-
-					if let Some(set) = set {
-						let emotes = load_emote_set(global, set.emotes.clone(), None, false)
-							.await
-							.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-						Some(EmoteSetModel::from_db(set, emotes, None))
-					} else {
-						None
-					}
-				}
-				None => None,
+				.await?
+			else {
+				return Ok(None);
 			};
-			let old_set = serde_json::to_value(old_set).map_err(|e| {
-				tracing::error!(error = %e, "failed to serialize value");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
 
-			let new_set_id = emote_set.id;
-			let emotes = load_emote_set(global, emote_set.emotes.clone(), None, false)
-				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-			let new_set = EmoteSetModel::from_db(emote_set, emotes, None);
-			let new_set = serde_json::to_value(new_set).map_err(|e| {
-				tracing::error!(error = %e, "failed to serialize value");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+			if let Some(true) = data.unlink {
+				let connection = old_user
+					.user
+					.connections
+					.into_iter()
+					.find(|c| c.platform_id == id)
+					.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-			for i in 0..user.connections.len() {
-				let value = vec![
-					ChangeField {
-						key: "emote_set".to_string(),
-						ty: ChangeFieldType::Object,
-						old_value: old_set.clone(),
-						value: new_set.clone(),
-						..Default::default()
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					data: InternalEventData::User {
+						after: user.clone(),
+						data: InternalEventUserData::RemoveConnection { connection },
 					},
-					ChangeField {
-						key: "emote_set_id".to_string(),
-						ty: ChangeFieldType::String,
-						old_value: user.style.active_emote_set_id.map(|id| id.to_string()).into(),
-						value: new_set_id.to_string().into(),
-						..Default::default()
-					},
-				];
-
-				let value = serde_json::to_value(value).map_err(|e| {
-					tracing::error!(error = %e, "failed to serialize value");
-					ApiError::INTERNAL_SERVER_ERROR
+					timestamp: chrono::Utc::now(),
 				})?;
+			}
 
-				global
-					.event_api
-					.dispatch_event(
-						EventType::UpdateUser,
-						ChangeMap {
-							id: self.id.0.cast(),
-							kind: ObjectKind::User,
-							actor: Some(UserPartialModel::from_db(
-								authed_user.clone(),
-								None,
-								None,
-								&global.config.api.cdn_origin,
-							)),
-							updated: vec![ChangeField {
-								key: "connections".to_string(),
-								index: Some(i),
-								nested: true,
-								value,
-								..Default::default()
-							}],
-							..Default::default()
+			if let Some(emote_set) = emote_set {
+				let old = if let Some(set_id) = old_user.user.style.active_emote_set_id {
+					global
+						.emote_set_by_id_loader
+						.load(set_id)
+						.await
+						.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+				} else {
+					None
+				};
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					data: InternalEventData::User {
+						after: user.clone(),
+						data: InternalEventUserData::ChangeActiveEmoteSet {
+							old,
+							new: Some(emote_set),
 						},
-						self.id.0,
-					)
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			Ok(Some(user))
+		})
+		.await;
+
+		match res {
+			Ok(Some(user)) => {
+				let full_user = global
+					.user_loader
+					.load_fast_user(global, user)
 					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to dispatch event");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
+					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+				Ok(Some(
+					full_user
+						.connections
+						.iter()
+						.cloned()
+						.map(|c| {
+							Some(UserConnection::from_db(
+								full_user.computed.permissions.emote_set_capacity.unwrap_or_default(),
+								c,
+								&full_user.style,
+							))
+						})
+						.collect(),
+				))
+			}
+			Ok(None) => Ok(None),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
 			}
 		}
-
-		let full_user = global
-			.user_loader
-			.load_fast_user(global, user)
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		Ok(Some(
-			full_user
-				.connections
-				.iter()
-				.cloned()
-				.map(|c| {
-					Some(UserConnection::from_db(
-						full_user.computed.permissions.emote_set_capacity.unwrap_or_default(),
-						c,
-						&full_user.style,
-					))
-				})
-				.collect(),
-		))
 	}
 
 	async fn editors(
@@ -295,131 +212,177 @@ impl UserOps {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let mut session = global.mongo.start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		let res = with_transaction(global, |mut tx| async move {
+			// load all editors, we have to do this to know the old permissions Sadge
+			let editors = global
+				.user_editor_by_user_id_loader
+				.load(user.id)
+				.await
+				.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+				.unwrap_or_default();
 
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			if let Some(permissions) = data.permissions {
+				if permissions == UserEditorModelPermission::none() {
+					let editor_id = UserEditorId {
+						user_id: self.id.id(),
+						editor_id: editor_id.id(),
+					};
 
-		if let Some(permissions) = data.permissions {
-			if permissions == UserEditorModelPermission::none() {
-				// Remove editor
-				let res = DbUserEditor::collection(&global.db)
-					.delete_one(filter::filter! {
-						DbUserEditor {
-							#[query(serde, rename = "_id")]
-							id: UserEditorId {
-								user_id: self.id.id(),
-								editor_id: editor_id.id(),
+					// Remove editor
+					let res = tx
+						.find_one_and_delete(
+							filter::filter! {
+								DbUserEditor {
+									#[query(serde, rename = "_id")]
+									id: editor_id,
+								}
 							},
+							None,
+						)
+						.await?;
+
+					if let Some(editor) = res {
+						let editor_user = global
+							.user_loader
+							.load_fast(&global, editor.id.editor_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
+						tx.register_event(InternalEvent {
+							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							data: InternalEventData::UserEditor {
+								after: editor,
+								data: InternalEventUserEditorData::RemoveEditor {
+									editor: editor_user.user,
+								},
+							},
+							timestamp: chrono::Utc::now(),
+						})?;
+					}
+				} else {
+					let old_permissions = editors
+						.iter()
+						.find(|e| e.id.editor_id == editor_id.id())
+						.map(|e| e.permissions);
+
+					// Add or update editor
+					let editor_id = UserEditorId {
+						user_id: self.id.id(),
+						editor_id: editor_id.id(),
+					};
+
+					let permissions = permissions.to_db();
+
+					let editor = tx
+						.find_one_and_update(
+							filter::filter! {
+								DbUserEditor {
+									#[query(serde, rename = "_id")]
+									id: editor_id,
+								}
+							},
+							update::update! {
+								#[query(set)]
+								DbUserEditor {
+									#[query(serde)]
+									permissions: permissions.clone(),
+									updated_at: chrono::Utc::now(),
+								}
+							},
+							FindOneAndUpdateOptions::builder()
+								.return_document(ReturnDocument::After)
+								.build(),
+						)
+						.await?;
+
+					if let Some(editor) = editor {
+						// updated
+						let editor_user = global
+							.user_loader
+							.load_fast(&global, editor.id.editor_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
+						tx.register_event(InternalEvent {
+							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							data: InternalEventData::UserEditor {
+								after: editor,
+								data: InternalEventUserEditorData::EditPermissions {
+									old: old_permissions.unwrap_or_default(),
+									editor: editor_user.user,
+								},
+							},
+							timestamp: chrono::Utc::now(),
+						})?;
+					} else {
+						// didn't exist
+						if user.has(UserPermission::InviteEditors) {
+							return Err(TransactionError::custom(ApiError::FORBIDDEN));
 						}
-					})
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to delete editor");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
 
-				if res.deleted_count > 0 {
-					AuditLog::collection(&global.db)
-						.insert_one(AuditLog {
-							id: AuditLogId::new(),
-							actor_id: Some(auth_session.user_id()),
-							data: AuditLogData::User {
-								target_id: self.id.id(),
-								data: AuditLogUserData::RemoveEditor {
-									editor_id: editor_id.id(),
-								},
-							},
+						let editor = DbUserEditor {
+							id: editor_id,
+							state: UserEditorState::Pending,
+							notes: None,
+							permissions: permissions.clone(),
+							added_by_id: auth_session.user_id(),
+							added_at: chrono::Utc::now(),
 							updated_at: chrono::Utc::now(),
 							search_updated_at: None,
-						})
-						.session(&mut session)
-						.await
-						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert audit log");
-							ApiError::INTERNAL_SERVER_ERROR
-						})?;
-				}
-			} else {
-				// Add or update editor
-				let res = shared::database::user::editor::UserEditor::collection(&global.db)
-					.update_one(
-						filter::filter! {
-							DbUserEditor {
-								#[query(serde, rename = "_id")]
-								id: UserEditorId {
-									user_id: self.id.id(),
-									editor_id: editor_id.id(),
-								},
-							}
-						},
-						update::update! {
-							#[query(set)]
-							DbUserEditor {
-								#[query(serde)]
-								permissions: permissions.to_db(),
-								added_at: chrono::Utc::now(),
-							}
-						},
-					)
-					.upsert(user.has(UserPermission::InviteEditors))
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to update editor");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
+						};
 
-				// inserted
-				if res.matched_count == 0 {
-					AuditLog::collection(&global.db)
-						.insert_one(AuditLog {
-							id: AuditLogId::new(),
-							actor_id: Some(auth_session.user_id()),
-							data: AuditLogData::User {
-								target_id: self.id.id(),
-								data: AuditLogUserData::AddEditor {
-									editor_id: editor_id.id(),
+						let editor_user = global
+							.user_loader
+							.load_fast(&global, editor.id.editor_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
+						tx.insert_one::<DbUserEditor>(&editor, None).await?;
+
+						tx.register_event(InternalEvent {
+							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							data: InternalEventData::UserEditor {
+								after: editor,
+								data: InternalEventUserEditorData::AddEditor {
+									editor: editor_user.user,
 								},
 							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						})
-						.session(&mut session)
-						.await
-						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert audit log");
-							ApiError::INTERNAL_SERVER_ERROR
+							timestamp: chrono::Utc::now(),
 						})?;
+					}
 				}
 			}
+
+			Ok(())
+		})
+		.await;
+
+		match res {
+			Ok(_) => {
+				let editors = global
+					.user_editor_by_user_id_loader
+					.load(self.id.id())
+					.await
+					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.unwrap_or_default();
+
+				Ok(Some(
+					editors
+						.into_iter()
+						.filter_map(|e| UserEditor::from_db(e, false))
+						.map(Some)
+						.collect(),
+				))
+			}
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
 		}
-
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let editors = global
-			.user_editor_by_user_id_loader
-			.load(self.id.id())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.unwrap_or_default();
-
-		Ok(Some(
-			editors
-				.into_iter()
-				.filter_map(|e| UserEditor::from_db(e, false))
-				.map(Some)
-				.collect(),
-		))
 	}
 
 	async fn cosmetics<'ctx>(&self, ctx: &Context<'ctx>, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
@@ -444,186 +407,106 @@ impl UserOps {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		let mut changes = vec![];
+		let res = with_transaction(global, |mut tx| async move {
+			match update.kind {
+				CosmeticKind::Paint => {
+					// check if user has paint
+					if !user.computed.entitlements.paints.contains(&update.id.id()) {
+						return Err(TransactionError::custom(ApiError::FORBIDDEN));
+					}
 
-		let result = match update.kind {
-			CosmeticKind::Paint => {
-				// check if user has paint
-				if !user.computed.entitlements.paints.contains(&update.id.id()) {
-					return Err(ApiError::FORBIDDEN);
-				}
-
-				let old_paint = match user.style.active_paint_id {
-					Some(paint_id) => global
-						.paint_by_id_loader
-						.load(paint_id)
-						.await
-						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
-					None => None,
-				};
-
-				let paint = global
-					.paint_by_id_loader
-					.load(update.id.id())
-					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::NOT_FOUND)?;
-
-				let res = User::collection(&global.db)
-					.update_one(
-						filter::filter! {
-							User {
-								#[query(rename = "_id")]
-								id: self.id.id(),
-							}
-						},
-						update::update! {
-							#[query(set)]
-							User {
-								#[query(flatten)]
-								style: UserStyle {
-									active_paint_id: update.id.id(),
-								}
-							}
-						},
-					)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to update user");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-
-				changes.push(ChangeField {
-					key: "paint_id".to_string(),
-					ty: ChangeFieldType::String,
-					value: update.id.0.to_string().into(),
-					old_value: user.style.active_paint_id.map(|id| id.to_string()).into(),
-					..Default::default()
-				});
-				changes.push(ChangeField {
-					key: "paint".to_string(),
-					ty: ChangeFieldType::Object,
-					value: serde_json::to_value(paint).map_err(|e| {
-						tracing::error!(error = %e, "failed to serialize value");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-					old_value: serde_json::to_value(old_paint).map_err(|e| {
-						tracing::error!(error = %e, "failed to serialize value");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-					..Default::default()
-				});
-
-				Ok(res.modified_count == 1)
-			}
-			CosmeticKind::Badge => {
-				// check if user has paint
-				if !user.computed.entitlements.badges.contains(&update.id.id()) {
-					return Err(ApiError::FORBIDDEN);
-				}
-
-				let old_badge = match user.style.active_badge_id {
-					Some(badge_id) => global
-						.badge_by_id_loader
-						.load(badge_id)
-						.await
-						.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?,
-					None => None,
-				};
-
-				let badge = global
-					.badge_by_id_loader
-					.load(update.id.id())
-					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::NOT_FOUND)?;
-
-				let res = User::collection(&global.db)
-					.update_one(
-						filter::filter! {
-							User {
-								#[query(rename = "_id")]
-								id: self.id.id(),
-							}
-						},
-						update::update! {
-							#[query(set)]
-							User {
-								#[query(flatten)]
-								style: UserStyle {
-									active_badge_id: update.id.id(),
+					let res = User::collection(&global.db)
+						.update_one(
+							filter::filter! {
+								User {
+									#[query(rename = "_id")]
+									id: self.id.id(),
 								}
 							},
+							update::update! {
+								#[query(set)]
+								User {
+									#[query(flatten)]
+									style: UserStyle {
+										active_paint_id: update.id.id(),
+									}
+								}
+							},
+						)
+						.await?;
+
+					Ok(res.modified_count == 1)
+				}
+				CosmeticKind::Badge => {
+					// check if user has paint
+					if !user.computed.entitlements.badges.contains(&update.id.id()) {
+						return Err(TransactionError::custom(ApiError::FORBIDDEN));
+					}
+
+					let new = global
+						.badge_by_id_loader
+						.load(update.id.id())
+						.await
+						.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+						.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+
+					let old = if let Some(badge_id) = user.style.active_badge_id {
+						Some(
+							global
+								.badge_by_id_loader
+								.load(badge_id)
+								.await
+								.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+								.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?,
+						)
+					} else {
+						None
+					};
+
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						data: InternalEventData::User {
+							after: user.user.clone(),
+							data: InternalEventUserData::ChangeActiveBadge { old, new: Some(new) },
 						},
-					)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to update user");
-						ApiError::INTERNAL_SERVER_ERROR
+						timestamp: chrono::Utc::now(),
 					})?;
 
-				changes.push(ChangeField {
-					key: "badge_id".to_string(),
-					ty: ChangeFieldType::String,
-					value: update.id.0.to_string().into(),
-					old_value: user.style.active_badge_id.map(|id| id.to_string()).into(),
-					..Default::default()
-				});
-				changes.push(ChangeField {
-					key: "badge".to_string(),
-					ty: ChangeFieldType::Object,
-					value: serde_json::to_value(badge).map_err(|e| {
-						tracing::error!(error = %e, "failed to serialize value");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-					old_value: serde_json::to_value(old_badge).map_err(|e| {
-						tracing::error!(error = %e, "failed to serialize value");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?,
-					..Default::default()
-				});
+					let res = User::collection(&global.db)
+						.update_one(
+							filter::filter! {
+								User {
+									#[query(rename = "_id")]
+									id: self.id.id(),
+								}
+							},
+							update::update! {
+								#[query(set)]
+								User {
+									#[query(flatten)]
+									style: UserStyle {
+										active_badge_id: update.id.id(),
+									}
+								},
+							},
+						)
+						.await?;
 
-				Ok(res.modified_count == 1)
+					Ok(res.modified_count == 1)
+				}
+				CosmeticKind::Avatar => Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED)),
 			}
-			CosmeticKind::Avatar => Err(ApiError::NOT_IMPLEMENTED),
-		};
+		})
+		.await;
 
-		if let Ok(true) = result {
-			global
-				.event_api
-				.dispatch_event(
-					EventType::UpdateUser,
-					ChangeMap {
-						id: self.id.0.cast(),
-						kind: ObjectKind::User,
-						actor: Some(UserPartialModel::from_db(
-							authed_user.clone(),
-							None,
-							None,
-							&global.config.api.cdn_origin,
-						)),
-						updated: vec![ChangeField {
-							key: "style".to_string(),
-							ty: ChangeFieldType::Object,
-							nested: true,
-							value: serde_json::to_value(changes).map_err(|e| {
-								tracing::error!(error = %e, "failed to serialize value");
-								ApiError::INTERNAL_SERVER_ERROR
-							})?,
-							..Default::default()
-						}],
-						..Default::default()
-					},
-					self.id.0,
-				)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to dispatch event");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
+		match res {
+			Ok(b) => Ok(b),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
 		}
-
-		result
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Assign)")]
@@ -649,162 +532,94 @@ impl UserOps {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let mut changes = ChangeMap {
-			id: self.id.0.cast(),
-			kind: ObjectKind::User,
-			actor: Some(UserPartialModel::from_db(
-				auth_session.user(global).await?.clone(),
-				None,
-				None,
-				&global.config.api.cdn_origin,
-			)),
-			..Default::default()
-		};
+		let res = with_transaction(global, |mut tx| async move {
+			let roles = match action {
+				ListItemAction::Add => {
+					if user.computed.entitlements.roles.contains(&role_id.id()) {
+						return Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect());
+					}
 
-		let mut session = global.mongo.start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		let roles = match action {
-			ListItemAction::Add => {
-				if user.computed.entitlements.roles.contains(&role_id.id()) {
-					return Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect());
-				}
-
-				let edge = EntitlementEdge {
-					id: EntitlementEdgeId {
-						from: EntitlementEdgeKind::User { user_id: self.id.id() },
-						to: EntitlementEdgeKind::Role { role_id: role_id.id() },
-						managed_by: None,
-					},
-				};
-
-				EntitlementEdge::collection(&global.db)
-					.insert_one(&edge)
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to insert entitlement edge");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-
-				AuditLog::collection(&global.db)
-					.insert_one(AuditLog {
-						id: AuditLogId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: AuditLogData::User {
-							target_id: self.id.id(),
-							data: AuditLogUserData::AddRole { role_id: role_id.id() },
+					let edge = EntitlementEdge {
+						id: EntitlementEdgeId {
+							from: EntitlementEdgeKind::User { user_id: self.id.id() },
+							to: EntitlementEdgeKind::Role { role_id: role_id.id() },
+							managed_by: None,
 						},
-						updated_at: chrono::Utc::now(),
-						search_updated_at: None,
-					})
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to insert audit log");
-						ApiError::INTERNAL_SERVER_ERROR
+					};
+
+					tx.insert_one::<EntitlementEdge>(&edge, None).await?;
+
+					tx.register_event(InternalEvent {
+						actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+						data: InternalEventData::EntitlementEdge {
+							after: edge,
+							data: StoredEventEntitlementEdgeData::Create,
+						},
+						timestamp: chrono::Utc::now(),
 					})?;
-
-				changes.pushed.push(ChangeField {
-					key: "role_ids".to_string(),
-					ty: ChangeFieldType::String,
-					index: Some(role.rank as usize),
-					value: role_id.0.to_string().into(),
-					..Default::default()
-				});
-
-				user.computed
-					.entitlements
-					.roles
-					.iter()
-					.copied()
-					.chain(std::iter::once(role_id.id()))
-					.map(Into::into)
-					.collect()
-			}
-			ListItemAction::Remove => {
-				let res = EntitlementEdge::collection(&global.db)
-					.delete_one(filter::filter! {
-						EntitlementEdge {
-							#[query(serde)]
-							id: EntitlementEdgeId {
-								from: EntitlementEdgeKind::User { user_id: self.id.id() }.into(),
-								to: EntitlementEdgeKind::Role { role_id: role_id.id() }.into(),
-								managed_by: None,
-							}
-						}
-					})
-					.session(&mut session)
-					.await
-					.map_err(|err| {
-						tracing::error!(error = %err, "failed to delete entitlement edge");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?;
-
-				if res.deleted_count > 0 {
-					AuditLog::collection(&global.db)
-						.insert_one(AuditLog {
-							id: AuditLogId::new(),
-							actor_id: Some(auth_session.user_id()),
-							data: AuditLogData::User {
-								target_id: self.id.id(),
-								data: AuditLogUserData::RemoveRole { role_id: role_id.id() },
-							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						})
-						.session(&mut session)
-						.await
-						.map_err(|err| {
-							tracing::error!(error = %err, "failed to insert audit log");
-							ApiError::INTERNAL_SERVER_ERROR
-						})?;
-
-					changes.pulled.push(ChangeField {
-						key: "role_ids".to_string(),
-						ty: ChangeFieldType::String,
-						index: Some(role.rank as usize),
-						value: role_id.0.to_string().into(),
-						..Default::default()
-					});
 
 					user.computed
 						.entitlements
 						.roles
 						.iter()
 						.copied()
-						.filter(|id| *id != role_id.id())
+						.chain(std::iter::once(role_id.id()))
 						.map(Into::into)
 						.collect()
-				} else {
-					user.computed.entitlements.roles.iter().copied().map(Into::into).collect()
 				}
+				ListItemAction::Remove => {
+					if let Some(edge) = tx
+						.find_one_and_delete(
+							filter::filter! {
+								EntitlementEdge {
+									#[query(serde)]
+									id: EntitlementEdgeId {
+										from: EntitlementEdgeKind::User { user_id: self.id.id() }.into(),
+										to: EntitlementEdgeKind::Role { role_id: role_id.id() }.into(),
+										managed_by: None,
+									}
+								}
+							},
+							None,
+						)
+						.await?
+					{
+						tx.register_event(InternalEvent {
+							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							data: InternalEventData::EntitlementEdge {
+								after: edge,
+								data: StoredEventEntitlementEdgeData::Delete,
+							},
+							timestamp: chrono::Utc::now(),
+						})?;
+
+						user.computed
+							.entitlements
+							.roles
+							.iter()
+							.copied()
+							.filter(|id| *id != role_id.id())
+							.map(Into::into)
+							.collect()
+					} else {
+						user.computed.entitlements.roles.iter().copied().map(Into::into).collect()
+					}
+				}
+				ListItemAction::Update => return Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED)),
+			};
+
+			Ok(roles)
+		})
+		.await;
+
+		match res {
+			Ok(roles) => Ok(roles),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
 			}
-			ListItemAction::Update => return Err(ApiError::NOT_IMPLEMENTED),
-		};
-
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		global
-			.event_api
-			.dispatch_event(EventType::UpdateUser, changes, self.id.0)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to dispatch event");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		Ok(roles)
+		}
 	}
 }
 

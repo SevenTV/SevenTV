@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use mongodb::options::FindOneAndUpdateOptions;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::{EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
@@ -10,12 +9,10 @@ use shared::database::emote_moderation_request::{
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
-use shared::old_types::UserPartialModel;
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::rest::types::{ActiveEmoteModel, EmotePartialModel};
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn emote_add(
@@ -157,7 +154,9 @@ pub async fn emote_add(
 					emotes: &emote_set_emote,
 				},
 			},
-			None,
+			FindOneAndUpdateOptions::builder()
+				.return_document(ReturnDocument::After)
+				.build(),
 		)
 		.await?
 		.ok_or(TransactionError::custom(ApiError::new_const(
@@ -174,65 +173,14 @@ pub async fn emote_add(
 		}
 	}
 
-	tx.insert_one(
-		AuditLog {
-			id: AuditLogId::new(),
-			actor_id: emote_set_emote.added_by_id.clone(),
-			data: AuditLogData::EmoteSet {
-				target_id: emote_set.id,
-				data: AuditLogEmoteSetData::AddEmote {
-					emote_id: emote_set_emote.id.clone(),
-					alias: emote_set_emote.alias.clone(),
-				},
-			},
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
+	tx.register_event(InternalEvent {
+		actor: Some(actor.clone()),
+		data: InternalEventData::EmoteSet {
+			after: emote_set.clone(),
+			data: InternalEventEmoteSetData::AddEmote { emote, emote_set_emote },
 		},
-		None,
-	)
-	.await?;
-
-	let active_emote = ActiveEmoteModel::from_db(
-		emote_set_emote,
-		Some(EmotePartialModel::from_db(emote, None, &global.config.api.cdn_origin)),
-	);
-	let active_emote = serde_json::to_value(active_emote)
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to serialize emote");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
-		.map_err(TransactionError::custom)?;
-
-	global
-		.event_api
-		.dispatch_event(
-			EventType::UpdateEmoteSet,
-			ChangeMap {
-				id: emote_set.id.cast(),
-				kind: ObjectKind::EmoteSet,
-				actor: Some(UserPartialModel::from_db(
-					actor.clone(),
-					None,
-					None,
-					&global.config.api.cdn_origin,
-				)),
-				pushed: vec![ChangeField {
-					key: "emotes".to_string(),
-					index: Some(emote_set.emotes.len()),
-					ty: ChangeFieldType::Object,
-					value: active_emote,
-					..Default::default()
-				}],
-				..Default::default()
-			},
-			emote_set.id,
-		)
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to dispatch event");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
-		.map_err(TransactionError::custom)?;
+		timestamp: chrono::Utc::now(),
+	})?;
 
 	Ok(emote_set)
 }

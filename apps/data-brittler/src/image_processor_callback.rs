@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -12,7 +12,7 @@ use scuffle_image_processor_proto::{event_callback, EventCallback};
 use shared::database::badge::Badge;
 use shared::database::emote::{Emote, EmoteFlags};
 use shared::database::image_set::{Image, ImageSet, ImageSetInput};
-use shared::database::paint::{Paint, PaintData, PaintLayer, PaintLayerId, PaintLayerType};
+use shared::database::paint::{Paint, PaintData, PaintLayer, PaintLayerType};
 use shared::database::queries::{filter, update};
 use shared::database::user::profile_picture::UserProfilePicture;
 use shared::database::user::{User, UserStyle};
@@ -117,17 +117,17 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 				continue;
 			}
 			event_callback::Event::Success(event) => {
-				if let Err(err) = handle_success(&global, subject, event_callback.metadata, event).await {
+				if let Err(err) = handle_success(&global, subject, event).await {
 					tracing::error!(error = %err, "failed to handle success event");
 				}
 			}
 			event_callback::Event::Fail(event) => {
-				if let Err(err) = handle_fail(&global, subject, event_callback.metadata, event).await {
+				if let Err(err) = handle_fail(&global, subject, event).await {
 					tracing::error!(error = %err, "failed to handle fail event");
 				}
 			}
 			event_callback::Event::Cancel(_) => {
-				if let Err(err) = handle_cancel(&global, subject, event_callback.metadata).await {
+				if let Err(err) = handle_cancel(&global, subject).await {
 					tracing::error!(error = %err, "failed to handle cancel event");
 				}
 			}
@@ -159,12 +159,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-async fn handle_success(
-	global: &Arc<Global>,
-	subject: Subject,
-	metadata: HashMap<String, String>,
-	event: event_callback::Success,
-) -> anyhow::Result<()> {
+async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_callback::Success) -> anyhow::Result<()> {
 	let input = event.input_metadata.context("missing input metadata")?;
 
 	let animated = event.files.iter().any(|i| i.frame_count > 1);
@@ -356,7 +351,7 @@ async fn handle_success(
 	Ok(())
 }
 
-async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>) -> anyhow::Result<()> {
+async fn handle_abort(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
 	match subject {
 		Subject::PaintLayer(id, layer_id) => {
 			Paint::collection(global.target_db())
@@ -404,21 +399,16 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject, metadata: HashMap<
 	Ok(())
 }
 
-async fn handle_fail(
-	global: &Arc<Global>,
-	subject: Subject,
-	metadata: HashMap<String, String>,
-	_event: event_callback::Fail,
-) -> anyhow::Result<()> {
-	handle_abort(global, subject, metadata).await?;
+async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callback::Fail) -> anyhow::Result<()> {
+	handle_abort(global, subject).await?;
 
 	// Notify user of failure with reason
 
 	Ok(())
 }
 
-async fn handle_cancel(global: &Arc<Global>, subject: Subject, metadata: HashMap<String, String>) -> anyhow::Result<()> {
-	handle_abort(global, subject, metadata).await?;
+async fn handle_cancel(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
+	handle_abort(global, subject).await?;
 
 	// Notify user of cancellation
 

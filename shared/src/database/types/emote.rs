@@ -7,7 +7,7 @@ use crate::database::{Id, MongoCollection};
 
 pub type EmoteId = Id<Emote>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq)]
 #[mongo(collection_name = "emotes")]
 #[mongo(index(fields(owner_id = 1)))]
 #[mongo(index(fields("merged.target_id" = 1)))]
@@ -34,7 +34,7 @@ pub struct Emote {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteScores {
 	pub trending_day: i32,
@@ -46,7 +46,7 @@ pub struct EmoteScores {
 	pub top_all_time: i32,
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteMerged {
 	pub target_id: EmoteId,
@@ -96,7 +96,7 @@ impl<'a> serde::Deserialize<'a> for EmoteFlags {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteAttribution {
 	pub user_id: UserId,

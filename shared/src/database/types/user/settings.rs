@@ -1,4 +1,4 @@
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct UserSettings {
 	pub notifications: UserNotificationSettings,
@@ -10,30 +10,30 @@ pub struct UserSettings {
 	pub extension: UserExtensionSettings,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct UserSiteSettings {}
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct UserExtensionSettings {}
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct UserLoginSettings {}
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct UserNotificationSettings {}
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct UserMessageSettings {}
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct UserEditorSettings {}
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct UserPrivacySettings {}

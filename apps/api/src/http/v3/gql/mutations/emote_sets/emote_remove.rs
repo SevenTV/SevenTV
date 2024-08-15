@@ -3,17 +3,14 @@ use std::sync::Arc;
 use hyper::StatusCode;
 use itertools::Itertools;
 use mongodb::options::FindOneAndUpdateOptions;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
 use shared::database::queries::{filter, update};
 use shared::database::user::FullUser;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
-use shared::old_types::UserPartialModel;
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::rest::types::{ActiveEmoteModel, EmotePartialModel};
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn emote_remove(
@@ -23,12 +20,22 @@ pub async fn emote_remove(
 	emote_set: &EmoteSet,
 	emote_id: EmoteId,
 ) -> TransactionResult<EmoteSet, ApiError> {
-	let Some((index, emote)) = emote_set.emotes.iter().find_position(|e| e.id == emote_id) else {
-		return Err(TransactionError::custom(ApiError::new_const(
+	let (index, old_emote_set_emote) = emote_set
+		.emotes
+		.iter()
+		.find_position(|e| e.id == emote_id)
+		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"))
+		.map_err(TransactionError::custom)?;
+
+	let emote = global
+		.emote_by_id_loader
+		.load(emote_id)
+		.await
+		.map_err(|()| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+		.ok_or(TransactionError::custom(ApiError::new_const(
 			StatusCode::NOT_FOUND,
-			"emote not found in set",
-		)));
-	};
+			"emote not found",
+		)))?;
 
 	let emote_set = tx
 		.find_one_and_update(
@@ -65,71 +72,18 @@ pub async fn emote_remove(
 			"emote not found in set",
 		)))?;
 
-	tx.insert_one(
-		AuditLog {
-			id: AuditLogId::new(),
-			actor_id: Some(actor.id),
-			data: AuditLogData::EmoteSet {
-				target_id: emote_set.id,
-				data: AuditLogEmoteSetData::RemoveEmote { emote_id },
+	tx.register_event(InternalEvent {
+		actor: Some(actor.clone()),
+		data: InternalEventData::EmoteSet {
+			after: emote_set.clone(),
+			data: InternalEventEmoteSetData::RemoveEmote {
+				emote,
+				emote_set_emote: old_emote_set_emote.clone(),
+				index,
 			},
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
 		},
-		None,
-	)
-	.await?;
-
-	let active_emote = ActiveEmoteModel::from_db(
-		emote.clone(),
-		Some(EmotePartialModel::from_db(
-			global
-				.emote_by_id_loader
-				.load(emote_id)
-				.await
-				.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?,
-			None,
-			&global.config.api.cdn_origin,
-		)),
-	);
-	let active_emote = serde_json::to_value(active_emote)
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to serialize emote");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
-		.map_err(TransactionError::custom)?;
-
-	global
-		.event_api
-		.dispatch_event(
-			EventType::UpdateEmoteSet,
-			ChangeMap {
-				id: emote_set.id.cast(),
-				kind: ObjectKind::EmoteSet,
-				actor: Some(UserPartialModel::from_db(
-					actor.clone(),
-					None,
-					None,
-					&global.config.api.cdn_origin,
-				)),
-				pulled: vec![ChangeField {
-					key: "emotes".to_string(),
-					index: Some(index),
-					ty: ChangeFieldType::Object,
-					old_value: active_emote,
-					..Default::default()
-				}],
-				..Default::default()
-			},
-			emote_set.id,
-		)
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to dispatch event");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
-		.map_err(TransactionError::custom)?;
+		timestamp: chrono::Utc::now(),
+	})?;
 
 	Ok(emote_set)
 }

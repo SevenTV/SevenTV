@@ -6,15 +6,15 @@ use chrono::Utc;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogTicketData};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::TicketPermission;
+use shared::database::stored_event::StoredEventTicketMessageData;
 use shared::database::ticket::{
 	Ticket, TicketId, TicketKind, TicketMember, TicketMemberKind, TicketMessage, TicketMessageId, TicketPriority,
 	TicketTarget,
 };
 use shared::database::user::UserId;
-use shared::database::MongoCollection;
+use shared::event::{InternalEvent, InternalEventData, InternalEventTicketData};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -37,95 +37,69 @@ impl ReportsMutation {
 
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let mut session = global.mongo.start_session().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+		let res = with_transaction(global, |mut tx| async move {
+			let ticket_id = TicketId::new();
 
-		let ticket_id = TicketId::new();
+			let message = TicketMessage {
+				id: TicketMessageId::new(),
+				ticket_id,
+				user_id: auth_session.user_id(),
+				content: data.body,
+				files: vec![],
+				search_updated_at: None,
+				updated_at: Utc::now(),
+			};
 
-		session.start_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			tx.insert_one::<TicketMessage>(&message, None).await?;
 
-		let message = TicketMessage {
-			id: TicketMessageId::new(),
-			ticket_id,
-			user_id: auth_sesion.user_id(),
-			content: data.body,
-			files: vec![],
-			search_updated_at: None,
-			updated_at: Utc::now(),
-		};
+			let member = TicketMember {
+				user_id: auth_session.user_id(),
+				kind: TicketMemberKind::Member,
+				notifications: true,
+				last_read: Some(message.id),
+			};
 
-		TicketMessage::collection(&global.db)
-			.insert_one(&message)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert ticket message");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		let member = TicketMember {
-			user_id: auth_sesion.user_id(),
-			kind: TicketMemberKind::Member,
-			notifications: true,
-			last_read: Some(message.id),
-		};
-
-		let ticket = Ticket {
-			id: ticket_id,
-			priority: TicketPriority::Medium,
-			members: vec![member],
-			title: data.subject,
-			tags: vec![],
-			country_code: None, // TODO
-			kind: TicketKind::Abuse,
-			targets: vec![TicketTarget::Emote(data.target_id.id())],
-			author_id: auth_sesion.user_id(),
-			open: true,
-			locked: false,
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-		};
-
-		Ticket::collection(&global.db)
-			.insert_one(&ticket)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert ticket");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		AuditLog::collection(&global.db)
-			.insert_one(AuditLog {
-				id: AuditLogId::new(),
-				actor_id: Some(auth_sesion.user_id()),
-				data: AuditLogData::Ticket {
-					target_id: ticket.id,
-					data: AuditLogTicketData::Create,
-				},
+			let ticket = Ticket {
+				id: ticket_id,
+				priority: TicketPriority::Medium,
+				members: vec![member],
+				title: data.subject,
+				tags: vec![],
+				country_code: None, // TODO
+				kind: TicketKind::Abuse,
+				targets: vec![TicketTarget::Emote(data.target_id.id())],
+				author_id: auth_session.user_id(),
+				open: true,
+				locked: false,
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
-			})
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert audit log");
-				ApiError::INTERNAL_SERVER_ERROR
+			};
+
+			tx.insert_one::<Ticket>(&ticket, None).await?;
+
+			tx.register_event(InternalEvent {
+				actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+				data: InternalEventData::Ticket {
+					after: ticket.clone(),
+					data: InternalEventTicketData::Create,
+				},
+				timestamp: chrono::Utc::now(),
 			})?;
 
-		session.commit_transaction().await.map_err(|err| {
-			tracing::error!(error = %err, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			Ok((ticket, message))
+		})
+		.await;
 
-		Report::from_db(ticket, vec![message]).ok_or(ApiError::INTERNAL_SERVER_ERROR)
+		match res {
+			Ok((ticket, message)) => Report::from_db(ticket, vec![message]).ok_or(ApiError::INTERNAL_SERVER_ERROR),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
+		}
 	}
 
 	#[graphql(guard = "PermissionGuard::all([TicketPermission::ManageAbuse, TicketPermission::ManageGeneric])")]
@@ -137,7 +111,7 @@ impl ReportsMutation {
 	) -> Result<Report, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let auth_sesion = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
 		let ticket = global
 			.ticket_by_id_loader
@@ -147,37 +121,17 @@ impl ReportsMutation {
 			.ok_or(ApiError::NOT_FOUND)?;
 
 		let transaction_result = with_transaction(global, |mut tx| async move {
-			let priority = data
+			let new_priority = data
 				.priority
 				.map(|p| TicketPriority::try_from(p))
 				.transpose()
 				.map_err(|_| ApiError::new_const(StatusCode::BAD_REQUEST, "invalid ticket priority"))
 				.map_err(TransactionError::custom)?;
 
-			let open = if let Some(status) = data.status {
+			let new_open = if let Some(status) = data.status {
 				let new = status == ReportStatus::Open || status == ReportStatus::Assigned;
 
-				if new != ticket.open {
-					tx.insert_one(
-						AuditLog {
-							id: AuditLogId::new(),
-							actor_id: Some(auth_sesion.user_id()),
-							data: AuditLogData::Ticket {
-								target_id: report_id.id(),
-								data: AuditLogTicketData::ChangeOpen {
-									old: ticket.open,
-									new: new,
-								},
-							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						},
-						None,
-					)
-					.await?;
-				}
-
-				Some(new)
+				(new != ticket.open).then_some(new)
 			} else {
 				None
 			};
@@ -186,13 +140,15 @@ impl ReportsMutation {
 				#[query(set)]
 				Ticket {
 					#[query(optional)]
-					open,
+					open: new_open,
 					#[query(serde, optional)]
-					priority,
+					priority: new_priority.as_ref(),
 					updated_at: chrono::Utc::now(),
 				},
 			}
 			.into();
+
+			let mut event_ticket_data = None;
 
 			if let Some(assignee) = data.assignee {
 				let mut chars = assignee.chars();
@@ -205,20 +161,16 @@ impl ReportsMutation {
 							last_read: None,
 						};
 
-						tx.insert_one(
-							AuditLog {
-								id: AuditLogId::new(),
-								actor_id: Some(auth_sesion.user_id()),
-								data: AuditLogData::Ticket {
-									target_id: report_id.id(),
-									data: AuditLogTicketData::AddMember { member: user_id },
-								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
-							},
-							None,
-						)
-						.await?;
+						let member_user = global
+							.user_loader
+							.load_fast(&global, user_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+
+						event_ticket_data = Some(InternalEventTicketData::AddMember {
+							member: member_user.user,
+						});
 
 						update = update.extend_one(update::update! {
 							#[query(push)]
@@ -229,20 +181,16 @@ impl ReportsMutation {
 						});
 					}
 					(Some('-'), Ok(user_id)) => {
-						tx.insert_one(
-							AuditLog {
-								id: AuditLogId::new(),
-								actor_id: Some(auth_sesion.user_id()),
-								data: AuditLogData::Ticket {
-									target_id: report_id.id(),
-									data: AuditLogTicketData::RemoveMember { member: user_id },
-								},
-								updated_at: chrono::Utc::now(),
-								search_updated_at: None,
-							},
-							None,
-						)
-						.await?;
+						let member_user = global
+							.user_loader
+							.load_fast(&global, user_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+							.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+
+						event_ticket_data = Some(InternalEventTicketData::RemoveMember {
+							member: member_user.user,
+						});
 
 						update = update.extend_one(update::update! {
 							#[query(pull)]
@@ -253,7 +201,7 @@ impl ReportsMutation {
 							},
 						});
 					}
-					_ => Err(TransactionError::custom(ApiError::BAD_REQUEST))?,
+					_ => return Err(TransactionError::custom(ApiError::BAD_REQUEST)),
 				}
 			}
 
@@ -274,18 +222,66 @@ impl ReportsMutation {
 				.ok_or(ApiError::NOT_FOUND)
 				.map_err(TransactionError::custom)?;
 
+			if let Some(new_priority) = new_priority {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::Ticket {
+						after: ticket.clone(),
+						data: InternalEventTicketData::ChangePriority {
+							old: ticket.priority.clone(),
+							new: new_priority,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if let Some(new_open) = new_open {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::Ticket {
+						after: ticket.clone(),
+						data: InternalEventTicketData::ChangeOpen {
+							old: ticket.open,
+							new: new_open,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if let Some(event_ticket_data) = event_ticket_data {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::Ticket {
+						after: ticket.clone(),
+						data: event_ticket_data,
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
 			if let Some(note) = data.note {
 				let message = TicketMessage {
 					id: TicketMessageId::new(),
 					ticket_id: ticket.id,
-					user_id: auth_sesion.user_id(),
+					user_id: auth_session.user_id(),
 					content: note.content.unwrap_or_default(),
 					files: vec![],
 					search_updated_at: None,
 					updated_at: Utc::now(),
 				};
 
-				tx.insert_one(message, None).await?;
+				tx.insert_one::<TicketMessage>(&message, None).await?;
+
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::TicketMessage {
+						after: message,
+						data: StoredEventTicketMessageData::Create,
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
 			}
 
 			Ok(ticket)

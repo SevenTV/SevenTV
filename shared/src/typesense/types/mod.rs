@@ -1,4 +1,4 @@
-pub mod audit_log;
+pub mod event;
 pub mod automod;
 pub mod badge;
 pub mod duration_unit;
@@ -232,7 +232,7 @@ impl<T> TypesenseString<T> {
 
 fn typesense_collections() -> impl IntoIterator<Item = TypesenseGenericCollection> {
 	std::iter::empty()
-		.chain(audit_log::typesense_collections())
+		.chain(event::typesense_collections())
 		.chain(automod::typesense_collections())
 		.chain(entitlement::typesense_collections())
 		.chain(page::typesense_collections())

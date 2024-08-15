@@ -4,7 +4,7 @@ use super::EmoteSetId;
 use crate::database::emote::EmoteId;
 use crate::database::user::UserId;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetEmote {
 	pub id: EmoteId,

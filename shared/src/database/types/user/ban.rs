@@ -7,7 +7,7 @@ use crate::database::{Id, MongoCollection};
 
 pub type UserBanId = Id<UserBan>;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "user_bans")]
 #[mongo(index(fields(user_id = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
@@ -32,7 +32,7 @@ pub struct UserBan {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct UserBanRemoved {
 	#[serde(with = "crate::database::serde")]

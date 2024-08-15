@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use mongodb::bson::Bson;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct UserConnection {
 	pub platform: Platform,

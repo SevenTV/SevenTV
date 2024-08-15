@@ -1,6 +1,8 @@
 // use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode as
 // WsCloseCode;
 
+use std::hash::Hash;
+
 // See the comment on the `payload.rs` file for a description of what this file
 // is.
 use super::payload::{Subscribe, Unsubscribe};
@@ -341,7 +343,22 @@ pub struct ChangeMap {
 	pub object: serde_json::Value,
 }
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+impl Hash for ChangeMap {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.id.hash(state);
+		self.kind.hash(state);
+		self.contextual.hash(state);
+		self.actor.as_ref().map(|a| a.id).hash(state);
+		self.added.hash(state);
+		self.updated.hash(state);
+		self.removed.hash(state);
+		self.pushed.hash(state);
+		self.pulled.hash(state);
+		self.object.hash(state);
+	}
+}
+
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, Hash)]
 #[serde(deny_unknown_fields)]
 pub struct ChangeField {
 	pub key: String,
@@ -359,7 +376,7 @@ pub struct ChangeField {
 	pub value: serde_json::Value,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u16)]
 pub enum ObjectKind {
 	#[default]
@@ -431,7 +448,7 @@ impl<'a> serde::Deserialize<'a> for ObjectKind {
 	}
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChangeFieldType {
 	String,
 	Number,

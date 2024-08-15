@@ -1,7 +1,7 @@
 use super::EmoteSetId;
 use crate::database::emote::EmoteId;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(tag = "type", content = "value")]
 #[serde(deny_unknown_fields)]
 pub enum EmoteSetOriginError {
@@ -9,7 +9,7 @@ pub enum EmoteSetOriginError {
 	MaxDepthExceeded(String),
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetOriginConfig {
 	pub origins: Vec<EmoteSetOrigin>,
@@ -23,7 +23,7 @@ pub struct EmoteSetOriginConfig {
 	pub error: Option<EmoteSetOriginError>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(tag = "type", content = "value")]
 #[serde(deny_unknown_fields)]
 pub enum EmoteSetEmoteRef {
@@ -31,7 +31,7 @@ pub enum EmoteSetEmoteRef {
 	Id(EmoteId),
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetOrigin {
 	pub id: EmoteSetId,
@@ -39,13 +39,13 @@ pub struct EmoteSetOrigin {
 	pub transformations: Vec<EmoteSetOriginTransformation>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSetLimit {
 	pub count: usize,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum EmoteSetOriginTransformation {

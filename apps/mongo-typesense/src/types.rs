@@ -1,5 +1,4 @@
 pub mod mongo {
-	pub use shared::database::audit_log::*;
 	pub use shared::database::automod::*;
 	pub use shared::database::badge::*;
 	pub use shared::database::emote::*;
@@ -15,6 +14,7 @@ pub mod mongo {
 	pub use shared::database::product::subscription_timeline::*;
 	pub use shared::database::product::*;
 	pub use shared::database::role::*;
+	pub use shared::database::stored_event::*;
 	pub use shared::database::ticket::*;
 	pub use shared::database::user::ban::*;
 	pub use shared::database::user::ban_template::*;
@@ -24,7 +24,7 @@ pub mod mongo {
 }
 
 pub mod typesense {
-	pub use shared::typesense::types::audit_log::*;
+	pub use shared::typesense::types::event::*;
 	pub use shared::typesense::types::automod::*;
 	pub use shared::typesense::types::badge::*;
 	pub use shared::typesense::types::emote::*;

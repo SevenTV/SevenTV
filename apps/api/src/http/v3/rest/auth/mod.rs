@@ -8,11 +8,11 @@ use axum::routing::{get, post};
 use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogId, AuditLogUserData};
 use shared::database::queries::filter;
+use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
-use shared::database::MongoCollection;
+use shared::event::{InternalEvent, InternalEventData};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
@@ -20,6 +20,7 @@ use crate::http::error::ApiError;
 use crate::http::extract::Query;
 use crate::http::middleware::auth::{AuthSession, AuthSessionKind, AUTH_COOKIE};
 use crate::http::middleware::cookies::Cookies;
+use crate::transactions::{with_transaction, TransactionError};
 
 mod login;
 
@@ -120,64 +121,53 @@ async fn logout(
 	Extension(cookies): Extension<Cookies>,
 	auth_session: AuthSession,
 ) -> Result<impl IntoResponse, ApiError> {
-	let mut session = global.mongo.start_session().await.map_err(|err| {
-		tracing::error!(error = %err, "failed to start session");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+	let res = with_transaction(&Arc::clone(&global), |mut tx| async move {
+		// is a new session
+		if let AuthSessionKind::Session(session) = &auth_session.kind {
+			let user_session = tx
+				.find_one_and_delete(
+					filter::filter! {
+						UserSession {
+							#[query(rename = "_id")]
+							id: session.id,
+						}
+					},
+					None,
+				)
+				.await?;
 
-	session.start_transaction().await.map_err(|err| {
-		tracing::error!(error = %err, "failed to start transaction");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
+			if let Some(user_session) = user_session {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(&global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::UserSession {
+						after: user_session,
+						data: StoredEventUserSessionData::Delete,
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+		}
 
-	// is a new session
-	if let AuthSessionKind::Session(session) = &auth_session.kind {
-		UserSession::collection(&global.db)
-			.delete_one(filter::filter! {
-				UserSession {
-					#[query(rename = "_id")]
-					id: session.id,
-				}
-			})
-			.await
+		cookies.remove(&global, AUTH_COOKIE);
+
+		Ok(())
+	})
+	.await;
+
+	match res {
+		Ok(_) => Response::builder()
+			.status(StatusCode::NO_CONTENT)
+			.body(Body::empty())
 			.map_err(|err| {
-				tracing::error!(error = %err, "failed to delete session");
+				tracing::error!(error = %err, "failed to create response");
 				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+			}),
+		Err(TransactionError::Custom(e)) => Err(e),
+		Err(e) => {
+			tracing::error!(error = %e, "transaction failed");
+			Err(ApiError::INTERNAL_SERVER_ERROR)
+		}
 	}
-
-	AuditLog::collection(&global.db)
-		.insert_one(AuditLog {
-			id: AuditLogId::new(),
-			actor_id: Some(auth_session.user_id()),
-			data: AuditLogData::User {
-				target_id: auth_session.user_id(),
-				data: AuditLogUserData::Logout,
-			},
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-		})
-		.session(&mut session)
-		.await
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to insert audit log");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-	session.commit_transaction().await.map_err(|err| {
-		tracing::error!(error = %err, "failed to commit transaction");
-		ApiError::INTERNAL_SERVER_ERROR
-	})?;
-
-	cookies.remove(&global, AUTH_COOKIE);
-
-	Response::builder()
-		.status(StatusCode::NO_CONTENT)
-		.body(Body::empty())
-		.map_err(|err| {
-			tracing::error!(error = %err, "failed to create response");
-			ApiError::INTERNAL_SERVER_ERROR
-		})
 }
 
 #[utoipa::path(

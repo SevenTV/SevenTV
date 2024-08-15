@@ -6,13 +6,12 @@ use futures::TryStreamExt;
 use mongodb::error::{TRANSIENT_TRANSACTION_ERROR, UNKNOWN_TRANSACTION_COMMIT_RESULT};
 use mongodb::results::{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult};
 use shared::database::queries::{filter, update};
+use shared::database::stored_event::StoredEvent;
 use shared::database::MongoCollection;
+use shared::event::{InternalEvent, InternalEventPayload};
 use spin::Mutex;
 
 use crate::global::Global;
-
-/// TOOD(lennart): whatever this is supposed to be.
-type EmittedEvent = ();
 
 pub struct TransactionSession<'a, E>(Arc<Mutex<SessionInner<'a>>>, PhantomData<E>);
 
@@ -33,6 +32,7 @@ impl<'a, E> TransactionSession<'a, E> {
 }
 
 impl<E> TransactionSession<'_, E> {
+	#[allow(unused)]
 	pub async fn find<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -49,6 +49,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(find.stream(&mut this.session).try_collect().await?)
 	}
 
+	#[allow(unused)]
 	pub async fn find_one<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -66,6 +67,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn find_one_and_update<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -83,6 +85,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn find_one_and_delete<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -100,6 +103,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn update<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -117,6 +121,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn update_one<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -134,6 +139,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn delete<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -150,6 +156,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn delete_one<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -166,6 +173,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn count<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -183,6 +191,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn insert_one<U: MongoCollection + serde::Serialize>(
 		&mut self,
 		insert: impl Borrow<U>,
@@ -199,6 +208,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[allow(unused)]
 	pub async fn insert_many<U: MongoCollection + serde::Serialize>(
 		&mut self,
 		items: impl IntoIterator<Item = impl Borrow<U>>,
@@ -215,7 +225,7 @@ impl<E> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	pub fn register_event(&mut self, event: EmittedEvent) -> Result<(), TransactionError<E>> {
+	pub fn register_event(&mut self, event: InternalEvent) -> Result<(), TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		this.events.push(event);
 		Ok(())
@@ -225,7 +235,7 @@ impl<E> TransactionSession<'_, E> {
 struct SessionInner<'a> {
 	global: &'a Arc<Global>,
 	session: mongodb::ClientSession,
-	events: Vec<EmittedEvent>,
+	events: Vec<InternalEvent>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -234,10 +244,10 @@ pub enum TransactionError<E> {
 	Mongo(#[from] mongodb::error::Error),
 	#[error("session locked after returning")]
 	SessionLocked,
-	#[error("filter error: {0}")]
-	Filter(bson::ser::Error),
-	#[error("modifier error: {0}")]
-	Update(bson::ser::Error),
+	#[error("event serialize error: {0}")]
+	EventSerialize(#[from] rmp_serde::encode::Error),
+	#[error("event publish error: {0}")]
+	EventPublish(#[from] async_nats::PublishError),
 	#[error("custom error")]
 	Custom(E),
 	#[error("too many failures")]
@@ -251,32 +261,6 @@ impl<E> TransactionError<E> {
 		Self::Custom(err)
 	}
 }
-
-// #[derive(Debug, Clone)]
-// pub struct TransactionOutput<T> {
-// 	pub output: T,
-// 	pub aborted: bool,
-// }
-
-// impl<T> TransactionOutput<T> {
-// 	pub fn into_inner(self) -> T {
-// 		self.output
-// 	}
-// }
-
-// impl<T> std::ops::Deref for TransactionOutput<T> {
-// 	type Target = T;
-
-// 	fn deref(&self) -> &Self::Target {
-// 		&self.output
-// 	}
-// }
-
-// impl<T> std::ops::DerefMut for TransactionOutput<T> {
-// 	fn deref_mut(&mut self) -> &mut Self::Target {
-// 		&mut self.output
-// 	}
-// }
 
 pub async fn with_transaction<'a, T, E, F, Fut>(global: &'a Arc<Global>, f: F) -> TransactionResult<T, E>
 where
@@ -305,13 +289,23 @@ where
 		let mut session_inner = session.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		match result {
 			Ok(output) => 'retry_commit: loop {
+				StoredEvent::collection(&global.db)
+					.insert_many(session_inner.events.iter().cloned().map(StoredEvent::from))
+					.session(&mut session_inner.session)
+					.await?;
+
 				match session_inner.session.commit_transaction().await {
-					Ok(()) => {
-						// todo emit events
-						session_inner.events.clear();
+					Ok(_) => {
+						let payload = InternalEventPayload::new(session_inner.events.drain(..));
+						let payload = rmp_serde::to_vec_named(&payload)?;
+
+						global.nats.publish("api.v4.events", payload.into()).await?;
+
 						return Ok(output);
 					}
 					Err(err) => {
+						tracing::warn!(error = %err, "transaction commit error");
+
 						if err.contains_label(UNKNOWN_TRANSACTION_COMMIT_RESULT) {
 							continue 'retry_commit;
 						} else if err.contains_label(TRANSIENT_TRANSACTION_ERROR) {
@@ -323,6 +317,8 @@ where
 				}
 			},
 			Err(err) => {
+				tracing::warn!(error = %err, "transaction error");
+
 				if let TransactionError::Mongo(err) = &err {
 					if err.contains_label(TRANSIENT_TRANSACTION_ERROR) {
 						continue 'retry_operation;
@@ -330,10 +326,6 @@ where
 				}
 
 				session_inner.session.abort_transaction().await?;
-
-				// if let TransactionError::Custom(output) = err {
-				// 	return Ok(TransactionOutput { output, aborted: true });
-				// }
 
 				return Err(err);
 			}

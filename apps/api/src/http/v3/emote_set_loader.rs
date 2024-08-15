@@ -4,9 +4,8 @@ use std::sync::Arc;
 use shared::database::emote_set::EmoteSetEmote;
 use shared::database::role::permissions::{FlagPermission, PermissionsExt};
 use shared::database::user::UserId;
-use shared::old_types::UserPartialModel;
+use shared::old_types::{EmotePartialModel, UserPartialModel};
 
-use super::rest::types::EmotePartialModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
 

@@ -7,14 +7,13 @@ use shared::database::emote::EmoteId;
 use shared::database::user::UserId;
 use shared::old_types::image::ImageHost;
 use shared::old_types::object_id::GqlObjectId;
-use shared::old_types::EmoteFlagsModel;
+use shared::old_types::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState};
 
 use super::audit_log::AuditLog;
 use super::report::Report;
 use super::user::{UserPartial, UserSearchResult};
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::types::{EmoteLifecycleModel, EmoteVersionState};
 use crate::search::{search, SearchOptions};
 
 #[derive(Default)]
@@ -200,7 +199,7 @@ impl Emote {
 			.per_page(limit)
 			.build();
 
-		let result = search::<shared::typesense::types::audit_log::AuditLog>(global, options)
+		let result = search::<shared::typesense::types::event::Event>(global, options)
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
@@ -208,11 +207,11 @@ impl Emote {
 			})?;
 
 		let logs = global
-			.audit_log_by_id_loader
+			.event_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
 			.map_err(|()| {
-				tracing::error!("failed to load audit logs");
+				tracing::error!("failed to load event");
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 

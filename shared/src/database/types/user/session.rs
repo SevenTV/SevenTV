@@ -4,7 +4,7 @@ use crate::database::{Id, MongoCollection};
 
 pub type UserSessionId = Id<UserSession>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "user_sessions")]
 #[mongo(index(fields(user_id = 1)))]
 #[mongo(index(fields(expires_at = 1), expire_after = 0))]

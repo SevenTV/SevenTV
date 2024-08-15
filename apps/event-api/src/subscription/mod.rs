@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use futures_util::StreamExt;
+use shared::event::InternalEventPayload;
 use shared::event_api::types::EventType;
 use shared::event_api::{payload, Message};
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
@@ -82,16 +83,15 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 
 	// We subscribe to all events.
 	// The .> wildcard is used to subscribe to all events.
-	let mut sub = global
-		.nats()
-		.subscribe(format!("{}.>", global.config().api.nats_event_subject))
-		.await?;
+	let mut sub = global.nats().subscribe("api.v4.events").await?;
 
 	// fnv::FnvHashMap is used because it is faster than the default HashMap for our
 	// use case.
 	let mut subscriptions = fnv::FnvHashMap::default();
 
 	let ctx = scuffle_foundations::context::Context::global();
+
+	let mut seq = 0;
 
 	loop {
 		tokio::select! {
@@ -132,67 +132,77 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 				}
 			}
 			message = sub.next() => {
-				tracing::trace!("received message: {:?}", message);
 				match message {
 					Some(message) => {
-						let subject = message.subject.strip_prefix(&global.config().api.nats_event_subject).unwrap_or(&message.subject).trim_matches('.');
-
-						let Ok(topic) = subject.parse::<EventTopic>() else {
-							tracing::warn!("invalid topic: {:?}", subject);
-							continue;
+						let payload: InternalEventPayload = match rmp_serde::from_slice(&message.payload) {
+							Ok(payload) => payload,
+							Err(err) => {
+								tracing::warn!(err = ?err, "malformed message");
+								break;
+							}
 						};
 
-						let mut keys = vec![topic.as_key()];
-						match keys[0].0 {
-							EventType::SystemAnnouncement => {
-								keys.push(topic.copy_cond(EventType::AnySystem).as_key());
-							},
-							EventType::CreateEmote | EventType::UpdateEmote | EventType::DeleteEmote => {
-								keys.push(topic.copy_cond(EventType::AnyEmote).as_key());
-							},
-							EventType::CreateEmoteSet | EventType::UpdateEmoteSet | EventType::DeleteEmoteSet => {
-								keys.push(topic.copy_cond(EventType::AnyEmoteSet).as_key());
-							},
-							EventType::CreateUser | EventType::UpdateUser | EventType::DeleteUser => {
-								keys.push(topic.copy_cond(EventType::AnyUser).as_key());
-							},
-							EventType::CreateEntitlement | EventType::UpdateEntitlement | EventType::DeleteEntitlement => {
-								keys.push(topic.copy_cond(EventType::AnyEntitlement).as_key());
-							},
-							EventType::CreateCosmetic | EventType::UpdateCosmetic | EventType::DeleteCosmetic => {
-								keys.push(topic.copy_cond(EventType::AnyCosmetic).as_key());
-							},
-							EventType::Whisper => {}
-							EventType::AnySystem | EventType::AnyEmote | EventType::AnyEmoteSet | EventType::AnyUser | EventType::AnyEntitlement | EventType::AnyCosmetic => {}
-						}
+						match payload.into_old_messages(&global.config().api.cdn_origin, seq) {
+							Ok(messages) => {
+								for message in messages {
+									// There is always only one condition map
+									let Some(condition) = message.data.condition.first() else {
+										tracing::warn!("missing condition");
+										continue;
+									};
 
-						let mut msg = None;
-						let mut missed = true;
-						for key in keys {
-							if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(key) {
-								if msg.is_none() {
-									msg = Some(Arc::new(match serde_json::from_slice(&message.payload) {
-										Ok(msg) => msg,
-										Err(err) => {
-											tracing::warn!("malformed message: {:?}: {}", err, String::from_utf8_lossy(&message.payload));
-											break;
+									let topic = EventTopic::new(message.data.ty, condition);
+
+									let mut keys = vec![topic.as_key()];
+									match keys[0].0 {
+										EventType::SystemAnnouncement => {
+											keys.push(topic.copy_cond(EventType::AnySystem).as_key());
+										},
+										EventType::CreateEmote | EventType::UpdateEmote | EventType::DeleteEmote => {
+											keys.push(topic.copy_cond(EventType::AnyEmote).as_key());
+										},
+										EventType::CreateEmoteSet | EventType::UpdateEmoteSet | EventType::DeleteEmoteSet => {
+											keys.push(topic.copy_cond(EventType::AnyEmoteSet).as_key());
+										},
+										EventType::CreateUser | EventType::UpdateUser | EventType::DeleteUser => {
+											keys.push(topic.copy_cond(EventType::AnyUser).as_key());
+										},
+										EventType::CreateEntitlement | EventType::UpdateEntitlement | EventType::DeleteEntitlement => {
+											keys.push(topic.copy_cond(EventType::AnyEntitlement).as_key());
+										},
+										EventType::CreateCosmetic | EventType::UpdateCosmetic | EventType::DeleteCosmetic => {
+											keys.push(topic.copy_cond(EventType::AnyCosmetic).as_key());
+										},
+										EventType::Whisper => {}
+										EventType::AnySystem | EventType::AnyEmote | EventType::AnyEmoteSet | EventType::AnyUser | EventType::AnyEntitlement | EventType::AnyCosmetic => {}
+									}
+
+									let message = Arc::new(message);
+
+									let mut missed = true;
+									for key in keys {
+										if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(key) {
+											if subscription.get().send(Arc::clone(&message)).is_err() {
+												subscription.remove();
+											} else {
+												missed = false;
+											}
 										}
-									}));
-								}
+									}
 
-								if subscription.get().send(msg.clone().unwrap()).is_err() {
-									subscription.remove();
-								} else {
-									missed = false;
+									if missed {
+										// global.metrics().observe_nats_event_miss();
+									} else {
+										// global.metrics().observe_nats_event_hit();
+									}
 								}
-							}
+							},
+							Err(err) => {
+								tracing::warn!(error = %err, "failed to parse message");
+							},
 						}
 
-						if missed {
-							// global.metrics().observe_nats_event_miss();
-						} else {
-							// global.metrics().observe_nats_event_hit();
-						}
+						seq += 1;
 					},
 					None => {
 						tracing::warn!("subscription closed");

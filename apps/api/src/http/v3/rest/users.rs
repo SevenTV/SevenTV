@@ -18,9 +18,11 @@ use shared::database::user::editor::{EditorUserPermission, UserEditorId};
 use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
 use shared::database::user::{User, UserId, UserStyle};
 use shared::database::MongoCollection;
-use shared::old_types::UserConnectionPartialModel;
+use shared::old_types::{
+	EmoteSetModel, EmoteSetPartialModel, UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel,
+};
 
-use super::types::{EmoteSetModel, EmoteSetPartialModel, PresenceModel, UserConnectionModel, UserEditorModel, UserModel};
+use super::types::PresenceModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;

@@ -8,7 +8,6 @@ use emote_update::emote_update;
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::audit_log::{AuditLog, AuditLogData, AuditLogEmoteSetData, AuditLogId};
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetKind};
 use shared::database::queries::{filter, update};
@@ -17,10 +16,8 @@ use shared::database::user::editor::{
 	EditorEmoteSetPermission, EditorPermission, EditorUserPermission, UserEditorId, UserEditorState,
 };
 use shared::database::user::FullUserRef;
-use shared::database::MongoCollection;
-use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, EventType, ObjectKind};
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 use shared::old_types::object_id::GqlObjectId;
-use shared::old_types::UserPartialModel;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -127,64 +124,45 @@ impl EmoteSetsMutation {
 			));
 		}
 
-		let emote_set = DbEmoteSet {
-			id: Default::default(),
-			owner_id: Some(user_id.id()),
-			name: data.name,
-			capacity: Some(capacity),
-			description: None,
-			emotes: vec![],
-			kind: EmoteSetKind::Normal,
-			origin_config: None,
-			tags: vec![],
-			updated_at: Utc::now(),
-			search_updated_at: None,
-			emotes_changed_since_reindex: false,
-		};
-
-		let mut session = global.mongo.start_session().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start session");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		session.start_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to start transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
-
-		DbEmoteSet::collection(&global.db)
-			.insert_one(&emote_set)
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert emote set");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
-
-		AuditLog::collection(&global.db)
-			.insert_one(AuditLog {
-				id: AuditLogId::new(),
-				actor_id: Some(user.id),
-				data: AuditLogData::EmoteSet {
-					target_id: emote_set.id,
-					data: AuditLogEmoteSetData::Create,
-				},
+		let res = with_transaction(global, |mut tx| async move {
+			let emote_set = DbEmoteSet {
+				id: Default::default(),
+				owner_id: Some(user_id.id()),
+				name: data.name,
+				capacity: Some(capacity),
+				description: None,
+				emotes: vec![],
+				kind: EmoteSetKind::Normal,
+				origin_config: None,
+				tags: vec![],
 				updated_at: Utc::now(),
 				search_updated_at: None,
-			})
-			.session(&mut session)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert audit log");
-				ApiError::INTERNAL_SERVER_ERROR
+				emotes_changed_since_reindex: false,
+			};
+
+			tx.insert_one::<DbEmoteSet>(&emote_set, None).await?;
+
+			tx.register_event(InternalEvent {
+				actor: Some(user.clone()),
+				data: InternalEventData::EmoteSet {
+					after: emote_set.clone(),
+					data: InternalEventEmoteSetData::Create,
+				},
+				timestamp: Utc::now(),
 			})?;
 
-		session.commit_transaction().await.map_err(|e| {
-			tracing::error!(error = %e, "failed to commit transaction");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+			Ok(emote_set)
+		})
+		.await;
 
-		Ok(EmoteSet::from_db(emote_set))
+		match res {
+			Ok(emote_set) => Ok(EmoteSet::from_db(emote_set)),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
+		}
 	}
 }
 
@@ -369,41 +347,8 @@ impl EmoteSetOps {
 			.await?;
 
 		let res = with_transaction(global, |mut tx| async move {
-			let mut changes = vec![];
-
-			let new_name = if let Some(name) = data.name {
-				// TODO validate this name
-
-				tx.insert_one(
-					AuditLog {
-						id: AuditLogId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: AuditLogData::EmoteSet {
-							target_id: self.emote_set.id,
-							data: AuditLogEmoteSetData::ChangeName {
-								old: self.emote_set.name.clone(),
-								new: name.clone(),
-							},
-						},
-						updated_at: Utc::now(),
-						search_updated_at: None,
-					},
-					None,
-				)
-				.await?;
-
-				changes.push(ChangeField {
-					key: "name".to_string(),
-					ty: ChangeFieldType::String,
-					old_value: self.emote_set.name.clone().into(),
-					value: name.clone().into(),
-					..Default::default()
-				});
-
-				Some(name)
-			} else {
-				None
-			};
+			// TODO validate this name
+			let new_name = data.name;
 
 			let new_capacity = if let Some(capacity) = data.capacity {
 				if capacity > i32::MAX as u32 {
@@ -434,32 +379,6 @@ impl EmoteSetOps {
 					)));
 				}
 
-				tx.insert_one(
-					AuditLog {
-						id: AuditLogId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: AuditLogData::EmoteSet {
-							target_id: self.emote_set.id,
-							data: AuditLogEmoteSetData::ChangeCapacity {
-								old: self.emote_set.capacity,
-								new: Some(capacity as i32),
-							},
-						},
-						updated_at: Utc::now(),
-						search_updated_at: None,
-					},
-					None,
-				)
-				.await?;
-
-				changes.push(ChangeField {
-					key: "capacity".to_string(),
-					ty: ChangeFieldType::Number,
-					old_value: self.emote_set.capacity.into(),
-					value: capacity.into(),
-					..Default::default()
-				});
-
 				Some(capacity as i32)
 			} else {
 				None
@@ -484,7 +403,7 @@ impl EmoteSetOps {
 						#[query(set)]
 						DbEmoteSet {
 							#[query(optional)]
-							name: new_name,
+							name: new_name.as_ref(),
 							#[query(optional)]
 							capacity: new_capacity,
 							updated_at: chrono::Utc::now(),
@@ -498,31 +417,32 @@ impl EmoteSetOps {
 				.ok_or(ApiError::INTERNAL_SERVER_ERROR)
 				.map_err(TransactionError::custom)?;
 
-			if !changes.is_empty() {
-				global
-					.event_api
-					.dispatch_event(
-						EventType::UpdateEmoteSet,
-						ChangeMap {
-							id: self.id.0,
-							kind: ObjectKind::EmoteSet,
-							actor: Some(UserPartialModel::from_db(
-								auth_session.user(global).await.map_err(TransactionError::custom)?.clone(),
-								None,
-								None,
-								&global.config.api.cdn_origin,
-							)),
-							updated: changes,
-							..Default::default()
+			if let Some(new_name) = new_name {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::EmoteSet {
+						after: emote_set.clone(),
+						data: InternalEventEmoteSetData::ChangeName {
+							old: self.emote_set.name.clone(),
+							new: new_name,
 						},
-						self.emote_set.id,
-					)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to dispatch event");
-						ApiError::INTERNAL_SERVER_ERROR
-					})
-					.map_err(TransactionError::custom)?;
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if let Some(new_capacity) = new_capacity {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::EmoteSet {
+						after: emote_set.clone(),
+						data: InternalEventEmoteSetData::ChangeCapacity {
+							old: self.emote_set.capacity,
+							new: Some(new_capacity as i32),
+						},
+					},
+					timestamp: Utc::now(),
+				})?;
 			}
 
 			Ok(emote_set)
@@ -558,8 +478,8 @@ impl EmoteSetOps {
 		}
 
 		let res = with_transaction(global, |mut tx| async move {
-			let res = tx
-				.delete_one(
+			let emote_set = tx
+				.find_one_and_delete(
 					filter::filter!(DbEmoteSet {
 						#[query(rename = "_id")]
 						id: self.emote_set.id
@@ -568,46 +488,20 @@ impl EmoteSetOps {
 				)
 				.await?;
 
-			if res.deleted_count > 0 {
-				tx.insert_one(
-					AuditLog {
-						id: AuditLogId::new(),
-						actor_id: Some(auth_session.user_id()),
-						data: AuditLogData::EmoteSet {
-							target_id: self.emote_set.id,
-							data: AuditLogEmoteSetData::Delete,
-						},
-						updated_at: Utc::now(),
-						search_updated_at: None,
+			if let Some(emote_set) = emote_set {
+				tx.register_event(InternalEvent {
+					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					data: InternalEventData::EmoteSet {
+						after: emote_set,
+						data: InternalEventEmoteSetData::Delete,
 					},
-					None,
-				)
-				.await?;
+					timestamp: Utc::now(),
+				})?;
 
-				let body = ChangeMap {
-					id: self.emote_set.id.cast(),
-					kind: ObjectKind::EmoteSet,
-					actor: Some(UserPartialModel::from_db(
-						auth_session.user(global).await.map_err(TransactionError::custom)?.clone(),
-						None,
-						None,
-						&global.config.api.cdn_origin,
-					)),
-					..Default::default()
-				};
-
-				global
-					.event_api
-					.dispatch_event(EventType::DeleteEmoteSet, body, self.emote_set.id)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to dispatch event");
-						ApiError::INTERNAL_SERVER_ERROR
-					})
-					.map_err(TransactionError::custom)?;
+				Ok(true)
+			} else {
+				Ok(false)
 			}
-
-			Ok(res.deleted_count > 0)
 		})
 		.await;
 

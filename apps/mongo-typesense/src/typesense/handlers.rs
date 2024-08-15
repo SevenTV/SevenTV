@@ -131,7 +131,11 @@ macro_rules! default_impl {
 
 				let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
-				global.$batcher.inserter.execute(data.into()).await?;
+				let Ok(data) = data.try_into() else {
+					return Ok(());
+				};
+
+				global.$batcher.inserter.execute(data).await?;
 
 				let now = bson::DateTime::from_chrono(chrono::Utc::now());
 
@@ -179,7 +183,7 @@ default_impl!(
 );
 default_impl!(user_ban_template_batcher, typesense::UserBanTemplate, mongo::UserBanTemplate);
 default_impl!(user_ban_batcher, typesense::UserBan, mongo::UserBan);
-default_impl!(audit_log_batcher, typesense::AuditLog, mongo::AuditLog);
+default_impl!(event_batcher, typesense::Event, mongo::StoredEvent);
 default_impl!(automod_rule_batcher, typesense::AutomodRule, mongo::AutomodRule);
 default_impl!(badge_batcher, typesense::Badge, mongo::Badge);
 default_impl!(

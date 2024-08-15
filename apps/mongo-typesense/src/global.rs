@@ -19,7 +19,7 @@ pub struct Global {
 	pub database: mongodb::Database,
 	pub config: Config,
 	pub typesense: typesense_codegen::apis::configuration::Configuration,
-	pub audit_log_batcher: CollectionBatcher<mongo::AuditLog, typesense::AuditLog>, // 1
+	pub event_batcher: CollectionBatcher<mongo::StoredEvent, typesense::Event>, // 1
 	pub user_batcher: CollectionBatcher<mongo::User, typesense::User>,
 	pub automod_rule_batcher: CollectionBatcher<mongo::AutomodRule, typesense::AutomodRule>, // 2
 	pub badge_batcher: CollectionBatcher<mongo::Badge, typesense::Badge>,
@@ -91,7 +91,7 @@ impl Global {
 		Ok(Self {
 			nats,
 			jetstream,
-			audit_log_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
+			event_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
 			user_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
 			automod_rule_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
 			badge_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),

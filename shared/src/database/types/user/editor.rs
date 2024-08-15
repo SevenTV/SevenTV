@@ -33,7 +33,7 @@ impl std::str::FromStr for UserEditorId {
 	}
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "user_editors")]
 #[mongo(index(fields("_id.user_id" = 1, "_id.editor_id" = 1)))]
 #[mongo(index(fields("_id.editor_id" = 1, "_id.user_id" = 1)))]
@@ -91,7 +91,7 @@ macro_rules! impl_bits {
 	};
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Copy, Default, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct UserEditorPermissions {
 	#[serde(skip_serializing_if = "EditorEmoteSetPermission::is_empty")]

@@ -159,10 +159,10 @@ fn event_to_image_set(event: &event_callback::Success) -> anyhow::Result<ImageSe
 async fn handle_success(global: &Arc<Global>, subject: Subject, event: &event_callback::Success) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
-			Subject::Emote(id) => emote::handle_success(tx, global, id, event).await,
-			Subject::ProfilePicture(id) => profile_picture::handle_success(tx, global, id, event).await,
-			Subject::PaintLayer(id, layer_id) => paint_layer::handle_success(tx, global, id, layer_id, event).await,
-			Subject::Badge(id) => badge::handle_success(tx, global, id, event).await,
+			Subject::Emote(id) => emote::handle_success(tx, id, event).await,
+			Subject::ProfilePicture(id) => profile_picture::handle_success(tx, id, event).await,
+			Subject::PaintLayer(id, layer_id) => paint_layer::handle_success(tx, id, layer_id, event).await,
+			Subject::Badge(id) => badge::handle_success(tx, id, event).await,
 		}
 	})
 	.await
@@ -172,9 +172,9 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: &event_ca
 async fn handle_fail(global: &Arc<Global>, subject: Subject, event: &event_callback::Fail) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
-			Subject::Emote(id) => emote::handle_fail(tx, global, id, event).await,
+			Subject::Emote(id) => emote::handle_fail(tx, id, event).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_fail(tx, global, id, event).await,
-			Subject::PaintLayer(id, layer_id) => paint_layer::handle_fail(tx, global, id, layer_id, event).await,
+			Subject::PaintLayer(id, ..) => paint_layer::handle_fail(tx, global, id, event).await,
 			Subject::Badge(id) => badge::handle_fail(tx, global, id, event).await,
 		}
 	})
@@ -187,7 +187,7 @@ async fn handle_start(global: &Arc<Global>, subject: Subject, event: &event_call
 		match subject {
 			Subject::Emote(id) => emote::handle_start(tx, global, id, event).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_start(tx, global, id, event).await,
-			Subject::PaintLayer(id, layer_id) => paint_layer::handle_start(tx, global, id, layer_id, event).await,
+			Subject::PaintLayer(id, ..) => paint_layer::handle_start(tx, global, id, event).await,
 			Subject::Badge(id) => badge::handle_start(tx, global, id, event).await,
 		}
 	})
@@ -200,7 +200,7 @@ async fn handle_cancel(global: &Arc<Global>, subject: Subject, event: &event_cal
 		match subject {
 			Subject::Emote(id) => emote::handle_cancel(tx, global, id, event).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_cancel(tx, global, id, event).await,
-			Subject::PaintLayer(id, layer_id) => paint_layer::handle_cancel(tx, global, id, layer_id, event).await,
+			Subject::PaintLayer(id, ..) => paint_layer::handle_cancel(tx, global, id, event).await,
 			Subject::Badge(id) => badge::handle_cancel(tx, global, id, event).await,
 		}
 	})
