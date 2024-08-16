@@ -1,0 +1,16 @@
+[package]
+name = "cdn"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.39.2", features = ["full"] }
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
+tower = "0.4"
+tower-http = { version = "0.5.2", features = ["trace", "cors", "request-id"] }
+tracing = "0.1.40"
+reqwest = { version = "0.12", features = [
+    "rustls-tls",
+], default-features = false }
+futures = "0.3.30"
+anyhow = "1.0.86"
