@@ -318,9 +318,8 @@ impl CosmeticBadgeModel {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 pub struct CosmeticAvatarModel {
 	pub id: UserId,
 	pub user: UserPartialModel,

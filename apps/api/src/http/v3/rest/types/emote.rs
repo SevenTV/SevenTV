@@ -1,14 +1,15 @@
-use shared::database::emote::{Emote, EmoteId};
+use shared::database::emote::Emote;
 use shared::old_types::image::ImageHost;
+use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{
 	EmoteFlagsModel, EmoteLifecycleModel, EmotePartialModel, EmoteVersionModel, EmoteVersionState, UserPartialModel,
 };
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L12
 pub struct EmoteModel {
-	pub id: EmoteId,
+	pub id: GqlObjectId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	pub tags: Vec<String>,

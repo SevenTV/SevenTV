@@ -13,9 +13,10 @@ use cosmetic::{
 	CosmeticPaintShadow, CosmeticPaintShape, CosmeticPaintStroke, CosmeticPaintText, CosmeticPaintTextTransform,
 };
 use image::{ImageFile, ImageFormat, ImageHost};
+use object_id::GqlObjectId;
 
 use crate::database::badge::BadgeId;
-use crate::database::emote::{Emote, EmoteFlags, EmoteId};
+use crate::database::emote::{Emote, EmoteFlags};
 use crate::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetId, EmoteSetKind};
 use crate::database::paint::PaintId;
 use crate::database::role::permissions::{PermissionsExt, UserPermission};
@@ -74,12 +75,11 @@ fn is_default<T: Default + PartialEq>(value: &T) -> bool {
 	value == &T::default()
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L30
 pub struct UserPartialModel {
-	pub id: UserId,
+	pub id: GqlObjectId,
 	#[serde(skip_serializing_if = "is_default")]
 	pub user_type: UserTypeModel,
 	pub username: String,
@@ -139,7 +139,7 @@ impl UserPartialModel {
 		.unwrap_or_default();
 
 		UserPartialModel {
-			id: user.id,
+			id: GqlObjectId { id: user.id.cast(), old: user.migrated },
 			user_type: UserTypeModel::Regular,
 			username: main_connection.map(|c| c.platform_username.clone()).unwrap_or_default(),
 			display_name: main_connection.map(|c| c.platform_display_name.clone()).unwrap_or_default(),
@@ -205,16 +205,16 @@ pub struct UserStyle {
 #[serde(deny_unknown_fields)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L64
 pub struct EmoteSetOrigin {
-	pub id: EmoteSetId,
+	pub id: GqlObjectId,
 	pub weight: i32,
 	pub slices: Vec<u32>,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L9
 pub struct EmoteSetModel {
-	pub id: EmoteSetId,
+	pub id: GqlObjectId,
 	pub name: String,
 	pub flags: EmoteSetFlagModel,
 	pub tags: Vec<String>,
@@ -278,7 +278,7 @@ impl EmoteSetModel {
 #[serde(deny_unknown_fields)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L23
 pub struct EmoteSetPartialModel {
-	pub id: EmoteSetId,
+	pub id: GqlObjectId,
 	pub name: String,
 	pub flags: EmoteSetFlagModel,
 	pub tags: Vec<String>,
@@ -291,7 +291,7 @@ impl EmoteSetPartialModel {
 	pub fn from_db(value: EmoteSet, owner: Option<UserPartialModel>) -> Self {
 		EmoteSetPartialModel {
 			flags: EmoteSetFlagModel::from_db(&value),
-			id: value.id,
+			id: GqlObjectId { id: value.id.cast(), old: value.migrated },
 			name: value.name,
 			capacity: value.capacity.unwrap_or(i32::MAX) as i32,
 			tags: value.tags,
@@ -425,9 +425,8 @@ impl<'a> utoipa::ToSchema<'a> for UserEditorModelPermission {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L171
 pub struct UserEditorModel {
 	pub id: UserId,
@@ -451,12 +450,11 @@ impl UserEditorModel {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user.model.go#L15
 pub struct UserModel {
-	pub id: UserId,
+	pub id: GqlObjectId,
 	#[serde(skip_serializing_if = "is_default")]
 	pub user_type: UserTypeModel,
 	pub username: String,
@@ -781,11 +779,11 @@ impl<'a> utoipa::ToSchema<'a> for ActiveEmoteFlagModel {
 #[serde(deny_unknown_fields)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote-set.model.go#L45
 pub struct ActiveEmoteModel {
-	pub id: EmoteId,
+	pub id: GqlObjectId,
 	pub name: String,
 	pub flags: ActiveEmoteFlagModel,
 	pub timestamp: i64,
-	pub actor_id: Option<UserId>,
+	pub actor_id: Option<GqlObjectId>,
 	pub data: Option<EmotePartialModel>,
 	pub origin_id: Option<EmoteSetId>,
 }
@@ -804,12 +802,11 @@ impl ActiveEmoteModel {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L27
 pub struct EmotePartialModel {
-	pub id: EmoteId,
+	pub id: GqlObjectId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
@@ -826,7 +823,7 @@ pub struct EmotePartialModel {
 impl EmotePartialModel {
 	pub fn from_db(value: Emote, owner: Option<UserPartialModel>, cdn_base_url: &str) -> Self {
 		Self {
-			id: value.id,
+			id: GqlObjectId { id: value.id.cast(), old: value.flags.contains(EmoteFlags::Migrated) },
 			name: value.default_name,
 			animated: value.flags.contains(EmoteFlags::Animated),
 			tags: value.tags,
@@ -846,12 +843,11 @@ impl EmotePartialModel {
 	}
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[serde(default)]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/emote.model.go#L40
 pub struct EmoteVersionModel {
-	pub id: EmoteId,
+	pub id: GqlObjectId,
 	pub name: String,
 	pub description: String,
 	pub lifecycle: EmoteLifecycleModel,

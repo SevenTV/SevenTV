@@ -37,7 +37,7 @@ pub async fn load_emote_set(
 			// we can ignore them.
 			UserPartialModel::from_db(user, None, None, cdn_base_url)
 		})
-		.map(|user| (user.id, user))
+		.map(|user| (user.id.id(), user))
 		.collect::<HashMap<_, _>>();
 
 	let emotes = emotes
