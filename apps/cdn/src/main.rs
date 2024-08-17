@@ -4,6 +4,7 @@ use config::Config;
 use scuffle_foundations::{bootstrap::bootstrap, settings::cli::Matches};
 use tokio::signal::unix::SignalKind;
 
+mod cache;
 mod config;
 mod global;
 mod http;

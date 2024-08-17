@@ -33,6 +33,7 @@ pub struct Cdn {
 	/// Bind address
 	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 8000)))]
 	pub bind: SocketAddr,
-    /// Bucket origin
+	/// Bucket origin
+	#[settings(default = "https://cdn.7tv.app".to_string())]
 	pub bucket_url: String,
 }

@@ -1,14 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use reqwest::header::HeaderValue;
 use scuffle_foundations::{
 	http::server::axum::{
-		self,
-		extract::{MatchedPath, Path, Request, State},
-		middleware::Next,
+		extract::{MatchedPath, Request},
 		response::Response,
-		routing::any,
 		Router,
 	},
 	telemetry::opentelemetry::OpenTelemetrySpanExt,
@@ -22,6 +18,8 @@ use tower_http::{
 use tracing::Span;
 
 use crate::global::Global;
+
+mod cdn;
 
 #[derive(Clone)]
 struct TraceRequestId;
@@ -37,13 +35,12 @@ impl MakeRequestId for TraceRequestId {
 
 fn routes(global: &Arc<Global>) -> Router {
 	Router::new()
-		.route("/", any(root))
-		.route("/*key", any(cdn_route))
-		.layer(axum::middleware::from_fn(move |req: Request, next: Next| async move {
-			let mut res = next.run(req).await;
-			res.headers_mut().insert("Server", HeaderValue::from_static("SevenTV"));
-			res
-		}))
+		.nest("/", cdn::routes())
+		// .layer(axum::middleware::from_fn(move |req: Request, next: Next| async move {
+		// 	let mut res = next.run(req).await;
+		// 	res.headers_mut().insert("Server", HeaderValue::from_static("SevenTV"));
+		// 	res
+		// }))
 		.with_state(Arc::clone(global))
 		.layer(
 			ServiceBuilder::new()
@@ -72,14 +69,6 @@ fn routes(global: &Arc<Global>) -> Router {
 				.layer(PropagateRequestIdLayer::x_request_id()),
 		)
 		.layer(CorsLayer::permissive())
-}
-
-async fn root() -> &'static str {
-	"Welcome to the 7TV CDN!"
-}
-
-async fn cdn_route(State(_global): State<Arc<Global>>, Path(key): Path<String>) -> String {
-	format!("Welcome to the 7TV CDN! {}", key)
 }
 
 #[tracing::instrument(name = "cdn", level = "info", skip(global))]
