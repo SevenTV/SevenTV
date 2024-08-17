@@ -45,7 +45,7 @@ pub async fn setup_nats(
 }
 
 #[derive(Debug, Clone)]
-pub struct ChangeStreamSubject(String);
+pub struct ChangeStreamSubject(pub String);
 
 fn escape_prefix(prefix: &str) -> String {
 	prefix.trim_end_matches('-').replace('.', "_")
