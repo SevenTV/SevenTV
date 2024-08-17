@@ -108,7 +108,7 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 	let config = stream::Config {
 		name: subject.name(),
 		subjects: vec![subject.wildcard()],
-		retention: stream::RetentionPolicy::Interest,
+		retention: stream::RetentionPolicy::WorkQueue,
 		duplicate_window: Duration::from_secs(60),
 		max_age: Duration::from_secs(60 * 60 * 24), // messages older than 24 hours are dropped
 		max_bytes: 1024 * 1024 * 1024 * 100,        // 100GB max
@@ -139,7 +139,7 @@ async fn setup(
 ) -> anyhow::Result<()> {
 	let config = async_nats::jetstream::consumer::pull::Config {
 		name: Some("change-stream".to_string()),
-		durable_name: Some("change-stream".to_string()),
+		durable_name: None,
 		max_ack_pending: 1_000_000,
 		ack_policy: async_nats::jetstream::consumer::AckPolicy::Explicit,
 		ack_wait: Duration::from_secs(30),
