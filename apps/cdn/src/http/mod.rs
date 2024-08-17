@@ -36,11 +36,6 @@ impl MakeRequestId for TraceRequestId {
 fn routes(global: &Arc<Global>) -> Router {
 	Router::new()
 		.nest("/", cdn::routes())
-		// .layer(axum::middleware::from_fn(move |req: Request, next: Next| async move {
-		// 	let mut res = next.run(req).await;
-		// 	res.headers_mut().insert("Server", HeaderValue::from_static("SevenTV"));
-		// 	res
-		// }))
 		.with_state(Arc::clone(global))
 		.layer(
 			ServiceBuilder::new()
