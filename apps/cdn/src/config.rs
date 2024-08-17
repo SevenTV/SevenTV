@@ -36,4 +36,7 @@ pub struct Cdn {
 	/// Bucket origin
 	#[settings(default = "https://cdn.7tv.app".to_string())]
 	pub bucket_url: String,
+	/// Cache capacity
+	#[settings(default = 1000)]
+	pub cache_capacity: u64,
 }

@@ -17,3 +17,5 @@ anyhow = "1.0.86"
 bytes = "1.7.1"
 moka = { version = "0.12.8", features = ["future"] }
 scc = "2.1.16"
+thiserror = "1.0.63"
+chrono = "0.4.38"

@@ -725,11 +725,13 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
+ "chrono",
  "futures",
  "moka",
  "reqwest",
  "scc",
  "scuffle-foundations",
+ "thiserror",
  "tokio",
  "tower",
  "tower-http",
