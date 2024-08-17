@@ -98,23 +98,6 @@ mod typesense {
 	pub fn processing(coll: &'static str) -> Gauge;
 }
 
-macro_rules! spawn_handler {
-	(($global:ident, $stream:ident, $subject:ident) => { $($ty:ty),* $(,)? }) => {
-		{
-			let mut handlers = Vec::new();
-			$(
-				let global = $global.clone();
-				let stream = $stream.clone();
-				let subject = $subject.clone();
-				handlers.push(tokio::spawn(async move {
-					setup::<$ty>(global, stream, subject).await.context(<$ty>::COLLECTION_NAME)
-				}));
-			)*
-			handlers
-		}
-	};
-}
-
 pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 	shared::typesense::types::init_typesense(&global.typesense)
 		.await
@@ -125,7 +108,7 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 	let config = stream::Config {
 		name: subject.name(),
 		subjects: vec![subject.wildcard()],
-		retention: stream::RetentionPolicy::Interest,
+		retention: stream::RetentionPolicy::WorkQueue,
 		duplicate_window: Duration::from_secs(60),
 		max_age: Duration::from_secs(60 * 60 * 24), // messages older than 24 hours are dropped
 		max_bytes: 1024 * 1024 * 1024 * 100,        // 100GB max
@@ -142,73 +125,32 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 		.context("update stream timeout")?
 		.context("update stream")?;
 
-	let handlers = spawn_handler!((global, stream, subject) => {
-		crate::types::mongo::DiscountCode,
-		crate::types::mongo::GiftCode,
-		crate::types::mongo::RedeemCode,
-		crate::types::mongo::SpecialEvent,
-		crate::types::mongo::Invoice,
-		crate::types::mongo::Product,
-		crate::types::mongo::Promotion,
-		crate::types::mongo::SubscriptionTimeline,
-		crate::types::mongo::SubscriptionTimelinePeriod,
-		crate::types::mongo::SubscriptionCredit,
-		crate::types::mongo::SubscriptionPeriod,
-		crate::types::mongo::UserBanTemplate,
-		crate::types::mongo::UserBan,
-		crate::types::mongo::UserEditor,
-		crate::types::mongo::UserRelation,
-		crate::types::mongo::User,
-		crate::types::mongo::StoredEvent,
-		crate::types::mongo::AutomodRule,
-		crate::types::mongo::Badge,
-		crate::types::mongo::EmoteModerationRequest,
-		crate::types::mongo::EmoteSet,
-		crate::types::mongo::Emote,
-		crate::types::mongo::EntitlementEdge,
-		crate::types::mongo::EntitlementGroup,
-		crate::types::mongo::Page,
-		crate::types::mongo::Paint,
-		crate::types::mongo::Role,
-		crate::types::mongo::Ticket,
-		crate::types::mongo::TicketMessage,
-	});
-
-	let (r, _, remaining) = futures::future::select_all(handlers).await;
-
-	for h in remaining {
-		h.abort();
-	}
-
-	r??;
+	setup(&global, stream, subject).await?;
 
 	tracing::info!("typesense handler exited");
 
 	Ok(())
 }
 
-async fn setup<M: SupportedMongoCollection>(
-	global: Arc<Global>,
+async fn setup(
+	global: &Arc<Global>,
 	stream: async_nats::jetstream::stream::Stream,
 	subject: ChangeStreamSubject,
 ) -> anyhow::Result<()> {
-	let name = format!("{}::{}", global.config.triggers.seventv_database, M::COLLECTION_NAME);
-
 	let config = async_nats::jetstream::consumer::pull::Config {
-		name: Some(name.clone()),
-		durable_name: Some(name.clone()),
+		name: Some("change-stream".to_string()),
+		durable_name: None,
 		max_ack_pending: 1_000_000,
 		ack_policy: async_nats::jetstream::consumer::AckPolicy::Explicit,
 		ack_wait: Duration::from_secs(30),
 		inactive_threshold: Duration::from_secs(60 * 60 * 24),
 		max_deliver: 5,
-		filter_subject: subject.topic(&global.config.triggers.seventv_database, M::COLLECTION_NAME),
 		..Default::default()
 	};
 
 	let consumer = tokio::time::timeout(
 		Duration::from_secs(5),
-		stream.get_or_create_consumer(&name.clone(), config.clone()),
+		stream.get_or_create_consumer("change-stream", config.clone()),
 	)
 	.await
 	.context("create consumer timeout")?
@@ -237,17 +179,74 @@ async fn setup<M: SupportedMongoCollection>(
 			break;
 		};
 
-		let metrics = typesense::Processing::new::<M>();
-		let global = global.clone();
+		let Some(collection) = message
+			.subject
+			.as_str()
+			.strip_prefix(&subject.0)
+			.and_then(|s| s.strip_prefix('.'))
+			.and_then(|s| s.strip_prefix(&global.config.triggers.seventv_database))
+			.and_then(|s| s.strip_prefix('.'))
+		else {
+			message.ack_with(AckKind::Nak(Some(Duration::from_secs(5)))).await.ok();
+			continue;
+		};
 
-		tokio::spawn(
-			async move {
-				handle_message::<M>(&global, message).await;
-				global.incr_request_count();
-				drop((ticket, metrics));
+		macro_rules! match_collection {
+			($str:ident => { $($collection:ty),*$(,)? }) => {
+				match $str {
+					$(
+						<$collection>::COLLECTION_NAME => {
+							let metrics = typesense::Processing::new::<$collection>();
+							let global = global.clone();
+
+							tokio::spawn(
+								async move {
+									handle_message::<$collection>(&global, message).await;
+									global.incr_request_count();
+									drop((ticket, metrics));
+								}
+								.with_context(scuffle_foundations::context::Context::global()),
+							);
+						}
+					),*
+					_ => {}
+				}
+			};
+		}
+
+		match_collection! {
+			collection => {
+				crate::types::mongo::DiscountCode,
+				crate::types::mongo::GiftCode,
+				crate::types::mongo::RedeemCode,
+				crate::types::mongo::SpecialEvent,
+				crate::types::mongo::Invoice,
+				crate::types::mongo::Product,
+				crate::types::mongo::Promotion,
+				crate::types::mongo::SubscriptionTimeline,
+				crate::types::mongo::SubscriptionTimelinePeriod,
+				crate::types::mongo::SubscriptionCredit,
+				crate::types::mongo::SubscriptionPeriod,
+				crate::types::mongo::UserBanTemplate,
+				crate::types::mongo::UserBan,
+				crate::types::mongo::UserEditor,
+				crate::types::mongo::UserRelation,
+				crate::types::mongo::User,
+				crate::types::mongo::StoredEvent,
+				crate::types::mongo::AutomodRule,
+				crate::types::mongo::Badge,
+				crate::types::mongo::EmoteModerationRequest,
+				crate::types::mongo::EmoteSet,
+				crate::types::mongo::Emote,
+				crate::types::mongo::EntitlementEdge,
+				crate::types::mongo::EntitlementGroup,
+				crate::types::mongo::Page,
+				crate::types::mongo::Paint,
+				crate::types::mongo::Role,
+				crate::types::mongo::Ticket,
+				crate::types::mongo::TicketMessage,
 			}
-			.with_context(scuffle_foundations::context::Context::global()),
-		);
+		}
 	}
 
 	Ok(())

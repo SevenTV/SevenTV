@@ -1,4 +1,3 @@
-pub mod event;
 pub mod automod;
 pub mod badge;
 pub mod duration_unit;
@@ -6,6 +5,7 @@ pub mod emote;
 pub mod emote_moderation_request;
 pub mod emote_set;
 pub mod entitlement;
+pub mod event;
 pub mod page;
 pub mod paint;
 pub mod product;
