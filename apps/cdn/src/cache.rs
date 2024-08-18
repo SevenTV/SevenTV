@@ -3,7 +3,7 @@ use std::sync::{atomic::AtomicUsize, Arc};
 use scuffle_foundations::http::server::{
 	axum::http::{
 		header::{self, HeaderMap},
-		HeaderValue, Response,
+		HeaderValue, Response, StatusCode,
 	},
 	stream::{Body, IntoResponse},
 };
@@ -156,10 +156,14 @@ impl Cache {
 				self.s3_client.get_object().bucket(&self.s3_bucket_name).key(&key).send(),
 			)
 			.await
-			.map_err(|_| CacheError::Timeout)??
+			.map_err(|_| CacheError::Timeout)?
 		};
 
-		Ok(CachedResponse::from_s3_response(response).await?)
+		match response {
+			Ok(response) => Ok(CachedResponse::from_s3_response(response).await?),
+			Err(aws_sdk_s3::error::SdkError::ServiceError(e)) if e.err().is_no_such_key() => Ok(CachedResponse::not_found()),
+			Err(e) => Err(e.into()),
+		}
 	}
 }
 
@@ -178,27 +182,70 @@ pub type CacheKey = String;
 
 #[derive(Debug, Clone)]
 pub struct CachedResponse {
-	pub data: bytes::Bytes,
-	pub content_type: Option<String>,
+	pub data: CachedData,
 	pub date: chrono::DateTime<chrono::Utc>,
 	pub max_age: std::time::Duration,
 	pub hits: Arc<AtomicUsize>,
 }
 
+impl CachedResponse {
+	pub fn not_found() -> Self {
+		Self {
+			data: CachedData::NotFound,
+			date: chrono::Utc::now(),
+			max_age: ONE_DAY,
+			hits: Arc::new(AtomicUsize::new(0)),
+		}
+	}
+}
+
+#[derive(Debug, Clone)]
+pub enum CachedData {
+	Bytes {
+		data: bytes::Bytes,
+		content_type: Option<String>,
+	},
+	NotFound,
+}
+
+impl CachedData {
+	pub fn len(&self) -> usize {
+		match self {
+			Self::Bytes { data, .. } => data.len(),
+			Self::NotFound => 0,
+		}
+	}
+}
+
+impl IntoResponse for CachedData {
+	fn into_response(self) -> scuffle_foundations::http::server::stream::Response {
+		match self {
+			Self::Bytes { data, content_type } => {
+				let mut headers = HeaderMap::new();
+
+				if let Some(content_type) = content_type.as_deref().and_then(|c| c.try_into().ok()) {
+					headers.insert(header::CONTENT_TYPE, content_type);
+				}
+
+				(headers, data).into_response()
+			},
+			Self::NotFound => {
+				StatusCode::NOT_FOUND.into_response()
+			},
+		}
+	}
+}
+
 impl IntoResponse for CachedResponse {
 	fn into_response(self) -> Response<Body> {
+		let mut data = self.data.into_response();
+
 		let hits = self.hits.load(std::sync::atomic::Ordering::Relaxed);
 
 		let age = chrono::Utc::now() - self.date;
 
-		let mut headers = HeaderMap::new();
-
-		if let Some(content_type) = self.content_type.and_then(|c| c.try_into().ok()) {
-			headers.insert(header::CONTENT_TYPE, content_type);
-		}
-
-		headers.insert("x-7tv-cache-hits", hits.to_string().try_into().unwrap());
-		headers.insert(
+		data.headers_mut().insert("x-7tv-cache-hits", hits.to_string().try_into().unwrap());
+		data.headers_mut().insert(
 			"x-7tv-cache",
 			if hits == 0 {
 				HeaderValue::from_static("miss")
@@ -206,9 +253,9 @@ impl IntoResponse for CachedResponse {
 				HeaderValue::from_static("hit")
 			},
 		);
-		headers.insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
+		data.headers_mut().insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
 
-		(headers, self.data).into_response()
+		data
 	}
 }
 
@@ -234,8 +281,10 @@ impl CachedResponse {
 			.unwrap_or(ONE_DAY);
 
 		Ok(Self {
-			data: value.body.collect().await?.into_bytes(),
-			content_type: value.content_type,
+			data: CachedData::Bytes {
+				data: value.body.collect().await?.into_bytes(),
+				content_type: value.content_type,
+			},
 			date,
 			max_age,
 			hits: Arc::new(AtomicUsize::new(0)),
