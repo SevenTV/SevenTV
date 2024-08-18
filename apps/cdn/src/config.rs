@@ -42,6 +42,12 @@ pub struct Cdn {
 	/// Max concurrent requests to the origin
 	#[settings(default = 100)]
 	pub max_concurrent_requests: u64,
+	/// Origin request timeout in seconds
+	#[settings(default = 5)]
+	pub origin_request_timeout: u64,
+	/// The migration timestamp
+	/// This is used to determine if a requested id needs to be converted back to an old object id
+	pub migration_timestamp: chrono::DateTime<chrono::Utc>,
 }
 
 #[auto_settings]
@@ -69,7 +75,7 @@ impl S3CredentialsConfig {
 #[serde(default)]
 pub struct S3BucketConfig {
 	/// The name of the S3 bucket
-	#[settings(default = String::from("7tv-cdn"))]
+	#[settings(default = String::from("7tv-public"))]
 	pub name: String,
 	/// The region the S3 bucket is in
 	#[settings(default = String::from("us-east-1"))]

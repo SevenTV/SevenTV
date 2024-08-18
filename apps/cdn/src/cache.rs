@@ -1,6 +1,5 @@
 use std::sync::{atomic::AtomicUsize, Arc};
 
-use scc::{ebr::Guard, TreeIndex};
 use scuffle_foundations::http::server::{
 	axum::http::{
 		header::{self, HeaderMap},
@@ -15,10 +14,11 @@ const ONE_DAY: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24
 
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
-	path_meta: Arc<TreeIndex<String, Arc<PathMeta>>>,
+	path_meta: Arc<scc::HashMap<String, PathMeta>>,
 	s3_bucket_name: String,
 	s3_client: aws_sdk_s3::client::Client,
 	request_limiter: Arc<tokio::sync::Semaphore>,
+	request_timeout: std::time::Duration,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -27,15 +27,13 @@ pub enum CacheError {
 	S3(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>),
 	#[error("s3 byte stream error: {0}")]
 	S3ByteStream(#[from] aws_sdk_s3::primitives::ByteStreamError),
-	#[error("failed to update path meta index")]
-	PathMetaUpdate,
-	#[error("semaphore closed")]
-	SemaphoreClosed,
+	#[error("origin request timed out")]
+	Timeout,
 }
 
 impl Cache {
 	pub fn new(config: &config::Cdn) -> Self {
-		let path_meta = Arc::new(TreeIndex::new());
+		let path_meta = Arc::new(scc::HashMap::new());
 		let pm = Arc::clone(&path_meta);
 
 		let s3_client = {
@@ -75,21 +73,22 @@ impl Cache {
 			s3_bucket_name: config.bucket.name.clone(),
 			s3_client,
 			request_limiter,
+			request_timeout: std::time::Duration::from_secs(config.origin_request_timeout),
 		}
 	}
 
 	pub async fn handle_request(&self, key: String) -> Result<CachedResponse, CacheError> {
-		loop {
-			let meta = self.path_meta.peek(&key, &Guard::new()).map(Arc::clone);
+		'fetch: loop {
+			let meta = self.path_meta.read_async(&key, |_, meta| meta.clone()).await;
 
 			if let Some(meta) = meta {
-				match meta.as_ref() {
+				match meta {
 					PathMeta::Pending { coalescing } => {
 						// wait for the request to finish
 						coalescing.cancelled().await;
 
 						// refetch the meta, it should be PathMeta::Cached now
-						continue;
+						continue 'fetch;
 					}
 					PathMeta::Cached => {
 						if let Some(hit) = self.inner.get(&key).await {
@@ -97,12 +96,15 @@ impl Cache {
 
 							// return cached response
 							return Ok(hit);
+						} else {
+							// something is wrong
+							unreachable!("cache is missing a cached response");
 						}
 					}
 				}
 			} else {
 				// miss
-				break;
+				break 'fetch;
 			}
 		}
 
@@ -111,35 +113,28 @@ impl Cache {
 		let coalescing = tokio_util::sync::CancellationToken::new();
 
 		self.path_meta
-			.insert(
+			.insert_async(
 				key.clone(),
-				Arc::new(PathMeta::Pending {
+				PathMeta::Pending {
 					coalescing: coalescing.clone(),
-				}),
+				},
 			)
-			.map_err(|_| CacheError::PathMetaUpdate)?;
+			.await
+			.map_err(|_| ())
+			.expect("unreachable");
 
 		// request file
-		let response = {
-			let _permit = self
-				.request_limiter
-				.acquire()
-				.await
-				.map_err(|_| CacheError::SemaphoreClosed)?;
-
-			self.s3_client
-				.get_object()
-				.bucket(&self.s3_bucket_name)
-				.key(&key)
-				.send()
-				.await?
+		let cached = match self.request_key(key.clone()).await {
+			Ok(response) => response,
+			Err(e) => {
+				// remove the pending entry
+				self.path_meta.remove_async(&key).await;
+				coalescing.cancel();
+				return Err(e);
+			}
 		};
 
-		let cached = CachedResponse::from_s3_response(response).await?;
-
-		self.path_meta
-			.insert(key.clone(), Arc::new(PathMeta::Cached))
-			.map_err(|_| CacheError::PathMetaUpdate)?;
+		self.path_meta.update_async(&key.clone(), |_, e| *e = PathMeta::Cached).await;
 
 		self.inner.insert(key, cached.clone()).await;
 
@@ -148,8 +143,26 @@ impl Cache {
 
 		Ok(cached)
 	}
+
+	async fn request_key(&self, key: String) -> Result<CachedResponse, CacheError> {
+		// request file
+		let response = {
+			let _permit = self.request_limiter.acquire().await.expect("semaphore closed");
+
+			tokio::time::timeout(
+				self.request_timeout,
+				self.s3_client.get_object().bucket(&self.s3_bucket_name).key(&key).send(),
+			)
+			.await
+			.map_err(|_| CacheError::Timeout)??
+		};
+
+		Ok(CachedResponse::from_s3_response(response).await?)
+	}
 }
 
+/// Safe to clone
+#[derive(Debug, Clone)]
 pub enum PathMeta {
 	Pending {
 		/// This token is pending as long as the request to the origin is pending.
