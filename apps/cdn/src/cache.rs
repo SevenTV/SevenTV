@@ -9,7 +9,7 @@ use scuffle_foundations::http::server::{
 	stream::{Body, IntoResponse},
 };
 
-use crate::config::S3BucketConfig;
+use crate::config;
 
 const ONE_DAY: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24);
 
@@ -18,6 +18,7 @@ pub struct Cache {
 	path_meta: Arc<TreeIndex<String, Arc<PathMeta>>>,
 	s3_bucket_name: String,
 	s3_client: aws_sdk_s3::client::Client,
+	request_limiter: Arc<tokio::sync::Semaphore>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -28,28 +29,34 @@ pub enum CacheError {
 	S3ByteStream(#[from] aws_sdk_s3::primitives::ByteStreamError),
 	#[error("failed to update path meta index")]
 	PathMetaUpdate,
+	#[error("semaphore closed")]
+	SemaphoreClosed,
 }
 
 impl Cache {
-	pub fn new(capacity: u64, bucket_config: &S3BucketConfig) -> Self {
+	pub fn new(config: &config::Cdn) -> Self {
 		let path_meta = Arc::new(TreeIndex::new());
 		let pm = Arc::clone(&path_meta);
 
-		let mut config = if let Some(endpoint) = &bucket_config.endpoint {
-			aws_sdk_s3::config::Builder::new().endpoint_url(endpoint)
-		} else {
-			aws_sdk_s3::config::Builder::new()
-		}
-		.region(aws_sdk_s3::config::Region::new(bucket_config.region.clone()))
-		.force_path_style(true);
+		let s3_client = {
+			let mut s3_config = if let Some(endpoint) = &config.bucket.endpoint {
+				aws_sdk_s3::config::Builder::new().endpoint_url(endpoint)
+			} else {
+				aws_sdk_s3::config::Builder::new()
+			}
+			.region(aws_sdk_s3::config::Region::new(config.bucket.region.clone()))
+			.force_path_style(true);
 
-		if let Some(credentials) = bucket_config.credentials.to_credentials() {
-			config = config.credentials_provider(credentials);
-		}
+			if let Some(credentials) = config.bucket.credentials.to_credentials() {
+				s3_config = s3_config.credentials_provider(credentials);
+			}
 
-		let config = config.build();
+			let config = s3_config.build();
 
-		let s3_client = aws_sdk_s3::Client::from_conf(config);
+			aws_sdk_s3::Client::from_conf(config)
+		};
+
+		let request_limiter = Arc::new(tokio::sync::Semaphore::new(config.max_concurrent_requests as usize));
 
 		Self {
 			inner: moka::future::Cache::builder()
@@ -62,11 +69,12 @@ impl Cache {
 				})
 				.expire_after(CacheExpiry)
 				.weigher(|_, v: &CachedResponse| v.data.len() as u32)
-				.max_capacity(capacity)
+				.max_capacity(config.cache_capacity)
 				.build(),
 			path_meta,
-			s3_bucket_name: bucket_config.name.clone(),
+			s3_bucket_name: config.bucket.name.clone(),
 			s3_client,
+			request_limiter,
 		}
 	}
 
@@ -112,13 +120,20 @@ impl Cache {
 			.map_err(|_| CacheError::PathMetaUpdate)?;
 
 		// request file
-		let response = self
-			.s3_client
-			.get_object()
-			.bucket(&self.s3_bucket_name)
-			.key(&key)
-			.send()
-			.await?;
+		let response = {
+			let _permit = self
+				.request_limiter
+				.acquire()
+				.await
+				.map_err(|_| CacheError::SemaphoreClosed)?;
+
+			self.s3_client
+				.get_object()
+				.bucket(&self.s3_bucket_name)
+				.key(&key)
+				.send()
+				.await?
+		};
 
 		let cached = CachedResponse::from_s3_response(response).await?;
 

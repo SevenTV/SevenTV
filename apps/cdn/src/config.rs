@@ -39,6 +39,9 @@ pub struct Cdn {
 	/// Cache capacity
 	#[settings(default = 1000)]
 	pub cache_capacity: u64,
+	/// Max concurrent requests to the origin
+	#[settings(default = 100)]
+	pub max_concurrent_requests: u64,
 }
 
 #[auto_settings]
@@ -46,7 +49,6 @@ pub struct Cdn {
 pub struct S3CredentialsConfig {
 	/// The access key for the S3 bucket
 	pub access_key: Option<String>,
-
 	/// The secret key for the S3 bucket
 	pub secret_key: Option<String>,
 }

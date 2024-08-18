@@ -10,7 +10,7 @@ pub struct Global {
 impl Global {
 	pub async fn new(config: Config) -> Self {
 		Self {
-			cache: cache::Cache::new(config.cdn.cache_capacity, &config.cdn.bucket),
+			cache: cache::Cache::new(&config.cdn),
 			config,
 		}
 	}
