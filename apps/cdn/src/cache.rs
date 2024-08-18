@@ -62,6 +62,7 @@ impl Cache {
 					let path_meta = Arc::clone(&pm);
 
 					Box::pin(async move {
+						tracing::debug!(key = %key, "evicting cache entry");
 						path_meta.remove_async(key.as_ref()).await;
 					})
 				})
@@ -147,6 +148,7 @@ impl Cache {
 	async fn request_key(&self, key: String) -> Result<CachedResponse, CacheError> {
 		// request file
 		let response = {
+			// we are never closing the semaphore, so we can expect it to be open here, right? Clueless
 			let _permit = self.request_limiter.acquire().await.expect("semaphore closed");
 
 			tokio::time::timeout(
@@ -177,6 +179,7 @@ pub type CacheKey = String;
 #[derive(Debug, Clone)]
 pub struct CachedResponse {
 	pub data: bytes::Bytes,
+	pub content_type: Option<String>,
 	pub date: chrono::DateTime<chrono::Utc>,
 	pub max_age: std::time::Duration,
 	pub hits: Arc<AtomicUsize>,
@@ -189,6 +192,10 @@ impl IntoResponse for CachedResponse {
 		let age = chrono::Utc::now() - self.date;
 
 		let mut headers = HeaderMap::new();
+
+		if let Some(content_type) = self.content_type.and_then(|c| c.try_into().ok()) {
+			headers.insert(header::CONTENT_TYPE, content_type);
+		}
 
 		headers.insert("x-7tv-cache-hits", hits.to_string().try_into().unwrap());
 		headers.insert(
@@ -228,6 +235,7 @@ impl CachedResponse {
 
 		Ok(Self {
 			data: value.body.collect().await?.into_bytes(),
+			content_type: value.content_type,
 			date,
 			max_age,
 			hits: Arc::new(AtomicUsize::new(0)),

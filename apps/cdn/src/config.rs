@@ -36,11 +36,11 @@ pub struct Cdn {
 	/// Bucket origin
 	#[settings(default = S3BucketConfig::default())]
 	pub bucket: S3BucketConfig,
-	/// Cache capacity
-	#[settings(default = 1000)]
+	/// Cache capacity in bytes
+	#[settings(default = 1024 * 1024 * 1024)]
 	pub cache_capacity: u64,
 	/// Max concurrent requests to the origin
-	#[settings(default = 100)]
+	#[settings(default = 200)]
 	pub max_concurrent_requests: u64,
 	/// Origin request timeout in seconds
 	#[settings(default = 5)]
