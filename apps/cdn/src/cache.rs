@@ -17,10 +17,8 @@ const ONE_DAY: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
 	inflight: Arc<scc::HashMap<CacheKey, Inflight>>,
-	s3_bucket_name: String,
 	s3_client: aws_sdk_s3::client::Client,
 	request_limiter: Arc<tokio::sync::Semaphore>,
-	request_timeout: std::time::Duration,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -29,8 +27,6 @@ pub enum CacheError {
 	S3(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>),
 	#[error("s3 byte stream error: {0}")]
 	S3ByteStream(#[from] aws_sdk_s3::primitives::ByteStreamError),
-	#[error("origin request timed out")]
-	Timeout,
 }
 
 impl Cache {
@@ -62,10 +58,8 @@ impl Cache {
 				.max_capacity(config.cache_capacity)
 				.build(),
 			inflight: Arc::new(scc::HashMap::new()),
-			s3_bucket_name: config.bucket.name.clone(),
 			s3_client,
 			request_limiter,
-			request_timeout: std::time::Duration::from_secs(config.origin_request_timeout),
 		}
 	}
 
@@ -77,38 +71,37 @@ impl Cache {
 			return Ok(hit);
 		}
 
-		if let Some(inflight) = self.inflight.read_async(&key, |_, inflight| inflight.clone()).await {
+		let mut insert = false;
+
+		let entry = self.inflight.entry_async(key.clone()).await.or_insert_with(|| {
+			insert = true;
+
+			Inflight {
+				token: tokio_util::sync::CancellationToken::new(),
+				response: Arc::new(OnceCell::new()),
+			}
+		});
+
+		if !insert {
 			// pending
-			inflight.token.cancelled().await;
-			return Ok(inflight.response.get().cloned().expect("unreachable"));
+			entry.token.cancelled().await;
+			return Ok(entry.response.get().cloned().expect("unreachable"));
 		}
 
 		// miss
 
-		let token = tokio_util::sync::CancellationToken::new();
-		let _guard = token.clone().drop_guard();
-		let response = Arc::new(OnceCell::new());
-
-		self.inflight
-			.insert_async(
-				key.clone(),
-				Inflight {
-					token,
-					response: Arc::clone(&response),
-				},
-			)
-			.await
-			.map_err(|_| ())
-			.expect("unreachable"); // TODO: is it actually unreachable?
+		let _guard = entry.token.clone().drop_guard();
 
 		// request file
 		let cached = self.request_key(global, key.clone()).await?;
 
-		response.set(cached.clone()).expect("unreachable"); // TODO: is it actually unreachable?
+		entry.response.set(cached.clone()).expect("unreachable");
 
 		self.inflight.remove_async(&key).await;
 
-		self.inner.insert(key, cached.clone()).await;
+		if !cached.max_age.is_zero() {
+			self.inner.insert(key, cached.clone()).await;
+		}
 
 		Ok(cached)
 	}
@@ -120,21 +113,23 @@ impl Cache {
 			let _permit = self.request_limiter.acquire().await.expect("semaphore closed");
 
 			tokio::time::timeout(
-				self.request_timeout,
+				std::time::Duration::from_secs(global.config.cdn.origin_request_timeout),
 				self.s3_client
 					.get_object()
-					.bucket(&self.s3_bucket_name)
+					.bucket(&global.config.cdn.bucket.name)
 					.key(key.get_path(global.config.cdn.migration_timestamp))
 					.send(),
 			)
 			.await
-			.map_err(|_| CacheError::Timeout)?
 		};
 
 		match response {
-			Ok(response) => Ok(CachedResponse::from_s3_response(response).await?),
-			Err(aws_sdk_s3::error::SdkError::ServiceError(e)) if e.err().is_no_such_key() => Ok(CachedResponse::not_found()),
-			Err(e) => Err(e.into()),
+			Ok(Ok(response)) => Ok(CachedResponse::from_s3_response(response).await?),
+			Ok(Err(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => {
+				Ok(CachedResponse::not_found())
+			}
+			Ok(Err(e)) => Err(e.into()),
+			Err(_) => Ok(CachedResponse::timeout()),
 		}
 	}
 }
@@ -194,6 +189,15 @@ impl CachedResponse {
 			data: CachedData::NotFound,
 			date: chrono::Utc::now(),
 			max_age: std::time::Duration::from_secs(10),
+			hits: Arc::new(AtomicUsize::new(0)),
+		}
+	}
+
+	pub fn timeout() -> Self {
+		Self {
+			data: CachedData::NotFound,
+			date: chrono::Utc::now(),
+			max_age: std::time::Duration::from_secs(0),
 			hits: Arc::new(AtomicUsize::new(0)),
 		}
 	}
