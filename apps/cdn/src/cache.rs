@@ -1,5 +1,6 @@
 use std::sync::{atomic::AtomicUsize, Arc};
 
+use scc::hash_map::OccupiedEntry;
 use scuffle_foundations::http::server::{
 	axum::http::{
 		header::{self, HeaderMap},
@@ -16,7 +17,7 @@ const ONE_DAY: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24
 
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
-	inflight: Arc<scc::HashMap<CacheKey, Arc<Inflight>>>,
+	inflight: Arc<scc::HashMap<CacheKey, Inflight>>,
 	s3_client: aws_sdk_s3::client::Client,
 	request_limiter: Arc<tokio::sync::Semaphore>,
 }
@@ -63,38 +64,53 @@ impl Cache {
 			return hit;
 		}
 
-		let mut insert = false;
-
-		let entry = self.inflight.entry_async(key.clone()).await.or_insert_with(|| {
-			insert = true;
-
-			Arc::new(Inflight {
-				token: tokio_util::sync::CancellationToken::new(),
-				response: OnceCell::new(),
-			})
-		});
-
-		if !insert {
-			// pending
-			entry.token.cancelled().await;
-			return entry.response.get().cloned().unwrap_or_else(CachedResponse::general_error);
-		}
-
-		// miss
-
 		let global = Arc::clone(&global);
-		let entry = Arc::clone(&entry);
 
 		let cached = tokio::spawn(async move {
-			let _guard = entry.token.clone().drop_guard();
-	
+			let mut insert = false;
+
+			let entry = global.cache.inflight.entry_async(key.clone()).await.or_insert_with(|| {
+				insert = true;
+
+				Inflight {
+					token: tokio_util::sync::CancellationToken::new(),
+					response: OnceCell::new(),
+				}
+			});
+
+			struct EntryDropGuard<'a>(Option<OccupiedEntry<'a, CacheKey, Inflight>>);
+
+			impl<'a> EntryDropGuard<'a> {
+				fn new(entry: OccupiedEntry<'a, CacheKey, Inflight>) -> Self {
+					Self(Some(entry))
+				}
+
+				fn entry(&self) -> &OccupiedEntry<'a, CacheKey, Inflight> {
+					self.0.as_ref().unwrap()
+				}
+			}
+
+			impl Drop for EntryDropGuard<'_> {
+				fn drop(&mut self) {
+					let _ = self.0.take().unwrap().remove();
+				}
+			}
+
+			let entry = EntryDropGuard::new(entry);
+
+			if !insert {
+				// pending
+				entry.entry().token.cancelled().await;
+				return entry.entry().response.get().cloned().unwrap_or_else(CachedResponse::general_error);
+			}
+
+			let _guard = entry.entry().token.clone().drop_guard();
+
 			// request file
 			let cached = global.cache.request_key(&global, key.clone()).await;
-	
-			entry.response.set(cached.clone()).expect("unreachable");
-	
-			global.cache.inflight.remove_async(&key).await;
-	
+
+			entry.entry().response.set(cached.clone()).expect("unreachable");
+
 			if !cached.max_age.is_zero() {
 				global.cache.inner.insert(key, cached.clone()).await;
 			}
@@ -102,7 +118,7 @@ impl Cache {
 			cached
 		});
 
-		cached.await.unwrap()
+		cached.await.unwrap_or_else(|_| CachedResponse::general_error())
 	}
 
 	async fn request_key(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
