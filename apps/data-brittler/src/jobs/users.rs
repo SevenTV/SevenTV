@@ -235,6 +235,8 @@ impl Job for UsersJob {
 
 		if let Some(profile_picture) = profile_picture {
 			self.profile_pictures.push(profile_picture);
+
+			// TODO: copy files to cdn
 		}
 
 		for editor in user.editors {

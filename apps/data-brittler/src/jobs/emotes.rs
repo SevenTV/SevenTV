@@ -77,6 +77,8 @@ impl Job for EmotesJob {
 				outputs: v.image_files.into_iter().map(Into::into).collect(),
 			};
 
+			// TODO: copy cdn files
+
 			self.emotes.push(Emote {
 				id: v.id.into(),
 				owner_id: (!owner_id.is_nil() && !owner_id.is_one())
