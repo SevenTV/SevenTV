@@ -21,14 +21,6 @@ pub struct Cache {
 	request_limiter: Arc<tokio::sync::Semaphore>,
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum CacheError {
-	#[error("failed to fetch origin: {0}")]
-	S3(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>),
-	#[error("s3 byte stream error: {0}")]
-	S3ByteStream(#[from] aws_sdk_s3::primitives::ByteStreamError),
-}
-
 impl Cache {
 	pub fn new(config: &config::Cdn) -> Self {
 		let s3_client = {
@@ -63,12 +55,12 @@ impl Cache {
 		}
 	}
 
-	pub async fn handle_request(&self, global: &Arc<Global>, key: CacheKey) -> Result<CachedResponse, CacheError> {
+	pub async fn handle_request(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
 		if let Some(hit) = self.inner.get(&key).await {
 			hit.hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
 			// return cached response
-			return Ok(hit);
+			return hit;
 		}
 
 		let mut insert = false;
@@ -85,7 +77,7 @@ impl Cache {
 		if !insert {
 			// pending
 			entry.token.cancelled().await;
-			return Ok(entry.response.get().cloned().expect("unreachable"));
+			return entry.response.get().cloned().expect("unreachable");
 		}
 
 		// miss
@@ -93,7 +85,7 @@ impl Cache {
 		let _guard = entry.token.clone().drop_guard();
 
 		// request file
-		let cached = self.request_key(global, key.clone()).await?;
+		let cached = self.request_key(global, key.clone()).await;
 
 		entry.response.set(cached.clone()).expect("unreachable");
 
@@ -103,10 +95,10 @@ impl Cache {
 			self.inner.insert(key, cached.clone()).await;
 		}
 
-		Ok(cached)
+		cached
 	}
 
-	async fn request_key(&self, global: &Arc<Global>, key: CacheKey) -> Result<CachedResponse, CacheError> {
+	async fn request_key(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
 		// request file
 		let response = {
 			// we are never closing the semaphore, so we can expect it to be open here, right? Clueless
@@ -124,12 +116,19 @@ impl Cache {
 		};
 
 		match response {
-			Ok(Ok(response)) => Ok(CachedResponse::from_s3_response(response).await?),
-			Ok(Err(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => {
-				Ok(CachedResponse::not_found())
+			Ok(Ok(response)) => match CachedResponse::from_s3_response(response).await {
+				Ok(response) => response,
+				Err(e) => {
+					tracing::error!(error = %e, "failed to parse cdn file");
+					CachedResponse::general_error()
+				}
+			},
+			Ok(Err(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => CachedResponse::not_found(),
+			Ok(Err(e)) => {
+				tracing::error!(error = %e, "failed to request cdn file");
+				CachedResponse::general_error()
 			}
-			Ok(Err(e)) => Err(e.into()),
-			Err(_) => Ok(CachedResponse::timeout()),
+			Err(_) => CachedResponse::timeout(),
 		}
 	}
 }
@@ -195,9 +194,18 @@ impl CachedResponse {
 
 	pub fn timeout() -> Self {
 		Self {
-			data: CachedData::NotFound,
+			data: CachedData::InternalServerError,
 			date: chrono::Utc::now(),
-			max_age: std::time::Duration::from_secs(0),
+			max_age: std::time::Duration::ZERO,
+			hits: Arc::new(AtomicUsize::new(0)),
+		}
+	}
+
+	pub fn general_error() -> Self {
+		Self {
+			data: CachedData::InternalServerError,
+			date: chrono::Utc::now(),
+			max_age: std::time::Duration::ZERO,
 			hits: Arc::new(AtomicUsize::new(0)),
 		}
 	}
@@ -210,6 +218,7 @@ pub enum CachedData {
 		content_type: Option<String>,
 	},
 	NotFound,
+	InternalServerError,
 }
 
 impl CachedData {
@@ -217,6 +226,7 @@ impl CachedData {
 		match self {
 			Self::Bytes { data, .. } => data.len(),
 			Self::NotFound => 0,
+			Self::InternalServerError => 0,
 		}
 	}
 }
@@ -234,6 +244,7 @@ impl IntoResponse for CachedData {
 				(headers, data).into_response()
 			}
 			Self::NotFound => StatusCode::NOT_FOUND.into_response(),
+			Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
 		}
 	}
 }

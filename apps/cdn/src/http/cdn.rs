@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use scuffle_foundations::http::server::axum::{
 	extract::{Path, State},
-	http::StatusCode,
 	routing::{any, get},
 	Router,
 };
@@ -27,38 +26,28 @@ async fn root() -> &'static str {
 	"Welcome to the 7TV CDN!"
 }
 
-async fn cdn_route(global: &Arc<Global>, key: CacheKey) -> Result<CachedResponse, StatusCode> {
-	global.cache.handle_request(&global, key).await.map_err(|e| {
-		tracing::error!(error = %e, "failed to handle cdn request");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})
+async fn badge(Path((id, file)): Path<(BadgeId, String)>, State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Badge { id, file }).await
 }
 
-async fn badge(
-	Path((id, file)): Path<(BadgeId, String)>,
-	State(global): State<Arc<Global>>,
-) -> Result<CachedResponse, StatusCode> {
-	cdn_route(&global, CacheKey::Badge { id, file }).await
-}
-
-async fn emote(
-	Path((id, file)): Path<(EmoteId, String)>,
-	State(global): State<Arc<Global>>,
-) -> Result<CachedResponse, StatusCode> {
-	cdn_route(&global, CacheKey::Emote { id, file }).await
+async fn emote(Path((id, file)): Path<(EmoteId, String)>, State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Emote { id, file }).await
 }
 
 async fn user_profile_picture(
 	Path((user, avatar_id, file)): Path<(UserId, String, String)>,
 	State(global): State<Arc<Global>>,
-) -> Result<CachedResponse, StatusCode> {
-	cdn_route(&global, CacheKey::UserProfilePicture { user, avatar_id, file }).await
+) -> CachedResponse {
+	global
+		.cache
+		.handle_request(&global, CacheKey::UserProfilePicture { user, avatar_id, file })
+		.await
 }
 
-async fn misc(Path(key): Path<String>, State(global): State<Arc<Global>>) -> Result<CachedResponse, StatusCode> {
-	cdn_route(&global, CacheKey::Misc { key }).await
+async fn misc(Path(key): Path<String>, State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Misc { key }).await
 }
 
-async fn juicers(State(global): State<Arc<Global>>) -> Result<CachedResponse, StatusCode> {
-	cdn_route(&global, CacheKey::Juicers).await
+async fn juicers(State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Juicers).await
 }
