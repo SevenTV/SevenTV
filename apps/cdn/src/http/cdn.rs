@@ -6,40 +6,59 @@ use scuffle_foundations::http::server::axum::{
 	routing::{any, get},
 	Router,
 };
-use shared::database::emote::EmoteId;
+use shared::database::{badge::BadgeId, emote::EmoteId, user::UserId};
 
-use crate::{cache::CachedResponse, global::Global};
+use crate::{
+	cache::{CacheKey, CachedResponse},
+	global::Global,
+};
 
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.route("/", any(root))
+		.route("/badge/:id/:file", get(badge))
 		.route("/emote/:id/:file", get(emote))
-		.route("/*key", any(cdn_route))
+		.route("/user/:user/:avatar_id/:file", get(user_profile_picture))
+		.route("/misc/*key", any(misc))
+		.route("/JUICERS.png", get(juicers))
 }
 
 async fn root() -> &'static str {
 	"Welcome to the 7TV CDN!"
 }
 
-async fn cdn_route(Path(key): Path<String>, State(global): State<Arc<Global>>) -> Result<CachedResponse, StatusCode> {
-	global.cache.handle_request(key).await.map_err(|e| {
+async fn cdn_route(global: &Arc<Global>, key: CacheKey) -> Result<CachedResponse, StatusCode> {
+	global.cache.handle_request(&global, key).await.map_err(|e| {
 		tracing::error!(error = %e, "failed to handle cdn request");
 		StatusCode::INTERNAL_SERVER_ERROR
 	})
+}
+
+async fn badge(
+	Path((id, file)): Path<(BadgeId, String)>,
+	State(global): State<Arc<Global>>,
+) -> Result<CachedResponse, StatusCode> {
+	cdn_route(&global, CacheKey::Badge { id, file }).await
 }
 
 async fn emote(
 	Path((id, file)): Path<(EmoteId, String)>,
 	State(global): State<Arc<Global>>,
 ) -> Result<CachedResponse, StatusCode> {
-	// When the requested id is older than the migration timestamp, we need to convert it back to an old object id
-	let id = (id.timestamp() < global.config.cdn.migration_timestamp)
-		.then_some(id.as_object_id().map(|i| i.to_string()))
-		.flatten()
-		.unwrap_or(id.to_string());
+	cdn_route(&global, CacheKey::Emote { id, file }).await
+}
 
-	global.cache.handle_request(format!("emote/{id}/{file}")).await.map_err(|e| {
-		tracing::error!(error = %e, "failed to handle cdn request");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})
+async fn user_profile_picture(
+	Path((user, avatar_id, file)): Path<(UserId, String, String)>,
+	State(global): State<Arc<Global>>,
+) -> Result<CachedResponse, StatusCode> {
+	cdn_route(&global, CacheKey::UserProfilePicture { user, avatar_id, file }).await
+}
+
+async fn misc(Path(key): Path<String>, State(global): State<Arc<Global>>) -> Result<CachedResponse, StatusCode> {
+	cdn_route(&global, CacheKey::Misc { key }).await
+}
+
+async fn juicers(State(global): State<Arc<Global>>) -> Result<CachedResponse, StatusCode> {
+	cdn_route(&global, CacheKey::Juicers).await
 }

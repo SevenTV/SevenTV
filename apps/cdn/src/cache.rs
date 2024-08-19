@@ -7,14 +7,16 @@ use scuffle_foundations::http::server::{
 	},
 	stream::{Body, IntoResponse},
 };
+use shared::database::{badge::BadgeId, emote::EmoteId, user::UserId, Id};
+use tokio::sync::OnceCell;
 
-use crate::config;
+use crate::{config, global::Global};
 
 const ONE_DAY: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24);
 
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
-	path_meta: Arc<scc::HashMap<String, PathMeta>>,
+	inflight: Arc<scc::HashMap<CacheKey, Inflight>>,
 	s3_bucket_name: String,
 	s3_client: aws_sdk_s3::client::Client,
 	request_limiter: Arc<tokio::sync::Semaphore>,
@@ -33,9 +35,6 @@ pub enum CacheError {
 
 impl Cache {
 	pub fn new(config: &config::Cdn) -> Self {
-		let path_meta = Arc::new(scc::HashMap::new());
-		let pm = Arc::clone(&path_meta);
-
 		let s3_client = {
 			let mut s3_config = if let Some(endpoint) = &config.bucket.endpoint {
 				aws_sdk_s3::config::Builder::new().endpoint_url(endpoint)
@@ -58,19 +57,11 @@ impl Cache {
 
 		Self {
 			inner: moka::future::Cache::builder()
-				.async_eviction_listener(move |key: Arc<CacheKey>, _, _| {
-					let path_meta = Arc::clone(&pm);
-
-					Box::pin(async move {
-						tracing::debug!(key = %key, "evicting cache entry");
-						path_meta.remove_async(key.as_ref()).await;
-					})
-				})
 				.expire_after(CacheExpiry)
 				.weigher(|_, v: &CachedResponse| v.data.len() as u32)
 				.max_capacity(config.cache_capacity)
 				.build(),
-			path_meta,
+			inflight: Arc::new(scc::HashMap::new()),
 			s3_bucket_name: config.bucket.name.clone(),
 			s3_client,
 			request_limiter,
@@ -78,74 +69,51 @@ impl Cache {
 		}
 	}
 
-	pub async fn handle_request(&self, key: String) -> Result<CachedResponse, CacheError> {
-		'fetch: loop {
-			let meta = self.path_meta.read_async(&key, |_, meta| meta.clone()).await;
+	pub async fn handle_request(&self, global: &Arc<Global>, key: CacheKey) -> Result<CachedResponse, CacheError> {
+		if let Some(hit) = self.inner.get(&key).await {
+			hit.hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
-			if let Some(meta) = meta {
-				match meta {
-					PathMeta::Pending { coalescing } => {
-						// wait for the request to finish
-						coalescing.cancelled().await;
+			// return cached response
+			return Ok(hit);
+		}
 
-						// refetch the meta, it should be PathMeta::Cached now
-						continue 'fetch;
-					}
-					PathMeta::Cached => {
-						if let Some(hit) = self.inner.get(&key).await {
-							hit.hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
-							// return cached response
-							return Ok(hit);
-						} else {
-							// something is wrong
-							unreachable!("cache is missing a cached response");
-						}
-					}
-				}
-			} else {
-				// miss
-				break 'fetch;
-			}
+		if let Some(inflight) = self.inflight.read_async(&key, |_, inflight| inflight.clone()).await {
+			// pending
+			inflight.token.cancelled().await;
+			return Ok(inflight.response.get().cloned().expect("unreachable"));
 		}
 
 		// miss
 
-		let coalescing = tokio_util::sync::CancellationToken::new();
+		let token = tokio_util::sync::CancellationToken::new();
+		let _guard = token.clone().drop_guard();
+		let response = Arc::new(OnceCell::new());
 
-		self.path_meta
+		self.inflight
 			.insert_async(
 				key.clone(),
-				PathMeta::Pending {
-					coalescing: coalescing.clone(),
+				Inflight {
+					token,
+					response: Arc::clone(&response),
 				},
 			)
 			.await
 			.map_err(|_| ())
-			.expect("unreachable");
+			.expect("unreachable"); // TODO: is it actually unreachable?
 
 		// request file
-		let cached = match self.request_key(key.clone()).await {
-			Ok(response) => response,
-			Err(e) => {
-				// remove the pending entry
-				self.path_meta.remove_async(&key).await;
-				coalescing.cancel();
-				return Err(e);
-			}
-		};
+		let cached = self.request_key(global, key.clone()).await?;
 
-		self.path_meta.update_async(&key.clone(), |_, e| *e = PathMeta::Cached).await;
+		response.set(cached.clone()).expect("unreachable"); // TODO: is it actually unreachable?
+
+		self.inflight.remove_async(&key).await;
 
 		self.inner.insert(key, cached.clone()).await;
-
-		// tell others waiting that the cache is ready
-		coalescing.cancel();
 
 		Ok(cached)
 	}
 
-	async fn request_key(&self, key: String) -> Result<CachedResponse, CacheError> {
+	async fn request_key(&self, global: &Arc<Global>, key: CacheKey) -> Result<CachedResponse, CacheError> {
 		// request file
 		let response = {
 			// we are never closing the semaphore, so we can expect it to be open here, right? Clueless
@@ -153,7 +121,11 @@ impl Cache {
 
 			tokio::time::timeout(
 				self.request_timeout,
-				self.s3_client.get_object().bucket(&self.s3_bucket_name).key(&key).send(),
+				self.s3_client
+					.get_object()
+					.bucket(&self.s3_bucket_name)
+					.key(key.get_path(global.config.cdn.migration_timestamp))
+					.send(),
 			)
 			.await
 			.map_err(|_| CacheError::Timeout)?
@@ -169,16 +141,44 @@ impl Cache {
 
 /// Safe to clone
 #[derive(Debug, Clone)]
-pub enum PathMeta {
-	Pending {
-		/// This token is pending as long as the request to the origin is pending.
-		/// "Cancellation" is an unfortunate name for this because it is not used to cancel anything but rather notify everyone waiting that the cache is ready to be queried.
-		coalescing: tokio_util::sync::CancellationToken,
-	},
-	Cached,
+pub struct Inflight {
+	/// This token is pending as long as the request to the origin is pending.
+	/// "Cancellation" is an unfortunate name for this because it is not used to cancel anything but rather notify everyone waiting that the cache is ready to be queried.
+	token: tokio_util::sync::CancellationToken,
+	/// The response once it is ready
+	response: Arc<OnceCell<CachedResponse>>,
 }
 
-pub type CacheKey = String;
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CacheKey {
+	Badge { id: BadgeId, file: String },
+	Emote { id: EmoteId, file: String },
+	UserProfilePicture { user: UserId, avatar_id: String, file: String },
+	Misc { key: String },
+	Juicers,
+}
+
+fn legacy_id<S>(id: Id<S>, migration_timestamp: chrono::DateTime<chrono::Utc>) -> String {
+	// When the requested id is older than the migration timestamp, we need to convert it back to an old object id
+	(id.timestamp() < migration_timestamp)
+		.then_some(id.as_object_id().map(|i| i.to_string()))
+		.flatten()
+		.unwrap_or(id.to_string())
+}
+
+impl CacheKey {
+	pub fn get_path(&self, migration_timestamp: chrono::DateTime<chrono::Utc>) -> String {
+		match self {
+			Self::Badge { id, file } => format!("badge/{}/{file}", legacy_id(*id, migration_timestamp)),
+			Self::Emote { id, file } => format!("emote/{}/{file}", legacy_id(*id, migration_timestamp)),
+			Self::UserProfilePicture { user, avatar_id, file } => {
+				format!("user/{}/{avatar_id}/{file}", legacy_id(*user, migration_timestamp))
+			}
+			Self::Misc { key } => format!("misc/{key}"),
+			Self::Juicers => "JUICERS.png".to_string(),
+		}
+	}
+}
 
 #[derive(Debug, Clone)]
 pub struct CachedResponse {
@@ -193,7 +193,7 @@ impl CachedResponse {
 		Self {
 			data: CachedData::NotFound,
 			date: chrono::Utc::now(),
-			max_age: ONE_DAY,
+			max_age: std::time::Duration::from_secs(10),
 			hits: Arc::new(AtomicUsize::new(0)),
 		}
 	}
@@ -228,10 +228,8 @@ impl IntoResponse for CachedData {
 				}
 
 				(headers, data).into_response()
-			},
-			Self::NotFound => {
-				StatusCode::NOT_FOUND.into_response()
-			},
+			}
+			Self::NotFound => StatusCode::NOT_FOUND.into_response(),
 		}
 	}
 }
@@ -244,7 +242,8 @@ impl IntoResponse for CachedResponse {
 
 		let age = chrono::Utc::now() - self.date;
 
-		data.headers_mut().insert("x-7tv-cache-hits", hits.to_string().try_into().unwrap());
+		data.headers_mut()
+			.insert("x-7tv-cache-hits", hits.to_string().try_into().unwrap());
 		data.headers_mut().insert(
 			"x-7tv-cache",
 			if hits == 0 {
@@ -253,7 +252,8 @@ impl IntoResponse for CachedResponse {
 				HeaderValue::from_static("hit")
 			},
 		);
-		data.headers_mut().insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
+		data.headers_mut()
+			.insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
 
 		data
 	}
