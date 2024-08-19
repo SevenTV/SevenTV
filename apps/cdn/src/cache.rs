@@ -16,7 +16,7 @@ const ONE_DAY: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24
 
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
-	inflight: Arc<scc::HashMap<CacheKey, Inflight>>,
+	inflight: Arc<scc::HashMap<CacheKey, Arc<Inflight>>>,
 	s3_client: aws_sdk_s3::client::Client,
 	request_limiter: Arc<tokio::sync::Semaphore>,
 }
@@ -68,34 +68,41 @@ impl Cache {
 		let entry = self.inflight.entry_async(key.clone()).await.or_insert_with(|| {
 			insert = true;
 
-			Inflight {
+			Arc::new(Inflight {
 				token: tokio_util::sync::CancellationToken::new(),
-				response: Arc::new(OnceCell::new()),
-			}
+				response: OnceCell::new(),
+			})
 		});
 
 		if !insert {
 			// pending
 			entry.token.cancelled().await;
-			return entry.response.get().cloned().expect("unreachable");
+			return entry.response.get().cloned().unwrap_or_else(CachedResponse::general_error);
 		}
 
 		// miss
 
-		let _guard = entry.token.clone().drop_guard();
+		let global = Arc::clone(&global);
+		let entry = Arc::clone(&entry);
 
-		// request file
-		let cached = self.request_key(global, key.clone()).await;
+		let cached = tokio::spawn(async move {
+			let _guard = entry.token.clone().drop_guard();
+	
+			// request file
+			let cached = global.cache.request_key(&global, key.clone()).await;
+	
+			entry.response.set(cached.clone()).expect("unreachable");
+	
+			global.cache.inflight.remove_async(&key).await;
+	
+			if !cached.max_age.is_zero() {
+				global.cache.inner.insert(key, cached.clone()).await;
+			}
 
-		entry.response.set(cached.clone()).expect("unreachable");
+			cached
+		});
 
-		self.inflight.remove_async(&key).await;
-
-		if !cached.max_age.is_zero() {
-			self.inner.insert(key, cached.clone()).await;
-		}
-
-		cached
+		cached.await.unwrap()
 	}
 
 	async fn request_key(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
@@ -140,7 +147,7 @@ pub struct Inflight {
 	/// "Cancellation" is an unfortunate name for this because it is not used to cancel anything but rather notify everyone waiting that the cache is ready to be queried.
 	token: tokio_util::sync::CancellationToken,
 	/// The response once it is ready
-	response: Arc<OnceCell<CachedResponse>>,
+	response: OnceCell<CachedResponse>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
