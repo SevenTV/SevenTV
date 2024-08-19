@@ -1,5 +1,6 @@
 use std::sync::{atomic::AtomicUsize, Arc};
 
+use key::CacheKey;
 use scc::hash_map::OccupiedEntry;
 use scuffle_foundations::http::server::{
 	axum::http::{
@@ -8,10 +9,11 @@ use scuffle_foundations::http::server::{
 	},
 	stream::{Body, IntoResponse},
 };
-use shared::database::{badge::BadgeId, emote::EmoteId, user::UserId, Id};
 use tokio::sync::OnceCell;
 
 use crate::{config, global::Global};
+
+pub mod key;
 
 const ONE_DAY: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24);
 
@@ -127,12 +129,14 @@ impl Cache {
 			// we are never closing the semaphore, so we can expect it to be open here, right? Clueless
 			let _permit = self.request_limiter.acquire().await.expect("semaphore closed");
 
+			tracing::debug!(key = %key, "requesting origin");
+
 			tokio::time::timeout(
 				std::time::Duration::from_secs(global.config.cdn.origin_request_timeout),
 				self.s3_client
 					.get_object()
 					.bucket(&global.config.cdn.bucket.name)
-					.key(key.get_path(global.config.cdn.migration_timestamp))
+					.key(key)
 					.send(),
 			)
 			.await
@@ -164,37 +168,6 @@ pub struct Inflight {
 	token: tokio_util::sync::CancellationToken,
 	/// The response once it is ready
 	response: OnceCell<CachedResponse>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum CacheKey {
-	Badge { id: BadgeId, file: String },
-	Emote { id: EmoteId, file: String },
-	UserProfilePicture { user: UserId, avatar_id: String, file: String },
-	Misc { key: String },
-	Juicers,
-}
-
-fn legacy_id<S>(id: Id<S>, migration_timestamp: chrono::DateTime<chrono::Utc>) -> String {
-	// When the requested id is older than the migration timestamp, we need to convert it back to an old object id
-	(id.timestamp() < migration_timestamp)
-		.then_some(id.as_object_id().map(|i| i.to_string()))
-		.flatten()
-		.unwrap_or(id.to_string())
-}
-
-impl CacheKey {
-	pub fn get_path(&self, migration_timestamp: chrono::DateTime<chrono::Utc>) -> String {
-		match self {
-			Self::Badge { id, file } => format!("badge/{}/{file}", legacy_id(*id, migration_timestamp)),
-			Self::Emote { id, file } => format!("emote/{}/{file}", legacy_id(*id, migration_timestamp)),
-			Self::UserProfilePicture { user, avatar_id, file } => {
-				format!("user/{}/{avatar_id}/{file}", legacy_id(*user, migration_timestamp))
-			}
-			Self::Misc { key } => format!("misc/{key}"),
-			Self::Juicers => "JUICERS.png".to_string(),
-		}
-	}
 }
 
 #[derive(Debug, Clone)]

@@ -45,9 +45,6 @@ pub struct Cdn {
 	/// Origin request timeout in seconds
 	#[settings(default = 5)]
 	pub origin_request_timeout: u64,
-	/// The migration timestamp
-	/// This is used to determine if a requested id needs to be converted back to an old object id
-	pub migration_timestamp: chrono::DateTime<chrono::Utc>,
 }
 
 #[auto_settings]
