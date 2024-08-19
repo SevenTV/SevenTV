@@ -5036,6 +5036,7 @@ dependencies = [
  "async-graphql",
  "async-nats",
  "async-stripe",
+ "aws-sdk-s3",
  "bitmask-enum",
  "bson",
  "bytes",

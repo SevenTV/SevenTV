@@ -57,5 +57,6 @@ typesense_codegen = { git = "https://github.com/typesense/typesense-rust.git" }
 itertools = "0.13"
 const_format = "0.2"
 typed-builder = "0.19.1"
+aws-sdk-s3 = { version = "1.45.0", features = ["behavior-version-latest"] }
 
 macros = { workspace = true }
