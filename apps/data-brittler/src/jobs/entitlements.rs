@@ -27,8 +27,8 @@ impl Job for EntitlementsJob {
 		})
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("entitlements")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("entitlements"))
 	}
 
 	async fn process(&mut self, entitlement: Self::T) -> ProcessOutcome {

@@ -8,7 +8,7 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
-use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::image_set::{self, ImageSet, ImageSetInput};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorPermissions, UserEditorState};
 use shared::database::user::profile_picture::UserProfilePicture;
@@ -94,8 +94,8 @@ impl Job for UsersJob {
 		})
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("users")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("users"))
 	}
 
 	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
@@ -120,10 +120,26 @@ impl Job for UsersJob {
 		let active_profile_picture = match user.avatar {
 			Some(types::UserAvatar::Processed {
 				input_file, image_files, ..
-			}) => Some(ImageSet {
-				input: ImageSetInput::Image(input_file.into()),
-				outputs: image_files.into_iter().map(Into::into).collect(),
-			}),
+			}) => {
+				let input_file = match image_set::Image::try_from(input_file) {
+					Ok(input_file) => input_file,
+					Err(e) => {
+						return outcome.with_error(error::Error::InvalidCdnFile(e));
+					}
+				};
+
+				let outputs = match image_files.into_iter().map(image_set::Image::try_from).collect() {
+					Ok(outputs) => outputs,
+					Err(e) => {
+						return outcome.with_error(error::Error::InvalidCdnFile(e));
+					}
+				};
+
+				Some(ImageSet {
+					input: ImageSetInput::Image(input_file),
+					outputs,
+				})
+			},
 			// Some(types::UserAvatar::Pending { pending_id }) => Some(ImageSet {
 			// 	input: ImageSetInput::Pending { path: todo!(), mime: todo!(), size: todo!() },
 			// 	outputs: vec![],

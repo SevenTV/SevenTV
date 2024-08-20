@@ -46,6 +46,8 @@ pub enum Error {
 	Reqwest(#[from] reqwest::Error),
 	#[error("failed to read image")]
 	Io(#[from] std::io::Error),
+	#[error("invalid cdn file")]
+	InvalidCdnFile(anyhow::Error),
 	#[error("failed to download image")]
 	ImageDownload {
 		cosmetic_id: ObjectId,
@@ -81,6 +83,7 @@ impl Error {
 			Self::InvalidStripeId(_) => "InvalidStripeId",
 			Self::Reqwest(_) => "Reqwest",
 			Self::Io(_) => "Io",
+			Self::InvalidCdnFile(_) => "InvalidCdnFile",
 			Self::ImageDownload { .. } => "ImageDownload",
 			Self::Grpc(_) => "Grpc",
 			Self::ImageProcessor(_) => "ImageProcessor",
@@ -103,6 +106,7 @@ impl Error {
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
 			Self::InvalidStripeId(id) => format!("id: {}", id),
 			Self::ImageProcessor(e) => e.message.clone(),
+			Self::InvalidCdnFile(e) => format!("{}", e),
 			Self::ImageDownload { cosmetic_id, status } => format!("cosmetic id: {}, status: {}", cosmetic_id, status),
 			// Self::DuplicateEmoteModRequest { emote_id, kind } => format!("emote id: {}, kind: {:?}", emote_id, kind),
 			Self::NotImplemented(msg) => msg.to_string(),

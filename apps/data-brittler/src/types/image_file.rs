@@ -1,6 +1,9 @@
-use shared::database::image_set::Image;
+use std::str::FromStr;
 
-#[derive(Debug, serde::Deserialize)]
+use anyhow::Context;
+use shared::database::{image_set::Image, user::profile_picture::UserProfilePictureId, Id};
+
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct ImageFile {
 	pub name: String,
 	#[serde(default)]
@@ -15,15 +18,48 @@ pub struct ImageFile {
 	pub bucket: String,
 }
 
-impl From<ImageFile> for Image {
-	fn from(value: ImageFile) -> Self {
-		Self {
-			path: value.key,
+impl TryFrom<ImageFile> for Image {
+	type Error = anyhow::Error;
+
+	fn try_from(value: ImageFile) -> Result<Self, Self::Error> {
+		let mut key = value.key.split('/');
+
+		let ty = key.next().ok_or(anyhow::anyhow!("missing type"))?;
+
+		let new_path = if ty == "user" {
+			let id = Id::<()>::from_str(key.next().ok_or(anyhow::anyhow!("missing id"))?)
+				.with_context(|| format!("invalid id: {}", value.key))?;
+			let avatar_id = UserProfilePictureId::from_str(
+				key.next()
+					.with_context(|| format!("missing avatar id: {}", value.key))?
+					.strip_prefix("av_")
+					.with_context(|| format!("invalid avatar id: {}", value.key))?,
+			)
+			.with_context(|| format!("invalid avatar id: {}", value.key))?;
+			let file = key.next().with_context(|| format!("missing file: {}", value.key))?;
+
+			format!("user/{}/profile-picture/{}/{}", id, avatar_id, file)
+		} else {
+			let next_segment = key.next().with_context(|| format!("missing segment: {}", value.key))?;
+			// some paths start with "emote/emote"
+			let id = if next_segment == "emote" {
+				Id::<()>::from_str(key.next().with_context(|| format!("missing id: {}", value.key))?)
+			} else {
+				Id::<()>::from_str(next_segment)
+			}
+			.with_context(|| format!("invalid id: {}", value.key))?;
+			let file = key.next().with_context(|| format!("missing file: {}", value.key))?;
+
+			format!("{}/{}/{}", ty, id, file)
+		};
+
+		Ok(Self {
+			path: new_path,
 			mime: value.content_type,
 			size: value.size as i64,
 			width: value.width as i32,
 			height: value.height as i32,
 			frame_count: value.frame_count as i32,
-		}
+		})
 	}
 }

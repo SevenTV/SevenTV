@@ -42,8 +42,8 @@ impl Job for AuditLogsJob {
 		Ok(Self { global, events: vec![] })
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("audit_logs")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("audit_logs"))
 	}
 
 	async fn process(&mut self, audit_log: Self::T) -> ProcessOutcome {

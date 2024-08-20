@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
 use shared::database::emote::{Emote, EmoteFlags, EmoteMerged};
-use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::image_set::{self, ImageSet, ImageSetInput};
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 use shared::old_types::EmoteFlagsModel;
@@ -35,8 +35,8 @@ impl Job for EmotesJob {
 		Ok(Self { global, emotes: vec![] })
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("emotes")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("emotes"))
 	}
 
 	async fn process(&mut self, emote: Self::T) -> ProcessOutcome {
@@ -72,12 +72,24 @@ impl Job for EmotesJob {
 
 			let aspect_ratio = v.input_file.width as f64 / v.input_file.height as f64;
 
-			let image_set = ImageSet {
-				input: ImageSetInput::Image(v.input_file.into()),
-				outputs: v.image_files.into_iter().map(Into::into).collect(),
+			let input_file = match image_set::Image::try_from(v.input_file) {
+				Ok(input_file) => input_file,
+				Err(e) => {
+					return ProcessOutcome::default().with_error(error::Error::InvalidCdnFile(e));
+				}
 			};
 
-			// TODO: copy cdn files
+			let outputs = match v.image_files.into_iter().map(image_set::Image::try_from).collect() {
+				Ok(outputs) => outputs,
+				Err(e) => {
+					return ProcessOutcome::default().with_error(error::Error::InvalidCdnFile(e));
+				}
+			};
+
+			let image_set = ImageSet {
+				input: ImageSetInput::Image(input_file),
+				outputs,
+			};
 
 			self.emotes.push(Emote {
 				id: v.id.into(),

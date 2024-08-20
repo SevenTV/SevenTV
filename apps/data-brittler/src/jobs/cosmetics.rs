@@ -57,8 +57,8 @@ impl Job for CosmeticsJob {
 		})
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("cosmetics")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("cosmetics"))
 	}
 
 	async fn process(&mut self, cosmetic: Self::T) -> ProcessOutcome {

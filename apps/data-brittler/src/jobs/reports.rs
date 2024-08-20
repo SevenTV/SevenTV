@@ -50,8 +50,8 @@ impl Job for ReportsJob {
 		})
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("reports")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("reports"))
 	}
 
 	async fn process(&mut self, report: Self::T) -> ProcessOutcome {

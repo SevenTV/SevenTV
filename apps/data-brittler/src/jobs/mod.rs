@@ -11,23 +11,25 @@ use shared::database::MongoCollection;
 use tokio::time::Instant;
 use tracing::Instrument;
 
-use self::emotes::EmotesJob;
-use self::users::UsersJob;
 use crate::format::Number;
 use crate::global::Global;
 use crate::jobs::audit_logs::AuditLogsJob;
 use crate::jobs::bans::BansJob;
+use crate::jobs::cdn_rename_list::CdnRenameJob;
 use crate::jobs::cosmetics::CosmeticsJob;
 use crate::jobs::emote_sets::EmoteSetsJob;
+use crate::jobs::emotes::EmotesJob;
 use crate::jobs::messages::MessagesJob;
 use crate::jobs::prices::PricesJob;
 use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
 use crate::jobs::system::SystemJob;
+use crate::jobs::users::UsersJob;
 use crate::{error, report};
 
 pub mod audit_logs;
 pub mod bans;
+pub mod cdn_rename_list;
 pub mod cosmetics;
 pub mod emote_sets;
 pub mod emotes;
@@ -103,15 +105,7 @@ pub trait Job: Sized + Send + Sync {
 
 	async fn run(mut self) -> anyhow::Result<JobOutcome> {
 		let timer = Instant::now();
-
-		let collection = self.collection().await;
-
-		// count
-		let count = collection.count_documents(doc! {}).await?;
-		let tenth = count / 10;
-		tracing::info!("found {} documents", Number::from(count));
-
-		// query
+		
 		let mut outcome = JobOutcome {
 			errors: Vec::new(),
 			job_name: Self::NAME.to_string(),
@@ -119,30 +113,39 @@ pub trait Job: Sized + Send + Sync {
 			processed_documents: 0,
 			inserted_rows: 0,
 		};
-		let mut documents = collection.find(doc! {}).await.context("failed to query documents")?;
 
-		while let Some(r) = documents.try_next().await.transpose() {
-			if scuffle_foundations::context::Context::global().is_done() {
-				tracing::info!("job cancelled");
-				break;
+		if let Some(collection) = self.collection().await {
+			// count
+			let count = collection.count_documents(doc! {}).await?;
+			let tenth = count / 10;
+			tracing::info!("found {} documents", Number::from(count));
+
+			// query
+			let mut documents = collection.find(doc! {}).await.context("failed to query documents")?;
+
+			while let Some(r) = documents.try_next().await.transpose() {
+				if scuffle_foundations::context::Context::global().is_done() {
+					tracing::info!("job cancelled");
+					break;
+				}
+
+				match r {
+					Ok(t) => outcome += self.process(t).await,
+					Err(e) => outcome.errors.push(error::Error::Deserialize(e)),
+				}
+
+				if tenth != 0 && outcome.processed_documents % tenth == 0 {
+					tracing::info!(
+						"{:.1}% ({}/{}) ({} errors)",
+						outcome.processed_documents as f64 / count as f64 * 100.0,
+						Number::from(outcome.processed_documents),
+						Number::from(count),
+						Number::from(outcome.errors.len())
+					);
+				}
+
+				outcome.processed_documents += 1;
 			}
-
-			match r {
-				Ok(t) => outcome += self.process(t).await,
-				Err(e) => outcome.errors.push(error::Error::Deserialize(e)),
-			}
-
-			if tenth != 0 && outcome.processed_documents % tenth == 0 {
-				tracing::info!(
-					"{:.1}% ({}/{}) ({} errors)",
-					outcome.processed_documents as f64 / count as f64 * 100.0,
-					Number::from(outcome.processed_documents),
-					Number::from(count),
-					Number::from(outcome.errors.len())
-				);
-			}
-
-			outcome.processed_documents += 1;
 		}
 
 		outcome += self.finish().await;
@@ -160,8 +163,14 @@ pub trait Job: Sized + Send + Sync {
 		Ok(outcome)
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T>;
-	async fn process(&mut self, t: Self::T) -> ProcessOutcome;
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		None
+	}
+
+	async fn process(&mut self, _t: Self::T) -> ProcessOutcome {
+		ProcessOutcome::default()
+	}
+
 	async fn finish(self) -> ProcessOutcome {
 		ProcessOutcome::default()
 	}
@@ -207,6 +216,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		[UsersJob, should_run_users],
 		[BansJob, should_run_bans],
 		[EmotesJob, should_run_emotes],
+		[CdnRenameJob, should_run_cdn_rename],
 		[EmoteSetsJob, should_run_emote_sets],
 		[EntitlementsJob, should_run_entitlements],
 		[CosmeticsJob, should_run_cosmetics],
