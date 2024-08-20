@@ -99,10 +99,6 @@ impl Job for UsersJob {
 	}
 
 	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
-		if self.global.config().should_run_entitlements() {
-			self.global.entitlement_job_token().cancelled().await;
-		}
-
 		let mut outcome = ProcessOutcome::default();
 
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
@@ -140,12 +136,7 @@ impl Job for UsersJob {
 					outputs,
 				})
 			},
-			// Some(types::UserAvatar::Pending { pending_id }) => Some(ImageSet {
-			// 	input: ImageSetInput::Pending { path: todo!(), mime: todo!(), size: todo!() },
-			// 	outputs: vec![],
-			// }),
 			Some(types::UserAvatar::Pending { .. }) => {
-				// TODO: implement?
 				None
 			}
 			_ => None,
@@ -251,8 +242,6 @@ impl Job for UsersJob {
 
 		if let Some(profile_picture) = profile_picture {
 			self.profile_pictures.push(profile_picture);
-
-			// TODO: copy files to cdn
 		}
 
 		for editor in user.editors {
@@ -294,13 +283,17 @@ impl Job for UsersJob {
 	async fn finish(self) -> ProcessOutcome {
 		tracing::info!("finishing users job");
 
+		// In case of truncate = true, we have to wait for the entitlements job to
+		// finish truncating. Otherwise we will loose the edges here.
+		if self.global.config().should_run_entitlements() && self.global.config().truncate {
+			self.global.entitlement_job_token().cancelled().await;
+		}
+
 		let mut outcome = ProcessOutcome::default();
 
 		let insert_options = InsertManyOptions::builder().ordered(false).build();
 		let users = User::collection(self.global.target_db());
 		let editors = UserEditor::collection(self.global.target_db());
-		// TODO: in case of truncate = true, we have to wait for the entitlements job to
-		// finish truncating otherwise we will loose the edges here
 		let edges = EntitlementEdge::collection(self.global.target_db());
 		let profile_pictures = UserProfilePicture::collection(self.global.target_db());
 

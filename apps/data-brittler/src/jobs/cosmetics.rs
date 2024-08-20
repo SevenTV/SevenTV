@@ -85,8 +85,6 @@ impl Job for CosmeticsJob {
 					}
 				};
 
-				// TODO: copy files to cdn
-
 				let input = match ip.upload_badge(id, image_data).await {
 					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
 						return outcome.with_error(error::Error::ImageProcessor(error));
