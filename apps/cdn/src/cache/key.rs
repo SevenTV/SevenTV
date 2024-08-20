@@ -44,13 +44,10 @@ impl From<CacheKey> for String {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ImageFile {
-	Image {
-		name: ImageFileName,
-		extension: ImageFileExtension,
-		is_static: bool,
-	},
-	Archive,
+pub struct ImageFile {
+	pub name: ImageFileName,
+	pub extension: ImageFileExtension,
+	pub is_static: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -130,10 +127,6 @@ impl FromStr for ImageFile {
 	type Err = anyhow::Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		if s == "archive.zip" {
-			return Ok(Self::Archive);
-		}
-
 		if let Some((mut name, ext)) = s.split_once('.') {
 			let extension = ImageFileExtension::from_str(ext)?;
 
@@ -144,7 +137,7 @@ impl FromStr for ImageFile {
 				false
 			};
 
-			Ok(Self::Image {
+			Ok(Self {
 				name: ImageFileName::from_str(name)?,
 				extension,
 				is_static,
@@ -170,18 +163,10 @@ impl FromStr for BadgeFile {
 
 impl Display for ImageFile {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			ImageFile::Image {
-				name,
-				extension,
-				is_static: false,
-			} => write!(f, "{}.{}", name, extension),
-			ImageFile::Image {
-				name,
-				extension,
-				is_static: true,
-			} => write!(f, "{}_static.{}", name, extension),
-			ImageFile::Archive => write!(f, "archive.zip"),
+		if self.is_static {
+			write!(f, "{}_static.{}", self.name, self.extension)
+		} else {
+			write!(f, "{}.{}", self.name, self.extension)
 		}
 	}
 }
