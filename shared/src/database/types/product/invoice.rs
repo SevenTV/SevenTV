@@ -81,11 +81,11 @@ impl From<stripe::InvoiceStatus> for InvoiceStatus {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct InvoiceItem {
-	// This will be a line item id from stripe
+	/// This will be a line item id from stripe
 	pub id: InvoiceLineItemId,
-	// This is a stripe id for the product
+	/// This is a stripe id for the product
 	pub product_id: ProductId,
-	// The discount codes that were applied to this item
+	/// The discount codes that were applied to this item
 	pub discount_codes: Vec<DiscountCodeId>,
 }
 

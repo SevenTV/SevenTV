@@ -36,6 +36,8 @@ pub struct Api {
 	/// Event API nats prefix
 	#[settings(default = "api.events".into())]
 	pub nats_event_subject: String,
+	/// Stripe config
+	pub stripe: StripeConfig,
 }
 
 #[auto_settings]
@@ -82,6 +84,14 @@ pub struct ChangeStreamConfig {
 	/// The number of pending acks to buffer
 	#[settings(default = 1000)]
 	pub back_pressure_limit: usize,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct StripeConfig {
+	/// Stripe webhook secret
+	#[settings(default = "whsec_test".into())]
+	pub webhook_secret: String,
 }
 
 #[auto_settings]
