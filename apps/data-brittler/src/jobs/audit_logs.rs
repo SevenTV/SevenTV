@@ -42,8 +42,8 @@ impl Job for AuditLogsJob {
 		Ok(Self { global, events: vec![] })
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("audit_logs")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("audit_logs"))
 	}
 
 	async fn process(&mut self, audit_log: Self::T) -> ProcessOutcome {
@@ -148,8 +148,6 @@ impl Job for AuditLogsJob {
 										new: new.into(),
 									},
 								});
-							} else {
-								// TODO: do something here?
 							}
 						}
 						_ => unimplemented!(),
@@ -307,14 +305,6 @@ impl Job for AuditLogsJob {
 			AuditLogKind::DeleteUser => data.push(stored_event::StoredEventData::User {
 				target_id: audit_log.target_id.into(),
 				data: stored_event::StoredEventUserData::Delete,
-			}),
-			AuditLogKind::BanUser => data.push(stored_event::StoredEventData::UserBan {
-				target_id: UserBanId::nil(), // TODO: how should we know this?
-				data: stored_event::StoredEventUserBanData::Ban,
-			}),
-			AuditLogKind::UnbanUser => data.push(stored_event::StoredEventData::UserBan {
-				target_id: UserBanId::nil(), // TODO: how should we know this?
-				data: stored_event::StoredEventUserBanData::Unban,
 			}),
 			AuditLogKind::CreateReport => data.push(stored_event::StoredEventData::Ticket {
 				target_id: audit_log.target_id.into(),

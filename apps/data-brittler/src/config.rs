@@ -99,6 +99,11 @@ pub struct Config {
 	/// Skip products job
 	pub skip_prices: bool,
 
+	/// Create a list of files to copy for the new cdn
+	pub cdn_rename: bool,
+	/// Create a list of files to copy for the new cdn
+	pub skip_cdn_rename: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 
@@ -134,6 +139,7 @@ impl Config {
 			|| self.messages
 			|| self.system
 			|| self.prices
+			|| self.cdn_rename
 	}
 
 	pub fn should_run_users(&self) -> bool {
@@ -149,6 +155,11 @@ impl Config {
 	pub fn should_run_emotes(&self) -> bool {
 		let any_run = self.any_run();
 		any_run && self.emotes || !any_run && !self.skip_emotes
+	}
+
+	pub fn should_run_cdn_rename(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.cdn_rename || !any_run && !self.skip_cdn_rename
 	}
 
 	pub fn should_run_emote_sets(&self) -> bool {

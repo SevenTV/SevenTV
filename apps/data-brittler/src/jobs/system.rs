@@ -29,8 +29,8 @@ impl Job for SystemJob {
 		Ok(Self { global })
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("system")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("system"))
 	}
 
 	async fn process(&mut self, system: Self::T) -> ProcessOutcome {

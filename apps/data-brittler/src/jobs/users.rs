@@ -8,7 +8,7 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::InsertManyOptions;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
-use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::image_set::{self, ImageSet, ImageSetInput};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorPermissions, UserEditorState};
 use shared::database::user::profile_picture::UserProfilePicture;
@@ -94,15 +94,11 @@ impl Job for UsersJob {
 		})
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("users")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("users"))
 	}
 
 	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
-		if self.global.config().should_run_entitlements() {
-			self.global.entitlement_job_token().cancelled().await;
-		}
-
 		let mut outcome = ProcessOutcome::default();
 
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
@@ -120,18 +116,27 @@ impl Job for UsersJob {
 		let active_profile_picture = match user.avatar {
 			Some(types::UserAvatar::Processed {
 				input_file, image_files, ..
-			}) => Some(ImageSet {
-				input: ImageSetInput::Image(input_file.into()),
-				outputs: image_files.into_iter().map(Into::into).collect(),
-			}),
-			// Some(types::UserAvatar::Pending { pending_id }) => Some(ImageSet {
-			// 	input: ImageSetInput::Pending { path: todo!(), mime: todo!(), size: todo!() },
-			// 	outputs: vec![],
-			// }),
-			Some(types::UserAvatar::Pending { .. }) => {
-				// TODO: implement?
-				None
+			}) => {
+				let input_file = match image_set::Image::try_from(input_file) {
+					Ok(input_file) => input_file,
+					Err(e) => {
+						return outcome.with_error(error::Error::InvalidCdnFile(e));
+					}
+				};
+
+				let outputs = match image_files.into_iter().map(image_set::Image::try_from).collect() {
+					Ok(outputs) => outputs,
+					Err(e) => {
+						return outcome.with_error(error::Error::InvalidCdnFile(e));
+					}
+				};
+
+				Some(ImageSet {
+					input: ImageSetInput::Image(input_file),
+					outputs,
+				})
 			}
+			Some(types::UserAvatar::Pending { .. }) => None,
 			_ => None,
 		};
 
@@ -276,13 +281,17 @@ impl Job for UsersJob {
 	async fn finish(self) -> ProcessOutcome {
 		tracing::info!("finishing users job");
 
+		// In case of truncate = true, we have to wait for the entitlements job to
+		// finish truncating. Otherwise we will loose the edges here.
+		if self.global.config().should_run_entitlements() && self.global.config().truncate {
+			self.global.entitlement_job_token().cancelled().await;
+		}
+
 		let mut outcome = ProcessOutcome::default();
 
 		let insert_options = InsertManyOptions::builder().ordered(false).build();
 		let users = User::collection(self.global.target_db());
 		let editors = UserEditor::collection(self.global.target_db());
-		// TODO: in case of truncate = true, we have to wait for the entitlements job to
-		// finish truncating otherwise we will loose the edges here
 		let edges = EntitlementEdge::collection(self.global.target_db());
 		let profile_pictures = UserProfilePicture::collection(self.global.target_db());
 

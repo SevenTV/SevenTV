@@ -36,8 +36,8 @@ impl Job for BansJob {
 		Ok(Self { global })
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("bans")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("bans"))
 	}
 
 	async fn process(&mut self, ban: Self::T) -> ProcessOutcome {

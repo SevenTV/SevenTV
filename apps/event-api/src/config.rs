@@ -39,8 +39,6 @@ pub struct Api {
 	/// bind
 	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 3000)))]
 	pub bind: SocketAddr,
-	/// Cors options
-	// pub cors: Option<HttpCors>,
 	/// API heartbeat interval
 	#[settings(default = Duration::from_secs(45))]
 	pub heartbeat_interval: Duration,

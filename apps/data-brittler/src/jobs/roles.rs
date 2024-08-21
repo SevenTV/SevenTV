@@ -35,8 +35,8 @@ impl Job for RolesJob {
 		})
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("roles")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("roles"))
 	}
 
 	async fn process(&mut self, role: Self::T) -> super::ProcessOutcome {

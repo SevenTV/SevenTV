@@ -37,8 +37,8 @@ impl Job for PricesJob {
 		})
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.egvault_source_db().collection("prices")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.egvault_source_db().collection("prices"))
 	}
 
 	async fn process(&mut self, price: Self::T) -> ProcessOutcome {

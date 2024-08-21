@@ -59,8 +59,8 @@ impl Job for MessagesJob {
 		})
 	}
 
-	async fn collection(&self) -> mongodb::Collection<Self::T> {
-		self.global.source_db().collection("messages")
+	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
+		Some(self.global.source_db().collection("messages"))
 	}
 
 	async fn process(&mut self, message: Self::T) -> ProcessOutcome {
