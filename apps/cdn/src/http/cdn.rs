@@ -9,7 +9,7 @@ use shared::database::{badge::BadgeId, emote::EmoteId, user::UserId};
 
 use crate::{
 	cache::{
-		key::{BadgeFile, CacheKey, ImageFile},
+		key::{CacheKey, ImageFile},
 		CachedResponse,
 	},
 	global::Global,
@@ -29,7 +29,7 @@ async fn root() -> &'static str {
 	"Welcome to the 7TV CDN!"
 }
 
-async fn badge(Path((id, file)): Path<(BadgeId, BadgeFile)>, State(global): State<Arc<Global>>) -> CachedResponse {
+async fn badge(Path((id, file)): Path<(BadgeId, ImageFile)>, State(global): State<Arc<Global>>) -> CachedResponse {
 	global.cache.handle_request(&global, CacheKey::Badge { id, file }).await
 }
 

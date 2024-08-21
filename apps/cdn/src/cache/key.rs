@@ -6,7 +6,7 @@ use shared::database::{badge::BadgeId, emote::EmoteId, user::UserId};
 pub enum CacheKey {
 	Badge {
 		id: BadgeId,
-		file: BadgeFile,
+		file: ImageFile,
 	},
 	Emote {
 		id: EmoteId,
@@ -48,13 +48,6 @@ pub struct ImageFile {
 	pub name: ImageFileName,
 	pub extension: ImageFileExtension,
 	pub is_static: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum BadgeFile {
-	One,
-	Two,
-	Three,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -143,20 +136,11 @@ impl FromStr for ImageFile {
 				is_static,
 			})
 		} else {
-			anyhow::bail!("missing file extension")
-		}
-	}
-}
-
-impl FromStr for BadgeFile {
-	type Err = anyhow::Error;
-
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		match s {
-			"1x" => Ok(Self::One),
-			"2x" => Ok(Self::Two),
-			"3x" => Ok(Self::Three),
-			_ => anyhow::bail!("invalid badge file"),
+			Ok(Self {
+				name: ImageFileName::from_str(s)?,
+				extension: ImageFileExtension::Webp,
+				is_static: false,
+			})
 		}
 	}
 }
@@ -171,16 +155,6 @@ impl Display for ImageFile {
 	}
 }
 
-impl Display for BadgeFile {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			BadgeFile::One => write!(f, "1x"),
-			BadgeFile::Two => write!(f, "2x"),
-			BadgeFile::Three => write!(f, "3x"),
-		}
-	}
-}
-
 impl serde::Serialize for ImageFile {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
@@ -190,26 +164,7 @@ impl serde::Serialize for ImageFile {
 	}
 }
 
-impl serde::Serialize for BadgeFile {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-	where
-		S: serde::Serializer,
-	{
-		serializer.serialize_str(&self.to_string())
-	}
-}
-
 impl<'de> serde::Deserialize<'de> for ImageFile {
-	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-	where
-		D: serde::Deserializer<'de>,
-	{
-		let s = String::deserialize(deserializer)?;
-		Ok(s.parse().map_err(|e| serde::de::Error::custom(e))?)
-	}
-}
-
-impl<'de> serde::Deserialize<'de> for BadgeFile {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
