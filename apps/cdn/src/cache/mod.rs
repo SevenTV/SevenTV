@@ -15,7 +15,7 @@ use crate::{config, global::Global};
 
 pub mod key;
 
-const ONE_DAY: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24);
+const ONE_WEEK: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24 * 7);
 
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
@@ -120,7 +120,10 @@ impl Cache {
 			cached
 		});
 
-		cached.await.unwrap_or_else(|_| CachedResponse::general_error())
+		cached.await.unwrap_or_else(|e| {
+			tracing::error!(error = %e, "task failed");
+			CachedResponse::general_error()
+		})
 	}
 
 	async fn request_key(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
@@ -136,7 +139,7 @@ impl Cache {
 				self.s3_client
 					.get_object()
 					.bucket(&global.config.cdn.bucket.name)
-					.key(key)
+					.key(key.to_string())
 					.send(),
 			)
 			.await
@@ -146,16 +149,19 @@ impl Cache {
 			Ok(Ok(response)) => match CachedResponse::from_s3_response(response).await {
 				Ok(response) => response,
 				Err(e) => {
-					tracing::error!(error = %e, "failed to parse cdn file");
+					tracing::error!(key = %key, error = %e, "failed to parse cdn file");
 					CachedResponse::general_error()
 				}
 			},
 			Ok(Err(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => CachedResponse::not_found(),
 			Ok(Err(e)) => {
-				tracing::error!(error = %e, "failed to request cdn file");
+				tracing::error!(key = %key, error = %e, "failed to request cdn file");
 				CachedResponse::general_error()
 			}
-			Err(_) => CachedResponse::timeout(),
+			Err(_) => {
+				tracing::error!(key = %key, "timeout while requesting cdn file");
+				CachedResponse::timeout()
+			},
 		}
 	}
 }
@@ -289,7 +295,7 @@ impl CachedResponse {
 					.and_then(|e| chrono::DateTime::parse_from_rfc2822(&e).ok());
 				expires.and_then(|e| e.signed_duration_since(date).to_std().ok())
 			})
-			.unwrap_or(ONE_DAY);
+			.unwrap_or(ONE_WEEK);
 
 		Ok(Self {
 			data: CachedData::Bytes {

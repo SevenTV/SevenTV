@@ -70,7 +70,7 @@ impl Display for ImageFileName {
 }
 
 impl FromStr for ImageFileName {
-	type Err = anyhow::Error;
+	type Err = &'static str;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
@@ -78,7 +78,7 @@ impl FromStr for ImageFileName {
 			"2x" => Ok(Self::Two),
 			"3x" => Ok(Self::Three),
 			"4x" => Ok(Self::Four),
-			_ => anyhow::bail!("invalid image file name"),
+			_ => Err("invalid image file name"),
 		}
 	}
 }
@@ -103,7 +103,7 @@ impl Display for ImageFileExtension {
 }
 
 impl FromStr for ImageFileExtension {
-	type Err = anyhow::Error;
+	type Err = &'static str;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
@@ -111,13 +111,13 @@ impl FromStr for ImageFileExtension {
 			"gif" => Ok(Self::Gif),
 			"png" => Ok(Self::Png),
 			"webp" => Ok(Self::Webp),
-			_ => anyhow::bail!("invalid file extension"),
+			_ => Err("invalid file extension"),
 		}
 	}
 }
 
 impl FromStr for ImageFile {
-	type Err = anyhow::Error;
+	type Err = &'static str;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		if let Some((mut name, ext)) = s.split_once('.') {
