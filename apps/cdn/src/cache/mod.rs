@@ -159,6 +159,7 @@ impl Cache {
 			},
 			Ok(Err(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => CachedResponse::not_found(),
 			Ok(Err(e)) => {
+				let e = S3ErrorWrapper(e);
 				tracing::error!(key = %key, error = %e, "failed to request cdn file");
 				CachedResponse::general_error()
 			}
@@ -166,6 +167,28 @@ impl Cache {
 				tracing::error!(key = %key, "timeout while requesting cdn file");
 				CachedResponse::timeout()
 			}
+		}
+	}
+}
+
+struct S3ErrorWrapper(aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>);
+
+impl std::fmt::Display for S3ErrorWrapper {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match &self.0 {
+			aws_sdk_s3::error::SdkError::ConstructionFailure(_) => write!(f, "{}", self.0),
+			aws_sdk_s3::error::SdkError::TimeoutError(_) => write!(f, "{}", self.0),
+			aws_sdk_s3::error::SdkError::DispatchFailure(_) => write!(f, "{}", self.0),
+			aws_sdk_s3::error::SdkError::ResponseError(_) => write!(f, "{}", self.0),
+			aws_sdk_s3::error::SdkError::ServiceError(e) => {
+				let e = e.err();
+				match e {
+					aws_sdk_s3::operation::get_object::GetObjectError::InvalidObjectState(e) => write!(f, "{}", e),
+					aws_sdk_s3::operation::get_object::GetObjectError::NoSuchKey(e) => write!(f, "{}", e),
+					_ => write!(f, "{}", self.0),
+				}
+			}
+			_ => write!(f, "{}", self.0),
 		}
 	}
 }
@@ -260,12 +283,13 @@ impl IntoResponse for CachedData {
 impl IntoResponse for CachedResponse {
 	fn into_response(self) -> Response<Body> {
 		let mut data = self.data.into_response();
-		
+
 		if self.max_age.as_secs() == 0 {
-			data.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+			data.headers_mut()
+				.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
 		} else {
 			let hits = self.hits.load(std::sync::atomic::Ordering::Relaxed);
-	
+
 			let age = chrono::Utc::now() - self.date;
 			data.headers_mut()
 				.insert("x-7tv-cache-hits", hits.to_string().try_into().unwrap());
