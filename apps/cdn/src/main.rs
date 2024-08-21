@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use config::Config;
-use scuffle_foundations::{bootstrap::bootstrap, settings::cli::Matches};
+use scuffle_foundations::bootstrap::bootstrap;
+use scuffle_foundations::settings::cli::Matches;
 use tokio::signal::unix::SignalKind;
 
 mod cache;

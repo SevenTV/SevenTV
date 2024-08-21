@@ -1,20 +1,14 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use scuffle_foundations::{
-	http::server::axum::{
-		extract::{MatchedPath, Request},
-		response::Response,
-		Router,
-	},
-	telemetry::opentelemetry::OpenTelemetrySpanExt,
-};
+use scuffle_foundations::http::server::axum::extract::{MatchedPath, Request};
+use scuffle_foundations::http::server::axum::response::Response;
+use scuffle_foundations::http::server::axum::Router;
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use tower::ServiceBuilder;
-use tower_http::{
-	cors::CorsLayer,
-	request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer},
-	trace::TraceLayer,
-};
+use tower_http::cors::CorsLayer;
+use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
+use tower_http::trace::TraceLayer;
 use tracing::Span;
 
 use crate::global::Global;

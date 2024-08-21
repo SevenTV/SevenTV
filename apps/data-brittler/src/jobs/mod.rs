@@ -105,7 +105,7 @@ pub trait Job: Sized + Send + Sync {
 
 	async fn run(mut self) -> anyhow::Result<JobOutcome> {
 		let timer = Instant::now();
-		
+
 		let mut outcome = JobOutcome {
 			errors: Vec::new(),
 			job_name: Self::NAME.to_string(),

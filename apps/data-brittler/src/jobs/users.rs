@@ -135,10 +135,8 @@ impl Job for UsersJob {
 					input: ImageSetInput::Image(input_file),
 					outputs,
 				})
-			},
-			Some(types::UserAvatar::Pending { .. }) => {
-				None
 			}
+			Some(types::UserAvatar::Pending { .. }) => None,
 			_ => None,
 		};
 

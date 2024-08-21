@@ -1,19 +1,15 @@
 use std::sync::Arc;
 
-use scuffle_foundations::http::server::axum::{
-	extract::{Path, State},
-	routing::get,
-	Router,
-};
-use shared::database::{badge::BadgeId, emote::EmoteId, user::UserId};
+use scuffle_foundations::http::server::axum::extract::{Path, State};
+use scuffle_foundations::http::server::axum::routing::get;
+use scuffle_foundations::http::server::axum::Router;
+use shared::database::badge::BadgeId;
+use shared::database::emote::EmoteId;
+use shared::database::user::UserId;
 
-use crate::{
-	cache::{
-		key::{CacheKey, ImageFile},
-		CachedResponse,
-	},
-	global::Global,
-};
+use crate::cache::key::{CacheKey, ImageFile};
+use crate::cache::CachedResponse;
+use crate::global::Global;
 
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()

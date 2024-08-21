@@ -1,6 +1,7 @@
 use scuffle_foundations::telemetry::server::HealthCheck;
 
-use crate::{cache, config::Config};
+use crate::cache;
+use crate::config::Config;
 
 pub struct Global {
 	pub config: Config,

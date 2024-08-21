@@ -1,6 +1,9 @@
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
+use std::str::FromStr;
 
-use shared::database::{badge::BadgeId, emote::EmoteId, user::UserId};
+use shared::database::badge::BadgeId;
+use shared::database::emote::EmoteId;
+use shared::database::user::UserId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CacheKey {

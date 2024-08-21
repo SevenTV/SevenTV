@@ -1,17 +1,15 @@
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::atomic::AtomicUsize;
+use std::sync::Arc;
 
 use key::CacheKey;
 use scc::hash_map::OccupiedEntry;
-use scuffle_foundations::http::server::{
-	axum::http::{
-		header::{self, HeaderMap},
-		HeaderValue, Response, StatusCode,
-	},
-	stream::{Body, IntoResponse},
-};
+use scuffle_foundations::http::server::axum::http::header::{self, HeaderMap};
+use scuffle_foundations::http::server::axum::http::{HeaderValue, Response, StatusCode};
+use scuffle_foundations::http::server::stream::{Body, IntoResponse};
 use tokio::sync::OnceCell;
 
-use crate::{config, global::Global};
+use crate::config;
+use crate::global::Global;
 
 pub mod key;
 
@@ -103,7 +101,12 @@ impl Cache {
 			if !insert {
 				// pending
 				entry.entry().token.cancelled().await;
-				return entry.entry().response.get().cloned().unwrap_or_else(CachedResponse::general_error);
+				return entry
+					.entry()
+					.response
+					.get()
+					.cloned()
+					.unwrap_or_else(CachedResponse::general_error);
 			}
 
 			let _guard = entry.entry().token.clone().drop_guard();
@@ -129,7 +132,8 @@ impl Cache {
 	async fn request_key(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
 		// request file
 		let response = {
-			// we are never closing the semaphore, so we can expect it to be open here, right? Clueless
+			// we are never closing the semaphore, so we can expect it to be open here,
+			// right? Clueless
 			let _permit = self.request_limiter.acquire().await.expect("semaphore closed");
 
 			tracing::debug!(key = %key, "requesting origin");
@@ -161,7 +165,7 @@ impl Cache {
 			Err(_) => {
 				tracing::error!(key = %key, "timeout while requesting cdn file");
 				CachedResponse::timeout()
-			},
+			}
 		}
 	}
 }
@@ -170,7 +174,9 @@ impl Cache {
 #[derive(Debug, Clone)]
 pub struct Inflight {
 	/// This token is pending as long as the request to the origin is pending.
-	/// "Cancellation" is an unfortunate name for this because it is not used to cancel anything but rather notify everyone waiting that the cache is ready to be queried.
+	/// "Cancellation" is an unfortunate name for this because it is not used to
+	/// cancel anything but rather notify everyone waiting that the cache is
+	/// ready to be queried.
 	token: tokio_util::sync::CancellationToken,
 	/// The response once it is ready
 	response: OnceCell<CachedResponse>,
@@ -271,6 +277,12 @@ impl IntoResponse for CachedResponse {
 		);
 		data.headers_mut()
 			.insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
+		data.headers_mut().insert(
+			header::CACHE_CONTROL,
+			format!("public, max-age={}, immutable", self.max_age.as_secs())
+				.try_into()
+				.unwrap(),
+		);
 
 		data
 	}

@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use futures::StreamExt;
 use mongodb::Cursor;
-use shared::database::{badge::BadgeId, image_set};
+use shared::database::badge::BadgeId;
+use shared::database::image_set;
 
 use super::{Job, ProcessOutcome};
-use crate::{error, global::Global, types};
+use crate::global::Global;
+use crate::{error, types};
 
 pub struct CdnRenameJob {
 	global: Arc<Global>,

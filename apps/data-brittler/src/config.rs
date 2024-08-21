@@ -128,7 +128,8 @@ impl Bootstrap for Config {
 impl Config {
 	fn any_run(&self) -> bool {
 		self.users
-			|| self.bans || self.emotes
+			|| self.bans
+			|| self.emotes
 			|| self.emote_sets
 			|| self.entitlements
 			|| self.cosmetics

@@ -1,7 +1,9 @@
 use std::str::FromStr;
 
 use anyhow::Context;
-use shared::database::{image_set::Image, user::profile_picture::UserProfilePictureId, Id};
+use shared::database::image_set::Image;
+use shared::database::user::profile_picture::UserProfilePictureId;
+use shared::database::Id;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ImageFile {
