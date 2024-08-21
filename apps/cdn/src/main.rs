@@ -12,6 +12,8 @@ mod http;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
+	rustls::crypto::aws_lc_rs::default_provider().install_default().unwrap();
+
 	tracing::info!("starting cdn");
 
 	let global = Arc::new(global::Global::new(settings.settings).await);
@@ -26,20 +28,47 @@ async fn main(settings: Matches<Config>) {
 
 	let handler = scuffle_foundations::context::Handler::global();
 
-	let shutdown = tokio::spawn(async move {
-		signal.recv().await;
+	let mut shutdown = tokio::spawn(async move {
+		tokio::select! {
+			_ = signal.recv() => {},
+			_ = handler.done() => {},
+		}
+
 		tracing::info!("received shutdown signal, waiting for jobs to finish");
-		handler.shutdown().await;
-		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv())
-			.await
-			.ok();
+		tokio::select! {
+			_ = handler.shutdown() => {
+				tracing::info!("shutdown complete");
+			},
+			_ = tokio::time::sleep(std::time::Duration::from_secs(60)) => {
+				tracing::warn!("timeout while waiting for jobs to finish, forcing exit");
+				std::process::exit(1);
+			},
+			_ = signal.recv() => {
+				tracing::warn!("received second shutdown signal, forcing exit");
+				std::process::exit(1);
+			},
+		}
 	});
 
 	tokio::select! {
-		r = app_handle => tracing::warn!("http server exited: {:?}", r),
-		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
+		r = app_handle => {
+			if let Err(err) = r {
+				tracing::warn!("http server exited: {:#}", err);
+			} else {
+				tracing::info!("http server exited");
+			}
+
+			handler.cancel();
+		},
+		s = &mut shutdown => {
+			if let Err(err) = s {
+				tracing::error!("shutdown error: {:#}", err);
+				std::process::exit(1);
+			}
+
+			std::process::exit(0);
+		}
 	}
 
-	tracing::info!("stopping cdn");
-	std::process::exit(0);
+	shutdown.await.unwrap();
 }

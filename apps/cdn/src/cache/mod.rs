@@ -260,29 +260,32 @@ impl IntoResponse for CachedData {
 impl IntoResponse for CachedResponse {
 	fn into_response(self) -> Response<Body> {
 		let mut data = self.data.into_response();
-
-		let hits = self.hits.load(std::sync::atomic::Ordering::Relaxed);
-
-		let age = chrono::Utc::now() - self.date;
-
-		data.headers_mut()
-			.insert("x-7tv-cache-hits", hits.to_string().try_into().unwrap());
-		data.headers_mut().insert(
-			"x-7tv-cache",
-			if hits == 0 {
-				HeaderValue::from_static("miss")
-			} else {
-				HeaderValue::from_static("hit")
-			},
-		);
-		data.headers_mut()
-			.insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
-		data.headers_mut().insert(
-			header::CACHE_CONTROL,
-			format!("public, max-age={}, immutable", self.max_age.as_secs())
-				.try_into()
-				.unwrap(),
-		);
+		
+		if self.max_age.as_secs() == 0 {
+			data.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+		} else {
+			let hits = self.hits.load(std::sync::atomic::Ordering::Relaxed);
+	
+			let age = chrono::Utc::now() - self.date;
+			data.headers_mut()
+				.insert("x-7tv-cache-hits", hits.to_string().try_into().unwrap());
+			data.headers_mut().insert(
+				"x-7tv-cache",
+				if hits == 0 {
+					HeaderValue::from_static("miss")
+				} else {
+					HeaderValue::from_static("hit")
+				},
+			);
+			data.headers_mut()
+				.insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
+			data.headers_mut().insert(
+				header::CACHE_CONTROL,
+				format!("public, max-age={}, immutable", self.max_age.as_secs())
+					.try_into()
+					.unwrap(),
+			);
+		}
 
 		data
 	}
