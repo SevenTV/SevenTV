@@ -24,5 +24,6 @@ rustls-pemfile = "2"
 quinn = "0.11"
 h3 = "0.0.6"
 http = "1"
+hyper-util = "0.1.7"
 
 shared = { workspace = true }

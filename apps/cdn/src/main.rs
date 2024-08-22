@@ -52,10 +52,16 @@ async fn main(settings: Matches<Config>) {
 
 	tokio::select! {
 		r = app_handle => {
-			if let Err(err) = r {
-				tracing::warn!("http server exited: {:#}", err);
-			} else {
-				tracing::info!("http server exited");
+			match r {
+				Ok(Err(err)) => {
+					tracing::error!("http server exited: {:#}", err);
+				}
+				Err(err) => {
+					tracing::error!("http server exited: {:#}", err);
+				}
+				Ok(Ok(())) => {
+					tracing::info!("http server exited");
+				}
 			}
 
 			handler.cancel();

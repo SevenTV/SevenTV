@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-
 use http::HeaderValue;
 use quinn::crypto::rustls::QuicServerConfig;
 use scuffle_foundations::http::server::axum::extract::{MatchedPath, Request};
@@ -38,9 +37,17 @@ fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 		.with_state(Arc::clone(global))
 		.layer(
 			ServiceBuilder::new()
-				.layer(SetResponseHeaderLayer::overriding(http::header::SERVER, server_name.parse::<HeaderValue>().unwrap()))
+				.layer(SetResponseHeaderLayer::overriding(
+					http::header::SERVER,
+					server_name.parse::<HeaderValue>().unwrap(),
+				))
 				.option_layer(if global.config.cdn.http3 && global.config.cdn.tls.is_some() {
-					Some(SetResponseHeaderLayer::overriding(http::header::ALT_SVC, format!("h3=\":{}\"; ma=2592000", global.config.cdn.secure_bind.port()).parse::<HeaderValue>().unwrap()))
+					Some(SetResponseHeaderLayer::overriding(
+						http::header::ALT_SVC,
+						format!("h3=\":{}\"; ma=2592000", global.config.cdn.secure_bind.port())
+							.parse::<HeaderValue>()
+							.unwrap(),
+					))
 				} else {
 					None
 				})
@@ -106,7 +113,10 @@ impl<A: ServiceHandler, B: ServiceHandler> ServiceHandler for AnyService<A, B> {
 		}
 	}
 
-	fn on_request(&self, req: Request) -> impl std::future::Future<Output = impl scuffle_foundations::http::server::stream::IntoResponse> + Send {
+	fn on_request(
+		&self,
+		req: Request,
+	) -> impl std::future::Future<Output = impl scuffle_foundations::http::server::stream::IntoResponse> + Send {
 		async move {
 			match self {
 				Self::Left(a) => a.on_request(req).await.into_response(),
@@ -139,7 +149,10 @@ struct RedirectUncrypted {
 }
 
 impl ServiceHandler for RedirectUncrypted {
-	fn on_request(&self, req: Request) -> impl std::future::Future<Output = impl scuffle_foundations::http::server::stream::IntoResponse> + Send {
+	fn on_request(
+		&self,
+		req: Request,
+	) -> impl std::future::Future<Output = impl scuffle_foundations::http::server::stream::IntoResponse> + Send {
 		let Some(host) = req.headers().get(http::header::HOST).and_then(|h| h.to_str().ok()) else {
 			return std::future::ready(http::StatusCode::BAD_REQUEST.into_response());
 		};
@@ -163,9 +176,13 @@ impl ServiceHandler for RedirectUncrypted {
 		let Ok(response) = http::Response::builder()
 			.status(http::StatusCode::PERMANENT_REDIRECT)
 			.header(http::header::LOCATION, uri.to_string())
-			.header(http::header::SERVER, self.server_name.as_ref().parse::<HeaderValue>().unwrap())
-			.body(Body::empty()) else {
-				return std::future::ready(http::StatusCode::BAD_REQUEST.into_response());
+			.header(
+				http::header::SERVER,
+				self.server_name.as_ref().parse::<HeaderValue>().unwrap(),
+			)
+			.body(Body::empty())
+		else {
+			return std::future::ready(http::StatusCode::BAD_REQUEST.into_response());
 		};
 
 		std::future::ready(response)
@@ -192,14 +209,29 @@ impl MakeService for CustomMakeService {
 
 #[tracing::instrument(name = "cdn", level = "info", skip(global))]
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
-	let mut builder = scuffle_foundations::http::server::Server::builder();
+	let mut builder = scuffle_foundations::http::server::Server::builder()
+		.with_workers(global.config.cdn.workers)
+		.with_http({
+			let mut http = hyper_util::server::conn::auto::Builder::new(Default::default());
+
+			http.http1().max_buf_size(8_192);
+
+			http.http2().max_send_buf_size(8_192);
+
+			http
+		});
 
 	if let Some(tls) = global.config.cdn.tls.as_ref() {
 		let cert = tokio::fs::read(&tls.cert).await.context("failed to read cert")?;
 		let key = tokio::fs::read(&tls.key).await.context("failed to read key")?;
 
-		let certs = rustls_pemfile::certs(&mut std::io::Cursor::new(cert)).collect::<std::result::Result<Vec<_>, _>>().context("invalid cert")?;
-		let key = rustls_pemfile::pkcs8_private_keys(&mut std::io::Cursor::new(key)).next().context("missing key")?.context("invalid key")?;
+		let certs = rustls_pemfile::certs(&mut std::io::Cursor::new(cert))
+			.collect::<std::result::Result<Vec<_>, _>>()
+			.context("invalid cert")?;
+		let key = rustls_pemfile::pkcs8_private_keys(&mut std::io::Cursor::new(key))
+			.next()
+			.context("missing key")?
+			.context("invalid key")?;
 
 		let mut tls_config = rustls::ServerConfig::builder_with_protocol_versions(&[&rustls::version::TLS13])
 			.with_no_client_auth()
@@ -211,26 +243,33 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		tls_config.alpn_protocols = tls.alpn_protocols.iter().map(|p| p.clone().into_bytes()).collect();
 
 		if global.config.cdn.http3 {
-			let server_config = quinn::ServerConfig::with_crypto(Arc::new(QuicServerConfig::try_from(tls_config.clone()).context("failed to build quic config")?));
+			let server_config = quinn::ServerConfig::with_crypto(Arc::new(
+				QuicServerConfig::try_from(tls_config.clone()).context("failed to build quic config")?,
+			));
 			builder = builder.with_http3(h3::server::builder(), server_config);
 		}
 
-		builder = builder.bind(global.config.cdn.secure_bind).with_tls(tls_config).with_insecure(global.config.cdn.bind);
+		builder = builder
+			.bind(global.config.cdn.secure_bind)
+			.with_tls(tls_config)
+			.with_insecure(global.config.cdn.bind);
 	} else {
 		builder = builder.bind(global.config.cdn.bind);
 	}
 
 	let server_name = global.config.cdn.server_name.clone().into();
 
-	let mut server = builder.build(CustomMakeService {
-		routes: routes(&global, &server_name),
-		server_name,
-		redirect_uncrypted: if !global.config.cdn.allow_insecure && global.config.cdn.tls.is_some() {
-			Some(global.config.cdn.secure_bind.port())
-		} else {
-			None
-		}
-	}).context("failed to build HTTP server")?;
+	let mut server = builder
+		.build(CustomMakeService {
+			routes: routes(&global, &server_name),
+			server_name,
+			redirect_uncrypted: if !global.config.cdn.allow_insecure && global.config.cdn.tls.is_some() {
+				Some(global.config.cdn.secure_bind.port())
+			} else {
+				None
+			},
+		})
+		.context("failed to build HTTP server")?;
 
 	server.start().await.context("failed to start HTTP server")?;
 

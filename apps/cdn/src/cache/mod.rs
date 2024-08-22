@@ -1,11 +1,12 @@
+use std::convert::Infallible;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
-use key::CacheKey;
-use scc::hash_map::OccupiedEntry;
+// use key::CacheKey;
 use scuffle_foundations::http::server::axum::http::header::{self, HeaderMap};
 use scuffle_foundations::http::server::axum::http::{HeaderValue, Response, StatusCode};
 use scuffle_foundations::http::server::stream::{Body, IntoResponse};
+use scuffle_foundations::telemetry::metrics::metrics;
 use tokio::sync::OnceCell;
 
 use crate::config;
@@ -15,11 +16,54 @@ pub mod key;
 
 const ONE_WEEK: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24 * 7);
 
+type CacheKey = String;
+
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
-	inflight: Arc<scc::HashMap<CacheKey, Inflight>>,
+	inflight: Arc<scc::HashMap<CacheKey, Arc<Inflight>>>,
 	s3_client: aws_sdk_s3::client::Client,
 	request_limiter: Arc<tokio::sync::Semaphore>,
+}
+
+#[metrics]
+mod cache {
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	pub enum State {
+		Hit,
+		ReboundHit,
+		Coalesced,
+		Miss,
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	pub enum ResponseStatus {
+		Success,
+		NotFound,
+		Timeout,
+		InternalServerError,
+	}
+
+	pub fn cache_action(state: State) -> Counter;
+	pub fn upstream_response(status: ResponseStatus) -> Counter;
+	pub fn inflight() -> Gauge;
+
+	pub struct InflightDropGuard;
+
+	impl Drop for InflightDropGuard {
+		fn drop(&mut self) {
+			inflight().dec();
+		}
+	}
+
+	impl InflightDropGuard {
+		pub fn new() -> Self {
+			inflight().inc();
+			Self
+		}
+	}
 }
 
 impl Cache {
@@ -47,7 +91,10 @@ impl Cache {
 		Self {
 			inner: moka::future::Cache::builder()
 				.expire_after(CacheExpiry)
-				.weigher(|_, v: &CachedResponse| v.data.len() as u32)
+				.weigher(|k, v: &CachedResponse| {
+					u32::try_from(v.data.len() + k.len() + std::mem::size_of_val(v) + std::mem::size_of_val(k))
+						.unwrap_or(u32::MAX)
+				})
 				.max_capacity(config.cache_capacity)
 				.build(),
 			inflight: Arc::new(scc::HashMap::new()),
@@ -56,69 +103,110 @@ impl Cache {
 		}
 	}
 
+	pub fn entries(&self) -> u64 {
+		self.inner.entry_count()
+	}
+
+	pub fn size(&self) -> u64 {
+		self.inner.weighted_size()
+	}
+
+	pub fn inflight(&self) -> u64 {
+		self.inflight.len() as u64
+	}
+
 	pub async fn handle_request(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
 		if let Some(hit) = self.inner.get(&key).await {
 			hit.hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+			cache::cache_action(cache::State::Hit).inc();
 
 			// return cached response
 			return hit;
 		}
 
-		let global = Arc::clone(&global);
+		let mut insert = false;
+
+		let entry = Arc::clone(&global.cache.inflight.entry_async(key.clone()).await.or_insert_with(|| {
+			insert = true;
+
+			Arc::new(Inflight {
+				token: tokio_util::sync::CancellationToken::new(),
+				response: OnceCell::new(),
+			})
+		}));
+
+		if !insert {
+			tracing::debug!(key = %key, "pending");
+			cache::cache_action(cache::State::Coalesced).inc();
+			// pending
+			entry.token.cancelled().await;
+			return entry.response.get().cloned().unwrap_or_else(CachedResponse::general_error);
+		}
+
+		struct PanicDropGuard(Option<(CacheKey, Arc<Inflight>, Arc<Global>)>);
+
+		impl PanicDropGuard {
+			fn new(key: CacheKey, entry: Arc<Inflight>, global: Arc<Global>) -> Self {
+				Self(Some((key, entry, global)))
+			}
+
+			async fn disarm(mut self) {
+				let Some((key, entry, global)) = self.0.take() else {
+					return;
+				};
+
+				entry.token.cancel();
+				global.cache.inflight.remove_async(&key).await;
+			}
+
+			fn entry(&self) -> &Arc<Inflight> {
+				&self.0.as_ref().unwrap().1
+			}
+
+			fn global(&self) -> &Arc<Global> {
+				&self.0.as_ref().unwrap().2
+			}
+
+			fn key(&self) -> &CacheKey {
+				&self.0.as_ref().unwrap().0
+			}
+		}
+
+		impl Drop for PanicDropGuard {
+			fn drop(&mut self) {
+				let Some((key, entry, global)) = self.0.take() else {
+					return;
+				};
+
+				entry.token.cancel();
+				global.cache.inflight.remove(&key);
+			}
+		}
+
+		let guard = PanicDropGuard::new(key, entry, Arc::clone(&global));
+
+		if let Some(cached) = self.inner.get(guard.key()).await {
+			tracing::debug!(key = %guard.key(), "rebounded hit");
+			cache::cache_action(cache::State::ReboundHit).inc();
+			guard.entry().response.set(cached.clone()).expect("unreachable");
+			guard.disarm().await;
+			return cached.clone();
+		}
+
+		cache::cache_action(cache::State::Miss).inc();
 
 		let cached = tokio::spawn(async move {
-			let mut insert = false;
-
-			let entry = global.cache.inflight.entry_async(key.clone()).await.or_insert_with(|| {
-				insert = true;
-
-				Inflight {
-					token: tokio_util::sync::CancellationToken::new(),
-					response: OnceCell::new(),
-				}
-			});
-
-			struct EntryDropGuard<'a>(Option<OccupiedEntry<'a, CacheKey, Inflight>>);
-
-			impl<'a> EntryDropGuard<'a> {
-				fn new(entry: OccupiedEntry<'a, CacheKey, Inflight>) -> Self {
-					Self(Some(entry))
-				}
-
-				fn entry(&self) -> &OccupiedEntry<'a, CacheKey, Inflight> {
-					self.0.as_ref().unwrap()
-				}
-			}
-
-			impl Drop for EntryDropGuard<'_> {
-				fn drop(&mut self) {
-					let _ = self.0.take().unwrap().remove();
-				}
-			}
-
-			let entry = EntryDropGuard::new(entry);
-
-			if !insert {
-				// pending
-				entry.entry().token.cancelled().await;
-				return entry
-					.entry()
-					.response
-					.get()
-					.cloned()
-					.unwrap_or_else(CachedResponse::general_error);
-			}
-
-			let _guard = entry.entry().token.clone().drop_guard();
-
 			// request file
-			let cached = global.cache.request_key(&global, key.clone()).await;
+			let cached = guard.global().cache.request_key(guard.global(), guard.key()).await;
 
-			entry.entry().response.set(cached.clone()).expect("unreachable");
+			guard.entry().response.set(cached.clone()).expect("unreachable");
 
 			if !cached.max_age.is_zero() {
-				global.cache.inner.insert(key, cached.clone()).await;
+				guard.global().cache.inner.insert(guard.key().clone(), cached.clone()).await;
+				tracing::debug!(key = %guard.key(), "cached");
 			}
+
+			guard.disarm().await;
 
 			cached
 		});
@@ -129,68 +217,61 @@ impl Cache {
 		})
 	}
 
-	async fn request_key(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
-		// request file
-		let response = {
-			// we are never closing the semaphore, so we can expect it to be open here,
-			// right? Clueless
-			let _permit = self.request_limiter.acquire().await.expect("semaphore closed");
+	async fn do_req(&self, global: &Arc<Global>, key: &CacheKey) -> Result<CachedResponse, S3ErrorWrapper> {
+		let _inflight = cache::InflightDropGuard::new();
+		let _permit = self.request_limiter.acquire().await.expect("semaphore closed");
 
-			tracing::debug!(key = %key, "requesting origin");
+		tracing::debug!(key = %key, "requesting origin");
 
-			tokio::time::timeout(
-				std::time::Duration::from_secs(global.config.cdn.origin_request_timeout),
-				self.s3_client
-					.get_object()
-					.bucket(&global.config.cdn.bucket.name)
-					.key(key.to_string())
-					.send(),
-			)
-			.await
-		};
-
-		match response {
-			Ok(Ok(response)) => match CachedResponse::from_s3_response(response).await {
-				Ok(response) => response,
-				Err(e) => {
-					tracing::error!(key = %key, error = %e, "failed to parse cdn file");
-					CachedResponse::general_error()
-				}
+		tokio::time::timeout(
+			std::time::Duration::from_secs(global.config.cdn.origin_request_timeout),
+			async {
+				Ok(CachedResponse::from_s3_response(
+					self.s3_client
+						.get_object()
+						.bucket(&global.config.cdn.bucket.name)
+						.key(key.to_string())
+						.send()
+						.await?,
+				)
+				.await?)
 			},
-			Ok(Err(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => CachedResponse::not_found(),
-			Ok(Err(e)) => {
-				let e = S3ErrorWrapper(e);
-				tracing::error!(key = %key, error = %e, "failed to request cdn file");
-				CachedResponse::general_error()
+		)
+		.await?
+	}
+
+	async fn request_key(&self, global: &Arc<Global>, key: &CacheKey) -> CachedResponse {
+		match self.do_req(global, key).await {
+			Ok(response) => {
+				cache::upstream_response(cache::ResponseStatus::Success).inc();
+				response
 			}
-			Err(_) => {
+			Err(S3ErrorWrapper::SDK(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => {
+				cache::upstream_response(cache::ResponseStatus::NotFound).inc();
+				CachedResponse::not_found()
+			}
+			Err(S3ErrorWrapper::Timeout(_)) => {
 				tracing::error!(key = %key, "timeout while requesting cdn file");
+				cache::upstream_response(cache::ResponseStatus::Timeout).inc();
 				CachedResponse::timeout()
+			}
+			Err(e) => {
+				tracing::error!(key = %key, error = %e, "failed to request cdn file");
+				cache::upstream_response(cache::ResponseStatus::InternalServerError).inc();
+				CachedResponse::general_error()
 			}
 		}
 	}
 }
 
-struct S3ErrorWrapper(aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>);
-
-impl std::fmt::Display for S3ErrorWrapper {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match &self.0 {
-			aws_sdk_s3::error::SdkError::ConstructionFailure(_) => write!(f, "{}", self.0),
-			aws_sdk_s3::error::SdkError::TimeoutError(_) => write!(f, "{}", self.0),
-			aws_sdk_s3::error::SdkError::DispatchFailure(_) => write!(f, "{}", self.0),
-			aws_sdk_s3::error::SdkError::ResponseError(_) => write!(f, "{}", self.0),
-			aws_sdk_s3::error::SdkError::ServiceError(e) => {
-				let e = e.err();
-				match e {
-					aws_sdk_s3::operation::get_object::GetObjectError::InvalidObjectState(e) => write!(f, "{}", e),
-					aws_sdk_s3::operation::get_object::GetObjectError::NoSuchKey(e) => write!(f, "{}", e),
-					_ => write!(f, "{}", self.0),
-				}
-			}
-			_ => write!(f, "{}", self.0),
-		}
-	}
+#[derive(Debug, thiserror::Error)]
+enum S3ErrorWrapper {
+	#[error("sdk error: {0}")]
+	SDK(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>),
+	#[error("timeout")]
+	Timeout(#[from] tokio::time::error::Elapsed),
+	#[error("bytes error: {0}")]
+	Bytes(#[from] aws_sdk_s3::primitives::ByteStreamError),
 }
 
 /// Safe to clone
@@ -245,8 +326,8 @@ impl CachedResponse {
 #[derive(Debug, Clone)]
 pub enum CachedData {
 	Bytes {
-		data: bytes::Bytes,
 		content_type: Option<String>,
+		chunks: Box<[bytes::Bytes]>,
 	},
 	NotFound,
 	InternalServerError,
@@ -255,7 +336,7 @@ pub enum CachedData {
 impl CachedData {
 	pub fn len(&self) -> usize {
 		match self {
-			Self::Bytes { data, .. } => data.len(),
+			Self::Bytes { chunks, .. } => chunks.iter().map(|c| c.len()).sum(),
 			Self::NotFound => 0,
 			Self::InternalServerError => 0,
 		}
@@ -265,14 +346,23 @@ impl CachedData {
 impl IntoResponse for CachedData {
 	fn into_response(self) -> scuffle_foundations::http::server::stream::Response {
 		match self {
-			Self::Bytes { data, content_type } => {
+			Self::Bytes { chunks, content_type } => {
 				let mut headers = HeaderMap::new();
 
 				if let Some(content_type) = content_type.as_deref().and_then(|c| c.try_into().ok()) {
 					headers.insert(header::CONTENT_TYPE, content_type);
 				}
 
-				(headers, data).into_response()
+				headers.insert(
+					header::CONTENT_LENGTH,
+					chunks.iter().map(|c| c.len()).sum::<usize>().to_string().try_into().unwrap(),
+				);
+
+				(
+					headers,
+					Body::from_stream(futures::stream::iter(chunks.to_vec().into_iter().map(Ok::<_, Infallible>))),
+				)
+					.into_response()
 			}
 			Self::NotFound => StatusCode::NOT_FOUND.into_response(),
 			Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -301,6 +391,7 @@ impl IntoResponse for CachedResponse {
 					HeaderValue::from_static("hit")
 				},
 			);
+
 			data.headers_mut()
 				.insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
 			data.headers_mut().insert(
@@ -317,7 +408,7 @@ impl IntoResponse for CachedResponse {
 
 impl CachedResponse {
 	pub async fn from_s3_response(
-		value: aws_sdk_s3::operation::get_object::GetObjectOutput,
+		mut value: aws_sdk_s3::operation::get_object::GetObjectOutput,
 	) -> Result<Self, aws_sdk_s3::primitives::ByteStreamError> {
 		let date = chrono::Utc::now();
 
@@ -336,9 +427,15 @@ impl CachedResponse {
 			})
 			.unwrap_or(ONE_WEEK);
 
+		let mut chunks = Vec::new();
+
+		while let Some(chunk) = value.body.next().await.transpose()? {
+			chunks.push(chunk);
+		}
+
 		Ok(Self {
 			data: CachedData::Bytes {
-				data: value.body.collect().await?.into_bytes(),
+				chunks: chunks.into_boxed_slice(),
 				content_type: value.content_type,
 			},
 			date,
