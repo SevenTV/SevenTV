@@ -3,6 +3,7 @@ use std::sync::Arc;
 use scuffle_foundations::http::server::axum::extract::{Path, State};
 use scuffle_foundations::http::server::axum::routing::get;
 use scuffle_foundations::http::server::axum::{Json, Router};
+use scuffle_foundations::telemetry::metrics::metrics;
 
 // use shared::database::badge::BadgeId;
 // use shared::database::emote::EmoteId;
@@ -11,6 +12,31 @@ use scuffle_foundations::http::server::axum::{Json, Router};
 // use crate::cache::key::{CacheKey, ImageFile};
 use crate::cache::CachedResponse;
 use crate::global::Global;
+
+#[metrics]
+mod http {
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+
+	pub struct CacheInflightDropGuard(());
+
+	impl CacheInflightDropGuard {
+		pub fn new() -> Self {
+			request_count().inc();
+			inflight().inc();
+			Self(())
+		}
+	}
+
+	impl Drop for CacheInflightDropGuard {
+		fn drop(&mut self) {
+			inflight().dec();
+		}
+	}
+
+	pub fn inflight() -> Gauge;
+	pub fn request_count() -> Counter;
+}
 
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new().route("/", get(root)).route("/*key", get(any))
@@ -43,6 +69,7 @@ async fn root(State(global): State<Arc<Global>>) -> Json<Welcome> {
 }
 
 async fn any(Path(key): Path<String>, State(global): State<Arc<Global>>) -> CachedResponse {
+	let _guard = http::CacheInflightDropGuard::new();
 	global.cache.handle_request(&global, key).await
 }
 
