@@ -984,7 +984,6 @@ dependencies = [
 name = "cdn"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "aws-sdk-s3",
  "bytes",
  "chrono",
