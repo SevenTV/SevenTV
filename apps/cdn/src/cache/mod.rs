@@ -117,7 +117,6 @@ impl Cache {
 
 	pub async fn handle_request(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
 		if let Some(hit) = self.inner.get(&key).await {
-			hit.hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 			cache::cache_action(cache::State::Hit).inc();
 
 			// return cached response
@@ -378,7 +377,7 @@ impl IntoResponse for CachedResponse {
 			data.headers_mut()
 				.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
 		} else {
-			let hits = self.hits.load(std::sync::atomic::Ordering::Relaxed);
+			let hits = self.hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
 			let age = chrono::Utc::now() - self.date;
 			data.headers_mut()
