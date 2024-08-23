@@ -159,10 +159,20 @@ impl ServiceHandler for RedirectUncrypted {
 
 		let mut builder = http::Uri::builder().scheme("https");
 
-		if let Some((host, _)) = host.split_once(':') {
-			builder = builder.authority(format!("{host}:{}", self.port));
-		} else {
-			builder = builder.authority(host);
+		{
+			let Some(uri) = format!("https://{host}").parse::<http::Uri>().ok() else {
+				return std::future::ready(http::StatusCode::BAD_REQUEST.into_response());
+			};
+
+			let Some(host) = uri.host() else {
+				return std::future::ready(http::StatusCode::BAD_REQUEST.into_response());
+			};
+
+			if self.port != 443 {
+				builder = builder.authority(format!("{host}:{}", self.port));
+			} else {
+				builder = builder.authority(host);
+			}
 		}
 
 		if let Some(path_and_query) = req.uri().path_and_query() {
