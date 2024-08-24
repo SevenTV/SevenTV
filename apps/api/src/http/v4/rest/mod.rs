@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use axum::{routing::post, Router};
+use axum::Router;
 
 use crate::global::Global;
 
-mod stripe_webhooks;
+mod webhooks;
 
 pub fn routes() -> Router<Arc<Global>> {
-	Router::new().route("/stripe/webhook", post(stripe_webhooks::handle))
+	Router::new().nest("/webhook", webhooks::routes())
 }
