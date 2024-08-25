@@ -91,6 +91,9 @@ pub struct ChangeStreamConfig {
 #[auto_settings]
 #[serde(default)]
 pub struct StripeConfig {
+	/// Stripe API key
+	#[settings(default = "sk_test_123".into())]
+	pub api_key: String,
 	/// Stripe webhook secret
 	#[settings(default = "whsec_test".into())]
 	pub webhook_secret: String,

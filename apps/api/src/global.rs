@@ -40,6 +40,7 @@ pub struct Global {
 	pub db: mongodb::Database,
 	pub clickhouse: clickhouse::Client,
 	pub http_client: reqwest::Client,
+	pub stripe_client: stripe::Client,
 	pub image_processor: ImageProcessor,
 	pub event_by_id_loader: DataLoader<LoaderById<StoredEvent>>,
 	pub product_by_id_loader: DataLoader<LoaderById<Product>>,
@@ -94,6 +95,8 @@ impl Global {
 			..Default::default()
 		};
 
+		let stripe_client = stripe::Client::new(&config.api.stripe.api_key);
+
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			jetstream,
@@ -121,6 +124,7 @@ impl Global {
 			user_ban_by_user_id_loader: UserBanByUserIdLoader::new(db.clone()),
 			user_profile_picture_id_loader: LoaderById::new(db.clone()),
 			http_client: reqwest::Client::new(),
+			stripe_client,
 			typesense,
 			mongo,
 			db,
