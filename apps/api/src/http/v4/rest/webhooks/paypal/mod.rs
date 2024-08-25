@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use axum::{
 	extract::State,
@@ -7,44 +7,61 @@ use axum::{
 use base64::{prelude::BASE64_STANDARD, Engine};
 use rsa::{pkcs1::DecodeRsaPublicKey, traits::SignatureScheme, Pkcs1v15Sign};
 use sha2::Digest;
-use tokio::sync::OnceCell;
+use tokio::sync::{OnceCell, RwLock};
 
 use crate::{global::Global, http::error::ApiError};
 
 mod dispute;
 mod sale;
 mod subscription;
+pub mod types;
 
-static PAYPAL_KEY_CACHE: OnceCell<rsa::RsaPublicKey> = OnceCell::const_new();
+async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
+	static PAYPAL_KEY_CACHE: OnceCell<RwLock<HashMap<String, rsa::RsaPublicKey>>> = OnceCell::const_new();
 
-async fn paypal_key(cert_url: &str) -> Result<&rsa::RsaPublicKey, ApiError> {
-	PAYPAL_KEY_CACHE
-		.get_or_try_init(|| async {
-			let cert_pem = reqwest::get(cert_url)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to download cert");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?
-				.text()
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to read cert");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-			let cert = x509_certificate::X509Certificate::from_pem(&cert_pem).map_err(|e| {
-				tracing::error!(error = %e, "failed to parse cert");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+	let cache = PAYPAL_KEY_CACHE.get_or_init(|| async { RwLock::new(HashMap::new()) }).await;
 
-			let public_key = rsa::RsaPublicKey::from_pkcs1_der(&cert.public_key_data()).map_err(|e| {
-				tracing::error!(error = %e, "failed to parse public key");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+	if let Some(key) = cache.read().await.get(cert_url) {
+		return Ok(key.clone());
+	}
 
-			Ok(public_key)
-		})
+	if !cert_url.starts_with("https://api.paypal.com/") {
+		tracing::warn!(url = %cert_url, "invalid cert url");
+		return Err(ApiError::BAD_REQUEST);
+	}
+
+	let cert_pem = reqwest::get(cert_url)
 		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to download cert");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?
+		.text()
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to read cert");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+	let cert = x509_certificate::X509Certificate::from_pem(&cert_pem).map_err(|e| {
+		tracing::error!(error = %e, "failed to parse cert");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	if cert.time_constraints_valid(None) {
+		tracing::warn!("cert is expired or not yet valid");
+		return Err(ApiError::BAD_REQUEST);
+	}
+
+	// TODO: check if cert has a valid signature
+
+	let public_key = rsa::RsaPublicKey::from_pkcs1_der(&cert.public_key_data()).map_err(|e| {
+		tracing::error!(error = %e, "failed to parse public key");
+		ApiError::INTERNAL_SERVER_ERROR
+	})?;
+
+	cache.write().await.insert(cert_url.to_string(), public_key.clone());
+
+	Ok(public_key)
 }
 
 /// https://developer.paypal.com/api/rest/webhooks/rest
@@ -92,7 +109,36 @@ pub async fn handle(
 		ApiError::BAD_REQUEST
 	})?;
 
-	tracing::info!("verified signature");
+	let event: types::Event = serde_json::from_slice(&payload).map_err(|e| {
+		tracing::error!(error = %e, "failed to deserialize payload");
+		ApiError::BAD_REQUEST
+	})?;
 
-	Ok(StatusCode::OK)
+	match (event.event_type, event.ressource) {
+		(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => sale::completed(&global, sale).await,
+		(types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(&global, sale).await,
+		(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale)) => sale::reversed(&global, sale).await,
+		(types::EventType::CustomerDisputeCreated, types::Resource::Dispute(dispute)) => {
+			dispute::created(&global, dispute).await
+		}
+		(types::EventType::CustomerDisputeUpdated, types::Resource::Dispute(dispute)) => {
+			dispute::updated(&global, dispute).await
+		}
+		(types::EventType::CustomerDisputeResolved, types::Resource::Dispute(dispute)) => {
+			dispute::resolved(&global, dispute).await
+		}
+		(types::EventType::BillingSubscriptionExpired, types::Resource::Subscription(subscription)) => {
+			subscription::expired(&global, subscription).await
+		}
+		(types::EventType::BillingSubscriptionCancelled, types::Resource::Subscription(subscription)) => {
+			subscription::cancelled(&global, subscription).await
+		}
+		(types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
+			subscription::suspended(&global, subscription).await
+		}
+		(types::EventType::BillingSubscriptionPaymentFailed, types::Resource::Subscription(subscription)) => {
+			subscription::payment_failed(&global, subscription).await
+		}
+		_ => Ok(StatusCode::BAD_REQUEST),
+	}
 }

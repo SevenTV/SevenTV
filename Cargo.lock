@@ -150,6 +150,7 @@ dependencies = [
  "clickhouse",
  "cookie",
  "crc",
+ "fnv",
  "futures",
  "futures-util",
  "hex",
