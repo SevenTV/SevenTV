@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use super::duration::DurationUnit;
+use super::entitlement::EntitlementEdgeKind;
 use super::{MongoCollection, MongoGenericCollection};
 
 pub mod codes;
 pub mod invoice;
 pub mod promotion;
 pub mod subscription;
-pub mod subscription_timeline;
 
 /// A helper macro used to define newtypes for stripe IDs
 macro_rules! stripe_type {
@@ -163,7 +163,16 @@ impl crate::typesense::types::TypesenseType for stripe::Currency {
 	}
 }
 
-// An item that can be purchased
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimePeriod {
+	#[serde(with = "crate::database::serde")]
+	pub start: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub end: chrono::DateTime<chrono::Utc>,
+}
+
+/// A non-recurring product, e.g. a paint bundle
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "products")]
 #[mongo(index(fields(search_updated_at = 1)))]
@@ -175,7 +184,6 @@ pub struct Product {
 	pub id: ProductId,
 	pub name: String,
 	pub description: Option<String>,
-	pub recurring: Option<DurationUnit>,
 	pub default_currency: stripe::Currency,
 	pub currency_prices: HashMap<stripe::Currency, i32>,
 	#[serde(with = "crate::database::serde")]
@@ -186,13 +194,50 @@ pub struct Product {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+/// There are only two kinds of subscriptions: monthly and yearly.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
+#[mongo(collection_name = "subscription_products")]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[serde(deny_unknown_fields)]
+pub struct SubscriptionProduct {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+    pub id: ProductId,
+    pub name: String,
+    pub description: String,
+    pub default_currency: stripe::Currency,
+    pub currency_prices: HashMap<stripe::Currency, i64>,
+    pub kind: SubscriptionKind,
+    pub benefits: Vec<SubscriptionBenefit>,
+	#[serde(with = "crate::database::serde")]
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+/// An entitlement edge between the user sub and `entitlement` which will be inserted as soon as the condition is met.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct TimePeriod {
-	#[serde(with = "crate::database::serde")]
-	pub start: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub end: chrono::DateTime<chrono::Utc>,
+pub struct SubscriptionBenefit {
+    pub entitlement: EntitlementEdgeKind,
+    pub condition: SubscriptionBenefitCondition,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum SubscriptionBenefitCondition {
+    Duration(DurationUnit),
+    TimePeriod(TimePeriod),
+}
+
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(i32)]
+pub enum SubscriptionKind {
+    Monthly = 0,
+    Yearly = 1,
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
@@ -201,5 +246,4 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 		.chain(invoice::collections())
 		.chain(promotion::collections())
 		.chain(subscription::collections())
-		.chain(subscription_timeline::collections())
 }

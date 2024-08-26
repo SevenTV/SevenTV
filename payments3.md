@@ -3,13 +3,13 @@
 ## Products
 
 ```rs
-/// e.g. a paint bundle
+/// A non-recurring product, e.g. a paint bundle
 struct Product {
     id: stripe::PriceId,
     name: String,
     description: String,
     default_currency: stripe::Currency,
-    currency_prices: HashMap<stripe::Currency, u64>,
+    currency_prices: HashMap<stripe::Currency, i64>,
 }
 
 /// There are only two kinds of subscriptions: monthly and yearly.
@@ -18,7 +18,7 @@ struct SubscriptionProduct {
     name: String,
     description: String,
     default_currency: stripe::Currency,
-    currency_prices: HashMap<stripe::Currency, u64>,
+    currency_prices: HashMap<stripe::Currency, i64>,
     kind: SubscriptionKind,
     benefits: Vec<SubscriptionBenefit>,
 }
@@ -26,7 +26,16 @@ struct SubscriptionProduct {
 /// An entitlement edge between the user sub and `entitlement` which will be inserted after the duration `after` has passed.
 struct SubscriptionBenefit {
     entitlement: EntitlementEdgeKind,
-    after: Duration,
+    condition: SubscriptionBenefitCondition,
+}
+
+enum SubscriptionBenefitCondition {
+    DurationDays(i32),
+    DurationMonths(i32),
+    TimePeriod {
+        start: chrono::DateTime<chrono::Utc>,
+        end: chrono::DateTime<chrono::Utc>,
+    },
 }
 
 enum SubscriptionKind {
@@ -61,18 +70,19 @@ enum InvoiceStatus {
 ## Subscription
 
 ```rs
+/// Current or past periods of a subscription (not future)
 struct SubscriptionPeriod {
     id: SubscriptionPeriodId,
     subscription_id: stripe::SubscriptionId,
+    product_id: stripe::PriceId,
     user_id: UserId,
     start: chrono::DateTime<chrono::Utc>,
     end: chrono::DateTime<chrono::Utc>,
     is_trial: bool,
-    created_by: SubscriptionCreatedBy,
-    product_id: stripe::PriceId,
+    created_by: PeriodCreatedBy,
 }
 
-enum SubscriptionCreatedBy {
+enum PeriodCreatedBy {
     RedeemCode {
         redeem_code_id: RedeemCodeId,
     },

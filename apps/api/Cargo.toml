@@ -62,5 +62,8 @@ typed-builder = "0.20.0"
 
 shared = { workspace = true }
 
+[dev-dependencies]
+axum = { version = "0.7", features = ["macros"] }
+
 [features]
 default = []

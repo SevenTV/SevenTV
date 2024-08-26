@@ -1,6 +1,5 @@
 use super::codes::{GiftCodeId, RedeemCodeId};
-use super::{InvoiceId, InvoiceLineItemId, ProductId, SubscriptionId};
-use crate::database::duration::DurationUnit;
+use super::{InvoiceId, ProductId, SubscriptionId};
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::{Id, MongoCollection};
@@ -9,7 +8,7 @@ pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, tag = "type")]
-pub enum SubscriptionCreatedBy {
+pub enum SubscriptionPeriodCreatedBy {
 	RedeemCode {
 		redeem_code_id: RedeemCodeId,
 	},
@@ -18,7 +17,6 @@ pub enum SubscriptionCreatedBy {
 	},
 	Invoice {
 		invoice_id: InvoiceId,
-		invoice_item_id: InvoiceLineItemId,
 	},
 	System {
 		reason: Option<String>,
@@ -46,31 +44,8 @@ pub struct SubscriptionPeriod {
 	#[serde(with = "crate::database::serde")]
 	pub end: chrono::DateTime<chrono::Utc>,
 	pub is_trial: bool,
-	pub created_by: SubscriptionCreatedBy,
+	pub created_by: SubscriptionPeriodCreatedBy,
 	pub product_ids: Vec<ProductId>,
-	#[serde(with = "crate::database::serde")]
-	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-pub type SubscriptionCreditId = Id<SubscriptionCredit>;
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
-#[mongo(collection_name = "subscription_credits")]
-#[mongo(index(fields(user_id = 1)))]
-#[mongo(index(fields(product_id = 1)))]
-#[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
-#[serde(deny_unknown_fields)]
-pub struct SubscriptionCredit {
-	#[mongo(id)]
-	#[serde(rename = "_id")]
-	pub id: SubscriptionCreditId,
-	pub user_id: UserId,
-	pub product_id: ProductId,
-	pub duration: DurationUnit,
-	pub created_by: SubscriptionCreatedBy,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
@@ -80,6 +55,5 @@ pub struct SubscriptionCredit {
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	[
 		MongoGenericCollection::new::<SubscriptionPeriod>(),
-		MongoGenericCollection::new::<SubscriptionCredit>(),
 	]
 }

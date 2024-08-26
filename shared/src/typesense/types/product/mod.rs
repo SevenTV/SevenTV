@@ -2,11 +2,9 @@ pub mod codes;
 pub mod invoice;
 pub mod promotion;
 pub mod subscription;
-pub mod subscription_timeline;
 
 use chrono::Utc;
 
-use super::duration_unit::DurationUnit;
 use super::TypesenseGenericCollection;
 use crate::database::entitlement::{EntitlementEdgeKind, EntitlementEdgeKindString};
 use crate::database::product::ProductId;
@@ -20,8 +18,6 @@ pub struct Product {
 	pub id: ProductId,
 	pub name: String,
 	pub description: Option<String>,
-	pub recurring_unit: Option<DurationUnit>,
-	pub recurring_value: Option<i32>,
 	pub default_currency: stripe::Currency,
 	pub default_price: i32,
 	pub currencies: Vec<stripe::Currency>,
@@ -43,14 +39,6 @@ impl Product {
 			id: value.id,
 			name: value.name,
 			description: value.description,
-			recurring_unit: value.recurring.map(|x| match x {
-				database::duration::DurationUnit::Days(_) => DurationUnit::Days,
-				database::duration::DurationUnit::Months(_) => DurationUnit::Months,
-			}),
-			recurring_value: value.recurring.map(|x| match x {
-				database::duration::DurationUnit::Days(x) => x,
-				database::duration::DurationUnit::Months(x) => x,
-			}),
 			entitlement_grants: entitlement_grants.into_iter().map(Into::into).collect(),
 			default_currency: value.default_currency,
 			default_price: value.currency_prices.get(&value.default_currency).copied().unwrap_or(0),
@@ -68,5 +56,4 @@ pub(super) fn typesense_collections() -> impl IntoIterator<Item = TypesenseGener
 		.chain(invoice::typesense_collections())
 		.chain(promotion::typesense_collections())
 		.chain(subscription::typesense_collections())
-		.chain(subscription_timeline::typesense_collections())
 }

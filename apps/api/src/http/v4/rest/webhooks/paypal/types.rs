@@ -1,4 +1,4 @@
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct Event {
 	pub id: String,
 	pub create_time: chrono::DateTime<chrono::Utc>,
@@ -7,7 +7,7 @@ pub struct Event {
 	pub ressource: Resource,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Deserialize)]
 pub enum EventType {
 	#[serde(rename = "PAYMENT.SALE.COMPLETED")]
 	PaymentSaleCompleted,
@@ -31,7 +31,7 @@ pub enum EventType {
 	BillingSubscriptionPaymentFailed,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 #[serde(tag = "resource_type", content = "resource", rename_all = "snake_case")]
 pub enum Resource {
 	Sale(Sale),
@@ -40,7 +40,7 @@ pub enum Resource {
 }
 
 /// https://developer.paypal.com/docs/api/payments/v1/#definition-sale
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct Sale {
 	pub id: String,
     pub state: SaleState,
@@ -48,7 +48,7 @@ pub struct Sale {
 	pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SaleState {
     Completed,
@@ -58,7 +58,7 @@ pub enum SaleState {
     Denied,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct Amount {
     /// The total amount of the sale as a decimal number.
     /// Negative on refunds.
@@ -67,7 +67,7 @@ pub struct Amount {
 }
 
 /// https://developer.paypal.com/docs/api/customer-disputes/v1/#definition-dispute
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct Dispute {
     pub dispute_id: String,
     pub status: DisputeStatus,
@@ -78,7 +78,7 @@ pub struct Dispute {
     pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DisputeStatus {
     Open,
@@ -89,7 +89,7 @@ pub enum DisputeStatus {
     Other,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DisputeLifeCycleStage {
     Inquiry,
@@ -98,7 +98,7 @@ pub enum DisputeLifeCycleStage {
     Arbitration,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DisputeChannel {
     Internal,
@@ -106,7 +106,7 @@ pub enum DisputeChannel {
     Alert,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DisputeReason {
     MerchandiseOrServiceNotReceived,
@@ -122,7 +122,7 @@ pub enum DisputeReason {
 }
 
 /// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-subscription
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct Subscription {
     pub id: String,
     pub status: SubscriptionStatus,
@@ -131,7 +131,7 @@ pub struct Subscription {
     pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SubscriptionStatus {
     ApprovalPending,

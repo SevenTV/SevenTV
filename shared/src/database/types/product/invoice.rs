@@ -42,7 +42,7 @@ pub struct Invoice {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[derive(Debug, Clone, Eq, PartialEq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 #[repr(i32)]
 pub enum InvoiceStatus {
 	Draft = 0,

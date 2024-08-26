@@ -7,9 +7,14 @@ use axum::{
 use base64::{prelude::BASE64_STANDARD, Engine};
 use rsa::{pkcs1::DecodeRsaPublicKey, traits::SignatureScheme, Pkcs1v15Sign};
 use sha2::Digest;
+use shared::database::webhook_event::WebhookEvent;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::{global::Global, http::error::ApiError};
+use crate::{
+	global::Global,
+	http::error::ApiError,
+	transactions::{with_transaction, TransactionError},
+};
 
 mod dispute;
 mod sale;
@@ -114,31 +119,62 @@ pub async fn handle(
 		ApiError::BAD_REQUEST
 	})?;
 
-	match (event.event_type, event.ressource) {
-		(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => sale::completed(&global, sale).await,
-		(types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(&global, sale).await,
-		(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale)) => sale::reversed(&global, sale).await,
-		(types::EventType::CustomerDisputeCreated, types::Resource::Dispute(dispute)) => {
-			dispute::created(&global, dispute).await
+	let res = with_transaction(&global, |mut tx| {
+		let global = Arc::clone(&global);
+
+		async move {
+			tx.insert_one(
+				WebhookEvent {
+					id: event.id,
+					created_at: event.create_time,
+				},
+				None,
+			)
+			.await?;
+
+			match (event.event_type, event.ressource) {
+				(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => {
+					sale::completed(&global, tx, sale).await
+				}
+				(types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => {
+					sale::refunded(&global, tx, sale).await
+				}
+				(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale)) => {
+					sale::reversed(&global, tx, sale).await
+				}
+				(types::EventType::CustomerDisputeCreated, types::Resource::Dispute(dispute)) => {
+					dispute::created(&global, tx, dispute).await
+				}
+				(types::EventType::CustomerDisputeUpdated, types::Resource::Dispute(dispute)) => {
+					dispute::updated(&global, tx, dispute).await
+				}
+				(types::EventType::CustomerDisputeResolved, types::Resource::Dispute(dispute)) => {
+					dispute::resolved(&global, tx, dispute).await
+				}
+				(types::EventType::BillingSubscriptionExpired, types::Resource::Subscription(subscription)) => {
+					subscription::expired(&global, tx, subscription).await
+				}
+				(types::EventType::BillingSubscriptionCancelled, types::Resource::Subscription(subscription)) => {
+					subscription::cancelled(&global, tx, subscription).await
+				}
+				(types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
+					subscription::suspended(&global, tx, subscription).await
+				}
+				(types::EventType::BillingSubscriptionPaymentFailed, types::Resource::Subscription(subscription)) => {
+					subscription::payment_failed(&global, tx, subscription).await
+				}
+				_ => Err(TransactionError::custom(ApiError::BAD_REQUEST)),
+			}
 		}
-		(types::EventType::CustomerDisputeUpdated, types::Resource::Dispute(dispute)) => {
-			dispute::updated(&global, dispute).await
+	})
+	.await;
+
+	match res {
+		Ok(_) => Ok(StatusCode::OK),
+		Err(TransactionError::Custom(e)) => Err(e),
+		Err(e) => {
+			tracing::error!(error = %e, "transaction failed");
+			Err(ApiError::INTERNAL_SERVER_ERROR)
 		}
-		(types::EventType::CustomerDisputeResolved, types::Resource::Dispute(dispute)) => {
-			dispute::resolved(&global, dispute).await
-		}
-		(types::EventType::BillingSubscriptionExpired, types::Resource::Subscription(subscription)) => {
-			subscription::expired(&global, subscription).await
-		}
-		(types::EventType::BillingSubscriptionCancelled, types::Resource::Subscription(subscription)) => {
-			subscription::cancelled(&global, subscription).await
-		}
-		(types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
-			subscription::suspended(&global, subscription).await
-		}
-		(types::EventType::BillingSubscriptionPaymentFailed, types::Resource::Subscription(subscription)) => {
-			subscription::payment_failed(&global, subscription).await
-		}
-		_ => Ok(StatusCode::BAD_REQUEST),
 	}
 }

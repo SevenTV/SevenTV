@@ -139,7 +139,7 @@ pub async fn get_user_by_id(
 }
 
 #[derive(Debug, Clone, Deserialize)]
-enum TargetUser {
+pub enum TargetUser {
 	#[serde(rename = "@me")]
 	Me,
 	#[serde(untagged)]

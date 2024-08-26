@@ -7,10 +7,7 @@ use super::emote_set::EmoteSetId;
 use super::paint::PaintId;
 use super::product::codes::{GiftCodeId, RedeemCodeId};
 use super::product::promotion::PromotionId;
-use super::product::subscription_timeline::{
-	SubscriptionTimelineId, SubscriptionTimelinePeriodId, UserSubscriptionTimelineId,
-};
-use super::product::{InvoiceId, InvoiceLineItemId, ProductId};
+use super::product::{InvoiceId, InvoiceLineItemId, ProductId, SubscriptionId};
 use super::role::RoleId;
 use super::user::UserId;
 use super::{MongoCollection, MongoGenericCollection};
@@ -22,39 +19,15 @@ use crate::typesense::types::impl_typesense_type;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum EntitlementEdgeKind {
-	User {
-		user_id: UserId,
-	},
-	Role {
-		role_id: RoleId,
-	},
-	Badge {
-		badge_id: BadgeId,
-	},
-	Paint {
-		paint_id: PaintId,
-	},
-	EmoteSet {
-		emote_id: EmoteSetId,
-	},
-	StaticProduct {
-		product_id: ProductId,
-	},
-	SubscriptionTimeline {
-		subscription_timeline_id: SubscriptionTimelineId,
-	},
-	SubscriptionTimelinePeriod {
-		subscription_timeline_period_id: SubscriptionTimelinePeriodId,
-	},
-	Promotion {
-		promotion_id: PromotionId,
-	},
-	UserSubscriptionTimeline {
-		user_subscription_timeline_id: UserSubscriptionTimelineId,
-	},
-	EntitlementGroup {
-		entitlement_group_id: EntitlementGroupId,
-	},
+	User { user_id: UserId },
+	Role { role_id: RoleId },
+	Badge { badge_id: BadgeId },
+	Paint { paint_id: PaintId },
+	EmoteSet { emote_id: EmoteSetId },
+	Product { product_id: ProductId },
+	Subscription { subscription_id: SubscriptionId },
+	Promotion { promotion_id: PromotionId },
+	EntitlementGroup { entitlement_group_id: EntitlementGroupId },
 	GlobalDefaultEntitlementGroup,
 }
 
@@ -66,17 +39,9 @@ impl std::fmt::Display for EntitlementEdgeKind {
 			EntitlementEdgeKind::Badge { badge_id } => write!(f, "badge:{}", badge_id),
 			EntitlementEdgeKind::Paint { paint_id } => write!(f, "paint:{}", paint_id),
 			EntitlementEdgeKind::EmoteSet { emote_id } => write!(f, "emote_set:{}", emote_id),
-			EntitlementEdgeKind::StaticProduct { product_id } => write!(f, "static_product:{}", product_id),
-			EntitlementEdgeKind::SubscriptionTimelinePeriod {
-				subscription_timeline_period_id,
-			} => write!(f, "subscription_timeline_period:{}", subscription_timeline_period_id),
-			EntitlementEdgeKind::SubscriptionTimeline {
-				subscription_timeline_id,
-			} => write!(f, "subscription_timeline:{}", subscription_timeline_id),
+			EntitlementEdgeKind::Product { product_id } => write!(f, "product:{}", product_id),
 			EntitlementEdgeKind::Promotion { promotion_id } => write!(f, "promotion:{}", promotion_id),
-			EntitlementEdgeKind::UserSubscriptionTimeline {
-				user_subscription_timeline_id,
-			} => write!(f, "user_subscription_timeline:{}", user_subscription_timeline_id),
+			EntitlementEdgeKind::Subscription { subscription_id } => write!(f, "subscription:{}", subscription_id),
 			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
 				write!(f, "entitlement_group:{}", entitlement_group_id)
 			}
@@ -110,20 +75,14 @@ impl std::str::FromStr for EntitlementEdgeKind {
 			"emote_set" => EntitlementEdgeKind::EmoteSet {
 				emote_id: parts[1].parse().map_err(|_| "invalid emote set id")?,
 			},
-			"static_product" => EntitlementEdgeKind::StaticProduct {
+			"product" => EntitlementEdgeKind::Product {
 				product_id: parts[1].parse().map_err(|_| "invalid product id")?,
-			},
-			"subscription_timeline_period" => EntitlementEdgeKind::SubscriptionTimelinePeriod {
-				subscription_timeline_period_id: parts[1].parse().map_err(|_| "invalid subscription timeline period id")?,
-			},
-			"subscription_timeline" => EntitlementEdgeKind::SubscriptionTimeline {
-				subscription_timeline_id: parts[1].parse().map_err(|_| "invalid subscription timeline id")?,
 			},
 			"promotion" => EntitlementEdgeKind::Promotion {
 				promotion_id: parts[1].parse().map_err(|_| "invalid promotion id")?,
 			},
-			"user_subscription_timeline" => EntitlementEdgeKind::UserSubscriptionTimeline {
-				user_subscription_timeline_id: parts[1].parse().map_err(|_| "invalid user subscription timeline id")?,
+			"subscription" => EntitlementEdgeKind::Subscription {
+				subscription_id: parts[1].parse().map_err(|_| "invalid subscription id")?,
 			},
 			"entitlement_group" => EntitlementEdgeKind::EntitlementGroup {
 				entitlement_group_id: parts[1].parse().map_err(|_| "invalid entitlement group id")?,
@@ -193,9 +152,6 @@ pub enum EntitlementEdgeManagedBy {
 	Promotion {
 		promotion: PromotionId,
 	},
-	UserSubscriptionTimeline {
-		user_subscription_timeline_id: UserSubscriptionTimelineId,
-	},
 }
 
 impl std::fmt::Display for EntitlementEdgeManagedBy {
@@ -204,9 +160,6 @@ impl std::fmt::Display for EntitlementEdgeManagedBy {
 			Self::GiftCode { gift_id } => write!(f, "gift_code:{gift_id}"),
 			Self::RedeemCode { redeem_code_id } => write!(f, "redeem_code:{redeem_code_id}"),
 			Self::Promotion { promotion } => write!(f, "promotion:{promotion}"),
-			Self::UserSubscriptionTimeline {
-				user_subscription_timeline_id,
-			} => write!(f, "user_subscription_timeline:{user_subscription_timeline_id}"),
 			Self::InvoiceLineItem {
 				invoice_id,
 				line_item_id,
@@ -249,16 +202,14 @@ impl GraphKey for EntitlementEdgeKind {
 	fn has_inbound(&self) -> bool {
 		matches!(
 			self,
-			Self::UserSubscriptionTimeline { .. }
-				| Self::Promotion { .. }
-				| Self::StaticProduct { .. }
-				| Self::SubscriptionTimelinePeriod { .. }
+			Self::Promotion { .. }
+				| Self::Product { .. }
 				| Self::Badge { .. }
 				| Self::Paint { .. }
 				| Self::EmoteSet { .. }
 				| Self::Role { .. }
 				| Self::EntitlementGroup { .. }
-				| Self::SubscriptionTimeline { .. }
+				| Self::Subscription { .. }
 		)
 	}
 
@@ -267,10 +218,9 @@ impl GraphKey for EntitlementEdgeKind {
 			self,
 			Self::User { .. }
 				| Self::Role { .. }
-				| Self::StaticProduct { .. }
+				| Self::Product { .. }
 				| Self::Promotion { .. }
-				| Self::SubscriptionTimelinePeriod { .. }
-				| Self::UserSubscriptionTimeline { .. }
+				| Self::Subscription { .. }
 				| Self::EntitlementGroup { .. }
 				| Self::GlobalDefaultEntitlementGroup
 		)
@@ -318,10 +268,9 @@ pub struct CalculatedEntitlements {
 	pub badges: HashSet<BadgeId>,
 	pub paints: HashSet<PaintId>,
 	pub emote_sets: HashSet<EmoteSetId>,
-	pub static_products: HashSet<ProductId>,
+	pub products: HashSet<ProductId>,
 	pub promotions: HashSet<PromotionId>,
-	pub user_subscription_timelines: HashSet<UserSubscriptionTimelineId>,
-	pub subscription_periods_timelines: HashSet<SubscriptionTimelinePeriodId>,
+	pub subscriptions: HashSet<SubscriptionId>,
 	pub entitlement_groups: HashSet<EntitlementGroupId>,
 }
 
@@ -331,11 +280,9 @@ impl CalculatedEntitlements {
 		let mut badges = HashSet::new();
 		let mut paints = HashSet::new();
 		let mut emote_sets = HashSet::new();
-		let mut static_products = HashSet::new();
-		let mut subscription_timeline_periods = HashSet::new();
-		let mut subscription_timelines = HashSet::new();
+		let mut products = HashSet::new();
+		let mut subscriptions = HashSet::new();
 		let mut promotions = HashSet::new();
-		let mut user_subscription_timelines = HashSet::new();
 		let mut entitlement_groups = HashSet::new();
 
 		edges.into_iter().for_each(|to| match to {
@@ -351,26 +298,14 @@ impl CalculatedEntitlements {
 			EntitlementEdgeKind::EmoteSet { emote_id } => {
 				emote_sets.insert(emote_id);
 			}
-			EntitlementEdgeKind::StaticProduct { product_id } => {
-				static_products.insert(product_id);
+			EntitlementEdgeKind::Product { product_id } => {
+				products.insert(product_id);
 			}
-			EntitlementEdgeKind::SubscriptionTimelinePeriod {
-				subscription_timeline_period_id,
-			} => {
-				subscription_timeline_periods.insert(subscription_timeline_period_id);
-			}
-			EntitlementEdgeKind::SubscriptionTimeline {
-				subscription_timeline_id,
-			} => {
-				subscription_timelines.insert(subscription_timeline_id);
+			EntitlementEdgeKind::Subscription { subscription_id } => {
+				subscriptions.insert(subscription_id);
 			}
 			EntitlementEdgeKind::Promotion { promotion_id } => {
 				promotions.insert(promotion_id);
-			}
-			EntitlementEdgeKind::UserSubscriptionTimeline {
-				user_subscription_timeline_id,
-			} => {
-				user_subscription_timelines.insert(user_subscription_timeline_id);
 			}
 			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
 				entitlement_groups.insert(entitlement_group_id);
@@ -386,10 +321,9 @@ impl CalculatedEntitlements {
 			badges,
 			paints,
 			emote_sets,
-			static_products,
-			subscription_periods_timelines: subscription_timeline_periods,
+			products,
+			subscriptions,
 			promotions,
-			user_subscription_timelines,
 			entitlement_groups,
 		}
 	}
