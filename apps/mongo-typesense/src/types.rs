@@ -11,7 +11,6 @@ pub mod mongo {
 	pub use shared::database::product::invoice::*;
 	pub use shared::database::product::promotion::*;
 	pub use shared::database::product::subscription::*;
-	pub use shared::database::product::subscription_timeline::*;
 	pub use shared::database::product::*;
 	pub use shared::database::role::*;
 	pub use shared::database::stored_event::*;
@@ -37,7 +36,6 @@ pub mod typesense {
 	pub use shared::typesense::types::product::invoice::*;
 	pub use shared::typesense::types::product::promotion::*;
 	pub use shared::typesense::types::product::subscription::*;
-	pub use shared::typesense::types::product::subscription_timeline::*;
 	pub use shared::typesense::types::product::*;
 	pub use shared::typesense::types::role::*;
 	pub use shared::typesense::types::ticket::*;

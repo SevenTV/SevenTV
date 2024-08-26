@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::typesense::types::impl_typesense_type;
+
 use super::duration::DurationUnit;
 use super::entitlement::EntitlementEdgeKind;
 use super::{MongoCollection, MongoGenericCollection};
@@ -205,9 +207,9 @@ pub struct SubscriptionProduct {
 	#[serde(rename = "_id")]
     pub id: ProductId,
     pub name: String,
-    pub description: String,
+    pub description: Option<String>,
     pub default_currency: stripe::Currency,
-    pub currency_prices: HashMap<stripe::Currency, i64>,
+    pub currency_prices: HashMap<stripe::Currency, i32>,
     pub kind: SubscriptionKind,
     pub benefits: Vec<SubscriptionBenefit>,
 	#[serde(with = "crate::database::serde")]
@@ -239,6 +241,8 @@ pub enum SubscriptionKind {
     Monthly = 0,
     Yearly = 1,
 }
+
+impl_typesense_type!(SubscriptionKind, Int32);
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	std::iter::once(MongoGenericCollection::new::<Product>())

@@ -25,6 +25,7 @@ pub enum EntitlementEdgeKind {
 	Paint { paint_id: PaintId },
 	EmoteSet { emote_id: EmoteSetId },
 	Product { product_id: ProductId },
+	SubscriptionProduct { product_id: ProductId },
 	Subscription { subscription_id: SubscriptionId },
 	Promotion { promotion_id: PromotionId },
 	EntitlementGroup { entitlement_group_id: EntitlementGroupId },
@@ -40,6 +41,7 @@ impl std::fmt::Display for EntitlementEdgeKind {
 			EntitlementEdgeKind::Paint { paint_id } => write!(f, "paint:{}", paint_id),
 			EntitlementEdgeKind::EmoteSet { emote_id } => write!(f, "emote_set:{}", emote_id),
 			EntitlementEdgeKind::Product { product_id } => write!(f, "product:{}", product_id),
+			EntitlementEdgeKind::SubscriptionProduct { product_id } => write!(f, "subscription_product:{}", product_id),
 			EntitlementEdgeKind::Promotion { promotion_id } => write!(f, "promotion:{}", promotion_id),
 			EntitlementEdgeKind::Subscription { subscription_id } => write!(f, "subscription:{}", subscription_id),
 			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
@@ -299,6 +301,9 @@ impl CalculatedEntitlements {
 				emote_sets.insert(emote_id);
 			}
 			EntitlementEdgeKind::Product { product_id } => {
+				products.insert(product_id);
+			}
+			EntitlementEdgeKind::SubscriptionProduct { product_id } => {
 				products.insert(product_id);
 			}
 			EntitlementEdgeKind::Subscription { subscription_id } => {

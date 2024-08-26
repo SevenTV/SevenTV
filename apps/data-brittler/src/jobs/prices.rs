@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::duration::DurationUnit;
-use shared::database::product::Product;
+use shared::database::product::{Product, SubscriptionKind, SubscriptionProduct};
 use shared::database::MongoCollection;
 use stripe::{Recurring, RecurringInterval};
 
@@ -14,6 +13,7 @@ use crate::{error, types};
 pub struct PricesJob {
 	global: Arc<Global>,
 	products: Vec<Product>,
+	subscription_products: Vec<SubscriptionProduct>,
 }
 
 impl Job for PricesJob {
@@ -34,6 +34,7 @@ impl Job for PricesJob {
 		Ok(Self {
 			global,
 			products: vec![],
+			subscription_products: vec![],
 		})
 	}
 
@@ -64,29 +65,6 @@ impl Job for PricesJob {
 			};
 		let product = price.product.and_then(|p| p.into_object()).expect("no product found");
 
-		let recurring = match price.recurring {
-			Some(Recurring {
-				interval: RecurringInterval::Day,
-				interval_count,
-				..
-			}) => Some(DurationUnit::Days(interval_count as i32)),
-			Some(Recurring {
-				interval: RecurringInterval::Month,
-				interval_count,
-				..
-			}) => Some(DurationUnit::Months(interval_count as i32)),
-			Some(Recurring {
-				interval: RecurringInterval::Year,
-				interval_count,
-				..
-			}) => Some(DurationUnit::Months((interval_count * 12) as i32)),
-			Some(Recurring { interval, .. }) => {
-				outcome.errors.push(error::Error::InvalidRecurringInterval(interval));
-				return outcome;
-			}
-			None => None,
-		};
-
 		let mut currency_prices = HashMap::new();
 
 		let currency = price.currency.expect("no currency found");
@@ -101,17 +79,45 @@ impl Job for PricesJob {
 			currency_prices.insert(currency, unit_amount.max(0) as i32);
 		}
 
-		self.products.push(Product {
-			id: price_id.into(),
-			name: product.name.unwrap_or_default(),
-			description: None,
-			recurring,
-			default_currency: currency,
-			currency_prices,
-			created_at: chrono::Utc::now(),
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-		});
+		if let Some(recurring) = price.recurring {
+			let kind = match recurring {
+				Recurring {
+					interval: RecurringInterval::Month,
+					..
+				} => SubscriptionKind::Monthly,
+				Recurring {
+					interval: RecurringInterval::Year,
+					..
+				} => SubscriptionKind::Yearly,
+				_ => {
+					return outcome.with_error(error::Error::InvalidRecurringInterval(recurring.interval));
+				}
+			};
+
+			self.subscription_products.push(SubscriptionProduct {
+				id: price_id.into(),
+				name: product.name.unwrap_or_default(),
+				description: None,
+				kind,
+				benefits: vec![],
+				default_currency: currency,
+				currency_prices,
+				created_at: chrono::Utc::now(),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			});
+		} else {
+			self.products.push(Product {
+				id: price_id.into(),
+				name: product.name.unwrap_or_default(),
+				description: None,
+				default_currency: currency,
+				currency_prices,
+				created_at: chrono::Utc::now(),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			});
+		}
 
 		outcome
 	}
@@ -123,6 +129,20 @@ impl Job for PricesJob {
 
 		match Product::collection(self.global.target_db())
 			.insert_many(&self.products)
+			.with_options(mongodb::options::InsertManyOptions::builder().ordered(false).build())
+			.await
+		{
+			Ok(res) => {
+				outcome.inserted_rows += res.inserted_ids.len() as u64;
+				if res.inserted_ids.len() != self.products.len() {
+					outcome.errors.push(error::Error::InsertMany);
+				}
+			}
+			Err(e) => outcome.errors.push(e.into()),
+		}
+
+		match SubscriptionProduct::collection(self.global.target_db())
+			.insert_many(&self.subscription_products)
 			.with_options(mongodb::options::InsertManyOptions::builder().ordered(false).build())
 			.await
 		{

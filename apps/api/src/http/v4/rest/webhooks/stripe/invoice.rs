@@ -81,6 +81,8 @@ pub async fn created(
 
 		tx.insert_one(invoice, None).await?;
 
+		// TODO: finalize invoice
+
 		Ok(())
 	} else {
 		// TODO: do something here?
