@@ -5,9 +5,10 @@ use axum::{
 	http::{HeaderMap, StatusCode},
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
+use mongodb::options::UpdateOptions;
 use rsa::{pkcs1::DecodeRsaPublicKey, traits::SignatureScheme, Pkcs1v15Sign};
 use sha2::Digest;
-use shared::database::webhook_event::WebhookEvent;
+use shared::database::{queries::{update, filter}, webhook_event::WebhookEvent};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::{
@@ -123,14 +124,28 @@ pub async fn handle(
 		let global = Arc::clone(&global);
 
 		async move {
-			tx.insert_one(
-				WebhookEvent {
-					id: event.id,
-					created_at: event.create_time,
+			let res = tx.update_one(
+				filter::filter! {
+					WebhookEvent {
+						#[query(rename = "_id")]
+						id: event.id.clone(),
+					}
 				},
-				None,
+				update::update! {
+					#[query(set_on_insert)]
+					WebhookEvent {
+						id: event.id,
+						created_at: event.create_time,
+					},
+				},
+				UpdateOptions::builder().upsert(true).build(),
 			)
 			.await?;
+
+			if res.matched_count > 0 {
+				// already processed
+				return Ok(());
+			}
 
 			match (event.event_type, event.ressource) {
 				(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => {

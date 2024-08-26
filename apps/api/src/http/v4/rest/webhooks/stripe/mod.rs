@@ -4,7 +4,11 @@ use axum::{
 	extract::State,
 	http::{HeaderMap, StatusCode},
 };
-use shared::database::webhook_event::WebhookEvent;
+use mongodb::options::UpdateOptions;
+use shared::database::{
+	queries::{filter, update},
+	webhook_event::WebhookEvent,
+};
 
 use crate::{
 	global::Global,
@@ -34,25 +38,44 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 		let global = Arc::clone(&global);
 
 		async move {
-			tx.insert_one(
-				WebhookEvent {
-					id: event.id.to_string(),
-					created_at: chrono::DateTime::from_timestamp(event.created, 0)
-						.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
-				},
-				None,
-			)
-			.await?;
+			let res = tx
+				.update_one(
+					filter::filter! {
+						WebhookEvent {
+							#[query(rename = "_id")]
+							id: event.id.to_string(),
+						}
+					},
+					update::update! {
+						#[query(set_on_insert)]
+						WebhookEvent {
+							id: event.id.to_string(),
+							created_at: chrono::DateTime::from_timestamp(event.created, 0)
+								.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
+						},
+					},
+					UpdateOptions::builder().upsert(true).build(),
+				)
+				.await?;
+
+			if res.matched_count > 0 {
+				// already processed
+				return Ok(());
+			}
 
 			match (event.type_, event.data.object) {
-				(stripe::EventType::InvoiceCreated, stripe::EventObject::Invoice(iv)) => invoice::created(&global, tx, iv).await,
+				(stripe::EventType::InvoiceCreated, stripe::EventObject::Invoice(iv)) => {
+					invoice::created(&global, tx, iv).await
+				}
 				(stripe::EventType::InvoiceUpdated, stripe::EventObject::Invoice(iv))
 				| (stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv))
 				| (stripe::EventType::InvoiceVoided, stripe::EventObject::Invoice(iv))
 				| (stripe::EventType::InvoiceMarkedUncollectible, stripe::EventObject::Invoice(iv)) => {
 					invoice::updated(&global, tx, iv).await
 				}
-				(stripe::EventType::InvoiceDeleted, stripe::EventObject::Invoice(iv)) => invoice::deleted(&global, tx, iv).await,
+				(stripe::EventType::InvoiceDeleted, stripe::EventObject::Invoice(iv)) => {
+					invoice::deleted(&global, tx, iv).await
+				}
 				(stripe::EventType::InvoicePaymentFailed, stripe::EventObject::Invoice(iv)) => {
 					invoice::payment_failed(&global, tx, iv).await
 				}
@@ -65,7 +88,9 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				(stripe::EventType::CustomerSubscriptionUpdated, stripe::EventObject::Subscription(sub)) => {
 					subscription::updated(&global, tx, sub).await
 				}
-				(stripe::EventType::ChargeRefunded, stripe::EventObject::Charge(ch)) => charge::refunded(&global, tx, ch).await,
+				(stripe::EventType::ChargeRefunded, stripe::EventObject::Charge(ch)) => {
+					charge::refunded(&global, tx, ch).await
+				}
 				(stripe::EventType::ChargeDisputeCreated, stripe::EventObject::Charge(ch)) => {
 					charge::dispute_created(&global, tx, ch).await
 				}
