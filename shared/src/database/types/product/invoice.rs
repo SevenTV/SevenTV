@@ -1,11 +1,11 @@
-use super::codes::DiscountCodeId;
-use super::{CustomerId, InvoiceId, InvoiceLineItemId, ProductId};
+use super::{CustomerId, InvoiceId, ProductId};
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::MongoCollection;
 use crate::typesense::types::impl_typesense_type;
 
-// An invoice that is generated for a purchase
+/// Only for showing to the user.
+/// Technically not necessary.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "invoices")]
 #[mongo(index(fields(user_id = 1)))]
@@ -20,7 +20,7 @@ pub struct Invoice {
 	#[serde(rename = "_id")]
 	pub id: InvoiceId,
 	/// These items will be the stripe line items for the invoice
-	pub items: Vec<InvoiceItem>,
+	pub items: Vec<ProductId>,
 	/// customer id from stripe
 	pub customer_id: CustomerId,
 	/// User who the invoice is for
@@ -29,8 +29,6 @@ pub struct Invoice {
 	pub paypal_payment_ids: Vec<String>,
 	/// Status of the invoice
 	pub status: InvoiceStatus,
-	/// A note about the invoice
-	pub note: Option<String>,
 	#[serde(with = "crate::database::serde")]
 	/// Created at
 	pub created_at: chrono::DateTime<chrono::Utc>,
@@ -76,17 +74,6 @@ impl From<stripe::InvoiceStatus> for InvoiceStatus {
 			stripe::InvoiceStatus::Void => InvoiceStatus::Void,
 		}
 	}
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct InvoiceItem {
-	/// This will be a line item id from stripe
-	pub id: InvoiceLineItemId,
-	/// This is a stripe id for the product
-	pub product_id: ProductId,
-	/// The discount codes that were applied to this item
-	pub discount_codes: Vec<DiscountCodeId>,
 }
 
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {

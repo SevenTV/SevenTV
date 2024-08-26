@@ -46,6 +46,9 @@ enum SubscriptionKind {
 
 ## Invoice
 
+Invoices are just for showing them to the user.
+They are not technically necessary.
+
 ```rs
 struct Invoice {
     id: stripe::InvoiceId,
@@ -98,3 +101,58 @@ enum PeriodCreatedBy {
     },
 }
 ```
+
+## Webhooks
+
+### `invoice.created`
+
+Create the invoice object and finalize it.
+
+### `invoice.updated`, `invoice.finalized`, `invoice.payment_succeeded`
+
+Update the invoice object.
+
+### `invoice.paid`
+
+Update the invoice object.
+If invoice is for a subscription, add a new subscription period to that subscription.
+Check if the subscription is still trial.
+
+### `invoice.deleted`
+
+Only sent for draft invoices.
+Delete the invoice object.
+
+### `invoice.payment_failed`
+
+Show the user an error message.
+Collect new payment information and update the subscriptions default payment method.
+
+### `customer.subscription.deleted`
+
+Set the subscription period end to `ended_at`.
+
+### `customer.subscription.updated`
+
+Only do something when there is an active subscription period for this subscription.
+End the current subscription period right away when the subscription product got removed from the subscription.
+Start a new subscription period when another subscription product got added to the subscription.
+
+### `charge.refunded`
+
+Mark associated invoice as refunded.
+Create a ticket to let staff know that the refund was made and decide what should happen next.
+
+### `charge.dispute.created`
+
+Mark the associated invoice as disputed.
+Create a ticket to track the dispute.
+
+### `charge.dispute.updated`
+
+Update the ticket with new information about the dispute.
+
+### `charge.dispute.closed`
+
+Update the associated invoice with the outcome of the dispute.
+Update and close the associated ticket.
