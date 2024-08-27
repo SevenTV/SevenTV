@@ -63,42 +63,51 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				return Ok(());
 			}
 
+			let prev_attributes = event.data.previous_attributes;
+
 			match (event.type_, event.data.object) {
 				(stripe::EventType::InvoiceCreated, stripe::EventObject::Invoice(iv)) => {
 					invoice::created(&global, tx, iv).await
 				}
 				(stripe::EventType::InvoiceUpdated, stripe::EventObject::Invoice(iv))
-				| (stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv))
-				| (stripe::EventType::InvoiceVoided, stripe::EventObject::Invoice(iv))
-				| (stripe::EventType::InvoiceMarkedUncollectible, stripe::EventObject::Invoice(iv)) => {
-					invoice::updated(&global, tx, iv).await
+				| (stripe::EventType::InvoiceFinalized, stripe::EventObject::Invoice(iv))
+				| (stripe::EventType::InvoicePaymentSucceeded, stripe::EventObject::Invoice(iv)) => {
+					invoice::updated(
+						&global,
+						tx,
+						iv,
+						prev_attributes.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
+					)
+					.await
 				}
+				(stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv)) => invoice::paid(&global, tx, iv).await,
 				(stripe::EventType::InvoiceDeleted, stripe::EventObject::Invoice(iv)) => {
 					invoice::deleted(&global, tx, iv).await
 				}
 				(stripe::EventType::InvoicePaymentFailed, stripe::EventObject::Invoice(iv)) => {
 					invoice::payment_failed(&global, tx, iv).await
 				}
-				(stripe::EventType::CustomerSubscriptionCreated, stripe::EventObject::Subscription(sub)) => {
-					subscription::created(&global, tx, sub).await
+				(stripe::EventType::CustomerSubscriptionUpdated, stripe::EventObject::Subscription(sub)) => {
+					subscription::updated(
+						&global,
+						tx,
+						chrono::DateTime::from_timestamp(event.created, 0)
+							.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
+						sub,
+						prev_attributes.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
+					)
+					.await
 				}
 				(stripe::EventType::CustomerSubscriptionDeleted, stripe::EventObject::Subscription(sub)) => {
 					subscription::deleted(&global, tx, sub).await
 				}
-				(stripe::EventType::CustomerSubscriptionUpdated, stripe::EventObject::Subscription(sub)) => {
-					subscription::updated(&global, tx, sub).await
-				}
 				(stripe::EventType::ChargeRefunded, stripe::EventObject::Charge(ch)) => {
 					charge::refunded(&global, tx, ch).await
 				}
-				(stripe::EventType::ChargeDisputeCreated, stripe::EventObject::Charge(ch)) => {
-					charge::dispute_created(&global, tx, ch).await
-				}
-				(stripe::EventType::ChargeDisputeUpdated, stripe::EventObject::Charge(ch)) => {
-					charge::dispute_updated(&global, tx, ch).await
-				}
-				(stripe::EventType::ChargeDisputeClosed, stripe::EventObject::Charge(ch)) => {
-					charge::dispute_closed(&global, tx, ch).await
+				(stripe::EventType::ChargeDisputeCreated, stripe::EventObject::Dispute(dis))
+				| (stripe::EventType::ChargeDisputeClosed, stripe::EventObject::Dispute(dis))
+				| (stripe::EventType::ChargeDisputeUpdated, stripe::EventObject::Dispute(dis)) => {
+					charge::dispute_updated(&global, tx, dis).await
 				}
 				_ => Err(TransactionError::custom(ApiError::BAD_REQUEST)),
 			}

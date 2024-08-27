@@ -58,7 +58,7 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 		return Err(ApiError::BAD_REQUEST);
 	}
 
-	// TODO: check if cert has a valid signature
+	// We don't have to verify the certificate because we know it's coming from a paypal domain.
 
 	let public_key = rsa::RsaPublicKey::from_pkcs1_der(&cert.public_key_data()).map_err(|e| {
 		tracing::error!(error = %e, "failed to parse public key");

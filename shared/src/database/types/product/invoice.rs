@@ -29,6 +29,10 @@ pub struct Invoice {
 	pub paypal_payment_ids: Vec<String>,
 	/// Status of the invoice
 	pub status: InvoiceStatus,
+	/// If the invoice was refunded
+	pub refunded: bool,
+	/// If the invoice was disputed
+	pub disputed: Option<InvoiceDisputeStatus>,
 	#[serde(with = "crate::database::serde")]
 	/// Created at
 	pub created_at: chrono::DateTime<chrono::Utc>,
@@ -72,6 +76,46 @@ impl From<stripe::InvoiceStatus> for InvoiceStatus {
 			stripe::InvoiceStatus::Paid => InvoiceStatus::Paid,
 			stripe::InvoiceStatus::Uncollectible => InvoiceStatus::Uncollectible,
 			stripe::InvoiceStatus::Void => InvoiceStatus::Void,
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(i32)]
+pub enum InvoiceDisputeStatus {
+	Lost = 0,
+    NeedsResponse = 1,
+    UnderReview = 2,
+    WarningClosed = 3,
+    WarningNeedsResponse = 4,
+    WarningUnderReview = 5,
+    Won = 6,
+}
+
+impl From<InvoiceDisputeStatus> for stripe::DisputeStatus {
+	fn from(value: InvoiceDisputeStatus) -> Self {
+		match value {
+			InvoiceDisputeStatus::Lost => stripe::DisputeStatus::Lost,
+			InvoiceDisputeStatus::NeedsResponse => stripe::DisputeStatus::NeedsResponse,
+			InvoiceDisputeStatus::UnderReview => stripe::DisputeStatus::UnderReview,
+			InvoiceDisputeStatus::WarningClosed => stripe::DisputeStatus::WarningClosed,
+			InvoiceDisputeStatus::WarningNeedsResponse => stripe::DisputeStatus::WarningNeedsResponse,
+			InvoiceDisputeStatus::WarningUnderReview => stripe::DisputeStatus::WarningUnderReview,
+			InvoiceDisputeStatus::Won => stripe::DisputeStatus::Won,
+		}
+	}
+}
+
+impl From<stripe::DisputeStatus> for InvoiceDisputeStatus {
+	fn from(value: stripe::DisputeStatus) -> Self {
+		match value {
+			stripe::DisputeStatus::Lost => InvoiceDisputeStatus::Lost,
+			stripe::DisputeStatus::NeedsResponse => InvoiceDisputeStatus::NeedsResponse,
+			stripe::DisputeStatus::UnderReview => InvoiceDisputeStatus::UnderReview,
+			stripe::DisputeStatus::WarningClosed => InvoiceDisputeStatus::WarningClosed,
+			stripe::DisputeStatus::WarningNeedsResponse => InvoiceDisputeStatus::WarningNeedsResponse,
+			stripe::DisputeStatus::WarningUnderReview => InvoiceDisputeStatus::WarningUnderReview,
+			stripe::DisputeStatus::Won => InvoiceDisputeStatus::Won,
 		}
 	}
 }

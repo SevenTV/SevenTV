@@ -13,7 +13,7 @@ use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, Entitleme
 use shared::database::global::GlobalConfig;
 use shared::database::loader::LoaderById;
 use shared::database::paint::Paint;
-use shared::database::product::Product;
+use shared::database::product::{Product, SubscriptionProduct};
 use shared::database::role::Role;
 use shared::database::stored_event::StoredEvent;
 use shared::database::ticket::Ticket;
@@ -59,6 +59,7 @@ pub struct Global {
 	pub ticket_message_by_ticket_id_loader: DataLoader<TicketMessageByTicketIdLoader>,
 	pub entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
 	pub entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
+	pub subscription_product_by_id_loader: DataLoader<LoaderById<SubscriptionProduct>>,
 	pub user_by_id_loader: DataLoader<LoaderById<User>>,
 	pub user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
 	pub user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
@@ -118,6 +119,7 @@ impl Global {
 			ticket_message_by_ticket_id_loader: TicketMessageByTicketIdLoader::new(db.clone()),
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
 			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
+			subscription_product_by_id_loader: LoaderById::new(db.clone()),
 			user_by_id_loader: LoaderById::new(db.clone()),
 			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),
 			user_ban_by_id_loader: LoaderById::new(db.clone()),

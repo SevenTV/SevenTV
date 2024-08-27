@@ -116,7 +116,7 @@ Update the invoice object.
 
 Update the invoice object.
 If invoice is for a subscription, add a new subscription period to that subscription.
-Check if the subscription is still trial.
+If the subscription is still trial, make the period a trial period.
 
 ### `invoice.deleted`
 
@@ -134,25 +134,17 @@ Set the subscription period end to `ended_at`.
 
 ### `customer.subscription.updated`
 
-Only do something when there is an active subscription period for this subscription.
-End the current subscription period right away when the subscription product got removed from the subscription.
-Start a new subscription period when another subscription product got added to the subscription.
+End the current subscription period right away when the subscription products got removed from the subscription.
+Otherwise, update the current subscription period to include all updated subscription products.
 
 ### `charge.refunded`
 
 Mark associated invoice as refunded.
-Create a ticket to let staff know that the refund was made and decide what should happen next.
 
 ### `charge.dispute.created`
 
 Mark the associated invoice as disputed.
-Create a ticket to track the dispute.
-
-### `charge.dispute.updated`
-
-Update the ticket with new information about the dispute.
 
 ### `charge.dispute.closed`
 
 Update the associated invoice with the outcome of the dispute.
-Update and close the associated ticket.

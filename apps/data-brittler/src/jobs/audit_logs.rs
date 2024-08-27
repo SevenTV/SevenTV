@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use shared::database::emote::EmoteId;
 use shared::database::entitlement::{EntitlementEdgeId, EntitlementEdgeKind};
-use shared::database::user::ban::UserBanId;
 use shared::database::user::editor::UserEditorId;
 use shared::database::user::UserId;
 use shared::database::{self, stored_event, MongoCollection};

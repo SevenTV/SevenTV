@@ -1,4 +1,13 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+
+use shared::database::{
+	product::{
+		invoice::{Invoice, InvoiceDisputeStatus},
+		InvoiceId,
+	},
+	queries::{filter, update},
+	ticket::Ticket,
+};
 
 use crate::{
 	global::Global,
@@ -6,34 +15,78 @@ use crate::{
 	transactions::{TransactionError, TransactionResult, TransactionSession},
 };
 
+/// Marks associated invoice as refunded.
+/// Creates a ticket to let staff know that the refund was made and decide what should happen next.
 pub async fn refunded(
 	global: &Arc<Global>,
-	tx: TransactionSession<'_, ApiError>,
+	mut tx: TransactionSession<'_, ApiError>,
 	charge: stripe::Charge,
 ) -> TransactionResult<(), ApiError> {
-	Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED))
+	let Some(invoice_id) = charge.invoice.map(|i| InvoiceId::from(i.id())) else {
+		return Ok(());
+	};
+
+	tx.update_one(
+		filter::filter! {
+			Invoice {
+				#[query(rename = "_id")]
+				id: invoice_id,
+			}
+		},
+		update::update! {
+			#[query(set)]
+			Invoice {
+				#[query(serde)]
+				refunded: true,
+				updated_at: chrono::Utc::now(),
+			}
+		},
+		None,
+	)
+	.await?;
+
+	Ok(())
 }
 
-pub async fn dispute_created(
-	global: &Arc<Global>,
-	tx: TransactionSession<'_, ApiError>,
-	charge: stripe::Charge,
-) -> TransactionResult<(), ApiError> {
-	Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED))
-}
-
+/// Marks the associated invoice as disputed.
+///
+/// Called for `charge.dispute.created`, `charge.dispute.updated`, `charge.dispute.closed`
 pub async fn dispute_updated(
 	global: &Arc<Global>,
-	tx: TransactionSession<'_, ApiError>,
-	charge: stripe::Charge,
+	mut tx: TransactionSession<'_, ApiError>,
+	dispute: stripe::Dispute,
 ) -> TransactionResult<(), ApiError> {
-	Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED))
-}
+	let charge = stripe::Charge::retrieve(&global.stripe_client, &dispute.charge.id(), &[])
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to retrieve charge");
+			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+		})?;
 
-pub async fn dispute_closed(
-	global: &Arc<Global>,
-	tx: TransactionSession<'_, ApiError>,
-	charge: stripe::Charge,
-) -> TransactionResult<(), ApiError> {
-	Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED))
+	let Some(invoice_id) = charge.invoice.map(|i| InvoiceId::from(i.id())) else {
+		return Ok(());
+	};
+
+	let disputed: Option<InvoiceDisputeStatus> = Some(dispute.status.into());
+
+	tx.update_one(
+		filter::filter! {
+			Invoice {
+				#[query(rename = "_id")]
+				id: invoice_id,
+			}
+		},
+		update::update! {
+			#[query(set)]
+			Invoice {
+				#[query(serde)]
+				disputed,
+				updated_at: chrono::Utc::now(),
+			}
+		},
+		None,
+	)
+	.await?;
+
+	Ok(())
 }

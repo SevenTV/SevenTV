@@ -1,6 +1,5 @@
 use super::emote::EmoteId;
 use super::emote_set::EmoteSetId;
-use super::product::InvoiceId;
 use super::user::UserId;
 use super::MongoGenericCollection;
 use crate::database::{Id, MongoCollection};
@@ -38,7 +37,6 @@ pub enum TicketTarget {
 	User(UserId),
 	Emote(EmoteId),
 	EmoteSet(EmoteSetId),
-	Invoice(InvoiceId),
 }
 
 impl std::fmt::Display for TicketTarget {
@@ -47,7 +45,6 @@ impl std::fmt::Display for TicketTarget {
 			TicketTarget::Emote(id) => write!(f, "emote:{}", id),
 			TicketTarget::EmoteSet(id) => write!(f, "emote_set:{}", id),
 			TicketTarget::User(id) => write!(f, "user:{}", id),
-			TicketTarget::Invoice(id) => write!(f, "invoice:{}", id),
 		}
 	}
 }
@@ -60,7 +57,6 @@ impl std::str::FromStr for TicketTarget {
 			["emote", id] => Ok(TicketTarget::Emote(id.parse().map_err(|_| "invalid emote id")?)),
 			["emote_set", id] => Ok(TicketTarget::EmoteSet(id.parse().map_err(|_| "invalid emote set id")?)),
 			["user", id] => Ok(TicketTarget::User(id.parse().map_err(|_| "invalid user id")?)),
-			["invoice", id] => Ok(TicketTarget::Invoice(id.parse().map_err(|_| "invalid invoice id")?)),
 			_ => Err("invalid target"),
 		}
 	}
