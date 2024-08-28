@@ -23,6 +23,7 @@ use crate::jobs::messages::MessagesJob;
 use crate::jobs::prices::PricesJob;
 use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
+use crate::jobs::subscriptions::SubscriptionsJob;
 use crate::jobs::system::SystemJob;
 use crate::jobs::users::UsersJob;
 use crate::{error, report};
@@ -38,6 +39,7 @@ pub mod messages;
 pub mod prices;
 pub mod reports;
 pub mod roles;
+pub mod subscriptions;
 pub mod system;
 pub mod users;
 

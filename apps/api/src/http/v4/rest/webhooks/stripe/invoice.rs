@@ -4,8 +4,8 @@ use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::{
 	product::{
 		invoice::{Invoice, InvoiceStatus},
-		subscription::{SubscriptionPeriod, SubscriptionPeriodCreatedBy},
-		InvoiceId, ProductId, SubscriptionProduct,
+		subscription::{SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId},
+		InvoiceId, ProductId,
 	},
 	queries::{filter, update},
 	user::UserId,
@@ -80,8 +80,9 @@ pub async fn created(
 			items,
 			customer_id,
 			user_id,
-			paypal_payment_ids: vec![],
+			paypal_payment_id: None,
 			status,
+			failed: false,
 			refunded: false,
 			disputed: None,
 			created_at,
@@ -141,6 +142,7 @@ pub async fn updated(
 					status: status,
 					#[query(serde)]
 					items: items,
+					failed: false,
 					updated_at: chrono::Utc::now(),
 				}
 			},
@@ -161,15 +163,15 @@ pub async fn updated(
 /// Called for `invoice.paid`
 pub async fn paid(
 	global: &Arc<Global>,
-	tx: TransactionSession<'_, ApiError>,
+	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
-	if let Some(subscription) = invoice.subscription {
+	if let Some(subscription) = &invoice.subscription {
 		let items = invoice_items(invoice.lines.as_ref()).map_err(TransactionError::custom)?;
 
 		let products = global
 			.subscription_product_by_id_loader
-			.load_many(item.iter().cloned())
+			.load_many(items.iter().cloned())
 			.await
 			.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
@@ -205,7 +207,7 @@ pub async fn paid(
 					end,
 					is_trial: subscription.trial_end.is_some(),
 					created_by: SubscriptionPeriodCreatedBy::Invoice {
-						invoice_id: invoice.id.into(),
+						invoice_id: invoice.id.clone().into(),
 					},
 					product_ids: items,
 					updated_at: chrono::Utc::now(),
@@ -245,15 +247,36 @@ pub async fn deleted(
 	Ok(())
 }
 
+/// Marks the associated invoice as failed.
 /// Shows the user an error message.
 /// Should prompt the user to collect new payment information and update the subscription's default payment method afterwards.
 pub async fn payment_failed(
 	_global: &Arc<Global>,
-	_tx: TransactionSession<'_, ApiError>,
-	_invoice: stripe::Invoice,
+	mut tx: TransactionSession<'_, ApiError>,
+	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
 	// TODO: Show the user an error message.
 	// TODO: Collect new payment information and update the subscriptions default payment method.
+
+	let id: InvoiceId = invoice.id.into();
+
+	tx.update_one(
+		filter::filter! {
+			Invoice {
+				#[query(rename = "_id")]
+				id,
+			}
+		},
+		update::update! {
+			#[query(set)]
+			Invoice {
+				failed: true,
+				updated_at: chrono::Utc::now(),
+			}
+		},
+		None,
+	)
+	.await?;
 
 	Ok(())
 }

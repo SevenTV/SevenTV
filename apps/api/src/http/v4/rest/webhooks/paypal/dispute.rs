@@ -1,21 +1,50 @@
 use std::sync::Arc;
 
-use crate::{global::Global, http::error::ApiError, transactions::{TransactionError, TransactionResult, TransactionSession}};
+use shared::database::{
+	product::invoice::{Invoice, InvoiceDisputeStatus},
+	queries::{filter, update},
+};
+
+use crate::{
+	global::Global,
+	http::error::ApiError,
+	transactions::{TransactionResult, TransactionSession},
+};
 
 use super::types;
 
-pub async fn created(
-	global: &Arc<Global>,
-	tx: TransactionSession<'_, ApiError>,
+/// Called for `CUSTOMER.DISPUTE.CREATED`, `CUSTOMER.DISPUTE.UPDATED`, `CUSTOMER.DISPUTE.RESOLVED`
+pub async fn updated(
+	_global: &Arc<Global>,
+	mut tx: TransactionSession<'_, ApiError>,
 	dispute: types::Dispute,
 ) -> TransactionResult<(), ApiError> {
-	Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED))
-}
+	let payment_ids: Vec<_> = dispute
+		.disputed_transactions
+		.into_iter()
+		.map(|t| t.seller_transaction_id)
+		.collect();
 
-pub async fn updated(global: &Arc<Global>, tx: TransactionSession<'_, ApiError>, dispute: types::Dispute) -> TransactionResult<(), ApiError> {
-	Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED))
-}
+	let disputed: InvoiceDisputeStatus = dispute.status.into();
 
-pub async fn resolved(global: &Arc<Global>, tx: TransactionSession<'_, ApiError>, dispute: types::Dispute) -> TransactionResult<(), ApiError> {
-	Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED))
+	tx.update_one(
+		filter::filter! {
+			Invoice {
+				#[query(selector = "in")]
+				paypal_payment_id: payment_ids,
+			}
+		},
+		update::update! {
+			#[query(set)]
+			Invoice {
+				#[query(serde)]
+				disputed: Some(disputed),
+				updated_at: chrono::Utc::now(),
+			}
+		},
+		None,
+	)
+	.await?;
+
+	Ok(())
 }

@@ -1,3 +1,5 @@
+use shared::database::product::invoice::InvoiceDisputeStatus;
+
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Event {
 	pub id: String,
@@ -45,6 +47,8 @@ pub struct Sale {
 	pub id: String,
     pub state: SaleState,
     pub amount: Amount,
+    /// Only present if the sale is for a subscription
+    pub billing_agreement_id: Option<String>,
 	pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
@@ -71,11 +75,15 @@ pub struct Amount {
 pub struct Dispute {
     pub dispute_id: String,
     pub status: DisputeStatus,
-    pub dispute_life_cycle_stage: DisputeLifeCycleStage,
-    pub dispute_channel: DisputeChannel,
-    pub reason: DisputeReason,
+    pub disputed_transactions: Vec<DisputedTransaction>,
     pub dispute_amount: Amount,
     pub create_time: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct DisputedTransaction {
+    /// hopefully corresponds to a sale id Clueless
+    pub seller_transaction_id: String,
 }
 
 #[derive(Debug, Copy, Clone, serde::Deserialize)]
@@ -89,36 +97,17 @@ pub enum DisputeStatus {
     Other,
 }
 
-#[derive(Debug, Copy, Clone, serde::Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum DisputeLifeCycleStage {
-    Inquiry,
-    Chargeback,
-    PreArbitration,
-    Arbitration,
-}
-
-#[derive(Debug, Copy, Clone, serde::Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum DisputeChannel {
-    Internal,
-    External,
-    Alert,
-}
-
-#[derive(Debug, Copy, Clone, serde::Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum DisputeReason {
-    MerchandiseOrServiceNotReceived,
-    MerchandiseOrServiceNotAsDescribed,
-    Unauthorised,
-    CreditNotProcessed,
-    DuplicateTransaction,
-    IncorrectAmount,
-    PaymentByOtherMeans,
-    CanceledRecurringBilling,
-    ProblemWithRemittance,
-    Other,
+impl From<DisputeStatus> for InvoiceDisputeStatus {
+    fn from(value: DisputeStatus) -> Self {
+        match value {
+            DisputeStatus::Open => InvoiceDisputeStatus::UnderReview,
+            DisputeStatus::WaitingForBuyerResponse => InvoiceDisputeStatus::NeedsResponse,
+            DisputeStatus::WaitingForSellerResponse => InvoiceDisputeStatus::NeedsResponse,
+            DisputeStatus::UnderReview => InvoiceDisputeStatus::UnderReview,
+            DisputeStatus::Resolved => InvoiceDisputeStatus::Resolved,
+            DisputeStatus::Other => InvoiceDisputeStatus::UnderReview,
+        }
+    }
 }
 
 /// https://developer.paypal.com/docs/api/subscriptions/v1/#definition-subscription
@@ -127,6 +116,8 @@ pub struct Subscription {
     pub id: String,
     pub status: SubscriptionStatus,
     pub status_update_time: chrono::DateTime<chrono::Utc>,
+    pub subscriber: Subscriber,
+    pub billing_info: SubscriptionBillingInfo,
     pub plan_id: String,
     pub create_time: chrono::DateTime<chrono::Utc>,
 }
@@ -140,4 +131,52 @@ pub enum SubscriptionStatus {
     Suspended,
     Cancelled,
     Expired,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct Subscriber {
+    pub payer_id: String,
+    pub email_address: Option<String>,
+    pub name: Option<SubscriberName>,
+    pub phone: Option<SubscriberPhone>,
+    pub shipping_address: Option<SubscriberShippingAddress>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct SubscriberName {
+    pub given_name: Option<String>,
+    pub surname: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct SubscriberPhone {
+    pub phone_number: Option<SubscriberPhoneNumber>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct SubscriberPhoneNumber {
+    pub national_number: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct SubscriberShippingAddress {
+    pub address_line_1: Option<String>,
+    pub address_line_2: Option<String>,
+    pub admin_area_1: Option<String>,
+    pub admin_area_2: Option<String>,
+    pub postal_code: Option<String>,
+    pub country_code: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct SubscriptionBillingInfo {
+    pub last_payment: Option<SubscriptionPayment>,
+    pub last_failed_payment: Option<SubscriptionPayment>,
+    pub next_billing_time: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct SubscriptionPayment {
+    pub amount: Amount,
+    pub time: chrono::DateTime<chrono::Utc>,
 }

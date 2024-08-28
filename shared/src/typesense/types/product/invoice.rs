@@ -14,7 +14,7 @@ pub struct Invoice {
 	pub items: Vec<ProductId>,
 	pub customer_id: CustomerId,
 	pub user_id: UserId,
-	pub paypal_payment_ids: Vec<String>,
+	pub paypal_payment_id: Option<String>,
 	pub status: InvoiceStatus,
 	#[typesense(default_sort)]
 	pub created_at: i64,
@@ -29,7 +29,7 @@ impl From<database::product::invoice::Invoice> for Invoice {
 			items: invoice.items,
 			customer_id: invoice.customer_id,
 			user_id: invoice.user_id,
-			paypal_payment_ids: invoice.paypal_payment_ids,
+			paypal_payment_id: invoice.paypal_payment_id,
 			status: invoice.status,
 			created_at: invoice.created_at.timestamp_millis(),
 			updated_at: invoice.updated_at.timestamp_millis(),

@@ -1,13 +1,12 @@
 use std::{
 	collections::{HashMap, HashSet},
-	str::FromStr,
 	sync::Arc,
 };
 
 use shared::database::{
 	product::{
-		subscription::{SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId},
-		ProductId, SubscriptionId, SubscriptionProduct,
+		subscription::{ProviderSubscriptionId, SubscriptionPeriod},
+		ProductId, SubscriptionProduct,
 	},
 	queries::{filter, update},
 };
@@ -28,12 +27,13 @@ pub async fn deleted(
 	let ended_at = subscription.ended_at.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 	let ended_at = chrono::DateTime::from_timestamp(ended_at, 0).ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 
-	let subscription_id: SubscriptionId = subscription.id.into();
+	let subscription_id: ProviderSubscriptionId = subscription.id.into();
 
 	tx.update_one(
 		filter::filter! {
 			SubscriptionPeriod {
-				subscription_id,
+				#[query(serde)]
+				subscription_id: subscription_id,
 				#[query(selector = "lt")]
 				start: chrono::Utc::now(),
 				#[query(selector = "gt")]
@@ -68,7 +68,7 @@ pub async fn updated(
 		return Ok(());
 	};
 
-	let subscription_id: SubscriptionId = subscription.id.into();
+	let subscription_id: ProviderSubscriptionId = subscription.id.into();
 
 	let product_ids = subscription
 		.items
@@ -89,6 +89,7 @@ pub async fn updated(
 		tx.update_one(
 			filter::filter! {
 				SubscriptionPeriod {
+					#[query(serde)]
 					subscription_id,
 					#[query(selector = "lt")]
 					start: chrono::Utc::now(),
@@ -111,6 +112,7 @@ pub async fn updated(
 		tx.update_one(
 			filter::filter! {
 				SubscriptionPeriod {
+					#[query(serde)]
 					subscription_id,
 					#[query(selector = "lt")]
 					start: chrono::Utc::now(),

@@ -8,7 +8,10 @@ use base64::{prelude::BASE64_STANDARD, Engine};
 use mongodb::options::UpdateOptions;
 use rsa::{pkcs1::DecodeRsaPublicKey, traits::SignatureScheme, Pkcs1v15Sign};
 use sha2::Digest;
-use shared::database::{queries::{update, filter}, webhook_event::WebhookEvent};
+use shared::database::{
+	queries::{filter, update},
+	webhook_event::WebhookEvent,
+};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::{
@@ -124,23 +127,24 @@ pub async fn handle(
 		let global = Arc::clone(&global);
 
 		async move {
-			let res = tx.update_one(
-				filter::filter! {
-					WebhookEvent {
-						#[query(rename = "_id")]
-						id: event.id.clone(),
-					}
-				},
-				update::update! {
-					#[query(set_on_insert)]
-					WebhookEvent {
-						id: event.id,
-						created_at: event.create_time,
+			let res = tx
+				.update_one(
+					filter::filter! {
+						WebhookEvent {
+							#[query(rename = "_id")]
+							id: event.id.clone(),
+						}
 					},
-				},
-				UpdateOptions::builder().upsert(true).build(),
-			)
-			.await?;
+					update::update! {
+						#[query(set_on_insert)]
+						WebhookEvent {
+							id: event.id,
+							created_at: event.create_time,
+						},
+					},
+					UpdateOptions::builder().upsert(true).build(),
+				)
+				.await?;
 
 			if res.matched_count > 0 {
 				// already processed
@@ -151,29 +155,16 @@ pub async fn handle(
 				(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => {
 					sale::completed(&global, tx, sale).await
 				}
-				(types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => {
-					sale::refunded(&global, tx, sale).await
-				}
-				(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale)) => {
-					sale::reversed(&global, tx, sale).await
-				}
-				(types::EventType::CustomerDisputeCreated, types::Resource::Dispute(dispute)) => {
-					dispute::created(&global, tx, dispute).await
-				}
-				(types::EventType::CustomerDisputeUpdated, types::Resource::Dispute(dispute)) => {
+				(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale))
+				| (types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(&global, tx, sale).await,
+				(types::EventType::CustomerDisputeCreated, types::Resource::Dispute(dispute))
+				| (types::EventType::CustomerDisputeUpdated, types::Resource::Dispute(dispute))
+				| (types::EventType::CustomerDisputeResolved, types::Resource::Dispute(dispute)) => {
 					dispute::updated(&global, tx, dispute).await
 				}
-				(types::EventType::CustomerDisputeResolved, types::Resource::Dispute(dispute)) => {
-					dispute::resolved(&global, tx, dispute).await
-				}
-				(types::EventType::BillingSubscriptionExpired, types::Resource::Subscription(subscription)) => {
-					subscription::expired(&global, tx, subscription).await
-				}
-				(types::EventType::BillingSubscriptionCancelled, types::Resource::Subscription(subscription)) => {
+				(types::EventType::BillingSubscriptionCancelled, types::Resource::Subscription(subscription))
+				| (types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
 					subscription::cancelled(&global, tx, subscription).await
-				}
-				(types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
-					subscription::suspended(&global, tx, subscription).await
 				}
 				(types::EventType::BillingSubscriptionPaymentFailed, types::Resource::Subscription(subscription)) => {
 					subscription::payment_failed(&global, tx, subscription).await

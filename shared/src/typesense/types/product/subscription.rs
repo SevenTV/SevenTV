@@ -1,8 +1,8 @@
 use chrono::Utc;
 
 use crate::database::product::codes::{GiftCodeId, RedeemCodeId};
-use crate::database::product::subscription::SubscriptionPeriodId;
-use crate::database::product::{InvoiceId, ProductId, SubscriptionId};
+use crate::database::product::subscription::{ProviderSubscriptionId, SubscriptionPeriodId};
+use crate::database::product::{InvoiceId, ProductId};
 use crate::database::user::UserId;
 use crate::database::{self};
 use crate::typesense::types::{impl_typesense_type, TypesenseCollection, TypesenseGenericCollection};
@@ -59,12 +59,22 @@ impl SubscriptionCreatedByKind {
 
 impl_typesense_type!(SubscriptionCreatedByKind, Int32);
 
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(i32)]
+pub enum SubscriptionProvider {
+	Stripe = 0,
+	Paypal = 1,
+}
+
+impl_typesense_type!(SubscriptionProvider, Int32);
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, TypesenseCollection)]
 #[typesense(collection_name = "subscription_periods")]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionPeriod {
 	pub id: SubscriptionPeriodId,
-	pub subscription_id: SubscriptionId,
+	pub subscription_provider: SubscriptionProvider,
+	pub subscription_id: String,
 	pub user_id: UserId,
 	pub start: i64,
 	pub end: i64,
@@ -92,7 +102,11 @@ impl From<crate::database::product::subscription::SubscriptionPeriod> for Subscr
 
 		Self {
 			id: value.id,
-			subscription_id: value.subscription_id,
+			subscription_provider: match value.subscription_id {
+				ProviderSubscriptionId::Stripe(_) => SubscriptionProvider::Stripe,
+				ProviderSubscriptionId::Paypal(_) => SubscriptionProvider::Paypal,
+			},
+			subscription_id: value.subscription_id.to_string(),
 			user_id: value.user_id,
 			start: value.start.timestamp_millis(),
 			end: value.end.timestamp_millis(),

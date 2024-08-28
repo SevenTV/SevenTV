@@ -102,6 +102,10 @@ pub struct StripeConfig {
 #[auto_settings]
 #[serde(default)]
 pub struct PayPalConfig {
+	/// Paypal api key
+	/// Needed to fetch subscriptions
+	#[settings(default = "api_key".into())]
+	pub api_key: String,
 	/// PayPal webhook id
 	#[settings(default = "webhook_id".into())]
 	pub webhook_id: String,

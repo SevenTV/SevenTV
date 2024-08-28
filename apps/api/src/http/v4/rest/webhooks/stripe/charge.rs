@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use shared::database::{
 	product::{
@@ -6,7 +6,6 @@ use shared::database::{
 		InvoiceId,
 	},
 	queries::{filter, update},
-	ticket::Ticket,
 };
 
 use crate::{

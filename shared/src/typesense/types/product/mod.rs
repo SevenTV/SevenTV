@@ -55,6 +55,7 @@ impl Product {
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionProduct {
 	pub id: ProductId,
+	pub paypal_id: Option<String>,
 	pub name: String,
 	pub description: Option<String>,
 	pub default_currency: stripe::Currency,
@@ -78,6 +79,7 @@ impl SubscriptionProduct {
 	) -> Self {
 		Self {
 			id: value.id,
+			paypal_id: value.paypal_id,
 			name: value.name,
 			description: value.description,
 			benefits: value.benefits.into_iter().map(|b| b.entitlement.into()).collect(),

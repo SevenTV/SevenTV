@@ -102,7 +102,7 @@ enum PeriodCreatedBy {
 }
 ```
 
-## Webhooks
+## Stripe Webhooks
 
 ### `invoice.created`
 
@@ -117,6 +117,7 @@ Update the invoice object.
 Update the invoice object.
 If invoice is for a subscription, add a new subscription period to that subscription.
 If the subscription is still trial, make the period a trial period.
+We should probably add a grace period of a few days here.
 
 ### `invoice.deleted`
 
@@ -125,12 +126,13 @@ Delete the invoice object.
 
 ### `invoice.payment_failed`
 
+Mark the associated invoice as failed.
 Show the user an error message.
 Collect new payment information and update the subscriptions default payment method.
 
 ### `customer.subscription.deleted`
 
-Set the subscription period end to `ended_at`.
+Set the subscription period end to `ended_at`. (which means ending the current period right away)
 
 ### `customer.subscription.updated`
 
@@ -145,6 +147,53 @@ Mark associated invoice as refunded.
 
 Mark the associated invoice as disputed.
 
+### `charge.dispute.updated`
+
+Update the associated invoice.
+
 ### `charge.dispute.closed`
 
 Update the associated invoice with the outcome of the dispute.
+
+## PayPal Webhooks
+
+https://developer.paypal.com/api/rest/webhooks/event-names/#link-subscriptions
+
+### `PAYMENT.SALE.COMPLETED`
+
+https://stackoverflow.com/a/61530219/10772729
+When a payment is made on a subscription.
+
+Create a new Stripe customer for the paypal customer.
+Create the invoice in Stripe.
+Create the invoice object.
+Finalize the invoice.
+Void the invoice which doesn't actually charge anything.
+Fetch the subscription from Paypal.
+Add a new subscription period to the subscription which starts `billing_info.last_payment.time` and ends `billing_info.next_billing_time`.
+We should probably add a grace period of a few days here.
+
+### `BILLING.SUBSCRIPTION.CANCELLED`, `BILLING.SUBSCRIPTION.SUSPENDED`
+
+End the current period right away.
+
+### (`BILLING.SUBSCRIPTION.EXPIRED`)
+
+According to gpt, this means that the subscription was cancelled but should be ended at the end of the current period.
+Which means that we don't have to do anything when we receive this event.
+
+### (`BILLING.SUBSCRIPTION.PAYMENT.FAILED`)
+
+We only get the subscription id here.
+There is no invoice for this payment because it only gets created when the payment succeeds.
+Show the user an error message.
+Collect new payment information and update the subscriptions default payment method.
+
+### `PAYMENT.SALE.REFUNDED`, `PAYMENT.SALE.REVERSED`
+
+Mark associated invoice as refunded.
+
+### `CUSTOMER.DISPUTE.CREATED`, `CUSTOMER.DISPUTE.UPDATED`, `CUSTOMER.DISPUTE.RESOLVED`
+
+Mark the associated invoice as disputed.
+Assuming that the `seller_transaction_id` is the sale id.

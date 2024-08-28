@@ -206,6 +206,7 @@ pub struct SubscriptionProduct {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
     pub id: ProductId,
+	pub paypal_id: Option<String>,
     pub name: String,
     pub description: Option<String>,
     pub default_currency: stripe::Currency,

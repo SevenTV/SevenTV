@@ -9,8 +9,8 @@ use crate::typesense::types::impl_typesense_type;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "invoices")]
 #[mongo(index(fields(user_id = 1)))]
-#[mongo(index(fields("items.id" = 1)))]
-#[mongo(index(fields("items.product_id" = 1)))]
+#[mongo(index(fields(paypal_payment_id = 1)))]
+#[mongo(index(fields(items = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
@@ -26,9 +26,11 @@ pub struct Invoice {
 	/// User who the invoice is for
 	pub user_id: UserId,
 	/// If this invoice was paid via a legacy payment
-	pub paypal_payment_ids: Vec<String>,
+	pub paypal_payment_id: Option<String>,
 	/// Status of the invoice
 	pub status: InvoiceStatus,
+	/// If a payment failed
+	pub failed: bool,
 	/// If the invoice was refunded
 	pub refunded: bool,
 	/// If the invoice was disputed
@@ -90,20 +92,8 @@ pub enum InvoiceDisputeStatus {
     WarningNeedsResponse = 4,
     WarningUnderReview = 5,
     Won = 6,
-}
-
-impl From<InvoiceDisputeStatus> for stripe::DisputeStatus {
-	fn from(value: InvoiceDisputeStatus) -> Self {
-		match value {
-			InvoiceDisputeStatus::Lost => stripe::DisputeStatus::Lost,
-			InvoiceDisputeStatus::NeedsResponse => stripe::DisputeStatus::NeedsResponse,
-			InvoiceDisputeStatus::UnderReview => stripe::DisputeStatus::UnderReview,
-			InvoiceDisputeStatus::WarningClosed => stripe::DisputeStatus::WarningClosed,
-			InvoiceDisputeStatus::WarningNeedsResponse => stripe::DisputeStatus::WarningNeedsResponse,
-			InvoiceDisputeStatus::WarningUnderReview => stripe::DisputeStatus::WarningUnderReview,
-			InvoiceDisputeStatus::Won => stripe::DisputeStatus::Won,
-		}
-	}
+	/// only applies to paypal disputes, either won or lost, we don't know
+	Resolved = 7,
 }
 
 impl From<stripe::DisputeStatus> for InvoiceDisputeStatus {

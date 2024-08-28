@@ -31,7 +31,7 @@ pub enum Error {
 	Timestamp(#[from] time::error::ComponentRange),
 
 	#[error("invalid stripe id: {0}")]
-	InvalidStripeId(String),
+	InvalidStripeId(stripe::ParseIdError),
 	#[error("{0}")]
 	Stripe(#[from] stripe::StripeError),
 	#[error("invalid recurring interval")]
@@ -104,7 +104,6 @@ impl Error {
 				format!("emote set id: {}, emote id: {:?}", emote_set_id, emote_id)
 			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
-			Self::InvalidStripeId(id) => format!("id: {}", id),
 			Self::ImageProcessor(e) => e.message.clone(),
 			Self::InvalidCdnFile(e) => format!("{}", e),
 			Self::ImageDownload { cosmetic_id, status } => format!("cosmetic id: {}, status: {}", cosmetic_id, status),

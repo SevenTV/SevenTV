@@ -19,7 +19,7 @@ pub struct Subscription {
 	pub ended_at: Option<super::DateTime>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubscriptionProvider {
 	Paypal,
