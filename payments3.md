@@ -1,3 +1,5 @@
+**MIGHT BE OUTDATED IN SOME PLACES**
+
 # Types
 
 ## Products
@@ -102,6 +104,8 @@ enum PeriodCreatedBy {
 }
 ```
 
+# Webhooks
+
 ## Stripe Webhooks
 
 ### `invoice.created`
@@ -197,3 +201,35 @@ Mark associated invoice as refunded.
 
 Mark the associated invoice as disputed.
 Assuming that the `seller_transaction_id` is the sale id.
+
+# Egvault endpoints
+
+## `POST /subcriptions`
+
+Search for existing stripe customer.
+If not found, create new stripe customer.
+Create new stripe subscription.
+
+## `GET /subscriptions/:target`
+
+Aggregate subscription perdiods.
+
+## `DELETE /subscriptions/:target`
+
+End at period end.
+
+## `POST /subscription/:target/reactivate`
+
+Don't end at period end.
+
+## `PATCH /subscription/:target/payment-method`
+
+TODO
+
+## `GET /products`
+
+Return list of subscription products.
+
+## `POST /redeem`
+
+Insert entitlement edges.

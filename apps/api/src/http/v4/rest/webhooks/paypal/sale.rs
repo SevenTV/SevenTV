@@ -3,7 +3,10 @@ use std::sync::Arc;
 use shared::database::{
 	product::{
 		invoice::Invoice,
-		subscription::{PaypalSubscription, ProviderSubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy},
+		subscription::{
+			PaypalSubscription, ProviderSubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
+			SubscriptionPeriodId,
+		}, InvoiceId,
 	},
 	queries::{filter, update},
 };
@@ -19,7 +22,7 @@ use super::types;
 
 pub async fn completed(
 	global: &Arc<Global>,
-	tx: TransactionSession<'_, ApiError>,
+	mut tx: TransactionSession<'_, ApiError>,
 	sale: types::Sale,
 ) -> TransactionResult<(), ApiError> {
 	let Some(subscription_id) = sale.billing_agreement_id else {
@@ -32,7 +35,7 @@ pub async fn completed(
 			filter::filter! {
 				PaypalSubscription {
 					#[query(rename = "_id")]
-					id: subscription_id,
+					id: &subscription_id,
 				}
 			},
 			None,
@@ -49,9 +52,17 @@ pub async fn completed(
 		.get(format!("https://api.paypal.com/v1/billing/subscriptions/{subscription_id}"))
 		.bearer_auth(&global.config.api.paypal.api_key)
 		.send()
-		.await?
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to retrieve paypal subscription");
+			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+		})?
 		.json()
-		.await?;
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to parse paypal subscription");
+			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+		})?;
 
 	let customer_id = match pp_sub.stripe_customer_id {
 		Some(id) => id,
@@ -80,15 +91,15 @@ pub async fn completed(
 				state: a.admin_area_2,
 			});
 
-			stripe::Customer::create(
+			let customer = stripe::Customer::create(
 				&global.stripe_client,
 				stripe::CreateCustomer {
-					name,
-					email: subscription.subscriber.email_address,
-					phone,
+					name: name.as_deref(),
+					email: subscription.subscriber.email_address.as_deref(),
+					phone: phone.as_deref(),
 					address,
 					description: Some("Legacy PayPal customer. Real payments will be handled by PayPal."),
-					metadata: Some(std::iter::once(("paypal_id", subscription.subscriber.payer_id)).collect()),
+					metadata: Some(std::iter::once(("paypal_id".to_string(), subscription.subscriber.payer_id)).collect()),
 					..Default::default()
 				},
 			)
@@ -96,8 +107,9 @@ pub async fn completed(
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create stripe customer");
 				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-			})?
-			.id
+			})?;
+
+			customer.id.into()
 		}
 	};
 
@@ -105,13 +117,13 @@ pub async fn completed(
 		filter::filter! {
 			PaypalSubscription {
 				#[query(rename = "_id")]
-				id: subscription_id,
+				id: &subscription_id,
 			}
 		},
 		update::update! {
 			#[query(set)]
 			PaypalSubscription {
-				stripe_customer_id: Some(customer_id),
+				stripe_customer_id: Some(customer_id.clone()),
 				updated_at: chrono::Utc::now(),
 			}
 		},
@@ -122,14 +134,18 @@ pub async fn completed(
 	let invoice = stripe::Invoice::create(
 		&global.stripe_client,
 		CreateInvoice {
-			customer: customer_id,
+			customer: Some(customer_id.clone().into()),
 			auto_advance: Some(false),
 			description: Some("Legacy PayPal invoice. Real payments will be handled by PayPal."),
-			metadata: Some(std::iter::once(("paypal_id", sale.id)).collect()),
+			metadata: Some(std::iter::once(("paypal_id".to_string(), sale.id.clone())).collect()),
 			..Default::default()
 		},
 	)
-	.await?;
+	.await
+	.map_err(|e| {
+		tracing::error!(error = %e, "failed to create invoice");
+		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+	})?;
 
 	stripe::Invoice::finalize(
 		&global.stripe_client,
@@ -138,24 +154,37 @@ pub async fn completed(
 			auto_advance: Some(false),
 		},
 	)
-	.await?;
+	.await
+	.map_err(|e| {
+		tracing::error!(error = %e, "failed to finalize invoice");
+		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+	})?;
 
-	let invoice = stripe::Invoice::void(&global.stripe_client, &invoice.id).await?;
-	let invoice_id = invoice.id.into();
+	let invoice = stripe::Invoice::void(&global.stripe_client, &invoice.id).await.map_err(|e| {
+		tracing::error!(error = %e, "failed to void invoice");
+		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+	})?;
+
+	let invoice_id: InvoiceId = invoice.id.into();
+
+	let status = invoice.status.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?.into();
+
+	let created_at = chrono::DateTime::from_timestamp(invoice.created.unwrap_or_default(), 0)
+		.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 
 	tx.insert_one(
 		Invoice {
 			id: invoice_id.clone(),
-			items: vec![pp_sub.product_id],
+			items: vec![pp_sub.product_id.clone()],
 			customer_id: customer_id.into(),
 			user_id: pp_sub.user_id,
 			paypal_payment_id: Some(sale.id.clone()),
-			status: invoice.status.into(),
+			status,
 			failed: false,
 			refunded: false,
 			disputed: None,
-			created_at: invoice.created.unwrap_or_default(),
-			updated_at: invoice.created.unwrap_or_default(),
+			created_at,
+			updated_at: created_at,
 			search_updated_at: None,
 		},
 		None,

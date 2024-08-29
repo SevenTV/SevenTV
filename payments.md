@@ -1,3 +1,5 @@
+**OUTDATED**
+
 # Stripe Payments
 
 https://docs.stripe.com/api/checkout/sessions

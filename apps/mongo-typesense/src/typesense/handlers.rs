@@ -459,6 +459,10 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 				tracing::warn!("emote set has child entitlements");
 				vec![]
 			}
+			EntitlementEdgeKind::Subscription { subscription_id } => {
+				// TODO: subscription
+				todo!()
+			}
 		};
 
 		global

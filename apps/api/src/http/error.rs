@@ -58,10 +58,12 @@ impl From<ApiError> for async_graphql::Error {
 		extensions.set("code", value.error_code);
 		// for backward compatibility
 		extensions.set("fields", async_graphql::Value::Object(Default::default()));
-		extensions.set("message", value.error.to_string());
+		// The old website expects the error message to be in the format "title: description"
+		let message = format!("Error: {}", value.error);
+		extensions.set("message", message.clone());
 
 		Self {
-			message: value.error.to_string(),
+			message,
 			source: Some(Arc::new(value)),
 			extensions: Some(extensions),
 		}

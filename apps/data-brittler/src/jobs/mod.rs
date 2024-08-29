@@ -227,7 +227,8 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		[AuditLogsJob, should_run_audit_logs],
 		[MessagesJob, should_run_messages],
 		[SystemJob, should_run_system],
-		[PricesJob, should_run_prices]
+		[PricesJob, should_run_prices],
+		[SubscriptionsJob, should_run_subscriptions]
 	};
 
 	let results: Vec<JobOutcome> = futures::future::try_join_all(futures).await?;

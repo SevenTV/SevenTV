@@ -6,6 +6,7 @@ use shared::database::product::{Product, SubscriptionKind, SubscriptionProduct};
 use shared::database::MongoCollection;
 use stripe::{Recurring, RecurringInterval};
 
+use super::subscriptions::{PAYPAL_MONTHLY, PAYPAL_YEARLY, STRIPE_MONTHLY, STRIPE_YEARLY};
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
@@ -50,9 +51,11 @@ impl Job for PricesJob {
 			return outcome;
 		}
 
-		let Ok(price_id) = stripe::PriceId::from_str(&price.provider_id) else {
-			outcome.errors.push(error::Error::InvalidStripeId(price.provider_id));
-			return outcome;
+		let price_id = match stripe::PriceId::from_str(&price.provider_id) {
+			Ok(price_id) => price_id,
+			Err(e) => {
+				return outcome.with_error(error::Error::InvalidStripeId(e));
+			}
 		};
 
 		let price =
@@ -94,8 +97,17 @@ impl Job for PricesJob {
 				}
 			};
 
+			let paypal_id = if price_id.as_str() == STRIPE_MONTHLY {
+				Some(PAYPAL_MONTHLY.to_string())
+			} else if price_id.as_str() == STRIPE_YEARLY {
+				Some(PAYPAL_YEARLY.to_string())
+			} else {
+				None
+			};
+
 			self.subscription_products.push(SubscriptionProduct {
 				id: price_id.into(),
+				paypal_id,
 				name: product.name.unwrap_or_default(),
 				description: None,
 				kind,

@@ -1,3 +1,5 @@
+**OUTDATED**
+
 # Stripe Events are not guaranteed to be delivered in order.
 
 ## Events

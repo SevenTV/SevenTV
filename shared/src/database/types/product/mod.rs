@@ -8,7 +8,6 @@ use super::{MongoCollection, MongoGenericCollection};
 
 pub mod codes;
 pub mod invoice;
-pub mod promotion;
 pub mod subscription;
 
 /// A helper macro used to define newtypes for stripe IDs
@@ -249,6 +248,5 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 	std::iter::once(MongoGenericCollection::new::<Product>())
 		.chain(codes::mongo_collections())
 		.chain(invoice::collections())
-		.chain(promotion::collections())
 		.chain(subscription::collections())
 }
