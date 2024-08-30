@@ -1,7 +1,7 @@
-use std::convert::Infallible;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
+use bytes::{Bytes, BytesMut};
 // use key::CacheKey;
 use scuffle_foundations::http::server::axum::http::header::{self, HeaderMap};
 use scuffle_foundations::http::server::axum::http::{HeaderValue, Response, StatusCode};
@@ -23,12 +23,15 @@ pub struct Cache {
 	inflight: Arc<scc::HashMap<CacheKey, Arc<Inflight>>>,
 	s3_client: aws_sdk_s3::client::Client,
 	request_limiter: Arc<tokio::sync::Semaphore>,
+	capacity: size::Size,
 }
 
 #[metrics]
 mod cache {
 	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
 	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
+	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 	pub enum State {
@@ -46,22 +49,28 @@ mod cache {
 		InternalServerError,
 	}
 
-	pub fn cache_action(state: State) -> Counter;
+	pub fn action(state: State) -> Counter;
+
 	pub fn upstream_response(status: ResponseStatus) -> Counter;
+
 	pub fn inflight() -> Gauge;
 
-	pub struct InflightDropGuard;
+	#[builder = HistogramBuilder::default()]
+	pub fn duration() -> Histogram;
+
+	pub struct InflightDropGuard(std::time::Instant);
 
 	impl Drop for InflightDropGuard {
 		fn drop(&mut self) {
 			inflight().dec();
+			duration().observe(self.0.elapsed().as_secs_f64());
 		}
 	}
 
 	impl InflightDropGuard {
 		pub fn new() -> Self {
 			inflight().inc();
-			Self
+			Self(std::time::Instant::now())
 		}
 	}
 }
@@ -88,6 +97,12 @@ impl Cache {
 
 		let request_limiter = Arc::new(tokio::sync::Semaphore::new(config.max_concurrent_requests as usize));
 
+		let mut capacity = config.cache_capacity;
+		if capacity.bytes() <= 0 {
+			tracing::warn!("cache capacity is set to 0, this will cause the cache to never expire, this will undoubtedly result in an OOM");
+			capacity = size::Size::from_bytes(u64::MAX);
+		}
+
 		Self {
 			inner: moka::future::Cache::builder()
 				.expire_after(CacheExpiry)
@@ -95,12 +110,17 @@ impl Cache {
 					u32::try_from(v.data.len() + k.len() + std::mem::size_of_val(v) + std::mem::size_of_val(k))
 						.unwrap_or(u32::MAX)
 				})
-				.max_capacity(config.cache_capacity)
+				.max_capacity(capacity.bytes() as u64)
 				.build(),
 			inflight: Arc::new(scc::HashMap::new()),
 			s3_client,
 			request_limiter,
+			capacity,
 		}
+	}
+
+	pub fn capacity(&self) -> u64 {
+		self.capacity.bytes() as u64
 	}
 
 	pub fn entries(&self) -> u64 {
@@ -117,7 +137,7 @@ impl Cache {
 
 	pub async fn handle_request(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
 		if let Some(hit) = self.inner.get(&key).await {
-			cache::cache_action(cache::State::Hit).inc();
+			cache::action(cache::State::Hit).inc();
 
 			// return cached response
 			return hit;
@@ -136,7 +156,7 @@ impl Cache {
 
 		if !insert {
 			tracing::debug!(key = %key, "pending");
-			cache::cache_action(cache::State::Coalesced).inc();
+			cache::action(cache::State::Coalesced).inc();
 			// pending
 			entry.token.cancelled().await;
 			return entry.response.get().cloned().unwrap_or_else(CachedResponse::general_error);
@@ -186,13 +206,13 @@ impl Cache {
 
 		if let Some(cached) = self.inner.get(guard.key()).await {
 			tracing::debug!(key = %guard.key(), "rebounded hit");
-			cache::cache_action(cache::State::ReboundHit).inc();
+			cache::action(cache::State::ReboundHit).inc();
 			guard.entry().response.set(cached.clone()).expect("unreachable");
 			guard.disarm().await;
 			return cached.clone();
 		}
 
-		cache::cache_action(cache::State::Miss).inc();
+		cache::action(cache::State::Miss).inc();
 
 		let cached = tokio::spawn(async move {
 			// request file
@@ -324,10 +344,7 @@ impl CachedResponse {
 
 #[derive(Debug, Clone)]
 pub enum CachedData {
-	Bytes {
-		content_type: Option<String>,
-		chunks: Box<[bytes::Bytes]>,
-	},
+	Bytes { content_type: Option<String>, data: Bytes },
 	NotFound,
 	InternalServerError,
 }
@@ -335,7 +352,7 @@ pub enum CachedData {
 impl CachedData {
 	pub fn len(&self) -> usize {
 		match self {
-			Self::Bytes { chunks, .. } => chunks.iter().map(|c| c.len()).sum(),
+			Self::Bytes { data, .. } => data.len(),
 			Self::NotFound => 0,
 			Self::InternalServerError => 0,
 		}
@@ -345,23 +362,16 @@ impl CachedData {
 impl IntoResponse for CachedData {
 	fn into_response(self) -> scuffle_foundations::http::server::stream::Response {
 		match self {
-			Self::Bytes { chunks, content_type } => {
+			Self::Bytes { data, content_type } => {
 				let mut headers = HeaderMap::new();
 
 				if let Some(content_type) = content_type.as_deref().and_then(|c| c.try_into().ok()) {
 					headers.insert(header::CONTENT_TYPE, content_type);
 				}
 
-				headers.insert(
-					header::CONTENT_LENGTH,
-					chunks.iter().map(|c| c.len()).sum::<usize>().to_string().try_into().unwrap(),
-				);
+				headers.insert(header::CONTENT_LENGTH, data.len().to_string().try_into().unwrap());
 
-				(
-					headers,
-					Body::from_stream(futures::stream::iter(chunks.to_vec().into_iter().map(Ok::<_, Infallible>))),
-				)
-					.into_response()
+				(headers, Body::from(data)).into_response()
 			}
 			Self::NotFound => StatusCode::NOT_FOUND.into_response(),
 			Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -432,9 +442,14 @@ impl CachedResponse {
 			chunks.push(chunk);
 		}
 
+		let mut data = BytesMut::with_capacity(chunks.iter().map(|c| c.len()).sum());
+		for chunk in chunks {
+			data.extend_from_slice(&chunk);
+		}
+
 		Ok(Self {
 			data: CachedData::Bytes {
-				chunks: chunks.into_boxed_slice(),
+				data: data.freeze(),
 				content_type: value.content_type,
 			},
 			date,

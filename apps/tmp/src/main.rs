@@ -26,7 +26,7 @@
 // 					},
 // 					scuffle_image_processor_proto::OutputFormatOptions {
 // 						format: scuffle_image_processor_proto::OutputFormat::WebpStatic as i32,
-// 						quality: scuffle_image_processor_proto::OutputQuality::Auto as i32,	
+// 						quality: scuffle_image_processor_proto::OutputQuality::Auto as i32,
 // 						name: None,
 // 					},
 // 					scuffle_image_processor_proto::OutputFormatOptions {
@@ -41,7 +41,7 @@
 // 					},
 // 					scuffle_image_processor_proto::OutputFormatOptions {
 // 						format: scuffle_image_processor_proto::OutputFormat::GifAnim as i32,
-// 						quality: scuffle_image_processor_proto::OutputQuality::Auto as i32,	
+// 						quality: scuffle_image_processor_proto::OutputQuality::Auto as i32,
 // 						name: None,
 // 					},
 // 					scuffle_image_processor_proto::OutputFormatOptions {
@@ -52,8 +52,10 @@
 // 				],
 // 				upscale: true,
 // 				skip_impossible_formats: true,
-// 				resize: Some(scuffle_image_processor_proto::output::Resize::Scaling(scuffle_image_processor_proto::Scaling{
-// 					base: Some(scuffle_image_processor_proto::scaling::Base::BaseHeight(32)),
+// 				resize:
+// Some(scuffle_image_processor_proto::output::Resize::Scaling(scuffle_image_processor_proto::Scaling{
+// 					base:
+// Some(scuffle_image_processor_proto::scaling::Base::BaseHeight(32)),
 // 					scales: vec![1, 2, 3, 4],
 // 				})),
 // 				..Default::default()

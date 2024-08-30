@@ -17,8 +17,6 @@ inherits = "release"
 lto = "fat"
 debug = false
 strip = true
-# debug = true
-# strip = false
 
 [workspace.dependencies]
 shared = { path = "shared" }

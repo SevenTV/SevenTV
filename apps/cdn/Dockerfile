@@ -2,10 +2,12 @@ FROM ubuntu:latest
 
 WORKDIR /app
 
+ARG BINARY_PATH=target/release-lto/cdn
+
 # Copy the binary from the host machine
 # This assumes that you have already built the binary using the
 # `cargo build --profile release-lto` command.
-RUN --mount=type=bind,src=target/release-lto/cdn,dst=/mount/cdn \
+RUN --mount=type=bind,src=${BINARY_PATH},dst=/mount/cdn \
     cp /mount/cdn /app/cdn && \
     chmod +x /app/cdn && \
     apt update && \
