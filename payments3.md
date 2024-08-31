@@ -27,17 +27,26 @@ pub struct Product {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+enum SubscriptionProductProviderId {
+	Stripe(ProductId),
+	Paypal(String)
+}
+
+pub struct SubscriptionProductVariant {
+	pub id: SubscriptionProductProviderId,
+	pub kind: SubscriptionProductKind,
+	pub currency_prices: HashMap<stripe::Currency, i32>,
+}
+
 /// There are only two kinds of subscriptions: monthly and yearly.
 pub struct SubscriptionProduct {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
-	pub id: ProductId,
-	pub paypal_id: Option<String>,
+	pub id: SubscriptionProductId,
+	pub variants: Vec<SubscriptionProductVariant>
 	pub name: String,
 	pub description: Option<String>,
 	pub default_currency: stripe::Currency,
-	pub currency_prices: HashMap<stripe::Currency, i32>,
-	pub kind: SubscriptionProductKind,
 	pub benefits: Vec<SubscriptionBenefit>,
 	#[serde(with = "crate::database::serde")]
 	pub created_at: chrono::DateTime<chrono::Utc>,
@@ -50,6 +59,7 @@ pub struct SubscriptionProduct {
 /// An entitlement edge between the user sub and `entitlement` which will be
 /// inserted as soon as the condition is met.
 pub struct SubscriptionBenefit {
+	pub id: SubscriptionBenefitId,
 	pub entitlement: EntitlementEdgeKind,
 	pub condition: SubscriptionBenefitCondition,
 }
@@ -121,6 +131,11 @@ pub enum InvoiceDisputeStatus {
 ## Subscription
 
 ```rs
+pub struct SubscriptionId {
+	pub user_id: UserId,
+	pub product_id: SubscriptionProductId,
+}
+
 /// All subscriptions that ever existed, not only active ones
 /// This is only used to save data about a subscription that could also be
 /// retrieved from Stripe or PayPal It is used to avoid sending requests to
@@ -128,14 +143,8 @@ pub enum InvoiceDisputeStatus {
 pub struct Subscription {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
-	pub id: ProviderSubscriptionId,
-	/// The user that receives the subscription benefits
-	pub user_id: UserId,
-	/// Set if there is a stripe customer for this customer already
-	/// always set for stripe subscriptions
-	pub stripe_customer_id: Option<CustomerId>,
-	pub product_ids: Vec<ProductId>,
-	pub cancel_at_period_end: bool,
+	pub id: SubscriptionId,
+	pub state: SubscriptionState,
 	pub trial_end: Option<chrono::DateTime<chrono::Utc>>,
 	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
 	#[serde(with = "crate::database::serde")]
@@ -144,21 +153,24 @@ pub struct Subscription {
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
+enum SubscriptionState {
+	CancelAtEnd,
+	Active,
+	Ended,
+}
+
 /// Current or past periods of a subscription (not future)
 pub struct SubscriptionPeriod {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionPeriodId,
-	/// None for gifted and system subscriptions
-	pub subscription_id: Option<ProviderSubscriptionId>,
-	pub user_id: UserId,
+	pub subscription_id: SubscriptionId,
 	#[serde(with = "crate::database::serde")]
 	pub start: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub end: chrono::DateTime<chrono::Utc>,
 	pub is_trial: bool,
 	pub created_by: SubscriptionPeriodCreatedBy,
-	pub product_ids: Vec<ProductId>,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
@@ -197,7 +209,7 @@ pub struct RedeemCode {
 
 pub enum CodeEffect {
 	Entitlement { edge: EntitlementEdgeKind },
-	SubscriptionProduct { id: ProductId, trial_days: Option<u32> },
+	SubscriptionProduct { id: SubscriptionProductId, trial_days: u32 },
 }
 
 pub struct SpecialEvent {
