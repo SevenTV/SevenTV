@@ -1,16 +1,12 @@
-use std::{
-	collections::{HashMap, HashSet},
-	sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use shared::database::{
 	product::{
-		subscription::{ProviderSubscriptionId, SubscriptionPeriod},
+		subscription::{ProviderSubscriptionId, Subscription, SubscriptionPeriod},
 		ProductId, SubscriptionProduct,
 	},
 	queries::{filter, update},
 };
-use stripe::Object;
 
 use crate::{
 	global::Global,
@@ -18,9 +14,22 @@ use crate::{
 	transactions::{TransactionError, TransactionResult, TransactionSession},
 };
 
+/// Creates the subscription object in the database.
+pub async fn created(
+	_global: &Arc<Global>,
+	mut tx: TransactionSession<'_, ApiError>,
+	subscription: stripe::Subscription,
+) -> TransactionResult<(), ApiError> {
+	let subscription = Subscription::from_stripe(subscription).ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+
+	tx.insert_one(subscription, None).await?;
+
+	Ok(())
+}
+
 /// Sets the subscription current period end to `ended_at`.
 pub async fn deleted(
-	global: &Arc<Global>,
+	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: stripe::Subscription,
 ) -> TransactionResult<(), ApiError> {
@@ -28,6 +37,24 @@ pub async fn deleted(
 	let ended_at = chrono::DateTime::from_timestamp(ended_at, 0).ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 
 	let subscription_id: ProviderSubscriptionId = subscription.id.into();
+
+	tx.update_one(
+		filter::filter! {
+			Subscription {
+				#[query(rename = "_id", serde)]
+				id: &subscription_id,
+			}
+		},
+		update::update! {
+			#[query(set)]
+			Subscription {
+				ended_at: Some(ended_at),
+				updated_at: chrono::Utc::now(),
+			}
+		},
+		None,
+	)
+	.await?;
 
 	tx.update_one(
 		filter::filter! {
@@ -68,19 +95,33 @@ pub async fn updated(
 		return Ok(());
 	};
 
-	let subscription_id: ProviderSubscriptionId = subscription.id.into();
+	let subscription = Subscription::from_stripe(subscription).ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 
-	let product_ids = subscription
-		.items
-		.data
-		.iter()
-		.map(|item| Ok(item.price.as_ref().ok_or(ApiError::BAD_REQUEST)?.id().into()))
-		.collect::<Result<HashSet<ProductId>, _>>()
-		.map_err(TransactionError::custom)?;
+	tx.update_one(
+		filter::filter! {
+			Subscription {
+				#[query(rename = "_id", serde)]
+				id: &subscription.id,
+			}
+		},
+		update::update! {
+			#[query(set)]
+			Subscription {
+				stripe_customer_id: subscription.stripe_customer_id,
+				product_ids: &subscription.product_ids,
+				cancel_at_period_end: subscription.cancel_at_period_end,
+				trial_end: subscription.trial_end,
+				ended_at: subscription.ended_at,
+				updated_at: chrono::Utc::now(),
+			}
+		},
+		None,
+	)
+	.await?;
 
 	let products: HashMap<ProductId, SubscriptionProduct> = global
 		.subscription_product_by_id_loader
-		.load_many(product_ids.into_iter())
+		.load_many(subscription.product_ids.into_iter())
 		.await
 		.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
@@ -90,7 +131,7 @@ pub async fn updated(
 			filter::filter! {
 				SubscriptionPeriod {
 					#[query(serde)]
-					subscription_id,
+					subscription_id: subscription.id,
 					#[query(selector = "lt")]
 					start: chrono::Utc::now(),
 					#[query(selector = "gt")]
@@ -113,7 +154,7 @@ pub async fn updated(
 			filter::filter! {
 				SubscriptionPeriod {
 					#[query(serde)]
-					subscription_id,
+					subscription_id: subscription.id,
 					#[query(selector = "lt")]
 					start: chrono::Utc::now(),
 					#[query(selector = "gt")]

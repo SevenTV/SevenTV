@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use shared::database::{
-	product::subscription::{ProviderSubscriptionId, SubscriptionPeriod},
+	product::subscription::{ProviderSubscriptionId, SubscriptionPeriod, Subscription},
 	queries::{filter, update},
 };
 
@@ -21,36 +21,49 @@ pub async fn cancelled(
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: types::Subscription,
 ) -> TransactionResult<(), ApiError> {
+	let subscription_id = ProviderSubscriptionId::Paypal(subscription.id);
+
+	let now = chrono::Utc::now();
+
 	tx.update_one(
 		filter::filter! {
-			SubscriptionPeriod {
-				#[query(serde)]
-				subscription_id: ProviderSubscriptionId::Paypal(subscription.id),
-				#[query(selector = "lt")]
-				start: chrono::Utc::now(),
-				#[query(selector = "gt")]
-				end: chrono::Utc::now(),
+			Subscription {
+				#[query(rename = "_id", serde)]
+				id: &subscription_id,
 			}
 		},
 		update::update! {
 			#[query(set)]
-			SubscriptionPeriod {
-				end: chrono::Utc::now(),
-				updated_at: chrono::Utc::now(),
+			Subscription {
+				ended_at: Some(now),
+				updated_at: now,
 			}
 		},
 		None,
 	)
 	.await?;
 
-	Ok(())
-}
+	tx.update_one(
+		filter::filter! {
+			SubscriptionPeriod {
+				#[query(serde)]
+				subscription_id,
+				#[query(selector = "lt")]
+				start: now,
+				#[query(selector = "gt")]
+				end: now,
+			}
+		},
+		update::update! {
+			#[query(set)]
+			SubscriptionPeriod {
+				end: now,
+				updated_at: now,
+			}
+		},
+		None,
+	)
+	.await?;
 
-/// There is no invoice for this payment because it only gets created when the payment succeeds.
-pub async fn payment_failed(
-	_global: &Arc<Global>,
-	_tx: TransactionSession<'_, ApiError>,
-	_subscription: types::Subscription,
-) -> TransactionResult<(), ApiError> {
 	Ok(())
 }

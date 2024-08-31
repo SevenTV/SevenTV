@@ -108,6 +108,22 @@ enum PeriodCreatedBy {
 
 ## Stripe Webhooks
 
+### `customer.created`
+
+Update user with stripe customer id.
+
+### `checkout.session.completed`
+
+If it is a setup session, update the user's default payment methods.
+
+If the session is related to a redeem code, grant access to the entitlements linked to the redeem code.
+
+If the session is related to a gift subscription payment, add one subscription period for the recipient.
+
+### `checkout.session.expired`
+
+If the session is related to a redeem code, increase the remaining uses of the redeem code again because it was left unused.
+
 ### `invoice.created`
 
 Create the invoice object and finalize it.
@@ -224,7 +240,7 @@ Don't end at period end.
 
 ## `PATCH /subscription/:target/payment-method`
 
-TODO
+Update the user's default payment method.
 
 ## `GET /products`
 

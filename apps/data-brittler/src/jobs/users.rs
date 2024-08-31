@@ -230,6 +230,7 @@ impl Job for UsersJob {
 				pending_profile_picture: None,
 			},
 			connections,
+			stripe_customer_id: None,
 			cached_active_emotes: vec![],
 			cached_entitlements: vec![],
 			cached_role_rank: -1,

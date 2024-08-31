@@ -157,6 +157,7 @@ stripe_type!(SubscriptionId, stripe::SubscriptionId);
 stripe_type!(InvoiceId, stripe::InvoiceId);
 stripe_type!(InvoiceLineItemId, stripe::InvoiceLineItemId);
 stripe_type!(CustomerId, stripe::CustomerId);
+stripe_type!(PaymentIntentId, stripe::PaymentIntentId);
 
 impl crate::typesense::types::TypesenseType for stripe::Currency {
 	fn typesense_type() -> crate::typesense::types::FieldType {
@@ -198,8 +199,9 @@ pub struct Product {
 /// There are only two kinds of subscriptions: monthly and yearly.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscription_products")]
-#[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(index(fields(kind = 1), unique))]
+#[mongo(index(fields(search_updated_at = 1)))]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionProduct {
 	#[mongo(id)]
@@ -210,7 +212,7 @@ pub struct SubscriptionProduct {
     pub description: Option<String>,
     pub default_currency: stripe::Currency,
     pub currency_prices: HashMap<stripe::Currency, i32>,
-    pub kind: SubscriptionKind,
+    pub kind: SubscriptionProductKind,
     pub benefits: Vec<SubscriptionBenefit>,
 	#[serde(with = "crate::database::serde")]
 	pub created_at: chrono::DateTime<chrono::Utc>,
@@ -237,12 +239,21 @@ pub enum SubscriptionBenefitCondition {
 
 #[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 #[repr(i32)]
-pub enum SubscriptionKind {
+pub enum SubscriptionProductKind {
     Monthly = 0,
     Yearly = 1,
 }
 
-impl_typesense_type!(SubscriptionKind, Int32);
+impl_typesense_type!(SubscriptionProductKind, Int32);
+
+impl SubscriptionProductKind {
+	pub fn period_duration_months(&self) -> u32 {
+		match self {
+			SubscriptionProductKind::Monthly => 1,
+			SubscriptionProductKind::Yearly => 12,
+		}
+	}
+}
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	std::iter::once(MongoGenericCollection::new::<Product>())

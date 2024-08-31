@@ -2,8 +2,8 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 use crate::database;
-use crate::database::product::codes::{DiscountCodeId, GiftCodeId, RedeemCodeId, SpecialEventId};
-use crate::database::product::{InvoiceId, InvoiceLineItemId, ProductId};
+use crate::database::product::codes::{DiscountCodeId, RedeemCodeId, SpecialEventId};
+use crate::database::product::ProductId;
 use crate::database::user::UserId;
 use crate::typesense::types::{impl_typesense_type, TypesenseCollection, TypesenseGenericCollection};
 
@@ -74,44 +74,6 @@ impl From<database::product::codes::DiscountCode> for DiscountCode {
 			created_by: discount.created_by,
 			created_at: discount.id.timestamp().timestamp_millis(),
 			updated_at: discount.updated_at.timestamp_millis(),
-			search_updated_at: Utc::now().timestamp_millis(),
-		}
-	}
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TypesenseCollection)]
-#[typesense(collection_name = "gift_codes")]
-#[serde(deny_unknown_fields)]
-pub struct GiftCode {
-	pub id: GiftCodeId,
-	pub code: String,
-	pub invoice_id: InvoiceId,
-	pub invoice_item_id: InvoiceLineItemId,
-	pub message: Option<String>,
-	pub purchased_by: UserId,
-	pub redeemed_by: Option<UserId>,
-	pub redeemed_at: Option<i64>,
-	pub product_id: ProductId,
-	#[typesense(default_sort)]
-	pub created_at: i64,
-	pub updated_at: i64,
-	pub search_updated_at: i64,
-}
-
-impl From<database::product::codes::GiftCode> for GiftCode {
-	fn from(value: database::product::codes::GiftCode) -> Self {
-		Self {
-			id: value.id,
-			code: value.code,
-			created_at: value.id.timestamp().timestamp_millis(),
-			message: value.message,
-			product_id: value.product_id,
-			purchased_by: value.purchased_by,
-			redeemed_at: value.redeemed_at.map(|x| x.timestamp_millis()),
-			redeemed_by: value.redeemed_by,
-			invoice_id: value.invoice_id,
-			invoice_item_id: value.invoice_item_id,
-			updated_at: value.updated_at.timestamp_millis(),
 			search_updated_at: Utc::now().timestamp_millis(),
 		}
 	}
@@ -192,7 +154,6 @@ impl From<database::product::codes::SpecialEvent> for SpecialEvent {
 pub(super) fn typesense_collections() -> impl IntoIterator<Item = TypesenseGenericCollection> {
 	[
 		TypesenseGenericCollection::new::<DiscountCode>(),
-		TypesenseGenericCollection::new::<GiftCode>(),
 		TypesenseGenericCollection::new::<RedeemCode>(),
 		TypesenseGenericCollection::new::<SpecialEvent>(),
 	]

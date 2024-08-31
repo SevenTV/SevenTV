@@ -4,9 +4,10 @@ use shared::database::{
 	product::{
 		invoice::Invoice,
 		subscription::{
-			PaypalSubscription, ProviderSubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
+			Subscription, ProviderSubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
 			SubscriptionPeriodId,
-		}, InvoiceId,
+		},
+		InvoiceId,
 	},
 	queries::{filter, update},
 };
@@ -30,11 +31,13 @@ pub async fn completed(
 		return Ok(());
 	};
 
+	let subscription_id = ProviderSubscriptionId::Paypal(subscription_id);
+
 	let Some(pp_sub) = tx
 		.find_one(
 			filter::filter! {
-				PaypalSubscription {
-					#[query(rename = "_id")]
+				Subscription {
+					#[query(rename = "_id", serde)]
 					id: &subscription_id,
 				}
 			},
@@ -99,7 +102,13 @@ pub async fn completed(
 					phone: phone.as_deref(),
 					address,
 					description: Some("Legacy PayPal customer. Real payments will be handled by PayPal."),
-					metadata: Some(std::iter::once(("paypal_id".to_string(), subscription.subscriber.payer_id)).collect()),
+					metadata: Some(
+						[
+							("USER_ID".to_string(), pp_sub.user_id.to_string()),
+							("PAYPAL_ID".to_string(), subscription.subscriber.payer_id),
+						]
+						.into(),
+					),
 					..Default::default()
 				},
 			)
@@ -115,14 +124,14 @@ pub async fn completed(
 
 	tx.update_one(
 		filter::filter! {
-			PaypalSubscription {
-				#[query(rename = "_id")]
+			Subscription {
+				#[query(rename = "_id", serde)]
 				id: &subscription_id,
 			}
 		},
 		update::update! {
 			#[query(set)]
-			PaypalSubscription {
+			Subscription {
 				stripe_customer_id: Some(customer_id.clone()),
 				updated_at: chrono::Utc::now(),
 			}
@@ -137,7 +146,7 @@ pub async fn completed(
 			customer: Some(customer_id.clone().into()),
 			auto_advance: Some(false),
 			description: Some("Legacy PayPal invoice. Real payments will be handled by PayPal."),
-			metadata: Some(std::iter::once(("paypal_id".to_string(), sale.id.clone())).collect()),
+			metadata: Some(std::iter::once(("PAYPAL_ID".to_string(), sale.id.clone())).collect()),
 			..Default::default()
 		},
 	)
@@ -175,7 +184,7 @@ pub async fn completed(
 	tx.insert_one(
 		Invoice {
 			id: invoice_id.clone(),
-			items: vec![pp_sub.product_id.clone()],
+			items: pp_sub.product_ids.clone(),
 			customer_id: customer_id.into(),
 			user_id: pp_sub.user_id,
 			paypal_payment_id: Some(sale.id.clone()),
@@ -195,7 +204,7 @@ pub async fn completed(
 		tx.insert_one(
 			SubscriptionPeriod {
 				id: SubscriptionPeriodId::new(),
-				subscription_id: ProviderSubscriptionId::Paypal(subscription_id),
+				subscription_id: Some(subscription_id),
 				user_id: pp_sub.user_id,
 				start: subscription
 					.billing_info
@@ -204,8 +213,10 @@ pub async fn completed(
 					.unwrap_or_else(chrono::Utc::now),
 				end: next_billing_time,
 				is_trial: false,
-				created_by: SubscriptionPeriodCreatedBy::Invoice { invoice_id },
-				product_ids: vec![pp_sub.product_id],
+				created_by: SubscriptionPeriodCreatedBy::Invoice {
+					invoice_id,
+				},
+				product_ids: pp_sub.product_ids,
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
 			},

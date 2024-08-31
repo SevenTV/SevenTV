@@ -1,12 +1,12 @@
 use shared::database::{
 	paint::PaintId,
-	product::{SubscriptionKind, SubscriptionProduct},
+	product::{SubscriptionProductKind, SubscriptionProduct},
 };
 
 #[derive(Debug, serde::Serialize)]
 pub struct Subscription {
 	pub id: String,
-	pub provider: Provider,
+	pub provider: Option<Provider>,
 	/// Stripe product id
 	pub product_id: String,
 	/// Stripe price id
@@ -18,11 +18,11 @@ pub struct Subscription {
 	/// Id of the user who is paying the subscription
 	pub customer_id: String,
 	pub started_at: chrono::DateTime<chrono::Utc>,
-	pub ended_at: chrono::DateTime<chrono::Utc>,
+	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
 	pub cycle: SubscriptionCycle,
 	pub renew: bool,
 	/// Date of the next renewal
-	pub end_at: chrono::DateTime<chrono::Utc>,
+	pub end_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -40,7 +40,7 @@ pub struct SubscriptionCycle {
 	pub status: SubscriptionCycleStatus,
 	pub internal: bool,
 	pub pending: bool,
-	pub trial_end: chrono::DateTime<chrono::Utc>,
+	pub trial_end: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, serde::Serialize, PartialEq, Eq)]
@@ -81,8 +81,8 @@ pub struct Plan {
 impl From<SubscriptionProduct> for Plan {
 	fn from(value: SubscriptionProduct) -> Self {
 		let (interval_unit, discount) = match value.kind {
-			SubscriptionKind::Monthly => (SubscriptionCycleUnit::Month, None),
-			SubscriptionKind::Yearly => (SubscriptionCycleUnit::Year, Some(0.2)),
+			SubscriptionProductKind::Monthly => (SubscriptionCycleUnit::Month, None),
+			SubscriptionProductKind::Yearly => (SubscriptionCycleUnit::Year, Some(0.2)),
 		};
 
 		Self {

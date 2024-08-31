@@ -1,37 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use super::{InvoiceId, InvoiceLineItemId, ProductId, TimePeriod};
+use super::{ProductId, TimePeriod};
 use crate::database::entitlement::EntitlementEdgeKind;
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::{Id, MongoCollection};
-
-pub type GiftCodeId = Id<GiftCode>;
-
-#[derive(Debug, Clone, Serialize, Deserialize, MongoCollection)]
-#[mongo(collection_name = "gift_codes")]
-#[mongo(index(fields(code = 1), unique))]
-#[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
-#[serde(deny_unknown_fields)]
-pub struct GiftCode {
-	#[mongo(id)]
-	#[serde(rename = "_id")]
-	pub id: GiftCodeId,
-	pub code: String,
-	pub message: Option<String>,
-	pub purchased_by: UserId,
-	pub invoice_id: InvoiceId,
-	pub invoice_item_id: InvoiceLineItemId,
-	pub redeemed_by: Option<UserId>,
-	#[serde(with = "crate::database::serde")]
-	pub redeemed_at: Option<chrono::DateTime<chrono::Utc>>,
-	pub product_id: ProductId,
-	#[serde(with = "crate::database::serde")]
-	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -139,7 +112,6 @@ pub enum Discount {
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	[
-		MongoGenericCollection::new::<GiftCode>(),
 		MongoGenericCollection::new::<RedeemCode>(),
 		MongoGenericCollection::new::<DiscountCode>(),
 		MongoGenericCollection::new::<SpecialEvent>(),

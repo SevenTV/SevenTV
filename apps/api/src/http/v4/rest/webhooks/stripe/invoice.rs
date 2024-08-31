@@ -1,10 +1,11 @@
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::{
 	product::{
 		invoice::{Invoice, InvoiceStatus},
-		subscription::{SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId},
+		subscription::{
+			ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
+		},
 		InvoiceId, ProductId,
 	},
 	queries::{filter, update},
@@ -127,31 +128,27 @@ pub async fn updated(
 
 	let items = invoice_items(invoice.lines.as_ref()).map_err(TransactionError::custom)?;
 
-	let invoice = tx
-		.find_one_and_update(
-			filter::filter! {
-				Invoice {
-					#[query(rename = "_id")]
-					id,
-				}
-			},
-			update::update! {
-				#[query(set)]
-				Invoice {
-					#[query(serde)]
-					status: status,
-					#[query(serde)]
-					items: items,
-					failed: false,
-					updated_at: chrono::Utc::now(),
-				}
-			},
-			FindOneAndUpdateOptions::builder()
-				.return_document(mongodb::options::ReturnDocument::After)
-				.build(),
-		)
-		.await?
-		.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+	tx.update_one(
+		filter::filter! {
+			Invoice {
+				#[query(rename = "_id")]
+				id,
+			}
+		},
+		update::update! {
+			#[query(set)]
+			Invoice {
+				#[query(serde)]
+				status: status,
+				#[query(serde)]
+				items: items,
+				failed: false,
+				updated_at: chrono::Utc::now(),
+			}
+		},
+		None,
+	)
+	.await?;
 
 	Ok(())
 }
@@ -198,10 +195,12 @@ pub async fn paid(
 			let end = chrono::DateTime::from_timestamp(subscription.current_period_end, 0)
 				.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 
+			let subscription_id = ProviderSubscriptionId::from(subscription.id);
+
 			tx.insert_one(
 				SubscriptionPeriod {
 					id: SubscriptionPeriodId::new(),
-					subscription_id: subscription.id.into(),
+					subscription_id: Some(subscription_id.clone()),
 					user_id,
 					start,
 					end,
@@ -212,6 +211,25 @@ pub async fn paid(
 					product_ids: items,
 					updated_at: chrono::Utc::now(),
 					search_updated_at: None,
+				},
+				None,
+			)
+			.await?;
+
+			tx.update_one(
+				filter::filter! {
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: subscription_id,
+					}
+				},
+				update::update! {
+					#[query(set)]
+					Subscription {
+						cancel_at_period_end: false,
+						ended_at: Option::<chrono::DateTime<chrono::Utc>>::None,
+						updated_at: chrono::Utc::now(),
+					}
 				},
 				None,
 			)

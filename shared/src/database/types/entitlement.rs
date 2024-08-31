@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::badge::BadgeId;
 use super::emote_set::EmoteSetId;
 use super::paint::PaintId;
-use super::product::codes::{GiftCodeId, RedeemCodeId};
-use super::product::promotion::PromotionId;
+use super::product::codes::RedeemCodeId;
 use super::product::{InvoiceId, InvoiceLineItemId, ProductId, SubscriptionId};
 use super::role::RoleId;
 use super::user::UserId;
@@ -27,7 +26,6 @@ pub enum EntitlementEdgeKind {
 	Product { product_id: ProductId },
 	SubscriptionProduct { product_id: ProductId },
 	Subscription { subscription_id: SubscriptionId },
-	Promotion { promotion_id: PromotionId },
 	EntitlementGroup { entitlement_group_id: EntitlementGroupId },
 	GlobalDefaultEntitlementGroup,
 }
@@ -42,7 +40,6 @@ impl std::fmt::Display for EntitlementEdgeKind {
 			EntitlementEdgeKind::EmoteSet { emote_id } => write!(f, "emote_set:{}", emote_id),
 			EntitlementEdgeKind::Product { product_id } => write!(f, "product:{}", product_id),
 			EntitlementEdgeKind::SubscriptionProduct { product_id } => write!(f, "subscription_product:{}", product_id),
-			EntitlementEdgeKind::Promotion { promotion_id } => write!(f, "promotion:{}", promotion_id),
 			EntitlementEdgeKind::Subscription { subscription_id } => write!(f, "subscription:{}", subscription_id),
 			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
 				write!(f, "entitlement_group:{}", entitlement_group_id)
@@ -79,9 +76,6 @@ impl std::str::FromStr for EntitlementEdgeKind {
 			},
 			"product" => EntitlementEdgeKind::Product {
 				product_id: parts[1].parse().map_err(|_| "invalid product id")?,
-			},
-			"promotion" => EntitlementEdgeKind::Promotion {
-				promotion_id: parts[1].parse().map_err(|_| "invalid promotion id")?,
 			},
 			"subscription" => EntitlementEdgeKind::Subscription {
 				subscription_id: parts[1].parse().map_err(|_| "invalid subscription id")?,
@@ -145,23 +139,15 @@ pub enum EntitlementEdgeManagedBy {
 		invoice_id: InvoiceId,
 		line_item_id: InvoiceLineItemId,
 	},
-	GiftCode {
-		gift_id: GiftCodeId,
-	},
 	RedeemCode {
 		redeem_code_id: RedeemCodeId,
-	},
-	Promotion {
-		promotion: PromotionId,
 	},
 }
 
 impl std::fmt::Display for EntitlementEdgeManagedBy {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::GiftCode { gift_id } => write!(f, "gift_code:{gift_id}"),
 			Self::RedeemCode { redeem_code_id } => write!(f, "redeem_code:{redeem_code_id}"),
-			Self::Promotion { promotion } => write!(f, "promotion:{promotion}"),
 			Self::InvoiceLineItem {
 				invoice_id,
 				line_item_id,
@@ -204,8 +190,7 @@ impl GraphKey for EntitlementEdgeKind {
 	fn has_inbound(&self) -> bool {
 		matches!(
 			self,
-			Self::Promotion { .. }
-				| Self::Product { .. }
+			Self::Product { .. }
 				| Self::Badge { .. }
 				| Self::Paint { .. }
 				| Self::EmoteSet { .. }
@@ -221,7 +206,6 @@ impl GraphKey for EntitlementEdgeKind {
 			Self::User { .. }
 				| Self::Role { .. }
 				| Self::Product { .. }
-				| Self::Promotion { .. }
 				| Self::Subscription { .. }
 				| Self::EntitlementGroup { .. }
 				| Self::GlobalDefaultEntitlementGroup
@@ -271,7 +255,6 @@ pub struct CalculatedEntitlements {
 	pub paints: HashSet<PaintId>,
 	pub emote_sets: HashSet<EmoteSetId>,
 	pub products: HashSet<ProductId>,
-	pub promotions: HashSet<PromotionId>,
 	pub subscriptions: HashSet<SubscriptionId>,
 	pub entitlement_groups: HashSet<EntitlementGroupId>,
 }
@@ -284,7 +267,6 @@ impl CalculatedEntitlements {
 		let mut emote_sets = HashSet::new();
 		let mut products = HashSet::new();
 		let mut subscriptions = HashSet::new();
-		let mut promotions = HashSet::new();
 		let mut entitlement_groups = HashSet::new();
 
 		edges.into_iter().for_each(|to| match to {
@@ -309,9 +291,6 @@ impl CalculatedEntitlements {
 			EntitlementEdgeKind::Subscription { subscription_id } => {
 				subscriptions.insert(subscription_id);
 			}
-			EntitlementEdgeKind::Promotion { promotion_id } => {
-				promotions.insert(promotion_id);
-			}
 			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
 				entitlement_groups.insert(entitlement_group_id);
 			}
@@ -328,7 +307,6 @@ impl CalculatedEntitlements {
 			emote_sets,
 			products,
 			subscriptions,
-			promotions,
 			entitlement_groups,
 		}
 	}

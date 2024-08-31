@@ -30,7 +30,7 @@ pub use subscription::*;
 pub use system::*;
 pub use user::*;
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
 pub enum DateTime {
 	Bson(mongodb::bson::DateTime),

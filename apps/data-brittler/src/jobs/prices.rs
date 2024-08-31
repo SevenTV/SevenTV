@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::product::{Product, SubscriptionKind, SubscriptionProduct};
+use shared::database::product::{Product, SubscriptionProductKind, SubscriptionProduct};
 use shared::database::MongoCollection;
 use stripe::{Recurring, RecurringInterval};
 
@@ -87,11 +87,11 @@ impl Job for PricesJob {
 				Recurring {
 					interval: RecurringInterval::Month,
 					..
-				} => SubscriptionKind::Monthly,
+				} => SubscriptionProductKind::Monthly,
 				Recurring {
 					interval: RecurringInterval::Year,
 					..
-				} => SubscriptionKind::Yearly,
+				} => SubscriptionProductKind::Yearly,
 				_ => {
 					return outcome.with_error(error::Error::InvalidRecurringInterval(recurring.interval));
 				}

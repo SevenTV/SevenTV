@@ -1,27 +1,71 @@
-use super::codes::{GiftCodeId, RedeemCodeId};
-use super::{CustomerId, InvoiceId, ProductId, SubscriptionId};
+use std::fmt::Display;
+use std::str::FromStr;
+
+use super::codes::RedeemCodeId;
+use super::{CustomerId, InvoiceId, PaymentIntentId, ProductId, SubscriptionId};
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::{Id, MongoCollection};
 
-/// Only required for paypal subscriptions since they can't save any metadata
+/// All subscriptions that ever existed, not only active ones
+/// This is only used to save data about a subscription that could also be retrieved from Stripe or PayPal
+/// It is used to avoid sending requests to Stripe or PayPal every time someone queries data about a subscription
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
-#[mongo(collection_name = "paypal_subscriptions")]
+#[mongo(collection_name = "subscriptions")]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
-pub struct PaypalSubscription {
+pub struct Subscription {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
-	pub id: String,
+	pub id: ProviderSubscriptionId,
 	/// The user that receives the subscription benefits
 	pub user_id: UserId,
 	/// Set if there is a stripe customer for this customer already
+	/// always set for stripe subscriptions
 	pub stripe_customer_id: Option<CustomerId>,
-	pub product_id: ProductId,
+	pub product_ids: Vec<ProductId>,
+	pub cancel_at_period_end: bool,
+	pub trial_end: Option<chrono::DateTime<chrono::Utc>>,
+	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
 	#[serde(with = "crate::database::serde")]
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl Subscription {
+	pub fn from_stripe(sub: stripe::Subscription) -> Option<Self> {
+		let created_at = match sub.ended_at {
+			Some(t) => chrono::DateTime::from_timestamp(t, 0)?,
+			None => chrono::Utc::now(),
+		};
+
+		let user_id = sub.metadata.get("USER_ID").and_then(|i| UserId::from_str(i).ok())?;
+
+		Some(Self {
+			id: sub.id.into(),
+			user_id,
+			stripe_customer_id: Some(sub.customer.id().into()),
+			product_ids: sub
+				.items
+				.data
+				.into_iter()
+				.map(|i| Ok(i.price.ok_or(())?.id.into()))
+				.collect::<Result<_, ()>>()
+				.ok()?,
+			cancel_at_period_end: sub.cancel_at_period_end,
+			trial_end: match sub.trial_end {
+				Some(t) => Some(chrono::DateTime::from_timestamp(t, 0)?),
+				None => None,
+			},
+			ended_at: match sub.ended_at {
+				Some(t) => Some(chrono::DateTime::from_timestamp(t, 0)?),
+				None => None,
+			},
+			created_at,
+			updated_at: created_at,
+		})
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -31,11 +75,11 @@ pub enum ProviderSubscriptionId {
 	Paypal(String),
 }
 
-impl ToString for ProviderSubscriptionId {
-	fn to_string(&self) -> String {
+impl Display for ProviderSubscriptionId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::Stripe(id) => id.to_string(),
-			Self::Paypal(id) => id.clone(),
+			Self::Stripe(id) => write!(f, "{id}"),
+			Self::Paypal(id) => write!(f, "{id}"),
 		}
 	}
 }
@@ -66,7 +110,8 @@ pub struct SubscriptionPeriod {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionPeriodId,
-	pub subscription_id: ProviderSubscriptionId,
+	/// None for gifted and system subscriptions
+	pub subscription_id: Option<ProviderSubscriptionId>,
 	pub user_id: UserId,
 	#[serde(with = "crate::database::serde")]
 	pub start: chrono::DateTime<chrono::Utc>,
@@ -86,22 +131,12 @@ pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, tag = "type")]
 pub enum SubscriptionPeriodCreatedBy {
-	RedeemCode {
-		redeem_code_id: RedeemCodeId,
-	},
-	GiftCode {
-		gift_code_id: GiftCodeId,
-	},
-	Invoice {
-		invoice_id: InvoiceId,
-	},
-	System {
-		reason: Option<String>,
-	},
+	RedeemCode { redeem_code_id: RedeemCodeId },
+	Invoice { invoice_id: InvoiceId },
+	Gift { gifter: UserId, payment: PaymentIntentId },
+	System { reason: Option<String> },
 }
 
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {
-	[
-		MongoGenericCollection::new::<SubscriptionPeriod>(),
-	]
+	[MongoGenericCollection::new::<SubscriptionPeriod>()]
 }

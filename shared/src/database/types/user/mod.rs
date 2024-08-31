@@ -17,6 +17,7 @@ use super::emote::EmoteId;
 use super::emote_set::EmoteSetId;
 use super::entitlement::{CalculatedEntitlements, EntitlementEdge, EntitlementEdgeKind};
 use super::paint::PaintId;
+use super::product::CustomerId;
 use super::role::permissions::{Permission, Permissions, PermissionsExt};
 use super::role::RoleId;
 use super::MongoGenericCollection;
@@ -45,6 +46,10 @@ pub struct User {
 	pub two_fa: Option<UserTwoFa>,
 	pub style: UserStyle,
 	pub connections: Vec<UserConnection>,
+	/// The Stripe customer ID for this user
+	/// This will be None after the migration
+	/// When any endpoint accesses this field and it is None, it should be populated by first searching for the user in stripe or, if not found, creating a new customer
+	pub stripe_customer_id: Option<CustomerId>,
 	pub cached_role_rank: i32,
 	#[serde(default)]
 	pub cached_entitlements: Vec<EntitlementEdgeKind>,
@@ -155,4 +160,5 @@ pub struct UserComputed {
 	pub highest_role_color: Option<i32>,
 	pub roles: Vec<RoleId>,
 	pub raw_entitlements: Option<Vec<EntitlementEdge>>,
+	pub is_subscribed: bool,
 }

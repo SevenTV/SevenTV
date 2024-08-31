@@ -17,6 +17,8 @@ use crate::{
 };
 
 mod charge;
+mod checkout_session;
+mod customer;
 mod invoice;
 mod subscription;
 
@@ -66,6 +68,15 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 			let prev_attributes = event.data.previous_attributes;
 
 			match (event.type_, event.data.object) {
+				(stripe::EventType::CustomerCreated, stripe::EventObject::Customer(cus)) => {
+					customer::created(&global, tx, cus).await
+				}
+				(stripe::EventType::CheckoutSessionCompleted, stripe::EventObject::CheckoutSession(s)) => {
+					checkout_session::completed(&global, tx, s).await
+				}
+				(stripe::EventType::CheckoutSessionExpired, stripe::EventObject::CheckoutSession(s)) => {
+					checkout_session::expired(&global, tx, s).await
+				}
 				(stripe::EventType::InvoiceCreated, stripe::EventObject::Invoice(iv)) => {
 					invoice::created(&global, tx, iv).await
 				}
@@ -86,6 +97,9 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				}
 				(stripe::EventType::InvoicePaymentFailed, stripe::EventObject::Invoice(iv)) => {
 					invoice::payment_failed(&global, tx, iv).await
+				}
+				(stripe::EventType::CustomerSubscriptionCreated, stripe::EventObject::Subscription(sub)) => {
+					subscription::created(&global, tx, sub).await
 				}
 				(stripe::EventType::CustomerSubscriptionUpdated, stripe::EventObject::Subscription(sub)) => {
 					subscription::updated(

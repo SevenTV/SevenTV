@@ -1,13 +1,12 @@
 pub mod codes;
 pub mod invoice;
-pub mod promotion;
 pub mod subscription;
 
 use chrono::Utc;
 
 use super::TypesenseGenericCollection;
 use crate::database::entitlement::{EntitlementEdgeKind, EntitlementEdgeKindString};
-use crate::database::product::{ProductId, SubscriptionKind};
+use crate::database::product::{ProductId, SubscriptionProductKind};
 use crate::database::{self};
 use crate::typesense::types::TypesenseCollection;
 
@@ -61,7 +60,7 @@ pub struct SubscriptionProduct {
 	pub default_currency: stripe::Currency,
 	pub default_price: i32,
 	pub currencies: Vec<stripe::Currency>,
-	pub kind: SubscriptionKind,
+	pub kind: SubscriptionProductKind,
 	pub benefits: Vec<EntitlementEdgeKindString>,
 	/// The `to` field of the `EntitlementEdge` where the `from` field is this
 	/// product.
@@ -103,6 +102,5 @@ pub(super) fn typesense_collections() -> impl IntoIterator<Item = TypesenseGener
 	.into_iter()
 	.chain(codes::typesense_collections())
 	.chain(invoice::typesense_collections())
-	.chain(promotion::typesense_collections())
 	.chain(subscription::typesense_collections())
 }
