@@ -58,9 +58,10 @@ pub struct SubscriptionProduct {
 
 /// An entitlement edge between the user sub and `entitlement` which will be
 /// inserted as soon as the condition is met.
+/// The `SubscriptionBenefitId` can have entitlements attached via the entitlement graph.
+/// If the user qualifies for the entitlement benifit then we create an edge between `Subscription` and `SubscriptionBenefit` on the entitlement graph.
 pub struct SubscriptionBenefit {
 	pub id: SubscriptionBenefitId,
-	pub entitlement: EntitlementEdgeKind,
 	pub condition: SubscriptionBenefitCondition,
 }
 
@@ -145,12 +146,21 @@ pub struct Subscription {
 	#[serde(rename = "_id")]
 	pub id: SubscriptionId,
 	pub state: SubscriptionState,
+	// This value will be populated by the refresh function, it is computed from the `SubscriptionPeriod`s for this `Subscription`
 	pub trial_end: Option<chrono::DateTime<chrono::Utc>>,
+	// This value will be populated by the refresh function, it is computed from the `SubscriptionPeriod`s for this `Subscription`
 	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
 	#[serde(with = "crate::database::serde")]
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl Subscription {
+	/// does not need to be on the object can be a standalone that takes the object id idk up to u
+	async fn refresh(&self, ...) -> Result<(), ...> {
+		/// This function will refresh the subscription object and entitlement edges if the conditions are met for the benifits.
+	}
 }
 
 enum SubscriptionState {
@@ -215,9 +225,13 @@ pub struct RedeemCode {
 
 pub enum CodeEffect {
 	Entitlement { edge: EntitlementEdgeKind },
-	SubscriptionProduct { id: SubscriptionProductId, trial_days: u32 },
+	/// This isnt an `Entitlement` we should just create a Subscription object for this user and then give them a period for the trial days.
+	/// If its only for first_time subs then dont give if they already have subbed before, and only give if they are not actively subbed.
+	/// Never create a new period if they are actively subbed.
+	SubscriptionProduct { id: SubscriptionProductId, trial_days: u32, first_time_only: bool },
 }
 
+// Display purposes only.
 pub struct SpecialEvent {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
