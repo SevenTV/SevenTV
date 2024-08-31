@@ -1,48 +1,67 @@
-**MIGHT BE OUTDATED IN SOME PLACES**
-
 # Types
 
 ## Products
 
 ```rs
+stripe_type!(ProductId, stripe::PriceId);
+stripe_type!(SubscriptionId, stripe::SubscriptionId);
+stripe_type!(InvoiceId, stripe::InvoiceId);
+stripe_type!(InvoiceLineItemId, stripe::InvoiceLineItemId);
+stripe_type!(CustomerId, stripe::CustomerId);
+stripe_type!(PaymentIntentId, stripe::PaymentIntentId);
+
 /// A non-recurring product, e.g. a paint bundle
-struct Product {
-    id: stripe::PriceId,
-    name: String,
-    description: String,
-    default_currency: stripe::Currency,
-    currency_prices: HashMap<stripe::Currency, i64>,
+pub struct Product {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: ProductId,
+	pub name: String,
+	pub description: Option<String>,
+	pub default_currency: stripe::Currency,
+	pub currency_prices: HashMap<stripe::Currency, i32>,
+	#[serde(with = "crate::database::serde")]
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 /// There are only two kinds of subscriptions: monthly and yearly.
-struct SubscriptionProduct {
-    id: stripe::PriceId,
-    name: String,
-    description: String,
-    default_currency: stripe::Currency,
-    currency_prices: HashMap<stripe::Currency, i64>,
-    kind: SubscriptionKind,
-    benefits: Vec<SubscriptionBenefit>,
+pub struct SubscriptionProduct {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: ProductId,
+	pub paypal_id: Option<String>,
+	pub name: String,
+	pub description: Option<String>,
+	pub default_currency: stripe::Currency,
+	pub currency_prices: HashMap<stripe::Currency, i32>,
+	pub kind: SubscriptionProductKind,
+	pub benefits: Vec<SubscriptionBenefit>,
+	#[serde(with = "crate::database::serde")]
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-/// An entitlement edge between the user sub and `entitlement` which will be inserted after the duration `after` has passed.
-struct SubscriptionBenefit {
-    entitlement: EntitlementEdgeKind,
-    condition: SubscriptionBenefitCondition,
+/// An entitlement edge between the user sub and `entitlement` which will be
+/// inserted as soon as the condition is met.
+pub struct SubscriptionBenefit {
+	pub entitlement: EntitlementEdgeKind,
+	pub condition: SubscriptionBenefitCondition,
 }
 
-enum SubscriptionBenefitCondition {
-    DurationDays(i32),
-    DurationMonths(i32),
-    TimePeriod {
-        start: chrono::DateTime<chrono::Utc>,
-        end: chrono::DateTime<chrono::Utc>,
-    },
+pub enum SubscriptionBenefitCondition {
+	Duration(DurationUnit),
+	TimePeriod(TimePeriod),
 }
 
-enum SubscriptionKind {
-    Monthly,
-    Yearly,
+pub enum SubscriptionProductKind {
+	Monthly = 0,
+	Yearly = 1,
 }
 ```
 
@@ -52,55 +71,147 @@ Invoices are just for showing them to the user.
 They are not technically necessary.
 
 ```rs
-struct Invoice {
-    id: stripe::InvoiceId,
-    items: Vec<InvoiceItem>,
-    customer_id: stripe::CustomerId,
-    user_id: UserId,
-    paypal_payment_ids: Vec<String>,
-    status: InvoiceStatus,
-    note: Option<String>,
+/// Only for showing to the user.
+/// Technically not necessary.
+pub struct Invoice {
+	/// This ID will be the stripe ID for the invoice
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: InvoiceId,
+	/// These items will be the stripe line items for the invoice
+	pub items: Vec<ProductId>,
+	/// customer id from stripe
+	pub customer_id: CustomerId,
+	/// User who the invoice is for
+	pub user_id: UserId,
+	/// If this invoice was paid via a legacy payment
+	pub paypal_payment_id: Option<String>,
+	/// Status of the invoice
+	pub status: InvoiceStatus,
+	/// If a payment failed
+	pub failed: bool,
+	/// If the invoice was refunded
+	pub refunded: bool,
+	/// If the invoice was disputed
+	pub disputed: Option<InvoiceDisputeStatus>,
+	#[serde(with = "crate::database::serde")]
+	/// Created at
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	/// Updated at
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	/// Search updated at
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-struct InvoiceItem {
-    product_id: stripe::PriceId,
-    // ...
-}
-
-enum InvoiceStatus {
-    // ...
+pub enum InvoiceDisputeStatus {
+	Lost = 0,
+	NeedsResponse = 1,
+	UnderReview = 2,
+	WarningClosed = 3,
+	WarningNeedsResponse = 4,
+	WarningUnderReview = 5,
+	Won = 6,
+	/// only applies to paypal disputes, either won or lost, we don't know
+	Resolved = 7,
 }
 ```
 
 ## Subscription
 
 ```rs
-/// Current or past periods of a subscription (not future)
-struct SubscriptionPeriod {
-    id: SubscriptionPeriodId,
-    subscription_id: stripe::SubscriptionId,
-    product_id: stripe::PriceId,
-    user_id: UserId,
-    start: chrono::DateTime<chrono::Utc>,
-    end: chrono::DateTime<chrono::Utc>,
-    is_trial: bool,
-    created_by: PeriodCreatedBy,
+/// All subscriptions that ever existed, not only active ones
+/// This is only used to save data about a subscription that could also be
+/// retrieved from Stripe or PayPal It is used to avoid sending requests to
+/// Stripe or PayPal every time someone queries data about a subscription
+pub struct Subscription {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: ProviderSubscriptionId,
+	/// The user that receives the subscription benefits
+	pub user_id: UserId,
+	/// Set if there is a stripe customer for this customer already
+	/// always set for stripe subscriptions
+	pub stripe_customer_id: Option<CustomerId>,
+	pub product_ids: Vec<ProductId>,
+	pub cancel_at_period_end: bool,
+	pub trial_end: Option<chrono::DateTime<chrono::Utc>>,
+	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
+	#[serde(with = "crate::database::serde")]
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-enum PeriodCreatedBy {
-    RedeemCode {
-        redeem_code_id: RedeemCodeId,
-    },
-    GiftCode {
-        gift_code_id: GiftCodeId,
-    },
-    Invoice {
-        invoice_id: stripe::InvoiceId,
-        invoice_item_id: stripe::InvoiceLineItemId,
-    },
-    System {
-        reason: Option<String>,
-    },
+/// Current or past periods of a subscription (not future)
+pub struct SubscriptionPeriod {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: SubscriptionPeriodId,
+	/// None for gifted and system subscriptions
+	pub subscription_id: Option<ProviderSubscriptionId>,
+	pub user_id: UserId,
+	#[serde(with = "crate::database::serde")]
+	pub start: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub end: chrono::DateTime<chrono::Utc>,
+	pub is_trial: bool,
+	pub created_by: SubscriptionPeriodCreatedBy,
+	pub product_ids: Vec<ProductId>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+pub enum SubscriptionPeriodCreatedBy {
+	RedeemCode { redeem_code_id: RedeemCodeId },
+	Invoice { invoice_id: InvoiceId },
+	Gift { gifter: UserId, payment: PaymentIntentId },
+	System { reason: Option<String> },
+}
+```
+
+## Codes
+
+```rs
+pub struct RedeemCode {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: RedeemCodeId,
+	pub name: String,
+	pub description: Option<String>,
+	pub tags: Vec<String>,
+	pub code: String,
+	pub remaining_uses: i32,
+	pub active_period: TimePeriod,
+	pub effects: Vec<CodeEffect>,
+	pub created_by: UserId,
+	pub special_event_id: Option<SpecialEventId>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+pub enum CodeEffect {
+	Entitlement { edge: EntitlementEdgeKind },
+	SubscriptionProduct { id: ProductId, trial_days: Option<u32> },
+}
+
+pub struct SpecialEvent {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: SpecialEventId,
+	pub name: String,
+	pub description: Option<String>,
+	pub tags: Vec<String>,
+	pub created_by: UserId,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 ```
 
