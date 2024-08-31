@@ -9,6 +9,7 @@ mod cache;
 mod config;
 mod global;
 mod http;
+mod metrics;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
@@ -25,6 +26,11 @@ async fn main(settings: Matches<Config>) {
 		.with_signal(SignalKind::terminate());
 
 	let app_handle = tokio::spawn(http::run(global.clone()));
+	let metrics_handle = if global.config.telemetry.metrics.enabled {
+		Some(tokio::spawn(metrics::recorder()))
+	} else {
+		None
+	};
 
 	let handler = scuffle_foundations::context::Handler::global();
 
@@ -52,13 +58,35 @@ async fn main(settings: Matches<Config>) {
 
 	tokio::select! {
 		r = app_handle => {
-			if let Err(err) = r {
-				tracing::warn!("http server exited: {:#}", err);
-			} else {
-				tracing::info!("http server exited");
+			match r {
+				Ok(Err(err)) => {
+					tracing::error!("http server exited: {:#}", err);
+				}
+				Err(err) => {
+					tracing::error!("http server exited: {:#}", err);
+				}
+				Ok(Ok(())) => {
+					tracing::info!("http server exited");
+				}
 			}
 
 			handler.cancel();
+		},
+		Some(r) = async {
+			if let Some(handle) = metrics_handle {
+				Some(handle.await)
+			} else {
+				None
+			}
+		} => {
+			match r {
+				Ok(()) => {
+					tracing::info!("metrics recorder exited");
+				}
+				Err(err) => {
+					tracing::error!("metrics recorder exited: {:#}", err);
+				}
+			}
 		},
 		s = &mut shutdown => {
 			if let Err(err) = s {

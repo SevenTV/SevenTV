@@ -36,7 +36,7 @@ serde_repr = "0.1"
 tokio-util = "0.7"
 bitmask-enum = "2"
 enum-impl = "0.1"
-clickhouse = { version = "0.11.6", features = ["uuid", "time"] }
+clickhouse = { version = "0.12.2", features = ["uuid", "time"] }
 time = "0.3.36"
 uuid = { version = "1.9.1", features = ["serde"] }
 mongodb = "3.0"
@@ -44,19 +44,19 @@ bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
 ulid = { version = "1.1", features = ["serde", "uuid"] }
 tonic = { version = "0.12", features = ["tls"]}
 http = { version = "1.1" }
-tower = "0.4"
+tower = { version = "0.4.0", features = ["discover"] }
 trust-dns-resolver = "0.23"
 futures = "0.3"
-async-stripe = { version = "0.37.1", features = ["runtime-tokio-hyper-rustls"] }
+async-stripe = { version = "0.38.1", features = ["runtime-tokio-hyper-rustls"] }
 async-graphql = { version = "7.0.6", default-features = false }
-scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["client"] }
+scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["client", "serde"] }
 humantime-serde = "1"
 bytes = "1.6.0"
 serde-enum-str = "0.4.0"
 typesense_codegen = { git = "https://github.com/typesense/typesense-rust.git" }
 itertools = "0.13"
 const_format = "0.2"
-typed-builder = "0.19.1"
+typed-builder = "0.20.0"
 aws-sdk-s3 = { version = "1.45.0", features = ["behavior-version-latest"] }
 
 macros = { workspace = true }

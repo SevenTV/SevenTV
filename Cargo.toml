@@ -15,6 +15,8 @@ lto = "thin"
 [profile.release-lto]
 inherits = "release"
 lto = "fat"
+debug = false
+strip = true
 
 [workspace.dependencies]
 shared = { path = "shared" }

@@ -49,11 +49,9 @@ typesense_codegen = { git = "https://github.com/typesense/typesense-rust.git" }
 
 tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
 axum = "0.7"
-tower = "0.4"
+tower = "0.5.0"
 spin = "0.9"
-
-
-typed-builder = "0.19.1"
+typed-builder = "0.20.0"
 
 shared = { workspace = true }
 
