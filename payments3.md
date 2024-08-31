@@ -159,18 +159,23 @@ enum SubscriptionState {
 	Ended,
 }
 
+enum SubscriptionProviderId {
+	Stripe(stripe::SubscriptionId),
+	Paypal(String),
+}
+
 /// Current or past periods of a subscription (not future)
 pub struct SubscriptionPeriod {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionPeriodId,
 	pub subscription_id: SubscriptionId,
+	pub provider_id: SubscriptionProviderId,
 	#[serde(with = "crate::database::serde")]
 	pub start: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub end: chrono::DateTime<chrono::Utc>,
 	pub is_trial: bool,
-	pub active: bool,
 	pub created_by: SubscriptionPeriodCreatedBy,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
