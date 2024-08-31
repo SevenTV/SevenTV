@@ -1,20 +1,14 @@
 use std::sync::Arc;
 
-use axum::{
-	extract::State,
-	http::{HeaderMap, StatusCode},
-};
+use axum::extract::State;
+use axum::http::{HeaderMap, StatusCode};
 use mongodb::options::UpdateOptions;
-use shared::database::{
-	queries::{filter, update},
-	webhook_event::WebhookEvent,
-};
+use shared::database::queries::{filter, update};
+use shared::database::webhook_event::WebhookEvent;
 
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{with_transaction, TransactionError},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{with_transaction, TransactionError};
 
 mod charge;
 mod checkout_session;

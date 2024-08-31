@@ -1,19 +1,15 @@
 use std::sync::Arc;
 
-use shared::database::{
-	product::invoice::{Invoice, InvoiceDisputeStatus},
-	queries::{filter, update},
-};
-
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{TransactionResult, TransactionSession},
-};
+use shared::database::product::invoice::{Invoice, InvoiceDisputeStatus};
+use shared::database::queries::{filter, update};
 
 use super::types;
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{TransactionResult, TransactionSession};
 
-/// Called for `CUSTOMER.DISPUTE.CREATED`, `CUSTOMER.DISPUTE.UPDATED`, `CUSTOMER.DISPUTE.RESOLVED`
+/// Called for `CUSTOMER.DISPUTE.CREATED`, `CUSTOMER.DISPUTE.UPDATED`,
+/// `CUSTOMER.DISPUTE.RESOLVED`
 pub async fn updated(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

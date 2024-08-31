@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, Extension};
-use shared::database::queries::filter;
-use shared::database::{
-	product::subscription::{ProviderSubscriptionId, SubscriptionPeriod},
-	queries::update,
-};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::Extension;
+use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionPeriod};
+use shared::database::queries::{filter, update};
 
-use crate::{
-	global::Global,
-	http::{error::ApiError, extract::Path, middleware::auth::AuthSession, v3::rest::users::TargetUser},
-	transactions::{with_transaction, TransactionError},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::extract::Path;
+use crate::http::middleware::auth::AuthSession;
+use crate::http::v3::rest::users::TargetUser;
+use crate::transactions::{with_transaction, TransactionError};
 
 pub async fn cancel_subscription(
 	State(global): State<Arc<Global>>,

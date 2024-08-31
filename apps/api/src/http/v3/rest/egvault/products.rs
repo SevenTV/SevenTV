@@ -1,18 +1,16 @@
 use std::sync::Arc;
 
-use axum::{extract::State, Json};
+use axum::extract::State;
+use axum::Json;
 use futures::TryStreamExt;
-use shared::database::{
-	entitlement::EntitlementEdgeKind,
-	product::{SubscriptionBenefitCondition, SubscriptionProduct},
-	queries::filter,
-    MongoCollection,
-};
+use shared::database::entitlement::EntitlementEdgeKind;
+use shared::database::product::{SubscriptionBenefitCondition, SubscriptionProduct};
+use shared::database::queries::filter;
+use shared::database::MongoCollection;
 
-use crate::{
-	global::Global,
-	http::{error::ApiError, v3::rest::types},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::v3::rest::types;
 
 pub async fn products(State(global): State<Arc<Global>>) -> Result<Json<Vec<types::Product>>, ApiError> {
 	let products: Vec<SubscriptionProduct> = SubscriptionProduct::collection(&global.db)

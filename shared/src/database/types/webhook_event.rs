@@ -8,13 +8,13 @@ use super::MongoGenericCollection;
 #[mongo(index(fields(created_at = 1), expire_after = 3600))]
 #[serde(deny_unknown_fields)]
 pub struct WebhookEvent {
-    #[mongo(id)]
-    #[serde(rename = "_id")]
-    pub id: String,
-    #[serde(with = "crate::database::serde")]
-    pub created_at: chrono::DateTime<chrono::Utc>,
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: String,
+	#[serde(with = "crate::database::serde")]
+	pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
-    [MongoGenericCollection::new::<WebhookEvent>()]
+	[MongoGenericCollection::new::<WebhookEvent>()]
 }

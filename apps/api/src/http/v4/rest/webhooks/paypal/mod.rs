@@ -1,24 +1,22 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use axum::{
-	extract::State,
-	http::{HeaderMap, StatusCode},
-};
-use base64::{prelude::BASE64_STANDARD, Engine};
+use axum::extract::State;
+use axum::http::{HeaderMap, StatusCode};
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use mongodb::options::UpdateOptions;
-use rsa::{pkcs1::DecodeRsaPublicKey, traits::SignatureScheme, Pkcs1v15Sign};
+use rsa::pkcs1::DecodeRsaPublicKey;
+use rsa::traits::SignatureScheme;
+use rsa::Pkcs1v15Sign;
 use sha2::Digest;
-use shared::database::{
-	queries::{filter, update},
-	webhook_event::WebhookEvent,
-};
+use shared::database::queries::{filter, update};
+use shared::database::webhook_event::WebhookEvent;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{with_transaction, TransactionError},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{with_transaction, TransactionError};
 
 mod dispute;
 mod sale;
@@ -61,7 +59,8 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 		return Err(ApiError::BAD_REQUEST);
 	}
 
-	// We don't have to verify the certificate because we know it's coming from a paypal domain.
+	// We don't have to verify the certificate because we know it's coming from a
+	// paypal domain.
 
 	let public_key = rsa::RsaPublicKey::from_pkcs1_der(&cert.public_key_data()).map_err(|e| {
 		tracing::error!(error = %e, "failed to parse public key");
@@ -74,7 +73,8 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 }
 
 /// https://developer.paypal.com/api/rest/webhooks/rest
-/// Needlessly complicated because PayPal has a weird way of signing their webhooks
+/// Needlessly complicated because PayPal has a weird way of signing their
+/// webhooks
 pub async fn handle(
 	State(global): State<Arc<Global>>,
 	headers: HeaderMap,

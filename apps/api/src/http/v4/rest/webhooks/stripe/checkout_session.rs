@@ -1,21 +1,18 @@
-use std::{str::FromStr, sync::Arc};
+use std::str::FromStr;
+use std::sync::Arc;
 
-use shared::database::{
-	entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy},
-	product::{
-		codes::{CodeEffect, RedeemCode, RedeemCodeId},
-		subscription::{ProviderSubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId},
-		ProductId,
-	},
-	queries::{filter, update},
-	user::UserId,
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
+use shared::database::product::codes::{CodeEffect, RedeemCode, RedeemCodeId};
+use shared::database::product::subscription::{
+	ProviderSubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
+use shared::database::product::ProductId;
+use shared::database::queries::{filter, update};
+use shared::database::user::UserId;
 
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{TransactionError, TransactionResult, TransactionSession},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn completed(
 	global: &Arc<Global>,
@@ -29,44 +26,72 @@ pub async fn completed(
 
 	if session.mode == stripe::CheckoutSessionMode::Setup {
 		// setup session
-		// the customer successfully setup a new payment method, now set it as the default payment method
+		// the customer successfully setup a new payment method, now set it as the
+		// default payment method
 
-		let setup_intent = session.setup_intent.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?.id();
-		let setup_intent = stripe::SetupIntent::retrieve(&global.stripe_client, &setup_intent, &[]).await.map_err(|e| {
-			tracing::error!(error = %e, "failed to retrieve setup intent");
-			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-		})?;
+		let setup_intent = session
+			.setup_intent
+			.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?
+			.id();
+		let setup_intent = stripe::SetupIntent::retrieve(&global.stripe_client, &setup_intent, &[])
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to retrieve setup intent");
+				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			})?;
 
 		let customer_id = session.customer.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?.id();
 		let Some(payment_method) = setup_intent.payment_method.map(|p| p.id()) else {
 			return Ok(());
 		};
 
-		let customer = stripe::Customer::update(&global.stripe_client, &customer_id, stripe::UpdateCustomer {
-			invoice_settings: Some(stripe::CustomerInvoiceSettings {
-				default_payment_method: Some(payment_method.to_string()),
+		let customer = stripe::Customer::update(
+			&global.stripe_client,
+			&customer_id,
+			stripe::UpdateCustomer {
+				invoice_settings: Some(stripe::CustomerInvoiceSettings {
+					default_payment_method: Some(payment_method.to_string()),
+					..Default::default()
+				}),
 				..Default::default()
-			}),
-			..Default::default()
-		}).await.map_err(|e| {
+			},
+		)
+		.await
+		.map_err(|e| {
 			tracing::error!(error = %e, "failed to update customer");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
 
-		if let Some(user_id) = customer.metadata.and_then(|m| m.get("USER_ID").and_then(|i| UserId::from_str(i).ok())) {
-			if let Some(ProviderSubscriptionId::Stripe(sub_id)) = tx.find_one(filter::filter! {
-				SubscriptionPeriod {
-					user_id,
-					#[query(selector = "lt")]
-					start: chrono::Utc::now(),
-					#[query(selector = "gt")]
-					end: chrono::Utc::now(),
-				}
-			}, None).await?.and_then(|p| p.subscription_id) {
-				stripe::Subscription::update(&global.stripe_client, &sub_id, stripe::UpdateSubscription {
-					default_payment_method: Some(&payment_method),
-					..Default::default()
-				}).await.map_err(|e| {
+		if let Some(user_id) = customer
+			.metadata
+			.and_then(|m| m.get("USER_ID").and_then(|i| UserId::from_str(i).ok()))
+		{
+			if let Some(ProviderSubscriptionId::Stripe(sub_id)) = tx
+				.find_one(
+					filter::filter! {
+						SubscriptionPeriod {
+							user_id,
+							#[query(selector = "lt")]
+							start: chrono::Utc::now(),
+							#[query(selector = "gt")]
+							end: chrono::Utc::now(),
+						}
+					},
+					None,
+				)
+				.await?
+				.and_then(|p| p.subscription_id)
+			{
+				stripe::Subscription::update(
+					&global.stripe_client,
+					&sub_id,
+					stripe::UpdateSubscription {
+						default_payment_method: Some(&payment_method),
+						..Default::default()
+					},
+				)
+				.await
+				.map_err(|e| {
 					tracing::error!(error = %e, "failed to update subscription");
 					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 				})?;
@@ -74,7 +99,8 @@ pub async fn completed(
 		}
 	} else if metadata.get("IS_REDEEM").is_some_and(|v| v == "true") {
 		// redeem code session
-		// the customer successfully redeemed the subscription linked to the redeem code, now we grant access to the entitlements linked to the redeem code
+		// the customer successfully redeemed the subscription linked to the redeem
+		// code, now we grant access to the entitlements linked to the redeem code
 
 		let redeem_code_id = metadata
 			.get("REDEEM_CODE_ID")
@@ -127,7 +153,8 @@ pub async fn completed(
 		}
 	} else if metadata.get("IS_GIFT").is_some_and(|v| v == "true") {
 		// gift code session
-		// the gift sub payment was successful, now we add one subscription period for the recipient
+		// the gift sub payment was successful, now we add one subscription period for
+		// the recipient
 
 		let Some(payment_id) = session.payment_intent.map(|p| p.id()) else {
 			// ignore non-payment sessions
@@ -206,7 +233,8 @@ pub async fn expired(
 		return Ok(());
 	};
 
-	// session expired so we can increase the remaining uses of the redeem code again
+	// session expired so we can increase the remaining uses of the redeem code
+	// again
 	if metadata.get("IS_REDEEM").is_some_and(|v| v == "true") {
 		let redeem_code_id = metadata
 			.get("REDEEM_CODE_ID")

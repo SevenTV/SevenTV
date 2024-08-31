@@ -1,19 +1,15 @@
 use std::sync::Arc;
 
-use axum::{
-	routing::{get, patch, post},
-	Router,
-};
-use shared::database::queries::filter;
-use shared::database::{
-	product::{CustomerId, ProductId},
-	queries::update,
-	user::{User, UserId},
-	MongoCollection,
-};
+use axum::routing::{get, patch, post};
+use axum::Router;
+use shared::database::product::{CustomerId, ProductId};
+use shared::database::queries::{filter, update};
+use shared::database::user::{User, UserId};
+use shared::database::MongoCollection;
 use tokio::sync::OnceCell;
 
-use crate::{global::Global, http::error::ApiError};
+use crate::global::Global;
+use crate::http::error::ApiError;
 
 mod cancel;
 mod payment_method;

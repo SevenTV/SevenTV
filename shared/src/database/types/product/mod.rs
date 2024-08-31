@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use crate::typesense::types::impl_typesense_type;
-
 use super::duration::DurationUnit;
 use super::entitlement::EntitlementEdgeKind;
 use super::{MongoCollection, MongoGenericCollection};
+use crate::typesense::types::impl_typesense_type;
 
 pub mod codes;
 pub mod invoice;
@@ -206,14 +205,14 @@ pub struct Product {
 pub struct SubscriptionProduct {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
-    pub id: ProductId,
+	pub id: ProductId,
 	pub paypal_id: Option<String>,
-    pub name: String,
-    pub description: Option<String>,
-    pub default_currency: stripe::Currency,
-    pub currency_prices: HashMap<stripe::Currency, i32>,
-    pub kind: SubscriptionProductKind,
-    pub benefits: Vec<SubscriptionBenefit>,
+	pub name: String,
+	pub description: Option<String>,
+	pub default_currency: stripe::Currency,
+	pub currency_prices: HashMap<stripe::Currency, i32>,
+	pub kind: SubscriptionProductKind,
+	pub benefits: Vec<SubscriptionBenefit>,
 	#[serde(with = "crate::database::serde")]
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
@@ -222,26 +221,27 @@ pub struct SubscriptionProduct {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-/// An entitlement edge between the user sub and `entitlement` which will be inserted as soon as the condition is met.
+/// An entitlement edge between the user sub and `entitlement` which will be
+/// inserted as soon as the condition is met.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionBenefit {
-    pub entitlement: EntitlementEdgeKind,
-    pub condition: SubscriptionBenefitCondition,
+	pub entitlement: EntitlementEdgeKind,
+	pub condition: SubscriptionBenefitCondition,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum SubscriptionBenefitCondition {
-    Duration(DurationUnit),
-    TimePeriod(TimePeriod),
+	Duration(DurationUnit),
+	TimePeriod(TimePeriod),
 }
 
 #[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 #[repr(i32)]
 pub enum SubscriptionProductKind {
-    Monthly = 0,
-    Yearly = 1,
+	Monthly = 0,
+	Yearly = 1,
 }
 
 impl_typesense_type!(SubscriptionProductKind, Int32);

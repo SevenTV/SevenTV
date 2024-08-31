@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use axum::{routing::post, Router};
+use axum::routing::post;
+use axum::Router;
 
 use crate::global::Global;
 

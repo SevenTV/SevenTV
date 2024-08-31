@@ -1,22 +1,18 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use axum::{extract::State, Extension, Json};
-use shared::database::{
-	entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy},
-	product::{
-		codes::{CodeEffect, RedeemCode},
-		TimePeriod,
-	},
-	queries::{filter, update},
-};
-
-use crate::{
-	global::Global,
-	http::{error::ApiError, middleware::auth::AuthSession},
-	transactions::{with_transaction, TransactionError},
-};
+use axum::extract::State;
+use axum::{Extension, Json};
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
+use shared::database::product::codes::{CodeEffect, RedeemCode};
+use shared::database::product::TimePeriod;
+use shared::database::queries::{filter, update};
 
 use super::{create_checkout_session_params, find_customer};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::middleware::auth::AuthSession;
+use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct RedeemRequest {

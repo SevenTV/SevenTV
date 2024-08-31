@@ -8,8 +8,9 @@ use crate::database::user::UserId;
 use crate::database::{Id, MongoCollection};
 
 /// All subscriptions that ever existed, not only active ones
-/// This is only used to save data about a subscription that could also be retrieved from Stripe or PayPal
-/// It is used to avoid sending requests to Stripe or PayPal every time someone queries data about a subscription
+/// This is only used to save data about a subscription that could also be
+/// retrieved from Stripe or PayPal It is used to avoid sending requests to
+/// Stripe or PayPal every time someone queries data about a subscription
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscriptions")]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
@@ -98,10 +99,8 @@ impl From<stripe::SubscriptionId> for ProviderSubscriptionId {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscription_periods")]
-#[mongo(index(fields(user_id = 1)))]
+#[mongo(index(fields(user_id = 1, start = 1, end = 1)))]
 #[mongo(index(fields(subscription_id = 1)))]
-#[mongo(index(fields(start = 1)))]
-#[mongo(index(fields(end = 1)))]
 #[mongo(index(fields(product_ids = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]

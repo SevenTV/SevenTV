@@ -1,21 +1,16 @@
 use std::sync::Arc;
 
-use shared::database::{
-	product::{
-		invoice::{Invoice, InvoiceDisputeStatus},
-		InvoiceId,
-	},
-	queries::{filter, update},
-};
+use shared::database::product::invoice::{Invoice, InvoiceDisputeStatus};
+use shared::database::product::InvoiceId;
+use shared::database::queries::{filter, update};
 
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{TransactionError, TransactionResult, TransactionSession},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 /// Marks associated invoice as refunded.
-/// Creates a ticket to let staff know that the refund was made and decide what should happen next.
+/// Creates a ticket to let staff know that the refund was made and decide what
+/// should happen next.
 pub async fn refunded(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
@@ -49,7 +44,8 @@ pub async fn refunded(
 
 /// Marks the associated invoice as disputed.
 ///
-/// Called for `charge.dispute.created`, `charge.dispute.updated`, `charge.dispute.closed`
+/// Called for `charge.dispute.created`, `charge.dispute.updated`,
+/// `charge.dispute.closed`
 pub async fn dispute_updated(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

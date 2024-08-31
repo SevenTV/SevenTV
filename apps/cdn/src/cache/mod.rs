@@ -99,7 +99,9 @@ impl Cache {
 
 		let mut capacity = config.cache_capacity;
 		if capacity.bytes() <= 0 {
-			tracing::warn!("cache capacity is set to 0, this will cause the cache to never expire, this will undoubtedly result in an OOM");
+			tracing::warn!(
+				"cache capacity is set to 0, this will cause the cache to never expire, this will undoubtedly result in an OOM"
+			);
 			capacity = size::Size::from_bytes(u64::MAX);
 		}
 

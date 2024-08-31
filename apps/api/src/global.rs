@@ -13,7 +13,8 @@ use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, Entitleme
 use shared::database::global::GlobalConfig;
 use shared::database::loader::LoaderById;
 use shared::database::paint::Paint;
-use shared::database::product::{Product, SubscriptionProduct, subscription::Subscription};
+use shared::database::product::subscription::Subscription;
+use shared::database::product::{Product, SubscriptionProduct};
 use shared::database::role::Role;
 use shared::database::stored_event::StoredEvent;
 use shared::database::ticket::Ticket;

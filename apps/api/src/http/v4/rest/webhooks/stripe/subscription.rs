@@ -1,18 +1,13 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use shared::database::{
-	product::{
-		subscription::{ProviderSubscriptionId, Subscription, SubscriptionPeriod},
-		ProductId, SubscriptionProduct,
-	},
-	queries::{filter, update},
-};
+use shared::database::product::subscription::{ProviderSubscriptionId, Subscription, SubscriptionPeriod};
+use shared::database::product::{ProductId, SubscriptionProduct};
+use shared::database::queries::{filter, update};
 
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{TransactionError, TransactionResult, TransactionSession},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 /// Creates the subscription object in the database.
 pub async fn created(
@@ -81,8 +76,9 @@ pub async fn deleted(
 	Ok(())
 }
 
-/// Ends the current subscription period right away when the subscription products got removed from the subscription.
-/// Otherwise, updates the current subscription period to include all updated subscription products.
+/// Ends the current subscription period right away when the subscription
+/// products got removed from the subscription. Otherwise, updates the current
+/// subscription period to include all updated subscription products.
 pub async fn updated(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

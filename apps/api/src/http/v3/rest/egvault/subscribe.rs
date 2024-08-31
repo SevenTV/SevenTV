@@ -1,16 +1,19 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, Extension, Json};
-use shared::database::{
-	product::SubscriptionProduct, product::SubscriptionProductKind, queries::filter, user::UserId, MongoCollection,
-};
-
-use crate::{
-	global::Global,
-	http::{error::ApiError, extract::Query, middleware::auth::AuthSession},
-};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::{Extension, Json};
+use shared::database::product::{SubscriptionProduct, SubscriptionProductKind};
+use shared::database::queries::filter;
+use shared::database::user::UserId;
+use shared::database::MongoCollection;
 
 use super::{create_checkout_session_params, find_customer};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::http::extract::Query;
+use crate::http::middleware::auth::AuthSession;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct SubscribeQuery {
@@ -18,7 +21,7 @@ pub struct SubscribeQuery {
 	/// only "stripe" allowed
 	payment_method: String,
 	/// always true
-    #[serde(rename = "next")]
+	#[serde(rename = "next")]
 	_next: bool,
 	gift_for: Option<UserId>,
 }
@@ -92,7 +95,8 @@ pub async fn subscribe(
 
 	let paying_user = auth_session.user_id();
 
-	let mut params = create_checkout_session_params(&global, customer_id, Some(&body.prefill.email), Some(&product.id)).await;
+	let mut params =
+		create_checkout_session_params(&global, customer_id, Some(&body.prefill.email), Some(&product.id)).await;
 
 	let receiving_user = if let Some(gift_for) = query.gift_for {
 		let receiving_user = global

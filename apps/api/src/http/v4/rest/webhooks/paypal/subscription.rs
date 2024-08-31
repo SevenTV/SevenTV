@@ -1,21 +1,17 @@
 use std::sync::Arc;
 
-use shared::database::{
-	product::subscription::{ProviderSubscriptionId, SubscriptionPeriod, Subscription},
-	queries::{filter, update},
-};
-
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{TransactionResult, TransactionSession},
-};
+use shared::database::product::subscription::{ProviderSubscriptionId, Subscription, SubscriptionPeriod};
+use shared::database::queries::{filter, update};
 
 use super::types;
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{TransactionResult, TransactionSession};
 
 /// Ends the current period right away.
 ///
-/// Called for `BILLING.SUBSCRIPTION.CANCELLED` and `BILLING.SUBSCRIPTION.SUSPENDED`
+/// Called for `BILLING.SUBSCRIPTION.CANCELLED` and
+/// `BILLING.SUBSCRIPTION.SUSPENDED`
 pub async fn cancelled(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

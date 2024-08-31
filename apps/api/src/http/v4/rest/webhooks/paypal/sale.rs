@@ -1,25 +1,17 @@
 use std::sync::Arc;
 
-use shared::database::{
-	product::{
-		invoice::Invoice,
-		subscription::{
-			Subscription, ProviderSubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
-			SubscriptionPeriodId,
-		},
-		InvoiceId,
-	},
-	queries::{filter, update},
+use shared::database::product::invoice::Invoice;
+use shared::database::product::subscription::{
+	ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
+use shared::database::product::InvoiceId;
+use shared::database::queries::{filter, update};
 use stripe::{CreateInvoice, FinalizeInvoiceParams};
 
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{TransactionError, TransactionResult, TransactionSession},
-};
-
 use super::types;
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn completed(
 	global: &Arc<Global>,
@@ -213,9 +205,7 @@ pub async fn completed(
 					.unwrap_or_else(chrono::Utc::now),
 				end: next_billing_time,
 				is_trial: false,
-				created_by: SubscriptionPeriodCreatedBy::Invoice {
-					invoice_id,
-				},
+				created_by: SubscriptionPeriodCreatedBy::Invoice { invoice_id },
 				product_ids: pp_sub.product_ids,
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,

@@ -86,12 +86,12 @@ impl From<stripe::InvoiceStatus> for InvoiceStatus {
 #[repr(i32)]
 pub enum InvoiceDisputeStatus {
 	Lost = 0,
-    NeedsResponse = 1,
-    UnderReview = 2,
-    WarningClosed = 3,
-    WarningNeedsResponse = 4,
-    WarningUnderReview = 5,
-    Won = 6,
+	NeedsResponse = 1,
+	UnderReview = 2,
+	WarningClosed = 3,
+	WarningNeedsResponse = 4,
+	WarningUnderReview = 5,
+	Won = 6,
 	/// only applies to paypal disputes, either won or lost, we don't know
 	Resolved = 7,
 }

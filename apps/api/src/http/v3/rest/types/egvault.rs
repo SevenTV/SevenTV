@@ -1,7 +1,5 @@
-use shared::database::{
-	paint::PaintId,
-	product::{SubscriptionProductKind, SubscriptionProduct},
-};
+use shared::database::paint::PaintId;
+use shared::database::product::{SubscriptionProduct, SubscriptionProductKind};
 
 #[derive(Debug, serde::Serialize)]
 pub struct Subscription {

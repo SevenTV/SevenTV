@@ -48,7 +48,9 @@ pub struct User {
 	pub connections: Vec<UserConnection>,
 	/// The Stripe customer ID for this user
 	/// This will be None after the migration
-	/// When any endpoint accesses this field and it is None, it should be populated by first searching for the user in stripe or, if not found, creating a new customer
+	/// When any endpoint accesses this field and it is None, it should be
+	/// populated by first searching for the user in stripe or, if not found,
+	/// creating a new customer
 	pub stripe_customer_id: Option<CustomerId>,
 	pub cached_role_rank: i32,
 	#[serde(default)]

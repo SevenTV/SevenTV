@@ -1,23 +1,19 @@
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::collections::HashMap;
+use std::str::FromStr;
+use std::sync::Arc;
 
-use shared::database::{
-	product::{
-		invoice::{Invoice, InvoiceStatus},
-		subscription::{
-			ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
-		},
-		InvoiceId, ProductId,
-	},
-	queries::{filter, update},
-	user::UserId,
+use shared::database::product::invoice::{Invoice, InvoiceStatus};
+use shared::database::product::subscription::{
+	ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
+use shared::database::product::{InvoiceId, ProductId};
+use shared::database::queries::{filter, update};
+use shared::database::user::UserId;
 use stripe::{FinalizeInvoiceParams, Object};
 
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{TransactionError, TransactionResult, TransactionSession},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Result<Vec<ProductId>, ApiError> {
 	// TODO: paginate?
@@ -36,7 +32,8 @@ pub async fn created(
 	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
 	if let Some(subscription) = invoice.subscription {
-		// We have to fetch the subscription here to determine the id of the user this invoice is for.
+		// We have to fetch the subscription here to determine the id of the user this
+		// invoice is for.
 		let subscription = stripe::Subscription::retrieve(&global.stripe_client, &subscription.id(), &[])
 			.await
 			.map_err(|e| {
@@ -115,7 +112,8 @@ pub async fn created(
 
 /// Updates the invoice object.
 ///
-/// Called for `invoice.updated`, `invoice.finalized`, `invoice.payment_succeeded`
+/// Called for `invoice.updated`, `invoice.finalized`,
+/// `invoice.payment_succeeded`
 pub async fn updated(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
@@ -153,9 +151,9 @@ pub async fn updated(
 	Ok(())
 }
 
-/// If invoice is for a subscription, adds a new subscription period to that subscription.
-/// If the subscription is still in trial, makes the period a trial period.
-/// Updates the invoice object.
+/// If invoice is for a subscription, adds a new subscription period to that
+/// subscription. If the subscription is still in trial, makes the period a
+/// trial period. Updates the invoice object.
 ///
 /// Called for `invoice.paid`
 pub async fn paid(
@@ -267,14 +265,16 @@ pub async fn deleted(
 
 /// Marks the associated invoice as failed.
 /// Shows the user an error message.
-/// Should prompt the user to collect new payment information and update the subscription's default payment method afterwards.
+/// Should prompt the user to collect new payment information and update the
+/// subscription's default payment method afterwards.
 pub async fn payment_failed(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
 	// TODO: Show the user an error message.
-	// TODO: Collect new payment information and update the subscriptions default payment method.
+	// TODO: Collect new payment information and update the subscriptions default
+	// payment method.
 
 	let id: InvoiceId = invoice.id.into();
 

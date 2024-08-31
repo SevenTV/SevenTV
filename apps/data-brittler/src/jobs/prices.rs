@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::product::{Product, SubscriptionProductKind, SubscriptionProduct};
+use shared::database::product::{Product, SubscriptionProduct, SubscriptionProductKind};
 use shared::database::MongoCollection;
 use stripe::{Recurring, RecurringInterval};
 
