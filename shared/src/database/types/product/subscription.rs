@@ -2,10 +2,37 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use super::codes::RedeemCodeId;
-use super::{CustomerId, InvoiceId, PaymentIntentId, ProductId, SubscriptionId};
+use super::{InvoiceId, PaymentIntentId, StripeSubscriptionId, SubscriptionProductId};
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
-use crate::database::{Id, MongoCollection};
+use crate::database::{Id, IdFromStrError, MongoCollection};
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SubscriptionId {
+	pub user_id: UserId,
+	pub product_id: SubscriptionProductId,
+}
+
+impl Display for SubscriptionId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{},{}", self.user_id, self.product_id)
+	}
+}
+
+impl FromStr for SubscriptionId {
+	type Err = IdFromStrError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		let mut parts = s.split(',');
+		let user_id = parts.next().ok_or(IdFromStrError::InvalidLength(s.len()))?;
+		let product_id = parts.next().ok_or(IdFromStrError::InvalidLength(s.len()))?;
+
+		Ok(Self {
+			user_id: user_id.parse()?,
+			product_id: product_id.parse()?,
+		})
+	}
+}
 
 /// All subscriptions that ever existed, not only active ones
 /// This is only used to save data about a subscription that could also be
@@ -13,66 +40,64 @@ use crate::database::{Id, MongoCollection};
 /// Stripe or PayPal every time someone queries data about a subscription
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscriptions")]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(index(fields("_id.user_id" = 1, "_id.product_id" = 1)))]
 #[serde(deny_unknown_fields)]
 pub struct Subscription {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
-	pub id: ProviderSubscriptionId,
-	/// The user that receives the subscription benefits
-	pub user_id: UserId,
-	/// Set if there is a stripe customer for this customer already
-	/// always set for stripe subscriptions
-	pub stripe_customer_id: Option<CustomerId>,
-	pub product_ids: Vec<ProductId>,
-	pub cancel_at_period_end: bool,
-	pub trial_end: Option<chrono::DateTime<chrono::Utc>>,
-	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
-	#[serde(with = "crate::database::serde")]
-	pub created_at: chrono::DateTime<chrono::Utc>,
+	pub id: SubscriptionId,
+	pub state: SubscriptionState,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl Subscription {
-	pub fn from_stripe(sub: stripe::Subscription) -> Option<Self> {
-		let created_at = match sub.ended_at {
-			Some(t) => chrono::DateTime::from_timestamp(t, 0)?,
-			None => chrono::Utc::now(),
-		};
-
-		let user_id = sub.metadata.get("USER_ID").and_then(|i| UserId::from_str(i).ok())?;
-
-		Some(Self {
-			id: sub.id.into(),
-			user_id,
-			stripe_customer_id: Some(sub.customer.id().into()),
-			product_ids: sub
-				.items
-				.data
-				.into_iter()
-				.map(|i| Ok(i.price.ok_or(())?.id.into()))
-				.collect::<Result<_, ()>>()
-				.ok()?,
-			cancel_at_period_end: sub.cancel_at_period_end,
-			trial_end: match sub.trial_end {
-				Some(t) => Some(chrono::DateTime::from_timestamp(t, 0)?),
-				None => None,
-			},
-			ended_at: match sub.ended_at {
-				Some(t) => Some(chrono::DateTime::from_timestamp(t, 0)?),
-				None => None,
-			},
-			created_at,
-			updated_at: created_at,
-		})
-	}
+#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(i32)]
+pub enum SubscriptionState {
+	Active = 0,
+	CancelAtEnd = 1,
+	Ended = 2,
 }
+
+// impl Subscription {
+// 	pub fn from_stripe(sub: stripe::Subscription) -> Option<Self> {
+// 		let created_at = match sub.ended_at {
+// 			Some(t) => chrono::DateTime::from_timestamp(t, 0)?,
+// 			None => chrono::Utc::now(),
+// 		};
+
+// 		let user_id = sub.metadata.get("USER_ID").and_then(|i| UserId::from_str(i).ok())?;
+
+// 		Some(Self {
+// 			id: sub.id.into(),
+// 			user_id,
+// 			stripe_customer_id: Some(sub.customer.id().into()),
+// 			product_ids: sub
+// 				.items
+// 				.data
+// 				.into_iter()
+// 				.map(|i| Ok(i.price.ok_or(())?.id.into()))
+// 				.collect::<Result<_, ()>>()
+// 				.ok()?,
+// 			cancel_at_period_end: sub.cancel_at_period_end,
+// 			trial_end: match sub.trial_end {
+// 				Some(t) => Some(chrono::DateTime::from_timestamp(t, 0)?),
+// 				None => None,
+// 			},
+// 			ended_at: match sub.ended_at {
+// 				Some(t) => Some(chrono::DateTime::from_timestamp(t, 0)?),
+// 				None => None,
+// 			},
+// 			created_at,
+// 			updated_at: created_at,
+// 		})
+// 	}
+// }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case", tag = "kind", content = "id")]
 pub enum ProviderSubscriptionId {
-	Stripe(SubscriptionId),
+	Stripe(StripeSubscriptionId),
 	Paypal(String),
 }
 
@@ -85,8 +110,8 @@ impl Display for ProviderSubscriptionId {
 	}
 }
 
-impl From<SubscriptionId> for ProviderSubscriptionId {
-	fn from(id: SubscriptionId) -> Self {
+impl From<StripeSubscriptionId> for ProviderSubscriptionId {
+	fn from(id: StripeSubscriptionId) -> Self {
 		Self::Stripe(id)
 	}
 }
@@ -110,16 +135,14 @@ pub struct SubscriptionPeriod {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionPeriodId,
-	/// None for gifted and system subscriptions
-	pub subscription_id: Option<ProviderSubscriptionId>,
-	pub user_id: UserId,
+	pub subscription_id: SubscriptionId,
+	pub provider_id: Option<ProviderSubscriptionId>,
 	#[serde(with = "crate::database::serde")]
 	pub start: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub end: chrono::DateTime<chrono::Utc>,
 	pub is_trial: bool,
 	pub created_by: SubscriptionPeriodCreatedBy,
-	pub product_ids: Vec<ProductId>,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]

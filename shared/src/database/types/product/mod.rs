@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use super::duration::DurationUnit;
-use super::entitlement::EntitlementEdgeKind;
 use super::{MongoCollection, MongoGenericCollection};
+use crate::database::Id;
 use crate::typesense::types::impl_typesense_type;
 
 pub mod codes;
@@ -152,7 +152,7 @@ macro_rules! stripe_type {
 }
 
 stripe_type!(ProductId, stripe::PriceId);
-stripe_type!(SubscriptionId, stripe::SubscriptionId);
+stripe_type!(StripeSubscriptionId, stripe::SubscriptionId);
 stripe_type!(InvoiceId, stripe::InvoiceId);
 stripe_type!(InvoiceLineItemId, stripe::InvoiceLineItemId);
 stripe_type!(CustomerId, stripe::CustomerId);
@@ -185,6 +185,7 @@ pub struct Product {
 	pub id: ProductId,
 	pub name: String,
 	pub description: Option<String>,
+	pub extends_subscription: Option<SubscriptionProductId>,
 	pub default_currency: stripe::Currency,
 	pub currency_prices: HashMap<stripe::Currency, i32>,
 	#[serde(with = "crate::database::serde")]
@@ -194,6 +195,8 @@ pub struct Product {
 	#[serde(with = "crate::database::serde")]
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
+
+pub type SubscriptionProductId = Id<SubscriptionProduct>;
 
 /// There are only two kinds of subscriptions: monthly and yearly.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
@@ -205,13 +208,11 @@ pub struct Product {
 pub struct SubscriptionProduct {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
-	pub id: ProductId,
-	pub paypal_id: Option<String>,
+	pub id: SubscriptionProductId,
+	pub variants: Vec<SubscriptionProductVariant>,
 	pub name: String,
 	pub description: Option<String>,
 	pub default_currency: stripe::Currency,
-	pub currency_prices: HashMap<stripe::Currency, i32>,
-	pub kind: SubscriptionProductKind,
 	pub benefits: Vec<SubscriptionBenefit>,
 	#[serde(with = "crate::database::serde")]
 	pub created_at: chrono::DateTime<chrono::Utc>,
@@ -221,12 +222,30 @@ pub struct SubscriptionProduct {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind", content = "id")]
+pub enum SubscriptionProductProviderId {
+	Stripe(ProductId),
+	Paypal(String),
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SubscriptionProductVariant {
+	pub id: SubscriptionProductProviderId,
+	pub kind: SubscriptionProductKind,
+	pub currency_prices: HashMap<stripe::Currency, i32>,
+}
+
+pub type SubscriptionBenefitId = Id<SubscriptionBenefit>;
+
 /// An entitlement edge between the user sub and `entitlement` which will be
 /// inserted as soon as the condition is met.
+/// The `SubscriptionBenefitId` can have entitlements attached via the entitlement graph.
+/// If the user qualifies for the entitlement benifit then we create an edge between `Subscription` and `SubscriptionBenefit` on the entitlement graph.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionBenefit {
-	pub entitlement: EntitlementEdgeKind,
+	pub id: SubscriptionBenefitId,
 	pub condition: SubscriptionBenefitCondition,
 }
 
@@ -256,8 +275,12 @@ impl SubscriptionProductKind {
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
-	std::iter::once(MongoGenericCollection::new::<Product>())
-		.chain(codes::mongo_collections())
-		.chain(invoice::collections())
-		.chain(subscription::collections())
+	[
+		MongoGenericCollection::new::<Product>(),
+		MongoGenericCollection::new::<SubscriptionProduct>(),
+	]
+	.into_iter()
+	.chain(codes::mongo_collections())
+	.chain(invoice::collections())
+	.chain(subscription::collections())
 }

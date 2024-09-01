@@ -4,9 +4,9 @@ use std::sync::Arc;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::codes::{CodeEffect, RedeemCode, RedeemCodeId};
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
+	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId, SubscriptionState
 };
-use shared::database::product::ProductId;
+use shared::database::product::{ProductId, SubscriptionProductId};
 use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
 
@@ -120,28 +120,31 @@ pub async fn completed(
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
 
-		let redeem_code = tx
-			.find_one(
-				filter::filter! {
-					RedeemCode {
-						#[query(rename = "_id")]
-						id: redeem_code_id,
-					}
-				},
-				None,
-			)
+		let redeem_code = global
+			.redeem_code_by_id_loader
+			.load(redeem_code_id)
 			.await?
-			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+			.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-		for effect in redeem_code.effects.into_iter().filter_map(|e| match e {
-			CodeEffect::Entitlement { edge } => Some(edge),
+		for (to, extends_subscription) in redeem_code.effects.into_iter().filter_map(|e| match e {
+			CodeEffect::Entitlement {
+				edge,
+				extends_subscription,
+			} => Some((edge, extends_subscription)),
 			_ => None,
 		}) {
+			let from = match extends_subscription {
+				Some(extends_subscription) => EntitlementEdgeKind::Subscription {
+					subscription_id: todo!("how??"),
+				},
+				None => EntitlementEdgeKind::User { user_id },
+			};
+
 			tx.insert_one(
 				EntitlementEdge {
 					id: EntitlementEdgeId {
-						from: EntitlementEdgeKind::User { user_id },
-						to: effect,
+						from,
+						to,
 						managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
 							redeem_code_id: redeem_code.id,
 						}),
@@ -187,7 +190,7 @@ pub async fn completed(
 		let product_id = metadata
 			.get("PRODUCT_ID")
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
-		let product_id = ProductId::from_str(&product_id).map_err(|e| {
+		let product_id = SubscriptionProductId::from_str(&product_id).map_err(|e| {
 			tracing::error!(error = %e, "invalid product id");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
@@ -199,11 +202,33 @@ pub async fn completed(
 			.checked_add_months(chrono::Months::new(period_duration)) // It's fine to use this function here since UTC doens't have daylight saving time transitions
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
+		let sub_id = SubscriptionId { user_id: receiving_user, product_id };
+
+		tx.find_one_and_update(
+				filter::filter! {
+					Subscription {
+						#[query(rename = "_id")]
+						id: sub_id,
+					}
+				},
+				update::update! {
+					#[query(set_on_insert)]
+					Subscription {
+						id: sub_id,
+						state: SubscriptionState::Active,
+						updated_at: chrono::Utc::now(),
+					}
+				},
+				FindOneAndUpdateOptions::builder().upsert(true),
+			)
+			.await?
+			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+			
 		tx.insert_one(
 			SubscriptionPeriod {
 				id: SubscriptionPeriodId::new(),
-				subscription_id: None,
-				user_id: receiving_user,
+				subscription_id: sub_id,
+				provider_id: None,
 				start,
 				end,
 				is_trial: false,
@@ -211,7 +236,6 @@ pub async fn completed(
 					gifter: paying_user,
 					payment: payment_id.into(),
 				},
-				product_ids: vec![product_id],
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
 			},

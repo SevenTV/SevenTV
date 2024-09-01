@@ -6,7 +6,8 @@ use super::badge::BadgeId;
 use super::emote_set::EmoteSetId;
 use super::paint::PaintId;
 use super::product::codes::RedeemCodeId;
-use super::product::{InvoiceId, InvoiceLineItemId, ProductId, SubscriptionId};
+use super::product::subscription::SubscriptionId;
+use super::product::{InvoiceId, InvoiceLineItemId, ProductId, SubscriptionBenefitId};
 use super::role::RoleId;
 use super::user::UserId;
 use super::{MongoCollection, MongoGenericCollection};
@@ -24,7 +25,7 @@ pub enum EntitlementEdgeKind {
 	Paint { paint_id: PaintId },
 	EmoteSet { emote_id: EmoteSetId },
 	Product { product_id: ProductId },
-	SubscriptionProduct { product_id: ProductId },
+	SubscriptionBenefit { subscription_benefit_id: SubscriptionBenefitId },
 	Subscription { subscription_id: SubscriptionId },
 	EntitlementGroup { entitlement_group_id: EntitlementGroupId },
 	GlobalDefaultEntitlementGroup,
@@ -39,7 +40,7 @@ impl std::fmt::Display for EntitlementEdgeKind {
 			EntitlementEdgeKind::Paint { paint_id } => write!(f, "paint:{}", paint_id),
 			EntitlementEdgeKind::EmoteSet { emote_id } => write!(f, "emote_set:{}", emote_id),
 			EntitlementEdgeKind::Product { product_id } => write!(f, "product:{}", product_id),
-			EntitlementEdgeKind::SubscriptionProduct { product_id } => write!(f, "subscription_product:{}", product_id),
+			EntitlementEdgeKind::SubscriptionBenefit { subscription_benefit_id } => write!(f, "subscription_benefit:{}", subscription_benefit_id),
 			EntitlementEdgeKind::Subscription { subscription_id } => write!(f, "subscription:{}", subscription_id),
 			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
 				write!(f, "entitlement_group:{}", entitlement_group_id)
@@ -256,6 +257,7 @@ pub struct CalculatedEntitlements {
 	pub emote_sets: HashSet<EmoteSetId>,
 	pub products: HashSet<ProductId>,
 	pub subscriptions: HashSet<SubscriptionId>,
+	pub subscription_benefits: HashSet<SubscriptionBenefitId>,
 	pub entitlement_groups: HashSet<EntitlementGroupId>,
 }
 
@@ -267,6 +269,7 @@ impl CalculatedEntitlements {
 		let mut emote_sets = HashSet::new();
 		let mut products = HashSet::new();
 		let mut subscriptions = HashSet::new();
+		let mut subscription_benefits = HashSet::new();
 		let mut entitlement_groups = HashSet::new();
 
 		edges.into_iter().for_each(|to| match to {
@@ -285,8 +288,8 @@ impl CalculatedEntitlements {
 			EntitlementEdgeKind::Product { product_id } => {
 				products.insert(product_id);
 			}
-			EntitlementEdgeKind::SubscriptionProduct { product_id } => {
-				products.insert(product_id);
+			EntitlementEdgeKind::SubscriptionBenefit { subscription_benefit_id } => {
+				subscription_benefits.insert(subscription_benefit_id);
 			}
 			EntitlementEdgeKind::Subscription { subscription_id } => {
 				subscriptions.insert(subscription_id);
@@ -307,6 +310,7 @@ impl CalculatedEntitlements {
 			emote_sets,
 			products,
 			subscriptions,
+			subscription_benefits,
 			entitlement_groups,
 		}
 	}
