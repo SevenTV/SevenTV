@@ -17,6 +17,7 @@ pub struct Product {
 	pub id: ProductId,
 	pub name: String,
 	pub description: Option<String>,
+	pub extends_subscription: Option<SubscriptionProductId>,
 	pub default_currency: stripe::Currency,
 	pub currency_prices: HashMap<stripe::Currency, i32>,
 	#[serde(with = "crate::database::serde")]
@@ -224,7 +225,7 @@ pub struct RedeemCode {
 }
 
 pub enum CodeEffect {
-	Entitlement { edge: EntitlementEdgeKind },
+	Entitlement { edge: EntitlementEdgeKind, extend_subscription: Option<SubscriptionProductId> },
 	/// This isnt an `Entitlement` we should just create a Subscription object for this user and then give them a period for the trial days.
 	/// If its only for first_time subs then dont give if they already have subbed before, and only give if they are not actively subbed.
 	/// Never create a new period if they are actively subbed.
