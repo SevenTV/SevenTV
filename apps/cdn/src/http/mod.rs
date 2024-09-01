@@ -123,10 +123,11 @@ enum AnyServiceInner<A: ServiceHandler, B: ServiceHandler> {
 
 #[metrics]
 mod http {
-	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
-	use scuffle_foundations::{http::server::stream, telemetry::metrics::prometheus_client::metrics::histogram::Histogram};
+	use scuffle_foundations::http::server::stream;
 	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
 	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
+	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
 	use serde::{Deserialize, Serialize};
 
 	pub struct ConnectionDropGuard(SocketKind);
@@ -176,13 +177,13 @@ mod http {
 
 	pub fn status_code(socket: SocketKind, status: String) -> Counter;
 
-	#[builder = HistogramBuilder::default()] 
+	#[builder = HistogramBuilder::default()]
 	pub fn socket_request_count(socket: SocketKind) -> Histogram;
 
-	#[builder = HistogramBuilder::default()] 
+	#[builder = HistogramBuilder::default()]
 	pub fn socket_duration(socket: SocketKind) -> Histogram;
 
-	#[builder = HistogramBuilder::default()] 
+	#[builder = HistogramBuilder::default()]
 	pub fn request_duration(socket: SocketKind) -> Histogram;
 
 	pub fn bytes_sent(socket: SocketKind) -> Counter;
@@ -338,7 +339,7 @@ impl MakeService for CustomMakeService {
 		let Some(ticket) = self.limiter.acquire(incoming.remote_addr().ip()) else {
 			return std::future::ready(None);
 		};
- 
+
 		let service = if let (Some(port), false) = (self.redirect_uncrypted, incoming.is_encrypted()) {
 			AnyService::new_b(
 				incoming.socket_kind().into(),

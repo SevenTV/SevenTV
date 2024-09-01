@@ -21,11 +21,27 @@ impl Bootstrap for Config {
 
 	fn telemetry_config(&self) -> Option<TelemetrySettings> {
 		let mut settings = self.telemetry.clone();
-		settings.metrics.labels.entry("server_name".to_string()).or_insert(self.cdn.server_name.clone());
+		settings
+			.metrics
+			.labels
+			.entry("server_name".to_string())
+			.or_insert(self.cdn.server_name.clone());
 		if let Ok(host_info) = sys_metrics::host::get_host_info() {
-			settings.metrics.labels.entry("system".to_string()).or_insert(host_info.system);
-			settings.metrics.labels.entry("kernel_version".to_string()).or_insert(host_info.kernel_version);
-			settings.metrics.labels.entry("hostname".to_string()).or_insert(host_info.hostname);
+			settings
+				.metrics
+				.labels
+				.entry("system".to_string())
+				.or_insert(host_info.system);
+			settings
+				.metrics
+				.labels
+				.entry("kernel_version".to_string())
+				.or_insert(host_info.kernel_version);
+			settings
+				.metrics
+				.labels
+				.entry("hostname".to_string())
+				.or_insert(host_info.hostname);
 		}
 		Some(settings)
 	}
@@ -101,7 +117,7 @@ fn default_ipv6_buckets() -> Vec<RateLimitPrefixBucket> {
 		},
 		RateLimitPrefixBucket {
 			prefix_length: 32,
-			concurrent_connections: 2000,
+			concurrent_connections: 10000,
 		},
 	]
 }
@@ -125,28 +141,39 @@ fn default_ipv4_buckets() -> Vec<RateLimitPrefixBucket> {
 
 fn default_range_buckets() -> Vec<RateLimitRangeBucket> {
 	vec![
+		// private ipv4
 		RateLimitRangeBucket {
 			range: "10.0.0.0/8".parse().unwrap(),
 			concurrent_connections: None,
 		},
+		// private ipv4
 		RateLimitRangeBucket {
 			range: "172.16.0.0/12".parse().unwrap(),
 			concurrent_connections: None,
 		},
+		// private ipv4
 		RateLimitRangeBucket {
 			range: "192.168.0.0/16".parse().unwrap(),
 			concurrent_connections: None,
 		},
+		// loopback ipv4
 		RateLimitRangeBucket {
 			range: "127.0.0.0/8".parse().unwrap(),
 			concurrent_connections: None,
 		},
+		// private ipv6
 		RateLimitRangeBucket {
 			range: "fc00::/7".parse().unwrap(),
 			concurrent_connections: None,
 		},
+		// link local ipv6
 		RateLimitRangeBucket {
 			range: "fe80::/10".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		// ipv6 loopback
+		RateLimitRangeBucket {
+			range: "::1/128".parse().unwrap(),
 			concurrent_connections: None,
 		},
 	]

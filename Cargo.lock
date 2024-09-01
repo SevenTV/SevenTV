@@ -1005,6 +1005,7 @@ dependencies = [
  "serde",
  "shared",
  "size",
+ "spin",
  "sys_metrics",
  "thiserror",
  "tokio",
