@@ -28,5 +28,5 @@ hyper-util = "0.1.7"
 num_cpus = "1.16.0"
 sys_metrics = "0.2"
 size = { version = "=0.5.0-preview2", features = ["serde"] }
-
+ipnet = { version = "2.9.0", features = ["serde"] }
 shared = { workspace = true }

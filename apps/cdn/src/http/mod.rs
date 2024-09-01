@@ -5,6 +5,7 @@ use std::time::Instant;
 use ::http::HeaderValue;
 use anyhow::Context;
 use quinn::crypto::rustls::QuicServerConfig;
+use ratelimit::{RateLimitDropGuard, RateLimiter};
 use scuffle_foundations::http::server::axum::body::HttpBody;
 use scuffle_foundations::http::server::axum::extract::{MatchedPath, Request};
 use scuffle_foundations::http::server::axum::response::Response;
@@ -23,6 +24,7 @@ use self::http::{ActionKind, ConnectionDropGuard, SocketKind};
 use crate::global::Global;
 
 mod cdn;
+mod ratelimit;
 
 #[derive(Clone)]
 struct TraceRequestId;
@@ -89,25 +91,25 @@ struct AnyService<A: ServiceHandler, B: ServiceHandler> {
 	kind: SocketKind,
 	started_at: Instant,
 	request_count: Arc<AtomicUsize>,
-	_guard: Arc<ConnectionDropGuard>,
+	_guard: Arc<(ConnectionDropGuard, RateLimitDropGuard)>,
 	inner: AnyServiceInner<A, B>,
 }
 
 impl<A: ServiceHandler, B: ServiceHandler> AnyService<A, B> {
-	fn new_a(kind: SocketKind, svc: A) -> Self {
-		Self::new(kind, AnyServiceInner::Left(svc))
+	fn new_a(kind: SocketKind, svc: A, limiter: RateLimitDropGuard) -> Self {
+		Self::new(kind, AnyServiceInner::Left(svc), limiter)
 	}
 
-	fn new_b(kind: SocketKind, svc: B) -> Self {
-		Self::new(kind, AnyServiceInner::Right(svc))
+	fn new_b(kind: SocketKind, svc: B, limiter: RateLimitDropGuard) -> Self {
+		Self::new(kind, AnyServiceInner::Right(svc), limiter)
 	}
 
-	fn new(kind: SocketKind, svc: AnyServiceInner<A, B>) -> Self {
+	fn new(kind: SocketKind, svc: AnyServiceInner<A, B>, limiter: RateLimitDropGuard) -> Self {
 		Self {
 			kind,
 			request_count: Arc::new(AtomicUsize::new(0)),
 			started_at: Instant::now(),
-			_guard: Arc::new(ConnectionDropGuard::new(kind.into())),
+			_guard: Arc::new((ConnectionDropGuard::new(kind.into()), limiter)),
 			inner: svc,
 		}
 	}
@@ -268,6 +270,7 @@ struct CustomMakeService {
 	redirect_uncrypted: Option<u16>,
 	server_name: Arc<str>,
 	routes: Router,
+	limiter: Arc<RateLimiter>,
 }
 
 #[derive(Clone, Debug)]
@@ -332,6 +335,10 @@ impl MakeService for CustomMakeService {
 		&self,
 		incoming: &impl IncomingConnection,
 	) -> impl std::future::Future<Output = Option<impl ServiceHandler>> + Send {
+		let Some(ticket) = self.limiter.acquire(incoming.remote_addr().ip()) else {
+			return std::future::ready(None);
+		};
+ 
 		let service = if let (Some(port), false) = (self.redirect_uncrypted, incoming.is_encrypted()) {
 			AnyService::new_b(
 				incoming.socket_kind().into(),
@@ -339,9 +346,10 @@ impl MakeService for CustomMakeService {
 					port,
 					server_name: self.server_name.clone(),
 				},
+				ticket,
 			)
 		} else {
-			AnyService::new_a(incoming.socket_kind().into(), self.routes.clone())
+			AnyService::new_a(incoming.socket_kind().into(), self.routes.clone(), ticket)
 		};
 
 		std::future::ready(Some(service))
@@ -409,6 +417,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		.build(CustomMakeService {
 			routes: routes(&global, &server_name),
 			server_name,
+			limiter: RateLimiter::new(&global.config.cdn.rate_limit),
 			redirect_uncrypted: if !global.config.cdn.allow_insecure && global.config.cdn.tls.is_some() {
 				Some(global.config.cdn.secure_bind.port())
 			} else {

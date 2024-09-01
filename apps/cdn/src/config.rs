@@ -69,4 +69,99 @@ pub struct Cdn {
 	/// Origin request timeout in seconds
 	#[settings(default = 5)]
 	pub origin_request_timeout: u64,
+	/// Rate limit configuration
+	#[settings(default = RateLimit::default())]
+	pub rate_limit: RateLimit,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct RateLimit {
+	#[settings(default = default_ipv6_buckets())]
+	pub ipv6_buckets: Vec<RateLimitPrefixBucket>,
+	#[settings(default = default_ipv4_buckets())]
+	pub ipv4_buckets: Vec<RateLimitPrefixBucket>,
+	#[settings(default = default_range_buckets())]
+	pub range_buckets: Vec<RateLimitRangeBucket>,
+}
+
+fn default_ipv6_buckets() -> Vec<RateLimitPrefixBucket> {
+	vec![
+		RateLimitPrefixBucket {
+			prefix_length: 128,
+			concurrent_connections: 50,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 64,
+			concurrent_connections: 100,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 48,
+			concurrent_connections: 1000,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 32,
+			concurrent_connections: 2000,
+		},
+	]
+}
+
+fn default_ipv4_buckets() -> Vec<RateLimitPrefixBucket> {
+	vec![
+		RateLimitPrefixBucket {
+			prefix_length: 32,
+			concurrent_connections: 125,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 24,
+			concurrent_connections: 250,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 16,
+			concurrent_connections: 10000,
+		},
+	]
+}
+
+fn default_range_buckets() -> Vec<RateLimitRangeBucket> {
+	vec![
+		RateLimitRangeBucket {
+			range: "10.0.0.0/8".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		RateLimitRangeBucket {
+			range: "172.16.0.0/12".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		RateLimitRangeBucket {
+			range: "192.168.0.0/16".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		RateLimitRangeBucket {
+			range: "127.0.0.0/8".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		RateLimitRangeBucket {
+			range: "fc00::/7".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		RateLimitRangeBucket {
+			range: "fe80::/10".parse().unwrap(),
+			concurrent_connections: None,
+		},
+	]
+}
+
+#[auto_settings]
+#[derive(Copy)]
+pub struct RateLimitRangeBucket {
+	pub range: ipnet::IpNet,
+	pub concurrent_connections: Option<u64>,
+}
+
+#[auto_settings]
+#[derive(Copy)]
+pub struct RateLimitPrefixBucket {
+	pub prefix_length: u8,
+	pub concurrent_connections: u64,
 }
