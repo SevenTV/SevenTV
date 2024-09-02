@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Extension;
-use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionPeriod};
+use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::{filter, update};
 
 use crate::global::Global;
@@ -38,7 +38,10 @@ pub async fn cancel_subscription(
 				.find_one(
 					filter::filter! {
 						SubscriptionPeriod {
-							user_id: user,
+							#[query(flatten)]
+							subscription_id: SubscriptionId {
+								user_id: user,
+							},
 							#[query(selector = "lt")]
 							start: chrono::Utc::now(),
 							#[query(selector = "gt")]
@@ -50,7 +53,7 @@ pub async fn cancel_subscription(
 				.await?
 				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-			match period.subscription_id {
+			match period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
 					stripe::Subscription::update(
 						&global.stripe_client,
@@ -150,7 +153,10 @@ pub async fn reactivate_subscription(
 				.find_one(
 					filter::filter! {
 						SubscriptionPeriod {
-							user_id: user,
+							#[query(flatten)]
+							subscription_id: SubscriptionId {
+								user_id: user,
+							},
 							#[query(selector = "lt")]
 							start: chrono::Utc::now(),
 							#[query(selector = "gt")]
@@ -162,7 +168,7 @@ pub async fn reactivate_subscription(
 				.await?
 				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-			match period.subscription_id {
+			match period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
 					stripe::Subscription::update(
 						&global.stripe_client,

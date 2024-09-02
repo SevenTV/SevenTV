@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use shared::database::product::invoice::Invoice;
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
+	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
-use shared::database::product::InvoiceId;
+use shared::database::product::{CustomerId, InvoiceId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
+use shared::database::user::User;
 use stripe::{CreateInvoice, FinalizeInvoiceParams};
 
 use super::types;
@@ -23,26 +24,23 @@ pub async fn completed(
 		return Ok(());
 	};
 
-	let subscription_id = ProviderSubscriptionId::Paypal(subscription_id);
-
-	let Some(pp_sub) = tx
+	let Some(user) = tx
 		.find_one(
 			filter::filter! {
-				Subscription {
-					#[query(rename = "_id", serde)]
-					id: &subscription_id,
+				User {
+					paypal_sub_id: Some(&subscription_id),
 				}
 			},
 			None,
 		)
 		.await?
 	else {
-		// no subscription found
+		// no user found
 		return Ok(());
 	};
 
 	// retrieve the paypal subscription
-	let subscription: types::Subscription = global
+	let paypal_sub: types::Subscription = global
 		.http_client
 		.get(format!("https://api.paypal.com/v1/billing/subscriptions/{subscription_id}"))
 		.bearer_auth(&global.config.api.paypal.api_key)
@@ -59,25 +57,25 @@ pub async fn completed(
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
 
-	let customer_id = match pp_sub.stripe_customer_id {
+	// get or create the stripe customer
+	let customer_id = match user.stripe_customer_id {
 		Some(id) => id,
 		None => {
 			// no stripe customer yet
-
-			let name = subscription.subscriber.name.and_then(|n| match (n.given_name, n.surname) {
+			let name = paypal_sub.subscriber.name.and_then(|n| match (n.given_name, n.surname) {
 				(Some(given), Some(surname)) => Some(format!("{given} {surname}")),
 				(Some(given), None) => Some(given),
 				(None, Some(surname)) => Some(surname),
 				(None, None) => None,
 			});
 
-			let phone = subscription
+			let phone = paypal_sub
 				.subscriber
 				.phone
 				.and_then(|p| p.phone_number)
 				.and_then(|n| n.national_number);
 
-			let address = subscription.subscriber.shipping_address.map(|a| stripe::Address {
+			let address = paypal_sub.subscriber.shipping_address.map(|a| stripe::Address {
 				city: a.admin_area_1,
 				country: a.country_code,
 				line1: a.address_line_1,
@@ -90,14 +88,14 @@ pub async fn completed(
 				&global.stripe_client,
 				stripe::CreateCustomer {
 					name: name.as_deref(),
-					email: subscription.subscriber.email_address.as_deref(),
+					email: paypal_sub.subscriber.email_address.as_deref(),
 					phone: phone.as_deref(),
 					address,
 					description: Some("Legacy PayPal customer. Real payments will be handled by PayPal."),
 					metadata: Some(
 						[
-							("USER_ID".to_string(), pp_sub.user_id.to_string()),
-							("PAYPAL_ID".to_string(), subscription.subscriber.payer_id),
+							("USER_ID".to_string(), user.id.to_string()),
+							("PAYPAL_ID".to_string(), paypal_sub.subscriber.payer_id),
 						]
 						.into(),
 					),
@@ -110,27 +108,54 @@ pub async fn completed(
 				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 			})?;
 
-			customer.id.into()
+			let customer_id: CustomerId = customer.id.into();
+
+			tx.update_one(
+				filter::filter! {
+					User {
+						#[query(rename = "_id")]
+						id: user.id,
+					}
+				},
+				update::update! {
+					#[query(set)]
+					User {
+						stripe_customer_id: Some(&customer_id),
+						updated_at: chrono::Utc::now(),
+					}
+				},
+				None,
+			)
+			.await?;
+
+			customer_id
 		}
 	};
 
-	tx.update_one(
-		filter::filter! {
-			Subscription {
-				#[query(rename = "_id", serde)]
-				id: &subscription_id,
-			}
-		},
-		update::update! {
-			#[query(set)]
-			Subscription {
-				stripe_customer_id: Some(customer_id.clone()),
-				updated_at: chrono::Utc::now(),
-			}
-		},
-		None,
-	)
-	.await?;
+	let Some(product) = tx
+		.find_one(
+			filter::filter! {
+				SubscriptionProduct {
+					#[query(flatten)]
+					variants: SubscriptionProductVariant {
+						paypal_id: Some(&paypal_sub.plan_id),
+					}
+				}
+			},
+			None,
+		)
+		.await?
+	else {
+		// no product found
+		return Ok(());
+	};
+
+	let stripe_product_id = product
+		.variants
+		.into_iter()
+		.find(|v| v.paypal_id.as_ref().is_some_and(|p| p == &paypal_sub.plan_id))
+		.unwrap()
+		.id;
 
 	let invoice = stripe::Invoice::create(
 		&global.stripe_client,
@@ -176,9 +201,9 @@ pub async fn completed(
 	tx.insert_one(
 		Invoice {
 			id: invoice_id.clone(),
-			items: pp_sub.product_ids.clone(),
+			items: vec![stripe_product_id],
 			customer_id: customer_id.into(),
-			user_id: pp_sub.user_id,
+			user_id: user.id,
 			paypal_payment_id: Some(sale.id.clone()),
 			status,
 			failed: false,
@@ -192,13 +217,16 @@ pub async fn completed(
 	)
 	.await?;
 
-	if let Some(next_billing_time) = subscription.billing_info.next_billing_time {
+	if let Some(next_billing_time) = paypal_sub.billing_info.next_billing_time {
 		tx.insert_one(
 			SubscriptionPeriod {
 				id: SubscriptionPeriodId::new(),
-				subscription_id: Some(subscription_id),
-				user_id: pp_sub.user_id,
-				start: subscription
+				subscription_id: SubscriptionId {
+					user_id: user.id,
+					product_id: product.id,
+				},
+				provider_id: Some(ProviderSubscriptionId::Paypal(subscription_id)),
+				start: paypal_sub
 					.billing_info
 					.last_payment
 					.map(|p| p.time)
@@ -206,7 +234,6 @@ pub async fn completed(
 				end: next_billing_time,
 				is_trial: false,
 				created_by: SubscriptionPeriodCreatedBy::Invoice { invoice_id },
-				product_ids: pp_sub.product_ids,
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
 			},

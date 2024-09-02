@@ -1,17 +1,19 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
-use shared::database::product::codes::{CodeEffect, RedeemCode, RedeemCodeId};
+use mongodb::options::FindOneAndUpdateOptions;
+use shared::database::product::codes::{RedeemCode, RedeemCodeId};
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId, SubscriptionState
+	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
+	SubscriptionPeriodId, SubscriptionState,
 };
-use shared::database::product::{ProductId, SubscriptionProductId};
+use shared::database::product::SubscriptionProductId;
 use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::v3::rest::egvault::redeem::grant_entitlements;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn completed(
@@ -70,7 +72,10 @@ pub async fn completed(
 				.find_one(
 					filter::filter! {
 						SubscriptionPeriod {
-							user_id,
+							#[query(flatten)]
+							subscription_id: SubscriptionId {
+								user_id,
+							},
 							#[query(selector = "lt")]
 							start: chrono::Utc::now(),
 							#[query(selector = "gt")]
@@ -80,7 +85,7 @@ pub async fn completed(
 					None,
 				)
 				.await?
-				.and_then(|p| p.subscription_id)
+				.and_then(|p| p.provider_id)
 			{
 				stripe::Subscription::update(
 					&global.stripe_client,
@@ -123,37 +128,11 @@ pub async fn completed(
 		let redeem_code = global
 			.redeem_code_by_id_loader
 			.load(redeem_code_id)
-			.await?
+			.await
+			.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 			.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-		for (to, extends_subscription) in redeem_code.effects.into_iter().filter_map(|e| match e {
-			CodeEffect::Entitlement {
-				edge,
-				extends_subscription,
-			} => Some((edge, extends_subscription)),
-			_ => None,
-		}) {
-			let from = match extends_subscription {
-				Some(extends_subscription) => EntitlementEdgeKind::Subscription {
-					subscription_id: todo!("how??"),
-				},
-				None => EntitlementEdgeKind::User { user_id },
-			};
-
-			tx.insert_one(
-				EntitlementEdge {
-					id: EntitlementEdgeId {
-						from,
-						to,
-						managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
-							redeem_code_id: redeem_code.id,
-						}),
-					},
-				},
-				None,
-			)
-			.await?;
-		}
+		grant_entitlements(&mut tx, &redeem_code, user_id).await?;
 	} else if metadata.get("IS_GIFT").is_some_and(|v| v == "true") {
 		// gift code session
 		// the gift sub payment was successful, now we add one subscription period for
@@ -202,28 +181,31 @@ pub async fn completed(
 			.checked_add_months(chrono::Months::new(period_duration)) // It's fine to use this function here since UTC doens't have daylight saving time transitions
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
-		let sub_id = SubscriptionId { user_id: receiving_user, product_id };
+		let sub_id = SubscriptionId {
+			user_id: receiving_user,
+			product_id,
+		};
 
 		tx.find_one_and_update(
-				filter::filter! {
-					Subscription {
-						#[query(rename = "_id")]
-						id: sub_id,
-					}
-				},
-				update::update! {
-					#[query(set_on_insert)]
-					Subscription {
-						id: sub_id,
-						state: SubscriptionState::Active,
-						updated_at: chrono::Utc::now(),
-					}
-				},
-				FindOneAndUpdateOptions::builder().upsert(true),
-			)
-			.await?
-			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
-			
+			filter::filter! {
+				Subscription {
+					#[query(rename = "_id", serde)]
+					id: &sub_id,
+				}
+			},
+			update::update! {
+				#[query(set_on_insert)]
+				Subscription {
+					id: sub_id.clone(),
+					state: SubscriptionState::Active,
+					updated_at: chrono::Utc::now(),
+				}
+			},
+			FindOneAndUpdateOptions::builder().upsert(true).build(),
+		)
+		.await?
+		.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
 		tx.insert_one(
 			SubscriptionPeriod {
 				id: SubscriptionPeriodId::new(),

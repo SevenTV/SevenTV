@@ -14,7 +14,7 @@ use crate::http::error::ApiError;
 mod cancel;
 mod payment_method;
 mod products;
-mod redeem;
+pub mod redeem;
 mod subscribe;
 mod subscription;
 

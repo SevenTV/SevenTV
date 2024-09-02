@@ -1,5 +1,6 @@
 use shared::database::paint::PaintId;
-use shared::database::product::{SubscriptionProduct, SubscriptionProductKind};
+use shared::database::product::subscription::SubscriptionState;
+use shared::database::product::{SubscriptionProductKind, SubscriptionProductVariant};
 
 #[derive(Debug, serde::Serialize)]
 pub struct Subscription {
@@ -20,7 +21,7 @@ pub struct Subscription {
 	pub cycle: SubscriptionCycle,
 	pub renew: bool,
 	/// Date of the next renewal
-	pub end_at: Option<chrono::DateTime<chrono::Utc>>,
+	pub end_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -33,7 +34,7 @@ pub enum Provider {
 #[derive(Debug, serde::Serialize)]
 pub struct SubscriptionCycle {
 	pub timestamp: chrono::DateTime<chrono::Utc>,
-	pub unit: SubscriptionCycleUnit,
+	pub unit: Option<SubscriptionCycleUnit>,
 	pub value: u32,
 	pub status: SubscriptionCycleStatus,
 	pub internal: bool,
@@ -50,12 +51,31 @@ pub enum SubscriptionCycleUnit {
 	Year,
 }
 
+impl From<SubscriptionProductKind> for SubscriptionCycleUnit {
+	fn from(value: SubscriptionProductKind) -> Self {
+		match value {
+			SubscriptionProductKind::Monthly => Self::Month,
+			SubscriptionProductKind::Yearly => Self::Year,
+		}
+	}
+}
+
 #[derive(Debug, serde::Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SubscriptionCycleStatus {
 	Ongoing,
 	Ended,
 	Canceled,
+}
+
+impl From<SubscriptionState> for SubscriptionCycleStatus {
+	fn from(value: SubscriptionState) -> Self {
+		match value {
+			SubscriptionState::Active => Self::Ongoing,
+			SubscriptionState::Ended => Self::Ended,
+			SubscriptionState::CancelAtEnd => Self::Canceled,
+		}
+	}
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -76,8 +96,8 @@ pub struct Plan {
 	pub discount: Option<f64>,
 }
 
-impl From<SubscriptionProduct> for Plan {
-	fn from(value: SubscriptionProduct) -> Self {
+impl Plan {
+	pub fn from_variant(value: SubscriptionProductVariant, default_currency: &stripe::Currency) -> Self {
 		let (interval_unit, discount) = match value.kind {
 			SubscriptionProductKind::Monthly => (SubscriptionCycleUnit::Month, None),
 			SubscriptionProductKind::Yearly => (SubscriptionCycleUnit::Year, Some(0.2)),
@@ -88,7 +108,7 @@ impl From<SubscriptionProduct> for Plan {
 			interval: 1,
 			price: value
 				.currency_prices
-				.get(&value.default_currency)
+				.get(default_currency)
 				.copied()
 				.unwrap_or_default()
 				.max(0) as u64,

@@ -223,25 +223,17 @@ pub struct SubscriptionProduct {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case", tag = "kind", content = "id")]
-pub enum SubscriptionProductProviderId {
-	Stripe(ProductId),
-	Paypal(String),
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SubscriptionProductVariant {
-	pub id: SubscriptionProductProviderId,
+	pub id: ProductId,
+	pub paypal_id: Option<String>,
 	pub kind: SubscriptionProductKind,
 	pub currency_prices: HashMap<stripe::Currency, i32>,
 }
 
 pub type SubscriptionBenefitId = Id<SubscriptionBenefit>;
 
-/// An entitlement edge between the user sub and `entitlement` which will be
-/// inserted as soon as the condition is met.
 /// The `SubscriptionBenefitId` can have entitlements attached via the entitlement graph.
-/// If the user qualifies for the entitlement benifit then we create an edge between `Subscription` and `SubscriptionBenefit` on the entitlement graph.
+/// If the user qualifies for the entitlement benefit then we create an edge between `Subscription` and `SubscriptionBenefit` on the entitlement graph.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionBenefit {
@@ -256,7 +248,7 @@ pub enum SubscriptionBenefitCondition {
 	TimePeriod(TimePeriod),
 }
 
-#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[derive(Debug, Clone, PartialEq, Eq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 #[repr(i32)]
 pub enum SubscriptionProductKind {
 	Monthly = 0,

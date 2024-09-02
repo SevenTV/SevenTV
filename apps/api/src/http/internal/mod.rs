@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use axum::Router;
 use tower_http::cors::CorsLayer;
-use utoipa::OpenApi;
 
 use crate::global::Global;
 

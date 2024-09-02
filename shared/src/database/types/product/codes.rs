@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{SubscriptionProductId, TimePeriod};
+use super::{ProductId, SubscriptionProductId, TimePeriod};
 use crate::database::entitlement::EntitlementEdgeKind;
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
@@ -10,21 +10,27 @@ use crate::database::{Id, MongoCollection};
 #[serde(tag = "type")]
 pub enum CodeEffect {
 	Entitlement { edge: EntitlementEdgeKind, extends_subscription: Option<SubscriptionProductId> },
-	SubscriptionProduct { id: SubscriptionProductId, trial_days: u32 },
+	SubscriptionProduct { id: ProductId, trial_days: u32 },
 }
 
-// impl std::fmt::Display for CodeEffect {
-// 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-// 		match self {
-// 			CodeEffect::Entitlement { edge } => {
-// 				write!(f, "entitlement:{edge}",)
-// 			}
-// 			CodeEffect::SubscriptionProduct { id, .. } => {
-// 				write!(f, "subscription_product:{id}")
-// 			}
-// 		}
-// 	}
-// }
+impl std::fmt::Display for CodeEffect {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			CodeEffect::Entitlement { edge, extends_subscription } => {
+				write!(f, "entitlement:{edge}")?;
+
+				if let Some(extends_subscription) = extends_subscription {
+					write!(f, ",extends_subscription:{extends_subscription}")?;
+				}
+
+				Ok(())
+			}
+			CodeEffect::SubscriptionProduct { id, .. } => {
+				write!(f, "subscription_product:{id}")
+			}
+		}
+	}
+}
 
 pub type RedeemCodeId = Id<RedeemCode>;
 

@@ -2,7 +2,7 @@ use chrono::Utc;
 
 use crate::database::product::codes::RedeemCodeId;
 use crate::database::product::subscription::{ProviderSubscriptionId, SubscriptionPeriodId};
-use crate::database::product::{InvoiceId, ProductId};
+use crate::database::product::{InvoiceId, SubscriptionProductId};
 use crate::database::user::UserId;
 use crate::database::{self};
 use crate::typesense::types::{impl_typesense_type, TypesenseCollection, TypesenseGenericCollection};
@@ -58,16 +58,19 @@ impl_typesense_type!(SubscriptionProvider, Int32);
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionPeriod {
 	pub id: SubscriptionPeriodId,
-	pub subscription_provider: Option<SubscriptionProvider>,
-	pub subscription_id: Option<String>,
+
+	// subscription id:
 	pub user_id: UserId,
+	pub product_id: SubscriptionProductId,
+
+	pub subscription_provider: Option<SubscriptionProvider>,
+	pub provider_id: Option<String>,
 	pub start: i64,
 	pub end: i64,
 	pub created_by_kind: SubscriptionCreatedByKind,
 	pub created_by_redeem_code_id: Option<RedeemCodeId>,
 	pub created_by_invoice_id: Option<InvoiceId>,
 	pub created_by_system_reason: Option<String>,
-	pub product_ids: Vec<ProductId>,
 	#[typesense(default_sort)]
 	pub created_at: i64,
 	pub updated_at: i64,
@@ -81,16 +84,16 @@ impl From<crate::database::product::subscription::SubscriptionPeriod> for Subscr
 
 		Self {
 			id: value.id,
-			subscription_provider: match value.subscription_id {
+			subscription_provider: match value.provider_id {
 				Some(ProviderSubscriptionId::Stripe(_)) => Some(SubscriptionProvider::Stripe),
 				Some(ProviderSubscriptionId::Paypal(_)) => Some(SubscriptionProvider::Paypal),
 				None => None,
 			},
-			subscription_id: value.subscription_id.map(|id| id.to_string()),
-			user_id: value.user_id,
+			provider_id: value.provider_id.map(|id| id.to_string()),
+			user_id: value.subscription_id.user_id,
+			product_id: value.subscription_id.product_id,
 			start: value.start.timestamp_millis(),
 			end: value.end.timestamp_millis(),
-			product_ids: value.product_ids,
 			created_by_kind,
 			created_by_redeem_code_id,
 			created_by_invoice_id,

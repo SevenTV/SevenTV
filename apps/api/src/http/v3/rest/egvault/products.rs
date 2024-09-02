@@ -10,7 +10,7 @@ use shared::database::MongoCollection;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::rest::types;
+use crate::http::v3::rest::types::{self, Plan};
 
 pub async fn products(State(global): State<Arc<Global>>) -> Result<Json<Vec<types::Product>>, ApiError> {
 	let products: Vec<SubscriptionProduct> = SubscriptionProduct::collection(&global.db)
@@ -29,18 +29,41 @@ pub async fn products(State(global): State<Arc<Global>>) -> Result<Json<Vec<type
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-	let plans = products.iter().cloned().map(Into::into).collect();
+	let plans = products
+		.iter()
+		.cloned()
+		.flat_map(|p| {
+			p.variants
+				.into_iter()
+				.map(move |v| Plan::from_variant(v, &p.default_currency))
+		})
+		.collect();
 
-	let current_paints = products
+	// find relevant benefits
+	let months_benefit_ids: Vec<_> = products
 		.into_iter()
 		.flat_map(|p| p.benefits)
 		.filter(|b| match &b.condition {
-			SubscriptionBenefitCondition::TimePeriod(time_period) => {
-				time_period.start <= chrono::Utc::now() && time_period.end > chrono::Utc::now()
-			}
+			SubscriptionBenefitCondition::TimePeriod(tp) => tp.start <= chrono::Utc::now() && tp.end > chrono::Utc::now(),
 			_ => false,
 		})
-		.filter_map(|b| match b.entitlement {
+		.map(|b| EntitlementEdgeKind::SubscriptionBenefit {
+			subscription_benefit_id: b.id,
+		})
+		.collect();
+
+	// follow the graph
+	let edges = global
+		.entitlement_edge_outbound_loader
+		.load_many(months_benefit_ids)
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+	// find the paints
+	let current_paints = edges
+		.into_values()
+		.flatten()
+		.filter_map(|e| match e.id.to {
 			EntitlementEdgeKind::Paint { paint_id } => Some(paint_id),
 			_ => None,
 		})

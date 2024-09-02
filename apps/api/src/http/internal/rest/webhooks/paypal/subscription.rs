@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use shared::database::product::subscription::{ProviderSubscriptionId, Subscription, SubscriptionPeriod};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use shared::database::product::subscription::{ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionState};
 use shared::database::queries::{filter, update};
 
 use super::types;
@@ -21,39 +22,46 @@ pub async fn cancelled(
 
 	let now = chrono::Utc::now();
 
+	let Some(period) = tx
+		.find_one_and_update(
+			filter::filter! {
+				SubscriptionPeriod {
+					#[query(serde)]
+					provider_id: subscription_id,
+					#[query(selector = "lt")]
+					start: now,
+					#[query(selector = "gt")]
+					end: now,
+				}
+			},
+			update::update! {
+				#[query(set)]
+				SubscriptionPeriod {
+					end: now,
+					updated_at: now,
+				}
+			},
+			FindOneAndUpdateOptions::builder()
+				.return_document(ReturnDocument::After)
+				.build(),
+		)
+		.await?
+	else {
+		return Ok(());
+	};
+
 	tx.update_one(
 		filter::filter! {
 			Subscription {
 				#[query(rename = "_id", serde)]
-				id: &subscription_id,
+				id: period.subscription_id,
 			}
 		},
 		update::update! {
 			#[query(set)]
 			Subscription {
-				ended_at: Some(now),
-				updated_at: now,
-			}
-		},
-		None,
-	)
-	.await?;
-
-	tx.update_one(
-		filter::filter! {
-			SubscriptionPeriod {
 				#[query(serde)]
-				subscription_id,
-				#[query(selector = "lt")]
-				start: now,
-				#[query(selector = "gt")]
-				end: now,
-			}
-		},
-		update::update! {
-			#[query(set)]
-			SubscriptionPeriod {
-				end: now,
+				state: SubscriptionState::Ended,
 				updated_at: now,
 			}
 		},

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use shared::database::product::{SubscriptionProduct, SubscriptionProductKind};
+use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
 use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
@@ -74,11 +74,16 @@ pub async fn subscribe(
 		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "payment method not supported"));
 	}
 
+	let kind = SubscriptionProductKind::from(query.renew_interval);
+
 	let product: SubscriptionProduct = SubscriptionProduct::collection(&global.db)
 		.find_one(filter::filter! {
 			SubscriptionProduct {
-				#[query(serde)]
-				kind: SubscriptionProductKind::from(query.renew_interval),
+				#[query(flatten)]
+				variants: SubscriptionProductVariant {
+					#[query(serde)]
+					kind: &kind,
+				}
 			}
 		})
 		.await
@@ -88,6 +93,8 @@ pub async fn subscribe(
 		})?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
 
+	let variant = product.variants.into_iter().find(|v| v.kind == kind).unwrap();
+
 	let customer_id = match auth_session.user(&global).await?.stripe_customer_id.clone() {
 		Some(id) => Some(id),
 		None => find_customer(&global, auth_session.user_id()).await?,
@@ -96,7 +103,7 @@ pub async fn subscribe(
 	let paying_user = auth_session.user_id();
 
 	let mut params =
-		create_checkout_session_params(&global, customer_id, Some(&body.prefill.email), Some(&product.id)).await;
+		create_checkout_session_params(&global, customer_id, Some(&body.prefill.email), Some(&variant.id)).await;
 
 	let receiving_user = if let Some(gift_for) = query.gift_for {
 		let receiving_user = global
@@ -127,7 +134,7 @@ pub async fn subscribe(
 		metadata.insert("PRODUCT_ID".to_string(), product.id.to_string());
 		metadata.insert(
 			"PERIOD_DURATION_MONTHS".to_string(),
-			product.kind.period_duration_months().to_string(),
+			kind.period_duration_months().to_string(),
 		);
 
 		params.metadata = Some(metadata);

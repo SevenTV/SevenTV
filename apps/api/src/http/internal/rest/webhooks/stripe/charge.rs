@@ -12,7 +12,7 @@ use crate::transactions::{TransactionError, TransactionResult, TransactionSessio
 /// Creates a ticket to let staff know that the refund was made and decide what
 /// should happen next.
 pub async fn refunded(
-	global: &Arc<Global>,
+	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	charge: stripe::Charge,
 ) -> TransactionResult<(), ApiError> {

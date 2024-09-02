@@ -6,9 +6,9 @@ use chrono::TimeDelta;
 use futures::TryStreamExt;
 use hyper::StatusCode;
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
+	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionState,
 };
-use shared::database::product::SubscriptionProductKind;
+use shared::database::product::SubscriptionProduct;
 use shared::database::queries::filter;
 use shared::database::MongoCollection;
 
@@ -16,7 +16,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::rest::types::{self, SubscriptionCycleStatus};
+use crate::http::v3::rest::types::{self, SubscriptionCycleUnit};
 use crate::http::v3::rest::users::TargetUser;
 
 #[derive(Debug, serde::Serialize)]
@@ -40,7 +40,10 @@ pub async fn subscription(
 	let periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
 		.find(filter::filter! {
 			SubscriptionPeriod {
-				user_id: user,
+				#[query(flatten)]
+				subscription_id: SubscriptionId {
+					user_id: user,
+				},
 			}
 		})
 		.await
@@ -58,6 +61,7 @@ pub async fn subscription(
 	let Some(active_period) = periods
 		.iter()
 		.find(|p| p.start < chrono::Utc::now() && p.end > chrono::Utc::now())
+		.cloned()
 	else {
 		return Ok(Json(SubscriptionResponse {
 			active: false,
@@ -67,22 +71,18 @@ pub async fn subscription(
 		}));
 	};
 
-	let subscription = match &active_period.subscription_id {
-		Some(id) => global
-			.subscription_by_id_loader
-			.load(id.clone())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?,
-		None => None,
-	};
+	let subscription = global
+		.subscription_by_id_loader
+		.load(active_period.subscription_id.clone())
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-	let Some(product_id) = active_period.product_ids.iter().next() else {
-		return Err(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"));
-	};
+	let periods: Vec<_> = periods.into_iter().filter(|p| p.subscription_id == active_period.subscription_id).collect();
 
-	let product = global
+	let product: SubscriptionProduct = global
 		.subscription_product_by_id_loader
-		.load(product_id.clone())
+		.load(subscription.id.product_id)
 		.await
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
@@ -93,36 +93,37 @@ pub async fn subscription(
 		.sum::<chrono::TimeDelta>()
 		.num_days();
 
-	let provider = active_period.subscription_id.as_ref().map(|id| match id {
+	let provider = active_period.provider_id.as_ref().map(|id| match id {
 		ProviderSubscriptionId::Stripe(_) => types::Provider::Stripe,
 		ProviderSubscriptionId::Paypal(_) => types::Provider::Paypal,
 	});
 
 	let customer_id = match active_period.created_by {
 		SubscriptionPeriodCreatedBy::Gift { gifter, .. } => gifter,
-		_ => active_period.user_id,
+		_ => active_period.subscription_id.user_id,
 	}
 	.to_string();
 
-	let status = match &subscription {
-		Some(Subscription { ended_at: Some(_), .. }) => SubscriptionCycleStatus::Ended,
-		Some(Subscription {
-			cancel_at_period_end: true,
-			..
-		}) => SubscriptionCycleStatus::Canceled,
-		_ => SubscriptionCycleStatus::Ongoing,
-	};
-
 	let internal = matches!(active_period.created_by, SubscriptionPeriodCreatedBy::System { .. });
 
-	let unit = match product.kind {
-		SubscriptionProductKind::Monthly => types::SubscriptionCycleUnit::Month,
-		SubscriptionProductKind::Yearly => types::SubscriptionCycleUnit::Year,
-	};
+	// TODO: figure out how to get the unit
+	let unit = Some(SubscriptionCycleUnit::Month);
 
-	let renew = subscription.as_ref().map(|s| !s.cancel_at_period_end).unwrap_or(false);
+	let started_at = periods
+		.iter()
+		.min_by_key(|p| p.start)
+		.map(|p| p.start)
+		.unwrap_or(active_period.start);
 
-	let ended_at = subscription.as_ref().and_then(|s| s.ended_at);
+	let end_at = periods
+		.iter()
+		.max_by_key(|p| p.end)
+		.map(|p| p.end)
+		.unwrap_or(active_period.end);
+
+	let trial_end = active_period.is_trial.then_some(active_period.end);
+
+	let renew = subscription.state != SubscriptionState::CancelAtEnd;
 
 	Ok(Json(SubscriptionResponse {
 		active: true,
@@ -134,21 +135,21 @@ pub async fn subscription(
 			product_id: product.id.to_string(),
 			plan: product.id.to_string(),
 			seats: 1,
-			subscriber_id: active_period.user_id.to_string(),
+			subscriber_id: subscription.id.user_id.to_string(),
 			customer_id,
-			started_at: subscription.as_ref().map(|s| s.created_at).unwrap_or(active_period.start),
-			ended_at,
+			started_at,
+			ended_at: (subscription.state == SubscriptionState::Ended).then_some(end_at),
 			cycle: types::SubscriptionCycle {
 				timestamp: active_period.end,
 				unit,
 				value: 1,
-				status,
+				status: subscription.state.into(),
 				internal,
 				pending: false,
-				trial_end: subscription.as_ref().and_then(|s| s.trial_end),
+				trial_end,
 			},
 			renew,
-			end_at: ended_at,
+			end_at,
 		}),
 	}))
 }

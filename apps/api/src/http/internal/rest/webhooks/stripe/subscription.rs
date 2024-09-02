@@ -1,13 +1,26 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::product::subscription::{ProviderSubscriptionId, Subscription, SubscriptionPeriod};
-use shared::database::product::{ProductId, SubscriptionProduct};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateOptions};
+use shared::database::product::subscription::{
+	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState,
+};
+use shared::database::product::{ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
+use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
+
+fn subscription_products(items: stripe::List<stripe::SubscriptionItem>) -> Result<Vec<ProductId>, ApiError> {
+	items
+		.data
+		.into_iter()
+		.map(|i| Ok(ProductId::from(i.price.ok_or(ApiError::BAD_REQUEST)?.id)))
+		.collect()
+}
 
 /// Creates the subscription object in the database.
 pub async fn created(
@@ -15,9 +28,59 @@ pub async fn created(
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: stripe::Subscription,
 ) -> TransactionResult<(), ApiError> {
-	let subscription = Subscription::from_stripe(subscription).ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+	let items = subscription_products(subscription.items).map_err(TransactionError::custom)?;
 
-	tx.insert_one(subscription, None).await?;
+	let products = tx
+		.find(
+			filter::filter! {
+				SubscriptionProduct {
+					#[query(flatten)]
+					variants: SubscriptionProductVariant {
+						#[query(selector = "in", serde)]
+						id: items,
+					}
+				}
+			},
+			None,
+		)
+		.await?;
+
+	if products.len() != 1 {
+		// only accept subs with one product
+		return Ok(());
+	}
+
+	let user_id = subscription
+		.metadata
+		.get("USER_ID")
+		.and_then(|i| UserId::from_str(i).ok())
+		.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+
+	let product = products.into_iter().next().unwrap();
+
+	let sub_id = SubscriptionId {
+		user_id,
+		product_id: product.id,
+	};
+
+	tx.update_one(
+		filter::filter! {
+			Subscription {
+				#[query(rename = "_id", serde)]
+				id: &sub_id,
+			}
+		},
+		update::update! {
+			#[query(set_on_insert)]
+			Subscription {
+				id: sub_id.clone(),
+				state: SubscriptionState::Active,
+				updated_at: chrono::Utc::now(),
+			}
+		},
+		UpdateOptions::builder().upsert(true).build(),
+	)
+	.await?;
 
 	Ok(())
 }
@@ -33,39 +96,46 @@ pub async fn deleted(
 
 	let subscription_id: ProviderSubscriptionId = subscription.id.into();
 
+	let Some(period) = tx
+		.find_one_and_update(
+			filter::filter! {
+				SubscriptionPeriod {
+					#[query(serde)]
+					provider_id: &subscription_id,
+					#[query(selector = "lt")]
+					start: chrono::Utc::now(),
+					#[query(selector = "gt")]
+					end: chrono::Utc::now(),
+				}
+			},
+			update::update! {
+				#[query(set)]
+				SubscriptionPeriod {
+					end: ended_at,
+					updated_at: chrono::Utc::now(),
+				}
+			},
+			FindOneAndUpdateOptions::builder()
+				.return_document(ReturnDocument::After)
+				.build(),
+		)
+		.await?
+	else {
+		return Ok(());
+	};
+
 	tx.update_one(
 		filter::filter! {
 			Subscription {
 				#[query(rename = "_id", serde)]
-				id: &subscription_id,
+				id: period.subscription_id,
 			}
 		},
 		update::update! {
 			#[query(set)]
 			Subscription {
-				ended_at: Some(ended_at),
-				updated_at: chrono::Utc::now(),
-			}
-		},
-		None,
-	)
-	.await?;
-
-	tx.update_one(
-		filter::filter! {
-			SubscriptionPeriod {
 				#[query(serde)]
-				subscription_id: subscription_id,
-				#[query(selector = "lt")]
-				start: chrono::Utc::now(),
-				#[query(selector = "gt")]
-				end: chrono::Utc::now(),
-			}
-		},
-		update::update! {
-			#[query(set)]
-			SubscriptionPeriod {
-				end: ended_at,
+				state: SubscriptionState::Ended,
 				updated_at: chrono::Utc::now(),
 			}
 		},
@@ -86,58 +156,72 @@ pub async fn updated(
 	subscription: stripe::Subscription,
 	prev_attributes: HashMap<String, serde_json::Value>,
 ) -> TransactionResult<(), ApiError> {
-	if !prev_attributes.contains_key("items") {
-		// items didn't change, we don't have to handle this
-		return Ok(());
-	};
+	// if !prev_attributes.contains_key("items") {
+	// 	// items didn't change, we don't have to handle this
+	// 	return Ok(());
+	// };
 
-	let subscription = Subscription::from_stripe(subscription).ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+	let items = subscription_products(subscription.items).map_err(TransactionError::custom)?;
 
-	tx.update_one(
-		filter::filter! {
-			Subscription {
-				#[query(rename = "_id", serde)]
-				id: &subscription.id,
-			}
-		},
-		update::update! {
-			#[query(set)]
-			Subscription {
-				stripe_customer_id: subscription.stripe_customer_id,
-				product_ids: &subscription.product_ids,
-				cancel_at_period_end: subscription.cancel_at_period_end,
-				trial_end: subscription.trial_end,
-				ended_at: subscription.ended_at,
-				updated_at: chrono::Utc::now(),
-			}
-		},
-		None,
-	)
-	.await?;
-
-	let products: HashMap<ProductId, SubscriptionProduct> = global
-		.subscription_product_by_id_loader
-		.load_many(subscription.product_ids.into_iter())
-		.await
-		.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+	let products = tx
+		.find(
+			filter::filter! {
+				SubscriptionProduct {
+					#[query(flatten)]
+					variants: SubscriptionProductVariant {
+						#[query(selector = "in", serde)]
+						id: items,
+					}
+				}
+			},
+			None,
+		)
+		.await?;
 
 	if products.is_empty() {
+		// all products were removed from the subscription
 		// end the current subscription period right now
+
+		let Some(period) = tx
+			.find_one_and_update(
+				filter::filter! {
+					SubscriptionPeriod {
+						#[query(serde)]
+						provider_id: Some(ProviderSubscriptionId::Stripe(subscription.id.into())),
+						#[query(selector = "lt")]
+						start: chrono::Utc::now(),
+						#[query(selector = "gt")]
+						end: chrono::Utc::now(),
+					}
+				},
+				update::update! {
+					#[query(set)]
+					SubscriptionPeriod {
+						end: event_created,
+						updated_at: chrono::Utc::now(),
+					}
+				},
+				FindOneAndUpdateOptions::builder()
+					.return_document(ReturnDocument::After)
+					.build(),
+			)
+			.await?
+		else {
+			return Ok(());
+		};
+
 		tx.update_one(
 			filter::filter! {
-				SubscriptionPeriod {
-					#[query(serde)]
-					subscription_id: subscription.id,
-					#[query(selector = "lt")]
-					start: chrono::Utc::now(),
-					#[query(selector = "gt")]
-					end: chrono::Utc::now(),
+				Subscription {
+					#[query(rename = "_id", serde)]
+					id: &period.subscription_id,
 				}
 			},
 			update::update! {
 				#[query(set)]
-				SubscriptionPeriod {
-					end: event_created,
+				Subscription {
+					#[query(serde)]
+					state: SubscriptionState::Ended,
 					updated_at: chrono::Utc::now(),
 				}
 			},
@@ -145,28 +229,58 @@ pub async fn updated(
 		)
 		.await?;
 	} else {
-		// update current subscription period
-		tx.update_one(
-			filter::filter! {
-				SubscriptionPeriod {
-					#[query(serde)]
-					subscription_id: subscription.id,
-					#[query(selector = "lt")]
-					start: chrono::Utc::now(),
-					#[query(selector = "gt")]
-					end: chrono::Utc::now(),
-				}
-			},
-			update::update! {
-				#[query(set)]
-				SubscriptionPeriod {
-					product_ids: products.into_keys().collect::<Vec<_>>(),
-					updated_at: chrono::Utc::now(),
-				}
-			},
-			None,
-		)
-		.await?;
+		if products.len() != 1 {
+			// only accept subs with one product
+			return Ok(());
+		}
+
+		let user_id = subscription
+			.metadata
+			.get("USER_ID")
+			.and_then(|i| UserId::from_str(i).ok())
+			.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+
+		let product = products.into_iter().next().unwrap();
+
+		let sub_id = SubscriptionId {
+			user_id,
+			product_id: product.id,
+		};
+
+		if prev_attributes.contains_key("items") {
+			// items changed
+
+			// TODO: handle this case
+		} else {
+			// items didn't change, we don't have to handle this
+
+			let new_state = if subscription.ended_at.is_some() {
+				SubscriptionState::Ended
+			} else if subscription.cancel_at_period_end {
+				SubscriptionState::CancelAtEnd
+			} else {
+				SubscriptionState::Active
+			};
+
+			tx.update_one(
+				filter::filter! {
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: &sub_id,
+					}
+				},
+				update::update! {
+					#[query(set)]
+					Subscription {
+						#[query(serde)]
+						state: new_state,
+						updated_at: chrono::Utc::now(),
+					}
+				},
+				None,
+			)
+			.await?;
+		}
 	}
 
 	Ok(())

@@ -51,7 +51,7 @@ pub struct Subscription {
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[derive(Debug, Clone, PartialEq, Eq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 #[repr(i32)]
 pub enum SubscriptionState {
 	Active = 0,

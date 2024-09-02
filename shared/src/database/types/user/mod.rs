@@ -32,6 +32,7 @@ pub type UserId = Id<User>;
 #[mongo(index(fields("cached_active_emotes" = 1)))]
 #[mongo(index(fields("cached_entitlements" = 1)))]
 #[mongo(index(fields("style.active_emote_set_id" = 1)))]
+#[mongo(index(fields("paypal_sub_id" = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
@@ -52,6 +53,8 @@ pub struct User {
 	/// populated by first searching for the user in stripe or, if not found,
 	/// creating a new customer
 	pub stripe_customer_id: Option<CustomerId>,
+	/// The PayPal subscription ID for this user, if any
+	pub paypal_sub_id: Option<String>,
 	pub cached_role_rank: i32,
 	#[serde(default)]
 	pub cached_entitlements: Vec<EntitlementEdgeKind>,

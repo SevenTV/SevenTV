@@ -5,14 +5,56 @@ use axum::extract::State;
 use axum::{Extension, Json};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::codes::{CodeEffect, RedeemCode};
+use shared::database::product::subscription::SubscriptionId;
 use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
+use shared::database::user::UserId;
 
 use super::{create_checkout_session_params, find_customer};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{with_transaction, TransactionError, TransactionResult, TransactionSession};
+
+pub async fn grant_entitlements(
+	tx: &mut TransactionSession<'_, ApiError>,
+	redeem_code: &RedeemCode,
+	user_id: UserId,
+) -> TransactionResult<(), ApiError> {
+	for (to, extends_subscription) in redeem_code.effects.iter().filter_map(|e| match e {
+		CodeEffect::Entitlement {
+			edge,
+			extends_subscription,
+		} => Some((edge, extends_subscription)),
+		_ => None,
+	}) {
+		let from = match extends_subscription {
+			Some(extends_subscription) => EntitlementEdgeKind::Subscription {
+				subscription_id: SubscriptionId {
+					user_id: user_id,
+					product_id: *extends_subscription,
+				},
+			},
+			None => EntitlementEdgeKind::User { user_id },
+		};
+
+		tx.insert_one(
+			EntitlementEdge {
+				id: EntitlementEdgeId {
+					from,
+					to: to.clone(),
+					managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
+						redeem_code_id: redeem_code.id,
+					}),
+				},
+			},
+			None,
+		)
+		.await?;
+	}
+
+	Ok(())
+}
 
 #[derive(Debug, serde::Deserialize)]
 pub struct RedeemRequest {
@@ -65,6 +107,7 @@ pub async fn redeem(
 				.await?
 				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
+			// if the user is already subscribed
 			let is_subscribed = auth_session
 				.user(&global)
 				.await
@@ -76,6 +119,8 @@ pub async fn redeem(
 				CodeEffect::SubscriptionProduct { id, trial_days } => Some((id, trial_days, is_subscribed)),
 				_ => None,
 			}) {
+				// the user is not subscribed and the effects contain a subscription product
+
 				let customer_id = match auth_session
 					.user(&global)
 					.await
@@ -97,7 +142,7 @@ pub async fn redeem(
 
 				params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
 					metadata: Some(metadata.clone()),
-					trial_period_days: *trial_days,
+					trial_period_days: Some(*trial_days),
 					trial_settings: Some(stripe::CreateCheckoutSessionSubscriptionDataTrialSettings {
 						end_behavior: stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehavior {
 							missing_payment_method:
@@ -131,32 +176,25 @@ pub async fn redeem(
 					items: vec![],
 				})
 			} else {
-				let mut items = vec![];
+				// the effects contain no subscription products
 
-				for edge in code.effects.into_iter().filter_map(|e| match e {
-					CodeEffect::Entitlement { edge } => Some(edge),
-					_ => None,
-				}) {
-					match edge {
-						EntitlementEdgeKind::Badge { badge_id } => items.push(badge_id.to_string()),
-						EntitlementEdgeKind::Paint { paint_id } => items.push(paint_id.to_string()),
-						_ => {}
-					}
+				let items = code
+					.effects
+					.iter()
+					.filter_map(|e| match e {
+						CodeEffect::Entitlement {
+							edge: EntitlementEdgeKind::Badge { badge_id },
+							..
+						} => Some(badge_id.to_string()),
+						CodeEffect::Entitlement {
+							edge: EntitlementEdgeKind::Paint { paint_id },
+							..
+						} => Some(paint_id.to_string()),
+						_ => None,
+					})
+					.collect();
 
-					tx.insert_one(
-						EntitlementEdge {
-							id: EntitlementEdgeId {
-								from: EntitlementEdgeKind::User {
-									user_id: auth_session.user_id(),
-								},
-								to: edge,
-								managed_by: Some(EntitlementEdgeManagedBy::RedeemCode { redeem_code_id: code.id }),
-							},
-						},
-						None,
-					)
-					.await?;
-				}
+				grant_entitlements(&mut tx, &code, auth_session.user_id()).await?;
 
 				Ok(RedeemResponse {
 					authorize_url: None,

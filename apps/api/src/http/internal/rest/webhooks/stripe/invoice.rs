@@ -2,15 +2,12 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::product::invoice::{Invoice, InvoiceStatus};
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
-	SubscriptionPeriodId, SubscriptionState,
+	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
+	SubscriptionPeriodId
 };
-use shared::database::product::{
-	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductProviderId, SubscriptionProductVariant,
-};
+use shared::database::product::{InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
 use stripe::{FinalizeInvoiceParams, Object};
@@ -19,19 +16,12 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
-fn invoice_items(
-	items: Option<&stripe::List<stripe::InvoiceLineItem>>,
-) -> Result<Vec<SubscriptionProductProviderId>, ApiError> {
-	// TODO: paginate?
+fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Result<Vec<ProductId>, ApiError> {
 	items
 		.ok_or(ApiError::BAD_REQUEST)?
 		.data
 		.iter()
-		.map(|line| {
-			Ok(SubscriptionProductProviderId::Stripe(
-				line.price.as_ref().ok_or(ApiError::BAD_REQUEST)?.id().into(),
-			))
-		})
+		.map(|line| Ok(line.price.as_ref().ok_or(ApiError::BAD_REQUEST)?.id().into()))
 		.collect()
 }
 
@@ -53,14 +43,24 @@ pub async fn created(
 
 		let items = invoice_items(invoice.lines.as_ref()).map_err(TransactionError::custom)?;
 
-		let subscription_products = global
-			.subscription_product_by_id_loader
-			.load_many(items.iter().cloned())
-			.await
-			.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+		let subscription_products = tx
+			.find(
+				filter::filter! {
+					SubscriptionProduct {
+						#[query(flatten)]
+						variants: SubscriptionProductVariant {
+							#[query(selector = "in")]
+							id: &items,
+						},
+					}
+				},
+				None,
+			)
+			.await?;
 
-		if subscription_products.is_empty() {
+		if subscription_products.len() != 1 {
 			// This invoice is not for one of our subscription products.
+			// only accept invoices for one of our products
 			return Ok(());
 		}
 
@@ -172,7 +172,10 @@ pub async fn paid(
 	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
 	if let Some(subscription) = &invoice.subscription {
-		let items = invoice_items(invoice.lines.as_ref()).map_err(TransactionError::custom)?;
+		let items = invoice_items(invoice.lines.as_ref())
+			.map_err(TransactionError::custom)?
+			.into_iter()
+			.collect::<Vec<_>>();
 
 		let products = tx
 			.find(
@@ -180,8 +183,8 @@ pub async fn paid(
 					SubscriptionProduct {
 						#[query(flatten)]
 						variants: SubscriptionProductVariant {
-							// #[query(contains)]
-							id: vec![SubscriptionProductProviderId::Stripe(items)]
+							#[query(selector = "in", serde)]
+							id: items,
 						}
 					}
 				},
@@ -189,72 +192,59 @@ pub async fn paid(
 			)
 			.await?;
 
-		for product in products {
-			// This invoice is for one of our subscription products.
-
-			// Retrieve subscription
-			let stripe_sub = stripe::Subscription::retrieve(&global.stripe_client, &subscription.id(), &[])
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to retrieve subscription");
-					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-				})?;
-
-			let user_id = stripe_sub
-				.metadata
-				.get("USER_ID")
-				.and_then(|i| UserId::from_str(i).ok())
-				.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
-
-			let sub_id = SubscriptionId { user_id, product_id: product.id };
-
-			tx
-				.find_one_and_update(
-					filter::filter! {
-						Subscription {
-							#[query(rename = "_id")]
-							id: sub_id,
-						}
-					},
-					update::update! {
-						#[query(set_on_insert)]
-						Subscription {
-							id: sub_id,
-							state: SubscriptionState::Active,
-							updated_at: chrono::Utc::now(),
-						}
-					},
-					FindOneAndUpdateOptions::builder().upsert(true),
-				)
-				.await?
-				.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
-
-			let start = chrono::DateTime::from_timestamp(stripe_sub.current_period_start, 0)
-				.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
-			// when the subscription is in trial, the current period end is the trial end
-			let end = chrono::DateTime::from_timestamp(stripe_sub.current_period_end, 0)
-				.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
-
-			let provider_id = ProviderSubscriptionId::from(stripe_sub.id);
-
-			tx.insert_one(
-				SubscriptionPeriod {
-					id: SubscriptionPeriodId::new(),
-					subscription_id: sub_id,
-					provider_id: Some(provider_id),
-					start,
-					end,
-					is_trial: stripe_sub.trial_end.is_some(),
-					created_by: SubscriptionPeriodCreatedBy::Invoice {
-						invoice_id: invoice.id.clone().into(),
-					},
-					updated_at: chrono::Utc::now(),
-					search_updated_at: None,
-				},
-				None,
-			)
-			.await?;
+		if products.len() != 1 {
+			// only accept invoices for one of our products
+			return Ok(());
 		}
+
+		let product = products.into_iter().next().unwrap();
+
+		// This invoice is for one of our subscription products.
+
+		// Retrieve subscription
+		let stripe_sub = stripe::Subscription::retrieve(&global.stripe_client, &subscription.id(), &[])
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to retrieve subscription");
+				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			})?;
+
+		let user_id = stripe_sub
+			.metadata
+			.get("USER_ID")
+			.and_then(|i| UserId::from_str(i).ok())
+			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
+		let sub_id = SubscriptionId {
+			user_id,
+			product_id: product.id,
+		};
+
+		let start = chrono::DateTime::from_timestamp(stripe_sub.current_period_start, 0)
+			.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+		// when the subscription is in trial, the current period end is the trial end
+		let end = chrono::DateTime::from_timestamp(stripe_sub.current_period_end, 0)
+			.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+
+		let provider_id = ProviderSubscriptionId::from(stripe_sub.id);
+
+		tx.insert_one(
+			SubscriptionPeriod {
+				id: SubscriptionPeriodId::new(),
+				subscription_id: sub_id,
+				provider_id: Some(provider_id),
+				start,
+				end,
+				is_trial: stripe_sub.trial_end.is_some(),
+				created_by: SubscriptionPeriodCreatedBy::Invoice {
+					invoice_id: invoice.id.clone().into(),
+				},
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			},
+			None,
+		)
+		.await?;
 	}
 
 	updated(global, tx, invoice, HashMap::new()).await?;

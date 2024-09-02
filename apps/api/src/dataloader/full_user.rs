@@ -7,7 +7,7 @@ use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
-use shared::database::product::subscription::SubscriptionPeriod;
+use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::filter;
 use shared::database::role::permissions::{Permissions, PermissionsExt, UserPermission};
 use shared::database::role::{Role, RoleId};
@@ -227,8 +227,11 @@ impl FullUserLoader {
 		let sub_periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
 			.find(filter::filter! {
 				SubscriptionPeriod {
-					#[query(selector = "in")]
-					user_id: users.keys().collect::<Vec<_>>(),
+					#[query(flatten)]
+					subscription_id: SubscriptionId {
+						#[query(selector = "in")]
+						user_id: users.keys().collect::<Vec<_>>(),
+					},
 					#[query(selector = "lt")]
 					start: chrono::Utc::now(),
 					#[query(selector = "gt")]
@@ -248,7 +251,7 @@ impl FullUserLoader {
 			})?;
 
 		for (id, user) in &mut users {
-			user.computed.is_subscribed = sub_periods.iter().any(|p| p.user_id == *id);
+			user.computed.is_subscribed = sub_periods.iter().any(|p| p.subscription_id.user_id == *id);
 		}
 
 		Ok(users)
@@ -356,8 +359,11 @@ impl Loader for UserComputedLoader {
 		let sub_periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
 			.find(filter::filter! {
 				SubscriptionPeriod {
-					#[query(selector = "in")]
-					user_id: result.keys().collect::<Vec<_>>(),
+					#[query(flatten)]
+					subscription_id: SubscriptionId {
+						#[query(selector = "in")]
+						user_id: result.keys().collect::<Vec<_>>(),
+					},
 					#[query(selector = "lt")]
 					start: chrono::Utc::now(),
 					#[query(selector = "gt")]
@@ -377,7 +383,7 @@ impl Loader for UserComputedLoader {
 			})?;
 
 		for (id, user) in &mut result {
-			user.is_subscribed = sub_periods.iter().any(|p| p.user_id == *id);
+			user.is_subscribed = sub_periods.iter().any(|p| p.subscription_id.user_id == *id);
 		}
 
 		Ok(result)
