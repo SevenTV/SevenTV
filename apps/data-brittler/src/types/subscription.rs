@@ -1,4 +1,5 @@
 use mongodb::bson::oid::ObjectId;
+use shared::database::product::subscription::SubscriptionState;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Subscription {
@@ -58,4 +59,14 @@ pub enum SubscriptionCycleStatus {
 	Ongoing,
 	Ended,
 	Canceled,
+}
+
+impl From<SubscriptionCycleStatus> for SubscriptionState {
+	fn from(value: SubscriptionCycleStatus) -> Self {
+		match value {
+			SubscriptionCycleStatus::Ongoing => Self::Active,
+			SubscriptionCycleStatus::Ended => Self::Ended,
+			SubscriptionCycleStatus::Canceled => Self::CancelAtEnd,
+		}
+	}
 }

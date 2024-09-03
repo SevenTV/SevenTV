@@ -215,8 +215,6 @@ pub struct SubscriptionProduct {
 	pub default_currency: stripe::Currency,
 	pub benefits: Vec<SubscriptionBenefit>,
 	#[serde(with = "crate::database::serde")]
-	pub created_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,

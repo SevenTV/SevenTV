@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::product::{Product, SubscriptionProduct, SubscriptionProductKind};
+use shared::database::product::{
+	Product, SubscriptionProduct, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant,
+};
 use shared::database::MongoCollection;
 use stripe::{Recurring, RecurringInterval};
 
@@ -11,10 +13,11 @@ use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
 
+pub const NEW_PRODUCT_ID: &'static str = "01FEVKBBTGRAT7FCY276TNTJ4A";
+
 pub struct PricesJob {
 	global: Arc<Global>,
-	products: Vec<Product>,
-	subscription_products: Vec<SubscriptionProduct>,
+	subscription_product: SubscriptionProduct,
 }
 
 impl Job for PricesJob {
@@ -34,8 +37,16 @@ impl Job for PricesJob {
 
 		Ok(Self {
 			global,
-			products: vec![],
-			subscription_products: vec![],
+			subscription_product: SubscriptionProduct {
+				id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
+				variants: vec![],
+				name: "7TV Subscription".to_string(),
+				description: None,
+				default_currency: stripe::Currency::USD,
+				benefits: vec![],
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			},
 		})
 	}
 
@@ -105,30 +116,31 @@ impl Job for PricesJob {
 				None
 			};
 
-			self.subscription_products.push(SubscriptionProduct {
+			self.subscription_product.default_currency = currency;
+			self.subscription_product.variants.push(SubscriptionProductVariant {
 				id: price_id.into(),
-				paypal_id,
-				name: product.name.unwrap_or_default(),
-				description: None,
 				kind,
-				benefits: vec![],
-				default_currency: currency,
 				currency_prices,
-				created_at: chrono::Utc::now(),
-				updated_at: chrono::Utc::now(),
-				search_updated_at: None,
+				paypal_id,
 			});
 		} else {
-			self.products.push(Product {
-				id: price_id.into(),
-				name: product.name.unwrap_or_default(),
-				description: None,
-				default_currency: currency,
-				currency_prices,
-				created_at: chrono::Utc::now(),
-				updated_at: chrono::Utc::now(),
-				search_updated_at: None,
-			});
+			match Product::collection(self.global.target_db())
+				.insert_one(Product {
+					id: price_id.into(),
+					name: product.name.unwrap_or_default(),
+					extends_subscription: None,
+					description: None,
+					default_currency: currency,
+					currency_prices,
+					created_at: chrono::Utc::now(),
+					updated_at: chrono::Utc::now(),
+					search_updated_at: None,
+				})
+				.await
+			{
+				Ok(_) => outcome.inserted_rows += 1,
+				Err(e) => outcome.errors.push(e.into()),
+			}
 		}
 
 		outcome
@@ -137,36 +149,12 @@ impl Job for PricesJob {
 	async fn finish(self) -> ProcessOutcome {
 		tracing::info!("finishing prices job");
 
-		let mut outcome = ProcessOutcome::default();
-
-		match Product::collection(self.global.target_db())
-			.insert_many(&self.products)
-			.with_options(mongodb::options::InsertManyOptions::builder().ordered(false).build())
-			.await
-		{
-			Ok(res) => {
-				outcome.inserted_rows += res.inserted_ids.len() as u64;
-				if res.inserted_ids.len() != self.products.len() {
-					outcome.errors.push(error::Error::InsertMany);
-				}
-			}
-			Err(e) => outcome.errors.push(e.into()),
-		}
-
 		match SubscriptionProduct::collection(self.global.target_db())
-			.insert_many(&self.subscription_products)
-			.with_options(mongodb::options::InsertManyOptions::builder().ordered(false).build())
+			.insert_one(&self.subscription_product)
 			.await
 		{
-			Ok(res) => {
-				outcome.inserted_rows += res.inserted_ids.len() as u64;
-				if res.inserted_ids.len() != self.products.len() {
-					outcome.errors.push(error::Error::InsertMany);
-				}
-			}
-			Err(e) => outcome.errors.push(e.into()),
+			Ok(_) => ProcessOutcome::default(),
+			Err(e) => ProcessOutcome::error(e),
 		}
-
-		outcome
 	}
 }

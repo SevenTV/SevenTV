@@ -4,15 +4,16 @@ use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
+	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy
 };
-use shared::database::product::ProductId;
+use shared::database::product::SubscriptionProductId;
 use shared::database::MongoCollection;
 
+use super::prices::NEW_PRODUCT_ID;
 use super::{Job, ProcessOutcome};
 use crate::error;
 use crate::global::Global;
-use crate::types::{self, SubscriptionCycleStatus, SubscriptionProvider};
+use crate::types::{self, SubscriptionProvider};
 
 pub const PAYPAL_YEARLY: &'static str = "P-9P108407878214437MDOSLGA";
 pub const PAYPAL_MONTHLY: &'static str = "P-0RN164482K927302CMDOSJJA";
@@ -65,16 +66,7 @@ impl Job for SubscriptionsJob {
 			return outcome;
 		};
 
-		let price_id = match subscription.plan_id.as_ref() {
-			PAYPAL_MONTHLY => stripe::PriceId::from_str(STRIPE_MONTHLY).ok(),
-			PAYPAL_YEARLY => stripe::PriceId::from_str(STRIPE_YEARLY).ok(),
-			_ => None,
-		};
-		let Some(product_id) = price_id.map(ProductId::from) else {
-			return outcome;
-		};
-
-		let subscription_id = match subscription.provider {
+		let provider_id = match subscription.provider {
 			SubscriptionProvider::Stripe => match stripe::SubscriptionId::from_str(&subscription_id) {
 				Ok(id) => id.into(),
 				Err(e) => return outcome.with_error(error::Error::InvalidStripeId(e)),
@@ -83,22 +75,21 @@ impl Job for SubscriptionsJob {
 			_ => return outcome,
 		};
 
-		self.subscriptions.push(Subscription {
-			id: subscription_id.clone(),
+		let sub_id = SubscriptionId {
 			user_id: subscription.subscriber_id.into(),
-			stripe_customer_id: None,
-			product_ids: vec![product_id.clone()],
-			cancel_at_period_end: subscription.cycle.status == SubscriptionCycleStatus::Canceled,
-			trial_end: subscription.cycle.trial_end_at.map(|t| t.into_chrono()),
-			ended_at: subscription.ended_at.map(|t| t.into_chrono()),
-			created_at: subscription.id.timestamp().to_chrono(),
+			product_id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
+		};
+
+		self.subscriptions.push(Subscription {
+			id: sub_id.clone(),
+			state: subscription.cycle.status.into(),
 			updated_at: chrono::Utc::now(),
 		});
 
 		self.periods.push(SubscriptionPeriod {
 			id: subscription.id.into(),
-			subscription_id: Some(subscription_id),
-			user_id: subscription.subscriber_id.into(),
+			provider_id: Some(provider_id),
+			subscription_id: sub_id,
 			start: subscription.started_at.into_chrono(),
 			end: subscription
 				.ended_at
@@ -109,7 +100,6 @@ impl Job for SubscriptionsJob {
 			created_by: SubscriptionPeriodCreatedBy::System {
 				reason: Some("Old subscription".to_string()),
 			},
-			product_ids: vec![product_id],
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,
 		});
