@@ -15,6 +15,7 @@ mod image_processor;
 mod jwt;
 mod search;
 mod transactions;
+mod sub_refresh_job;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {

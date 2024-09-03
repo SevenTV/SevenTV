@@ -140,6 +140,9 @@ pub enum EntitlementEdgeManagedBy {
 		invoice_id: InvoiceId,
 		line_item_id: InvoiceLineItemId,
 	},
+	Subscription {
+		subscription_id: SubscriptionId,
+	},
 	RedeemCode {
 		redeem_code_id: RedeemCodeId,
 	},
@@ -148,11 +151,12 @@ pub enum EntitlementEdgeManagedBy {
 impl std::fmt::Display for EntitlementEdgeManagedBy {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::RedeemCode { redeem_code_id } => write!(f, "redeem_code:{redeem_code_id}"),
 			Self::InvoiceLineItem {
 				invoice_id,
 				line_item_id,
 			} => write!(f, "invoice:{invoice_id}:{line_item_id}"),
+			Self::Subscription { subscription_id } => write!(f, "subscription:{subscription_id}"),
+			Self::RedeemCode { redeem_code_id } => write!(f, "redeem_code:{redeem_code_id}"),
 		}
 	}
 }

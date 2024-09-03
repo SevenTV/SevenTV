@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::product::invoice::{Invoice, InvoiceStatus};
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
-	SubscriptionPeriodId
+	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
+	SubscriptionPeriodId, SubscriptionState,
 };
 use shared::database::product::{InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
@@ -14,6 +15,7 @@ use stripe::{FinalizeInvoiceParams, Object};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::sub_refresh_job;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Result<Vec<ProductId>, ApiError> {
@@ -31,6 +33,7 @@ pub async fn created(
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
+	// Invoices are only created for subscriptions
 	if let Some(subscription) = invoice.subscription {
 		// We have to fetch the subscription here to determine the id of the user this
 		// invoice is for.
@@ -112,12 +115,9 @@ pub async fn created(
 			tracing::error!(error = %e, "failed to finalize invoice");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
-
-		Ok(())
-	} else {
-		// TODO: do something here?
-		Ok(())
 	}
+
+	Ok(())
 }
 
 /// Updates the invoice object.
@@ -231,7 +231,7 @@ pub async fn paid(
 		tx.insert_one(
 			SubscriptionPeriod {
 				id: SubscriptionPeriodId::new(),
-				subscription_id: sub_id,
+				subscription_id: sub_id.clone(),
 				provider_id: Some(provider_id),
 				start,
 				end,
@@ -245,6 +245,32 @@ pub async fn paid(
 			None,
 		)
 		.await?;
+
+		let subscription = tx
+			.find_one_and_update(
+				filter::filter! {
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: &sub_id,
+					}
+				},
+				update::update! {
+					#[query(set_on_insert)]
+					Subscription {
+						id: sub_id,
+						state: SubscriptionState::Active,
+						updated_at: chrono::Utc::now(),
+					}
+				},
+				FindOneAndUpdateOptions::builder()
+					.upsert(true)
+					.return_document(ReturnDocument::After)
+					.build(),
+			)
+			.await?
+			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+
+		sub_refresh_job::refresh_entitlements(&mut tx, &subscription.id, &product.benefits).await?;
 	}
 
 	updated(global, tx, invoice, HashMap::new()).await?;

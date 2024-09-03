@@ -59,41 +59,6 @@ pub enum SubscriptionState {
 	Ended = 2,
 }
 
-// impl Subscription {
-// 	pub fn from_stripe(sub: stripe::Subscription) -> Option<Self> {
-// 		let created_at = match sub.ended_at {
-// 			Some(t) => chrono::DateTime::from_timestamp(t, 0)?,
-// 			None => chrono::Utc::now(),
-// 		};
-
-// 		let user_id = sub.metadata.get("USER_ID").and_then(|i| UserId::from_str(i).ok())?;
-
-// 		Some(Self {
-// 			id: sub.id.into(),
-// 			user_id,
-// 			stripe_customer_id: Some(sub.customer.id().into()),
-// 			product_ids: sub
-// 				.items
-// 				.data
-// 				.into_iter()
-// 				.map(|i| Ok(i.price.ok_or(())?.id.into()))
-// 				.collect::<Result<_, ()>>()
-// 				.ok()?,
-// 			cancel_at_period_end: sub.cancel_at_period_end,
-// 			trial_end: match sub.trial_end {
-// 				Some(t) => Some(chrono::DateTime::from_timestamp(t, 0)?),
-// 				None => None,
-// 			},
-// 			ended_at: match sub.ended_at {
-// 				Some(t) => Some(chrono::DateTime::from_timestamp(t, 0)?),
-// 				None => None,
-// 			},
-// 			created_at,
-// 			updated_at: created_at,
-// 		})
-// 	}
-// }
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case", tag = "kind", content = "id")]
 pub enum ProviderSubscriptionId {

@@ -12,6 +12,7 @@ use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::sub_refresh_job;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 fn subscription_products(items: stripe::List<stripe::SubscriptionItem>) -> Result<Vec<ProductId>, ApiError> {
@@ -128,7 +129,7 @@ pub async fn deleted(
 		filter::filter! {
 			Subscription {
 				#[query(rename = "_id", serde)]
-				id: period.subscription_id,
+				id: &period.subscription_id,
 			}
 		},
 		update::update! {
@@ -143,6 +144,8 @@ pub async fn deleted(
 	)
 	.await?;
 
+	sub_refresh_job::revoke_entitlements(&mut tx, &period.subscription_id).await?;
+
 	Ok(())
 }
 
@@ -150,17 +153,12 @@ pub async fn deleted(
 /// products got removed from the subscription. Otherwise, updates the current
 /// subscription period to include all updated subscription products.
 pub async fn updated(
-	global: &Arc<Global>,
+	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	event_created: chrono::DateTime<chrono::Utc>,
 	subscription: stripe::Subscription,
 	prev_attributes: HashMap<String, serde_json::Value>,
 ) -> TransactionResult<(), ApiError> {
-	// if !prev_attributes.contains_key("items") {
-	// 	// items didn't change, we don't have to handle this
-	// 	return Ok(());
-	// };
-
 	let items = subscription_products(subscription.items).map_err(TransactionError::custom)?;
 
 	let products = tx
@@ -178,81 +176,101 @@ pub async fn updated(
 		)
 		.await?;
 
-	if products.is_empty() {
-		// all products were removed from the subscription
-		// end the current subscription period right now
+	let items_changed = prev_attributes.contains_key("items");
 
-		let Some(period) = tx
-			.find_one_and_update(
+	match (items_changed, products.len()) {
+		(true, 0) => {
+			// product was removed from the subscription
+			// end the current period right away
+
+			let Some(period) = tx
+				.find_one_and_update(
+					filter::filter! {
+						SubscriptionPeriod {
+							#[query(serde)]
+							provider_id: Some(ProviderSubscriptionId::Stripe(subscription.id.into())),
+							#[query(selector = "lt")]
+							start: chrono::Utc::now(),
+							#[query(selector = "gt")]
+							end: chrono::Utc::now(),
+						}
+					},
+					update::update! {
+						#[query(set)]
+						SubscriptionPeriod {
+							end: event_created,
+							updated_at: chrono::Utc::now(),
+						}
+					},
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::After)
+						.build(),
+				)
+				.await?
+			else {
+				return Ok(());
+			};
+
+			tx.update_one(
 				filter::filter! {
-					SubscriptionPeriod {
-						#[query(serde)]
-						provider_id: Some(ProviderSubscriptionId::Stripe(subscription.id.into())),
-						#[query(selector = "lt")]
-						start: chrono::Utc::now(),
-						#[query(selector = "gt")]
-						end: chrono::Utc::now(),
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: &period.subscription_id,
 					}
 				},
 				update::update! {
 					#[query(set)]
-					SubscriptionPeriod {
-						end: event_created,
+					Subscription {
+						#[query(serde)]
+						state: SubscriptionState::Ended,
 						updated_at: chrono::Utc::now(),
 					}
 				},
-				FindOneAndUpdateOptions::builder()
-					.return_document(ReturnDocument::After)
-					.build(),
+				None,
 			)
-			.await?
-		else {
-			return Ok(());
-		};
+			.await?;
 
-		tx.update_one(
-			filter::filter! {
-				Subscription {
-					#[query(rename = "_id", serde)]
-					id: &period.subscription_id,
-				}
-			},
-			update::update! {
-				#[query(set)]
-				Subscription {
-					#[query(serde)]
-					state: SubscriptionState::Ended,
-					updated_at: chrono::Utc::now(),
-				}
-			},
-			None,
-		)
-		.await?;
-	} else {
-		if products.len() != 1 {
-			// only accept subs with one product
-			return Ok(());
+			sub_refresh_job::revoke_entitlements(&mut tx, &period.subscription_id).await?;
 		}
+		(true, 1) => {
+			// product was swapped with another product
 
-		let user_id = subscription
-			.metadata
-			.get("USER_ID")
-			.and_then(|i| UserId::from_str(i).ok())
-			.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+			// let user_id = subscription
+			// 	.metadata
+			// 	.get("USER_ID")
+			// 	.and_then(|i| UserId::from_str(i).ok())
+			// 	.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 
-		let product = products.into_iter().next().unwrap();
+			// let old_product = prev_attributes
+			// 	.get("items")
+			// 	.and_then(|v| v.get("data"))
+			// 	.and_then(|v| v.get(0))
+			// 	.and_then(|v| v.get("price"))
+			// 	.and_then(|v| v.get("id"))
+			// 	.and_then(|v| v.as_str())
+			// 	.and_then(|s| ProductId::from_str(s).ok())
+			// 	.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+		}
+		(true, _) => {
+			// n > 1
+			// the subscription has more than one product now
+		}
+		(false, 1) => {
+			// nothing changed, still one product
+			// update subscription
 
-		let sub_id = SubscriptionId {
-			user_id,
-			product_id: product.id,
-		};
+			let user_id = subscription
+				.metadata
+				.get("USER_ID")
+				.and_then(|i| UserId::from_str(i).ok())
+				.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 
-		if prev_attributes.contains_key("items") {
-			// items changed
+			let product = products.into_iter().next().unwrap();
 
-			// TODO: handle this case
-		} else {
-			// items didn't change, we don't have to handle this
+			let sub_id = SubscriptionId {
+				user_id,
+				product_id: product.id,
+			};
 
 			let new_state = if subscription.ended_at.is_some() {
 				SubscriptionState::Ended
@@ -280,6 +298,10 @@ pub async fn updated(
 				None,
 			)
 			.await?;
+		}
+		(false, _) => {
+			// n == 0 || n > 1
+			// nothing changed, still more than one product or zero products
 		}
 	}
 

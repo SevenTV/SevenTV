@@ -12,6 +12,7 @@ use stripe::{CreateInvoice, FinalizeInvoiceParams};
 use super::types;
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::sub_refresh_job;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn completed(
@@ -19,7 +20,7 @@ pub async fn completed(
 	mut tx: TransactionSession<'_, ApiError>,
 	sale: types::Sale,
 ) -> TransactionResult<(), ApiError> {
-	let Some(subscription_id) = sale.billing_agreement_id else {
+	let Some(provider_id) = sale.billing_agreement_id else {
 		// sale isn't related to a subscription
 		return Ok(());
 	};
@@ -28,7 +29,7 @@ pub async fn completed(
 		.find_one(
 			filter::filter! {
 				User {
-					paypal_sub_id: Some(&subscription_id),
+					paypal_sub_id: Some(&provider_id),
 				}
 			},
 			None,
@@ -42,7 +43,7 @@ pub async fn completed(
 	// retrieve the paypal subscription
 	let paypal_sub: types::Subscription = global
 		.http_client
-		.get(format!("https://api.paypal.com/v1/billing/subscriptions/{subscription_id}"))
+		.get(format!("https://api.paypal.com/v1/billing/subscriptions/{provider_id}"))
 		.bearer_auth(&global.config.api.paypal.api_key)
 		.send()
 		.await
@@ -218,14 +219,16 @@ pub async fn completed(
 	.await?;
 
 	if let Some(next_billing_time) = paypal_sub.billing_info.next_billing_time {
+		let subscription_id = SubscriptionId {
+			user_id: user.id,
+			product_id: product.id,
+		};
+
 		tx.insert_one(
 			SubscriptionPeriod {
 				id: SubscriptionPeriodId::new(),
-				subscription_id: SubscriptionId {
-					user_id: user.id,
-					product_id: product.id,
-				},
-				provider_id: Some(ProviderSubscriptionId::Paypal(subscription_id)),
+				subscription_id: subscription_id.clone(),
+				provider_id: Some(ProviderSubscriptionId::Paypal(provider_id)),
 				start: paypal_sub
 					.billing_info
 					.last_payment
@@ -240,6 +243,8 @@ pub async fn completed(
 			None,
 		)
 		.await?;
+
+		sub_refresh_job::refresh_entitlements(&mut tx, &subscription_id, &product.benefits).await?;
 	}
 
 	Ok(())

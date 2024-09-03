@@ -7,6 +7,7 @@ use shared::database::queries::{filter, update};
 use super::types;
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::sub_refresh_job;
 use crate::transactions::{TransactionResult, TransactionSession};
 
 /// Ends the current period right away.
@@ -54,7 +55,7 @@ pub async fn cancelled(
 		filter::filter! {
 			Subscription {
 				#[query(rename = "_id", serde)]
-				id: period.subscription_id,
+				id: &period.subscription_id,
 			}
 		},
 		update::update! {
@@ -68,6 +69,8 @@ pub async fn cancelled(
 		None,
 	)
 	.await?;
+
+	sub_refresh_job::revoke_entitlements(&mut tx, &period.subscription_id).await?;
 
 	Ok(())
 }

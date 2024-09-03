@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::{Extension, Json};
-use chrono::TimeDelta;
 use futures::TryStreamExt;
 use hyper::StatusCode;
 use shared::database::product::subscription::{
@@ -18,6 +17,7 @@ use crate::http::extract::Path;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::rest::types::{self, SubscriptionCycleUnit};
 use crate::http::v3::rest::users::TargetUser;
+use crate::sub_refresh_job;
 
 #[derive(Debug, serde::Serialize)]
 pub struct SubscriptionResponse {
@@ -87,11 +87,7 @@ pub async fn subscription(
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
 
-	let age = periods
-		.iter()
-		.map(|p| p.end.signed_duration_since(p.start).max(TimeDelta::zero()))
-		.sum::<chrono::TimeDelta>()
-		.num_days();
+	let age = sub_refresh_job::sub_age_days(&periods);
 
 	let provider = active_period.provider_id.as_ref().map(|id| match id {
 		ProviderSubscriptionId::Stripe(_) => types::Provider::Stripe,
