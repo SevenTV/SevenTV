@@ -78,7 +78,10 @@ pub async fn subscription(
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-	let periods: Vec<_> = periods.into_iter().filter(|p| p.subscription_id == active_period.subscription_id).collect();
+	let periods: Vec<_> = periods
+		.into_iter()
+		.filter(|p| p.subscription_id == active_period.subscription_id)
+		.collect();
 
 	let product: SubscriptionProduct = global
 		.subscription_product_by_id_loader

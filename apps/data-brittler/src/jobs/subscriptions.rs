@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use mongodb::options::InsertManyOptions;
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy
+	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
 };
 use shared::database::product::SubscriptionProductId;
 use shared::database::MongoCollection;

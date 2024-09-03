@@ -17,9 +17,9 @@ use crate::global::Global;
 
 pub mod error;
 pub mod extract;
+pub mod internal;
 pub mod middleware;
 pub mod v3;
-pub mod internal;
 
 #[derive(Clone)]
 struct TraceRequestId;

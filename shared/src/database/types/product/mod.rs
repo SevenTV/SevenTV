@@ -230,8 +230,10 @@ pub struct SubscriptionProductVariant {
 
 pub type SubscriptionBenefitId = Id<SubscriptionBenefit>;
 
-/// The `SubscriptionBenefitId` can have entitlements attached via the entitlement graph.
-/// If the user qualifies for the entitlement benefit then we create an edge between `Subscription` and `SubscriptionBenefit` on the entitlement graph.
+/// The `SubscriptionBenefitId` can have entitlements attached via the
+/// entitlement graph. If the user qualifies for the entitlement benefit then we
+/// create an edge between `Subscription` and `SubscriptionBenefit` on the
+/// entitlement graph.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionBenefit {

@@ -80,7 +80,11 @@ impl SubscriptionProduct {
 			benefits: value.benefits.into_iter().map(|b| b.id).collect(),
 			default_currency: value.default_currency,
 			entitlement_grants: entitlement_grants.into_iter().map(Into::into).collect(),
-			currencies: value.variants.iter().flat_map(|v| v.currency_prices.keys().copied()).collect(),
+			currencies: value
+				.variants
+				.iter()
+				.flat_map(|v| v.currency_prices.keys().copied())
+				.collect(),
 			created_at: value.id.timestamp().timestamp_millis(),
 			updated_at: value.updated_at.timestamp_millis(),
 			search_updated_at: Utc::now().timestamp_millis(),

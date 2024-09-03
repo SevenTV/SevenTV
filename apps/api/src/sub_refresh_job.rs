@@ -1,20 +1,14 @@
 use std::sync::Arc;
 
-use shared::database::{
-	duration::DurationUnit,
-	entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy},
-	product::{
-		subscription::{SubscriptionId, SubscriptionPeriod},
-		SubscriptionBenefit, SubscriptionBenefitCondition,
-	},
-	queries::filter,
-};
+use shared::database::duration::DurationUnit;
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
+use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
+use shared::database::product::{SubscriptionBenefit, SubscriptionBenefitCondition};
+use shared::database::queries::filter;
 
-use crate::{
-	global::Global,
-	http::error::ApiError,
-	transactions::{TransactionError, TransactionResult, TransactionSession},
-};
+use crate::global::Global;
+use crate::http::error::ApiError;
+use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub fn sub_age_days(periods: &[SubscriptionPeriod]) -> isize {
 	sub_age(periods).0

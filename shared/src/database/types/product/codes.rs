@@ -9,14 +9,23 @@ use crate::database::{Id, MongoCollection};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum CodeEffect {
-	Entitlement { edge: EntitlementEdgeKind, extends_subscription: Option<SubscriptionProductId> },
-	SubscriptionProduct { id: ProductId, trial_days: u32 },
+	Entitlement {
+		edge: EntitlementEdgeKind,
+		extends_subscription: Option<SubscriptionProductId>,
+	},
+	SubscriptionProduct {
+		id: ProductId,
+		trial_days: u32,
+	},
 }
 
 impl std::fmt::Display for CodeEffect {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			CodeEffect::Entitlement { edge, extends_subscription } => {
+			CodeEffect::Entitlement {
+				edge,
+				extends_subscription,
+			} => {
 				write!(f, "entitlement:{edge}")?;
 
 				if let Some(extends_subscription) = extends_subscription {
