@@ -5,10 +5,11 @@ use axum::extract::State;
 use axum::{Extension, Json};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::codes::{CodeEffect, RedeemCode};
-use shared::database::product::subscription::SubscriptionId;
+use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
+use shared::database::MongoCollection;
 
 use super::{create_checkout_session_params, find_customer};
 use crate::global::Global;
@@ -107,13 +108,24 @@ pub async fn redeem(
 				.await?
 				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
-			// if the user is already subscribed
-			let is_subscribed = auth_session
-				.user(&global)
-				.await
-				.map_err(TransactionError::custom)?
-				.computed
-				.is_subscribed;
+			let is_subscribed = tx
+				.find_one(
+					filter::filter! {
+						SubscriptionPeriod {
+							#[query(flatten)]
+							subscription_id: SubscriptionId {
+								user_id: auth_session.user_id(),
+							},
+							#[query(selector = "lt")]
+							start: chrono::Utc::now(),
+							#[query(selector = "gt")]
+							end: chrono::Utc::now(),
+						}
+					},
+					None,
+				)
+				.await?
+				.is_some();
 
 			if let Some((product_id, trial_days, false)) = code.effects.iter().find_map(|e| match e {
 				CodeEffect::SubscriptionProduct { id, trial_days } => Some((id, trial_days, is_subscribed)),

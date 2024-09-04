@@ -4,6 +4,7 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
 use shared::database::queries::filter;
 use shared::database::user::UserId;
@@ -113,7 +114,26 @@ pub async fn subscribe(
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
 
-		if receiving_user.computed.is_subscribed {
+		let is_subscribed = SubscriptionPeriod::collection(&global.db)
+			.find_one(filter::filter! {
+				SubscriptionPeriod {
+					#[query(flatten)]
+					subscription_id: SubscriptionId {
+						user_id: receiving_user.id,
+					},
+					#[query(selector = "lt")]
+					start: chrono::Utc::now(),
+					#[query(selector = "gt")]
+					end: chrono::Utc::now(),
+				}
+			})
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to load subscription periods");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?
+			.is_some();
+		if is_subscribed {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
 		}
 
@@ -141,7 +161,27 @@ pub async fn subscribe(
 
 		receiving_user.id
 	} else {
-		if auth_session.user(&global).await?.computed.is_subscribed {
+		let is_subscribed = SubscriptionPeriod::collection(&global.db)
+			.find_one(filter::filter! {
+				SubscriptionPeriod {
+					#[query(flatten)]
+					subscription_id: SubscriptionId {
+						user_id: auth_session.user_id(),
+					},
+					#[query(selector = "lt")]
+					start: chrono::Utc::now(),
+					#[query(selector = "gt")]
+					end: chrono::Utc::now(),
+				}
+			})
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to load subscription periods");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?
+			.is_some();
+
+		if is_subscribed {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
 		}
 

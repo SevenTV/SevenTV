@@ -165,5 +165,4 @@ pub struct UserComputed {
 	pub highest_role_color: Option<i32>,
 	pub roles: Vec<RoleId>,
 	pub raw_entitlements: Option<Vec<EntitlementEdge>>,
-	pub is_subscribed: bool,
 }

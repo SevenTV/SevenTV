@@ -7,8 +7,6 @@ use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
-use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
-use shared::database::queries::filter;
 use shared::database::role::permissions::{Permissions, PermissionsExt, UserPermission};
 use shared::database::role::{Role, RoleId};
 use shared::database::user::ban::ActiveBans;
@@ -159,7 +157,6 @@ impl FullUserLoader {
 					highest_role_color: None,
 					raw_entitlements: None,
 					roles: vec![],
-					is_subscribed: false,
 				};
 
 				role_ids.extend(computed.entitlements.roles.iter().cloned());
@@ -222,36 +219,6 @@ impl FullUserLoader {
 				.style
 				.active_profile_picture
 				.and_then(|id| profile_pictures.get(&id).cloned());
-		}
-
-		let sub_periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
-			.find(filter::filter! {
-				SubscriptionPeriod {
-					#[query(flatten)]
-					subscription_id: SubscriptionId {
-						#[query(selector = "in")]
-						user_id: users.keys().collect::<Vec<_>>(),
-					},
-					#[query(selector = "lt")]
-					start: chrono::Utc::now(),
-					#[query(selector = "gt")]
-					end: chrono::Utc::now(),
-				}
-			})
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to load subscription periods");
-				()
-			})?
-			.try_collect()
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to collect subscription periods");
-				()
-			})?;
-
-		for (id, user) in &mut users {
-			user.computed.is_subscribed = sub_periods.iter().any(|p| p.subscription_id.user_id == *id);
 		}
 
 		Ok(users)
@@ -331,7 +298,6 @@ impl Loader for UserComputedLoader {
 						highest_role_color: None,
 						roles: vec![],
 						raw_entitlements: Some(raw_entitlements),
-						is_subscribed: false,
 					},
 				)
 			})
@@ -354,36 +320,6 @@ impl Loader for UserComputedLoader {
 				.map(|r| r.id)
 				.filter(|r| user.entitlements.roles.contains(r))
 				.collect();
-		}
-
-		let sub_periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
-			.find(filter::filter! {
-				SubscriptionPeriod {
-					#[query(flatten)]
-					subscription_id: SubscriptionId {
-						#[query(selector = "in")]
-						user_id: result.keys().collect::<Vec<_>>(),
-					},
-					#[query(selector = "lt")]
-					start: chrono::Utc::now(),
-					#[query(selector = "gt")]
-					end: chrono::Utc::now(),
-				}
-			})
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to load subscription periods");
-				()
-			})?
-			.try_collect()
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to collect subscription periods");
-				()
-			})?;
-
-		for (id, user) in &mut result {
-			user.is_subscribed = sub_periods.iter().any(|p| p.subscription_id.user_id == *id);
 		}
 
 		Ok(result)
