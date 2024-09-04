@@ -16,6 +16,7 @@ use tokio::sync::{OnceCell, RwLock};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::sub_refresh_job;
 use crate::transactions::{with_transaction, TransactionError};
 
 mod dispute;
@@ -148,32 +149,38 @@ pub async fn handle(
 
 			if res.matched_count > 0 {
 				// already processed
-				return Ok(());
+				return Ok(None);
 			}
 
 			match (event.event_type, event.ressource) {
 				(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => {
-					sale::completed(&global, tx, sale).await
+					return sale::completed(&global, tx, sale).await;
 				}
 				(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale))
-				| (types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(&global, tx, sale).await,
+				| (types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(&global, tx, sale).await?,
 				(types::EventType::CustomerDisputeCreated, types::Resource::Dispute(dispute))
 				| (types::EventType::CustomerDisputeUpdated, types::Resource::Dispute(dispute))
 				| (types::EventType::CustomerDisputeResolved, types::Resource::Dispute(dispute)) => {
-					dispute::updated(&global, tx, dispute).await
+					dispute::updated(&global, tx, dispute).await?
 				}
 				(types::EventType::BillingSubscriptionCancelled, types::Resource::Subscription(subscription))
 				| (types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
-					subscription::cancelled(&global, tx, subscription).await
+					return subscription::cancelled(&global, tx, subscription).await;
 				}
-				_ => Err(TransactionError::custom(ApiError::BAD_REQUEST)),
+				_ => return Err(TransactionError::custom(ApiError::BAD_REQUEST)),
 			}
+
+			Ok(None)
 		}
 	})
 	.await;
 
 	match res {
-		Ok(_) => Ok(StatusCode::OK),
+		Ok(Some(sub_id)) => {
+			sub_refresh_job::refresh(&global, &sub_id).await?;
+			Ok(StatusCode::OK)
+		}
+		Ok(None) => Ok(StatusCode::OK),
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");

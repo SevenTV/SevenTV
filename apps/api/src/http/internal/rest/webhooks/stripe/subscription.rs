@@ -12,7 +12,6 @@ use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::sub_refresh_job;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 fn subscription_products(items: stripe::List<stripe::SubscriptionItem>) -> Result<Vec<ProductId>, ApiError> {
@@ -91,7 +90,7 @@ pub async fn deleted(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: stripe::Subscription,
-) -> TransactionResult<(), ApiError> {
+) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	let ended_at = subscription.ended_at.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 	let ended_at = chrono::DateTime::from_timestamp(ended_at, 0).ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
 
@@ -122,7 +121,7 @@ pub async fn deleted(
 		)
 		.await?
 	else {
-		return Ok(());
+		return Ok(None);
 	};
 
 	tx.update_one(
@@ -144,9 +143,7 @@ pub async fn deleted(
 	)
 	.await?;
 
-	sub_refresh_job::revoke_entitlements(&mut tx, &period.subscription_id).await?;
-
-	Ok(())
+	Ok(Some(period.subscription_id))
 }
 
 /// Ends the current subscription period right away when the subscription
@@ -158,7 +155,7 @@ pub async fn updated(
 	event_created: chrono::DateTime<chrono::Utc>,
 	subscription: stripe::Subscription,
 	prev_attributes: HashMap<String, serde_json::Value>,
-) -> TransactionResult<(), ApiError> {
+) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	let items = subscription_products(subscription.items).map_err(TransactionError::custom)?;
 
 	let products = tx
@@ -208,7 +205,7 @@ pub async fn updated(
 				)
 				.await?
 			else {
-				return Ok(());
+				return Ok(None);
 			};
 
 			tx.update_one(
@@ -230,7 +227,7 @@ pub async fn updated(
 			)
 			.await?;
 
-			sub_refresh_job::revoke_entitlements(&mut tx, &period.subscription_id).await?;
+			return Ok(Some(period.subscription_id));
 		}
 		(true, 1) => {
 			// product was swapped with another product
@@ -298,6 +295,8 @@ pub async fn updated(
 				None,
 			)
 			.await?;
+
+			return Ok(Some(sub_id));
 		}
 		(false, _) => {
 			// n == 0 || n > 1
@@ -305,5 +304,5 @@ pub async fn updated(
 		}
 	}
 
-	Ok(())
+	Ok(None)
 }

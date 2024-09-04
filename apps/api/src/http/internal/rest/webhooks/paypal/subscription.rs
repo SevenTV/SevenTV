@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::product::subscription::{ProviderSubscriptionId, Subscription, SubscriptionPeriod, SubscriptionState};
+use shared::database::product::subscription::{ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState};
 use shared::database::queries::{filter, update};
 
 use super::types;
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::sub_refresh_job;
 use crate::transactions::{TransactionResult, TransactionSession};
 
 /// Ends the current period right away.
@@ -18,7 +17,7 @@ pub async fn cancelled(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: types::Subscription,
-) -> TransactionResult<(), ApiError> {
+) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	let subscription_id = ProviderSubscriptionId::Paypal(subscription.id);
 
 	let now = chrono::Utc::now();
@@ -48,7 +47,7 @@ pub async fn cancelled(
 		)
 		.await?
 	else {
-		return Ok(());
+		return Ok(None);
 	};
 
 	tx.update_one(
@@ -70,7 +69,5 @@ pub async fn cancelled(
 	)
 	.await?;
 
-	sub_refresh_job::revoke_entitlements(&mut tx, &period.subscription_id).await?;
-
-	Ok(())
+	Ok(Some(period.subscription_id))
 }

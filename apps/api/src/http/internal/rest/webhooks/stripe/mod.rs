@@ -8,6 +8,7 @@ use shared::database::webhook_event::WebhookEvent;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::sub_refresh_job;
 use crate::transactions::{with_transaction, TransactionError};
 
 mod charge;
@@ -56,23 +57,23 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 
 			if res.matched_count > 0 {
 				// already processed
-				return Ok(());
+				return Ok(None);
 			}
 
 			let prev_attributes = event.data.previous_attributes;
 
 			match (event.type_, event.data.object) {
 				(stripe::EventType::CustomerCreated, stripe::EventObject::Customer(cus)) => {
-					customer::created(&global, tx, cus).await
+					customer::created(&global, tx, cus).await?;
 				}
 				(stripe::EventType::CheckoutSessionCompleted, stripe::EventObject::CheckoutSession(s)) => {
-					checkout_session::completed(&global, tx, s).await
+					checkout_session::completed(&global, tx, s).await?;
 				}
 				(stripe::EventType::CheckoutSessionExpired, stripe::EventObject::CheckoutSession(s)) => {
-					checkout_session::expired(&global, tx, s).await
+					checkout_session::expired(&global, tx, s).await?;
 				}
 				(stripe::EventType::InvoiceCreated, stripe::EventObject::Invoice(iv)) => {
-					invoice::created(&global, tx, iv).await
+					invoice::created(&global, tx, iv).await?;
 				}
 				(stripe::EventType::InvoiceUpdated, stripe::EventObject::Invoice(iv))
 				| (stripe::EventType::InvoiceFinalized, stripe::EventObject::Invoice(iv))
@@ -83,20 +84,22 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 						iv,
 						prev_attributes.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
 					)
-					.await
+					.await?;
 				}
-				(stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv)) => invoice::paid(&global, tx, iv).await,
+				(stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv)) => {
+					return invoice::paid(&global, tx, iv).await;
+				}
 				(stripe::EventType::InvoiceDeleted, stripe::EventObject::Invoice(iv)) => {
-					invoice::deleted(&global, tx, iv).await
+					invoice::deleted(&global, tx, iv).await?;
 				}
 				(stripe::EventType::InvoicePaymentFailed, stripe::EventObject::Invoice(iv)) => {
-					invoice::payment_failed(&global, tx, iv).await
+					invoice::payment_failed(&global, tx, iv).await?;
 				}
 				(stripe::EventType::CustomerSubscriptionCreated, stripe::EventObject::Subscription(sub)) => {
-					subscription::created(&global, tx, sub).await
+					subscription::created(&global, tx, sub).await?;
 				}
 				(stripe::EventType::CustomerSubscriptionUpdated, stripe::EventObject::Subscription(sub)) => {
-					subscription::updated(
+					return subscription::updated(
 						&global,
 						tx,
 						chrono::DateTime::from_timestamp(event.created, 0)
@@ -104,27 +107,33 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 						sub,
 						prev_attributes.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
 					)
-					.await
+					.await;
 				}
 				(stripe::EventType::CustomerSubscriptionDeleted, stripe::EventObject::Subscription(sub)) => {
-					subscription::deleted(&global, tx, sub).await
+					return subscription::deleted(&global, tx, sub).await;
 				}
 				(stripe::EventType::ChargeRefunded, stripe::EventObject::Charge(ch)) => {
-					charge::refunded(&global, tx, ch).await
+					charge::refunded(&global, tx, ch).await?;
 				}
 				(stripe::EventType::ChargeDisputeCreated, stripe::EventObject::Dispute(dis))
 				| (stripe::EventType::ChargeDisputeClosed, stripe::EventObject::Dispute(dis))
 				| (stripe::EventType::ChargeDisputeUpdated, stripe::EventObject::Dispute(dis)) => {
-					charge::dispute_updated(&global, tx, dis).await
+					charge::dispute_updated(&global, tx, dis).await?;
 				}
-				_ => Err(TransactionError::custom(ApiError::BAD_REQUEST)),
+				_ => return Err(TransactionError::custom(ApiError::BAD_REQUEST)),
 			}
+
+			Ok(None)
 		}
 	})
 	.await;
 
 	match res {
-		Ok(_) => Ok(StatusCode::OK),
+		Ok(Some(sub_id)) => {
+			sub_refresh_job::refresh(&global, &sub_id).await?;
+			Ok(StatusCode::OK)
+		}
+		Ok(None) => Ok(StatusCode::OK),
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");

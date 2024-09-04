@@ -12,17 +12,16 @@ use stripe::{CreateInvoice, FinalizeInvoiceParams};
 use super::types;
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::sub_refresh_job;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn completed(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	sale: types::Sale,
-) -> TransactionResult<(), ApiError> {
+) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	let Some(provider_id) = sale.billing_agreement_id else {
 		// sale isn't related to a subscription
-		return Ok(());
+		return Ok(None);
 	};
 
 	let Some(user) = tx
@@ -37,7 +36,7 @@ pub async fn completed(
 		.await?
 	else {
 		// no user found
-		return Ok(());
+		return Ok(None);
 	};
 
 	// retrieve the paypal subscription
@@ -148,7 +147,7 @@ pub async fn completed(
 		.await?
 	else {
 		// no product found
-		return Ok(());
+		return Ok(None);
 	};
 
 	let stripe_product_id = product
@@ -244,10 +243,10 @@ pub async fn completed(
 		)
 		.await?;
 
-		sub_refresh_job::refresh_entitlements(&mut tx, &subscription_id, &product.benefits).await?;
+		return Ok(Some(subscription_id));
 	}
 
-	Ok(())
+	Ok(None)
 }
 
 /// Called for `PAYMENT.SALE.REFUNDED`, `PAYMENT.SALE.REVERSED`

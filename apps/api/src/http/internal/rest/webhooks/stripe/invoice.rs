@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::UpdateOptions;
 use shared::database::product::invoice::{Invoice, InvoiceStatus};
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
@@ -15,7 +15,6 @@ use stripe::{FinalizeInvoiceParams, Object};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::sub_refresh_job;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Result<Vec<ProductId>, ApiError> {
@@ -170,7 +169,7 @@ pub async fn paid(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
-) -> TransactionResult<(), ApiError> {
+) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	if let Some(subscription) = &invoice.subscription {
 		let items = invoice_items(invoice.lines.as_ref())
 			.map_err(TransactionError::custom)?
@@ -194,7 +193,7 @@ pub async fn paid(
 
 		if products.len() != 1 {
 			// only accept invoices for one of our products
-			return Ok(());
+			return Ok(None);
 		}
 
 		let product = products.into_iter().next().unwrap();
@@ -246,36 +245,33 @@ pub async fn paid(
 		)
 		.await?;
 
-		let subscription = tx
-			.find_one_and_update(
-				filter::filter! {
-					Subscription {
-						#[query(rename = "_id", serde)]
-						id: &sub_id,
-					}
-				},
-				update::update! {
-					#[query(set_on_insert)]
-					Subscription {
-						id: sub_id,
-						state: SubscriptionState::Active,
-						updated_at: chrono::Utc::now(),
-					}
-				},
-				FindOneAndUpdateOptions::builder()
-					.upsert(true)
-					.return_document(ReturnDocument::After)
-					.build(),
-			)
-			.await?
-			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+		tx.update_one(
+			filter::filter! {
+				Subscription {
+					#[query(rename = "_id", serde)]
+					id: &sub_id,
+				}
+			},
+			update::update! {
+				#[query(set_on_insert)]
+				Subscription {
+					id: sub_id.clone(),
+					state: SubscriptionState::Active,
+					updated_at: chrono::Utc::now(),
+				}
+			},
+			UpdateOptions::builder().upsert(true).build(),
+		)
+		.await?;
 
-		sub_refresh_job::refresh_entitlements(&mut tx, &subscription.id, &product.benefits).await?;
+		updated(global, tx, invoice, HashMap::new()).await?;
+
+		return Ok(Some(sub_id));
 	}
 
 	updated(global, tx, invoice, HashMap::new()).await?;
 
-	Ok(())
+	Ok(None)
 }
 
 /// Only sent for draft invoices.

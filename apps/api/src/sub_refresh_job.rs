@@ -1,14 +1,16 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
+use futures::TryStreamExt;
 use shared::database::duration::DurationUnit;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
-use shared::database::product::{SubscriptionBenefit, SubscriptionBenefitCondition};
+use shared::database::product::SubscriptionBenefitCondition;
 use shared::database::queries::filter;
+use shared::database::MongoCollection;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub fn sub_age_days(periods: &[SubscriptionPeriod]) -> isize {
 	sub_age(periods).0
@@ -25,115 +27,131 @@ pub fn sub_age(periods: &[SubscriptionPeriod]) -> (isize, isize) {
 }
 
 /// Grants entitlements for a subscription.
-pub async fn refresh_entitlements(
-	tx: &mut TransactionSession<'_, ApiError>,
-	subscription_id: &SubscriptionId,
-	benefits: &[SubscriptionBenefit],
-) -> TransactionResult<(), ApiError> {
-	// first revoke all entitlements
-	revoke_entitlements(tx, subscription_id).await?;
-
-	// load all periods
-	let periods = tx
-		.find(
-			filter::filter! {
-				SubscriptionPeriod {
-					#[query(serde)]
-					subscription_id: subscription_id,
-				}
-			},
-			None,
-		)
-		.await?;
-
-	let now = chrono::Utc::now();
-	let active = periods.iter().any(|p| p.start < now && p.end > now);
-
-	if active {
-		let mut edges = vec![];
-
-		// always insert the edge from the user to the subscription
-		edges.push(EntitlementEdgeId {
-			from: EntitlementEdgeKind::User {
-				user_id: subscription_id.user_id,
-			},
-			to: EntitlementEdgeKind::Subscription {
-				subscription_id: subscription_id.clone(),
-			},
-			managed_by: Some(EntitlementEdgeManagedBy::Subscription {
-				subscription_id: subscription_id.clone(),
-			}),
-		});
-
-		let (age_days, age_months) = sub_age(&periods);
-
-		for benefit in benefits {
-			let is_fulfilled = match &benefit.condition {
-				SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => age_days >= (*d as isize),
-				SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => age_months >= (*m as isize),
-				SubscriptionBenefitCondition::TimePeriod(tp) => {
-					periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end)
-				}
-			};
-
-			if is_fulfilled {
-				edges.push(EntitlementEdgeId {
-					from: EntitlementEdgeKind::Subscription {
-						subscription_id: subscription_id.clone(),
-					},
-					to: EntitlementEdgeKind::SubscriptionBenefit {
-						subscription_benefit_id: benefit.id,
-					},
-					managed_by: Some(EntitlementEdgeManagedBy::Subscription {
-						subscription_id: subscription_id.clone(),
-					}),
-				});
-			}
-		}
-
-		tx.insert_many(edges.into_iter().map(|id| EntitlementEdge { id }), None)
-			.await?;
-	}
-
-	Ok(())
-}
-
-/// Grants entitlements for a subscription.
-pub async fn revoke_entitlements(
-	tx: &mut TransactionSession<'_, ApiError>,
-	subscription_id: &SubscriptionId,
-) -> TransactionResult<(), ApiError> {
-	tx.delete(
-		filter::filter! {
-			EntitlementEdge {
-				#[query(rename = "_id", flatten)]
-				id: EntitlementEdgeId {
-					#[query(serde)]
-					managed_by: Some(EntitlementEdgeManagedBy::Subscription { subscription_id: subscription_id.clone() }),
-				}
-			}
-		},
-		None,
-	)
-	.await?;
-
-	Ok(())
-}
-
-/// Call this function from the refresh cron job.
-pub async fn refresh(
-	global: &Arc<Global>,
-	tx: &mut TransactionSession<'_, ApiError>,
-	subscription_id: &SubscriptionId,
-) -> TransactionResult<(), ApiError> {
+pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> Result<(), ApiError> {
 	let product = global
 		.subscription_product_by_id_loader
 		.load(subscription_id.product_id.clone())
 		.await
-		.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-		.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-	refresh_entitlements(tx, subscription_id, &product.benefits).await?;
+	// load existing edges
+	let outgoing: HashSet<_> = global
+		.entitlement_edge_outbound_loader
+		.load(EntitlementEdgeKind::Subscription {
+			subscription_id: subscription_id.clone(),
+		})
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.unwrap_or_default()
+		.into_iter()
+		.map(|e| e.id.to)
+		.collect();
+
+	let incoming: HashSet<_> = global
+		.entitlement_edge_inbound_loader
+		.load(EntitlementEdgeKind::Subscription {
+			subscription_id: subscription_id.clone(),
+		})
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.unwrap_or_default()
+		.into_iter()
+		.map(|e| e.id.from)
+		.collect();
+
+	// load all periods
+	let periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
+		.find(filter::filter! {
+			SubscriptionPeriod {
+				#[query(serde)]
+				subscription_id: subscription_id,
+			}
+		})
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to load subscription periods");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?
+		.try_collect()
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to collect subscription periods");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+	let mut new_edges = vec![];
+	let mut remove_edges = vec![];
+
+	for benefit in product.benefits {
+		let (age_days, age_months) = sub_age(&periods);
+
+		let is_fulfilled = match &benefit.condition {
+			SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => age_days >= (*d as isize),
+			SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => age_months >= (*m as isize),
+			SubscriptionBenefitCondition::TimePeriod(tp) => periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end),
+		};
+
+		let benefit_edge = EntitlementEdgeId {
+			from: EntitlementEdgeKind::Subscription {
+				subscription_id: subscription_id.clone(),
+			},
+			to: EntitlementEdgeKind::SubscriptionBenefit {
+				subscription_benefit_id: benefit.id,
+			},
+			managed_by: Some(EntitlementEdgeManagedBy::Subscription {
+				subscription_id: subscription_id.clone(),
+			}),
+		};
+
+		if is_fulfilled && !outgoing.contains(&benefit_edge.to) {
+			new_edges.push(benefit_edge);
+		} else if !is_fulfilled && outgoing.contains(&benefit_edge.to) {
+			remove_edges.push(benefit_edge);
+		}
+	}
+
+	let now = chrono::Utc::now();
+	let active = periods.iter().any(|p| p.start < now && p.end > now);
+
+	let user_edge = EntitlementEdgeId {
+		from: EntitlementEdgeKind::User {
+			user_id: subscription_id.user_id,
+		},
+		to: EntitlementEdgeKind::Subscription {
+			subscription_id: subscription_id.clone(),
+		},
+		managed_by: Some(EntitlementEdgeManagedBy::Subscription {
+			subscription_id: subscription_id.clone(),
+		}),
+	};
+
+	if active && !incoming.contains(&user_edge.from) {
+		new_edges.push(user_edge);
+	} else if !active && incoming.contains(&user_edge.from) {
+		remove_edges.push(user_edge);
+	}
+
+	EntitlementEdge::collection(&global.db)
+		.delete_many(filter::filter! {
+			EntitlementEdge {
+				#[query(rename = "_id", selector = "in", serde)]
+				id: remove_edges,
+			}
+		})
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to delete entitlement edges");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
+
+	EntitlementEdge::collection(&global.db)
+		.insert_many(new_edges.into_iter().map(|id| EntitlementEdge { id }))
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to insert entitlement edges");
+			ApiError::INTERNAL_SERVER_ERROR
+		})?;
 
 	Ok(())
 }
