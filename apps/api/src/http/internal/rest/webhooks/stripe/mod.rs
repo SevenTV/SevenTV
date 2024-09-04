@@ -62,6 +62,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 
 			let prev_attributes = event.data.previous_attributes;
 
+			// https://kappa.lol/BB4ME
 			match (event.type_, event.data.object) {
 				(stripe::EventType::CustomerCreated, stripe::EventObject::Customer(cus)) => {
 					customer::created(&global, tx, cus).await?;
