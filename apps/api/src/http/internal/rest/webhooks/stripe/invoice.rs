@@ -123,11 +123,11 @@ pub async fn created(
 /// `invoice.payment_succeeded`
 pub async fn updated(
 	_global: &Arc<Global>,
-	mut tx: TransactionSession<'_, ApiError>,
-	invoice: stripe::Invoice,
+	tx: &mut TransactionSession<'_, ApiError>,
+	invoice: &stripe::Invoice,
 	_prev_attributes: HashMap<String, serde_json::Value>,
 ) -> TransactionResult<(), ApiError> {
-	let id: InvoiceId = invoice.id.into();
+	let id: InvoiceId = invoice.id.clone().into();
 
 	let status: InvoiceStatus = invoice.status.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?.into();
 
@@ -168,6 +168,8 @@ pub async fn paid(
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
+	updated(global, &mut tx, &invoice, HashMap::new()).await?;
+
 	if let Some(subscription) = &invoice.subscription {
 		let items = invoice_items(invoice.lines.as_ref())
 			.map_err(TransactionError::custom)?
@@ -191,9 +193,6 @@ pub async fn paid(
 
 		if products.len() != 1 {
 			// only accept invoices for one of our products
-
-			updated(global, tx, invoice, HashMap::new()).await?;
-			
 			return Ok(None);
 		}
 
@@ -247,12 +246,8 @@ pub async fn paid(
 		)
 		.await?;
 
-		updated(global, tx, invoice, HashMap::new()).await?;
-
 		return Ok(Some(sub_id));
 	}
-
-	updated(global, tx, invoice, HashMap::new()).await?;
 
 	Ok(None)
 }

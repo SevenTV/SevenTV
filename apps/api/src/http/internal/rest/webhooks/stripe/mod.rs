@@ -80,8 +80,8 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				| (stripe::EventType::InvoicePaymentSucceeded, stripe::EventObject::Invoice(iv)) => {
 					invoice::updated(
 						&global,
-						tx,
-						iv,
+						&mut tx,
+						&iv,
 						prev_attributes.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
 					)
 					.await?;
