@@ -3,7 +3,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
+use shared::database::product::subscription::{
+	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
+};
 use shared::database::product::{ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
@@ -197,20 +199,49 @@ pub async fn updated(
 			// nothing changed, still one product
 			// update subscription
 
-			let user_id = subscription
-				.metadata
-				.get("USER_ID")
-				.and_then(|i| UserId::from_str(i).ok())
-				.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
-
-			let product = products.into_iter().next().unwrap();
-
-			let sub_id = SubscriptionId {
-				user_id,
-				product_id: product.id,
+			let Some(invoice) = subscription.latest_invoice else {
+				return Ok(None);
 			};
 
-			return Ok(Some(sub_id));
+			// update cancel_at_period_end of the current subscription period
+			let Some(period) = tx
+				.find_one_and_update(
+					filter::filter! {
+						SubscriptionPeriod {
+							#[query(serde)]
+							provider_id: Some(ProviderSubscriptionId::Stripe(subscription.id.into())),
+							#[query(selector = "lt")]
+							start: chrono::Utc::now(),
+							#[query(selector = "gt")]
+							end: chrono::Utc::now(),
+							#[query(serde)]
+							created_by: SubscriptionPeriodCreatedBy::Invoice {
+								invoice_id: invoice.id().into(),
+								cancel_at_period_end: false,
+							},
+						}
+					},
+					update::update! {
+						#[query(set)]
+						SubscriptionPeriod {
+							#[query(serde)]
+							created_by: SubscriptionPeriodCreatedBy::Invoice {
+								invoice_id: invoice.id().into(),
+								cancel_at_period_end: subscription.cancel_at_period_end,
+							},
+							updated_at: chrono::Utc::now(),
+						}
+					},
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::After)
+						.build(),
+				)
+				.await?
+			else {
+				return Ok(None);
+			};
+
+			return Ok(Some(period.subscription_id));
 		}
 		(false, _) => {
 			// n == 0 || n > 1
