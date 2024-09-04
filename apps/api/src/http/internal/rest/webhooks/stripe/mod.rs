@@ -67,7 +67,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 					customer::created(&global, tx, cus).await?;
 				}
 				(stripe::EventType::CheckoutSessionCompleted, stripe::EventObject::CheckoutSession(s)) => {
-					checkout_session::completed(&global, tx, s).await?;
+					return checkout_session::completed(&global, tx, s).await;
 				}
 				(stripe::EventType::CheckoutSessionExpired, stripe::EventObject::CheckoutSession(s)) => {
 					checkout_session::expired(&global, tx, s).await?;
@@ -96,7 +96,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 					invoice::payment_failed(&global, tx, iv).await?;
 				}
 				(stripe::EventType::CustomerSubscriptionCreated, stripe::EventObject::Subscription(sub)) => {
-					subscription::created(&global, tx, sub).await?;
+					return subscription::created(&global, tx, sub).await;
 				}
 				(stripe::EventType::CustomerSubscriptionUpdated, stripe::EventObject::Subscription(sub)) => {
 					return subscription::updated(

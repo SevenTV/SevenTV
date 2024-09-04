@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::product::subscription::{ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState};
+use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::{filter, update};
 
 use super::types;
@@ -49,25 +49,6 @@ pub async fn cancelled(
 	else {
 		return Ok(None);
 	};
-
-	tx.update_one(
-		filter::filter! {
-			Subscription {
-				#[query(rename = "_id", serde)]
-				id: &period.subscription_id,
-			}
-		},
-		update::update! {
-			#[query(set)]
-			Subscription {
-				#[query(serde)]
-				state: SubscriptionState::Ended,
-				updated_at: now,
-			}
-		},
-		None,
-	)
-	.await?;
 
 	Ok(Some(period.subscription_id))
 }

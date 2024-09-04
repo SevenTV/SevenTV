@@ -1,11 +1,9 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::product::codes::{RedeemCode, RedeemCodeId};
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
-	SubscriptionPeriodId, SubscriptionState,
+	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
 use shared::database::product::SubscriptionProductId;
 use shared::database::queries::{filter, update};
@@ -20,10 +18,10 @@ pub async fn completed(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	session: stripe::CheckoutSession,
-) -> TransactionResult<(), ApiError> {
+) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	let Some(metadata) = session.metadata else {
 		// ignore metadata sessions that don't have metadata
-		return Ok(());
+		return Ok(None);
 	};
 
 	if session.mode == stripe::CheckoutSessionMode::Setup {
@@ -44,7 +42,7 @@ pub async fn completed(
 
 		let customer_id = session.customer.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?.id();
 		let Some(payment_method) = setup_intent.payment_method.map(|p| p.id()) else {
-			return Ok(());
+			return Ok(None);
 		};
 
 		let customer = stripe::Customer::update(
@@ -140,7 +138,7 @@ pub async fn completed(
 
 		let Some(payment_id) = session.payment_intent.map(|p| p.id()) else {
 			// ignore non-payment sessions
-			return Ok(());
+			return Ok(None);
 		};
 
 		let period_duration: u32 = metadata
@@ -186,30 +184,10 @@ pub async fn completed(
 			product_id,
 		};
 
-		tx.find_one_and_update(
-			filter::filter! {
-				Subscription {
-					#[query(rename = "_id", serde)]
-					id: &sub_id,
-				}
-			},
-			update::update! {
-				#[query(set_on_insert)]
-				Subscription {
-					id: sub_id.clone(),
-					state: SubscriptionState::Active,
-					updated_at: chrono::Utc::now(),
-				}
-			},
-			FindOneAndUpdateOptions::builder().upsert(true).build(),
-		)
-		.await?
-		.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
-
 		tx.insert_one(
 			SubscriptionPeriod {
 				id: SubscriptionPeriodId::new(),
-				subscription_id: sub_id,
+				subscription_id: sub_id.clone(),
 				provider_id: None,
 				start,
 				end,
@@ -224,9 +202,11 @@ pub async fn completed(
 			None,
 		)
 		.await?;
+
+		return Ok(Some(sub_id));
 	}
 
-	Ok(())
+	Ok(None)
 }
 
 pub async fn expired(

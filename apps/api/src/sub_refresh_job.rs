@@ -4,9 +4,11 @@ use std::sync::Arc;
 use futures::TryStreamExt;
 use shared::database::duration::DurationUnit;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
-use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
+use shared::database::product::subscription::{
+	Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionState,
+};
 use shared::database::product::SubscriptionBenefitCondition;
-use shared::database::queries::filter;
+use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
 
 use crate::global::Global;
@@ -112,7 +114,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 	}
 
 	let now = chrono::Utc::now();
-	let active = periods.iter().any(|p| p.start < now && p.end > now);
+	let active_period = periods.iter().find(|p| p.start < now && p.end > now);
 
 	let user_edge = EntitlementEdgeId {
 		from: EntitlementEdgeKind::User {
@@ -126,10 +128,78 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 		}),
 	};
 
-	if active && !incoming.contains(&user_edge.from) {
-		new_edges.push(user_edge);
-	} else if !active && incoming.contains(&user_edge.from) {
-		remove_edges.push(user_edge);
+	if let Some(active) = active_period {
+		if !incoming.contains(&user_edge.from) {
+			new_edges.push(user_edge);
+		}
+
+		let state = if matches!(
+			active.created_by,
+			SubscriptionPeriodCreatedBy::Invoice {
+				cancel_at_period_end: true,
+				..
+			}
+		) {
+			SubscriptionState::CancelAtEnd
+		} else {
+			SubscriptionState::Active
+		};
+
+		Subscription::collection(&global.db)
+			.update_one(
+				filter::filter! {
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: subscription_id,
+					}
+				},
+				update::update! {
+					#[query(set)]
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: subscription_id,
+						#[query(serde)]
+						state,
+						updated_at: chrono::Utc::now(),
+					}
+				},
+			)
+			.upsert(true)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to update subscription");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+	} else {
+		if incoming.contains(&user_edge.from) {
+			remove_edges.push(user_edge);
+		}
+
+		Subscription::collection(&global.db)
+			.update_one(
+				filter::filter! {
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: subscription_id,
+					}
+				},
+				update::update! {
+					#[query(set)]
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: subscription_id,
+						#[query(serde)]
+						state: SubscriptionState::Ended,
+						updated_at: chrono::Utc::now(),
+					}
+				},
+			)
+			.upsert(true)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to update subscription");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 	}
 
 	EntitlementEdge::collection(&global.db)

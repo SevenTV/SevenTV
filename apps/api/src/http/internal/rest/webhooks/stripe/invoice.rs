@@ -2,11 +2,9 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use mongodb::options::UpdateOptions;
 use shared::database::product::invoice::{Invoice, InvoiceStatus};
 use shared::database::product::subscription::{
-	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
-	SubscriptionPeriodId, SubscriptionState,
+	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
 use shared::database::product::{InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
@@ -237,30 +235,12 @@ pub async fn paid(
 				is_trial: stripe_sub.trial_end.is_some(),
 				created_by: SubscriptionPeriodCreatedBy::Invoice {
 					invoice_id: invoice.id.clone().into(),
+					cancel_at_period_end: stripe_sub.cancel_at_period_end,
 				},
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
 			},
 			None,
-		)
-		.await?;
-
-		tx.update_one(
-			filter::filter! {
-				Subscription {
-					#[query(rename = "_id", serde)]
-					id: &sub_id,
-				}
-			},
-			update::update! {
-				#[query(set_on_insert)]
-				Subscription {
-					id: sub_id.clone(),
-					state: SubscriptionState::Active,
-					updated_at: chrono::Utc::now(),
-				}
-			},
-			UpdateOptions::builder().upsert(true).build(),
 		)
 		.await?;
 

@@ -235,7 +235,7 @@ pub async fn completed(
 					.unwrap_or_else(chrono::Utc::now),
 				end: next_billing_time,
 				is_trial: false,
-				created_by: SubscriptionPeriodCreatedBy::Invoice { invoice_id },
+				created_by: SubscriptionPeriodCreatedBy::Invoice { invoice_id, cancel_at_period_end: false },
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
 			},

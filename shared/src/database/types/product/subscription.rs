@@ -120,7 +120,7 @@ pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 #[serde(deny_unknown_fields, tag = "type")]
 pub enum SubscriptionPeriodCreatedBy {
 	RedeemCode { redeem_code_id: RedeemCodeId },
-	Invoice { invoice_id: InvoiceId },
+	Invoice { invoice_id: InvoiceId, cancel_at_period_end: bool },
 	Gift { gifter: UserId, payment: PaymentIntentId },
 	System { reason: Option<String> },
 }

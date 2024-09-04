@@ -2,10 +2,8 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateOptions};
-use shared::database::product::subscription::{
-	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState,
-};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
 use shared::database::product::{ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
@@ -27,7 +25,7 @@ pub async fn created(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: stripe::Subscription,
-) -> TransactionResult<(), ApiError> {
+) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	let items = subscription_products(subscription.items).map_err(TransactionError::custom)?;
 
 	let products = tx
@@ -47,7 +45,7 @@ pub async fn created(
 
 	if products.len() != 1 {
 		// only accept subs with one product
-		return Ok(());
+		return Ok(None);
 	}
 
 	let user_id = subscription
@@ -63,26 +61,7 @@ pub async fn created(
 		product_id: product.id,
 	};
 
-	tx.update_one(
-		filter::filter! {
-			Subscription {
-				#[query(rename = "_id", serde)]
-				id: &sub_id,
-			}
-		},
-		update::update! {
-			#[query(set_on_insert)]
-			Subscription {
-				id: sub_id.clone(),
-				state: SubscriptionState::Active,
-				updated_at: chrono::Utc::now(),
-			}
-		},
-		UpdateOptions::builder().upsert(true).build(),
-	)
-	.await?;
-
-	Ok(())
+	Ok(Some(sub_id))
 }
 
 /// Sets the subscription current period end to `ended_at`.
@@ -123,25 +102,6 @@ pub async fn deleted(
 	else {
 		return Ok(None);
 	};
-
-	tx.update_one(
-		filter::filter! {
-			Subscription {
-				#[query(rename = "_id", serde)]
-				id: &period.subscription_id,
-			}
-		},
-		update::update! {
-			#[query(set)]
-			Subscription {
-				#[query(serde)]
-				state: SubscriptionState::Ended,
-				updated_at: chrono::Utc::now(),
-			}
-		},
-		None,
-	)
-	.await?;
 
 	Ok(Some(period.subscription_id))
 }
@@ -208,25 +168,6 @@ pub async fn updated(
 				return Ok(None);
 			};
 
-			tx.update_one(
-				filter::filter! {
-					Subscription {
-						#[query(rename = "_id", serde)]
-						id: &period.subscription_id,
-					}
-				},
-				update::update! {
-					#[query(set)]
-					Subscription {
-						#[query(serde)]
-						state: SubscriptionState::Ended,
-						updated_at: chrono::Utc::now(),
-					}
-				},
-				None,
-			)
-			.await?;
-
 			return Ok(Some(period.subscription_id));
 		}
 		(true, 1) => {
@@ -268,33 +209,6 @@ pub async fn updated(
 				user_id,
 				product_id: product.id,
 			};
-
-			let new_state = if subscription.ended_at.is_some() {
-				SubscriptionState::Ended
-			} else if subscription.cancel_at_period_end {
-				SubscriptionState::CancelAtEnd
-			} else {
-				SubscriptionState::Active
-			};
-
-			tx.update_one(
-				filter::filter! {
-					Subscription {
-						#[query(rename = "_id", serde)]
-						id: &sub_id,
-					}
-				},
-				update::update! {
-					#[query(set)]
-					Subscription {
-						#[query(serde)]
-						state: new_state,
-						updated_at: chrono::Utc::now(),
-					}
-				},
-				None,
-			)
-			.await?;
 
 			return Ok(Some(sub_id));
 		}
