@@ -191,6 +191,9 @@ pub async fn paid(
 
 		if products.len() != 1 {
 			// only accept invoices for one of our products
+
+			updated(global, tx, invoice, HashMap::new()).await?;
+			
 			return Ok(None);
 		}
 
