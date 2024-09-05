@@ -21,6 +21,16 @@ impl Job for EntitlementsJob {
 	const NAME: &'static str = "transfer_entitlements";
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+		if global.config().truncate {
+			EntitlementEdge::collection(global.target_db()).drop().await?;
+			let indexes = EntitlementEdge::indexes();
+			if !indexes.is_empty() {
+				EntitlementEdge::collection(global.target_db())
+					.create_indexes(indexes)
+					.await?;
+			}
+		}
+
 		Ok(Self {
 			global,
 			edges: FnvHashSet::default(),

@@ -6,8 +6,6 @@ use bson::doc;
 use entitlements::EntitlementsJob;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
-use shared::database::entitlement::EntitlementEdge;
-use shared::database::MongoCollection;
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -182,11 +180,6 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	tracing::info!("starting jobs");
 
 	let timer = Instant::now();
-
-	if global.config().truncate {
-		tracing::info!("dropping entitlements");
-		EntitlementEdge::collection(global.target_db()).drop().await?;
-	}
 
 	macro_rules! job {
 		(

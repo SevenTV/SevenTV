@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::extract::{Query, State};
-use axum::{Extension, Json};
+use axum::Json;
 
 use super::{create_checkout_session_params, find_customer};
 use crate::global::Global;
@@ -27,7 +27,7 @@ pub async fn payment_method(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
 	Query(_query): Query<PaymentMethodQuery>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 ) -> Result<Json<PaymentMethodResponse>, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
 

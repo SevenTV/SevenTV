@@ -36,6 +36,8 @@ pub enum Error {
 	Stripe(#[from] stripe::StripeError),
 	#[error("invalid recurring interval")]
 	InvalidRecurringInterval(stripe::RecurringInterval),
+	#[error("invalid subscription cycle")]
+	InvalidSubscriptionCycle,
 
 	// #[error("duplicate emote moderation request")]
 	// DuplicateEmoteModRequest {
@@ -79,6 +81,7 @@ impl Error {
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
 			Self::InvalidRecurringInterval(_) => "InvalidRecurringInterval",
+			Self::InvalidSubscriptionCycle => "InvalidSubscriptionCycle",
 			// Self::DuplicateEmoteModRequest { .. } => "DuplicateEmoteModRequest",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
 			Self::Reqwest(_) => "Reqwest",

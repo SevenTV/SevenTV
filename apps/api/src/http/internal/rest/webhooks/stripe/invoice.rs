@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -100,18 +99,20 @@ pub async fn created(
 
 		tx.insert_one(db_invoice, None).await?;
 
-		stripe::Invoice::finalize(
-			&global.stripe_client,
-			&invoice.id,
-			FinalizeInvoiceParams {
-				auto_advance: Some(true),
-			},
-		)
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to finalize invoice");
-			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-		})?;
+		if invoice.status == Some(stripe::InvoiceStatus::Draft) {
+			stripe::Invoice::finalize(
+					&global.stripe_client,
+				&invoice.id,
+				FinalizeInvoiceParams {
+					auto_advance: Some(true),
+				},
+			)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to finalize invoice");
+				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			})?;
+		}
 	}
 
 	Ok(())
@@ -125,7 +126,6 @@ pub async fn updated(
 	_global: &Arc<Global>,
 	tx: &mut TransactionSession<'_, ApiError>,
 	invoice: &stripe::Invoice,
-	_prev_attributes: HashMap<String, serde_json::Value>,
 ) -> TransactionResult<(), ApiError> {
 	let id: InvoiceId = invoice.id.clone().into();
 
@@ -168,7 +168,7 @@ pub async fn paid(
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
-	updated(global, &mut tx, &invoice, HashMap::new()).await?;
+	updated(global, &mut tx, &invoice).await?;
 
 	if let Some(subscription) = &invoice.subscription {
 		let items = invoice_items(invoice.lines.as_ref())

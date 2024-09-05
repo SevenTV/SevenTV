@@ -49,7 +49,6 @@ async fn create_checkout_session_params<'a>(
 		.await;
 
 	stripe::CreateCheckoutSession {
-		customer: customer_id.map(Into::into),
 		customer_email: email,
 		line_items: product_id.map(|id| {
 			vec![stripe::CreateCheckoutSessionLineItems {
@@ -62,10 +61,11 @@ async fn create_checkout_session_params<'a>(
 			enabled: true,
 			..Default::default()
 		}),
-		customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
+		customer_update: customer_id.as_ref().map(|_| stripe::CreateCheckoutSessionCustomerUpdate {
 			address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
 			..Default::default()
 		}),
+		customer: customer_id.map(Into::into),
 		// expire the session 4 hours from now so we can restore unused redeem codes in the checkout.session.expired handler
 		expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),
 		success_url: Some(success_url),

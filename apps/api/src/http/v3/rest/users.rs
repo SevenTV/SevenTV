@@ -5,7 +5,7 @@ use axum::body::Bytes;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, patch, post, put};
-use axum::{Extension, Json, Router};
+use axum::{Json, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
@@ -70,7 +70,7 @@ pub fn routes() -> Router<Arc<Global>> {
 pub async fn get_user_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<UserId>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let user = global
 		.user_loader
@@ -163,7 +163,7 @@ pub enum TargetUser {
 pub async fn upload_user_profile_picture(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<TargetUser>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
@@ -342,7 +342,7 @@ pub async fn create_user_presence(
 pub async fn get_user_by_platform_id(
 	State(global): State<Arc<Global>>,
 	Path((platform, platform_id)): Path<(String, String)>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let platform = Platform::from_str(&platform.to_lowercase()).map_err(|_| ApiError::BAD_REQUEST)?;
 

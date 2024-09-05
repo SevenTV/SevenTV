@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::extract::State;
-use axum::{Extension, Json};
+use axum::Json;
 use futures::TryStreamExt;
 use hyper::StatusCode;
 use shared::database::product::subscription::{
@@ -24,13 +24,15 @@ pub struct SubscriptionResponse {
 	pub active: bool,
 	pub age: u32,
 	pub renew: bool,
+	/// Date of the next renewal
+	pub end_at: Option<chrono::DateTime<chrono::Utc>>,
 	pub subscription: Option<types::Subscription>,
 }
 
 pub async fn subscription(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 ) -> Result<Json<SubscriptionResponse>, ApiError> {
 	let user = match target {
 		TargetUser::Me => auth_session.ok_or(ApiError::UNAUTHORIZED)?.user_id(),
@@ -67,6 +69,7 @@ pub async fn subscription(
 			active: false,
 			age: 0,
 			renew: false,
+			end_at: None,
 			subscription: None,
 		}));
 	};
@@ -128,6 +131,7 @@ pub async fn subscription(
 		active: true,
 		age: age.try_into().unwrap_or(0),
 		renew,
+		end_at: Some(end_at),
 		subscription: Some(types::Subscription {
 			id: active_period.id.to_string(),
 			provider,
@@ -148,7 +152,6 @@ pub async fn subscription(
 				trial_end,
 			},
 			renew,
-			end_at,
 		}),
 	}))
 }

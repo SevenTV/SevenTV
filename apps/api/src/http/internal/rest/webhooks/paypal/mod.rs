@@ -140,7 +140,7 @@ pub async fn handle(
 						#[query(set_on_insert)]
 						WebhookEvent {
 							id: event.id,
-							created_at: event.create_time,
+							epxires_at: event.create_time + chrono::Duration::weeks(1),
 						},
 					},
 					UpdateOptions::builder().upsert(true).build(),

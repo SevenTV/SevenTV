@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::extract::State;
-use axum::{Extension, Json};
+use axum::Json;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::codes::{CodeEffect, RedeemCode};
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
@@ -72,7 +72,7 @@ pub struct RedeemResponse {
 
 pub async fn redeem(
 	State(global): State<Arc<Global>>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 	Json(body): Json<RedeemRequest>,
 ) -> Result<Json<RedeemResponse>, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;

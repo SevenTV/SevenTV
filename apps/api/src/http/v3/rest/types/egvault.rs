@@ -20,8 +20,6 @@ pub struct Subscription {
 	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
 	pub cycle: SubscriptionCycle,
 	pub renew: bool,
-	/// Date of the next renewal
-	pub end_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, serde::Serialize)]

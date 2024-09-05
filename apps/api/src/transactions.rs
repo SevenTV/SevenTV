@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -15,7 +16,7 @@ use crate::global::Global;
 
 pub struct TransactionSession<'a, E>(Arc<Mutex<SessionInner<'a>>>, PhantomData<E>);
 
-impl<'a, E> TransactionSession<'a, E> {
+impl<'a, E: Debug> TransactionSession<'a, E> {
 	fn new(inner: Arc<Mutex<SessionInner<'a>>>) -> Self {
 		Self(inner, PhantomData)
 	}
@@ -31,7 +32,7 @@ impl<'a, E> TransactionSession<'a, E> {
 	}
 }
 
-impl<E> TransactionSession<'_, E> {
+impl<E: Debug> TransactionSession<'_, E> {
 	#[allow(unused)]
 	pub async fn find<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
@@ -239,7 +240,7 @@ struct SessionInner<'a> {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum TransactionError<E> {
+pub enum TransactionError<E: Debug> {
 	#[error("mongo error: {0}")]
 	Mongo(#[from] mongodb::error::Error),
 	#[error("session locked after returning")]
@@ -248,7 +249,7 @@ pub enum TransactionError<E> {
 	EventSerialize(#[from] rmp_serde::encode::Error),
 	#[error("event publish error: {0}")]
 	EventPublish(#[from] async_nats::PublishError),
-	#[error("custom error")]
+	#[error("custom error: {0:?}")]
 	Custom(E),
 	#[error("too many failures")]
 	TooManyFailures,
@@ -256,7 +257,7 @@ pub enum TransactionError<E> {
 
 pub type TransactionResult<T, E> = Result<T, TransactionError<E>>;
 
-impl<E> TransactionError<E> {
+impl<E: Debug> TransactionError<E> {
 	pub const fn custom(err: E) -> Self {
 		Self::Custom(err)
 	}
@@ -266,6 +267,7 @@ pub async fn with_transaction<'a, T, E, F, Fut>(global: &'a Arc<Global>, f: F) -
 where
 	F: FnOnce(TransactionSession<'a, E>) -> Fut + Clone + 'a,
 	Fut: std::future::Future<Output = TransactionResult<T, E>> + 'a,
+	E: Debug,
 {
 	let mut session = global.mongo.start_session().await?;
 	session.start_transaction().await?;
@@ -289,10 +291,12 @@ where
 		let mut session_inner = session.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		match result {
 			Ok(output) => 'retry_commit: loop {
-				StoredEvent::collection(&global.db)
-					.insert_many(session_inner.events.iter().cloned().map(StoredEvent::from))
-					.session(&mut session_inner.session)
-					.await?;
+				if !session_inner.events.is_empty() {
+					StoredEvent::collection(&global.db)
+						.insert_many(session_inner.events.iter().cloned().map(StoredEvent::from))
+						.session(&mut session_inner.session)
+						.await?;
+				}
 
 				match session_inner.session.commit_transaction().await {
 					Ok(_) => {

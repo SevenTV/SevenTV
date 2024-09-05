@@ -202,26 +202,30 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			})?;
 	}
 
-	EntitlementEdge::collection(&global.db)
-		.delete_many(filter::filter! {
-			EntitlementEdge {
-				#[query(rename = "_id", selector = "in", serde)]
-				id: remove_edges,
-			}
-		})
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to delete entitlement edges");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+	if !remove_edges.is_empty() {
+		EntitlementEdge::collection(&global.db)
+			.delete_many(filter::filter! {
+				EntitlementEdge {
+					#[query(rename = "_id", selector = "in", serde)]
+					id: remove_edges,
+				}
+			})
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to delete entitlement edges");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+	}
 
-	EntitlementEdge::collection(&global.db)
-		.insert_many(new_edges.into_iter().map(|id| EntitlementEdge { id }))
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to insert entitlement edges");
-			ApiError::INTERNAL_SERVER_ERROR
-		})?;
+	if !new_edges.is_empty() {
+		EntitlementEdge::collection(&global.db)
+			.insert_many(new_edges.into_iter().map(|id| EntitlementEdge { id }))
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert entitlement edges");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+	}
 
 	Ok(())
 }

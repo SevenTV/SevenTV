@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::{Extension, Json, Router};
+use axum::{Json, Router};
 use hyper::StatusCode;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::role::permissions::{FlagPermission, PermissionsExt};
@@ -41,7 +41,7 @@ pub fn routes() -> Router<Arc<Global>> {
 pub async fn get_emote_set_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<EmoteSetId>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let mut emote_set = global
 		.emote_set_by_id_loader

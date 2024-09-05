@@ -47,8 +47,8 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 						#[query(set_on_insert)]
 						WebhookEvent {
 							id: event.id.to_string(),
-							created_at: chrono::DateTime::from_timestamp(event.created, 0)
-								.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
+							epxires_at: chrono::DateTime::from_timestamp(event.created, 0)
+								.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))? + chrono::Duration::weeks(1),
 						},
 					},
 					UpdateOptions::builder().upsert(true).build(),
@@ -83,7 +83,6 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 						&global,
 						&mut tx,
 						&iv,
-						prev_attributes.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
 					)
 					.await?;
 				}
@@ -106,7 +105,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 						chrono::DateTime::from_timestamp(event.created, 0)
 							.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
 						sub,
-						prev_attributes.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?,
+						prev_attributes.unwrap_or_default(),
 					)
 					.await;
 				}

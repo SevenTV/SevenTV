@@ -135,7 +135,7 @@ impl User {
 	}
 
 	async fn roles(&self) -> Result<Vec<GqlObjectId>, ApiError> {
-		Ok(self.full_user.computed.roles.iter().copied().map(Into::into).collect())
+		Ok(self.full_user.computed.roles.iter().rev().copied().map(Into::into).collect())
 	}
 
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
@@ -316,7 +316,7 @@ impl UserPartial {
 	}
 
 	async fn roles(&self) -> Result<Vec<GqlObjectId>, ApiError> {
-		Ok(self.full_user.computed.roles.iter().copied().map(Into::into).collect())
+		Ok(self.full_user.computed.roles.iter().copied().rev().map(Into::into).collect())
 	}
 
 	async fn connections(&self) -> Result<Vec<UserConnection>, ApiError> {

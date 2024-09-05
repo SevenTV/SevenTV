@@ -2,6 +2,7 @@ use std::future::IntoFuture;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use chrono::Months;
 use mongodb::options::InsertManyOptions;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
@@ -13,7 +14,7 @@ use super::prices::NEW_PRODUCT_ID;
 use super::{Job, ProcessOutcome};
 use crate::error;
 use crate::global::Global;
-use crate::types::{self, SubscriptionProvider};
+use crate::types::{self, SubscriptionCycleUnit, SubscriptionProvider};
 
 pub const PAYPAL_YEARLY: &'static str = "P-9P108407878214437MDOSLGA";
 pub const PAYPAL_MONTHLY: &'static str = "P-0RN164482K927302CMDOSJJA";
@@ -86,17 +87,27 @@ impl Job for SubscriptionsJob {
 			updated_at: chrono::Utc::now(),
 		});
 
+		let end = match subscription.ended_at.map(|t| t.into_chrono()).or_else(|| {
+			let unit = match subscription.cycle.unit {
+				SubscriptionCycleUnit::Month | SubscriptionCycleUnit::Day => Months::new(1),
+				SubscriptionCycleUnit::Year => Months::new(12),
+			};
+
+			subscription.cycle.timestamp?.into_chrono().checked_add_months(unit)
+		}) {
+			Some(end) => end,
+			None => {
+				return outcome.with_error(error::Error::InvalidSubscriptionCycle);
+			}
+		};
+
 		self.periods.push(SubscriptionPeriod {
 			id: subscription.id.into(),
 			provider_id: Some(provider_id),
 			subscription_id: sub_id,
 			start: subscription.started_at.into_chrono(),
-			end: subscription
-				.ended_at
-				.or(subscription.cycle.timestamp)
-				.map(|t| t.into_chrono())
-				.unwrap_or_else(chrono::Utc::now),
-			is_trial: false,
+			end,
+			is_trial: subscription.cycle.trial_end_at.is_some(),
 			created_by: SubscriptionPeriodCreatedBy::System {
 				reason: Some("Old subscription".to_string()),
 			},

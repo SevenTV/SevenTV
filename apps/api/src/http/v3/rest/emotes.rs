@@ -4,7 +4,7 @@ use axum::body::Bytes;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::{Extension, Json, Router};
+use axum::{Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
@@ -186,7 +186,7 @@ pub async fn create_emote(
 pub async fn get_emote_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<EmoteId>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let emote = global
 		.emote_by_id_loader

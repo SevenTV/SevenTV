@@ -11,7 +11,7 @@ use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::rest::egvault::redeem::grant_entitlements;
+use crate::http::egvault::redeem::grant_entitlements;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn completed(

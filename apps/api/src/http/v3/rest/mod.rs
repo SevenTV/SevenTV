@@ -6,7 +6,6 @@ use crate::global::Global;
 
 pub mod auth;
 pub mod config;
-pub mod egvault;
 pub mod emote_sets;
 pub mod emotes;
 pub mod entitlements;
@@ -21,5 +20,4 @@ pub fn routes() -> Router<Arc<Global>> {
 		.nest("/emote-sets", emote_sets::routes())
 		.nest("/users", users::routes())
 		.nest("/entitlements", entitlements::routes())
-		.nest("/egvault/v1", egvault::routes())
 }

@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Extension;
 use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::{filter, update};
 
@@ -16,7 +15,7 @@ use crate::transactions::{with_transaction, TransactionError};
 pub async fn cancel_subscription(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 ) -> Result<StatusCode, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
 
@@ -131,7 +130,7 @@ pub async fn cancel_subscription(
 pub async fn reactivate_subscription(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 ) -> Result<StatusCode, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
 

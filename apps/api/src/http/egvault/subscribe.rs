@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::{Extension, Json};
+use axum::Json;
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
 use shared::database::queries::filter;
@@ -34,8 +34,8 @@ pub struct SubscribeBody {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Prefill {
-	// first_name: String,
-	// last_name: String,
+	first_name: String,
+	last_name: String,
 	email: String,
 }
 
@@ -66,7 +66,7 @@ pub struct SubscribeResponse {
 pub async fn subscribe(
 	State(global): State<Arc<Global>>,
 	Query(query): Query<SubscribeQuery>,
-	auth_session: Option<Extension<AuthSession>>,
+	auth_session: Option<AuthSession>,
 	Json(body): Json<SubscribeBody>,
 ) -> Result<Json<SubscribeResponse>, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
@@ -97,14 +97,38 @@ pub async fn subscribe(
 	let variant = product.variants.into_iter().find(|v| v.kind == kind).unwrap();
 
 	let customer_id = match auth_session.user(&global).await?.stripe_customer_id.clone() {
-		Some(id) => Some(id),
-		None => find_customer(&global, auth_session.user_id()).await?,
+		Some(id) => id,
+		None => match find_customer(&global, auth_session.user_id()).await? {
+			Some(id) => id,
+			None => {
+				// no customer found, create one
+
+				let name = format!("{} {}", body.prefill.first_name, body.prefill.last_name);
+
+				let customer = stripe::Customer::create(
+					&global.stripe_client,
+					stripe::CreateCustomer {
+						email: Some(&body.prefill.email),
+						name: Some(&name),
+						metadata: Some([("USER_ID".to_string(), auth_session.user_id().to_string())].into()),
+						..Default::default()
+					},
+				)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to create customer");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?;
+
+				customer.id.into()
+			}
+		},
 	};
 
 	let paying_user = auth_session.user_id();
 
 	let mut params =
-		create_checkout_session_params(&global, customer_id, Some(&body.prefill.email), Some(&variant.id)).await;
+		create_checkout_session_params(&global, Some(customer_id), Some(&body.prefill.email), Some(&variant.id)).await;
 
 	let receiving_user = if let Some(gift_for) = query.gift_for {
 		let receiving_user = global
