@@ -11,7 +11,7 @@ use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-use super::{create_checkout_session_params, find_customer};
+use super::{create_checkout_session_params, find_or_create_customer};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
@@ -140,13 +140,11 @@ pub async fn redeem(
 					.stripe_customer_id
 					.clone()
 				{
-					Some(id) => Some(id),
-					None => find_customer(&global, auth_session.user_id())
-						.await
-						.map_err(TransactionError::custom)?,
+					Some(id) => id,
+					None => find_or_create_customer(&global, auth_session.user_id(), None).await.map_err(TransactionError::custom)?,
 				};
 
-				let mut params = create_checkout_session_params(&global, customer_id, None, Some(product_id)).await;
+				let mut params = create_checkout_session_params(&global, customer_id, Some(product_id)).await;
 
 				params.mode = Some(stripe::CheckoutSessionMode::Subscription);
 

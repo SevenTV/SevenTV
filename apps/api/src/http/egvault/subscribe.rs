@@ -10,7 +10,7 @@ use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-use super::{create_checkout_session_params, find_customer};
+use super::{create_checkout_session_params, find_or_create_customer};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Query;
@@ -34,9 +34,9 @@ pub struct SubscribeBody {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Prefill {
-	first_name: String,
-	last_name: String,
-	email: String,
+	pub first_name: String,
+	pub last_name: String,
+	pub email: String,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -98,37 +98,13 @@ pub async fn subscribe(
 
 	let customer_id = match auth_session.user(&global).await?.stripe_customer_id.clone() {
 		Some(id) => id,
-		None => match find_customer(&global, auth_session.user_id()).await? {
-			Some(id) => id,
-			None => {
-				// no customer found, create one
-
-				let name = format!("{} {}", body.prefill.first_name, body.prefill.last_name);
-
-				let customer = stripe::Customer::create(
-					&global.stripe_client,
-					stripe::CreateCustomer {
-						email: Some(&body.prefill.email),
-						name: Some(&name),
-						metadata: Some([("USER_ID".to_string(), auth_session.user_id().to_string())].into()),
-						..Default::default()
-					},
-				)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to create customer");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
-				customer.id.into()
-			}
-		},
+		None => find_or_create_customer(&global, auth_session.user_id(), Some(body.prefill)).await?,
 	};
 
 	let paying_user = auth_session.user_id();
 
 	let mut params =
-		create_checkout_session_params(&global, Some(customer_id), Some(&body.prefill.email), Some(&variant.id)).await;
+		create_checkout_session_params(&global, customer_id, Some(&variant.id)).await;
 
 	let receiving_user = if let Some(gift_for) = query.gift_for {
 		let receiving_user = global

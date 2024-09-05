@@ -6,6 +6,7 @@ use shared::database::product::{CustomerId, ProductId};
 use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId};
 use shared::database::MongoCollection;
+use subscribe::Prefill;
 use tokio::sync::OnceCell;
 
 use crate::global::Global;
@@ -33,8 +34,7 @@ pub fn routes() -> Router<Arc<Global>> {
 
 async fn create_checkout_session_params<'a>(
 	global: &'a Arc<Global>,
-	customer_id: Option<CustomerId>,
-	email: Option<&'a str>,
+	customer_id: CustomerId,
 	product_id: Option<&ProductId>,
 ) -> stripe::CreateCheckoutSession<'a> {
 	// cursed solution but the ownership has to stay somewhere
@@ -49,7 +49,6 @@ async fn create_checkout_session_params<'a>(
 		.await;
 
 	stripe::CreateCheckoutSession {
-		customer_email: email,
 		line_items: product_id.map(|id| {
 			vec![stripe::CreateCheckoutSessionLineItems {
 				price: Some(id.to_string()),
@@ -61,11 +60,11 @@ async fn create_checkout_session_params<'a>(
 			enabled: true,
 			..Default::default()
 		}),
-		customer_update: customer_id.as_ref().map(|_| stripe::CreateCheckoutSessionCustomerUpdate {
+		customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
 			address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
 			..Default::default()
 		}),
-		customer: customer_id.map(Into::into),
+		customer: Some(customer_id.into()),
 		// expire the session 4 hours from now so we can restore unused redeem codes in the checkout.session.expired handler
 		expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),
 		success_url: Some(success_url),
@@ -121,4 +120,36 @@ async fn find_customer(global: &Arc<Global>, user_id: UserId) -> Result<Option<C
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	Ok(customer_id)
+}
+
+async fn find_or_create_customer(
+	global: &Arc<Global>,
+	user_id: UserId,
+	prefill: Option<Prefill>,
+) -> Result<CustomerId, ApiError> {
+	match find_customer(&global, user_id).await? {
+		Some(id) => Ok(id),
+		None => {
+			// no customer found, create one
+
+			let name = prefill.as_ref().map(|p| format!("{} {}", p.first_name, p.last_name));
+
+			let customer = stripe::Customer::create(
+				&global.stripe_client,
+				stripe::CreateCustomer {
+					email: prefill.map(|p| p.email).as_deref(),
+					name: name.as_deref(),
+					metadata: Some([("USER_ID".to_string(), user_id.to_string())].into()),
+					..Default::default()
+				},
+			)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to create customer");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+			Ok(customer.id.into())
+		}
+	}
 }

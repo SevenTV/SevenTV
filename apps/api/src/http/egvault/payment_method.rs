@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::extract::{Query, State};
 use axum::Json;
 
-use super::{create_checkout_session_params, find_customer};
+use super::{create_checkout_session_params, find_or_create_customer};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
@@ -42,11 +42,11 @@ pub async fn payment_method(
 	}
 
 	let customer_id = match auth_session.user(&global).await?.stripe_customer_id.clone() {
-		Some(id) => Some(id),
-		None => find_customer(&global, auth_session.user_id()).await?,
+		Some(id) => id,
+		None => find_or_create_customer(&global, auth_session.user_id(), None).await?,
 	};
 
-	let mut params = create_checkout_session_params(&global, customer_id, None, None).await;
+	let mut params = create_checkout_session_params(&global, customer_id, None).await;
 
 	params.mode = Some(stripe::CheckoutSessionMode::Setup);
 
