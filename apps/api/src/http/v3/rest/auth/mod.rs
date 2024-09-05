@@ -121,6 +121,9 @@ async fn logout(
 	Extension(cookies): Extension<Cookies>,
 	auth_session: AuthSession,
 ) -> Result<impl IntoResponse, ApiError> {
+	let auth_session = &auth_session;
+	let authed_user = auth_session.user(&global).await?;
+
 	let res = with_transaction(&Arc::clone(&global), |mut tx| async move {
 		// is a new session
 		if let AuthSessionKind::Session(session) = &auth_session.kind {
@@ -138,7 +141,8 @@ async fn logout(
 
 			if let Some(user_session) = user_session {
 				tx.register_event(InternalEvent {
-					actor: Some(auth_session.user(&global).await.map_err(TransactionError::custom)?.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::UserSession {
 						after: user_session,
 						data: StoredEventUserSessionData::Delete,

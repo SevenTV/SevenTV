@@ -62,8 +62,8 @@ impl EmoteSetsMutation {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let user = auth_session.user(global).await?;
-		let other_user = if user_id.id() == user.id {
+		let authed_user = auth_session.user(global).await?;
+		let other_user = if user_id.id() == authed_user.id {
 			None
 		} else {
 			Some(
@@ -76,20 +76,20 @@ impl EmoteSetsMutation {
 			)
 		};
 
-		let target = other_user.as_ref().unwrap_or(user);
+		let target = other_user.as_ref().unwrap_or(authed_user);
 
-		if !target.has(EmoteSetPermission::Manage) && !user.has(EmoteSetPermission::ManageAny) {
+		if !target.has(EmoteSetPermission::Manage) && !authed_user.has(EmoteSetPermission::ManageAny) {
 			return Err(ApiError::new_const(
 				StatusCode::FORBIDDEN,
 				"this user does not have permission to create emote sets",
 			));
 		}
 
-		if target.id != user.id && !user.has(EmoteSetPermission::ManageAny) {
+		if target.id != authed_user.id && !authed_user.has(EmoteSetPermission::ManageAny) {
 			let editor = global
 				.user_editor_by_id_loader
 				.load(UserEditorId {
-					user_id: user.id,
+					user_id: authed_user.id,
 					editor_id: user_id.id(),
 				})
 				.await
@@ -144,7 +144,8 @@ impl EmoteSetsMutation {
 			tx.insert_one::<DbEmoteSet>(&emote_set, None).await?;
 
 			tx.register_event(InternalEvent {
-				actor: Some(user.clone()),
+				actor: Some(authed_user.clone()),
+				session_id: auth_session.id(),
 				data: InternalEventData::EmoteSet {
 					after: emote_set.clone(),
 					data: InternalEventEmoteSetData::Create,
@@ -313,20 +314,21 @@ impl EmoteSetOps {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+		let ip = ctx.data::<std::net::IpAddr>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let actor = auth_session.user(global).await?;
 
-		let target = self
-			.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
+		self.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
 			.await?;
-		let target = target.as_ref();
 
 		let id: EmoteId = id.id();
 
 		let res = with_transaction(global, |tx| async move {
 			match action {
-				ListItemAction::Add => emote_add(global, tx, actor, target, &self.emote_set, id, name).await,
-				ListItemAction::Remove => emote_remove(global, tx, actor, &self.emote_set, id).await,
-				ListItemAction::Update => emote_update(global, tx, actor, &self.emote_set, id, name).await,
+				ListItemAction::Add => emote_add(global, *ip, tx, auth_session.id(), actor, &self.emote_set, id, name).await,
+				ListItemAction::Remove => emote_remove(global, tx, auth_session.id(), actor, &self.emote_set, id).await,
+				ListItemAction::Update => {
+					emote_update(global, tx, auth_session.id(), actor, &self.emote_set, id, name).await
+				}
 			}
 		})
 		.await;
@@ -349,6 +351,8 @@ impl EmoteSetOps {
 		let target = self
 			.check_perms(global, auth_session, EditorEmoteSetPermission::Manage)
 			.await?;
+
+		let authed_user = auth_session.user(global).await?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			// TODO validate this name
@@ -423,7 +427,8 @@ impl EmoteSetOps {
 
 			if let Some(new_name) = new_name {
 				tx.register_event(InternalEvent {
-					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::EmoteSet {
 						after: emote_set.clone(),
 						data: InternalEventEmoteSetData::ChangeName {
@@ -437,7 +442,8 @@ impl EmoteSetOps {
 
 			if let Some(new_capacity) = new_capacity {
 				tx.register_event(InternalEvent {
-					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::EmoteSet {
 						after: emote_set.clone(),
 						data: InternalEventEmoteSetData::ChangeCapacity {
@@ -481,6 +487,8 @@ impl EmoteSetOps {
 			));
 		}
 
+		let authed_user = auth_session.user(global).await?;
+
 		let res = with_transaction(global, |mut tx| async move {
 			let emote_set = tx
 				.find_one_and_delete(
@@ -494,7 +502,8 @@ impl EmoteSetOps {
 
 			if let Some(emote_set) = emote_set {
 				tx.register_event(InternalEvent {
-					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::EmoteSet {
 						after: emote_set,
 						data: InternalEventEmoteSetData::Delete,

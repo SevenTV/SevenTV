@@ -140,3 +140,23 @@ impl S3CredentialsConfig {
 		))
 	}
 }
+
+#[auto_settings]
+#[serde(default)]
+pub struct ClickhouseConfig {
+	/// Clickhouse URI
+	#[settings(default = "http://localhost:8123".into())]
+	pub uri: String,
+
+	/// Clickhouse username
+	#[settings(default = "default".into())]
+	pub username: String,
+
+	/// Clickhouse password
+	#[settings(default = "default".into())]
+	pub password: String,
+
+	/// Clickhouse database
+	#[settings(default = "7tv".into())]
+	pub database: String,
+}

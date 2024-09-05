@@ -219,15 +219,25 @@ impl ImageProcessor {
 		}
 	}
 
-	pub async fn upload_emote(&self, id: EmoteId, data: Bytes) -> tonic::Result<image_processor::ProcessImageResponse> {
+	pub async fn upload_emote(
+		&self,
+		id: EmoteId,
+		data: Bytes,
+		upload_ip: Option<std::net::IpAddr>,
+	) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
 			Some(self.make_input_upload(format!("/emote/{id}/input.{{ext}}"), data)),
 			self.make_task(
 				self.make_output(format!("/emote/{id}/{{scale}}x{{static}}.{{ext}}")),
-				self.make_events(
-					Subject::Emote(id),
-					[("emote_id".to_string(), id.to_string())].into_iter().collect(),
-				),
+				self.make_events(Subject::Emote(id), {
+					let mut map = std::collections::HashMap::new();
+					map.insert("emote_id".to_string(), id.to_string());
+					if let Some(ip) = upload_ip {
+						map.insert("upload_ip".to_string(), ip.to_string());
+					}
+
+					map
+				}),
 			),
 		);
 
@@ -239,15 +249,21 @@ impl ImageProcessor {
 		id: UserProfilePictureId,
 		user_id: UserId,
 		data: Bytes,
+		upload_ip: Option<std::net::IpAddr>,
 	) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
 			Some(self.make_input_upload(format!("/user/{user_id}/profile-picture/{id}/input.{{ext}}"), data)),
 			self.make_task(
 				self.make_output(format!("/user/{user_id}/profile-picture/{id}/{{scale}}x{{static}}.{{ext}}")),
-				self.make_events(
-					Subject::ProfilePicture(id),
-					[("user_id".to_string(), user_id.to_string())].into_iter().collect(),
-				),
+				self.make_events(Subject::ProfilePicture(id), {
+					let mut map = std::collections::HashMap::new();
+					map.insert("user_id".to_string(), user_id.to_string());
+					if let Some(ip) = upload_ip {
+						map.insert("upload_ip".to_string(), ip.to_string());
+					}
+
+					map
+				}),
 			),
 		);
 

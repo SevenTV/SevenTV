@@ -1,7 +1,7 @@
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
-use shared::config::{DatabaseConfig, NatsConfig, TypesenseConfig};
+use shared::config::{ClickhouseConfig, DatabaseConfig, NatsConfig, TypesenseConfig};
 
 #[auto_settings]
 #[serde(default)]
@@ -20,6 +20,9 @@ pub struct Config {
 
 	/// Triggers configuration
 	pub triggers: TriggersConfig,
+
+	/// Clickhouse configuration
+	pub clickhouse: ClickhouseConfig,
 }
 
 #[auto_settings]

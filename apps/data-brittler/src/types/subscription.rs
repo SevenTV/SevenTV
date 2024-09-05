@@ -53,7 +53,7 @@ pub enum SubscriptionCycleUnit {
 	Year,
 }
 
-#[derive(Debug, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, serde::Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SubscriptionCycleStatus {
 	Ongoing,

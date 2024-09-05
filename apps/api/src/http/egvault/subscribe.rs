@@ -1,15 +1,15 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
+use axum::{Extension, Json};
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
 use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
+use super::metadata::{CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
 use super::{create_checkout_session_params, find_or_create_customer};
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -66,6 +66,7 @@ pub struct SubscribeResponse {
 pub async fn subscribe(
 	State(global): State<Arc<Global>>,
 	Query(query): Query<SubscribeQuery>,
+	Extension(ip): Extension<std::net::IpAddr>,
 	auth_session: Option<AuthSession>,
 	Json(body): Json<SubscribeBody>,
 ) -> Result<Json<SubscribeResponse>, ApiError> {
@@ -109,12 +110,15 @@ pub async fn subscribe(
 		variant.id
 	};
 
-	let mut params = create_checkout_session_params(&global, customer_id, Some(&product_id)).await;
-
-	params.automatic_tax = Some(stripe::CreateCheckoutSessionAutomaticTax {
-		enabled: true,
-		..Default::default()
-	});
+	let mut params = create_checkout_session_params(
+		&global,
+		ip,
+		customer_id,
+		&product_id,
+		product.default_currency,
+		&variant.currency_prices,
+	)
+	.await;
 
 	let paying_user = auth_session.user_id();
 
@@ -149,27 +153,28 @@ pub async fn subscribe(
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
 		}
 
-		let mut metadata: HashMap<_, _> = [
-			("USER_ID".to_string(), receiving_user.id.to_string()),
-			("CUSTOMER_ID".to_string(), paying_user.to_string()),
-		]
-		.into();
-
 		params.mode = Some(stripe::CheckoutSessionMode::Payment);
 		params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
 			description: Some("Gift subscription payment".to_string()),
-			metadata: Some(metadata.clone()),
 			..Default::default()
 		});
 
-		metadata.insert("IS_GIFT".to_string(), "true".to_string());
-		metadata.insert("PRODUCT_ID".to_string(), product.id.to_string());
-		metadata.insert(
-			"PERIOD_DURATION_MONTHS".to_string(),
-			kind.period_duration_months().to_string(),
-		);
+		params.invoice_creation = Some(stripe::CreateCheckoutSessionInvoiceCreation {
+			enabled: true,
+			invoice_data: Some(stripe::CreateCheckoutSessionInvoiceCreationInvoiceData {
+				metadata: Some(
+					InvoiceMetadata::Gift {
+						customer_id: paying_user,
+						user_id: receiving_user.id,
+						subscription_product_id: Some(product.id),
+					}
+					.to_stripe(),
+				),
+				..Default::default()
+			}),
+		});
 
-		params.metadata = Some(metadata);
+		params.metadata = Some(CheckoutSessionMetadata::Gift.to_stripe());
 
 		receiving_user.id
 	} else {
@@ -199,9 +204,17 @@ pub async fn subscribe(
 
 		params.mode = Some(stripe::CheckoutSessionMode::Subscription);
 		params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
-			metadata: Some([("USER_ID".to_string(), auth_session.user_id().to_string())].into()),
+			metadata: Some(
+				SubscriptionMetadata {
+					user_id: auth_session.user_id(),
+					customer_id: None,
+				}
+				.to_stripe(),
+			),
 			..Default::default()
 		});
+
+		params.metadata = Some(CheckoutSessionMetadata::Subscription.to_stripe());
 
 		auth_session.user_id()
 	};

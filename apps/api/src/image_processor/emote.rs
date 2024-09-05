@@ -1,10 +1,14 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
+use shared::database::emote_moderation_request::{
+	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
+};
 use shared::database::queries::{filter, update};
-use shared::database::stored_event::{ImageProcessorEvent, StoredEventEmoteData};
+use shared::database::stored_event::{ImageProcessorEvent, StoredEventEmoteData, StoredEventEmoteModerationRequestData};
 use shared::event::{InternalEvent, InternalEventData};
 
 use super::event_to_image_set;
@@ -13,8 +17,10 @@ use crate::transactions::{TransactionError, TransactionResult, TransactionSessio
 
 pub async fn handle_success(
 	mut tx: TransactionSession<'_, anyhow::Error>,
+	global: &Arc<Global>,
 	id: EmoteId,
 	event: &event_callback::Success,
+	metadata: &HashMap<String, String>,
 ) -> TransactionResult<(), anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::custom)?;
 
@@ -30,6 +36,11 @@ pub async fn handle_success(
 		None
 	};
 
+	let aspect_ratio = image_set
+		.input
+		.aspect_ratio()
+		.ok_or(TransactionError::custom(anyhow::anyhow!("failed to get aspect ratio")))?;
+
 	let after = tx
 		.find_one_and_update(
 			filter::filter! {
@@ -43,6 +54,7 @@ pub async fn handle_success(
 				Emote {
 					#[query(serde)]
 					image_set,
+					aspect_ratio,
 					updated_at: chrono::Utc::now(),
 				},
 				#[query(bit)]
@@ -55,8 +67,53 @@ pub async fn handle_success(
 		.await?
 		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
 
+	let country_code = metadata
+		.get("upload_ip")
+		.and_then(|ip| ip.parse().ok())
+		.and_then(|ip| global.geoip()?.lookup(ip))
+		.and_then(|c| c.iso_code);
+
+	let actor = global
+		.user_loader
+		.load(global, after.owner_id)
+		.await
+		.ok()
+		.flatten()
+		.ok_or_else(|| TransactionError::custom(anyhow::anyhow!("failed to load user")))?;
+
+	let mod_request = EmoteModerationRequest {
+		id: EmoteModerationRequestId::new(),
+		emote_id: id,
+		user_id: after.owner_id,
+		priority: actor
+			.computed
+			.permissions
+			.emote_moderation_request_priority
+			.unwrap_or_default(),
+		kind: EmoteModerationRequestKind::PublicListing,
+		status: EmoteModerationRequestStatus::Pending,
+		reason: Some("New upload".to_string()),
+		updated_at: chrono::Utc::now(),
+		search_updated_at: None,
+		assigned_to: vec![],
+		country_code: country_code.map(|c| c.to_string()),
+	};
+
+	tx.insert_one::<EmoteModerationRequest>(&mod_request, None).await?;
+
+	tx.register_event(InternalEvent {
+		actor: Some(actor.clone()),
+		session_id: None,
+		data: InternalEventData::EmoteModerationRequest {
+			after: mod_request,
+			data: StoredEventEmoteModerationRequestData::Create,
+		},
+		timestamp: chrono::Utc::now(),
+	})?;
+
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {
@@ -71,6 +128,7 @@ pub async fn handle_success(
 
 pub async fn handle_fail(
 	mut tx: TransactionSession<'_, anyhow::Error>,
+	_: &Arc<Global>,
 	id: EmoteId,
 	event: &event_callback::Fail,
 ) -> TransactionResult<(), anyhow::Error> {
@@ -93,6 +151,7 @@ pub async fn handle_fail(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {
@@ -120,6 +179,7 @@ pub async fn handle_start(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {
@@ -147,6 +207,7 @@ pub async fn handle_cancel(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {

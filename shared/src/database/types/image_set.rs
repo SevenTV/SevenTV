@@ -22,6 +22,13 @@ impl ImageSetInput {
 	pub fn is_pending(&self) -> bool {
 		matches!(self, ImageSetInput::Pending { .. })
 	}
+
+	pub fn aspect_ratio(&self) -> Option<f64> {
+		match self {
+			ImageSetInput::Pending { .. } => None,
+			ImageSetInput::Image(image) => Some(image.width as f64 / image.height as f64),
+		}
+	}
 }
 
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize, PartialEq, Eq)]

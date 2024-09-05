@@ -57,8 +57,6 @@ pub struct SubscriptionProduct {
 	pub name: String,
 	pub description: Option<String>,
 	pub default_currency: stripe::Currency,
-	/// The `to` field of the `EntitlementEdge` where the `from` field is this
-	/// product.
 	pub entitlement_grants: Vec<EntitlementEdgeKindString>,
 	pub currencies: Vec<stripe::Currency>,
 	pub benefits: Vec<SubscriptionBenefitId>,

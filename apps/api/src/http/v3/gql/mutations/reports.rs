@@ -38,6 +38,14 @@ impl ReportsMutation {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+		let ip = ctx.data::<std::net::IpAddr>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = auth_session.user(global).await?;
+
+		let country_code = global
+			.geoip()
+			.and_then(|g| g.lookup(*ip))
+			.and_then(|c| c.iso_code)
+			.map(|c| c.to_string());
 
 		let res = with_transaction(global, |mut tx| async move {
 			let ticket_id = TicketId::new();
@@ -67,7 +75,7 @@ impl ReportsMutation {
 				members: vec![member],
 				title: data.subject,
 				tags: vec![],
-				country_code: None, // TODO
+				country_code, // TODO
 				kind: TicketKind::Abuse,
 				targets: vec![TicketTarget::Emote(data.target_id.id())],
 				author_id: auth_session.user_id(),
@@ -80,7 +88,8 @@ impl ReportsMutation {
 			tx.insert_one::<Ticket>(&ticket, None).await?;
 
 			tx.register_event(InternalEvent {
-				actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+				actor: Some(authed_user.clone()),
+				session_id: auth_session.id(),
 				data: InternalEventData::Ticket {
 					after: ticket.clone(),
 					data: InternalEventTicketData::Create,
@@ -119,6 +128,8 @@ impl ReportsMutation {
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
+
+		let authed_user = auth_session.user(global).await?;
 
 		let transaction_result = with_transaction(global, |mut tx| async move {
 			let new_priority = data
@@ -224,7 +235,8 @@ impl ReportsMutation {
 
 			if let Some(new_priority) = new_priority {
 				tx.register_event(InternalEvent {
-					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::Ticket {
 						after: ticket.clone(),
 						data: InternalEventTicketData::ChangePriority {
@@ -238,7 +250,8 @@ impl ReportsMutation {
 
 			if let Some(new_open) = new_open {
 				tx.register_event(InternalEvent {
-					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::Ticket {
 						after: ticket.clone(),
 						data: InternalEventTicketData::ChangeOpen {
@@ -252,7 +265,8 @@ impl ReportsMutation {
 
 			if let Some(event_ticket_data) = event_ticket_data {
 				tx.register_event(InternalEvent {
-					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::Ticket {
 						after: ticket.clone(),
 						data: event_ticket_data,
@@ -275,7 +289,8 @@ impl ReportsMutation {
 				tx.insert_one::<TicketMessage>(&message, None).await?;
 
 				tx.register_event(InternalEvent {
-					actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::TicketMessage {
 						after: message,
 						data: StoredEventTicketMessageData::Create,

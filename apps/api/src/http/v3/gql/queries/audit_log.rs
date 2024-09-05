@@ -1,8 +1,7 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
-use shared::database::emote::{Emote, EmoteFlags, EmoteId};
+use shared::database::emote::EmoteFlags;
 use shared::database::stored_event::{
 	ImageProcessorEvent, StoredEventEmoteData, StoredEventEmoteSetData, StoredEventUserEditorData,
 };
@@ -81,10 +80,7 @@ pub enum AuditLogKind {
 async_graphql::scalar!(AuditLogKind);
 
 impl AuditLog {
-	pub fn from_db(
-		audit_log: shared::database::stored_event::StoredEvent,
-		emotes: &HashMap<EmoteId, Emote>,
-	) -> Option<Self> {
+	pub fn from_db(audit_log: shared::database::stored_event::StoredEvent) -> Option<Self> {
 		let actor_id = audit_log.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into();
 
 		let (kind, target_id, target_kind, changes) = match audit_log.data {
@@ -120,12 +116,7 @@ impl AuditLog {
 				AuditLogKind::UpdateEmoteSet,
 				target_id.into(),
 				3,
-				vec![AuditLogChange::from_db_emote_set(
-					data,
-					actor_id,
-					audit_log.id.timestamp(),
-					emotes,
-				)?],
+				vec![AuditLogChange::from_db_emote_set(data, actor_id, audit_log.id.timestamp())?],
 			),
 			shared::database::stored_event::StoredEventData::UserEditor { target_id, data } => (
 				AuditLogKind::EditUser,
@@ -233,7 +224,6 @@ impl AuditLogChange {
 		data: StoredEventEmoteSetData,
 		actor_id: GqlObjectId,
 		timestamp: chrono::DateTime<chrono::Utc>,
-		emotes: &HashMap<EmoteId, Emote>,
 	) -> Option<Self> {
 		match data {
 			StoredEventEmoteSetData::ChangeName { old, new } => Some(Self {
@@ -259,8 +249,6 @@ impl AuditLogChange {
 				}),
 			}),
 			StoredEventEmoteSetData::RemoveEmote { emote_id } => {
-				let emote = emotes.get(&emote_id)?;
-
 				Some(Self {
 					format: AuditLogChangeFormat::ArrayValue,
 					key: "emotes".to_string(),
@@ -271,7 +259,7 @@ impl AuditLogChange {
 							id: emote_id.into(),
 							actor_id,
 							flags: EmoteFlagsModel::none(),
-							name: emote.default_name.clone(),
+							name: "".to_string(), // TODO: get the emote name
 							timestamp,
 						}],
 						updated: vec![],

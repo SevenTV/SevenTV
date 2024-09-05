@@ -41,7 +41,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 	let outgoing: HashSet<_> = global
 		.entitlement_edge_outbound_loader
 		.load(EntitlementEdgeKind::Subscription {
-			subscription_id: subscription_id.clone(),
+			subscription_id: *subscription_id,
 		})
 		.await
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
@@ -53,7 +53,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 	let incoming: HashSet<_> = global
 		.entitlement_edge_inbound_loader
 		.load(EntitlementEdgeKind::Subscription {
-			subscription_id: subscription_id.clone(),
+			subscription_id: *subscription_id,
 		})
 		.await
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
@@ -96,13 +96,13 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 
 		let benefit_edge = EntitlementEdgeId {
 			from: EntitlementEdgeKind::Subscription {
-				subscription_id: subscription_id.clone(),
+				subscription_id: *subscription_id,
 			},
 			to: EntitlementEdgeKind::SubscriptionBenefit {
 				subscription_benefit_id: benefit.id,
 			},
 			managed_by: Some(EntitlementEdgeManagedBy::Subscription {
-				subscription_id: subscription_id.clone(),
+				subscription_id: *subscription_id,
 			}),
 		};
 
@@ -121,10 +121,10 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			user_id: subscription_id.user_id,
 		},
 		to: EntitlementEdgeKind::Subscription {
-			subscription_id: subscription_id.clone(),
+			subscription_id: *subscription_id,
 		},
 		managed_by: Some(EntitlementEdgeManagedBy::Subscription {
-			subscription_id: subscription_id.clone(),
+			subscription_id: *subscription_id,
 		}),
 	};
 

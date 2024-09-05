@@ -8,6 +8,7 @@ pub type PageId = Id<Page>;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "pages")]
+#[mongo(search = "crate::typesense::types::page::Page")]
 #[serde(deny_unknown_fields)]
 pub struct Page {
 	#[mongo(id)]

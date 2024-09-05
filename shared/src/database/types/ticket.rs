@@ -76,6 +76,7 @@ pub type TicketId = Id<Ticket>;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "tickets")]
+#[mongo(search = "crate::typesense::types::ticket::Ticket")]
 #[serde(deny_unknown_fields)]
 pub struct Ticket {
 	#[mongo(id)]
@@ -121,6 +122,7 @@ pub type TicketMessageId = Id<TicketMessage>;
 #[mongo(collection_name = "ticket_messages")]
 #[mongo(index(fields(ticket_id = 1)))]
 #[mongo(index(fields(user_id = 1)))]
+#[mongo(search = "crate::typesense::types::ticket::TicketMessage")]
 #[serde(deny_unknown_fields)]
 pub struct TicketMessage {
 	#[mongo(id)]

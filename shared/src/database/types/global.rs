@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::automod::AutomodRuleId;
 use super::emote_set::EmoteSetId;
 use super::MongoGenericCollection;
@@ -15,6 +17,7 @@ pub struct GlobalConfig {
 	pub alerts: GlobalConfigAlerts,
 	pub emote_set_id: EmoteSetId,
 	pub automod_rule_ids: Vec<AutomodRuleId>,
+	pub country_currency_overrides: HashMap<String, stripe::Currency>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default)]

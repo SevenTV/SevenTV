@@ -58,5 +58,10 @@ itertools = "0.13"
 const_format = "0.2"
 typed-builder = "0.20.0"
 aws-sdk-s3 = { version = "1.45.0", features = ["behavior-version-latest"] }
+url = "2.3.1"
+maxminddb = "0.24.0"
+reqwest = { version = "0.12.7" }
+flate2 = "1.0.33"
+tar = "0.4.41"
 
 macros = { workspace = true }

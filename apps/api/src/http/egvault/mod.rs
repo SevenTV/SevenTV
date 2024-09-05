@@ -1,4 +1,5 @@
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, OnceLock};
 
 use axum::routing::{get, patch, post};
 use axum::Router;
@@ -7,12 +8,12 @@ use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId};
 use shared::database::MongoCollection;
 use subscribe::Prefill;
-use tokio::sync::OnceCell;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 
 mod cancel;
+pub mod metadata;
 mod payment_method;
 mod products;
 pub mod redeem;
@@ -32,34 +33,51 @@ pub fn routes() -> Router<Arc<Global>> {
 		.route("/redeem", post(redeem::redeem))
 }
 
-async fn create_checkout_session_params<'a>(
-	global: &'a Arc<Global>,
+async fn create_checkout_session_params(
+	global: &Arc<Global>,
+	ip: std::net::IpAddr,
 	customer_id: CustomerId,
-	product_id: Option<&ProductId>,
-) -> stripe::CreateCheckoutSession<'a> {
+	product_id: &ProductId,
+	default_currency: stripe::Currency,
+	currency_prices: &HashMap<stripe::Currency, i32>,
+) -> stripe::CreateCheckoutSession<'static> {
 	// cursed solution but the ownership has to stay somewhere
-	static SUCCESS_URL: OnceCell<String> = OnceCell::const_new();
-	static CANCEL_URL: OnceCell<String> = OnceCell::const_new();
+	static SUCCESS_URL: OnceLock<String> = OnceLock::new();
+	static CANCEL_URL: OnceLock<String> = OnceLock::new();
 
-	let success_url = SUCCESS_URL
-		.get_or_init(|| async { format!("{}/subscribe/complete?with_provider=stripe", global.config.api.website_origin) })
-		.await;
-	let cancel_url = CANCEL_URL
-		.get_or_init(|| async { format!("{}/subscribe/cancel?with_provider=stripe", global.config.api.website_origin) })
-		.await;
+	let success_url =
+		SUCCESS_URL.get_or_init(|| format!("{}/subscribe/complete?with_provider=stripe", global.config.api.website_origin));
+	let cancel_url =
+		CANCEL_URL.get_or_init(|| format!("{}/subscribe/cancel?with_provider=stripe", global.config.api.website_origin));
+
+	let mut currency = default_currency;
+
+	if let Some(country_code) = global.geoip().and_then(|g| g.lookup(ip)).and_then(|c| c.iso_code) {
+		if let Ok(Some(global)) = global.global_config_loader.load(()).await {
+			if let Some(currency_override) = global.country_currency_overrides.get(country_code) {
+				currency = *currency_override;
+			}
+		}
+	}
 
 	stripe::CreateCheckoutSession {
-		line_items: product_id.map(|id| {
-			vec![stripe::CreateCheckoutSessionLineItems {
-				price: Some(id.to_string()),
-				quantity: Some(1),
-				..Default::default()
-			}]
-		}),
+		line_items: Some(vec![stripe::CreateCheckoutSessionLineItems {
+			price: Some(product_id.to_string()),
+			quantity: Some(1),
+			..Default::default()
+		}]),
 		customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
 			address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
 			..Default::default()
 		}),
+		automatic_tax: Some(stripe::CreateCheckoutSessionAutomaticTax {
+			enabled: true,
+			..Default::default()
+		}),
+		currency: currency_prices
+			.contains_key(&currency)
+			.then_some(currency)
+			.or_else(|| currency_prices.contains_key(&currency).then_some(default_currency)),
 		customer: Some(customer_id.into()),
 		// expire the session 4 hours from now so we can restore unused redeem codes in the checkout.session.expired handler
 		expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),

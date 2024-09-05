@@ -13,6 +13,7 @@ use crate::typesense::types::impl_typesense_type;
 #[mongo(index(fields(items = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::product::invoice::Invoice")]
 #[serde(deny_unknown_fields)]
 pub struct Invoice {
 	/// This ID will be the stripe ID for the invoice

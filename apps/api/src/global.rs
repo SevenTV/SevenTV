@@ -8,6 +8,7 @@ use scuffle_foundations::batcher::dataloader::DataLoader;
 use scuffle_foundations::telemetry::server::HealthCheck;
 use shared::database::badge::Badge;
 use shared::database::emote::Emote;
+use shared::database::emote_moderation_request::EmoteModerationRequest;
 use shared::database::emote_set::EmoteSet;
 use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
 use shared::database::global::GlobalConfig;
@@ -24,6 +25,7 @@ use shared::database::user::editor::UserEditor;
 use shared::database::user::profile_picture::UserProfilePicture;
 use shared::database::user::User;
 use shared::image_processor::ImageProcessor;
+use shared::ip::GeoIpResolver;
 
 use crate::config::Config;
 use crate::dataloader::emote::EmoteByUserIdLoader;
@@ -36,6 +38,7 @@ use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUse
 
 pub struct Global {
 	pub nats: async_nats::Client,
+	pub geoip: Option<GeoIpResolver>,
 	pub jetstream: async_nats::jetstream::Context,
 	pub config: Config,
 	pub mongo: mongodb::Client,
@@ -69,6 +72,7 @@ pub struct Global {
 	pub user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
 	pub user_ban_by_user_id_loader: DataLoader<UserBanByUserIdLoader>,
 	pub user_profile_picture_id_loader: DataLoader<LoaderById<UserProfilePicture>>,
+	pub emote_moderation_request_by_id_loader: DataLoader<LoaderById<EmoteModerationRequest>>,
 	pub user_loader: FullUserLoader,
 	pub typesense: typesense_codegen::apis::configuration::Configuration,
 }
@@ -102,8 +106,15 @@ impl Global {
 
 		let stripe_client = stripe::Client::new(&config.api.stripe.api_key);
 
+		let geoip = if let Some(config) = config.api.geoip.as_ref() {
+			Some(GeoIpResolver::new(config).await?)
+		} else {
+			None
+		};
+
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
+			geoip,
 			jetstream,
 			image_processor,
 			event_by_id_loader: LoaderById::new(db.clone()),
@@ -131,6 +142,7 @@ impl Global {
 			user_ban_by_id_loader: LoaderById::new(db.clone()),
 			user_ban_by_user_id_loader: UserBanByUserIdLoader::new(db.clone()),
 			user_profile_picture_id_loader: LoaderById::new(db.clone()),
+			emote_moderation_request_by_id_loader: LoaderById::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			stripe_client,
 			typesense,
@@ -140,6 +152,10 @@ impl Global {
 			config,
 			user_loader: FullUserLoader::new(weak.clone()),
 		}))
+	}
+
+	pub fn geoip(&self) -> Option<&GeoIpResolver> {
+		self.geoip.as_ref()
 	}
 }
 

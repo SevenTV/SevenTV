@@ -148,7 +148,7 @@ impl FullUserLoader {
 				let id = user.id;
 				let computed = UserComputed {
 					permissions: Permissions::default(),
-					entitlements: CalculatedEntitlements::new(user.cached_entitlements.iter().cloned()),
+					entitlements: CalculatedEntitlements::new(user.cached.entitlements.iter().cloned()),
 					highest_role_rank: -1,
 					highest_role_color: None,
 					raw_entitlements: None,

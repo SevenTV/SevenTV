@@ -40,6 +40,7 @@ impl Job for PricesJob {
 			subscription_product: SubscriptionProduct {
 				id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
 				variants: vec![],
+				default_variant_idx: 0,
 				name: "7TV Subscription".to_string(),
 				description: None,
 				default_currency: stripe::Currency::USD,

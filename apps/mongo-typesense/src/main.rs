@@ -15,6 +15,8 @@ mod typesense;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) -> anyhow::Result<()> {
+	rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
+
 	tracing::info!("starting mongo typesense");
 
 	let global = Arc::new(

@@ -76,7 +76,7 @@ pub async fn subscription(
 
 	let subscription = global
 		.subscription_by_id_loader
-		.load(active_period.subscription_id.clone())
+		.load(active_period.subscription_id)
 		.await
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;

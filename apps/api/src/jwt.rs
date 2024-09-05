@@ -161,13 +161,15 @@ impl From<UserSession> for AuthJwtPayload {
 pub struct CsrfJwtPayload {
 	pub random: [u8; 32],
 	pub user_id: Option<UserId>,
+	pub _session_id: Option<UserSessionId>,
 	pub expiration: DateTime<Utc>,
 }
 
 impl CsrfJwtPayload {
-	pub fn new(user_id: Option<UserId>) -> Self {
+	pub fn new(session_id: Option<UserSessionId>, user_id: Option<UserId>) -> Self {
 		Self {
 			random: rand::random(),
+			_session_id: session_id,
 			user_id,
 			expiration: Utc::now() + chrono::Duration::minutes(5),
 		}
@@ -203,6 +205,8 @@ impl JwtState for CsrfJwtPayload {
 		Some(Self {
 			expiration: Utc.timestamp_opt(claims.registered.expiration? as i64, 0).single()?,
 			user_id: claims.registered.audience.as_ref().and_then(|x| x.parse().ok()),
+			_session_id: None,
+
 			random: hex::decode(claims.registered.json_web_token_id.as_ref()?)
 				.ok()?
 				.try_into()

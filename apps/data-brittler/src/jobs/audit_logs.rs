@@ -1,8 +1,10 @@
 use std::mem;
 use std::sync::Arc;
 
+use shared::clickhouse::emote_stat::EmoteStat;
+use shared::clickhouse::ClickhouseCollection;
 use shared::database::emote::EmoteId;
-use shared::database::entitlement::{EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::entitlement::EntitlementEdgeKind;
 use shared::database::user::editor::UserEditorId;
 use shared::database::user::UserId;
 use shared::database::{self, stored_event, MongoCollection};
@@ -17,6 +19,7 @@ const BATCH_SIZE: usize = 1_000_000;
 
 pub struct AuditLogsJob {
 	global: Arc<Global>,
+	stats: Vec<EmoteStat>,
 	events: Vec<stored_event::StoredEvent>,
 }
 
@@ -36,9 +39,19 @@ impl Job for AuditLogsJob {
 					.create_indexes(indexes)
 					.await?;
 			}
+
+			global
+				.clickhouse()
+				.query(&format!("TRUNCATE TABLE {}", EmoteStat::COLLECTION_NAME))
+				.execute()
+				.await?;
 		}
 
-		Ok(Self { global, events: vec![] })
+		Ok(Self {
+			global,
+			events: vec![],
+			stats: vec![],
+		})
 	}
 
 	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
@@ -201,11 +214,23 @@ impl Job for AuditLogsJob {
 										alias: alias.unwrap_or_default(),
 									},
 								});
+
+								self.stats.push(EmoteStat {
+									date: audit_log.id.timestamp().to_time_0_3().date(),
+									emote_id,
+									count: 1,
+								});
 							}
 							for emote_id in emotes.removed.into_iter().filter_map(|e| e.id.map(EmoteId::from)) {
 								data.push(stored_event::StoredEventData::EmoteSet {
 									target_id: audit_log.target_id.into(),
 									data: stored_event::StoredEventEmoteSetData::RemoveEmote { emote_id },
+								});
+
+								self.stats.push(EmoteStat {
+									date: audit_log.id.timestamp().to_time_0_3().date(),
+									emote_id,
+									count: -1,
 								});
 							}
 							for update in emotes
@@ -269,31 +294,19 @@ impl Job for AuditLogsJob {
 						}
 						AuditLogChange::UserRoles(roles) => {
 							for role in roles.added.into_iter().flatten() {
-								let entitlement_edge_id = EntitlementEdgeId {
-									from: EntitlementEdgeKind::User {
-										user_id: audit_log.target_id.into(),
+								data.push(stored_event::StoredEventData::User {
+									target_id: audit_log.target_id.into(),
+									data: stored_event::StoredEventUserData::AddEntitlement {
+										target: EntitlementEdgeKind::Role { role_id: role.into() },
 									},
-									to: EntitlementEdgeKind::Role { role_id: role.into() },
-									managed_by: None,
-								};
-
-								data.push(stored_event::StoredEventData::EntitlementEdge {
-									target_id: entitlement_edge_id,
-									data: stored_event::StoredEventEntitlementEdgeData::Create,
 								});
 							}
 							for role in roles.removed.into_iter().flatten() {
-								let entitlement_edge_id = EntitlementEdgeId {
-									from: EntitlementEdgeKind::User {
-										user_id: audit_log.target_id.into(),
+								data.push(stored_event::StoredEventData::User {
+									target_id: audit_log.target_id.into(),
+									data: stored_event::StoredEventUserData::RemoveEntitlement {
+										target: EntitlementEdgeKind::Role { role_id: role.into() },
 									},
-									to: EntitlementEdgeKind::Role { role_id: role.into() },
-									managed_by: None,
-								};
-
-								data.push(stored_event::StoredEventData::EntitlementEdge {
-									target_id: entitlement_edge_id,
-									data: stored_event::StoredEventEntitlementEdgeData::Delete,
 								});
 							}
 						}
@@ -349,6 +362,7 @@ impl Job for AuditLogsJob {
 			self.events.push(stored_event::StoredEvent {
 				id: stored_event::StoredEventId::with_timestamp(audit_log.id.timestamp().to_chrono()),
 				actor_id: Some(UserId::from(audit_log.actor_id)),
+				session_id: None,
 				data,
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
@@ -367,6 +381,29 @@ impl Job for AuditLogsJob {
 					}
 				}
 				Err(e) => return outcome.with_error(e),
+			}
+
+			if !self.stats.is_empty() {
+				let mut stats_inserter = match self.global.clickhouse().insert::<EmoteStat>(EmoteStat::COLLECTION_NAME) {
+					Ok(inserter) => inserter,
+					Err(e) => {
+						tracing::error!("failed to insert emote stats: {}", e);
+						outcome.errors.push(e.into());
+						return outcome;
+					}
+				};
+
+				for stat in self.stats.drain(..) {
+					if let Err(e) = stats_inserter.write(&stat).await {
+						tracing::error!("failed to insert emote stat: {}", e);
+						outcome.errors.push(e.into());
+						return outcome;
+					}
+				}
+
+				if let Err(err) = stats_inserter.end().await {
+					outcome.errors.push(err.into());
+				}
 			}
 		}
 

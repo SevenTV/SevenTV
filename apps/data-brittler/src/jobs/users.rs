@@ -13,7 +13,7 @@ use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorState};
 use shared::database::user::profile_picture::UserProfilePicture;
 use shared::database::user::settings::UserSettings;
-use shared::database::user::{User, UserId, UserStyle};
+use shared::database::user::{User, UserCached, UserId, UserStyle};
 use shared::database::MongoCollection;
 
 use super::{Job, ProcessOutcome};
@@ -165,7 +165,6 @@ impl Job for UsersJob {
 			user_id: user.id.into(),
 			image_set: p,
 			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
 		});
 
 		let active_emote_set_id = user
@@ -254,9 +253,7 @@ impl Job for UsersJob {
 			connections,
 			stripe_customer_id: None,
 			paypal_sub_id,
-			cached_active_emotes: vec![],
-			cached_entitlements: vec![],
-			cached_role_rank: -1,
+			cached: UserCached::default(),
 			has_bans: false,
 			search_updated_at: None,
 			updated_at: chrono::Utc::now(),

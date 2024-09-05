@@ -1,9 +1,11 @@
+pub mod clickhouse;
 pub mod config;
 pub mod database;
 pub mod event;
 pub mod event_api;
 pub mod grpc;
 pub mod image_processor;
+pub mod ip;
 pub mod nats;
 pub mod old_types;
 pub mod typesense;

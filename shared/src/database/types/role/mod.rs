@@ -12,6 +12,7 @@ pub type RoleId = Id<Role>;
 #[mongo(index(fields(rank = 1), unique))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::role::Role")]
 #[serde(deny_unknown_fields)]
 pub struct Role {
 	#[mongo(id)]

@@ -9,6 +9,7 @@ pub type BadgeId = Id<Badge>;
 #[mongo(collection_name = "badges")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::badge::Badge")]
 #[serde(deny_unknown_fields)]
 pub struct Badge {
 	#[mongo(id)]

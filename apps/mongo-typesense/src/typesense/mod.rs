@@ -11,7 +11,6 @@ use scuffle_foundations::context::ContextFutExt;
 use scuffle_foundations::telemetry::metrics::metrics;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::MongoCollection;
-use shared::nats::ChangeStreamSubject;
 use typesense::{EventStatus, OperationType};
 
 use crate::global::Global;
@@ -107,11 +106,12 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 
 	let config = stream::Config {
 		name: subject.name(),
-		subjects: vec![subject.wildcard()],
+		subjects: vec![subject.name()],
 		retention: stream::RetentionPolicy::WorkQueue,
-		duplicate_window: Duration::from_secs(60),
+		duplicate_window: Duration::from_secs(15),
 		max_age: Duration::from_secs(60 * 60 * 24), // messages older than 24 hours are dropped
 		max_bytes: 1024 * 1024 * 1024 * 100,        // 100GB max
+		storage: stream::StorageType::File,
 		..Default::default()
 	};
 
@@ -125,18 +125,14 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 		.context("update stream timeout")?
 		.context("update stream")?;
 
-	setup(&global, stream, subject).await?;
+	setup(&global, stream).await?;
 
 	tracing::info!("typesense handler exited");
 
 	Ok(())
 }
 
-async fn setup(
-	global: &Arc<Global>,
-	stream: async_nats::jetstream::stream::Stream,
-	subject: ChangeStreamSubject,
-) -> anyhow::Result<()> {
+async fn setup(global: &Arc<Global>, stream: async_nats::jetstream::stream::Stream) -> anyhow::Result<()> {
 	let config = async_nats::jetstream::consumer::pull::Config {
 		name: Some("change-stream".to_string()),
 		durable_name: None,
@@ -180,14 +176,11 @@ async fn setup(
 		};
 
 		let Some(collection) = message
-			.subject
-			.as_str()
-			.strip_prefix(&subject.0)
-			.and_then(|s| s.strip_prefix('.'))
-			.and_then(|s| s.strip_prefix(&global.config.triggers.seventv_database))
-			.and_then(|s| s.strip_prefix('.'))
+			.headers
+			.as_ref()
+			.and_then(|headers| headers.get("collection").map(|s| s.as_str()))
 		else {
-			message.ack_with(AckKind::Nak(Some(Duration::from_secs(5)))).await.ok();
+			message.ack_with(AckKind::Term).await.ok();
 			continue;
 		};
 
@@ -220,12 +213,13 @@ async fn setup(
 				crate::types::mongo::SpecialEvent,
 				crate::types::mongo::Invoice,
 				crate::types::mongo::Product,
+				crate::types::mongo::SubscriptionProduct,
 				crate::types::mongo::SubscriptionPeriod,
 				crate::types::mongo::UserBanTemplate,
 				crate::types::mongo::UserBan,
 				crate::types::mongo::UserEditor,
-				crate::types::mongo::UserRelation,
 				crate::types::mongo::User,
+				crate::types::mongo::UserRelation,
 				crate::types::mongo::StoredEvent,
 				crate::types::mongo::AutomodRule,
 				crate::types::mongo::Badge,
@@ -239,6 +233,7 @@ async fn setup(
 				crate::types::mongo::Role,
 				crate::types::mongo::Ticket,
 				crate::types::mongo::TicketMessage,
+				crate::types::mongo::Subscription,
 			}
 		}
 	}

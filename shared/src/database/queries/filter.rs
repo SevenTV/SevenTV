@@ -217,6 +217,8 @@ impl<T> __AssertFilterBoundsFlatten<T> for T {}
 impl<T> __AssertFilterBoundsFlatten<T> for &T {}
 impl<T> __AssertFilterBoundsFlatten<T> for Value<T> {}
 impl<T> __AssertFilterBoundsFlatten<T> for &Value<T> {}
+impl<T> __AssertFilterBoundsFlatten<Option<T>> for Value<T> {}
+impl<T> __AssertFilterBoundsFlatten<Option<T>> for &Value<T> {}
 
 impl<T> __AssertFilterBounds<Option<T>> for T {}
 impl<T> __AssertFilterBounds<Option<T>> for &T {}

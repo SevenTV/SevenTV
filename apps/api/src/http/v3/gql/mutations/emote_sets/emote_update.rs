@@ -5,6 +5,7 @@ use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
 use shared::database::queries::{filter, update};
+use shared::database::user::session::UserSessionId;
 use shared::database::user::FullUser;
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
@@ -15,7 +16,8 @@ use crate::transactions::{TransactionError, TransactionResult, TransactionSessio
 pub async fn emote_update(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
-	actor: &FullUser,
+	auth_session_id: Option<UserSessionId>,
+	authed_user: &FullUser,
 	emote_set: &EmoteSet,
 	emote_id: EmoteId,
 	name: Option<String>,
@@ -90,7 +92,8 @@ pub async fn emote_update(
 		.map_err(TransactionError::custom)?;
 
 	tx.register_event(InternalEvent {
-		actor: Some(actor.clone()),
+		actor: Some(authed_user.clone()),
+		session_id: auth_session_id,
 		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::RenameEmote {

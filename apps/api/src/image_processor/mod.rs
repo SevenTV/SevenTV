@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -97,22 +98,22 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		// handle event
 		match event_callback.event.context("missing event")? {
 			event_callback::Event::Success(event) => {
-				if let Err(err) = handle_success(&global, subject, &event).await {
+				if let Err(err) = handle_success(&global, subject, &event, &event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle success event");
 				}
 			}
 			event_callback::Event::Fail(event) => {
-				if let Err(err) = handle_fail(&global, subject, &event).await {
+				if let Err(err) = handle_fail(&global, subject, &event, &event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle fail event");
 				}
 			}
 			event_callback::Event::Cancel(event) => {
-				if let Err(err) = handle_cancel(&global, subject, &event).await {
+				if let Err(err) = handle_cancel(&global, subject, &event, &event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle cancel event");
 				}
 			}
 			event_callback::Event::Start(event) => {
-				if let Err(err) = handle_start(&global, subject, &event).await {
+				if let Err(err) = handle_start(&global, subject, &event, &event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle start event");
 				}
 			}
@@ -156,23 +157,33 @@ fn event_to_image_set(event: &event_callback::Success) -> anyhow::Result<ImageSe
 	})
 }
 
-async fn handle_success(global: &Arc<Global>, subject: Subject, event: &event_callback::Success) -> anyhow::Result<()> {
+async fn handle_success(
+	global: &Arc<Global>,
+	subject: Subject,
+	event: &event_callback::Success,
+	metadata: &HashMap<String, String>,
+) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
-			Subject::Emote(id) => emote::handle_success(tx, id, event).await,
-			Subject::ProfilePicture(id) => profile_picture::handle_success(tx, id, event).await,
-			Subject::PaintLayer(id, layer_id) => paint_layer::handle_success(tx, id, layer_id, event).await,
-			Subject::Badge(id) => badge::handle_success(tx, id, event).await,
+			Subject::Emote(id) => emote::handle_success(tx, global, id, event, metadata).await,
+			Subject::ProfilePicture(id) => profile_picture::handle_success(tx, global, id, event).await,
+			Subject::PaintLayer(id, layer_id) => paint_layer::handle_success(tx, global, id, layer_id, event).await,
+			Subject::Badge(id) => badge::handle_success(tx, global, id, event).await,
 		}
 	})
 	.await
 	.context("transaction")
 }
 
-async fn handle_fail(global: &Arc<Global>, subject: Subject, event: &event_callback::Fail) -> anyhow::Result<()> {
+async fn handle_fail(
+	global: &Arc<Global>,
+	subject: Subject,
+	event: &event_callback::Fail,
+	_metadata: &HashMap<String, String>,
+) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
-			Subject::Emote(id) => emote::handle_fail(tx, id, event).await,
+			Subject::Emote(id) => emote::handle_fail(tx, global, id, event).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_fail(tx, global, id, event).await,
 			Subject::PaintLayer(id, ..) => paint_layer::handle_fail(tx, global, id, event).await,
 			Subject::Badge(id) => badge::handle_fail(tx, global, id, event).await,
@@ -182,7 +193,12 @@ async fn handle_fail(global: &Arc<Global>, subject: Subject, event: &event_callb
 	.context("transaction")
 }
 
-async fn handle_start(global: &Arc<Global>, subject: Subject, event: &event_callback::Start) -> anyhow::Result<()> {
+async fn handle_start(
+	global: &Arc<Global>,
+	subject: Subject,
+	event: &event_callback::Start,
+	_metadata: &HashMap<String, String>,
+) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
 			Subject::Emote(id) => emote::handle_start(tx, global, id, event).await,
@@ -195,7 +211,12 @@ async fn handle_start(global: &Arc<Global>, subject: Subject, event: &event_call
 	.context("transaction")
 }
 
-async fn handle_cancel(global: &Arc<Global>, subject: Subject, event: &event_callback::Cancel) -> anyhow::Result<()> {
+async fn handle_cancel(
+	global: &Arc<Global>,
+	subject: Subject,
+	event: &event_callback::Cancel,
+	_metadata: &HashMap<String, String>,
+) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
 			Subject::Emote(id) => emote::handle_cancel(tx, global, id, event).await,

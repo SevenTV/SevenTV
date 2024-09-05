@@ -6,7 +6,7 @@ use shared::typesense::types::TypesenseCollection;
 use typesense_codegen::apis::documents_api::{ImportDocumentsError, IndexDocumentError};
 use typesense_codegen::models::ImportDocumentsImportDocumentsParametersParameter;
 
-pub struct TypesenseInsert<T: TypesenseCollection + serde::Serialize + 'static> {
+pub struct TypesenseInsert<T> {
 	client: typesense_codegen::apis::configuration::Configuration,
 	config: BatcherConfig,
 	_phantom: std::marker::PhantomData<T>,

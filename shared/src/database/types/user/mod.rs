@@ -25,16 +25,17 @@ use crate::database::{Id, MongoCollection};
 
 pub type UserId = Id<User>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "users")]
 #[mongo(index(fields("connections.platform" = 1, "connections.platform_id" = 1), unique, sparse))]
 #[mongo(index(fields("connections.platform" = 1, "connections.platform_username" = 1)))]
-#[mongo(index(fields("cached_active_emotes" = 1)))]
-#[mongo(index(fields("cached_entitlements" = 1)))]
+#[mongo(index(fields("cached.active_emotes" = 1)))]
+#[mongo(index(fields("cached.entitlements" = 1)))]
 #[mongo(index(fields("style.active_emote_set_id" = 1)))]
 #[mongo(index(fields("paypal_sub_id" = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::user::User")]
 #[serde(deny_unknown_fields)]
 pub struct User {
 	#[mongo(id)]
@@ -55,15 +56,22 @@ pub struct User {
 	pub stripe_customer_id: Option<CustomerId>,
 	/// The PayPal subscription ID for this user, if any
 	pub paypal_sub_id: Option<String>,
-	pub cached_role_rank: i32,
-	#[serde(default)]
-	pub cached_entitlements: Vec<EntitlementEdgeKind>,
-	#[serde(default)]
-	pub cached_active_emotes: Vec<EmoteId>,
+	pub cached: UserCached,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct UserCached {
+	#[serde(default)]
+	pub entitlements: Vec<EntitlementEdgeKind>,
+	#[serde(default)]
+	pub active_emotes: Vec<EmoteId>,
+	pub emote_set_id: Option<EmoteSetId>,
+	pub role_rank: i32,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
@@ -94,7 +102,7 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 		.chain(profile_picture::collections())
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FullUser {
 	pub user: User,
 	pub computed: UserComputed,

@@ -8,6 +8,7 @@ use axum::response::Response;
 use axum::routing::get;
 use axum::Router;
 use hyper::Method;
+use middleware::ip::IpMiddleware;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use tower::ServiceBuilder;
 use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
@@ -109,6 +110,7 @@ fn routes(global: Arc<Global>) -> Router {
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
 				.layer(PropagateRequestIdLayer::x_request_id())
+				.layer(IpMiddleware)
 				.layer(CookieMiddleware)
 				.layer(cors_layer(&global)),
 		)

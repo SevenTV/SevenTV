@@ -4,10 +4,12 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use scuffle_foundations::batcher::dataloader::DataLoader;
-use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_foundations::batcher::{Batcher, BatcherConfig};
 use scuffle_foundations::telemetry::server::HealthCheck;
+use shared::clickhouse::emote_stat::EmoteStat;
 use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
 
+use crate::batcher::clickhouse::ClickhouseInsert;
 use crate::batcher::updater::MongoUpdater;
 use crate::batcher::CollectionBatcher;
 use crate::config::Config;
@@ -19,31 +21,33 @@ pub struct Global {
 	pub database: mongodb::Database,
 	pub config: Config,
 	pub typesense: typesense_codegen::apis::configuration::Configuration,
-	pub event_batcher: CollectionBatcher<mongo::StoredEvent, typesense::Event>, // 1
-	pub user_batcher: CollectionBatcher<mongo::User, typesense::User>,
-	pub automod_rule_batcher: CollectionBatcher<mongo::AutomodRule, typesense::AutomodRule>, // 2
-	pub badge_batcher: CollectionBatcher<mongo::Badge, typesense::Badge>,
-	pub emote_batcher: CollectionBatcher<mongo::Emote, typesense::Emote>,
-	pub emote_moderation_request_batcher:
-		CollectionBatcher<mongo::EmoteModerationRequest, typesense::EmoteModerationRequest>,
-	pub emote_set_batcher: CollectionBatcher<mongo::EmoteSet, typesense::EmoteSet>,
-	pub page_batcher: CollectionBatcher<mongo::Page, typesense::Page>,
-	pub paint_batcher: CollectionBatcher<mongo::Paint, typesense::Paint>,
-	pub role_batcher: CollectionBatcher<mongo::Role, typesense::Role>,
-	pub ticket_batcher: CollectionBatcher<mongo::Ticket, typesense::Ticket>,
-	pub ticket_message_batcher: CollectionBatcher<mongo::TicketMessage, typesense::TicketMessage>,
-	pub redeem_code_batcher: CollectionBatcher<mongo::RedeemCode, typesense::RedeemCode>,
-	pub special_event_batcher: CollectionBatcher<mongo::SpecialEvent, typesense::SpecialEvent>,
-	pub invoice_batcher: CollectionBatcher<mongo::Invoice, typesense::Invoice>,
-	pub product_batcher: CollectionBatcher<mongo::Product, typesense::Product>,
-	pub subscription_period_batcher: CollectionBatcher<mongo::SubscriptionPeriod, typesense::SubscriptionPeriod>,
-	pub user_ban_template_batcher: CollectionBatcher<mongo::UserBanTemplate, typesense::UserBanTemplate>,
-	pub user_ban_batcher: CollectionBatcher<mongo::UserBan, typesense::UserBan>,
-	pub user_editor_batcher: CollectionBatcher<mongo::UserEditor, typesense::UserEditor>,
-	pub user_relation_batcher: CollectionBatcher<mongo::UserRelation, typesense::UserRelation>,
-	pub entitlement_group_batcher: CollectionBatcher<mongo::EntitlementGroup, typesense::EntitlementGroup>, // 7
+	pub event_batcher: CollectionBatcher<mongo::StoredEvent>,
+	pub user_batcher: CollectionBatcher<mongo::User>,
+	pub automod_rule_batcher: CollectionBatcher<mongo::AutomodRule>,
+	pub badge_batcher: CollectionBatcher<mongo::Badge>,
+	pub emote_batcher: CollectionBatcher<mongo::Emote>,
+	pub emote_moderation_request_batcher: CollectionBatcher<mongo::EmoteModerationRequest>,
+	pub emote_set_batcher: CollectionBatcher<mongo::EmoteSet>,
+	pub page_batcher: CollectionBatcher<mongo::Page>,
+	pub paint_batcher: CollectionBatcher<mongo::Paint>,
+	pub role_batcher: CollectionBatcher<mongo::Role>,
+	pub ticket_batcher: CollectionBatcher<mongo::Ticket>,
+	pub ticket_message_batcher: CollectionBatcher<mongo::TicketMessage>,
+	pub redeem_code_batcher: CollectionBatcher<mongo::RedeemCode>,
+	pub special_event_batcher: CollectionBatcher<mongo::SpecialEvent>,
+	pub invoice_batcher: CollectionBatcher<mongo::Invoice>,
+	pub product_batcher: CollectionBatcher<mongo::Product>,
+	pub subscription_period_batcher: CollectionBatcher<mongo::SubscriptionPeriod>,
+	pub user_ban_template_batcher: CollectionBatcher<mongo::UserBanTemplate>,
+	pub user_ban_batcher: CollectionBatcher<mongo::UserBan>,
+	pub user_editor_batcher: CollectionBatcher<mongo::UserEditor>,
+	pub user_relation_batcher: CollectionBatcher<mongo::UserRelation>,
+	pub entitlement_group_batcher: CollectionBatcher<mongo::EntitlementGroup>,
 	pub entitlement_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
 	pub entitlement_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
+	pub emote_stats_batcher: Batcher<ClickhouseInsert<EmoteStat>>,
+	pub subscription_product_batcher: CollectionBatcher<mongo::SubscriptionProduct>,
+	pub subscription_batcher: CollectionBatcher<mongo::Subscription>,
 	pub updater: MongoUpdater,
 	is_healthy: AtomicBool,
 	request_count: AtomicUsize,
@@ -81,6 +85,8 @@ impl Global {
 			..Default::default()
 		};
 
+		let clickhouse = shared::clickhouse::init_clickhouse(&config.clickhouse).await?;
+
 		Ok(Self {
 			nats,
 			jetstream,
@@ -108,6 +114,8 @@ impl Global {
 			entitlement_group_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
 			entitlement_inbound_loader: EntitlementEdgeInboundLoader::new(database.clone()),
 			entitlement_outbound_loader: EntitlementEdgeOutboundLoader::new(database.clone()),
+			subscription_product_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
+			subscription_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
 			updater: MongoUpdater::new(
 				database.clone(),
 				BatcherConfig {
@@ -123,6 +131,7 @@ impl Global {
 			request_count: AtomicUsize::new(0),
 			health_state: tokio::sync::Mutex::new(HealthCheckState::default()),
 			semaphore: Arc::new(tokio::sync::Semaphore::new(config.triggers.typesense_concurrency.max(1))),
+			emote_stats_batcher: ClickhouseInsert::new(clickhouse),
 			config,
 		})
 	}

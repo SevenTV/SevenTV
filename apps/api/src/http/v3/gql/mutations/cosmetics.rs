@@ -12,10 +12,10 @@ use shared::database::MongoCollection;
 use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape};
 use shared::old_types::object_id::GqlObjectId;
 
-use crate::http::v3::validators::NameValidator;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::validators::NameValidator;
 
 #[derive(Default)]
 pub struct CosmeticsMutation;

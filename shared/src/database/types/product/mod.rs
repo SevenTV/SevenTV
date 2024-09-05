@@ -178,6 +178,7 @@ pub struct TimePeriod {
 #[mongo(collection_name = "products")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::product::Product")]
 #[serde(deny_unknown_fields)]
 pub struct Product {
 	#[mongo(id)]
@@ -204,12 +205,15 @@ pub type SubscriptionProductId = Id<SubscriptionProduct>;
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(index(fields(kind = 1), unique))]
 #[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields("benifits.id" = 1)))]
+#[mongo(search = "crate::typesense::types::product::SubscriptionProduct")]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionProduct {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionProductId,
 	pub variants: Vec<SubscriptionProductVariant>,
+	pub default_variant_idx: i32,
 	pub name: String,
 	pub description: Option<String>,
 	pub default_currency: stripe::Currency,

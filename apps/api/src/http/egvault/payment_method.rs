@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use axum::extract::{Query, State};
-use axum::Json;
+use axum::{Extension, Json};
 
-use super::{create_checkout_session_params, find_or_create_customer};
+use super::find_or_create_customer;
+use super::metadata::{CheckoutSessionMetadata, StripeMetadata};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
@@ -27,6 +28,7 @@ pub async fn payment_method(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
 	Query(_query): Query<PaymentMethodQuery>,
+	Extension(ip): Extension<std::net::IpAddr>,
 	auth_session: Option<AuthSession>,
 ) -> Result<Json<PaymentMethodResponse>, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
@@ -46,18 +48,35 @@ pub async fn payment_method(
 		None => find_or_create_customer(&global, auth_session.user_id(), None).await?,
 	};
 
-	let mut params = create_checkout_session_params(&global, customer_id, None).await;
-
-	// TODO: make it depend on the user's country
-	params.currency = Some(stripe::Currency::EUR);
-
-	params.mode = Some(stripe::CheckoutSessionMode::Setup);
-
 	let success_url = format!("{}/subscribe", global.config.api.website_origin);
-	params.success_url = Some(&success_url);
-
 	let cancel_url = format!("{}/subscribe", global.config.api.website_origin);
-	params.cancel_url = Some(&cancel_url);
+
+	let mut currency = stripe::Currency::EUR;
+
+	if let Some(country_code) = global.geoip().and_then(|g| g.lookup(ip)).and_then(|c| c.iso_code) {
+		if let Ok(Some(global)) = global.global_config_loader.load(()).await {
+			if let Some(currency_override) = global.country_currency_overrides.get(country_code) {
+				currency = *currency_override;
+			}
+		}
+	}
+
+	let params = stripe::CreateCheckoutSession {
+		line_items: None,
+		mode: Some(stripe::CheckoutSessionMode::Setup),
+		customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
+			address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
+			..Default::default()
+		}),
+		currency: Some(currency),
+		customer: Some(customer_id.into()),
+		// expire the session 4 hours from now so we can restore unused redeem codes in the checkout.session.expired handler
+		expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),
+		success_url: Some(&success_url),
+		cancel_url: Some(&cancel_url),
+		metadata: Some(CheckoutSessionMetadata::Setup.to_stripe()),
+		..Default::default()
+	};
 
 	let url = stripe::CheckoutSession::create(&global.stripe_client, params)
 		.await

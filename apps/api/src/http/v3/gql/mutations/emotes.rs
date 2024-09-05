@@ -59,14 +59,14 @@ impl EmoteOps {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let user = auth_session.user(global).await?;
+		let authed_user = auth_session.user(global).await?;
 
-		if user.id != self.emote.owner_id && !user.has(EmotePermission::ManageAny) {
+		if authed_user.id != self.emote.owner_id && !authed_user.has(EmotePermission::ManageAny) {
 			let editor = global
 				.user_editor_by_id_loader
 				.load(UserEditorId {
 					user_id: self.emote.owner_id,
-					editor_id: user.id,
+					editor_id: authed_user.id,
 				})
 				.await
 				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
@@ -78,7 +78,7 @@ impl EmoteOps {
 		}
 
 		if params.deleted.is_some_and(|d| d) {
-			if !user.has(EmotePermission::Delete) {
+			if !authed_user.has(EmotePermission::Delete) {
 				return Err(ApiError::FORBIDDEN);
 			}
 
@@ -101,7 +101,8 @@ impl EmoteOps {
 					.map_err(TransactionError::custom)?;
 
 				tx.register_event(InternalEvent {
-					actor: Some(user.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::Emote {
 						after: emote.clone(),
 						data: StoredEventEmoteData::Delete,
@@ -122,7 +123,7 @@ impl EmoteOps {
 				}
 			}
 		} else {
-			if !user.has(EmotePermission::Edit) {
+			if !authed_user.has(EmotePermission::Edit) {
 				return Err(ApiError::FORBIDDEN);
 			}
 
@@ -148,7 +149,7 @@ impl EmoteOps {
 				}
 
 				// changing visibility and owner requires manage any perms
-				let new_owner_id = if user.has(EmotePermission::ManageAny) {
+				let new_owner_id = if authed_user.has(EmotePermission::ManageAny) {
 					if let Some(listed) = params.listed {
 						if listed {
 							flags |= EmoteFlags::PublicListed;
@@ -208,7 +209,8 @@ impl EmoteOps {
 
 				if let Some(new_default_name) = new_default_name {
 					tx.register_event(InternalEvent {
-						actor: Some(user.clone()),
+						actor: Some(authed_user.clone()),
+						session_id: auth_session.id(),
 						data: InternalEventData::Emote {
 							after: emote.clone(),
 							data: StoredEventEmoteData::ChangeName {
@@ -222,7 +224,8 @@ impl EmoteOps {
 
 				if let Some(new_owner_id) = new_owner_id {
 					tx.register_event(InternalEvent {
-						actor: Some(user.clone()),
+						actor: Some(authed_user.clone()),
+						session_id: auth_session.id(),
 						data: InternalEventData::Emote {
 							after: emote.clone(),
 							data: StoredEventEmoteData::ChangeOwner {
@@ -236,7 +239,8 @@ impl EmoteOps {
 
 				if let Some(new_flags) = new_flags {
 					tx.register_event(InternalEvent {
-						actor: Some(user.clone()),
+						actor: Some(authed_user.clone()),
+						session_id: auth_session.id(),
 						data: InternalEventData::Emote {
 							after: emote.clone(),
 							data: StoredEventEmoteData::ChangeFlags {
@@ -250,7 +254,8 @@ impl EmoteOps {
 
 				if let Some(new_tags) = params.tags {
 					tx.register_event(InternalEvent {
-						actor: Some(user.clone()),
+						actor: Some(authed_user.clone()),
+						session_id: auth_session.id(),
 						data: InternalEventData::Emote {
 							after: emote.clone(),
 							data: StoredEventEmoteData::ChangeTags {
@@ -287,6 +292,7 @@ impl EmoteOps {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+		let authed_user = auth_session.user(global).await?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let emote = tx
@@ -315,7 +321,8 @@ impl EmoteOps {
 				.map_err(TransactionError::custom)?;
 
 			tx.register_event(InternalEvent {
-				actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+				actor: Some(authed_user.clone()),
+				session_id: auth_session.id(),
 				data: InternalEventData::Emote {
 					after: emote.clone(),
 					data: StoredEventEmoteData::Merge {

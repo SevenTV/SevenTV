@@ -19,8 +19,6 @@ pub struct UserProfilePicture {
 	pub image_set: ImageSet,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {

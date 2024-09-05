@@ -45,10 +45,11 @@ shared = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
 bitmask-enum = "2"
 mongodb = "3.0"
-bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
+bson = { version = "2.11", features = ["chrono-0_4", "uuid-1", "time-0_3"] }
 chrono = "0.4.38"
 serde_json = "1.0.118"
-clickhouse = "0.12.2"
+clickhouse = "0.12"
+rustls = { version = "0.23", features = ["aws-lc-rs"] }
 
 sailfish = "=0.8.3"
 uuid = "1.9.1"
