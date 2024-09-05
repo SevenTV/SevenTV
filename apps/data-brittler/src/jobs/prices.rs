@@ -119,6 +119,7 @@ impl Job for PricesJob {
 			self.subscription_product.default_currency = currency;
 			self.subscription_product.variants.push(SubscriptionProductVariant {
 				id: price_id.into(),
+				gift_id: None,
 				kind,
 				currency_prices,
 				paypal_id,

@@ -9,7 +9,6 @@ use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod
 use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
-use shared::database::MongoCollection;
 
 use super::{create_checkout_session_params, find_or_create_customer};
 use crate::global::Global;

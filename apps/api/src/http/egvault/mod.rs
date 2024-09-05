@@ -96,25 +96,6 @@ async fn find_customer(global: &Arc<Global>, user_id: UserId) -> Result<Option<C
 
 	let customer_id = customer.data.into_iter().next().map(|c| c.id.into());
 
-	User::collection(&global.db)
-		.update_one(
-			filter::filter! {
-				User {
-					#[query(rename = "_id")]
-					id: user_id,
-				}
-			},
-			update::update! {
-				#[query(set)]
-				User {
-					stripe_customer_id: &customer_id,
-					updated_at: chrono::Utc::now(),
-				}
-			},
-		)
-		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
 	Ok(customer_id)
 }
 
@@ -123,8 +104,8 @@ async fn find_or_create_customer(
 	user_id: UserId,
 	prefill: Option<Prefill>,
 ) -> Result<CustomerId, ApiError> {
-	match find_customer(&global, user_id).await? {
-		Some(id) => Ok(id),
+	let id = match find_customer(&global, user_id).await? {
+		Some(id) => id,
 		None => {
 			// no customer found, create one
 
@@ -145,7 +126,28 @@ async fn find_or_create_customer(
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-			Ok(customer.id.into())
+			customer.id.into()
 		}
-	}
+	};
+
+	User::collection(&global.db)
+		.update_one(
+			filter::filter! {
+				User {
+					#[query(rename = "_id")]
+					id: user_id,
+				}
+			},
+			update::update! {
+				#[query(set)]
+				User {
+					stripe_customer_id: &id,
+					updated_at: chrono::Utc::now(),
+				}
+			},
+		)
+		.await
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+	Ok(id)
 }

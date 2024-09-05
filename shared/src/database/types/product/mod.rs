@@ -223,6 +223,7 @@ pub struct SubscriptionProduct {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SubscriptionProductVariant {
 	pub id: ProductId,
+	pub gift_id: Option<ProductId>,
 	pub paypal_id: Option<String>,
 	pub kind: SubscriptionProductKind,
 	pub currency_prices: HashMap<stripe::Currency, i32>,

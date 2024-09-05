@@ -101,15 +101,22 @@ pub async fn subscribe(
 		None => find_or_create_customer(&global, auth_session.user_id(), Some(body.prefill)).await?,
 	};
 
-	let paying_user = auth_session.user_id();
+	let product_id = if query.gift_for.is_some() {
+		variant
+			.gift_id
+			.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "this product can't be gifted"))?
+	} else {
+		variant.id
+	};
 
-	let mut params =
-		create_checkout_session_params(&global, customer_id, Some(&variant.id)).await;
+	let mut params = create_checkout_session_params(&global, customer_id, Some(&product_id)).await;
 
 	params.automatic_tax = Some(stripe::CreateCheckoutSessionAutomaticTax {
 		enabled: true,
 		..Default::default()
 	});
+
+	let paying_user = auth_session.user_id();
 
 	let receiving_user = if let Some(gift_for) = query.gift_for {
 		let receiving_user = global
