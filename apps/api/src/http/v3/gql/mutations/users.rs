@@ -152,8 +152,8 @@ impl UserOps {
 					data: InternalEventData::User {
 						after: user.clone(),
 						data: InternalEventUserData::ChangeActiveEmoteSet {
-							old,
-							new: Some(emote_set),
+							old: old.map(Box::new),
+							new: Some(Box::new(emote_set)),
 						},
 					},
 					timestamp: chrono::Utc::now(),
@@ -244,7 +244,7 @@ impl UserOps {
 					if let Some(editor) = res {
 						let editor_user = global
 							.user_loader
-							.load_fast(&global, editor.id.editor_id)
+							.load_fast(global, editor.id.editor_id)
 							.await
 							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
@@ -254,7 +254,7 @@ impl UserOps {
 							data: InternalEventData::UserEditor {
 								after: editor,
 								data: InternalEventUserEditorData::RemoveEditor {
-									editor: editor_user.user,
+									editor: Box::new(editor_user.user),
 								},
 							},
 							timestamp: chrono::Utc::now(),
@@ -286,7 +286,7 @@ impl UserOps {
 								#[query(set)]
 								DbUserEditor {
 									#[query(serde)]
-									permissions: permissions.clone(),
+									permissions,
 									updated_at: chrono::Utc::now(),
 								}
 							},
@@ -300,7 +300,7 @@ impl UserOps {
 						// updated
 						let editor_user = global
 							.user_loader
-							.load_fast(&global, editor.id.editor_id)
+							.load_fast(global, editor.id.editor_id)
 							.await
 							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
@@ -311,7 +311,7 @@ impl UserOps {
 								after: editor,
 								data: InternalEventUserEditorData::EditPermissions {
 									old: old_permissions.unwrap_or_default(),
-									editor: editor_user.user,
+									editor: Box::new(editor_user.user),
 								},
 							},
 							timestamp: chrono::Utc::now(),
@@ -326,7 +326,7 @@ impl UserOps {
 							id: editor_id,
 							state: UserEditorState::Pending,
 							notes: None,
-							permissions: permissions.clone(),
+							permissions,
 							added_by_id: auth_session.user_id(),
 							added_at: chrono::Utc::now(),
 							updated_at: chrono::Utc::now(),
@@ -335,7 +335,7 @@ impl UserOps {
 
 						let editor_user = global
 							.user_loader
-							.load_fast(&global, editor.id.editor_id)
+							.load_fast(global, editor.id.editor_id)
 							.await
 							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
@@ -347,7 +347,7 @@ impl UserOps {
 							data: InternalEventData::UserEditor {
 								after: editor,
 								data: InternalEventUserEditorData::AddEditor {
-									editor: editor_user.user,
+									editor: Box::new(editor_user.user),
 								},
 							},
 							timestamp: chrono::Utc::now(),
@@ -467,7 +467,10 @@ impl UserOps {
 						actor: Some(authed_user.clone()),
 						data: InternalEventData::User {
 							after: user.user.clone(),
-							data: InternalEventUserData::ChangeActiveBadge { old, new: Some(new) },
+							data: InternalEventUserData::ChangeActiveBadge {
+								old: old.map(Box::new),
+								new: Some(Box::new(new)),
+							},
 						},
 						timestamp: chrono::Utc::now(),
 					})?;
@@ -574,8 +577,8 @@ impl UserOps {
 								EntitlementEdge {
 									#[query(serde)]
 									id: EntitlementEdgeId {
-										from: EntitlementEdgeKind::User { user_id: self.id.id() }.into(),
-										to: EntitlementEdgeKind::Role { role_id: role_id.id() }.into(),
+										from: EntitlementEdgeKind::User { user_id: self.id.id() },
+										to: EntitlementEdgeKind::Role { role_id: role_id.id() },
 										managed_by: None,
 									}
 								}

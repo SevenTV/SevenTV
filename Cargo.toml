@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-    "apps/*", "macros",
+    "apps/*",
+    "macros",
     "shared",
 ]
 

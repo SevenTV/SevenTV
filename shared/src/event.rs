@@ -221,7 +221,7 @@ impl From<InternalEvent> for StoredEvent {
 					}
 					InternalEventUserEditorData::EditPermissions { old, .. } => StoredEventUserEditorData::EditPermissions {
 						new: after.permissions,
-						old: old,
+						old,
 					},
 				},
 			},
@@ -290,16 +290,16 @@ pub enum InternalEventEmoteSetData {
 		new: Option<i32>,
 	},
 	AddEmote {
-		emote: Emote,
+		emote: Box<Emote>,
 		emote_set_emote: EmoteSetEmote,
 	},
 	RemoveEmote {
-		emote: Emote,
+		emote: Box<Emote>,
 		emote_set_emote: EmoteSetEmote,
 		index: usize,
 	},
 	RenameEmote {
-		emote: Emote,
+		emote: Box<Emote>,
 		emote_set_emote: EmoteSetEmote,
 		old_alias: String,
 	},
@@ -328,7 +328,7 @@ impl From<InternalEventEmoteSetData> for StoredEventEmoteSetData {
 				old_alias,
 			} => StoredEventEmoteSetData::RenameEmote {
 				emote_id: emote.id,
-				old_alias: old_alias,
+				old_alias,
 				new_alias: emote_set_emote.alias,
 			},
 			InternalEventEmoteSetData::Delete => StoredEventEmoteSetData::Delete,
@@ -340,11 +340,24 @@ impl From<InternalEventEmoteSetData> for StoredEventEmoteSetData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventUserData {
 	Create,
-	ChangeActivePaint { old: Option<Paint>, new: Option<Paint> },
-	ChangeActiveBadge { old: Option<Badge>, new: Option<Badge> },
-	ChangeActiveEmoteSet { old: Option<EmoteSet>, new: Option<EmoteSet> },
-	AddConnection { connection: UserConnection },
-	RemoveConnection { connection: UserConnection },
+	ChangeActivePaint {
+		old: Option<Box<Paint>>,
+		new: Option<Box<Paint>>,
+	},
+	ChangeActiveBadge {
+		old: Option<Box<Badge>>,
+		new: Option<Box<Badge>>,
+	},
+	ChangeActiveEmoteSet {
+		old: Option<Box<EmoteSet>>,
+		new: Option<Box<EmoteSet>>,
+	},
+	AddConnection {
+		connection: UserConnection,
+	},
+	RemoveConnection {
+		connection: UserConnection,
+	},
 	Merge,
 	Delete,
 }
@@ -380,17 +393,17 @@ impl From<InternalEventUserData> for StoredEventUserData {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventUserEditorData {
-	AddEditor { editor: User },
-	RemoveEditor { editor: User },
-	EditPermissions { editor: User, old: UserEditorPermissions },
+	AddEditor { editor: Box<User> },
+	RemoveEditor { editor: Box<User> },
+	EditPermissions { editor: Box<User>, old: UserEditorPermissions },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventTicketData {
 	Create,
-	AddMember { member: User },
-	RemoveMember { member: User },
+	AddMember { member: Box<User> },
+	RemoveMember { member: Box<User> },
 	ChangeOpen { old: bool, new: bool },
 	ChangePriority { old: TicketPriority, new: TicketPriority },
 }
@@ -519,7 +532,7 @@ impl InternalEventPayload {
 
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
-							Some(EmotePartialModel::from_db(emote, None, cdn_base_url)),
+							Some(EmotePartialModel::from_db(*emote, None, cdn_base_url)),
 						);
 						let active_emote = serde_json::to_value(active_emote)?;
 
@@ -542,7 +555,7 @@ impl InternalEventPayload {
 					} => {
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
-							Some(EmotePartialModel::from_db(emote, None, cdn_base_url)),
+							Some(EmotePartialModel::from_db(*emote, None, cdn_base_url)),
 						);
 						let active_emote = serde_json::to_value(active_emote)?;
 
@@ -571,7 +584,7 @@ impl InternalEventPayload {
 
 						let new_active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
-							Some(EmotePartialModel::from_db(emote, None, cdn_base_url)),
+							Some(EmotePartialModel::from_db(*emote, None, cdn_base_url)),
 						);
 
 						let mut old_active_emote = new_active_emote.clone();
@@ -674,8 +687,8 @@ impl InternalEventPayload {
 						// we have to emit the event for every connection since you could have different
 						// sets for every connection before
 
-						let old_set = old.map(|set| EmoteSetModel::from_db(set, std::iter::empty(), None));
-						let new_set = new.map(|set| EmoteSetModel::from_db(set, std::iter::empty(), None));
+						let old_set = old.map(|set| EmoteSetModel::from_db(*set, std::iter::empty(), None));
+						let new_set = new.map(|set| EmoteSetModel::from_db(*set, std::iter::empty(), None));
 
 						for i in 0..after.connections.len() {
 							let value = vec![
@@ -710,28 +723,26 @@ impl InternalEventPayload {
 						data: InternalEventUserData::ChangeActivePaint { old, new },
 						..
 					} => {
-						let mut changes = vec![];
-
-						changes.push(ChangeField {
-							key: "paint".to_string(),
-							ty: ChangeFieldType::Object,
-							value: serde_json::to_value(&new)?,
-							old_value: serde_json::to_value(&old)?,
-							..Default::default()
-						});
-						changes.push(ChangeField {
-							key: "paint_id".to_string(),
-							ty: ChangeFieldType::String,
-							value: new.map(|p| p.id.to_string()).into(),
-							old_value: old.map(|p| p.id.to_string()).into(),
-							..Default::default()
-						});
-
 						updated.push(ChangeField {
 							key: "style".to_string(),
 							ty: ChangeFieldType::Object,
 							nested: true,
-							value: serde_json::to_value(changes)?,
+							value: serde_json::to_value([
+								ChangeField {
+									key: "paint".to_string(),
+									ty: ChangeFieldType::Object,
+									value: serde_json::to_value(&new)?,
+									old_value: serde_json::to_value(&old)?,
+									..Default::default()
+								},
+								ChangeField {
+									key: "paint_id".to_string(),
+									ty: ChangeFieldType::String,
+									value: new.map(|p| p.id.to_string()).into(),
+									old_value: old.map(|p| p.id.to_string()).into(),
+									..Default::default()
+								},
+							])?,
 							..Default::default()
 						});
 					}
@@ -739,28 +750,26 @@ impl InternalEventPayload {
 						data: InternalEventUserData::ChangeActiveBadge { old, new },
 						..
 					} => {
-						let mut changes = vec![];
-
-						changes.push(ChangeField {
-							key: "badge".to_string(),
-							ty: ChangeFieldType::Object,
-							value: serde_json::to_value(&new)?,
-							old_value: serde_json::to_value(&old)?,
-							..Default::default()
-						});
-						changes.push(ChangeField {
-							key: "badge_id".to_string(),
-							ty: ChangeFieldType::String,
-							value: new.map(|b| b.id.to_string()).into(),
-							old_value: old.map(|b| b.id.to_string()).into(),
-							..Default::default()
-						});
-
 						updated.push(ChangeField {
 							key: "style".to_string(),
 							ty: ChangeFieldType::Object,
 							nested: true,
-							value: serde_json::to_value(changes)?,
+							value: serde_json::to_value([
+								ChangeField {
+									key: "badge".to_string(),
+									ty: ChangeFieldType::Object,
+									value: serde_json::to_value(&new)?,
+									old_value: serde_json::to_value(&old)?,
+									..Default::default()
+								},
+								ChangeField {
+									key: "badge_id".to_string(),
+									ty: ChangeFieldType::String,
+									value: new.map(|b| b.id.to_string()).into(),
+									old_value: old.map(|b| b.id.to_string()).into(),
+									..Default::default()
+								},
+							])?,
 							..Default::default()
 						});
 					}

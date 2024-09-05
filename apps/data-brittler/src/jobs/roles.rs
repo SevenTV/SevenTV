@@ -44,7 +44,7 @@ impl Job for RolesJob {
 
 		let id = role.id.into();
 
-		let mut rank = role.position.try_into().unwrap_or(i32::MAX);
+		let mut rank = role.position;
 
 		while !self.ranks.insert(rank) {
 			rank += 1;

@@ -103,7 +103,7 @@ pub struct FullUser {
 
 #[derive(Debug, Clone)]
 pub enum FullUserRef<'a> {
-	Owned(FullUser),
+	Owned(Box<FullUser>),
 	Ref(&'a FullUser),
 }
 

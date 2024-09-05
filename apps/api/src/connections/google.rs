@@ -27,15 +27,15 @@ pub struct YoutubeUserSnippet {
 #[derive(Debug, Deserialize)]
 pub struct YoutubeUserThumbnails {
 	pub default: YoutubeUserThumbnail,
-	pub medium: YoutubeUserThumbnail,
-	pub high: YoutubeUserThumbnail,
+	// pub medium: YoutubeUserThumbnail,
+	// pub high: YoutubeUserThumbnail,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct YoutubeUserThumbnail {
 	pub url: String,
-	pub width: u64,
-	pub height: u64,
+	// pub width: u64,
+	// pub height: u64,
 }
 
 impl From<YoutubeUserData> for PlatformUserData {

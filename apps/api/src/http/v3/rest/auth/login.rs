@@ -227,7 +227,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 				.map_err(TransactionError::custom)?;
 
 			cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
-			cookies.remove(&global, CSRF_COOKIE);
+			cookies.remove(global, CSRF_COOKIE);
 
 			Ok(format!(
 				"{}/auth/callback?platform={}&token={}",

@@ -61,7 +61,7 @@ pub async fn handle_success(
 		data: InternalEventData::Paint {
 			after,
 			data: StoredEventPaintData::Process {
-				event: ImageProcessorEvent::Success(Some(event.clone())),
+				event: ImageProcessorEvent::Success(Some(event.clone().into())),
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -115,7 +115,7 @@ pub async fn handle_start(
 		data: InternalEventData::Paint {
 			after,
 			data: StoredEventPaintData::Process {
-				event: ImageProcessorEvent::Start(event.clone()),
+				event: ImageProcessorEvent::Start(*event),
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -142,7 +142,7 @@ pub async fn handle_cancel(
 		data: InternalEventData::Paint {
 			after,
 			data: StoredEventPaintData::Process {
-				event: ImageProcessorEvent::Cancel(event.clone()),
+				event: ImageProcessorEvent::Cancel(*event),
 			},
 		},
 		timestamp: chrono::Utc::now(),

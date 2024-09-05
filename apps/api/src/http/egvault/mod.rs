@@ -104,7 +104,7 @@ async fn find_or_create_customer(
 	user_id: UserId,
 	prefill: Option<Prefill>,
 ) -> Result<CustomerId, ApiError> {
-	let id = match find_customer(&global, user_id).await? {
+	let id = match find_customer(global, user_id).await? {
 		Some(id) => id,
 		None => {
 			// no customer found, create one

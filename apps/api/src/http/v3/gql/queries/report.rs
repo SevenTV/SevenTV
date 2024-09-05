@@ -37,7 +37,7 @@ pub struct Report {
 
 impl Report {
 	pub fn from_db(ticket: Ticket, messages: Vec<TicketMessage>) -> Option<Self> {
-		let Some(TicketTarget::Emote(emote_id)) = ticket.targets.get(0) else {
+		let Some(TicketTarget::Emote(emote_id)) = ticket.targets.first() else {
 			return None;
 		};
 

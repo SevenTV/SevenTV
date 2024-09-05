@@ -216,13 +216,10 @@ async fn setup(
 
 		match_collection! {
 			collection => {
-				crate::types::mongo::DiscountCode,
-				crate::types::mongo::GiftCode,
 				crate::types::mongo::RedeemCode,
 				crate::types::mongo::SpecialEvent,
 				crate::types::mongo::Invoice,
 				crate::types::mongo::Product,
-				crate::types::mongo::Promotion,
 				crate::types::mongo::SubscriptionPeriod,
 				crate::types::mongo::UserBanTemplate,
 				crate::types::mongo::UserBan,
@@ -262,7 +259,7 @@ async fn handle<M: SupportedMongoCollection>(
 	tracing::Span::current().record("coll", &coll);
 	tracing::Span::current().record("operation", operation.as_str());
 
-	let result = handlers::process::<M>(&global, message).await;
+	let result = handlers::process::<M>(global, message).await;
 
 	let status = match &result {
 		Ok(true) => EventStatus::Success,
@@ -294,7 +291,7 @@ async fn handle_message<M: SupportedMongoCollection>(global: &Arc<Global>, messa
 		}
 	};
 
-	let mut handle_fut = handle::<M>(&global, event);
+	let mut handle_fut = handle::<M>(global, event);
 	let mut handle_fut = std::pin::pin!(handle_fut);
 
 	let r = loop {

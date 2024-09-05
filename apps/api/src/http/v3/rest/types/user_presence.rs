@@ -16,9 +16,9 @@ pub struct PresenceModel {
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/user-presence.model.go#L19
 pub enum PresenceKind {
 	#[default]
-	UserPresenceKindUnknown = 0,
-	UserPresenceKindChannel = 1,
-	UserPresenceKindWebPage = 2,
+	Unknown = 0,
+	Channel = 1,
+	WebPage = 2,
 }
 
 #[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]

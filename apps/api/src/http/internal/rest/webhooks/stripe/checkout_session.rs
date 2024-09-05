@@ -10,8 +10,8 @@ use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
 use crate::http::egvault::redeem::grant_entitlements;
+use crate::http::error::ApiError;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn completed(
@@ -109,7 +109,7 @@ pub async fn completed(
 			.get("REDEEM_CODE_ID")
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
-		let redeem_code_id = RedeemCodeId::from_str(&redeem_code_id).map_err(|e| {
+		let redeem_code_id = RedeemCodeId::from_str(redeem_code_id).map_err(|e| {
 			tracing::error!(error = %e, "invalid redeem code id");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
@@ -118,7 +118,7 @@ pub async fn completed(
 			.get("USER_ID")
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
-		let user_id = UserId::from_str(&user_id).map_err(|e| {
+		let user_id = UserId::from_str(user_id).map_err(|e| {
 			tracing::error!(error = %e, "invalid user id");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
@@ -150,7 +150,7 @@ pub async fn completed(
 			.get("USER_ID")
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
-		let receiving_user = UserId::from_str(&receiving_user).map_err(|e| {
+		let receiving_user = UserId::from_str(receiving_user).map_err(|e| {
 			tracing::error!(error = %e, "invalid user id");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
@@ -159,7 +159,7 @@ pub async fn completed(
 			.get("CUSTOMER_ID")
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
-		let paying_user = UserId::from_str(&paying_user).map_err(|e| {
+		let paying_user = UserId::from_str(paying_user).map_err(|e| {
 			tracing::error!(error = %e, "invalid user id");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
@@ -167,7 +167,7 @@ pub async fn completed(
 		let product_id = metadata
 			.get("PRODUCT_ID")
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
-		let product_id = SubscriptionProductId::from_str(&product_id).map_err(|e| {
+		let product_id = SubscriptionProductId::from_str(product_id).map_err(|e| {
 			tracing::error!(error = %e, "invalid product id");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;
@@ -226,7 +226,7 @@ pub async fn expired(
 			.get("REDEEM_CODE_ID")
 			.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
-		let redeem_code_id = RedeemCodeId::from_str(&redeem_code_id).map_err(|e| {
+		let redeem_code_id = RedeemCodeId::from_str(redeem_code_id).map_err(|e| {
 			tracing::error!(error = %e, "invalid redeem code id");
 			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 		})?;

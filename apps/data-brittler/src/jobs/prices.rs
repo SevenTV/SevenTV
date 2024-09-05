@@ -13,7 +13,7 @@ use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
 
-pub const NEW_PRODUCT_ID: &'static str = "01FEVKBBTGRAT7FCY276TNTJ4A";
+pub const NEW_PRODUCT_ID: &str = "01FEVKBBTGRAT7FCY276TNTJ4A";
 
 pub struct PricesJob {
 	global: Arc<Global>,

@@ -11,8 +11,8 @@ pub struct Report {
 	pub subject: String,
 	pub body: String,
 	pub assignee_ids: Vec<ObjectId>,
-	pub last_updated_at: super::DateTime,
-	pub closed_at: Option<super::DateTime>,
+	// pub last_updated_at: super::DateTime,
+	// pub closed_at: Option<super::DateTime>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]

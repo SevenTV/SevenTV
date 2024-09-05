@@ -16,7 +16,7 @@ use shared::database::Id;
 use shared::event_api::payload::Subscribe;
 use shared::event_api::types::{CloseCode, Opcode};
 use shared::event_api::{payload, Message, MessageData, MessagePayload};
-use tokio::time::Instant;
+// use tokio::time::Instant;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 
@@ -59,7 +59,7 @@ async fn handle(
 	}
 
 	// Parse the initial subscriptions from the path.
-	let initial_subs = if let Some(query) = query.as_ref().and_then(|q| q.contains('@').then(|| q)) {
+	let initial_subs = if let Some(query) = query.as_ref().and_then(|q| q.contains('@').then_some(q)) {
 		Some(parser::parse_path_subscriptions(
 			&urlencoding::decode(query).unwrap_or_default(),
 		))
@@ -151,8 +151,8 @@ struct Connection {
 	initial_subs: Option<Vec<payload::Subscribe>>,
 	/// A deduplication cache for dispatch events.
 	dedupe: Dedupe,
-	/// The time that this connection was started.
-	start: Instant,
+	// /// The time that this connection was started.
+	// start: Instant,
 }
 
 /// When the socket is dropped, we need to update the metrics.
@@ -204,7 +204,7 @@ impl Connection {
 			dedupe: Dedupe::new(),
 			_ticket: ticket,
 			global,
-			start: Instant::now(),
+			// start: Instant::now(),
 		}
 	}
 
@@ -216,7 +216,7 @@ impl Connection {
 		match self
 			.send_message(payload::Hello {
 				heartbeat_interval: self.heartbeat_interval.period().as_millis() as u32,
-				session_id: self.id.into(),
+				session_id: self.id,
 				subscription_limit: self.global.config().api.subscription_limit.map(|s| s as i32).unwrap_or(-1),
 				actor: None,
 				instance: Some(payload::HelloInstanceInfo {

@@ -202,7 +202,7 @@ pub async fn completed(
 		Invoice {
 			id: invoice_id.clone(),
 			items: vec![stripe_product_id],
-			customer_id: customer_id.into(),
+			customer_id,
 			user_id: user.id,
 			paypal_payment_id: Some(sale.id.clone()),
 			status,
@@ -235,7 +235,10 @@ pub async fn completed(
 					.unwrap_or_else(chrono::Utc::now),
 				end: next_billing_time,
 				is_trial: false,
-				created_by: SubscriptionPeriodCreatedBy::Invoice { invoice_id, cancel_at_period_end: false },
+				created_by: SubscriptionPeriodCreatedBy::Invoice {
+					invoice_id,
+					cancel_at_period_end: false,
+				},
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
 			},

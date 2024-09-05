@@ -101,7 +101,7 @@ pub async fn created(
 
 		if invoice.status == Some(stripe::InvoiceStatus::Draft) {
 			stripe::Invoice::finalize(
-					&global.stripe_client,
+				&global.stripe_client,
 				&invoice.id,
 				FinalizeInvoiceParams {
 					auto_advance: Some(true),

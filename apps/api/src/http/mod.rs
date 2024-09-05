@@ -19,14 +19,14 @@ use self::error::ApiError;
 use self::middleware::cookies::CookieMiddleware;
 use crate::global::Global;
 
-pub mod error;
 pub mod egvault;
+pub mod error;
 pub mod extract;
 pub mod internal;
 pub mod middleware;
 pub mod v3;
 
-const ALLOWED_CORS_HEADERS: [&'static str; 8] = [
+const ALLOWED_CORS_HEADERS: [&str; 8] = [
 	"content-type",
 	"content-length",
 	"accept-encoding",
@@ -104,7 +104,7 @@ fn routes(global: Arc<Global>) -> Router {
 							span
 						})
 						.on_response(|res: &Response, _, span: &Span| {
-							span.record("response.status_code", &res.status().as_u16());
+							span.record("response.status_code", res.status().as_u16());
 						}),
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))

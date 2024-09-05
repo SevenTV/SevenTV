@@ -304,7 +304,7 @@ impl<'de, S> serde::Deserialize<'de> for Id<S> {
 impl<S: Sync + Send> async_graphql::ScalarType for Id<S> {
 	fn parse(value: async_graphql::Value) -> async_graphql::InputValueResult<Self> {
 		if let async_graphql::Value::String(value) = &value {
-			Ok(value.parse().map_err(|e| async_graphql::InputValueError::custom(e))?)
+			Ok(value.parse().map_err(async_graphql::InputValueError::custom)?)
 		} else {
 			Err(async_graphql::InputValueError::expected_type(value))
 		}

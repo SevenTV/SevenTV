@@ -303,6 +303,7 @@ impl<R: DnsResolver> ChannelController<R> {
 }
 
 /// Make a new gRPC transport channel which is backed by a DNS resolver.
+///
 /// This will create a new channel which will automatically update the endpoints
 /// when the DNS records change. Allowing for a more dynamic way of connecting
 /// to services.
@@ -319,6 +320,7 @@ pub fn make_channel(addresses: Vec<String>, interval: Duration, tls: Option<TlsS
 }
 
 /// Make a new gRPC transport channel which is backed by a DNS resolver.
+///
 /// This will create a new channel which will automatically update the endpoints
 /// when the DNS records change. Allowing for a more dynamic way of connecting
 /// to services. This funtion allows you to provide your own options.
@@ -328,6 +330,7 @@ pub fn make_channel_with_opts(opts: ChannelOpts) -> Result<Channel, GrpcError> {
 }
 
 /// Make a new gRPC transport channel which is backed by a DNS resolver.
+///
 /// This will create a new channel which will automatically update the endpoints
 /// when the DNS records change. Allowing for a more dynamic way of connecting
 /// to services. This function allows you to provide your own DNS resolver.

@@ -76,7 +76,7 @@ impl EmoteSetsMutation {
 			)
 		};
 
-		let target = other_user.as_ref().unwrap_or(&user);
+		let target = other_user.as_ref().unwrap_or(user);
 
 		if !target.has(EmoteSetPermission::Manage) && !user.has(EmoteSetPermission::ManageAny) {
 			return Err(ApiError::new_const(
@@ -193,7 +193,7 @@ impl EmoteSetOps {
 		let mut editor_perm = editor_perm.into();
 		let user = auth_session.user(global).await?;
 
-		let mut target = FullUserRef::Ref(&user);
+		let mut target = FullUserRef::Ref(user);
 
 		match self.emote_set.kind {
 			EmoteSetKind::Global => {
@@ -233,7 +233,8 @@ impl EmoteSetOps {
 					.load(global, owner_id)
 					.await
 					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "owner not found"))?,
+					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "owner not found"))?
+					.into(),
 			)
 		}
 
@@ -321,7 +322,7 @@ impl EmoteSetOps {
 
 		let id: EmoteId = id.id();
 
-		let res = with_transaction(&global, |tx| async move {
+		let res = with_transaction(global, |tx| async move {
 			match action {
 				ListItemAction::Add => emote_add(global, tx, actor, target, &self.emote_set, id, name).await,
 				ListItemAction::Remove => emote_remove(global, tx, actor, &self.emote_set, id).await,
@@ -441,7 +442,7 @@ impl EmoteSetOps {
 						after: emote_set.clone(),
 						data: InternalEventEmoteSetData::ChangeCapacity {
 							old: self.emote_set.capacity,
-							new: Some(new_capacity as i32),
+							new: Some(new_capacity),
 						},
 					},
 					timestamp: Utc::now(),

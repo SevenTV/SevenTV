@@ -7,7 +7,6 @@ use shared::database::emote_set::EmoteSetId;
 use shared::database::entitlement::{EntitlementEdgeId, EntitlementEdgeKind, EntitlementGroupId};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
-use shared::database::product::promotion::PromotionId;
 use shared::database::product::ProductId;
 use shared::database::role::RoleId;
 use shared::database::user::editor::UserEditorId;
@@ -130,6 +129,7 @@ macro_rules! default_impl {
 
 				let updated_at = bson::DateTime::from_chrono(data.updated_at);
 
+				#[allow(irrefutable_let_patterns)]
 				let Ok(data) = data.try_into() else {
 					return Ok(());
 				};
@@ -160,8 +160,6 @@ macro_rules! default_impl {
 	};
 }
 
-default_impl!(discount_code_batcher, typesense::DiscountCode, mongo::DiscountCode);
-default_impl!(gift_code_batcher, typesense::GiftCode, mongo::GiftCode);
 default_impl!(redeem_code_batcher, typesense::RedeemCode, mongo::RedeemCode);
 default_impl!(special_event_batcher, typesense::SpecialEvent, mongo::SpecialEvent);
 default_impl!(invoice_batcher, typesense::Invoice, mongo::Invoice);
@@ -375,7 +373,7 @@ impl SupportedMongoCollection for mongo::User {
 			))
 			.await?;
 
-		if global
+		global
 			.updater
 			.update::<mongo::User>(
 				bson::doc! { "_id": id, "updated_at": updated_at },
@@ -383,8 +381,7 @@ impl SupportedMongoCollection for mongo::User {
 				false,
 			)
 			.await
-			.context("failed to update user")?
-		{}
+			.context("failed to update user")?;
 
 		Ok(())
 	}
@@ -410,22 +407,6 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 			],
 			EntitlementEdgeKind::Product { product_id } => vec![
 				MongoReq::update::<mongo::Product>(bson::doc! { "_id": product_id }, update.clone(), false),
-				MongoReq::update::<mongo::User>(
-					bson::doc! { "cached_entitlements": bson::to_bson(&id.from)? },
-					update,
-					true,
-				),
-			],
-			EntitlementEdgeKind::SubscriptionProduct { product_id } => vec![
-				MongoReq::update::<mongo::SubscriptionProduct>(bson::doc! { "_id": product_id }, update.clone(), false),
-				MongoReq::update::<mongo::User>(
-					bson::doc! { "cached_entitlements": bson::to_bson(&id.from)? },
-					update,
-					true,
-				),
-			],
-			EntitlementEdgeKind::Promotion { promotion_id } => vec![
-				MongoReq::update::<mongo::Promotion>(bson::doc! { "_id": promotion_id }, update.clone(), false),
 				MongoReq::update::<mongo::User>(
 					bson::doc! { "cached_entitlements": bson::to_bson(&id.from)? },
 					update,
@@ -459,8 +440,12 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 				tracing::warn!("emote set has child entitlements");
 				vec![]
 			}
-			EntitlementEdgeKind::Subscription { subscription_id } => {
+			EntitlementEdgeKind::Subscription { .. } => {
 				// TODO: subscription
+				todo!()
+			}
+			EntitlementEdgeKind::SubscriptionBenefit { .. } => {
+				// TODO: subscription benefit
 				todo!()
 			}
 		};
@@ -533,64 +518,6 @@ impl SupportedMongoCollection for mongo::Product {
 	}
 }
 
-impl SupportedMongoCollection for mongo::Promotion {
-	async fn handle_delete(global: &Arc<Global>, id: PromotionId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::Promotion::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
-		Ok(())
-	}
-
-	#[tracing::instrument(skip_all, fields(id))]
-	async fn handle_any(global: &Arc<Global>, id: PromotionId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.promotion_batcher.loader.load(id.clone()).await else {
-			anyhow::bail!("failed to load data");
-		};
-
-		if data.search_updated_at.is_some_and(|u| u > data.updated_at) {
-			return Ok(());
-		}
-
-		let updated_at = bson::DateTime::from_chrono(data.updated_at);
-
-		let granted_entitlements = global
-			.entitlement_outbound_loader
-			.load(EntitlementEdgeKind::Promotion {
-				promotion_id: id.clone(),
-			})
-			.await
-			.map_err(|()| anyhow::anyhow!("failed to load entitlements"))?
-			.unwrap_or_default();
-
-		global
-			.promotion_batcher
-			.inserter
-			.execute(typesense::Promotion::from_db(
-				data,
-				granted_entitlements.into_iter().map(|edge| edge.id.to),
-			))
-			.await?;
-
-		let now = bson::DateTime::from_chrono(chrono::Utc::now());
-
-		global
-			.updater
-			.update::<mongo::Promotion>(
-				bson::doc! { "_id": id, "updated_at": updated_at },
-				bson::doc! { "$set": { "search_updated_at": now } },
-				false,
-			)
-			.await
-			.context("failed to update promotion")?;
-
-		Ok(())
-	}
-}
-
 impl SupportedMongoCollection for mongo::Role {
 	async fn handle_delete(global: &Arc<Global>, id: RoleId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
@@ -605,7 +532,7 @@ impl SupportedMongoCollection for mongo::Role {
 
 	#[tracing::instrument(skip_all, fields(id))]
 	async fn handle_any(global: &Arc<Global>, id: RoleId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.role_batcher.loader.load(id.clone()).await else {
+		let Ok(Some(data)) = global.role_batcher.loader.load(id).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -622,7 +549,7 @@ impl SupportedMongoCollection for mongo::Role {
 
 		let granted_entitlements = global
 			.entitlement_outbound_loader
-			.load(EntitlementEdgeKind::Role { role_id: id.clone() })
+			.load(EntitlementEdgeKind::Role { role_id: id })
 			.await
 			.map_err(|()| anyhow::anyhow!("failed to load entitlements"))?
 			.unwrap_or_default();
@@ -747,7 +674,7 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 
 	#[tracing::instrument(skip_all, fields(id))]
 	async fn handle_any(global: &Arc<Global>, id: EmoteSetId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.emote_set_batcher.loader.load(id.clone()).await else {
+		let Ok(Some(data)) = global.emote_set_batcher.loader.load(id).await else {
 			anyhow::bail!("failed to load data");
 		};
 

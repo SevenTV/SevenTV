@@ -382,9 +382,10 @@ impl Job for AuditLogsJob {
 				if res.inserted_ids.len() != self.events.len() {
 					ProcessOutcome::default().with_error(error::Error::InsertMany)
 				} else {
-					let mut outcome = ProcessOutcome::default();
-					outcome.inserted_rows = res.inserted_ids.len() as u64;
-					outcome
+					ProcessOutcome {
+						inserted_rows: res.inserted_ids.len() as u64,
+						..Default::default()
+					}
 				}
 			}
 			Err(e) => ProcessOutcome::default().with_error(e),

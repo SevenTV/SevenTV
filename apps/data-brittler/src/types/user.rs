@@ -1,5 +1,6 @@
 use mongodb::bson::oid::ObjectId;
 use shared::database;
+use shared::old_types::UserEditorModelPermission;
 
 use super::ImageFile;
 
@@ -7,13 +8,13 @@ use super::ImageFile;
 pub struct User {
 	#[serde(rename = "_id")]
 	pub id: ObjectId,
-	pub username: String,
-	pub display_name: String,
+	// pub username: String,
+	// pub display_name: String,
 	#[serde(default, deserialize_with = "super::empty_string_is_none")]
 	pub email: Option<String>,
 	#[serde(default)]
 	pub avatar: Option<UserAvatar>,
-	pub biography: String,
+	// pub biography: String,
 	pub editors: Vec<UserEditor>,
 	pub role_ids: Vec<ObjectId>,
 	pub connections: Vec<UserConnection>,
@@ -23,10 +24,10 @@ pub struct User {
 #[serde(untagged)]
 pub enum UserAvatar {
 	Pending {
-		pending_id: ObjectId,
+		// pending_id: ObjectId,
 	},
 	Processed {
-		id: ObjectId,
+		// id: ObjectId,
 		input_file: ImageFile,
 		image_files: Vec<ImageFile>,
 	},
@@ -39,9 +40,9 @@ pub struct UserEditor {
 	#[serde(default)]
 	pub id: Option<ObjectId>,
 	#[serde(default)]
-	pub permissions: i32,
-	#[serde(default)]
-	pub visible: bool,
+	pub permissions: UserEditorModelPermission,
+	// #[serde(default)]
+	// pub visible: bool,
 	#[serde(default)]
 	pub added_at: super::DateTime,
 }

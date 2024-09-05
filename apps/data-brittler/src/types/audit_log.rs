@@ -11,8 +11,8 @@ pub struct AuditLog {
 	pub kind: AuditLogKind,
 	pub actor_id: ObjectId,
 	pub target_id: ObjectId,
-	pub target_kind: AuditLogTargetKind,
-	pub reason: Option<String>,
+	// pub target_kind: AuditLogTargetKind,
+	// pub reason: Option<String>,
 	#[serde(default, deserialize_with = "super::null_to_default")]
 	pub changes: Vec<AuditLogChange>,
 }
@@ -89,14 +89,14 @@ pub struct AuditLogChangeSingleValue<T> {
 #[serde(untagged)]
 pub enum ObjectIdWrapper {
 	Oid(ObjectId),
-	InvalidOid(String),
+	InvalidOid,
 }
 
 impl ObjectIdWrapper {
 	pub fn into_inner(self) -> Option<ObjectId> {
 		match self {
 			ObjectIdWrapper::Oid(oid) => Some(oid),
-			ObjectIdWrapper::InvalidOid(_) => None,
+			ObjectIdWrapper::InvalidOid => None,
 		}
 	}
 }

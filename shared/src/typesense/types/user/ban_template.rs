@@ -28,7 +28,7 @@ impl From<database::user::ban_template::UserBanTemplate> for UserBanTemplate {
 	fn from(value: database::user::ban_template::UserBanTemplate) -> Self {
 		let (duration, duration_value) = value
 			.duration
-			.map(|duration| DurationUnit::split(duration))
+			.map(DurationUnit::split)
 			.map(|(duration, value)| (Some(duration), Some(value)))
 			.unwrap_or((None, None));
 

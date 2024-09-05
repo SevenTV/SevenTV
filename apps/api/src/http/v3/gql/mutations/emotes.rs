@@ -36,7 +36,7 @@ impl EmotesMutation {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		Ok(EmoteOps { id, emote: emote })
+		Ok(EmoteOps { id, emote })
 	}
 }
 

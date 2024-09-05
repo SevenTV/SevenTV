@@ -93,9 +93,11 @@ impl Job for EmotesJob {
 
 			self.emotes.push(Emote {
 				id: v.id.into(),
-				owner_id: (!owner_id.is_nil() && !owner_id.is_one())
-					.then_some(owner_id)
-					.unwrap_or(UserId::nil()),
+				owner_id: if !owner_id.is_nil() && !owner_id.is_one() {
+					owner_id
+				} else {
+					UserId::nil()
+				},
 				default_name: v.name.unwrap_or_else(|| emote.name.clone()),
 				tags: emote.tags.clone(),
 				aspect_ratio,

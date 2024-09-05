@@ -46,8 +46,8 @@ pub enum MessageData {
 	Resume(payload::Resume),
 	Subscribe(payload::Subscribe),
 	Unsubscribe(payload::Unsubscribe),
-	Dispatch(payload::Dispatch),
-	Signal(payload::Signal),
+	Dispatch(Box<payload::Dispatch>),
+	Signal(Box<payload::Signal>),
 	Error(payload::Error),
 	EndOfStream(payload::EndOfStream),
 	Bridge(payload::Bridge),
@@ -78,7 +78,7 @@ macro_rules! impl_from {
         $(
             impl From<payload::$ty> for MessageData {
                 fn from(data: payload::$ty) -> Self {
-                    Self::$ty(data)
+                    Self::$ty(data.into())
                 }
             }
         )*

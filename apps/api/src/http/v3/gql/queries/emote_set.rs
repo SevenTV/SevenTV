@@ -121,7 +121,7 @@ impl EmoteSet {
 			.iter()
 			.take(limit.unwrap_or(100000) as usize)
 			.cloned()
-			.map(|emote| ActiveEmote::from_db(emote))
+			.map(ActiveEmote::from_db)
 			.collect())
 	}
 

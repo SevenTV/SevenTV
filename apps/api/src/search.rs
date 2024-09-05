@@ -43,7 +43,7 @@ pub struct SearchOptions {
 pub struct SearchResult<T: TypesenseCollection> {
 	pub hits: Vec<T::Id>,
 	pub found: u64,
-	pub search_time_ms: u64,
+	// pub search_time_ms: u64,
 }
 
 pub async fn search<T: TypesenseCollection>(
@@ -80,6 +80,6 @@ pub async fn search<T: TypesenseCollection>(
 	Ok(SearchResult {
 		hits: resp.hits.into_iter().flatten().filter_map(|h| Some(h.document?.id)).collect(),
 		found: resp.found.unwrap_or(0).min(0) as u64,
-		search_time_ms: resp.search_time_ms.unwrap_or(0).min(0) as u64,
+		// search_time_ms: resp.search_time_ms.unwrap_or(0).min(0) as u64,
 	})
 }

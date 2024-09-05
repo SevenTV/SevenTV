@@ -148,7 +148,7 @@ impl User {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
-		Ok(emote_sets.into_iter().map(|e| EmoteSet::from_db(e)).collect())
+		Ok(emote_sets.into_iter().map(EmoteSet::from_db).collect())
 	}
 
 	async fn owned_emotes<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Emote>, ApiError> {
@@ -209,9 +209,11 @@ impl UserEditor {
 		}
 
 		Some(UserEditor {
-			id: editor_of
-				.then_some(value.id.user_id.into())
-				.unwrap_or(value.id.editor_id.into()),
+			id: if editor_of {
+				value.id.user_id.into()
+			} else {
+				value.id.editor_id.into()
+			},
 			added_at: value.added_at,
 			permissions: UserEditorModelPermission::from_db(&value.permissions),
 			visible: true,
@@ -230,7 +232,7 @@ impl UserEditor {
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|u| UserPartial::from_db(global, u))
-			.unwrap_or_else(|| UserPartial::deleted_user()))
+			.unwrap_or_else(UserPartial::deleted_user))
 	}
 }
 
@@ -347,7 +349,7 @@ impl UserPartial {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.unwrap_or_default();
 
-		Ok(emote_sets.into_iter().map(|e| EmoteSet::from_db(e)).collect())
+		Ok(emote_sets.into_iter().map(EmoteSet::from_db).collect())
 	}
 }
 
@@ -443,7 +445,7 @@ impl UsersQuery {
 			.load(global, session.user_id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u.into()));
+			.map(|u| UserPartial::from_db(global, u));
 
 		Ok(user.map(Into::into))
 	}
@@ -456,8 +458,8 @@ impl UsersQuery {
 			.load(global, id.id())
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u.into()))
-			.unwrap_or_else(|| UserPartial::deleted_user());
+			.map(|u| UserPartial::from_db(global, u))
+			.unwrap_or_else(UserPartial::deleted_user);
 
 		Ok(user.into())
 	}
@@ -484,7 +486,7 @@ impl UsersQuery {
 
 		let full_user = global
 			.user_loader
-			.load_fast_user(&global, user)
+			.load_fast_user(global, user)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -553,7 +555,7 @@ impl UsersQuery {
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.into_values()
-			.map(|u| UserPartial::from_db(global, u.into()))
+			.map(|u| UserPartial::from_db(global, u))
 			.collect();
 
 		Ok(users)

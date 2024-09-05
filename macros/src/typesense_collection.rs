@@ -2,33 +2,33 @@ use darling::{ast, FromDeriveInput, FromField, FromMeta};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 
-/// #[derive(TypesenseCollection)]
-/// #[typesense(collection_name = "invoices")]
-/// pub struct Invoice {
-///    	pub id: InvoiceId,
-///   	pub items: Vec<ProductId>,
-///  	pub customer_id: CustomerId,
-///  	pub user_id: UserId,
-/// 	pub paypal_payment_ids: Vec<String>,
-/// 	pub status: InvoiceStatus,
-/// 	pub note: Option<String>,
-///    	pub created_at: i64,
-///   	pub updated_at: i64,
-///  	pub search_updated_at: i64,
-/// }
-///
-/// trait TypesenseCollection {
-///    const COLLECTION_NAME: &'static str;
-///    fn schema() -> typesense_codegen::models::CollectionSchema;
-/// }
-///
-/// pub enum FieldType {
-/// 	...
-/// }
-///
-/// trait TypesenseType {
-/// 		fn typesense_type() -> typesense_codegen::models::FieldType;
-/// }
+// #[derive(TypesenseCollection)]
+// #[typesense(collection_name = "invoices")]
+// pub struct Invoice {
+//    	pub id: InvoiceId,
+//   	pub items: Vec<ProductId>,
+//  	pub customer_id: CustomerId,
+//  	pub user_id: UserId,
+// 	pub paypal_payment_ids: Vec<String>,
+// 	pub status: InvoiceStatus,
+// 	pub note: Option<String>,
+//    	pub created_at: i64,
+//   	pub updated_at: i64,
+//  	pub search_updated_at: i64,
+// }
+//
+// trait TypesenseCollection {
+//    const COLLECTION_NAME: &'static str;
+//    fn schema() -> typesense_codegen::models::CollectionSchema;
+// }
+//
+// pub enum FieldType {
+// 	...
+// }
+//
+// trait TypesenseType {
+// 		fn typesense_type() -> typesense_codegen::models::FieldType;
+// }
 
 #[derive(FromDeriveInput, Debug)]
 #[darling(attributes(typesense), supports(struct_named))]
@@ -175,7 +175,7 @@ pub fn derive(input: TokenStream) -> syn::Result<TokenStream> {
 		.or_else(|| {
 			fields
 				.iter()
-				.find(|f| f.ident.as_ref().unwrap().to_string() == "id")
+				.find(|f| *f.ident.as_ref().unwrap() == "id")
 				.map(|f| f.ty.clone())
 		})
 		.ok_or_else(|| syn::Error::new(Span::call_site(), "id field not found"))?;
@@ -333,7 +333,6 @@ pub fn derive(input: TokenStream) -> syn::Result<TokenStream> {
 					token_separators: #token_separators,
 					symbols_to_index: #index_symbols,
 					enable_nested_fields: #nested_fields,
-					..Default::default()
 				}
 			}
 		}

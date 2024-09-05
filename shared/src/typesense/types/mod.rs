@@ -45,11 +45,11 @@ impl TypesenseGenericCollection {
 
 	#[tracing::instrument(skip(self, config), fields(collection = self.name))]
 	pub async fn init(self, config: &typesense_codegen::apis::configuration::Configuration) -> anyhow::Result<()> {
-		let result = match typesense_codegen::apis::collections_api::get_collection(&config, &self.name).await {
+		let result = match typesense_codegen::apis::collections_api::get_collection(config, self.name).await {
 			Ok(result) => result,
 			Err(typesense_codegen::apis::Error::ResponseError(err)) if err.status == hyper::StatusCode::NOT_FOUND => {
 				tracing::debug!("collection not found, creating");
-				typesense_codegen::apis::collections_api::create_collection(&config, self.schema.clone()).await?
+				typesense_codegen::apis::collections_api::create_collection(config, self.schema.clone()).await?
 			}
 			Err(err) => {
 				anyhow::bail!("failed to get collection: {err}");
@@ -58,7 +58,7 @@ impl TypesenseGenericCollection {
 
 		if let Some(migration) = self.determine_migration(result)? {
 			tracing::debug!("applying migration");
-			typesense_codegen::apis::collections_api::update_collection(&config, &self.name, migration).await?;
+			typesense_codegen::apis::collections_api::update_collection(config, self.name, migration).await?;
 		}
 
 		Ok(())
@@ -208,7 +208,7 @@ where
 		D: serde::Deserializer<'de>,
 	{
 		let s = String::deserialize(deserializer)?;
-		Ok(s.parse().map_err(|s| serde::de::Error::custom(s))?)
+		s.parse().map_err(serde::de::Error::custom)
 	}
 }
 
