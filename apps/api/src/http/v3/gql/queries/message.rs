@@ -3,13 +3,14 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use mongodb::bson::doc;
 use shared::database::emote_moderation_request::{
-	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
+	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus
 };
-use shared::database::role::permissions::EmoteModerationRequestPermission;
+use shared::database::role::permissions::{EmoteModerationRequestPermission, PermissionsExt};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/messages.gql
@@ -124,13 +125,29 @@ impl MessagesQuery {
 	#[graphql(guard = "PermissionGuard::one(EmoteModerationRequestPermission::Manage)")]
 	async fn mod_requests<'ctx>(
 		&self,
-		_ctx: &Context<'ctx>,
-		_after_id: Option<GqlObjectId>,
-		_limit: Option<u32>,
-		_wish: Option<String>,
+		ctx: &Context<'ctx>,
+		after_id: Option<GqlObjectId>,
+		limit: Option<u32>,
+		wish: Option<String>,
 		_country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
-		// TODO(troy): implement
-		Err(ApiError::NOT_IMPLEMENTED)
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+
+		let authed_user = auth_session.user(global).await?;
+
+		if !authed_user.has(EmoteModerationRequestPermission::Manage) {
+			return Err(ApiError::FORBIDDEN);
+		}
+
+		let after_id: Option<EmoteModerationRequestId> = after_id.map(|id| id.id());
+		let wish = wish.and_then(|w| match w.as_ref() {
+			"list" => Some(EmoteModerationRequestKind::PublicListing),
+			"personal_use" => Some(EmoteModerationRequestKind::PersonalUse),
+			_ => None,
+		});
+
+		todo!()
 	}
 }
