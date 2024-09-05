@@ -6,8 +6,6 @@ use bson::doc;
 use entitlements::EntitlementsJob;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
-use shared::database::entitlement::EntitlementEdge;
-use shared::database::MongoCollection;
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -23,6 +21,7 @@ use crate::jobs::messages::MessagesJob;
 use crate::jobs::prices::PricesJob;
 use crate::jobs::reports::ReportsJob;
 use crate::jobs::roles::RolesJob;
+use crate::jobs::subscriptions::SubscriptionsJob;
 use crate::jobs::system::SystemJob;
 use crate::jobs::users::UsersJob;
 use crate::{error, report};
@@ -38,6 +37,7 @@ pub mod messages;
 pub mod prices;
 pub mod reports;
 pub mod roles;
+pub mod subscriptions;
 pub mod system;
 pub mod users;
 
@@ -181,11 +181,6 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 
 	let timer = Instant::now();
 
-	if global.config().truncate {
-		tracing::info!("dropping entitlements");
-		EntitlementEdge::collection(global.target_db()).drop().await?;
-	}
-
 	macro_rules! job {
 		(
 			$([$name:ident, $fn:ident]),+
@@ -225,7 +220,8 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		[AuditLogsJob, should_run_audit_logs],
 		[MessagesJob, should_run_messages],
 		[SystemJob, should_run_system],
-		[PricesJob, should_run_prices]
+		[PricesJob, should_run_prices],
+		[SubscriptionsJob, should_run_subscriptions]
 	};
 
 	let results: Vec<JobOutcome> = futures::future::try_join_all(futures).await?;

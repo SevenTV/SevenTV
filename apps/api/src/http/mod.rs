@@ -1,12 +1,16 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Context as _;
 use axum::extract::{MatchedPath, Request};
+use axum::http::HeaderName;
 use axum::response::Response;
 use axum::routing::get;
 use axum::Router;
+use hyper::Method;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use tower::ServiceBuilder;
+use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
 use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
 use tower_http::trace::TraceLayer;
 use tracing::Span;
@@ -16,9 +20,49 @@ use self::middleware::cookies::CookieMiddleware;
 use crate::global::Global;
 
 pub mod error;
+pub mod egvault;
 pub mod extract;
+pub mod internal;
 pub mod middleware;
 pub mod v3;
+
+const ALLOWED_CORS_HEADERS: [&'static str; 8] = [
+	"content-type",
+	"content-length",
+	"accept-encoding",
+	"authorization",
+	"cookie",
+	"x-emote-data",
+	"x-seventv-platform",
+	"x-seventv-version",
+];
+
+fn cors_layer(global: &Arc<Global>) -> CorsLayer {
+	let website_origin = global.config.api.website_origin.clone();
+	let api_origin = global.config.api.api_origin.clone();
+	let allow_credentials = AllowCredentials::predicate(move |origin, _| {
+		origin
+			.to_str()
+			.map(|o| o == website_origin || o == api_origin)
+			.unwrap_or_default()
+	});
+
+	CorsLayer::new()
+		.allow_origin(AllowOrigin::mirror_request())
+		.allow_credentials(allow_credentials)
+		.allow_methods(AllowMethods::list([
+			Method::GET,
+			Method::POST,
+			Method::PUT,
+			Method::PATCH,
+			Method::DELETE,
+		]))
+		.allow_headers(AllowHeaders::list(
+			ALLOWED_CORS_HEADERS.into_iter().map(HeaderName::from_static),
+		))
+		.expose_headers(ExposeHeaders::list([HeaderName::from_static("x-access-token")]))
+		.max_age(MaxAge::exact(Duration::from_secs(7200)))
+}
 
 #[derive(Clone)]
 struct TraceRequestId;
@@ -35,7 +79,9 @@ impl MakeRequestId for TraceRequestId {
 fn routes(global: Arc<Global>) -> Router {
 	Router::new()
 		.route("/", get(root))
+		.nest("/internal", internal::routes())
 		.nest("/v3", v3::routes(&global))
+		.nest("/egvault/v1", egvault::routes())
 		.with_state(global.clone())
 		.fallback(not_found)
 		.layer(
@@ -63,7 +109,8 @@ fn routes(global: Arc<Global>) -> Router {
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
 				.layer(PropagateRequestIdLayer::x_request_id())
-				.layer(CookieMiddleware),
+				.layer(CookieMiddleware)
+				.layer(cors_layer(&global)),
 		)
 }
 

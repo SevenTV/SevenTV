@@ -14,6 +14,7 @@ pub mod role;
 pub mod stored_event;
 pub mod ticket;
 pub mod user;
+pub mod webhook_event;
 
 pub use macros::MongoCollection;
 pub use mongodb;
@@ -87,6 +88,7 @@ fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 		.chain(ticket::mongo_collections())
 		.chain(user::mongo_collections())
 		.chain(emote_moderation_request::mongo_collections())
+		.chain(webhook_event::mongo_collections())
 }
 
 pub(super) async fn init_mongo(db: &mongodb::Database) -> anyhow::Result<()> {

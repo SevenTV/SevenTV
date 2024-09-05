@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use super::duration::DurationUnit;
 use super::{MongoCollection, MongoGenericCollection};
+use crate::database::Id;
+use crate::typesense::types::impl_typesense_type;
 
 pub mod codes;
 pub mod invoice;
-pub mod promotion;
 pub mod subscription;
-pub mod subscription_timeline;
 
 /// A helper macro used to define newtypes for stripe IDs
 macro_rules! stripe_type {
@@ -152,38 +152,16 @@ macro_rules! stripe_type {
 }
 
 stripe_type!(ProductId, stripe::PriceId);
-stripe_type!(SubscriptionId, stripe::SubscriptionId);
+stripe_type!(StripeSubscriptionId, stripe::SubscriptionId);
 stripe_type!(InvoiceId, stripe::InvoiceId);
 stripe_type!(InvoiceLineItemId, stripe::InvoiceLineItemId);
 stripe_type!(CustomerId, stripe::CustomerId);
+stripe_type!(PaymentIntentId, stripe::PaymentIntentId);
 
 impl crate::typesense::types::TypesenseType for stripe::Currency {
 	fn typesense_type() -> crate::typesense::types::FieldType {
 		crate::typesense::types::FieldType::String
 	}
-}
-
-// An item that can be purchased
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
-#[mongo(collection_name = "products")]
-#[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
-#[serde(deny_unknown_fields)]
-pub struct Product {
-	#[mongo(id)]
-	#[serde(rename = "_id")]
-	pub id: ProductId,
-	pub name: String,
-	pub description: Option<String>,
-	pub recurring: Option<DurationUnit>,
-	pub default_currency: stripe::Currency,
-	pub currency_prices: HashMap<stripe::Currency, i32>,
-	#[serde(with = "crate::database::serde")]
-	pub created_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -195,11 +173,107 @@ pub struct TimePeriod {
 	pub end: chrono::DateTime<chrono::Utc>,
 }
 
+/// A non-recurring product, e.g. a paint bundle
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
+#[mongo(collection_name = "products")]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[serde(deny_unknown_fields)]
+pub struct Product {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: ProductId,
+	pub name: String,
+	pub description: Option<String>,
+	pub extends_subscription: Option<SubscriptionProductId>,
+	pub default_currency: stripe::Currency,
+	pub currency_prices: HashMap<stripe::Currency, i32>,
+	#[serde(with = "crate::database::serde")]
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+pub type SubscriptionProductId = Id<SubscriptionProduct>;
+
+/// There are only two kinds of subscriptions: monthly and yearly.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
+#[mongo(collection_name = "subscription_products")]
+#[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(index(fields(kind = 1), unique))]
+#[mongo(index(fields(search_updated_at = 1)))]
+#[serde(deny_unknown_fields)]
+pub struct SubscriptionProduct {
+	#[mongo(id)]
+	#[serde(rename = "_id")]
+	pub id: SubscriptionProductId,
+	pub variants: Vec<SubscriptionProductVariant>,
+	pub name: String,
+	pub description: Option<String>,
+	pub default_currency: stripe::Currency,
+	pub benefits: Vec<SubscriptionBenefit>,
+	#[serde(with = "crate::database::serde")]
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SubscriptionProductVariant {
+	pub id: ProductId,
+	pub gift_id: Option<ProductId>,
+	pub paypal_id: Option<String>,
+	pub kind: SubscriptionProductKind,
+	pub currency_prices: HashMap<stripe::Currency, i32>,
+}
+
+pub type SubscriptionBenefitId = Id<SubscriptionBenefit>;
+
+/// The `SubscriptionBenefitId` can have entitlements attached via the
+/// entitlement graph. If the user qualifies for the entitlement benefit then we
+/// create an edge between `Subscription` and `SubscriptionBenefit` on the
+/// entitlement graph.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SubscriptionBenefit {
+	pub id: SubscriptionBenefitId,
+	pub condition: SubscriptionBenefitCondition,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum SubscriptionBenefitCondition {
+	Duration(DurationUnit),
+	TimePeriod(TimePeriod),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(i32)]
+pub enum SubscriptionProductKind {
+	Monthly = 0,
+	Yearly = 1,
+}
+
+impl_typesense_type!(SubscriptionProductKind, Int32);
+
+impl SubscriptionProductKind {
+	pub fn period_duration_months(&self) -> u32 {
+		match self {
+			SubscriptionProductKind::Monthly => 1,
+			SubscriptionProductKind::Yearly => 12,
+		}
+	}
+}
+
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
-	std::iter::once(MongoGenericCollection::new::<Product>())
-		.chain(codes::mongo_collections())
-		.chain(invoice::collections())
-		.chain(promotion::collections())
-		.chain(subscription::collections())
-		.chain(subscription_timeline::collections())
+	[
+		MongoGenericCollection::new::<Product>(),
+		MongoGenericCollection::new::<SubscriptionProduct>(),
+	]
+	.into_iter()
+	.chain(codes::mongo_collections())
+	.chain(invoice::collections())
+	.chain(subscription::collections())
 }

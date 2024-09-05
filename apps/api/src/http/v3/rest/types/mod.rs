@@ -1,15 +1,18 @@
+use shared::old_types::{
+	ActiveEmoteModel, EmoteLifecycleModel, EmotePartialModel, EmoteSetModel, EmoteSetOrigin, EmoteSetPartialModel,
+	EmoteVersionModel, EmoteVersionState, UserConnectionModel, UserEditorModel, UserEditorModelPermission, UserModel,
+};
+
+mod egvault;
 mod emote;
 mod entitlement;
 mod role;
 mod user_presence;
 
+pub use egvault::*;
 pub use emote::*;
 pub use entitlement::*;
 pub use role::*;
-use shared::old_types::{
-	ActiveEmoteModel, EmoteLifecycleModel, EmotePartialModel, EmoteSetModel, EmoteSetOrigin, EmoteSetPartialModel,
-	EmoteVersionModel, EmoteVersionState, UserConnectionModel, UserEditorModel, UserEditorModelPermission, UserModel,
-};
 pub use user_presence::*;
 
 #[derive(utoipa::OpenApi)]

@@ -104,6 +104,11 @@ pub struct Config {
 	/// Create a list of files to copy for the new cdn
 	pub skip_cdn_rename: bool,
 
+	/// Run subscriptions job
+	pub subscriptions: bool,
+	/// Skip subscriptions job
+	pub skip_subscriptions: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 
@@ -140,6 +145,7 @@ impl Config {
 			|| self.system
 			|| self.prices
 			|| self.cdn_rename
+			|| self.subscriptions
 	}
 
 	pub fn should_run_users(&self) -> bool {
@@ -205,5 +211,10 @@ impl Config {
 	pub fn should_run_prices(&self) -> bool {
 		let any_run = self.any_run();
 		any_run && self.prices || !any_run && !self.skip_prices
+	}
+
+	pub fn should_run_subscriptions(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.subscriptions || !any_run && !self.skip_subscriptions
 	}
 }

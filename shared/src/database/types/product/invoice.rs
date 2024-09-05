@@ -1,16 +1,16 @@
-use super::codes::DiscountCodeId;
-use super::{CustomerId, InvoiceId, InvoiceLineItemId, ProductId};
+use super::{CustomerId, InvoiceId, ProductId};
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::MongoCollection;
 use crate::typesense::types::impl_typesense_type;
 
-// An invoice that is generated for a purchase
+/// Only for showing to the user.
+/// Technically not necessary.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "invoices")]
 #[mongo(index(fields(user_id = 1)))]
-#[mongo(index(fields("items.id" = 1)))]
-#[mongo(index(fields("items.product_id" = 1)))]
+#[mongo(index(fields(paypal_payment_id = 1)))]
+#[mongo(index(fields(items = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
@@ -20,17 +20,21 @@ pub struct Invoice {
 	#[serde(rename = "_id")]
 	pub id: InvoiceId,
 	/// These items will be the stripe line items for the invoice
-	pub items: Vec<InvoiceItem>,
+	pub items: Vec<ProductId>,
 	/// customer id from stripe
 	pub customer_id: CustomerId,
 	/// User who the invoice is for
 	pub user_id: UserId,
 	/// If this invoice was paid via a legacy payment
-	pub paypal_payment_ids: Vec<String>,
+	pub paypal_payment_id: Option<String>,
 	/// Status of the invoice
 	pub status: InvoiceStatus,
-	/// A note about the invoice
-	pub note: Option<String>,
+	/// If a payment failed
+	pub failed: bool,
+	/// If the invoice was refunded
+	pub refunded: bool,
+	/// If the invoice was disputed
+	pub disputed: Option<InvoiceDisputeStatus>,
 	#[serde(with = "crate::database::serde")]
 	/// Created at
 	pub created_at: chrono::DateTime<chrono::Utc>,
@@ -42,7 +46,7 @@ pub struct Invoice {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[derive(Debug, Clone, Eq, PartialEq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 #[repr(i32)]
 pub enum InvoiceStatus {
 	Draft = 0,
@@ -78,15 +82,32 @@ impl From<stripe::InvoiceStatus> for InvoiceStatus {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct InvoiceItem {
-	// This will be a line item id from stripe
-	pub id: InvoiceLineItemId,
-	// This is a stripe id for the product
-	pub product_id: ProductId,
-	// The discount codes that were applied to this item
-	pub discount_codes: Vec<DiscountCodeId>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+#[repr(i32)]
+pub enum InvoiceDisputeStatus {
+	Lost = 0,
+	NeedsResponse = 1,
+	UnderReview = 2,
+	WarningClosed = 3,
+	WarningNeedsResponse = 4,
+	WarningUnderReview = 5,
+	Won = 6,
+	/// only applies to paypal disputes, either won or lost, we don't know
+	Resolved = 7,
+}
+
+impl From<stripe::DisputeStatus> for InvoiceDisputeStatus {
+	fn from(value: stripe::DisputeStatus) -> Self {
+		match value {
+			stripe::DisputeStatus::Lost => InvoiceDisputeStatus::Lost,
+			stripe::DisputeStatus::NeedsResponse => InvoiceDisputeStatus::NeedsResponse,
+			stripe::DisputeStatus::UnderReview => InvoiceDisputeStatus::UnderReview,
+			stripe::DisputeStatus::WarningClosed => InvoiceDisputeStatus::WarningClosed,
+			stripe::DisputeStatus::WarningNeedsResponse => InvoiceDisputeStatus::WarningNeedsResponse,
+			stripe::DisputeStatus::WarningUnderReview => InvoiceDisputeStatus::WarningUnderReview,
+			stripe::DisputeStatus::Won => InvoiceDisputeStatus::Won,
+		}
+	}
 }
 
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {

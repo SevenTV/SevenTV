@@ -24,6 +24,7 @@ use crate::{error, types};
 pub struct UsersJob {
 	global: Arc<Global>,
 	entitlements: FnvHashMap<ObjectId, Vec<types::Entitlement>>,
+	paypal_subs: FnvHashMap<ObjectId, String>,
 	all_connections: FnvHashSet<(Platform, String)>,
 	users: Vec<User>,
 	profile_pictures: Vec<UserProfilePicture>,
@@ -50,6 +51,24 @@ impl Job for UsersJob {
 			let indexes = UserEditor::indexes();
 			if !indexes.is_empty() {
 				UserEditor::collection(global.target_db()).create_indexes(indexes).await?;
+			}
+		}
+
+		let mut paypal_subs = FnvHashMap::default();
+
+		let mut subs_cursor = global
+			.egvault_source_db()
+			.collection::<types::Subscription>("subscriptions")
+			.find(doc! {
+				"provider": "paypal"
+			})
+			.await?;
+
+		while let Some(sub) = subs_cursor.try_next().await.context("failed to deserialize sub")? {
+			if sub.provider == types::SubscriptionProvider::Paypal {
+				if let Some(provider_id) = sub.provider_id {
+					paypal_subs.insert(sub.customer_id, provider_id);
+				}
 			}
 		}
 
@@ -86,6 +105,7 @@ impl Job for UsersJob {
 		Ok(Self {
 			global,
 			entitlements,
+			paypal_subs,
 			profile_pictures: vec![],
 			all_connections: FnvHashSet::default(),
 			users: vec![],
@@ -216,6 +236,8 @@ impl Job for UsersJob {
 			}
 		}
 
+		let paypal_sub_id = self.paypal_subs.remove(&user.id);
+
 		self.users.push(User {
 			id: user.id.into(),
 			email: user.email,
@@ -230,6 +252,8 @@ impl Job for UsersJob {
 				pending_profile_picture: None,
 			},
 			connections,
+			stripe_customer_id: None,
+			paypal_sub_id,
 			cached_active_emotes: vec![],
 			cached_entitlements: vec![],
 			cached_role_rank: -1,

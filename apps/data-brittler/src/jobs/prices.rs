@@ -2,18 +2,22 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use shared::database::duration::DurationUnit;
-use shared::database::product::Product;
+use shared::database::product::{
+	Product, SubscriptionProduct, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant,
+};
 use shared::database::MongoCollection;
 use stripe::{Recurring, RecurringInterval};
 
+use super::subscriptions::{PAYPAL_MONTHLY, PAYPAL_YEARLY, STRIPE_MONTHLY, STRIPE_YEARLY};
 use super::{Job, ProcessOutcome};
 use crate::global::Global;
 use crate::{error, types};
 
+pub const NEW_PRODUCT_ID: &'static str = "01FEVKBBTGRAT7FCY276TNTJ4A";
+
 pub struct PricesJob {
 	global: Arc<Global>,
-	products: Vec<Product>,
+	subscription_product: SubscriptionProduct,
 }
 
 impl Job for PricesJob {
@@ -33,7 +37,16 @@ impl Job for PricesJob {
 
 		Ok(Self {
 			global,
-			products: vec![],
+			subscription_product: SubscriptionProduct {
+				id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
+				variants: vec![],
+				name: "7TV Subscription".to_string(),
+				description: None,
+				default_currency: stripe::Currency::USD,
+				benefits: vec![],
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			},
 		})
 	}
 
@@ -49,9 +62,11 @@ impl Job for PricesJob {
 			return outcome;
 		}
 
-		let Ok(price_id) = stripe::PriceId::from_str(&price.provider_id) else {
-			outcome.errors.push(error::Error::InvalidStripeId(price.provider_id));
-			return outcome;
+		let price_id = match stripe::PriceId::from_str(&price.provider_id) {
+			Ok(price_id) => price_id,
+			Err(e) => {
+				return outcome.with_error(error::Error::InvalidStripeId(e));
+			}
 		};
 
 		let price =
@@ -63,29 +78,6 @@ impl Job for PricesJob {
 				}
 			};
 		let product = price.product.and_then(|p| p.into_object()).expect("no product found");
-
-		let recurring = match price.recurring {
-			Some(Recurring {
-				interval: RecurringInterval::Day,
-				interval_count,
-				..
-			}) => Some(DurationUnit::Days(interval_count as i32)),
-			Some(Recurring {
-				interval: RecurringInterval::Month,
-				interval_count,
-				..
-			}) => Some(DurationUnit::Months(interval_count as i32)),
-			Some(Recurring {
-				interval: RecurringInterval::Year,
-				interval_count,
-				..
-			}) => Some(DurationUnit::Months((interval_count * 12) as i32)),
-			Some(Recurring { interval, .. }) => {
-				outcome.errors.push(error::Error::InvalidRecurringInterval(interval));
-				return outcome;
-			}
-			None => None,
-		};
 
 		let mut currency_prices = HashMap::new();
 
@@ -101,17 +93,56 @@ impl Job for PricesJob {
 			currency_prices.insert(currency, unit_amount.max(0) as i32);
 		}
 
-		self.products.push(Product {
-			id: price_id.into(),
-			name: product.name.unwrap_or_default(),
-			description: None,
-			recurring,
-			default_currency: currency,
-			currency_prices,
-			created_at: chrono::Utc::now(),
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-		});
+		if let Some(recurring) = price.recurring {
+			let kind = match recurring {
+				Recurring {
+					interval: RecurringInterval::Month,
+					..
+				} => SubscriptionProductKind::Monthly,
+				Recurring {
+					interval: RecurringInterval::Year,
+					..
+				} => SubscriptionProductKind::Yearly,
+				_ => {
+					return outcome.with_error(error::Error::InvalidRecurringInterval(recurring.interval));
+				}
+			};
+
+			let paypal_id = if price_id.as_str() == STRIPE_MONTHLY {
+				Some(PAYPAL_MONTHLY.to_string())
+			} else if price_id.as_str() == STRIPE_YEARLY {
+				Some(PAYPAL_YEARLY.to_string())
+			} else {
+				None
+			};
+
+			self.subscription_product.default_currency = currency;
+			self.subscription_product.variants.push(SubscriptionProductVariant {
+				id: price_id.into(),
+				gift_id: None,
+				kind,
+				currency_prices,
+				paypal_id,
+			});
+		} else {
+			match Product::collection(self.global.target_db())
+				.insert_one(Product {
+					id: price_id.into(),
+					name: product.name.unwrap_or_default(),
+					extends_subscription: None,
+					description: None,
+					default_currency: currency,
+					currency_prices,
+					created_at: chrono::Utc::now(),
+					updated_at: chrono::Utc::now(),
+					search_updated_at: None,
+				})
+				.await
+			{
+				Ok(_) => outcome.inserted_rows += 1,
+				Err(e) => outcome.errors.push(e.into()),
+			}
+		}
 
 		outcome
 	}
@@ -119,22 +150,12 @@ impl Job for PricesJob {
 	async fn finish(self) -> ProcessOutcome {
 		tracing::info!("finishing prices job");
 
-		let mut outcome = ProcessOutcome::default();
-
-		match Product::collection(self.global.target_db())
-			.insert_many(&self.products)
-			.with_options(mongodb::options::InsertManyOptions::builder().ordered(false).build())
+		match SubscriptionProduct::collection(self.global.target_db())
+			.insert_one(&self.subscription_product)
 			.await
 		{
-			Ok(res) => {
-				outcome.inserted_rows += res.inserted_ids.len() as u64;
-				if res.inserted_ids.len() != self.products.len() {
-					outcome.errors.push(error::Error::InsertMany);
-				}
-			}
-			Err(e) => outcome.errors.push(e.into()),
+			Ok(_) => ProcessOutcome::default(),
+			Err(e) => ProcessOutcome::error(e),
 		}
-
-		outcome
 	}
 }

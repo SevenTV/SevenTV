@@ -8,7 +8,6 @@ use shared::database::entitlement::{EntitlementEdgeId, EntitlementEdgeKind, Enti
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
 use shared::database::product::promotion::PromotionId;
-use shared::database::product::subscription_timeline::SubscriptionTimelinePeriodId;
 use shared::database::product::ProductId;
 use shared::database::role::RoleId;
 use shared::database::user::editor::UserEditorId;
@@ -166,16 +165,6 @@ default_impl!(gift_code_batcher, typesense::GiftCode, mongo::GiftCode);
 default_impl!(redeem_code_batcher, typesense::RedeemCode, mongo::RedeemCode);
 default_impl!(special_event_batcher, typesense::SpecialEvent, mongo::SpecialEvent);
 default_impl!(invoice_batcher, typesense::Invoice, mongo::Invoice);
-default_impl!(
-	subscription_timeline_batcher,
-	typesense::SubscriptionTimeline,
-	mongo::SubscriptionTimeline
-);
-default_impl!(
-	subscription_credit_batcher,
-	typesense::SubscriptionCredit,
-	mongo::SubscriptionCredit
-);
 default_impl!(
 	subscription_period_batcher,
 	typesense::SubscriptionPeriod,
@@ -419,8 +408,16 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 					true,
 				),
 			],
-			EntitlementEdgeKind::StaticProduct { product_id } => vec![
+			EntitlementEdgeKind::Product { product_id } => vec![
 				MongoReq::update::<mongo::Product>(bson::doc! { "_id": product_id }, update.clone(), false),
+				MongoReq::update::<mongo::User>(
+					bson::doc! { "cached_entitlements": bson::to_bson(&id.from)? },
+					update,
+					true,
+				),
+			],
+			EntitlementEdgeKind::SubscriptionProduct { product_id } => vec![
+				MongoReq::update::<mongo::SubscriptionProduct>(bson::doc! { "_id": product_id }, update.clone(), false),
 				MongoReq::update::<mongo::User>(
 					bson::doc! { "cached_entitlements": bson::to_bson(&id.from)? },
 					update,
@@ -429,34 +426,6 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 			],
 			EntitlementEdgeKind::Promotion { promotion_id } => vec![
 				MongoReq::update::<mongo::Promotion>(bson::doc! { "_id": promotion_id }, update.clone(), false),
-				MongoReq::update::<mongo::User>(
-					bson::doc! { "cached_entitlements": bson::to_bson(&id.from)? },
-					update,
-					true,
-				),
-			],
-			EntitlementEdgeKind::SubscriptionTimelinePeriod {
-				subscription_timeline_period_id,
-			} => vec![
-				MongoReq::update::<mongo::SubscriptionTimelinePeriod>(
-					bson::doc! { "_id": subscription_timeline_period_id },
-					update.clone(),
-					false,
-				),
-				MongoReq::update::<mongo::User>(
-					bson::doc! { "cached_entitlements": bson::to_bson(&id.from)? },
-					update,
-					true,
-				),
-			],
-			EntitlementEdgeKind::UserSubscriptionTimeline {
-				user_subscription_timeline_id,
-			} => vec![
-				MongoReq::update::<mongo::UserSubscriptionTimeline>(
-					bson::doc! { "_id": user_subscription_timeline_id },
-					update.clone(),
-					false,
-				),
 				MongoReq::update::<mongo::User>(
 					bson::doc! { "cached_entitlements": bson::to_bson(&id.from)? },
 					update,
@@ -478,10 +447,6 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 			EntitlementEdgeKind::GlobalDefaultEntitlementGroup => {
 				vec![MongoReq::update::<mongo::User>(bson::doc! {}, update, true)]
 			}
-			EntitlementEdgeKind::SubscriptionTimeline { .. } => {
-				tracing::warn!("subscription timeline has child entitlements");
-				vec![]
-			}
 			EntitlementEdgeKind::Badge { .. } => {
 				tracing::warn!("badge has child entitlements");
 				vec![]
@@ -493,6 +458,10 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 			EntitlementEdgeKind::EmoteSet { .. } => {
 				tracing::warn!("emote set has child entitlements");
 				vec![]
+			}
+			EntitlementEdgeKind::Subscription { subscription_id } => {
+				// TODO: subscription
+				todo!()
 			}
 		};
 
@@ -534,7 +503,7 @@ impl SupportedMongoCollection for mongo::Product {
 
 		let granted_entitlements = global
 			.entitlement_outbound_loader
-			.load(EntitlementEdgeKind::StaticProduct { product_id: id.clone() })
+			.load(EntitlementEdgeKind::Product { product_id: id.clone() })
 			.await
 			.map_err(|()| anyhow::anyhow!("failed to load entitlements"))?
 			.unwrap_or_default();
@@ -697,72 +666,6 @@ impl SupportedMongoCollection for mongo::Role {
 			.into_iter()
 			.collect::<Result<Vec<_>, _>>()
 			.context("failed to update role")?;
-
-		Ok(())
-	}
-}
-
-impl SupportedMongoCollection for mongo::SubscriptionTimelinePeriod {
-	async fn handle_delete(
-		global: &Arc<Global>,
-		id: SubscriptionTimelinePeriodId,
-		_: ChangeStreamEvent<Document>,
-	) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::SubscriptionTimelinePeriod::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
-		Ok(())
-	}
-
-	#[tracing::instrument(skip_all, fields(id))]
-	async fn handle_any(
-		global: &Arc<Global>,
-		id: SubscriptionTimelinePeriodId,
-		_: ChangeStreamEvent<Document>,
-	) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.subscription_timeline_period_batcher.loader.load(id).await else {
-			anyhow::bail!("failed to load data");
-		};
-
-		if data.search_updated_at.is_some_and(|u| u > data.updated_at) {
-			return Ok(());
-		}
-
-		let updated_at = bson::DateTime::from_chrono(data.updated_at);
-
-		let granted_entitlements = global
-			.entitlement_outbound_loader
-			.load(EntitlementEdgeKind::SubscriptionTimelinePeriod {
-				subscription_timeline_period_id: id,
-			})
-			.await
-			.map_err(|()| anyhow::anyhow!("failed to load entitlements"))?
-			.unwrap_or_default();
-
-		global
-			.subscription_timeline_period_batcher
-			.inserter
-			.execute(typesense::SubscriptionTimelinePeriod::from_db(
-				data,
-				granted_entitlements.into_iter().map(|edge| edge.id.to),
-			))
-			.await?;
-
-		let now = bson::DateTime::from_chrono(chrono::Utc::now());
-
-		global
-			.updater
-			.update::<mongo::SubscriptionTimelinePeriod>(
-				bson::doc! { "_id": id, "updated_at": updated_at },
-				bson::doc! { "$set": { "search_updated_at": now } },
-				false,
-			)
-			.await
-			.context("failed to update subscription timeline period")?;
 
 		Ok(())
 	}

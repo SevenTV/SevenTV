@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 
+use futures::TryStreamExt;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
@@ -10,6 +11,7 @@ use shared::database::role::permissions::{Permissions, PermissionsExt, UserPermi
 use shared::database::role::{Role, RoleId};
 use shared::database::user::ban::ActiveBans;
 use shared::database::user::{FullUser, User, UserComputed, UserId};
+use shared::database::MongoCollection;
 
 use crate::global::Global;
 

@@ -14,6 +14,7 @@ mod http;
 mod image_processor;
 mod jwt;
 mod search;
+mod sub_refresh_job;
 mod transactions;
 
 #[bootstrap]

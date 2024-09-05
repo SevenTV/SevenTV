@@ -102,6 +102,7 @@ pub enum StoredEventData {
 	},
 }
 
+// TODO: don't do this
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ImageProcessorEvent {

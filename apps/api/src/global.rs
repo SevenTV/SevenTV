@@ -13,7 +13,9 @@ use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, Entitleme
 use shared::database::global::GlobalConfig;
 use shared::database::loader::LoaderById;
 use shared::database::paint::Paint;
-use shared::database::product::Product;
+use shared::database::product::codes::RedeemCode;
+use shared::database::product::subscription::Subscription;
+use shared::database::product::{Product, SubscriptionProduct};
 use shared::database::role::Role;
 use shared::database::stored_event::StoredEvent;
 use shared::database::ticket::Ticket;
@@ -40,6 +42,7 @@ pub struct Global {
 	pub db: mongodb::Database,
 	pub clickhouse: clickhouse::Client,
 	pub http_client: reqwest::Client,
+	pub stripe_client: stripe::Client,
 	pub image_processor: ImageProcessor,
 	pub event_by_id_loader: DataLoader<LoaderById<StoredEvent>>,
 	pub product_by_id_loader: DataLoader<LoaderById<Product>>,
@@ -58,6 +61,9 @@ pub struct Global {
 	pub ticket_message_by_ticket_id_loader: DataLoader<TicketMessageByTicketIdLoader>,
 	pub entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
 	pub entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
+	pub subscription_product_by_id_loader: DataLoader<LoaderById<SubscriptionProduct>>,
+	pub subscription_by_id_loader: DataLoader<LoaderById<Subscription>>,
+	pub redeem_code_by_id_loader: DataLoader<LoaderById<RedeemCode>>,
 	pub user_by_id_loader: DataLoader<LoaderById<User>>,
 	pub user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
 	pub user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
@@ -94,6 +100,8 @@ impl Global {
 			..Default::default()
 		};
 
+		let stripe_client = stripe::Client::new(&config.api.stripe.api_key);
+
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			jetstream,
@@ -115,12 +123,16 @@ impl Global {
 			ticket_message_by_ticket_id_loader: TicketMessageByTicketIdLoader::new(db.clone()),
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
 			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
+			subscription_product_by_id_loader: LoaderById::new(db.clone()),
+			subscription_by_id_loader: LoaderById::new(db.clone()),
+			redeem_code_by_id_loader: LoaderById::new(db.clone()),
 			user_by_id_loader: LoaderById::new(db.clone()),
 			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),
 			user_ban_by_id_loader: LoaderById::new(db.clone()),
 			user_ban_by_user_id_loader: UserBanByUserIdLoader::new(db.clone()),
 			user_profile_picture_id_loader: LoaderById::new(db.clone()),
 			http_client: reqwest::Client::new(),
+			stripe_client,
 			typesense,
 			mongo,
 			db,

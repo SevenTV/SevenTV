@@ -36,6 +36,10 @@ pub struct Api {
 	/// Event API nats prefix
 	#[settings(default = "api.events".into())]
 	pub nats_event_subject: String,
+	/// Stripe config
+	pub stripe: StripeConfig,
+	/// PayPal config
+	pub paypal: PayPalConfig,
 }
 
 #[auto_settings]
@@ -82,6 +86,29 @@ pub struct ChangeStreamConfig {
 	/// The number of pending acks to buffer
 	#[settings(default = 1000)]
 	pub back_pressure_limit: usize,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct StripeConfig {
+	/// Stripe API key
+	#[settings(default = "sk_test_123".into())]
+	pub api_key: String,
+	/// Stripe webhook secret
+	#[settings(default = "whsec_test".into())]
+	pub webhook_secret: String,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct PayPalConfig {
+	/// Paypal api key
+	/// Needed to fetch subscriptions
+	#[settings(default = "api_key".into())]
+	pub api_key: String,
+	/// PayPal webhook id
+	#[settings(default = "webhook_id".into())]
+	pub webhook_id: String,
 }
 
 #[auto_settings]

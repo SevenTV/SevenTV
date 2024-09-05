@@ -1,5 +1,8 @@
+# [telemetry.logging]
+# level = "trace"
+
 [database]
-uri = "mongodb://mongodb:27017/image-processor?replicaSet=rs0"
+uri = "mongodb://mongodb:27017/image-processor?replicaSet=rs0&directConnection=true"
 
 [[drives]]
 name = "seventv-cdn"

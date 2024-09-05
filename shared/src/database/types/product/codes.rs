@@ -1,50 +1,38 @@
 use serde::{Deserialize, Serialize};
 
-use super::{InvoiceId, InvoiceLineItemId, ProductId, TimePeriod};
+use super::{ProductId, SubscriptionProductId, TimePeriod};
 use crate::database::entitlement::EntitlementEdgeKind;
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::{Id, MongoCollection};
 
-pub type GiftCodeId = Id<GiftCode>;
-
-#[derive(Debug, Clone, Serialize, Deserialize, MongoCollection)]
-#[mongo(collection_name = "gift_codes")]
-#[mongo(index(fields(code = 1), unique))]
-#[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
-#[serde(deny_unknown_fields)]
-pub struct GiftCode {
-	#[mongo(id)]
-	#[serde(rename = "_id")]
-	pub id: GiftCodeId,
-	pub code: String,
-	pub message: Option<String>,
-	pub purchased_by: UserId,
-	pub invoice_id: InvoiceId,
-	pub invoice_item_id: InvoiceLineItemId,
-	pub redeemed_by: Option<UserId>,
-	#[serde(with = "crate::database::serde")]
-	pub redeemed_at: Option<chrono::DateTime<chrono::Utc>>,
-	pub product_id: ProductId,
-	#[serde(with = "crate::database::serde")]
-	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum CodeEffect {
-	Entitlement { edge: EntitlementEdgeKind },
-	SubscriptionProduct { id: ProductId, trial_days: Option<u32> },
+	Entitlement {
+		edge: EntitlementEdgeKind,
+		extends_subscription: Option<SubscriptionProductId>,
+	},
+	SubscriptionProduct {
+		id: ProductId,
+		trial_days: u32,
+	},
 }
 
 impl std::fmt::Display for CodeEffect {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			CodeEffect::Entitlement { edge } => {
-				write!(f, "entitlement:{edge}",)
+			CodeEffect::Entitlement {
+				edge,
+				extends_subscription,
+			} => {
+				write!(f, "entitlement:{edge}")?;
+
+				if let Some(extends_subscription) = extends_subscription {
+					write!(f, ",extends_subscription:{extends_subscription}")?;
+				}
+
+				Ok(())
 			}
 			CodeEffect::SubscriptionProduct { id, .. } => {
 				write!(f, "subscription_product:{id}")
@@ -101,47 +89,46 @@ pub struct SpecialEvent {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-pub type DiscountCodeId = Id<DiscountCode>;
+// pub type DiscountCodeId = Id<DiscountCode>;
 
-#[derive(Debug, Clone, Serialize, Deserialize, MongoCollection)]
-#[mongo(collection_name = "discount_codes")]
-#[mongo(index(fields(code = 1), unique))]
-#[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
-#[serde(deny_unknown_fields)]
-pub struct DiscountCode {
-	#[mongo(id)]
-	#[serde(rename = "_id")]
-	pub id: DiscountCodeId,
-	pub name: String,
-	pub description: Option<String>,
-	pub tags: Vec<String>,
-	pub code: String,
-	pub discount: Discount,
-	pub active_period: TimePeriod,
-	pub max_uses: Option<i32>,
-	pub remaining_uses: Option<i32>,
-	pub max_uses_per_user: Option<i32>,
-	pub product_ids: Vec<ProductId>,
-	pub created_by: UserId,
-	#[serde(with = "crate::database::serde")]
-	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
-}
+// #[derive(Debug, Clone, Serialize, Deserialize, MongoCollection)]
+// #[mongo(collection_name = "discount_codes")]
+// #[mongo(index(fields(code = 1), unique))]
+// #[mongo(index(fields(search_updated_at = 1)))]
+// #[mongo(index(fields(_id = 1, updated_at = -1)))]
+// #[serde(deny_unknown_fields)]
+// pub struct DiscountCode {
+// 	#[mongo(id)]
+// 	#[serde(rename = "_id")]
+// 	pub id: DiscountCodeId,
+// 	pub name: String,
+// 	pub description: Option<String>,
+// 	pub tags: Vec<String>,
+// 	pub code: String,
+// 	pub discount: Discount,
+// 	pub active_period: TimePeriod,
+// 	pub max_uses: Option<i32>,
+// 	pub remaining_uses: Option<i32>,
+// 	pub max_uses_per_user: Option<i32>,
+// 	pub product_ids: Vec<ProductId>,
+// 	pub created_by: UserId,
+// 	#[serde(with = "crate::database::serde")]
+// 	pub updated_at: chrono::DateTime<chrono::Utc>,
+// 	#[serde(with = "crate::database::serde")]
+// 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+// }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum Discount {
-	Percentage { percentage: f64 },
-	Fixed { amount: f64, currency: stripe::Currency },
-}
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[serde(tag = "type")]
+// pub enum Discount {
+// 	Percentage { percentage: f64 },
+// 	Fixed { amount: f64, currency: stripe::Currency },
+// }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	[
-		MongoGenericCollection::new::<GiftCode>(),
 		MongoGenericCollection::new::<RedeemCode>(),
-		MongoGenericCollection::new::<DiscountCode>(),
+		// MongoGenericCollection::new::<DiscountCode>(),
 		MongoGenericCollection::new::<SpecialEvent>(),
 	]
 }

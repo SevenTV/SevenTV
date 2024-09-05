@@ -31,11 +31,13 @@ pub enum Error {
 	Timestamp(#[from] time::error::ComponentRange),
 
 	#[error("invalid stripe id: {0}")]
-	InvalidStripeId(String),
+	InvalidStripeId(stripe::ParseIdError),
 	#[error("{0}")]
 	Stripe(#[from] stripe::StripeError),
 	#[error("invalid recurring interval")]
 	InvalidRecurringInterval(stripe::RecurringInterval),
+	#[error("invalid subscription cycle")]
+	InvalidSubscriptionCycle,
 
 	// #[error("duplicate emote moderation request")]
 	// DuplicateEmoteModRequest {
@@ -79,6 +81,7 @@ impl Error {
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
 			Self::InvalidRecurringInterval(_) => "InvalidRecurringInterval",
+			Self::InvalidSubscriptionCycle => "InvalidSubscriptionCycle",
 			// Self::DuplicateEmoteModRequest { .. } => "DuplicateEmoteModRequest",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
 			Self::Reqwest(_) => "Reqwest",
@@ -104,7 +107,6 @@ impl Error {
 				format!("emote set id: {}, emote id: {:?}", emote_set_id, emote_id)
 			}
 			Self::UnsupportedAuditLogKind(kind) => format!("kind: {:?}", kind),
-			Self::InvalidStripeId(id) => format!("id: {}", id),
 			Self::ImageProcessor(e) => e.message.clone(),
 			Self::InvalidCdnFile(e) => format!("{}", e),
 			Self::ImageDownload { cosmetic_id, status } => format!("cosmetic id: {}, status: {}", cosmetic_id, status),
