@@ -48,6 +48,9 @@ pub async fn payment_method(
 
 	let mut params = create_checkout_session_params(&global, customer_id, None).await;
 
+	// TODO: make it depend on the user's country
+	params.currency = Some(stripe::Currency::EUR);
+
 	params.mode = Some(stripe::CheckoutSessionMode::Setup);
 
 	let success_url = format!("{}/subscribe", global.config.api.website_origin);

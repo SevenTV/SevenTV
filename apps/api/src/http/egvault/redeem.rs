@@ -147,6 +147,10 @@ pub async fn redeem(
 				let mut params = create_checkout_session_params(&global, customer_id, Some(product_id)).await;
 
 				params.mode = Some(stripe::CheckoutSessionMode::Subscription);
+				params.automatic_tax = Some(stripe::CreateCheckoutSessionAutomaticTax {
+					enabled: true,
+					..Default::default()
+				});
 
 				let mut metadata: HashMap<_, _> = [("USER_ID".to_string(), auth_session.user_id().to_string())].into();
 

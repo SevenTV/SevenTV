@@ -106,6 +106,11 @@ pub async fn subscribe(
 	let mut params =
 		create_checkout_session_params(&global, customer_id, Some(&variant.id)).await;
 
+	params.automatic_tax = Some(stripe::CreateCheckoutSessionAutomaticTax {
+		enabled: true,
+		..Default::default()
+	});
+
 	let receiving_user = if let Some(gift_for) = query.gift_for {
 		let receiving_user = global
 			.user_loader

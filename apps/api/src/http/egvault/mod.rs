@@ -27,7 +27,7 @@ pub fn routes() -> Router<Arc<Global>> {
 			get(subscription::subscription).delete(cancel::cancel_subscription),
 		)
 		.route("/subscription/:target/reactivate", post(cancel::reactivate_subscription))
-		.route("/subscription/:target/payment-method", patch(payment_method::payment_method))
+		.route("/subscriptions/:target/payment-method", patch(payment_method::payment_method))
 		.route("/products", get(products::products))
 		.route("/redeem", post(redeem::redeem))
 }
@@ -55,10 +55,6 @@ async fn create_checkout_session_params<'a>(
 				quantity: Some(1),
 				..Default::default()
 			}]
-		}),
-		automatic_tax: Some(stripe::CreateCheckoutSessionAutomaticTax {
-			enabled: true,
-			..Default::default()
 		}),
 		customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
 			address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
