@@ -25,6 +25,7 @@ impl MessagesMutation {
 		&self,
 		ctx: &Context<'ctx>,
 		message_ids: Vec<GqlObjectId>,
+		read: bool,
 		approved: bool,
 	) -> Result<u32, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
@@ -39,10 +40,15 @@ impl MessagesMutation {
 
 		let ids: Vec<EmoteModerationRequestId> = message_ids.into_iter().map(|id| id.id()).collect();
 
-		let status = if approved {
-			EmoteModerationRequestStatus::Approved
+		// read is false when mods click the undo button
+		let status = if read {
+			if approved {
+				EmoteModerationRequestStatus::Approved
+			} else {
+				EmoteModerationRequestStatus::Denied
+			}
 		} else {
-			EmoteModerationRequestStatus::Denied
+			EmoteModerationRequestStatus::Pending
 		};
 
 		let res = EmoteModerationRequest::collection(&global.db)
