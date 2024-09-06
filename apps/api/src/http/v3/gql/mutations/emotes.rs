@@ -350,11 +350,15 @@ impl EmoteOps {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EmoteUpdate {
+	#[graphql(validator(min_length = 1, max_length = 100))]
 	name: Option<String>,
+	#[graphql(validator(min_length = 1, max_length = 100))]
 	version_name: Option<String>,
+	#[graphql(validator(min_length = 1, max_length = 100))]
 	version_description: Option<String>,
 	flags: Option<EmoteFlagsModel>,
 	owner_id: Option<GqlObjectId>,
+	#[graphql(validator(min_items = 1, max_items = 10))]
 	tags: Option<Vec<String>>,
 	listed: Option<bool>,
 	personal_use: Option<bool>,

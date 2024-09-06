@@ -56,11 +56,14 @@ impl CosmeticsMutation {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintInput {
+	#[graphql(validator(min_length = 1, max_length = 100))]
 	name: String,
 	function: CosmeticPaintFunction,
 	color: Option<u32>,
+	#[graphql(validator(minimum = 0, maximum = 360))]
 	angle: Option<u32>,
 	shape: Option<CosmeticPaintShape>,
+	#[graphql(validator(url))]
 	image_url: Option<String>,
 	repeat: bool,
 	stops: Vec<CosmeticPaintStopInput>,
@@ -194,6 +197,7 @@ impl CosmeticPaintInput {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintStopInput {
+	#[graphql(validator(minimum = 0, maximum = 1))]
 	at: f64,
 	color: u32,
 }

@@ -304,7 +304,7 @@ impl EmoteSetOps {
 		ctx: &Context<'ctx>,
 		id: GqlObjectId,
 		action: ListItemAction,
-		name: Option<String>,
+		#[graphql(validator(min_length = 1, max_length = 100))] name: Option<String>,
 	) -> Result<Vec<ActiveEmote>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

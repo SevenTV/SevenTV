@@ -205,6 +205,7 @@ impl RolesMutation {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CreateRoleInput {
+	#[graphql(validator(min_length = 1, max_length = 100))]
 	name: String,
 	color: i32,
 	allowed: String,
@@ -214,6 +215,7 @@ pub struct CreateRoleInput {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EditRoleInput {
+	#[graphql(validator(min_length = 1, max_length = 100))]
 	name: Option<String>,
 	color: Option<i32>,
 	allowed: Option<String>,

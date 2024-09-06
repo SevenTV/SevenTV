@@ -67,8 +67,13 @@ pub async fn create_emote(
 	let emote_data = serde_json::from_str::<XEmoteData>(emote_data.to_str().map_err(|_| ApiError::BAD_REQUEST)?)
 		.map_err(|_| ApiError::BAD_REQUEST)?;
 
-	// TODO: validate emote name
-	// 	 We have automod rules too!!
+	if !(1..=100).contains(&emote_data.name.len()) {
+		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "emote name too long"));
+	}
+
+	if emote_data.tags.len() > 10 {
+		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "too many tags"));
+	}
 
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
 	let user = auth_session.user(&global).await?;
