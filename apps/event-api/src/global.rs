@@ -81,11 +81,6 @@ impl Global {
 	pub fn http_client(&self) -> &reqwest::Client {
 		&self.http_client
 	}
-
-	// /// Global metrics.
-	// pub fn metrics(&self) -> &Arc<metrics::Metrics> {
-	// 	&self.metrics
-	// }
 }
 
 impl HealthCheck for Global {
