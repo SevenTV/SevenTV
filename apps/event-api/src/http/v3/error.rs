@@ -25,33 +25,33 @@ pub enum ConnectionError {
 }
 
 impl ConnectionError {
-	// pub const fn as_str(&self) -> &'static str {
-	// 	match self {
-	// 		Self::Socket(_) => "CLIENT_CLOSED_ABNORMAL",
-	// 		Self::ClientClosed(code) => match code {
-	// 			None | Some(1000) => "CLIENT_CLOSED_CLEAN",
-	// 			Some(1001) => "CLIENT_CLOSED_AWAY",
-	// 			Some(1002) => "CLIENT_CLOSED_PROTOCOL",
-	// 			Some(1003) => "CLIENT_CLOSED_UNSUPPORTED",
-	// 			Some(1005) => "CLIENT_CLOSED_STATUS",
-	// 			Some(1006) => "CLIENT_CLOSED_ABNORMAL",
-	// 			Some(1007) => "CLIENT_CLOSED_INVALID",
-	// 			Some(1008) => "CLIENT_CLOSED_POLICY",
-	// 			Some(1009) => "CLIENT_CLOSED_SIZE",
-	// 			Some(1010) => "CLIENT_CLOSED_EXTENSION",
-	// 			Some(1011) => "CLIENT_CLOSED_ERROR",
-	// 			Some(1012) => "CLIENT_CLOSED_RESTART",
-	// 			Some(1013) => "CLIENT_CLOSED_AGAIN",
-	// 			_ => "CLIENT_CLOSED_UNKNOWN",
-	// 		},
-	// 		Self::Subscription(_) => "SUBSCRIPTION_ERROR",
-	// 		Self::Bridge(_) => "BRIDGE_ERROR",
-	// 		Self::InvalidPayload(_) => CloseCode::InvalidPayload.as_code_str(),
-	// 		Self::TtlExpired => CloseCode::Reconnect.as_code_str(),
-	// 		Self::GlobalClosed => CloseCode::Restart.as_code_str(),
-	// 		Self::ClosedByServer(code) => code.as_code_str(),
-	// 	}
-	// }
+	pub const fn as_code(&self) -> &'static str {
+		match self {
+			Self::Socket(_) => "CLIENT_CLOSED_ABNORMAL",
+			Self::ClientClosed(code) => match code {
+				None | Some(1000) => "CLIENT_CLOSED_CLEAN",
+				Some(1001) => "CLIENT_CLOSED_AWAY",
+				Some(1002) => "CLIENT_CLOSED_PROTOCOL",
+				Some(1003) => "CLIENT_CLOSED_UNSUPPORTED",
+				Some(1005) => "CLIENT_CLOSED_STATUS",
+				Some(1006) => "CLIENT_CLOSED_ABNORMAL",
+				Some(1007) => "CLIENT_CLOSED_INVALID",
+				Some(1008) => "CLIENT_CLOSED_POLICY",
+				Some(1009) => "CLIENT_CLOSED_SIZE",
+				Some(1010) => "CLIENT_CLOSED_EXTENSION",
+				Some(1011) => "CLIENT_CLOSED_ERROR",
+				Some(1012) => "CLIENT_CLOSED_RESTART",
+				Some(1013) => "CLIENT_CLOSED_AGAIN",
+				_ => "CLIENT_CLOSED_UNKNOWN",
+			},
+			Self::Subscription(_) => "SUBSCRIPTION_ERROR",
+			Self::Bridge(_) => "BRIDGE_ERROR",
+			Self::InvalidPayload(_) => CloseCode::InvalidPayload.as_code_str(),
+			Self::TtlExpired => CloseCode::Reconnect.as_code_str(),
+			Self::GlobalClosed => CloseCode::Restart.as_code_str(),
+			Self::ClosedByServer(code) => code.as_code_str(),
+		}
+	}
 
 	pub const fn as_close_code(&self) -> Option<CloseCode> {
 		match self {

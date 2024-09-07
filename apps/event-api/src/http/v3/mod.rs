@@ -81,7 +81,7 @@ mod v3 {
 	}
 
 	/// The number of client closes
-	pub fn client_closes(code: String, kind: ConnectionKind) -> Counter;
+	pub fn client_closes(code: &'static str, kind: ConnectionKind) -> Counter;
 
 	/// The number of commands issued
 	pub fn commands(kind: CommandKind, command: String) -> Counter;
@@ -336,10 +336,10 @@ impl Connection {
 
 				match self.socket {
 					Socket::Sse(_) => {
-						v3::client_closes(err.to_string(), v3::ConnectionKind::EventStream).inc();
+						v3::client_closes(err.as_code(), v3::ConnectionKind::EventStream).inc();
 					}
 					Socket::WebSocket(_) => {
-						v3::client_closes(err.to_string(), v3::ConnectionKind::Websocket).inc();
+						v3::client_closes(err.as_code(), v3::ConnectionKind::Websocket).inc();
 					}
 				}
 				false
