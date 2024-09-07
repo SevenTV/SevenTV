@@ -149,7 +149,7 @@ impl BansMutation {
 		&self,
 		ctx: &Context<'ctx>,
 		ban_id: GqlObjectId,
-		#[graphql(validator(max_length = 500))] reason: Option<String>,
+		#[graphql(validator(min_length = 1, max_length = 500))] reason: Option<String>,
 		effects: Option<BanEffect>,
 		expire_at: Option<chrono::DateTime<chrono::Utc>>,
 	) -> Result<Option<Ban>, ApiError> {

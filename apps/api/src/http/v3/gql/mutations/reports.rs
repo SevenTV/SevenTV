@@ -335,5 +335,6 @@ pub struct EditReportNoteInput {
 	#[graphql(validator(min_length = 1, max_length = 1000))]
 	content: Option<String>,
 	internal: Option<bool>,
+	/// unused
 	reply: Option<String>,
 }

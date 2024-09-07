@@ -12,6 +12,7 @@ use shared::database::MongoCollection;
 use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape};
 use shared::old_types::object_id::GqlObjectId;
 
+use crate::http::v3::validators::NameValidator;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::PermissionGuard;
@@ -56,7 +57,7 @@ impl CosmeticsMutation {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintInput {
-	#[graphql(validator(min_length = 1, max_length = 100))]
+	#[graphql(validator(custom = "NameValidator"))]
 	name: String,
 	function: CosmeticPaintFunction,
 	color: Option<u32>,

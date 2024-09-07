@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use hyper::StatusCode;
-use mongodb::options::UpdateOptions;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::stored_event::StoredEventUserSessionData;
@@ -66,7 +65,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 	// query user data from platform
 	let user_data = connections::get_user_data(global, platform, &token.access_token).await?;
 
-	let user_id = with_transaction(global, |mut tx| async move {
+	let user = with_transaction(global, |mut tx| async move {
 		let user = tx
 			.find_one(
 				filter::filter! {
@@ -137,7 +136,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		};
 
 		// upsert the connection
-		tx.update_one(
+		let user = tx.find_one_and_update(
 			filter::filter! {
 				User {
 					#[query(rename = "_id")]
@@ -162,11 +161,12 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 					updated_at: chrono::Utc::now(),
 				}
 			},
-			UpdateOptions::builder().upsert(true).build(),
+			None,
 		)
-		.await?;
+		.await?
+		.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
-		Ok(user_id)
+		Ok(user)
 	})
 	.await
 	.map_err(|e| match e {
@@ -179,11 +179,9 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 	let full_user = global
 		.user_loader
-		.load(global, user_id)
+		.load_user(global, user)
 		.await
-		.ok()
-		.flatten()
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 	if !full_user.has(UserPermission::Login) {
 		return Err(ApiError::new_const(StatusCode::FORBIDDEN, "not allowed to login"));
@@ -193,7 +191,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		if csrf_payload.user_id.is_none() {
 			let user_session = UserSession {
 				id: Default::default(),
-				user_id: user_id,
+				user_id: full_user.id,
 				// TODO: maybe allow for this to be configurable
 				expires_at: chrono::Utc::now() + chrono::Duration::days(30),
 				last_used_at: chrono::Utc::now(),
