@@ -71,7 +71,7 @@ impl BansMutation {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
 
-		let actor = auth_session.user(&global).await?;
+		let actor = auth_session.user(global).await?;
 		if actor.id == victim.id {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "cannot ban yourself"));
 		} else if actor.computed.highest_role_rank <= victim.computed.highest_role_rank
@@ -256,7 +256,7 @@ impl Ban {
 			effects,
 			expire_at: ban.expires_at.unwrap_or_default(),
 			created_at: ban.id.timestamp(),
-			victim_id: user_id.into(),
+			victim_id: user_id,
 			actor_id: ban.created_by_id.into(),
 		}
 	}

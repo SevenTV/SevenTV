@@ -117,10 +117,7 @@ pub async fn get_user_by_id(
 			.into_iter()
 			.map(|emote_set| EmoteSetPartialModel::from_db(emote_set, None))
 			.collect(),
-		editors
-			.into_iter()
-			.filter_map(|editor| UserEditorModel::from_db(editor))
-			.collect(),
+		editors.into_iter().filter_map(UserEditorModel::from_db).collect(),
 		&global.config.api.cdn_origin,
 	);
 
@@ -182,7 +179,7 @@ pub async fn upload_user_profile_picture(
 		),
 	};
 
-	let target_user = other_user.as_ref().unwrap_or(&user);
+	let target_user = other_user.as_ref().unwrap_or(user);
 
 	if target_user.computed.permissions.has(UserPermission::UseCustomProfilePicture) {
 		return Err(ApiError::new_const(
@@ -191,8 +188,9 @@ pub async fn upload_user_profile_picture(
 		));
 	}
 
-	if other_user.is_some() && !user.has(UserPermission::ManageAny) {
-		if !global
+	if other_user.is_some()
+		&& !user.has(UserPermission::ManageAny)
+		&& !global
 			.user_editor_by_id_loader
 			.load(UserEditorId {
 				user_id: target_user.id,
@@ -202,12 +200,11 @@ pub async fn upload_user_profile_picture(
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.map(|editor| editor.permissions.has_user(EditorUserPermission::ManageProfile))
 			.unwrap_or_default()
-		{
-			return Err(ApiError::new_const(
-				StatusCode::FORBIDDEN,
-				"user cannot edit other user's profile picture",
-			));
-		}
+	{
+		return Err(ApiError::new_const(
+			StatusCode::FORBIDDEN,
+			"user cannot edit other user's profile picture",
+		));
 	}
 
 	if target_user.style.pending_profile_picture.is_some() {
@@ -391,7 +388,7 @@ pub async fn get_user_by_platform_id(
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.unwrap_or_default()
 		.into_iter()
-		.filter_map(|e| UserEditorModel::from_db(e))
+		.filter_map(UserEditorModel::from_db)
 		.collect::<Vec<_>>();
 
 	// query user emote sets
@@ -449,6 +446,7 @@ pub async fn delete_user_by_id() -> Result<impl IntoResponse, ApiError> {
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.update-connection.go#L86
 #[derive(Debug, Clone, Deserialize)]
 struct UpdateUserConnectionBody {
+	#[allow(unused)]
 	new_user_id: UserId,
 }
 

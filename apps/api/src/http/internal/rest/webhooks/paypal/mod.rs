@@ -165,7 +165,7 @@ pub async fn handle(
 				}
 				(types::EventType::BillingSubscriptionCancelled, types::Resource::Subscription(subscription))
 				| (types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
-					return subscription::cancelled(&global, tx, subscription).await;
+					return subscription::cancelled(&global, tx, *subscription).await;
 				}
 				_ => return Err(TransactionError::custom(ApiError::BAD_REQUEST)),
 			}

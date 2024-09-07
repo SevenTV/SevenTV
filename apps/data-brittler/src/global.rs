@@ -7,7 +7,7 @@ use crate::config::Config;
 
 pub struct Global {
 	config: Config,
-	clickhouse: clickhouse::Client,
+	// clickhouse: clickhouse::Client,
 	stripe_client: stripe::Client,
 	main_source_db: mongodb::Database,
 	egvault_source_db: mongodb::Database,
@@ -23,7 +23,8 @@ pub struct Global {
 
 impl Global {
 	pub async fn new(config: Config) -> anyhow::Result<Self> {
-		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
+		// let clickhouse =
+		// clickhouse::Client::default().with_url(&config.clickhouse.uri);
 
 		let mongo_source = shared::database::setup_database(&config.main_source_database, false)
 			.await
@@ -44,7 +45,7 @@ impl Global {
 		Ok(Self {
 			stripe_client: stripe::Client::new(&config.stripe_key),
 			config,
-			clickhouse,
+			// clickhouse,
 			main_source_db: mongo_source
 				.default_database()
 				.unwrap_or_else(|| mongo_source.database("7tv")),
@@ -68,9 +69,9 @@ impl Global {
 		&self.config
 	}
 
-	pub fn clickhouse(&self) -> &clickhouse::Client {
-		&self.clickhouse
-	}
+	// pub fn clickhouse(&self) -> &clickhouse::Client {
+	// 	&self.clickhouse
+	// }
 
 	pub fn source_db(&self) -> &mongodb::Database {
 		&self.main_source_db

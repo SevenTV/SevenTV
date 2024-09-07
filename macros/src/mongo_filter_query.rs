@@ -14,11 +14,7 @@ struct Struct {
 impl Struct {
 	fn from_syn(s: syn::ExprStruct) -> Result<Self, syn::Error> {
 		let path = s.path;
-		let fields = s
-			.fields
-			.into_iter()
-			.map(|field| Field::from_syn(field))
-			.collect::<Result<Vec<_>, _>>()?;
+		let fields = s.fields.into_iter().map(Field::from_syn).collect::<Result<Vec<_>, _>>()?;
 
 		Ok(Self { path, fields })
 	}
@@ -127,7 +123,7 @@ impl Field {
 
 					let selector = match meta.value()?.parse::<QuerySelector>() {
 						Ok(selector) => selector,
-						Err(e) => return Err(e.into()),
+						Err(e) => return Err(e),
 					};
 					query_selector = Some(selector);
 				} else if meta.path.is_ident("flatten") {
@@ -461,16 +457,19 @@ pub fn mapper_struct(ast: syn::ExprStruct) -> Result<proc_macro2::TokenStream, s
 	let ty = &root_stuct.path;
 
 	Ok(quote! {
-		#path::Value::<#ty>::new({
-			#variables
+		{
+			#[allow(clippy::redundant_locals)]
+			#path::Value::<#ty>::new({
+				#variables
 
-			#[allow(unused_imports, unused_variables, dead_code, unused_unsafe, unsafe_code, unused_doc_comments, unreachable_code)]
-			if false {
-				#asserts
-			}
+				#[allow(unused_imports, unused_variables, dead_code, unused_unsafe, unsafe_code, unused_doc_comments, unreachable_code)]
+				if false {
+					#asserts
+				}
 
-			#bson_doc
-		})
+				#bson_doc
+			})
+		}
 	})
 }
 

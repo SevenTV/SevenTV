@@ -173,6 +173,6 @@ impl<'de> serde::Deserialize<'de> for ImageFile {
 		D: serde::Deserializer<'de>,
 	{
 		let s = String::deserialize(deserializer)?;
-		Ok(s.parse().map_err(|e| serde::de::Error::custom(e))?)
+		s.parse().map_err(serde::de::Error::custom)
 	}
 }

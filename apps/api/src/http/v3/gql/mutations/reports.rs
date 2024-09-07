@@ -123,7 +123,7 @@ impl ReportsMutation {
 		let transaction_result = with_transaction(global, |mut tx| async move {
 			let new_priority = data
 				.priority
-				.map(|p| TicketPriority::try_from(p))
+				.map(TicketPriority::try_from)
 				.transpose()
 				.map_err(|_| ApiError::new_const(StatusCode::BAD_REQUEST, "invalid ticket priority"))
 				.map_err(TransactionError::custom)?;
@@ -163,13 +163,13 @@ impl ReportsMutation {
 
 						let member_user = global
 							.user_loader
-							.load_fast(&global, user_id)
+							.load_fast(global, user_id)
 							.await
 							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 							.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
 						event_ticket_data = Some(InternalEventTicketData::AddMember {
-							member: member_user.user,
+							member: Box::new(member_user.user),
 						});
 
 						update = update.extend_one(update::update! {
@@ -183,13 +183,13 @@ impl ReportsMutation {
 					(Some('-'), Ok(user_id)) => {
 						let member_user = global
 							.user_loader
-							.load_fast(&global, user_id)
+							.load_fast(global, user_id)
 							.await
 							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 							.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
 						event_ticket_data = Some(InternalEventTicketData::RemoveMember {
-							member: member_user.user,
+							member: Box::new(member_user.user),
 						});
 
 						update = update.extend_one(update::update! {

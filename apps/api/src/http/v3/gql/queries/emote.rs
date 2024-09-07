@@ -75,7 +75,7 @@ impl Emote {
 				lifecycle,
 				error: None,
 				state: state.clone(),
-				listed: listed,
+				listed,
 				host,
 			}],
 			state,
@@ -377,7 +377,7 @@ impl EmotesQuery {
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		Ok(emote.into_iter().map(|(_, e)| Emote::from_db(global, e).into()).collect())
+		Ok(emote.into_values().map(|e| Emote::from_db(global, e).into()).collect())
 	}
 
 	async fn emotes(

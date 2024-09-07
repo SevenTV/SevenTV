@@ -43,7 +43,7 @@ impl HealthCheck for Global {
 				return false;
 			}
 
-			if !self.database.run_command(bson::doc! { "ping": 1 }).await.is_ok() {
+			if self.database.run_command(bson::doc! { "ping": 1 }).await.is_err() {
 				tracing::error!("mongo not connected");
 				return false;
 			}

@@ -2,9 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use mongodb::bson::doc;
-use shared::database::emote_moderation_request::{
-	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus
-};
+use shared::database::emote_moderation_request::{EmoteModerationRequestId, EmoteModerationRequestKind};
 use shared::database::role::permissions::{EmoteModerationRequestPermission, PermissionsExt};
 use shared::old_types::object_id::GqlObjectId;
 
@@ -51,26 +49,26 @@ pub struct ModRequestMessage {
 	actor_country_code: String,
 }
 
-impl ModRequestMessage {
-	fn from_db(mod_request: EmoteModerationRequest) -> Self {
-		Self {
-			id: mod_request.id.into(),
-			kind: MessageKind::ModRequest,
-			author_id: Some(mod_request.user_id.into()),
-			read: mod_request.status == EmoteModerationRequestStatus::Approved
-				|| mod_request.status == EmoteModerationRequestStatus::Denied,
-			read_at: None,
-			target_kind: 2,
-			target_id: mod_request.emote_id.into(),
-			wish: match mod_request.kind {
-				EmoteModerationRequestKind::PublicListing => "list".to_string(),
-				EmoteModerationRequestKind::PersonalUse => "personal_use".to_string(),
-			},
-			actor_country_name: String::new(),
-			actor_country_code: mod_request.country_code.unwrap_or_default(),
-		}
-	}
-}
+// impl ModRequestMessage {
+// 	fn from_db(mod_request: EmoteModerationRequest) -> Self {
+// 		Self {
+// 			id: mod_request.id.into(),
+// 			kind: MessageKind::ModRequest,
+// 			author_id: Some(mod_request.user_id.into()),
+// 			read: mod_request.status == EmoteModerationRequestStatus::Approved
+// 				|| mod_request.status == EmoteModerationRequestStatus::Denied,
+// 			read_at: None,
+// 			target_kind: 2,
+// 			target_id: mod_request.emote_id.into(),
+// 			wish: match mod_request.kind {
+// 				EmoteModerationRequestKind::PublicListing => "list".to_string(),
+// 				EmoteModerationRequestKind::PersonalUse => "personal_use".to_string(),
+// 			},
+// 			actor_country_name: String::new(),
+// 			actor_country_code: mod_request.country_code.unwrap_or_default(),
+// 		}
+// 	}
+// }
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ModRequestMessage {
@@ -127,7 +125,7 @@ impl MessagesQuery {
 		&self,
 		ctx: &Context<'ctx>,
 		after_id: Option<GqlObjectId>,
-		limit: Option<u32>,
+		_limit: Option<u32>,
 		wish: Option<String>,
 		_country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
@@ -141,8 +139,8 @@ impl MessagesQuery {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let after_id: Option<EmoteModerationRequestId> = after_id.map(|id| id.id());
-		let wish = wish.and_then(|w| match w.as_ref() {
+		let _after_id: Option<EmoteModerationRequestId> = after_id.map(|id| id.id());
+		let _wish = wish.and_then(|w| match w.as_ref() {
 			"list" => Some(EmoteModerationRequestKind::PublicListing),
 			"personal_use" => Some(EmoteModerationRequestKind::PersonalUse),
 			_ => None,

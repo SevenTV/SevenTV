@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 
-use futures::TryStreamExt;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
@@ -11,7 +10,6 @@ use shared::database::role::permissions::{Permissions, PermissionsExt, UserPermi
 use shared::database::role::{Role, RoleId};
 use shared::database::user::ban::ActiveBans;
 use shared::database::user::{FullUser, User, UserComputed, UserId};
-use shared::database::MongoCollection;
 
 use crate::global::Global;
 
@@ -87,11 +85,9 @@ impl FullUserLoader {
 		Ok(users
 			.into_iter()
 			.filter_map(|user| {
-				let Some(mut computed) = computed.get(&user.id).cloned() else {
-					return None;
-				};
+				let mut computed = computed.get(&user.id)?.clone();
 
-				if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(&bans)) {
+				if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
 					computed.permissions.merge(active_bans.permissions());
 				}
 
@@ -203,7 +199,7 @@ impl FullUserLoader {
 
 		for user in users.values_mut() {
 			user.computed.permissions = compute_permissions(&roles, &user.computed.entitlements.roles);
-			if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(&bans)) {
+			if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
 				user.computed.permissions.merge(active_bans.permissions());
 			}
 
@@ -328,7 +324,7 @@ impl Loader for UserComputedLoader {
 
 fn compute_permissions(sorted_roles: &[Role], user_roles: &HashSet<RoleId>) -> Permissions {
 	sorted_roles
-		.into_iter()
+		.iter()
 		.filter(|role| user_roles.contains(&role.id))
 		.map(|role| &role.permissions)
 		.fold(Permissions::default(), |mut acc, p| {
@@ -339,7 +335,7 @@ fn compute_permissions(sorted_roles: &[Role], user_roles: &HashSet<RoleId>) -> P
 
 fn compute_highest_role_rank(sorted_roles: &[Role], user_roles: &HashSet<RoleId>) -> i32 {
 	sorted_roles
-		.into_iter()
+		.iter()
 		.rev()
 		.find_map(|role| {
 			if user_roles.contains(&role.id) {
@@ -353,7 +349,7 @@ fn compute_highest_role_rank(sorted_roles: &[Role], user_roles: &HashSet<RoleId>
 
 fn compute_highest_role_color(sorted_roles: &[Role], user_roles: &HashSet<RoleId>) -> Option<i32> {
 	sorted_roles
-		.into_iter()
+		.iter()
 		.rev()
 		.filter(|role| user_roles.contains(&role.id))
 		.find_map(|role| role.color)

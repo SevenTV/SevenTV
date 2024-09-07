@@ -32,7 +32,7 @@ pub fn sub_age(periods: &[SubscriptionPeriod]) -> (isize, isize) {
 pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> Result<(), ApiError> {
 	let product = global
 		.subscription_product_by_id_loader
-		.load(subscription_id.product_id.clone())
+		.load(subscription_id.product_id)
 		.await
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;

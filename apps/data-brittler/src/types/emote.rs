@@ -5,8 +5,8 @@ use super::image_file::ImageFile;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Emote {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	// #[serde(rename = "_id")]
+	// pub id: ObjectId,
 	pub name: String,
 	pub flags: EmoteFlagsModel,
 	pub owner_id: ObjectId,
@@ -19,13 +19,13 @@ pub struct EmoteVersion {
 	pub id: ObjectId,
 	#[serde(default, deserialize_with = "super::empty_string_is_none")]
 	pub name: Option<String>,
-	#[serde(default, deserialize_with = "super::empty_string_is_none")]
-	pub description: Option<String>,
+	// #[serde(default, deserialize_with = "super::empty_string_is_none")]
+	// pub description: Option<String>,
 	pub animated: bool,
 	pub state: EmoteVersionState,
 	pub input_file: ImageFile,
 	pub image_files: Vec<ImageFile>,
-	pub created_at: super::DateTime,
+	// pub created_at: super::DateTime,
 }
 
 #[derive(Debug, serde::Deserialize)]

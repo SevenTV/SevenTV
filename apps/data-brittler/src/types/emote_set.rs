@@ -8,10 +8,10 @@ pub struct EmoteSet {
 	pub owner_id: ObjectId,
 	pub name: String,
 	pub capacity: i32,
-	#[serde(default)]
-	pub immutable: bool,
-	#[serde(default)]
-	pub privileged: bool,
+	// #[serde(default)]
+	// pub immutable: bool,
+	// #[serde(default)]
+	// pub privileged: bool,
 	#[serde(default)]
 	pub flags: EmoteSetFlagModel,
 	#[serde(default, deserialize_with = "super::null_to_default")]

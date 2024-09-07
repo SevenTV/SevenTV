@@ -71,7 +71,7 @@ async fn process_cosmetic(global: &Arc<Global>, c: Cosmetic) -> anyhow::Result<(
 
 	tracing::debug!(cosmetic_id = %c.id, "processing cosmetic");
 
-	let image = request_image(&global, &download_url).await?;
+	let image = request_image(global, &download_url).await?;
 	let path = format!("local/cosmetics/{}", c.id);
 
 	tokio::fs::OpenOptions::new()

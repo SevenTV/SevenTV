@@ -77,7 +77,7 @@ fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 						})
 						.on_failure(DefaultOnFailure::new().level(tracing::Level::DEBUG))
 						.on_response(|res: &Response, _, span: &Span| {
-							span.record("response.status_code", &res.status().as_u16());
+							span.record("response.status_code", res.status().as_u16());
 						}),
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
@@ -109,7 +109,7 @@ impl<A: ServiceHandler, B: ServiceHandler> AnyService<A, B> {
 			kind,
 			request_count: Arc::new(AtomicUsize::new(0)),
 			started_at: Instant::now(),
-			_guard: Arc::new((ConnectionDropGuard::new(kind.into()), limiter)),
+			_guard: Arc::new((ConnectionDropGuard::new(kind), limiter)),
 			inner: svc,
 		}
 	}

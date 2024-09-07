@@ -10,7 +10,9 @@ use crate::config;
 #[metrics]
 mod rate_limit {
 	use ipnet::IpNet;
-	use scuffle_foundations::telemetry::metrics::{prometheus_client::metrics::{counter::Counter, histogram::Histogram}, HistogramBuilder};
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
+	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize)]
 	pub enum RuleType {
@@ -18,19 +20,19 @@ mod rate_limit {
 		Bucket,
 	}
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize)]
-    pub enum IpType {
-        V4,
-        V6,
-    }
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize)]
+	pub enum IpType {
+		V4,
+		V6,
+	}
 
 	pub fn deny(range: IpNet, rule: RuleType, limit: String) -> Counter;
 
-    #[builder = HistogramBuilder::default()]
-    pub fn accept_bucket(ip: IpType, prefix: String) -> Histogram;
+	#[builder = HistogramBuilder::default()]
+	pub fn accept_bucket(ip: IpType, prefix: String) -> Histogram;
 
-    #[builder = HistogramBuilder::default()]
-    pub fn accept_subnet(subnet: String) -> Histogram;
+	#[builder = HistogramBuilder::default()]
+	pub fn accept_subnet(subnet: String) -> Histogram;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -51,29 +53,28 @@ impl Limit {
 				rate_limit::deny(ip, RuleType::Subnet, self.connections.to_string()).inc();
 			}
 			LimitType::Bucket(ip) => {
-				rate_limit::deny(
-					ip.trunc(),
-					RuleType::Bucket,
-					self.connections.to_string(),
-				)
-				.inc();
+				rate_limit::deny(ip.trunc(), RuleType::Bucket, self.connections.to_string()).inc();
 			}
 		}
 	}
 
-    fn report_accept(&self, count: u64) {
-        match self.range {
-            LimitType::Subnet(ip) => {
-                rate_limit::accept_subnet(ip.to_string()).observe(count as f64);
-            }
-            LimitType::Bucket(ip) => {
-                rate_limit::accept_bucket(match ip {
-                    IpNet::V4(_) => IpType::V4,
-                    IpNet::V6(_) => IpType::V6,
-                }, ip.prefix_len().to_string()).observe(count as f64);
-            }
-        }
-    }
+	fn report_accept(&self, count: u64) {
+		match self.range {
+			LimitType::Subnet(ip) => {
+				rate_limit::accept_subnet(ip.to_string()).observe(count as f64);
+			}
+			LimitType::Bucket(ip) => {
+				rate_limit::accept_bucket(
+					match ip {
+						IpNet::V4(_) => IpType::V4,
+						IpNet::V6(_) => IpType::V6,
+					},
+					ip.prefix_len().to_string(),
+				)
+				.observe(count as f64);
+			}
+		}
+	}
 }
 
 pub struct RateLimiter {
@@ -202,9 +203,9 @@ impl RateLimiter {
 		}
 
 		limits.iter().for_each(|limit| {
-            let value = ip_buckets.entry(limit.range).or_insert(0);
+			let value = ip_buckets.entry(limit.range).or_insert(0);
 			*value += 1;
-            limit.report_accept(*value);
+			limit.report_accept(*value);
 		});
 
 		Some(RateLimitDropGuard {

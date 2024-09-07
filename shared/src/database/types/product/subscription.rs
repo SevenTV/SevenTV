@@ -34,10 +34,10 @@ impl FromStr for SubscriptionId {
 	}
 }
 
-/// All subscriptions that ever existed, not only active ones
-/// This is only used to save data about a subscription that could also be
-/// retrieved from Stripe or PayPal It is used to avoid sending requests to
-/// Stripe or PayPal every time someone queries data about a subscription
+// All subscriptions that ever existed, not only active ones
+// This is only used to save data about a subscription that could also be
+// retrieved from Stripe or PayPal It is used to avoid sending requests to
+// Stripe or PayPal every time someone queries data about a subscription
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscriptions")]
 #[mongo(index(fields("_id.user_id" = 1, "_id.product_id" = 1)))]
@@ -119,10 +119,20 @@ pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, tag = "type")]
 pub enum SubscriptionPeriodCreatedBy {
-	RedeemCode { redeem_code_id: RedeemCodeId },
-	Invoice { invoice_id: InvoiceId, cancel_at_period_end: bool },
-	Gift { gifter: UserId, payment: PaymentIntentId },
-	System { reason: Option<String> },
+	RedeemCode {
+		redeem_code_id: RedeemCodeId,
+	},
+	Invoice {
+		invoice_id: InvoiceId,
+		cancel_at_period_end: bool,
+	},
+	Gift {
+		gifter: UserId,
+		payment: PaymentIntentId,
+	},
+	System {
+		reason: Option<String>,
+	},
 }
 
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {

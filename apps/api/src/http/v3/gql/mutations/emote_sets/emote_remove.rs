@@ -77,7 +77,7 @@ pub async fn emote_remove(
 		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::RemoveEmote {
-				emote,
+				emote: Box::new(emote),
 				emote_set_emote: old_emote_set_emote.clone(),
 				index,
 			},

@@ -57,7 +57,7 @@ fn parse_mode(ast: &mut syn::Expr) -> Result<Mode, syn::Error> {
 		.filter(|attr| attr.meta.path().is_ident(ATTRIBUTE_NAME))
 		.cloned()
 		.collect::<Vec<_>>();
-	attrs.retain(|attr| !query_attrs.contains(&attr));
+	attrs.retain(|attr| !query_attrs.contains(attr));
 
 	let mut mode = None;
 	for attr in query_attrs {
@@ -142,7 +142,7 @@ fn parse_mode(ast: &mut syn::Expr) -> Result<Mode, syn::Error> {
 		parser.parse2(tokens)?;
 	}
 
-	Ok(mode.ok_or_else(|| syn::Error::new(ast.span(), "Expected `set`, `unset`, `inc`, `mul`, `setOnInsert`, `push`, `pull`, `addToSet`, `pop`, `pullAll`, `setOnInsert` attribute"))?)
+	mode.ok_or_else(|| syn::Error::new(ast.span(), "Expected `set`, `unset`, `inc`, `mul`, `setOnInsert`, `push`, `pull`, `addToSet`, `pop`, `pullAll`, `setOnInsert` attribute"))
 }
 
 pub(crate) fn proc_macro(input: proc_macro2::TokenStream) -> Result<proc_macro2::TokenStream, syn::Error> {
@@ -785,15 +785,18 @@ fn mapper_struct(ast: syn::ExprStruct, mode: Mode) -> Result<proc_macro2::TokenS
 	let ty = &root_stuct.path;
 
 	Ok(quote! {
-		#mode::<#ty>::new({
-			#variables
+		{
+			#[allow(clippy::redundant_locals)]
+			#mode::<#ty>::new({
+				#variables
 
-			#[allow(unused_imports, unused_variables, dead_code, unused_unsafe, unsafe_code, unused_doc_comments, unreachable_code)]
-			if false {
-				#asserts
-			}
+				#[allow(unused_imports, unused_variables, dead_code, unused_unsafe, unsafe_code, unused_doc_comments, unreachable_code)]
+				if false {
+					#asserts
+				}
 
-			#bson_doc
-		})
+				#bson_doc
+			})
+		}
 	})
 }

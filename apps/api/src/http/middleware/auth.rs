@@ -45,12 +45,12 @@ impl AuthSession {
 	pub async fn user(&self, global: &Arc<Global>) -> Result<&FullUser, ApiError> {
 		self.cached_data
 			.get_or_try_init(|| async {
-				Ok(global
+				global
 					.user_loader
 					.load(global, self.user_id())
 					.await
 					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::UNAUTHORIZED)?)
+					.ok_or(ApiError::UNAUTHORIZED)
 			})
 			.await
 	}

@@ -15,7 +15,7 @@ pub struct Role {
 	pub allowed: RolePermission,
 	#[serde(default)]
 	pub denied: RolePermission,
-	pub discord_id: Option<u64>,
+	// pub discord_id: Option<u64>,
 }
 
 impl Role {

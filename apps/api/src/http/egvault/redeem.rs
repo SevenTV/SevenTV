@@ -31,7 +31,7 @@ pub async fn grant_entitlements(
 		let from = match extends_subscription {
 			Some(extends_subscription) => EntitlementEdgeKind::Subscription {
 				subscription_id: SubscriptionId {
-					user_id: user_id,
+					user_id,
 					product_id: *extends_subscription,
 				},
 			},
@@ -140,7 +140,9 @@ pub async fn redeem(
 					.clone()
 				{
 					Some(id) => id,
-					None => find_or_create_customer(&global, auth_session.user_id(), None).await.map_err(TransactionError::custom)?,
+					None => find_or_create_customer(&global, auth_session.user_id(), None)
+						.await
+						.map_err(TransactionError::custom)?,
 				};
 
 				let mut params = create_checkout_session_params(&global, customer_id, Some(product_id)).await;

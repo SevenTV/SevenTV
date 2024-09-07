@@ -16,10 +16,10 @@ use crate::error;
 use crate::global::Global;
 use crate::types::{self, SubscriptionCycleUnit, SubscriptionProvider};
 
-pub const PAYPAL_YEARLY: &'static str = "P-9P108407878214437MDOSLGA";
-pub const PAYPAL_MONTHLY: &'static str = "P-0RN164482K927302CMDOSJJA";
-pub const STRIPE_YEARLY: &'static str = "price_1JWQ2RCHxsWbK3R3a6emz76a";
-pub const STRIPE_MONTHLY: &'static str = "price_1JWQ2QCHxsWbK3R31cZkaocV";
+pub const PAYPAL_YEARLY: &str = "P-9P108407878214437MDOSLGA";
+pub const PAYPAL_MONTHLY: &str = "P-0RN164482K927302CMDOSJJA";
+pub const STRIPE_YEARLY: &str = "price_1JWQ2RCHxsWbK3R3a6emz76a";
+pub const STRIPE_MONTHLY: &str = "price_1JWQ2QCHxsWbK3R31cZkaocV";
 
 pub struct SubscriptionsJob {
 	global: Arc<Global>,

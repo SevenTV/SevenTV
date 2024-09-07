@@ -4,9 +4,9 @@ use mongodb::bson::oid::ObjectId;
 pub struct Message {
 	#[serde(rename = "_id")]
 	pub id: ObjectId,
-	pub kind: MessageKind,
+	// pub kind: MessageKind,
 	pub author_id: ObjectId,
-	pub created_at: super::DateTime,
+	// pub created_at: super::DateTime,
 	pub data: MessageData,
 }
 
@@ -23,8 +23,8 @@ pub enum MessageKind {
 #[serde(untagged)]
 pub enum MessageData {
 	InboxData {
-		subject: String,
-		content: String,
+		// subject: String,
+		// content: String,
 	},
 	EmoteRequest {
 		target_id: ObjectId,
@@ -42,8 +42,8 @@ pub enum EmoteWish {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct MessageRead {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	// #[serde(rename = "_id")]
+	// pub id: ObjectId,
 	pub message_id: ObjectId,
 	pub read: bool,
 }

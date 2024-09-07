@@ -74,7 +74,7 @@ macro_rules! stripe_type {
 
 			impl PartialOrd for $name {
 				fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-					self.0.partial_cmp(&other.0)
+					Some(self.0.cmp(&other.0))
 				}
 			}
 
@@ -231,10 +231,10 @@ pub struct SubscriptionProductVariant {
 
 pub type SubscriptionBenefitId = Id<SubscriptionBenefit>;
 
-/// The `SubscriptionBenefitId` can have entitlements attached via the
-/// entitlement graph. If the user qualifies for the entitlement benefit then we
-/// create an edge between `Subscription` and `SubscriptionBenefit` on the
-/// entitlement graph.
+// The `SubscriptionBenefitId` can have entitlements attached via the
+// entitlement graph. If the user qualifies for the entitlement benefit then we
+// create an edge between `Subscription` and `SubscriptionBenefit` on the
+// entitlement graph.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionBenefit {

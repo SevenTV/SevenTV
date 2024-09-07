@@ -37,7 +37,7 @@ impl CosmeticsQuery {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let list = list.unwrap_or_default();
 
-		if list.len() == 0 {
+		if list.is_empty() {
 			// return all cosmetics when empty list is provided
 
 			let paints = Paint::collection(&global.db)

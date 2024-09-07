@@ -79,12 +79,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				(stripe::EventType::InvoiceUpdated, stripe::EventObject::Invoice(iv))
 				| (stripe::EventType::InvoiceFinalized, stripe::EventObject::Invoice(iv))
 				| (stripe::EventType::InvoicePaymentSucceeded, stripe::EventObject::Invoice(iv)) => {
-					invoice::updated(
-						&global,
-						&mut tx,
-						&iv,
-					)
-					.await?;
+					invoice::updated(&global, &mut tx, &iv).await?;
 				}
 				(stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv)) => {
 					return invoice::paid(&global, tx, iv).await;

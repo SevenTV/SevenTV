@@ -38,18 +38,18 @@ pub enum EventType {
 pub enum Resource {
 	Sale(Sale),
 	Dispute(Dispute),
-	Subscription(Subscription),
+	Subscription(Box<Subscription>),
 }
 
 /// https://developer.paypal.com/docs/api/payments/v1/#definition-sale
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Sale {
 	pub id: String,
-	pub state: SaleState,
-	pub amount: Amount,
+	// pub state: SaleState,
+	// pub amount: Amount,
 	/// Only present if the sale is for a subscription
 	pub billing_agreement_id: Option<String>,
-	pub create_time: chrono::DateTime<chrono::Utc>,
+	// pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Copy, Clone, serde::Deserialize)]
@@ -62,22 +62,22 @@ pub enum SaleState {
 	Denied,
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct Amount {
-	/// The total amount of the sale as a decimal number.
-	/// Negative on refunds.
-	pub total: String,
-	pub currency: stripe::Currency,
-}
+// #[derive(Debug, Clone, serde::Deserialize)]
+// pub struct Amount {
+// 	/// The total amount of the sale as a decimal number.
+// 	/// Negative on refunds.
+// 	pub total: String,
+// 	pub currency: stripe::Currency,
+// }
 
 /// https://developer.paypal.com/docs/api/customer-disputes/v1/#definition-dispute
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Dispute {
-	pub dispute_id: String,
+	// pub dispute_id: String,
 	pub status: DisputeStatus,
 	pub disputed_transactions: Vec<DisputedTransaction>,
-	pub dispute_amount: Amount,
-	pub create_time: chrono::DateTime<chrono::Utc>,
+	// pub dispute_amount: Amount,
+	// pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -114,12 +114,12 @@ impl From<DisputeStatus> for InvoiceDisputeStatus {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Subscription {
 	pub id: String,
-	pub status: SubscriptionStatus,
-	pub status_update_time: chrono::DateTime<chrono::Utc>,
+	// pub status: SubscriptionStatus,
+	// pub status_update_time: chrono::DateTime<chrono::Utc>,
 	pub subscriber: Subscriber,
 	pub billing_info: SubscriptionBillingInfo,
 	pub plan_id: String,
-	pub create_time: chrono::DateTime<chrono::Utc>,
+	// pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Copy, Clone, serde::Deserialize)]
@@ -171,12 +171,12 @@ pub struct SubscriberShippingAddress {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct SubscriptionBillingInfo {
 	pub last_payment: Option<SubscriptionPayment>,
-	pub last_failed_payment: Option<SubscriptionPayment>,
+	// pub last_failed_payment: Option<SubscriptionPayment>,
 	pub next_billing_time: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct SubscriptionPayment {
-	pub amount: Amount,
+	// pub amount: Amount,
 	pub time: chrono::DateTime<chrono::Utc>,
 }

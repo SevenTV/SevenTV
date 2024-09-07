@@ -94,7 +94,7 @@ pub async fn emote_update(
 		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::RenameEmote {
-				emote,
+				emote: Box::new(emote),
 				emote_set_emote: emote_set_emote.clone(),
 				old_alias: old_emote_set_emote.alias.clone(),
 			},

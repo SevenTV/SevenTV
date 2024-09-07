@@ -122,16 +122,13 @@ impl UserPartialModel {
 		let paint = paint.and_then(|paint| if Some(paint.id) == paint_id { Some(paint) } else { None });
 
 		let avatar_url = if user.has(UserPermission::UseCustomProfilePicture) {
-			user.active_profile_picture
-				.as_ref()
-				.map(|p| {
-					p.image_set
-						.outputs
-						.iter()
-						.max_by_key(|i| i.height)
-						.map(|i| i.get_url(cdn_base_url))
-				})
-				.flatten()
+			user.active_profile_picture.as_ref().and_then(|p| {
+				p.image_set
+					.outputs
+					.iter()
+					.max_by_key(|i| i.height)
+					.map(|i| i.get_url(cdn_base_url))
+			})
 		} else {
 			None
 		}
@@ -243,19 +240,13 @@ impl EmoteSetModel {
 
 		Self {
 			flags: EmoteSetFlagModel::from_db(&value),
-			id: value.id.into(),
+			id: value.id,
 			name: value.name,
 			tags: value.tags,
-			immutable: match value.kind {
-				EmoteSetKind::Special => true,
-				_ => false,
-			},
-			privileged: match value.kind {
-				EmoteSetKind::Special | EmoteSetKind::Global => true,
-				_ => false,
-			},
+			immutable: matches!(value.kind, EmoteSetKind::Special),
+			privileged: matches!(value.kind, EmoteSetKind::Special | EmoteSetKind::Global),
 			emote_count: emotes.len() as i32,
-			capacity: value.capacity.unwrap_or(i32::MAX) as i32,
+			capacity: value.capacity.unwrap_or(i32::MAX),
 			emotes,
 			origins: value.origin_config.map_or_else(Vec::new, |config| {
 				config
@@ -263,7 +254,7 @@ impl EmoteSetModel {
 					.iter()
 					.enumerate()
 					.map(|(idx, origin)| EmoteSetOrigin {
-						id: origin.id.into(),
+						id: origin.id,
 						weight: idx as i32,
 						slices: Vec::new(),
 					})
@@ -293,7 +284,7 @@ impl EmoteSetPartialModel {
 			flags: EmoteSetFlagModel::from_db(&value),
 			id: value.id,
 			name: value.name,
-			capacity: value.capacity.unwrap_or(i32::MAX) as i32,
+			capacity: value.capacity.unwrap_or(i32::MAX),
 			tags: value.tags,
 			owner,
 		}
@@ -793,7 +784,7 @@ pub struct ActiveEmoteModel {
 impl ActiveEmoteModel {
 	pub fn from_db(value: EmoteSetEmote, data: Option<EmotePartialModel>) -> Self {
 		ActiveEmoteModel {
-			id: value.id.into(),
+			id: value.id,
 			actor_id: value.added_by_id.map(Into::into),
 			name: value.alias,
 			timestamp: value.id.timestamp_ms() as i64,

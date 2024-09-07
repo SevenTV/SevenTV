@@ -20,7 +20,7 @@ impl EmoteSetByUserIdLoader {
 		Self::new_with_config(
 			db,
 			BatcherConfig {
-				name: format!("EmoteSetByUserIdLoader"),
+				name: "EmoteSetByUserIdLoader".to_string(),
 				concurrency: 50,
 				max_batch_size: 1_000,
 				sleep_duration: std::time::Duration::from_millis(5),

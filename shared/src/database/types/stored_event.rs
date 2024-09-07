@@ -107,7 +107,7 @@ pub enum StoredEventData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ImageProcessorEvent {
 	/// The event callback is only None for old events
-	Success(Option<event_callback::Success>),
+	Success(Option<Box<event_callback::Success>>),
 	Fail(event_callback::Fail),
 	Cancel(event_callback::Cancel),
 	Start(event_callback::Start),
@@ -218,8 +218,8 @@ pub enum StoredEventUserBanData {
 		new: Option<chrono::DateTime<chrono::Utc>>,
 	},
 	ChangeUserBanPermissions {
-		old: Permissions,
-		new: Permissions,
+		old: Box<Permissions>,
+		new: Box<Permissions>,
 	},
 	Unban,
 }
@@ -275,7 +275,7 @@ pub enum StoredEventRoleData {
 	Create,
 	ChangeName { old: String, new: String },
 	ChangeColor { old: i32, new: i32 },
-	ChangePermissions { old: Permissions, new: Permissions },
+	ChangePermissions { old: Box<Permissions>, new: Box<Permissions> },
 	ChangeRank { old: i32, new: i32 },
 	Delete,
 }

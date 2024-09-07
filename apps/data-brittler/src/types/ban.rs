@@ -1,5 +1,5 @@
 use mongodb::bson::oid::ObjectId;
-use shared::old_types::BanEffect;
+// use shared::old_types::BanEffect;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Ban {
@@ -9,5 +9,5 @@ pub struct Ban {
 	pub actor_id: ObjectId,
 	pub reason: String,
 	pub expire_at: super::DateTime,
-	pub effects: BanEffect,
+	// pub effects: BanEffect,
 }

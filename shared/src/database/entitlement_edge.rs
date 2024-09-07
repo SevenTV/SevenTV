@@ -62,7 +62,7 @@ impl EntitlementEdgeOutboundLoader {
 		Self::new_with_config(
 			db,
 			BatcherConfig {
-				name: format!("EntitlementEdgeOutboundLoader"),
+				name: "EntitlementEdgeOutboundLoader".to_string(),
 				concurrency: 50,
 				max_batch_size: 1_000,
 				sleep_duration: std::time::Duration::from_millis(5),
@@ -123,14 +123,14 @@ impl GraphTraverse for EntitlementEdgeGraphTraverse<'_> {
 		match direction {
 			crate::database::graph::Direction::Inbound => Ok(self
 				.inbound_loader
-				.load_many(nodes.into_iter().cloned())
+				.load_many(nodes.iter().cloned())
 				.await?
 				.into_values()
 				.flatten()
 				.collect()),
 			crate::database::graph::Direction::Outbound => Ok(self
 				.outbound_loader
-				.load_many(nodes.into_iter().cloned())
+				.load_many(nodes.iter().cloned())
 				.await?
 				.into_values()
 				.flatten()

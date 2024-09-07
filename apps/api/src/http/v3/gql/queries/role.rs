@@ -103,6 +103,6 @@ impl RolesQuery {
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		Ok(role.map(|r| Role::from_db(r)))
+		Ok(role.map(Role::from_db))
 	}
 }

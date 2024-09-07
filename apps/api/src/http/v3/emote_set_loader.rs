@@ -42,10 +42,10 @@ pub async fn load_emote_set(
 
 	let emotes = emotes
 		.into_iter()
-		.filter_map(|(id, emote)| {
+		.map(|(id, emote)| {
 			let owner = users.get(&emote.owner_id).cloned();
 
-			Some((id, EmotePartialModel::from_db(emote, owner, &global.config.api.cdn_origin)))
+			(id, EmotePartialModel::from_db(emote, owner, &global.config.api.cdn_origin))
 		})
 		.collect::<HashMap<_, _>>();
 

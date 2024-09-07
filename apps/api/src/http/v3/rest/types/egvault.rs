@@ -40,7 +40,7 @@ pub struct SubscriptionCycle {
 	pub trial_end: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, serde::Serialize, PartialEq, Eq)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SubscriptionCycleUnit {
 	/// only one subscription has that

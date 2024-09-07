@@ -12,11 +12,11 @@ pub struct Subscription {
 	pub subscriber_id: ObjectId,
 	pub customer_id: ObjectId,
 	pub cycle: SubscriptionCycle,
-	pub plan_id: String,
-	pub product_id: String,
+	// pub plan_id: String,
+	// pub product_id: String,
 	/// always 1
-	pub seats: i32,
-	pub upgraded: Option<bool>,
+	// pub seats: i32,
+	// pub upgraded: Option<bool>,
 	pub ended_at: Option<super::DateTime>,
 }
 
@@ -36,11 +36,11 @@ pub enum SubscriptionProvider {
 #[derive(Debug, serde::Deserialize)]
 pub struct SubscriptionCycle {
 	pub unit: SubscriptionCycleUnit,
-	pub value: u32,
+	// pub value: u32,
 	pub status: SubscriptionCycleStatus,
 	pub timestamp: Option<super::DateTime>,
-	pub internal: bool,
-	pub pending: bool,
+	// pub internal: bool,
+	// pub pending: bool,
 	pub trial_end_at: Option<super::DateTime>,
 }
 

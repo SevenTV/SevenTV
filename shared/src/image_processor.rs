@@ -216,7 +216,6 @@ impl ImageProcessor {
 				topic: topic.clone(),
 			}),
 			metadata,
-			..Default::default()
 		}
 	}
 

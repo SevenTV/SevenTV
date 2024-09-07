@@ -6,23 +6,23 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{Data, Fields, Ident, LitInt, LitStr, Meta, Token};
 
-/// #[derive(MongoCollection, serde::Deserialize, serde::Serialize)]
-/// #[mongo(collection_name = "invoices")]
-/// #[mongo(index(fields("a.b"=1, "c.d"=2), unique))]
-/// pub struct Invoice {
-///    	#[mongo(id)]
-///    	#[serde(rename = "_id")]
-///    	pub id: InvoiceId,
-///   	pub items: Vec<ProductId>,
-///  	pub customer_id: CustomerId,
-///  	pub user_id: UserId,
-/// 	pub paypal_payment_ids: Vec<String>,
-/// 	pub status: InvoiceStatus,
-/// 	pub note: Option<String>,
-///    	pub created_at: i64,
-///   	pub updated_at: i64,
-///  	pub search_updated_at: i64,
-/// }
+// #[derive(MongoCollection, serde::Deserialize, serde::Serialize)]
+// #[mongo(collection_name = "invoices")]
+// #[mongo(index(fields("a.b"=1, "c.d"=2), unique))]
+// pub struct Invoice {
+//    	#[mongo(id)]
+//    	#[serde(rename = "_id")]
+//    	pub id: InvoiceId,
+//   	pub items: Vec<ProductId>,
+//  	pub customer_id: CustomerId,
+//  	pub user_id: UserId,
+// 	pub paypal_payment_ids: Vec<String>,
+// 	pub status: InvoiceStatus,
+// 	pub note: Option<String>,
+//    	pub created_at: i64,
+//   	pub updated_at: i64,
+//  	pub search_updated_at: i64,
+// }
 
 #[derive(Debug)]
 struct StructAttributes {
@@ -89,7 +89,7 @@ impl StructAttributes {
 			fields: fields
 				.named
 				.iter()
-				.map(|field| FieldAttributes::from_field(&field))
+				.map(FieldAttributes::from_field)
 				.collect::<syn::Result<_>>()?,
 			index,
 			crate_,
@@ -194,7 +194,7 @@ struct IndexFields(Vec<Field>);
 
 impl Parse for IndexFields {
 	fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-		let input = Punctuated::<Field, Token![,]>::parse_terminated(&input)?;
+		let input = Punctuated::<Field, Token![,]>::parse_terminated(input)?;
 		Ok(Self(input.into_iter().collect()))
 	}
 }
@@ -212,7 +212,7 @@ struct Index {
 
 impl Parse for Index {
 	fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-		let fields = Punctuated::<Meta, Token![,]>::parse_terminated(&input)?;
+		let fields = Punctuated::<Meta, Token![,]>::parse_terminated(input)?;
 
 		let mut _fields = None;
 		let mut _unique = None;

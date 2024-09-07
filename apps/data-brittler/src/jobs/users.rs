@@ -10,7 +10,7 @@ use mongodb::options::InsertManyOptions;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::image_set::{self, ImageSet, ImageSetInput};
 use shared::database::user::connection::{Platform, UserConnection};
-use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorPermissions, UserEditorState};
+use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorState};
 use shared::database::user::profile_picture::UserProfilePicture;
 use shared::database::user::settings::UserSettings;
 use shared::database::user::{User, UserId, UserStyle};
@@ -268,8 +268,6 @@ impl Job for UsersJob {
 
 		for editor in user.editors {
 			if let Some(editor_id) = editor.id {
-				let permissions = UserEditorPermissions::default();
-
 				let user_id = user.id.into();
 				let editor_id = editor_id.into();
 
@@ -279,7 +277,7 @@ impl Job for UsersJob {
 						id: UserEditorId { user_id, editor_id },
 						state: UserEditorState::Accepted,
 						notes: None,
-						permissions,
+						permissions: editor.permissions.to_db(),
 						added_by_id: user.id.into(),
 						added_at: editor.added_at.into_chrono(),
 						search_updated_at: None,

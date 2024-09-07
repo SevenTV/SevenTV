@@ -53,7 +53,7 @@ fn routes(global: &Arc<Global>) -> Router {
 							span
 						})
 						.on_response(|res: &Response, _, span: &Span| {
-							span.record("response.status_code", &res.status().as_u16());
+							span.record("response.status_code", res.status().as_u16());
 						}),
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))

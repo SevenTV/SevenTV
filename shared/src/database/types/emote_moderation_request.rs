@@ -27,6 +27,7 @@ pub type EmoteModerationRequestId = Id<EmoteModerationRequest>;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "emote_moderation_requests")]
+#[allow(clippy::duplicated_attributes)]
 #[mongo(index(fields(kind = 1, user_id = 1, status = 1)))]
 #[mongo(index(fields(kind = 1, emote_id = 1), unique))]
 #[mongo(index(fields(search_updated_at = 1)))]

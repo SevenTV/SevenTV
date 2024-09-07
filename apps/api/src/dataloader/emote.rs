@@ -21,7 +21,7 @@ impl EmoteByUserIdLoader {
 		Self::new_with_config(
 			db,
 			BatcherConfig {
-				name: format!("EmoteByUserIdLoader"),
+				name: "EmoteByUserIdLoader".to_string(),
 				concurrency: 50,
 				max_batch_size: 1_000,
 				sleep_duration: std::time::Duration::from_millis(5),

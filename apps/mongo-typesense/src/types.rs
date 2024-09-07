@@ -9,7 +9,6 @@ pub mod mongo {
 	pub use shared::database::paint::*;
 	pub use shared::database::product::codes::*;
 	pub use shared::database::product::invoice::*;
-	pub use shared::database::product::promotion::*;
 	pub use shared::database::product::subscription::*;
 	pub use shared::database::product::*;
 	pub use shared::database::role::*;
@@ -34,7 +33,6 @@ pub mod typesense {
 	pub use shared::typesense::types::paint::*;
 	pub use shared::typesense::types::product::codes::*;
 	pub use shared::typesense::types::product::invoice::*;
-	pub use shared::typesense::types::product::promotion::*;
 	pub use shared::typesense::types::product::subscription::*;
 	pub use shared::typesense::types::product::*;
 	pub use shared::typesense::types::role::*;

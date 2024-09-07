@@ -204,7 +204,7 @@ impl Cache {
 			}
 		}
 
-		let guard = PanicDropGuard::new(key, entry, Arc::clone(&global));
+		let guard = PanicDropGuard::new(key, entry, Arc::clone(global));
 
 		if let Some(cached) = self.inner.get(guard.key()).await {
 			tracing::debug!(key = %guard.key(), "rebounded hit");
@@ -267,7 +267,7 @@ impl Cache {
 				cache::upstream_response(cache::ResponseStatus::Success).inc();
 				response
 			}
-			Err(S3ErrorWrapper::SDK(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => {
+			Err(S3ErrorWrapper::Sdk(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => {
 				cache::upstream_response(cache::ResponseStatus::NotFound).inc();
 				CachedResponse::not_found()
 			}
@@ -288,7 +288,7 @@ impl Cache {
 #[derive(Debug, thiserror::Error)]
 enum S3ErrorWrapper {
 	#[error("sdk error: {0}")]
-	SDK(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>),
+	Sdk(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>),
 	#[error("timeout")]
 	Timeout(#[from] tokio::time::error::Elapsed),
 	#[error("bytes error: {0}")]

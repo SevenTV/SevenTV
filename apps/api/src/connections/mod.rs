@@ -44,18 +44,7 @@ struct TokenRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct TokenResponse {
-	pub token_type: String,
 	pub access_token: String,
-	pub expires_in: i64,
-	pub refresh_token: Option<String>,
-	pub scope: Option<TokenResponseScope>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-pub enum TokenResponseScope {
-	Twitch(Vec<String>),
-	Other(String),
 }
 
 /// Twitch docs: https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow
@@ -79,7 +68,7 @@ pub async fn exchange_code(
 		_ => return Err(ConnectionError::UnsupportedPlatform),
 	};
 
-	tracing::Span::current().record("endpoint", &endpoint);
+	tracing::Span::current().record("endpoint", endpoint);
 
 	let res = global
 		.http_client
