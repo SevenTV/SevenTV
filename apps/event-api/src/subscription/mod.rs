@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use futures_util::StreamExt;
+use scuffle_foundations::telemetry::metrics::metrics;
 use shared::event::InternalEventPayload;
 use shared::event_api::types::EventType;
 use shared::event_api::{payload, Message};
@@ -17,6 +18,40 @@ pub type Payload = Arc<Message<payload::Dispatch>>;
 mod error;
 mod event_topic;
 mod recv;
+
+#[metrics]
+mod subscription {
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::{counter::Counter, gauge::Gauge};
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum SubscriptionKind {
+		Cap,
+		Len,
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum Endpoint {
+		V3,
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum NatsEventKind {
+		Hit,
+		Miss,
+	}
+
+	/// The number of unique subscriptions
+	pub fn unique_subscriptions(kind: SubscriptionKind) -> Gauge;
+
+	/// The number of total subscriptions
+	pub fn total_subscriptions(endpoint: Endpoint) -> Gauge;
+
+	/// The number of NATs events
+	pub fn nats_events(kind: NatsEventKind) -> Counter;
+}
 
 pub use error::SubscriptionError;
 pub use event_topic::{EventTopic, TopicKey};
@@ -103,21 +138,22 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 								let (btx, brx) = broadcast::channel(16);
 
 								if tx.send(brx).is_ok() {
-									// global.metrics().incr_total_subscriptions();
+									subscription::total_subscriptions(subscription::Endpoint::V3).inc();
 									entry.insert(btx);
 								}
 							}
 							std::collections::hash_map::Entry::Occupied(entry) => {
 								if tx.send(entry.get().subscribe()).is_ok() {
-									// global.metrics().incr_total_subscriptions();
+									subscription::total_subscriptions(subscription::Endpoint::V3).inc();
 								}
 							},
 						}
 
-						// global.metrics().set_unique_subscriptions(subscriptions.len(), subscriptions.capacity());
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Len).set(subscriptions.len() as i64);
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Cap).set(subscriptions.capacity() as i64);
 					}
 					Event::Unsubscribe { topic } => {
-						// global.metrics().decr_total_subscriptions();
+						subscription::total_subscriptions(subscription::Endpoint::V3).dec();
 						match subscriptions.entry(topic) {
 							std::collections::hash_map::Entry::Occupied(entry) => {
 								if entry.get().receiver_count() == 0 {
@@ -127,7 +163,8 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 							std::collections::hash_map::Entry::Vacant(_) => {}
 						}
 
-						// global.metrics().set_unique_subscriptions(subscriptions.len(), subscriptions.capacity());
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Len).set(subscriptions.len() as i64);
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Cap).set(subscriptions.capacity() as i64);
 					}
 				}
 			}
@@ -191,9 +228,9 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 									}
 
 									if missed {
-										// global.metrics().observe_nats_event_miss();
+										subscription::nats_events(subscription::NatsEventKind::Miss).inc();
 									} else {
-										// global.metrics().observe_nats_event_hit();
+										subscription::nats_events(subscription::NatsEventKind::Hit).inc();
 									}
 								}
 							},

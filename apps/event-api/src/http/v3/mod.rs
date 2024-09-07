@@ -12,6 +12,7 @@ use axum::routing::any;
 use axum::Router;
 use parser::{parse_json_subscriptions, parse_query_uri};
 use scuffle_foundations::context::ContextFutExt;
+use scuffle_foundations::telemetry::metrics::metrics;
 use shared::database::Id;
 use shared::event_api::payload::Subscribe;
 use shared::event_api::types::{CloseCode, Opcode};
@@ -33,6 +34,47 @@ mod dedupe;
 pub mod error;
 mod parser;
 mod topic_map;
+
+#[metrics]
+mod v3 {
+	use scuffle_foundations::telemetry::metrics::{
+		prometheus_client::metrics::{counter::Counter, gauge::Gauge, histogram::Histogram},
+		HistogramBuilder,
+	};
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum ConnectionKind {
+		Websocket,
+		EventStream,
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum CommandKind {
+		Client,
+		Server,
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum Endpoint {
+		V3,
+	}
+
+	/// The current number of connections
+	pub fn current_connections(kind: ConnectionKind, endpoint: Endpoint) -> Gauge;
+
+	/// The number of client closes
+	pub fn client_closes(code: String, kind: ConnectionKind, endpoint: Endpoint) -> Counter;
+
+	/// The number of commands issued
+	pub fn commands(kind: CommandKind, command: String, endpoint: Endpoint) -> Counter;
+
+	/// The number of seconds used on connections
+	#[builder = HistogramBuilder::default()]
+	pub fn connection_duration_seconds(kind: ConnectionKind, endpoint: Endpoint) -> Histogram;
+}
 
 const MAX_CONDITIONS: usize = 10;
 const MAX_CONDITION_KEY_LEN: usize = 64;
@@ -93,7 +135,7 @@ async fn handle_ws(
 		.max_message_size(1024 * 18)
 		.write_buffer_size(1024 * 16)
 		.on_upgrade(|ws| async {
-			// global.metrics().incr_current_websocket_connections();
+			v3::current_connections(v3::ConnectionKind::Websocket, v3::Endpoint::V3).inc();
 			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket);
 
 			tokio::spawn(socket.serve());
@@ -110,7 +152,7 @@ async fn handle_sse(
 
 	let response = Sse::new(ReceiverStream::new(response));
 
-	// global.metrics().incr_current_event_streams();
+	v3::current_connections(v3::ConnectionKind::EventStream, v3::Endpoint::V3).inc();
 	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket);
 
 	tokio::spawn(socket.serve());
@@ -162,18 +204,14 @@ impl Drop for Connection {
 	fn drop(&mut self) {
 		match &self.socket {
 			Socket::WebSocket(_) => {
-				// self.global.metrics().decr_current_websocket_connections();
-				// self.global
-				// 	.metrics()
-				// 	.observe_connection_duration_seconds_websocket(self.start.
-				// elapsed().as_secs_f64());
+				v3::current_connections(v3::ConnectionKind::Websocket, v3::Endpoint::V3).dec();
+				v3::connection_duration_seconds(v3::ConnectionKind::Websocket, v3::Endpoint::V3)
+					.observe(self.start.elapsed().as_secs_f64());
 			}
 			Socket::Sse(_) => {
-				// self.global.metrics().decr_current_event_streams();
-				// self.global
-				// 	.metrics()
-				// 	.observe_connection_duration_seconds_event_stream(self.
-				// start. elapsed().as_secs_f64());
+				v3::current_connections(v3::ConnectionKind::EventStream, v3::Endpoint::V3).dec();
+				v3::connection_duration_seconds(v3::ConnectionKind::EventStream, v3::Endpoint::V3)
+					.observe(self.start.elapsed().as_secs_f64());
 			}
 		}
 	}
@@ -277,12 +315,10 @@ impl Connection {
 
 				match self.socket {
 					Socket::Sse(_) => {
-						// self.global.metrics().
-						// observe_client_close_event_stream(err.as_str());
+						v3::client_closes(err.to_string(), v3::ConnectionKind::EventStream, v3::Endpoint::V3).inc();
 					}
 					Socket::WebSocket(_) => {
-						// self.global.metrics().
-						// observe_client_close_websocket(err.as_str());
+						v3::client_closes(err.to_string(), v3::ConnectionKind::Websocket, v3::Endpoint::V3).inc();
 					}
 				}
 				false
@@ -337,7 +373,7 @@ impl Connection {
 	/// Send a message to the client.
 	async fn send_message(&mut self, data: impl MessagePayload + serde::Serialize) -> Result<(), ConnectionError> {
 		self.seq += 1;
-		// self.global.metrics().observe_server_command(data.opcode());
+		v3::commands(v3::CommandKind::Server, data.opcode().to_string(), v3::Endpoint::V3).inc();
 		self.socket.send(Message::new(data, self.seq - 1)).await?;
 		Ok(())
 	}
@@ -489,7 +525,7 @@ impl Connection {
 
 	/// Handle a message from the client.
 	async fn handle_message(&mut self, msg: Message) -> Result<(), ConnectionError> {
-		// self.global.metrics().observe_client_command(msg.opcode);
+		v3::commands(v3::CommandKind::Client, msg.opcode.to_string(), v3::Endpoint::V3).inc();
 
 		// We match on the opcode so that we can deserialize the data into the correct
 		// type.
