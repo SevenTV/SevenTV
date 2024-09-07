@@ -17,6 +17,7 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::role::Role;
+use crate::http::v3::validators::NameValidator;
 
 #[derive(Default)]
 pub struct RolesMutation;
@@ -205,6 +206,7 @@ impl RolesMutation {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CreateRoleInput {
+	#[graphql(validator(custom = "NameValidator"))]
 	name: String,
 	color: i32,
 	allowed: String,
@@ -214,6 +216,7 @@ pub struct CreateRoleInput {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EditRoleInput {
+	#[graphql(validator(custom = "NameValidator"))]
 	name: Option<String>,
 	color: Option<i32>,
 	allowed: Option<String>,

@@ -25,6 +25,7 @@ use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
 use crate::http::v3::gql::types::ListItemAction;
+use crate::http::v3::validators::NameValidator;
 use crate::transactions::{with_transaction, TransactionError};
 
 mod emote_add;
@@ -169,6 +170,7 @@ impl EmoteSetsMutation {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CreateEmoteSetInput {
+	#[graphql(validator(custom = "NameValidator"))]
 	name: String,
 	privileged: Option<bool>,
 }
@@ -283,6 +285,7 @@ impl EmoteSetOps {
 #[derive(InputObject, Clone)]
 #[graphql(rename_fields = "snake_case")]
 pub struct UpdateEmoteSetInput {
+	#[graphql(validator(custom = "NameValidator"))]
 	name: Option<String>,
 	capacity: Option<u32>,
 	origins: Option<Vec<EmoteSetOriginInput>>,
@@ -304,7 +307,7 @@ impl EmoteSetOps {
 		ctx: &Context<'ctx>,
 		id: GqlObjectId,
 		action: ListItemAction,
-		name: Option<String>,
+		#[graphql(validator(custom = "NameValidator"))] name: Option<String>,
 	) -> Result<Vec<ActiveEmote>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

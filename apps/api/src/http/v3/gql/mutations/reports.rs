@@ -313,7 +313,9 @@ impl ReportsMutation {
 pub struct CreateReportInput {
 	target_kind: u32,
 	target_id: GqlObjectId,
+	#[graphql(validator(min_length = 1, max_length = 100))]
 	subject: String,
+	#[graphql(validator(min_length = 1, max_length = 1000))]
 	body: String,
 }
 
@@ -330,7 +332,9 @@ pub struct EditReportInput {
 #[graphql(rename_fields = "snake_case")]
 pub struct EditReportNoteInput {
 	timestamp: Option<String>,
+	#[graphql(validator(min_length = 1, max_length = 1000))]
 	content: Option<String>,
 	internal: Option<bool>,
+	/// unused
 	reply: Option<String>,
 }

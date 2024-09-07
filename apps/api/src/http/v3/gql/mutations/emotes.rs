@@ -18,6 +18,7 @@ use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::emote::Emote;
+use crate::http::v3::validators::{NameValidator, TagsValidator};
 use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
@@ -350,11 +351,15 @@ impl EmoteOps {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct EmoteUpdate {
+	#[graphql(validator(custom = "NameValidator"))]
 	name: Option<String>,
+	#[graphql(validator(custom = "NameValidator"))]
 	version_name: Option<String>,
+	#[graphql(validator(custom = "NameValidator"))]
 	version_description: Option<String>,
 	flags: Option<EmoteFlagsModel>,
 	owner_id: Option<GqlObjectId>,
+	#[graphql(validator(custom = "TagsValidator"))]
 	tags: Option<Vec<String>>,
 	listed: Option<bool>,
 	personal_use: Option<bool>,

@@ -495,21 +495,10 @@ impl UsersQuery {
 		&self,
 		ctx: &Context<'ctx>,
 		query: String,
-		page: Option<u32>,
-		limit: Option<u32>,
+		#[graphql(validator(maximum = 10))] page: Option<u32>,
+		#[graphql(validator(maximum = 100))] limit: Option<u32>,
 	) -> Result<Vec<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		if limit.is_some_and(|l| l > 100) {
-			return Err(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
-				"limit cannot be greater than 100",
-			));
-		}
-
-		if page.is_some_and(|p| p > 10) {
-			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "page cannot be greater than 10"));
-		}
 
 		let options = SearchOptions::builder()
 			.query(query)

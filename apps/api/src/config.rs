@@ -68,6 +68,9 @@ pub struct ConnectionsConfig {
 #[auto_settings]
 #[serde(default)]
 pub struct ConnectionConfig {
+	/// If login with this connection is enabled
+	#[settings(default = false)]
+	pub enabled: bool,
 	/// Client ID
 	#[settings(default = "client_id".into())]
 	pub client_id: String,
