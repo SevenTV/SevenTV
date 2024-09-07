@@ -262,9 +262,15 @@ pub fn handle_login(
 ) -> Result<String, ApiError> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
-		Platform::Twitch => (TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.api.connections.twitch),
-		Platform::Discord => (DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config.api.connections.discord),
-		Platform::Google => (GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.api.connections.google),
+		Platform::Twitch if global.config.api.connections.twitch.enabled => {
+			(TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.api.connections.twitch)
+		}
+		Platform::Discord if global.config.api.connections.discord.enabled => {
+			(DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config.api.connections.discord)
+		}
+		Platform::Google if global.config.api.connections.google.enabled => {
+			(GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.api.connections.google)
+		}
 		_ => {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform"));
 		}
