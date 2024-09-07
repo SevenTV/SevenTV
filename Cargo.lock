@@ -163,6 +163,7 @@ dependencies = [
  "pin-project",
  "prost 0.13.2",
  "rand 0.8.5",
+ "regex",
  "reqwest",
  "rmp-serde",
  "rsa",

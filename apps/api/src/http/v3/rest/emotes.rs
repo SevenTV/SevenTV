@@ -19,6 +19,7 @@ use super::types::EmoteModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
+use crate::http::v3::validators;
 use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(utoipa::OpenApi)]
@@ -67,12 +68,12 @@ pub async fn create_emote(
 	let emote_data = serde_json::from_str::<XEmoteData>(emote_data.to_str().map_err(|_| ApiError::BAD_REQUEST)?)
 		.map_err(|_| ApiError::BAD_REQUEST)?;
 
-	if !(1..=100).contains(&emote_data.name.len()) {
-		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "emote name too long"));
+	if !validators::check_name(&emote_data.name) {
+		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "invalid emote name"));
 	}
 
-	if emote_data.tags.len() > 10 {
-		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "too many tags"));
+	if !validators::check_tags(&emote_data.tags) {
+		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "invalid tags"));
 	}
 
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
