@@ -86,6 +86,7 @@ pub async fn subscribe(
 					#[query(serde)]
 					kind: &kind,
 					active: true,
+					gift: query.gift_for.is_some(),
 				}
 			}
 		})
@@ -96,26 +97,22 @@ pub async fn subscribe(
 		})?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
 
-	let variant = product.variants.into_iter().find(|v| v.kind == kind).unwrap();
+	let variant = product
+		.variants
+		.into_iter()
+		.find(|v| v.kind == kind && v.gift == query.gift_for.is_some())
+		.unwrap();
 
 	let customer_id = match auth_session.user(&global).await?.stripe_customer_id.clone() {
 		Some(id) => id,
 		None => find_or_create_customer(&global, auth_session.user_id(), Some(body.prefill)).await?,
 	};
 
-	let product_id = if query.gift_for.is_some() {
-		variant
-			.gift_id
-			.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "this product can't be gifted"))?
-	} else {
-		variant.id
-	};
-
 	let mut params = create_checkout_session_params(
 		&global,
 		ip,
 		customer_id,
-		&product_id,
+		&variant.id,
 		product.default_currency,
 		&variant.currency_prices,
 	)

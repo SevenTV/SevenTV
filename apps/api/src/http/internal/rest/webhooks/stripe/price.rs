@@ -8,14 +8,6 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
-pub async fn created(
-	_global: &Arc<Global>,
-	_tx: TransactionSession<'_, ApiError>,
-	_price: stripe::Price,
-) -> TransactionResult<(), ApiError> {
-	Ok(())
-}
-
 pub async fn updated(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
@@ -76,30 +68,6 @@ pub async fn updated(
 					active: active,
 					#[query(serde)]
 					currency_prices: currency_prices,
-				},
-				updated_at: chrono::Utc::now(),
-			}
-		},
-		None,
-	)
-	.await?;
-
-	// Disable the gift id if the gift price was deactivated
-	tx.update(
-		filter::filter! {
-			SubscriptionProduct {
-				#[query(elem_match)]
-				variants: SubscriptionProductVariant {
-					gift_id: Some(&product_id),
-				}
-			}
-		},
-		update::update! {
-			#[query(set)]
-			SubscriptionProduct {
-				#[query(flatten, index = "$")]
-				variants: SubscriptionProductVariant {
-					gift_id: active.then_some(product_id),
 				},
 				updated_at: chrono::Utc::now(),
 			}

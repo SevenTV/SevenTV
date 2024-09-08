@@ -63,11 +63,8 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 
 			let prev_attributes = event.data.previous_attributes;
 
-			// https://kappa.lol/CH3KG
+			// https://kappa.lol/2NwAU
 			match (event.type_, event.data.object) {
-				(stripe::EventType::PriceCreated, stripe::EventObject::Price(price)) => {
-					price::created(&global, tx, price).await?;
-				}
 				(stripe::EventType::PriceUpdated, stripe::EventObject::Price(price)) => {
 					price::updated(&global, tx, price).await?;
 				}

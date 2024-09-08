@@ -252,8 +252,6 @@ pub struct SpecialEvent {
 
 ## Stripe Webhooks
 
-### `price.created`
-
 ### `price.updated`
 
 ### `price.deleted`
