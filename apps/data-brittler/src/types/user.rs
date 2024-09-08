@@ -23,8 +23,9 @@ pub struct User {
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
 pub enum UserAvatar {
+	#[allow(dead_code)]
 	Pending {
-		// pending_id: ObjectId,
+		pending_id: ObjectId,
 	},
 	Processed {
 		// id: ObjectId,

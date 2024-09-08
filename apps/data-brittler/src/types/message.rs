@@ -22,9 +22,10 @@ pub enum MessageKind {
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
 pub enum MessageData {
+	#[allow(dead_code)]
 	InboxData {
-		// subject: String,
-		// content: String,
+		subject: String,
+		content: String,
 	},
 	EmoteRequest {
 		target_id: ObjectId,
