@@ -130,13 +130,17 @@ impl Job for UsersJob {
 
 		let active_badge_id = entitlements
 			.iter()
-			.find(|e| matches!(e.data, types::EntitlementData::Badge { selected: true, .. }))
-			.map(|e| e.id);
+			.find_map(|e| match e.data {
+				types::EntitlementData::Badge { selected: true, ref_id } => Some(ref_id),
+				_ => None,
+			});
 
 		let active_paint_id = entitlements
 			.iter()
-			.find(|e| matches!(e.data, types::EntitlementData::Paint { selected: true, .. }))
-			.map(|e| e.id);
+			.find_map(|e| match e.data {
+				types::EntitlementData::Badge { selected: true, ref_id } => Some(ref_id),
+				_ => None,
+			});
 
 		let active_profile_picture = match user.avatar {
 			Some(types::UserAvatar::Processed {
