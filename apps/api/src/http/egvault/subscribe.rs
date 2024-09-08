@@ -85,6 +85,7 @@ pub async fn subscribe(
 				variants: SubscriptionProductVariant {
 					#[query(serde)]
 					kind: &kind,
+					active: true,
 				}
 			}
 		})

@@ -16,6 +16,7 @@ mod checkout_session;
 mod customer;
 mod invoice;
 mod subscription;
+mod price;
 
 pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, payload: String) -> Result<StatusCode, ApiError> {
 	let sig = headers
@@ -62,8 +63,17 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 
 			let prev_attributes = event.data.previous_attributes;
 
-			// https://kappa.lol/BB4ME
+			// https://kappa.lol/CH3KG
 			match (event.type_, event.data.object) {
+				(stripe::EventType::PriceCreated, stripe::EventObject::Price(price)) => {
+					price::created(&global, tx, price).await?;
+				}
+				(stripe::EventType::PriceUpdated, stripe::EventObject::Price(price)) => {
+					price::updated(&global, tx, price).await?;
+				}
+				(stripe::EventType::PriceDeleted, stripe::EventObject::Price(price)) => {
+					price::deleted(&global, tx, price).await?;
+				}
 				(stripe::EventType::CustomerCreated, stripe::EventObject::Customer(cus)) => {
 					customer::created(&global, tx, cus).await?;
 				}

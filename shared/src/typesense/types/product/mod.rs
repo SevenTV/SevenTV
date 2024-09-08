@@ -18,7 +18,7 @@ pub struct Product {
 	pub name: String,
 	pub description: Option<String>,
 	pub default_currency: stripe::Currency,
-	pub default_price: i32,
+	pub default_price: i64,
 	pub currencies: Vec<stripe::Currency>,
 	/// The `to` field of the `EntitlementEdge` where the `from` field is this
 	/// product.

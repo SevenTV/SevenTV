@@ -39,7 +39,7 @@ async fn create_checkout_session_params(
 	customer_id: CustomerId,
 	product_id: &ProductId,
 	default_currency: stripe::Currency,
-	currency_prices: &HashMap<stripe::Currency, i32>,
+	currency_prices: &HashMap<stripe::Currency, i64>,
 ) -> stripe::CreateCheckoutSession<'static> {
 	// cursed solution but the ownership has to stay somewhere
 	static SUCCESS_URL: OnceLock<String> = OnceLock::new();

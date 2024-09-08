@@ -139,6 +139,7 @@ pub async fn completed(
 					#[query(flatten)]
 					variants: SubscriptionProductVariant {
 						paypal_id: Some(&paypal_sub.plan_id),
+						active: true,
 					}
 				}
 			},

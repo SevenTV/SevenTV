@@ -129,6 +129,7 @@ impl Job for PricesJob {
 			self.subscription_product.variants.push(SubscriptionProductVariant {
 				id: price_id.into(),
 				gift_id: None,
+				active: price.active == Some(true),
 				kind,
 				currency_prices,
 				paypal_id,

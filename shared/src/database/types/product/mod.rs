@@ -184,11 +184,12 @@ pub struct Product {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: ProductId,
+	pub active: bool,
 	pub name: String,
 	pub description: Option<String>,
 	pub extends_subscription: Option<SubscriptionProductId>,
 	pub default_currency: stripe::Currency,
-	pub currency_prices: HashMap<stripe::Currency, i32>,
+	pub currency_prices: HashMap<stripe::Currency, i64>,
 	#[serde(with = "crate::database::serde")]
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
@@ -229,8 +230,9 @@ pub struct SubscriptionProductVariant {
 	pub id: ProductId,
 	pub gift_id: Option<ProductId>,
 	pub paypal_id: Option<String>,
+	pub active: bool,
 	pub kind: SubscriptionProductKind,
-	pub currency_prices: HashMap<stripe::Currency, i32>,
+	pub currency_prices: HashMap<stripe::Currency, i64>,
 }
 
 pub type SubscriptionBenefitId = Id<SubscriptionBenefit>;

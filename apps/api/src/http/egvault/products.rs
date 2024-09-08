@@ -49,9 +49,13 @@ pub async fn products(
 		.iter()
 		.cloned()
 		.flat_map(|p| {
-			p.variants
-				.into_iter()
-				.filter_map(move |v| Plan::from_variant(v, currency, p.default_currency))
+			p.variants.into_iter().filter_map(move |v| {
+				if v.active {
+					Plan::from_variant(v, currency, p.default_currency)
+				} else {
+					None
+				}
+			})
 		})
 		.collect();
 
