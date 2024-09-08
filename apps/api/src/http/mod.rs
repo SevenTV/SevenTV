@@ -110,7 +110,7 @@ fn routes(global: Arc<Global>) -> Router {
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
 				.layer(PropagateRequestIdLayer::x_request_id())
-				.layer(IpMiddleware)
+				.layer(IpMiddleware::new(global.clone()))
 				.layer(CookieMiddleware)
 				.layer(cors_layer(&global)),
 		)

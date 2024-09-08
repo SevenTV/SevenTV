@@ -1,4 +1,4 @@
-//! Cookie middleware
+//! IP middleware
 
 use std::sync::Arc;
 
@@ -8,31 +8,40 @@ use axum::response::{IntoResponse, Response};
 use crate::global::Global;
 use crate::http::error::ApiError;
 
-#[derive(Default, Clone, Debug, Copy)]
-pub struct IpMiddleware;
+#[derive(Clone)]
+pub struct IpMiddleware(Arc<Global>);
+
+impl IpMiddleware {
+	pub fn new(global: Arc<Global>) -> Self {
+		Self(global)
+	}
+}
 
 impl<S> tower::Layer<S> for IpMiddleware {
 	type Service = IpMiddlewareService<S>;
 
 	fn layer(&self, inner: S) -> Self::Service {
-		IpMiddlewareService { inner }
+		IpMiddlewareService {
+			inner,
+			global: self.0.clone(),
+		}
 	}
 }
 
 #[derive(Clone)]
 pub struct IpMiddlewareService<S> {
 	inner: S,
+	global: Arc<Global>,
 }
 
 impl<S> IpMiddlewareService<S> {
 	fn modify<B>(&mut self, req: &mut Request<B>) -> Result<(), ApiError> {
-		let global = req.extensions().get::<Arc<Global>>().ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 		let connecting_ip = req
 			.extensions()
 			.get::<std::net::IpAddr>()
 			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let trusted_proxies = &global.config.api.incoming_request.trusteded_proxies;
+		let trusted_proxies = &self.global.config.api.incoming_request.trusteded_proxies;
 
 		if trusted_proxies.is_empty() {
 			return Ok(());
@@ -43,7 +52,7 @@ impl<S> IpMiddlewareService<S> {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let Some(header) = &global.config.api.incoming_request.ip_header else {
+		let Some(header) = &self.global.config.api.incoming_request.ip_header else {
 			tracing::warn!("missing ip_header but trusted proxies are enabled");
 			return Ok(());
 		};
