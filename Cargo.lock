@@ -168,6 +168,7 @@ dependencies = [
  "reqwest",
  "rmp-serde",
  "rsa",
+ "rustls 0.23.12",
  "scuffle-foundations",
  "scuffle-image-processor-proto",
  "serde",
