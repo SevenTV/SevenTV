@@ -11,6 +11,7 @@ scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.gi
 prost = "0.13"
 tonic = { version = "0.12" }
 regex = "1.10.6"
+rustls = { version = "0.23.12", features = ["aws-lc-rs"] }
 
 serde = { version = "1.0", features = ["derive"] }
 bitmask-enum = "2"
@@ -61,6 +62,8 @@ axum = "0.7"
 tower = "0.5.0"
 spin = "0.9"
 typed-builder = "0.20.0"
+
+ipnet = { version = "2.9.0", features = ["serde"] }
 
 shared = { workspace = true }
 

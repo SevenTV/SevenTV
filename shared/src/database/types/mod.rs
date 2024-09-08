@@ -1,5 +1,6 @@
 pub mod automod;
 pub mod badge;
+pub mod cron_job;
 pub mod duration;
 pub mod emote;
 pub mod emote_moderation_request;
@@ -20,6 +21,7 @@ pub use macros::MongoCollection;
 pub use mongodb;
 
 use super::queries::{CollectionExt, TypedCollection};
+use crate::typesense::types::TypesenseCollection;
 
 pub trait MongoCollection: Send + Sync {
 	type Id: std::fmt::Debug
@@ -46,6 +48,10 @@ pub trait MongoCollection: Send + Sync {
 	fn indexes() -> Vec<mongodb::IndexModel> {
 		vec![]
 	}
+}
+
+pub trait SearchableMongoCollection: MongoCollection {
+	type Typesense: TypesenseCollection;
 }
 
 struct MongoGenericCollection {
@@ -89,6 +95,7 @@ fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 		.chain(user::mongo_collections())
 		.chain(emote_moderation_request::mongo_collections())
 		.chain(webhook_event::mongo_collections())
+		.chain(cron_job::mongo_collections())
 }
 
 pub(super) async fn init_mongo(db: &mongodb::Database) -> anyhow::Result<()> {

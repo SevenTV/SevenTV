@@ -139,6 +139,7 @@ pub async fn completed(
 					#[query(flatten)]
 					variants: SubscriptionProductVariant {
 						paypal_id: Some(&paypal_sub.plan_id),
+						active: true,
 					}
 				}
 			},
@@ -226,7 +227,7 @@ pub async fn completed(
 		tx.insert_one(
 			SubscriptionPeriod {
 				id: SubscriptionPeriodId::new(),
-				subscription_id: subscription_id.clone(),
+				subscription_id,
 				provider_id: Some(ProviderSubscriptionId::Paypal(provider_id)),
 				start: paypal_sub
 					.billing_info

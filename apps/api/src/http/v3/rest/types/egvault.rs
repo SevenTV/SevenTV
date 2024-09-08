@@ -92,25 +92,35 @@ pub struct Plan {
 	pub price: u64,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub discount: Option<f64>,
+	pub currency: stripe::Currency,
 }
 
 impl Plan {
-	pub fn from_variant(value: SubscriptionProductVariant, default_currency: &stripe::Currency) -> Self {
+	pub fn from_variant(
+		value: SubscriptionProductVariant,
+		regional_currency: Option<stripe::Currency>,
+		default_currency: stripe::Currency,
+	) -> Option<Self> {
 		let (interval_unit, discount) = match value.kind {
 			SubscriptionProductKind::Monthly => (SubscriptionCycleUnit::Month, None),
 			SubscriptionProductKind::Yearly => (SubscriptionCycleUnit::Year, Some(0.2)),
 		};
 
-		Self {
+		let (currency, price) =
+			if let Some(price) = regional_currency.and_then(|currency| value.currency_prices.get(&currency)) {
+				(regional_currency.unwrap(), *price)
+			} else if let Some(price) = value.currency_prices.get(&default_currency) {
+				(default_currency, *price)
+			} else {
+				return None;
+			};
+
+		Some(Self {
 			interval_unit,
 			interval: 1,
-			price: value
-				.currency_prices
-				.get(default_currency)
-				.copied()
-				.unwrap_or_default()
-				.max(0) as u64,
+			price: price.max(0) as u64,
+			currency,
 			discount,
-		}
+		})
 	}
 }

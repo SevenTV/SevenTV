@@ -33,6 +33,7 @@ struct StructAttributes {
 	index: Vec<Index>,
 	crate_: Option<syn::Path>,
 	collection_name: Option<syn::LitStr>,
+	searchable_collection: Option<syn::Type>,
 }
 
 fn parse_nested(meta: Meta) -> syn::Result<Meta> {
@@ -64,6 +65,7 @@ impl StructAttributes {
 		let mut index = Vec::new();
 		let mut crate_ = None;
 		let mut collection_name = None;
+		let mut searchable_collection = None;
 
 		for attr in attrs {
 			let attr = attr?;
@@ -78,6 +80,9 @@ impl StructAttributes {
 				}
 				Meta::NameValue(meta) if meta.path.is_ident("collection_name") => {
 					collection_name = Some(syn::LitStr::from_expr(&meta.value)?);
+				}
+				Meta::NameValue(meta) if meta.path.is_ident("search") => {
+					searchable_collection = Some(syn::Type::from_expr(&meta.value)?);
 				}
 				_ => return Err(syn::Error::new(attr.span(), "invalid mongo attribute")),
 			}
@@ -94,6 +99,7 @@ impl StructAttributes {
 			index,
 			crate_,
 			collection_name,
+			searchable_collection,
 		})
 	}
 }
@@ -447,21 +453,37 @@ pub fn derive(input: TokenStream) -> syn::Result<TokenStream> {
 
 	let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-	Ok(quote! {
-		impl #impl_generics #crate_::MongoCollection for #ident #ty_generics #where_clause {
-			const COLLECTION_NAME: &'static str = #collection_name;
-
-			type Id = #id_ty;
-
-			fn id(&self) -> Self::Id {
-				self.#id_ident.clone()
-			}
-
-			fn indexes() -> Vec<#crate_::mongodb::IndexModel> {
-				vec![
-					#(#index_fields),*
-				]
+	let search_impl = if let Some(searchable_collection) = input.searchable_collection {
+		quote! {
+			impl #impl_generics #crate_::SearchableMongoCollection for #ident #ty_generics #where_clause {
+				type Typesense = #searchable_collection;
 			}
 		}
+	} else {
+		quote! {}
+	};
+
+	Ok(quote! {
+		#[allow(clippy::all)]
+		#[doc(hidden)]
+		const _: () = {
+			impl #impl_generics #crate_::MongoCollection for #ident #ty_generics #where_clause {
+				const COLLECTION_NAME: &'static str = #collection_name;
+
+				type Id = #id_ty;
+
+				fn id(&self) -> Self::Id {
+					self.#id_ident.clone()
+				}
+
+				fn indexes() -> Vec<#crate_::mongodb::IndexModel> {
+					vec![
+						#(#index_fields),*
+					]
+				}
+			}
+
+			#search_impl
+		};
 	})
 }

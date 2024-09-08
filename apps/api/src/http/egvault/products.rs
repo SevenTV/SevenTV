@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::extract::State;
-use axum::Json;
+use axum::{Extension, Json};
 use futures::TryStreamExt;
 use shared::database::entitlement::EntitlementEdgeKind;
 use shared::database::product::{SubscriptionBenefitCondition, SubscriptionProduct};
@@ -12,7 +12,10 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::rest::types::{self, Plan};
 
-pub async fn products(State(global): State<Arc<Global>>) -> Result<Json<Vec<types::Product>>, ApiError> {
+pub async fn products(
+	State(global): State<Arc<Global>>,
+	Extension(ip): Extension<std::net::IpAddr>,
+) -> Result<Json<Vec<types::Product>>, ApiError> {
 	let products: Vec<SubscriptionProduct> = SubscriptionProduct::collection(&global.db)
 		.find(filter::filter! {
 			SubscriptionProduct {}
@@ -29,13 +32,30 @@ pub async fn products(State(global): State<Arc<Global>>) -> Result<Json<Vec<type
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
+	let currency = if let Some(country_code) = global.geoip().and_then(|g| g.lookup(ip)).and_then(|c| c.iso_code) {
+		let global = global
+			.global_config_loader
+			.load(())
+			.await
+			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+		global.country_currency_overrides.get(country_code).copied()
+	} else {
+		None
+	};
+
 	let plans = products
 		.iter()
 		.cloned()
 		.flat_map(|p| {
-			p.variants
-				.into_iter()
-				.map(move |v| Plan::from_variant(v, &p.default_currency))
+			p.variants.into_iter().filter_map(move |v| {
+				if v.active {
+					Plan::from_variant(v, currency, p.default_currency)
+				} else {
+					None
+				}
+			})
 		})
 		.collect();
 

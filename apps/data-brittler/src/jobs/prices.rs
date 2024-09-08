@@ -27,11 +27,19 @@ impl Job for PricesJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("dropping products collection");
+			tracing::info!("dropping products and subscription_products collection");
 			Product::collection(global.target_db()).drop().await?;
 			let indexes = Product::indexes();
 			if !indexes.is_empty() {
 				Product::collection(global.target_db()).create_indexes(indexes).await?;
+			}
+
+			SubscriptionProduct::collection(global.target_db()).drop().await?;
+			let indexes = SubscriptionProduct::indexes();
+			if !indexes.is_empty() {
+				SubscriptionProduct::collection(global.target_db())
+					.create_indexes(indexes)
+					.await?;
 			}
 		}
 
@@ -40,6 +48,7 @@ impl Job for PricesJob {
 			subscription_product: SubscriptionProduct {
 				id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
 				variants: vec![],
+				default_variant_idx: 0,
 				name: "7TV Subscription".to_string(),
 				description: None,
 				default_currency: stripe::Currency::USD,
@@ -83,14 +92,14 @@ impl Job for PricesJob {
 
 		let currency = price.currency.expect("no currency found");
 		let unit_amount = price.unit_amount.expect("no unit amount found");
-		currency_prices.insert(currency, unit_amount.max(0) as i32);
+		currency_prices.insert(currency, unit_amount);
 
 		let currency_options = price.currency_options.expect("no currency options found");
 		for (currency, unit_amount) in currency_options
 			.into_iter()
 			.filter_map(|(c, o)| o.unit_amount.map(|a| (c, a)))
 		{
-			currency_prices.insert(currency, unit_amount.max(0) as i32);
+			currency_prices.insert(currency, unit_amount);
 		}
 
 		if let Some(recurring) = price.recurring {
@@ -119,7 +128,8 @@ impl Job for PricesJob {
 			self.subscription_product.default_currency = currency;
 			self.subscription_product.variants.push(SubscriptionProductVariant {
 				id: price_id.into(),
-				gift_id: None,
+				active: price.active == Some(true),
+				gift: false,
 				kind,
 				currency_prices,
 				paypal_id,
@@ -128,6 +138,7 @@ impl Job for PricesJob {
 			match Product::collection(self.global.target_db())
 				.insert_one(Product {
 					id: price_id.into(),
+					active: price.active == Some(true),
 					name: product.name.unwrap_or_default(),
 					extends_subscription: None,
 					description: None,

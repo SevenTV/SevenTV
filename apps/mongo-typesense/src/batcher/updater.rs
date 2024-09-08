@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherError, BatcherNormalMode};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
 
 pub struct MongoUpdater(Batcher<Inner>);
@@ -18,8 +19,8 @@ impl MongoUpdater {
 
 	pub async fn update<M: MongoCollection>(
 		&self,
-		filter: bson::Document,
-		update: bson::Document,
+		filter: impl Into<filter::Filter<M>>,
+		update: impl Into<update::Update<M>>,
 		many: bool,
 	) -> Result<bool, BatcherError<MongoOpError>> {
 		self.bulk(Some(MongoReq::update::<M>(filter, update, many)))
@@ -57,10 +58,18 @@ pub struct MongoReq {
 }
 
 impl MongoReq {
-	pub fn update<M: MongoCollection>(filter: bson::Document, update: bson::Document, many: bool) -> Self {
+	pub fn update<M: MongoCollection>(
+		filter: impl Into<filter::Filter<M>>,
+		update: impl Into<update::Update<M>>,
+		many: bool,
+	) -> Self {
 		Self {
 			collection: M::COLLECTION_NAME,
-			op: MongoOp::Update { filter, update, many },
+			op: MongoOp::Update {
+				filter: filter.into().to_document(),
+				update: update.into().to_document(),
+				many,
+			},
 		}
 	}
 }

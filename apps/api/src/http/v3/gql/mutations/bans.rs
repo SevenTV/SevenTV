@@ -71,11 +71,11 @@ impl BansMutation {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
 
-		let actor = auth_session.user(global).await?;
-		if actor.id == victim.id {
+		let authed_user = auth_session.user(global).await?;
+		if authed_user.id == victim.id {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "cannot ban yourself"));
-		} else if actor.computed.highest_role_rank <= victim.computed.highest_role_rank
-			&& !actor.has(AdminPermission::SuperAdmin)
+		} else if authed_user.computed.highest_role_rank <= victim.computed.highest_role_rank
+			&& !authed_user.has(AdminPermission::SuperAdmin)
 		{
 			return Err(ApiError::new_const(
 				StatusCode::FORBIDDEN,
@@ -89,7 +89,7 @@ impl BansMutation {
 				user_id: victim.id,
 				template_id: None,
 				expires_at: expire_at,
-				created_by_id: actor.id,
+				created_by_id: authed_user.id,
 				reason,
 				tags: vec![],
 				removed: None,
@@ -121,7 +121,8 @@ impl BansMutation {
 
 			if res.modified_count > 0 {
 				tx.register_event(InternalEvent {
-					actor: Some(actor.clone()),
+					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::UserBan {
 						after: ban.clone(),
 						data: StoredEventUserBanData::Ban,

@@ -4,7 +4,7 @@ use axum::body::Bytes;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
@@ -59,6 +59,7 @@ pub struct XEmoteData {
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L58
 pub async fn create_emote(
 	State(global): State<Arc<Global>>,
+	Extension(ip): Extension<std::net::IpAddr>,
 	auth_session: Option<AuthSession>,
 	headers: HeaderMap,
 	body: Bytes,
@@ -76,16 +77,16 @@ pub async fn create_emote(
 		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "invalid tags"));
 	}
 
-	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
-	let user = auth_session.user(&global).await?;
+	let auth_session = &auth_session.ok_or(ApiError::UNAUTHORIZED)?;
+	let authed_user = auth_session.user(&global).await?;
 
-	if !user.has(EmotePermission::Upload) {
+	if !authed_user.has(EmotePermission::Upload) {
 		return Err(ApiError::FORBIDDEN);
 	}
 
 	let emote_id = EmoteId::new();
 
-	let input = match global.image_processor.upload_emote(emote_id, body).await {
+	let input = match global.image_processor.upload_emote(emote_id, body, Some(ip)).await {
 		Ok(ProcessImageResponse {
 			id,
 			error: None,
@@ -133,7 +134,7 @@ pub async fn create_emote(
 	let res = with_transaction(&global, |mut tx| async move {
 		let emote = Emote {
 			id: emote_id,
-			owner_id: user.id,
+			owner_id: authed_user.id,
 			default_name: emote_data.name,
 			tags: emote_data.tags,
 			image_set: ImageSet { input, outputs: vec![] },
@@ -149,7 +150,8 @@ pub async fn create_emote(
 		tx.insert_one::<Emote>(&emote, None).await?;
 
 		tx.register_event(InternalEvent {
-			actor: Some(user.clone()),
+			actor: Some(authed_user.clone()),
+			session_id: auth_session.id(),
 			data: InternalEventData::Emote {
 				after: emote.clone(),
 				data: StoredEventEmoteData::Upload,

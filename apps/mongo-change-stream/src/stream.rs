@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::Context;
 use async_nats::header::NATS_MESSAGE_ID;
 use async_nats::jetstream::context::PublishAckFuture;
-use async_nats::{HeaderMap, HeaderValue};
+use async_nats::{HeaderMap, HeaderName, HeaderValue};
 use bytes::Bytes;
 use mongodb::change_stream::event::OperationType;
 use scuffle_foundations::context::ContextFutExt;
@@ -120,9 +120,9 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 		.jetstream
 		.get_or_create_stream(async_nats::jetstream::stream::Config {
 			name: subject.name(),
-			subjects: vec![subject.wildcard()],
-			retention: async_nats::jetstream::stream::RetentionPolicy::Interest,
-			duplicate_window: std::time::Duration::from_secs(60),
+			subjects: vec![subject.name()],
+			retention: async_nats::jetstream::stream::RetentionPolicy::WorkQueue,
+			duplicate_window: std::time::Duration::from_secs(15),
 			storage: async_nats::jetstream::stream::StorageType::File,
 			..Default::default()
 		})
@@ -164,9 +164,12 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 
 		let event = serde_json::to_vec(&event).context("serialize event")?;
 
-		let headers = HeaderMap::from_iter(std::iter::once((NATS_MESSAGE_ID, HeaderValue::from(id))));
+		let headers = HeaderMap::from_iter([
+			(NATS_MESSAGE_ID, HeaderValue::from(id)),
+			(HeaderName::from_static("collection"), HeaderValue::from(collection)),
+		]);
 
-		if !publish_nats(&global, &tx, subject.topic(&ns.db, collection), headers, Bytes::from(event)).await {
+		if !publish_nats(&global, &tx, subject.name(), headers, Bytes::from(event)).await {
 			anyhow::bail!("failed to publish event");
 		}
 	}

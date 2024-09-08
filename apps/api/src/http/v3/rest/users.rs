@@ -5,7 +5,7 @@ use axum::body::Bytes;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, patch, post, put};
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
@@ -160,6 +160,7 @@ pub enum TargetUser {
 pub async fn upload_user_profile_picture(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<TargetUser>,
+	Extension(ip): Extension<std::net::IpAddr>,
 	auth_session: Option<AuthSession>,
 	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -218,7 +219,7 @@ pub async fn upload_user_profile_picture(
 
 	let input = match global
 		.image_processor
-		.upload_profile_picture(profile_picture_id, target_user.id, body)
+		.upload_profile_picture(profile_picture_id, target_user.id, body, Some(ip))
 		.await
 	{
 		Ok(ProcessImageResponse {
@@ -263,7 +264,6 @@ pub async fn upload_user_profile_picture(
 			user_id: target_user.id,
 			image_set: ImageSet { input, outputs: vec![] },
 			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
 		})
 		.await
 		.map_err(|e| {

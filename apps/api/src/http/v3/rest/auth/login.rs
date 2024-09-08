@@ -136,7 +136,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 		};
 
 		// upsert the connection
-		let user = tx.find_one_and_update(
+		tx.find_one_and_update(
 			filter::filter! {
 				User {
 					#[query(rename = "_id")]
@@ -164,18 +164,18 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			None,
 		)
 		.await?
-		.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
-
-		Ok(user)
+		.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))
 	})
-	.await
-	.map_err(|e| match e {
-		TransactionError::Custom(e) => e,
-		e => {
+	.await;
+
+	let user = match user {
+		Ok(user) => user,
+		Err(TransactionError::Custom(e)) => return Err(e),
+		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");
-			ApiError::INTERNAL_SERVER_ERROR
+			return Err(ApiError::INTERNAL_SERVER_ERROR);
 		}
-	})?;
+	};
 
 	let full_user = global
 		.user_loader
@@ -200,7 +200,8 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 			tx.insert_one::<UserSession>(&user_session, None).await?;
 
 			tx.register_event(InternalEvent {
-				actor: Some(full_user),
+				actor: Some(full_user.clone()),
+				session_id: None,
 				data: InternalEventData::UserSession {
 					after: user_session.clone(),
 					data: StoredEventUserSessionData::Create { platform },
@@ -274,7 +275,7 @@ pub fn handle_login(
 		}
 	};
 
-	let csrf = CsrfJwtPayload::new(user_id);
+	let csrf = CsrfJwtPayload::new(None, user_id);
 
 	cookies.add(new_cookie(
 		global,

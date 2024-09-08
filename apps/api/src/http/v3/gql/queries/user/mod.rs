@@ -7,6 +7,7 @@ use shared::database::user::{FullUser, UserId};
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{UserConnectionPlatformModel, UserEditorModelPermission, UserTypeModel};
+use shared::typesense::types::event::EventId;
 
 use super::audit_log::AuditLog;
 use super::emote::Emote;
@@ -164,9 +165,35 @@ impl User {
 		Ok(emotes.into_iter().map(|e| Emote::from_db(global, e)).collect())
 	}
 
-	async fn activity<'ctx>(&self, _ctx: &Context<'ctx>, _limit: Option<u32>) -> Result<Vec<AuditLog>, ApiError> {
-		// TODO(troy): implement
-		Err(ApiError::NOT_IMPLEMENTED)
+	async fn activity<'ctx>(&self, ctx: &Context<'ctx>, limit: Option<u32>) -> Result<Vec<AuditLog>, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let options = SearchOptions::builder()
+			.query("".to_owned())
+			.query_by(vec!["id".to_owned()])
+			.filter_by(format!("target_id: {}", EventId::User(self.id.id())))
+			.sort_by(vec!["created_at:desc".to_owned()])
+			.page(None)
+			.per_page(limit)
+			.build();
+
+		let result = search::<shared::typesense::types::event::Event>(global, options)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to search");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		let events = global
+			.event_by_id_loader
+			.load_many(result.hits.iter().copied())
+			.await
+			.map_err(|()| {
+				tracing::error!("failed to load event");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		Ok(events.into_values().filter_map(AuditLog::from_db).collect())
 	}
 
 	async fn connections<'ctx>(&self) -> Result<Vec<UserConnection>, ApiError> {

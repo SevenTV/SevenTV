@@ -90,15 +90,13 @@ pub struct AuditLogChangeSingleValue<T> {
 pub enum ObjectIdWrapper {
 	Oid(ObjectId),
 	String(String),
-	InvalidOid,
 }
 
 impl ObjectIdWrapper {
 	pub fn into_inner(self) -> Option<ObjectId> {
 		match self {
 			ObjectIdWrapper::Oid(oid) => Some(oid),
-			ObjectIdWrapper::String(oid) => oid.parse().ok(),
-			ObjectIdWrapper::InvalidOid => None,
+			ObjectIdWrapper::String(id) => id.parse().ok(),
 		}
 	}
 }

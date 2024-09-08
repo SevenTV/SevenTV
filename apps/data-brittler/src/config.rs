@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use scuffle_foundations::bootstrap::Bootstrap;
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::{LoggingSettings, TelemetrySettings};
-use shared::config::{DatabaseConfig, ImageProcessorConfig, NatsConfig};
+use shared::config::{ClickhouseConfig, DatabaseConfig, ImageProcessorConfig, NatsConfig};
 
 #[auto_settings]
 #[serde(default)]
@@ -24,10 +24,8 @@ pub struct Config {
 	})]
 	pub target_database: DatabaseConfig,
 	/// ClickHouse connection string
-	#[settings(default = DatabaseConfig {
-		uri: "http://localhost:8123".to_string(),
-	})]
-	pub clickhouse: DatabaseConfig,
+	#[settings(default = ClickhouseConfig::default())]
+	pub clickhouse: ClickhouseConfig,
 	/// Path to the report file
 	#[settings(default = PathBuf::from("./local/report.md"))]
 	pub report_path: PathBuf,
@@ -108,6 +106,10 @@ pub struct Config {
 	pub subscriptions: bool,
 	/// Skip subscriptions job
 	pub skip_subscriptions: bool,
+	/// Run cron jobs
+	pub cron_jobs: bool,
+	/// Skip cron jobs
+	pub skip_cron_jobs: bool,
 
 	/// Truncate tables before inserting data
 	pub truncate: bool,
@@ -216,5 +218,10 @@ impl Config {
 	pub fn should_run_subscriptions(&self) -> bool {
 		let any_run = self.any_run();
 		any_run && self.subscriptions || !any_run && !self.skip_subscriptions
+	}
+
+	pub fn should_run_cron_jobs(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.cron_jobs || !any_run && !self.skip_cron_jobs
 	}
 }

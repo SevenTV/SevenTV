@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 
 use super::MongoCollection;
 
-pub struct LoaderById<T: MongoCollection + DeserializeOwned + Clone + 'static> {
+pub struct LoaderById<T> {
 	db: mongodb::Database,
 	config: BatcherConfig,
 	_phantom: std::marker::PhantomData<T>,

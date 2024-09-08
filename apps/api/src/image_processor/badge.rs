@@ -14,6 +14,7 @@ use crate::transactions::{TransactionError, TransactionResult, TransactionSessio
 
 pub async fn handle_success(
 	mut tx: TransactionSession<'_, anyhow::Error>,
+	_: &Arc<Global>,
 	id: BadgeId,
 	event: &event_callback::Success,
 ) -> TransactionResult<(), anyhow::Error> {
@@ -45,6 +46,7 @@ pub async fn handle_success(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {
@@ -72,6 +74,7 @@ pub async fn handle_fail(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {
@@ -99,6 +102,7 @@ pub async fn handle_start(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {
@@ -126,6 +130,7 @@ pub async fn handle_cancel(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {

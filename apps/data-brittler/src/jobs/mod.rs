@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use bson::doc;
+use cron_jobs::CronJobsJob;
 use entitlements::EntitlementsJob;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
@@ -30,6 +31,7 @@ pub mod audit_logs;
 pub mod bans;
 pub mod cdn_rename_list;
 pub mod cosmetics;
+pub mod cron_jobs;
 pub mod emote_sets;
 pub mod emotes;
 pub mod entitlements;
@@ -82,6 +84,20 @@ pub trait Job: Sized + Send + Sync {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self>;
 
+	fn log_progress(&self, outcome: &JobOutcome, count: u64) {
+		let tenth = count / 10;
+
+		if tenth != 0 && outcome.processed_documents % tenth == 0 {
+			tracing::info!(
+				"{:.1}% ({}/{}) ({} errors)",
+				outcome.processed_documents as f64 / count as f64 * 100.0,
+				Number::from(outcome.processed_documents),
+				Number::from(count),
+				Number::from(outcome.errors.len())
+			);
+		}
+	}
+
 	#[tracing::instrument(name = "job", skip_all, fields(job = Self::NAME))]
 	fn conditional_init_and_run(
 		global: Arc<Global>,
@@ -117,7 +133,6 @@ pub trait Job: Sized + Send + Sync {
 		if let Some(collection) = self.collection().await {
 			// count
 			let count = collection.count_documents(doc! {}).await?;
-			let tenth = count / 10;
 			tracing::info!("found {} documents", Number::from(count));
 
 			// query
@@ -134,16 +149,7 @@ pub trait Job: Sized + Send + Sync {
 					Err(e) => outcome.errors.push(error::Error::Deserialize(e)),
 				}
 
-				if tenth != 0 && outcome.processed_documents % tenth == 0 {
-					tracing::info!(
-						"{:.1}% ({}/{}) ({} errors)",
-						outcome.processed_documents as f64 / count as f64 * 100.0,
-						Number::from(outcome.processed_documents),
-						Number::from(count),
-						Number::from(outcome.errors.len())
-					);
-				}
-
+				self.log_progress(&outcome, count);
 				outcome.processed_documents += 1;
 			}
 		}
@@ -183,7 +189,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 
 	macro_rules! job {
 		(
-			$([$name:ident, $fn:ident]),+
+			$([$name:ident, $fn:ident]),+$(,)?
 		) => {
 			{
 				let mut futures = Vec::new();
@@ -208,6 +214,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	}
 
 	let futures = job! {
+		[AuditLogsJob, should_run_audit_logs],
 		[UsersJob, should_run_users],
 		[BansJob, should_run_bans],
 		[EmotesJob, should_run_emotes],
@@ -217,11 +224,11 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		[CosmeticsJob, should_run_cosmetics],
 		[RolesJob, should_run_roles],
 		[ReportsJob, should_run_reports],
-		[AuditLogsJob, should_run_audit_logs],
 		[MessagesJob, should_run_messages],
 		[SystemJob, should_run_system],
 		[PricesJob, should_run_prices],
-		[SubscriptionsJob, should_run_subscriptions]
+		[SubscriptionsJob, should_run_subscriptions],
+		[CronJobsJob, should_run_cron_jobs],
 	};
 
 	let results: Vec<JobOutcome> = futures::future::try_join_all(futures).await?;

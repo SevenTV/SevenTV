@@ -59,12 +59,4 @@ impl ChangeStreamSubject {
 	pub fn name(&self) -> String {
 		self.0.clone()
 	}
-
-	pub fn wildcard(&self) -> String {
-		format!("{}.>", self.0)
-	}
-
-	pub fn topic(&self, database: &str, collection: &str) -> String {
-		format!("{}.{}.{}", self.0, database, collection)
-	}
 }

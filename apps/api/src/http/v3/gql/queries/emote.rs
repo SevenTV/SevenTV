@@ -1,19 +1,21 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
 use hyper::StatusCode;
 use shared::database::emote::EmoteId;
+use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::UserId;
 use shared::old_types::image::ImageHost;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState};
+use shared::typesense::types::event::EventId;
 
 use super::audit_log::AuditLog;
 use super::report::Report;
 use super::user::{UserPartial, UserSearchResult};
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::auth::AuthSession;
 use crate::search::{search, SearchOptions};
 
 #[derive(Default)]
@@ -182,8 +184,8 @@ impl Emote {
 		let options = SearchOptions::builder()
 			.query("".to_owned())
 			.query_by(vec!["id".to_owned()])
-			.filter_by(format!("emotes: {}", self.id.0))
-			.sort_by(vec!["updated_at:desc".to_owned()])
+			.filter_by(format!("target_id: {}", EventId::Emote(self.id.id())))
+			.sort_by(vec!["created_at:desc".to_owned()])
 			.page(None)
 			.per_page(limit)
 			.build();
@@ -195,7 +197,7 @@ impl Emote {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		let logs = global
+		let events = global
 			.event_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
@@ -204,10 +206,7 @@ impl Emote {
 				ApiError::INTERNAL_SERVER_ERROR
 			})?;
 
-		Ok(logs
-			.into_values()
-			.filter_map(|l| AuditLog::from_db(l, &HashMap::new()))
-			.collect())
+		Ok(events.into_values().filter_map(AuditLog::from_db).collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {
@@ -396,6 +395,17 @@ impl EmotesQuery {
 
 		let mut filters = Vec::new();
 
+		let mut view_unlisted = false;
+		if let Ok(session) = ctx.data::<AuthSession>() {
+			let user = session.user(global).await.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			view_unlisted = user.has(EmotePermission::ViewUnlisted);
+		}
+
+		if !view_unlisted {
+			filters.push("flag_public_listed: true".to_owned());
+			filters.push("flag_private: false".to_owned());
+		}
+
 		let options = SearchOptions::builder().query(query.clone()).page(page).per_page(limit);
 
 		let mut query_by = vec!["default_name".to_owned()];
@@ -430,7 +440,7 @@ impl EmotesQuery {
 
 			match filter.category {
 				None | Some(EmoteSearchCategory::Top) => {
-					sort_by.push("score_top_all_time:desc".to_owned());
+					sort_by.push("scorez_top_all_time:desc".to_owned());
 				}
 				Some(EmoteSearchCategory::Featured) | Some(EmoteSearchCategory::TrendingDay) => {
 					sort_by.push(format!("score_trending_day:{order}"));

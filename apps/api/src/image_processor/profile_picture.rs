@@ -15,6 +15,7 @@ use crate::transactions::{TransactionError, TransactionResult, TransactionSessio
 #[tracing::instrument(skip_all, fields(id = %id))]
 pub async fn handle_success(
 	mut tx: TransactionSession<'_, anyhow::Error>,
+	_: &Arc<Global>,
 	id: UserProfilePictureId,
 	event: &event_callback::Success,
 ) -> TransactionResult<(), anyhow::Error> {
@@ -74,6 +75,7 @@ pub async fn handle_success(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::UserProfilePicture {
 			after: profile_picture,
 			data: StoredEventUserProfilePictureData::Process {
@@ -101,6 +103,7 @@ pub async fn handle_fail(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::UserProfilePicture {
 			after,
 			data: StoredEventUserProfilePictureData::Process {
@@ -128,6 +131,7 @@ pub async fn handle_start(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::UserProfilePicture {
 			after,
 			data: StoredEventUserProfilePictureData::Process {
@@ -155,6 +159,7 @@ pub async fn handle_cancel(
 
 	tx.register_event(InternalEvent {
 		actor: None,
+		session_id: None,
 		data: InternalEventData::UserProfilePicture {
 			after,
 			data: StoredEventUserProfilePictureData::Process {

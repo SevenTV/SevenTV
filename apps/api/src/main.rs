@@ -19,6 +19,8 @@ mod transactions;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
+	rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
+
 	if let Some(export_path) = settings.settings.export_schema_path {
 		fs::write(
 			&export_path,

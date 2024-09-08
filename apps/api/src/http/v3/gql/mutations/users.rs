@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateOptions};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
-use shared::database::stored_event::StoredEventEntitlementEdgeData;
 use shared::database::user::connection::UserConnection as DbUserConnection;
 use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId, UserEditorState};
 use shared::database::user::{User, UserStyle};
@@ -128,6 +127,7 @@ impl UserOps {
 
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::User {
 						after: user.clone(),
 						data: InternalEventUserData::RemoveConnection { connection },
@@ -149,6 +149,7 @@ impl UserOps {
 
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),
+					session_id: auth_session.id(),
 					data: InternalEventData::User {
 						after: user.clone(),
 						data: InternalEventUserData::ChangeActiveEmoteSet {
@@ -206,9 +207,9 @@ impl UserOps {
 
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let user = auth_session.user(global).await?;
+		let authed_user = auth_session.user(global).await?;
 
-		if !(auth_session.user_id() == self.id.id() || user.has(UserPermission::ManageAny)) {
+		if !(auth_session.user_id() == self.id.id() || authed_user.has(UserPermission::ManageAny)) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
@@ -216,7 +217,7 @@ impl UserOps {
 			// load all editors, we have to do this to know the old permissions Sadge
 			let editors = global
 				.user_editor_by_user_id_loader
-				.load(user.id)
+				.load(authed_user.id)
 				.await
 				.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 				.unwrap_or_default();
@@ -250,7 +251,8 @@ impl UserOps {
 							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
 						tx.register_event(InternalEvent {
-							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							actor: Some(authed_user.clone()),
+							session_id: auth_session.id(),
 							data: InternalEventData::UserEditor {
 								after: editor,
 								data: InternalEventUserEditorData::RemoveEditor {
@@ -306,7 +308,8 @@ impl UserOps {
 							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
 						tx.register_event(InternalEvent {
-							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							actor: Some(authed_user.clone()),
+							session_id: auth_session.id(),
 							data: InternalEventData::UserEditor {
 								after: editor,
 								data: InternalEventUserEditorData::EditPermissions {
@@ -318,7 +321,7 @@ impl UserOps {
 						})?;
 					} else {
 						// didn't exist
-						if user.has(UserPermission::InviteEditors) {
+						if authed_user.has(UserPermission::InviteEditors) {
 							return Err(TransactionError::custom(ApiError::FORBIDDEN));
 						}
 
@@ -343,7 +346,8 @@ impl UserOps {
 						tx.insert_one::<DbUserEditor>(&editor, None).await?;
 
 						tx.register_event(InternalEvent {
-							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
+							actor: Some(authed_user.clone()),
+							session_id: auth_session.id(),
 							data: InternalEventData::UserEditor {
 								after: editor,
 								data: InternalEventUserEditorData::AddEditor {
@@ -451,20 +455,18 @@ impl UserOps {
 						.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
 					let old = if let Some(badge_id) = user.style.active_badge_id {
-						Some(
-							global
-								.badge_by_id_loader
-								.load(badge_id)
-								.await
-								.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-								.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?,
-						)
+						global
+							.badge_by_id_loader
+							.load(badge_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 					} else {
 						None
 					};
 
 					tx.register_event(InternalEvent {
 						actor: Some(authed_user.clone()),
+						session_id: auth_session.id(),
 						data: InternalEventData::User {
 							after: user.user.clone(),
 							data: InternalEventUserData::ChangeActiveBadge {
@@ -522,7 +524,7 @@ impl UserOps {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
 
-		let user = auth_session.user(global).await?;
+		let authed_user = auth_session.user(global).await?;
 
 		let role = global
 			.role_by_id_loader
@@ -531,48 +533,74 @@ impl UserOps {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
+		if role.permissions > authed_user.computed.permissions && !authed_user.has(AdminPermission::SuperAdmin) {
 			return Err(ApiError::FORBIDDEN);
 		}
+
+		let target_user = global
+			.user_loader
+			.load(global, self.id.id())
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.ok_or(ApiError::NOT_FOUND)?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let roles = match action {
 				ListItemAction::Add => {
-					if user.computed.entitlements.roles.contains(&role_id.id()) {
-						return Ok(user.computed.entitlements.roles.iter().copied().map(Into::into).collect());
-					}
-
-					let edge = EntitlementEdge {
-						id: EntitlementEdgeId {
-							from: EntitlementEdgeKind::User { user_id: self.id.id() },
-							to: EntitlementEdgeKind::Role { role_id: role_id.id() },
-							managed_by: None,
-						},
+					let edge_id = EntitlementEdgeId {
+						from: EntitlementEdgeKind::User { user_id: self.id.id() },
+						to: EntitlementEdgeKind::Role { role_id: role_id.id() },
+						managed_by: None,
 					};
 
-					tx.insert_one::<EntitlementEdge>(&edge, None).await?;
+					let res = tx
+						.update_one(
+							filter::filter! {
+								EntitlementEdge {
+									#[query(rename = "_id", serde)]
+									id: &edge_id
+								}
+							},
+							update::update! {
+								#[query(set_on_insert)]
+								EntitlementEdge {
+									id: edge_id,
+								}
+							},
+							Some(UpdateOptions::builder().upsert(true).build()),
+						)
+						.await?;
 
-					tx.register_event(InternalEvent {
-						actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
-						data: InternalEventData::EntitlementEdge {
-							after: edge,
-							data: StoredEventEntitlementEdgeData::Create,
-						},
-						timestamp: chrono::Utc::now(),
-					})?;
+					if res.upserted_id.is_some() {
+						tx.register_event(InternalEvent {
+							actor: Some(authed_user.clone()),
+							session_id: auth_session.id(),
+							data: InternalEventData::User {
+								after: target_user.user.clone(),
+								data: InternalEventUserData::AddEntitlement {
+									target: EntitlementEdgeKind::Role { role_id: role_id.id() },
+								},
+							},
+							timestamp: chrono::Utc::now(),
+						})?;
+					}
 
-					user.computed
+					let no_role = !target_user.computed.roles.contains(&role_id.id());
+
+					target_user
+						.computed
 						.entitlements
 						.roles
 						.iter()
 						.copied()
-						.chain(std::iter::once(role_id.id()))
+						// If the user didnt have the role before, we add it
+						.chain(no_role.then_some(role_id.id()))
 						.map(Into::into)
 						.collect()
 				}
 				ListItemAction::Remove => {
-					if let Some(edge) = tx
-						.find_one_and_delete(
+					if tx
+						.delete_one(
 							filter::filter! {
 								EntitlementEdge {
 									#[query(serde)]
@@ -586,27 +614,37 @@ impl UserOps {
 							None,
 						)
 						.await?
+						.deleted_count == 1
 					{
 						tx.register_event(InternalEvent {
-							actor: Some(auth_session.user(global).await.map_err(TransactionError::custom)?.clone()),
-							data: InternalEventData::EntitlementEdge {
-								after: edge,
-								data: StoredEventEntitlementEdgeData::Delete,
+							actor: Some(authed_user.clone()),
+							session_id: auth_session.id(),
+							data: InternalEventData::User {
+								after: target_user.user.clone(),
+								data: InternalEventUserData::RemoveEntitlement {
+									target: EntitlementEdgeKind::Role { role_id: role_id.id() },
+								},
 							},
 							timestamp: chrono::Utc::now(),
 						})?;
+					};
 
-						user.computed
-							.entitlements
-							.roles
-							.iter()
-							.copied()
-							.filter(|id| *id != role_id.id())
-							.map(Into::into)
-							.collect()
-					} else {
-						user.computed.entitlements.roles.iter().copied().map(Into::into).collect()
-					}
+					// They might have the role via some other entitlement.
+					let role_via_edge = target_user.computed.raw_entitlements.iter().flat_map(|e| e.iter()).any(|e| {
+						e.id.to == EntitlementEdgeKind::Role { role_id: role_id.id() }
+							&& (e.id.from != EntitlementEdgeKind::User { user_id: self.id.id() }
+								|| e.id.managed_by.is_some())
+					});
+
+					target_user
+						.computed
+						.entitlements
+						.roles
+						.iter()
+						.copied()
+						.filter(|id| role_via_edge || *id != role_id.id())
+						.map(Into::into)
+						.collect()
 				}
 				ListItemAction::Update => return Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED)),
 			};

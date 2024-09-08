@@ -1,8 +1,7 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::extract::State;
-use axum::Json;
+use axum::{Extension, Json};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::codes::{CodeEffect, RedeemCode};
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
@@ -10,6 +9,7 @@ use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
 use shared::database::user::UserId;
 
+use super::metadata::{CheckoutSessionMetadata, StripeMetadata, SubscriptionMetadata};
 use super::{create_checkout_session_params, find_or_create_customer};
 use crate::global::Global;
 use crate::http::error::ApiError;
@@ -71,6 +71,7 @@ pub struct RedeemResponse {
 
 pub async fn redeem(
 	State(global): State<Arc<Global>>,
+	Extension(ip): Extension<std::net::IpAddr>,
 	auth_session: Option<AuthSession>,
 	Json(body): Json<RedeemRequest>,
 ) -> Result<Json<RedeemResponse>, ApiError> {
@@ -145,18 +146,44 @@ pub async fn redeem(
 						.map_err(TransactionError::custom)?,
 				};
 
-				let mut params = create_checkout_session_params(&global, customer_id, Some(product_id)).await;
+				let product = global
+					.subscription_product_by_id_loader
+					.load(*product_id)
+					.await
+					.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+					.ok_or_else(|| {
+						tracing::warn!(
+							"could not find subscription product for redeem code: {} product id: {product_id}",
+							code.id
+						);
+						TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+					})?;
+
+				let variant = product.variants.get(product.default_variant_idx as usize).ok_or_else(|| {
+					tracing::warn!(
+						"could not find default variant for subscription product for redeem code: {} product id: {product_id}",
+						code.id
+					);
+					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+				})?;
+
+				let mut params = create_checkout_session_params(
+					&global,
+					ip,
+					customer_id,
+					&variant.id,
+					product.default_currency,
+					&variant.currency_prices,
+				)
+				.await;
 
 				params.mode = Some(stripe::CheckoutSessionMode::Subscription);
-				params.automatic_tax = Some(stripe::CreateCheckoutSessionAutomaticTax {
-					enabled: true,
-					..Default::default()
-				});
-
-				let mut metadata: HashMap<_, _> = [("USER_ID".to_string(), auth_session.user_id().to_string())].into();
 
 				params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
-					metadata: Some(metadata.clone()),
+					metadata: Some(SubscriptionMetadata {
+						user_id: auth_session.user_id(),
+						customer_id: None,
+					}.to_stripe()),
 					trial_period_days: Some(*trial_days),
 					trial_settings: Some(stripe::CreateCheckoutSessionSubscriptionDataTrialSettings {
 						end_behavior: stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehavior {
@@ -167,15 +194,13 @@ pub async fn redeem(
 					..Default::default()
 				});
 
-				metadata.insert("IS_REDEEM".to_string(), "true".to_string());
-				metadata.insert("REDEEM_CODE_ID".to_string(), code.id.to_string());
-				params.metadata = Some(metadata);
-
-				params.line_items = Some(vec![stripe::CreateCheckoutSessionLineItems {
-					price: Some(product_id.to_string()),
-					quantity: Some(1),
-					..Default::default()
-				}]);
+				params.metadata = Some(
+					CheckoutSessionMetadata::Redeem {
+						redeem_code_id: code.id,
+						user_id: auth_session.user_id(),
+					}
+					.to_stripe(),
+				);
 
 				let url = stripe::CheckoutSession::create(&global.stripe_client, params)
 					.await

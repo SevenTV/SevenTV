@@ -86,14 +86,15 @@ impl User {
 				.into_iter()
 				.collect(),
 			entitlements: value
-				.cached_entitlements
+				.cached
+				.entitlements
 				.into_iter()
 				.map(Into::into)
 				.collect::<HashSet<_>>()
 				.into_iter()
 				.collect(),
-			emotes: value.cached_active_emotes.into_iter().map(|id| id.to_string()).collect(),
-			role_rank: value.cached_role_rank,
+			emotes: value.cached.active_emotes.into_iter().map(|id| id.to_string()).collect(),
+			role_rank: value.cached.role_rank,
 			created_at: value.id.timestamp().timestamp_millis(),
 			updated_at: value.updated_at.timestamp_millis(),
 			search_updated_at: Utc::now().timestamp_millis(),

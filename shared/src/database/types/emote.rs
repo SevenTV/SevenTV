@@ -14,6 +14,7 @@ pub type EmoteId = Id<Emote>;
 #[mongo(index(fields("merged.at" = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::emote::Emote")]
 #[serde(deny_unknown_fields)]
 pub struct Emote {
 	#[mongo(id)]

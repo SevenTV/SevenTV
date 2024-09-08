@@ -171,6 +171,8 @@ impl<T> __AssertUpdateBoundsFlatten<Set<T>, T> for T {}
 impl<T> __AssertUpdateBoundsFlatten<Set<T>, T> for &T {}
 impl<T> __AssertUpdateBoundsFlatten<Set<T>, T> for Set<T> {}
 impl<T> __AssertUpdateBoundsFlatten<Set<T>, T> for &Set<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Set<Option<T>>, Option<T>> for Set<T> {}
+impl<T> __AssertUpdateBoundsFlatten<Set<Option<T>>, Option<T>> for &Set<T> {}
 
 impl<T> __AssertUpdateBounds<Unset<T>, T> for bool {}
 impl<T> __AssertUpdateBoundsFlatten<Unset<T>, T> for bool {}

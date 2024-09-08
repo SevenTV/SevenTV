@@ -12,6 +12,7 @@ pub type UserBanId = Id<UserBan>;
 #[mongo(index(fields(user_id = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::user::ban::UserBan")]
 #[serde(deny_unknown_fields)]
 pub struct UserBan {
 	#[mongo(id)]

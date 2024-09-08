@@ -23,3 +23,6 @@ typesense_codegen = { git = "https://github.com/typesense/typesense-rust.git" }
 tokio-util = "0.7"
 chrono = "0.4"
 const_format = "0.2"
+clickhouse = { version = "0.12", features = ["time", "uuid", "rustls-tls"] }
+rustls = { version = "0.23", features = ["aws-lc-rs"] }
+time = { version = "0.3", features = ["serde"] }

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use shared::database::emote_set::EmoteSetId;
@@ -43,6 +44,7 @@ impl Job for SystemJob {
 			alerts: GlobalConfigAlerts::default(),
 			emote_set_id,
 			automod_rule_ids: vec![],
+			country_currency_overrides: HashMap::new(),
 		};
 		match GlobalConfig::collection(self.global.target_db()).insert_one(config).await {
 			Ok(_) => outcome.inserted_rows += 1,

@@ -178,16 +178,18 @@ pub struct TimePeriod {
 #[mongo(collection_name = "products")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::product::Product")]
 #[serde(deny_unknown_fields)]
 pub struct Product {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: ProductId,
+	pub active: bool,
 	pub name: String,
 	pub description: Option<String>,
 	pub extends_subscription: Option<SubscriptionProductId>,
 	pub default_currency: stripe::Currency,
-	pub currency_prices: HashMap<stripe::Currency, i32>,
+	pub currency_prices: HashMap<stripe::Currency, i64>,
 	#[serde(with = "crate::database::serde")]
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
@@ -204,12 +206,15 @@ pub type SubscriptionProductId = Id<SubscriptionProduct>;
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(index(fields(kind = 1), unique))]
 #[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields("benifits.id" = 1)))]
+#[mongo(search = "crate::typesense::types::product::SubscriptionProduct")]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionProduct {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionProductId,
 	pub variants: Vec<SubscriptionProductVariant>,
+	pub default_variant_idx: i32,
 	pub name: String,
 	pub description: Option<String>,
 	pub default_currency: stripe::Currency,
@@ -223,10 +228,11 @@ pub struct SubscriptionProduct {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SubscriptionProductVariant {
 	pub id: ProductId,
-	pub gift_id: Option<ProductId>,
 	pub paypal_id: Option<String>,
+	pub active: bool,
+	pub gift: bool,
 	pub kind: SubscriptionProductKind,
-	pub currency_prices: HashMap<stripe::Currency, i32>,
+	pub currency_prices: HashMap<stripe::Currency, i64>,
 }
 
 pub type SubscriptionBenefitId = Id<SubscriptionBenefit>;

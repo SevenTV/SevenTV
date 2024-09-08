@@ -234,6 +234,7 @@ pub type EntitlementGroupId = Id<EntitlementGroup>;
 #[mongo(collection_name = "entitlement_groups")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::entitlement::EntitlementGroup")]
 #[serde(deny_unknown_fields)]
 pub struct EntitlementGroup {
 	#[mongo(id)]

@@ -18,6 +18,8 @@ mod types;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
+	rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
+
 	tracing::info!("starting data-brittler");
 
 	let global = Arc::new(

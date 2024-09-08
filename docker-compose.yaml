@@ -90,10 +90,10 @@ services:
       - -c
       - |
         set -eux;
-        /usr/bin/mc config host add myminio http://minio:9000 seventvkey seventvkey; 
-        /usr/bin/mc mb myminio/seventv-cdn;
-        /usr/bin/mc anonymous set download myminio/seventv-cdn;
-        /usr/bin/mc mb myminio/seventv-cdn-private;
+        /usr/bin/mc config host add myminio http://minio:9000 seventvkey seventvkey || true; 
+        /usr/bin/mc mb myminio/seventv-cdn || true;
+        /usr/bin/mc anonymous set download myminio/seventv-cdn || true;
+        /usr/bin/mc mb myminio/seventv-cdn-private || true;
         exit 0;
 
   image-processor:
@@ -115,8 +115,22 @@ services:
       - nats
       - minio
 
+  clickhouse:
+    image: bitnami/clickhouse:latest
+    pull_policy: "always"
+    restart: unless-stopped
+    ports:
+      - "${CLICKHOUSE_BIND:-127.0.0.1:8123}:8123"
+      - "${CLICKHOUSE_BIND:-127.0.0.1:19000}:9000"
+    environment:
+      - CLICKHOUSE_ADMIN_USER=default
+      - CLICKHOUSE_ADMIN_PASSWORD=default
+    volumes:
+      - clickhouse:/bitnami/clickhouse
+
 volumes:
   mongodb:
   typesense:
   minio:
   nats:
+  clickhouse:

@@ -22,23 +22,11 @@ pub mod mongo {
 }
 
 pub mod typesense {
-	pub use shared::typesense::types::automod::*;
-	pub use shared::typesense::types::badge::*;
-	pub use shared::typesense::types::emote::*;
-	pub use shared::typesense::types::emote_moderation_request::*;
 	pub use shared::typesense::types::emote_set::*;
 	pub use shared::typesense::types::entitlement::*;
-	pub use shared::typesense::types::event::*;
-	pub use shared::typesense::types::page::*;
-	pub use shared::typesense::types::paint::*;
-	pub use shared::typesense::types::product::codes::*;
-	pub use shared::typesense::types::product::invoice::*;
 	pub use shared::typesense::types::product::subscription::*;
 	pub use shared::typesense::types::product::*;
 	pub use shared::typesense::types::role::*;
-	pub use shared::typesense::types::ticket::*;
-	pub use shared::typesense::types::user::ban::*;
-	pub use shared::typesense::types::user::ban_template::*;
 	pub use shared::typesense::types::user::editor::*;
 	pub use shared::typesense::types::user::relation::*;
 	pub use shared::typesense::types::user::*;

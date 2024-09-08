@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::future::IntoFuture;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -14,7 +15,7 @@ use super::prices::NEW_PRODUCT_ID;
 use super::{Job, ProcessOutcome};
 use crate::error;
 use crate::global::Global;
-use crate::types::{self, SubscriptionCycleUnit, SubscriptionProvider};
+use crate::types::{self, SubscriptionCycleStatus, SubscriptionCycleUnit, SubscriptionProvider};
 
 pub const PAYPAL_YEARLY: &str = "P-9P108407878214437MDOSLGA";
 pub const PAYPAL_MONTHLY: &str = "P-0RN164482K927302CMDOSJJA";
@@ -23,7 +24,7 @@ pub const STRIPE_MONTHLY: &str = "price_1JWQ2QCHxsWbK3R31cZkaocV";
 
 pub struct SubscriptionsJob {
 	global: Arc<Global>,
-	subscriptions: Vec<Subscription>,
+	subscriptions: HashMap<SubscriptionId, Subscription>,
 	periods: Vec<SubscriptionPeriod>,
 }
 
@@ -51,7 +52,7 @@ impl Job for SubscriptionsJob {
 
 		Ok(Self {
 			global,
-			subscriptions: vec![],
+			subscriptions: Default::default(),
 			periods: vec![],
 		})
 	}
@@ -81,12 +82,6 @@ impl Job for SubscriptionsJob {
 			product_id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
 		};
 
-		self.subscriptions.push(Subscription {
-			id: sub_id.clone(),
-			state: subscription.cycle.status.into(),
-			updated_at: chrono::Utc::now(),
-		});
-
 		let end = match subscription.ended_at.map(|t| t.into_chrono()).or_else(|| {
 			let unit = match subscription.cycle.unit {
 				SubscriptionCycleUnit::Month | SubscriptionCycleUnit::Day => Months::new(1),
@@ -101,6 +96,22 @@ impl Job for SubscriptionsJob {
 			}
 		};
 
+		let sub = self.subscriptions.entry(sub_id).or_insert(Subscription {
+			id: sub_id,
+			updated_at: chrono::Utc::now(),
+			created_at: subscription.id.timestamp().to_chrono(),
+			search_updated_at: None,
+			ended_at: None,
+			state: subscription.cycle.status.into(),
+		});
+
+		sub.created_at = sub.created_at.min(subscription.id.timestamp().to_chrono());
+		sub.state = subscription.cycle.status.into();
+		sub.ended_at = match &subscription.cycle.status {
+			SubscriptionCycleStatus::Ended | SubscriptionCycleStatus::Canceled => Some(sub.ended_at.unwrap_or(end).max(end)),
+			_ => None,
+		};
+
 		self.periods.push(SubscriptionPeriod {
 			id: subscription.id.into(),
 			provider_id: Some(provider_id),
@@ -109,7 +120,7 @@ impl Job for SubscriptionsJob {
 			end,
 			is_trial: subscription.cycle.trial_end_at.is_some(),
 			created_by: SubscriptionPeriodCreatedBy::System {
-				reason: Some("Old subscription".to_string()),
+				reason: Some("Data migration job".to_string()),
 			},
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,
@@ -129,7 +140,7 @@ impl Job for SubscriptionsJob {
 
 		let res = tokio::join!(
 			subscriptions
-				.insert_many(&self.subscriptions)
+				.insert_many(self.subscriptions.values())
 				.with_options(insert_options.clone())
 				.into_future(),
 			periods

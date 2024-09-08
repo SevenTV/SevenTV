@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use mongodb::bson::doc;
-use shared::database::emote_moderation_request::{EmoteModerationRequestId, EmoteModerationRequestKind};
+use shared::database::emote_moderation_request::{
+	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
+};
 use shared::database::role::permissions::{EmoteModerationRequestPermission, PermissionsExt};
 use shared::old_types::object_id::GqlObjectId;
 
@@ -10,6 +12,7 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
+use crate::search::{search, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/messages.gql
 
@@ -49,26 +52,26 @@ pub struct ModRequestMessage {
 	actor_country_code: String,
 }
 
-// impl ModRequestMessage {
-// 	fn from_db(mod_request: EmoteModerationRequest) -> Self {
-// 		Self {
-// 			id: mod_request.id.into(),
-// 			kind: MessageKind::ModRequest,
-// 			author_id: Some(mod_request.user_id.into()),
-// 			read: mod_request.status == EmoteModerationRequestStatus::Approved
-// 				|| mod_request.status == EmoteModerationRequestStatus::Denied,
-// 			read_at: None,
-// 			target_kind: 2,
-// 			target_id: mod_request.emote_id.into(),
-// 			wish: match mod_request.kind {
-// 				EmoteModerationRequestKind::PublicListing => "list".to_string(),
-// 				EmoteModerationRequestKind::PersonalUse => "personal_use".to_string(),
-// 			},
-// 			actor_country_name: String::new(),
-// 			actor_country_code: mod_request.country_code.unwrap_or_default(),
-// 		}
-// 	}
-// }
+impl ModRequestMessage {
+	fn from_db(mod_request: EmoteModerationRequest) -> Self {
+		Self {
+			id: mod_request.id.into(),
+			kind: MessageKind::ModRequest,
+			author_id: Some(mod_request.user_id.into()),
+			read: mod_request.status == EmoteModerationRequestStatus::Approved
+				|| mod_request.status == EmoteModerationRequestStatus::Denied,
+			read_at: None,
+			target_kind: 2,
+			target_id: mod_request.emote_id.into(),
+			wish: match mod_request.kind {
+				EmoteModerationRequestKind::PublicListing => "list".to_string(),
+				EmoteModerationRequestKind::PersonalUse => "personal_use".to_string(),
+			},
+			actor_country_name: String::new(),
+			actor_country_code: mod_request.country_code.unwrap_or_default(),
+		}
+	}
+}
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ModRequestMessage {
@@ -124,10 +127,10 @@ impl MessagesQuery {
 	async fn mod_requests<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		after_id: Option<GqlObjectId>,
-		_limit: Option<u32>,
+		#[graphql(validator(maximum = 50))] page: Option<u32>,
+		#[graphql(validator(maximum = 500))] limit: Option<u32>,
 		wish: Option<String>,
-		_country: Option<String>,
+		country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -139,13 +142,48 @@ impl MessagesQuery {
 			return Err(ApiError::FORBIDDEN);
 		}
 
-		let _after_id: Option<EmoteModerationRequestId> = after_id.map(|id| id.id());
-		let _wish = wish.and_then(|w| match w.as_ref() {
-			"list" => Some(EmoteModerationRequestKind::PublicListing),
-			"personal_use" => Some(EmoteModerationRequestKind::PersonalUse),
-			_ => None,
-		});
+		let wish = wish
+			.map(|w| match w.as_ref() {
+				"personal_use" => EmoteModerationRequestKind::PersonalUse,
+				_ => EmoteModerationRequestKind::PublicListing,
+			})
+			.unwrap_or(EmoteModerationRequestKind::PublicListing);
 
-		todo!()
+		let mut filters = vec![format!("kind: {}", wish as i32)];
+
+		if let Some(country) = country {
+			// TODO: prevent injection
+			filters.push(format!("country_code: {}", country));
+		}
+
+		let options = SearchOptions::builder()
+			.query("".to_owned())
+			.query_by(vec!["id".to_owned()])
+			.filter_by(filters.join(" && "))
+			.sort_by(vec!["priority:desc".to_owned()])
+			.page(page)
+			.per_page(limit)
+			.build();
+
+		let result = search::<shared::typesense::types::emote_moderation_request::EmoteModerationRequest>(global, options)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to search");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		let requests = global
+			.emote_moderation_request_by_id_loader
+			.load_many(result.hits.iter().copied())
+			.await
+			.map_err(|()| {
+				tracing::error!("failed to load event");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		Ok(ModRequestMessageList {
+			messages: requests.into_values().map(ModRequestMessage::from_db).collect(),
+			total: result.found,
+		})
 	}
 }

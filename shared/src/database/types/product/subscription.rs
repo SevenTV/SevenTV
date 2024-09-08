@@ -2,12 +2,13 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use super::codes::RedeemCodeId;
-use super::{InvoiceId, PaymentIntentId, StripeSubscriptionId, SubscriptionProductId};
+use super::{InvoiceId, StripeSubscriptionId, SubscriptionProductId};
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::{Id, IdFromStrError, MongoCollection};
+use crate::typesense::types::TypesenseType;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SubscriptionId {
 	pub user_id: UserId,
 	pub product_id: SubscriptionProductId,
@@ -15,7 +16,7 @@ pub struct SubscriptionId {
 
 impl Display for SubscriptionId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{},{}", self.user_id, self.product_id)
+		write!(f, "{}:{}", self.user_id, self.product_id)
 	}
 }
 
@@ -23,9 +24,7 @@ impl FromStr for SubscriptionId {
 	type Err = IdFromStrError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		let mut parts = s.split(',');
-		let user_id = parts.next().ok_or(IdFromStrError::InvalidLength(s.len()))?;
-		let product_id = parts.next().ok_or(IdFromStrError::InvalidLength(s.len()))?;
+		let (user_id, product_id) = s.split_once(':').ok_or(IdFromStrError::InvalidLength(s.len()))?;
 
 		Ok(Self {
 			user_id: user_id.parse()?,
@@ -41,6 +40,7 @@ impl FromStr for SubscriptionId {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscriptions")]
 #[mongo(index(fields("_id.user_id" = 1, "_id.product_id" = 1)))]
+#[mongo(search = "crate::typesense::types::product::subscription::Subscription")]
 #[serde(deny_unknown_fields)]
 pub struct Subscription {
 	#[mongo(id)]
@@ -49,6 +49,12 @@ pub struct Subscription {
 	pub state: SubscriptionState,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub created_at: chrono::DateTime<chrono::Utc>,
+	#[serde(with = "crate::database::serde")]
+	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
+	#[serde(with = "crate::database::serde")]
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
@@ -57,6 +63,12 @@ pub enum SubscriptionState {
 	Active = 0,
 	CancelAtEnd = 1,
 	Ended = 2,
+}
+
+impl TypesenseType for SubscriptionState {
+	fn typesense_type() -> crate::typesense::types::FieldType {
+		crate::typesense::types::FieldType::Int32
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -95,6 +107,7 @@ impl From<stripe::SubscriptionId> for ProviderSubscriptionId {
 #[mongo(index(fields(product_ids = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::product::subscription::SubscriptionPeriod")]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionPeriod {
 	#[mongo(id)]
@@ -128,7 +141,7 @@ pub enum SubscriptionPeriodCreatedBy {
 	},
 	Gift {
 		gifter: UserId,
-		payment: PaymentIntentId,
+		invoice: InvoiceId,
 	},
 	System {
 		reason: Option<String>,

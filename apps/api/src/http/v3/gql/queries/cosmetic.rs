@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use async_graphql::{Context, Object};
 use futures::{TryFutureExt, TryStreamExt};
-use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::badge::Badge;
 use shared::database::paint::Paint;
@@ -32,7 +31,7 @@ impl CosmeticsQuery {
 	async fn cosmetics<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		list: Option<Vec<GqlObjectId>>,
+		#[graphql(validator(max_items = 100))] list: Option<Vec<GqlObjectId>>,
 	) -> Result<CosmeticsQueryResponse, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let list = list.unwrap_or_default();
@@ -68,10 +67,6 @@ impl CosmeticsQuery {
 
 			Ok(CosmeticsQueryResponse { paints, badges })
 		} else {
-			if list.len() > 1000 {
-				return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "list too large"));
-			}
-
 			let paints = global
 				.paint_by_id_loader
 				.load_many(list.clone().into_iter().map(|id| id.id()))

@@ -7,21 +7,21 @@ use crate::database::badge::Badge;
 use crate::database::emote::{Emote, EmoteFlags};
 use crate::database::emote_moderation_request::EmoteModerationRequest;
 use crate::database::emote_set::{EmoteSet, EmoteSetEmote};
-use crate::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use crate::database::entitlement::EntitlementEdgeKind;
 use crate::database::paint::Paint;
 use crate::database::role::Role;
 use crate::database::stored_event::{
 	StoredEvent, StoredEventBadgeData, StoredEventData, StoredEventEmoteData, StoredEventEmoteModerationRequestData,
-	StoredEventEmoteSetData, StoredEventEntitlementEdgeData, StoredEventId, StoredEventPaintData, StoredEventRoleData,
-	StoredEventTicketData, StoredEventTicketMessageData, StoredEventUserBanData, StoredEventUserData,
-	StoredEventUserEditorData, StoredEventUserProfilePictureData, StoredEventUserSessionData,
+	StoredEventEmoteSetData, StoredEventId, StoredEventPaintData, StoredEventRoleData, StoredEventTicketData,
+	StoredEventTicketMessageData, StoredEventUserBanData, StoredEventUserData, StoredEventUserEditorData,
+	StoredEventUserProfilePictureData, StoredEventUserSessionData,
 };
 use crate::database::ticket::{Ticket, TicketMessage, TicketPriority};
 use crate::database::user::ban::UserBan;
 use crate::database::user::connection::UserConnection;
 use crate::database::user::editor::{UserEditor, UserEditorPermissions};
 use crate::database::user::profile_picture::UserProfilePicture;
-use crate::database::user::session::UserSession;
+use crate::database::user::session::{UserSession, UserSessionId};
 use crate::database::user::{FullUser, User};
 use crate::database::Id;
 use crate::event_api::types::{ChangeField, ChangeFieldType};
@@ -31,7 +31,7 @@ use crate::old_types::{
 	UserPartialModel,
 };
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct InternalEventPayload {
 	pub events: Vec<InternalEvent>,
@@ -47,15 +47,16 @@ impl InternalEventPayload {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct InternalEvent {
 	pub actor: Option<FullUser>,
+	pub session_id: Option<UserSessionId>,
 	pub data: InternalEventData,
 	pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventData {
 	Emote {
@@ -110,15 +111,11 @@ pub enum InternalEventData {
 		after: Role,
 		data: StoredEventRoleData,
 	},
-	EntitlementEdge {
-		after: EntitlementEdge,
-		data: StoredEventEntitlementEdgeData,
-	},
 }
 
 impl InternalEventData {
-	pub fn id(&self) -> Option<Id> {
-		let id = match self {
+	pub fn id(&self) -> Id {
+		match self {
 			InternalEventData::Emote { after, .. } => after.id.cast(),
 			InternalEventData::EmoteSet { after, .. } => after.id.cast(),
 			InternalEventData::User { after, .. } => after.id.cast(),
@@ -132,23 +129,7 @@ impl InternalEventData {
 			InternalEventData::Paint { after, .. } => after.id.cast(),
 			InternalEventData::Badge { after, .. } => after.id.cast(),
 			InternalEventData::Role { after, .. } => after.id.cast(),
-			// only for role assignments
-			InternalEventData::EntitlementEdge {
-				after:
-					EntitlementEdge {
-						id:
-							EntitlementEdgeId {
-								from: EntitlementEdgeKind::User { user_id },
-								to: EntitlementEdgeKind::Role { .. },
-								..
-							},
-					},
-				..
-			} => user_id.cast(),
-			_ => return None,
-		};
-
-		Some(id)
+		}
 	}
 
 	pub fn event_api_kind(&self) -> event_api::types::ObjectKind {
@@ -166,7 +147,6 @@ impl InternalEventData {
 			InternalEventData::Paint { .. } => event_api::types::ObjectKind::Cosmetic,
 			InternalEventData::Badge { .. } => event_api::types::ObjectKind::Cosmetic,
 			InternalEventData::Role { .. } => event_api::types::ObjectKind::Role,
-			InternalEventData::EntitlementEdge { .. } => event_api::types::ObjectKind::User,
 		}
 	}
 
@@ -183,7 +163,6 @@ impl InternalEventData {
 			InternalEventData::UserEditor { .. } => event_api::types::EventType::UpdateUser,
 			InternalEventData::UserBan { .. } => event_api::types::EventType::UpdateUser,
 			InternalEventData::UserSession { .. } => event_api::types::EventType::UpdateUser,
-			InternalEventData::EntitlementEdge { .. } => event_api::types::EventType::UpdateUser,
 			_ => return None,
 		};
 
@@ -208,6 +187,7 @@ impl From<InternalEvent> for StoredEvent {
 			},
 			InternalEventData::UserProfilePicture { after, data } => StoredEventData::UserProfilePicture {
 				target_id: after.id,
+				user_id: after.user_id,
 				data,
 			},
 			InternalEventData::UserEditor { after, data } => StoredEventData::UserEditor {
@@ -227,10 +207,12 @@ impl From<InternalEvent> for StoredEvent {
 			},
 			InternalEventData::UserBan { after, data } => StoredEventData::UserBan {
 				target_id: after.id,
+				user_id: after.user_id,
 				data,
 			},
 			InternalEventData::UserSession { after, data } => StoredEventData::UserSession {
 				target_id: after.id,
+				user_id: after.user_id,
 				data,
 			},
 			InternalEventData::Ticket { after, data } => StoredEventData::Ticket {
@@ -239,10 +221,12 @@ impl From<InternalEvent> for StoredEvent {
 			},
 			InternalEventData::TicketMessage { after, data } => StoredEventData::TicketMessage {
 				target_id: after.id,
+				ticket_id: after.ticket_id,
 				data,
 			},
 			InternalEventData::EmoteModerationRequest { after, data } => StoredEventData::EmoteModerationRequest {
 				target_id: after.id,
+				emote_id: after.emote_id,
 				data,
 			},
 			InternalEventData::Paint { after, data } => StoredEventData::Paint {
@@ -257,16 +241,13 @@ impl From<InternalEvent> for StoredEvent {
 				target_id: after.id,
 				data,
 			},
-			InternalEventData::EntitlementEdge { after, data } => StoredEventData::EntitlementEdge {
-				target_id: after.id,
-				data,
-			},
 		};
 
 		Self {
 			id: StoredEventId::with_timestamp(payload.timestamp),
 			actor_id: payload.actor.map(|u| u.id),
 			data,
+			session_id: payload.session_id,
 			updated_at: payload.timestamp,
 			search_updated_at: None,
 		}
@@ -360,6 +341,12 @@ pub enum InternalEventUserData {
 	},
 	Merge,
 	Delete,
+	AddEntitlement {
+		target: EntitlementEdgeKind,
+	},
+	RemoveEntitlement {
+		target: EntitlementEdgeKind,
+	},
 }
 
 impl From<InternalEventUserData> for StoredEventUserData {
@@ -386,11 +373,13 @@ impl From<InternalEventUserData> for StoredEventUserData {
 			},
 			InternalEventUserData::Merge => StoredEventUserData::Merge,
 			InternalEventUserData::Delete => StoredEventUserData::Delete,
+			InternalEventUserData::AddEntitlement { target } => StoredEventUserData::AddEntitlement { target },
+			InternalEventUserData::RemoveEntitlement { target } => StoredEventUserData::RemoveEntitlement { target },
 		}
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventUserEditorData {
 	AddEditor { editor: Box<User> },
@@ -398,7 +387,7 @@ pub enum InternalEventUserEditorData {
 	EditPermissions { editor: Box<User>, old: UserEditorPermissions },
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventTicketData {
 	Create,
@@ -432,7 +421,7 @@ impl InternalEventPayload {
 			.filter_map(|e| {
 				Some((
 					e.data.event_api_event_type()?,
-					e.data.id()?,
+					e.data.id(),
 					e.data.event_api_kind(),
 					e.actor.as_ref().map(|a| a.id),
 					e,

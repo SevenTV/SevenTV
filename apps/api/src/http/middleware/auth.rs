@@ -7,7 +7,7 @@ use mongodb::bson::doc;
 use mongodb::options::ReturnDocument;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
-use shared::database::user::session::UserSession;
+use shared::database::user::session::{UserSession, UserSessionId};
 use shared::database::user::{FullUser, UserId};
 use shared::database::MongoCollection;
 use tokio::sync::OnceCell;
@@ -39,6 +39,13 @@ impl AuthSession {
 		match &self.kind {
 			AuthSessionKind::Session(session) => session.user_id,
 			AuthSessionKind::Old(user_id) => *user_id,
+		}
+	}
+
+	pub fn id(&self) -> Option<UserSessionId> {
+		match &self.kind {
+			AuthSessionKind::Session(session) => Some(session.id),
+			AuthSessionKind::Old(_) => None,
 		}
 	}
 

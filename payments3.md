@@ -252,6 +252,10 @@ pub struct SpecialEvent {
 
 ## Stripe Webhooks
 
+### `price.updated`
+
+### `price.deleted`
+
 ### `customer.created`
 
 Update user with stripe customer id.

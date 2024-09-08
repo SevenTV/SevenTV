@@ -5,6 +5,7 @@ use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
 use shared::config::{DatabaseConfig, ImageProcessorConfig, NatsConfig, TypesenseConfig};
+use shared::ip::GeoIpConfig;
 
 #[auto_settings]
 #[serde(default)]
@@ -40,6 +41,19 @@ pub struct Api {
 	pub stripe: StripeConfig,
 	/// PayPal config
 	pub paypal: PayPalConfig,
+	/// GeoIP config
+	pub geoip: Option<GeoIpConfig>,
+	/// IP Header config
+	pub incoming_request: IncomingRequestConfig,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct IncomingRequestConfig {
+	/// The IP header to use for incoming requests
+	pub ip_header: Option<String>,
+	/// A set of trusted proxies that we should use for incoming requests
+	pub trusteded_proxies: Vec<ipnet::IpNet>,
 }
 
 #[auto_settings]

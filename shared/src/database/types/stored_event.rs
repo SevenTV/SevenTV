@@ -4,7 +4,7 @@ use super::badge::BadgeId;
 use super::emote::{EmoteFlags, EmoteId};
 use super::emote_moderation_request::EmoteModerationRequestId;
 use super::emote_set::EmoteSetId;
-use super::entitlement::EntitlementEdgeId;
+use super::entitlement::EntitlementEdgeKind;
 use super::paint::{PaintData, PaintId};
 use super::role::permissions::Permissions;
 use super::role::RoleId;
@@ -24,12 +24,14 @@ pub type StoredEventId = Id<StoredEvent>;
 #[mongo(collection_name = "events")]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields(_id = 1, updated_at = -1)))]
+#[mongo(search = "crate::typesense::types::event::Event")]
 #[serde(deny_unknown_fields)]
 pub struct StoredEvent {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: StoredEventId,
 	pub actor_id: Option<UserId>,
+	pub session_id: Option<UserSessionId>,
 	pub data: StoredEventData,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -58,6 +60,7 @@ pub enum StoredEventData {
 	},
 	UserProfilePicture {
 		target_id: UserProfilePictureId,
+		user_id: UserId,
 		data: StoredEventUserProfilePictureData,
 	},
 	UserEditor {
@@ -66,10 +69,12 @@ pub enum StoredEventData {
 	},
 	UserBan {
 		target_id: UserBanId,
+		user_id: UserId,
 		data: StoredEventUserBanData,
 	},
 	UserSession {
 		target_id: UserSessionId,
+		user_id: UserId,
 		data: StoredEventUserSessionData,
 	},
 	Ticket {
@@ -78,10 +83,12 @@ pub enum StoredEventData {
 	},
 	TicketMessage {
 		target_id: TicketMessageId,
+		ticket_id: TicketId,
 		data: StoredEventTicketMessageData,
 	},
 	EmoteModerationRequest {
 		target_id: EmoteModerationRequestId,
+		emote_id: EmoteId,
 		data: StoredEventEmoteModerationRequestData,
 	},
 	Paint {
@@ -95,10 +102,6 @@ pub enum StoredEventData {
 	Role {
 		target_id: RoleId,
 		data: StoredEventRoleData,
-	},
-	EntitlementEdge {
-		target_id: EntitlementEdgeId,
-		data: StoredEventEntitlementEdgeData,
 	},
 }
 
@@ -178,6 +181,12 @@ pub enum StoredEventUserData {
 	},
 	RemoveConnection {
 		platform: Platform,
+	},
+	AddEntitlement {
+		target: EntitlementEdgeKind,
+	},
+	RemoveEntitlement {
+		target: EntitlementEdgeKind,
 	},
 	Merge,
 	Delete,
@@ -277,6 +286,8 @@ pub enum StoredEventRoleData {
 	ChangeColor { old: i32, new: i32 },
 	ChangePermissions { old: Box<Permissions>, new: Box<Permissions> },
 	ChangeRank { old: i32, new: i32 },
+	AddEntitlement { target: EntitlementEdgeKind },
+	RemoveEntitlement { target: EntitlementEdgeKind },
 	Delete,
 }
 

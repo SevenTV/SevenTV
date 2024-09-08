@@ -1,7 +1,8 @@
 use chrono::Utc;
 
+use crate::database::entitlement::{EntitlementEdgeKind, EntitlementEdgeKindString};
 use crate::database::product::codes::RedeemCodeId;
-use crate::database::product::subscription::{ProviderSubscriptionId, SubscriptionPeriodId};
+use crate::database::product::subscription::{ProviderSubscriptionId, SubscriptionPeriodId, SubscriptionState};
 use crate::database::product::{InvoiceId, SubscriptionProductId};
 use crate::database::user::UserId;
 use crate::database::{self};
@@ -59,7 +60,6 @@ impl_typesense_type!(SubscriptionProvider, Int32);
 pub struct SubscriptionPeriod {
 	pub id: SubscriptionPeriodId,
 
-	// subscription id:
 	pub user_id: UserId,
 	pub product_id: SubscriptionProductId,
 
@@ -105,6 +105,44 @@ impl From<crate::database::product::subscription::SubscriptionPeriod> for Subscr
 	}
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, TypesenseCollection)]
+#[typesense(collection_name = "subscriptions")]
+#[serde(deny_unknown_fields)]
+pub struct Subscription {
+	pub id: String,
+	pub user_id: UserId,
+	pub product_id: SubscriptionProductId,
+	pub state: SubscriptionState,
+	pub entitlements: Vec<EntitlementEdgeKindString>,
+	#[typesense(default_sort)]
+	pub created_at: i64,
+	pub ended_at: Option<i64>,
+	pub updated_at: i64,
+	pub search_updated_at: i64,
+}
+
+impl Subscription {
+	pub fn from_db(
+		value: crate::database::product::subscription::Subscription,
+		entitlements: impl IntoIterator<Item = EntitlementEdgeKind>,
+	) -> Self {
+		Self {
+			id: value.id.to_string(),
+			user_id: value.id.user_id,
+			product_id: value.id.product_id,
+			state: value.state,
+			entitlements: entitlements.into_iter().map(Into::into).collect(),
+			created_at: value.created_at.timestamp_millis(),
+			ended_at: value.ended_at.map(|t| t.timestamp_millis()),
+			updated_at: value.updated_at.timestamp_millis(),
+			search_updated_at: Utc::now().timestamp_millis(),
+		}
+	}
+}
+
 pub(super) fn typesense_collections() -> impl IntoIterator<Item = TypesenseGenericCollection> {
-	[TypesenseGenericCollection::new::<SubscriptionPeriod>()]
+	[
+		TypesenseGenericCollection::new::<SubscriptionPeriod>(),
+		TypesenseGenericCollection::new::<Subscription>(),
+	]
 }
