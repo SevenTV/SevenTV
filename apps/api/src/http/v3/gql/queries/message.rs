@@ -127,8 +127,8 @@ impl MessagesQuery {
 	async fn mod_requests<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		page: Option<u32>,
-		limit: Option<u32>,
+		#[graphql(validator(maximum = 50))] page: Option<u32>,
+		#[graphql(validator(maximum = 500))] limit: Option<u32>,
 		wish: Option<String>,
 		country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
