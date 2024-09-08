@@ -3,12 +3,11 @@ use std::sync::Arc;
 
 use async_graphql::{Context, Object};
 use futures::{TryFutureExt, TryStreamExt};
-use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::database::badge::Badge;
-use shared::database::paint::Paint;
+use shared::database::badge::{Badge, BadgeId};
+use shared::database::paint::{Paint, PaintId};
 use shared::database::queries::filter;
-use shared::database::MongoCollection;
+use shared::database::{Id, MongoCollection};
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
 
@@ -32,7 +31,7 @@ impl CosmeticsQuery {
 	async fn cosmetics<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		list: Option<Vec<GqlObjectId>>,
+		#[graphql(validator(max_items = 100))] list: Option<Vec<GqlObjectId>>,
 	) -> Result<CosmeticsQueryResponse, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let list = list.unwrap_or_default();
@@ -68,26 +67,44 @@ impl CosmeticsQuery {
 
 			Ok(CosmeticsQueryResponse { paints, badges })
 		} else {
-			if list.len() > 1000 {
-				return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "list too large"));
-			}
+			let list: Vec<Id<()>> = list.clone().into_iter().map(|id| id.id()).collect();
 
-			let paints = global
-				.paint_by_id_loader
-				.load_many(list.clone().into_iter().map(|id| id.id()))
+			let ids: Vec<PaintId> = list.iter().cloned().map(|id| id.cast()).collect();
+
+			let paints = Paint::collection(&global.db)
+				.find(filter::filter!(Paint {
+					#[query(rename = "_id", selector = "in")]
+					id: ids,
+				}))
+				.sort(doc! { "_id": 1 })
+				.into_future()
+				.and_then(|f| f.try_collect::<Vec<Paint>>())
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.into_values()
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to query paints");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?
+				.into_iter()
 				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
 				.collect();
 
-			let badges = global
-				.badge_by_id_loader
-				.load_many(list.into_iter().map(|id| id.id()))
+			let ids: Vec<BadgeId> = list.into_iter().map(|id| id.cast()).collect();
+
+			let badges = Badge::collection(&global.db)
+				.find(filter::filter!(Badge {
+					#[query(rename = "_id", selector = "in")]
+					id: ids,
+				}))
+				.sort(doc! { "_id": 1 })
+				.into_future()
+				.and_then(|f| f.try_collect::<Vec<Badge>>())
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.into_values()
-				.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to query badges");
+					ApiError::INTERNAL_SERVER_ERROR
+				})?
+				.into_iter()
+				.filter_map(|b: Badge| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
 				.collect();
 
 			Ok(CosmeticsQueryResponse { paints, badges })

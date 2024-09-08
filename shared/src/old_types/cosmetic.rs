@@ -130,7 +130,10 @@ impl CosmeticPaintModel {
 				.unwrap_or_default(),
 			image_url: first_layer
 				.and_then(|l| match &l.ty {
-					PaintLayerType::Image(image_set) => image_set.outputs.first().map(|i| i.get_url(cdn_base_url)),
+					PaintLayerType::Image(image_set) => {
+						let host = ImageHost::from_image_set(image_set, cdn_base_url);
+						host.files.first().map(|f| format!("{}/{}", host.url, f.name))
+					}
 					_ => None,
 				})
 				.unwrap_or_default(),
