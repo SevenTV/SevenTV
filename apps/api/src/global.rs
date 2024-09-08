@@ -104,7 +104,11 @@ impl Global {
 			..Default::default()
 		};
 
-		let stripe_client = stripe::Client::new(&config.api.stripe.api_key);
+		let stripe_client = stripe::Client::new(&config.api.stripe.api_key).with_app_info(
+			env!("CARGO_PKG_NAME").to_string(),
+			Some(env!("CARGO_PKG_VERSION").to_string()),
+			Some(config.api.api_origin.clone()),
+		);
 
 		let geoip = if let Some(config) = config.api.geoip.as_ref() {
 			Some(GeoIpResolver::new(config).await?)
