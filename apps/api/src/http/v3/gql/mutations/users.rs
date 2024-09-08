@@ -455,14 +455,11 @@ impl UserOps {
 						.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
 					let old = if let Some(badge_id) = user.style.active_badge_id {
-						Some(
-							global
-								.badge_by_id_loader
-								.load(badge_id)
-								.await
-								.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-								.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?,
-						)
+						global
+							.badge_by_id_loader
+							.load(badge_id)
+							.await
+							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
 					} else {
 						None
 					};
