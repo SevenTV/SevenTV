@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use axum::extract::State;
@@ -77,6 +78,8 @@ pub async fn redeem(
 ) -> Result<Json<RedeemResponse>, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
 
+	let stripe_client = global.stripe_client.safe().await;
+
 	let res = with_transaction(&global, |mut tx| {
 		let global = Arc::clone(&global);
 
@@ -141,7 +144,7 @@ pub async fn redeem(
 					.clone()
 				{
 					Some(id) => id,
-					None => find_or_create_customer(&global, auth_session.user_id(), None)
+					None => find_or_create_customer(&global, stripe_client.client(0).await, auth_session.user_id(), None)
 						.await
 						.map_err(TransactionError::custom)?,
 				};
@@ -202,7 +205,7 @@ pub async fn redeem(
 					.to_stripe(),
 				);
 
-				let url = stripe::CheckoutSession::create(&global.stripe_client, params)
+				let url = stripe::CheckoutSession::create(stripe_client.client(1).await.deref(), params)
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to create checkout session");

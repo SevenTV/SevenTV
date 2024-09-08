@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use axum::extract::{Query, State};
@@ -43,9 +44,11 @@ pub async fn payment_method(
 		return Err(ApiError::FORBIDDEN);
 	}
 
+	let stripe_tx = global.stripe_client.safe().await;
+
 	let customer_id = match auth_session.user(&global).await?.stripe_customer_id.clone() {
 		Some(id) => id,
-		None => find_or_create_customer(&global, auth_session.user_id(), None).await?,
+		None => find_or_create_customer(&global, stripe_tx.client(0).await, auth_session.user_id(), None).await?,
 	};
 
 	let success_url = format!("{}/subscribe", global.config.api.website_origin);
@@ -78,7 +81,7 @@ pub async fn payment_method(
 		..Default::default()
 	};
 
-	let url = stripe::CheckoutSession::create(&global.stripe_client, params)
+	let url = stripe::CheckoutSession::create(stripe_tx.client(1).await.deref(), params)
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to create checkout session");

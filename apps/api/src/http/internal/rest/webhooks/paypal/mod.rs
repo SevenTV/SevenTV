@@ -124,6 +124,8 @@ pub async fn handle(
 		ApiError::BAD_REQUEST
 	})?;
 
+	let stripe_client = global.stripe_client.safe().await;
+
 	let res = with_transaction(&global, |mut tx| {
 		let global = Arc::clone(&global);
 
@@ -154,7 +156,7 @@ pub async fn handle(
 
 			match (event.event_type, event.ressource) {
 				(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => {
-					return sale::completed(&global, tx, sale).await;
+					return sale::completed(&global, stripe_client, tx, sale).await;
 				}
 				(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale))
 				| (types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(&global, tx, sale).await?,

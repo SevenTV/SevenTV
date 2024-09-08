@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::Arc;
 
 use shared::database::product::{Product, ProductId, SubscriptionProduct, SubscriptionProductVariant};
@@ -6,14 +7,16 @@ use shared::database::queries::{filter, update};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn updated(
-	global: &Arc<Global>,
+	_global: &Arc<Global>,
+	stripe_client: SafeStripeClient,
 	mut tx: TransactionSession<'_, ApiError>,
 	price: stripe::Price,
 ) -> TransactionResult<(), ApiError> {
-	let price = stripe::Price::retrieve(&global.stripe_client, &price.id, &["currency_options"])
+	let price = stripe::Price::retrieve(stripe_client.client(0).await.deref(), &price.id, &["currency_options"])
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to retrieve price");

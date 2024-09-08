@@ -114,6 +114,9 @@ pub struct StripeConfig {
 	/// Stripe webhook secret
 	#[settings(default = "whsec_test".into())]
 	pub webhook_secret: String,
+	/// Stripe concurrent requests
+	#[settings(default = 50)]
+	pub concurrent_requests: usize,
 }
 
 #[auto_settings]

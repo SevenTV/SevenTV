@@ -35,6 +35,7 @@ use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
 use crate::dataloader::user::UserByPlatformIdLoader;
 use crate::dataloader::user_bans::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
+use crate::stripe_client;
 
 pub struct Global {
 	pub nats: async_nats::Client,
@@ -45,7 +46,7 @@ pub struct Global {
 	pub db: mongodb::Database,
 	pub clickhouse: clickhouse::Client,
 	pub http_client: reqwest::Client,
-	pub stripe_client: stripe::Client,
+	pub stripe_client: stripe_client::StripeClientManager,
 	pub image_processor: ImageProcessor,
 	pub event_by_id_loader: DataLoader<LoaderById<StoredEvent>>,
 	pub product_by_id_loader: DataLoader<LoaderById<Product>>,
@@ -104,11 +105,7 @@ impl Global {
 			..Default::default()
 		};
 
-		let stripe_client = stripe::Client::new(&config.api.stripe.api_key).with_app_info(
-			env!("CARGO_PKG_NAME").to_string(),
-			Some(env!("CARGO_PKG_VERSION").to_string()),
-			Some(config.api.api_origin.clone()),
-		);
+		let stripe_client = stripe_client::StripeClientManager::new(&config);
 
 		let geoip = if let Some(config) = config.api.geoip.as_ref() {
 			Some(GeoIpResolver::new(config).await?)
