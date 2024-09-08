@@ -8,6 +8,7 @@ use shared::database::webhook_event::WebhookEvent;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::stripe_client::SafeStripeClient;
 use crate::sub_refresh_job;
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -17,6 +18,14 @@ mod customer;
 mod invoice;
 mod price;
 mod subscription;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum StripeRequest {
+	Price(price::StripeRequest),
+	CheckoutSession(checkout_session::StripeRequest),
+	Invoice(invoice::StripeRequest),
+	Charge(charge::StripeRequest),
+}
 
 pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, payload: String) -> Result<StatusCode, ApiError> {
 	let sig = headers
@@ -61,7 +70,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				return Ok(None);
 			}
 
-			let stripe_client = global.stripe_client.safe().await;
+			let stripe_client: SafeStripeClient<StripeRequest> = global.stripe_client.safe().await;
 
 			let prev_attributes = event.data.previous_attributes;
 

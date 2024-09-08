@@ -99,6 +99,7 @@ async fn find_customer(global: &Arc<Global>, user_id: UserId) -> Result<Option<C
 
 	let query = query.join(" OR ");
 
+	// This doesnt have to be safe because it is a read only operation
 	let customer = stripe::Customer::search(
 		global.stripe_client.client().await.deref(),
 		stripe::CustomerSearchParams {

@@ -107,6 +107,7 @@ pub async fn subscribe(
 	let customer_id = match auth_session.user(&global).await?.stripe_customer_id.clone() {
 		Some(id) => id,
 		None => {
+			// We don't need the safe client here because this won't be retried
 			find_or_create_customer(
 				&global,
 				global.stripe_client.client().await,
@@ -226,6 +227,7 @@ pub async fn subscribe(
 		auth_session.user_id()
 	};
 
+	// We don't need the safe client here because this won't be retried
 	let session_url = stripe::CheckoutSession::create(global.stripe_client.client().await.deref(), params)
 		.await
 		.map_err(|e| {

@@ -58,7 +58,7 @@ pub async fn cancel_subscription(
 			match period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
 					stripe::Subscription::update(
-						stripe_client.client(0).await.deref(),
+						stripe_client.client(()).await.deref(),
 						&id,
 						stripe::UpdateSubscription {
 							cancel_at_period_end: Some(true),
@@ -172,7 +172,7 @@ pub async fn reactivate_subscription(
 		match period.provider_id {
 			Some(ProviderSubscriptionId::Stripe(id)) => {
 				stripe::Subscription::update(
-					stripe_client.client(0).await.deref(),
+					stripe_client.client(()).await.deref(),
 					&id,
 					stripe::UpdateSubscription {
 						cancel_at_period_end: Some(false),

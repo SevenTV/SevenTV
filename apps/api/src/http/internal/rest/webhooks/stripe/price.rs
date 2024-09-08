@@ -10,18 +10,25 @@ use crate::http::error::ApiError;
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
+// we only have one request
+pub type StripeRequest = ();
+
 pub async fn updated(
 	_global: &Arc<Global>,
-	stripe_client: SafeStripeClient,
+	stripe_client: SafeStripeClient<super::StripeRequest>,
 	mut tx: TransactionSession<'_, ApiError>,
 	price: stripe::Price,
 ) -> TransactionResult<(), ApiError> {
-	let price = stripe::Price::retrieve(stripe_client.client(0).await.deref(), &price.id, &["currency_options"])
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to retrieve price");
-			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-		})?;
+	let price = stripe::Price::retrieve(
+		stripe_client.client(super::StripeRequest::Price(())).await.deref(),
+		&price.id,
+		&["currency_options"],
+	)
+	.await
+	.map_err(|e| {
+		tracing::error!(error = %e, "failed to retrieve price");
+		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+	})?;
 
 	let product_id: ProductId = price.id.into();
 

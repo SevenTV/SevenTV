@@ -70,6 +70,12 @@ pub struct RedeemResponse {
 	items: Vec<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum StripeRequest {
+	CreateCustomer,
+	CreateCheckoutSession,
+}
+
 pub async fn redeem(
 	State(global): State<Arc<Global>>,
 	Extension(ip): Extension<std::net::IpAddr>,
@@ -144,9 +150,14 @@ pub async fn redeem(
 					.clone()
 				{
 					Some(id) => id,
-					None => find_or_create_customer(&global, stripe_client.client(0).await, auth_session.user_id(), None)
-						.await
-						.map_err(TransactionError::custom)?,
+					None => find_or_create_customer(
+						&global,
+						stripe_client.client(StripeRequest::CreateCustomer).await,
+						auth_session.user_id(),
+						None,
+					)
+					.await
+					.map_err(TransactionError::custom)?,
 				};
 
 				let product = global
@@ -205,14 +216,17 @@ pub async fn redeem(
 					.to_stripe(),
 				);
 
-				let url = stripe::CheckoutSession::create(stripe_client.client(1).await.deref(), params)
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to create checkout session");
-						TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-					})?
-					.url
-					.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+				let url = stripe::CheckoutSession::create(
+					stripe_client.client(StripeRequest::CreateCheckoutSession).await.deref(),
+					params,
+				)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to create checkout session");
+					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+				})?
+				.url
+				.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
 				Ok(RedeemResponse {
 					authorize_url: Some(url),
