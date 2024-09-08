@@ -1,4 +1,6 @@
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::collections::HashMap;
+use std::ops::Deref;
+use std::sync::Arc;
 
 use crate::config::Config;
 
@@ -24,10 +26,11 @@ impl StripeClientManager {
 		}
 	}
 
-    /// This function returns a stripe client without idempotency.
-    /// Idempotency is handled by the `SafeStripeClient` returned by `safe`.
-    /// 
-    /// Use the safe client for all requests that could potentially be retried. (e.g. in a database transaction)
+	/// This function returns a stripe client without idempotency.
+	/// Idempotency is handled by the `SafeStripeClient` returned by `safe`.
+	///
+	/// Use the safe client for all requests that could potentially be retried.
+	/// (e.g. in a database transaction)
 	pub async fn client(&self) -> StripeClient {
 		let permit = Arc::clone(&self.semaphore).acquire_owned().await.expect("semaphore closed");
 
@@ -37,8 +40,9 @@ impl StripeClientManager {
 		}
 	}
 
-    /// This function returns a safe stripe client with idempotency.
-    /// The safe client should be used for all requests that could potentially be retried. (e.g. in a database transaction)
+	/// This function returns a safe stripe client with idempotency.
+	/// The safe client should be used for all requests that could potentially
+	/// be retried. (e.g. in a database transaction)
 	pub async fn safe(&self) -> SafeStripeClient {
 		SafeStripeClient {
 			idempotency: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
@@ -56,25 +60,23 @@ pub struct SafeStripeClient {
 }
 
 impl SafeStripeClient {
-    /// This function returns a stripe client.
-    /// The `key` should be the same for all requests that should be considered the same by stripe.
+	/// This function returns a stripe client.
+	/// The `key` should be the same for all requests that should be considered
+	/// the same by stripe.
 	pub async fn client(&self, key: u32) -> StripeClient {
 		let permit = Arc::clone(&self.semaphore).acquire_owned().await.expect("semaphore closed");
 
 		let strategy = self
 			.idempotency
-            .lock()
-            .await
+			.lock()
+			.await
 			.entry(key)
 			.or_insert_with(|| stripe::RequestStrategy::idempotent_with_uuid())
 			.clone();
 
 		let inner = self.client.clone().with_strategy(strategy);
 
-		StripeClient {
-			inner,
-			_permit: permit,
-		}
+		StripeClient { inner, _permit: permit }
 	}
 }
 

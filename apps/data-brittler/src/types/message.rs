@@ -23,10 +23,7 @@ pub enum MessageKind {
 #[serde(untagged)]
 pub enum MessageData {
 	#[allow(dead_code)]
-	InboxData {
-		subject: String,
-		content: String,
-	},
+	InboxData { subject: String, content: String },
 	EmoteRequest {
 		target_id: ObjectId,
 		wish: Option<EmoteWish>,

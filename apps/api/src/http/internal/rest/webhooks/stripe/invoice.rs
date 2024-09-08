@@ -48,12 +48,13 @@ pub async fn created(
 	// Invoices are only created for subscriptions
 	let user_id = match (invoice.subscription, metadata) {
 		(Some(subscription), _) => {
-			let subscription = stripe::Subscription::retrieve(stripe_client.client(0).await.deref(), &subscription.id(), &[])
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to retrieve subscription");
-					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-				})?;
+			let subscription =
+				stripe::Subscription::retrieve(stripe_client.client(0).await.deref(), &subscription.id(), &[])
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to retrieve subscription");
+						TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+					})?;
 
 			let metadata = SubscriptionMetadata::from_stripe(&subscription.metadata).map_err(|e| {
 				tracing::error!(error = %e, "failed to deserialize metadata");

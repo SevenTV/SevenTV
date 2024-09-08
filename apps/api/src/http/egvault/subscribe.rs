@@ -106,7 +106,15 @@ pub async fn subscribe(
 
 	let customer_id = match auth_session.user(&global).await?.stripe_customer_id.clone() {
 		Some(id) => id,
-		None => find_or_create_customer(&global, global.stripe_client.client().await, auth_session.user_id(), Some(body.prefill)).await?,
+		None => {
+			find_or_create_customer(
+				&global,
+				global.stripe_client.client().await,
+				auth_session.user_id(),
+				Some(body.prefill),
+			)
+			.await?
+		}
 	};
 
 	let mut params = create_checkout_session_params(

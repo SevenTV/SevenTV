@@ -190,10 +190,12 @@ pub async fn completed(
 		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 	})?;
 
-	let invoice = stripe::Invoice::void(stripe_client.client(3).await.deref(), &invoice.id).await.map_err(|e| {
-		tracing::error!(error = %e, "failed to void invoice");
-		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-	})?;
+	let invoice = stripe::Invoice::void(stripe_client.client(3).await.deref(), &invoice.id)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to void invoice");
+			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+		})?;
 
 	let invoice_id: InvoiceId = invoice.id.into();
 
