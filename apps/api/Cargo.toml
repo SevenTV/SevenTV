@@ -11,7 +11,7 @@ scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.gi
 prost = "0.13"
 tonic = { version = "0.12" }
 regex = "1.10.6"
-rustls = { version = "0.23", features = ["aws-lc-rs"] }
+rustls = { version = "0.23.12", features = ["aws-lc-rs"] }
 
 serde = { version = "1.0", features = ["derive"] }
 bitmask-enum = "2"
@@ -25,7 +25,6 @@ async-stripe = { version = "0.38.1", features = ["runtime-tokio-hyper-rustls", "
 crc = "3.2.1"
 x509-certificate = "0.23.1"
 rsa = "0.9.6"
-rustls = "0.23.12"
 
 async-trait = "0.1.80"
 async-nats = "0.35.1"

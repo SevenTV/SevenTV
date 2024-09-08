@@ -27,11 +27,17 @@ impl Job for PricesJob {
 
 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
 		if global.config().truncate {
-			tracing::info!("dropping products collection");
+			tracing::info!("dropping products and subscription_products collection");
 			Product::collection(global.target_db()).drop().await?;
 			let indexes = Product::indexes();
 			if !indexes.is_empty() {
 				Product::collection(global.target_db()).create_indexes(indexes).await?;
+			}
+			
+			SubscriptionProduct::collection(global.target_db()).drop().await?;
+			let indexes = SubscriptionProduct::indexes();
+			if !indexes.is_empty() {
+				SubscriptionProduct::collection(global.target_db()).create_indexes(indexes).await?;
 			}
 		}
 
