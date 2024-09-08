@@ -16,6 +16,7 @@ pub async fn products(
 	State(global): State<Arc<Global>>,
 	Extension(ip): Extension<std::net::IpAddr>,
 ) -> Result<Json<Vec<types::Product>>, ApiError> {
+	// TODO: dataload this
 	let products: Vec<SubscriptionProduct> = SubscriptionProduct::collection(&global.db)
 		.find(filter::filter! {
 			SubscriptionProduct {}

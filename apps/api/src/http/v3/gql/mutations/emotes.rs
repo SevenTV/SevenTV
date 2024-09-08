@@ -16,9 +16,10 @@ use shared::old_types::EmoteFlagsModel;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote::Emote;
 use crate::http::v3::validators::{NameValidator, TagsValidator};
+use crate::ratelimit::RateLimitResource;
 use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
@@ -50,11 +51,12 @@ pub struct EmoteOps {
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteOps {
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
 	async fn update<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
 		params: EmoteUpdate,
-		_reason: Option<String>,
+		#[graphql(validator(max_length = 100))] _reason: Option<String>,
 	) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;

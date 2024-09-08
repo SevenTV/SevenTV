@@ -16,6 +16,7 @@ use super::report::Report;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
+use crate::http::v3::gql::guards::RateLimitGuard;
 use crate::search::{search, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
@@ -165,7 +166,12 @@ impl User {
 		Ok(emotes.into_iter().map(|e| Emote::from_db(global, e)).collect())
 	}
 
-	async fn activity<'ctx>(&self, ctx: &Context<'ctx>, limit: Option<u32>) -> Result<Vec<AuditLog>, ApiError> {
+	#[graphql(guard = "RateLimitGuard::search(1)")]
+	async fn activity<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+	) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let options = SearchOptions::builder()
@@ -174,7 +180,7 @@ impl User {
 			.filter_by(format!("target_id: {}", EventId::User(self.id.id())))
 			.sort_by(vec!["created_at:desc".to_owned()])
 			.page(None)
-			.per_page(limit)
+			.per_page(limit.unwrap_or(20))
 			.build();
 
 		let result = search::<shared::typesense::types::event::Event>(global, options)
@@ -495,7 +501,7 @@ impl UsersQuery {
 		&self,
 		ctx: &Context<'ctx>,
 		platform: UserConnectionPlatformModel,
-		id: String,
+		#[graphql(validator(max_length = 100))] id: String,
 	) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -520,10 +526,11 @@ impl UsersQuery {
 		Ok(UserPartial::from_db(global, full_user).into())
 	}
 
+	#[graphql(guard = "RateLimitGuard::search(1)")]
 	async fn users<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		query: String,
+		#[graphql(validator(max_length = 100))] query: String,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
 		#[graphql(validator(maximum = 100))] limit: Option<u32>,
 	) -> Result<Vec<UserPartial>, ApiError> {

@@ -2,6 +2,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use axum::extract::State;
+use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::codes::{CodeEffect, RedeemCode};
@@ -15,6 +16,7 @@ use super::{create_checkout_session_params, find_or_create_customer};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
+use crate::ratelimit::{with_ratelimit, RateLimitRequest, RateLimitResource};
 use crate::transactions::{with_transaction, TransactionError, TransactionResult, TransactionSession};
 
 pub async fn grant_entitlements(
@@ -81,193 +83,200 @@ pub async fn redeem(
 	Extension(ip): Extension<std::net::IpAddr>,
 	auth_session: Option<AuthSession>,
 	Json(body): Json<RedeemRequest>,
-) -> Result<Json<RedeemResponse>, ApiError> {
+) -> Result<impl IntoResponse, ApiError> {
 	let auth_session = auth_session.ok_or(ApiError::UNAUTHORIZED)?;
+	let auth_user = auth_session.user(&global).await?;
+	let rate_limit_req = RateLimitRequest::new(RateLimitResource::EgVaultRedeem, Some(auth_user), ip);
 
-	let stripe_client = global.stripe_client.safe().await;
+	Ok(with_ratelimit(&global, rate_limit_req, || async {
+		let stripe_client = global.stripe_client.safe().await;
 
-	let res = with_transaction(&global, |mut tx| {
-		let global = Arc::clone(&global);
+		let res = with_transaction(&global, |mut tx| {
+			let global = Arc::clone(&global);
 
-		async move {
-			let code = tx
-				.find_one_and_update(
-					filter::filter! {
-						RedeemCode {
-							code: body.code,
-							#[query(selector = "gt")]
-							remaining_uses: 0,
-							#[query(flatten)]
-							active_period: TimePeriod {
+			async move {
+				// TODO: should we dataload this?
+				let code = tx
+					.find_one_and_update(
+						filter::filter! {
+							RedeemCode {
+								code: body.code,
+								#[query(selector = "gt")]
+								remaining_uses: 0,
+								#[query(flatten)]
+								active_period: TimePeriod {
+									#[query(selector = "lt")]
+									start: chrono::Utc::now(),
+									#[query(selector = "gt")]
+									end: chrono::Utc::now(),
+								},
+							}
+						},
+						update::update! {
+							#[query(inc)]
+							RedeemCode {
+								remaining_uses: -1,
+							},
+						},
+						None,
+					)
+					.await?
+					.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+
+				// TODO: should we dataload this?
+				let is_subscribed = tx
+					.find_one(
+						filter::filter! {
+							SubscriptionPeriod {
+								#[query(flatten)]
+								subscription_id: SubscriptionId {
+									user_id: auth_session.user_id(),
+								},
 								#[query(selector = "lt")]
 								start: chrono::Utc::now(),
 								#[query(selector = "gt")]
 								end: chrono::Utc::now(),
-							},
-						}
-					},
-					update::update! {
-						#[query(inc)]
-						RedeemCode {
-							remaining_uses: -1,
+							}
 						},
-					},
-					None,
-				)
-				.await?
-				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
-
-			let is_subscribed = tx
-				.find_one(
-					filter::filter! {
-						SubscriptionPeriod {
-							#[query(flatten)]
-							subscription_id: SubscriptionId {
-								user_id: auth_session.user_id(),
-							},
-							#[query(selector = "lt")]
-							start: chrono::Utc::now(),
-							#[query(selector = "gt")]
-							end: chrono::Utc::now(),
-						}
-					},
-					None,
-				)
-				.await?
-				.is_some();
-
-			if let Some((product_id, trial_days, false)) = code.effects.iter().find_map(|e| match e {
-				CodeEffect::SubscriptionProduct { id, trial_days } => Some((id, trial_days, is_subscribed)),
-				_ => None,
-			}) {
-				// the user is not subscribed and the effects contain a subscription product
-
-				let customer_id = match auth_session
-					.user(&global)
-					.await
-					.map_err(TransactionError::custom)?
-					.stripe_customer_id
-					.clone()
-				{
-					Some(id) => id,
-					None => find_or_create_customer(
-						&global,
-						stripe_client.client(StripeRequest::CreateCustomer).await,
-						auth_session.user_id(),
 						None,
 					)
-					.await
-					.map_err(TransactionError::custom)?,
-				};
+					.await?
+					.is_some();
 
-				let product = global
-					.subscription_product_by_id_loader
-					.load(*product_id)
-					.await
-					.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-					.ok_or_else(|| {
+				if let Some((product_id, trial_days, false)) = code.effects.iter().find_map(|e| match e {
+					CodeEffect::SubscriptionProduct { id, trial_days } => Some((id, trial_days, is_subscribed)),
+					_ => None,
+				}) {
+					// the user is not subscribed and the effects contain a subscription product
+
+					let customer_id = match auth_session
+						.user(&global)
+						.await
+						.map_err(TransactionError::custom)?
+						.stripe_customer_id
+						.clone()
+					{
+						Some(id) => id,
+						None => find_or_create_customer(
+							&global,
+							stripe_client.client(StripeRequest::CreateCustomer).await,
+							auth_session.user_id(),
+							None,
+						)
+						.await
+						.map_err(TransactionError::custom)?,
+					};
+
+					let product = global
+						.subscription_product_by_id_loader
+						.load(*product_id)
+						.await
+						.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+						.ok_or_else(|| {
+							tracing::warn!(
+								"could not find subscription product for redeem code: {} product id: {product_id}",
+								code.id
+							);
+							TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+						})?;
+
+					let variant = product.variants.get(product.default_variant_idx as usize).ok_or_else(|| {
 						tracing::warn!(
-							"could not find subscription product for redeem code: {} product id: {product_id}",
+							"could not find default variant for subscription product for redeem code: {} product id: {product_id}",
 							code.id
 						);
 						TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 					})?;
 
-				let variant = product.variants.get(product.default_variant_idx as usize).ok_or_else(|| {
-					tracing::warn!(
-						"could not find default variant for subscription product for redeem code: {} product id: {product_id}",
-						code.id
+					let mut params = create_checkout_session_params(
+						&global,
+						ip,
+						customer_id,
+						&variant.id,
+						product.default_currency,
+						&variant.currency_prices,
+					)
+					.await;
+
+					params.mode = Some(stripe::CheckoutSessionMode::Subscription);
+
+					params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
+						metadata: Some(SubscriptionMetadata {
+							user_id: auth_session.user_id(),
+							customer_id: None,
+						}.to_stripe()),
+						trial_period_days: Some(*trial_days),
+						trial_settings: Some(stripe::CreateCheckoutSessionSubscriptionDataTrialSettings {
+							end_behavior: stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehavior {
+								missing_payment_method:
+									stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehaviorMissingPaymentMethod::Cancel,
+							},
+						}),
+						..Default::default()
+					});
+
+					params.metadata = Some(
+						CheckoutSessionMetadata::Redeem {
+							redeem_code_id: code.id,
+							user_id: auth_session.user_id(),
+						}
+						.to_stripe(),
 					);
-					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-				})?;
 
-				let mut params = create_checkout_session_params(
-					&global,
-					ip,
-					customer_id,
-					&variant.id,
-					product.default_currency,
-					&variant.currency_prices,
-				)
-				.await;
+					let url = stripe::CheckoutSession::create(
+						stripe_client.client(StripeRequest::CreateCheckoutSession).await.deref(),
+						params,
+					)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to create checkout session");
+						TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+					})?
+					.url
+					.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
 
-				params.mode = Some(stripe::CheckoutSessionMode::Subscription);
-
-				params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
-					metadata: Some(SubscriptionMetadata {
-						user_id: auth_session.user_id(),
-						customer_id: None,
-					}.to_stripe()),
-					trial_period_days: Some(*trial_days),
-					trial_settings: Some(stripe::CreateCheckoutSessionSubscriptionDataTrialSettings {
-						end_behavior: stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehavior {
-							missing_payment_method:
-								stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehaviorMissingPaymentMethod::Cancel,
-						},
-					}),
-					..Default::default()
-				});
-
-				params.metadata = Some(
-					CheckoutSessionMetadata::Redeem {
-						redeem_code_id: code.id,
-						user_id: auth_session.user_id(),
-					}
-					.to_stripe(),
-				);
-
-				let url = stripe::CheckoutSession::create(
-					stripe_client.client(StripeRequest::CreateCheckoutSession).await.deref(),
-					params,
-				)
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to create checkout session");
-					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-				})?
-				.url
-				.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
-
-				Ok(RedeemResponse {
-					authorize_url: Some(url),
-					items: vec![],
-				})
-			} else {
-				// the effects contain no subscription products
-
-				let items = code
-					.effects
-					.iter()
-					.filter_map(|e| match e {
-						CodeEffect::Entitlement {
-							edge: EntitlementEdgeKind::Badge { badge_id },
-							..
-						} => Some(badge_id.to_string()),
-						CodeEffect::Entitlement {
-							edge: EntitlementEdgeKind::Paint { paint_id },
-							..
-						} => Some(paint_id.to_string()),
-						_ => None,
+					Ok(RedeemResponse {
+						authorize_url: Some(url),
+						items: vec![],
 					})
-					.collect();
+				} else {
+					// the effects contain no subscription products
 
-				grant_entitlements(&mut tx, &code, auth_session.user_id()).await?;
+					let items = code
+						.effects
+						.iter()
+						.filter_map(|e| match e {
+							CodeEffect::Entitlement {
+								edge: EntitlementEdgeKind::Badge { badge_id },
+								..
+							} => Some(badge_id.to_string()),
+							CodeEffect::Entitlement {
+								edge: EntitlementEdgeKind::Paint { paint_id },
+								..
+							} => Some(paint_id.to_string()),
+							_ => None,
+						})
+						.collect();
 
-				Ok(RedeemResponse {
-					authorize_url: None,
-					items,
-				})
+					grant_entitlements(&mut tx, &code, auth_session.user_id()).await?;
+
+					Ok(RedeemResponse {
+						authorize_url: None,
+						items,
+					})
+				}
+			}
+		})
+		.await;
+
+		match res {
+			Ok(res) => Ok(Json(res)),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
 			}
 		}
 	})
-	.await;
-
-	match res {
-		Ok(res) => Ok(Json(res)),
-		Err(TransactionError::Custom(e)) => Err(e),
-		Err(e) => {
-			tracing::error!(error = %e, "transaction failed");
-			Err(ApiError::INTERNAL_SERVER_ERROR)
-		}
-	}
+	.await)
 }

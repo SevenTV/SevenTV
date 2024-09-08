@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
-use hyper::StatusCode;
 use shared::database::emote::EmoteId;
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::UserId;
@@ -16,6 +15,7 @@ use super::user::{UserPartial, UserSearchResult};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
+use crate::http::v3::gql::guards::RateLimitGuard;
 use crate::search::{search, SearchOptions};
 
 #[derive(Default)]
@@ -123,6 +123,7 @@ impl Emote {
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
 
+	#[graphql(guard = "RateLimitGuard::search(1)")]
 	async fn channels(
 		&self,
 		ctx: &Context<'_>,
@@ -178,7 +179,12 @@ impl Emote {
 		Ok(None)
 	}
 
-	async fn activity<'ctx>(&self, ctx: &Context<'ctx>, limit: Option<u32>) -> Result<Vec<AuditLog>, ApiError> {
+	#[graphql(guard = "RateLimitGuard::search(1)")]
+	async fn activity<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+	) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let options = SearchOptions::builder()
@@ -187,7 +193,7 @@ impl Emote {
 			.filter_by(format!("target_id: {}", EventId::Emote(self.id.id())))
 			.sort_by(vec!["created_at:desc".to_owned()])
 			.page(None)
-			.per_page(limit)
+			.per_page(limit.unwrap_or(20))
 			.build();
 
 		let result = search::<shared::typesense::types::event::Event>(global, options)
@@ -306,6 +312,7 @@ pub struct EmoteSearchFilter {
 	animated: Option<bool>,
 	zero_width: Option<bool>,
 	authentic: Option<bool>,
+	#[graphql(validator(max_length = 32))]
 	aspect_ratio: Option<String>,
 	personal_use: Option<bool>,
 }
@@ -363,12 +370,12 @@ impl EmotesQuery {
 	}
 
 	#[graphql(name = "emotesByID")]
-	async fn emotes_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<GqlObjectId>) -> Result<Vec<EmotePartial>, ApiError> {
+	async fn emotes_by_id<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		#[graphql(validator(max_items = 100))] list: Vec<GqlObjectId>,
+	) -> Result<Vec<EmotePartial>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		if list.len() > 100 {
-			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "list too large"));
-		}
 
 		let emote = global
 			.emote_by_id_loader
@@ -379,6 +386,7 @@ impl EmotesQuery {
 		Ok(emote.into_values().map(|e| Emote::from_db(global, e).into()).collect())
 	}
 
+	#[graphql(guard = "RateLimitGuard::search(1)")]
 	async fn emotes(
 		&self,
 		ctx: &Context<'_>,

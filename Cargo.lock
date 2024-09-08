@@ -138,8 +138,8 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-graphql-axum",
- "async-nats",
- "async-stripe 0.39.1",
+ "async-nats 0.36.0",
+ "async-stripe",
  "async-trait",
  "axum",
  "base64 0.22.1",
@@ -151,6 +151,7 @@ dependencies = [
  "cookie",
  "crc",
  "date_component",
+ "fred",
  "futures",
  "futures-util",
  "hex",
@@ -191,6 +192,12 @@ dependencies = [
  "utoipa",
  "x509-certificate",
 ]
+
+[[package]]
+name = "arc-swap"
+version = "1.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69f7f8c3906b62b754cd5326047894316021dcfe5a194c8ea52bdd94934a3457"
 
 [[package]]
 name = "ascii_utils"
@@ -351,6 +358,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-nats"
+version = "0.36.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f71e5a1bab60f46b0b005f4808b8ee83ef6d577608923de938403393c9a30cf8"
+dependencies = [
+ "base64 0.22.1",
+ "bytes",
+ "futures",
+ "memchr",
+ "nkeys",
+ "nuid",
+ "once_cell",
+ "portable-atomic",
+ "rand 0.8.5",
+ "regex",
+ "ring",
+ "rustls-native-certs 0.7.3",
+ "rustls-pemfile 2.1.3",
+ "rustls-webpki 0.102.7",
+ "serde",
+ "serde_json",
+ "serde_nanos",
+ "serde_repr",
+ "thiserror",
+ "time",
+ "tokio",
+ "tokio-rustls 0.26.0",
+ "tokio-util",
+ "tracing",
+ "tryhard",
+ "url",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -370,27 +411,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.77",
-]
-
-[[package]]
-name = "async-stripe"
-version = "0.38.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97ddaa6999d246ba2c6c84d830a1ba0cd16c9234d58701988b3869f0e5bd732d"
-dependencies = [
- "chrono",
- "futures-util",
- "http-types",
- "hyper 0.14.30",
- "hyper-rustls 0.24.2",
- "serde",
- "serde_json",
- "serde_path_to_error",
- "serde_qs 0.10.1",
- "smart-default",
- "smol_str",
- "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -1300,6 +1320,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cookie-factory"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "396de984970346b0d9e93d1415082923c679e5ae5c3ee3dcbd104f5610af126b"
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1349,6 +1375,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
 
 [[package]]
+name = "crc16"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "338089f42c427b86394a5ee60ff321da23a5c89c9d89514c829687b26359fcff"
+
+[[package]]
 name = "crc32c"
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1380,6 +1412,15 @@ name = "crossbeam-epoch"
 version = "0.9.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-queue"
+version = "0.3.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df0346b5d5e76ac2fe4e327c5fd1118d6be7c51dfb18f9b7922923f287471e35"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -1524,8 +1565,8 @@ name = "data-brittler"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats",
- "async-stripe 0.38.1",
+ "async-nats 0.36.0",
+ "async-stripe",
  "bitmask-enum",
  "bson",
  "bytes",
@@ -1810,7 +1851,7 @@ name = "event-api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats",
+ "async-nats 0.36.0",
  "axum",
  "axum-macros",
  "bson",
@@ -1959,6 +2000,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "float-cmp"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1986,6 +2036,50 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13624c2627564efccf4934284bdd98cbaa14e79b0b5a141218e507b3a823456"
 dependencies = [
  "percent-encoding",
+]
+
+[[package]]
+name = "fred"
+version = "9.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1caa4f052f1ee1b987c2089e0524aeb9a0e33cd7be0a184667aca2e4cbf17579"
+dependencies = [
+ "arc-swap",
+ "async-trait",
+ "bytes",
+ "bytes-utils",
+ "crossbeam-queue",
+ "float-cmp",
+ "fred-macros",
+ "futures",
+ "hickory-resolver",
+ "log",
+ "parking_lot",
+ "rand 0.8.5",
+ "redis-protocol",
+ "rustls 0.23.12",
+ "rustls-native-certs 0.7.3",
+ "semver",
+ "socket2",
+ "tokio",
+ "tokio-rustls 0.26.0",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+ "tracing-futures",
+ "url",
+ "urlencoding",
+]
+
+[[package]]
+name = "fred-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1458c6e22d36d61507034d5afecc64f105c1d39712b7ac6ec3b352c423f715cc"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3131,7 +3225,7 @@ name = "mongo-change-stream"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats",
+ "async-nats 0.36.0",
  "bson",
  "bytes",
  "fnv",
@@ -3152,7 +3246,7 @@ name = "mongo-typesense"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats",
+ "async-nats 0.36.0",
  "bson",
  "bytes",
  "chrono",
@@ -4272,6 +4366,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "redis-protocol"
+version = "5.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65deb7c9501fbb2b6f812a30d59c0253779480853545153a51d8e9e444ddc99f"
+dependencies = [
+ "bytes",
+ "bytes-utils",
+ "cookie-factory",
+ "crc16",
+ "log",
+ "nom",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5212,8 +5320,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-graphql",
- "async-nats",
- "async-stripe 0.39.1",
+ "async-nats 0.36.0",
+ "async-stripe",
  "aws-sdk-s3",
  "bitmask-enum",
  "bson",
@@ -5224,6 +5332,7 @@ dependencies = [
  "enum-impl",
  "flate2",
  "fnv",
+ "fred",
  "futures",
  "hex",
  "http 1.1.0",
@@ -5685,7 +5794,7 @@ name = "tmp"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats",
+ "async-nats 0.35.1",
  "futures",
  "once_cell",
  "prost 0.13.2",

@@ -39,6 +39,7 @@ pub async fn subscription(
 		TargetUser::Other(id) => id,
 	};
 
+	// TODO: should we dataload this?
 	let periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
 		.find(filter::filter! {
 			SubscriptionPeriod {

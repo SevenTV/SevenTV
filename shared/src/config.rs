@@ -21,6 +21,31 @@ pub struct NatsConfig {
 }
 
 #[auto_settings]
+pub struct RedisConfig {
+	/// Redis URI
+	#[settings(default = vec!["127.0.0.1:6379".to_string()])]
+	pub servers: Vec<String>,
+	/// Redis username
+	#[settings(default = None)]
+	pub username: Option<String>,
+	/// Redis password
+	#[settings(default = None)]
+	pub password: Option<String>,
+	/// Redis database
+	#[settings(default = 0)]
+	pub database: u8,
+	/// Redis max connections
+	#[settings(default = 10)]
+	pub max_connections: usize,
+	/// Redis TLS configuration
+	#[settings(default = None)]
+	pub tls: Option<TlsConfig>,
+	/// Redis Sentinel configuration
+	#[settings(default = None)]
+	pub sentinel_service_name: Option<String>,
+}
+
+#[auto_settings]
 #[serde(default)]
 pub struct TlsConfig {
 	/// The path to the TLS certificate

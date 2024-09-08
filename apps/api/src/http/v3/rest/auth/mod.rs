@@ -20,6 +20,7 @@ use crate::http::error::ApiError;
 use crate::http::extract::Query;
 use crate::http::middleware::auth::{AuthSession, AuthSessionKind, AUTH_COOKIE};
 use crate::http::middleware::cookies::Cookies;
+use crate::ratelimit::{with_ratelimit, RateLimitRequest, RateLimitResource};
 use crate::transactions::{with_transaction, TransactionError};
 
 mod login;
@@ -93,17 +94,29 @@ pub struct LoginRequest {
 async fn login(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
+	Extension(ip): Extension<std::net::IpAddr>,
 	session: Option<AuthSession>,
 	Query(query): Query<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let location = if query.callback {
-		handle_login_callback(&global, query, &cookies).await?
+	let authed_user = if let Some(session) = &session {
+		Some(session.user(&global).await?)
 	} else {
-		let user_id = session.map(|s| s.user_id());
-		handle_login(&global, user_id, query.platform.into(), &cookies)?
+		None
 	};
 
-	Ok(Redirect::to(&location))
+	let rate_limit_req = RateLimitRequest::new(RateLimitResource::Login, authed_user, ip);
+
+	Ok(with_ratelimit(&global, rate_limit_req, || async {
+		let location = if query.callback {
+			handle_login_callback(&global, query, &cookies).await?
+		} else {
+			let user_id = session.map(|s| s.user_id());
+			handle_login(&global, user_id, query.platform.into(), &cookies)?
+		};
+
+		Ok::<_, ApiError>(Redirect::to(&location))
+	})
+	.await)
 }
 
 #[utoipa::path(

@@ -10,7 +10,7 @@ use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::search::{search, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/messages.gql
@@ -122,14 +122,14 @@ impl MessagesQuery {
 		vec![]
 	}
 
-	#[graphql(guard = "PermissionGuard::one(EmoteModerationRequestPermission::Manage)")]
+	#[graphql(guard = "PermissionGuard::one(EmoteModerationRequestPermission::Manage).and(RateLimitGuard::search(1))")]
 	async fn mod_requests<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
 		#[graphql(validator(maximum = 50))] page: Option<u32>,
 		#[graphql(validator(maximum = 500))] limit: Option<u32>,
-		wish: Option<String>,
-		country: Option<String>,
+		#[graphql(validator(max_length = 100))] wish: Option<String>,
+		#[graphql(validator(max_length = 100))] country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -140,7 +140,10 @@ impl MessagesQuery {
 			})
 			.unwrap_or(EmoteModerationRequestKind::PublicListing);
 
-		let mut filters = vec![format!("kind: {}", wish as i32)];
+		let mut filters = vec![
+			format!("kind: {}", wish as i32),
+			format!("status: {}", EmoteModerationRequestStatus::Pending as i32),
+		];
 
 		if let Some(country) = country {
 			// TODO: prevent injection

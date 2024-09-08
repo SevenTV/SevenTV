@@ -8,4 +8,5 @@ pub mod image_processor;
 pub mod ip;
 pub mod nats;
 pub mod old_types;
+pub mod redis;
 pub mod typesense;

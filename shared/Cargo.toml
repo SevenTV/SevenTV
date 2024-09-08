@@ -30,7 +30,7 @@ tokio-rustls = "0.26"
 fnv = "1.0"
 rustls-pemfile = "2.1"
 rustls = "0.23"
-async-nats = "0.35.1"
+async-nats = "0.36.0"
 utoipa = { version = "4.2", features = ["repr"] }
 serde_repr = "0.1"
 tokio-util = "0.7"
@@ -63,5 +63,6 @@ maxminddb = "0.24.0"
 reqwest = { version = "0.12.7" }
 flate2 = "1.0.33"
 tar = "0.4.41"
+fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "partial-tracing"]}
 
 macros = { workspace = true }

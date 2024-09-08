@@ -22,10 +22,11 @@ use shared::old_types::object_id::GqlObjectId;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
 use crate::http::v3::gql::types::ListItemAction;
 use crate::http::v3::validators::NameValidator;
+use crate::ratelimit::RateLimitResource;
 use crate::transactions::{with_transaction, TransactionError};
 
 mod emote_add;
@@ -52,7 +53,9 @@ impl EmoteSetsMutation {
 		}))
 	}
 
-	#[graphql(guard = "PermissionGuard::one(EmoteSetPermission::Manage)")]
+	#[graphql(
+		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetCreate, 1))"
+	)]
 	async fn create_emote_set<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -303,7 +306,9 @@ pub struct EmoteSetOriginInput {
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteSetOps {
-	#[graphql(guard = "PermissionGuard::one(EmoteSetPermission::Manage)")]
+	#[graphql(
+		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
+	)]
 	async fn emotes<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -343,7 +348,9 @@ impl EmoteSetOps {
 		}
 	}
 
-	#[graphql(guard = "PermissionGuard::one(EmoteSetPermission::Manage)")]
+	#[graphql(
+		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
+	)]
 	async fn update<'ctx>(&self, ctx: &Context<'ctx>, data: UpdateEmoteSetInput) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
@@ -469,7 +476,9 @@ impl EmoteSetOps {
 		}
 	}
 
-	#[graphql(guard = "PermissionGuard::one(EmoteSetPermission::Manage)")]
+	#[graphql(
+		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
+	)]
 	async fn delete<'ctx>(&self, ctx: &Context<'ctx>) -> Result<bool, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;

@@ -17,9 +17,10 @@ use shared::old_types::UserEditorModelPermission;
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
+use crate::ratelimit::RateLimitResource;
 use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
@@ -40,6 +41,7 @@ pub struct UserOps {
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl UserOps {
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1)")]
 	async fn connections<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -197,6 +199,7 @@ impl UserOps {
 		}
 	}
 
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeEditor, 1)")]
 	async fn editors(
 		&self,
 		ctx: &Context<'_>,
@@ -389,6 +392,7 @@ impl UserOps {
 		}
 	}
 
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeCosmetics, 1)")]
 	async fn cosmetics<'ctx>(&self, ctx: &Context<'ctx>, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 

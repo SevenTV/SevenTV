@@ -74,7 +74,7 @@ impl<T> SafeStripeClient<T> {
 			.idempotency
 			.lock()
 			.entry(key)
-			.or_insert_with(|| stripe::RequestStrategy::idempotent_with_uuid())
+			.or_insert_with(stripe::RequestStrategy::idempotent_with_uuid)
 			.clone();
 
 		let inner = self.client.clone().with_strategy(strategy);

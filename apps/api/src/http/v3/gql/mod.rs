@@ -4,6 +4,7 @@ use async_graphql::{extensions, EmptySubscription, Schema};
 use axum::response::{self, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Extension, Router};
+use guards::RateLimitResponseStore;
 
 use crate::global::Global;
 use crate::http::middleware::auth::AuthSession;
@@ -48,10 +49,11 @@ pub async fn graphql_handler(
 	auth: Option<AuthSession>,
 	req: async_graphql_axum::GraphQLRequest,
 ) -> async_graphql_axum::GraphQLResponse {
-	let mut req = req.into_inner().data(ip);
+	let mut req = req.into_inner().data(ip).data(RateLimitResponseStore::new());
 	if let Some(session) = auth {
 		req = req.data(session);
 	}
+
 	schema.execute(req).await.into()
 }
 

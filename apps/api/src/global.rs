@@ -26,6 +26,7 @@ use shared::database::user::profile_picture::UserProfilePicture;
 use shared::database::user::User;
 use shared::image_processor::ImageProcessor;
 use shared::ip::GeoIpResolver;
+use shared::redis::setup_redis;
 
 use crate::config::Config;
 use crate::dataloader::emote::EmoteByUserIdLoader;
@@ -35,11 +36,14 @@ use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
 use crate::dataloader::user::UserByPlatformIdLoader;
 use crate::dataloader::user_bans::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
+use crate::ratelimit::RateLimiter;
 use crate::stripe_client;
 
 pub struct Global {
 	pub nats: async_nats::Client,
-	pub geoip: Option<GeoIpResolver>,
+	pub redis: fred::clients::RedisClient,
+	pub rate_limiter: RateLimiter,
+	geoip: Option<GeoIpResolver>,
 	pub jetstream: async_nats::jetstream::Context,
 	pub config: Config,
 	pub mongo: mongodb::Client,
@@ -113,9 +117,15 @@ impl Global {
 			None
 		};
 
+		let redis = setup_redis(&config.api.redis).await?;
+
+		let rate_limiter = RateLimiter::new(redis.clone(), config.api.rate_limit.clone()).await?;
+
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			geoip,
+			redis,
+			rate_limiter,
 			jetstream,
 			image_processor,
 			event_by_id_loader: LoaderById::new(db.clone()),

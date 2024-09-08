@@ -349,6 +349,8 @@ pub enum AdminPermission {
 	Admin = 1,
 	/// Grants all permissions and ignores role hierarchy
 	SuperAdmin = 2,
+	/// Bypass rate limit
+	BypassRateLimit = 4,
 }
 
 impl BitMask for AdminPermission {
@@ -414,6 +416,10 @@ pub struct Permissions {
 	#[serde(skip_serializing_if = "Option::is_none")]
 	#[serde(default)]
 	pub personal_emote_set_capacity: Option<i32>,
+
+	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(default)]
+	pub graphql_rate_limit: Option<i32>,
 
 	#[serde(flatten)]
 	pub unknown: HashMap<String, serde_json::Value>,

@@ -128,9 +128,25 @@ services:
     volumes:
       - clickhouse:/bitnami/clickhouse
 
+  redis:
+    image: bitnami/redis:latest
+    pull_policy: "always"
+    restart: unless-stopped
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "${REDIS_BIND:-127.0.0.1:6379}:6379"
+    deploy:
+      resources:
+        limits:
+          memory: ${REDIS_MEMORY_LIMIT:-4G}
+    volumes:
+      - redis:/bitnami/redis/data
+
 volumes:
   mongodb:
   typesense:
   minio:
   nats:
   clickhouse:
+  redis:
