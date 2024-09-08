@@ -33,11 +33,13 @@ impl Job for PricesJob {
 			if !indexes.is_empty() {
 				Product::collection(global.target_db()).create_indexes(indexes).await?;
 			}
-			
+
 			SubscriptionProduct::collection(global.target_db()).drop().await?;
 			let indexes = SubscriptionProduct::indexes();
 			if !indexes.is_empty() {
-				SubscriptionProduct::collection(global.target_db()).create_indexes(indexes).await?;
+				SubscriptionProduct::collection(global.target_db())
+					.create_indexes(indexes)
+					.await?;
 			}
 		}
 
