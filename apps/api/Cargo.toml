@@ -21,7 +21,7 @@ hyper = { version = "1", features = ["full"] }
 async-graphql = { version = "7.0.6", features = ["apollo_tracing", "tracing", "chrono", "time"] }
 async-graphql-axum = "7.0.6"
 
-async-stripe = { version = "0.38.1", features = ["runtime-tokio-hyper-rustls", "async"] }
+async-stripe = { version = "0.39.1", features = ["runtime-tokio-hyper-rustls", "async"] }
 crc = "3.2.1"
 x509-certificate = "0.23.1"
 rsa = "0.9.6"

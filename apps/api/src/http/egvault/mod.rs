@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
 use axum::routing::{get, patch, post};
@@ -11,6 +12,7 @@ use subscribe::Prefill;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::stripe_client::StripeClient;
 
 mod cancel;
 pub mod metadata;
@@ -97,8 +99,9 @@ async fn find_customer(global: &Arc<Global>, user_id: UserId) -> Result<Option<C
 
 	let query = query.join(" OR ");
 
+	// This doesnt have to be safe because it is a read only operation
 	let customer = stripe::Customer::search(
-		&global.stripe_client,
+		global.stripe_client.client().await.deref(),
 		stripe::CustomerSearchParams {
 			query,
 			limit: Some(1),
@@ -119,6 +122,7 @@ async fn find_customer(global: &Arc<Global>, user_id: UserId) -> Result<Option<C
 
 async fn find_or_create_customer(
 	global: &Arc<Global>,
+	stripe_client: StripeClient,
 	user_id: UserId,
 	prefill: Option<Prefill>,
 ) -> Result<CustomerId, ApiError> {
@@ -130,7 +134,7 @@ async fn find_or_create_customer(
 			let name = prefill.as_ref().map(|p| format!("{} {}", p.first_name, p.last_name));
 
 			let customer = stripe::Customer::create(
-				&global.stripe_client,
+				stripe_client.deref(),
 				stripe::CreateCustomer {
 					email: prefill.map(|p| p.email).as_deref(),
 					name: name.as_deref(),

@@ -8,6 +8,7 @@ use shared::database::webhook_event::WebhookEvent;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::stripe_client::SafeStripeClient;
 use crate::sub_refresh_job;
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -15,8 +16,16 @@ mod charge;
 mod checkout_session;
 mod customer;
 mod invoice;
-mod subscription;
 mod price;
+mod subscription;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum StripeRequest {
+	Price(price::StripeRequest),
+	CheckoutSession(checkout_session::StripeRequest),
+	Invoice(invoice::StripeRequest),
+	Charge(charge::StripeRequest),
+}
 
 pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, payload: String) -> Result<StatusCode, ApiError> {
 	let sig = headers
@@ -61,12 +70,14 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				return Ok(None);
 			}
 
+			let stripe_client: SafeStripeClient<StripeRequest> = global.stripe_client.safe().await;
+
 			let prev_attributes = event.data.previous_attributes;
 
 			// https://kappa.lol/2NwAU
 			match (event.type_, event.data.object) {
 				(stripe::EventType::PriceUpdated, stripe::EventObject::Price(price)) => {
-					price::updated(&global, tx, price).await?;
+					price::updated(&global, stripe_client, tx, price).await?;
 				}
 				(stripe::EventType::PriceDeleted, stripe::EventObject::Price(price)) => {
 					price::deleted(&global, tx, price).await?;
@@ -75,13 +86,13 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 					customer::created(&global, tx, cus).await?;
 				}
 				(stripe::EventType::CheckoutSessionCompleted, stripe::EventObject::CheckoutSession(s)) => {
-					return checkout_session::completed(&global, tx, s).await;
+					return checkout_session::completed(&global, stripe_client, tx, s).await;
 				}
 				(stripe::EventType::CheckoutSessionExpired, stripe::EventObject::CheckoutSession(s)) => {
 					checkout_session::expired(&global, tx, s).await?;
 				}
 				(stripe::EventType::InvoiceCreated, stripe::EventObject::Invoice(iv)) => {
-					invoice::created(&global, tx, iv).await?;
+					invoice::created(&global, stripe_client, tx, iv).await?;
 				}
 				(stripe::EventType::InvoiceUpdated, stripe::EventObject::Invoice(iv))
 				| (stripe::EventType::InvoiceFinalized, stripe::EventObject::Invoice(iv))
@@ -89,7 +100,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 					invoice::updated(&global, &mut tx, &iv).await?;
 				}
 				(stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv)) => {
-					return invoice::paid(&global, tx, iv).await;
+					return invoice::paid(&global, stripe_client, tx, iv).await;
 				}
 				(stripe::EventType::InvoiceDeleted, stripe::EventObject::Invoice(iv)) => {
 					invoice::deleted(&global, tx, iv).await?;
@@ -120,7 +131,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				(stripe::EventType::ChargeDisputeCreated, stripe::EventObject::Dispute(dis))
 				| (stripe::EventType::ChargeDisputeClosed, stripe::EventObject::Dispute(dis))
 				| (stripe::EventType::ChargeDisputeUpdated, stripe::EventObject::Dispute(dis)) => {
-					charge::dispute_updated(&global, tx, dis).await?;
+					charge::dispute_updated(&global, stripe_client, tx, dis).await?;
 				}
 				_ => return Err(TransactionError::custom(ApiError::BAD_REQUEST)),
 			}

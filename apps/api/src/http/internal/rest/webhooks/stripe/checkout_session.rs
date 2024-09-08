@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -9,10 +10,19 @@ use crate::global::Global;
 use crate::http::egvault::metadata::{CheckoutSessionMetadata, CustomerMetadata, StripeMetadata};
 use crate::http::egvault::redeem::grant_entitlements;
 use crate::http::error::ApiError;
+use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum StripeRequest {
+	RetrieveSetupIntent,
+	UpdateCustomer,
+	SubscriptionUpdate,
+}
 
 pub async fn completed(
 	global: &Arc<Global>,
+	stripe_client: SafeStripeClient<super::StripeRequest>,
 	mut tx: TransactionSession<'_, ApiError>,
 	session: stripe::CheckoutSession,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
@@ -40,12 +50,19 @@ pub async fn completed(
 				.setup_intent
 				.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?
 				.id();
-			let setup_intent = stripe::SetupIntent::retrieve(&global.stripe_client, &setup_intent, &[])
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to retrieve setup intent");
-					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-				})?;
+			let setup_intent = stripe::SetupIntent::retrieve(
+				stripe_client
+					.client(super::StripeRequest::CheckoutSession(StripeRequest::RetrieveSetupIntent))
+					.await
+					.deref(),
+				&setup_intent,
+				&[],
+			)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to retrieve setup intent");
+				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			})?;
 
 			let customer_id = session.customer.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?.id();
 			let Some(payment_method) = setup_intent.payment_method.map(|p| p.id()) else {
@@ -53,7 +70,10 @@ pub async fn completed(
 			};
 
 			let customer = stripe::Customer::update(
-				&global.stripe_client,
+				stripe_client
+					.client(super::StripeRequest::CheckoutSession(StripeRequest::UpdateCustomer))
+					.await
+					.deref(),
 				&customer_id,
 				stripe::UpdateCustomer {
 					invoice_settings: Some(stripe::CustomerInvoiceSettings {
@@ -94,7 +114,10 @@ pub async fn completed(
 				.and_then(|p| p.provider_id)
 			{
 				stripe::Subscription::update(
-					&global.stripe_client,
+					stripe_client
+						.client(super::StripeRequest::CheckoutSession(StripeRequest::SubscriptionUpdate))
+						.await
+						.deref(),
 					&sub_id,
 					stripe::UpdateSubscription {
 						default_payment_method: Some(&payment_method),

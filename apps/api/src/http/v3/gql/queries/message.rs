@@ -5,12 +5,11 @@ use mongodb::bson::doc;
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
-use shared::database::role::permissions::{EmoteModerationRequestPermission, PermissionsExt};
+use shared::database::role::permissions::EmoteModerationRequestPermission;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::auth::AuthSession;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::search::{search, SearchOptions};
 
@@ -133,14 +132,6 @@ impl MessagesQuery {
 		country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let authed_user = auth_session.user(global).await?;
-
-		if !authed_user.has(EmoteModerationRequestPermission::Manage) {
-			return Err(ApiError::FORBIDDEN);
-		}
 
 		let wish = wish
 			.map(|w| match w.as_ref() {

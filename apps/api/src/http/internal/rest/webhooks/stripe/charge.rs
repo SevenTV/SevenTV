@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use shared::database::product::invoice::{Invoice, InvoiceDisputeStatus};
@@ -6,6 +7,7 @@ use shared::database::queries::{filter, update};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 /// Marks associated invoice as refunded.
@@ -42,21 +44,29 @@ pub async fn refunded(
 	Ok(())
 }
 
+// we only have one request
+pub type StripeRequest = ();
+
 /// Marks the associated invoice as disputed.
 ///
 /// Called for `charge.dispute.created`, `charge.dispute.updated`,
 /// `charge.dispute.closed`
 pub async fn dispute_updated(
-	global: &Arc<Global>,
+	_global: &Arc<Global>,
+	stripe_client: SafeStripeClient<super::StripeRequest>,
 	mut tx: TransactionSession<'_, ApiError>,
 	dispute: stripe::Dispute,
 ) -> TransactionResult<(), ApiError> {
-	let charge = stripe::Charge::retrieve(&global.stripe_client, &dispute.charge.id(), &[])
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to retrieve charge");
-			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-		})?;
+	let charge = stripe::Charge::retrieve(
+		stripe_client.client(super::StripeRequest::Charge(())).await.deref(),
+		&dispute.charge.id(),
+		&[],
+	)
+	.await
+	.map_err(|e| {
+		tracing::error!(error = %e, "failed to retrieve charge");
+		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+	})?;
 
 	let Some(invoice_id) = charge.invoice.map(|i| InvoiceId::from(i.id())) else {
 		return Ok(());

@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use shared::database::product::invoice::{Invoice, InvoiceStatus};
@@ -13,6 +14,7 @@ use stripe::{FinalizeInvoiceParams, Object};
 use crate::global::Global;
 use crate::http::egvault::metadata::{CustomerMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
 use crate::http::error::ApiError;
+use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Result<Vec<ProductId>, ApiError> {
@@ -24,9 +26,18 @@ fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Resul
 		.collect()
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum StripeRequest {
+	CreatedRetrieveSubscription,
+	CreatedRetrieveCustomer,
+	CreatedFinalizeInvoice,
+	PaidRetrieveSubscription,
+}
+
 /// Creates the invoice object and finalize it.
 pub async fn created(
-	global: &Arc<Global>,
+	_global: &Arc<Global>,
+	stripe_client: SafeStripeClient<super::StripeRequest>,
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
@@ -45,12 +56,19 @@ pub async fn created(
 	// Invoices are only created for subscriptions
 	let user_id = match (invoice.subscription, metadata) {
 		(Some(subscription), _) => {
-			let subscription = stripe::Subscription::retrieve(&global.stripe_client, &subscription.id(), &[])
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to retrieve subscription");
-					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-				})?;
+			let subscription = stripe::Subscription::retrieve(
+				stripe_client
+					.client(super::StripeRequest::Invoice(StripeRequest::CreatedRetrieveSubscription))
+					.await
+					.deref(),
+				&subscription.id(),
+				&[],
+			)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to retrieve subscription");
+				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			})?;
 
 			let metadata = SubscriptionMetadata::from_stripe(&subscription.metadata).map_err(|e| {
 				tracing::error!(error = %e, "failed to deserialize metadata");
@@ -61,12 +79,19 @@ pub async fn created(
 		}
 		(None, Some(InvoiceMetadata::Gift { customer_id, .. })) => customer_id,
 		_ => {
-			let customer = stripe::Customer::retrieve(&global.stripe_client, &customer_id, &[])
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to retrieve customer");
-					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-				})?;
+			let customer = stripe::Customer::retrieve(
+				stripe_client
+					.client(super::StripeRequest::Invoice(StripeRequest::CreatedRetrieveCustomer))
+					.await
+					.deref(),
+				&customer_id,
+				&[],
+			)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to retrieve customer");
+				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			})?;
 
 			let metadata = CustomerMetadata::from_stripe(&customer.metadata.unwrap_or_default()).map_err(|e| {
 				tracing::error!(error = %e, "failed to deserialize metadata");
@@ -105,7 +130,10 @@ pub async fn created(
 
 	if invoice.status == Some(stripe::InvoiceStatus::Draft) {
 		stripe::Invoice::finalize(
-			&global.stripe_client,
+			stripe_client
+				.client(super::StripeRequest::Invoice(StripeRequest::CreatedFinalizeInvoice))
+				.await
+				.deref(),
 			&invoice.id,
 			FinalizeInvoiceParams {
 				auto_advance: Some(true),
@@ -168,6 +196,7 @@ pub async fn updated(
 /// Called for `invoice.paid`
 pub async fn paid(
 	global: &Arc<Global>,
+	stripe_client: SafeStripeClient<super::StripeRequest>,
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
@@ -215,12 +244,19 @@ pub async fn paid(
 			// This invoice is for one of our subscription products.
 
 			// Retrieve subscription
-			let stripe_sub = stripe::Subscription::retrieve(&global.stripe_client, &subscription.id(), &[])
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to retrieve subscription");
-					TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-				})?;
+			let stripe_sub = stripe::Subscription::retrieve(
+				stripe_client
+					.client(super::StripeRequest::Invoice(StripeRequest::PaidRetrieveSubscription))
+					.await
+					.deref(),
+				&subscription.id(),
+				&[],
+			)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to retrieve subscription");
+				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			})?;
 
 			let user_id = SubscriptionMetadata::from_stripe(&stripe_sub.metadata)
 				.map_err(|e| {

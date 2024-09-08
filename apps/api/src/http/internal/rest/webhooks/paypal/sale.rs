@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use shared::database::product::invoice::Invoice;
@@ -12,10 +13,20 @@ use stripe::{CreateInvoice, FinalizeInvoiceParams};
 use super::types;
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum StripeRequest {
+	CreateCustomer,
+	CreateInvoice,
+	FinalizeInvoice,
+	VoidInvoice,
+}
 
 pub async fn completed(
 	global: &Arc<Global>,
+	stripe_client: SafeStripeClient<StripeRequest>,
 	mut tx: TransactionSession<'_, ApiError>,
 	sale: types::Sale,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
@@ -85,7 +96,7 @@ pub async fn completed(
 			});
 
 			let customer = stripe::Customer::create(
-				&global.stripe_client,
+				stripe_client.client(StripeRequest::CreateCustomer).await.deref(),
 				stripe::CreateCustomer {
 					name: name.as_deref(),
 					email: paypal_sub.subscriber.email_address.as_deref(),
@@ -159,7 +170,7 @@ pub async fn completed(
 		.id;
 
 	let invoice = stripe::Invoice::create(
-		&global.stripe_client,
+		stripe_client.client(StripeRequest::CreateInvoice).await.deref(),
 		CreateInvoice {
 			customer: Some(customer_id.clone().into()),
 			auto_advance: Some(false),
@@ -175,7 +186,7 @@ pub async fn completed(
 	})?;
 
 	stripe::Invoice::finalize(
-		&global.stripe_client,
+		stripe_client.client(StripeRequest::FinalizeInvoice).await.deref(),
 		&invoice.id,
 		FinalizeInvoiceParams {
 			auto_advance: Some(false),
@@ -187,10 +198,12 @@ pub async fn completed(
 		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
 	})?;
 
-	let invoice = stripe::Invoice::void(&global.stripe_client, &invoice.id).await.map_err(|e| {
-		tracing::error!(error = %e, "failed to void invoice");
-		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
-	})?;
+	let invoice = stripe::Invoice::void(stripe_client.client(StripeRequest::VoidInvoice).await.deref(), &invoice.id)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to void invoice");
+			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+		})?;
 
 	let invoice_id: InvoiceId = invoice.id.into();
 

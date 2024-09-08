@@ -139,7 +139,7 @@ dependencies = [
  "async-graphql",
  "async-graphql-axum",
  "async-nats",
- "async-stripe",
+ "async-stripe 0.39.1",
  "async-trait",
  "axum",
  "base64 0.22.1",
@@ -377,6 +377,27 @@ name = "async-stripe"
 version = "0.38.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97ddaa6999d246ba2c6c84d830a1ba0cd16c9234d58701988b3869f0e5bd732d"
+dependencies = [
+ "chrono",
+ "futures-util",
+ "http-types",
+ "hyper 0.14.30",
+ "hyper-rustls 0.24.2",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_qs 0.10.1",
+ "smart-default",
+ "smol_str",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "async-stripe"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58d670cf4d47a1b8ffef54286a5625382e360a34ee76902fd93ad8c7032a0c30"
 dependencies = [
  "chrono",
  "futures-util",
@@ -1504,7 +1525,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-nats",
- "async-stripe",
+ "async-stripe 0.38.1",
  "bitmask-enum",
  "bson",
  "bytes",
@@ -5192,7 +5213,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-nats",
- "async-stripe",
+ "async-stripe 0.39.1",
  "aws-sdk-s3",
  "bitmask-enum",
  "bson",
