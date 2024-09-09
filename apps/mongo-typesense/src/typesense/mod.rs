@@ -227,7 +227,6 @@ async fn setup(global: &Arc<Global>, stream: async_nats::jetstream::stream::Stre
 				crate::types::mongo::EmoteSet,
 				crate::types::mongo::Emote,
 				crate::types::mongo::EntitlementEdge,
-				crate::types::mongo::EntitlementGroup,
 				crate::types::mongo::Page,
 				crate::types::mongo::Paint,
 				crate::types::mongo::Role,

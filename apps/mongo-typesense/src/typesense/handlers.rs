@@ -7,9 +7,10 @@ use chrono::Datelike;
 use mongodb::change_stream::event::{ChangeStreamEvent, OperationType};
 use shared::clickhouse::emote_stat::EmoteStat;
 use shared::database::emote_set::EmoteSetId;
-use shared::database::entitlement::{EntitlementEdgeId, EntitlementEdgeKind, EntitlementGroupId};
+use shared::database::entitlement::{EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
+use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::subscription::SubscriptionId;
 use shared::database::product::{ProductId, SubscriptionProductId};
 use shared::database::queries::{filter, update};
@@ -175,7 +176,6 @@ macro_rules! default_impl {
 }
 
 default_impl!(redeem_code_batcher, mongo::RedeemCode);
-default_impl!(special_event_batcher, mongo::SpecialEvent);
 default_impl!(invoice_batcher, mongo::Invoice);
 default_impl!(subscription_period_batcher, mongo::SubscriptionPeriod);
 default_impl!(user_ban_template_batcher, mongo::UserBanTemplate);
@@ -533,17 +533,17 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 				),
 				user_update(),
 			],
-			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => vec![
+			EntitlementEdgeKind::SpecialEvent { special_event_id } => vec![
 				MongoReq::update(
 					filter::filter! {
-						mongo::EntitlementGroup {
+						mongo::SpecialEvent {
 							#[query(rename = "_id")]
-							id: entitlement_group_id,
+							id: special_event_id,
 						}
 					},
 					update::update! {
 						#[query(set)]
-						mongo::EntitlementGroup {
+						mongo::SpecialEvent {
 							updated_at: now,
 						}
 					},
@@ -957,15 +957,11 @@ impl SupportedMongoCollection for mongo::Role {
 	}
 }
 
-impl SupportedMongoCollection for mongo::EntitlementGroup {
-	async fn handle_delete(
-		global: &Arc<Global>,
-		id: EntitlementGroupId,
-		_: ChangeStreamEvent<Document>,
-	) -> anyhow::Result<()> {
+impl SupportedMongoCollection for mongo::SpecialEvent {
+	async fn handle_delete(global: &Arc<Global>, id: SpecialEventId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		typesense_codegen::apis::documents_api::delete_document(
 			&global.typesense,
-			typesense::EntitlementGroup::COLLECTION_NAME,
+			typesense::SpecialEvent::COLLECTION_NAME,
 			&id.to_string(),
 		)
 		.await
@@ -974,8 +970,8 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 	}
 
 	#[tracing::instrument(skip_all, fields(id))]
-	async fn handle_any(global: &Arc<Global>, id: EntitlementGroupId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.entitlement_group_batcher.loader.load(id).await else {
+	async fn handle_any(global: &Arc<Global>, id: SpecialEventId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
+		let Ok(Some(data)) = global.special_event_batcher.loader.load(id).await else {
 			anyhow::bail!("failed to load data");
 		};
 
@@ -987,17 +983,15 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 
 		let granted_entitlements = global
 			.entitlement_outbound_loader
-			.load(EntitlementEdgeKind::EntitlementGroup {
-				entitlement_group_id: id,
-			})
+			.load(EntitlementEdgeKind::SpecialEvent { special_event_id: id })
 			.await
 			.map_err(|()| anyhow::anyhow!("failed to load entitlements"))?
 			.unwrap_or_default();
 
 		global
-			.entitlement_group_batcher
+			.special_event_batcher
 			.inserter
-			.execute(typesense::EntitlementGroup::from_db(
+			.execute(typesense::SpecialEvent::from_db(
 				data,
 				granted_entitlements.into_iter().map(|edge| edge.id.to),
 			))
@@ -1007,7 +1001,7 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 			.updater
 			.update(
 				filter::filter! {
-					mongo::EntitlementGroup {
+					mongo::SpecialEvent {
 						#[query(rename = "_id")]
 						id: id,
 						updated_at,
@@ -1015,7 +1009,7 @@ impl SupportedMongoCollection for mongo::EntitlementGroup {
 				},
 				update::update! {
 					#[query(set)]
-					mongo::EntitlementGroup {
+					mongo::SpecialEvent {
 						search_updated_at: chrono::Utc::now(),
 					}
 				},

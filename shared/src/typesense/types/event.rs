@@ -5,8 +5,9 @@ use crate::database::badge::BadgeId;
 use crate::database::emote::EmoteId;
 use crate::database::emote_moderation_request::EmoteModerationRequestId;
 use crate::database::emote_set::EmoteSetId;
-use crate::database::entitlement::{EntitlementEdgeKind, EntitlementGroupId};
+use crate::database::entitlement::EntitlementEdgeKind;
 use crate::database::paint::PaintId;
+use crate::database::product::special_event::SpecialEventId;
 use crate::database::product::ProductId;
 use crate::database::role::RoleId;
 use crate::database::stored_event::{
@@ -121,10 +122,12 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 						EntitlementEdgeKind::Role { role_id } => secondary.push(EventId::Role(*role_id)),
 						EntitlementEdgeKind::Badge { badge_id } => secondary.push(EventId::Badge(*badge_id)),
 						EntitlementEdgeKind::Paint { paint_id } => secondary.push(EventId::Paint(*paint_id)),
-						EntitlementEdgeKind::EmoteSet { emote_id } => secondary.push(EventId::EmoteSet(*emote_id)),
+						EntitlementEdgeKind::EmoteSet { emote_set_id: emote_id } => {
+							secondary.push(EventId::EmoteSet(*emote_id))
+						}
 						EntitlementEdgeKind::Product { product_id } => secondary.push(EventId::Product(product_id.clone())),
-						EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
-							secondary.push(EventId::EntitlementGroup(*entitlement_group_id))
+						EntitlementEdgeKind::SpecialEvent { special_event_id } => {
+							secondary.push(EventId::SpecialEvent(*special_event_id))
 						}
 						EntitlementEdgeKind::Subscription { .. } => {}
 						EntitlementEdgeKind::SubscriptionBenefit { .. } => {}
@@ -139,10 +142,12 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 						EntitlementEdgeKind::Role { role_id } => secondary.push(EventId::Role(*role_id)),
 						EntitlementEdgeKind::Badge { badge_id } => secondary.push(EventId::Badge(*badge_id)),
 						EntitlementEdgeKind::Paint { paint_id } => secondary.push(EventId::Paint(*paint_id)),
-						EntitlementEdgeKind::EmoteSet { emote_id } => secondary.push(EventId::EmoteSet(*emote_id)),
+						EntitlementEdgeKind::EmoteSet { emote_set_id: emote_id } => {
+							secondary.push(EventId::EmoteSet(*emote_id))
+						}
 						EntitlementEdgeKind::Product { product_id } => secondary.push(EventId::Product(product_id.clone())),
-						EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
-							secondary.push(EventId::EntitlementGroup(*entitlement_group_id))
+						EntitlementEdgeKind::SpecialEvent { special_event_id } => {
+							secondary.push(EventId::SpecialEvent(*special_event_id))
 						}
 						EntitlementEdgeKind::Subscription { .. } => {}
 						EntitlementEdgeKind::SubscriptionBenefit { .. } => {}
@@ -318,10 +323,12 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 						EntitlementEdgeKind::Role { role_id } => secondary.push(EventId::Role(*role_id)),
 						EntitlementEdgeKind::Badge { badge_id } => secondary.push(EventId::Badge(*badge_id)),
 						EntitlementEdgeKind::Paint { paint_id } => secondary.push(EventId::Paint(*paint_id)),
-						EntitlementEdgeKind::EmoteSet { emote_id } => secondary.push(EventId::EmoteSet(*emote_id)),
+						EntitlementEdgeKind::EmoteSet { emote_set_id: emote_id } => {
+							secondary.push(EventId::EmoteSet(*emote_id))
+						}
 						EntitlementEdgeKind::Product { product_id } => secondary.push(EventId::Product(product_id.clone())),
-						EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
-							secondary.push(EventId::EntitlementGroup(*entitlement_group_id))
+						EntitlementEdgeKind::SpecialEvent { special_event_id } => {
+							secondary.push(EventId::SpecialEvent(*special_event_id))
 						}
 						EntitlementEdgeKind::Subscription { .. } => {}
 						EntitlementEdgeKind::SubscriptionBenefit { .. } => {}
@@ -336,10 +343,12 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 						EntitlementEdgeKind::Role { role_id } => secondary.push(EventId::Role(*role_id)),
 						EntitlementEdgeKind::Badge { badge_id } => secondary.push(EventId::Badge(*badge_id)),
 						EntitlementEdgeKind::Paint { paint_id } => secondary.push(EventId::Paint(*paint_id)),
-						EntitlementEdgeKind::EmoteSet { emote_id } => secondary.push(EventId::EmoteSet(*emote_id)),
+						EntitlementEdgeKind::EmoteSet { emote_set_id: emote_id } => {
+							secondary.push(EventId::EmoteSet(*emote_id))
+						}
 						EntitlementEdgeKind::Product { product_id } => secondary.push(EventId::Product(product_id.clone())),
-						EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
-							secondary.push(EventId::EntitlementGroup(*entitlement_group_id))
+						EntitlementEdgeKind::SpecialEvent { special_event_id } => {
+							secondary.push(EventId::SpecialEvent(*special_event_id))
 						}
 						EntitlementEdgeKind::Subscription { .. } => {}
 						EntitlementEdgeKind::SubscriptionBenefit { .. } => {}
@@ -366,7 +375,7 @@ pub enum EventId {
 	Paint(PaintId),
 	Role(RoleId),
 	Product(ProductId),
-	EntitlementGroup(EntitlementGroupId),
+	SpecialEvent(SpecialEventId),
 	UserProfilePicture(UserProfilePictureId),
 	UserBan(UserBanId),
 	UserSession(UserSessionId),
@@ -385,7 +394,7 @@ impl std::fmt::Display for EventId {
 			EventId::Paint(paint_id) => write!(f, "paint:{}", paint_id),
 			EventId::Role(role_id) => write!(f, "role:{}", role_id),
 			EventId::Product(product_id) => write!(f, "product:{}", product_id),
-			EventId::EntitlementGroup(entitlement_group_id) => write!(f, "entitlement_group:{}", entitlement_group_id),
+			EventId::SpecialEvent(special_event_id) => write!(f, "special_event:{}", special_event_id),
 			EventId::UserProfilePicture(user_profile_picture_id) => {
 				write!(f, "user_profile_picture:{}", user_profile_picture_id)
 			}
@@ -426,7 +435,7 @@ impl std::str::FromStr for EventId {
 			"paint" => EventId::Paint(id.parse()?),
 			"role" => EventId::Role(id.parse()?),
 			"product" => EventId::Product(id.parse().map_err(|_| EventIdFromStrError::OtherInvalidId("product"))?),
-			"entitlement_group" => EventId::EntitlementGroup(id.parse()?),
+			"special_event" => EventId::SpecialEvent(id.parse()?),
 			"user_profile_picture" => EventId::UserProfilePicture(id.parse()?),
 			"user_ban" => EventId::UserBan(id.parse()?),
 			"user_session" => EventId::UserSession(id.parse()?),

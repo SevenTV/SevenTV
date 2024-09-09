@@ -111,6 +111,11 @@ pub struct Config {
 	/// Skip cron jobs
 	pub skip_cron_jobs: bool,
 
+	/// Run special events job
+	pub special_events: bool,
+	/// Skip special events job
+	pub skip_special_events: bool,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 
@@ -148,6 +153,8 @@ impl Config {
 			|| self.prices
 			|| self.cdn_rename
 			|| self.subscriptions
+			|| self.special_events
+			|| self.cron_jobs
 	}
 
 	pub fn should_run_users(&self) -> bool {
@@ -223,5 +230,10 @@ impl Config {
 	pub fn should_run_cron_jobs(&self) -> bool {
 		let any_run = self.any_run();
 		any_run && self.cron_jobs || !any_run && !self.skip_cron_jobs
+	}
+
+	pub fn should_run_special_events(&self) -> bool {
+		let any_run = self.any_run();
+		any_run && self.special_events || !any_run && !self.skip_special_events
 	}
 }

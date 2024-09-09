@@ -1,5 +1,6 @@
 pub mod codes;
 pub mod invoice;
+pub mod special_event;
 pub mod subscription;
 
 use chrono::Utc;
@@ -99,4 +100,5 @@ pub(super) fn typesense_collections() -> impl IntoIterator<Item = TypesenseGener
 	.chain(codes::typesense_collections())
 	.chain(invoice::typesense_collections())
 	.chain(subscription::typesense_collections())
+	.chain(special_event::typesense_collections())
 }

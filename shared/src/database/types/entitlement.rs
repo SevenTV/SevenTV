@@ -6,13 +6,13 @@ use super::badge::BadgeId;
 use super::emote_set::EmoteSetId;
 use super::paint::PaintId;
 use super::product::codes::RedeemCodeId;
+use super::product::special_event::SpecialEventId;
 use super::product::subscription::SubscriptionId;
 use super::product::{InvoiceId, InvoiceLineItemId, ProductId, SubscriptionBenefitId};
 use super::role::RoleId;
 use super::user::UserId;
 use super::{MongoCollection, MongoGenericCollection};
 use crate::database::graph::{GraphEdge, GraphKey};
-use crate::database::Id;
 use crate::typesense::types::impl_typesense_type;
 
 /// https://www.mermaidchart.com/raw/db698878-667d-4aac-a7c7-6c310120ff35?version=v0.1&format=svg
@@ -23,11 +23,11 @@ pub enum EntitlementEdgeKind {
 	Role { role_id: RoleId },
 	Badge { badge_id: BadgeId },
 	Paint { paint_id: PaintId },
-	EmoteSet { emote_id: EmoteSetId },
+	EmoteSet { emote_set_id: EmoteSetId },
 	Product { product_id: ProductId },
 	SubscriptionBenefit { subscription_benefit_id: SubscriptionBenefitId },
 	Subscription { subscription_id: SubscriptionId },
-	EntitlementGroup { entitlement_group_id: EntitlementGroupId },
+	SpecialEvent { special_event_id: SpecialEventId },
 	GlobalDefaultEntitlementGroup,
 }
 
@@ -38,16 +38,14 @@ impl std::fmt::Display for EntitlementEdgeKind {
 			EntitlementEdgeKind::Role { role_id } => write!(f, "role:{}", role_id),
 			EntitlementEdgeKind::Badge { badge_id } => write!(f, "badge:{}", badge_id),
 			EntitlementEdgeKind::Paint { paint_id } => write!(f, "paint:{}", paint_id),
-			EntitlementEdgeKind::EmoteSet { emote_id } => write!(f, "emote_set:{}", emote_id),
+			EntitlementEdgeKind::EmoteSet { emote_set_id: emote_id } => write!(f, "emote_set:{}", emote_id),
 			EntitlementEdgeKind::Product { product_id } => write!(f, "product:{}", product_id),
 			EntitlementEdgeKind::SubscriptionBenefit { subscription_benefit_id } => {
 				write!(f, "subscription_benefit:{}", subscription_benefit_id)
 			}
 			EntitlementEdgeKind::Subscription { subscription_id } => write!(f, "subscription:{}", subscription_id),
-			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
-				write!(f, "entitlement_group:{}", entitlement_group_id)
-			}
 			EntitlementEdgeKind::GlobalDefaultEntitlementGroup => write!(f, "global_default_entitlement_group"),
+			EntitlementEdgeKind::SpecialEvent { special_event_id } => write!(f, "special_event:{}", special_event_id),
 		}
 	}
 }
@@ -75,7 +73,7 @@ impl std::str::FromStr for EntitlementEdgeKind {
 				paint_id: parts[1].parse().map_err(|_| "invalid paint id")?,
 			},
 			"emote_set" => EntitlementEdgeKind::EmoteSet {
-				emote_id: parts[1].parse().map_err(|_| "invalid emote set id")?,
+				emote_set_id: parts[1].parse().map_err(|_| "invalid emote set id")?,
 			},
 			"product" => EntitlementEdgeKind::Product {
 				product_id: parts[1].parse().map_err(|_| "invalid product id")?,
@@ -83,10 +81,10 @@ impl std::str::FromStr for EntitlementEdgeKind {
 			"subscription" => EntitlementEdgeKind::Subscription {
 				subscription_id: parts[1].parse().map_err(|_| "invalid subscription id")?,
 			},
-			"entitlement_group" => EntitlementEdgeKind::EntitlementGroup {
-				entitlement_group_id: parts[1].parse().map_err(|_| "invalid entitlement group id")?,
-			},
 			"global_default_entitlement_group" => EntitlementEdgeKind::GlobalDefaultEntitlementGroup,
+			"special_event" => EntitlementEdgeKind::SpecialEvent {
+				special_event_id: parts[1].parse().map_err(|_| "invalid special event id")?,
+			},
 			_ => return Err("invalid kind"),
 		};
 
@@ -148,6 +146,9 @@ pub enum EntitlementEdgeManagedBy {
 	RedeemCode {
 		redeem_code_id: RedeemCodeId,
 	},
+	SpecialEvent {
+		special_event_id: SpecialEventId,
+	},
 }
 
 impl std::fmt::Display for EntitlementEdgeManagedBy {
@@ -159,6 +160,7 @@ impl std::fmt::Display for EntitlementEdgeManagedBy {
 			} => write!(f, "invoice:{invoice_id}:{line_item_id}"),
 			Self::Subscription { subscription_id } => write!(f, "subscription:{subscription_id}"),
 			Self::RedeemCode { redeem_code_id } => write!(f, "redeem_code:{redeem_code_id}"),
+			Self::SpecialEvent { special_event_id } => write!(f, "special_event:{special_event_id}"),
 		}
 	}
 }
@@ -202,7 +204,7 @@ impl GraphKey for EntitlementEdgeKind {
 				| Self::Paint { .. }
 				| Self::EmoteSet { .. }
 				| Self::Role { .. }
-				| Self::EntitlementGroup { .. }
+				| Self::SpecialEvent { .. }
 				| Self::Subscription { .. }
 		)
 	}
@@ -214,7 +216,7 @@ impl GraphKey for EntitlementEdgeKind {
 				| Self::Role { .. }
 				| Self::Product { .. }
 				| Self::Subscription { .. }
-				| Self::EntitlementGroup { .. }
+				| Self::SpecialEvent { .. }
 				| Self::GlobalDefaultEntitlementGroup
 		)
 	}
@@ -228,32 +230,8 @@ impl EntitlementEdge {
 	}
 }
 
-pub type EntitlementGroupId = Id<EntitlementGroup>;
-
-#[derive(Debug, Clone, Serialize, Deserialize, MongoCollection)]
-#[mongo(collection_name = "entitlement_groups")]
-#[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
-#[mongo(search = "crate::typesense::types::entitlement::EntitlementGroup")]
-#[serde(deny_unknown_fields)]
-pub struct EntitlementGroup {
-	#[mongo(id)]
-	#[serde(rename = "_id")]
-	pub id: EntitlementGroupId,
-	pub name: String,
-	pub description: Option<String>,
-	pub tags: Vec<String>,
-	#[serde(with = "crate::database::serde")]
-	pub updated_at: chrono::DateTime<chrono::Utc>,
-	#[serde(with = "crate::database::serde")]
-	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
-	[
-		MongoGenericCollection::new::<EntitlementEdge>(),
-		MongoGenericCollection::new::<EntitlementGroup>(),
-	]
+	[MongoGenericCollection::new::<EntitlementEdge>()]
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
@@ -265,7 +243,7 @@ pub struct CalculatedEntitlements {
 	pub products: HashSet<ProductId>,
 	pub subscriptions: HashSet<SubscriptionId>,
 	pub subscription_benefits: HashSet<SubscriptionBenefitId>,
-	pub entitlement_groups: HashSet<EntitlementGroupId>,
+	pub special_events: HashSet<SpecialEventId>,
 }
 
 impl CalculatedEntitlements {
@@ -277,7 +255,7 @@ impl CalculatedEntitlements {
 		let mut products = HashSet::new();
 		let mut subscriptions = HashSet::new();
 		let mut subscription_benefits = HashSet::new();
-		let mut entitlement_groups = HashSet::new();
+		let mut special_events = HashSet::new();
 
 		edges.into_iter().for_each(|to| match to {
 			EntitlementEdgeKind::Role { role_id } => {
@@ -289,7 +267,7 @@ impl CalculatedEntitlements {
 			EntitlementEdgeKind::Paint { paint_id } => {
 				paints.insert(paint_id);
 			}
-			EntitlementEdgeKind::EmoteSet { emote_id } => {
+			EntitlementEdgeKind::EmoteSet { emote_set_id: emote_id } => {
 				emote_sets.insert(emote_id);
 			}
 			EntitlementEdgeKind::Product { product_id } => {
@@ -301,8 +279,8 @@ impl CalculatedEntitlements {
 			EntitlementEdgeKind::Subscription { subscription_id } => {
 				subscriptions.insert(subscription_id);
 			}
-			EntitlementEdgeKind::EntitlementGroup { entitlement_group_id } => {
-				entitlement_groups.insert(entitlement_group_id);
+			EntitlementEdgeKind::SpecialEvent { special_event_id } => {
+				special_events.insert(special_event_id);
 			}
 			EntitlementEdgeKind::User { .. } => {
 				tracing::warn!("user entitlements are not supported in this context")
@@ -318,7 +296,7 @@ impl CalculatedEntitlements {
 			products,
 			subscriptions,
 			subscription_benefits,
-			entitlement_groups,
+			special_events,
 		}
 	}
 }

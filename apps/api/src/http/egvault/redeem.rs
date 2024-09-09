@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
-use shared::database::product::codes::{CodeEffect, RedeemCode};
+use shared::database::product::codes::{CodeEffect, RedeemCode, RedeemCodeSubscriptionEffect};
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
@@ -25,36 +25,51 @@ pub async fn grant_entitlements(
 	redeem_code: &RedeemCode,
 	user_id: UserId,
 ) -> TransactionResult<(), ApiError> {
-	for (to, extends_subscription) in redeem_code.effects.iter().filter_map(|e| match e {
-		CodeEffect::Entitlement {
-			edge,
-			extends_subscription,
-		} => Some((edge, extends_subscription)),
-		_ => None,
-	}) {
-		let from = match extends_subscription {
-			Some(extends_subscription) => EntitlementEdgeKind::Subscription {
-				subscription_id: SubscriptionId {
-					user_id,
-					product_id: *extends_subscription,
-				},
+	// If the redeem code has a subscription effect then all entitlements should be
+	// attached to the subscription, not the user.
+	let from = match &redeem_code.subscription_effect {
+		Some(subscription_effect) => EntitlementEdgeKind::Subscription {
+			subscription_id: SubscriptionId {
+				user_id,
+				product_id: subscription_effect.id,
 			},
-			None => EntitlementEdgeKind::User { user_id },
-		};
+		},
+		None => EntitlementEdgeKind::User { user_id },
+	};
 
-		tx.insert_one(
-			EntitlementEdge {
-				id: EntitlementEdgeId {
-					from,
-					to: to.clone(),
-					managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
-						redeem_code_id: redeem_code.id,
-					}),
+	match &redeem_code.effect {
+		CodeEffect::DirectEntitlement { entitlements } => {
+			tx.insert_many(
+				entitlements.iter().map(|e| EntitlementEdge {
+					id: EntitlementEdgeId {
+						from: from.clone(),
+						to: e.clone(),
+						managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
+							redeem_code_id: redeem_code.id,
+						}),
+					},
+				}),
+				None,
+			)
+			.await?;
+		}
+		CodeEffect::SpecialEvent { special_event_id } => {
+			tx.insert_one(
+				EntitlementEdge {
+					id: EntitlementEdgeId {
+						from,
+						to: EntitlementEdgeKind::SpecialEvent {
+							special_event_id: *special_event_id,
+						},
+						managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
+							redeem_code_id: redeem_code.id,
+						}),
+					},
 				},
-			},
-			None,
-		)
-		.await?;
+				None,
+			)
+			.await?;
+		}
 	}
 
 	Ok(())
@@ -70,6 +85,7 @@ pub struct RedeemResponse {
 	/// Url that the website will open
 	authorize_url: Option<String>,
 	/// list of ids of cosmetics that the user received
+	/// TODO: is this needed?
 	items: Vec<String>,
 }
 
@@ -123,7 +139,7 @@ pub async fn redeem(
 					.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
 
 				// TODO: should we dataload this?
-				let is_subscribed = tx
+				let not_subscribed = tx
 					.find_one(
 						filter::filter! {
 							SubscriptionPeriod {
@@ -140,14 +156,16 @@ pub async fn redeem(
 						None,
 					)
 					.await?
-					.is_some();
+					.is_none();
 
-				if let Some((product_id, trial_days, false)) = code.effects.iter().find_map(|e| match e {
-					CodeEffect::SubscriptionProduct { id, trial_days } => Some((id, trial_days, is_subscribed)),
-					_ => None,
-				}) {
+				// If the user is not subscribed and the redeem code has a subscription effect
+				// which grants a trial period, then we should start their trial period.
+				if let Some(RedeemCodeSubscriptionEffect {
+					id: product_id,
+					trial_days: Some(trial_days),
+				}) = not_subscribed.then_some(code.subscription_effect.as_ref()).flatten()
+				{
 					// the user is not subscribed and the effects contain a subscription product
-
 					let customer_id = match authed_user.stripe_customer_id.clone() {
 						Some(id) => id,
 						None => find_or_create_customer(
@@ -194,19 +212,19 @@ pub async fn redeem(
 					params.mode = Some(stripe::CheckoutSessionMode::Subscription);
 
 					params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
-					metadata: Some(SubscriptionMetadata {
-						user_id: authed_user.id,
-						customer_id: None,
-					}.to_stripe()),
-					trial_period_days: Some(*trial_days),
-					trial_settings: Some(stripe::CreateCheckoutSessionSubscriptionDataTrialSettings {
-						end_behavior: stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehavior {
-							missing_payment_method:
-								stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehaviorMissingPaymentMethod::Cancel,
-						},
-					}),
-					..Default::default()
-				});
+						metadata: Some(SubscriptionMetadata {
+							user_id: authed_user.id,
+							customer_id: None,
+						}.to_stripe()),
+						trial_period_days: Some(*trial_days),
+						trial_settings: Some(stripe::CreateCheckoutSessionSubscriptionDataTrialSettings {
+							end_behavior: stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehavior {
+								missing_payment_method:
+									stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehaviorMissingPaymentMethod::Cancel,
+							},
+						}),
+						..Default::default()
+					});
 
 					params.metadata = Some(
 						CheckoutSessionMetadata::Redeem {
@@ -234,28 +252,12 @@ pub async fn redeem(
 					})
 				} else {
 					// the effects contain no subscription products
-
-					let items = code
-						.effects
-						.iter()
-						.filter_map(|e| match e {
-							CodeEffect::Entitlement {
-								edge: EntitlementEdgeKind::Badge { badge_id },
-								..
-							} => Some(badge_id.to_string()),
-							CodeEffect::Entitlement {
-								edge: EntitlementEdgeKind::Paint { paint_id },
-								..
-							} => Some(paint_id.to_string()),
-							_ => None,
-						})
-						.collect();
-
 					grant_entitlements(&mut tx, &code, authed_user.id).await?;
 
+					// TODO: do we need to return the items you get from the redeem code?
 					Ok(RedeemResponse {
 						authorize_url: None,
-						items,
+						items: vec![],
 					})
 				}
 			}

@@ -7,6 +7,7 @@ use crate::typesense::types::impl_typesense_type;
 
 pub mod codes;
 pub mod invoice;
+pub mod special_event;
 pub mod subscription;
 
 /// A helper macro used to define newtypes for stripe IDs
@@ -245,6 +246,7 @@ pub type SubscriptionBenefitId = Id<SubscriptionBenefit>;
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionBenefit {
 	pub id: SubscriptionBenefitId,
+	pub name: String,
 	pub condition: SubscriptionBenefitCondition,
 }
 
@@ -282,4 +284,5 @@ pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollec
 	.chain(codes::mongo_collections())
 	.chain(invoice::collections())
 	.chain(subscription::collections())
+	.chain(special_event::mongo_collections())
 }

@@ -1,6 +1,8 @@
 use std::collections::HashSet;
+use std::str::FromStr;
 use std::sync::Arc;
 
+use bson::oid::ObjectId;
 use shared::database::role::Role;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
@@ -72,5 +74,18 @@ impl Job for RolesJob {
 		}
 
 		outcome
+	}
+
+	async fn finish(mut self) -> ProcessOutcome {
+		// Insert a new role for translators
+		self.process(types::Role {
+			id: ObjectId::from_str("62f99d0ce46eb00e438a6984").unwrap(),
+			name: "Translator".to_string(),
+			position: 10,
+			allowed: Default::default(),
+			denied: Default::default(),
+			color: 0,
+		})
+		.await
 	}
 }

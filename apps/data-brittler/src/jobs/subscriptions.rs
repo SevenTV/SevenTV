@@ -17,6 +17,8 @@ use crate::error;
 use crate::global::Global;
 use crate::types::{self, SubscriptionCycleStatus, SubscriptionCycleUnit, SubscriptionProvider};
 
+pub mod benefits;
+
 pub const PAYPAL_YEARLY: &str = "P-9P108407878214437MDOSLGA";
 pub const PAYPAL_MONTHLY: &str = "P-0RN164482K927302CMDOSJJA";
 pub const STRIPE_YEARLY: &str = "price_1JWQ2RCHxsWbK3R3a6emz76a";
