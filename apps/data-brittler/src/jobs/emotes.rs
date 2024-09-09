@@ -42,12 +42,20 @@ impl Job for EmotesJob {
 	async fn process(&mut self, emote: Self::T) -> ProcessOutcome {
 		let owner_id = UserId::from(emote.owner_id);
 
+		let versions_num = emote.versions.len();
+
 		for v in emote.versions {
 			if (v.state.lifecycle == EmoteLifecycle::Failed)
 				|| (v.state.lifecycle == EmoteLifecycle::Deleted && v.state.replace_id.is_none())
 			{
 				continue;
 			}
+
+			let default_name = if versions_num == 1 {
+				emote.name.clone()
+			} else {
+				v.name.unwrap_or_else(|| emote.name.clone())
+			};
 
 			let mut flags = EmoteFlags::none();
 			if emote.flags.contains(EmoteFlagsModel::Private) {
@@ -98,7 +106,7 @@ impl Job for EmotesJob {
 				} else {
 					UserId::nil()
 				},
-				default_name: v.name.unwrap_or_else(|| emote.name.clone()),
+				default_name,
 				tags: emote.tags.clone(),
 				aspect_ratio,
 				image_set,
