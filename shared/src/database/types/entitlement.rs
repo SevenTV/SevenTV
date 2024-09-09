@@ -135,6 +135,7 @@ impl<'de> Deserialize<'de> for EntitlementEdgeKindString {
 impl_typesense_type!(EntitlementEdgeKindString, String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
 pub enum EntitlementEdgeManagedBy {
 	InvoiceLineItem {
 		invoice_id: InvoiceId,
