@@ -195,9 +195,10 @@ impl Job for SubscriptionsJob {
 				.with_options(insert_options.clone())
 				.into_future(),
 		);
-		let res = vec![res.0, res.1, res.2]
-			.into_iter()
-			.zip(vec![self.subscriptions.len(), self.periods.len(), self.edges.len()]);
+		let res =
+			vec![res.0, res.1, res.2]
+				.into_iter()
+				.zip(vec![self.subscriptions.len(), self.periods.len(), self.edges.len()]);
 
 		for (res, len) in res {
 			match res {

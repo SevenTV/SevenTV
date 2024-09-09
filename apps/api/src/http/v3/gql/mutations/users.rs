@@ -523,7 +523,7 @@ impl UserOps {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		if authed_user.computed.permissions.is_superset_of(&role.permissions) {
+		if !authed_user.computed.permissions.is_superset_of(&role.permissions) {
 			return Err(ApiError::FORBIDDEN);
 		}
 

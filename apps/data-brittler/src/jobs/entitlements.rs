@@ -20,8 +20,12 @@ pub struct EntitlementsJob {
 	edges: FnvHashSet<EntitlementEdge>,
 }
 
-fn skip_entitlements() -> impl Iterator<Item = (EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool))>
-{
+fn skip_entitlements() -> impl Iterator<
+	Item = (
+		EntitlementEdgeKind,
+		(EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool),
+	),
+> {
 	super::subscriptions::benefits::sub_badges_benefits()
 		.into_iter()
 		.flat_map(|b| {
@@ -61,7 +65,16 @@ fn skip_entitlements() -> impl Iterator<Item = (EntitlementEdgeKind, (Entitlemen
 				.into_iter()
 				// Ignore all other role inserts because they are handled by the user job.
 				// This is a new role called the `Translator` role which is not handled by the user job.
-				.map(move |to| (to, (EntitlementEdgeKind::Role { role_id: r.id }, None, r.id != "62f99d0ce46eb00e438a6984".parse().unwrap())))
+				.map(move |to| {
+					(
+						to,
+						(
+							EntitlementEdgeKind::Role { role_id: r.id },
+							None,
+							r.id != "62f99d0ce46eb00e438a6984".parse().unwrap(),
+						),
+					)
+				})
 		}))
 		.chain(super::subscriptions::benefits::special_events().into_iter().flat_map(|s| {
 			s.entitlements.into_iter().map(move |to| {
