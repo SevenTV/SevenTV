@@ -59,7 +59,7 @@ impl Job for RolesJob {
 				name: role.name,
 				description: None,
 				tags: vec![],
-				hoist: false,
+				hoist: role.color != 0,
 				color: Some(role.color),
 				rank,
 				applied_rank: None,

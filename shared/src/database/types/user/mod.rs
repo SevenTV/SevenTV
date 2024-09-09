@@ -72,6 +72,7 @@ pub struct UserCached {
 	pub active_emotes: Vec<EmoteId>,
 	pub emote_set_id: Option<EmoteSetId>,
 	pub role_rank: i32,
+	pub role_hoist: bool,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq, Eq)]

@@ -135,7 +135,7 @@ impl Emote {
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
 			.filter_by(format!("emotes: {}", self.id.0))
-			.sort_by(vec!["role_rank:desc".to_owned()])
+			.sort_by(vec!["role_hoist:desc".to_owned(), "role_rank:desc".to_owned()])
 			.page(page)
 			.per_page(limit.unwrap_or(50))
 			.build();
