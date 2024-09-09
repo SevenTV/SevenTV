@@ -95,8 +95,8 @@ impl SubAge {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StartEnd {
-	start: chrono::DateTime<chrono::Utc>,
-	end: chrono::DateTime<chrono::Utc>,
+	pub start: chrono::DateTime<chrono::Utc>,
+	pub end: chrono::DateTime<chrono::Utc>,
 }
 
 /// Grants entitlements for a subscription.
