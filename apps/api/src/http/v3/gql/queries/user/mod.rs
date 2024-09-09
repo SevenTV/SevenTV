@@ -175,8 +175,7 @@ impl User {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let options = SearchOptions::builder()
-			.query("".to_owned())
-			.query_by(vec!["id".to_owned()])
+			.query("*".to_owned())
 			.filter_by(format!("target_id: {}", EventId::User(self.id.id())))
 			.sort_by(vec!["created_at:desc".to_owned()])
 			.page(None)

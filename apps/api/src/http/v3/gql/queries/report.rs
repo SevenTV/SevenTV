@@ -147,10 +147,9 @@ impl ReportsQuery {
 		}
 
 		let options = SearchOptions::builder()
-			.query("".to_owned())
-			.query_by(vec!["id".to_owned()])
+			.query("*".to_owned())
 			.filter_by(format!(
-				"status: open && kind: {} && targets:=emote:*",
+				"open: true && kind: {} && targets_emote: true",
 				TicketKind::Abuse as i32
 			))
 			// Oldest highest priority first
