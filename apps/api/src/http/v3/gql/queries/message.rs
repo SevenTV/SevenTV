@@ -151,8 +151,7 @@ impl MessagesQuery {
 		}
 
 		let options = SearchOptions::builder()
-			.query("".to_owned())
-			.query_by(vec!["id".to_owned()])
+			.query("*".to_owned())
 			.filter_by(filters.join(" && "))
 			.sort_by(vec!["priority:desc".to_owned()])
 			.page(page)

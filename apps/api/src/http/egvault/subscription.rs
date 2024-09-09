@@ -94,7 +94,7 @@ pub async fn subscription(
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
 
-	let age = sub_refresh_job::sub_age_days(&periods);
+	let age = sub_refresh_job::SubAge::new(&periods).days;
 
 	let provider = active_period.provider_id.as_ref().map(|id| match id {
 		ProviderSubscriptionId::Stripe(_) => types::Provider::Stripe,
