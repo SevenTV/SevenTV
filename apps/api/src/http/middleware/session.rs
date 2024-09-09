@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::extract::Request;
 use axum::response::{IntoResponse, Response};
 use futures::future::BoxFuture;
-use hyper::{header, HeaderMap, StatusCode};
+use hyper::{header, StatusCode};
 use shared::database::role::permissions::{
 	FlagPermission, Permission, Permissions, PermissionsExt, RateLimitResource, UserPermission,
 };
