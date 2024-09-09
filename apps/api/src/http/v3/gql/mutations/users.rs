@@ -593,7 +593,7 @@ impl UserOps {
 						.delete_one(
 							filter::filter! {
 								EntitlementEdge {
-									#[query(serde)]
+									#[query(rename = "_id", serde)]
 									id: EntitlementEdgeId {
 										from: EntitlementEdgeKind::User { user_id: self.id.id() },
 										to: EntitlementEdgeKind::Role { role_id: role_id.id() },
@@ -617,7 +617,7 @@ impl UserOps {
 							},
 							timestamp: chrono::Utc::now(),
 						})?;
-					};
+					}
 
 					// They might have the role via some other entitlement.
 					let role_via_edge = target_user.computed.raw_entitlements.iter().flat_map(|e| e.iter()).any(|e| {
