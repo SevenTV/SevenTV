@@ -131,7 +131,7 @@ pub struct SubscriptionPeriod {
 pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields, tag = "type")]
+#[serde(deny_unknown_fields, rename_all = "snake_case", tag = "type")]
 pub enum SubscriptionPeriodCreatedBy {
 	RedeemCode {
 		redeem_code_id: RedeemCodeId,

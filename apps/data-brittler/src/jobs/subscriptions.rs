@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::future::IntoFuture;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -29,7 +29,7 @@ pub struct SubscriptionsJob {
 	global: Arc<Global>,
 	subscriptions: HashMap<SubscriptionId, Subscription>,
 	periods: Vec<SubscriptionPeriod>,
-	edges: Vec<EntitlementEdge>,
+	edges: HashSet<EntitlementEdge>,
 }
 
 impl Job for SubscriptionsJob {
@@ -58,7 +58,7 @@ impl Job for SubscriptionsJob {
 			global,
 			subscriptions: Default::default(),
 			periods: vec![],
-			edges: vec![],
+			edges: HashSet::new(),
 		})
 	}
 
@@ -68,6 +68,11 @@ impl Job for SubscriptionsJob {
 
 	async fn process(&mut self, subscription: Self::T) -> ProcessOutcome {
 		let outcome = ProcessOutcome::default();
+
+		// skip one sub that doesnt have a plan id
+		let Some(plan_id) = subscription.plan_id else {
+			return outcome;
+		};
 
 		let Some(subscription_id) = subscription.provider_id else {
 			return outcome;
@@ -108,7 +113,7 @@ impl Job for SubscriptionsJob {
 		}
 
 		if start < chrono::Utc::now() && end > chrono::Utc::now() {
-			self.edges.push(EntitlementEdge {
+			self.edges.insert(EntitlementEdge {
 				id: EntitlementEdgeId {
 					from: EntitlementEdgeKind::User { user_id: sub_id.user_id },
 					to: EntitlementEdgeKind::Subscription { subscription_id: sub_id },
@@ -137,8 +142,8 @@ impl Job for SubscriptionsJob {
 			id: subscription.id.into(),
 			provider_id: Some(provider_id),
 			product_id: match subscription.provider {
-				SubscriptionProvider::Stripe => ProductId::from_str(&subscription.plan_id).unwrap(),
-				SubscriptionProvider::Paypal => match subscription.plan_id.as_str() {
+				SubscriptionProvider::Stripe => ProductId::from_str(&plan_id).unwrap(),
+				SubscriptionProvider::Paypal => match plan_id.as_str() {
 					PAYPAL_MONTHLY => ProductId::from_str(STRIPE_MONTHLY).unwrap(),
 					PAYPAL_YEARLY => ProductId::from_str(STRIPE_YEARLY).unwrap(),
 					_ => ProductId::from_str(STRIPE_MONTHLY).unwrap(),

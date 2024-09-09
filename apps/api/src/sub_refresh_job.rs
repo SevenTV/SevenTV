@@ -14,18 +14,18 @@ use shared::database::MongoCollection;
 use crate::global::Global;
 use crate::http::error::ApiError;
 
-pub fn sub_age_days(periods: &[SubscriptionPeriod]) -> isize {
+pub fn sub_age_days(periods: &[SubscriptionPeriod]) -> i32 {
 	sub_age(periods).0
 }
 
-pub fn sub_age(periods: &[SubscriptionPeriod]) -> (isize, isize) {
+pub fn sub_age(periods: &[SubscriptionPeriod]) -> (i32, i32) {
 	periods
 		.iter()
 		.map(|p| {
-			let diff = date_component::date_component::calculate(&p.start, &p.end);
+			let diff = date_component::date_component::calculate(&p.start, &p.end.min(chrono::Utc::now()));
 			(diff.interval_days, diff.month)
 		})
-		.fold((0, 0), |(days, month), diff| (days + diff.0, month + diff.1))
+		.fold((0, 0), |(days, month), diff| (days + diff.0 as i32, month + diff.1 as i32))
 }
 
 /// Grants entitlements for a subscription.
@@ -89,8 +89,8 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 		let (age_days, age_months) = sub_age(&periods);
 
 		let is_fulfilled = match &benefit.condition {
-			SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => age_days >= (*d as isize),
-			SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => age_months >= (*m as isize),
+			SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => age_days >= *d,
+			SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => age_months >= *m,
 			SubscriptionBenefitCondition::TimePeriod(tp) => periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end),
 		};
 
