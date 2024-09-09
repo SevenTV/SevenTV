@@ -97,13 +97,15 @@ enum StripeRequest {
 
 pub async fn redeem(
 	State(global): State<Arc<Global>>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 	Json(body): Json<RedeemRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
-	let req = RateLimitRequest::new(RateLimitResource::EgVaultRedeem, session);
+	let req = RateLimitRequest::new(RateLimitResource::EgVaultRedeem, &session);
 
 	req.http(&global, async {
+		let session = &session;
+
 		let stripe_client = global.stripe_client.safe().await;
 
 		let res = with_transaction(&global, |mut tx| {

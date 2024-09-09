@@ -15,7 +15,7 @@ use crate::http::v3::rest::types::{self, Plan};
 
 pub async fn products(
 	State(global): State<Arc<Global>>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<Json<Vec<types::Product>>, ApiError> {
 	// TODO: dataload this
 	let products: Vec<SubscriptionProduct> = SubscriptionProduct::collection(&global.db)

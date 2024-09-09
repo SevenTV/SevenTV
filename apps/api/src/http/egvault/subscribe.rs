@@ -70,7 +70,7 @@ pub struct SubscribeResponse {
 pub async fn subscribe(
 	State(global): State<Arc<Global>>,
 	Query(query): Query<SubscribeQuery>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 	Json(body): Json<SubscribeBody>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
@@ -80,7 +80,7 @@ pub async fn subscribe(
 	}
 
 	let kind = SubscriptionProductKind::from(query.renew_interval);
-	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, session);
+	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, &session);
 
 	req.http(&global, async {
 		let product: SubscriptionProduct = SubscriptionProduct::collection(&global.db)

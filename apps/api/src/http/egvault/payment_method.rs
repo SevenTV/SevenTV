@@ -32,7 +32,7 @@ pub async fn payment_method(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
 	Query(_query): Query<PaymentMethodQuery>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let auth_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
@@ -53,7 +53,7 @@ pub async fn payment_method(
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::NOT_FOUND)?;
 
-	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, session);
+	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, &session);
 
 	req.http(&global, async {
 		let customer_id = match target_user.stripe_customer_id.clone() {

@@ -32,7 +32,7 @@ pub struct SubscriptionResponse {
 pub async fn subscription(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<Json<SubscriptionResponse>, ApiError> {
 	let user = match target {
 		TargetUser::Me => session.user_id().ok_or(ApiError::UNAUTHORIZED)?,
