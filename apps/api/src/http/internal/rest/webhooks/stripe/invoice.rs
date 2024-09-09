@@ -219,27 +219,30 @@ pub async fn paid(
 				.into_iter()
 				.collect::<Vec<_>>();
 
-			let products = tx
-				.find(
+			if items.len() != 1 {
+				// TODO: record an error to be investigated
+				return Err(TransactionError::custom(ApiError::BAD_REQUEST));
+			}
+
+			let stripe_product_id = items.into_iter().next().unwrap();
+
+			let Some(product) = tx
+				.find_one(
 					filter::filter! {
 						SubscriptionProduct {
 							#[query(flatten)]
 							variants: SubscriptionProductVariant {
-								#[query(selector = "in", serde)]
-								id: items,
+								id: &stripe_product_id,
 							}
 						}
 					},
 					None,
 				)
-				.await?;
-
-			if products.len() != 1 {
-				// only accept invoices for one of our products
+				.await?
+			else {
+				// TODO: record an error to be investigated
 				return Ok(None);
-			}
-
-			let product = products.into_iter().next().unwrap();
+			};
 
 			// This invoice is for one of our subscription products.
 
@@ -285,6 +288,7 @@ pub async fn paid(
 					provider_id: Some(provider_id),
 					start,
 					end,
+					product_id: stripe_product_id,
 					is_trial: stripe_sub.trial_end.is_some(),
 					created_by: SubscriptionPeriodCreatedBy::Invoice {
 						invoice_id: invoice.id.clone().into(),
@@ -316,11 +320,11 @@ pub async fn paid(
 				.collect::<Vec<_>>();
 
 			if items.len() != 1 {
-				// only accept invoices for one of our products
+				// TODO: record an error to be investigated
 				return Ok(None);
 			}
 
-			let product_id = items.into_iter().next().unwrap();
+			let stripe_product_id = items.into_iter().next().unwrap();
 
 			let subscription_product = global
 				.subscription_product_by_id_loader
@@ -338,7 +342,7 @@ pub async fn paid(
 			let period_duration = subscription_product
 				.variants
 				.iter()
-				.find(|v| v.id == product_id)
+				.find(|v| v.id == stripe_product_id)
 				.map(|v| match v.kind {
 					SubscriptionProductKind::Monthly => chrono::Months::new(1),
 					SubscriptionProductKind::Yearly => chrono::Months::new(12),
@@ -372,6 +376,7 @@ pub async fn paid(
 					provider_id: None,
 					start,
 					end,
+					product_id: stripe_product_id,
 					is_trial: false,
 					created_by: SubscriptionPeriodCreatedBy::Gift {
 						gifter: customer_id,

@@ -7,14 +7,14 @@ use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
 use shared::database::queries::{filter, update};
-use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission};
+use shared::database::role::permissions::RolePermission;
 use shared::database::role::{Role as DbRole, RoleId};
 use shared::database::MongoCollection;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::auth::AuthSession;
+use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::role::Role;
 use crate::http::v3::validators::NameValidator;
@@ -27,9 +27,8 @@ impl RolesMutation {
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
 	async fn create_role<'ctx>(&self, ctx: &Context<'ctx>, data: CreateRoleInput) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		let allowed: u64 = data.allowed.parse().map_err(|_| ApiError::BAD_REQUEST)?;
 		let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
@@ -38,10 +37,11 @@ impl RolesMutation {
 
 		let role_permissions = shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied);
 
-		if role_permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
+		if !authed_user.computed.permissions.is_superset_of(&role_permissions) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
+		// TODO: events, and this should be in a transaction
 		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(&global.db)
 			.find(filter::filter! {
 				DbRole {}
@@ -70,7 +70,7 @@ impl RolesMutation {
 			hoist: false,
 			color: Some(data.color),
 			rank,
-			created_by: user.id,
+			created_by: authed_user.id,
 			updated_at: chrono::Utc::now(),
 			search_updated_at: None,
 			applied_rank: None,
@@ -95,9 +95,8 @@ impl RolesMutation {
 		data: EditRoleInput,
 	) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		let permissions = match (data.allowed, data.denied) {
 			(Some(allowed), Some(denied)) => {
@@ -109,7 +108,7 @@ impl RolesMutation {
 				let role_permissions =
 					shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied);
 
-				if role_permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
+				if !authed_user.computed.permissions.is_superset_of(&role_permissions) {
 					return Err(ApiError::FORBIDDEN);
 				}
 
@@ -124,6 +123,7 @@ impl RolesMutation {
 			}
 		};
 
+		// TODO: events
 		let role = shared::database::role::Role::collection(&global.db)
 			.find_one_and_update(
 				filter::filter! {
@@ -165,9 +165,8 @@ impl RolesMutation {
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
 	async fn delete_role<'ctx>(&self, ctx: &Context<'ctx>, role_id: GqlObjectId) -> Result<String, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let user = auth_session.user(global).await.map_err(|_| ApiError::UNAUTHORIZED)?;
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		let role = global
 			.role_by_id_loader
@@ -176,10 +175,11 @@ impl RolesMutation {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		if role.permissions > user.computed.permissions && !user.has(AdminPermission::SuperAdmin) {
+		if !authed_user.computed.permissions.is_superset_of(&role.permissions) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
+		// TODO: events
 		let res = shared::database::role::Role::collection(&global.db)
 			.delete_one(filter::filter! {
 				DbRole {

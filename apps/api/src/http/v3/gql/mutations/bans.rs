@@ -17,7 +17,7 @@ use shared::old_types::BanEffect;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::auth::AuthSession;
+use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::user::{User as GqlUser, UserPartial};
 use crate::transactions::{with_transaction, TransactionError};
@@ -61,7 +61,8 @@ impl BansMutation {
 		_anonymous: Option<bool>,
 	) -> Result<Option<Ban>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		// check if victim exists
 		let victim = global
@@ -71,7 +72,6 @@ impl BansMutation {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
 
-		let authed_user = auth_session.user(global).await?;
 		if authed_user.id == victim.id {
 			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "cannot ban yourself"));
 		} else if authed_user.computed.highest_role_rank <= victim.computed.highest_role_rank
@@ -122,7 +122,7 @@ impl BansMutation {
 			if res.modified_count > 0 {
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),
-					session_id: auth_session.id(),
+					session_id: session.user_session_id(),
 					data: InternalEventData::UserBan {
 						after: ban.clone(),
 						data: StoredEventUserBanData::Ban,
@@ -156,6 +156,7 @@ impl BansMutation {
 	) -> Result<Option<Ban>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
+		// TODO: events?
 		let ban = UserBan::collection(&global.db)
 			.find_one_and_update(
 				filter::filter! {

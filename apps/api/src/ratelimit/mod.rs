@@ -1,54 +1,15 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Context;
 use axum::http::HeaderName;
 use axum::response::{IntoResponse, Response};
 use hyper::{HeaderMap, StatusCode};
-use scuffle_foundations::settings::auto_settings;
-use shared::database::role::permissions::{AdminPermission, PermissionsExt};
-use shared::database::user::{FullUser, UserId};
+use shared::database::role::permissions::{AdminPermission, PermissionsExt, RateLimitResource};
+use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum RateLimitResource {
-	EmoteUpload,
-	ProfilePictureUpload,
-	Login,
-	Search,
-	UserChangeCosmetics,
-	UserChangeEditor,
-	UserChangeConnections,
-	EmoteUpdate,
-	EmoteSetCreate,
-	EmoteSetChange,
-	EgVaultSubscribe,
-	EgVaultRedeem,
-	EgVaultPaymentMethod,
-}
-
-impl std::fmt::Display for RateLimitResource {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Self::EmoteUpload => write!(f, "emote_upload"),
-			Self::ProfilePictureUpload => write!(f, "profile_picture_upload"),
-			Self::Login => write!(f, "login"),
-			Self::Search => write!(f, "search"),
-			Self::UserChangeCosmetics => write!(f, "user_change_cosmetics"),
-			Self::UserChangeEditor => write!(f, "user_change_editor"),
-			Self::UserChangeConnections => write!(f, "user_change_connections"),
-			Self::EmoteUpdate => write!(f, "emote_update"),
-			Self::EmoteSetCreate => write!(f, "emote_set_create"),
-			Self::EmoteSetChange => write!(f, "emote_set_change"),
-			Self::EgVaultSubscribe => write!(f, "egvault_subscribe"),
-			Self::EgVaultRedeem => write!(f, "egvault_redeem"),
-			Self::EgVaultPaymentMethod => write!(f, "egvault_payment_method"),
-		}
-	}
-}
+use crate::http::middleware::session::Session;
 
 /// `RateLimiter` is a wrapper around the redis rate limiter.
 ///
@@ -66,23 +27,6 @@ impl std::fmt::Display for RateLimitResource {
 pub struct RateLimiter {
 	redis: fred::clients::RedisClient,
 	ratelimit: fred::types::Function,
-	limits: HashMap<RateLimitResource, LimitsConfig>,
-}
-
-#[derive(Copy)]
-#[auto_settings]
-#[serde(default)]
-pub struct LimitsConfig {
-	/// The number of seconds in the interval
-	pub interval_seconds: u64,
-	/// The number of requests that can be made in the interval
-	pub requests: u64,
-	/// If the limit is exceeded, the user will be banned for the specified
-	/// amount of seconds If specified otherwise nothing will happen and the
-	/// user will be allowed to make requests After their limit resets (the
-	/// interval)
-	pub overuse_threshold: Option<u64>,
-	pub overuse_punishment: Option<u64>,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -116,41 +60,56 @@ impl std::fmt::Display for RateLimitIdentifier {
 pub struct RateLimitRequest {
 	pub resource: RateLimitResource,
 	pub id: RateLimitIdentifier,
-	pub limit: Option<u64>,
-	pub ticket_count: u64,
+	pub limit: i64,
+	pub interval_seconds: i64,
+	pub ticket_count: i64,
+	pub punishment_ttl: Option<i64>,
+	pub punishment_threshold: Option<i64>,
 }
 
 impl RateLimitRequest {
-	pub fn new(resource: RateLimitResource, authed_user: Option<&FullUser>, ip: std::net::IpAddr) -> Self {
+	pub fn new(resource: RateLimitResource, session: &Session) -> Self {
+		let limits = session.permissions().ratelimit(resource);
+
 		Self {
 			resource,
-			id: authed_user
-				.map(|s| RateLimitIdentifier::UserId(s.id))
-				.unwrap_or(RateLimitIdentifier::Ip(ip)),
-			limit: None,
-			ticket_count: authed_user
-				.map(|s| if s.has(AdminPermission::BypassRateLimit) { 0 } else { 1 })
-				.unwrap_or(1),
+			id: session
+				.user_id()
+				.map(RateLimitIdentifier::UserId)
+				.unwrap_or(RateLimitIdentifier::Ip(session.ip())),
+			limit: limits.map(|l| l.requests).unwrap_or(0),
+			ticket_count: if session.has(AdminPermission::BypassRateLimit) { 0 } else { 1 },
+			interval_seconds: limits.map(|l| l.interval_seconds).unwrap_or(0),
+			punishment_ttl: limits.and_then(|l| l.overuse_punishment),
+			punishment_threshold: limits.and_then(|l| l.overuse_threshold),
 		}
 	}
 
-	pub fn with_limit(mut self, limit: u64) -> Self {
-		self.limit = Some(limit);
-		self
-	}
+	pub async fn http<R, F>(self, global: &Arc<Global>, svc: F) -> Response
+	where
+		R: IntoResponse,
+		F: std::future::Future<Output = R> + Send,
+	{
+		match global.rate_limiter.acquire(self).await {
+			Ok(Some(response)) => {
+				let mut resp = svc.await.into_response();
 
-	pub fn with_ticket_count(mut self, ticket_count: u64) -> Self {
-		self.ticket_count = ticket_count;
-		self
+				resp.headers_mut().extend(response.header_map());
+
+				resp
+			}
+			Ok(None) => svc.await.into_response(),
+			Err(e) => e.into_response(),
+		}
 	}
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct RateLimitResponse {
-	pub remaining: u64,
-	pub reset: u64,
-	pub limit: u64,
-	pub used: u64,
+	pub remaining: i64,
+	pub reset: i64,
+	pub limit: i64,
+	pub used: i64,
 	pub resource: RateLimitResource,
 }
 
@@ -159,13 +118,13 @@ impl RateLimitResponse {
 
 	pub fn header_map(&self) -> HeaderMap {
 		let x_rate_limit_limit =
-			HeaderName::try_from(format!("x-ratelimit-{}-limit", self.resource)).expect("invalid header name");
+			HeaderName::try_from(format!("x-ratelimit-{}-limit", self.resource.as_str())).expect("invalid header name");
 		let x_rate_limit_remaining =
-			HeaderName::try_from(format!("x-ratelimit-{}-remaining", self.resource)).expect("invalid header name");
+			HeaderName::try_from(format!("x-ratelimit-{}-remaining", self.resource.as_str())).expect("invalid header name");
 		let x_rate_limit_reset =
-			HeaderName::try_from(format!("x-ratelimit-{}-reset", self.resource)).expect("invalid header name");
+			HeaderName::try_from(format!("x-ratelimit-{}-reset", self.resource.as_str())).expect("invalid header name");
 		let x_rate_limit_used =
-			HeaderName::try_from(format!("x-ratelimit-{}-used", self.resource)).expect("invalid header name");
+			HeaderName::try_from(format!("x-ratelimit-{}-used", self.resource.as_str())).expect("invalid header name");
 
 		HeaderMap::from_iter([
 			(x_rate_limit_limit, self.limit.into()),
@@ -183,10 +142,7 @@ impl RateLimitResponse {
 const LUA_SCRIPT: &str = include_str!("limit.lua");
 
 impl RateLimiter {
-	pub async fn new(
-		redis: fred::clients::RedisClient,
-		limits: HashMap<RateLimitResource, LimitsConfig>,
-	) -> anyhow::Result<Self> {
+	pub async fn new(redis: fred::clients::RedisClient) -> anyhow::Result<Self> {
 		let lib = fred::types::Library::from_code(&redis, LUA_SCRIPT).await?;
 
 		Ok(Self {
@@ -196,27 +152,17 @@ impl RateLimiter {
 				.context("failed to get api_ratelimit function")?
 				.clone(),
 			redis,
-			limits,
 		})
 	}
 
 	pub async fn acquire(&self, request: RateLimitRequest) -> Result<Option<RateLimitResponse>, ApiError> {
-		let Some(limits) = self.limits.get(&request.resource) else {
-			return Ok(None);
-		};
-
-		let key = format!("ratelimit:{}:{}", request.resource, request.id);
-
-		let limit = request.limit.unwrap_or(limits.requests);
-		let ticket_count = request.ticket_count;
-		if ticket_count == 0 {
+		if request.ticket_count <= 0 || request.interval_seconds <= 0 {
 			return Ok(None);
 		}
-
-		if limit == 0 {
+		if request.limit <= 0 {
 			return Err(RateLimitResponse {
 				resource: request.resource,
-				limit,
+				limit: 0,
 				remaining: 0,
 				reset: 0,
 				used: 0,
@@ -224,16 +170,18 @@ impl RateLimiter {
 			.error());
 		}
 
-		let ttl = limits.interval_seconds;
-		let overuse_threshold = limits.overuse_threshold.unwrap_or(0);
-		let overuse_punishment = limits.overuse_punishment.unwrap_or(0);
-
-		let result: Vec<i32> = self
+		let result: Vec<i64> = self
 			.ratelimit
 			.fcall(
 				&self.redis,
-				vec![key.as_str()],
-				vec![limit, ticket_count, ttl, overuse_threshold, overuse_punishment],
+				vec![format!("ratelimit:{}:{}", request.resource.as_str(), request.id).as_str()],
+				vec![
+					request.limit,
+					request.ticket_count,
+					request.interval_seconds,
+					request.punishment_ttl.unwrap_or(0).max(0),
+					request.punishment_threshold.unwrap_or(0).max(0),
+				],
 			)
 			.await
 			.map_err(|e| {
@@ -242,47 +190,25 @@ impl RateLimiter {
 			})?;
 
 		let remaining = result[0];
-		let reset = result[1].max(0) as u64;
+		let reset = result[1].max(0);
 
 		if remaining < 0 {
 			return Err(RateLimitResponse {
 				resource: request.resource,
-				limit,
+				limit: request.limit,
 				reset,
-				remaining: 0,
+				remaining: -1,
 				used: 0,
 			}
 			.error());
 		}
 
 		Ok(Some(RateLimitResponse {
-			limit,
-			remaining: remaining as u64,
+			limit: request.limit,
+			remaining,
 			reset,
 			used: request.ticket_count,
 			resource: request.resource,
 		}))
-	}
-}
-
-pub async fn with_ratelimit<'a, R, F>(
-	global: &'a Arc<Global>,
-	req: RateLimitRequest,
-	service: impl FnOnce() -> F,
-) -> Response
-where
-	R: IntoResponse,
-	F: std::future::Future<Output = R> + Send + 'a,
-{
-	match global.rate_limiter.acquire(req).await {
-		Ok(Some(response)) => {
-			let mut resp = service().await.into_response();
-
-			resp.headers_mut().extend(response.header_map());
-
-			resp
-		}
-		Ok(None) => service().await.into_response(),
-		Err(e) => e.into_response(),
 	}
 }

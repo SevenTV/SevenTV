@@ -14,7 +14,7 @@ use super::report::Report;
 use super::user::{UserPartial, UserSearchResult};
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::auth::AuthSession;
+use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::RateLimitGuard;
 use crate::search::{search, SearchOptions};
 
@@ -397,24 +397,17 @@ impl EmotesQuery {
 		sort: Option<EmoteSearchSort>,
 	) -> Result<EmoteSearchResult, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let limit = limit.unwrap_or(30);
 		let page = page.unwrap_or_default().max(1);
 
 		let mut filters = Vec::new();
 
-		let mut view_unlisted = false;
-		if let Ok(session) = ctx.data::<AuthSession>() {
-			let user = session.user(global).await.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-			view_unlisted = user.has(EmotePermission::ViewUnlisted);
-		}
-
-		if !view_unlisted {
+		if session.has(EmotePermission::ViewUnlisted) {
 			filters.push("flag_public_listed: true".to_owned());
 			filters.push("flag_private: false".to_owned());
 		}
-
-		let options = SearchOptions::builder().query(query.clone()).page(page).per_page(limit);
 
 		let mut query_by = vec!["default_name".to_owned()];
 		let mut query_by_weights = vec![4];
@@ -477,7 +470,10 @@ impl EmotesQuery {
 			query_by_weights.push(1);
 		}
 
-		let options = options
+		let options = SearchOptions::builder()
+			.query(query.clone())
+			.page(page)
+			.per_page(limit)
 			.query_by(query_by)
 			.filter_by(filters.join(" && "))
 			.query_by_weights(query_by_weights)

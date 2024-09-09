@@ -7,7 +7,7 @@ use axum::{Extension, Router};
 use guards::RateLimitResponseStore;
 
 use crate::global::Global;
-use crate::http::middleware::auth::AuthSession;
+use crate::http::middleware::session::Session;
 
 mod guards;
 mod mutations;
@@ -45,14 +45,10 @@ pub struct Docs;
 #[utoipa::path(post, path = "/v3/gql", tag = "gql")]
 pub async fn graphql_handler(
 	Extension(schema): Extension<V3Schema>,
-	Extension(ip): Extension<std::net::IpAddr>,
-	auth: Option<AuthSession>,
+	Extension(session): Extension<Session>,
 	req: async_graphql_axum::GraphQLRequest,
 ) -> async_graphql_axum::GraphQLResponse {
-	let mut req = req.into_inner().data(ip).data(RateLimitResponseStore::new());
-	if let Some(session) = auth {
-		req = req.data(session);
-	}
+	let req = req.into_inner().data(session).data(RateLimitResponseStore::new());
 
 	schema.execute(req).await.into()
 }

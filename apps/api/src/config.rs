@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
@@ -7,8 +6,6 @@ use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
 use shared::config::{DatabaseConfig, ImageProcessorConfig, NatsConfig, RedisConfig, TypesenseConfig};
 use shared::ip::GeoIpConfig;
-
-use crate::ratelimit::{LimitsConfig, RateLimitResource};
 
 #[auto_settings]
 #[serde(default)]
@@ -50,8 +47,6 @@ pub struct Api {
 	pub incoming_request: IncomingRequestConfig,
 	/// Redis config
 	pub redis: RedisConfig,
-	/// Rate Limit config
-	pub rate_limit: HashMap<RateLimitResource, LimitsConfig>,
 }
 
 #[auto_settings]

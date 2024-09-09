@@ -4,7 +4,7 @@ use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateOptions};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::queries::{filter, update};
-use shared::database::role::permissions::{AdminPermission, PermissionsExt, RolePermission, UserPermission};
+use shared::database::role::permissions::{PermissionsExt, RateLimitResource, RolePermission, UserPermission};
 use shared::database::user::connection::UserConnection as DbUserConnection;
 use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId, UserEditorState};
 use shared::database::user::{User, UserStyle};
@@ -16,11 +16,10 @@ use shared::old_types::UserEditorModelPermission;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::auth::AuthSession;
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
+use crate::http::middleware::session::Session;
+use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard, UserGuard};
 use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::ratelimit::RateLimitResource;
 use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
@@ -41,7 +40,9 @@ pub struct UserOps {
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl UserOps {
-	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1)")]
+	#[graphql(
+		guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1).and(UserGuard(self.id.id()).or(PermissionGuard::one(UserPermission::ManageAny)))"
+	)]
 	async fn connections<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -49,14 +50,8 @@ impl UserOps {
 		data: UserConnectionUpdate,
 	) -> Result<Option<Vec<Option<UserConnection>>>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let authed_user = auth_session.user(global).await?;
-
-		if !(auth_session.user_id() == self.id.id() || authed_user.has(UserPermission::ManageAny)) {
-			return Err(ApiError::FORBIDDEN);
-		}
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let old_user = global
@@ -129,7 +124,7 @@ impl UserOps {
 
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),
-					session_id: auth_session.id(),
+					session_id: session.user_session_id(),
 					data: InternalEventData::User {
 						after: user.clone(),
 						data: InternalEventUserData::RemoveConnection { connection },
@@ -151,7 +146,7 @@ impl UserOps {
 
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),
-					session_id: auth_session.id(),
+					session_id: session.user_session_id(),
 					data: InternalEventData::User {
 						after: user.clone(),
 						data: InternalEventUserData::ChangeActiveEmoteSet {
@@ -199,7 +194,9 @@ impl UserOps {
 		}
 	}
 
-	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeEditor, 1)")]
+	#[graphql(
+		guard = "RateLimitGuard::new(RateLimitResource::UserChangeEditor, 1).and(UserGuard(self.id.id()).or(PermissionGuard::one(UserPermission::ManageAny)))"
+	)]
 	async fn editors(
 		&self,
 		ctx: &Context<'_>,
@@ -207,14 +204,8 @@ impl UserOps {
 		data: UserEditorUpdate,
 	) -> Result<Option<Vec<Option<UserEditor>>>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let authed_user = auth_session.user(global).await?;
-
-		if !(auth_session.user_id() == self.id.id() || authed_user.has(UserPermission::ManageAny)) {
-			return Err(ApiError::FORBIDDEN);
-		}
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			// load all editors, we have to do this to know the old permissions Sadge
@@ -255,7 +246,7 @@ impl UserOps {
 
 						tx.register_event(InternalEvent {
 							actor: Some(authed_user.clone()),
-							session_id: auth_session.id(),
+							session_id: session.user_session_id(),
 							data: InternalEventData::UserEditor {
 								after: editor,
 								data: InternalEventUserEditorData::RemoveEditor {
@@ -312,7 +303,7 @@ impl UserOps {
 
 						tx.register_event(InternalEvent {
 							actor: Some(authed_user.clone()),
-							session_id: auth_session.id(),
+							session_id: session.user_session_id(),
 							data: InternalEventData::UserEditor {
 								after: editor,
 								data: InternalEventUserEditorData::EditPermissions {
@@ -333,7 +324,7 @@ impl UserOps {
 							state: UserEditorState::Pending,
 							notes: None,
 							permissions,
-							added_by_id: auth_session.user_id(),
+							added_by_id: authed_user.id,
 							added_at: chrono::Utc::now(),
 							updated_at: chrono::Utc::now(),
 							search_updated_at: None,
@@ -350,7 +341,7 @@ impl UserOps {
 
 						tx.register_event(InternalEvent {
 							actor: Some(authed_user.clone()),
-							session_id: auth_session.id(),
+							session_id: session.user_session_id(),
 							data: InternalEventData::UserEditor {
 								after: editor,
 								data: InternalEventUserEditorData::AddEditor {
@@ -392,17 +383,13 @@ impl UserOps {
 		}
 	}
 
-	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeCosmetics, 1)")]
+	#[graphql(
+		guard = "RateLimitGuard::new(RateLimitResource::UserChangeCosmetics, 1).and(UserGuard(self.id.id()).or(PermissionGuard::one(UserPermission::ManageAny)))"
+	)]
 	async fn cosmetics<'ctx>(&self, ctx: &Context<'ctx>, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let authed_user = auth_session.user(global).await?;
-
-		if !(auth_session.user_id() == self.id.id() || authed_user.has(UserPermission::ManageAny)) {
-			return Err(ApiError::FORBIDDEN);
-		}
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		if !update.selected {
 			return Ok(true);
@@ -470,7 +457,7 @@ impl UserOps {
 
 					tx.register_event(InternalEvent {
 						actor: Some(authed_user.clone()),
-						session_id: auth_session.id(),
+						session_id: session.user_session_id(),
 						data: InternalEventData::User {
 							after: user.user.clone(),
 							data: InternalEventUserData::ChangeActiveBadge {
@@ -526,9 +513,8 @@ impl UserOps {
 		action: ListItemAction,
 	) -> Result<Vec<GqlObjectId>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let authed_user = auth_session.user(global).await?;
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		let role = global
 			.role_by_id_loader
@@ -537,7 +523,7 @@ impl UserOps {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		if role.permissions > authed_user.computed.permissions && !authed_user.has(AdminPermission::SuperAdmin) {
+		if authed_user.computed.permissions.is_superset_of(&role.permissions) {
 			return Err(ApiError::FORBIDDEN);
 		}
 
@@ -578,7 +564,7 @@ impl UserOps {
 					if res.upserted_id.is_some() {
 						tx.register_event(InternalEvent {
 							actor: Some(authed_user.clone()),
-							session_id: auth_session.id(),
+							session_id: session.user_session_id(),
 							data: InternalEventData::User {
 								after: target_user.user.clone(),
 								data: InternalEventUserData::AddEntitlement {
@@ -622,7 +608,7 @@ impl UserOps {
 					{
 						tx.register_event(InternalEvent {
 							actor: Some(authed_user.clone()),
-							session_id: auth_session.id(),
+							session_id: session.user_session_id(),
 							data: InternalEventData::User {
 								after: target_user.user.clone(),
 								data: InternalEventUserData::RemoveEntitlement {

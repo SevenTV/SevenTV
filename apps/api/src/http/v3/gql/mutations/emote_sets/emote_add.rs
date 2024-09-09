@@ -9,25 +9,23 @@ use shared::database::emote_moderation_request::{
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
 use shared::database::queries::{filter, update};
 use shared::database::stored_event::StoredEventEmoteModerationRequestData;
-use shared::database::user::session::UserSessionId;
-use shared::database::user::FullUser;
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::session::Session;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
-#[allow(clippy::too_many_arguments)]
 pub async fn emote_add(
 	global: &Arc<Global>,
-	ip: std::net::IpAddr,
 	mut tx: TransactionSession<'_, ApiError>,
-	auth_session_id: Option<UserSessionId>,
-	authed_user: &FullUser,
+	session: &Session,
 	emote_set: &EmoteSet,
 	id: EmoteId,
 	name: Option<String>,
 ) -> TransactionResult<EmoteSet, ApiError> {
+	let authed_user = session.user().ok_or(TransactionError::custom(ApiError::UNAUTHORIZED))?;
+
 	if let Some(capacity) = emote_set.capacity {
 		if emote_set.emotes.len() as i32 >= capacity {
 			return Err(TransactionError::custom(ApiError::new_const(
@@ -63,7 +61,7 @@ pub async fn emote_add(
 			let id = EmoteModerationRequestId::new();
 			let country_code = global
 				.geoip()
-				.and_then(|g| g.lookup(ip))
+				.and_then(|g| g.lookup(session.ip()))
 				.and_then(|c| c.iso_code)
 				.map(|c| c.to_string());
 
@@ -107,7 +105,7 @@ pub async fn emote_add(
 			if request.id == id {
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),
-					session_id: auth_session_id,
+					session_id: session.user_session_id(),
 					data: InternalEventData::EmoteModerationRequest {
 						after: request,
 						data: StoredEventEmoteModerationRequestData::Create,
@@ -202,7 +200,7 @@ pub async fn emote_add(
 
 	tx.register_event(InternalEvent {
 		actor: Some(authed_user.clone()),
-		session_id: auth_session_id,
+		session_id: session.user_session_id(),
 		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::AddEmote {

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use mongodb::bson::doc;
-use shared::database::role::permissions::TicketPermission;
+use shared::database::role::permissions::{RateLimitResource, TicketPermission};
 use shared::database::ticket::{Ticket, TicketKind, TicketMemberKind, TicketMessage, TicketTarget};
 use shared::old_types::object_id::GqlObjectId;
 
@@ -10,7 +10,6 @@ use super::user::{User, UserPartial};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
-use crate::ratelimit::RateLimitResource;
 use crate::search::{search, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/reports.gql

@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::{Context, Guard};
-use shared::database::role::permissions::{Permission, PermissionsExt};
+use shared::database::role::permissions::{Permission, PermissionsExt, RateLimitResource};
+use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::auth::AuthSession;
-use crate::ratelimit::{RateLimitRequest, RateLimitResource, RateLimitResponse};
+use crate::http::middleware::session::Session;
+use crate::ratelimit::{RateLimitRequest, RateLimitResponse};
 
 pub struct PermissionGuard {
 	pub permissions: Vec<Permission>,
@@ -32,16 +33,27 @@ impl PermissionGuard {
 
 impl Guard for PermissionGuard {
 	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
-		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let auth_session = ctx.data::<AuthSession>().map_err(|_| ApiError::UNAUTHORIZED)?;
-
-		let user = auth_session.user(global).await?;
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		if self.all {
-			if !user.has_all(self.permissions.iter().copied()) {
+			if !session.has_all(self.permissions.iter().copied()) {
 				return Err(ApiError::FORBIDDEN.into());
 			}
-		} else if !user.has_any(self.permissions.iter().copied()) {
+		} else if !session.has_any(self.permissions.iter().copied()) {
+			return Err(ApiError::FORBIDDEN.into());
+		}
+
+		Ok(())
+	}
+}
+
+pub struct UserGuard(pub UserId);
+
+impl Guard for UserGuard {
+	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		if session.user_id() != Some(self.0) {
 			return Err(ApiError::FORBIDDEN.into());
 		}
 
@@ -51,15 +63,15 @@ impl Guard for PermissionGuard {
 
 pub struct RateLimitGuard {
 	resource: RateLimitResource,
-	ticket_count: u64,
+	ticket_count: i64,
 }
 
 impl RateLimitGuard {
-	pub fn new(resource: RateLimitResource, ticket_count: u64) -> Self {
+	pub fn new(resource: RateLimitResource, ticket_count: i64) -> Self {
 		Self { resource, ticket_count }
 	}
 
-	pub fn search(ticket_count: u64) -> Self {
+	pub fn search(ticket_count: i64) -> Self {
 		Self::new(RateLimitResource::Search, ticket_count)
 	}
 }
@@ -67,21 +79,15 @@ impl RateLimitGuard {
 impl Guard for RateLimitGuard {
 	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let ip = ctx.data::<std::net::IpAddr>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let response = ctx
 			.data::<Arc<RateLimitResponseStore>>()
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let authed_user = if let Some(auth_session) = ctx.data_opt::<AuthSession>() {
-			Some(auth_session.user(global).await.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?)
-		} else {
-			None
-		};
+		let mut req = RateLimitRequest::new(self.resource, session);
 
-		let mut req = RateLimitRequest::new(self.resource, authed_user, *ip).with_ticket_count(self.ticket_count);
-
-		if let Some(gql_limit) = authed_user.and_then(|s| s.computed.permissions.graphql_rate_limit) {
-			req = req.with_limit(gql_limit.max(0) as u64);
+		if req.ticket_count > 0 {
+			req.ticket_count = self.ticket_count;
 		}
 
 		if let Some(rate_limit) = global.rate_limiter.acquire(req).await? {
@@ -108,7 +114,7 @@ impl Guard for RateLimitGuard {
 }
 
 pub struct RateLimitResponseStore {
-	used: spin::Mutex<HashMap<RateLimitResource, u64>>,
+	used: spin::Mutex<HashMap<RateLimitResource, i64>>,
 }
 
 impl RateLimitResponseStore {
@@ -118,7 +124,7 @@ impl RateLimitResponseStore {
 		}
 	}
 
-	pub fn incr_used(&self, resource: RateLimitResource, count: u64) -> u64 {
+	pub fn incr_used(&self, resource: RateLimitResource, count: i64) -> i64 {
 		let mut used = self.used.lock();
 		*used.entry(resource).or_insert(0) += count;
 		*used.get(&resource).unwrap()

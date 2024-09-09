@@ -14,7 +14,7 @@ use shared::database::user::{FullUser, User, UserComputed, UserId};
 use crate::global::Global;
 
 pub struct FullUserLoader {
-	computed_loader: DataLoader<UserComputedLoader>,
+	pub computed_loader: DataLoader<UserComputedLoader>,
 }
 
 impl FullUserLoader {
@@ -221,7 +221,7 @@ impl FullUserLoader {
 	}
 }
 
-struct UserComputedLoader {
+pub struct UserComputedLoader {
 	global: Weak<Global>,
 	config: BatcherConfig,
 }
@@ -265,10 +265,8 @@ impl Loader for UserComputedLoader {
 			let raw_entitlements = traverse
 				.traversal(
 					Direction::Outbound,
-					[
-						EntitlementEdgeKind::User { user_id },
-						EntitlementEdgeKind::GlobalDefaultEntitlementGroup,
-					],
+					std::iter::once(EntitlementEdgeKind::GlobalDefaultEntitlementGroup)
+						.chain((!user_id.is_nil()).then_some(EntitlementEdgeKind::User { user_id })),
 				)
 				.await?;
 

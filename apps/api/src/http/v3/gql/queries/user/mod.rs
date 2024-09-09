@@ -15,7 +15,7 @@ use super::emote_set::EmoteSet;
 use super::report::Report;
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::auth::AuthSession;
+use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::RateLimitGuard;
 use crate::search::{search, SearchOptions};
 
@@ -468,19 +468,10 @@ pub struct UserSearchResult {
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl UsersQuery {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
-		let Some(session) = ctx.data_opt::<AuthSession>() else {
-			return Ok(None);
-		};
+		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
-		let user = global
-			.user_loader
-			.load(global, session.user_id())
-			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.map(|u| UserPartial::from_db(global, u));
-
-		Ok(user.map(Into::into))
+		Ok(session.user().map(|u| UserPartial::from_db(global, u.clone()).into()))
 	}
 
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<User, ApiError> {

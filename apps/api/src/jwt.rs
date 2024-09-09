@@ -10,6 +10,7 @@ use shared::database::user::session::{UserSession, UserSessionId};
 use shared::database::user::UserId;
 
 use crate::global::Global;
+use crate::http::middleware::session::Session;
 
 pub struct AuthJwtPayload {
 	pub user_id: UserId,
@@ -166,11 +167,11 @@ pub struct CsrfJwtPayload {
 }
 
 impl CsrfJwtPayload {
-	pub fn new(session_id: Option<UserSessionId>, user_id: Option<UserId>) -> Self {
+	pub fn new(session: &Session) -> Self {
 		Self {
 			random: rand::random(),
-			_session_id: session_id,
-			user_id,
+			_session_id: session.user_session().map(|s| s.id),
+			user_id: session.user_id(),
 			expiration: Utc::now() + chrono::Duration::minutes(5),
 		}
 	}

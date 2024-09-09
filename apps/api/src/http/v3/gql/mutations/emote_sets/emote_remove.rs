@@ -6,22 +6,22 @@ use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
 use shared::database::queries::{filter, update};
-use shared::database::user::session::UserSessionId;
-use shared::database::user::FullUser;
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::session::Session;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn emote_remove(
 	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
-	auth_session_id: Option<UserSessionId>,
-	authed_user: &FullUser,
+	session: &Session,
 	emote_set: &EmoteSet,
 	emote_id: EmoteId,
 ) -> TransactionResult<EmoteSet, ApiError> {
+	let authed_user = session.user().ok_or(TransactionError::custom(ApiError::UNAUTHORIZED))?;
+
 	let (index, old_emote_set_emote) = emote_set
 		.emotes
 		.iter()
@@ -76,7 +76,7 @@ pub async fn emote_remove(
 
 	tx.register_event(InternalEvent {
 		actor: Some(authed_user.clone()),
-		session_id: auth_session_id,
+		session_id: session.user_session_id(),
 		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::RemoveEmote {

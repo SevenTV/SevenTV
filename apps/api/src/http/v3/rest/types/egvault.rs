@@ -1,21 +1,22 @@
 use shared::database::paint::PaintId;
-use shared::database::product::subscription::SubscriptionState;
-use shared::database::product::{SubscriptionProductKind, SubscriptionProductVariant};
+use shared::database::product::subscription::{SubscriptionPeriodId, SubscriptionState};
+use shared::database::product::{ProductId, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant};
+use shared::database::user::UserId;
 
 #[derive(Debug, serde::Serialize)]
 pub struct Subscription {
-	pub id: String,
+	pub id: SubscriptionPeriodId,
 	pub provider: Option<Provider>,
 	/// Stripe product id
-	pub product_id: String,
+	pub product_id: SubscriptionProductId,
 	/// Stripe price id
-	pub plan: String,
+	pub plan: ProductId,
 	/// always 1
 	pub seats: u32,
 	/// Id of the user who is subscribed
-	pub subscriber_id: String,
+	pub subscriber_id: UserId,
 	/// Id of the user who is paying the subscription
-	pub customer_id: String,
+	pub customer_id: UserId,
 	pub started_at: chrono::DateTime<chrono::Utc>,
 	pub ended_at: Option<chrono::DateTime<chrono::Utc>>,
 	pub cycle: SubscriptionCycle,

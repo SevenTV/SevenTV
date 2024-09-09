@@ -174,3 +174,13 @@ pub struct UserComputed {
 	pub roles: Vec<RoleId>,
 	pub raw_entitlements: Option<Vec<EntitlementEdge>>,
 }
+
+impl PermissionsExt for UserComputed {
+	fn has(&self, permission: impl Into<Permission>) -> bool {
+		self.permissions.has(permission)
+	}
+
+	fn denied(&self, permission: impl Into<Permission>) -> bool {
+		self.permissions.denied(permission)
+	}
+}
