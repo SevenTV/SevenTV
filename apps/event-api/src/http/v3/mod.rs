@@ -12,11 +12,11 @@ use axum::routing::any;
 use axum::Router;
 use parser::{parse_json_subscriptions, parse_query_uri};
 use scuffle_foundations::context::ContextFutExt;
+use scuffle_foundations::telemetry::metrics::metrics;
 use shared::database::Id;
 use shared::event_api::payload::Subscribe;
 use shared::event_api::types::{CloseCode, Opcode};
 use shared::event_api::{payload, Message, MessageData, MessagePayload};
-// use tokio::time::Instant;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 
@@ -33,6 +33,83 @@ mod dedupe;
 pub mod error;
 mod parser;
 mod topic_map;
+
+#[metrics]
+mod v3 {
+	use tokio::time::Instant;
+
+	use scuffle_foundations::telemetry::metrics::{
+		prometheus_client::metrics::{counter::Counter, gauge::Gauge, histogram::Histogram},
+		HistogramBuilder,
+	};
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum ConnectionKind {
+		Websocket,
+		EventStream,
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum CommandKind {
+		Client,
+		Server,
+	}
+
+	/// The current number of connections
+	pub fn current_connections(kind: ConnectionKind) -> Gauge;
+
+	pub struct CurrentConnectionDropGuard {
+		kind: ConnectionKind,
+	}
+
+	impl Drop for CurrentConnectionDropGuard {
+		fn drop(&mut self) {
+			current_connections(self.kind).dec();
+		}
+	}
+
+	impl CurrentConnectionDropGuard {
+		pub fn new(kind: ConnectionKind) -> Self {
+			current_connections(kind).inc();
+
+			Self {
+				kind,
+			}
+		}
+	}
+
+	/// The number of client closes
+	pub fn client_closes(code: &'static str, kind: ConnectionKind) -> Counter;
+
+	/// The number of commands issued
+	pub fn commands(kind: CommandKind, command: String) -> Counter;
+
+	/// The number of seconds used on connections
+	#[builder = HistogramBuilder::default()]
+	pub fn connection_duration_seconds(kind: ConnectionKind) -> Histogram;
+
+	pub struct ConnectionDurationDropGuard {
+		kind: ConnectionKind,
+		start: Instant,
+	}
+
+	impl ConnectionDurationDropGuard {
+		pub fn new(kind: ConnectionKind) -> Self {
+			Self {
+				kind,
+				start: Instant::now(),
+			}
+		}
+	}
+
+	impl Drop for ConnectionDurationDropGuard {
+		fn drop(&mut self) {
+			connection_duration_seconds(self.kind).observe(self.start.elapsed().as_secs_f64());
+		}
+	}
+}
 
 const MAX_CONDITIONS: usize = 10;
 const MAX_CONDITION_KEY_LEN: usize = 64;
@@ -93,7 +170,6 @@ async fn handle_ws(
 		.max_message_size(1024 * 18)
 		.write_buffer_size(1024 * 16)
 		.on_upgrade(|ws| async {
-			// global.metrics().incr_current_websocket_connections();
 			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket);
 
 			tokio::spawn(socket.serve());
@@ -110,7 +186,6 @@ async fn handle_sse(
 
 	let response = Sse::new(ReceiverStream::new(response));
 
-	// global.metrics().incr_current_event_streams();
 	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket);
 
 	tokio::spawn(socket.serve());
@@ -151,32 +226,10 @@ struct Connection {
 	initial_subs: Option<Vec<payload::Subscribe>>,
 	/// A deduplication cache for dispatch events.
 	dedupe: Dedupe,
-	// /// The time that this connection was started.
-	// start: Instant,
-}
-
-/// When the socket is dropped, we need to update the metrics.
-/// This will always run regardless of how the socket was dropped (even during a
-/// panic!)
-impl Drop for Connection {
-	fn drop(&mut self) {
-		match &self.socket {
-			Socket::WebSocket(_) => {
-				// self.global.metrics().decr_current_websocket_connections();
-				// self.global
-				// 	.metrics()
-				// 	.observe_connection_duration_seconds_websocket(self.start.
-				// elapsed().as_secs_f64());
-			}
-			Socket::Sse(_) => {
-				// self.global.metrics().decr_current_event_streams();
-				// self.global
-				// 	.metrics()
-				// 	.observe_connection_duration_seconds_event_stream(self.
-				// start. elapsed().as_secs_f64());
-			}
-		}
-	}
+	/// Drop guard for the metrics
+	_connection_duration_drop_guard: v3::ConnectionDurationDropGuard,
+	/// Drop guard for the metrics
+	_current_connection_drop_guard: v3::CurrentConnectionDropGuard,
 }
 
 /// The implementation of the socket.
@@ -187,6 +240,11 @@ impl Connection {
 		initial_subs: Option<Vec<payload::Subscribe>>,
 		ticket: AtomicTicket,
 	) -> Self {
+		let connection_kind = match socket {
+			Socket::WebSocket(_) => v3::ConnectionKind::Websocket,
+			Socket::Sse(_) => v3::ConnectionKind::EventStream,
+		};
+
 		Self {
 			socket,
 			seq: 0,
@@ -204,7 +262,8 @@ impl Connection {
 			dedupe: Dedupe::new(),
 			_ticket: ticket,
 			global,
-			// start: Instant::now(),
+			_connection_duration_drop_guard: v3::ConnectionDurationDropGuard::new(connection_kind),
+			_current_connection_drop_guard: v3::CurrentConnectionDropGuard::new(connection_kind),
 		}
 	}
 
@@ -277,12 +336,10 @@ impl Connection {
 
 				match self.socket {
 					Socket::Sse(_) => {
-						// self.global.metrics().
-						// observe_client_close_event_stream(err.as_str());
+						v3::client_closes(err.as_code(), v3::ConnectionKind::EventStream).inc();
 					}
 					Socket::WebSocket(_) => {
-						// self.global.metrics().
-						// observe_client_close_websocket(err.as_str());
+						v3::client_closes(err.as_code(), v3::ConnectionKind::Websocket).inc();
 					}
 				}
 				false
@@ -337,7 +394,7 @@ impl Connection {
 	/// Send a message to the client.
 	async fn send_message(&mut self, data: impl MessagePayload + serde::Serialize) -> Result<(), ConnectionError> {
 		self.seq += 1;
-		// self.global.metrics().observe_server_command(data.opcode());
+		v3::commands(v3::CommandKind::Server, data.opcode().to_string()).inc();
 		self.socket.send(Message::new(data, self.seq - 1)).await?;
 		Ok(())
 	}
@@ -489,7 +546,7 @@ impl Connection {
 
 	/// Handle a message from the client.
 	async fn handle_message(&mut self, msg: Message) -> Result<(), ConnectionError> {
-		// self.global.metrics().observe_client_command(msg.opcode);
+		v3::commands(v3::CommandKind::Client, msg.opcode.to_string()).inc();
 
 		// We match on the opcode so that we can deserialize the data into the correct
 		// type.

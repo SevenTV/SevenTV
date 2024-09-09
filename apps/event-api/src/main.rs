@@ -8,7 +8,6 @@ use tokio::signal::unix::SignalKind;
 mod config;
 mod global;
 mod http;
-// mod metrics;
 mod subscription;
 mod utils;
 
@@ -29,7 +28,6 @@ async fn main(settings: Matches<Config>) {
 		.with_signal(SignalKind::terminate());
 
 	let app_handle = tokio::spawn(http::run(global.clone()));
-	// let metrics_handle = tokio::spawn(metrics::run(global.clone()));
 	let subscription_handle = tokio::spawn(subscription::run(global.clone()));
 
 	let handler = scuffle_foundations::context::Handler::global();
@@ -46,7 +44,6 @@ async fn main(settings: Matches<Config>) {
 	tokio::select! {
 		r = subscription_handle => tracing::warn!("subscription manager exited: {:?}", r),
 		r = app_handle => tracing::warn!("http server exited: {:?}", r),
-		// r = metrics_handle => tracing::warn!("metrics server exited: {:?}", r),
 		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
 	}
 
