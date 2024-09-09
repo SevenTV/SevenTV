@@ -85,7 +85,7 @@ impl RateLimitRequest {
 		}
 	}
 
-	pub async fn http<R, F>(self, global: &Arc<Global>, svc: F) -> Response
+	pub async fn http<R, F>(self, global: &Arc<Global>, svc: F) -> Result<Response, ApiError>
 	where
 		R: IntoResponse,
 		F: std::future::Future<Output = R> + Send,
@@ -96,10 +96,10 @@ impl RateLimitRequest {
 
 				resp.headers_mut().extend(response.header_map());
 
-				resp
+				Ok(resp)
 			}
-			Ok(None) => svc.await.into_response(),
-			Err(e) => e.into_response(),
+			Ok(None) => Ok(svc.await.into_response()),
+			Err(e) => Err(e),
 		}
 	}
 }

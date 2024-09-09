@@ -98,19 +98,18 @@ async fn login(
 	Extension(session): Extension<&Session>,
 	Query(query): Query<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let rate_limit_req = RateLimitRequest::new(RateLimitResource::Login, session);
+	let req = RateLimitRequest::new(RateLimitResource::Login, session);
 
-	Ok(rate_limit_req
-		.http(&global, async {
-			let location = if query.callback {
-				handle_login_callback(&global, session, query, &cookies).await?
-			} else {
-				handle_login(&global, session, query.platform.into(), &cookies)?
-			};
+	req.http(&global, async {
+		let location = if query.callback {
+			handle_login_callback(&global, session, query, &cookies).await?
+		} else {
+			handle_login(&global, session, query.platform.into(), &cookies)?
+		};
 
-			Ok::<_, ApiError>(Redirect::to(&location))
-		})
-		.await)
+		Ok::<_, ApiError>(Redirect::to(&location))
+	})
+	.await
 }
 
 #[utoipa::path(

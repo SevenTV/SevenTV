@@ -82,104 +82,103 @@ pub async fn create_emote(
 		return Err(ApiError::FORBIDDEN);
 	}
 
-	let request = RateLimitRequest::new(RateLimitResource::ProfilePictureUpload, session);
+	let req = RateLimitRequest::new(RateLimitResource::ProfilePictureUpload, session);
 
-	Ok(request
-		.http(&global, async {
-			let emote_id = EmoteId::new();
+	req.http(&global, async {
+		let emote_id = EmoteId::new();
 
-			let input = match global.image_processor.upload_emote(emote_id, body, Some(session.ip())).await {
-				Ok(ProcessImageResponse {
-					id,
-					error: None,
-					upload_info:
-						Some(ProcessImageResponseUploadInfo {
-							path: Some(path),
-							content_type,
-							size,
-						}),
-				}) => ImageSetInput::Pending {
-					task_id: id,
-					path: path.path,
-					mime: content_type,
-					size: size as i64,
-				},
-				Ok(ProcessImageResponse { error: Some(err), .. }) => {
-					// At this point if we get a decode error then the image is invalid
-					// and we should return a bad request
-					if err.code == image_processor::ErrorCode::Decode as i32
-						|| err.code == image_processor::ErrorCode::InvalidInput as i32
-					{
-						return Err(ApiError::BAD_REQUEST);
-					}
+		let input = match global.image_processor.upload_emote(emote_id, body, Some(session.ip())).await {
+			Ok(ProcessImageResponse {
+				id,
+				error: None,
+				upload_info:
+					Some(ProcessImageResponseUploadInfo {
+						path: Some(path),
+						content_type,
+						size,
+					}),
+			}) => ImageSetInput::Pending {
+				task_id: id,
+				path: path.path,
+				mime: content_type,
+				size: size as i64,
+			},
+			Ok(ProcessImageResponse { error: Some(err), .. }) => {
+				// At this point if we get a decode error then the image is invalid
+				// and we should return a bad request
+				if err.code == image_processor::ErrorCode::Decode as i32
+					|| err.code == image_processor::ErrorCode::InvalidInput as i32
+				{
+					return Err(ApiError::BAD_REQUEST);
+				}
 
-					tracing::error!(code = ?err.code(), "failed to upload emote: {}", err.message);
-					return Err(ApiError::INTERNAL_SERVER_ERROR);
-				}
-				Err(err) => {
-					tracing::error!("failed to upload emote: {:#}", err);
-					return Err(ApiError::INTERNAL_SERVER_ERROR);
-				}
-				_ => {
-					tracing::error!("failed to upload emote: unknown error");
-					return Err(ApiError::INTERNAL_SERVER_ERROR);
-				}
+				tracing::error!(code = ?err.code(), "failed to upload emote: {}", err.message);
+				return Err(ApiError::INTERNAL_SERVER_ERROR);
+			}
+			Err(err) => {
+				tracing::error!("failed to upload emote: {:#}", err);
+				return Err(ApiError::INTERNAL_SERVER_ERROR);
+			}
+			_ => {
+				tracing::error!("failed to upload emote: unknown error");
+				return Err(ApiError::INTERNAL_SERVER_ERROR);
+			}
+		};
+
+		let mut flags = EmoteFlags::default();
+		if emote_data.flags.contains(EmoteFlagsModel::ZeroWidth) {
+			flags |= EmoteFlags::DefaultZeroWidth;
+		}
+		if emote_data.flags.contains(EmoteFlagsModel::Private) {
+			flags |= EmoteFlags::Private;
+		}
+
+		let res = with_transaction(&global, |mut tx| async move {
+			let emote = Emote {
+				id: emote_id,
+				owner_id: authed_user.id,
+				default_name: emote_data.name,
+				tags: emote_data.tags,
+				image_set: ImageSet { input, outputs: vec![] },
+				flags,
+				attribution: vec![],
+				merged: None,
+				aspect_ratio: -1.0,
+				scores: Default::default(),
+				search_updated_at: None,
+				updated_at: chrono::Utc::now(),
 			};
 
-			let mut flags = EmoteFlags::default();
-			if emote_data.flags.contains(EmoteFlagsModel::ZeroWidth) {
-				flags |= EmoteFlags::DefaultZeroWidth;
-			}
-			if emote_data.flags.contains(EmoteFlagsModel::Private) {
-				flags |= EmoteFlags::Private;
-			}
+			tx.insert_one::<Emote>(&emote, None).await?;
 
-			let res = with_transaction(&global, |mut tx| async move {
-				let emote = Emote {
-					id: emote_id,
-					owner_id: authed_user.id,
-					default_name: emote_data.name,
-					tags: emote_data.tags,
-					image_set: ImageSet { input, outputs: vec![] },
-					flags,
-					attribution: vec![],
-					merged: None,
-					aspect_ratio: -1.0,
-					scores: Default::default(),
-					search_updated_at: None,
-					updated_at: chrono::Utc::now(),
-				};
+			tx.register_event(InternalEvent {
+				actor: Some(authed_user.clone()),
+				session_id: session.user_session().map(|s| s.id),
+				data: InternalEventData::Emote {
+					after: emote.clone(),
+					data: StoredEventEmoteData::Upload,
+				},
+				timestamp: chrono::Utc::now(),
+			})?;
 
-				tx.insert_one::<Emote>(&emote, None).await?;
-
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session().map(|s| s.id),
-					data: InternalEventData::Emote {
-						after: emote.clone(),
-						data: StoredEventEmoteData::Upload,
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-
-				Ok(emote)
-			})
-			.await;
-
-			match res {
-				Ok(emote) => {
-					// we don't have to return the owner here
-					let emote = EmotePartialModel::from_db(emote, None, &global.config.api.cdn_origin);
-					Ok((StatusCode::CREATED, Json(emote)))
-				}
-				Err(TransactionError::Custom(e)) => Err(e),
-				Err(e) => {
-					tracing::error!(error = %e, "transaction failed");
-					Err(ApiError::INTERNAL_SERVER_ERROR)
-				}
-			}
+			Ok(emote)
 		})
-		.await)
+		.await;
+
+		match res {
+			Ok(emote) => {
+				// we don't have to return the owner here
+				let emote = EmotePartialModel::from_db(emote, None, &global.config.api.cdn_origin);
+				Ok((StatusCode::CREATED, Json(emote)))
+			}
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::INTERNAL_SERVER_ERROR)
+			}
+		}
+	})
+	.await
 }
 
 #[utoipa::path(

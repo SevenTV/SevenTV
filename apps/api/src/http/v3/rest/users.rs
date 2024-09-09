@@ -211,95 +211,94 @@ pub async fn upload_user_profile_picture(
 		));
 	}
 
-	let rate_limit_req = RateLimitRequest::new(RateLimitResource::ProfilePictureUpload, &session);
+	let req = RateLimitRequest::new(RateLimitResource::ProfilePictureUpload, &session);
 
-	Ok(rate_limit_req
-		.http(&global, async {
-			let profile_picture_id = UserProfilePictureId::new();
+	req.http(&global, async {
+		let profile_picture_id = UserProfilePictureId::new();
 
-			let input = match global
-				.image_processor
-				.upload_profile_picture(profile_picture_id, target_user.id, body, Some(session.ip()))
-				.await
-			{
-				Ok(ProcessImageResponse {
-					id,
-					error: None,
-					upload_info:
-						Some(ProcessImageResponseUploadInfo {
-							path: Some(path),
-							content_type,
-							size,
-						}),
-				}) => ImageSetInput::Pending {
-					task_id: id,
-					path: path.path,
-					mime: content_type,
-					size: size as i64,
-				},
-				Ok(ProcessImageResponse { error: Some(err), .. }) => {
-					// At this point if we get a decode error then the image is invalid
-					// and we should return a bad request
-					if err.code == image_processor::ErrorCode::Decode as i32
-						|| err.code == image_processor::ErrorCode::InvalidInput as i32
-					{
-						return Err(ApiError::BAD_REQUEST);
+		let input = match global
+			.image_processor
+			.upload_profile_picture(profile_picture_id, target_user.id, body, Some(session.ip()))
+			.await
+		{
+			Ok(ProcessImageResponse {
+				id,
+				error: None,
+				upload_info:
+					Some(ProcessImageResponseUploadInfo {
+						path: Some(path),
+						content_type,
+						size,
+					}),
+			}) => ImageSetInput::Pending {
+				task_id: id,
+				path: path.path,
+				mime: content_type,
+				size: size as i64,
+			},
+			Ok(ProcessImageResponse { error: Some(err), .. }) => {
+				// At this point if we get a decode error then the image is invalid
+				// and we should return a bad request
+				if err.code == image_processor::ErrorCode::Decode as i32
+					|| err.code == image_processor::ErrorCode::InvalidInput as i32
+				{
+					return Err(ApiError::BAD_REQUEST);
+				}
+
+				tracing::error!(code = ?err.code(), "failed to upload profile picture: {}", err.message);
+				return Err(ApiError::INTERNAL_SERVER_ERROR);
+			}
+			Err(err) => {
+				tracing::error!("failed to upload profile picture: {:#}", err);
+				return Err(ApiError::INTERNAL_SERVER_ERROR);
+			}
+			_ => {
+				tracing::error!("failed to upload profile picture: unknown error");
+				return Err(ApiError::INTERNAL_SERVER_ERROR);
+			}
+		};
+
+		UserProfilePicture::collection(&global.db)
+			.insert_one(UserProfilePicture {
+				id: profile_picture_id,
+				user_id: target_user.id,
+				image_set: ImageSet { input, outputs: vec![] },
+				updated_at: chrono::Utc::now(),
+			})
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to insert profile picture");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		User::collection(&global.db)
+			.update_one(
+				filter::filter! {
+					User {
+						#[query(rename = "_id")]
+						id: target_user.id,
 					}
+				},
+				update::update! {
+					#[query(set)]
+					User {
+						#[query(flatten)]
+						style: UserStyle {
+							active_profile_picture: Some(profile_picture_id),
+						},
+						updated_at: chrono::Utc::now(),
+					}
+				},
+			)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to update user");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
 
-					tracing::error!(code = ?err.code(), "failed to upload profile picture: {}", err.message);
-					return Err(ApiError::INTERNAL_SERVER_ERROR);
-				}
-				Err(err) => {
-					tracing::error!("failed to upload profile picture: {:#}", err);
-					return Err(ApiError::INTERNAL_SERVER_ERROR);
-				}
-				_ => {
-					tracing::error!("failed to upload profile picture: unknown error");
-					return Err(ApiError::INTERNAL_SERVER_ERROR);
-				}
-			};
-
-			UserProfilePicture::collection(&global.db)
-				.insert_one(UserProfilePicture {
-					id: profile_picture_id,
-					user_id: target_user.id,
-					image_set: ImageSet { input, outputs: vec![] },
-					updated_at: chrono::Utc::now(),
-				})
-				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to insert profile picture");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
-			User::collection(&global.db)
-				.update_one(
-					filter::filter! {
-						User {
-							#[query(rename = "_id")]
-							id: target_user.id,
-						}
-					},
-					update::update! {
-						#[query(set)]
-						User {
-							#[query(flatten)]
-							style: UserStyle {
-								active_profile_picture: Some(profile_picture_id),
-							},
-							updated_at: chrono::Utc::now(),
-						}
-					},
-				)
-				.await
-				.map_err(|err| {
-					tracing::error!(error = %err, "failed to update user");
-					ApiError::INTERNAL_SERVER_ERROR
-				})?;
-
-			Ok(StatusCode::OK)
-		})
-		.await)
+		Ok(StatusCode::OK)
+	})
+	.await
 }
 
 #[utoipa::path(

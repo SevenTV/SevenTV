@@ -80,172 +80,171 @@ pub async fn subscribe(
 	}
 
 	let kind = SubscriptionProductKind::from(query.renew_interval);
-	let rate_limit_req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, session);
+	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, session);
 
-	Ok(rate_limit_req
-		.http(&global, async {
-			let product: SubscriptionProduct = SubscriptionProduct::collection(&global.db)
+	req.http(&global, async {
+		let product: SubscriptionProduct = SubscriptionProduct::collection(&global.db)
+			.find_one(filter::filter! {
+				SubscriptionProduct {
+					#[query(flatten)]
+					variants: SubscriptionProductVariant {
+						#[query(serde)]
+						kind: &kind,
+						active: true,
+						gift: query.gift_for.is_some(),
+					}
+				}
+			})
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to find subscription product");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?
+			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
+
+		let variant = product
+			.variants
+			.into_iter()
+			.find(|v| v.kind == kind && v.gift == query.gift_for.is_some())
+			.unwrap();
+
+		let customer_id = match authed_user.stripe_customer_id.clone() {
+			Some(id) => id,
+			None => {
+				// We don't need the safe client here because this won't be retried
+				find_or_create_customer(
+					&global,
+					global.stripe_client.client().await,
+					authed_user.id,
+					Some(body.prefill),
+				)
+				.await?
+			}
+		};
+
+		let mut params = create_checkout_session_params(
+			&global,
+			session.ip(),
+			customer_id,
+			&variant.id,
+			product.default_currency,
+			&variant.currency_prices,
+		)
+		.await;
+
+		let receiving_user = if let Some(gift_for) = query.gift_for {
+			let receiving_user = global
+				.user_loader
+				.load_fast(&global, gift_for)
+				.await
+				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+				.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
+
+			// TODO: should we dataload this?
+			let is_subscribed = SubscriptionPeriod::collection(&global.db)
 				.find_one(filter::filter! {
-					SubscriptionProduct {
+					SubscriptionPeriod {
 						#[query(flatten)]
-						variants: SubscriptionProductVariant {
-							#[query(serde)]
-							kind: &kind,
-							active: true,
-							gift: query.gift_for.is_some(),
-						}
+						subscription_id: SubscriptionId {
+							user_id: receiving_user.id,
+						},
+						#[query(selector = "lt")]
+						start: chrono::Utc::now(),
+						#[query(selector = "gt")]
+						end: chrono::Utc::now(),
 					}
 				})
 				.await
 				.map_err(|e| {
-					tracing::error!(error = %e, "failed to find subscription product");
+					tracing::error!(error = %e, "failed to load subscription periods");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
-				.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
+				.is_some();
+			if is_subscribed {
+				return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
+			}
 
-			let variant = product
-				.variants
-				.into_iter()
-				.find(|v| v.kind == kind && v.gift == query.gift_for.is_some())
-				.unwrap();
+			params.mode = Some(stripe::CheckoutSessionMode::Payment);
+			params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
+				description: Some("Gift subscription payment".to_string()),
+				..Default::default()
+			});
 
-			let customer_id = match authed_user.stripe_customer_id.clone() {
-				Some(id) => id,
-				None => {
-					// We don't need the safe client here because this won't be retried
-					find_or_create_customer(
-						&global,
-						global.stripe_client.client().await,
-						authed_user.id,
-						Some(body.prefill),
-					)
-					.await?
-				}
-			};
-
-			let mut params = create_checkout_session_params(
-				&global,
-				session.ip(),
-				customer_id,
-				&variant.id,
-				product.default_currency,
-				&variant.currency_prices,
-			)
-			.await;
-
-			let receiving_user = if let Some(gift_for) = query.gift_for {
-				let receiving_user = global
-					.user_loader
-					.load_fast(&global, gift_for)
-					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
-
-				// TODO: should we dataload this?
-				let is_subscribed = SubscriptionPeriod::collection(&global.db)
-					.find_one(filter::filter! {
-						SubscriptionPeriod {
-							#[query(flatten)]
-							subscription_id: SubscriptionId {
-								user_id: receiving_user.id,
-							},
-							#[query(selector = "lt")]
-							start: chrono::Utc::now(),
-							#[query(selector = "gt")]
-							end: chrono::Utc::now(),
-						}
-					})
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to load subscription periods");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?
-					.is_some();
-				if is_subscribed {
-					return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
-				}
-
-				params.mode = Some(stripe::CheckoutSessionMode::Payment);
-				params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
-					description: Some("Gift subscription payment".to_string()),
-					..Default::default()
-				});
-
-				params.invoice_creation = Some(stripe::CreateCheckoutSessionInvoiceCreation {
-					enabled: true,
-					invoice_data: Some(stripe::CreateCheckoutSessionInvoiceCreationInvoiceData {
-						metadata: Some(
-							InvoiceMetadata::Gift {
-								customer_id: authed_user.id,
-								user_id: receiving_user.id,
-								subscription_product_id: Some(product.id),
-							}
-							.to_stripe(),
-						),
-						..Default::default()
-					}),
-				});
-
-				params.metadata = Some(CheckoutSessionMetadata::Gift.to_stripe());
-
-				receiving_user.id
-			} else {
-				// TODO: should we dataload this?
-				let is_subscribed = SubscriptionPeriod::collection(&global.db)
-					.find_one(filter::filter! {
-						SubscriptionPeriod {
-							#[query(flatten)]
-							subscription_id: SubscriptionId {
-								user_id: authed_user.id,
-							},
-							#[query(selector = "lt")]
-							start: chrono::Utc::now(),
-							#[query(selector = "gt")]
-							end: chrono::Utc::now(),
-						}
-					})
-					.await
-					.map_err(|e| {
-						tracing::error!(error = %e, "failed to load subscription periods");
-						ApiError::INTERNAL_SERVER_ERROR
-					})?
-					.is_some();
-
-				if is_subscribed {
-					return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
-				}
-
-				params.mode = Some(stripe::CheckoutSessionMode::Subscription);
-				params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
+			params.invoice_creation = Some(stripe::CreateCheckoutSessionInvoiceCreation {
+				enabled: true,
+				invoice_data: Some(stripe::CreateCheckoutSessionInvoiceCreationInvoiceData {
 					metadata: Some(
-						SubscriptionMetadata {
-							user_id: authed_user.id,
-							customer_id: None,
+						InvoiceMetadata::Gift {
+							customer_id: authed_user.id,
+							user_id: receiving_user.id,
+							subscription_product_id: Some(product.id),
 						}
 						.to_stripe(),
 					),
 					..Default::default()
-				});
+				}),
+			});
 
-				params.metadata = Some(CheckoutSessionMetadata::Subscription.to_stripe());
+			params.metadata = Some(CheckoutSessionMetadata::Gift.to_stripe());
 
-				authed_user.id
-			};
-
-			// We don't need the safe client here because this won't be retried
-			let session_url = stripe::CheckoutSession::create(global.stripe_client.client().await.deref(), params)
+			receiving_user.id
+		} else {
+			// TODO: should we dataload this?
+			let is_subscribed = SubscriptionPeriod::collection(&global.db)
+				.find_one(filter::filter! {
+					SubscriptionPeriod {
+						#[query(flatten)]
+						subscription_id: SubscriptionId {
+							user_id: authed_user.id,
+						},
+						#[query(selector = "lt")]
+						start: chrono::Utc::now(),
+						#[query(selector = "gt")]
+						end: chrono::Utc::now(),
+					}
+				})
 				.await
 				.map_err(|e| {
-					tracing::error!(error = %e, "failed to create checkout session");
+					tracing::error!(error = %e, "failed to load subscription periods");
 					ApiError::INTERNAL_SERVER_ERROR
 				})?
-				.url
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+				.is_some();
 
-			Ok(Json(SubscribeResponse {
-				url: session_url,
-				user_id: receiving_user,
-			}))
-		})
-		.await)
+			if is_subscribed {
+				return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
+			}
+
+			params.mode = Some(stripe::CheckoutSessionMode::Subscription);
+			params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
+				metadata: Some(
+					SubscriptionMetadata {
+						user_id: authed_user.id,
+						customer_id: None,
+					}
+					.to_stripe(),
+				),
+				..Default::default()
+			});
+
+			params.metadata = Some(CheckoutSessionMetadata::Subscription.to_stripe());
+
+			authed_user.id
+		};
+
+		// We don't need the safe client here because this won't be retried
+		let session_url = stripe::CheckoutSession::create(global.stripe_client.client().await.deref(), params)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to create checkout session");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?
+			.url
+			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+
+		Ok(Json(SubscribeResponse {
+			url: session_url,
+			user_id: receiving_user,
+		}))
+	})
+	.await
 }
