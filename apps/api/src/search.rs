@@ -99,7 +99,7 @@ pub async fn search<T: TypesenseCollection>(
 
 	Ok(SearchResult {
 		hits: resp.hits.into_iter().flatten().filter_map(|h| Some(h.document?.id)).collect(),
-		found: resp.found.unwrap_or(0).min(0) as u64,
-		// search_time_ms: resp.search_time_ms.unwrap_or(0).min(0) as u64,
+		found: resp.found.unwrap_or(0).max(0) as u64,
+		// search_time_ms: resp.search_time_ms.unwrap_or(0).max(0) as u64,
 	})
 }

@@ -123,7 +123,7 @@ impl Job for UsersJob {
 		Some(self.global.source_db().collection("users"))
 	}
 
-	async fn process(&mut self, user: Self::T) -> ProcessOutcome {
+	async fn process(&mut self, mut user: Self::T) -> ProcessOutcome {
 		let mut outcome = ProcessOutcome::default();
 
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
@@ -178,6 +178,15 @@ impl Job for UsersJob {
 			.filter(|c| c.emote_set_id.is_some())
 			.min_by(|a, b| a.platform.cmp(&b.platform))
 			.map(|c| c.emote_set_id.unwrap().into());
+
+		user.connections.sort_by_key(|c| {
+			match c.platform {
+				types::ConnectionPlatform::Twitch { .. } => 0,
+				types::ConnectionPlatform::Discord { .. } => 1,
+				types::ConnectionPlatform::Youtube { .. } => 2,
+				types::ConnectionPlatform::Kick { .. } => 3,
+			}
+		});
 
 		let mut connections = vec![];
 

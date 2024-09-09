@@ -128,7 +128,7 @@ impl Emote {
 		&self,
 		ctx: &Context<'_>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
-		#[graphql(validator(maximum = 50))] limit: Option<u32>,
+		#[graphql(validator(maximum = 100))] limit: Option<u32>,
 	) -> Result<UserSearchResult, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
@@ -137,7 +137,7 @@ impl Emote {
 			.filter_by(format!("emotes: {}", self.id.0))
 			.sort_by(vec!["role_rank:desc".to_owned()])
 			.page(page)
-			.per_page(limit)
+			.per_page(limit.unwrap_or(50))
 			.build();
 
 		let result = search::<shared::typesense::types::user::User>(global, options)
