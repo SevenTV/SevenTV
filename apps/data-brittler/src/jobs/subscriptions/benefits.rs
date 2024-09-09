@@ -943,6 +943,8 @@
 //     ]
 // }
 
+use std::sync::OnceLock;
+
 use shared::database::duration::DurationUnit;
 use shared::database::entitlement::{EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::codes::RedeemCodeId;
@@ -951,6 +953,7 @@ use shared::database::product::{SubscriptionBenefit, SubscriptionBenefitConditio
 use shared::database::role::RoleId;
 use shared::database::user::UserId;
 
+#[derive(Debug, Clone)]
 pub struct BenefitWithEntitlements {
 	pub benefit: SubscriptionBenefit,
 	pub entitlements: Vec<EntitlementEdgeKind>,
@@ -970,7 +973,9 @@ impl BenefitWithEntitlements {
 }
 
 pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements> {
-	[
+	static STATIC: OnceLock<Vec<BenefitWithEntitlements>> = OnceLock::new();
+
+	STATIC.get_or_init(|| vec![
 		BenefitWithEntitlements::new(
 			"Subscriber Pack",
 			SubscriptionBenefitCondition::Duration(DurationUnit::Months(1)),
@@ -1067,11 +1072,13 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 				badge_id: "64dffd6b2040c6754787d930".parse().unwrap(),
 			}],
 		),
-	]
+	]).into_iter().cloned()
 }
 
 pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements> {
-	[
+	static STATIC: OnceLock<Vec<BenefitWithEntitlements>> = OnceLock::new();
+	
+	STATIC.get_or_init(|| vec![
 		BenefitWithEntitlements::new(
 			"September 2021 Paint Bundle",
 			SubscriptionBenefitCondition::TimePeriod(TimePeriod {
@@ -1901,9 +1908,10 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 				},
 			],
 		),
-	]
+	]).into_iter().cloned()
 }
 
+#[derive(Debug, Clone)]
 pub struct SpecialEventWithEntitlements {
 	pub special_event: SpecialEvent,
 	pub entitlements: Vec<EntitlementEdgeKind>,
@@ -1930,7 +1938,9 @@ impl SpecialEventWithEntitlements {
 }
 
 pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements> {
-	[
+	static STATIC: OnceLock<Vec<SpecialEventWithEntitlements>> = OnceLock::new();
+
+	STATIC.get_or_init(|| vec![
 		SpecialEventWithEntitlements::new(
 			"Beta Tester",
 			vec![EntitlementEdgeKind::Paint {
@@ -2108,9 +2118,10 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 			],
 			None,
 		),
-	]
+	]).into_iter().cloned()
 }
 
+#[derive(Debug, Clone)]
 pub struct RoleEntitlements {
 	pub id: RoleId,
 	pub entitlements: Vec<EntitlementEdgeKind>,
@@ -2123,7 +2134,9 @@ impl RoleEntitlements {
 }
 
 pub fn role_entitlements() -> impl IntoIterator<Item = RoleEntitlements> {
-	[
+	static STATIC: OnceLock<Vec<RoleEntitlements>> = OnceLock::new();
+
+	STATIC.get_or_init(|| vec![
 		// Mod Role
 		RoleEntitlements::new(
 			"60724f65e93d828bf8858789".parse().unwrap(),
@@ -2164,5 +2177,5 @@ pub fn role_entitlements() -> impl IntoIterator<Item = RoleEntitlements> {
 				badge_id: "62f99d0ce46eb00e438a6984".parse().unwrap(),
 			}],
 		),
-	]
+	]).into_iter().cloned()
 }

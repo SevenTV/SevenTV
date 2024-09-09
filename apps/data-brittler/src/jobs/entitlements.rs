@@ -16,7 +16,7 @@ use crate::{error, types};
 
 pub struct EntitlementsJob {
 	global: Arc<Global>,
-	skip_entitlements: FnvHashMap<EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool)>,
+	skipped_entitlements: FnvHashMap<EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool)>,
 	edges: FnvHashSet<EntitlementEdge>,
 }
 
@@ -157,7 +157,7 @@ impl Job for EntitlementsJob {
 
 		Ok(Self {
 			global,
-			skip_entitlements: FnvHashMap::from_iter(skip_entitlements()),
+			skipped_entitlements: FnvHashMap::from_iter(skip_entitlements()),
 			edges: FnvHashSet::from_iter(custom_edges()),
 		})
 	}
@@ -178,7 +178,7 @@ impl Job for EntitlementsJob {
 			_ => return ProcessOutcome::default(),
 		};
 
-		if let Some((custom_edge, managed_by, ignore)) = self.skip_entitlements.get(&to) {
+		if let Some((custom_edge, managed_by, ignore)) = self.skipped_entitlements.get(&to) {
 			if !ignore {
 				self.edges.insert(EntitlementEdge {
 					id: EntitlementEdgeId {
