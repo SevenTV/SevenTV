@@ -207,6 +207,7 @@ impl GraphKey for EntitlementEdgeKind {
 				| Self::Role { .. }
 				| Self::SpecialEvent { .. }
 				| Self::Subscription { .. }
+				| Self::SubscriptionBenefit { .. }
 		)
 	}
 
@@ -219,6 +220,7 @@ impl GraphKey for EntitlementEdgeKind {
 				| Self::Subscription { .. }
 				| Self::SpecialEvent { .. }
 				| Self::GlobalDefaultEntitlementGroup
+				| Self::SubscriptionBenefit { .. }
 		)
 	}
 }

@@ -89,6 +89,11 @@ impl Job for UsersJob {
 			// Ignore all entitlements without a user_id
 			if let Some(user_id) = entitlement.user_id {
 				if let EntitlementData::Role { ref_id } = entitlement.data {
+					// Ignore the `Subscriber` role because it is handled by the subscription job.
+					if ref_id.to_string() == "6076a86b09a4c63a38ebe801" {
+						continue;
+					}
+
 					edges.insert(EntitlementEdge {
 						id: EntitlementEdgeId {
 							from: EntitlementEdgeKind::User { user_id: user_id.into() },

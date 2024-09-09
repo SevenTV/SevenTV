@@ -16,11 +16,11 @@ use crate::{error, types};
 
 pub struct EntitlementsJob {
 	global: Arc<Global>,
-	skip_entitlements: FnvHashMap<EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>)>,
+	skip_entitlements: FnvHashMap<EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool)>,
 	edges: FnvHashSet<EntitlementEdge>,
 }
 
-fn skip_entitlements() -> impl Iterator<Item = (EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>))>
+fn skip_entitlements() -> impl Iterator<Item = (EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool))>
 {
 	super::subscriptions::benefits::sub_badges_benefits()
 		.into_iter()
@@ -33,6 +33,7 @@ fn skip_entitlements() -> impl Iterator<Item = (EntitlementEdgeKind, (Entitlemen
 							subscription_benefit_id: b.benefit.id,
 						},
 						None,
+						false,
 					),
 				)
 			})
@@ -49,6 +50,7 @@ fn skip_entitlements() -> impl Iterator<Item = (EntitlementEdgeKind, (Entitlemen
 									subscription_benefit_id: b.benefit.id,
 								},
 								None,
+								false,
 							),
 						)
 					})
@@ -57,7 +59,9 @@ fn skip_entitlements() -> impl Iterator<Item = (EntitlementEdgeKind, (Entitlemen
 		.chain(super::subscriptions::benefits::role_entitlements().into_iter().flat_map(|r| {
 			r.entitlements
 				.into_iter()
-				.map(move |to| (to, (EntitlementEdgeKind::Role { role_id: r.id }, None)))
+				// Ignore all other role inserts because they are handled by the user job.
+				// This is a new role called the `Translator` role which is not handled by the user job.
+				.map(move |to| (to, (EntitlementEdgeKind::Role { role_id: r.id }, None, r.id != "62f99d0ce46eb00e438a6984".parse().unwrap())))
 		}))
 		.chain(super::subscriptions::benefits::special_events().into_iter().flat_map(|s| {
 			s.entitlements.into_iter().map(move |to| {
@@ -68,6 +72,7 @@ fn skip_entitlements() -> impl Iterator<Item = (EntitlementEdgeKind, (Entitlemen
 							special_event_id: s.special_event.id,
 						},
 						Some(s.managed_by.clone()),
+						false,
 					),
 				)
 			})
@@ -173,19 +178,21 @@ impl Job for EntitlementsJob {
 			_ => return ProcessOutcome::default(),
 		};
 
-		if let Some((custom_edge, managed_by)) = self.skip_entitlements.get(&to) {
-			self.edges.insert(EntitlementEdge {
-				id: EntitlementEdgeId {
-					from: EntitlementEdgeKind::Subscription {
-						subscription_id: SubscriptionId {
-							user_id: user_id.into(),
-							product_id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
+		if let Some((custom_edge, managed_by, ignore)) = self.skip_entitlements.get(&to) {
+			if !ignore {
+				self.edges.insert(EntitlementEdge {
+					id: EntitlementEdgeId {
+						from: EntitlementEdgeKind::Subscription {
+							subscription_id: SubscriptionId {
+								user_id: user_id.into(),
+								product_id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
+							},
 						},
+						to: custom_edge.clone(),
+						managed_by: managed_by.clone(),
 					},
-					to: custom_edge.clone(),
-					managed_by: managed_by.clone(),
-				},
-			});
+				});
+			}
 		} else {
 			self.edges.insert(EntitlementEdge {
 				id: EntitlementEdgeId {

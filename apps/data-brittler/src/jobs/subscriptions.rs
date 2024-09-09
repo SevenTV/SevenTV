@@ -4,6 +4,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use chrono::Months;
+use fnv::FnvHashSet;
 use mongodb::options::InsertManyOptions;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::subscription::{
@@ -29,7 +30,7 @@ pub struct SubscriptionsJob {
 	global: Arc<Global>,
 	subscriptions: HashMap<SubscriptionId, Subscription>,
 	periods: Vec<SubscriptionPeriod>,
-	edges: HashSet<EntitlementEdge>,
+	edges: FnvHashSet<EntitlementEdge>,
 }
 
 impl Job for SubscriptionsJob {
@@ -58,7 +59,7 @@ impl Job for SubscriptionsJob {
 			global,
 			subscriptions: Default::default(),
 			periods: vec![],
-			edges: HashSet::new(),
+			edges: FnvHashSet::default(),
 		})
 	}
 
