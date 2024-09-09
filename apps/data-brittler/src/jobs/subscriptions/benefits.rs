@@ -1032,6 +1032,13 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 				badge_id: "637d54582863630a2d06e27b".parse().unwrap(),
 			}],
 		),
+        BenefitWithEntitlements::new(
+			"1.75 Year Badge",
+			SubscriptionBenefitCondition::Duration(DurationUnit::Months(21)),
+			vec![EntitlementEdgeKind::Badge {
+				badge_id: "64344f93cda636a6910a265f".parse().unwrap(),
+			}],
+		),
 		BenefitWithEntitlements::new(
 			"2 Year Badge",
 			SubscriptionBenefitCondition::Duration(DurationUnit::Months(24)),
