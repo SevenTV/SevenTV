@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
 use axum::extract::State;
-use axum::Json;
+use axum::{Extension, Json};
 use futures::TryStreamExt;
 use hyper::StatusCode;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionState,
 };
-use shared::database::product::SubscriptionProduct;
+use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
 use shared::database::queries::filter;
 use shared::database::MongoCollection;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
-use crate::http::middleware::auth::AuthSession;
+use crate::http::middleware::session::Session;
 use crate::http::v3::rest::types::{self, SubscriptionCycleUnit};
 use crate::http::v3::rest::users::TargetUser;
 use crate::sub_refresh_job;
@@ -32,13 +32,14 @@ pub struct SubscriptionResponse {
 pub async fn subscription(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
-	auth_session: Option<AuthSession>,
+	Extension(session): Extension<&Session>,
 ) -> Result<Json<SubscriptionResponse>, ApiError> {
 	let user = match target {
-		TargetUser::Me => auth_session.ok_or(ApiError::UNAUTHORIZED)?.user_id(),
+		TargetUser::Me => session.user_id().ok_or(ApiError::UNAUTHORIZED)?,
 		TargetUser::Other(id) => id,
 	};
 
+	// TODO: should we dataload this?
 	let periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
 		.find(filter::filter! {
 			SubscriptionPeriod {
@@ -103,13 +104,12 @@ pub async fn subscription(
 	let customer_id = match active_period.created_by {
 		SubscriptionPeriodCreatedBy::Gift { gifter, .. } => gifter,
 		_ => active_period.subscription_id.user_id,
-	}
-	.to_string();
+	};
 
 	let internal = matches!(active_period.created_by, SubscriptionPeriodCreatedBy::System { .. });
 
 	// TODO: figure out how to get the unit
-	let unit = Some(SubscriptionCycleUnit::Month);
+	let unit = product.variants.iter().find(|v| v.id == active_period.product_id);
 
 	let started_at = periods
 		.iter()
@@ -133,18 +133,27 @@ pub async fn subscription(
 		renew,
 		end_at: Some(end_at),
 		subscription: Some(types::Subscription {
-			id: active_period.id.to_string(),
+			id: active_period.id,
 			provider,
-			product_id: product.id.to_string(),
-			plan: product.id.to_string(),
+			product_id: product.id,
+			plan: active_period.product_id,
 			seats: 1,
-			subscriber_id: subscription.id.user_id.to_string(),
+			subscriber_id: subscription.id.user_id,
 			customer_id,
 			started_at,
 			ended_at: (subscription.state == SubscriptionState::Ended).then_some(end_at),
 			cycle: types::SubscriptionCycle {
 				timestamp: active_period.end,
-				unit,
+				unit: unit.map(|unit| match unit {
+					SubscriptionProductVariant {
+						kind: SubscriptionProductKind::Monthly,
+						..
+					} => SubscriptionCycleUnit::Month,
+					SubscriptionProductVariant {
+						kind: SubscriptionProductKind::Yearly,
+						..
+					} => SubscriptionCycleUnit::Year,
+				}),
 				value: 1,
 				status: subscription.state.into(),
 				internal,

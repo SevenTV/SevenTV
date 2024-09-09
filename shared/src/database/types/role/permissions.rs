@@ -349,6 +349,8 @@ pub enum AdminPermission {
 	Admin = 1,
 	/// Grants all permissions and ignores role hierarchy
 	SuperAdmin = 2,
+	/// Bypass rate limit
+	BypassRateLimit = 4,
 }
 
 impl BitMask for AdminPermission {
@@ -415,8 +417,61 @@ pub struct Permissions {
 	#[serde(default)]
 	pub personal_emote_set_capacity: Option<i32>,
 
+	#[serde(skip_serializing_if = "HashMap::is_empty")]
+	#[serde(default)]
+	pub ratelimits: HashMap<String, Option<RateLimits>>,
+
 	#[serde(flatten)]
 	pub unknown: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
+pub struct RateLimits {
+	pub interval_seconds: i64,
+	pub requests: i64,
+	pub overuse_threshold: Option<i64>,
+	pub overuse_punishment: Option<i64>,
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub enum RateLimitResource {
+	EmoteUpload,
+	ProfilePictureUpload,
+	Login,
+	Search,
+	UserChangeCosmetics,
+	UserChangeEditor,
+	UserChangeConnections,
+	EmoteUpdate,
+	EmoteSetCreate,
+	EmoteSetChange,
+	EgVaultSubscribe,
+	EgVaultRedeem,
+	EgVaultPaymentMethod,
+	Global,
+}
+
+impl RateLimitResource {
+	pub fn as_str(&self) -> &'static str {
+		match self {
+			Self::EmoteUpload => "emote_upload",
+			Self::ProfilePictureUpload => "profile_picture_upload",
+			Self::Login => "login",
+			Self::Search => "search",
+			Self::UserChangeCosmetics => "user_change_cosmetics",
+			Self::UserChangeEditor => "user_change_editor",
+			Self::UserChangeConnections => "user_change_connections",
+			Self::EmoteUpdate => "emote_update",
+			Self::EmoteSetCreate => "emote_set_create",
+			Self::EmoteSetChange => "emote_set_change",
+			Self::EgVaultSubscribe => "egvault_subscribe",
+			Self::EgVaultRedeem => "egvault_redeem",
+			Self::EgVaultPaymentMethod => "egvault_payment_method",
+			Self::Global => "global",
+		}
+	}
 }
 
 impl Permissions {
@@ -587,39 +642,23 @@ impl Permissions {
 	pub fn denied_flags(&self, permission: FlagPermission) -> bool {
 		self.flags.deny.contains(permission)
 	}
-}
 
-impl PartialOrd for Permissions {
-	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-		let cmp = [
-			self.emote.partial_cmp(&other.emote)?,
-			self.role.partial_cmp(&other.role)?,
-			self.emote_set.partial_cmp(&other.emote_set)?,
-			self.badge.partial_cmp(&other.badge)?,
-			self.paint.partial_cmp(&other.paint)?,
-			self.user.partial_cmp(&other.user)?,
-			self.ticket.partial_cmp(&other.ticket)?,
-			self.emote_moderation_request.partial_cmp(&other.emote_moderation_request)?,
-			self.admin.partial_cmp(&other.admin)?,
-			self.flags.partial_cmp(&other.flags)?,
-			self.emote_moderation_request_priority
-				.partial_cmp(&other.emote_moderation_request_priority)?,
-			self.emote_moderation_request_limit
-				.partial_cmp(&other.emote_moderation_request_limit)?,
-			self.emote_set_capacity.partial_cmp(&other.emote_set_capacity)?,
-			self.personal_emote_set_capacity
-				.partial_cmp(&other.personal_emote_set_capacity)?,
-		];
+	pub fn ratelimit(&self, resource: RateLimitResource) -> Option<&RateLimits> {
+		self.ratelimits.get(resource.as_str())?.as_ref()
+	}
 
-		if cmp.iter().any(|c| *c == std::cmp::Ordering::Greater) {
-			// all greater
-			Some(std::cmp::Ordering::Greater)
-		} else if cmp.iter().all(|c| *c == std::cmp::Ordering::Equal) {
-			// nothing greater & all equal
-			Some(std::cmp::Ordering::Equal)
-		} else {
-			// nothing greater & at least one less
-			Some(std::cmp::Ordering::Less)
+	pub fn is_superset_of(&self, other: &Self) -> bool {
+		self.is_super_admin() || {
+			self.has(other.badge.allow)
+				&& self.has(other.paint.allow)
+				&& self.has(other.emote_set.allow)
+				&& self.has(other.emote.allow)
+				&& self.has(other.role.allow)
+				&& self.has(other.user.allow)
+				&& self.has(other.ticket.allow)
+				&& self.has(other.admin.allow)
+				&& self.has(other.user.allow)
+				&& self.has(other.emote_moderation_request.allow)
 		}
 	}
 }

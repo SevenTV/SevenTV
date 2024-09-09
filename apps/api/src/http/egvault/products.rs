@@ -10,12 +10,14 @@ use shared::database::MongoCollection;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::session::Session;
 use crate::http::v3::rest::types::{self, Plan};
 
 pub async fn products(
 	State(global): State<Arc<Global>>,
-	Extension(ip): Extension<std::net::IpAddr>,
+	Extension(session): Extension<&Session>,
 ) -> Result<Json<Vec<types::Product>>, ApiError> {
+	// TODO: dataload this
 	let products: Vec<SubscriptionProduct> = SubscriptionProduct::collection(&global.db)
 		.find(filter::filter! {
 			SubscriptionProduct {}
@@ -32,7 +34,7 @@ pub async fn products(
 			ApiError::INTERNAL_SERVER_ERROR
 		})?;
 
-	let currency = if let Some(country_code) = global.geoip().and_then(|g| g.lookup(ip)).and_then(|c| c.iso_code) {
+	let currency = if let Some(country_code) = global.geoip().and_then(|g| g.lookup(session.ip())).and_then(|c| c.iso_code) {
 		let global = global
 			.global_config_loader
 			.load(())

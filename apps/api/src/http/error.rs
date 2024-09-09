@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql::ErrorExtensionValues;
 use axum::response::IntoResponse;
 use axum::Json;
-use hyper::StatusCode;
+use hyper::{HeaderMap, StatusCode};
 
 #[derive(Debug, Clone, Default, serde::Serialize)]
 pub struct ApiError {
@@ -13,6 +13,8 @@ pub struct ApiError {
 	pub status: Cow<'static, str>,
 	pub error_code: u16,
 	pub error: Cow<'static, str>,
+	#[serde(skip)]
+	pub extra_headers: Option<Box<HeaderMap>>,
 }
 
 impl ApiError {
@@ -29,6 +31,7 @@ impl ApiError {
 			error: error.into(),
 			status: status_code.canonical_reason().unwrap_or("unknown status code").into(),
 			error_code: 0,
+			extra_headers: None,
 		}
 	}
 
@@ -38,17 +41,31 @@ impl ApiError {
 			status: Cow::Borrowed("unknown"),
 			error: Cow::Borrowed(error),
 			error_code: 0,
+			extra_headers: None,
 		}
+	}
+
+	pub fn with_extra_headers(mut self, headers: HeaderMap) -> Self {
+		self.extra_headers = Some(Box::new(headers));
+		self
 	}
 }
 
 impl IntoResponse for ApiError {
-	fn into_response(self) -> axum::http::Response<axum::body::Body> {
+	fn into_response(mut self) -> axum::http::Response<axum::body::Body> {
 		// tracing::Span::current().set_status(Status::Error {
 		// 	message: Some(self.message.clone()),
 		// });
 
-		(self.status_code, Json(self)).into_response()
+		let extra_headers = self.extra_headers.take();
+
+		let mut resp = (self.status_code, Json(self)).into_response();
+
+		if let Some(headers) = extra_headers {
+			resp.headers_mut().extend(*headers);
+		}
+
+		resp
 	}
 }
 
@@ -62,6 +79,22 @@ impl From<ApiError> for async_graphql::Error {
 		// description"
 		let message = format!("{} {}", value.error_code, value.error);
 		extensions.set("message", message.clone());
+		if let Some(headers) = &value.extra_headers {
+			extensions.set(
+				"headers",
+				async_graphql::Value::Object(
+					headers
+						.iter()
+						.map(|(k, v)| {
+							(
+								async_graphql::Name::new(k.as_str()),
+								async_graphql::Value::String(v.to_str().unwrap_or_default().to_string()),
+							)
+						})
+						.collect(),
+				),
+			);
+		}
 
 		Self {
 			message,

@@ -3,17 +3,16 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use hyper::StatusCode;
 use shared::database::emote_set::EmoteSetId;
-use shared::database::role::permissions::{FlagPermission, PermissionsExt};
 use shared::old_types::{EmoteSetModel, UserPartialModel};
 use utoipa::OpenApi;
 
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Path;
-use crate::http::middleware::auth::AuthSession;
+use crate::http::middleware::session::Session;
 use crate::http::v3::emote_set_loader::load_emote_set;
 
 #[derive(OpenApi)]
@@ -41,7 +40,7 @@ pub fn routes() -> Router<Arc<Global>> {
 pub async fn get_emote_set_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<EmoteSetId>,
-	auth_session: Option<AuthSession>,
+	Extension(session): Extension<&Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let mut emote_set = global
 		.emote_set_by_id_loader
@@ -50,26 +49,18 @@ pub async fn get_emote_set_by_id(
 		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote set not found"))?;
 
-	let actor_id = auth_session.as_ref().map(|s| s.user_id());
-
 	let owner = match emote_set.owner_id {
 		Some(owner_id) => global
 			.user_loader
 			.load_fast(&global, owner_id)
 			.await
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.and_then(|owner| {
-				if owner.has(FlagPermission::Hidden) && Some(owner.id) != actor_id {
-					None
-				} else {
-					Some(owner)
-				}
-			})
+			.and_then(|owner| session.can_view(&owner).then_some(owner))
 			.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config.api.cdn_origin)),
 		None => None,
 	};
 
-	let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), actor_id, false).await?;
+	let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), session).await?;
 
 	Ok(Json(EmoteSetModel::from_db(emote_set, emotes, owner)))
 }

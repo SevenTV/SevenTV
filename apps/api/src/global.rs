@@ -23,9 +23,11 @@ use shared::database::ticket::Ticket;
 use shared::database::user::ban::UserBan;
 use shared::database::user::editor::UserEditor;
 use shared::database::user::profile_picture::UserProfilePicture;
+use shared::database::user::session::UserSession;
 use shared::database::user::User;
 use shared::image_processor::ImageProcessor;
 use shared::ip::GeoIpResolver;
+use shared::redis::setup_redis;
 
 use crate::config::Config;
 use crate::dataloader::emote::EmoteByUserIdLoader;
@@ -35,11 +37,15 @@ use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
 use crate::dataloader::user::UserByPlatformIdLoader;
 use crate::dataloader::user_bans::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
+use crate::dataloader::user_session::UserSessionUpdaterBatcher;
+use crate::ratelimit::RateLimiter;
 use crate::stripe_client;
 
 pub struct Global {
 	pub nats: async_nats::Client,
-	pub geoip: Option<GeoIpResolver>,
+	pub redis: fred::clients::RedisClient,
+	pub rate_limiter: RateLimiter,
+	geoip: Option<GeoIpResolver>,
 	pub jetstream: async_nats::jetstream::Context,
 	pub config: Config,
 	pub mongo: mongodb::Client,
@@ -74,6 +80,8 @@ pub struct Global {
 	pub user_ban_by_user_id_loader: DataLoader<UserBanByUserIdLoader>,
 	pub user_profile_picture_id_loader: DataLoader<LoaderById<UserProfilePicture>>,
 	pub emote_moderation_request_by_id_loader: DataLoader<LoaderById<EmoteModerationRequest>>,
+	pub user_session_by_id_loader: DataLoader<LoaderById<UserSession>>,
+	pub user_session_updater_batcher: DataLoader<UserSessionUpdaterBatcher>,
 	pub user_loader: FullUserLoader,
 	pub typesense: typesense_codegen::apis::configuration::Configuration,
 }
@@ -113,9 +121,15 @@ impl Global {
 			None
 		};
 
+		let redis = setup_redis(&config.api.redis).await?;
+
+		let rate_limiter = RateLimiter::new(redis.clone()).await?;
+
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			geoip,
+			redis,
+			rate_limiter,
 			jetstream,
 			image_processor,
 			event_by_id_loader: LoaderById::new(db.clone()),
@@ -144,6 +158,8 @@ impl Global {
 			user_ban_by_user_id_loader: UserBanByUserIdLoader::new(db.clone()),
 			user_profile_picture_id_loader: LoaderById::new(db.clone()),
 			emote_moderation_request_by_id_loader: LoaderById::new(db.clone()),
+			user_session_by_id_loader: LoaderById::new(db.clone()),
+			user_session_updater_batcher: UserSessionUpdaterBatcher::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			stripe_client,
 			typesense,

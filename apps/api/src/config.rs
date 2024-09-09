@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
-use shared::config::{DatabaseConfig, ImageProcessorConfig, NatsConfig, TypesenseConfig};
+use shared::config::{DatabaseConfig, ImageProcessorConfig, NatsConfig, RedisConfig, TypesenseConfig};
 use shared::ip::GeoIpConfig;
 
 #[auto_settings]
@@ -45,6 +45,8 @@ pub struct Api {
 	pub geoip: Option<GeoIpConfig>,
 	/// IP Header config
 	pub incoming_request: IncomingRequestConfig,
+	/// Redis config
+	pub redis: RedisConfig,
 }
 
 #[auto_settings]

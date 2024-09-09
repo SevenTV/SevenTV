@@ -2,14 +2,15 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use mongodb::bson::doc;
-use shared::database::role::permissions::TicketPermission;
+use shared::database::role::permissions::{RateLimitResource, TicketPermission};
 use shared::database::ticket::{Ticket, TicketKind, TicketMemberKind, TicketMessage, TicketTarget};
 use shared::old_types::object_id::GqlObjectId;
 
 use super::user::{User, UserPartial};
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::v3::gql::guards::PermissionGuard;
+use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
+use crate::search::{search, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/reports.gql
 
@@ -129,17 +130,62 @@ pub enum ReportStatus {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl ReportsQuery {
-	#[graphql(guard = "PermissionGuard::one(TicketPermission::ManageAbuse)")]
+	#[graphql(
+		guard = "PermissionGuard::one(TicketPermission::ManageAbuse).and(RateLimitGuard::new(RateLimitResource::Search, 1))"
+	)]
 	async fn reports<'ctx>(
 		&self,
-		_ctx: &Context<'ctx>,
-		_status: Option<ReportStatus>,
-		_limit: Option<u32>,
-		_after_id: Option<GqlObjectId>,
-		_before_id: Option<GqlObjectId>,
+		ctx: &Context<'ctx>,
+		status: Option<ReportStatus>,
+		limit: Option<u32>,
+		page: Option<u32>,
 	) -> Result<Vec<Report>, ApiError> {
-		// TODO(troy): implement
-		Err(ApiError::NOT_IMPLEMENTED)
+		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		if !matches!(status, Some(ReportStatus::Open) | None) {
+			return Err(ApiError::NOT_IMPLEMENTED);
+		}
+
+		let options = SearchOptions::builder()
+			.query("".to_owned())
+			.query_by(vec!["id".to_owned()])
+			.filter_by(format!(
+				"status: open && kind: {} && targets:=emote:*",
+				TicketKind::Abuse as i32
+			))
+			// Oldest highest priority first
+			.sort_by(vec!["priority:desc".to_owned(), "created_at:asc".to_owned()])
+			.page(page)
+			.per_page(limit)
+			.build();
+
+		let result = search::<shared::typesense::types::ticket::Ticket>(global, options)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to search");
+				ApiError::INTERNAL_SERVER_ERROR
+			})?;
+
+		let tickets = global
+			.ticket_by_id_loader
+			.load_many(result.hits.iter().copied())
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		let messages = global
+			.ticket_message_by_ticket_id_loader
+			.load_many(tickets.keys().copied())
+			.await
+			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+
+		Ok(tickets
+			.into_values()
+			.filter_map(|ticket| {
+				let messages = messages.get(&ticket.id).cloned().unwrap_or_default();
+
+				Report::from_db(ticket, messages)
+			})
+			.collect())
 	}
 
 	#[graphql(guard = "PermissionGuard::one(TicketPermission::ManageAbuse)")]
@@ -153,7 +199,7 @@ impl ReportsQuery {
 			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
 			.ok_or(ApiError::NOT_FOUND)?;
 
-		if ticket.kind != TicketKind::Abuse && !ticket.targets.iter().any(|t| matches!(t, TicketTarget::Emote(_))) {
+		if ticket.kind != TicketKind::Abuse && !matches!(ticket.targets.first(), Some(TicketTarget::Emote(_))) {
 			return Ok(None);
 		}
 

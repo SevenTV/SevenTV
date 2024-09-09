@@ -12,7 +12,7 @@ pub struct Subscription {
 	pub subscriber_id: ObjectId,
 	pub customer_id: ObjectId,
 	pub cycle: SubscriptionCycle,
-	// pub plan_id: String,
+	pub plan_id: String,
 	// pub product_id: String,
 	/// always 1
 	// pub seats: i32,

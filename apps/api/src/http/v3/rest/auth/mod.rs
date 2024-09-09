@@ -9,6 +9,7 @@ use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::queries::filter;
+use shared::database::role::permissions::RateLimitResource;
 use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::Platform;
 use shared::database::user::session::UserSession;
@@ -18,8 +19,9 @@ use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::http::extract::Query;
-use crate::http::middleware::auth::{AuthSession, AuthSessionKind, AUTH_COOKIE};
 use crate::http::middleware::cookies::Cookies;
+use crate::http::middleware::session::{Session, AUTH_COOKIE};
+use crate::ratelimit::RateLimitRequest;
 use crate::transactions::{with_transaction, TransactionError};
 
 mod login;
@@ -93,17 +95,21 @@ pub struct LoginRequest {
 async fn login(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	session: Option<AuthSession>,
+	Extension(session): Extension<&Session>,
 	Query(query): Query<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let location = if query.callback {
-		handle_login_callback(&global, query, &cookies).await?
-	} else {
-		let user_id = session.map(|s| s.user_id());
-		handle_login(&global, user_id, query.platform.into(), &cookies)?
-	};
+	let req = RateLimitRequest::new(RateLimitResource::Login, session);
 
-	Ok(Redirect::to(&location))
+	req.http(&global, async {
+		let location = if query.callback {
+			handle_login_callback(&global, session, query, &cookies).await?
+		} else {
+			handle_login(&global, session, query.platform.into(), &cookies)?
+		};
+
+		Ok::<_, ApiError>(Redirect::to(&location))
+	})
+	.await
 }
 
 #[utoipa::path(
@@ -119,20 +125,18 @@ async fn login(
 async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	auth_session: AuthSession,
+	Extension(session): Extension<&Session>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let auth_session = &auth_session;
-	let authed_user = auth_session.user(&global).await?;
-
-	let res = with_transaction(&Arc::clone(&global), |mut tx| async move {
+	let global = &global;
+	let res = with_transaction(global, |mut tx| async move {
 		// is a new session
-		if let AuthSessionKind::Session(session) = &auth_session.kind {
+		if let Some(user_session) = session.user_session() {
 			let user_session = tx
 				.find_one_and_delete(
 					filter::filter! {
 						UserSession {
 							#[query(rename = "_id")]
-							id: session.id,
+							id: user_session.id,
 						}
 					},
 					None,
@@ -141,8 +145,8 @@ async fn logout(
 
 			if let Some(user_session) = user_session {
 				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: auth_session.id(),
+					actor: Some(session.user().unwrap().clone()),
+					session_id: Some(user_session.id),
 					data: InternalEventData::UserSession {
 						after: user_session,
 						data: StoredEventUserSessionData::Delete,
@@ -152,7 +156,7 @@ async fn logout(
 			}
 		}
 
-		cookies.remove(&global, AUTH_COOKIE);
+		cookies.remove(global, AUTH_COOKIE);
 
 		Ok(())
 	})

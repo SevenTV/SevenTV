@@ -2,18 +2,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use shared::database::emote_set::EmoteSetEmote;
-use shared::database::role::permissions::{FlagPermission, PermissionsExt};
-use shared::database::user::UserId;
 use shared::old_types::{EmotePartialModel, UserPartialModel};
 
 use crate::global::Global;
 use crate::http::error::ApiError;
+use crate::http::middleware::session::Session;
 
 pub async fn load_emote_set(
 	global: &Arc<Global>,
 	emote_set_emotes: Vec<EmoteSetEmote>,
-	actor_id: Option<UserId>,
-	view_hidden: bool,
+	session: &Session,
 ) -> Result<impl Iterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>, ApiError> {
 	let emotes = global
 		.emote_by_id_loader
@@ -31,7 +29,7 @@ pub async fn load_emote_set(
 
 	let users = users
 		.into_values()
-		.filter(|user| Some(user.id) == actor_id || !user.has(FlagPermission::Hidden) || view_hidden)
+		.filter(|user| session.can_view(user))
 		.map(|user| {
 			// This api doesnt seem to return the user's badges and paints so
 			// we can ignore them.

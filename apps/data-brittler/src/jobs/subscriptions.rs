@@ -8,7 +8,7 @@ use mongodb::options::InsertManyOptions;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
 };
-use shared::database::product::SubscriptionProductId;
+use shared::database::product::{ProductId, SubscriptionProductId};
 use shared::database::MongoCollection;
 
 use super::prices::NEW_PRODUCT_ID;
@@ -115,6 +115,15 @@ impl Job for SubscriptionsJob {
 		self.periods.push(SubscriptionPeriod {
 			id: subscription.id.into(),
 			provider_id: Some(provider_id),
+			product_id: match subscription.provider {
+				SubscriptionProvider::Stripe => ProductId::from_str(&subscription.plan_id).unwrap(),
+				SubscriptionProvider::Paypal => match subscription.plan_id.as_str() {
+					PAYPAL_MONTHLY => ProductId::from_str(STRIPE_MONTHLY).unwrap(),
+					PAYPAL_YEARLY => ProductId::from_str(STRIPE_YEARLY).unwrap(),
+					_ => ProductId::from_str(STRIPE_MONTHLY).unwrap(),
+				},
+				_ => ProductId::from_str(STRIPE_MONTHLY).unwrap(),
+			},
 			subscription_id: sub_id,
 			start: subscription.started_at.into_chrono(),
 			end,

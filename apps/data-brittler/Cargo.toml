@@ -35,7 +35,7 @@ scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.gi
     "serde",
 ] }
 tonic = "0.12"
-async-nats = "0.35.1"
+async-nats = "0.36.0"
 prost = "0.13"
 
 cap = "0.1"
@@ -55,7 +55,7 @@ sailfish = "=0.8.3"
 uuid = "1.9.1"
 serde_repr = "0.1.19"
 time = "0.3.36"
-async-stripe = { version = "0.38.1", default-features = false, features = [
+async-stripe = { version = "0.39.1", default-features = false, features = [
     "runtime-tokio-hyper-rustls",
     "checkout",
     "billing",

@@ -6,15 +6,15 @@ use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
-use shared::database::user::{User, UserId};
+use shared::database::user::User;
 use shared::event::{InternalEvent, InternalEventData};
 
 use super::LoginRequest;
 use crate::connections;
 use crate::global::Global;
 use crate::http::error::ApiError;
-use crate::http::middleware::auth::AUTH_COOKIE;
 use crate::http::middleware::cookies::{new_cookie, Cookies};
+use crate::http::middleware::session::{Session, AUTH_COOKIE};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -31,7 +31,12 @@ const GOOGLE_AUTH_URL: &str =
 const GOOGLE_AUTH_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonly";
 
 /// https://gist.github.com/lennartkloock/412323105bc913c7064664dc4f1568cb
-pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies: &Cookies) -> Result<String, ApiError> {
+pub async fn handle_callback(
+	global: &Arc<Global>,
+	_session: &Session,
+	query: LoginRequest,
+	cookies: &Cookies,
+) -> Result<String, ApiError> {
 	let code = query
 		.code
 		.ok_or(ApiError::new_const(StatusCode::BAD_REQUEST, "missing code from query"))?;
@@ -255,7 +260,7 @@ pub async fn handle_callback(global: &Arc<Global>, query: LoginRequest, cookies:
 
 pub fn handle_login(
 	global: &Arc<Global>,
-	user_id: Option<UserId>,
+	session: &Session,
 	platform: Platform,
 	cookies: &Cookies,
 ) -> Result<String, ApiError> {
@@ -275,7 +280,7 @@ pub fn handle_login(
 		}
 	};
 
-	let csrf = CsrfJwtPayload::new(None, user_id);
+	let csrf = CsrfJwtPayload::new(session);
 
 	cookies.add(new_cookie(
 		global,

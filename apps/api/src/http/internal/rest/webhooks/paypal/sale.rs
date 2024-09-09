@@ -215,7 +215,7 @@ pub async fn completed(
 	tx.insert_one(
 		Invoice {
 			id: invoice_id.clone(),
-			items: vec![stripe_product_id],
+			items: vec![stripe_product_id.clone()],
 			customer_id,
 			user_id: user.id,
 			paypal_payment_id: Some(sale.id.clone()),
@@ -242,6 +242,7 @@ pub async fn completed(
 				id: SubscriptionPeriodId::new(),
 				subscription_id,
 				provider_id: Some(ProviderSubscriptionId::Paypal(provider_id)),
+				product_id: stripe_product_id,
 				start: paypal_sub
 					.billing_info
 					.last_payment
