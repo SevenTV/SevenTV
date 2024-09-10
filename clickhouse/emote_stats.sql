@@ -1,3 +1,4 @@
+--- clickhouse-client --host localhost --port 19000 --user default --password default --database 7tv
 CREATE TABLE IF NOT EXISTS emote_stats (
     emote_id UUID,
     date Date,
