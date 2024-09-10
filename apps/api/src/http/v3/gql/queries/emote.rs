@@ -137,7 +137,7 @@ impl Emote {
 			.filter_by(format!("emotes: {}", self.id.0))
 			.sort_by(vec!["role_hoist:desc".to_owned(), "role_rank:desc".to_owned()])
 			.page(page)
-			.per_page(limit.unwrap_or(50))
+			.per_page(limit.unwrap_or(30))
 			.build();
 
 		let result = search::<shared::typesense::types::user::User>(global, options)
