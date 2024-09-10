@@ -356,8 +356,8 @@ impl SupportedMongoCollection for mongo::User {
 		let old_role_rank = data.cached.role_rank;
 		data.cached.role_rank = roles.values().map(|role| role.rank).max().unwrap_or(0);
 
-		let old_role_hoist = data.cached.role_hoist;
-		data.cached.role_hoist = roles.values().map(|role| role.hoist).any(|b| b);
+		let old_role_hoist_rank = data.cached.role_hoist_rank;
+		data.cached.role_hoist_rank = roles.values().filter(|r| r.hoist).map(|role| role.rank).max().unwrap_or(0);
 
 		let old_entitlements = data.cached.entitlements.clone();
 		data.cached.entitlements = granted_entitlements.iter().map(|edge| edge.id.to.clone()).collect();
@@ -407,8 +407,8 @@ impl SupportedMongoCollection for mongo::User {
 						None
 					},
 					#[query(optional)]
-					role_hoist: if old_role_hoist != data.cached.role_hoist {
-						Some(data.cached.role_hoist)
+					role_hoist_rank: if old_role_hoist_rank != data.cached.role_hoist_rank {
+						Some(data.cached.role_hoist_rank)
 					} else {
 						None
 					},

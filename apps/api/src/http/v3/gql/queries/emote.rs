@@ -135,7 +135,7 @@ impl Emote {
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
 			.filter_by(format!("emotes: {}", self.id.0))
-			.sort_by(vec!["role_hoist:desc".to_owned(), "role_rank:desc".to_owned()])
+			.sort_by(vec!["role_hoist_rank:desc".to_owned()])
 			.page(page)
 			.per_page(limit.unwrap_or(30))
 			.build();
@@ -402,7 +402,7 @@ impl EmotesQuery {
 
 		let mut filters = Vec::new();
 
-		if session.has(EmotePermission::ViewUnlisted) {
+		if !session.has(EmotePermission::ViewUnlisted) {
 			filters.push("flag_public_listed: true".to_owned());
 			filters.push("flag_private: false".to_owned());
 		}
