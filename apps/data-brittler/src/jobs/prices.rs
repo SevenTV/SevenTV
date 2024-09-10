@@ -52,7 +52,11 @@ impl Job for PricesJob {
 				name: "7TV Subscription".to_string(),
 				description: None,
 				default_currency: stripe::Currency::USD,
-				benefits: vec![],
+				benefits: super::subscriptions::benefits::sub_badges_benefits()
+					.into_iter()
+					.chain(super::subscriptions::benefits::sub_monthly_benefits())
+					.map(|benefit| benefit.benefit)
+					.collect(),
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
 			},

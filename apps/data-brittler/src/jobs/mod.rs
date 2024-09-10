@@ -7,6 +7,7 @@ use cron_jobs::CronJobsJob;
 use entitlements::EntitlementsJob;
 use futures::{Future, TryStreamExt};
 use sailfish::TemplateOnce;
+use special_events::SpecialEventsJob;
 use tokio::time::Instant;
 use tracing::Instrument;
 
@@ -39,6 +40,7 @@ pub mod messages;
 pub mod prices;
 pub mod reports;
 pub mod roles;
+pub mod special_events;
 pub mod subscriptions;
 pub mod system;
 pub mod users;
@@ -229,6 +231,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		[PricesJob, should_run_prices],
 		[SubscriptionsJob, should_run_subscriptions],
 		[CronJobsJob, should_run_cron_jobs],
+		[SpecialEventsJob, should_run_special_events],
 	};
 
 	let results: Vec<JobOutcome> = futures::future::try_join_all(futures).await?;

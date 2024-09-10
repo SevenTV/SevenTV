@@ -60,7 +60,7 @@ pub struct XEmoteData {
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L58
 pub async fn create_emote(
 	State(global): State<Arc<Global>>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 	headers: HeaderMap,
 	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -82,9 +82,11 @@ pub async fn create_emote(
 		return Err(ApiError::FORBIDDEN);
 	}
 
-	let req = RateLimitRequest::new(RateLimitResource::ProfilePictureUpload, session);
+	let req = RateLimitRequest::new(RateLimitResource::ProfilePictureUpload, &session);
 
 	req.http(&global, async {
+		let session = &session;
+
 		let emote_id = EmoteId::new();
 
 		let input = match global.image_processor.upload_emote(emote_id, body, Some(session.ip())).await {
@@ -198,7 +200,7 @@ pub async fn create_emote(
 pub async fn get_emote_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<EmoteId>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let emote = global
 		.emote_by_id_loader

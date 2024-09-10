@@ -31,7 +31,7 @@ impl CosmeticsQuery {
 	async fn cosmetics<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		#[graphql(validator(max_items = 100))] list: Option<Vec<GqlObjectId>>,
+		#[graphql(validator(max_items = 600))] list: Option<Vec<GqlObjectId>>,
 	) -> Result<CosmeticsQueryResponse, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let list = list.unwrap_or_default();

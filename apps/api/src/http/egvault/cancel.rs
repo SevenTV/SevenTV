@@ -20,7 +20,7 @@ use crate::transactions::{with_transaction, TransactionError};
 pub async fn cancel_subscription(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let auth_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
@@ -34,7 +34,7 @@ pub async fn cancel_subscription(
 		return Err(ApiError::FORBIDDEN);
 	}
 
-	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, session);
+	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, &session);
 
 	req.http(&global, async {
 		let stripe_client = global.stripe_client.safe().await;
@@ -142,7 +142,7 @@ pub async fn cancel_subscription(
 pub async fn reactivate_subscription(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let auth_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
 
@@ -156,7 +156,7 @@ pub async fn reactivate_subscription(
 		return Err(ApiError::FORBIDDEN);
 	}
 
-	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, session);
+	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, &session);
 
 	req.http(&global, async {
 		let stripe_client = global.stripe_client.safe().await;

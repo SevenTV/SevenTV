@@ -38,78 +38,52 @@ pub struct Config {
 	pub download_cosmetics: bool,
 
 	/// Run users job
-	pub users: bool,
-	/// Skip users job
-	pub skip_users: bool,
+	pub users: Option<bool>,
 
 	/// Run bans job
-	pub bans: bool,
-	/// Skip bans job
-	pub skip_bans: bool,
+	pub bans: Option<bool>,
 
 	/// Run emotes job
-	pub emotes: bool,
-	/// Skip emotes job
-	pub skip_emotes: bool,
+	pub emotes: Option<bool>,
 
 	/// Run emote sets job
-	pub emote_sets: bool,
-	/// Skip emote sets job
-	pub skip_emote_sets: bool,
+	pub emote_sets: Option<bool>,
 
 	/// Run entitlments job
-	pub entitlements: bool,
-	/// Skip entitlements job
-	pub skip_entitlements: bool,
+	pub entitlements: Option<bool>,
 
 	/// Run cosmetics job
-	pub cosmetics: bool,
-	/// Skip cosmetics job
-	pub skip_cosmetics: bool,
+	pub cosmetics: Option<bool>,
 
 	/// Run roles job
-	pub roles: bool,
-	/// Skip roless job
-	pub skip_roles: bool,
+	pub roles: Option<bool>,
 
 	/// Run reports job
-	pub reports: bool,
-	/// Skip reports job
-	pub skip_reports: bool,
+	pub reports: Option<bool>,
 
 	/// Run audit logs job
-	pub audit_logs: bool,
-	/// Skip audit logs job
-	pub skip_audit_logs: bool,
+	pub audit_logs: Option<bool>,
 
 	/// Run messages job
-	pub messages: bool,
-	/// Skip messages job
-	pub skip_messages: bool,
+	pub messages: Option<bool>,
 
 	/// Run system job
-	pub system: bool,
-	/// Skip system job
-	pub skip_system: bool,
+	pub system: Option<bool>,
 
 	/// Run products job
-	pub prices: bool,
-	/// Skip products job
-	pub skip_prices: bool,
+	pub prices: Option<bool>,
 
 	/// Create a list of files to copy for the new cdn
-	pub cdn_rename: bool,
-	/// Create a list of files to copy for the new cdn
-	pub skip_cdn_rename: bool,
+	pub cdn_rename: Option<bool>,
 
 	/// Run subscriptions job
-	pub subscriptions: bool,
-	/// Skip subscriptions job
-	pub skip_subscriptions: bool,
+	pub subscriptions: Option<bool>,
+
 	/// Run cron jobs
-	pub cron_jobs: bool,
-	/// Skip cron jobs
-	pub skip_cron_jobs: bool,
+	pub cron_jobs: Option<bool>,
+
+	/// Run special events job
+	pub special_events: Option<bool>,
 
 	/// Truncate tables before inserting data
 	pub truncate: bool,
@@ -134,94 +108,85 @@ impl Bootstrap for Config {
 
 impl Config {
 	fn any_run(&self) -> bool {
-		self.users
-			|| self.bans
-			|| self.emotes
-			|| self.emote_sets
-			|| self.entitlements
-			|| self.cosmetics
-			|| self.roles
-			|| self.reports
-			|| self.audit_logs
-			|| self.messages
-			|| self.system
-			|| self.prices
-			|| self.cdn_rename
-			|| self.subscriptions
+		self.users.is_some_and(|r| r)
+			|| self.bans.is_some_and(|r| r)
+			|| self.emotes.is_some_and(|r| r)
+			|| self.emote_sets.is_some_and(|r| r)
+			|| self.entitlements.is_some_and(|r| r)
+			|| self.cosmetics.is_some_and(|r| r)
+			|| self.roles.is_some_and(|r| r)
+			|| self.reports.is_some_and(|r| r)
+			|| self.audit_logs.is_some_and(|r| r)
+			|| self.messages.is_some_and(|r| r)
+			|| self.system.is_some_and(|r| r)
+			|| self.prices.is_some_and(|r| r)
+			|| self.cdn_rename.is_some_and(|r| r)
+			|| self.subscriptions.is_some_and(|r| r)
+			|| self.special_events.is_some_and(|r| r)
+			|| self.cron_jobs.is_some_and(|r| r)
 	}
 
 	pub fn should_run_users(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.users || !any_run && !self.skip_users
+		self.users.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_bans(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.bans || !any_run && !self.skip_bans
+		self.bans.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_emotes(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.emotes || !any_run && !self.skip_emotes
+		self.emotes.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_cdn_rename(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.cdn_rename || !any_run && !self.skip_cdn_rename
+		self.cdn_rename.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_emote_sets(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.emote_sets || !any_run && !self.skip_emote_sets
+		self.emote_sets.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_entitlements(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.entitlements || !any_run && !self.skip_entitlements
+		self.entitlements.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_cosmetics(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.cosmetics || !any_run && !self.skip_cosmetics
+		self.cosmetics.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_roles(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.roles || !any_run && !self.skip_roles
+		self.roles.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_reports(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.reports || !any_run && !self.skip_reports
+		self.reports.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_audit_logs(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.audit_logs || !any_run && !self.skip_audit_logs
+		self.audit_logs.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_messages(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.messages || !any_run && !self.skip_messages
+		self.messages.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_system(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.system || !any_run && !self.skip_system
+		self.system.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_prices(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.prices || !any_run && !self.skip_prices
+		self.prices.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_subscriptions(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.subscriptions || !any_run && !self.skip_subscriptions
+		self.subscriptions.unwrap_or_else(|| !self.any_run())
 	}
 
 	pub fn should_run_cron_jobs(&self) -> bool {
-		let any_run = self.any_run();
-		any_run && self.cron_jobs || !any_run && !self.skip_cron_jobs
+		self.cron_jobs.unwrap_or_else(|| !self.any_run())
+	}
+
+	pub fn should_run_special_events(&self) -> bool {
+		self.special_events.unwrap_or_else(|| !self.any_run())
 	}
 }

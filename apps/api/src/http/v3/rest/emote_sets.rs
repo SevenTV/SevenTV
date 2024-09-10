@@ -40,7 +40,7 @@ pub fn routes() -> Router<Arc<Global>> {
 pub async fn get_emote_set_by_id(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<EmoteSetId>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let mut emote_set = global
 		.emote_set_by_id_loader
@@ -60,7 +60,7 @@ pub async fn get_emote_set_by_id(
 		None => None,
 	};
 
-	let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), session).await?;
+	let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), &session).await?;
 
 	Ok(Json(EmoteSetModel::from_db(emote_set, emotes, owner)))
 }

@@ -31,6 +31,6 @@ pub enum EntitlementData {
 	Subscription {},
 	EmoteSet {
 		#[serde(rename = "ref")]
-		ref_id: ObjectId,
+		_ref_id: ObjectId,
 	},
 }

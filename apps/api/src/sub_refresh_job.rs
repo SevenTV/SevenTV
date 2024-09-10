@@ -14,18 +14,89 @@ use shared::database::MongoCollection;
 use crate::global::Global;
 use crate::http::error::ApiError;
 
-pub fn sub_age_days(periods: &[SubscriptionPeriod]) -> isize {
-	sub_age(periods).0
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SubAge {
+	pub extra: chrono::Duration,
+	pub months: i32,
+	pub days: i32,
+	pub periods: Vec<StartEnd>,
+	pub expected_end: chrono::DateTime<chrono::Utc>,
 }
 
-pub fn sub_age(periods: &[SubscriptionPeriod]) -> (isize, isize) {
-	periods
-		.iter()
-		.map(|p| {
-			let diff = date_component::date_component::calculate(&p.start, &p.end);
-			(diff.interval_days, diff.month)
-		})
-		.fold((0, 0), |(days, month), diff| (days + diff.0, month + diff.1))
+impl SubAge {
+	pub fn new(periods: &[SubscriptionPeriod]) -> Self {
+		// We need to sum up all the time so that we can calculate the age of the subscription.
+		// We want to make sure there are no overlapping periods so we dont have duplicate time.
+		let now = chrono::Utc::now();
+
+		let expected_end = periods.iter().map(|p| p.end).max().unwrap_or(now);
+
+		let mut combined_periods = periods.into_iter().map(|p| StartEnd { start: p.start, end: p.end.min(now) }).collect::<Vec<_>>();
+
+		combined_periods.sort_by(|a, b| a.start.cmp(&b.start));
+
+		let merged_periods: Vec<StartEnd> = combined_periods
+			.into_iter()
+			.fold(Vec::new(), |mut acc, period| {
+				if acc.is_empty() {
+					acc.push(period);
+					return acc;
+				}
+
+				let last = acc.last_mut().unwrap();
+				if last.end >= period.start {
+					last.end = period.end.max(last.end);
+				} else {
+					acc.push(period);
+				}
+
+				acc
+			});
+
+		let mut extra = chrono::Duration::zero();
+		let mut months = 0;
+		let mut days = 0;
+		for period in &merged_periods {
+			let calc = date_component::date_component::calculate(&period.start, &(period.end + extra));
+
+			// Time that was extra in the period
+			extra = chrono::Duration::days(calc.day as i64)
+				+ chrono::Duration::hours(calc.hour as i64)
+				+ chrono::Duration::minutes(calc.minute as i64)
+				+ chrono::Duration::seconds(calc.second as i64);
+			
+			months += calc.month as i32 + calc.year as i32 * 12;
+			days += calc.interval_days as i32;
+		}
+
+		SubAge {
+			extra,
+			months,
+			days,
+			periods: merged_periods,
+			expected_end,
+		}
+	}
+
+	pub fn meets_condition(&self, condition: &SubscriptionBenefitCondition) -> bool {
+		// Consider the Subscription, if their sub is set to end in the future then they should get the entitlements for the period that they are currently in.
+		// if you sub to twitch you are given the 1 month sub badge even though you havent subbed for the entire month yet, this is because the sub is set to end in the future.
+		// However if you unsub at the end of your term you would have completed the month and wouldnt get the next badge because your sub has ended.
+		// Then once you start subbing again you would get the next badge.
+		let next_period = if self.expected_end > chrono::Utc::now() { 1 } else { 0 };
+
+		match condition {
+			SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => self.days + next_period >= *d,
+			SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => self.months + next_period >= *m,
+			SubscriptionBenefitCondition::TimePeriod(tp) => self.periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end),
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StartEnd {
+	pub start: chrono::DateTime<chrono::Utc>,
+	pub end: chrono::DateTime<chrono::Utc>,
 }
 
 /// Grants entitlements for a subscription.
@@ -86,13 +157,9 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 	let mut remove_edges = vec![];
 
 	for benefit in product.benefits {
-		let (age_days, age_months) = sub_age(&periods);
+		let sub_age = SubAge::new(&periods);
 
-		let is_fulfilled = match &benefit.condition {
-			SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => age_days >= (*d as isize),
-			SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => age_months >= (*m as isize),
-			SubscriptionBenefitCondition::TimePeriod(tp) => periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end),
-		};
+		let is_fulfilled = sub_age.meets_condition(&benefit.condition);
 
 		let benefit_edge = EntitlementEdgeId {
 			from: EntitlementEdgeKind::Subscription {

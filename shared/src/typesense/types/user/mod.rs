@@ -37,6 +37,7 @@ pub struct User {
 	pub emotes: Vec<String>,
 	#[typesense(default_sort)]
 	pub role_rank: i32,
+	pub role_hoist_rank: i32,
 	pub created_at: i64,
 	pub updated_at: i64,
 	pub search_updated_at: i64,
@@ -95,6 +96,7 @@ impl User {
 				.collect(),
 			emotes: value.cached.active_emotes.into_iter().map(|id| id.to_string()).collect(),
 			role_rank: value.cached.role_rank,
+			role_hoist_rank: value.cached.role_hoist_rank,
 			created_at: value.id.timestamp().timestamp_millis(),
 			updated_at: value.updated_at.timestamp_millis(),
 			search_updated_at: Utc::now().timestamp_millis(),

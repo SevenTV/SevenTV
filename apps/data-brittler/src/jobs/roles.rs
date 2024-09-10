@@ -1,6 +1,9 @@
 use std::collections::HashSet;
+use std::str::FromStr;
 use std::sync::Arc;
 
+use bson::oid::ObjectId;
+use shared::database::role::permissions::UserPermission;
 use shared::database::role::Role;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
@@ -50,14 +53,22 @@ impl Job for RolesJob {
 			rank += 1;
 		}
 
+		let mut permissions = role.to_new_permissions();
+
+		// if this is the default role
+		if role.id == "62b48deb791a15a25c2a0354".parse().unwrap() {
+			permissions.user.allow(UserPermission::Login);
+			permissions.user.allow(UserPermission::InviteEditors);
+		}
+
 		match Role::collection(self.global.target_db())
 			.insert_one(Role {
 				id,
-				permissions: role.to_new_permissions(),
+				permissions,
 				name: role.name,
 				description: None,
 				tags: vec![],
-				hoist: false,
+				hoist: role.color != 0,
 				color: Some(role.color),
 				rank,
 				applied_rank: None,
@@ -72,5 +83,18 @@ impl Job for RolesJob {
 		}
 
 		outcome
+	}
+
+	async fn finish(mut self) -> ProcessOutcome {
+		// Insert a new role for translators
+		self.process(types::Role {
+			id: ObjectId::from_str("62f99d0ce46eb00e438a6984").unwrap(),
+			name: "Translator".to_string(),
+			position: 10,
+			allowed: Default::default(),
+			denied: Default::default(),
+			color: 0,
+		})
+		.await
 	}
 }

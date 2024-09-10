@@ -128,17 +128,16 @@ impl Emote {
 		&self,
 		ctx: &Context<'_>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
-		#[graphql(validator(maximum = 50))] limit: Option<u32>,
+		#[graphql(validator(maximum = 100))] limit: Option<u32>,
 	) -> Result<UserSearchResult, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let options = SearchOptions::builder()
-			.query("".to_owned())
-			.query_by(vec!["id".to_owned()])
+			.query("*".to_owned())
 			.filter_by(format!("emotes: {}", self.id.0))
-			.sort_by(vec!["role_rank:desc".to_owned()])
+			.sort_by(vec!["role_hoist_rank:desc".to_owned()])
 			.page(page)
-			.per_page(limit)
+			.per_page(limit.unwrap_or(30))
 			.build();
 
 		let result = search::<shared::typesense::types::user::User>(global, options)
@@ -188,8 +187,7 @@ impl Emote {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let options = SearchOptions::builder()
-			.query("".to_owned())
-			.query_by(vec!["id".to_owned()])
+			.query("*".to_owned())
 			.filter_by(format!("target_id: {}", EventId::Emote(self.id.id())))
 			.sort_by(vec!["created_at:desc".to_owned()])
 			.page(None)
@@ -404,7 +402,7 @@ impl EmotesQuery {
 
 		let mut filters = Vec::new();
 
-		if session.has(EmotePermission::ViewUnlisted) {
+		if !session.has(EmotePermission::ViewUnlisted) {
 			filters.push("flag_public_listed: true".to_owned());
 			filters.push("flag_private: false".to_owned());
 		}
@@ -441,7 +439,7 @@ impl EmotesQuery {
 
 			match filter.category {
 				None | Some(EmoteSearchCategory::Top) => {
-					sort_by.push("scorez_top_all_time:desc".to_owned());
+					sort_by.push("score_top_all_time:desc".to_owned());
 				}
 				Some(EmoteSearchCategory::Featured) | Some(EmoteSearchCategory::TrendingDay) => {
 					sort_by.push(format!("score_trending_day:{order}"));

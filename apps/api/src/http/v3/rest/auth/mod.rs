@@ -95,16 +95,16 @@ pub struct LoginRequest {
 async fn login(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 	Query(query): Query<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let req = RateLimitRequest::new(RateLimitResource::Login, session);
+	let req = RateLimitRequest::new(RateLimitResource::Login, &session);
 
 	req.http(&global, async {
 		let location = if query.callback {
-			handle_login_callback(&global, session, query, &cookies).await?
+			handle_login_callback(&global, &session, query, &cookies).await?
 		} else {
-			handle_login(&global, session, query.platform.into(), &cookies)?
+			handle_login(&global, &session, query.platform.into(), &cookies)?
 		};
 
 		Ok::<_, ApiError>(Redirect::to(&location))
@@ -125,7 +125,7 @@ async fn login(
 async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let global = &global;
 	let res = with_transaction(global, |mut tx| async move {

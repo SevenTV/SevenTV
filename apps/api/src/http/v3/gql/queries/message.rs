@@ -127,7 +127,7 @@ impl MessagesQuery {
 		&self,
 		ctx: &Context<'ctx>,
 		#[graphql(validator(maximum = 50))] page: Option<u32>,
-		#[graphql(validator(maximum = 500))] limit: Option<u32>,
+		#[graphql(validator(maximum = 250))] limit: Option<u32>,
 		#[graphql(validator(max_length = 100))] wish: Option<String>,
 		#[graphql(validator(max_length = 100))] country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
@@ -151,10 +151,9 @@ impl MessagesQuery {
 		}
 
 		let options = SearchOptions::builder()
-			.query("".to_owned())
-			.query_by(vec!["id".to_owned()])
+			.query("*".to_owned())
 			.filter_by(filters.join(" && "))
-			.sort_by(vec!["priority:desc".to_owned()])
+			.sort_by(vec!["priority:desc".to_owned(), "created_at:asc".to_owned()])
 			.page(page)
 			.per_page(limit)
 			.build();

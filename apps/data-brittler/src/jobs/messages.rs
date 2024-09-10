@@ -93,6 +93,39 @@ impl Job for MessagesJob {
 		};
 
 		if self.dedupe_mod_requests.insert((emote_id, kind)) {
+			let user: Option<types::User> = self
+				.global
+				.source_db()
+				.collection("users")
+				.find_one(doc! { "_id": message.author_id })
+				.await
+				.ok()
+				.flatten();
+
+			let mut roles = user.map(|u| u.role_ids).unwrap_or_default();
+
+			if let Ok(mut cursor) = self
+				.global
+				.source_db()
+				.collection::<types::Entitlement>("entitlements")
+				.find(doc! { "kind": "ROLE", "user_id": message.author_id })
+				.await
+			{
+				while let Some(e) = cursor.try_next().await.ok().flatten() {
+					if let types::EntitlementData::Role { ref_id } = e.data {
+						roles.push(ref_id);
+					}
+				}
+			}
+
+			let priority = if roles.contains(&"6076a99409a4c63a38ebe802".parse().unwrap()) {
+				20
+			} else if roles.contains(&"6076a86b09a4c63a38ebe801".parse().unwrap()) {
+				10
+			} else {
+				0
+			};
+
 			self.mod_requests.push(EmoteModerationRequest {
 				id,
 				user_id: message.author_id.into(),
@@ -102,7 +135,7 @@ impl Job for MessagesJob {
 				status,
 				country_code,
 				assigned_to: vec![],
-				priority: 0,
+				priority,
 				search_updated_at: None,
 				updated_at: chrono::Utc::now(),
 			});

@@ -32,7 +32,7 @@ pub struct SubscriptionResponse {
 pub async fn subscription(
 	State(global): State<Arc<Global>>,
 	Path(target): Path<TargetUser>,
-	Extension(session): Extension<&Session>,
+	Extension(session): Extension<Session>,
 ) -> Result<Json<SubscriptionResponse>, ApiError> {
 	let user = match target {
 		TargetUser::Me => session.user_id().ok_or(ApiError::UNAUTHORIZED)?,
@@ -94,7 +94,7 @@ pub async fn subscription(
 		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
 		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
 
-	let age = sub_refresh_job::sub_age_days(&periods);
+	let age = sub_refresh_job::SubAge::new(&periods);
 
 	let provider = active_period.provider_id.as_ref().map(|id| match id {
 		ProviderSubscriptionId::Stripe(_) => types::Provider::Stripe,
@@ -129,7 +129,7 @@ pub async fn subscription(
 
 	Ok(Json(SubscriptionResponse {
 		active: true,
-		age: age.try_into().unwrap_or(0),
+		age: age.days as u32,
 		renew,
 		end_at: Some(end_at),
 		subscription: Some(types::Subscription {

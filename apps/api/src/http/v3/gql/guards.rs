@@ -81,7 +81,7 @@ impl Guard for RateLimitGuard {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let response = ctx
-			.data::<Arc<RateLimitResponseStore>>()
+			.data::<RateLimitResponseStore>()
 			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 
 		let mut req = RateLimitRequest::new(self.resource, session);

@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::sync::Arc;
 
 use itertools::Itertools;
@@ -8,17 +9,36 @@ use typesense_codegen::models::SearchParameters;
 
 use crate::global::Global;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug)]
 pub enum SearchError {
-	#[error("failed to search: {0}")]
-	Search(#[from] typesense_codegen::apis::Error<SearchCollectionError>),
+	Search(typesense_codegen::apis::Error<SearchCollectionError>),
 }
+
+impl From<typesense_codegen::apis::Error<SearchCollectionError>> for SearchError {
+	fn from(value: typesense_codegen::apis::Error<SearchCollectionError>) -> Self {
+		Self::Search(value)
+	}
+}
+
+impl Display for SearchError {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Search(typesense_codegen::apis::Error::ResponseError(e)) => {
+				write!(f, "status code {}, content: {}", e.status, e.content)
+			}
+			Self::Search(e) => write!(f, "{e}"),
+		}
+	}
+}
+
+impl std::error::Error for SearchError {}
 
 #[derive(TypedBuilder, Debug, Clone)]
 #[builder(field_defaults(setter(into)))]
 pub struct SearchOptions {
 	pub query: String,
-	pub query_by: Vec<String>,
+	#[builder(default)]
+	pub query_by: Option<Vec<String>>,
 	#[builder(default)]
 	pub query_by_weights: Option<Vec<i32>>,
 	#[builder(default)]
@@ -60,7 +80,7 @@ pub async fn search<T: TypesenseCollection>(
 		T::COLLECTION_NAME,
 		SearchParameters {
 			q: options.query,
-			query_by: options.query_by.join(","),
+			query_by: options.query_by.unwrap_or_default().join(","),
 			query_by_weights: options.query_by_weights.map(|w| w.iter().map(|i| i.to_string()).join(",")),
 			filter_by: options.filter_by,
 			sort_by: options.sort_by.map(|s| s.join(",")),
@@ -79,7 +99,7 @@ pub async fn search<T: TypesenseCollection>(
 
 	Ok(SearchResult {
 		hits: resp.hits.into_iter().flatten().filter_map(|h| Some(h.document?.id)).collect(),
-		found: resp.found.unwrap_or(0).min(0) as u64,
-		// search_time_ms: resp.search_time_ms.unwrap_or(0).min(0) as u64,
+		found: resp.found.unwrap_or(0).max(0) as u64,
+		// search_time_ms: resp.search_time_ms.unwrap_or(0).max(0) as u64,
 	})
 }
