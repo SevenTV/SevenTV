@@ -25,9 +25,12 @@ use crate::global::Global;
 pub mod egvault;
 pub mod error;
 pub mod extract;
+pub mod guards;
 pub mod internal;
 pub mod middleware;
 pub mod v3;
+pub mod v4;
+pub mod validators;
 
 const ALLOWED_CORS_HEADERS: [&str; 8] = [
 	"content-type",
@@ -86,6 +89,7 @@ fn routes(global: Arc<Global>) -> Router {
 		.route("/", get(root))
 		.nest("/internal", internal::routes())
 		.nest("/v3", v3::routes(&global))
+		.nest("/v4", v4::routes(&global))
 		.nest("/egvault/v1", egvault::routes())
 		.with_state(global.clone())
 		.fallback(not_found)

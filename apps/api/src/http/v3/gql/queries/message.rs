@@ -10,7 +10,7 @@ use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
+use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::search::{search, sorted_results, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/messages.gql

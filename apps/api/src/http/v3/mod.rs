@@ -5,11 +5,10 @@ use utoipa::OpenApi;
 
 use crate::global::Global;
 
-pub mod docs;
-pub mod emote_set_loader;
-pub mod gql;
+mod docs;
+mod emote_set_loader;
+mod gql;
 pub mod rest;
-mod validators;
 
 pub fn docs() -> utoipa::openapi::OpenApi {
 	#[derive(OpenApi)]

@@ -14,8 +14,8 @@ use super::report::Report;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::RateLimitGuard;
 use crate::search::{search, sorted_results, SearchOptions};
+use crate::http::guards::RateLimitGuard;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
 
