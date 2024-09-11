@@ -486,11 +486,20 @@ impl Permissions {
 		self.paint.merge(other.paint);
 		self.user.merge(other.user);
 		self.ticket.merge(other.ticket);
+		self.emote_moderation_request.merge(other.emote_moderation_request);
 		self.admin.merge(other.admin);
+		self.flags.merge(other.flags);
+
 		self.emote_moderation_request_priority = other
 			.emote_moderation_request_priority
 			.or(self.emote_moderation_request_priority);
 		self.emote_moderation_request_limit = other.emote_moderation_request_limit.or(self.emote_moderation_request_limit);
+		self.emote_set_capacity = other.emote_set_capacity.or(self.emote_set_capacity);
+		self.personal_emote_set_capacity = other.personal_emote_set_capacity.or(self.personal_emote_set_capacity);
+
+		self.ratelimits
+			.extend(other.ratelimits.iter().map(|(k, v)| (k.clone(), v.clone())));
+		self.unknown.extend(other.unknown.iter().map(|(k, v)| (k.clone(), v.clone())));
 	}
 
 	pub fn allow(&mut self, perm: impl Into<Permission>) {
