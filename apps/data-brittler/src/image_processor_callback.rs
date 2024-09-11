@@ -353,34 +353,14 @@ async fn handle_success(global: &Arc<Global>, subject: Subject, event: event_cal
 
 async fn handle_abort(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
 	match subject {
-		Subject::PaintLayer(id, layer_id) => {
+		Subject::PaintLayer(id, _) => {
 			Paint::collection(global.target_db())
-				.update_one(
-					filter::filter! {
-						Paint {
-							#[query(rename = "_id")]
-							id: id,
-							#[query(flatten)]
-							data: PaintData {
-								#[query(flatten)]
-								layers: PaintLayer {
-									id: layer_id,
-								}
-							}
-						}
-					},
-					update::update! {
-						#[query(pull)]
-						Paint {
-							#[query(flatten)]
-							data: PaintData {
-								layers: PaintLayer {
-									id: layer_id,
-								}
-							}
-						},
-					},
-				)
+				.delete_one(filter::filter! {
+					Paint {
+						#[query(rename = "_id")]
+						id: id,
+					}
+				})
 				.await?;
 		}
 		Subject::Badge(id) => {
@@ -399,7 +379,9 @@ async fn handle_abort(global: &Arc<Global>, subject: Subject) -> anyhow::Result<
 	Ok(())
 }
 
-async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callback::Fail) -> anyhow::Result<()> {
+async fn handle_fail(global: &Arc<Global>, subject: Subject, event: event_callback::Fail) -> anyhow::Result<()> {
+	tracing::warn!(subject = subject.to_string(""), event = ?event, "failed to process image");
+
 	handle_abort(global, subject).await?;
 
 	// Notify user of failure with reason
@@ -408,6 +390,8 @@ async fn handle_fail(global: &Arc<Global>, subject: Subject, _event: event_callb
 }
 
 async fn handle_cancel(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
+	tracing::warn!(subject = subject.to_string(""), "image processing job cancelled");
+
 	handle_abort(global, subject).await?;
 
 	// Notify user of cancellation

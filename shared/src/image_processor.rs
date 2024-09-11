@@ -278,21 +278,29 @@ impl ImageProcessor {
 	) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
 			Some(self.make_input_upload(format!("/paint/{id}/layer/{layer_id}/input.{{ext}}"), data)),
-			self.make_task(
-				scuffle_image_processor_proto::Output {
-					max_aspect_ratio: None,
-					..self.make_output(format!("/paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
-				},
-				self.make_events(
-					Subject::PaintLayer(id, layer_id),
-					[
-						("paint_id".to_string(), id.to_string()),
-						("layer_id".to_string(), layer_id.to_string()),
-					]
-					.into_iter()
-					.collect(),
-				),
-			),
+			image_processor::Task {
+				limits: Some(image_processor::Limits {
+					max_input_frame_count: Some(1000),
+					max_input_width: Some(1500),
+					max_input_height: Some(1500),
+					..Default::default()
+				}),
+				..self.make_task(
+					scuffle_image_processor_proto::Output {
+						max_aspect_ratio: None,
+						..self.make_output(format!("/paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
+					},
+					self.make_events(
+						Subject::PaintLayer(id, layer_id),
+						[
+							("paint_id".to_string(), id.to_string()),
+							("layer_id".to_string(), layer_id.to_string()),
+						]
+						.into_iter()
+						.collect(),
+					),
+				)
+			},
 		);
 
 		self.send_req(req).await
