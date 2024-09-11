@@ -17,7 +17,7 @@ impl ImageHost {
 			let path = i.path.clone();
 			// keep everything until last '/'
 			let split = path.split('/').collect::<Vec<_>>();
-			Some(format!("{cdn_base_url}/{}", split.split_last()?.1.join("/")))
+			Some(format!("{cdn_base_url}{}", split.split_last()?.1.join("/")))
 		});
 
 		let animated = image_set.outputs.iter().any(|i| i.frame_count > 1);
