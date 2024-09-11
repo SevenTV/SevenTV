@@ -138,7 +138,7 @@ impl Job for UsersJob {
 		let active_paint_id = entitlements
 			.iter()
 			.find_map(|e| match e.data {
-				types::EntitlementData::Badge { selected: true, ref_id } => Some(ref_id),
+				types::EntitlementData::Paint { selected: true, ref_id } => Some(ref_id),
 				_ => None,
 			});
 
