@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use bson::oid::ObjectId;
-use shared::database::role::permissions::UserPermission;
+use shared::database::role::permissions::{EmotePermission, EmoteSetPermission, Permissions, TicketPermission, UserPermission};
 use shared::database::role::Role;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
@@ -53,48 +53,116 @@ impl Job for RolesJob {
 			rank += 1;
 		}
 
-		let mut permissions = role.to_new_permissions();
-
 		// if this is the default role
-		if role.id == "62b48deb791a15a25c2a0354".parse().unwrap() {
-			permissions.user.allow(UserPermission::Login);
-			permissions.user.allow(UserPermission::InviteEditors);
-		}
-
-		match Role::collection(self.global.target_db())
-			.insert_one(Role {
-				id,
-				permissions,
-				name: role.name,
-				description: None,
-				tags: vec![],
-				hoist: role.color != 0,
-				color: Some(role.color),
-				rank,
-				applied_rank: None,
-				search_updated_at: None,
-				created_by: UserId::nil(),
-				updated_at: chrono::Utc::now(),
-			})
-			.await
-		{
-			Ok(_) => outcome.inserted_rows += 1,
-			Err(e) => outcome.errors.push(e.into()),
+		if role.id != "62b48deb791a15a25c2a0354".parse().unwrap() && role.id != "6076a86b09a4c63a38ebe801".parse().unwrap() {
+			match Role::collection(self.global.target_db())
+				.insert_one(Role {
+					id,
+					permissions: role.to_new_permissions(),
+					name: role.name,
+					description: None,
+					tags: vec![],
+					hoist: role.color != 0,
+					color: (role.color != 0).then_some(role.color),
+					rank,
+					applied_rank: None,
+					search_updated_at: None,
+					created_by: UserId::nil(),
+					updated_at: chrono::Utc::now(),
+				})
+				.await
+			{
+				Ok(_) => outcome.inserted_rows += 1,
+				Err(e) => outcome.errors.push(e.into()),
+			}
 		}
 
 		outcome
 	}
 
-	async fn finish(mut self) -> ProcessOutcome {
-		// Insert a new role for translators
-		self.process(types::Role {
-			id: ObjectId::from_str("62f99d0ce46eb00e438a6984").unwrap(),
+	async fn finish(self) -> ProcessOutcome {
+		let mut outcome = ProcessOutcome::default();
+
+		let mut roles = vec![];
+
+		// Insert default role
+		let mut default_permissions = Permissions::default();
+		default_permissions.emote.allow(EmotePermission::Upload);
+		default_permissions.emote.allow(EmotePermission::Edit);
+		default_permissions.emote.allow(EmotePermission::Delete);
+
+		default_permissions.emote_set.allow(EmoteSetPermission::Manage);
+
+		default_permissions.user.allow(UserPermission::Login);
+		default_permissions.user.allow(UserPermission::InviteEditors);
+		default_permissions.user.allow(UserPermission::UseBadge);
+		default_permissions.user.allow(UserPermission::UsePaint);
+
+		default_permissions.ticket.allow(TicketPermission::Create);
+		default_permissions.ticket.allow(TicketPermission::Message);
+
+		default_permissions.emote_moderation_request_priority = Some(1);
+		default_permissions.emote_moderation_request_limit = Some(10);
+		default_permissions.emote_set_capacity = Some(1000);
+
+		roles.push(Role {
+			id: ObjectId::from_str("62b48deb791a15a25c2a0354").unwrap().into(),
+			permissions: default_permissions,
+			name: "Default".to_string(),
+			description: None,
+			tags: vec![],
+			hoist: false,
+			color: None,
+			rank: 0,
+			applied_rank: None,
+			search_updated_at: None,
+			created_by: UserId::nil(),
+			updated_at: chrono::Utc::now(),
+		});
+
+		let mut sub_permissions = Permissions::default();
+		sub_permissions.user.allow(UserPermission::UseCustomProfilePicture);
+		sub_permissions.user.allow(UserPermission::UsePersonalEmoteSet);
+		sub_permissions.personal_emote_set_capacity = Some(5);
+
+		roles.push(Role {
+			id: ObjectId::from_str("6076a86b09a4c63a38ebe801").unwrap().into(),
+			permissions: Permissions::default(),
+			name: "Subscriber".to_string(),
+			description: None,
+			tags: vec![],
+			hoist: false,
+			color: Some(-5635841),
+			rank: 0,
+			applied_rank: None,
+			search_updated_at: None,
+			created_by: UserId::nil(),
+			updated_at: chrono::Utc::now(),
+		});
+
+		roles.push(Role {
+			id: ObjectId::from_str("62f99d0ce46eb00e438a6984").unwrap().into(),
+			permissions: Permissions::default(),
 			name: "Translator".to_string(),
-			position: 10,
-			allowed: Default::default(),
-			denied: Default::default(),
-			color: 0,
-		})
-		.await
+			description: None,
+			tags: vec![],
+			hoist: false,
+			color: None,
+			rank: 0,
+			applied_rank: None,
+			search_updated_at: None,
+			created_by: UserId::nil(),
+			updated_at: chrono::Utc::now(),
+		});
+
+		match Role::collection(self.global.target_db()).insert_many(&roles).await {
+			Ok(r) if r.inserted_ids.len() == roles.len() => {
+				outcome.inserted_rows += r.inserted_ids.len() as u64;
+			}
+			Ok(_) => outcome = outcome.with_error(crate::error::Error::InsertMany),
+			Err(e) => outcome = outcome.with_error(e),
+		}
+
+		outcome
 	}
 }

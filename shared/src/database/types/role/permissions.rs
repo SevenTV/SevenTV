@@ -264,17 +264,15 @@ pub enum UserPermission {
 	UseBadge = 32,
 	/// Use paints
 	UsePaint = 64,
-	/// Allows the user to use special emote sets
-	UseSpecialEmoteSet = 128,
 
 	/// Allows the user to manage other users
-	ManageAny = 256,
+	ManageAny = 128,
 
 	/// Allows the user to moderate other users (ban, unban, etc.)
-	Moderate = 512,
+	Moderate = 256,
 
 	/// View hidden users
-	ViewHidden = 1028,
+	ViewHidden = 512,
 }
 
 impl BitMask for UserPermission {
