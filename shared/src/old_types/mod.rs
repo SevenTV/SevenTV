@@ -98,7 +98,7 @@ impl UserPartialModel {
 		user: FullUser,
 		paint: Option<CosmeticPaintModel>,
 		badge: Option<CosmeticBadgeModel>,
-		cdn_base_url: &str,
+		cdn_base_url: &url::Url,
 	) -> Self {
 		let main_connection = user.connections.first();
 
@@ -476,7 +476,7 @@ impl UserModel {
 		badge: Option<CosmeticBadgeModel>,
 		emote_sets: Vec<EmoteSetPartialModel>,
 		editors: Vec<UserEditorModel>,
-		cdn_base_url: &str,
+		cdn_base_url: &url::Url,
 	) -> Self {
 		let created_at = user.id.timestamp_ms();
 		let active_emote_set_id = user.style.active_emote_set_id;
@@ -815,7 +815,7 @@ pub struct EmotePartialModel {
 }
 
 impl EmotePartialModel {
-	pub fn from_db(value: Emote, owner: Option<UserPartialModel>, cdn_base_url: &str) -> Self {
+	pub fn from_db(value: Emote, owner: Option<UserPartialModel>, cdn_base_url: &url::Url) -> Self {
 		Self {
 			id: value.id,
 			name: value.default_name,

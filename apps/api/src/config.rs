@@ -20,8 +20,8 @@ pub struct Api {
 	#[settings(default = "https://7tv.app".into())]
 	pub website_origin: String,
 	/// cdn base url
-	#[settings(default = "//cdn.7tv.app".into())]
-	pub cdn_origin: String,
+	#[settings(default = "https://cdn.7tv.app/".parse().unwrap())]
+	pub cdn_origin: url::Url,
 	/// public domain
 	#[settings(default = "7tv.io".into())]
 	pub domain: String,

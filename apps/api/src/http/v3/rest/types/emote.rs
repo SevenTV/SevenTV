@@ -22,7 +22,7 @@ pub struct EmoteModel {
 }
 
 impl EmoteModel {
-	pub fn from_db(value: Emote, owner: Option<UserPartialModel>, cdn_base_url: &str) -> Self {
+	pub fn from_db(value: Emote, owner: Option<UserPartialModel>, cdn_base_url: &url::Url) -> Self {
 		let partial = EmotePartialModel::from_db(value, owner, cdn_base_url);
 
 		Self {

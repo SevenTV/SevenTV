@@ -12,12 +12,15 @@ pub struct ImageHost {
 }
 
 impl ImageHost {
-	pub fn from_image_set(image_set: &ImageSet, cdn_base_url: &str) -> Self {
+	pub fn from_image_set(image_set: &ImageSet, cdn_base_url: &url::Url) -> Self {
 		let url = image_set.outputs.first().and_then(|i| {
 			let path = i.path.clone();
 			// keep everything until last '/'
 			let split = path.split('/').collect::<Vec<_>>();
-			Some(format!("{cdn_base_url}{}", split.split_last()?.1.join("/")))
+			cdn_base_url
+				.join(&split.split_last()?.1.join("/"))
+				.map(|u| u.as_str().trim_start_matches("https:").trim_start_matches("http:").to_string())
+				.ok()
 		});
 
 		let animated = image_set.outputs.iter().any(|i| i.frame_count > 1);

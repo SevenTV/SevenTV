@@ -182,6 +182,7 @@ dependencies = [
  "tracing",
  "typed-builder 0.20.0",
  "typesense_codegen",
+ "url",
  "urlencoding",
  "utoipa",
  "x509-certificate",

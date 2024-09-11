@@ -412,7 +412,7 @@ impl From<InternalEventTicketData> for StoredEventTicketData {
 impl InternalEventPayload {
 	pub fn into_old_messages(
 		self,
-		cdn_base_url: &str,
+		cdn_base_url: &url::Url,
 		seq: u64,
 	) -> anyhow::Result<Vec<event_api::Message<event_api::payload::Dispatch>>> {
 		let events = self

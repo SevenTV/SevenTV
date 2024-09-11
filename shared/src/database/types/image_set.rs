@@ -43,7 +43,7 @@ pub struct Image {
 }
 
 impl Image {
-	pub fn get_url(&self, cdn_base_url: &str) -> String {
-		format!("{}/{}", cdn_base_url, self.path)
+	pub fn get_url(&self, cdn_base_url: &url::Url) -> String {
+		cdn_base_url.join(&self.path).map(|u| u.to_string()).unwrap_or_default()
 	}
 }

@@ -78,7 +78,7 @@ impl CosmeticPaintModel {
 }
 
 impl CosmeticPaintModel {
-	pub fn from_db(value: Paint, cdn_base_url: &str) -> Option<Self> {
+	pub fn from_db(value: Paint, cdn_base_url: &url::Url) -> Option<Self> {
 		let first_layer = value.data.layers.first();
 
 		Some(Self {
@@ -307,7 +307,7 @@ impl CosmeticBadgeModel {
 }
 
 impl CosmeticBadgeModel {
-	pub fn from_db(value: Badge, cdn_base_url: &str) -> Option<Self> {
+	pub fn from_db(value: Badge, cdn_base_url: &url::Url) -> Option<Self> {
 		let id = value.id.cast();
 		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url);
 
