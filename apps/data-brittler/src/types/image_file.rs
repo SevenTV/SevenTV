@@ -40,7 +40,7 @@ impl TryFrom<ImageFile> for Image {
 			.with_context(|| format!("invalid avatar id: {}", value.key))?;
 			let file = key.next().with_context(|| format!("missing file: {}", value.key))?;
 
-			format!("user/{}/profile-picture/{}/{}", id, avatar_id, file)
+			format!("/user/{}/profile-picture/{}/{}", id, avatar_id, file)
 		} else {
 			let next_segment = key.next().with_context(|| format!("missing segment: {}", value.key))?;
 			// some paths start with "emote/emote"
@@ -52,7 +52,7 @@ impl TryFrom<ImageFile> for Image {
 			.with_context(|| format!("invalid id: {}", value.key))?;
 			let file = key.next().with_context(|| format!("missing file: {}", value.key))?;
 
-			format!("{}/{}/{}", ty, id, file)
+			format!("/{}/{}/{}", ty, id, file)
 		};
 
 		Ok(Self {
