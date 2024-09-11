@@ -2,8 +2,8 @@ use mongodb::bson::oid::ObjectId;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Entitlement {
-	#[serde(rename = "_id")]
-	pub id: ObjectId,
+	// #[serde(rename = "_id")]
+	// pub id: ObjectId,
 	pub user_id: Option<ObjectId>,
 	#[serde(flatten)]
 	pub data: EntitlementData,
