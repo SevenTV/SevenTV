@@ -15,13 +15,13 @@ use shared::database::product::subscription::SubscriptionId;
 use shared::database::product::{ProductId, SubscriptionProductId};
 use shared::database::queries::{filter, update};
 use shared::database::role::RoleId;
+use shared::database::updater::MongoReq;
 use shared::database::user::editor::UserEditorId;
 use shared::database::user::relation::UserRelationId;
 use shared::database::user::UserId;
 use shared::database::{MongoCollection, SearchableMongoCollection};
 use shared::typesense::types::{TypesenseCollection, TypesenseString};
 
-use crate::batcher::updater::MongoReq;
 use crate::global::Global;
 use crate::types::{mongo, typesense};
 

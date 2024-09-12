@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherError, BatcherNormalMode};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::queries::{filter, update};
-use shared::database::MongoCollection;
+
+use crate::database::queries::{filter, update};
+use crate::database::MongoCollection;
 
 pub struct MongoUpdater(Batcher<Inner>);
 

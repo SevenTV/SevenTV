@@ -8,6 +8,7 @@ use crate::config::Config;
 
 mod config;
 mod connections;
+mod cron;
 mod dataloader;
 mod global;
 mod http;
@@ -18,7 +19,6 @@ mod search;
 mod stripe_client;
 mod sub_refresh_job;
 mod transactions;
-mod cron;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
@@ -70,6 +70,8 @@ async fn main(settings: Matches<Config>) {
 			.await
 			.ok();
 	});
+
+	tracing::info!("started api");
 
 	tokio::select! {
 		r = http_handle => tracing::warn!("http server exited: {:?}", r),

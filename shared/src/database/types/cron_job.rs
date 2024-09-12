@@ -45,7 +45,7 @@ pub struct CronJob {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(tag = "unit", content = "count")]
 pub enum CronJobInterval {
 	Hours(i32),
 	Days(i32),

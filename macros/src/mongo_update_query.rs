@@ -206,35 +206,25 @@ struct Struct {
 	path: syn::Path,
 	fields: Vec<Field>,
 	mode: Mode,
-	expr: syn::ExprStruct,
 }
 
 impl Struct {
 	fn from_syn(expr: syn::ExprStruct, mode: Mode) -> Result<Self, syn::Error> {
-		let fields = if !matches!(mode, Mode::SetOnInsert(_)) {
-			expr.fields
-				.iter()
-				.cloned()
-				.map(|field| Field::from_syn(mode.clone(), field))
-				.collect::<Result<Vec<_>, _>>()?
-		} else {
-			vec![]
-		};
+		let fields = expr
+			.fields
+			.iter()
+			.cloned()
+			.map(|field| Field::from_syn(mode.clone(), field))
+			.collect::<Result<Vec<_>, _>>()?;
 
 		Ok(Self {
 			path: expr.path.clone(),
 			fields,
 			mode,
-			expr,
 		})
 	}
 
 	fn to_bson(&self) -> proc_macro2::TokenStream {
-		if let Mode::SetOnInsert(_) = &self.mode {
-			let expr = &self.expr;
-			return quote! { bson::to_document(&#expr).expect("Failed to serialize") };
-		};
-
 		let fields = self.fields.iter().map(|field| field.to_bson());
 		quote! {
 			{

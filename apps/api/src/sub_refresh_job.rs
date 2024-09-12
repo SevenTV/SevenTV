@@ -110,7 +110,7 @@ pub struct StartEnd {
 }
 
 /// Grants entitlements for a subscription.
-pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> Result<(), ApiError> {
+pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> Result<(), ApiError> {
 	let product = global
 		.subscription_product_by_id_loader
 		.load(subscription_id.product_id)
@@ -121,9 +121,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 	// load existing edges
 	let outgoing: HashSet<_> = global
 		.entitlement_edge_outbound_loader
-		.load(EntitlementEdgeKind::Subscription {
-			subscription_id: *subscription_id,
-		})
+		.load(EntitlementEdgeKind::Subscription { subscription_id })
 		.await
 		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription entitlements"))?
 		.unwrap_or_default()
@@ -133,9 +131,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 
 	let incoming: HashSet<_> = global
 		.entitlement_edge_inbound_loader
-		.load(EntitlementEdgeKind::Subscription {
-			subscription_id: *subscription_id,
-		})
+		.load(EntitlementEdgeKind::Subscription { subscription_id })
 		.await
 		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription entitlements"))?
 		.unwrap_or_default()
@@ -148,7 +144,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 		.find(filter::filter! {
 			SubscriptionPeriod {
 				#[query(serde)]
-				subscription_id: subscription_id,
+				subscription_id,
 			}
 		})
 		.await
@@ -165,22 +161,17 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 
 	let mut new_edges = vec![];
 	let mut remove_edges = vec![];
+	let sub_age = SubAge::new(&periods);
 
 	for benefit in product.benefits {
-		let sub_age = SubAge::new(&periods);
-
 		let is_fulfilled = sub_age.meets_condition(&benefit.condition);
 
 		let benefit_edge = EntitlementEdgeId {
-			from: EntitlementEdgeKind::Subscription {
-				subscription_id: *subscription_id,
-			},
+			from: EntitlementEdgeKind::Subscription { subscription_id },
 			to: EntitlementEdgeKind::SubscriptionBenefit {
 				subscription_benefit_id: benefit.id,
 			},
-			managed_by: Some(EntitlementEdgeManagedBy::Subscription {
-				subscription_id: *subscription_id,
-			}),
+			managed_by: Some(EntitlementEdgeManagedBy::Subscription { subscription_id }),
 		};
 
 		if is_fulfilled && !outgoing.contains(&benefit_edge.to) {
@@ -191,32 +182,30 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 	}
 
 	let now = chrono::Utc::now();
-	let active_period = periods.iter().find(|p| p.start < now && p.end > now);
+	let active_periods = periods.iter().filter(|p| p.start < now && p.end > now).collect::<Vec<_>>();
 
 	let user_edge = EntitlementEdgeId {
 		from: EntitlementEdgeKind::User {
 			user_id: subscription_id.user_id,
 		},
-		to: EntitlementEdgeKind::Subscription {
-			subscription_id: *subscription_id,
-		},
-		managed_by: Some(EntitlementEdgeManagedBy::Subscription {
-			subscription_id: *subscription_id,
-		}),
+		to: EntitlementEdgeKind::Subscription { subscription_id },
+		managed_by: Some(EntitlementEdgeManagedBy::Subscription { subscription_id }),
 	};
 
-	if let Some(active) = active_period {
+	if !active_periods.is_empty() {
 		if !incoming.contains(&user_edge.from) {
 			new_edges.push(user_edge);
 		}
 
-		let state = if matches!(
-			active.created_by,
-			SubscriptionPeriodCreatedBy::Invoice {
-				cancel_at_period_end: true,
-				..
-			}
-		) {
+		let state = if active_periods.iter().all(|period| {
+			matches!(
+				period.created_by,
+				SubscriptionPeriodCreatedBy::Invoice {
+					cancel_at_period_end: true,
+					..
+				}
+			)
+		}) {
 			SubscriptionState::CancelAtEnd
 		} else {
 			SubscriptionState::Active
@@ -233,11 +222,17 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 				update::update! {
 					#[query(set)]
 					Subscription {
-						#[query(rename = "_id", serde)]
-						id: subscription_id,
 						#[query(serde)]
 						state,
+						ended_at: None::<chrono::DateTime<chrono::Utc>>,
 						updated_at: chrono::Utc::now(),
+					},
+					#[query(set_on_insert)]
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: subscription_id,
+						created_at: chrono::Utc::now(),
+						search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
 					}
 				},
 			)
@@ -263,11 +258,17 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 				update::update! {
 					#[query(set)]
 					Subscription {
-						#[query(rename = "_id", serde)]
-						id: subscription_id,
 						#[query(serde)]
 						state: SubscriptionState::Ended,
+						ended_at: Some(sub_age.expected_end),
 						updated_at: chrono::Utc::now(),
+					},
+					#[query(set_on_insert)]
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: subscription_id,
+						created_at: chrono::Utc::now(),
+						search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
 					}
 				},
 			)

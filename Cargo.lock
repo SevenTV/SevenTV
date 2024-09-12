@@ -185,6 +185,7 @@ dependencies = [
  "url",
  "urlencoding",
  "utoipa",
+ "uuid 1.10.0",
  "x509-certificate",
 ]
 

@@ -5,7 +5,9 @@ use std::sync::Arc;
 use anyhow::Context as _;
 use bson::doc;
 use scuffle_foundations::batcher::dataloader::DataLoader;
+use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::server::HealthCheck;
+use shared::clickhouse::init_clickhouse;
 use shared::database::badge::Badge;
 use shared::database::emote::Emote;
 use shared::database::emote_moderation_request::EmoteModerationRequest;
@@ -20,6 +22,7 @@ use shared::database::product::{Product, SubscriptionProduct};
 use shared::database::role::Role;
 use shared::database::stored_event::StoredEvent;
 use shared::database::ticket::Ticket;
+use shared::database::updater::MongoUpdater;
 use shared::database::user::ban::UserBan;
 use shared::database::user::editor::UserEditor;
 use shared::database::user::profile_picture::UserProfilePicture;
@@ -84,24 +87,32 @@ pub struct Global {
 	pub user_session_updater_batcher: DataLoader<UserSessionUpdaterBatcher>,
 	pub user_loader: FullUserLoader,
 	pub typesense: typesense_codegen::apis::configuration::Configuration,
+	pub updater: MongoUpdater,
 }
 
 impl Global {
 	pub async fn new(config: Config) -> anyhow::Result<Arc<Self>> {
 		let (nats, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
+
+		tracing::info!("connected to nats");
+
 		let mongo = shared::database::setup_and_init_database(&config.database)
 			.await
 			.context("database setup")?;
+
+		tracing::info!("connected to mongo");
 
 		let db = mongo
 			.default_database()
 			.ok_or_else(|| anyhow::anyhow!("No default database"))?;
 
-		let clickhouse = clickhouse::Client::default().with_url(&config.clickhouse.uri);
+		let clickhouse = init_clickhouse(&config.clickhouse).await?;
 
 		let image_processor = ImageProcessor::new(&config.api.image_processor)
 			.await
 			.context("image processor setup")?;
+
+		tracing::info!("connected to image processor");
 
 		let typesense = typesense_codegen::apis::configuration::Configuration {
 			base_path: config.typesense.uri.clone(),
@@ -116,14 +127,18 @@ impl Global {
 		let stripe_client = stripe_client::StripeClientManager::new(&config);
 
 		let geoip = if let Some(config) = config.api.geoip.as_ref() {
-			Some(GeoIpResolver::new(config).await?)
+			Some(GeoIpResolver::new(config).await.context("geoip resolver")?)
 		} else {
 			None
 		};
 
 		let redis = setup_redis(&config.api.redis).await?;
 
+		tracing::info!("connected to redis");
+
 		let rate_limiter = RateLimiter::new(redis.clone()).await?;
+
+		tracing::info!("connected to rate limiter");
 
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
@@ -164,6 +179,15 @@ impl Global {
 			stripe_client,
 			typesense,
 			mongo,
+			updater: MongoUpdater::new(
+				db.clone(),
+				BatcherConfig {
+					name: "MongoUpdater".to_string(),
+					concurrency: 50,
+					max_batch_size: 5_000,
+					sleep_duration: std::time::Duration::from_millis(300),
+				},
+			),
 			db,
 			clickhouse,
 			config,

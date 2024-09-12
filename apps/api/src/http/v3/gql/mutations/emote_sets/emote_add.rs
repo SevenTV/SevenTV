@@ -81,11 +81,14 @@ pub async fn emote_add(
 					update::update! {
 						#[query(set_on_insert)]
 						EmoteModerationRequest {
+							#[query(rename = "_id")]
 							id,
 							user_id: authed_user.id,
+							#[query(serde)]
 							kind: EmoteModerationRequestKind::PersonalUse,
 							reason: Some("User requested to add emote to a personal set".to_string()),
 							emote_id: emote.id,
+							#[query(serde)]
 							status: EmoteModerationRequestStatus::Pending,
 							country_code,
 							assigned_to: vec![],
