@@ -84,7 +84,9 @@ impl ImageProcessor {
 		let channel =
 			crate::grpc::make_channel(config.address.clone(), config.resolve_interval, None).context("make channel")?;
 
-		let client = ImageProcessorClient::new(channel);
+		let client = ImageProcessorClient::new(channel)
+			.max_decoding_message_size(128 * 1024 * 1024) // 128MB
+			.max_encoding_message_size(128 * 1024 * 1024);
 
 		Ok(Self {
 			client,
