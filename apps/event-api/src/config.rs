@@ -59,6 +59,6 @@ pub struct Api {
 	#[settings(default = "http://localhost:9700".to_string())]
 	pub bridge_url: String,
 	/// Cdn Origin
-	#[settings(default = "https://cdn.7tv.app".to_string())]
-	pub cdn_origin: String,
+	#[settings(default = "https://cdn.7tv.app".parse().unwrap())]
+	pub cdn_origin: url::Url,
 }
