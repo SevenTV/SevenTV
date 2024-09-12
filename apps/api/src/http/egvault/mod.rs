@@ -29,7 +29,7 @@ pub fn routes() -> Router<Arc<Global>> {
 			"/subscriptions/:target",
 			get(subscription::subscription).delete(cancel::cancel_subscription),
 		)
-		.route("/subscription/:target/reactivate", post(cancel::reactivate_subscription))
+		.route("/subscriptions/:target/reactivate", post(cancel::reactivate_subscription))
 		.route("/subscriptions/:target/payment-method", patch(payment_method::payment_method))
 		.route("/products", get(products::products))
 		.route("/redeem", post(redeem::redeem))
