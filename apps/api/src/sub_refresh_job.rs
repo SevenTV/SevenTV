@@ -33,7 +33,7 @@ impl SubAge {
 		let expected_end = periods.iter().map(|p| p.end).max().unwrap_or(now);
 
 		let mut combined_periods = periods
-			.into_iter()
+			.iter()
 			.map(|p| StartEnd {
 				start: p.start,
 				end: p.end.min(now),
