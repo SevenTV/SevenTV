@@ -32,17 +32,14 @@ pub async fn completed(
 		.transpose()
 		.map_err(|err| {
 			tracing::error!(error = %err, "failed to deserialize metadata");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::StripeError,
 				"failed to deserialize metadata",
 			))
 		})?
 		.ok_or_else(|| {
 			tracing::error!("missing metadata");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeWebhook,
-				"missing metadata",
-			))
+			TransactionError::Custom(ApiError::internal_server_error(ApiErrorCode::StripeError, "missing metadata"))
 		})?;
 
 	match (session.mode, metadata) {
@@ -54,7 +51,7 @@ pub async fn completed(
 			let setup_intent = session
 				.setup_intent
 				.ok_or_else(|| {
-					TransactionError::custom(ApiError::bad_request(ApiErrorCode::StripeWebhook, "missing setup intent"))
+					TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "missing setup intent"))
 				})?
 				.id();
 			let setup_intent = stripe::SetupIntent::retrieve(
@@ -68,8 +65,8 @@ pub async fn completed(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to retrieve setup intent");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to retrieve setup intent",
 				))
 			})?;
@@ -77,7 +74,7 @@ pub async fn completed(
 			let customer_id = session
 				.customer
 				.ok_or_else(|| {
-					TransactionError::custom(ApiError::bad_request(ApiErrorCode::StripeWebhook, "missing customer"))
+					TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "missing customer"))
 				})?
 				.id();
 			let Some(payment_method) = setup_intent.payment_method.map(|p| p.id()) else {
@@ -101,16 +98,16 @@ pub async fn completed(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update customer");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to update customer",
 				))
 			})?;
 
 			let metadata = CustomerMetadata::from_stripe(&customer.metadata.unwrap_or_default()).map_err(|e| {
 				tracing::error!(error = %e, "failed to deserialize metadata");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to deserialize metadata",
 				))
 			})?;
@@ -148,8 +145,8 @@ pub async fn completed(
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to update subscription");
-					TransactionError::custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeWebhook,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::StripeError,
 						"failed to update subscription",
 					))
 				})?;
@@ -164,13 +161,13 @@ pub async fn completed(
 				.load(redeem_code_id)
 				.await
 				.map_err(|_| {
-					TransactionError::custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeWebhook,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::StripeError,
 						"failed to load redeem code",
 					))
 				})?
 				.ok_or_else(|| {
-					TransactionError::custom(ApiError::not_found(ApiErrorCode::StripeWebhook, "redeem code not found"))
+					TransactionError::Custom(ApiError::not_found(ApiErrorCode::StripeError, "redeem code not found"))
 				})?;
 
 			grant_entitlements(&mut tx, &redeem_code, user_id).await?;
@@ -193,17 +190,14 @@ pub async fn expired(
 		.transpose()
 		.map_err(|err| {
 			tracing::error!(error = %err, "failed to deserialize metadata");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::StripeError,
 				"failed to deserialize metadata",
 			))
 		})?
 		.ok_or_else(|| {
 			tracing::error!("missing metadata");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeWebhook,
-				"missing metadata",
-			))
+			TransactionError::Custom(ApiError::internal_server_error(ApiErrorCode::StripeError, "missing metadata"))
 		})?;
 
 	if let CheckoutSessionMetadata::Redeem { redeem_code_id, .. } = metadata {

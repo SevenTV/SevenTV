@@ -38,19 +38,19 @@ pub async fn handle_callback(
 ) -> Result<String, ApiError> {
 	let code = query
 		.code
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::Auth, "missing code from query"))?;
+		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "missing code from query"))?;
 	let state = query
 		.state
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::Auth, "missing state from query"))?;
+		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "missing state from query"))?;
 
 	// validate csrf
 	let csrf_cookie = cookies
 		.get(CSRF_COOKIE)
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::Auth, "missing csrf cookie"))?;
+		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "missing csrf cookie"))?;
 
 	let csrf_payload = CsrfJwtPayload::verify(global, csrf_cookie.value())
 		.filter(|payload| payload.validate_random(&state).unwrap_or_default())
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::Auth, "invalid csrf"))?;
+		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid csrf"))?;
 
 	let platform = Platform::from(query.platform);
 
@@ -89,8 +89,8 @@ pub async fn handle_callback(
 			// user tries to link a different account
 			(Some(user_id), Some(user)) if user_id != user.id => {
 				// deny log in
-				return Err(TransactionError::custom(ApiError::bad_request(
-					ApiErrorCode::Auth,
+				return Err(TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::MutationError,
 					"connection already paired with another user",
 				)));
 			}
@@ -106,15 +106,15 @@ pub async fn handle_callback(
 					.iter()
 					.find(|c| c.platform_id == user_data.id)
 					.ok_or_else(|| {
-						TransactionError::custom(ApiError::internal_server_error(
-							ApiErrorCode::Auth,
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
 							"failed to load connection",
 						))
 					})?;
 
 				if !connection.allow_login {
-					return Err(TransactionError::custom(ApiError::unauthorized(
-						ApiErrorCode::Auth,
+					return Err(TransactionError::Custom(ApiError::unauthorized(
+						ApiErrorCode::LackingPrivileges,
 						"connection is not allowed to login",
 					)));
 				}
@@ -173,7 +173,12 @@ pub async fn handle_callback(
 			None,
 		)
 		.await?
-		.ok_or_else(|| TransactionError::custom(ApiError::internal_server_error(ApiErrorCode::Auth, "failed to load user")))
+		.ok_or_else(|| {
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::LoadError,
+				"failed to load user",
+			))
+		})
 	})
 	.await;
 
@@ -182,7 +187,10 @@ pub async fn handle_callback(
 		Err(TransactionError::Custom(e)) => return Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");
-			return Err(ApiError::internal_server_error(ApiErrorCode::Auth, "transaction failed"));
+			return Err(ApiError::internal_server_error(
+				ApiErrorCode::TransactionError,
+				"transaction failed",
+			));
 		}
 	};
 
@@ -190,10 +198,10 @@ pub async fn handle_callback(
 		.user_loader
 		.load_user(global, user)
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Auth, "failed to load user"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
 	if !full_user.has(UserPermission::Login) {
-		return Err(ApiError::forbidden(ApiErrorCode::Auth, "not allowed to login"));
+		return Err(ApiError::forbidden(ApiErrorCode::LackingPrivileges, "not allowed to login"));
 	}
 
 	let res = with_transaction(global, |mut tx| async move {
@@ -224,17 +232,17 @@ pub async fn handle_callback(
 				.serialize(global)
 				.ok_or_else(|| {
 					tracing::error!("failed to serialize jwt");
-					ApiError::internal_server_error(ApiErrorCode::Auth, "failed to serialize jwt")
+					ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to serialize jwt")
 				})
-				.map_err(TransactionError::custom)?;
+				.map_err(TransactionError::Custom)?;
 
 			// create cookie
 			let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(user_session.expires_at.timestamp())
 				.map_err(|err| {
 					tracing::error!(error = %err, "failed to convert expiration to cookie time");
-					ApiError::internal_server_error(ApiErrorCode::Auth, "failed to convert expiration to cookie time")
+					ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to convert expiration to cookie time")
 				})
-				.map_err(TransactionError::custom)?;
+				.map_err(TransactionError::Custom)?;
 
 			cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
 			cookies.remove(global, CSRF_COOKIE);
@@ -257,7 +265,10 @@ pub async fn handle_callback(
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");
-			Err(ApiError::internal_server_error(ApiErrorCode::Auth, "transaction failed"))
+			Err(ApiError::internal_server_error(
+				ApiErrorCode::TransactionError,
+				"transaction failed",
+			))
 		}
 	}
 }
@@ -280,7 +291,7 @@ pub fn handle_login(
 			(GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.api.connections.google)
 		}
 		_ => {
-			return Err(ApiError::bad_request(ApiErrorCode::Auth, "unsupported platform"));
+			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "unsupported platform"));
 		}
 	};
 
@@ -292,7 +303,7 @@ pub fn handle_login(
 			CSRF_COOKIE,
 			csrf.serialize(global).ok_or_else(|| {
 				tracing::error!("failed to serialize csrf");
-				ApiError::internal_server_error(ApiErrorCode::Auth, "failed to serialize csrf")
+				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to serialize csrf")
 			})?,
 		),
 	));

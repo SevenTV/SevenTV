@@ -19,14 +19,14 @@ use crate::transactions::{TransactionError, TransactionResult, TransactionSessio
 
 fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Result<Vec<ProductId>, ApiError> {
 	items
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeWebhook, "invoice line items are missing"))?
+		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeError, "invoice line items are missing"))?
 		.data
 		.iter()
 		.map(|line| {
 			Ok(line
 				.price
 				.as_ref()
-				.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeWebhook, "invoice line item price is missing"))?
+				.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeError, "invoice line item price is missing"))?
 				.id()
 				.into())
 		})
@@ -55,8 +55,8 @@ pub async fn created(
 		.transpose()
 		.map_err(|err| {
 			tracing::error!(error = %err, "failed to deserialize metadata");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::StripeError,
 				"failed to deserialize metadata",
 			))
 		})?;
@@ -64,8 +64,8 @@ pub async fn created(
 	let customer_id = invoice
 		.customer
 		.ok_or_else(|| {
-			TransactionError::custom(ApiError::bad_request(
-				ApiErrorCode::StripeWebhook,
+			TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::StripeError,
 				"invoice customer is missing",
 			))
 		})?
@@ -85,16 +85,16 @@ pub async fn created(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to retrieve subscription");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to retrieve subscription",
 				))
 			})?;
 
 			let metadata = SubscriptionMetadata::from_stripe(&subscription.metadata).map_err(|e| {
 				tracing::error!(error = %e, "failed to deserialize metadata");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to deserialize metadata",
 				))
 			})?;
@@ -114,16 +114,16 @@ pub async fn created(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to retrieve customer");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to retrieve customer",
 				))
 			})?;
 
 			let metadata = CustomerMetadata::from_stripe(&customer.metadata.unwrap_or_default()).map_err(|e| {
 				tracing::error!(error = %e, "failed to deserialize metadata");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to deserialize metadata",
 				))
 			})?;
@@ -132,15 +132,12 @@ pub async fn created(
 		}
 	};
 
-	let items = invoice_items(invoice.lines.as_ref()).map_err(TransactionError::custom)?;
+	let items = invoice_items(invoice.lines.as_ref()).map_err(TransactionError::Custom)?;
 
 	let status = invoice
 		.status
 		.ok_or_else(|| {
-			TransactionError::custom(ApiError::bad_request(
-				ApiErrorCode::StripeWebhook,
-				"invoice status is missing",
-			))
+			TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "invoice status is missing"))
 		})?
 		.into();
 
@@ -148,8 +145,8 @@ pub async fn created(
 		.created
 		.and_then(|t| chrono::DateTime::from_timestamp(t, 0))
 		.ok_or_else(|| {
-			TransactionError::custom(ApiError::bad_request(
-				ApiErrorCode::StripeWebhook,
+			TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::StripeError,
 				"invoice created_at is missing",
 			))
 		})?;
@@ -185,8 +182,8 @@ pub async fn created(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to finalize invoice");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::StripeError,
 				"failed to finalize invoice",
 			))
 		})?;
@@ -209,14 +206,11 @@ pub async fn updated(
 	let status: InvoiceStatus = invoice
 		.status
 		.ok_or_else(|| {
-			TransactionError::custom(ApiError::bad_request(
-				ApiErrorCode::StripeWebhook,
-				"invoice status is missing",
-			))
+			TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "invoice status is missing"))
 		})?
 		.into();
 
-	let items = invoice_items(invoice.lines.as_ref()).map_err(TransactionError::custom)?;
+	let items = invoice_items(invoice.lines.as_ref()).map_err(TransactionError::Custom)?;
 
 	tx.update_one(
 		filter::filter! {
@@ -263,8 +257,8 @@ pub async fn paid(
 		.transpose()
 		.map_err(|err| {
 			tracing::error!(error = %err, "failed to deserialize metadata");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::StripeError,
 				"failed to deserialize metadata",
 			))
 		})?;
@@ -272,14 +266,14 @@ pub async fn paid(
 	match (invoice.subscription, metadata) {
 		(Some(subscription), _) => {
 			let items = invoice_items(invoice.lines.as_ref())
-				.map_err(TransactionError::custom)?
+				.map_err(TransactionError::Custom)?
 				.into_iter()
 				.collect::<Vec<_>>();
 
 			if items.len() != 1 {
 				// TODO: record an error to be investigated
-				return Err(TransactionError::custom(ApiError::bad_request(
-					ApiErrorCode::StripeWebhook,
+				return Err(TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::StripeError,
 					"invalid number of invoice line items",
 				)));
 			}
@@ -301,8 +295,8 @@ pub async fn paid(
 				.await?
 			else {
 				// TODO: record an error to be investigated
-				return Err(TransactionError::custom(ApiError::bad_request(
-					ApiErrorCode::StripeWebhook,
+				return Err(TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::StripeError,
 					"no subscription product found",
 				)));
 			};
@@ -321,8 +315,8 @@ pub async fn paid(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to retrieve subscription");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to retrieve subscription",
 				))
 			})?;
@@ -330,8 +324,8 @@ pub async fn paid(
 			let user_id = SubscriptionMetadata::from_stripe(&stripe_sub.metadata)
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to deserialize metadata");
-					TransactionError::custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeWebhook,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::StripeError,
 						"failed to deserialize metadata",
 					))
 				})?
@@ -343,15 +337,15 @@ pub async fn paid(
 			};
 
 			let start = chrono::DateTime::from_timestamp(stripe_sub.current_period_start, 0).ok_or_else(|| {
-				TransactionError::custom(ApiError::bad_request(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::StripeError,
 					"subscription current period start is missing",
 				))
 			})?;
 			// when the subscription is in trial, the current period end is the trial end
 			let end = chrono::DateTime::from_timestamp(stripe_sub.current_period_end, 0).ok_or_else(|| {
-				TransactionError::custom(ApiError::bad_request(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::StripeError,
 					"subscription current period end is missing",
 				))
 			})?;
@@ -392,7 +386,7 @@ pub async fn paid(
 			// the gift sub payment was successful, now we add one subscription period for
 			// the recipient
 			let items = invoice_items(invoice.lines.as_ref())
-				.map_err(TransactionError::custom)?
+				.map_err(TransactionError::Custom)?
 				.into_iter()
 				.collect::<Vec<_>>();
 
@@ -408,8 +402,8 @@ pub async fn paid(
 				.load(subscription_product_id)
 				.await
 				.map_err(|_| {
-					TransactionError::custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeWebhook,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::StripeError,
 						"failed to load subscription product",
 					))
 				})?
@@ -418,8 +412,8 @@ pub async fn paid(
 						"could not find subscription product for gift: {} product id: {subscription_product_id}",
 						invoice.id
 					);
-					TransactionError::custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeWebhook,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::StripeError,
 						"failed to load subscription product",
 					))
 				})?;
@@ -437,22 +431,22 @@ pub async fn paid(
 						"could not find variant for gift: {} product id: {subscription_product_id}",
 						invoice.id
 					);
-					TransactionError::custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeWebhook,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::StripeError,
 						"failed to load subscription product variant",
 					))
 				})?;
 
 			let created = invoice.created.ok_or_else(|| {
-				TransactionError::custom(ApiError::bad_request(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::StripeError,
 					"invoice created_at is missing",
 				))
 			})?;
 
 			let start = chrono::DateTime::from_timestamp(created, 0).ok_or_else(|| {
-				TransactionError::custom(ApiError::bad_request(
-					ApiErrorCode::StripeWebhook,
+				TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::StripeError,
 					"invoice created_at is missing",
 				))
 			})?;
@@ -460,8 +454,8 @@ pub async fn paid(
 			let end = start
 				.checked_add_months(period_duration) // It's fine to use this function here since UTC doens't have daylight saving time transitions
 				.ok_or_else(|| {
-					TransactionError::custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeWebhook,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::StripeError,
 						"invoice created_at is missing",
 					))
 				})?;

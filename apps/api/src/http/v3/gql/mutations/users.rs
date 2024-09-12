@@ -51,13 +51,11 @@ impl UserOps {
 	) -> Result<Option<Vec<Option<UserConnection>>>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let old_user = global
@@ -65,9 +63,12 @@ impl UserOps {
 				.load(global, self.id.id())
 				.await
 				.map_err(|_| {
-					TransactionError::custom(ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::LoadError,
+						"failed to load user",
+					))
 				})?
-				.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "user not found")))?;
+				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found")))?;
 
 			let emote_set = if let Some(emote_set_id) = data.emote_set_id {
 				// check if set exists
@@ -76,13 +77,13 @@ impl UserOps {
 					.load(emote_set_id.id())
 					.await
 					.map_err(|_| {
-						TransactionError::custom(ApiError::internal_server_error(
-							ApiErrorCode::GraphQL,
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
 							"failed to load emote set",
 						))
 					})?
 					.ok_or_else(|| {
-						TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote set not found"))
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))
 					})?;
 
 				Some(emote_set)
@@ -136,7 +137,7 @@ impl UserOps {
 					.into_iter()
 					.find(|c| c.platform_id == id)
 					.ok_or_else(|| {
-						TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "connection not found"))
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "connection not found"))
 					})?;
 
 				tx.register_event(InternalEvent {
@@ -153,8 +154,8 @@ impl UserOps {
 			if let Some(emote_set) = emote_set {
 				let old = if let Some(set_id) = old_user.user.style.active_emote_set_id {
 					global.emote_set_by_id_loader.load(set_id).await.map_err(|_| {
-						TransactionError::custom(ApiError::internal_server_error(
-							ApiErrorCode::GraphQL,
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
 							"failed to load emote set",
 						))
 					})?
@@ -186,7 +187,7 @@ impl UserOps {
 					.user_loader
 					.load_fast_user(global, user)
 					.await
-					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?;
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
 				Ok(Some(
 					full_user
@@ -207,7 +208,10 @@ impl UserOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -223,13 +227,11 @@ impl UserOps {
 	) -> Result<Option<Vec<Option<UserEditor>>>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			// load all editors, we have to do this to know the old permissions Sadge
@@ -238,8 +240,8 @@ impl UserOps {
 				.load(authed_user.id)
 				.await
 				.map_err(|_| {
-					TransactionError::custom(ApiError::internal_server_error(
-						ApiErrorCode::GraphQL,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::LoadError,
 						"failed to load editors",
 					))
 				})?
@@ -271,14 +273,14 @@ impl UserOps {
 							.load_fast(global, editor.id.editor_id)
 							.await
 							.map_err(|_| {
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::GraphQL,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
 									"failed to load user",
 								))
 							})?
 							.ok_or_else(|| {
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::GraphQL,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
 									"failed to load user",
 								))
 							})?;
@@ -338,14 +340,14 @@ impl UserOps {
 							.load_fast(global, editor.id.editor_id)
 							.await
 							.map_err(|_| {
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::GraphQL,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
 									"failed to load user",
 								))
 							})?
 							.ok_or_else(|| {
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::GraphQL,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
 									"failed to load user",
 								))
 							})?;
@@ -365,8 +367,8 @@ impl UserOps {
 					} else {
 						// didn't exist
 						if authed_user.has(UserPermission::InviteEditors) {
-							return Err(TransactionError::custom(ApiError::forbidden(
-								ApiErrorCode::GraphQL,
+							return Err(TransactionError::Custom(ApiError::forbidden(
+								ApiErrorCode::LackingPrivileges,
 								"you do not have permission to invite editors",
 							)));
 						}
@@ -387,14 +389,14 @@ impl UserOps {
 							.load_fast(global, editor.id.editor_id)
 							.await
 							.map_err(|_| {
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::GraphQL,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
 									"failed to load user",
 								))
 							})?
 							.ok_or_else(|| {
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::GraphQL,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
 									"failed to load user",
 								))
 							})?;
@@ -426,7 +428,7 @@ impl UserOps {
 					.user_editor_by_user_id_loader
 					.load(self.id.id())
 					.await
-					.map_err(|_| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load editors"))?
+					.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
 					.unwrap_or_default();
 
 				Ok(Some(
@@ -440,7 +442,10 @@ impl UserOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -451,13 +456,11 @@ impl UserOps {
 	async fn cosmetics<'ctx>(&self, ctx: &Context<'ctx>, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		if !update.selected {
 			return Ok(true);
@@ -467,16 +470,16 @@ impl UserOps {
 			.user_loader
 			.load(global, self.id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "user not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			match update.kind {
 				CosmeticKind::Paint => {
 					// check if user has paint
 					if !user.computed.entitlements.paints.contains(&update.id.id()) {
-						return Err(TransactionError::custom(ApiError::forbidden(
-							ApiErrorCode::GraphQL,
+						return Err(TransactionError::Custom(ApiError::forbidden(
+							ApiErrorCode::LoadError,
 							"you do not have permission to use this paint",
 						)));
 					}
@@ -506,8 +509,8 @@ impl UserOps {
 				CosmeticKind::Badge => {
 					// check if user has paint
 					if !user.computed.entitlements.badges.contains(&update.id.id()) {
-						return Err(TransactionError::custom(ApiError::forbidden(
-							ApiErrorCode::GraphQL,
+						return Err(TransactionError::Custom(ApiError::forbidden(
+							ApiErrorCode::LoadError,
 							"you do not have permission to use this badge",
 						)));
 					}
@@ -517,19 +520,19 @@ impl UserOps {
 						.load(update.id.id())
 						.await
 						.map_err(|_| {
-							TransactionError::custom(ApiError::internal_server_error(
-								ApiErrorCode::GraphQL,
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
 								"failed to load badge",
 							))
 						})?
 						.ok_or_else(|| {
-							TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "badge not found"))
+							TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))
 						})?;
 
 					let old = if let Some(badge_id) = user.style.active_badge_id {
 						global.badge_by_id_loader.load(badge_id).await.map_err(|_| {
-							TransactionError::custom(ApiError::internal_server_error(
-								ApiErrorCode::GraphQL,
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
 								"failed to load badge",
 							))
 						})?
@@ -572,8 +575,8 @@ impl UserOps {
 
 					Ok(res.modified_count == 1)
 				}
-				CosmeticKind::Avatar => Err(TransactionError::custom(ApiError::not_implemented(
-					ApiErrorCode::GraphQL,
+				CosmeticKind::Avatar => Err(TransactionError::Custom(ApiError::not_implemented(
+					ApiErrorCode::BadRequest,
 					"avatar cosmetics mutations are not supported via this endpoint, use the upload endpoint instead",
 				))),
 			}
@@ -585,7 +588,10 @@ impl UserOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -599,24 +605,22 @@ impl UserOps {
 	) -> Result<Vec<GqlObjectId>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let role = global
 			.role_by_id_loader
 			.load(role_id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load role"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "role not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load role"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "role not found"))?;
 
 		if !authed_user.computed.permissions.is_superset_of(&role.permissions) {
 			return Err(ApiError::forbidden(
-				ApiErrorCode::GraphQL,
+				ApiErrorCode::LackingPrivileges,
 				"the role has a higher permission level than you",
 			));
 		}
@@ -625,8 +629,8 @@ impl UserOps {
 			.user_loader
 			.load(global, self.id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "user not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let roles = match action {
@@ -731,8 +735,8 @@ impl UserOps {
 						.collect()
 				}
 				ListItemAction::Update => {
-					return Err(TransactionError::custom(ApiError::not_implemented(
-						ApiErrorCode::GraphQL,
+					return Err(TransactionError::Custom(ApiError::not_implemented(
+						ApiErrorCode::BadRequest,
 						"update role is not implemented",
 					)));
 				}
@@ -747,7 +751,10 @@ impl UserOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}

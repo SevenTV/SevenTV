@@ -19,24 +19,19 @@ pub async fn emote_remove(
 	emote_set: &EmoteSet,
 	emote_id: EmoteId,
 ) -> TransactionResult<EmoteSet, ApiError> {
-	let authed_user = session
-		.user()
-		.ok_or_else(|| TransactionError::custom(ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in")))?;
+	let authed_user = session.user().map_err(TransactionError::Custom)?;
 
-	let (index, old_emote_set_emote) = emote_set
-		.emotes
-		.iter()
-		.find_position(|e| e.id == emote_id)
-		.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote not found in set")))?;
+	let (index, old_emote_set_emote) =
+		emote_set.emotes.iter().find_position(|e| e.id == emote_id).ok_or_else(|| {
+			TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
+		})?;
 
-	let emote = global
-		.emote_by_id_loader
-		.load(emote_id)
-		.await
-		.map_err(|()| {
-			TransactionError::custom(ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emote"))
-		})?
-		.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote not found")))?;
+	let emote = global.emote_by_id_loader.load(emote_id).await.map_err(|()| {
+		TransactionError::Custom(ApiError::internal_server_error(
+			ApiErrorCode::LoadError,
+			"failed to load emote",
+		))
+	})?;
 
 	let emote_set = tx
 		.find_one_and_update(
@@ -68,8 +63,8 @@ pub async fn emote_remove(
 				.build(),
 		)
 		.await?
-		.ok_or(TransactionError::custom(ApiError::not_found(
-			ApiErrorCode::GraphQL,
+		.ok_or(TransactionError::Custom(ApiError::not_found(
+			ApiErrorCode::BadRequest,
 			"emote not found in set",
 		)))?;
 
@@ -79,7 +74,7 @@ pub async fn emote_remove(
 		data: InternalEventData::EmoteSet {
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::RemoveEmote {
-				emote: Box::new(emote),
+				emote: emote.map(Box::new),
 				emote_set_emote: old_emote_set_emote.clone(),
 				index,
 			},

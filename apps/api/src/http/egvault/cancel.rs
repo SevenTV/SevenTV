@@ -22,9 +22,7 @@ pub async fn cancel_subscription(
 	Path(target): Path<TargetUser>,
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let auth_user = session
-		.user()
-		.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::EgVault, "not authenticated"))?;
+	let auth_user = session.user()?;
 
 	let target_id = match target {
 		TargetUser::Me => auth_user.id,
@@ -34,7 +32,7 @@ pub async fn cancel_subscription(
 	// TODO: is this the right permission?
 	if !auth_user.has(UserPermission::ManageAny) && target_id != auth_user.id {
 		return Err(ApiError::forbidden(
-			ApiErrorCode::EgVault,
+			ApiErrorCode::LackingPrivileges,
 			"you are not allowed to manage this user",
 		));
 	}
@@ -65,8 +63,8 @@ pub async fn cancel_subscription(
 						None,
 					)
 					.await?
-					.ok_or(TransactionError::custom(ApiError::not_found(
-						ApiErrorCode::EgVault,
+					.ok_or(TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::BadRequest,
 						"subscription not found",
 					)))?;
 
@@ -83,8 +81,8 @@ pub async fn cancel_subscription(
 						.await
 						.map_err(|e| {
 							tracing::error!(error = %e, "failed to update stripe subscription");
-							TransactionError::custom(ApiError::internal_server_error(
-								ApiErrorCode::EgVault,
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::StripeError,
 								"failed to update stripe subscription",
 							))
 						})?;
@@ -104,8 +102,8 @@ pub async fn cancel_subscription(
 							.await
 							.map_err(|e| {
 								tracing::error!(error = %e, "failed to cancel paypal subscription");
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::EgVault,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::PaypalError,
 									"failed to cancel paypal subscription",
 								))
 							})?;
@@ -146,7 +144,10 @@ pub async fn cancel_subscription(
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::EgVault, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	})
@@ -158,9 +159,7 @@ pub async fn reactivate_subscription(
 	Path(target): Path<TargetUser>,
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let auth_user = session
-		.user()
-		.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::EgVault, "not authenticated"))?;
+	let auth_user = session.user()?;
 
 	let target_user_id = match target {
 		TargetUser::Me => auth_user.id,
@@ -170,7 +169,7 @@ pub async fn reactivate_subscription(
 	// TODO: is this the right permission?
 	if !auth_user.has(UserPermission::ManageAny) && target_user_id != auth_user.id {
 		return Err(ApiError::forbidden(
-			ApiErrorCode::EgVault,
+			ApiErrorCode::LackingPrivileges,
 			"you are not allowed to manage this user",
 		));
 	}
@@ -199,7 +198,7 @@ pub async fn reactivate_subscription(
 				)
 				.await?
 				.ok_or_else(|| {
-					TransactionError::custom(ApiError::not_found(ApiErrorCode::EgVault, "subscription not found"))
+					TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "subscription not found"))
 				})?;
 
 			match period.provider_id {
@@ -215,16 +214,16 @@ pub async fn reactivate_subscription(
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to update stripe subscription");
-						TransactionError::custom(ApiError::internal_server_error(
-							ApiErrorCode::EgVault,
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::MutationError,
 							"failed to update stripe subscription",
 						))
 					})?;
 
 					Ok(())
 				}
-				_ => Err(TransactionError::custom(ApiError::not_implemented(
-					ApiErrorCode::EgVault,
+				_ => Err(TransactionError::Custom(ApiError::not_implemented(
+					ApiErrorCode::BadRequest,
 					"this subscription cannot be reactivated",
 				))),
 			}
@@ -236,7 +235,10 @@ pub async fn reactivate_subscription(
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::EgVault, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	})

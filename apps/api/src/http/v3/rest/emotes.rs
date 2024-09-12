@@ -64,33 +64,32 @@ pub async fn create_emote(
 	headers: HeaderMap,
 	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
-	let authed_user = session
-		.user()
-		.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::Rest, "you are not logged in"))?;
+	let authed_user = session.user()?;
+
 	if !session.has(EmotePermission::Upload) {
 		return Err(ApiError::forbidden(
-			ApiErrorCode::Rest,
+			ApiErrorCode::LackingPrivileges,
 			"you do not have permission to upload emotes",
 		));
 	}
 
 	let emote_data = headers
 		.get("X-Emote-Data")
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::Rest, "missing X-Emote-Data header"))?;
+		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "missing X-Emote-Data header"))?;
 
 	let emote_data = serde_json::from_str::<XEmoteData>(
 		emote_data
 			.to_str()
-			.map_err(|_| ApiError::bad_request(ApiErrorCode::Rest, "invalid X-Emote-Data header"))?,
+			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid X-Emote-Data header"))?,
 	)
-	.map_err(|_| ApiError::bad_request(ApiErrorCode::Rest, "invalid X-Emote-Data header"))?;
+	.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid X-Emote-Data header"))?;
 
 	if !validators::check_emote_name(&emote_data.name) {
-		return Err(ApiError::bad_request(ApiErrorCode::Rest, "invalid emote name"));
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid emote name"));
 	}
 
 	if !validators::check_tags(&emote_data.tags) {
-		return Err(ApiError::bad_request(ApiErrorCode::Rest, "invalid tags"));
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid tags"));
 	}
 
 	let req = RateLimitRequest::new(RateLimitResource::ProfilePictureUpload, &session);
@@ -122,19 +121,28 @@ pub async fn create_emote(
 				if err.code == image_processor::ErrorCode::Decode as i32
 					|| err.code == image_processor::ErrorCode::InvalidInput as i32
 				{
-					return Err(ApiError::bad_request(ApiErrorCode::Rest, "bad image format"));
+					return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "bad image format"));
 				}
 
 				tracing::error!(code = ?err.code(), "failed to upload emote: {}", err.message);
-				return Err(ApiError::internal_server_error(ApiErrorCode::Rest, "failed to upload emote"));
+				return Err(ApiError::internal_server_error(
+					ApiErrorCode::ImageProcessorError,
+					"failed to upload emote",
+				));
 			}
 			Err(err) => {
 				tracing::error!("failed to upload emote: {:#}", err);
-				return Err(ApiError::internal_server_error(ApiErrorCode::Rest, "failed to upload emote"));
+				return Err(ApiError::internal_server_error(
+					ApiErrorCode::ImageProcessorError,
+					"failed to upload emote",
+				));
 			}
 			_ => {
 				tracing::error!("failed to upload emote: unknown error");
-				return Err(ApiError::internal_server_error(ApiErrorCode::Rest, "failed to upload emote"));
+				return Err(ApiError::internal_server_error(
+					ApiErrorCode::ImageProcessorError,
+					"failed to upload emote",
+				));
 			}
 		};
 
@@ -187,7 +195,10 @@ pub async fn create_emote(
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	})
@@ -217,14 +228,14 @@ pub async fn get_emote_by_id(
 		.emote_by_id_loader
 		.load(id)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load emote"))?
-		.ok_or_else(|| ApiError::not_found(ApiErrorCode::Rest, "emote not found"))?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;
 
 	let owner = global
 		.user_loader
 		.load_fast(&global, emote.owner_id)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load user"))?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
 	let owner = owner
 		.and_then(|owner| session.can_view(&owner).then_some(owner))

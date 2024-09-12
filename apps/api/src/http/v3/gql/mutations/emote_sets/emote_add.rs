@@ -23,14 +23,12 @@ pub async fn emote_add(
 	id: EmoteId,
 	name: Option<String>,
 ) -> TransactionResult<EmoteSet, ApiError> {
-	let authed_user = session
-		.user()
-		.ok_or_else(|| TransactionError::custom(ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in")))?;
+	let authed_user = session.user().map_err(TransactionError::Custom)?;
 
 	if let Some(capacity) = emote_set.capacity {
 		if emote_set.emotes.len() as i32 >= capacity {
-			return Err(TransactionError::custom(ApiError::bad_request(
-				ApiErrorCode::GraphQL,
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
 				"emote set is at capacity",
 			)));
 		}
@@ -41,23 +39,26 @@ pub async fn emote_add(
 		.load(id)
 		.await
 		.map_err(|()| {
-			TransactionError::custom(ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emote"))
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::LoadError,
+				"failed to load emote",
+			))
 		})?
-		.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote not found")))?;
+		.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found")))?;
 
 	let alias = name.unwrap_or_else(|| emote.default_name.clone());
 
 	if emote_set.emotes.iter().any(|e| e.alias == alias || e.id == id) {
-		return Err(TransactionError::custom(ApiError::conflict(
-			ApiErrorCode::GraphQL,
+		return Err(TransactionError::Custom(ApiError::conflict(
+			ApiErrorCode::BadRequest,
 			"this emote is already in the set or has a conflicting name",
 		)));
 	}
 
 	if matches!(emote_set.kind, EmoteSetKind::Personal) {
 		if emote.flags.contains(EmoteFlags::DeniedPersonal) {
-			return Err(TransactionError::custom(ApiError::bad_request(
-				ApiErrorCode::GraphQL,
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
 				"emote is not allowed in personal emote sets",
 			)));
 		} else if !emote.flags.contains(EmoteFlags::ApprovedPersonal) {
@@ -101,8 +102,8 @@ pub async fn emote_add(
 				)
 				.await?
 				.ok_or_else(|| {
-					TransactionError::custom(ApiError::not_found(
-						ApiErrorCode::GraphQL,
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::MutationError,
 						"emote moderation failed to insert",
 					))
 				})?;
@@ -141,8 +142,8 @@ pub async fn emote_add(
 					.emote_moderation_request_limit
 					.unwrap_or_default()
 			{
-				return Err(TransactionError::custom(ApiError::bad_request(
-					ApiErrorCode::GraphQL,
+				return Err(TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::LackingPrivileges,
 					"too many pending moderation requests",
 				)));
 			}
@@ -189,12 +190,12 @@ pub async fn emote_add(
 				.build(),
 		)
 		.await?
-		.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote set not found")))?;
+		.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found")))?;
 
 	if let Some(capacity) = emote_set.capacity {
 		if emote_set.emotes.len() as i32 > capacity {
-			return Err(TransactionError::custom(ApiError::bad_request(
-				ApiErrorCode::GraphQL,
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::LoadError,
 				"emote set is at capacity",
 			)));
 		}

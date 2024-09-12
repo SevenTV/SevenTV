@@ -114,13 +114,13 @@ impl Emote {
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast(global, self.owner_id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
@@ -134,7 +134,7 @@ impl Emote {
 	) -> Result<UserSearchResult, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
@@ -148,7 +148,7 @@ impl Emote {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to search")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
 		let users = global
@@ -157,7 +157,7 @@ impl Emote {
 			.await
 			.map_err(|()| {
 				tracing::error!("failed to load users");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load users")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users")
 			})?;
 
 		Ok(UserSearchResult {
@@ -190,7 +190,7 @@ impl Emote {
 	) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
@@ -204,7 +204,7 @@ impl Emote {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to search")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
 		let events = global
@@ -213,7 +213,7 @@ impl Emote {
 			.await
 			.map_err(|()| {
 				tracing::error!("failed to load event");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load event")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load event")
 			})?;
 
 		Ok(events.into_values().filter_map(AuditLog::from_db).collect())
@@ -268,13 +268,13 @@ impl EmotePartial {
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast(global, self.owner_id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
@@ -363,13 +363,13 @@ impl EmotesQuery {
 	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to get global from context"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emote = global
 			.emote_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emote"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
 
 		Ok(emote.map(|e| Emote::from_db(global, e)))
 	}
@@ -382,13 +382,13 @@ impl EmotesQuery {
 	) -> Result<Vec<EmotePartial>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emote = global
 			.emote_by_id_loader
 			.load_many(list.into_iter().map(|i| i.id()))
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emotes"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 		Ok(emote.into_values().map(|e| Emote::from_db(global, e).into()).collect())
 	}
@@ -405,10 +405,10 @@ impl EmotesQuery {
 	) -> Result<EmoteSearchResult, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 
 		let limit = limit.unwrap_or(30);
 		let page = page.unwrap_or_default().max(1);
@@ -472,7 +472,7 @@ impl EmotesQuery {
 				Some(EmoteSearchCategory::Global) => {
 					// TODO: implement
 					return Err(ApiError::not_implemented(
-						ApiErrorCode::GraphQL,
+						ApiErrorCode::BadRequest,
 						"global emote search is not implemented",
 					));
 				}
@@ -497,14 +497,14 @@ impl EmotesQuery {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to search")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
 		let emotes = global
 			.emote_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emotes"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 		Ok(EmoteSearchResult {
 			count: result.found as u32,

@@ -59,8 +59,8 @@ pub async fn completed(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to retrieve paypal subscription");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::PaypalWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::PaypalError,
 				"failed to retrieve paypal subscription",
 			))
 		})?
@@ -68,8 +68,8 @@ pub async fn completed(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to parse paypal subscription");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::PaypalWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::PaypalError,
 				"failed to parse paypal subscription",
 			))
 		})?;
@@ -122,8 +122,8 @@ pub async fn completed(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create stripe customer");
-				TransactionError::custom(ApiError::internal_server_error(
-					ApiErrorCode::PaypalWebhook,
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
 					"failed to create stripe customer",
 				))
 			})?;
@@ -191,8 +191,8 @@ pub async fn completed(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to create invoice");
-		TransactionError::custom(ApiError::internal_server_error(
-			ApiErrorCode::PaypalWebhook,
+		TransactionError::Custom(ApiError::internal_server_error(
+			ApiErrorCode::StripeError,
 			"failed to create invoice",
 		))
 	})?;
@@ -207,8 +207,8 @@ pub async fn completed(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to finalize invoice");
-		TransactionError::custom(ApiError::internal_server_error(
-			ApiErrorCode::PaypalWebhook,
+		TransactionError::Custom(ApiError::internal_server_error(
+			ApiErrorCode::StripeError,
 			"failed to finalize invoice",
 		))
 	})?;
@@ -217,8 +217,8 @@ pub async fn completed(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to void invoice");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::PaypalWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::StripeError,
 				"failed to void invoice",
 			))
 		})?;
@@ -228,16 +228,13 @@ pub async fn completed(
 	let status = invoice
 		.status
 		.ok_or_else(|| {
-			TransactionError::custom(ApiError::bad_request(
-				ApiErrorCode::PaypalWebhook,
-				"invoice status is missing",
-			))
+			TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "invoice status is missing"))
 		})?
 		.into();
 
 	let created_at = chrono::DateTime::from_timestamp(invoice.created.unwrap_or_default(), 0).ok_or_else(|| {
-		TransactionError::custom(ApiError::bad_request(
-			ApiErrorCode::PaypalWebhook,
+		TransactionError::Custom(ApiError::bad_request(
+			ApiErrorCode::StripeError,
 			"invoice created_at is missing",
 		))
 	})?;

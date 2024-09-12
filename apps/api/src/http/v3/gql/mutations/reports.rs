@@ -32,17 +32,15 @@ impl ReportsMutation {
 	async fn create_report<'ctx>(&self, ctx: &Context<'ctx>, data: CreateReportInput) -> Result<Report, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		if data.target_kind != 2 {
 			return Err(ApiError::not_implemented(
-				ApiErrorCode::GraphQL,
+				ApiErrorCode::BadRequest,
 				"only emote reports are supported",
 			));
 		}
@@ -109,11 +107,14 @@ impl ReportsMutation {
 
 		match res {
 			Ok((ticket, message)) => Report::from_db(ticket, vec![message])
-				.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to create report")),
+				.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to create report")),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -127,29 +128,26 @@ impl ReportsMutation {
 	) -> Result<Report, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
+
+		let new_priority = data
+			.priority
+			.map(TicketPriority::try_from)
+			.transpose()
+			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid ticket priority"))?;
 
 		let ticket = global
 			.ticket_by_id_loader
 			.load(report_id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load ticket"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "ticket not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "ticket not found"))?;
 
 		let transaction_result = with_transaction(global, |mut tx| async move {
-			let new_priority = data
-				.priority
-				.map(TicketPriority::try_from)
-				.transpose()
-				.map_err(|_| ApiError::bad_request(ApiErrorCode::GraphQL, "invalid ticket priority"))
-				.map_err(TransactionError::custom)?;
-
 			let new_open = if let Some(status) = data.status {
 				let new = status == ReportStatus::Open || status == ReportStatus::Assigned;
 
@@ -188,13 +186,13 @@ impl ReportsMutation {
 							.load_fast(global, user_id)
 							.await
 							.map_err(|_| {
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::GraphQL,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
 									"failed to load user",
 								))
 							})?
 							.ok_or_else(|| {
-								TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "user not found"))
+								TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
 							})?;
 
 						event_ticket_data = Some(InternalEventTicketData::AddMember {
@@ -215,13 +213,13 @@ impl ReportsMutation {
 							.load_fast(global, user_id)
 							.await
 							.map_err(|_| {
-								TransactionError::custom(ApiError::internal_server_error(
-									ApiErrorCode::GraphQL,
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
 									"failed to load user",
 								))
 							})?
 							.ok_or_else(|| {
-								TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "user not found"))
+								TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
 							})?;
 
 						event_ticket_data = Some(InternalEventTicketData::RemoveMember {
@@ -238,8 +236,8 @@ impl ReportsMutation {
 						});
 					}
 					_ => {
-						return Err(TransactionError::custom(ApiError::bad_request(
-							ApiErrorCode::GraphQL,
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
 							"invalid ticket status",
 						)));
 					}
@@ -260,8 +258,8 @@ impl ReportsMutation {
 						.build(),
 				)
 				.await?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "ticket not found"))
-				.map_err(TransactionError::custom)?;
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "ticket not found"))
+				.map_err(TransactionError::Custom)?;
 
 			if let Some(new_priority) = new_priority {
 				tx.register_event(InternalEvent {
@@ -339,16 +337,19 @@ impl ReportsMutation {
 					.ticket_message_by_ticket_id_loader
 					.load(ticket.id)
 					.await
-					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load messages"))?
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load messages"))?
 					.unwrap_or_default();
 
 				Report::from_db(ticket, messages)
-					.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load report"))
+					.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load report"))
 			}
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}

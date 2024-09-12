@@ -18,7 +18,7 @@ pub async fn handle_success(
 	id: BadgeId,
 	event: &event_callback::Success,
 ) -> TransactionResult<(), anyhow::Error> {
-	let image_set = event_to_image_set(event).map_err(TransactionError::custom)?;
+	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
 
 	let after = tx
 		.find_one_and_update(
@@ -42,7 +42,7 @@ pub async fn handle_success(
 		)
 		.await?
 		.context("badge not found")
-		.map_err(TransactionError::custom)?;
+		.map_err(TransactionError::Custom)?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -69,8 +69,8 @@ pub async fn handle_fail(
 		.badge_by_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query badge")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("failed to query badge")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query badge")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("failed to query badge")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -97,8 +97,8 @@ pub async fn handle_start(
 		.badge_by_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query badge")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("failed to query badge")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query badge")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("failed to query badge")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -125,8 +125,8 @@ pub async fn handle_cancel(
 		.badge_by_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query badge")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("failed to query badge")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query badge")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("failed to query badge")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,

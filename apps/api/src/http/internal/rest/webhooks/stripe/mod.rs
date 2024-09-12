@@ -31,11 +31,11 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 	let sig = headers
 		.get("stripe-signature")
 		.and_then(|v| v.to_str().ok())
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeWebhook, "missing stripe-signature header"))?;
+		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "missing stripe-signature header"))?;
 
 	let event = stripe::Webhook::construct_event(&payload, sig, &global.config.api.stripe.webhook_secret).map_err(|e| {
 		tracing::error!(error = %e, "failed to parse webhook");
-		ApiError::bad_request(ApiErrorCode::StripeWebhook, "failed to parse webhook")
+		ApiError::bad_request(ApiErrorCode::StripeError, "failed to parse webhook")
 	})?;
 
 	// TODO: verify request is coming from stripe ip
@@ -58,7 +58,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 						WebhookEvent {
 							id: event.id.to_string(),
 							epxires_at: chrono::DateTime::from_timestamp(event.created, 0)
-								.ok_or_else(|| TransactionError::custom(ApiError::bad_request(ApiErrorCode::StripeWebhook, "webhook event created_at is missing")))? + chrono::Duration::weeks(1),
+								.ok_or_else(|| TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "webhook event created_at is missing")))? + chrono::Duration::weeks(1),
 						},
 					},
 					UpdateOptions::builder().upsert(true).build(),
@@ -116,7 +116,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 						&global,
 						tx,
 						chrono::DateTime::from_timestamp(event.created, 0)
-							.ok_or_else(|| TransactionError::custom(ApiError::bad_request(ApiErrorCode::StripeWebhook, "webhook event created_at is missing")))?,
+							.ok_or_else(|| TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "webhook event created_at is missing")))?,
 						sub,
 						prev_attributes.unwrap_or_default(),
 					)
@@ -133,7 +133,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				| (stripe::EventType::ChargeDisputeUpdated, stripe::EventObject::Dispute(dis)) => {
 					charge::dispute_updated(&global, stripe_client, tx, dis).await?;
 				}
-				_ => return Err(TransactionError::custom(ApiError::bad_request(ApiErrorCode::StripeWebhook, "invalid event type"))),
+				_ => return Err(TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "invalid event type"))),
 			}
 
 			Ok(None)
@@ -150,7 +150,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");
-			Err(ApiError::bad_request(ApiErrorCode::StripeWebhook, "transaction failed"))
+			Err(ApiError::bad_request(ApiErrorCode::TransactionError, "transaction failed"))
 		}
 	}
 }

@@ -22,36 +22,35 @@ pub struct ApiError {
 pub enum ApiErrorCode {
 	#[default]
 	Unknown = 0,
-	SubRefresh = 1,
-	RateLimit = 2,
-	Route = 3,
-	Cookie = 4,
-	Ip = 5,
-	Auth = 6,
-	PaypalWebhook = 7,
-	StripeWebhook = 8,
-	EgVault = 9,
-	Rest = 10,
-	GraphQL = 11,
-	ExternalPlatform = 12,
+
+	/// Login Required
+	LoginRequired = 1000,
+	/// Transaction Error
+	TransactionError = 5000,
+	/// Missing Application Context
+	MissingContext = 6000,
+	/// Rate Limit
+	RateLimitExceeded = 7000,
+	/// Stripe Error
+	StripeError = 8000,
+	/// Paypal Error
+	PaypalError = 9000,
+	/// Bad Request
+	BadRequest = 10000,
+	/// Mutation Error
+	MutationError = 11000,
+	/// Load Error
+	LoadError = 12000,
+	/// Lacking Privileges
+	LackingPrivileges = 20000,
+	/// Image Processor Error
+	ImageProcessorError = 21000,
 }
 
 impl ApiErrorCode {
 	pub fn as_str(&self) -> &'static str {
 		match self {
-			Self::Unknown => "UNKNOWN",
-			Self::SubRefresh => "SUB_REFRESH",
-			Self::RateLimit => "RATE_LIMIT",
-			Self::Route => "ROUTE",
-			Self::Cookie => "COOKIE",
-			Self::Ip => "IP",
-			Self::Auth => "AUTH",
-			Self::PaypalWebhook => "PAYPAL_WEBHOOK",
-			Self::StripeWebhook => "STRIPE_WEBHOOK",
-			Self::EgVault => "EG_VAULT",
-			Self::Rest => "REST",
-			Self::GraphQL => "GRAPHQL",
-			Self::ExternalPlatform => "EXTERNAL_PLATFORM",
+			_ => "UNKNOWN",
 		}
 	}
 }
@@ -140,7 +139,7 @@ impl ApiError {
 	pub fn too_many_requests(error: impl Into<Cow<'static, str>>) -> Self {
 		Self {
 			status_code: StatusCode::TOO_MANY_REQUESTS,
-			error_code: ApiErrorCode::RateLimit,
+			error_code: ApiErrorCode::RateLimitExceeded,
 			error: error.into(),
 			status: Cow::Borrowed("too many requests"),
 			extra_headers: None,

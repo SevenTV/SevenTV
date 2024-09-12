@@ -23,14 +23,10 @@ pub enum ConnectionError {
 impl From<ConnectionError> for ApiError {
 	fn from(value: ConnectionError) -> Self {
 		match value {
-			ConnectionError::UnsupportedPlatform => {
-				ApiError::bad_request(ApiErrorCode::ExternalPlatform, "unsupported platform")
-			}
-			ConnectionError::RequestError => {
-				ApiError::internal_server_error(ApiErrorCode::ExternalPlatform, "request failed")
-			}
+			ConnectionError::UnsupportedPlatform => ApiError::bad_request(ApiErrorCode::BadRequest, "unsupported platform"),
+			ConnectionError::RequestError => ApiError::internal_server_error(ApiErrorCode::LoadError, "request failed"),
 			ConnectionError::NoUserData => {
-				ApiError::bad_request(ApiErrorCode::ExternalPlatform, "3rd party platform did not return user data")
+				ApiError::bad_request(ApiErrorCode::LoadError, "3rd party platform did not return user data")
 			}
 		}
 	}

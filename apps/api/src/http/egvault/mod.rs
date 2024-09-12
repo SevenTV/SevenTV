@@ -112,7 +112,7 @@ async fn find_customer(global: &Arc<Global>, user_id: UserId) -> Result<Option<C
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to search customer");
-		ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to search customer")
+		ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to search customer")
 	})?;
 
 	let customer_id = customer.data.into_iter().next().map(|c| c.id.into());
@@ -145,7 +145,7 @@ async fn find_or_create_customer(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create customer");
-				ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to create customer")
+				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create customer")
 			})?;
 
 			customer.id.into()
@@ -169,7 +169,7 @@ async fn find_or_create_customer(
 			},
 		)
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to update user"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update user"))?;
 
 	Ok(id)
 }

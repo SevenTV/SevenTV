@@ -21,8 +21,8 @@ pub async fn created(
 		.transpose()
 		.map_err(|err| {
 			tracing::error!(error = %err, "failed to deserialize metadata");
-			TransactionError::custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeWebhook,
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::StripeError,
 				"failed to deserialize metadata",
 			))
 		})?

@@ -65,8 +65,8 @@ pub async fn dispute_updated(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to retrieve charge");
-		TransactionError::custom(ApiError::internal_server_error(
-			ApiErrorCode::StripeWebhook,
+		TransactionError::Custom(ApiError::internal_server_error(
+			ApiErrorCode::StripeError,
 			"failed to retrieve charge",
 		))
 	})?;

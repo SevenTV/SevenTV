@@ -45,15 +45,15 @@ pub async fn get_emote_set_by_id(
 		.emote_set_by_id_loader
 		.load(id)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load emote set"))?
-		.ok_or_else(|| ApiError::not_found(ApiErrorCode::Rest, "emote set not found"))?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))?;
 
 	let owner = match emote_set.owner_id {
 		Some(owner_id) => global
 			.user_loader
 			.load_fast(&global, owner_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load user"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.and_then(|owner| session.can_view(&owner).then_some(owner))
 			.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config.api.cdn_origin)),
 		None => None,

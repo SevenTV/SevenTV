@@ -27,30 +27,28 @@ impl RolesMutation {
 	async fn create_role<'ctx>(&self, ctx: &Context<'ctx>, data: CreateRoleInput) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let allowed: u64 = data
 			.allowed
 			.parse()
-			.map_err(|_| ApiError::bad_request(ApiErrorCode::GraphQL, "invalid allowed permission"))?;
+			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid allowed permission"))?;
 		let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
 		let denied: u64 = data
 			.denied
 			.parse()
-			.map_err(|_| ApiError::bad_request(ApiErrorCode::GraphQL, "invalid denied permission"))?;
+			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid denied permission"))?;
 		let denied = shared::old_types::role_permission::RolePermission::from(denied);
 
 		let role_permissions = shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied);
 
 		if !authed_user.computed.permissions.is_superset_of(&role_permissions) {
 			return Err(ApiError::forbidden(
-				ApiErrorCode::GraphQL,
+				ApiErrorCode::LackingPrivileges,
 				"the role has a higher permission level than you",
 			));
 		}
@@ -66,7 +64,7 @@ impl RolesMutation {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load roles")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load roles")
 			})?;
 
 		let mut rank = 0;
@@ -95,7 +93,7 @@ impl RolesMutation {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert role");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to insert role")
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert role")
 			})?;
 
 		Ok(Role::from_db(role))
@@ -110,23 +108,21 @@ impl RolesMutation {
 	) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let permissions = match (data.allowed, data.denied) {
 			(Some(allowed), Some(denied)) => {
 				let allowed: u64 = allowed
 					.parse()
-					.map_err(|_| ApiError::bad_request(ApiErrorCode::GraphQL, "invalid allowed permission"))?;
+					.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid allowed permission"))?;
 				let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
 				let denied: u64 = denied
 					.parse()
-					.map_err(|_| ApiError::bad_request(ApiErrorCode::GraphQL, "invalid denied permission"))?;
+					.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid denied permission"))?;
 				let denied = shared::old_types::role_permission::RolePermission::from(denied);
 
 				let role_permissions =
@@ -134,7 +130,7 @@ impl RolesMutation {
 
 				if !authed_user.computed.permissions.is_superset_of(&role_permissions) {
 					return Err(ApiError::forbidden(
-						ApiErrorCode::GraphQL,
+						ApiErrorCode::LackingPrivileges,
 						"the role has a higher permission level than you",
 					));
 				}
@@ -144,7 +140,7 @@ impl RolesMutation {
 			(None, None) => None,
 			_ => {
 				return Err(ApiError::bad_request(
-					ApiErrorCode::GraphQL,
+					ApiErrorCode::LackingPrivileges,
 					"must provide both allowed and denied permissions",
 				));
 			}
@@ -182,9 +178,9 @@ impl RolesMutation {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update role");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to update role")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to update role")
 			})?
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to update role"))?;
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to update role"))?;
 
 		Ok(Role::from_db(role))
 	}
@@ -193,24 +189,22 @@ impl RolesMutation {
 	async fn delete_role<'ctx>(&self, ctx: &Context<'ctx>, role_id: GqlObjectId) -> Result<String, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let authed_user = session
-			.user()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let role = global
 			.role_by_id_loader
 			.load(role_id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load role"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "role not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load role"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "role not found"))?;
 
 		if !authed_user.computed.permissions.is_superset_of(&role.permissions) {
 			return Err(ApiError::forbidden(
-				ApiErrorCode::GraphQL,
+				ApiErrorCode::LackingPrivileges,
 				"the role has a higher permission level than you",
 			));
 		}
@@ -226,7 +220,7 @@ impl RolesMutation {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to delete role");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to delete role")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to delete role")
 			})?;
 
 		// TODO: remove entitlement edges
@@ -234,7 +228,7 @@ impl RolesMutation {
 		if res.deleted_count > 0 {
 			Ok(String::new())
 		} else {
-			Err(ApiError::not_found(ApiErrorCode::GraphQL, "role not found"))
+			Err(ApiError::not_found(ApiErrorCode::LoadError, "role not found"))
 		}
 	}
 }

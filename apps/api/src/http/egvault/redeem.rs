@@ -100,9 +100,7 @@ pub async fn redeem(
 	Extension(session): Extension<Session>,
 	Json(body): Json<RedeemRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let authed_user = session
-		.user()
-		.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::EgVault, "you are not logged in"))?;
+	let authed_user = session.user()?;
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultRedeem, &session);
 
 	req.http(&global, async {
@@ -141,7 +139,7 @@ pub async fn redeem(
 					)
 					.await?
 					.ok_or_else(|| {
-						TransactionError::custom(ApiError::not_found(ApiErrorCode::EgVault, "redeem code not found"))
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "redeem code not found"))
 					})?;
 
 				// TODO: should we dataload this?
@@ -181,7 +179,7 @@ pub async fn redeem(
 							None,
 						)
 						.await
-						.map_err(TransactionError::custom)?,
+						.map_err(TransactionError::Custom)?,
 					};
 
 					let product = global
@@ -189,8 +187,8 @@ pub async fn redeem(
 						.load(*product_id)
 						.await
 						.map_err(|_| {
-							TransactionError::custom(ApiError::internal_server_error(
-								ApiErrorCode::EgVault,
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
 								"failed to load subscription product",
 							))
 						})?
@@ -199,8 +197,8 @@ pub async fn redeem(
 								"could not find subscription product for redeem code: {} product id: {product_id}",
 								code.id
 							);
-							TransactionError::custom(ApiError::internal_server_error(
-								ApiErrorCode::EgVault,
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
 								"failed to load subscription product",
 							))
 						})?;
@@ -210,8 +208,8 @@ pub async fn redeem(
 							"could not find default variant for subscription product for redeem code: {} product id: {product_id}",
 							code.id
 						);
-						TransactionError::custom(ApiError::internal_server_error(
-							ApiErrorCode::EgVault,
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
 							"failed to load subscription product",
 						))
 					})?;
@@ -258,15 +256,15 @@ pub async fn redeem(
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to create checkout session");
-						TransactionError::custom(ApiError::internal_server_error(
-							ApiErrorCode::EgVault,
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::StripeError,
 							"failed to create checkout session",
 						))
 					})?
 					.url
 					.ok_or_else(|| {
-						TransactionError::custom(ApiError::internal_server_error(
-							ApiErrorCode::EgVault,
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::StripeError,
 							"failed to create checkout session",
 						))
 					})?;
@@ -294,7 +292,10 @@ pub async fn redeem(
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::internal_server_error(ApiErrorCode::EgVault, "transaction failed"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	})

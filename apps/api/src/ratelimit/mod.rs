@@ -184,7 +184,7 @@ impl RateLimiter {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to call ratelimit function");
-				ApiError::internal_server_error(ApiErrorCode::RateLimit, "failed to call ratelimit function")
+				ApiError::internal_server_error(ApiErrorCode::RateLimitExceeded, "failed to call ratelimit function")
 			})?;
 
 		let remaining = result[0];

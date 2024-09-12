@@ -105,14 +105,14 @@ impl MessagesQuery {
 	async fn announcement<'ctx>(&self, ctx: &Context<'ctx>) -> Result<String, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let message = global
 			.global_config_loader
 			.load(())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load global config"))?
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::GraphQL, "global config not found"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load global config"))?
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "global config not found"))?
 			.alerts
 			.message;
 
@@ -135,7 +135,7 @@ impl MessagesQuery {
 	) -> Result<ModRequestMessageList, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let wish = wish
 			.map(|w| match w.as_ref() {
@@ -166,7 +166,7 @@ impl MessagesQuery {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to search")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
 		let requests = global
@@ -174,7 +174,7 @@ impl MessagesQuery {
 			.load_many(result.hits.iter().copied())
 			.await
 			.map_err(|()| {
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emote moderation requests")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote moderation requests")
 			})?;
 
 		Ok(ModRequestMessageList {

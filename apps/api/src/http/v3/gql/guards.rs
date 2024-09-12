@@ -35,18 +35,22 @@ impl Guard for PermissionGuard {
 	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
 
 		if self.all {
 			if !session.has_all(self.permissions.iter().copied()) {
-				return Err(
-					ApiError::forbidden(ApiErrorCode::GraphQL, "you do not have permission to use this endpoint").into(),
-				);
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"you do not have permission to use this endpoint",
+				)
+				.into());
 			}
 		} else if !session.has_any(self.permissions.iter().copied()) {
-			return Err(
-				ApiError::forbidden(ApiErrorCode::GraphQL, "you do not have permission to use this endpoint").into(),
-			);
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you do not have permission to use this endpoint",
+			)
+			.into());
 		}
 
 		Ok(())
@@ -59,10 +63,12 @@ impl Guard for UserGuard {
 	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
 
 		if session.user_id() != Some(self.0) {
-			return Err(ApiError::forbidden(ApiErrorCode::GraphQL, "you are not authorized to use this endpoint").into());
+			return Err(
+				ApiError::forbidden(ApiErrorCode::LackingPrivileges, "you are not authorized to use this endpoint").into(),
+			);
 		}
 
 		Ok(())
@@ -88,13 +94,13 @@ impl Guard for RateLimitGuard {
 	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
-		let response = ctx
-			.data::<RateLimitResponseStore>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing rate limit response data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+		let response = ctx.data::<RateLimitResponseStore>().map_err(|_| {
+			ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing rate limit response data")
+		})?;
 
 		let mut req = RateLimitRequest::new(self.resource, session);
 

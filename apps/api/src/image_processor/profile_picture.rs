@@ -19,7 +19,7 @@ pub async fn handle_success(
 	id: UserProfilePictureId,
 	event: &event_callback::Success,
 ) -> TransactionResult<(), anyhow::Error> {
-	let image_set = event_to_image_set(event).map_err(TransactionError::custom)?;
+	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
 
 	let Some(profile_picture) = tx
 		.find_one_and_update(
@@ -98,8 +98,8 @@ pub async fn handle_fail(
 		.user_profile_picture_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query profile picture")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("profile picture not found")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query profile picture")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("profile picture not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -126,8 +126,8 @@ pub async fn handle_start(
 		.user_profile_picture_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query profile picture")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("profile picture not found")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query profile picture")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("profile picture not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -154,8 +154,8 @@ pub async fn handle_cancel(
 		.user_profile_picture_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query profile picture")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("profile picture not found")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query profile picture")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("profile picture not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,

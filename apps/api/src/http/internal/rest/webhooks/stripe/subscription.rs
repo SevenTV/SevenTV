@@ -20,7 +20,7 @@ fn subscription_products(items: stripe::List<stripe::SubscriptionItem>) -> Resul
 		.map(|i| {
 			Ok(ProductId::from(
 				i.price
-					.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeWebhook, "subscription item price is missing"))?
+					.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeError, "subscription item price is missing"))?
 					.id,
 			))
 		})
@@ -33,7 +33,7 @@ pub async fn created(
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: stripe::Subscription,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
-	let items = subscription_products(subscription.items).map_err(TransactionError::custom)?;
+	let items = subscription_products(subscription.items).map_err(TransactionError::Custom)?;
 
 	let products = tx
 		.find(
@@ -57,8 +57,8 @@ pub async fn created(
 
 	let metadata = SubscriptionMetadata::from_stripe(&subscription.metadata).map_err(|e| {
 		tracing::error!(error = %e, "failed to deserialize metadata");
-		TransactionError::custom(ApiError::internal_server_error(
-			ApiErrorCode::StripeWebhook,
+		TransactionError::Custom(ApiError::internal_server_error(
+			ApiErrorCode::StripeError,
 			"failed to deserialize metadata",
 		))
 	})?;
@@ -80,14 +80,14 @@ pub async fn deleted(
 	subscription: stripe::Subscription,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	let ended_at = subscription.ended_at.ok_or_else(|| {
-		TransactionError::custom(ApiError::bad_request(
-			ApiErrorCode::StripeWebhook,
+		TransactionError::Custom(ApiError::bad_request(
+			ApiErrorCode::StripeError,
 			"subscription ended_at is missing",
 		))
 	})?;
 	let ended_at = chrono::DateTime::from_timestamp(ended_at, 0).ok_or_else(|| {
-		TransactionError::custom(ApiError::bad_request(
-			ApiErrorCode::StripeWebhook,
+		TransactionError::Custom(ApiError::bad_request(
+			ApiErrorCode::StripeError,
 			"subscription ended_at is missing",
 		))
 	})?;
@@ -135,7 +135,7 @@ pub async fn updated(
 	subscription: stripe::Subscription,
 	prev_attributes: HashMap<String, serde_json::Value>,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
-	let items = subscription_products(subscription.items).map_err(TransactionError::custom)?;
+	let items = subscription_products(subscription.items).map_err(TransactionError::Custom)?;
 
 	let products = tx
 		.find(

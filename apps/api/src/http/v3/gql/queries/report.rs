@@ -90,13 +90,13 @@ impl Report {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast(global, self.actor_id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())
@@ -105,13 +105,13 @@ impl Report {
 	async fn assignees<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast_many(global, self.assignee_ids.iter().map(|i| i.id()))
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load users"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?
 			.into_values()
 			.map(|u| UserPartial::from_db(global, u))
 			.map(Into::into)
@@ -146,11 +146,11 @@ impl ReportsQuery {
 	) -> Result<Vec<Report>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		if !matches!(status, Some(ReportStatus::Open) | None) {
 			return Err(ApiError::not_implemented(
-				ApiErrorCode::GraphQL,
+				ApiErrorCode::BadRequest,
 				"only open reports are supported",
 			));
 		}
@@ -171,20 +171,20 @@ impl ReportsQuery {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to search")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
 		let tickets = global
 			.ticket_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load tickets"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load tickets"))?;
 
 		let messages = global
 			.ticket_message_by_ticket_id_loader
 			.load_many(tickets.keys().copied())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load ticket messages"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket messages"))?;
 
 		Ok(tickets
 			.into_values()
@@ -200,13 +200,13 @@ impl ReportsQuery {
 	async fn report<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Report>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let Some(ticket) = global
 			.ticket_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load ticket"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket"))?
 		else {
 			return Ok(None);
 		};
@@ -219,7 +219,7 @@ impl ReportsQuery {
 			.ticket_message_by_ticket_id_loader
 			.load(ticket.id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load ticket messages"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket messages"))?
 			.unwrap_or_default();
 
 		Ok(Report::from_db(ticket, messages))

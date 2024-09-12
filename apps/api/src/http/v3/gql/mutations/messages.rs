@@ -30,7 +30,7 @@ impl MessagesMutation {
 	) -> Result<u32, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let ids: Vec<EmoteModerationRequestId> = message_ids.into_iter().map(|id| id.id()).collect();
 
 		let status = if approved {
@@ -59,7 +59,7 @@ impl MessagesMutation {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update moderation requests");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to update moderation requests")
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update moderation requests")
 			})?;
 
 		Ok(res.modified_count as u32)
@@ -74,11 +74,11 @@ impl MessagesMutation {
 		_anonymous: Option<bool>,
 	) -> Result<Option<InboxMessage>, ApiError> {
 		// will be left unimplemented
-		Err(ApiError::not_implemented(ApiErrorCode::GraphQL, "not implemented"))
+		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 	}
 
 	async fn dismiss_void_target_mod_requests(&self, _object: u32) -> Result<u32, ApiError> {
 		// will be left unimplemented
-		Err(ApiError::not_implemented(ApiErrorCode::GraphQL, "not implemented"))
+		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 	}
 }

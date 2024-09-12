@@ -72,12 +72,13 @@ pub async fn subscribe(
 	Extension(session): Extension<Session>,
 	Json(body): Json<SubscribeBody>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let authed_user = session
-		.user()
-		.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::EgVault, "you are not logged in"))?;
+	let authed_user = session.user()?;
 
 	if query.payment_method != "stripe" {
-		return Err(ApiError::bad_request(ApiErrorCode::EgVault, "payment method not supported"));
+		return Err(ApiError::bad_request(
+			ApiErrorCode::BadRequest,
+			"payment method not supported",
+		));
 	}
 
 	let kind = SubscriptionProductKind::from(query.renew_interval);
@@ -99,9 +100,9 @@ pub async fn subscribe(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to find subscription product");
-				ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to find subscription product")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find subscription product")
 			})?
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "subscription product not found"))?;
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "subscription product not found"))?;
 
 		let variant = product
 			.variants
@@ -138,8 +139,8 @@ pub async fn subscribe(
 				.user_loader
 				.load_fast(&global, gift_for)
 				.await
-				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load user"))?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::EgVault, "user not found"))?;
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
 			// TODO: should we dataload this?
 			let is_subscribed = SubscriptionPeriod::collection(&global.db)
@@ -158,11 +159,11 @@ pub async fn subscribe(
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to load subscription periods");
-					ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription periods")
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods")
 				})?
 				.is_some();
 			if is_subscribed {
-				return Err(ApiError::bad_request(ApiErrorCode::EgVault, "user is already subscribed"));
+				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "user is already subscribed"));
 			}
 
 			params.mode = Some(stripe::CheckoutSessionMode::Payment);
@@ -207,12 +208,12 @@ pub async fn subscribe(
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to load subscription periods");
-					ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription periods")
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods")
 				})?
 				.is_some();
 
 			if is_subscribed {
-				return Err(ApiError::bad_request(ApiErrorCode::EgVault, "user is already subscribed"));
+				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "user is already subscribed"));
 			}
 
 			params.mode = Some(stripe::CheckoutSessionMode::Subscription);
@@ -237,10 +238,12 @@ pub async fn subscribe(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create checkout session");
-				ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to create checkout session")
+				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
 			})?
 			.url
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to create checkout session"))?;
+			.ok_or_else(|| {
+				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
+			})?;
 
 		Ok(Json(SubscribeResponse {
 			url: session_url,

@@ -275,7 +275,7 @@ pub enum InternalEventEmoteSetData {
 		emote_set_emote: EmoteSetEmote,
 	},
 	RemoveEmote {
-		emote: Box<Emote>,
+		emote: Option<Box<Emote>>,
 		emote_set_emote: EmoteSetEmote,
 		index: usize,
 	},
@@ -300,9 +300,9 @@ impl From<InternalEventEmoteSetData> for StoredEventEmoteSetData {
 				emote_id: emote.id,
 				alias: emote_set_emote.alias,
 			},
-			InternalEventEmoteSetData::RemoveEmote { emote, .. } => {
-				StoredEventEmoteSetData::RemoveEmote { emote_id: emote.id }
-			}
+			InternalEventEmoteSetData::RemoveEmote { emote_set_emote, .. } => StoredEventEmoteSetData::RemoveEmote {
+				emote_id: emote_set_emote.id,
+			},
 			InternalEventEmoteSetData::RenameEmote {
 				emote,
 				emote_set_emote,
@@ -544,7 +544,7 @@ impl InternalEventPayload {
 					} => {
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
-							Some(EmotePartialModel::from_db(*emote, None, cdn_base_url)),
+							emote.map(|emote| EmotePartialModel::from_db(*emote, None, cdn_base_url)),
 						);
 						let active_emote = serde_json::to_value(active_emote)?;
 

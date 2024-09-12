@@ -80,7 +80,7 @@ impl RolesQuery {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let roles: Vec<DbRole> = DbRole::collection(&global.db)
 			.find(filter::filter!(DbRole {}))
@@ -90,7 +90,7 @@ impl RolesQuery {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load roles")
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load roles")
 			})?;
 
 		Ok(roles.into_iter().map(Role::from_db).collect())
@@ -99,13 +99,13 @@ impl RolesQuery {
 	async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Role>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let role = global
 			.role_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load role"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load role"))?;
 
 		Ok(role.map(Role::from_db))
 	}

@@ -115,8 +115,8 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 		.subscription_product_by_id_loader
 		.load(subscription_id.product_id)
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to load product"))?
-		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::SubRefresh, "product not found"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load product"))?
+		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "product not found"))?;
 
 	// load existing edges
 	let outgoing: HashSet<_> = global
@@ -125,7 +125,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			subscription_id: *subscription_id,
 		})
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to load subscription entitlements"))?
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription entitlements"))?
 		.unwrap_or_default()
 		.into_iter()
 		.map(|e| e.id.to)
@@ -137,7 +137,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			subscription_id: *subscription_id,
 		})
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to load subscription entitlements"))?
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription entitlements"))?
 		.unwrap_or_default()
 		.into_iter()
 		.map(|e| e.id.from)
@@ -154,13 +154,13 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to load subscription periods");
-			ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to load subscription periods")
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods")
 		})?
 		.try_collect()
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to collect subscription periods");
-			ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to collect subscription periods")
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to collect subscription periods")
 		})?;
 
 	let mut new_edges = vec![];
@@ -245,7 +245,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update subscription");
-				ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to update subscription")
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update subscription")
 			})?;
 	} else {
 		if incoming.contains(&user_edge.from) {
@@ -275,7 +275,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update subscription");
-				ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to update subscription")
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update subscription")
 			})?;
 	}
 
@@ -290,7 +290,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to delete entitlement edges");
-				ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to delete entitlement edges")
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to delete entitlement edges")
 			})?;
 	}
 
@@ -300,7 +300,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert entitlement edges");
-				ApiError::internal_server_error(ApiErrorCode::SubRefresh, "failed to insert entitlement edges")
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert entitlement edges")
 			})?;
 	}
 

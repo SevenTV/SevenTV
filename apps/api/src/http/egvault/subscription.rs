@@ -34,9 +34,7 @@ pub async fn subscription(
 	Extension(session): Extension<Session>,
 ) -> Result<Json<SubscriptionResponse>, ApiError> {
 	let user = match target {
-		TargetUser::Me => session
-			.user_id()
-			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::EgVault, "you are not logged in"))?,
+		TargetUser::Me => session.user()?.id,
 		TargetUser::Other(id) => id,
 	};
 
@@ -53,13 +51,13 @@ pub async fn subscription(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to find subscription period");
-			ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to find subscription period")
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find subscription period")
 		})?
 		.try_collect()
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to collect subscription periods");
-			ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to collect subscription periods")
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to collect subscription periods")
 		})?;
 
 	let Some(active_period) = periods
@@ -80,8 +78,8 @@ pub async fn subscription(
 		.subscription_by_id_loader
 		.load(active_period.subscription_id)
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription"))?
-		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?
+		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?;
 
 	let periods: Vec<_> = periods
 		.into_iter()
@@ -92,8 +90,8 @@ pub async fn subscription(
 		.subscription_product_by_id_loader
 		.load(subscription.id.product_id)
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription product"))?
-		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "could not find subscription product"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription product"))?
+		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "could not find subscription product"))?;
 
 	let age = sub_refresh_job::SubAge::new(&periods);
 

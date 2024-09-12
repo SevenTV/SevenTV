@@ -113,13 +113,13 @@ where
 			.get_all(hyper::header::COOKIE)
 			.iter()
 			.try_fold(CookieJar::new(), |mut jar, h| {
-				for c in Cookie::split_parse_encoded(
-					h.to_str()
-						.map_err(|_| ApiError::bad_request(ApiErrorCode::Cookie, "cookie header is not a valid string"))?,
-				) {
+				for c in
+					Cookie::split_parse_encoded(h.to_str().map_err(|_| {
+						ApiError::bad_request(ApiErrorCode::BadRequest, "cookie header is not a valid string")
+					})?) {
 					match c {
 						Ok(cookie) => jar.add_original(cookie.into_owned()),
-						Err(_) => return Err(ApiError::bad_request(ApiErrorCode::Cookie, "invalid cookie header")),
+						Err(_) => return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid cookie header")),
 					}
 				}
 				Ok(jar)

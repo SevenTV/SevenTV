@@ -46,7 +46,7 @@ fn cors_layer(global: &Arc<Global>) -> CorsLayer {
 	let allow_credentials = AllowCredentials::predicate(move |origin, _| {
 		origin
 			.to_str()
-			.map(|o| o == website_origin || o == api_origin)
+			.map(|o| o == website_origin.as_str() || o == api_origin.as_str())
 			.unwrap_or_default()
 	});
 
@@ -126,7 +126,7 @@ async fn root() -> &'static str {
 
 #[tracing::instrument]
 pub async fn not_found() -> ApiError {
-	ApiError::not_found(ApiErrorCode::Route, "route not found")
+	ApiError::not_found(ApiErrorCode::BadRequest, "route not found")
 }
 
 #[tracing::instrument(name = "API", skip(global))]

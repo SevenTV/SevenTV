@@ -77,25 +77,25 @@ pub async fn get_user_by_id(
 		.user_loader
 		.load(&global, id)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load user"))?
-		.ok_or_else(|| ApiError::not_found(ApiErrorCode::Rest, "user not found"))?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
 	if user.has(FlagPermission::Hidden) && Some(user.id) != session.user_id() && !session.has(UserPermission::ViewHidden) {
-		return Err(ApiError::not_found(ApiErrorCode::Rest, "user not found"));
+		return Err(ApiError::not_found(ApiErrorCode::LoadError, "user not found"));
 	}
 
 	let emote_sets = global
 		.emote_set_by_user_id_loader
 		.load(user.id)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load emote sets"))?
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 		.unwrap_or_default();
 
 	let editors = global
 		.user_editor_by_user_id_loader
 		.load(user.id)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load editors"))?
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
 		.unwrap_or_default();
 
 	let active_emote_set = if let Some(emote_set_id) = user.style.active_emote_set_id {
@@ -103,7 +103,7 @@ pub async fn get_user_by_id(
 			.emote_set_by_id_loader
 			.load(emote_set_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load emote set"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?
 	} else {
 		None
 	};
@@ -162,9 +162,7 @@ pub async fn upload_user_profile_picture(
 	Extension(session): Extension<Session>,
 	body: Bytes,
 ) -> Result<impl IntoResponse, ApiError> {
-	let authed_user = session
-		.user()
-		.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::Rest, "you are not logged in"))?;
+	let authed_user = session.user()?;
 
 	let other_user = match id {
 		TargetUser::Me => None,
@@ -173,8 +171,8 @@ pub async fn upload_user_profile_picture(
 				.user_loader
 				.load(&global, id)
 				.await
-				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load user"))?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::Rest, "user not found"))?,
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?,
 		),
 	};
 
@@ -182,7 +180,7 @@ pub async fn upload_user_profile_picture(
 
 	if target_user.computed.permissions.has(UserPermission::UseCustomProfilePicture) {
 		return Err(ApiError::forbidden(
-			ApiErrorCode::Rest,
+			ApiErrorCode::LackingPrivileges,
 			"user cannot set custom profile picture",
 		));
 	}
@@ -196,19 +194,19 @@ pub async fn upload_user_profile_picture(
 				editor_id: authed_user.id,
 			})
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load editor"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
 			.map(|editor| editor.permissions.has_user(EditorUserPermission::ManageProfile))
 			.unwrap_or_default()
 	{
 		return Err(ApiError::forbidden(
-			ApiErrorCode::Rest,
+			ApiErrorCode::LackingPrivileges,
 			"user cannot edit other user's profile picture",
 		));
 	}
 
 	if target_user.style.pending_profile_picture.is_some() {
 		return Err(ApiError::conflict(
-			ApiErrorCode::Rest,
+			ApiErrorCode::MutationError,
 			"profile picture change already pending",
 		));
 	}
@@ -244,26 +242,29 @@ pub async fn upload_user_profile_picture(
 				if err.code == image_processor::ErrorCode::Decode as i32
 					|| err.code == image_processor::ErrorCode::InvalidInput as i32
 				{
-					return Err(ApiError::bad_request(ApiErrorCode::Rest, "failed to upload profile picture"));
+					return Err(ApiError::bad_request(
+						ApiErrorCode::ImageProcessorError,
+						"failed to upload profile picture",
+					));
 				}
 
 				tracing::error!(code = ?err.code(), "failed to upload profile picture: {}", err.message);
 				return Err(ApiError::internal_server_error(
-					ApiErrorCode::Rest,
+					ApiErrorCode::ImageProcessorError,
 					"failed to upload profile picture",
 				));
 			}
 			Err(err) => {
 				tracing::error!("failed to upload profile picture: {:#}", err);
 				return Err(ApiError::internal_server_error(
-					ApiErrorCode::Rest,
+					ApiErrorCode::ImageProcessorError,
 					"failed to upload profile picture",
 				));
 			}
 			_ => {
 				tracing::error!("failed to upload profile picture: unknown error");
 				return Err(ApiError::internal_server_error(
-					ApiErrorCode::Rest,
+					ApiErrorCode::ImageProcessorError,
 					"failed to upload profile picture",
 				));
 			}
@@ -279,7 +280,7 @@ pub async fn upload_user_profile_picture(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert profile picture");
-				ApiError::internal_server_error(ApiErrorCode::Rest, "failed to insert profile picture")
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert profile picture")
 			})?;
 
 		User::collection(&global.db)
@@ -304,7 +305,7 @@ pub async fn upload_user_profile_picture(
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to update user");
-				ApiError::internal_server_error(ApiErrorCode::Rest, "failed to update user")
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update user")
 			})?;
 
 		Ok(StatusCode::OK)
@@ -331,7 +332,7 @@ pub async fn create_user_presence(
 	Json(_presence): Json<PresenceModel>,
 ) -> Result<impl IntoResponse, ApiError> {
 	// TODO: decide what to do with this
-	Ok(ApiError::not_implemented(ApiErrorCode::Rest, "not implemented"))
+	Ok(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 }
 
 #[utoipa::path(
@@ -355,7 +356,7 @@ pub async fn get_user_by_platform_id(
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let platform = Platform::from_str(&platform.to_lowercase())
-		.map_err(|_| ApiError::bad_request(ApiErrorCode::Rest, "invalid platform"))?;
+		.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid platform"))?;
 
 	let user = global
 		.user_loader
@@ -365,24 +366,24 @@ pub async fn get_user_by_platform_id(
 				.user_by_platform_id_loader
 				.load((platform, platform_id.clone()))
 				.await
-				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load user"))?
-				.ok_or(ApiError::not_found(ApiErrorCode::Rest, "user not found"))?,
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?,
 		)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load user"))?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
 	if user.has(FlagPermission::Hidden)
 		&& Some(user.id) != session.user_id()
 		&& !session.permissions().has(UserPermission::ViewHidden)
 	{
-		return Err(ApiError::not_found(ApiErrorCode::Rest, "user not found"));
+		return Err(ApiError::not_found(ApiErrorCode::LoadError, "user not found"));
 	}
 
 	let connection = user
 		.connections
 		.iter()
 		.find(|c| c.platform == platform && c.platform_id == platform_id)
-		.ok_or_else(|| ApiError::not_found(ApiErrorCode::Rest, "user not found"))?;
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
 	let mut connection_model: UserConnectionModel = UserConnectionPartialModel::from_db(
 		connection.clone(),
@@ -395,7 +396,7 @@ pub async fn get_user_by_platform_id(
 		.user_editor_by_user_id_loader
 		.load(user.id)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load editors"))?
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
 		.unwrap_or_default()
 		.into_iter()
 		.filter_map(UserEditorModel::from_db)
@@ -406,7 +407,7 @@ pub async fn get_user_by_platform_id(
 		.emote_set_by_user_id_loader
 		.load(user.id)
 		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load emote sets"))?
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 		.unwrap_or_default()
 		.into_iter()
 		.map(|s| EmoteSetPartialModel::from_db(s, None))
@@ -419,7 +420,7 @@ pub async fn get_user_by_platform_id(
 			.emote_set_by_id_loader
 			.load(emote_set_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load emote set"))?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?
 		{
 			let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), &session).await?;
 			let user_virtual_set = EmoteSetModel::from_db(emote_set, emotes, None);
@@ -455,7 +456,7 @@ pub async fn get_user_by_platform_id(
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.delete.go#L33
 pub async fn delete_user_by_id() -> Result<impl IntoResponse, ApiError> {
 	// will be left unimplemented because it is unused
-	Ok(ApiError::not_implemented(ApiErrorCode::Rest, "not implemented"))
+	Ok(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 }
 
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.update-connection.go#L86
@@ -487,5 +488,5 @@ pub async fn update_user_connection_by_id(
 ) -> Result<impl IntoResponse, ApiError> {
 	let _ = (global, body);
 	// TODO: implement
-	Ok(ApiError::not_implemented(ApiErrorCode::Rest, "not implemented"))
+	Ok(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 }

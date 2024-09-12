@@ -25,13 +25,13 @@ pub async fn products(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to query subscription products");
-			ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to query subscription products")
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to query subscription products")
 		})?
 		.try_collect()
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to collect subscription products");
-			ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to collect subscription products")
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to collect subscription products")
 		})?;
 
 	let currency = if let Some(country_code) = global.geoip().and_then(|g| g.lookup(session.ip())).and_then(|c| c.iso_code) {
@@ -39,8 +39,8 @@ pub async fn products(
 			.global_config_loader
 			.load(())
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load global config"))?
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load global config"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load global config"))?
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load global config"))?;
 
 		global.country_currency_overrides.get(country_code).copied()
 	} else {
@@ -79,7 +79,7 @@ pub async fn products(
 		.entitlement_edge_outbound_loader
 		.load_many(months_benefit_ids)
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load entitlement edges"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load entitlement edges"))?;
 
 	// find the paints
 	let current_paints = edges

@@ -257,12 +257,6 @@ pub enum TransactionError<E: Debug> {
 
 pub type TransactionResult<T, E> = Result<T, TransactionError<E>>;
 
-impl<E: Debug> TransactionError<E> {
-	pub const fn custom(err: E) -> Self {
-		Self::Custom(err)
-	}
-}
-
 pub async fn with_transaction<'a, T, E, F, Fut>(global: &'a Arc<Global>, f: F) -> TransactionResult<T, E>
 where
 	F: FnOnce(TransactionSession<'a, E>) -> Fut + Clone + 'a,
