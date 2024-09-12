@@ -111,6 +111,8 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 	let scores = scores.into_iter().collect::<Vec<_>>();
 	let chunks = scores.chunks(10000);
 
+	let now = chrono::Utc::now();
+
 	for chunk in chunks {
 		global
 			.updater
@@ -127,6 +129,7 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 						Emote {
 							#[query(serde)]
 							scores,
+							updated_at: now,
 						}
 					},
 					false,
