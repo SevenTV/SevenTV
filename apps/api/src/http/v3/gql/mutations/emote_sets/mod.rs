@@ -24,7 +24,7 @@ use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::http::v3::validators::NameValidator;
+use crate::http::v3::validators::{EmoteNameValidator, NameValidator};
 use crate::transactions::{with_transaction, TransactionError};
 
 mod emote_add;
@@ -312,7 +312,7 @@ impl EmoteSetOps {
 		ctx: &Context<'ctx>,
 		id: GqlObjectId,
 		action: ListItemAction,
-		#[graphql(validator(custom = "NameValidator"))] name: Option<String>,
+		#[graphql(validator(custom = "EmoteNameValidator"))] name: Option<String>,
 	) -> Result<Vec<ActiveEmote>, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
 		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;

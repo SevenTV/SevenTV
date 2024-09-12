@@ -32,9 +32,15 @@ impl Job for RolesJob {
 			}
 		}
 
+		let mut ranks = HashSet::new();
+
+		ranks.insert(0); // Default
+		ranks.insert(5); // Subscriber
+		ranks.insert(6); // Contributor
+
 		Ok(RolesJob {
 			global,
-			ranks: HashSet::new(),
+			ranks,
 		})
 	}
 
@@ -133,7 +139,7 @@ impl Job for RolesJob {
 			tags: vec![],
 			hoist: false,
 			color: Some(-5635841),
-			rank: 7,
+			rank: 5,
 			applied_rank: None,
 			search_updated_at: None,
 			created_by: UserId::nil(),
@@ -148,7 +154,7 @@ impl Job for RolesJob {
 			tags: vec![],
 			hoist: false,
 			color: None,
-			rank: 8,
+			rank: 6,
 			applied_rank: None,
 			search_updated_at: None,
 			created_by: UserId::nil(),

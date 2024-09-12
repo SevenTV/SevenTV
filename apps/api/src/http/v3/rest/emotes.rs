@@ -69,7 +69,7 @@ pub async fn create_emote(
 	let emote_data = serde_json::from_str::<XEmoteData>(emote_data.to_str().map_err(|_| ApiError::BAD_REQUEST)?)
 		.map_err(|_| ApiError::BAD_REQUEST)?;
 
-	if !validators::check_name(&emote_data.name) {
+	if !validators::check_emote_name(&emote_data.name) {
 		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "invalid emote name"));
 	}
 
