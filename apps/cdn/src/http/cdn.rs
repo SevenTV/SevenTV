@@ -18,7 +18,6 @@ pub fn routes() -> Router<Arc<Global>> {
 		.route("/badge/:id/:file", get(badge))
 		.route("/emote/:id/:file", get(emote))
 		.route("/user/:user/:avatar_id/:file", get(user_profile_picture))
-		.route("/misc/*key", get(misc))
 		.route("/JUICERS.png", get(juicers))
 }
 
@@ -59,10 +58,6 @@ async fn user_profile_picture(
 		.cache
 		.handle_request(&global, CacheKey::UserProfilePicture { user, avatar_id, file })
 		.await
-}
-
-async fn misc(Path(key): Path<String>, State(global): State<Arc<Global>>) -> CachedResponse {
-	global.cache.handle_request(&global, CacheKey::Misc { key }).await
 }
 
 async fn juicers(State(global): State<Arc<Global>>) -> CachedResponse {
