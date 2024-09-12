@@ -115,7 +115,7 @@
 				<NotePencil slot="icon" />
 			</Button>
 			<DropDown>
-				<Button secondary hideOnMobile>
+				<Button secondary hideOnMobile on:click={() => (moreMenuMode = MoreMenuMode.Root)}>
 					{$t("labels.more")}
 					<CaretDown slot="icon-right" />
 				</Button>

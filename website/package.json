@@ -4,9 +4,9 @@
 	"private": true,
 	"license": "Apache-2.0 with Commons Clause",
 	"scripts": {
-		"dev": "vite dev --host --port 3000",
+		"dev": "vite dev --port 3000",
 		"build": "vite build",
-		"preview": "vite preview --host --port 3000",
+		"preview": "vite preview --port 3000",
 		"lint": "prettier --check \"**/*\" -u && eslint . --ext .js,.ts,.svelte && pnpm run svelte:check",
 		"svelte:check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"svelte:check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
