@@ -9,7 +9,7 @@ use shared::database::role::permissions::{PermissionsExt, RateLimitResource, Use
 use super::find_or_create_customer;
 use super::metadata::{CheckoutSessionMetadata, StripeMetadata};
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
 use crate::http::middleware::session::Session;
 use crate::http::v3::rest::users::TargetUser;
@@ -34,7 +34,7 @@ pub async fn payment_method(
 	Query(_query): Query<PaymentMethodQuery>,
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let auth_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+	let auth_user = session.user()?;
 
 	let target_id = match target {
 		TargetUser::Me => auth_user.id,
@@ -43,15 +43,18 @@ pub async fn payment_method(
 
 	// TODO: is this the right permission?
 	if !auth_user.has(UserPermission::ManageAny) && target_id != auth_user.id {
-		return Err(ApiError::FORBIDDEN);
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"you are not allowed to manage this user",
+		));
 	}
 
 	let target_user = global
 		.user_loader
 		.load_fast(&global, target_id)
 		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::NOT_FOUND)?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::BadRequest, "user not found"))?;
 
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, &session);
 
@@ -62,8 +65,7 @@ pub async fn payment_method(
 			None => find_or_create_customer(&global, global.stripe_client.client().await, target_user.id, None).await?,
 		};
 
-		let success_url = format!("{}/subscribe", global.config.api.website_origin);
-		let cancel_url = format!("{}/subscribe", global.config.api.website_origin);
+		let callback = global.config.api.website_origin.join("subscribe").unwrap();
 
 		let mut currency = stripe::Currency::EUR;
 
@@ -87,8 +89,8 @@ pub async fn payment_method(
 			// expire the session 4 hours from now so we can restore unused redeem codes in the checkout.session.expired
 			// handler
 			expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),
-			success_url: Some(&success_url),
-			cancel_url: Some(&cancel_url),
+			success_url: Some(callback.as_str()),
+			cancel_url: Some(callback.as_str()),
 			metadata: Some(CheckoutSessionMetadata::Setup.to_stripe()),
 			..Default::default()
 		};
@@ -98,10 +100,10 @@ pub async fn payment_method(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create checkout session");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
 			})?
 			.url
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::StripeError, "checkout session url is missing"))?;
 
 		Ok::<_, ApiError>(Json(PaymentMethodResponse { url }))
 	})

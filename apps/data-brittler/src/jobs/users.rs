@@ -128,19 +128,15 @@ impl Job for UsersJob {
 
 		let entitlements = self.entitlements.remove(&user.id).unwrap_or_default();
 
-		let active_badge_id = entitlements
-			.iter()
-			.find_map(|e| match e.data {
-				types::EntitlementData::Badge { selected: true, ref_id } => Some(ref_id),
-				_ => None,
-			});
+		let active_badge_id = entitlements.iter().find_map(|e| match e.data {
+			types::EntitlementData::Badge { selected: true, ref_id } => Some(ref_id),
+			_ => None,
+		});
 
-		let active_paint_id = entitlements
-			.iter()
-			.find_map(|e| match e.data {
-				types::EntitlementData::Paint { selected: true, ref_id } => Some(ref_id),
-				_ => None,
-			});
+		let active_paint_id = entitlements.iter().find_map(|e| match e.data {
+			types::EntitlementData::Paint { selected: true, ref_id } => Some(ref_id),
+			_ => None,
+		});
 
 		let active_profile_picture = match user.avatar {
 			Some(types::UserAvatar::Processed {
@@ -183,13 +179,11 @@ impl Job for UsersJob {
 			.min_by(|a, b| a.platform.cmp(&b.platform))
 			.map(|c| c.emote_set_id.unwrap().into());
 
-		user.connections.sort_by_key(|c| {
-			match c.platform {
-				types::ConnectionPlatform::Twitch { .. } => 0,
-				types::ConnectionPlatform::Discord { .. } => 1,
-				types::ConnectionPlatform::Youtube { .. } => 2,
-				types::ConnectionPlatform::Kick { .. } => 3,
-			}
+		user.connections.sort_by_key(|c| match c.platform {
+			types::ConnectionPlatform::Twitch { .. } => 0,
+			types::ConnectionPlatform::Discord { .. } => 1,
+			types::ConnectionPlatform::Youtube { .. } => 2,
+			types::ConnectionPlatform::Kick { .. } => 3,
 		});
 
 		let mut connections = vec![];

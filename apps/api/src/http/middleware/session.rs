@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::extract::Request;
 use axum::response::{IntoResponse, Response};
 use futures::future::BoxFuture;
-use hyper::{header, StatusCode};
+use hyper::header;
 use shared::database::role::permissions::{
 	FlagPermission, Permission, Permissions, PermissionsExt, RateLimitResource, UserPermission,
 };
@@ -12,7 +12,7 @@ use shared::database::user::{FullUser, UserComputed, UserId};
 
 use super::cookies::Cookies;
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::{RateLimitRequest, RateLimitResponse};
 
@@ -74,10 +74,12 @@ impl Session {
 		self.1
 	}
 
-	pub fn user(&self) -> Option<&FullUser> {
+	pub fn user(&self) -> Result<&FullUser, ApiError> {
 		match &*self.0 {
-			AuthState::Authenticated { user, .. } => Some(user),
-			AuthState::Unauthenticated { .. } => None,
+			AuthState::Authenticated { user, .. } => Ok(user),
+			AuthState::Unauthenticated { .. } => {
+				Err(ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))
+			}
 		}
 	}
 
@@ -147,7 +149,7 @@ impl<S> SessionMiddlewareService<S> {
 
 			let jwt = AuthJwtPayload::verify(&self.global, token).ok_or_else(|| {
 				cookies.remove(&self.global, AUTH_COOKIE);
-				ApiError::new(StatusCode::UNAUTHORIZED, "invalid token")
+				ApiError::unauthorized(ApiErrorCode::BadRequest, "invalid token")
 			})?;
 
 			let kind = match jwt.session_id {
@@ -157,15 +159,15 @@ impl<S> SessionMiddlewareService<S> {
 						.user_session_by_id_loader
 						.load(session_id)
 						.await
-						.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+						.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load session"))?
 						.ok_or_else(|| {
 							cookies.remove(&self.global, AUTH_COOKIE);
-							ApiError::new_const(StatusCode::UNAUTHORIZED, "session not found")
+							ApiError::unauthorized(ApiErrorCode::BadRequest, "session not found")
 						})?;
 
 					if session.expires_at < chrono::Utc::now() {
 						cookies.remove(&self.global, AUTH_COOKIE);
-						return Err(ApiError::new_const(StatusCode::UNAUTHORIZED, "session expired"));
+						return Err(ApiError::unauthorized(ApiErrorCode::BadRequest, "session expired"));
 					}
 
 					self.global.user_session_updater_batcher.load(session.id).await.ok();
@@ -181,10 +183,10 @@ impl<S> SessionMiddlewareService<S> {
 				.user_loader
 				.load(&self.global, kind.user_id())
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 				.ok_or_else(|| {
 					cookies.remove(&self.global, AUTH_COOKIE);
-					ApiError::new_const(StatusCode::UNAUTHORIZED, "user not found")
+					ApiError::unauthorized(ApiErrorCode::BadRequest, "user not found")
 				})?;
 
 			Session(
@@ -202,10 +204,11 @@ impl<S> SessionMiddlewareService<S> {
 				.computed_loader
 				.load(UserId::nil())
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| {
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load default permissions")
+				})?
 				.ok_or_else(|| {
-					tracing::error!("failed to load default permissions");
-					ApiError::INTERNAL_SERVER_ERROR
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load default permissions")
 				})?;
 
 			Session(

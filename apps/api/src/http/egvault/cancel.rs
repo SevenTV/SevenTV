@@ -10,7 +10,7 @@ use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
 use crate::http::middleware::session::Session;
 use crate::http::v3::rest::users::TargetUser;
@@ -22,7 +22,7 @@ pub async fn cancel_subscription(
 	Path(target): Path<TargetUser>,
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let auth_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+	let auth_user = session.user()?;
 
 	let target_id = match target {
 		TargetUser::Me => auth_user.id,
@@ -31,7 +31,10 @@ pub async fn cancel_subscription(
 
 	// TODO: is this the right permission?
 	if !auth_user.has(UserPermission::ManageAny) && target_id != auth_user.id {
-		return Err(ApiError::FORBIDDEN);
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"you are not allowed to manage this user",
+		));
 	}
 
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, &session);
@@ -60,7 +63,10 @@ pub async fn cancel_subscription(
 						None,
 					)
 					.await?
-					.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+					.ok_or(TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::BadRequest,
+						"subscription not found",
+					)))?;
 
 				match period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
@@ -75,7 +81,10 @@ pub async fn cancel_subscription(
 						.await
 						.map_err(|e| {
 							tracing::error!(error = %e, "failed to update stripe subscription");
-							TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::StripeError,
+								"failed to update stripe subscription",
+							))
 						})?;
 
 						Ok(())
@@ -93,7 +102,10 @@ pub async fn cancel_subscription(
 							.await
 							.map_err(|e| {
 								tracing::error!(error = %e, "failed to cancel paypal subscription");
-								TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::PaypalError,
+									"failed to cancel paypal subscription",
+								))
 							})?;
 
 						Ok(())
@@ -132,7 +144,10 @@ pub async fn cancel_subscription(
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	})
@@ -144,7 +159,7 @@ pub async fn reactivate_subscription(
 	Path(target): Path<TargetUser>,
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let auth_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+	let auth_user = session.user()?;
 
 	let target_user_id = match target {
 		TargetUser::Me => auth_user.id,
@@ -153,7 +168,10 @@ pub async fn reactivate_subscription(
 
 	// TODO: is this the right permission?
 	if !auth_user.has(UserPermission::ManageAny) && target_user_id != auth_user.id {
-		return Err(ApiError::FORBIDDEN);
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"you are not allowed to manage this user",
+		));
 	}
 
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, &session);
@@ -179,7 +197,9 @@ pub async fn reactivate_subscription(
 					None,
 				)
 				.await?
-				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+				.ok_or_else(|| {
+					TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "subscription not found"))
+				})?;
 
 			match period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
@@ -194,14 +214,17 @@ pub async fn reactivate_subscription(
 					.await
 					.map_err(|e| {
 						tracing::error!(error = %e, "failed to update stripe subscription");
-						TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::MutationError,
+							"failed to update stripe subscription",
+						))
 					})?;
 
 					Ok(())
 				}
-				_ => Err(TransactionError::custom(ApiError::new_const(
-					StatusCode::NOT_IMPLEMENTED,
-					"thios subscription cannot be reactivated",
+				_ => Err(TransactionError::Custom(ApiError::not_implemented(
+					ApiErrorCode::BadRequest,
+					"this subscription cannot be reactivated",
 				))),
 			}
 		})
@@ -212,7 +235,10 @@ pub async fn reactivate_subscription(
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	})

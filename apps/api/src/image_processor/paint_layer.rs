@@ -18,7 +18,7 @@ pub async fn handle_success(
 	layer_id: PaintLayerId,
 	event: &event_callback::Success,
 ) -> TransactionResult<(), anyhow::Error> {
-	let image_set = event_to_image_set(event).map_err(TransactionError::custom)?;
+	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
 
 	let after = tx
 		.find_one_and_update(
@@ -55,7 +55,7 @@ pub async fn handle_success(
 				.build(),
 		)
 		.await?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("paint not found")))?;
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("paint not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -82,8 +82,8 @@ pub async fn handle_fail(
 		.paint_by_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query paint")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("paint not found")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query paint")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("paint not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -110,8 +110,8 @@ pub async fn handle_start(
 		.paint_by_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query paint")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("paint not found")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query paint")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("paint not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -138,8 +138,8 @@ pub async fn handle_cancel(
 		.paint_by_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query paint")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("paint not found")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query paint")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("paint not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,

@@ -6,7 +6,7 @@ use axum::extract::Request;
 use axum::response::{IntoResponse, Response};
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 #[derive(Clone)]
 pub struct IpMiddleware(Arc<Global>);
@@ -39,7 +39,7 @@ impl<S> IpMiddlewareService<S> {
 		let connecting_ip = req
 			.extensions()
 			.get::<std::net::IpAddr>()
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing connecting ip address"))?;
 
 		let trusted_proxies = &self.global.config.api.incoming_request.trusteded_proxies;
 
@@ -49,7 +49,7 @@ impl<S> IpMiddlewareService<S> {
 
 		// If the IP is not a trusted proxy, we should return a 403.
 		if trusted_proxies.iter().all(|net| !net.contains(connecting_ip)) {
-			return Err(ApiError::FORBIDDEN);
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "ip is not trusted"));
 		}
 
 		let Some(header) = &self.global.config.api.incoming_request.ip_header else {
@@ -57,13 +57,18 @@ impl<S> IpMiddlewareService<S> {
 			return Ok(());
 		};
 
-		let ips = req.headers().get(header).ok_or(ApiError::FORBIDDEN)?;
-		let ips = ips.to_str().map_err(|_| ApiError::BAD_REQUEST)?;
+		let ips = req
+			.headers()
+			.get(header)
+			.ok_or_else(|| ApiError::forbidden(ApiErrorCode::BadRequest, "missing ip header"))?;
+		let ips = ips
+			.to_str()
+			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "ip header is not a valid string"))?;
 		let ips = ips.split(',').map(|ip| ip.trim());
 		let ips = ips
 			.map(|ip| ip.parse::<std::net::IpAddr>())
 			.collect::<Result<Vec<_>, _>>()
-			.map_err(|_| ApiError::BAD_REQUEST)?;
+			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid ip header"))?;
 
 		for ip in ips.into_iter().rev() {
 			if trusted_proxies.iter().all(|net| !net.contains(&ip)) {

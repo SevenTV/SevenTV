@@ -17,8 +17,8 @@ pub struct Api {
 	#[settings(default = 1)]
 	pub workers: usize,
 	/// website origin
-	#[settings(default = "https://7tv.app".into())]
-	pub website_origin: String,
+	#[settings(default = "https://7tv.app".parse().unwrap())]
+	pub website_origin: url::Url,
 	/// cdn base url
 	#[settings(default = "https://cdn.7tv.app/".parse().unwrap())]
 	pub cdn_origin: url::Url,
@@ -26,8 +26,8 @@ pub struct Api {
 	#[settings(default = "7tv.io".into())]
 	pub domain: String,
 	/// base url
-	#[settings(default = "https://7tv.io".into())]
-	pub api_origin: String,
+	#[settings(default = "https://7tv.io".parse().unwrap())]
+	pub api_origin: url::Url,
 	/// connection config
 	pub connections: ConnectionsConfig,
 	/// jwt config

@@ -5,7 +5,6 @@ use chrono::Utc;
 use emote_add::emote_add;
 use emote_remove::emote_remove;
 use emote_update::emote_update;
-use hyper::StatusCode;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote_set::{EmoteSet as DbEmoteSet, EmoteSetKind};
@@ -19,7 +18,7 @@ use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData}
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
@@ -37,13 +36,15 @@ pub struct EmoteSetsMutation;
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteSetsMutation {
 	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<EmoteSetOps>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emote_set = global
 			.emote_set_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?;
 
 		Ok(emote_set.map(|s| EmoteSetOps {
 			id: s.id.into(),
@@ -60,9 +61,13 @@ impl EmoteSetsMutation {
 		user_id: GqlObjectId,
 		data: CreateEmoteSetInput,
 	) -> Result<EmoteSet, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let other_user = if user_id.id() == authed_user.id {
 			None
@@ -72,16 +77,16 @@ impl EmoteSetsMutation {
 					.user_loader
 					.load(global, user_id.id())
 					.await
-					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?,
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?,
 			)
 		};
 
 		let target = other_user.as_ref().unwrap_or(authed_user);
 
 		if !target.has(EmoteSetPermission::Manage) && !authed_user.has(EmoteSetPermission::ManageAny) {
-			return Err(ApiError::new_const(
-				StatusCode::FORBIDDEN,
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
 				"this user does not have permission to create emote sets",
 			));
 		}
@@ -94,25 +99,22 @@ impl EmoteSetsMutation {
 					editor_id: user_id.id(),
 				})
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::new_const(
-					StatusCode::NOT_FOUND,
-					"you are not an editor for this user",
-				))?;
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "you are not an editor for this user"))?;
 
 			if editor.state != UserEditorState::Accepted
 				|| !editor.permissions.has_emote_set(EditorEmoteSetPermission::Create)
 			{
-				return Err(ApiError::new_const(
-					StatusCode::FORBIDDEN,
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
 					"you do not have permission to create emote sets for this user",
 				));
 			}
 		}
 
 		if data.privileged.unwrap_or(false) {
-			return Err(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
+			return Err(ApiError::not_implemented(
+				ApiErrorCode::BadRequest,
 				"privileged emote sets are not supported",
 			));
 		}
@@ -120,8 +122,8 @@ impl EmoteSetsMutation {
 		let capacity = target.computed.permissions.emote_set_capacity.unwrap_or_default().max(0);
 
 		if capacity == 0 {
-			return Err(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
+			return Err(ApiError::bad_request(
+				ApiErrorCode::LackingPrivileges,
 				"maximum emote set capacity is 0, cannot create emote set",
 			));
 		}
@@ -163,7 +165,10 @@ impl EmoteSetsMutation {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -193,15 +198,15 @@ impl EmoteSetOps {
 		editor_perm: impl Into<EditorPermission>,
 	) -> Result<FullUserRef<'a>, ApiError> {
 		let mut editor_perm = editor_perm.into();
-		let user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let user = session.user()?;
 
 		let mut target = FullUserRef::Ref(user);
 
 		match self.emote_set.kind {
 			EmoteSetKind::Global => {
 				if !user.has(EmoteSetPermission::ManageGlobal) {
-					return Err(ApiError::new_const(
-						StatusCode::FORBIDDEN,
+					return Err(ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
 						"this user does not have permission to manage global emote sets",
 					));
 				}
@@ -210,8 +215,8 @@ impl EmoteSetOps {
 			}
 			EmoteSetKind::Special => {
 				if !user.has(EmoteSetPermission::ManageSpecial) {
-					return Err(ApiError::new_const(
-						StatusCode::FORBIDDEN,
+					return Err(ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
 						"this user does not have permission to manage special emote sets",
 					));
 				}
@@ -224,7 +229,7 @@ impl EmoteSetOps {
 		let owner_id = self
 			.emote_set
 			.owner_id
-			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "owner not found"))?;
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "owner not found"))?;
 
 		// If the person who is updating the set is not the owner, we need to load the
 		// owner.
@@ -234,8 +239,8 @@ impl EmoteSetOps {
 					.user_loader
 					.load(global, owner_id)
 					.await
-					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "owner not found"))?
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "owner not found"))?
 					.into(),
 			)
 		}
@@ -245,8 +250,8 @@ impl EmoteSetOps {
 		// If the emote set is personal, check if the owner has permission to use
 		if matches!(self.emote_set.kind, EmoteSetKind::Personal) {
 			if !target.has(UserPermission::UsePersonalEmoteSet) {
-				return Err(ApiError::new_const(
-					StatusCode::FORBIDDEN,
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
 					"this user does not have permission to use personal emote sets",
 				));
 			}
@@ -256,10 +261,7 @@ impl EmoteSetOps {
 		}
 
 		if !target.has(EmoteSetPermission::Manage) && !user.has(EmoteSetPermission::ManageAny) {
-			return Err(ApiError::new_const(
-				StatusCode::FORBIDDEN,
-				"the target user does not have permission to use emote sets",
-			));
+			return Err(ApiError::forbidden(ApiErrorCode::LackingPrivileges, forbidden_msg));
 		}
 
 		if target.id != user.id && !user.has(EmoteSetPermission::ManageAny) {
@@ -270,14 +272,13 @@ impl EmoteSetOps {
 					editor_id: user.id,
 				})
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::new_const(
-					StatusCode::NOT_FOUND,
-					"you are not an editor for this user",
-				))?;
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(ApiErrorCode::LackingPrivileges, "you are not an editor for this user")
+				})?;
 
 			if editor.state != UserEditorState::Accepted || !editor.permissions.has(editor_perm) {
-				return Err(ApiError::new_const(StatusCode::FORBIDDEN, forbidden_msg));
+				return Err(ApiError::forbidden(ApiErrorCode::LackingPrivileges, forbidden_msg));
 			}
 		}
 
@@ -314,8 +315,12 @@ impl EmoteSetOps {
 		action: ListItemAction,
 		#[graphql(validator(custom = "EmoteNameValidator"))] name: Option<String>,
 	) -> Result<Vec<ActiveEmote>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 
 		self.check_perms(global, session, EditorEmoteSetPermission::Manage).await?;
 
@@ -333,7 +338,10 @@ impl EmoteSetOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -342,39 +350,42 @@ impl EmoteSetOps {
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
 	async fn update<'ctx>(&self, ctx: &Context<'ctx>, data: UpdateEmoteSetInput) -> Result<EmoteSet, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let sesison = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let sesison = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = sesison.user()?;
 
 		let target = self.check_perms(global, sesison, EditorEmoteSetPermission::Manage).await?;
-
-		let authed_user = sesison.user().ok_or(ApiError::UNAUTHORIZED)?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let new_capacity = if let Some(capacity) = data.capacity {
 				if capacity > i32::MAX as u32 {
-					return Err(TransactionError::custom(ApiError::new_const(
-						StatusCode::BAD_REQUEST,
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
 						"emote set capacity is too large",
 					)));
 				}
 
 				if capacity == 0 {
-					return Err(TransactionError::custom(ApiError::new_const(
-						StatusCode::BAD_REQUEST,
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
 						"emote set capacity cannot be 0",
 					)));
 				}
 
 				if capacity < self.emote_set.emotes.len() as u32 {
-					return Err(TransactionError::custom(ApiError::new_const(
-						StatusCode::BAD_REQUEST,
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
 						"emote set capacity cannot be less than the number of emotes in the set",
 					)));
 				}
 
 				if capacity as i32 > target.computed.permissions.emote_set_capacity.unwrap_or_default().max(0) {
-					return Err(TransactionError::custom(ApiError::new_const(
-						StatusCode::BAD_REQUEST,
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::LackingPrivileges,
 						"emote set capacity cannot exceed user's capacity",
 					)));
 				}
@@ -385,8 +396,8 @@ impl EmoteSetOps {
 			};
 
 			if data.origins.is_some() {
-				return Err(TransactionError::custom(ApiError::new_const(
-					StatusCode::BAD_REQUEST,
+				return Err(TransactionError::Custom(ApiError::not_implemented(
+					ApiErrorCode::BadRequest,
 					"legacy origins are not supported",
 				)));
 			}
@@ -414,8 +425,12 @@ impl EmoteSetOps {
 						.build(),
 				)
 				.await?
-				.ok_or(ApiError::INTERNAL_SERVER_ERROR)
-				.map_err(TransactionError::custom)?;
+				.ok_or_else(|| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::LoadError,
+						"failed to load emote set",
+					))
+				})?;
 
 			if let Some(new_name) = data.name {
 				tx.register_event(InternalEvent {
@@ -456,7 +471,10 @@ impl EmoteSetOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -465,8 +483,12 @@ impl EmoteSetOps {
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
 	async fn delete<'ctx>(&self, ctx: &Context<'ctx>) -> Result<bool, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 
 		self.check_perms(global, session, EditorEmoteSetPermission::Manage).await?;
 
@@ -474,13 +496,13 @@ impl EmoteSetOps {
 			self.emote_set.kind,
 			EmoteSetKind::Personal | EmoteSetKind::Global | EmoteSetKind::Special
 		) {
-			return Err(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
+			return Err(ApiError::bad_request(
+				ApiErrorCode::LackingPrivileges,
 				"cannot delete personal, global, or special emote sets",
 			));
 		}
 
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let authed_user = session.user()?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let emote_set = tx
@@ -516,7 +538,10 @@ impl EmoteSetOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}

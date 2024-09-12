@@ -8,7 +8,7 @@ use shared::old_types::object_id::GqlObjectId;
 
 use super::user::{User, UserPartial};
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::search::{search, SearchOptions};
 
@@ -88,26 +88,30 @@ impl Report {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl Report {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast(global, self.actor_id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())
 	}
 
 	async fn assignees<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<User>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast_many(global, self.assignee_ids.iter().map(|i| i.id()))
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?
 			.into_values()
 			.map(|u| UserPartial::from_db(global, u))
 			.map(Into::into)
@@ -140,10 +144,15 @@ impl ReportsQuery {
 		limit: Option<u32>,
 		page: Option<u32>,
 	) -> Result<Vec<Report>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		if !matches!(status, Some(ReportStatus::Open) | None) {
-			return Err(ApiError::NOT_IMPLEMENTED);
+			return Err(ApiError::not_implemented(
+				ApiErrorCode::BadRequest,
+				"only open reports are supported",
+			));
 		}
 
 		let options = SearchOptions::builder()
@@ -162,20 +171,20 @@ impl ReportsQuery {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
 		let tickets = global
 			.ticket_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load tickets"))?;
 
 		let messages = global
 			.ticket_message_by_ticket_id_loader
 			.load_many(tickets.keys().copied())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket messages"))?;
 
 		Ok(tickets
 			.into_values()
@@ -189,14 +198,18 @@ impl ReportsQuery {
 
 	#[graphql(guard = "PermissionGuard::one(TicketPermission::ManageAbuse)")]
 	async fn report<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Report>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let ticket = global
+		let Some(ticket) = global
 			.ticket_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket"))?
+		else {
+			return Ok(None);
+		};
 
 		if ticket.kind != TicketKind::Abuse && !matches!(ticket.targets.first(), Some(TicketTarget::Emote(_))) {
 			return Ok(None);
@@ -206,7 +219,7 @@ impl ReportsQuery {
 			.ticket_message_by_ticket_id_loader
 			.load(ticket.id)
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket messages"))?
 			.unwrap_or_default();
 
 		Ok(Report::from_db(ticket, messages))

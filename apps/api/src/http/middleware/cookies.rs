@@ -8,7 +8,7 @@ use cookie::{Cookie, CookieBuilder, CookieJar};
 use hyper::header::HeaderValue;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 #[derive(Clone)]
 pub struct Cookies(Arc<Mutex<CookieJar>>);
@@ -113,10 +113,13 @@ where
 			.get_all(hyper::header::COOKIE)
 			.iter()
 			.try_fold(CookieJar::new(), |mut jar, h| {
-				for c in Cookie::split_parse_encoded(h.to_str().map_err(|_| ApiError::BAD_REQUEST)?) {
+				for c in
+					Cookie::split_parse_encoded(h.to_str().map_err(|_| {
+						ApiError::bad_request(ApiErrorCode::BadRequest, "cookie header is not a valid string")
+					})?) {
 					match c {
 						Ok(cookie) => jar.add_original(cookie.into_owned()),
-						Err(_) => return Err(ApiError::BAD_REQUEST),
+						Err(_) => return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid cookie header")),
 					}
 				}
 				Ok(jar)

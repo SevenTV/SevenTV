@@ -3,12 +3,12 @@ use std::sync::Arc;
 use anyhow::Context;
 use axum::http::HeaderName;
 use axum::response::{IntoResponse, Response};
-use hyper::{HeaderMap, StatusCode};
+use hyper::HeaderMap;
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RateLimitResource};
 use shared::database::user::UserId;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 
 /// `RateLimiter` is a wrapper around the redis rate limiter.
@@ -114,8 +114,6 @@ pub struct RateLimitResponse {
 }
 
 impl RateLimitResponse {
-	pub const RATE_LIMIT_ERROR: ApiError = ApiError::new_const(StatusCode::TOO_MANY_REQUESTS, "rate limit exceeded");
-
 	pub fn header_map(&self) -> HeaderMap {
 		let x_rate_limit_limit =
 			HeaderName::try_from(format!("x-ratelimit-{}-limit", self.resource.as_str())).expect("invalid header name");
@@ -135,7 +133,7 @@ impl RateLimitResponse {
 	}
 
 	pub fn error(&self) -> ApiError {
-		Self::RATE_LIMIT_ERROR.with_extra_headers(self.header_map())
+		ApiError::too_many_requests("rate limit exceeded").with_extra_headers(self.header_map())
 	}
 }
 
@@ -186,7 +184,7 @@ impl RateLimiter {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to call ratelimit function");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::RateLimitExceeded, "failed to call ratelimit function")
 			})?;
 
 		let remaining = result[0];

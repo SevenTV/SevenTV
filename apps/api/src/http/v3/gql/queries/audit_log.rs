@@ -11,7 +11,7 @@ use shared::old_types::EmoteFlagsModel;
 
 use super::user::UserPartial;
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/audit.gql
 
@@ -32,13 +32,15 @@ pub struct AuditLog {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl AuditLog {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast(global, self.actor_id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}

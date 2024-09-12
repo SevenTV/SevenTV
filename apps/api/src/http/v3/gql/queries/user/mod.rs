@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
-use hyper::StatusCode;
-use mongodb::bson::doc;
 use shared::database::user::{FullUser, UserId};
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
@@ -14,7 +12,7 @@ use super::emote::Emote;
 use super::emote_set::EmoteSet;
 use super::report::Report;
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::RateLimitGuard;
 use crate::search::{search, SearchOptions};
@@ -82,26 +80,30 @@ impl User {
 	}
 
 	async fn editors<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let editors = global
 			.user_editor_by_user_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user editors"))?
 			.unwrap_or_default();
 
 		Ok(editors.into_iter().filter_map(|e| UserEditor::from_db(e, false)).collect())
 	}
 
 	async fn editor_of<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let editors = global
 			.user_editor_by_editor_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user editors"))?
 			.unwrap_or_default();
 
 		Ok(editors.into_iter().filter_map(|e| UserEditor::from_db(e, true)).collect())
@@ -141,26 +143,30 @@ impl User {
 	}
 
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emote_sets = global
 			.emote_set_by_user_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 			.unwrap_or_default();
 
 		Ok(emote_sets.into_iter().map(EmoteSet::from_db).collect())
 	}
 
 	async fn owned_emotes<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Emote>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emotes = global
 			.emote_by_user_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?
 			.unwrap_or_default();
 
 		Ok(emotes.into_iter().map(|e| Emote::from_db(global, e)).collect())
@@ -172,7 +178,9 @@ impl User {
 		ctx: &Context<'ctx>,
 		#[graphql(validator(maximum = 100))] limit: Option<u32>,
 	) -> Result<Vec<AuditLog>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
@@ -186,17 +194,14 @@ impl User {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
 		let events = global
 			.event_by_id_loader
 			.load_many(result.hits.iter().copied())
 			.await
-			.map_err(|()| {
-				tracing::error!("failed to load event");
-				ApiError::INTERNAL_SERVER_ERROR
-			})?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load events"))?;
 
 		Ok(events.into_values().filter_map(AuditLog::from_db).collect())
 	}
@@ -256,13 +261,15 @@ impl UserEditor {
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserEditor {
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast(global, self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
@@ -372,13 +379,15 @@ impl UserPartial {
 	}
 
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emote_sets = global
 			.emote_set_by_user_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 			.unwrap_or_default();
 
 		Ok(emote_sets.into_iter().map(EmoteSet::from_db).collect())
@@ -432,13 +441,15 @@ impl UserStyle {
 			return Ok(None);
 		};
 
-		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.paint_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
 			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin)))
 	}
 
@@ -447,13 +458,15 @@ impl UserStyle {
 			return Ok(None);
 		};
 
-		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.badge_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
 			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin)))
 	}
 }
@@ -467,20 +480,26 @@ pub struct UserSearchResult {
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl UsersQuery {
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		Ok(session.user().map(|u| UserPartial::from_db(global, u.clone()).into()))
+		Ok(session.user().ok().map(|u| UserPartial::from_db(global, u.clone()).into()))
 	}
 
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<User, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let user = global
 			.user_loader
 			.load(global, id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user);
 
@@ -493,7 +512,9 @@ impl UsersQuery {
 		platform: UserConnectionPlatformModel,
 		#[graphql(validator(max_length = 100))] id: String,
 	) -> Result<User, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let platform = shared::database::user::connection::Platform::from(platform);
 
@@ -501,7 +522,7 @@ impl UsersQuery {
 			.user_by_platform_id_loader
 			.load((platform, id))
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 		{
 			Some(u) => u,
 			None => return Ok(UserPartial::deleted_user().into()),
@@ -511,7 +532,7 @@ impl UsersQuery {
 			.user_loader
 			.load_fast_user(global, user)
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
 		Ok(UserPartial::from_db(global, full_user).into())
 	}
@@ -524,7 +545,9 @@ impl UsersQuery {
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
 		#[graphql(validator(maximum = 100))] limit: Option<u32>,
 	) -> Result<Vec<UserPartial>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let options = SearchOptions::builder()
 			.query(query)
@@ -545,7 +568,7 @@ impl UsersQuery {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
 		let users = global
@@ -554,7 +577,7 @@ impl UsersQuery {
 			.await
 			.map_err(|()| {
 				tracing::error!("failed to load users");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users")
 			})?;
 
 		Ok(result
@@ -566,18 +589,20 @@ impl UsersQuery {
 	}
 
 	#[graphql(name = "usersByID")]
-	async fn users_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<GqlObjectId>) -> Result<Vec<UserPartial>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		if list.len() > 100 {
-			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "list too large, max 100"));
-		}
+	async fn users_by_id<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		#[graphql(validator(max_items = 100))] list: Vec<GqlObjectId>,
+	) -> Result<Vec<UserPartial>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let users = global
 			.user_loader
 			.load_many(global, list.into_iter().map(|id| id.id()))
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?
 			.into_values()
 			.map(|u| UserPartial::from_db(global, u))
 			.collect();

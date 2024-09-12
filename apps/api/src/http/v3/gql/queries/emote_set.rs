@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
-use hyper::StatusCode;
 use mongodb::bson::doc;
 use shared::database::emote_set::EmoteSetEmote;
 use shared::database::user::UserId;
@@ -11,7 +10,7 @@ use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 use super::emote::{Emote, EmotePartial};
 use super::user::UserPartial;
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
@@ -83,13 +82,15 @@ impl ActiveEmote {
 	}
 
 	async fn data<'ctx>(&self, ctx: &Context<'ctx>) -> Result<EmotePartial, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emote = global
 			.emote_by_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
 
 		Ok(emote
 			.map(|e| Emote::from_db(global, e))
@@ -98,7 +99,9 @@ impl ActiveEmote {
 	}
 
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let Some(actor_id) = self.actor_id else {
 			return Ok(None);
@@ -108,7 +111,7 @@ impl ActiveEmote {
 			.user_loader
 			.load_fast(global, actor_id)
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u)))
 	}
 }
@@ -134,13 +137,15 @@ impl EmoteSet {
 			return Ok(None);
 		};
 
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast(global, id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u)))
 	}
 }
@@ -162,32 +167,35 @@ pub enum EmoteSetName {
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteSetsQuery {
 	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<EmoteSet, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emote_set = global
 			.emote_set_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))?;
 
 		Ok(EmoteSet::from_db(emote_set))
 	}
 
 	#[graphql(name = "emoteSetsByID")]
-	async fn emote_sets_by_id<'ctx>(&self, ctx: &Context<'ctx>, list: Vec<GqlObjectId>) -> Result<Vec<EmoteSet>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-
-		// TODO: 1000 is very large
-		if list.len() > 1000 {
-			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "list too large"));
-		}
+	async fn emote_sets_by_id<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		#[graphql(validator(max_items = 300))] list: Vec<GqlObjectId>,
+	) -> Result<Vec<EmoteSet>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let emote_sets: Vec<_> = global
 			.emote_set_by_id_loader
 			.load_many(list.into_iter().map(|id| id.id()))
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 			.into_values()
 			.map(EmoteSet::from_db)
 			.collect();
@@ -196,7 +204,9 @@ impl EmoteSetsQuery {
 	}
 
 	async fn named_emote_set<'ctx>(&self, ctx: &Context<'ctx>, name: EmoteSetName) -> Result<EmoteSet, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		match name {
 			EmoteSetName::Global => {
@@ -204,15 +214,15 @@ impl EmoteSetsQuery {
 					.global_config_loader
 					.load(())
 					.await
-					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load global config"))?
+					.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "global config not found"))?;
 
 				let global_set = global
 					.emote_set_by_id_loader
 					.load(global_config.emote_set_id)
 					.await
-					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-					.ok_or(ApiError::NOT_FOUND)?;
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))?;
 
 				Ok(EmoteSet::from_db(global_set))
 			}

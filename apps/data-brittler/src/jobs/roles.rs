@@ -3,7 +3,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use bson::oid::ObjectId;
-use shared::database::role::permissions::{EmotePermission, EmoteSetPermission, Permissions, TicketPermission, UserPermission};
+use shared::database::role::permissions::{
+	EmotePermission, EmoteSetPermission, Permissions, TicketPermission, UserPermission,
+};
 use shared::database::role::Role;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
@@ -38,10 +40,7 @@ impl Job for RolesJob {
 		ranks.insert(2); // Subscriber
 		ranks.insert(3); // Translator
 
-		Ok(RolesJob {
-			global,
-			ranks,
-		})
+		Ok(RolesJob { global, ranks })
 	}
 
 	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {

@@ -15,7 +15,7 @@ use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::UserEditorModelPermission;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard, UserGuard};
 use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
@@ -49,17 +49,26 @@ impl UserOps {
 		id: String,
 		data: UserConnectionUpdate,
 	) -> Result<Option<Vec<Option<UserConnection>>>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let old_user = global
 				.user_loader
 				.load(global, self.id.id())
 				.await
-				.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-				.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+				.map_err(|_| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::LoadError,
+						"failed to load user",
+					))
+				})?
+				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found")))?;
 
 			let emote_set = if let Some(emote_set_id) = data.emote_set_id {
 				// check if set exists
@@ -67,8 +76,15 @@ impl UserOps {
 					.emote_set_by_id_loader
 					.load(emote_set_id.id())
 					.await
-					.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-					.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+					.map_err(|_| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load emote set",
+						))
+					})?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))
+					})?;
 
 				Some(emote_set)
 			} else {
@@ -120,7 +136,9 @@ impl UserOps {
 					.connections
 					.into_iter()
 					.find(|c| c.platform_id == id)
-					.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "connection not found"))
+					})?;
 
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),
@@ -135,11 +153,12 @@ impl UserOps {
 
 			if let Some(emote_set) = emote_set {
 				let old = if let Some(set_id) = old_user.user.style.active_emote_set_id {
-					global
-						.emote_set_by_id_loader
-						.load(set_id)
-						.await
-						.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+					global.emote_set_by_id_loader.load(set_id).await.map_err(|_| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load emote set",
+						))
+					})?
 				} else {
 					None
 				};
@@ -168,7 +187,7 @@ impl UserOps {
 					.user_loader
 					.load_fast_user(global, user)
 					.await
-					.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
 				Ok(Some(
 					full_user
@@ -189,7 +208,10 @@ impl UserOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -203,9 +225,13 @@ impl UserOps {
 		editor_id: GqlObjectId,
 		data: UserEditorUpdate,
 	) -> Result<Option<Vec<Option<UserEditor>>>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			// load all editors, we have to do this to know the old permissions Sadge
@@ -213,7 +239,12 @@ impl UserOps {
 				.user_editor_by_user_id_loader
 				.load(authed_user.id)
 				.await
-				.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+				.map_err(|_| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::LoadError,
+						"failed to load editors",
+					))
+				})?
 				.unwrap_or_default();
 
 			if let Some(permissions) = data.permissions {
@@ -241,8 +272,18 @@ impl UserOps {
 							.user_loader
 							.load_fast(global, editor.id.editor_id)
 							.await
-							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+							.map_err(|_| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
+									"failed to load user",
+								))
+							})?
+							.ok_or_else(|| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
+									"failed to load user",
+								))
+							})?;
 
 						tx.register_event(InternalEvent {
 							actor: Some(authed_user.clone()),
@@ -298,8 +339,18 @@ impl UserOps {
 							.user_loader
 							.load_fast(global, editor.id.editor_id)
 							.await
-							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+							.map_err(|_| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
+									"failed to load user",
+								))
+							})?
+							.ok_or_else(|| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
+									"failed to load user",
+								))
+							})?;
 
 						tx.register_event(InternalEvent {
 							actor: Some(authed_user.clone()),
@@ -316,7 +367,10 @@ impl UserOps {
 					} else {
 						// didn't exist
 						if authed_user.has(UserPermission::InviteEditors) {
-							return Err(TransactionError::custom(ApiError::FORBIDDEN));
+							return Err(TransactionError::Custom(ApiError::forbidden(
+								ApiErrorCode::LackingPrivileges,
+								"you do not have permission to invite editors",
+							)));
 						}
 
 						let editor = DbUserEditor {
@@ -334,8 +388,18 @@ impl UserOps {
 							.user_loader
 							.load_fast(global, editor.id.editor_id)
 							.await
-							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-							.ok_or(TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?;
+							.map_err(|_| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
+									"failed to load user",
+								))
+							})?
+							.ok_or_else(|| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
+									"failed to load user",
+								))
+							})?;
 
 						tx.insert_one::<DbUserEditor>(&editor, None).await?;
 
@@ -364,7 +428,7 @@ impl UserOps {
 					.user_editor_by_user_id_loader
 					.load(self.id.id())
 					.await
-					.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+					.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
 					.unwrap_or_default();
 
 				Ok(Some(
@@ -378,7 +442,10 @@ impl UserOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -387,9 +454,13 @@ impl UserOps {
 		guard = "RateLimitGuard::new(RateLimitResource::UserChangeCosmetics, 1).and(UserGuard(self.id.id()).or(PermissionGuard::one(UserPermission::ManageAny)))"
 	)]
 	async fn cosmetics<'ctx>(&self, ctx: &Context<'ctx>, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		if !update.selected {
 			return Ok(true);
@@ -399,15 +470,18 @@ impl UserOps {
 			.user_loader
 			.load(global, self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			match update.kind {
 				CosmeticKind::Paint => {
 					// check if user has paint
 					if !user.computed.entitlements.paints.contains(&update.id.id()) {
-						return Err(TransactionError::custom(ApiError::FORBIDDEN));
+						return Err(TransactionError::Custom(ApiError::forbidden(
+							ApiErrorCode::LoadError,
+							"you do not have permission to use this paint",
+						)));
 					}
 
 					let res = User::collection(&global.db)
@@ -435,22 +509,33 @@ impl UserOps {
 				CosmeticKind::Badge => {
 					// check if user has paint
 					if !user.computed.entitlements.badges.contains(&update.id.id()) {
-						return Err(TransactionError::custom(ApiError::FORBIDDEN));
+						return Err(TransactionError::Custom(ApiError::forbidden(
+							ApiErrorCode::LoadError,
+							"you do not have permission to use this badge",
+						)));
 					}
 
 					let new = global
 						.badge_by_id_loader
 						.load(update.id.id())
 						.await
-						.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-						.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+						.map_err(|_| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load badge",
+							))
+						})?
+						.ok_or_else(|| {
+							TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))
+						})?;
 
 					let old = if let Some(badge_id) = user.style.active_badge_id {
-						global
-							.badge_by_id_loader
-							.load(badge_id)
-							.await
-							.map_err(|_| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
+						global.badge_by_id_loader.load(badge_id).await.map_err(|_| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load badge",
+							))
+						})?
 					} else {
 						None
 					};
@@ -490,7 +575,10 @@ impl UserOps {
 
 					Ok(res.modified_count == 1)
 				}
-				CosmeticKind::Avatar => Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED)),
+				CosmeticKind::Avatar => Err(TransactionError::Custom(ApiError::not_implemented(
+					ApiErrorCode::BadRequest,
+					"avatar cosmetics mutations are not supported via this endpoint, use the upload endpoint instead",
+				))),
 			}
 		})
 		.await;
@@ -500,7 +588,10 @@ impl UserOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}
@@ -512,27 +603,34 @@ impl UserOps {
 		role_id: GqlObjectId,
 		action: ListItemAction,
 	) -> Result<Vec<GqlObjectId>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let role = global
 			.role_by_id_loader
 			.load(role_id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load role"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "role not found"))?;
 
 		if !authed_user.computed.permissions.is_superset_of(&role.permissions) {
-			return Err(ApiError::FORBIDDEN);
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"the role has a higher permission level than you",
+			));
 		}
 
 		let target_user = global
 			.user_loader
 			.load(global, self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let roles = match action {
@@ -636,7 +734,12 @@ impl UserOps {
 						.map(Into::into)
 						.collect()
 				}
-				ListItemAction::Update => return Err(TransactionError::custom(ApiError::NOT_IMPLEMENTED)),
+				ListItemAction::Update => {
+					return Err(TransactionError::Custom(ApiError::not_implemented(
+						ApiErrorCode::BadRequest,
+						"update role is not implemented",
+					)));
+				}
 			};
 
 			Ok(roles)
@@ -648,7 +751,10 @@ impl UserOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
 			}
 		}
 	}

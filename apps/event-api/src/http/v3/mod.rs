@@ -36,12 +36,11 @@ mod topic_map;
 
 #[metrics]
 mod v3 {
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
+	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
 	use tokio::time::Instant;
-
-	use scuffle_foundations::telemetry::metrics::{
-		prometheus_client::metrics::{counter::Counter, gauge::Gauge, histogram::Histogram},
-		HistogramBuilder,
-	};
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 	#[serde(rename_all = "snake_case")]
@@ -74,9 +73,7 @@ mod v3 {
 		pub fn new(kind: ConnectionKind) -> Self {
 			current_connections(kind).inc();
 
-			Self {
-				kind,
-			}
+			Self { kind }
 		}
 	}
 

@@ -5,7 +5,7 @@ use shared::database::emote_set::EmoteSetEmote;
 use shared::old_types::{EmotePartialModel, UserPartialModel};
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 
 pub async fn load_emote_set(
@@ -17,13 +17,13 @@ pub async fn load_emote_set(
 		.emote_by_id_loader
 		.load_many(emote_set_emotes.iter().map(|emote| emote.id))
 		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 	let users = global
 		.user_loader
 		.load_fast_many(global, emotes.values().map(|emote| emote.owner_id))
 		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?;
 
 	let cdn_base_url = &global.config.api.cdn_origin;
 

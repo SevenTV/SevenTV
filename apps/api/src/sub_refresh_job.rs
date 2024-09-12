@@ -12,7 +12,7 @@ use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubAge {
@@ -25,33 +25,38 @@ pub struct SubAge {
 
 impl SubAge {
 	pub fn new(periods: &[SubscriptionPeriod]) -> Self {
-		// We need to sum up all the time so that we can calculate the age of the subscription.
-		// We want to make sure there are no overlapping periods so we dont have duplicate time.
+		// We need to sum up all the time so that we can calculate the age of the
+		// subscription. We want to make sure there are no overlapping periods so we
+		// dont have duplicate time.
 		let now = chrono::Utc::now();
 
 		let expected_end = periods.iter().map(|p| p.end).max().unwrap_or(now);
 
-		let mut combined_periods = periods.into_iter().map(|p| StartEnd { start: p.start, end: p.end.min(now) }).collect::<Vec<_>>();
+		let mut combined_periods = periods
+			.iter()
+			.map(|p| StartEnd {
+				start: p.start,
+				end: p.end.min(now),
+			})
+			.collect::<Vec<_>>();
 
 		combined_periods.sort_by(|a, b| a.start.cmp(&b.start));
 
-		let merged_periods: Vec<StartEnd> = combined_periods
-			.into_iter()
-			.fold(Vec::new(), |mut acc, period| {
-				if acc.is_empty() {
-					acc.push(period);
-					return acc;
-				}
+		let merged_periods: Vec<StartEnd> = combined_periods.into_iter().fold(Vec::new(), |mut acc, period| {
+			if acc.is_empty() {
+				acc.push(period);
+				return acc;
+			}
 
-				let last = acc.last_mut().unwrap();
-				if last.end >= period.start {
-					last.end = period.end.max(last.end);
-				} else {
-					acc.push(period);
-				}
+			let last = acc.last_mut().unwrap();
+			if last.end >= period.start {
+				last.end = period.end.max(last.end);
+			} else {
+				acc.push(period);
+			}
 
-				acc
-			});
+			acc
+		});
 
 		let mut extra = chrono::Duration::zero();
 		let mut months = 0;
@@ -64,7 +69,7 @@ impl SubAge {
 				+ chrono::Duration::hours(calc.hour as i64)
 				+ chrono::Duration::minutes(calc.minute as i64)
 				+ chrono::Duration::seconds(calc.second as i64);
-			
+
 			months += calc.month as i32 + calc.year as i32 * 12;
 			days += calc.interval_days as i32;
 		}
@@ -79,16 +84,21 @@ impl SubAge {
 	}
 
 	pub fn meets_condition(&self, condition: &SubscriptionBenefitCondition) -> bool {
-		// Consider the Subscription, if their sub is set to end in the future then they should get the entitlements for the period that they are currently in.
-		// if you sub to twitch you are given the 1 month sub badge even though you havent subbed for the entire month yet, this is because the sub is set to end in the future.
-		// However if you unsub at the end of your term you would have completed the month and wouldnt get the next badge because your sub has ended.
-		// Then once you start subbing again you would get the next badge.
+		// Consider the Subscription, if their sub is set to end in the future then they
+		// should get the entitlements for the period that they are currently in.
+		// if you sub to twitch you are given the 1 month sub badge even though you
+		// havent subbed for the entire month yet, this is because the sub is set to end
+		// in the future. However if you unsub at the end of your term you would have
+		// completed the month and wouldnt get the next badge because your sub has
+		// ended. Then once you start subbing again you would get the next badge.
 		let next_period = if self.expected_end > chrono::Utc::now() { 1 } else { 0 };
 
 		match condition {
 			SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => self.days + next_period >= *d,
 			SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => self.months + next_period >= *m,
-			SubscriptionBenefitCondition::TimePeriod(tp) => self.periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end),
+			SubscriptionBenefitCondition::TimePeriod(tp) => {
+				self.periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end)
+			}
 		}
 	}
 }
@@ -105,8 +115,8 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 		.subscription_product_by_id_loader
 		.load(subscription_id.product_id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load product"))?
+		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "product not found"))?;
 
 	// load existing edges
 	let outgoing: HashSet<_> = global
@@ -115,7 +125,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			subscription_id: *subscription_id,
 		})
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription entitlements"))?
 		.unwrap_or_default()
 		.into_iter()
 		.map(|e| e.id.to)
@@ -127,7 +137,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			subscription_id: *subscription_id,
 		})
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription entitlements"))?
 		.unwrap_or_default()
 		.into_iter()
 		.map(|e| e.id.from)
@@ -144,13 +154,13 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to load subscription periods");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods")
 		})?
 		.try_collect()
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to collect subscription periods");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to collect subscription periods")
 		})?;
 
 	let mut new_edges = vec![];
@@ -235,7 +245,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update subscription");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update subscription")
 			})?;
 	} else {
 		if incoming.contains(&user_edge.from) {
@@ -265,7 +275,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update subscription");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update subscription")
 			})?;
 	}
 
@@ -280,7 +290,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to delete entitlement edges");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to delete entitlement edges")
 			})?;
 	}
 
@@ -290,7 +300,7 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: &SubscriptionId) -> 
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to insert entitlement edges");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert entitlement edges")
 			})?;
 	}
 

@@ -17,7 +17,7 @@ use shared::event::{InternalEvent, InternalEventData};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Query;
 use crate::http::middleware::cookies::Cookies;
 use crate::http::middleware::session::{Session, AUTH_COOKIE};
@@ -168,12 +168,15 @@ async fn logout(
 			.body(Body::empty())
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to create response");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to create response")
 			}),
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");
-			Err(ApiError::INTERNAL_SERVER_ERROR)
+			Err(ApiError::internal_server_error(
+				ApiErrorCode::TransactionError,
+				"transaction failed",
+			))
 		}
 	}
 }
@@ -190,5 +193,5 @@ async fn logout(
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/manual.route.go#L41
 async fn manual() -> Result<impl IntoResponse, ApiError> {
 	// TODO: decide what to do here
-	Ok(ApiError::NOT_IMPLEMENTED)
+	Ok(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 }

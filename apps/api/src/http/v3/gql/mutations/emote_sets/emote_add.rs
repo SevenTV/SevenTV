@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use hyper::StatusCode;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::{EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
@@ -12,7 +11,7 @@ use shared::database::stored_event::StoredEventEmoteModerationRequestData;
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
@@ -24,12 +23,12 @@ pub async fn emote_add(
 	id: EmoteId,
 	name: Option<String>,
 ) -> TransactionResult<EmoteSet, ApiError> {
-	let authed_user = session.user().ok_or(TransactionError::custom(ApiError::UNAUTHORIZED))?;
+	let authed_user = session.user().map_err(TransactionError::Custom)?;
 
 	if let Some(capacity) = emote_set.capacity {
 		if emote_set.emotes.len() as i32 >= capacity {
-			return Err(TransactionError::custom(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
 				"emote set is at capacity",
 			)));
 		}
@@ -39,22 +38,27 @@ pub async fn emote_add(
 		.emote_by_id_loader
 		.load(id)
 		.await
-		.map_err(|()| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-		.ok_or(TransactionError::custom(ApiError::NOT_FOUND))?;
+		.map_err(|()| {
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::LoadError,
+				"failed to load emote",
+			))
+		})?
+		.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found")))?;
 
 	let alias = name.unwrap_or_else(|| emote.default_name.clone());
 
 	if emote_set.emotes.iter().any(|e| e.alias == alias || e.id == id) {
-		return Err(TransactionError::custom(ApiError::new_const(
-			StatusCode::CONFLICT,
+		return Err(TransactionError::Custom(ApiError::conflict(
+			ApiErrorCode::BadRequest,
 			"this emote is already in the set or has a conflicting name",
 		)));
 	}
 
 	if matches!(emote_set.kind, EmoteSetKind::Personal) {
 		if emote.flags.contains(EmoteFlags::DeniedPersonal) {
-			return Err(TransactionError::custom(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
 				"emote is not allowed in personal emote sets",
 			)));
 		} else if !emote.flags.contains(EmoteFlags::ApprovedPersonal) {
@@ -97,10 +101,12 @@ pub async fn emote_add(
 					FindOneAndUpdateOptions::builder().upsert(true).build(),
 				)
 				.await?
-				.ok_or(TransactionError::custom(ApiError::new_const(
-					StatusCode::NOT_FOUND,
-					"emote moderation failed to insert",
-				)))?;
+				.ok_or_else(|| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::MutationError,
+						"emote moderation failed to insert",
+					))
+				})?;
 
 			if request.id == id {
 				tx.register_event(InternalEvent {
@@ -136,8 +142,8 @@ pub async fn emote_add(
 					.emote_moderation_request_limit
 					.unwrap_or_default()
 			{
-				return Err(TransactionError::custom(ApiError::new_const(
-					StatusCode::BAD_REQUEST,
+				return Err(TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::LackingPrivileges,
 					"too many pending moderation requests",
 				)));
 			}
@@ -184,15 +190,12 @@ pub async fn emote_add(
 				.build(),
 		)
 		.await?
-		.ok_or(TransactionError::custom(ApiError::new_const(
-			StatusCode::NOT_FOUND,
-			"emote set not found",
-		)))?;
+		.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found")))?;
 
 	if let Some(capacity) = emote_set.capacity {
 		if emote_set.emotes.len() as i32 > capacity {
-			return Err(TransactionError::custom(ApiError::new_const(
-				StatusCode::BAD_REQUEST,
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::LoadError,
 				"emote set is at capacity",
 			)));
 		}

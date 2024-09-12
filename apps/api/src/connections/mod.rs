@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
-use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use shared::database::user::connection::Platform;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 mod discord;
 mod google;
@@ -24,10 +23,10 @@ pub enum ConnectionError {
 impl From<ConnectionError> for ApiError {
 	fn from(value: ConnectionError) -> Self {
 		match value {
-			ConnectionError::UnsupportedPlatform => ApiError::new_const(StatusCode::BAD_REQUEST, "unsupported platform"),
-			ConnectionError::RequestError => ApiError::INTERNAL_SERVER_ERROR,
+			ConnectionError::UnsupportedPlatform => ApiError::bad_request(ApiErrorCode::BadRequest, "unsupported platform"),
+			ConnectionError::RequestError => ApiError::internal_server_error(ApiErrorCode::LoadError, "request failed"),
 			ConnectionError::NoUserData => {
-				ApiError::new_const(StatusCode::BAD_REQUEST, "3rd party platform did not return user data")
+				ApiError::bad_request(ApiErrorCode::LoadError, "3rd party platform did not return user data")
 			}
 		}
 	}

@@ -1076,7 +1076,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 				),
 			]
 		})
-		.into_iter()
+		.iter()
 		.cloned()
 }
 
@@ -1917,7 +1917,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 				),
 			]
 		})
-		.into_iter()
+		.iter()
 		.cloned()
 }
 
@@ -2132,7 +2132,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 				),
 			]
 		})
-		.into_iter()
+		.iter()
 		.cloned()
 }
 
@@ -2196,6 +2196,6 @@ pub fn role_entitlements() -> impl IntoIterator<Item = RoleEntitlements> {
 				),
 			]
 		})
-		.into_iter()
+		.iter()
 		.cloned()
 }

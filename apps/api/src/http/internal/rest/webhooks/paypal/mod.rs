@@ -15,7 +15,7 @@ use shared::database::webhook_event::WebhookEvent;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::sub_refresh_job;
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -35,29 +35,32 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 
 	if !cert_url.starts_with("https://api.paypal.com/") {
 		tracing::warn!(url = %cert_url, "invalid cert url");
-		return Err(ApiError::BAD_REQUEST);
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid cert url"));
 	}
 
 	let cert_pem = reqwest::get(cert_url)
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to download cert");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to download cert")
 		})?
 		.text()
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to read cert");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to read cert")
 		})?;
 	let cert = x509_certificate::X509Certificate::from_pem(&cert_pem).map_err(|e| {
 		tracing::error!(error = %e, "failed to parse cert");
-		ApiError::INTERNAL_SERVER_ERROR
+		ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to parse cert")
 	})?;
 
 	if cert.time_constraints_valid(None) {
 		tracing::warn!("cert is expired or not yet valid");
-		return Err(ApiError::BAD_REQUEST);
+		return Err(ApiError::internal_server_error(
+			ApiErrorCode::PaypalError,
+			"cert is expired or not yet valid",
+		));
 	}
 
 	// We don't have to verify the certificate because we know it's coming from a
@@ -65,7 +68,7 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 
 	let public_key = rsa::RsaPublicKey::from_pkcs1_der(&cert.public_key_data()).map_err(|e| {
 		tracing::error!(error = %e, "failed to parse public key");
-		ApiError::INTERNAL_SERVER_ERROR
+		ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to parse public key")
 	})?;
 
 	cache.write().await.insert(cert_url.to_string(), public_key.clone());
@@ -84,7 +87,7 @@ pub async fn handle(
 	let cert_url = headers
 		.get("paypal-cert-url")
 		.and_then(|v| v.to_str().ok())
-		.ok_or(ApiError::BAD_REQUEST)?;
+		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "missing or invalid paypal-cert-url header"))?;
 
 	let public_key = paypal_key(cert_url).await?;
 
@@ -92,19 +95,25 @@ pub async fn handle(
 		.get("paypal-transmission-sig")
 		.and_then(|v| v.to_str().ok())
 		.and_then(|v| BASE64_STANDARD.decode(v).ok())
-		.ok_or(ApiError::BAD_REQUEST)?;
+		.ok_or_else(|| {
+			ApiError::bad_request(ApiErrorCode::BadRequest, "missing or invalid paypal-transmission-sig header")
+		})?;
 
 	let transmision_id = headers
 		.get("paypal-transmission-id")
 		.and_then(|v| v.to_str().ok())
-		.ok_or(ApiError::BAD_REQUEST)?;
+		.ok_or_else(|| {
+			ApiError::bad_request(ApiErrorCode::BadRequest, "missing or invalid paypal-transmission-id header")
+		})?;
 
 	let webhook_id = &global.config.api.paypal.webhook_id;
 
 	let timestamp = headers
 		.get("paypal-transmission-time")
 		.and_then(|v| v.to_str().ok())
-		.ok_or(ApiError::BAD_REQUEST)?;
+		.ok_or_else(|| {
+			ApiError::bad_request(ApiErrorCode::BadRequest, "missing or invalid paypal-transmission-time header")
+		})?;
 
 	let crc = crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
 	let mut crc = crc.digest();
@@ -116,12 +125,12 @@ pub async fn handle(
 	let scheme = Pkcs1v15Sign::new::<sha2::Sha256>();
 	scheme.verify(&public_key, &hash, &signature).map_err(|e| {
 		tracing::error!(error = %e, "failed to verify signature");
-		ApiError::BAD_REQUEST
+		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to verify signature")
 	})?;
 
 	let event: types::Event = serde_json::from_slice(&payload).map_err(|e| {
 		tracing::error!(error = %e, "failed to deserialize payload");
-		ApiError::BAD_REQUEST
+		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to deserialize payload")
 	})?;
 
 	let stripe_client = global.stripe_client.safe().await;
@@ -169,7 +178,12 @@ pub async fn handle(
 				| (types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
 					return subscription::cancelled(&global, tx, *subscription).await;
 				}
-				_ => return Err(TransactionError::custom(ApiError::BAD_REQUEST)),
+				_ => {
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
+						"invalid event type",
+					)));
+				}
 			}
 
 			Ok(None)
@@ -186,7 +200,10 @@ pub async fn handle(
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");
-			Err(ApiError::INTERNAL_SERVER_ERROR)
+			Err(ApiError::internal_server_error(
+				ApiErrorCode::TransactionError,
+				"transaction failed",
+			))
 		}
 	}
 }

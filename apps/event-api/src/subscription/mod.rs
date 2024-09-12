@@ -21,7 +21,8 @@ mod recv;
 
 #[metrics]
 mod subscription {
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::{counter::Counter, gauge::Gauge};
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 	#[serde(rename_all = "snake_case")]

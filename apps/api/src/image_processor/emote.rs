@@ -22,7 +22,7 @@ pub async fn handle_success(
 	event: &event_callback::Success,
 	metadata: &HashMap<String, String>,
 ) -> TransactionResult<(), anyhow::Error> {
-	let image_set = event_to_image_set(event).map_err(TransactionError::custom)?;
+	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
 
 	let bit_update = if image_set.outputs.iter().any(|i| i.frame_count > 1) {
 		Some(update::update! {
@@ -39,7 +39,7 @@ pub async fn handle_success(
 	let aspect_ratio = image_set
 		.input
 		.aspect_ratio()
-		.ok_or(TransactionError::custom(anyhow::anyhow!("failed to get aspect ratio")))?;
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("failed to get aspect ratio")))?;
 
 	let after = tx
 		.find_one_and_update(
@@ -65,7 +65,7 @@ pub async fn handle_success(
 				.build(),
 		)
 		.await?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("emote not found")))?;
 
 	let country_code = metadata
 		.get("upload_ip")
@@ -79,7 +79,7 @@ pub async fn handle_success(
 		.await
 		.ok()
 		.flatten()
-		.ok_or_else(|| TransactionError::custom(anyhow::anyhow!("failed to load user")))?;
+		.ok_or_else(|| TransactionError::Custom(anyhow::anyhow!("failed to load user")))?;
 
 	let mod_request = EmoteModerationRequest {
 		id: EmoteModerationRequestId::new(),
@@ -147,7 +147,7 @@ pub async fn handle_fail(
 			None,
 		)
 		.await?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("emote not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -174,8 +174,8 @@ pub async fn handle_start(
 		.emote_by_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query emote")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query emote")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("emote not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -202,8 +202,8 @@ pub async fn handle_cancel(
 		.emote_by_id_loader
 		.load(id)
 		.await
-		.map_err(|_| TransactionError::custom(anyhow::anyhow!("failed to query emote")))?
-		.ok_or(TransactionError::custom(anyhow::anyhow!("emote not found")))?;
+		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query emote")))?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("emote not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,

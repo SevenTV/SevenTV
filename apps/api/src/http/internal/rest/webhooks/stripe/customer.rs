@@ -1,12 +1,12 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
 use shared::database::product::CustomerId;
 use shared::database::queries::{filter, update};
-use shared::database::user::{User, UserId};
+use shared::database::user::User;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::egvault::metadata::{CustomerMetadata, StripeMetadata};
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn created(
@@ -14,20 +14,27 @@ pub async fn created(
 	mut tx: TransactionSession<'_, ApiError>,
 	customer: stripe::Customer,
 ) -> TransactionResult<(), ApiError> {
-	let Some(user_id) = customer.metadata.as_ref().and_then(|m| m.get("USER_ID")) else {
-		// no user id on metadata
+	let Some(metadata) = customer
+		.metadata
+		.as_ref()
+		.map(CustomerMetadata::from_stripe)
+		.transpose()
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to deserialize metadata");
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::StripeError,
+				"failed to deserialize metadata",
+			))
+		})?
+	else {
+		// no metadata
 		return Ok(());
 	};
-
-	let user_id = UserId::from_str(user_id).map_err(|e| {
-		tracing::error!(error = %e, "invalid user id");
-		TransactionError::custom(ApiError::BAD_REQUEST)
-	})?;
 
 	tx.update_one(
 		filter::filter! {
 			User {
-				id: user_id,
+				id: metadata.user_id,
 			}
 		},
 		update::update! {
