@@ -1,4 +1,3 @@
-use super::duration::DurationUnit;
 use super::MongoGenericCollection;
 use crate::database::{Id, MongoCollection};
 
@@ -32,7 +31,7 @@ pub struct CronJob {
 	pub last_run: Option<chrono::DateTime<chrono::Utc>>,
 	#[serde(with = "crate::database::serde")]
 	pub next_run: chrono::DateTime<chrono::Utc>,
-	pub interval: DurationUnit,
+	pub interval: CronJobInterval,
 	pub enabled: bool,
 	/// The machine id that is currently running the job
 	pub currently_running_by: Option<Id<()>>,
@@ -43,6 +42,13 @@ pub struct CronJob {
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CronJobInterval {
+	Hours(i32),
+	Days(i32),
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
@@ -60,7 +66,7 @@ pub fn default_cron_jobs() -> Vec<CronJob> {
 			tags: vec!["emote".to_string()],
 			last_run: None,
 			next_run: chrono::Utc::now(),
-			interval: DurationUnit::Days(1),
+			interval: CronJobInterval::Days(1),
 			enabled: true,
 			currently_running_by: None,
 			held_until: chrono::Utc::now(),
@@ -77,7 +83,7 @@ pub fn default_cron_jobs() -> Vec<CronJob> {
 			tags: vec!["subscription".to_string()],
 			last_run: None,
 			next_run: chrono::Utc::now(),
-			interval: DurationUnit::Days(1),
+			interval: CronJobInterval::Days(1),
 			enabled: true,
 			currently_running_by: None,
 			held_until: chrono::Utc::now(),
