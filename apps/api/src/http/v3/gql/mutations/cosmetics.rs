@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
-use hyper::StatusCode;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{
 	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
@@ -13,7 +12,7 @@ use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, Cos
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::validators::NameValidator;
 
@@ -28,7 +27,9 @@ impl CosmeticsMutation {
 		ctx: &Context<'ctx>,
 		definition: CosmeticPaintInput,
 	) -> Result<GqlObjectId, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		let id = PaintId::new();
 
@@ -43,7 +44,7 @@ impl CosmeticsMutation {
 
 		Paint::collection(&global.db).insert_one(paint).await.map_err(|e| {
 			tracing::error!(error = %e, "failed to insert paint");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to insert paint")
 		})?;
 
 		Ok(id.into())
@@ -111,7 +112,7 @@ impl CosmeticPaintInput {
 			}
 			CosmeticPaintFunction::Url => {
 				let Some(image_url) = self.image_url else {
-					return Err(ApiError::BAD_REQUEST);
+					return Err(ApiError::bad_request(ApiErrorCode::GraphQL, "missing image url"));
 				};
 
 				// TODO(troy): This allows for anyone to pass any url and we will blindly do a
@@ -123,16 +124,22 @@ impl CosmeticPaintInput {
 						Ok(bytes) => bytes,
 						Err(e) => {
 							tracing::error!(error = ?e, "failed to read image data");
-							return Err(ApiError::INTERNAL_SERVER_ERROR);
+							return Err(ApiError::internal_server_error(
+								ApiErrorCode::GraphQL,
+								"failed to read image data",
+							));
 						}
 					},
 					Ok(res) => {
 						tracing::error!(status = ?res.status(), "failed to request image url");
-						return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "failed to request image url"));
+						return Err(ApiError::bad_request(ApiErrorCode::GraphQL, "failed to request image url"));
 					}
 					Err(e) => {
 						tracing::error!(error = ?e, "failed to request image url");
-						return Err(ApiError::INTERNAL_SERVER_ERROR);
+						return Err(ApiError::internal_server_error(
+							ApiErrorCode::GraphQL,
+							"failed to request image url",
+						));
 					}
 				};
 
@@ -143,8 +150,8 @@ impl CosmeticPaintInput {
 				{
 					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
 						tracing::error!(error = ?error, "failed to start processing image");
-						return Err(ApiError::new_const(
-							StatusCode::INTERNAL_SERVER_ERROR,
+						return Err(ApiError::internal_server_error(
+							ApiErrorCode::GraphQL,
 							"image processor error",
 						));
 					}
@@ -165,14 +172,14 @@ impl CosmeticPaintInput {
 					},
 					Err(e) => {
 						tracing::error!(error = ?e, "failed to start send image processor request");
-						return Err(ApiError::new_const(
-							StatusCode::INTERNAL_SERVER_ERROR,
+						return Err(ApiError::internal_server_error(
+							ApiErrorCode::GraphQL,
 							"image processor error",
 						));
 					}
 					_ => {
-						return Err(ApiError::new_const(
-							StatusCode::INTERNAL_SERVER_ERROR,
+						return Err(ApiError::internal_server_error(
+							ApiErrorCode::GraphQL,
 							"image processor error",
 						));
 					}
@@ -237,14 +244,16 @@ impl CosmeticOps {
 		ctx: &Context<'ctx>,
 		definition: CosmeticPaintInput,
 	) -> Result<CosmeticPaintModel, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		let _ = global
 			.paint_by_id_loader
 			.load(self.id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load paint"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "paint not found"))?;
 
 		let name = definition.name.clone();
 		let data = definition.into_db(self.id.id(), global).await?;
@@ -270,10 +279,11 @@ impl CosmeticOps {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update paint");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to update paint")
 			})?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "paint not found"))?;
 
-		CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin).ok_or(ApiError::INTERNAL_SERVER_ERROR)
+		CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin)
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load paint"))
 	}
 }

@@ -6,6 +6,7 @@ use hyper::StatusCode;
 use serde::de::DeserializeOwned;
 
 use super::error::ApiError;
+use crate::http::error::ApiErrorCode;
 
 pub struct Path<T>(pub T);
 
@@ -31,10 +32,10 @@ impl From<PathRejection> for ApiError {
 	fn from(err: PathRejection) -> Self {
 		if err.status() >= StatusCode::INTERNAL_SERVER_ERROR {
 			tracing::error!(%err, "path decode error");
-			return ApiError::INTERNAL_SERVER_ERROR;
+			return ApiError::internal_server_error(ApiErrorCode::Route, "path decode error");
 		}
 
-		ApiError::new(err.status(), err.to_string())
+		ApiError::new(err.status(), ApiErrorCode::Route, err.to_string())
 	}
 }
 
@@ -62,9 +63,9 @@ impl From<QueryRejection> for ApiError {
 	fn from(err: QueryRejection) -> Self {
 		if err.status() >= StatusCode::INTERNAL_SERVER_ERROR {
 			tracing::error!(%err, "query decode error");
-			return ApiError::INTERNAL_SERVER_ERROR;
+			return ApiError::internal_server_error(ApiErrorCode::Route, "query decode error");
 		}
 
-		ApiError::new(err.status(), err.to_string())
+		ApiError::new(err.status(), ApiErrorCode::Route, err.to_string())
 	}
 }

@@ -12,7 +12,7 @@ use stripe::{CreateInvoice, FinalizeInvoiceParams};
 
 use super::types;
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
@@ -59,13 +59,19 @@ pub async fn completed(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to retrieve paypal subscription");
-			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			TransactionError::custom(ApiError::internal_server_error(
+				ApiErrorCode::PaypalWebhook,
+				"failed to retrieve paypal subscription",
+			))
 		})?
 		.json()
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to parse paypal subscription");
-			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			TransactionError::custom(ApiError::internal_server_error(
+				ApiErrorCode::PaypalWebhook,
+				"failed to parse paypal subscription",
+			))
 		})?;
 
 	// get or create the stripe customer
@@ -116,7 +122,10 @@ pub async fn completed(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create stripe customer");
-				TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+				TransactionError::custom(ApiError::internal_server_error(
+					ApiErrorCode::PaypalWebhook,
+					"failed to create stripe customer",
+				))
 			})?;
 
 			let customer_id: CustomerId = customer.id.into();
@@ -182,7 +191,10 @@ pub async fn completed(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to create invoice");
-		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+		TransactionError::custom(ApiError::internal_server_error(
+			ApiErrorCode::PaypalWebhook,
+			"failed to create invoice",
+		))
 	})?;
 
 	stripe::Invoice::finalize(
@@ -195,22 +207,40 @@ pub async fn completed(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to finalize invoice");
-		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+		TransactionError::custom(ApiError::internal_server_error(
+			ApiErrorCode::PaypalWebhook,
+			"failed to finalize invoice",
+		))
 	})?;
 
 	let invoice = stripe::Invoice::void(stripe_client.client(StripeRequest::VoidInvoice).await.deref(), &invoice.id)
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to void invoice");
-			TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+			TransactionError::custom(ApiError::internal_server_error(
+				ApiErrorCode::PaypalWebhook,
+				"failed to void invoice",
+			))
 		})?;
 
 	let invoice_id: InvoiceId = invoice.id.into();
 
-	let status = invoice.status.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?.into();
+	let status = invoice
+		.status
+		.ok_or_else(|| {
+			TransactionError::custom(ApiError::bad_request(
+				ApiErrorCode::PaypalWebhook,
+				"invoice status is missing",
+			))
+		})?
+		.into();
 
-	let created_at = chrono::DateTime::from_timestamp(invoice.created.unwrap_or_default(), 0)
-		.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+	let created_at = chrono::DateTime::from_timestamp(invoice.created.unwrap_or_default(), 0).ok_or_else(|| {
+		TransactionError::custom(ApiError::bad_request(
+			ApiErrorCode::PaypalWebhook,
+			"invoice created_at is missing",
+		))
+	})?;
 
 	tx.insert_one(
 		Invoice {

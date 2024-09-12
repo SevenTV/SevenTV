@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
@@ -8,17 +7,23 @@ use shared::database::product::subscription::{
 };
 use shared::database::product::{ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
-use shared::database::user::UserId;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::egvault::metadata::{StripeMetadata, SubscriptionMetadata};
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 fn subscription_products(items: stripe::List<stripe::SubscriptionItem>) -> Result<Vec<ProductId>, ApiError> {
 	items
 		.data
 		.into_iter()
-		.map(|i| Ok(ProductId::from(i.price.ok_or(ApiError::BAD_REQUEST)?.id)))
+		.map(|i| {
+			Ok(ProductId::from(
+				i.price
+					.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeWebhook, "subscription item price is missing"))?
+					.id,
+			))
+		})
 		.collect()
 }
 
@@ -50,16 +55,18 @@ pub async fn created(
 		return Ok(None);
 	}
 
-	let user_id = subscription
-		.metadata
-		.get("USER_ID")
-		.and_then(|i| UserId::from_str(i).ok())
-		.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+	let metadata = SubscriptionMetadata::from_stripe(&subscription.metadata).map_err(|e| {
+		tracing::error!(error = %e, "failed to deserialize metadata");
+		TransactionError::custom(ApiError::internal_server_error(
+			ApiErrorCode::StripeWebhook,
+			"failed to deserialize metadata",
+		))
+	})?;
 
 	let product = products.into_iter().next().unwrap();
 
 	let sub_id = SubscriptionId {
-		user_id,
+		user_id: metadata.user_id,
 		product_id: product.id,
 	};
 
@@ -72,8 +79,18 @@ pub async fn deleted(
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: stripe::Subscription,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
-	let ended_at = subscription.ended_at.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
-	let ended_at = chrono::DateTime::from_timestamp(ended_at, 0).ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+	let ended_at = subscription.ended_at.ok_or_else(|| {
+		TransactionError::custom(ApiError::bad_request(
+			ApiErrorCode::StripeWebhook,
+			"subscription ended_at is missing",
+		))
+	})?;
+	let ended_at = chrono::DateTime::from_timestamp(ended_at, 0).ok_or_else(|| {
+		TransactionError::custom(ApiError::bad_request(
+			ApiErrorCode::StripeWebhook,
+			"subscription ended_at is missing",
+		))
+	})?;
 
 	let subscription_id: ProviderSubscriptionId = subscription.id.into();
 

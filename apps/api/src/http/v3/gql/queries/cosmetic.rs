@@ -12,7 +12,7 @@ use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/cosmetics.gql
 
@@ -33,7 +33,9 @@ impl CosmeticsQuery {
 		ctx: &Context<'ctx>,
 		#[graphql(validator(max_items = 600))] list: Option<Vec<GqlObjectId>>,
 	) -> Result<CosmeticsQueryResponse, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 		let list = list.unwrap_or_default();
 
 		if list.is_empty() {
@@ -46,7 +48,7 @@ impl CosmeticsQuery {
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to query paints");
-					ApiError::INTERNAL_SERVER_ERROR
+					ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to query paints")
 				})?
 				.into_iter()
 				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
@@ -59,7 +61,7 @@ impl CosmeticsQuery {
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to query badges");
-					ApiError::INTERNAL_SERVER_ERROR
+					ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to query badges")
 				})?
 				.into_iter()
 				.filter_map(|b: Badge| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
@@ -71,7 +73,7 @@ impl CosmeticsQuery {
 				.paint_by_id_loader
 				.load_many(list.clone().into_iter().map(|id| id.id()))
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load paints"))?
 				.into_values()
 				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
 				.collect();
@@ -80,7 +82,7 @@ impl CosmeticsQuery {
 				.badge_by_id_loader
 				.load_many(list.into_iter().map(|id| id.id()))
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load badges"))?
 				.into_values()
 				.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
 				.collect();

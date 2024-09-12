@@ -5,7 +5,7 @@ use axum::routing::post;
 use axum::Router;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_entitlement), components(schemas(XEntitlementData)))]
@@ -31,5 +31,5 @@ pub struct XEntitlementData {}
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/entitlements/entitlements.create.go#L34
 pub async fn create_entitlement() -> Result<impl IntoResponse, ApiError> {
 	// This endpoint was previously only used by admins.
-	Ok(ApiError::NOT_IMPLEMENTED)
+	Ok(ApiError::not_implemented(ApiErrorCode::Rest, "not implemented"))
 }

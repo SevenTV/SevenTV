@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
-use hyper::StatusCode;
 use mongodb::options::ReturnDocument;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{
@@ -16,7 +15,7 @@ use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::BanEffect;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::user::{User as GqlUser, UserPartial};
@@ -60,25 +59,31 @@ impl BansMutation {
 		expire_at: Option<chrono::DateTime<chrono::Utc>>,
 		_anonymous: Option<bool>,
 	) -> Result<Option<Ban>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
+		let authed_user = session
+			.user()
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
 
 		// check if victim exists
 		let victim = global
 			.user_loader
 			.load(global, victim_id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "user not found"))?;
 
 		if authed_user.id == victim.id {
-			return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "cannot ban yourself"));
+			return Err(ApiError::bad_request(ApiErrorCode::GraphQL, "cannot ban yourself"));
 		} else if authed_user.computed.highest_role_rank <= victim.computed.highest_role_rank
 			&& !authed_user.has(AdminPermission::SuperAdmin)
 		{
-			return Err(ApiError::new_const(
-				StatusCode::FORBIDDEN,
+			return Err(ApiError::forbidden(
+				ApiErrorCode::GraphQL,
 				"can only ban users with lower roles",
 			));
 		}
@@ -140,7 +145,7 @@ impl BansMutation {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
 			}
 		}
 	}
@@ -154,7 +159,9 @@ impl BansMutation {
 		effects: Option<BanEffect>,
 		expire_at: Option<chrono::DateTime<chrono::Utc>>,
 	) -> Result<Option<Ban>, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		// TODO: events?
 		let ban = UserBan::collection(&global.db)
@@ -181,9 +188,9 @@ impl BansMutation {
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update user ban");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to update user ban")
 			})?
-			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "ban not found"))?;
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "ban not found"))?;
 
 		Ok(Some(Ban::from_db(ban.user_id.into(), ban)))
 	}
@@ -206,26 +213,30 @@ pub struct Ban {
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl Ban {
 	async fn victim<'ctx>(&self, ctx: &Context<'ctx>) -> Result<GqlUser, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load_fast(global, self.victim_id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())
 	}
 
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<GqlUser, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		Ok(global
 			.user_loader
 			.load(global, self.actor_id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load user"))?
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())

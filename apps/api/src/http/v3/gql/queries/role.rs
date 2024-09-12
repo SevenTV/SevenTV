@@ -13,7 +13,7 @@ use shared::old_types::role_permission::RolePermission;
 
 use super::user::User;
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/roles.gql
 
@@ -78,7 +78,9 @@ impl Role {
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl RolesQuery {
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
-		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		let roles: Vec<DbRole> = DbRole::collection(&global.db)
 			.find(filter::filter!(DbRole {}))
@@ -88,20 +90,22 @@ impl RolesQuery {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load roles")
 			})?;
 
 		Ok(roles.into_iter().map(Role::from_db).collect())
 	}
 
 	async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Role>, ApiError> {
-		let global = ctx.data::<Arc<Global>>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		let role = global
 			.role_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load role"))?;
 
 		Ok(role.map(Role::from_db))
 	}

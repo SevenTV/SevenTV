@@ -6,7 +6,7 @@ use shared::database::role::permissions::{Permission, PermissionsExt, RateLimitR
 use shared::database::user::UserId;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::ratelimit::{RateLimitRequest, RateLimitResponse};
 
@@ -33,14 +33,20 @@ impl PermissionGuard {
 
 impl Guard for PermissionGuard {
 	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
 
 		if self.all {
 			if !session.has_all(self.permissions.iter().copied()) {
-				return Err(ApiError::FORBIDDEN.into());
+				return Err(
+					ApiError::forbidden(ApiErrorCode::GraphQL, "you do not have permission to use this endpoint").into(),
+				);
 			}
 		} else if !session.has_any(self.permissions.iter().copied()) {
-			return Err(ApiError::FORBIDDEN.into());
+			return Err(
+				ApiError::forbidden(ApiErrorCode::GraphQL, "you do not have permission to use this endpoint").into(),
+			);
 		}
 
 		Ok(())
@@ -51,10 +57,12 @@ pub struct UserGuard(pub UserId);
 
 impl Guard for UserGuard {
 	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
 
 		if session.user_id() != Some(self.0) {
-			return Err(ApiError::FORBIDDEN.into());
+			return Err(ApiError::forbidden(ApiErrorCode::GraphQL, "you are not authorized to use this endpoint").into());
 		}
 
 		Ok(())
@@ -78,11 +86,15 @@ impl RateLimitGuard {
 
 impl Guard for RateLimitGuard {
 	async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
 		let response = ctx
 			.data::<RateLimitResponseStore>()
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing rate limit response data"))?;
 
 		let mut req = RateLimitRequest::new(self.resource, session);
 

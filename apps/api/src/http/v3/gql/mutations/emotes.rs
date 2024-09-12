@@ -14,7 +14,7 @@ use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote::Emote;
@@ -27,14 +27,16 @@ pub struct EmotesMutation;
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmotesMutation {
 	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<EmoteOps, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		let emote = global
 			.emote_by_id_loader
 			.load(id.id())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::NOT_FOUND)?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emote"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "emote not found"))?;
 
 		Ok(EmoteOps { id, emote })
 	}
@@ -57,9 +59,15 @@ impl EmoteOps {
 		params: EmoteUpdate,
 		#[graphql(validator(max_length = 100))] _reason: Option<String>,
 	) -> Result<Emote, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
+		let authed_user = session
+			.user()
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
 
 		// TODO: maybe a guard?
 		if authed_user.id != self.emote.owner_id && !authed_user.has(EmotePermission::ManageAny) {
@@ -70,17 +78,25 @@ impl EmoteOps {
 					editor_id: authed_user.id,
 				})
 				.await
-				.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::FORBIDDEN)?;
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(ApiErrorCode::GraphQL, "you do not have permission to edit this emote")
+				})?;
 
 			if editor.state != UserEditorState::Accepted || !editor.permissions.has_emote(EditorEmotePermission::Manage) {
-				return Err(ApiError::FORBIDDEN);
+				return Err(ApiError::forbidden(
+					ApiErrorCode::GraphQL,
+					"you do not have permission to edit this emote",
+				));
 			}
 		}
 
 		if params.deleted.is_some_and(|d| d) {
 			if !authed_user.has(EmotePermission::Delete) {
-				return Err(ApiError::FORBIDDEN);
+				return Err(ApiError::forbidden(
+					ApiErrorCode::GraphQL,
+					"you do not have permission to delete this emote",
+				));
 			}
 
 			// TODO: don't allow deletion of emotes that are in use
@@ -98,7 +114,7 @@ impl EmoteOps {
 						None,
 					)
 					.await?
-					.ok_or(ApiError::NOT_FOUND)
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "emote not found"))
 					.map_err(TransactionError::custom)?;
 
 				tx.register_event(InternalEvent {
@@ -120,13 +136,16 @@ impl EmoteOps {
 				Err(TransactionError::Custom(e)) => Err(e),
 				Err(e) => {
 					tracing::error!(error = %e, "transaction failed");
-					Err(ApiError::INTERNAL_SERVER_ERROR)
+					Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
 				}
 			};
 		}
 
 		if !authed_user.has(EmotePermission::Edit) {
-			return Err(ApiError::FORBIDDEN);
+			return Err(ApiError::forbidden(
+				ApiErrorCode::GraphQL,
+				"you do not have permission to edit this emote",
+			));
 		}
 
 		let res = with_transaction(global, |mut tx| async move {
@@ -206,7 +225,7 @@ impl EmoteOps {
 						.build(),
 				)
 				.await?
-				.ok_or(ApiError::NOT_FOUND)
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "emote not found"))
 				.map_err(TransactionError::custom)?;
 
 			if let Some(new_default_name) = new_default_name {
@@ -278,7 +297,7 @@ impl EmoteOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
 			}
 		}
 	}
@@ -290,9 +309,15 @@ impl EmoteOps {
 		target_id: GqlObjectId,
 		_reason: Option<String>,
 	) -> Result<Emote, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let session = ctx.data::<Session>().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
-		let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing session data"))?;
+		let authed_user = session
+			.user()
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in"))?;
 
 		let res = with_transaction(global, |mut tx| async move {
 			let emote = tx
@@ -317,7 +342,7 @@ impl EmoteOps {
 					None,
 				)
 				.await?
-				.ok_or(ApiError::NOT_FOUND)
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::GraphQL, "emote not found"))
 				.map_err(TransactionError::custom)?;
 
 			tx.register_event(InternalEvent {
@@ -343,7 +368,7 @@ impl EmoteOps {
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
-				Err(ApiError::INTERNAL_SERVER_ERROR)
+				Err(ApiError::internal_server_error(ApiErrorCode::GraphQL, "transaction failed"))
 			}
 		}
 	}
@@ -351,7 +376,7 @@ impl EmoteOps {
 	#[graphql(guard = "PermissionGuard::one(EmotePermission::Admin)")]
 	async fn rerun(&self) -> Result<Option<Emote>, ApiError> {
 		// will be left unimplemented
-		Err(ApiError::NOT_IMPLEMENTED)
+		Err(ApiError::not_implemented(ApiErrorCode::GraphQL, "not implemented"))
 	}
 }
 

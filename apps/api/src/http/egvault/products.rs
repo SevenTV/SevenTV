@@ -9,7 +9,7 @@ use shared::database::queries::filter;
 use shared::database::MongoCollection;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::rest::types::{self, Plan};
 
@@ -25,13 +25,13 @@ pub async fn products(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to query subscription products");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to query subscription products")
 		})?
 		.try_collect()
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to collect subscription products");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to collect subscription products")
 		})?;
 
 	let currency = if let Some(country_code) = global.geoip().and_then(|g| g.lookup(session.ip())).and_then(|c| c.iso_code) {
@@ -39,8 +39,8 @@ pub async fn products(
 			.global_config_loader
 			.load(())
 			.await
-			.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load global config"))?
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load global config"))?;
 
 		global.country_currency_overrides.get(country_code).copied()
 	} else {
@@ -79,7 +79,7 @@ pub async fn products(
 		.entitlement_edge_outbound_loader
 		.load_many(months_benefit_ids)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load entitlement edges"))?;
 
 	// find the paints
 	let current_paints = edges

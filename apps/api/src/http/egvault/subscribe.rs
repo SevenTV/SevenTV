@@ -2,7 +2,6 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use axum::extract::State;
-use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
@@ -15,7 +14,7 @@ use shared::database::MongoCollection;
 use super::metadata::{CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
 use super::{create_checkout_session_params, find_or_create_customer};
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Query;
 use crate::http::middleware::session::Session;
 use crate::ratelimit::RateLimitRequest;
@@ -73,10 +72,12 @@ pub async fn subscribe(
 	Extension(session): Extension<Session>,
 	Json(body): Json<SubscribeBody>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let authed_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+	let authed_user = session
+		.user()
+		.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::EgVault, "you are not logged in"))?;
 
 	if query.payment_method != "stripe" {
-		return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "payment method not supported"));
+		return Err(ApiError::bad_request(ApiErrorCode::EgVault, "payment method not supported"));
 	}
 
 	let kind = SubscriptionProductKind::from(query.renew_interval);
@@ -98,9 +99,9 @@ pub async fn subscribe(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to find subscription product");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to find subscription product")
 			})?
-			.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "subscription product not found"))?;
 
 		let variant = product
 			.variants
@@ -137,8 +138,8 @@ pub async fn subscribe(
 				.user_loader
 				.load_fast(&global, gift_for)
 				.await
-				.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-				.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "user not found"))?;
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load user"))?
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::EgVault, "user not found"))?;
 
 			// TODO: should we dataload this?
 			let is_subscribed = SubscriptionPeriod::collection(&global.db)
@@ -157,11 +158,11 @@ pub async fn subscribe(
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to load subscription periods");
-					ApiError::INTERNAL_SERVER_ERROR
+					ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription periods")
 				})?
 				.is_some();
 			if is_subscribed {
-				return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
+				return Err(ApiError::bad_request(ApiErrorCode::EgVault, "user is already subscribed"));
 			}
 
 			params.mode = Some(stripe::CheckoutSessionMode::Payment);
@@ -206,12 +207,12 @@ pub async fn subscribe(
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to load subscription periods");
-					ApiError::INTERNAL_SERVER_ERROR
+					ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription periods")
 				})?
 				.is_some();
 
 			if is_subscribed {
-				return Err(ApiError::new_const(StatusCode::BAD_REQUEST, "user is already subscribed"));
+				return Err(ApiError::bad_request(ApiErrorCode::EgVault, "user is already subscribed"));
 			}
 
 			params.mode = Some(stripe::CheckoutSessionMode::Subscription);
@@ -236,10 +237,10 @@ pub async fn subscribe(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create checkout session");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to create checkout session")
 			})?
 			.url
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to create checkout session"))?;
 
 		Ok(Json(SubscribeResponse {
 			url: session_url,

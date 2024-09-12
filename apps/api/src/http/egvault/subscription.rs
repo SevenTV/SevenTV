@@ -3,7 +3,6 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::{Extension, Json};
 use futures::TryStreamExt;
-use hyper::StatusCode;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionState,
 };
@@ -12,7 +11,7 @@ use shared::database::queries::filter;
 use shared::database::MongoCollection;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
 use crate::http::middleware::session::Session;
 use crate::http::v3::rest::types::{self, SubscriptionCycleUnit};
@@ -35,7 +34,9 @@ pub async fn subscription(
 	Extension(session): Extension<Session>,
 ) -> Result<Json<SubscriptionResponse>, ApiError> {
 	let user = match target {
-		TargetUser::Me => session.user_id().ok_or(ApiError::UNAUTHORIZED)?,
+		TargetUser::Me => session
+			.user_id()
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::EgVault, "you are not logged in"))?,
 		TargetUser::Other(id) => id,
 	};
 
@@ -52,13 +53,13 @@ pub async fn subscription(
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to find subscription period");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to find subscription period")
 		})?
 		.try_collect()
 		.await
 		.map_err(|e| {
 			tracing::error!(error = %e, "failed to collect subscription periods");
-			ApiError::INTERNAL_SERVER_ERROR
+			ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to collect subscription periods")
 		})?;
 
 	let Some(active_period) = periods
@@ -79,8 +80,8 @@ pub async fn subscription(
 		.subscription_by_id_loader
 		.load(active_period.subscription_id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription"))?
+		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription"))?;
 
 	let periods: Vec<_> = periods
 		.into_iter()
@@ -91,8 +92,8 @@ pub async fn subscription(
 		.subscription_product_by_id_loader
 		.load(subscription.id.product_id)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "subscription product not found"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load subscription product"))?
+		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "could not find subscription product"))?;
 
 	let age = sub_refresh_job::SubAge::new(&periods);
 

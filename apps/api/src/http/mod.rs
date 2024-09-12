@@ -7,6 +7,7 @@ use axum::http::HeaderName;
 use axum::response::Response;
 use axum::routing::get;
 use axum::Router;
+use error::ApiErrorCode;
 use hyper::Method;
 use middleware::ip::IpMiddleware;
 use middleware::session::SessionMiddleware;
@@ -125,7 +126,7 @@ async fn root() -> &'static str {
 
 #[tracing::instrument]
 pub async fn not_found() -> ApiError {
-	ApiError::NOT_FOUND
+	ApiError::not_found(ApiErrorCode::Route, "route not found")
 }
 
 #[tracing::instrument(name = "API", skip(global))]

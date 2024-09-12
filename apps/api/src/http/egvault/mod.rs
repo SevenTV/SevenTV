@@ -11,7 +11,7 @@ use shared::database::MongoCollection;
 use subscribe::Prefill;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::stripe_client::StripeClient;
 
 mod cancel;
@@ -112,7 +112,7 @@ async fn find_customer(global: &Arc<Global>, user_id: UserId) -> Result<Option<C
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to search customer");
-		ApiError::INTERNAL_SERVER_ERROR
+		ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to search customer")
 	})?;
 
 	let customer_id = customer.data.into_iter().next().map(|c| c.id.into());
@@ -145,7 +145,7 @@ async fn find_or_create_customer(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create customer");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to create customer")
 			})?;
 
 			customer.id.into()
@@ -169,7 +169,7 @@ async fn find_or_create_customer(
 			},
 		)
 		.await
-		.map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to update user"))?;
 
 	Ok(id)
 }

@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use hyper::StatusCode;
 use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
@@ -8,7 +7,7 @@ use shared::database::queries::{filter, update};
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
@@ -20,30 +19,30 @@ pub async fn emote_update(
 	emote_id: EmoteId,
 	name: Option<String>,
 ) -> TransactionResult<EmoteSet, ApiError> {
-	let authed_user = session.user().ok_or(TransactionError::custom(ApiError::UNAUTHORIZED))?;
+	let authed_user = session
+		.user()
+		.ok_or_else(|| TransactionError::custom(ApiError::unauthorized(ApiErrorCode::GraphQL, "you are not logged in")))?;
 
 	let old_emote_set_emote = emote_set
 		.emotes
 		.iter()
 		.find(|e| e.id == emote_id)
-		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote not found in set"))
-		.map_err(TransactionError::custom)?;
+		.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote not found in set")))?;
 
 	let emote = global
 		.emote_by_id_loader
 		.load(emote_id)
 		.await
-		.map_err(|()| TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR))?
-		.ok_or(TransactionError::custom(ApiError::new_const(
-			StatusCode::NOT_FOUND,
-			"emote not found",
-		)))?;
+		.map_err(|()| {
+			TransactionError::custom(ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emote"))
+		})?
+		.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote not found")))?;
 
 	let new_name = name.unwrap_or(emote.default_name.clone());
 
 	if emote_set.emotes.iter().any(|e| e.alias == new_name) {
-		return Err(TransactionError::custom(ApiError::new_const(
-			StatusCode::CONFLICT,
+		return Err(TransactionError::custom(ApiError::conflict(
+			ApiErrorCode::GraphQL,
 			"emote name conflict",
 		)));
 	}
@@ -76,20 +75,13 @@ pub async fn emote_update(
 				.build(),
 		)
 		.await?
-		.ok_or(TransactionError::custom(ApiError::new_const(
-			StatusCode::NOT_FOUND,
-			"emote not found in set",
-		)))?;
+		.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote not found in set")))?;
 
 	let emote_set_emote = emote_set
 		.emotes
 		.iter()
 		.find(|e| e.id == emote_id)
-		.ok_or(ApiError::new_const(
-			StatusCode::INTERNAL_SERVER_ERROR,
-			"emote not found in set",
-		))
-		.map_err(TransactionError::custom)?;
+		.ok_or_else(|| TransactionError::custom(ApiError::not_found(ApiErrorCode::GraphQL, "emote not found in set")))?;
 
 	tx.register_event(InternalEvent {
 		actor: Some(authed_user.clone()),

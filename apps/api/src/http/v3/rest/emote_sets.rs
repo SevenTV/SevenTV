@@ -4,13 +4,12 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Json, Router};
-use hyper::StatusCode;
 use shared::database::emote_set::EmoteSetId;
 use shared::old_types::{EmoteSetModel, UserPartialModel};
 use utoipa::OpenApi;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
 use crate::http::middleware::session::Session;
 use crate::http::v3::emote_set_loader::load_emote_set;
@@ -46,15 +45,15 @@ pub async fn get_emote_set_by_id(
 		.emote_set_by_id_loader
 		.load(id)
 		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::new_const(StatusCode::NOT_FOUND, "emote set not found"))?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load emote set"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::Rest, "emote set not found"))?;
 
 	let owner = match emote_set.owner_id {
 		Some(owner_id) => global
 			.user_loader
 			.load_fast(&global, owner_id)
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::Rest, "failed to load user"))?
 			.and_then(|owner| session.can_view(&owner).then_some(owner))
 			.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config.api.cdn_origin)),
 		None => None,

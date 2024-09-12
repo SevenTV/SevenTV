@@ -9,7 +9,7 @@ use shared::database::role::permissions::{PermissionsExt, RateLimitResource, Use
 use super::find_or_create_customer;
 use super::metadata::{CheckoutSessionMetadata, StripeMetadata};
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
 use crate::http::middleware::session::Session;
 use crate::http::v3::rest::users::TargetUser;
@@ -34,7 +34,9 @@ pub async fn payment_method(
 	Query(_query): Query<PaymentMethodQuery>,
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let auth_user = session.user().ok_or(ApiError::UNAUTHORIZED)?;
+	let auth_user = session
+		.user()
+		.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::EgVault, "not authenticated"))?;
 
 	let target_id = match target {
 		TargetUser::Me => auth_user.id,
@@ -43,15 +45,18 @@ pub async fn payment_method(
 
 	// TODO: is this the right permission?
 	if !auth_user.has(UserPermission::ManageAny) && target_id != auth_user.id {
-		return Err(ApiError::FORBIDDEN);
+		return Err(ApiError::forbidden(
+			ApiErrorCode::EgVault,
+			"you are not allowed to manage this user",
+		));
 	}
 
 	let target_user = global
 		.user_loader
 		.load_fast(&global, target_id)
 		.await
-		.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-		.ok_or(ApiError::NOT_FOUND)?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to load user"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::EgVault, "user not found"))?;
 
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, &session);
 
@@ -98,10 +103,10 @@ pub async fn payment_method(
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to create checkout session");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::EgVault, "failed to create checkout session")
 			})?
 			.url
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?;
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::EgVault, "checkout session url is missing"))?;
 
 		Ok::<_, ApiError>(Json(PaymentMethodResponse { url }))
 	})

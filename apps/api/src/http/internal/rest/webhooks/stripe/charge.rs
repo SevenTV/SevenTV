@@ -6,7 +6,7 @@ use shared::database::product::InvoiceId;
 use shared::database::queries::{filter, update};
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
@@ -65,7 +65,10 @@ pub async fn dispute_updated(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to retrieve charge");
-		TransactionError::custom(ApiError::INTERNAL_SERVER_ERROR)
+		TransactionError::custom(ApiError::internal_server_error(
+			ApiErrorCode::StripeWebhook,
+			"failed to retrieve charge",
+		))
 	})?;
 
 	let Some(invoice_id) = charge.invoice.map(|i| InvoiceId::from(i.id())) else {

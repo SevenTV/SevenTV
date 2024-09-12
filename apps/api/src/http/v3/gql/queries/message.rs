@@ -9,7 +9,7 @@ use shared::database::role::permissions::EmoteModerationRequestPermission;
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
-use crate::http::error::ApiError;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::search::{search, SearchOptions};
 
@@ -103,14 +103,16 @@ pub struct ModRequestMessageList {
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl MessagesQuery {
 	async fn announcement<'ctx>(&self, ctx: &Context<'ctx>) -> Result<String, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		let message = global
 			.global_config_loader
 			.load(())
 			.await
-			.map_err(|()| ApiError::INTERNAL_SERVER_ERROR)?
-			.ok_or(ApiError::INTERNAL_SERVER_ERROR)?
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load global config"))?
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::GraphQL, "global config not found"))?
 			.alerts
 			.message;
 
@@ -131,7 +133,9 @@ impl MessagesQuery {
 		#[graphql(validator(max_length = 100))] wish: Option<String>,
 		#[graphql(validator(max_length = 100))] country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
-		let global: &Arc<Global> = ctx.data().map_err(|_| ApiError::INTERNAL_SERVER_ERROR)?;
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "missing global data"))?;
 
 		let wish = wish
 			.map(|w| match w.as_ref() {
@@ -162,7 +166,7 @@ impl MessagesQuery {
 			.await
 			.map_err(|err| {
 				tracing::error!(error = %err, "failed to search");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to search")
 			})?;
 
 		let requests = global
@@ -170,8 +174,7 @@ impl MessagesQuery {
 			.load_many(result.hits.iter().copied())
 			.await
 			.map_err(|()| {
-				tracing::error!("failed to load event");
-				ApiError::INTERNAL_SERVER_ERROR
+				ApiError::internal_server_error(ApiErrorCode::GraphQL, "failed to load emote moderation requests")
 			})?;
 
 		Ok(ModRequestMessageList {

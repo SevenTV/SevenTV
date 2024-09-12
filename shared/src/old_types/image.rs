@@ -19,7 +19,12 @@ impl ImageHost {
 			let split = path.split('/').collect::<Vec<_>>();
 			cdn_base_url
 				.join(&split.split_last()?.1.join("/"))
-				.map(|u| u.as_str().trim_start_matches("https:").trim_start_matches("http:").to_string())
+				.map(|u| {
+					u.as_str()
+						.trim_start_matches("https:")
+						.trim_start_matches("http:")
+						.to_string()
+				})
 				.ok()
 		});
 
