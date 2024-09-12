@@ -35,8 +35,8 @@ impl Job for RolesJob {
 		let mut ranks = HashSet::new();
 
 		ranks.insert(0); // Default
-		ranks.insert(5); // Subscriber
-		ranks.insert(6); // Contributor
+		ranks.insert(2); // Subscriber
+		ranks.insert(3); // Translator
 
 		Ok(RolesJob {
 			global,
@@ -51,16 +51,16 @@ impl Job for RolesJob {
 	async fn process(&mut self, role: Self::T) -> super::ProcessOutcome {
 		let mut outcome = ProcessOutcome::default();
 
-		let id = role.id.into();
-
-		let mut rank = role.position;
-
-		while !self.ranks.insert(rank) {
-			rank += 1;
-		}
-
 		// if this is the default role
 		if role.id != "62b48deb791a15a25c2a0354".parse().unwrap() && role.id != "6076a86b09a4c63a38ebe801".parse().unwrap() {
+			let id = role.id.into();
+
+			let mut rank = role.position;
+
+			while !self.ranks.insert(rank) {
+				rank += 1;
+			}
+
 			match Role::collection(self.global.target_db())
 				.insert_one(Role {
 					id,
@@ -139,7 +139,7 @@ impl Job for RolesJob {
 			tags: vec![],
 			hoist: false,
 			color: Some(-5635841),
-			rank: 5,
+			rank: 2,
 			applied_rank: None,
 			search_updated_at: None,
 			created_by: UserId::nil(),
@@ -154,7 +154,7 @@ impl Job for RolesJob {
 			tags: vec![],
 			hoist: false,
 			color: None,
-			rank: 6,
+			rank: 3,
 			applied_rank: None,
 			search_updated_at: None,
 			created_by: UserId::nil(),
