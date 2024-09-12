@@ -68,7 +68,7 @@
 	}
 
 	.dropped {
-		z-index: 1;
+		z-index: 10;
 
 		position: absolute;
 		top: 100%;

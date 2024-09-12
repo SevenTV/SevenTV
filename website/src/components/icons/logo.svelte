@@ -2,7 +2,7 @@
 	export let size = 28;
 </script>
 
-<svg width={size} height={size} viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width={size} height={size} {...$$restProps} viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 	<g id="logo">
 		<path
 			d="M20.7465 5.48825L21.9799 3.33745L22.646 2.20024L21.4125 0.0494437V0H14.8259L17.2928 4.3016L17.9836 5.48825H20.7465Z"

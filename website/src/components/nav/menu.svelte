@@ -221,7 +221,7 @@
 
 		text-align: left;
 
-		min-width: 16rem;
+		min-width: 14rem;
 	}
 
 	.profile {

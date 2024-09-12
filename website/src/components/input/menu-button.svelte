@@ -43,7 +43,7 @@
 <style lang="scss">
 	a,
 	button {
-		padding: 0.75rem 1.2rem;
+		padding: 0.8rem 0.75rem;
 		border-radius: 0.5rem;
 		color: var(--text);
 		font-size: 0.875rem;
@@ -52,11 +52,12 @@
 
 		display: flex;
 		align-items: center;
-		gap: 1.2rem;
+		gap: 0.8rem;
 
 		&:hover,
 		&:focus-visible {
 			background-color: var(--bg-light);
+			text-decoration: none;
 		}
 	}
 
