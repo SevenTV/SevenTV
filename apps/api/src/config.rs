@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
-use shared::config::{DatabaseConfig, ImageProcessorConfig, NatsConfig, RedisConfig, TypesenseConfig};
+use shared::config::{ClickhouseConfig, DatabaseConfig, ImageProcessorConfig, NatsConfig, RedisConfig, TypesenseConfig};
 use shared::ip::GeoIpConfig;
 
 #[auto_settings]
@@ -146,8 +146,8 @@ pub struct Config {
 	/// Database configuration
 	pub database: DatabaseConfig,
 
-	/// Database configuration
-	pub clickhouse: DatabaseConfig,
+	/// Clickhouse configuration
+	pub clickhouse: ClickhouseConfig,
 
 	/// NATs configuration
 	pub nats: NatsConfig,

@@ -652,6 +652,7 @@ impl UserOps {
 							update::update! {
 								#[query(set_on_insert)]
 								EntitlementEdge {
+									#[query(serde, rename = "_id")]
 									id: edge_id,
 								}
 							},

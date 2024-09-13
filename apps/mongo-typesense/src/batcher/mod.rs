@@ -8,7 +8,6 @@ use typesense_insert::TypesenseInsert;
 
 pub mod clickhouse;
 pub mod typesense_insert;
-pub mod updater;
 
 pub struct CollectionBatcher<M: SearchableMongoCollection>
 where

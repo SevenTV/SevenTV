@@ -8,9 +8,9 @@ use scuffle_foundations::batcher::{Batcher, BatcherConfig};
 use scuffle_foundations::telemetry::server::HealthCheck;
 use shared::clickhouse::emote_stat::EmoteStat;
 use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
+use shared::database::updater::MongoUpdater;
 
 use crate::batcher::clickhouse::ClickhouseInsert;
-use crate::batcher::updater::MongoUpdater;
 use crate::batcher::CollectionBatcher;
 use crate::config::Config;
 use crate::types::*;

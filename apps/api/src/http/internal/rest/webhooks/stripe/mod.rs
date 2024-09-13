@@ -143,7 +143,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 
 	match res {
 		Ok(Some(sub_id)) => {
-			sub_refresh_job::refresh(&global, &sub_id).await?;
+			sub_refresh_job::refresh(&global, sub_id).await?;
 			Ok(StatusCode::OK)
 		}
 		Ok(None) => Ok(StatusCode::OK),

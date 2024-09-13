@@ -7,6 +7,10 @@ use mongodb::bson::Bson;
 
 pub struct Id<S = ()>(ulid::Ulid, std::marker::PhantomData<S>);
 
+impl clickhouse::Row for Id {
+	const COLUMN_NAMES: &'static [&'static str] = &[];
+}
+
 impl<S> crate::typesense::types::TypesenseType for Id<S> {
 	fn typesense_type() -> crate::typesense::types::FieldType {
 		crate::typesense::types::FieldType::String

@@ -26,6 +26,7 @@ impl MessagesMutation {
 		&self,
 		ctx: &Context<'ctx>,
 		message_ids: Vec<GqlObjectId>,
+		read: bool,
 		approved: bool,
 	) -> Result<u32, ApiError> {
 		let global: &Arc<Global> = ctx
@@ -33,10 +34,12 @@ impl MessagesMutation {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let ids: Vec<EmoteModerationRequestId> = message_ids.into_iter().map(|id| id.id()).collect();
 
-		let status = if approved {
+		let status = if read && approved {
 			EmoteModerationRequestStatus::Approved
-		} else {
+		} else if read {
 			EmoteModerationRequestStatus::Denied
+		} else {
+			EmoteModerationRequestStatus::Pending
 		};
 
 		// TODO: events?

@@ -8,6 +8,7 @@ use crate::config::Config;
 
 mod config;
 mod connections;
+mod cron;
 mod dataloader;
 mod global;
 mod http;
@@ -57,6 +58,7 @@ async fn main(settings: Matches<Config>) {
 
 	let http_handle = tokio::spawn(http::run(global.clone()));
 	let image_processor_handle = tokio::spawn(image_processor::run(global.clone()));
+	let cron_handle = tokio::spawn(cron::run(global.clone()));
 
 	let handler = scuffle_foundations::context::Handler::global();
 
@@ -69,9 +71,12 @@ async fn main(settings: Matches<Config>) {
 			.ok();
 	});
 
+	tracing::info!("started api");
+
 	tokio::select! {
 		r = http_handle => tracing::warn!("http server exited: {:?}", r),
 		r = image_processor_handle => tracing::warn!("image processor handler exited: {:?}", r),
+		r = cron_handle => tracing::warn!("cron handler exited: {:?}", r),
 		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
 	}
 

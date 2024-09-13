@@ -558,9 +558,10 @@ impl UsersQuery {
 				"discord_names".to_owned(),
 			])
 			.query_by_weights(vec![4, 1, 1, 1])
-			.sort_by(vec!["role_rank:desc".to_owned(), "_text_match(buckets: 4):desc".to_owned()])
+			.sort_by(vec!["_text_match(buckets: 10):desc".to_owned(), "role_rank:desc".to_owned()])
 			.page(page)
 			.per_page(limit)
+			.prioritize_exact_match(true)
 			.exaustive(true)
 			.build();
 

@@ -5,6 +5,7 @@ pub mod loader;
 pub mod queries;
 pub mod serde;
 mod types;
+pub mod updater;
 
 pub use id::*;
 pub use types::*;
