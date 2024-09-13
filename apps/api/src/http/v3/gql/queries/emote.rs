@@ -426,16 +426,16 @@ impl EmotesQuery {
 		let mut sort_by = vec!["_text_match(buckets: 10):desc".to_owned()];
 
 		if let Some(filter) = &filter {
-			if let Some(animated) = filter.animated {
-				filters.push(format!("flag_animated: {animated}"));
+			if let Some(true) = filter.animated {
+				filters.push(format!("flag_animated: true"));
 			}
 
-			if let Some(zero_width) = filter.zero_width {
-				filters.push(format!("flag_default_zero_width: {zero_width}"));
+			if let Some(true) = filter.zero_width {
+				filters.push(format!("flag_default_zero_width: true"));
 			}
 
-			if let Some(personal_use) = filter.personal_use {
-				filters.push(format!("flag_approved_personal: {personal_use}"));
+			if let Some(true) = filter.personal_use {
+				filters.push(format!("flag_approved_personal: true"));
 			}
 
 			if let Some(true) = filter.exact_match {
@@ -490,7 +490,9 @@ impl EmotesQuery {
 			.per_page(limit)
 			.query_by(query_by)
 			.filter_by(filters.join(" && "))
+			.sort_by(sort_by)
 			.query_by_weights(query_by_weights)
+			.exaustive(true)
 			.build();
 
 		let result = search::<shared::typesense::types::emote::Emote>(global, options)
