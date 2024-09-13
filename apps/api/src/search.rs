@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
 
@@ -60,8 +62,8 @@ pub struct SearchOptions {
 }
 
 #[derive(Debug, Clone)]
-pub struct SearchResult<T: TypesenseCollection> {
-	pub hits: Vec<T::Id>,
+pub struct SearchResult<V> {
+	pub hits: Vec<V>,
 	pub found: u64,
 	// pub search_time_ms: u64,
 }
@@ -69,7 +71,7 @@ pub struct SearchResult<T: TypesenseCollection> {
 pub async fn search<T: TypesenseCollection>(
 	global: &Arc<Global>,
 	options: SearchOptions,
-) -> Result<SearchResult<T>, SearchError> {
+) -> Result<SearchResult<T::Id>, SearchError> {
 	#[derive(serde::Deserialize)]
 	struct SearchHit<T: TypesenseCollection> {
 		id: T::Id,
@@ -102,4 +104,14 @@ pub async fn search<T: TypesenseCollection>(
 		found: resp.found.unwrap_or(0).max(0) as u64,
 		// search_time_ms: resp.search_time_ms.unwrap_or(0).max(0) as u64,
 	})
+}
+
+pub fn sorted_results<'a, K: std::hash::Hash + Eq + 'a, V: 'a, B: Borrow<K> + 'a, H: IntoIterator<Item = B>>(
+	hits: H,
+	mut loaded: HashMap<K, V>,
+) -> impl IntoIterator<Item = V> + 'a
+where
+	H::IntoIter: 'a,
+{
+	hits.into_iter().filter_map(move |h| loaded.remove(h.borrow()))
 }

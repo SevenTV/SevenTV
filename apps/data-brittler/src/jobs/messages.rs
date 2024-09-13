@@ -99,7 +99,11 @@ impl Job for MessagesJob {
 				kind,
 				reason: None,
 				emote_id,
-				priority: if status == EmoteModerationRequestStatus::Pending { 100 } else { 0 },
+				priority: if status == EmoteModerationRequestStatus::Pending {
+					100
+				} else {
+					0
+				},
 				status,
 				country_code,
 				assigned_to: vec![],

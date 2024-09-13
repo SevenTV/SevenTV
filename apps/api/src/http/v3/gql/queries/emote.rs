@@ -16,7 +16,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::RateLimitGuard;
-use crate::search::{search, SearchOptions};
+use crate::search::{search, sorted_results, SearchOptions};
 
 #[derive(Default)]
 pub struct EmotesQuery;
@@ -162,10 +162,8 @@ impl Emote {
 
 		Ok(UserSearchResult {
 			total: result.found as u32,
-			items: result
-				.hits
+			items: sorted_results(result.hits, users)
 				.into_iter()
-				.filter_map(|id| users.get(&id).cloned())
 				.map(|u| UserPartial::from_db(global, u))
 				.collect(),
 		})
@@ -216,7 +214,10 @@ impl Emote {
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load event")
 			})?;
 
-		Ok(events.into_values().filter_map(AuditLog::from_db).collect())
+		Ok(sorted_results(result.hits, events)
+			.into_iter()
+			.filter_map(AuditLog::from_db)
+			.collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {
@@ -511,10 +512,8 @@ impl EmotesQuery {
 		Ok(EmoteSearchResult {
 			count: result.found as u32,
 			max_page: result.found as u32 / limit + 1,
-			items: result
-				.hits
+			items: sorted_results(result.hits, emotes)
 				.into_iter()
-				.filter_map(|id| emotes.get(&id).cloned())
 				.map(|e| Emote::from_db(global, e))
 				.collect(),
 		})
