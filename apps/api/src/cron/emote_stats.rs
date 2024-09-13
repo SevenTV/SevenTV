@@ -41,7 +41,7 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 		global
 			.clickhouse
 			.query("SELECT sum(count) count, emote_id FROM emote_stats WHERE date >= ? GROUP BY emote_id")
-			.bind((now - time::Duration::days(1)).to_string())
+			.bind((now - time::Duration::days(2)).to_string())
 			.fetch(),
 		|EmoteStat { emote_id, count }| {
 			scores.entry(emote_id).or_default().top_daily = count as i32;
