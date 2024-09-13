@@ -46,7 +46,9 @@ fn cors_layer(global: &Arc<Global>) -> CorsLayer {
 	let allow_credentials = AllowCredentials::predicate(move |origin, _| {
 		origin
 			.to_str()
-			.map(|o| o == website_origin.as_str() || o == api_origin.as_str())
+			.ok()
+			.and_then(|o| url::Url::parse(o).ok())
+			.map(|o| o.origin() == website_origin.origin() || o.origin() == api_origin.origin())
 			.unwrap_or_default()
 	});
 
