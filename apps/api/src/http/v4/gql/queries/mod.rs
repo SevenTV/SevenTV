@@ -1,4 +1,8 @@
-use async_graphql::MergedObject;
+use async_graphql::SimpleObject;
 
-#[derive(Default, MergedObject)]
-pub struct Query;
+mod emote;
+
+#[derive(Default, SimpleObject)]
+pub struct Query {
+    emotes: emote::EmoteQuery,
+}

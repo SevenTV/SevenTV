@@ -11,6 +11,7 @@ use crate::http::guards::RateLimitResponseStore;
 use crate::{global::Global, http::middleware::session::Session};
 
 mod queries;
+mod types;
 
 pub type V3Schema = Schema<queries::Query, EmptyMutation, EmptySubscription>;
 
