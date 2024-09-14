@@ -67,7 +67,7 @@
 				font-weight: 400;
 
 				a {
-					color: var(--subscriber);
+					color: var(--store);
 				}
 			}
 		}
@@ -80,7 +80,7 @@
             justify-content: flex-end;
 
 			& > *:hover {
-				color: var(--subscriber);
+				color: var(--store);
 			}
 		}
 

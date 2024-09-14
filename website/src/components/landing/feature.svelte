@@ -70,7 +70,7 @@
             }
 
             a {
-                color: var(--subscriber);
+                color: var(--store);
                 font-size: 1rem;
                 font-weight: 600;
             }

@@ -14,7 +14,7 @@
 			secondary
 			hideOnMobile
 			on:click={() => (subbed = true)}
-			style={subbed && "color: var(--subscriber)"}
+			style={subbed && "color: var(--store)"}
 		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<span>
@@ -28,7 +28,7 @@
 			secondary
 			hideOnDesktop
 			on:click={() => (subbed = true)}
-			style={subbed && "color: var(--subscriber)"}
+			style={subbed && "color: var(--store)"}
 		>
 			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
 			<CaretDown slot="icon-right" />

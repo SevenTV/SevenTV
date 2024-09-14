@@ -64,7 +64,7 @@
 	}
 
 	.name {
-		color: var(--subscriber);
+		color: var(--store);
 		font-size: 0.875rem;
 		font-weight: 600;
 	}

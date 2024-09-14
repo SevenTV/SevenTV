@@ -15,7 +15,6 @@
 	export let secondary: boolean = false;
 
 	export let big: boolean = false;
-	export let textSize: string = "0.875rem";
 	export let submit: boolean = false;
 
 	export let hideOnMobile: boolean = false;
@@ -37,7 +36,6 @@
 		class:icon-right={$$slots["icon-right"]}
 		class:hide-on-mobile={hideOnMobile}
 		class:hide-on-desktop={hideOnDesktop}
-		style:font-size={textSize}
 	>
 		<slot name="icon" />
 		<slot />
@@ -58,7 +56,6 @@
 		class:icon-right={$$slots["icon-right"]}
 		class:hide-on-mobile={hideOnMobile}
 		class:hide-on-desktop={hideOnDesktop}
-		style:font-size={textSize}
 	>
 		<slot name="icon" />
 		<slot />
@@ -79,6 +76,7 @@
 		transition: background-color 0.1s;
 		white-space: nowrap;
 		user-select: none;
+		font-size: 0.875rem;
 
 		display: flex;
 		align-items: center;

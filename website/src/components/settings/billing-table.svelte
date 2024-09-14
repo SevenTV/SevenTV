@@ -30,11 +30,11 @@
 					<td>
 						<div class="items">
 							<div class="item">
-								<Star color="var(--subscriber)" />
+								<Star color="var(--store)" />
 								<span>Subscription - Tier 1</span>
 							</div>
 							<div class="item">
-								<PaintBrush color="var(--subscriber)" />
+								<PaintBrush color="var(--store)" />
 								<span>Paint Bundle - Candy</span>
 							</div>
 						</div>

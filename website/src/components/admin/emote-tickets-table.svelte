@@ -87,7 +87,7 @@
 				<td>
 					<a href="/user/uploader" class="uploader">
 						Username
-						<SealCheck size="1rem" weight="fill" color="var(--subscriber)" />
+						<SealCheck size="1rem" weight="fill" color="var(--store)" />
 					</a>
 				</td>
 				<td>{numberFormat().format(999)}</td>

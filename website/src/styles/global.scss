@@ -80,14 +80,14 @@ textarea {
 	color: var(--text);
 	font-size: 0.875rem;
 
+	transition: background-color 0.1s;
+
 	&::-webkit-input-placeholder,
 	&::-moz-placeholder,
 	&::-ms-input-placeholder,
 	&::placeholder {
 		font-weight: 500;
 	}
-
-	transition: background-color 0.1s;
 
 	&:focus-visible {
 		background-color: var(--secondary-hover);

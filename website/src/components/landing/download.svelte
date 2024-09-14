@@ -26,7 +26,7 @@
 	</p>
 	<div class="buttons">
         <DropDown>
-            <Button primary textSize="1em">
+            <Button primary style="font-size: 1em;">
                 <Logo size={1.25 * 16} slot="icon" />
                 Web Extension
                 <CaretDown slot="icon-right" />
@@ -36,7 +36,7 @@
             </div>
         </DropDown>
         <DropDown>
-            <Button secondary textSize="1em">
+            <Button secondary style="font-size: 1em;">
                 <ChatterinoLogo slot="icon" />
                 Chatterino
                 <CaretDown slot="icon-right" />
@@ -46,7 +46,7 @@
             </div>
         </DropDown>
         <DropDown>
-            <Button secondary textSize="1em">
+            <Button secondary style="font-size: 1em;">
                 <DeviceMobile slot="icon" />
                 Mobile Apps
                 <CaretDown slot="icon-right" />

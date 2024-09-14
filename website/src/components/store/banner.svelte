@@ -19,6 +19,17 @@
 
 		color: white;
 
+		background-color: var(--bg-medium);
+		border-radius: 0.5rem;
+
+		min-width: 12rem;
+		min-height: 11.25rem;
+		padding: 1.25rem 2.5rem;
+
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+
 		&::before {
 			content: "";
 			position: absolute;
@@ -50,17 +61,6 @@
 			mask-size: 100% 400%;
 			animation: fade-in 0.5s linear forwards;
 		}
-
-		background-color: var(--bg-medium);
-		border-radius: 0.5rem;
-
-		min-width: 12rem;
-		min-height: 11.25rem;
-		padding: 1.25rem 2.5rem;
-
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
 
 		h1 {
 			font-size: 1.875rem;

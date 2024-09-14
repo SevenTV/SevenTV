@@ -36,6 +36,8 @@
 		--gap: 0.5rem;
 		--input-block-padding: 0.5rem;
 
+		position: relative;
+
 		&.big {
 			--icon-left-padding: 1rem;
 			--gap: 0.75rem;
@@ -50,8 +52,6 @@
 		textarea {
 			height: 7lh;
 		}
-
-		position: relative;
 
 		.icon {
 			position: absolute;

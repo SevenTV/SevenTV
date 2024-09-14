@@ -16,8 +16,8 @@
 			</p>
 		</div>
 		<div class="buttons">
-			<Button primary textSize="1rem" href="#download">Download</Button>
-			<Button textSize="1rem" href="#learn-more">Learn More</Button>
+			<Button primary style="font-size: 1em;" href="#download">Download</Button>
+			<Button style="font-size: 1em;" href="#learn-more">Learn More</Button>
 		</div>
 	</div>
 	<img class="hero-image hide-on-mobile" src="/landing-page-placeholder.png" alt="7TV" />

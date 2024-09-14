@@ -63,7 +63,7 @@
 		<a class="field" href="/user/username">
 			<User />
 			Username
-			<SealCheck weight="fill" color="var(--subscriber)" />
+			<SealCheck weight="fill" color="var(--store)" />
 		</a>
 		<div class="field from-now">
 			<Clock />

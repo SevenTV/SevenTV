@@ -214,6 +214,12 @@
 	.emote-info {
 		margin-top: 0.5rem;
 
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		align-items: center;
+		gap: 2rem;
+
 		.heading {
 			display: flex;
 			flex-direction: column;
@@ -225,12 +231,6 @@
 				font-weight: 600;
 			}
 		}
-
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
-		align-items: center;
-		gap: 2rem;
 
 		.previews {
 			display: flex;

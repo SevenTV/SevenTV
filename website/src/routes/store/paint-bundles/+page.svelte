@@ -156,8 +156,8 @@
 			}
 
 			.new {
-				color: var(--subscriber);
-				border: 1px solid var(--subscriber);
+				color: var(--store);
+				border: 1px solid var(--store);
 				padding: 0.2rem 0.5rem;
 				border-radius: 0.25rem;
 				font-size: 0.625rem;

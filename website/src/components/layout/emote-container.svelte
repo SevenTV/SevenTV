@@ -16,16 +16,16 @@
 
 <style lang="scss">
 	.emotes {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+		place-items: center;
+		gap: 1rem;
+
 		&.scrollable {
 			overflow: auto;
 			overflow: overlay;
 			scrollbar-gutter: stable;
 		}
-
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-		place-items: center;
-		gap: 1rem;
 
 		&.small-grid {
 			grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));

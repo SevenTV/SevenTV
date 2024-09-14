@@ -31,7 +31,7 @@
 					<tr>
 						<td class="name">
 							<div class="center">
-								<Star color="var(--subscriber)" />
+								<Star color="var(--store)" />
 								Tier 1 Subscription
 							</div>
 						</td>
