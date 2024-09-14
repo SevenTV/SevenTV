@@ -25,7 +25,6 @@ pub use image_file::*;
 pub use message::*;
 pub use price::*;
 pub use report::*;
-pub use role::*;
 pub use subscription::*;
 pub use system::*;
 pub use user::*;

@@ -428,15 +428,15 @@ impl EmotesQuery {
 
 		if let Some(filter) = &filter {
 			if let Some(true) = filter.animated {
-				filters.push(format!("flag_animated: true"));
+				filters.push("flag_animated: true".to_string());
 			}
 
 			if let Some(true) = filter.zero_width {
-				filters.push(format!("flag_default_zero_width: true"));
+				filters.push("flag_default_zero_width: true".to_string());
 			}
 
 			if let Some(true) = filter.personal_use {
-				filters.push(format!("flag_approved_personal: true"));
+				filters.push("flag_approved_personal: true".to_string());
 			}
 
 			if let Some(true) = filter.exact_match {
