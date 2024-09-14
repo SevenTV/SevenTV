@@ -2,7 +2,7 @@ use async_graphql::SimpleObject;
 
 #[derive(Debug, Clone, SimpleObject)]
 pub struct Image {
-    pub path: String,
+    pub url: String,
 	pub mime: String,
 	pub size: i64,
 	pub width: i32,
@@ -10,10 +10,10 @@ pub struct Image {
 	pub frame_count: i32,
 }
 
-impl for Image {
-    pub fn from_db(value: shared::database::image_set::Image, cdn_bas_url: &url::Url) -> Self {
+impl Image {
+    pub fn from_db(value: shared::database::image_set::Image, cdn_base_url: &url::Url) -> Self {
         Self {
-            path: value.path,
+            url: value.get_url(cdn_base_url),
             mime: value.mime,
             size: value.size,
             width: value.width,
