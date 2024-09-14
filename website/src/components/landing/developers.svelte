@@ -9,13 +9,13 @@
         <GithubLogo size="2.5rem" />
         <h2>Source-Available</h2>
         <p>Our entire codebase is available on GitHub with a source-available license. Anyone can view and contribute.</p>
-        <Button primary big>Contribute</Button>
+        <Button primary big href={import.meta.env.VITE_GITHUB_LINK}>Contribute</Button>
     </div>
     <div class="column">
         <Code size="2.5rem" />
         <h2>Developer Portal</h2>
         <p>This area exists to provide documentation for developers to integrate with our API. </p>
-        <Button primary big>Get Started</Button>
+        <Button primary big href={import.meta.env.VITE_DEVELOPER_PORTAL}>Get Started</Button>
     </div>
 </section>
 

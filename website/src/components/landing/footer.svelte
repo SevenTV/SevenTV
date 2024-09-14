@@ -19,13 +19,13 @@
         </div>
         <div class="links">
             <a href="/faq">FAQ</a>
-            <a href="https://7tv.io/">Developer Portal</a>
+            <a href={import.meta.env.VITE_DEVELOPER_PORTAL}>Developer Portal</a>
             <a href="/contact">Contact</a>
         </div>
         <div class="socials">
-            <a href="https://x.com/Official_7TV"><XTwitterLogo size="1.6rem" /></a>
-            <a href="https://github.com/SevenTV"><GithubLogo size="1.6rem" /></a>
-            <a href="https://discord.gg/7tv"><DiscordLogo size="1.6rem" /></a>
+            <a href={import.meta.env.VITE_TWITTER_LINK}><XTwitterLogo size="1.6rem" /></a>
+            <a href={import.meta.env.VITE_GITHUB_LINK}><GithubLogo size="1.6rem" /></a>
+            <a href={import.meta.env.VITE_DISCORD_LINK}><DiscordLogo size="1.6rem" /></a>
         </div>
     </div>
     <hr />

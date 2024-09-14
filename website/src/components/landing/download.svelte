@@ -52,9 +52,9 @@
                 <CaretDown slot="icon-right" />
             </Button>
             <div slot="dropdown" class="apps-dropdown">
-                <MenuButton href="https://chatsen.app/?referrer=7tv.app">Chatsen</MenuButton>
-                <MenuButton href="https://www.frostyapp.io/?referrer=7tv.app">Frosty</MenuButton>
-                <MenuButton href="https://dank.chat/?referrer=7tv.app">DankChat</MenuButton>
+                <MenuButton href={import.meta.env.VITE_CHATSEN_LINK}>Chatsen</MenuButton>
+                <MenuButton href={import.meta.env.VITE_FROSTY_LINK}>Frosty</MenuButton>
+                <MenuButton href={import.meta.env.VITE_DANK_CHAT_LINK}>DankChat</MenuButton>
             </div>
         </DropDown>
 	</div>

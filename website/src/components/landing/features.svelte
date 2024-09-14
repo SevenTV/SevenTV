@@ -39,7 +39,7 @@
 			title="Large Community"
 			description="7TV serves 2,000,000+ daily unique users and has a library of over 1,000,000 public emotes."
 			link="Join our Discord"
-			href="https://discord.gg/7tv"
+			href={import.meta.env.VITE_DISCORD_LINK}
 		/>
 		<Feature
 			image="/battery.png"

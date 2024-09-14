@@ -76,10 +76,10 @@
 				<Smiley />
 				{$t("common.emotes", { values: { count: 2 } })}
 			</MenuButton>
-			<MenuButton href="/discover">
+			<!-- <MenuButton href="/discover">
 				<Compass />
 				{$t("pages.discover.title")}
-			</MenuButton>
+			</MenuButton> -->
 			<MenuButton href="/store" style="color: var(--store)">
 				<Star />
 				{$t("pages.store.title")}
@@ -99,10 +99,10 @@
 			<hr class="hide-on-mobile" />
 		{/if}
 		<div class="link-list">
-			<MenuButton showCaret on:click={(e) => setMenu(e, Menu.Language)}>
+			<!-- <MenuButton showCaret on:click={(e) => setMenu(e, Menu.Language)}>
 				<GlobeHemisphereWest />
 				{$t("common.language")}
-			</MenuButton>
+			</MenuButton> -->
 			<MenuButton showCaret on:click={(e) => setMenu(e, Menu.Theme)}>
 				<Moon />
 				{$t("common.theme")}
@@ -120,11 +120,11 @@
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<MenuButton href="https://7tv.io/">
+			<MenuButton href={import.meta.env.VITE_DEVELOPER_PORTAL}>
 				<Code />
 				{$t("common.developer_portal")}
 			</MenuButton>
-			<MenuButton href="/contact">
+			<!-- <MenuButton href="/contact">
 				<ChatDots />
 				{$t("common.contact")}
 			</MenuButton>
@@ -139,7 +139,7 @@
 			<MenuButton href="/tos">
 				<Note />
 				{$t("common.tos")}
-			</MenuButton>
+			</MenuButton> -->
 		</div>
 		{#if $user}
 			<hr class="hide-on-mobile" />
