@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CaretDown, DeviceMobile } from "phosphor-svelte";
+	import { CaretDown, DeviceMobile, Download } from "phosphor-svelte";
 	import Logo from "../icons/logo.svelte";
 	import Button from "../input/button.svelte";
 	import ChatterinoLogo from "../icons/chatterino-logo.svelte";
@@ -45,7 +45,7 @@
                 Idk why this is a dropdown
             </div>
         </DropDown>
-        <DropDown>
+        <DropDown align="left">
             <Button secondary style="font-size: 1em;">
                 <DeviceMobile slot="icon" />
                 Mobile Apps
@@ -95,6 +95,8 @@
 		}
         
         .apps-dropdown {
+            min-width: 10rem;
+
             display: flex;
             flex-direction: column;
         }

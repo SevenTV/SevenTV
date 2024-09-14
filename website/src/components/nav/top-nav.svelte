@@ -112,9 +112,9 @@
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
-			<Button primary on:click={() => ($signInDialogMode = DialogMode.Shown)}>
+			<!-- <Button primary on:click={() => ($signInDialogMode = DialogMode.Shown)}>
 				{$t("common.sign_in")}
-			</Button>
+			</Button> -->
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}

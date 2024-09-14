@@ -71,7 +71,7 @@
 				height: 0.5rem;
 				width: 0.5rem;
 				border-radius: 50%;
-				background-color: white;
+				background-color: var(--secondary);
 
 				transform: scale(0);
 				transition: transform 0.1s;

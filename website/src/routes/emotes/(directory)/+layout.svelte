@@ -16,6 +16,7 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
+	import { user } from "$/lib/stores";
 
 	let sortAsc = false;
 
@@ -54,15 +55,17 @@
 				<FolderSimple />
 				<FolderSimple weight="fill" slot="active" />
 			</TabLink>
-			<TabLink
-				href="/emotes/bookmarked"
-				title={$t("pages.directory.bookmarked")}
-				big
-				matcher={menuMatcher}
-			>
-				<BookmarkSimple />
-				<BookmarkSimple weight="fill" slot="active" />
-			</TabLink>
+			{#if $user}
+				<TabLink
+					href="/emotes/bookmarked"
+					title={$t("pages.directory.bookmarked")}
+					big
+					matcher={menuMatcher}
+				>
+					<BookmarkSimple />
+					<BookmarkSimple weight="fill" slot="active" />
+				</TabLink>
+			{/if}
 		</nav>
 		<hr />
 		<Expandable title={$t("labels.search")}>
@@ -70,10 +73,10 @@
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</Expandable>
-		<Expandable title={$t("labels.tags")}>
+		<Expandable title={$t("labels.tags")} expanded={false}>
 			<TagsInput />
 		</Expandable>
-		<Expandable title={$t("pages.directory.sorting.title")}>
+		<Expandable title={$t("pages.directory.sorting.title")} expanded={false}>
 			<div class="row">
 				<Select
 					options={[
@@ -93,7 +96,7 @@
 				</Button>
 			</div>
 		</Expandable>
-		<Expandable title={$t("labels.filters")}>
+		<Expandable title={$t("labels.filters")} expanded={false}>
 			<div class="filters">
 				<Checkbox>{$t("pages.directory.filters.animated")}</Checkbox>
 				<Checkbox>{$t("pages.directory.filters.static")}</Checkbox>
@@ -102,7 +105,7 @@
 				<Checkbox>{$t("pages.directory.filters.exact_match")}</Checkbox>
 			</div>
 		</Expandable>
-		<Expandable title={$t("pages.directory.size.title")}>
+		<Expandable title={$t("pages.directory.size.title")} expanded={false}>
 			<div class="row">
 				<Select
 					options={[

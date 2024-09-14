@@ -2,8 +2,7 @@
 	import { CaretDown } from "phosphor-svelte";
 
 	export let title: string;
-
-	let expanded = true;
+	export let expanded = true;
 </script>
 
 <div class="expandable" {...$$restProps}>
