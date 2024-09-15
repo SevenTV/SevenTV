@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use std::hash::Hash;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -44,20 +42,22 @@ impl StripeClientManager {
 	/// This function returns a safe stripe client with idempotency.
 	/// The safe client should be used for all requests that could potentially
 	/// be retried. (e.g. in a database transaction)
-	pub async fn safe<T>(&self) -> SafeStripeClient<T> {
+	pub async fn safe<T>(&self, key: impl std::fmt::Display) -> SafeStripeClient<T> {
 		SafeStripeClient {
-			idempotency: Arc::new(spin::Mutex::new(HashMap::new())),
 			semaphore: Arc::clone(&self.semaphore),
+			key: key.to_string(),
 			client: self.client.clone(),
+			_marker: std::marker::PhantomData,
 		}
 	}
 }
 
 #[derive(Clone)]
 pub struct SafeStripeClient<T> {
-	idempotency: Arc<spin::Mutex<HashMap<T, stripe::RequestStrategy>>>,
 	client: stripe::Client,
+	key: String,
 	semaphore: Arc<tokio::sync::Semaphore>,
+	_marker: std::marker::PhantomData<T>,
 }
 
 impl<T> SafeStripeClient<T> {
@@ -66,18 +66,14 @@ impl<T> SafeStripeClient<T> {
 	/// the same by stripe.
 	pub async fn client(&self, key: T) -> StripeClient
 	where
-		T: Eq + Hash,
+		T: std::fmt::Display,
 	{
 		let permit = Arc::clone(&self.semaphore).acquire_owned().await.expect("semaphore closed");
 
-		let strategy = self
-			.idempotency
-			.lock()
-			.entry(key)
-			.or_insert_with(stripe::RequestStrategy::idempotent_with_uuid)
-			.clone();
-
-		let inner = self.client.clone().with_strategy(strategy);
+		let inner = self
+			.client
+			.clone()
+			.with_strategy(stripe::RequestStrategy::Idempotent(format!("{}:{}", self.key, key)));
 
 		StripeClient { inner, _permit: permit }
 	}

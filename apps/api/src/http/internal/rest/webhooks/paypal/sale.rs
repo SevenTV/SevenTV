@@ -16,12 +16,23 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub enum StripeRequest {
 	CreateCustomer,
 	CreateInvoice,
 	FinalizeInvoice,
 	VoidInvoice,
+}
+
+impl std::fmt::Display for StripeRequest {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::CreateCustomer => write!(f, "create_customer"),
+			Self::CreateInvoice => write!(f, "create_invoice"),
+			Self::FinalizeInvoice => write!(f, "finalize_invoice"),
+			Self::VoidInvoice => write!(f, "void_invoice"),
+		}
+	}
 }
 
 pub async fn completed(

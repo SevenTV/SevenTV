@@ -41,6 +41,17 @@ pub enum StripeRequest {
 	PaidRetrieveSubscription,
 }
 
+impl std::fmt::Display for StripeRequest {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::CreatedRetrieveSubscription => write!(f, "created_retrieve_subscription"),
+			Self::CreatedRetrieveCustomer => write!(f, "created_retrieve_customer"),
+			Self::CreatedFinalizeInvoice => write!(f, "created_finalize_invoice"),
+			Self::PaidRetrieveSubscription => write!(f, "paid_retrieve_subscription"),
+		}
+	}
+}
+
 /// Creates the invoice object and finalize it.
 pub async fn created(
 	_global: &Arc<Global>,

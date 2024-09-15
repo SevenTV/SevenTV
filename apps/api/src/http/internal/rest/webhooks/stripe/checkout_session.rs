@@ -19,6 +19,16 @@ pub enum StripeRequest {
 	SubscriptionUpdate,
 }
 
+impl std::fmt::Display for StripeRequest {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::RetrieveSetupIntent => write!(f, "retrieve_setup_intent"),
+			Self::UpdateCustomer => write!(f, "update_customer"),
+			Self::SubscriptionUpdate => write!(f, "subscription_update"),
+		}
+	}
+}
+
 pub async fn completed(
 	global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,

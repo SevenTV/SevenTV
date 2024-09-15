@@ -8,7 +8,6 @@ use shared::database::webhook_event::WebhookEvent;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::stripe_client::SafeStripeClient;
 use crate::sub_refresh_job;
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -21,10 +20,21 @@ mod subscription;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum StripeRequest {
-	Price(price::StripeRequest),
+	Price,
 	CheckoutSession(checkout_session::StripeRequest),
 	Invoice(invoice::StripeRequest),
-	Charge(charge::StripeRequest),
+	Charge,
+}
+
+impl std::fmt::Display for StripeRequest {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Price => write!(f, "price"),
+			Self::CheckoutSession(r) => write!(f, "checkout_session:{}", r),
+			Self::Invoice(r) => write!(f, "invoice:{}", r),
+			Self::Charge => write!(f, "charge"),
+		}
+	}
 }
 
 pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, payload: String) -> Result<StatusCode, ApiError> {
@@ -40,6 +50,8 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 
 	// TODO: verify request is coming from stripe ip
 	// https://docs.stripe.com/ips#webhook-notifications
+
+	let stripe_client = global.stripe_client.safe(&event.id).await;
 
 	let res = with_transaction(&global, |mut tx| {
 		let global = Arc::clone(&global);
@@ -69,8 +81,6 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				// already processed
 				return Ok(None);
 			}
-
-			let stripe_client: SafeStripeClient<StripeRequest> = global.stripe_client.safe().await;
 
 			let prev_attributes = event.data.previous_attributes;
 

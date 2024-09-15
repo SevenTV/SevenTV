@@ -133,7 +133,7 @@ pub async fn handle(
 		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to deserialize payload")
 	})?;
 
-	let stripe_client = global.stripe_client.safe().await;
+	let stripe_client = global.stripe_client.safe(&event.id).await;
 
 	let res = with_transaction(&global, |mut tx| {
 		let global = Arc::clone(&global);

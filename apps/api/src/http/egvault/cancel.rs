@@ -8,6 +8,7 @@ use axum::Extension;
 use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
+use shared::database::Id;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -40,7 +41,7 @@ pub async fn cancel_subscription(
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, &session);
 
 	req.http(&global, async {
-		let stripe_client = global.stripe_client.safe().await;
+		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
 		let res = with_transaction(&global, |mut tx| {
 			let global = Arc::clone(&global);
@@ -71,7 +72,7 @@ pub async fn cancel_subscription(
 				match period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
 						stripe::Subscription::update(
-							stripe_client.client(()).await.deref(),
+							stripe_client.client("update").await.deref(),
 							&id,
 							stripe::UpdateSubscription {
 								cancel_at_period_end: Some(true),
@@ -177,7 +178,7 @@ pub async fn reactivate_subscription(
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, &session);
 
 	req.http(&global, async {
-		let stripe_client = global.stripe_client.safe().await;
+		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
 		let res = with_transaction(&global, |mut tx| async move {
 			let period = tx
@@ -204,7 +205,7 @@ pub async fn reactivate_subscription(
 			match period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
 					stripe::Subscription::update(
-						stripe_client.client(()).await.deref(),
+						stripe_client.client("update").await.deref(),
 						&id,
 						stripe::UpdateSubscription {
 							cancel_at_period_end: Some(false),

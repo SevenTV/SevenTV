@@ -11,6 +11,7 @@ use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::RateLimitResource;
 use shared::database::user::UserId;
+use shared::database::Id;
 
 use super::metadata::{CheckoutSessionMetadata, StripeMetadata, SubscriptionMetadata};
 use super::{create_checkout_session_params, find_or_create_customer};
@@ -89,10 +90,19 @@ pub struct RedeemResponse {
 	items: Vec<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 enum StripeRequest {
 	CreateCustomer,
 	CreateCheckoutSession,
+}
+
+impl std::fmt::Display for StripeRequest {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::CreateCustomer => write!(f, "create_customer"),
+			Self::CreateCheckoutSession => write!(f, "create_checkout_session"),
+		}
+	}
 }
 
 pub async fn redeem(
@@ -106,7 +116,7 @@ pub async fn redeem(
 	req.http(&global, async {
 		let session = &session;
 
-		let stripe_client = global.stripe_client.safe().await;
+		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
 		let res = with_transaction(&global, |mut tx| {
 			let global = Arc::clone(&global);
