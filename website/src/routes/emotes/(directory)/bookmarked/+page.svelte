@@ -8,8 +8,8 @@
 	<title>{$t("page_titles.bookmarked_emotes")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
-<EmoteContainer scrollable>
+<!-- <EmoteContainer scrollable>
 	{#each Array(100) as _, i}
 		<EmotePreview index={i} name="bookmarkedEmote{i}" />
 	{/each}
-</EmoteContainer>
+</EmoteContainer> -->

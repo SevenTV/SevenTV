@@ -3,8 +3,8 @@
 	import EmotePreview from "$/components/emote-preview.svelte";
 </script>
 
-<EmoteContainer>
+<!-- <EmoteContainer>
 	{#each Array(100) as _, i}
 		<EmotePreview name="uploadedEmote1" index={i} />
 	{/each}
-</EmoteContainer>
+</EmoteContainer> -->

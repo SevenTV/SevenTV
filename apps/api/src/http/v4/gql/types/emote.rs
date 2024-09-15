@@ -1,9 +1,14 @@
-use async_graphql::SimpleObject;
+use std::sync::Arc;
+
+use async_graphql::{ComplexObject, SimpleObject, Context};
 use shared::database::{emote::EmoteId, user::UserId};
 
-use super::Image;
+use crate::{global::Global, http::error::{ApiError, ApiErrorCode}};
+
+use super::{Image, User};
 
 #[derive(Debug, Clone, SimpleObject)]
+#[graphql(complex)]
 pub struct Emote {
 	pub id: EmoteId,
 	pub owner_id: UserId,
@@ -16,6 +21,24 @@ pub struct Emote {
 	pub scores: EmoteScores,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[ComplexObject]
+impl Emote {
+	pub async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let user = global
+			.user_loader
+			.load(global, self.owner_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+
+		Ok(user.into())
+	}
 }
 
 impl Emote {

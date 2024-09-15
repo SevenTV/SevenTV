@@ -1,5 +1,5 @@
 <script lang="ts">
-	export let value = "";
+	export let value: string | null = null;
 	export let type: "text" | "email" | "password" | "textarea" = "text";
 	export let placeholder: string | null = null;
 

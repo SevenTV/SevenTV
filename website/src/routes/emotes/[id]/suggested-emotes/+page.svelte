@@ -20,11 +20,11 @@
 		</Button>
 	</div>
 </div>
-<EmoteContainer style="margin-top: 1.5rem">
+<!-- <EmoteContainer style="margin-top: 1.5rem">
 	{#each Array(10) as _, i}
 		<EmotePreview index={i} name="suggestedEmote{i}" bg="light" />
 	{/each}
-</EmoteContainer>
+</EmoteContainer> -->
 
 <style lang="scss">
 	.navigation {

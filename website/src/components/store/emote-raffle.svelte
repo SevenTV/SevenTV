@@ -12,7 +12,7 @@
 		<Button>
 			<CaretLeft slot="icon" />
 		</Button>
-		<EmotePreview bg="light" />
+		<!-- <EmotePreview bg="light" /> -->
 		<Button>
 			<CaretRight slot="icon" />
 		</Button>

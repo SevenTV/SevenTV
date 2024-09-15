@@ -43,11 +43,11 @@
 			/>
 		</HideOn>
 	</div>
-	<HideOn mobile>
+	<!-- <HideOn mobile>
 		<TextInput placeholder={$t("labels.search")} big style="flex: 0 1 20rem">
 			<MagnifyingGlass slot="icon" />
 		</TextInput>
-	</HideOn>
+	</HideOn> -->
 	<div class="user-actions">
 		<Button hideOnDesktop>
 			<MagnifyingGlass slot="icon" />

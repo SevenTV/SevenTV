@@ -13,11 +13,11 @@
 	<div class="layout">
 		<h1>{$t("dialogs.copy_emotes.title")}</h1>
 		<hr />
-		<EmoteContainer layout={Layout.SmallGrid} style="max-height: 11rem" scrollable>
+		<!-- <EmoteContainer layout={Layout.SmallGrid} style="max-height: 11rem" scrollable>
 			{#each Array(100) as _, i}
 				<EmotePreview index={i} emoteOnly />
 			{/each}
-		</EmoteContainer>
+		</EmoteContainer> -->
 		<EmoteSetPicker />
 	</div>
 </Dialog>

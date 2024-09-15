@@ -25,7 +25,7 @@
 			</span>
 		</div>
 		<div class="emotes">
-			<EmotePreview bg="light" />
+			<!-- <EmotePreview bg="light" /> -->
 		</div>
 	</div>
 	<div class="upload">
@@ -44,10 +44,10 @@
 			</span>
 		</div>
 		<div class="emotes">
+			<!-- <EmotePreview bg="light" />
 			<EmotePreview bg="light" />
 			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
+			<EmotePreview bg="light" /> -->
 		</div>
 	</div>
 	<div class="upload">
@@ -66,10 +66,10 @@
 			</span>
 		</div>
 		<div class="emotes">
+			<!-- <EmotePreview bg="light" />
 			<EmotePreview bg="light" />
 			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
+			<EmotePreview bg="light" /> -->
 		</div>
 	</div>
 	<div class="upload">
@@ -88,10 +88,10 @@
 			</span>
 		</div>
 		<div class="emotes">
+			<!-- <EmotePreview bg="light" />
 			<EmotePreview bg="light" />
 			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
+			<EmotePreview bg="light" /> -->
 		</div>
 	</div>
 	<div class="upload">
@@ -110,8 +110,8 @@
 			</span>
 		</div>
 		<div class="emotes">
-			<EmotePreview bg="light" />
-			<EmotePreview bg="light" />
+			<!-- <EmotePreview bg="light" />
+			<EmotePreview bg="light" /> -->
 		</div>
 	</div>
 	<div class="upload">
@@ -130,7 +130,7 @@
 			</span>
 		</div>
 		<div class="emotes">
-			<EmotePreview bg="light" />
+			<!-- <EmotePreview bg="light" /> -->
 		</div>
 	</div>
 	<div class="upload">
@@ -149,7 +149,7 @@
 			</span>
 		</div>
 		<div class="emotes">
-			<EmotePreview bg="light" />
+			<!-- <EmotePreview bg="light" /> -->
 		</div>
 	</div>
 </div>

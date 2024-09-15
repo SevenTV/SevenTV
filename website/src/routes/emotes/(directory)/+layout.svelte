@@ -1,23 +1,32 @@
 <script lang="ts">
 	import Expandable from "$/components/expandable.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
-	import Select from "$/components/input/select.svelte";
-	import {
-		Smiley,
-		FolderSimple,
-		SortAscending,
-		SortDescending,
-		BookmarkSimple,
-		MagnifyingGlass,
-	} from "phosphor-svelte";
-	import Button from "$/components/input/button.svelte";
+	import { Smiley, FolderSimple, BookmarkSimple, MagnifyingGlass } from "phosphor-svelte";
 	import TagsInput from "$/components/input/tags-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
 	import { user } from "$/store/auth";
+	import { page } from "$app/stores";
+	import { goto } from "$app/navigation";
 
-	let sortAsc = false;
+	let query: string | null = $page.url.searchParams.get("q");
+	let numPage: string | null = $page.url.searchParams.get("p");
+
+	$: {
+		let url = new URL($page.url);
+		if (query) {
+			url.searchParams.set("q", query);
+		} else {
+			url.searchParams.delete("q");
+		}
+		if (numPage) {
+			url.searchParams.set("p", numPage);
+		} else {
+			url.searchParams.delete("p");
+		}
+		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+	}
 
 	function menuMatcher(id: string | null, _url: URL, href: string | null) {
 		switch (href) {
@@ -68,14 +77,14 @@
 		</nav>
 		<hr />
 		<Expandable title={$t("labels.search")}>
-			<TextInput placeholder={$t("common.emotes", { values: { count: 1 } })}>
+			<TextInput placeholder={$t("common.emotes", { values: { count: 1 } })} bind:value={query}>
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 		</Expandable>
 		<Expandable title={$t("labels.tags")} expanded={false}>
 			<TagsInput />
 		</Expandable>
-		<Expandable title={$t("pages.directory.sorting.title")} expanded={false}>
+		<!-- <Expandable title={$t("pages.directory.sorting.title")} expanded={false}>
 			<div class="row">
 				<Select
 					options={[
@@ -94,7 +103,7 @@
 					</svelte:fragment>
 				</Button>
 			</div>
-		</Expandable>
+		</Expandable> -->
 		<Expandable title={$t("labels.filters")} expanded={false}>
 			<div class="filters">
 				<Checkbox>{$t("pages.directory.filters.animated")}</Checkbox>
@@ -124,11 +133,11 @@
 </div>
 
 <style lang="scss">
-	.row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
+	// .row {
+	// 	display: flex;
+	// 	align-items: center;
+	// 	gap: 0.5rem;
+	// }
 
 	.filters {
 		display: flex;

@@ -1,3 +1,4 @@
+
 """
 Implement the DateTime<Utc> scalar
 
@@ -12,6 +13,7 @@ type Emote {
 	flags: EmoteFlags!
 	id: Id!
 	images: [Image!]!
+	owner: User!
 	ownerId: Id!
 	scores: EmoteScores!
 	searchUpdatedAt: DateTime
@@ -59,6 +61,8 @@ input Filters {
 	overlaying: Boolean
 }
 
+
+
 scalar Id
 
 type Image {
@@ -68,6 +72,14 @@ type Image {
 	size: Int!
 	url: String!
 	width: Int!
+}
+
+
+enum Platform {
+	DISCORD
+	GOOGLE
+	KICK
+	TWITCH
 }
 
 type Query {
@@ -96,6 +108,7 @@ enum SortOrder {
 	DESCENDING
 }
 
+
 input Tags {
 	match: TagsMatch!
 	tags: [String!]!
@@ -106,22 +119,38 @@ enum TagsMatch {
 	ANY
 }
 
+type User {
+	connections: [UserConnection!]!
+	id: Id!
+	mainConnection: UserConnection
+	searchUpdatedAt: DateTime
+	style: UserStyle!
+	updatedAt: DateTime!
+}
+
+type UserConnection {
+	allowLogin: Boolean!
+	linkedAt: DateTime!
+	platform: Platform!
+	platformAvatarUrl: String
+	platformDisplayName: String!
+	platformId: String!
+	platformUsername: String!
+	updatedAt: DateTime!
+}
+
+type UserStyle {
+	activeBadgeId: Id
+	activeEmoteSetId: Id
+	activePaintId: Id
+	activeProfilePicture: Id
+	pendingProfilePicture: Id
+}
+
 directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @specifiedBy(url: String!) on SCALAR
-extend schema
-	@link(
-		url: "https://specs.apollo.dev/federation/v2.3"
-		import: [
-			"@key"
-			"@tag"
-			"@shareable"
-			"@inaccessible"
-			"@override"
-			"@external"
-			"@provides"
-			"@requires"
-			"@composeDirective"
-			"@interfaceObject"
-		]
-	)
+extend schema @link(
+	url: "https://specs.apollo.dev/federation/v2.3",
+	import: ["@key", "@tag", "@shareable", "@inaccessible", "@override", "@external", "@provides", "@requires", "@composeDirective", "@interfaceObject"]
+)

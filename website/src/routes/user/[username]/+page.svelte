@@ -2,4 +2,4 @@
 	import EmotePreview from "$/components/emote-preview.svelte";
 </script>
 
-<EmotePreview />
+<!-- <EmotePreview /> -->

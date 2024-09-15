@@ -119,7 +119,7 @@
 		</div>
 	</div>
 	<div class="content">
-		<EmoteContainer layout={$emotesLayout}>
+		<!-- <EmoteContainer layout={$emotesLayout}>
 			{#each Array(100) as _, i}
 				<EmotePreview
 					name="emoteSetEmote{i}"
@@ -128,7 +128,7 @@
 					{selectionMode}
 				/>
 			{/each}
-		</EmoteContainer>
+		</EmoteContainer> -->
 	</div>
 </div>
 

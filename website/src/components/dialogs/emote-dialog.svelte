@@ -10,7 +10,7 @@
 <Dialog {width} bind:mode>
 	<form class="layout">
 		<div class="preview">
-			<EmotePreview />
+			<!-- <EmotePreview /> -->
 			<slot name="preview" />
 		</div>
 		<div class="content">

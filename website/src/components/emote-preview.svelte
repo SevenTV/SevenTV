@@ -13,7 +13,7 @@
 
 	let loading: boolean = true;
 
-	let flags = ["active", "global", "trending", "overlaying"];
+	let flags: string[] = [];
 
 	$: imageUrl = data.images
 		.sort((a, b) => b.size - a.size)
@@ -36,6 +36,7 @@
 <a
 	href="/emotes/{data.id}"
 	class="emote"
+	class:emote-only={emoteOnly}
 	style:border-color={selected ? "var(--primary)" : `${highlight}80`}
 	style:background-color="var(--bg-{bg})"
 	title={data.defaultName}
@@ -53,7 +54,7 @@
 	/>
 	{#if !emoteOnly}
 		<span class="name">{data.defaultName}</span>
-		<span class="user">{data.ownerId}</span>
+		<span class="user">{data.owner.mainConnection?.platformDisplayName}</span>
 	{/if}
 	<div class="flags">
 		{#if selectionMode}
@@ -91,8 +92,8 @@
 		}
 
 		&.emote-only > .image {
-			width: 100%;
-			height: 100%;
+			max-width: unset;
+			max-height: unset;
 			margin: 0;
 		}
 	}
@@ -120,7 +121,7 @@
 
 		width: 100%;
 		height: 100%;
-		max-width: 50%;
+		max-width: 60%;
 		max-height: 50%;
 
 		margin-bottom: 0.5rem;

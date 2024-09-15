@@ -80,7 +80,7 @@
 				{/if}
 				<td>
 					<div class="emote">
-						<EmotePreview emoteOnly style="pointer-events: none" />
+						<!-- <EmotePreview emoteOnly style="pointer-events: none" /> -->
 						EmoteName
 					</div>
 				</td>
