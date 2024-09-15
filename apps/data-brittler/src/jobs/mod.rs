@@ -11,8 +11,10 @@ use shared::database::emote_moderation_request::EmoteModerationRequest;
 use shared::database::emote_set::{EmoteSet, EmoteSetId};
 use shared::database::entitlement::EntitlementEdge;
 use shared::database::paint::{Paint, PaintId};
+use shared::database::role::{Role, RoleId};
 use shared::database::stored_event::StoredEvent;
 use shared::database::user::ban::UserBan;
+use shared::database::user::{UserId, User};
 use special_events::SpecialEventsJob;
 use tokio::time::Instant;
 
@@ -94,16 +96,27 @@ impl AddAssign<ProcessOutcome> for JobOutcome {
 
 #[derive(Default)]
 pub struct JobRunner {
-	pub stored_events: Vec<StoredEvent>,
-	pub bans: Vec<UserBan>,
 	pub badges: HashMap<BadgeId, Badge>,
 	pub paints: HashMap<PaintId, Paint>,
-	pub cron_jobs: Vec<CronJob>,
-	pub emote_sets: HashMap<EmoteSetId, EmoteSet>,
-	pub emotes: HashMap<EmoteId, Emote>,
-	pub entitlements: HashSet<EntitlementEdge>,
-	pub emote_stats: BTreeMap<(EmoteId, time::Date), i32>,
+	pub roles: HashMap<RoleId, Role>,
 	pub pending_tasks: HashMap<String, cosmetics::PendingTask>,
+
+	pub emotes: HashMap<EmoteId, Emote>,
+	pub users: HashMap<UserId, User>,
+	// Remove emotes from sets & sets from users which do not exist, make sure to keep special sets (global, etc)
+	pub emote_sets: HashMap<EmoteSetId, EmoteSet>,
+	pub true_emote_usage: HashMap<EmoteId, i32>,
+
+	// Remove events that involve objects that are not apart of the above data
+	pub stored_events: Vec<StoredEvent>,
+	pub emote_stats: BTreeMap<(EmoteId, time::Date), i32>,
+
+	// remove bans for users that do not exist
+	pub bans: Vec<UserBan>,
+	pub cron_jobs: Vec<CronJob>,
+	// remove entitlements for badges/paints/emotesets/users that do not exist
+	pub entitlements: HashSet<EntitlementEdge>,
+	// remove mod requests for emotes that do not exist
 	pub mod_requests: Vec<EmoteModerationRequest>,
 }
 
