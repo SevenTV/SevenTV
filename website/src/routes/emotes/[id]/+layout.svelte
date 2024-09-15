@@ -7,12 +7,12 @@
 </script>
 
 <svelte:head>
-	<title>{data.id} - {$t("page_titles.suffix")}</title>
+	<title>{data.emote.defaultName} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <div class="layout">
 	<div>
-		<EmoteInfo id={data.id} />
+		<EmoteInfo data={data.emote} />
 	</div>
 	<div class="tabs">
 		<slot />

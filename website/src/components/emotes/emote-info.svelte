@@ -24,8 +24,9 @@
 	import ReportEmoteDialog from "../dialogs/report-emote-dialog.svelte";
 	import DeleteEmoteDialog from "../dialogs/delete-emote-dialog.svelte";
 	import MenuButton from "../input/menu-button.svelte";
+	import type { Emote } from "$/gql/graphql";
 
-	export let id: string;
+	export let data: Emote;
 
 	enum MoreMenuMode {
 		Root,
@@ -88,14 +89,14 @@
 </div>
 <div class="emote-info">
 	<div class="heading">
-		<h1>{id}</h1>
-		<Tags tags={["tag1", "tag2", "tag3"]} />
+		<h1>{data.defaultName}</h1>
+		<Tags tags={data.tags} />
 	</div>
 	<div class="previews">
-		<ImagePreview size={32} />
-		<ImagePreview size={64} />
-		<ImagePreview size={96} />
-		<ImagePreview size={128} />
+		<ImagePreview size={32} src={data.images[0].url} />
+		<ImagePreview size={64} src={data.images[1].url} />
+		<ImagePreview size={96} src={data.images[2].url} />
+		<ImagePreview size={128} src={data.images[3].url} />
 	</div>
 	<div class="buttons">
 		<slot>

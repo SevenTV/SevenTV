@@ -5,7 +5,7 @@
 	"license": "Apache-2.0 with Commons Clause",
 	"scripts": {
 		"dev": "pnpm run codegen && vite dev --port 3000",
-		"build": "pnpm run codegen && vite build",
+		"build": "pnpm run codegen && pnpm run svelte:check && vite build",
 		"preview": "vite preview --port 3000",
 		"lint": "pnpm run codegen && prettier --check \"**/*\" -u && eslint . && pnpm run svelte:check",
 		"svelte:check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
