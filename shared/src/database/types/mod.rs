@@ -13,6 +13,7 @@ pub mod paint;
 pub mod product;
 pub mod role;
 pub mod stored_event;
+pub mod stripe_errors;
 pub mod ticket;
 pub mod user;
 pub mod webhook_event;

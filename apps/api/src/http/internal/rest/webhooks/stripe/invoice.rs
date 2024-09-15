@@ -9,6 +9,7 @@ use shared::database::product::{
 	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant,
 };
 use shared::database::queries::{filter, update};
+use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
 use stripe::{FinalizeInvoiceParams, Object};
 
 use crate::global::Global;
@@ -257,6 +258,7 @@ pub async fn paid(
 	global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,
 	mut tx: TransactionSession<'_, ApiError>,
+	event_id: stripe::EventId,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	updated(global, &mut tx, &invoice).await?;
@@ -282,11 +284,13 @@ pub async fn paid(
 				.collect::<Vec<_>>();
 
 			if items.len() != 1 {
-				// TODO: record an error to be investigated
-				return Err(TransactionError::Custom(ApiError::bad_request(
-					ApiErrorCode::StripeError,
-					"invalid number of invoice line items",
-				)));
+				tx.insert_one(StripeError {
+					id: StripeErrorId::new(),
+					event_id,
+					error_kind: StripeErrorKind::SubscriptionInvoiceInvalidItems,
+				}, None).await?;
+
+				return Ok(None);
 			}
 
 			let stripe_product_id = items.into_iter().next().unwrap();
@@ -305,11 +309,13 @@ pub async fn paid(
 				)
 				.await?
 			else {
-				// TODO: record an error to be investigated
-				return Err(TransactionError::Custom(ApiError::bad_request(
-					ApiErrorCode::StripeError,
-					"no subscription product found",
-				)));
+				tx.insert_one(StripeError {
+					id: StripeErrorId::new(),
+					event_id,
+					error_kind: StripeErrorKind::SubscriptionInvoiceNoProduct,
+				}, None).await?;
+
+				return Ok(None);
 			};
 
 			// This invoice is for one of our subscription products.
@@ -402,7 +408,12 @@ pub async fn paid(
 				.collect::<Vec<_>>();
 
 			if items.len() != 1 {
-				// TODO: record an error to be investigated
+				tx.insert_one(StripeError {
+					id: StripeErrorId::new(),
+					event_id,
+					error_kind: StripeErrorKind::GiftInvoiceNoProduct,
+				}, None).await?;
+
 				return Ok(None);
 			}
 

@@ -107,7 +107,6 @@ pub async fn subscription(
 
 	let internal = matches!(active_period.created_by, SubscriptionPeriodCreatedBy::System { .. });
 
-	// TODO: figure out how to get the unit
 	let unit = product.variants.iter().find(|v| v.id == active_period.product_id);
 
 	let started_at = periods

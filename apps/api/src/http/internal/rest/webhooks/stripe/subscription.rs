@@ -7,6 +7,7 @@ use shared::database::product::subscription::{
 };
 use shared::database::product::{ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
+use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
 
 use crate::global::Global;
 use crate::http::egvault::metadata::{StripeMetadata, SubscriptionMetadata};
@@ -131,6 +132,7 @@ pub async fn deleted(
 pub async fn updated(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
+	event_id: stripe::EventId,
 	event_created: chrono::DateTime<chrono::Utc>,
 	subscription: stripe::Subscription,
 	prev_attributes: HashMap<String, serde_json::Value>,
@@ -190,27 +192,20 @@ pub async fn updated(
 			return Ok(Some(period.subscription_id));
 		}
 		(true, 1) => {
-			// product was swapped with another product
-
-			// let user_id = subscription
-			// 	.metadata
-			// 	.get("USER_ID")
-			// 	.and_then(|i| UserId::from_str(i).ok())
-			// 	.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
-
-			// let old_product = prev_attributes
-			// 	.get("items")
-			// 	.and_then(|v| v.get("data"))
-			// 	.and_then(|v| v.get(0))
-			// 	.and_then(|v| v.get("price"))
-			// 	.and_then(|v| v.get("id"))
-			// 	.and_then(|v| v.as_str())
-			// 	.and_then(|s| ProductId::from_str(s).ok())
-			// 	.ok_or(TransactionError::custom(ApiError::BAD_REQUEST))?;
+			tx.insert_one(StripeError {
+				id: StripeErrorId::new(),
+				event_id,
+				error_kind: StripeErrorKind::SubscriptionItemChanged,
+			}, None).await?;
 		}
 		(true, _) => {
 			// n > 1
 			// the subscription has more than one product now
+			tx.insert_one(StripeError {
+				id: StripeErrorId::new(),
+				event_id,
+				error_kind: StripeErrorKind::SubscriptionMultipleProducts,
+			}, None).await?;
 		}
 		(false, 1) => {
 			// nothing changed, still one product

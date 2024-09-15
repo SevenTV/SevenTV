@@ -110,7 +110,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 					invoice::updated(&global, &mut tx, &iv).await?;
 				}
 				(stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv)) => {
-					return invoice::paid(&global, stripe_client, tx, iv).await;
+					return invoice::paid(&global, stripe_client, tx, event.id, iv).await;
 				}
 				(stripe::EventType::InvoiceDeleted, stripe::EventObject::Invoice(iv)) => {
 					invoice::deleted(&global, tx, iv).await?;
@@ -125,6 +125,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 					return subscription::updated(
 						&global,
 						tx,
+						event.id,
 						chrono::DateTime::from_timestamp(event.created, 0)
 							.ok_or_else(|| TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "webhook event created_at is missing")))?,
 						sub,
