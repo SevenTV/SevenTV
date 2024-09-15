@@ -960,10 +960,17 @@ pub struct BenefitWithEntitlements {
 }
 
 impl BenefitWithEntitlements {
-	pub fn new(name: &str, condition: SubscriptionBenefitCondition, entitlements: Vec<EntitlementEdgeKind>) -> Self {
+	pub fn new(
+		id: &str,
+		name: &str,
+		condition: SubscriptionBenefitCondition,
+		entitlements: Vec<EntitlementEdgeKind>,
+	) -> Self {
+		let id = SubscriptionBenefitId::from_str(id).unwrap();
+
 		Self {
 			benefit: SubscriptionBenefit {
-				id: SubscriptionBenefitId::new(),
+				id,
 				name: name.to_string(),
 				condition,
 			},
@@ -979,6 +986,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 		.get_or_init(|| {
 			vec![
 				BenefitWithEntitlements::new(
+					"62f97c05e46eb00e438a6888",
 					"Subscriber Pack",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(1)),
 					vec![
@@ -991,6 +999,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					],
 				),
 				BenefitWithEntitlements::new(
+					"62f97db2e46eb00e438a6888",
 					"2 Month Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(2)),
 					vec![EntitlementEdgeKind::Badge {
@@ -998,6 +1007,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"62f97e19e46eb00e438a6888",
 					"3 Month Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(3)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1005,6 +1015,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"62f97e71e46eb00e438a6888",
 					"6 Month Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(6)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1012,6 +1023,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"62f97ebee46eb00e438a6888",
 					"9 Month Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(9)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1019,6 +1031,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"62f97f19e46eb00e438a6888",
 					"1 Year Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(12)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1026,6 +1039,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"637d53962863630a2d06e888",
 					"1.25 Year Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(15)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1033,6 +1047,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"637d54582863630a2d06e888",
 					"1.5 Year Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(18)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1040,6 +1055,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"64344f93cda636a6910a2888",
 					"1.75 Year Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(21)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1047,6 +1063,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"64dfeec02040c6754787d888",
 					"2 Year Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(24)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1054,6 +1071,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"64dff4652040c6754787d888",
 					"2.25 Year Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(27)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1061,6 +1079,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"64dff95e2040c6754787d888",
 					"2.5 Year Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(30)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1068,6 +1087,7 @@ pub fn sub_badges_benefits() -> impl IntoIterator<Item = BenefitWithEntitlements
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"64dffd6b2040c6754787d888",
 					"2.75 Year Badge",
 					SubscriptionBenefitCondition::Duration(DurationUnit::Months(33)),
 					vec![EntitlementEdgeKind::Badge {
@@ -1087,6 +1107,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 		.get_or_init(|| {
 			vec![
 				BenefitWithEntitlements::new(
+					"62f98190e46eb00e438a6095",
 					"September 2021 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2021-09-01T00:00:00.000Z".parse().unwrap(),
@@ -1097,6 +1118,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"61bede3db6b41ea54419ffff",
 					"December 2021 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2021-12-01T00:00:00.000Z".parse().unwrap(),
@@ -1115,6 +1137,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"61cecdad07f6416558e0a4f8",
 					"New Year 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-01-01T00:00:00.000Z".parse().unwrap(),
@@ -1125,6 +1148,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"61d8bb2be39922abc6944449",
 					"January 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-01-01T00:00:00.000Z".parse().unwrap(),
@@ -1143,6 +1167,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"61f7f20fcb0d232dce26d8f2",
 					"Lunar New Year 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-02-01T00:00:00.000Z".parse().unwrap(),
@@ -1153,6 +1178,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"62005bc0bc2dcdab1abb1db03",
 					"Feburary 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-02-01T00:00:00.000Z".parse().unwrap(),
@@ -1174,6 +1200,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"621e16bb601277f19bd83f91",
 					"Anniversary 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-03-02T00:00:00.000Z".parse().unwrap(),
@@ -1184,6 +1211,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					}],
 				),
 				BenefitWithEntitlements::new(
+					"6230dd6af1aadbc2df5bf8e1",
 					"March 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-03-01T00:00:00.000Z".parse().unwrap(),
@@ -1202,6 +1230,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"6259e4e2f75296e5da5af357",
 					"April 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-04-01T00:00:00.000Z".parse().unwrap(),
@@ -1220,6 +1249,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"6281560aea0fb7b69a2ea10a",
 					"May 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-05-01T00:00:00.000Z".parse().unwrap(),
@@ -1244,6 +1274,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"62a7722c6e0cf034a03803ff",
 					"June 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-06-01T00:00:00.000Z".parse().unwrap(),
@@ -1268,6 +1299,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"62d967784ed8697f69f2c699",
 					"July 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-07-01T00:00:00.000Z".parse().unwrap(),
@@ -1292,6 +1324,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"62dbfdc0b4b221e4fe77a7f2",
 					"August 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-08-01T00:00:00.000Z".parse().unwrap(),
@@ -1316,6 +1349,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"62f2ad17318fc9cb856d81ff",
 					"September 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-09-01T00:00:00.000Z".parse().unwrap(),
@@ -1340,6 +1374,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"6348a3af82f29dffdbb396f7",
 					"October 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-10-01T00:00:00.000Z".parse().unwrap(),
@@ -1364,6 +1399,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"63698d8138d7a07f2714df61",
 					"November 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-11-01T00:00:00.000Z".parse().unwrap(),
@@ -1388,6 +1424,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"62fe2c29dff0c083ea60fff3",
 					"December 2022 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2022-12-01T00:00:00.000Z".parse().unwrap(),
@@ -1412,6 +1449,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"639797389ba30c0e3070f888",
 					"January 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-01-01T00:00:00.000Z".parse().unwrap(),
@@ -1436,6 +1474,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"63d6f0476e40981149587888",
 					"Feburary 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-02-01T00:00:00.000Z".parse().unwrap(),
@@ -1460,6 +1499,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"63dedc1c4af186f390db9888",
 					"March 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-03-01T00:00:00.000Z".parse().unwrap(),
@@ -1484,6 +1524,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"641c0ef3e4bd6a3d85522888",
 					"April 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-04-01T00:00:00.000Z".parse().unwrap(),
@@ -1508,6 +1549,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"644fdb7f5985f2f7c2191888",
 					"May 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-05-01T00:00:00.000Z".parse().unwrap(),
@@ -1532,6 +1574,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"6454e5b26b4d36df97db9888",
 					"June 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-06-01T00:00:00.000Z".parse().unwrap(),
@@ -1556,6 +1599,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"649f3ee6dd00d86e1be3b888",
 					"July 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-07-01T00:00:00.000Z".parse().unwrap(),
@@ -1580,6 +1624,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"64c822181ebfdbc3dd5ac888",
 					"August 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-08-01T00:00:00.000Z".parse().unwrap(),
@@ -1604,6 +1649,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"64f22d5bbddcf4735fddd888",
 					"September 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-09-01T00:00:00.000Z".parse().unwrap(),
@@ -1628,6 +1674,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"65169249d1696328456c5888",
 					"October 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-10-01T00:00:00.000Z".parse().unwrap(),
@@ -1652,6 +1699,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"65459be4ed8a01cc905ec888",
 					"November 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-11-01T00:00:00.000Z".parse().unwrap(),
@@ -1676,6 +1724,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"656519ebdf131cd956354888",
 					"December 2023 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2023-12-01T00:00:00.000Z".parse().unwrap(),
@@ -1700,6 +1749,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"6401a89c04e4a9fd8ee27888",
 					"January 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-01-01T00:00:00.000Z".parse().unwrap(),
@@ -1724,6 +1774,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"65ac658a09353112415da888",
 					"Feburary 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-02-01T00:00:00.000Z".parse().unwrap(),
@@ -1748,6 +1799,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"65e089c27d9647e32b3a8888",
 					"March 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-03-01T00:00:00.000Z".parse().unwrap(),
@@ -1772,6 +1824,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"65fdd022044fb3f5401f5888",
 					"April 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-04-01T00:00:00.000Z".parse().unwrap(),
@@ -1796,6 +1849,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"66254f40e6b7bc76e1e5b888",
 					"May 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-05-01T00:00:00.000Z".parse().unwrap(),
@@ -1820,6 +1874,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"6649c22e3980527dca703888",
 					"June 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-06-01T00:00:00.000Z".parse().unwrap(),
@@ -1844,6 +1899,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"667c6276fbe3f7b7cf088888",
 					"July 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-07-01T00:00:00.000Z".parse().unwrap(),
@@ -1868,6 +1924,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"66a1a73b25cae97b3cc7e888",
 					"August 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-08-01T00:00:00.000Z".parse().unwrap(),
@@ -1892,6 +1949,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
+					"66d2fd0df4a3fe5aecb78888",
 					"September 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-09-01T00:00:00.000Z".parse().unwrap(),
@@ -1929,8 +1987,14 @@ pub struct SpecialEventWithEntitlements {
 }
 
 impl SpecialEventWithEntitlements {
-	pub fn new(name: &str, entitlements: Vec<EntitlementEdgeKind>, managed_by: Option<EntitlementEdgeManagedBy>) -> Self {
-		let id = SpecialEventId::new();
+	pub fn new(
+		id: &str,
+		name: &str,
+		entitlements: Vec<EntitlementEdgeKind>,
+		managed_by: Option<EntitlementEdgeManagedBy>,
+	) -> Self {
+		let id = SpecialEventId::from_str(id).unwrap();
+
 		Self {
 			special_event: SpecialEvent {
 				id,
@@ -1954,6 +2018,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 		.get_or_init(|| {
 			vec![
 				SpecialEventWithEntitlements::new(
+					"63bdff9723e3c08ccb84494c",
 					"Beta Tester",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "63bdff9723e3c08ccb76494c".parse().unwrap(),
@@ -1963,6 +2028,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"656e35ad02083e64deb4774f",
 					"NYYS",
 					vec![
 						EntitlementEdgeKind::Paint {
@@ -1983,6 +2049,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"667b1d7f8ea0ce5a325aa4d0",
 					"Freedom 2024 Paint",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "667b1d7f8ea0ce5a325ff4d0".parse().unwrap(),
@@ -1992,6 +2059,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"651db14d9ab037055944204c",
 					"TwitchCon 2023 Las Vegas",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "651db14d9ab037055957204c".parse().unwrap(),
@@ -2001,6 +2069,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"6338fd0e6a33c6c1976d5222",
 					"TwitchCon 2022 San Diego",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "6338fd0e6a33c6c1976d5211".parse().unwrap(),
@@ -2010,6 +2079,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"64a5c80d0d35dd67d91ff2cb",
 					"TwitchCon 2023 Paris",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "64a5c80d0d35dd67d91ee2cb".parse().unwrap(),
@@ -2019,6 +2089,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"66213702469f00cda34b99de",
 					"TwitchCon 2024 Rotterdam",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66213702469f00cda34b38de".parse().unwrap(),
@@ -2028,6 +2099,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"63934cbff9b8473d9c9fdc5f",
 					"Beta Tester 2",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "63934cbff9b8473d9c8fdc5d".parse().unwrap(),
@@ -2037,6 +2109,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"641cb1bd5c90d6791868e072",
 					"Design NNYS 2023",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "641cb1bd5c90d6791857e072".parse().unwrap(),
@@ -2046,6 +2119,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"64bb6a35ea275511a25b9502",
 					"Webros",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "64bb6a35ea275511a25b8402".parse().unwrap(),
@@ -2055,6 +2129,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"66c4f339176d823265a4ca60",
 					"Elis",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66c4f339176d823265a4ca50".parse().unwrap(),
@@ -2064,6 +2139,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"66bfcd890d8502f0629f9bff",
 					"Empi",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66bfcd890d8502f0629f9bc8".parse().unwrap(),
@@ -2073,6 +2149,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"669d3ffb45b86da9fc241a91",
 					"Breadworms",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "669d3ffb45b86da9fc181a91".parse().unwrap(),
@@ -2082,6 +2159,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"66c224a4232c023ab6551b58",
 					"Deme",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66c224a4232c023ab5001b58".parse().unwrap(),
@@ -2091,6 +2169,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"66c233ffc3bb781db7f5d6f0",
 					"PSP1G",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66c233ffc3bb781db7c5d6f0".parse().unwrap(),
@@ -2100,6 +2179,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"66c60be6981479cde1f78225",
 					"Rubius",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66c60be6981479cde1c37225".parse().unwrap(),
@@ -2109,6 +2189,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
+					"63a66ade919e3d301c52fa97",
 					"Gift Sub 2022",
 					vec![EntitlementEdgeKind::Badge {
 						badge_id: "63a66ade919e3d301c52fa84".parse().unwrap(),
@@ -2116,6 +2197,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					None,
 				),
 				SpecialEventWithEntitlements::new(
+					"6508d5bd55deb74f50370f41",
 					"Gift Sub 2023",
 					vec![
 						EntitlementEdgeKind::Paint {

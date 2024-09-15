@@ -1,24 +1,21 @@
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
 
-use fnv::{FnvHashMap, FnvHashSet};
-use mongodb::options::InsertManyOptions;
+use anyhow::Context;
+use futures::StreamExt;
+use shared::database::badge::BadgeId;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
+use shared::database::paint::PaintId;
 use shared::database::product::subscription::SubscriptionId;
 use shared::database::product::SubscriptionProductId;
 use shared::database::MongoCollection;
 
 use super::prices::NEW_PRODUCT_ID;
-use super::{Job, ProcessOutcome};
+use super::{JobOutcome, ProcessOutcome};
 use crate::global::Global;
+use crate::types;
 use crate::types::EntitlementData;
-use crate::{error, types};
-
-pub struct EntitlementsJob {
-	global: Arc<Global>,
-	skipped_entitlements: FnvHashMap<EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool)>,
-	edges: FnvHashSet<EntitlementEdge>,
-}
 
 fn skip_entitlements() -> impl Iterator<
 	Item = (
@@ -152,94 +149,122 @@ fn custom_edges() -> impl IntoIterator<Item = EntitlementEdge> {
 		}))
 }
 
-impl Job for EntitlementsJob {
-	type T = types::Entitlement;
+pub struct RunInput<'a> {
+	pub global: &'a Arc<Global>,
+	pub edges: &'a mut HashSet<EntitlementEdge>,
+	pub badge_filter: Box<dyn Fn(BadgeId) -> bool + 'a>,
+	pub paint_filter: Box<dyn Fn(PaintId) -> bool + 'a>,
+}
 
-	const NAME: &'static str = "transfer_entitlements";
+pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
+	let mut outcome = JobOutcome::new("entitlements");
 
-	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			EntitlementEdge::collection(global.target_db()).drop().await?;
-			let indexes = EntitlementEdge::indexes();
-			if !indexes.is_empty() {
-				EntitlementEdge::collection(global.target_db())
-					.create_indexes(indexes)
-					.await?;
-			}
-		}
+	let RunInput {
+		global,
+		edges,
+		badge_filter,
+		paint_filter,
+	} = input;
 
-		Ok(Self {
-			global,
-			skipped_entitlements: FnvHashMap::from_iter(skip_entitlements()),
-			edges: FnvHashSet::from_iter(custom_edges()),
-		})
-	}
+	let mut cursor = global
+		.source_db()
+		.collection::<types::Entitlement>("entitlements")
+		.find(bson::doc! {})
+		.await
+		.context("query")?;
 
-	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
-		Some(self.global.source_db().collection("entitlements"))
-	}
+	let skipped = HashMap::from_iter(skip_entitlements());
 
-	async fn process(&mut self, entitlement: Self::T) -> ProcessOutcome {
-		let Some(user_id) = entitlement.user_id else {
-			return ProcessOutcome::default();
-		};
+	edges.extend(custom_edges());
 
-		let to = match entitlement.data {
-			EntitlementData::Badge { ref_id, .. } => EntitlementEdgeKind::Badge { badge_id: ref_id.into() },
-			EntitlementData::Paint { ref_id, .. } => EntitlementEdgeKind::Paint { paint_id: ref_id.into() },
-			// ignore role & emote set entitlements because they are handled by the user job
-			_ => return ProcessOutcome::default(),
-		};
-
-		if let Some((custom_edge, managed_by, ignore)) = self.skipped_entitlements.get(&to) {
-			if !ignore {
-				self.edges.insert(EntitlementEdge {
-					id: EntitlementEdgeId {
-						from: EntitlementEdgeKind::Subscription {
-							subscription_id: SubscriptionId {
-								user_id: user_id.into(),
-								product_id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
-							},
-						},
-						to: custom_edge.clone(),
-						managed_by: managed_by.clone(),
-					},
+	while let Some(entitlement) = cursor.next().await {
+		match entitlement {
+			Ok(entitlement) => {
+				outcome += process(ProcessInput {
+					edges,
+					entitlement,
+					skipped: &skipped,
+					badge_filter: &badge_filter,
+					paint_filter: &paint_filter,
 				});
 			}
-		} else {
-			self.edges.insert(EntitlementEdge {
+			Err(e) => {
+				outcome.errors.push(e.into());
+			}
+		}
+	}
+
+	Ok(outcome)
+}
+
+struct ProcessInput<'a> {
+	entitlement: types::Entitlement,
+	badge_filter: &'a Box<dyn Fn(BadgeId) -> bool + 'a>,
+	paint_filter: &'a Box<dyn Fn(PaintId) -> bool + 'a>,
+	skipped: &'a HashMap<EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool)>,
+	edges: &'a mut HashSet<EntitlementEdge>,
+}
+
+fn process(input: ProcessInput<'_>) -> ProcessOutcome {
+	let ProcessInput {
+		entitlement,
+		edges,
+		skipped,
+		badge_filter,
+		paint_filter,
+	} = input;
+
+	let Some(user_id) = entitlement.user_id else {
+		return ProcessOutcome::default();
+	};
+
+	let to = match entitlement.data {
+		EntitlementData::Badge { ref_id, .. } => {
+			let badge_id = ref_id.into();
+
+			if !badge_filter(&badge_id) {
+				return ProcessOutcome::default();
+			}
+
+			EntitlementEdgeKind::Badge { badge_id: ref_id.into() }
+		}
+		EntitlementData::Paint { ref_id, .. } => {
+			let paint_id = ref_id.into();
+
+			if !paint_filter(&paint_id) {
+				return ProcessOutcome::default();
+			}
+
+			EntitlementEdgeKind::Paint { paint_id: ref_id.into() }
+		}
+		// ignore role & emote set entitlements because they are handled by the user job
+		_ => return ProcessOutcome::default(),
+	};
+
+	if let Some((custom_edge, managed_by, ignore)) = skipped.get(&to) {
+		if !ignore {
+			edges.insert(EntitlementEdge {
 				id: EntitlementEdgeId {
-					from: EntitlementEdgeKind::User { user_id: user_id.into() },
-					to,
-					managed_by: None,
+					from: EntitlementEdgeKind::Subscription {
+						subscription_id: SubscriptionId {
+							user_id: user_id.into(),
+							product_id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
+						},
+					},
+					to: custom_edge.clone(),
+					managed_by: managed_by.clone(),
 				},
 			});
 		}
-
-		ProcessOutcome::default()
+	} else {
+		edges.insert(EntitlementEdge {
+			id: EntitlementEdgeId {
+				from: EntitlementEdgeKind::User { user_id: user_id.into() },
+				to,
+				managed_by: None,
+			},
+		});
 	}
 
-	async fn finish(self) -> ProcessOutcome {
-		tracing::info!("finishing entitlements job");
-
-		let mut outcome = ProcessOutcome::default();
-
-		match EntitlementEdge::collection(self.global.target_db())
-			.insert_many(&self.edges)
-			.with_options(InsertManyOptions::builder().ordered(false).build())
-			.await
-		{
-			Ok(res) => {
-				outcome.inserted_rows += res.inserted_ids.len() as u64;
-				if res.inserted_ids.len() != self.edges.len() {
-					outcome.errors.push(error::Error::InsertMany);
-				}
-			}
-			Err(e) => outcome.errors.push(e.into()),
-		}
-
-		self.global.entitlement_job_token().cancel();
-
-		outcome
-	}
+	ProcessOutcome::default()
 }
