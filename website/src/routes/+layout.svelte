@@ -9,7 +9,7 @@
 		signInDialogMode,
 		uploadDialogMode,
 		defaultEmoteSetDialogMode,
-	} from "$/lib/stores";
+	} from "$/store/layout";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
 	import { IconContext } from "phosphor-svelte";
@@ -17,6 +17,12 @@
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
 	import { t } from "svelte-i18n";
+	import type { LayoutData } from "./$types";
+	import { setContextClient } from "@urql/svelte";
+
+	export let data: LayoutData;
+
+	setContextClient(data.client);
 
 	beforeNavigate((nav) => {
 		// Hide menu on navigate

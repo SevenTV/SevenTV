@@ -32,9 +32,9 @@
 
 	let actionsPosition: "left" | "right" = loadActionsPosition() || "left";
 
-	$: actionsPosition &&
-		browser &&
+	$: if (actionsPosition && browser) {
 		window.localStorage.setItem("emoteTicketsActionsPosition", JSON.stringify(actionsPosition));
+	}
 
 	export let buttonOptions: {
 		merge: boolean;

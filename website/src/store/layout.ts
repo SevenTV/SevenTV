@@ -2,8 +2,6 @@ import { writable } from "svelte/store";
 import { browser } from "$app/environment";
 import { DialogMode } from "$/components/dialogs/dialog.svelte";
 
-export const user = writable(false);
-
 export const showMobileMenu = writable(false);
 
 export const uploadDialogMode = writable<DialogMode>(DialogMode.Hidden);

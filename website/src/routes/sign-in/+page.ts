@@ -1,5 +1,5 @@
 import { DialogMode } from "$/components/dialogs/dialog.svelte";
-import { signInDialogMode } from "$/lib/stores";
+import { signInDialogMode } from "$/store/layout";
 import { redirect } from "@sveltejs/kit";
 
 export function load() {

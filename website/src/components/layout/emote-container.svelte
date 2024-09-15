@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Layout } from "$/lib/stores";
+	import { Layout } from "$/store/layout";
 
 	export let scrollable = false;
 	export let layout: Layout | null = null;

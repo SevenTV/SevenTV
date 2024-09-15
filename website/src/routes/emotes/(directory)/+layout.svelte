@@ -8,7 +8,6 @@
 		SortAscending,
 		SortDescending,
 		BookmarkSimple,
-		PencilSimple,
 		MagnifyingGlass,
 	} from "phosphor-svelte";
 	import Button from "$/components/input/button.svelte";
@@ -16,7 +15,7 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
-	import { user } from "$/lib/stores";
+	import { user } from "$/store/auth";
 
 	let sortAsc = false;
 
@@ -101,11 +100,10 @@
 				<Checkbox>{$t("pages.directory.filters.animated")}</Checkbox>
 				<Checkbox>{$t("pages.directory.filters.static")}</Checkbox>
 				<Checkbox>{$t("flags.overlaying")}</Checkbox>
-				<Checkbox>{$t("pages.directory.filters.case_sensitive")}</Checkbox>
 				<Checkbox>{$t("pages.directory.filters.exact_match")}</Checkbox>
 			</div>
 		</Expandable>
-		<Expandable title={$t("pages.directory.size.title")} expanded={false}>
+		<!-- <Expandable title={$t("pages.directory.size.title")} expanded={false}>
 			<div class="row">
 				<Select
 					options={[
@@ -118,7 +116,7 @@
 					<PencilSimple slot="icon" />
 				</Button>
 			</div>
-		</Expandable>
+		</Expandable> -->
 	</aside>
 	<div class="content">
 		<slot />

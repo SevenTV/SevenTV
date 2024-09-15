@@ -1,8 +1,9 @@
 <script lang="ts">
+	import type { Emote } from "$/gql/graphql";
 	import Flags, { determineHighlightColor } from "./flags.svelte";
 	import Checkbox from "./input/checkbox.svelte";
 
-	export let name = "emoteName";
+	export let data: Emote;
 	export let index = 0;
 	export let bg: "medium" | "light" = "medium";
 	export let emoteOnly = false;
@@ -10,7 +11,13 @@
 	export let selected = false;
 	export let ignoredFlagsForHighlight: string[] = [];
 
+	let loading: boolean = true;
+
 	let flags = ["active", "global", "trending", "overlaying"];
+
+	$: imageUrl = data.images
+		.sort((a, b) => b.size - a.size)
+		.find((i) => data.flags.animated === i.frameCount > 1)?.url;
 
 	$: highlight = determineHighlightColor(flags, ignoredFlagsForHighlight);
 
@@ -27,24 +34,26 @@
 </script>
 
 <a
-	href="/emotes/{name}"
+	href="/emotes/{data.id}"
 	class="emote"
-	class:emote-only={emoteOnly}
 	style:border-color={selected ? "var(--primary)" : `${highlight}80`}
 	style:background-color="var(--bg-{bg})"
-	title={name}
+	title={data.defaultName}
 	on:click={onClick}
 	{...$$restProps}
 >
 	<img
-		src="https://cdn.7tv.app/emote/60e8677677b18d5dd3800410/4x.webp"
-		alt={name}
 		class="image"
+		class:loading
+		src={imageUrl}
+		alt={data.defaultName}
+		loading="lazy"
 		style="animation-delay: {-index * 10}ms"
+		on:load={() => (loading = false)}
 	/>
 	{#if !emoteOnly}
-		<span class="name">{name}</span>
-		<span class="user">username</span>
+		<span class="name">{data.defaultName}</span>
+		<span class="user">{data.ownerId}</span>
 	{/if}
 	<div class="flags">
 		{#if selectionMode}
@@ -88,6 +97,11 @@
 		}
 	}
 
+	.loading {
+		animation: loading 1s infinite;
+		background-color: var(--preview);
+	}
+
 	@keyframes loading {
 		0% {
 			opacity: 0.5;
@@ -101,12 +115,15 @@
 	}
 
 	.image {
-		width: 50%;
-		height: 50%;
-		margin-bottom: 0.5rem;
+		flex-grow: 1;
+		object-fit: contain;
 
-		background-color: var(--preview);
-		animation: loading 1s infinite;
+		width: 100%;
+		height: 100%;
+		max-width: 50%;
+		max-height: 50%;
+
+		margin-bottom: 0.5rem;
 	}
 
 	.name {
@@ -119,6 +136,9 @@
 	.user {
 		font-size: 0.75rem;
 		font-weight: 500;
+		max-width: 90%;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.flags {

@@ -1,0 +1,127 @@
+"""
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339")
+
+type Emote {
+	aspectRatio: Float!
+	attribution: [EmoteAttribution!]!
+	defaultName: String!
+	flags: EmoteFlags!
+	id: Id!
+	images: [Image!]!
+	ownerId: Id!
+	scores: EmoteScores!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type EmoteAttribution {
+	addedAt: DateTime!
+	userId: Id!
+}
+
+type EmoteFlags {
+	animated: Boolean!
+	approvedPersonal: Boolean!
+	defaultZeroWidth: Boolean!
+	deniedPersonal: Boolean!
+	nsfw: Boolean!
+	private: Boolean!
+	publicListed: Boolean!
+}
+
+type EmoteQuery {
+	emote(id: Id!): Emote
+	search(filters: Filters, limit: Int, page: Int, query: String, sort: Sort!, tags: Tags): [Emote!]!
+}
+
+type EmoteScores {
+	topAllTime: Int!
+	topDaily: Int!
+	topMonthly: Int!
+	topWeekly: Int!
+	trendingDay: Int!
+	trendingMonth: Int!
+	trendingWeek: Int!
+}
+
+input Filters {
+	animated: Boolean
+	"""
+	defaults to false when unset
+	"""
+	exactMatch: Boolean
+	nsfw: Boolean
+	overlaying: Boolean
+}
+
+scalar Id
+
+type Image {
+	frameCount: Int!
+	height: Int!
+	mime: String!
+	size: Int!
+	url: String!
+	width: Int!
+}
+
+type Query {
+	emotes: EmoteQuery!
+}
+
+input Sort {
+	order: SortOrder!
+	sortBy: SortBy!
+}
+
+enum SortBy {
+	NAME_ALPHABETICAL
+	TOP_ALL_TIME
+	TOP_DAILY
+	TOP_MONTHLY
+	TOP_WEEKLY
+	TRENDING_DAILY
+	TRENDING_MONTHLY
+	TRENDING_WEEKLY
+	UPLOAD_DATE
+}
+
+enum SortOrder {
+	ASCENDING
+	DESCENDING
+}
+
+input Tags {
+	match: TagsMatch!
+	tags: [String!]!
+}
+
+enum TagsMatch {
+	ALL
+	ANY
+}
+
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @specifiedBy(url: String!) on SCALAR
+extend schema
+	@link(
+		url: "https://specs.apollo.dev/federation/v2.3"
+		import: [
+			"@key"
+			"@tag"
+			"@shareable"
+			"@inaccessible"
+			"@override"
+			"@external"
+			"@provides"
+			"@requires"
+			"@composeDirective"
+			"@interfaceObject"
+		]
+	)

@@ -11,7 +11,7 @@
 		GridFour,
 	} from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { Layout, adminTicketsLayout } from "$/lib/stores";
+	import { Layout, adminTicketsLayout } from "$/store/layout";
 	import EmoteTicketsTable from "./emote-tickets-table.svelte";
 	import EmoteTicket from "./emote-ticket.svelte";
 	import { t } from "svelte-i18n";
@@ -50,9 +50,9 @@
 
 	let buttonOptions = loadButtonOptions() || defaultButtonOptions;
 
-	$: buttonOptions &&
-		browser &&
+	$: if (buttonOptions && browser) {
 		window.localStorage.setItem("emoteTicketsButtonOptions", JSON.stringify(buttonOptions));
+	}
 </script>
 
 <EmoteTicketDialog bind:mode={emoteTicketDialogMode} />

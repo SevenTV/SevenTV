@@ -2,7 +2,7 @@
 	import Dialog, { DialogMode } from "./dialog.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
 	import { Moon, Sun, Trash, UploadSimple, User } from "phosphor-svelte";
-	import { Theme, theme } from "$/lib/stores";
+	import { Theme, theme } from "$/store/layout";
 	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../input/button.svelte";
 	import ImagePreview from "../image-preview.svelte";

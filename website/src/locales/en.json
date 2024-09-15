@@ -254,7 +254,6 @@
 			"filters": {
 				"animated": "Animated",
 				"static": "Static",
-				"case_sensitive": "Case Sensitive",
 				"exact_match": "Exact Match"
 			},
 			"size": {

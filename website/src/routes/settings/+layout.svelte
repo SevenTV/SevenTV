@@ -2,7 +2,8 @@
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { signInDialogMode, user } from "$/lib/stores";
+	import { signInDialogMode } from "$/store/layout";
+	import { user } from "$/store/auth";
 	import { Key, PencilSimple, Bell, CreditCard, Prohibit, MagnifyingGlass } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 

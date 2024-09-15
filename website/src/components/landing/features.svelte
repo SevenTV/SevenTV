@@ -1,10 +1,13 @@
 <script lang="ts">
 	import Feature from "./feature.svelte";
+	import { PUBLIC_DISCORD_LINK } from "$env/static/public";
 </script>
 
 <section class="features">
 	<h2>Why 7TV?</h2>
-	<p>Our platform offers a variety of useful features that will enhance your chatting experience.</p>
+	<p>
+		Our platform offers a variety of useful features that will enhance your chatting experience.
+	</p>
 	<div class="feature-grid">
 		<Feature
 			image="/weird-smiley.png"
@@ -39,7 +42,7 @@
 			title="Large Community"
 			description="7TV serves 2,000,000+ daily unique users and has a library of over 1,000,000 public emotes."
 			link="Join our Discord"
-			href={import.meta.env.VITE_DISCORD_LINK}
+			href={PUBLIC_DISCORD_LINK}
 		/>
 		<Feature
 			image="/battery.png"
@@ -78,9 +81,9 @@
 	}
 
 	.feature-grid {
-        margin: 2.5rem 0;
+		margin: 2.5rem 0;
 
-        width: 100%;
+		width: 100%;
 		// 3 columns + 2 gaps
 		// max-width: 80rem;
 		max-width: min(80rem, 100%);

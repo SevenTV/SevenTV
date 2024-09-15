@@ -96,7 +96,7 @@ impl EmoteQuery {
 	async fn search<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		query: String,
+		query: Option<String>,
 		tags: Option<Tags>,
 		sort: Sort,
 		filters: Option<Filters>,
@@ -145,9 +145,9 @@ impl EmoteQuery {
 				filter_by.push(format!("flag_nsfw: {}", nsfw));
 			}
 
-			if let Some(true) = filters.exact_match {
+			if let (Some(true), Some(query)) = (filters.exact_match, &query) {
 				// TODO: prevent injection
-				filter_by.push(format!("default_name: {}", query));
+				filter_by.push(format!("default_name: {}", query.clone()));
 			}
 		}
 
@@ -191,8 +191,8 @@ impl EmoteQuery {
 		}
 
 		let options = SearchOptions::builder()
-			.query(query.clone())
-			.query_by(vec!["default_name".to_owned(), "tags".to_owned()])
+			.query_by(query.is_some().then_some(vec!["default_name".to_owned(), "tags".to_owned()]))
+			.query(query.unwrap_or("*".to_owned()))
 			.query_by_weights(vec![4, 1])
 			.per_page(limit)
 			.page(page)

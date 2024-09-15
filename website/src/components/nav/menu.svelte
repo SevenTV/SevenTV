@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Theme, theme, user } from "$/lib/stores";
+	import { Theme, theme } from "$/store/layout";
+	import { user } from "$/store/auth";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
@@ -7,21 +8,16 @@
 		CaretLeft,
 		CaretRight,
 		ChartLine,
-		ChatDots,
 		Code,
-		Compass,
 		CreditCard,
 		Gear,
 		GlobeHemisphereWest,
 		House,
 		Key,
-		LockSimple,
 		Moon,
-		Note,
 		PaintBrush,
 		PencilSimple,
 		Prohibit,
-		Question,
 		SealCheck,
 		SignOut,
 		Sliders,
@@ -32,6 +28,7 @@
 	import MenuButton from "../input/menu-button.svelte";
 	import { locale, dictionary, t } from "svelte-i18n";
 	import { localeNames } from "$/lib/i18n";
+	import { PUBLIC_DEVELOPER_PORTAL } from "$env/static/public";
 
 	enum Menu {
 		Root,
@@ -120,7 +117,7 @@
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<MenuButton href={import.meta.env.VITE_DEVELOPER_PORTAL}>
+			<MenuButton href={PUBLIC_DEVELOPER_PORTAL}>
 				<Code />
 				{$t("common.developer_portal")}
 			</MenuButton>

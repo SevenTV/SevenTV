@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { user } from "$/lib/stores";
+	import { user } from "$/store/auth";
 	import Button from "../input/button.svelte";
 	import DiscordLogo from "../icons/discord-logo.svelte";
 	import Logo from "../icons/logo.svelte";

@@ -3,7 +3,8 @@
 	import TopTabs from "./top-tabs.svelte";
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { user, showMobileMenu, uploadDialogMode, signInDialogMode } from "$/lib/stores";
+	import { showMobileMenu, uploadDialogMode } from "$/store/layout";
+	import { user } from "$/store/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import DirectMessages from "../direct-messages/direct-messages.svelte";

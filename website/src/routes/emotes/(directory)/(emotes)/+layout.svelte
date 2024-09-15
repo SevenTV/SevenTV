@@ -4,8 +4,8 @@
 	import EmoteContainer from "$/components/layout/emote-container.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { emotesLayout, defaultEmoteSetDialogMode } from "$/lib/stores";
-	import { Fire, FolderSimple, GlobeHemisphereWest, Trophy, Upload } from "phosphor-svelte";
+	import { emotesLayout, defaultEmoteSetDialogMode } from "$/store/layout";
+	import { Fire, FolderSimple, Trophy, Upload } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 </script>
 
@@ -19,10 +19,10 @@
 			<Trophy />
 			<Trophy weight="fill" slot="active" />
 		</TabLink>
-		<TabLink href="/emotes/global" title={$t("common.emotes", { values: { count: 2 } })} responsive>
+		<!-- <TabLink href="/emotes/global" title={$t("common.emotes", { values: { count: 2 } })} responsive>
 			<GlobeHemisphereWest />
 			<GlobeHemisphereWest weight="fill" slot="active" />
-		</TabLink>
+		</TabLink> -->
 		<TabLink href="/emotes/new" title={$t("common.new")} responsive>
 			<Upload />
 			<Upload weight="fill" slot="active" />

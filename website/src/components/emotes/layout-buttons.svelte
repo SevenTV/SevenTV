@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Layout, emotesLayout } from "$/lib/stores";
+	import { Layout, emotesLayout } from "$/store/layout";
 	import { GridFour, GridNine } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 </script>

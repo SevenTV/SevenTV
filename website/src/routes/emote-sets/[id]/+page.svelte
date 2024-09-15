@@ -13,7 +13,7 @@
 	} from "phosphor-svelte";
 	import type { PageData } from "./$types";
 	import Select from "$/components/input/select.svelte";
-	import { Layout, emotesLayout } from "$/lib/stores";
+	import { Layout, emotesLayout } from "$/store/layout";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
 	import Flags from "$/components/flags.svelte";

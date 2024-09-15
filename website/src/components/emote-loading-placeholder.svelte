@@ -1,0 +1,31 @@
+<script lang="ts">
+	export let index = 0;
+</script>
+
+<div class="placeholder" style="animation-delay: {-index * 10}ms"></div>
+
+<style lang="scss">
+	.placeholder {
+		width: 100%;
+		max-width: 10rem;
+		aspect-ratio: 1 / 1;
+
+		border: 1px solid transparent;
+		border-radius: 0.25rem;
+
+		background-color: var(--preview);
+		animation: loading 1s infinite;
+	}
+
+	@keyframes loading {
+		0% {
+			opacity: 0.5;
+		}
+		50% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0.5;
+		}
+	}
+</style>

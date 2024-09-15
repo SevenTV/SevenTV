@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Layout } from "$/lib/stores";
+	import { Layout } from "$/store/layout";
 	import EmoteContainer from "../layout/emote-container.svelte";
 	import EmotePreview from "../emote-preview.svelte";
 	import Button from "../input/button.svelte";

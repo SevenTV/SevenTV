@@ -1,6 +1,5 @@
 <script lang="ts">
-	import EmotePreview from "$/components/emote-preview.svelte";
-	import { Layout, emotesLayout } from "$/lib/stores";
+	import EmoteLoadingPlaceholder from "$/components/emote-loading-placeholder.svelte";
 	import { t } from "svelte-i18n";
 </script>
 
@@ -8,6 +7,6 @@
 	<title>{$t("page_titles.global_emotes")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
-{#each Array(10) as _, i}
-	<EmotePreview index={i} name="globalEmote{i}" emoteOnly={$emotesLayout === Layout.SmallGrid} />
+{#each Array(30) as _, i}
+	<EmoteLoadingPlaceholder index={i} />
 {/each}
