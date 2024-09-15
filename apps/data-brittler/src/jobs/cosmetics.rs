@@ -8,7 +8,6 @@ use futures::StreamExt;
 use shared::database::badge::{Badge, BadgeId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintId, PaintLayer, PaintLayerId, PaintLayerType};
-use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::{self, MongoCollection};
 
@@ -269,50 +268,4 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 	}
 
 	outcome
-}
-
-pub async fn skip(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
-	let mut outcome = JobOutcome::new("cosmetics");
-
-	let RunInput {
-		global, badges, paints, ..
-	} = input;
-
-	let mut cursor = Badge::collection(global.target_db())
-		.find(filter::filter! {
-			Badge {}
-		})
-		.await
-		.context("query")?;
-
-	while let Some(badge) = cursor.next().await {
-		match badge {
-			Ok(badge) => {
-				badges.insert(badge.id.into(), badge);
-			}
-			Err(e) => {
-				outcome.errors.push(e.into());
-			}
-		}
-	}
-
-	let mut cursor = Paint::collection(global.target_db())
-		.find(filter::filter! {
-			Paint {}
-		})
-		.await
-		.context("query")?;
-
-	while let Some(paint) = cursor.next().await {
-		match paint {
-			Ok(paint) => {
-				paints.insert(paint.id.into(), paint);
-			}
-			Err(e) => {
-				outcome.errors.push(e.into());
-			}
-		}
-	}
-
-	Ok(outcome)
 }

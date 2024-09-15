@@ -3,7 +3,6 @@ use std::ops::AddAssign;
 use std::sync::Arc;
 
 use anyhow::Context;
-use sailfish::TemplateOnce;
 use shared::database::badge::{Badge, BadgeId};
 use shared::database::cron_job::{default_cron_jobs, CronJob};
 use shared::database::emote::{Emote, EmoteId};
@@ -15,19 +14,10 @@ use shared::database::role::{Role, RoleId};
 use shared::database::stored_event::StoredEvent;
 use shared::database::user::ban::UserBan;
 use shared::database::user::{UserId, User};
-use special_events::SpecialEventsJob;
 use tokio::time::Instant;
 
 use crate::global::Global;
-use crate::jobs::cdn_rename_list::CdnRenameJob;
-use crate::jobs::cosmetics::CosmeticsJob;
-use crate::jobs::prices::PricesJob;
-use crate::jobs::reports::ReportsJob;
-use crate::jobs::roles::RolesJob;
-use crate::jobs::subscriptions::SubscriptionsJob;
-use crate::jobs::system::SystemJob;
-use crate::jobs::users::UsersJob;
-use crate::{error, report};
+use crate::error;
 
 pub mod audit_logs;
 pub mod bans;
@@ -98,8 +88,8 @@ impl AddAssign<ProcessOutcome> for JobOutcome {
 pub struct JobRunner {
 	pub badges: HashMap<BadgeId, Badge>,
 	pub paints: HashMap<PaintId, Paint>,
-	pub roles: HashMap<RoleId, Role>,
 	pub pending_tasks: HashMap<String, cosmetics::PendingTask>,
+	pub roles: HashMap<RoleId, Role>,
 
 	pub emotes: HashMap<EmoteId, Emote>,
 	pub users: HashMap<UserId, User>,
@@ -123,6 +113,19 @@ pub struct JobRunner {
 impl JobRunner {
 	pub async fn fetch(&mut self, global: &Arc<Global>) -> anyhow::Result<HashMap<&'static str, JobOutcome>> {
 		let mut outcomes = HashMap::new();
+
+		// Will fetch the cosmetics from the source db if we run the job
+		let outcome = cosmetics::run(cosmetics::RunInput {
+				global,
+				badges: &mut self.badges,
+				paints: &mut self.paints,
+				pending_tasks: &mut self.pending_tasks,
+			})
+			.await
+			.context("cosmetics")?;
+		outcomes.insert(outcome.job_name, outcome);
+
+		self.roles.extend(roles::roles().into_iter().map(|r| (r.id, r)));
 
 		let outcome = if global.config().should_run_audit_logs() {
 			// Will fetch the audit logs from the source db and construct stats for emotes
@@ -162,29 +165,6 @@ impl JobRunner {
 			})
 			.await
 			.context("bans skip")?
-		};
-		outcomes.insert(outcome.job_name, outcome);
-
-		let outcome = if global.config().should_run_cosmetics() {
-			// Will fetch the cosmetics from the source db if we run the job
-			cosmetics::run(cosmetics::RunInput {
-				global,
-				badges: &mut self.badges,
-				paints: &mut self.paints,
-				pending_tasks: &mut self.pending_tasks,
-			})
-			.await
-			.context("cosmetics")?
-		} else {
-			// Will fetch the cosmetics from the target db if we skip the job
-			cosmetics::skip(cosmetics::RunInput {
-				global,
-				badges: &mut self.badges,
-				paints: &mut self.paints,
-				pending_tasks: &mut self.pending_tasks,
-			})
-			.await
-			.context("cosmetics skip")?
 		};
 		outcomes.insert(outcome.job_name, outcome);
 

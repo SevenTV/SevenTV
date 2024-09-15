@@ -9,7 +9,6 @@ use shared::database::role::{Role, RoleId};
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-use super::{Job, ProcessOutcome};
 use crate::global::Global;
 
 pub struct RolesJob {
@@ -432,37 +431,37 @@ pub fn roles() -> Vec<Role> {
 	.collect()
 }
 
-impl Job for RolesJob {
-	type T = ();
+// impl Job for RolesJob {
+// 	type T = ();
 
-	const NAME: &'static str = "transfer_roles";
+// 	const NAME: &'static str = "transfer_roles";
 
-	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			tracing::info!("dropping roles collection");
-			Role::collection(global.target_db()).drop().await?;
-			let indexes = Role::indexes();
-			if !indexes.is_empty() {
-				Role::collection(global.target_db()).create_indexes(indexes).await?;
-			}
-		}
+// 	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
+// 		if global.config().truncate {
+// 			tracing::info!("dropping roles collection");
+// 			Role::collection(global.target_db()).drop().await?;
+// 			let indexes = Role::indexes();
+// 			if !indexes.is_empty() {
+// 				Role::collection(global.target_db()).create_indexes(indexes).await?;
+// 			}
+// 		}
 
-		Ok(RolesJob { global })
-	}
+// 		Ok(RolesJob { global })
+// 	}
 
-	async fn finish(self) -> ProcessOutcome {
-		let mut outcome = ProcessOutcome::default();
+// 	async fn finish(self) -> ProcessOutcome {
+// 		let mut outcome = ProcessOutcome::default();
 
-		let roles = roles();
+// 		let roles = roles();
 
-		match Role::collection(self.global.target_db()).insert_many(&roles).await {
-			Ok(r) if r.inserted_ids.len() == roles.len() => {
-				outcome.inserted_rows += r.inserted_ids.len() as u64;
-			}
-			Ok(_) => outcome = outcome.with_error(crate::error::Error::InsertMany),
-			Err(e) => outcome = outcome.with_error(e),
-		}
+// 		match Role::collection(self.global.target_db()).insert_many(&roles).await {
+// 			Ok(r) if r.inserted_ids.len() == roles.len() => {
+// 				outcome.inserted_rows += r.inserted_ids.len() as u64;
+// 			}
+// 			Ok(_) => outcome = outcome.with_error(crate::error::Error::InsertMany),
+// 			Err(e) => outcome = outcome.with_error(e),
+// 		}
 
-		outcome
-	}
-}
+// 		outcome
+// 	}
+// }
