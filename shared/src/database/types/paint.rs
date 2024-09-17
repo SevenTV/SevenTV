@@ -16,7 +16,7 @@ pub struct Paint {
 	#[serde(rename = "_id")]
 	pub id: PaintId,
 	pub name: String,
-	pub description: String,
+	pub description: Option<String>,
 	pub tags: Vec<String>,
 	pub data: PaintData,
 	pub created_by: UserId,

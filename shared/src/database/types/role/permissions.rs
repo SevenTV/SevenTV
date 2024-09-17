@@ -448,6 +448,7 @@ pub enum RateLimitResource {
 	EgVaultSubscribe,
 	EgVaultRedeem,
 	EgVaultPaymentMethod,
+	UserPresenceWrite,
 	Global,
 }
 
@@ -467,6 +468,7 @@ impl RateLimitResource {
 			Self::EgVaultSubscribe => "egvault_subscribe",
 			Self::EgVaultRedeem => "egvault_redeem",
 			Self::EgVaultPaymentMethod => "egvault_payment_method",
+			Self::UserPresenceWrite => "user_presence_write",
 			Self::Global => "global",
 		}
 	}

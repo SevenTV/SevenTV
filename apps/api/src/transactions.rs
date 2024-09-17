@@ -285,9 +285,16 @@ where
 		let mut session_inner = session.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		match result {
 			Ok(output) => 'retry_commit: loop {
-				if !session_inner.events.is_empty() {
+				let events = session_inner
+					.events
+					.iter()
+					.cloned()
+					.filter_map(|e| StoredEvent::try_from(e).ok())
+					.collect::<Vec<_>>();
+
+				if !events.is_empty() {
 					StoredEvent::collection(&global.db)
-						.insert_many(session_inner.events.iter().cloned().map(StoredEvent::from))
+						.insert_many(events)
 						.session(&mut session_inner.session)
 						.await?;
 				}

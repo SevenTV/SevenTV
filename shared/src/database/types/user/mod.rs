@@ -91,6 +91,7 @@ pub struct UserStyle {
 	pub active_emote_set_id: Option<EmoteSetId>,
 	pub active_profile_picture: Option<UserProfilePictureId>,
 	pub pending_profile_picture: Option<UserProfilePictureId>,
+	pub personal_emote_set_id: Option<EmoteSetId>,
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {

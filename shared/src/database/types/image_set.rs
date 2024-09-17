@@ -36,6 +36,7 @@ impl ImageSetInput {
 pub struct Image {
 	pub path: String,
 	pub mime: String,
+	pub scale: i32,
 	pub size: i64,
 	pub width: i32,
 	pub height: i32,

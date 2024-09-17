@@ -1,7 +1,5 @@
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::pin::Pin;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use axum::extract::{ws, RawQuery, Request, State, WebSocketUpgrade};
@@ -13,23 +11,28 @@ use axum::Router;
 use parser::{parse_json_subscriptions, parse_query_uri};
 use scuffle_foundations::context::ContextFutExt;
 use scuffle_foundations::telemetry::metrics::metrics;
+use shared::database::badge::BadgeId;
+use shared::database::emote_set::EmoteSetId;
+use shared::database::image_set::Image;
+use shared::database::paint::PaintId;
+use shared::database::user::profile_picture::UserProfilePictureId;
+use shared::database::user::UserId;
 use shared::database::Id;
-use shared::event_api::payload::Subscribe;
-use shared::event_api::types::{CloseCode, Opcode};
+use shared::event::{EventUserPresencePlatform, InternalEventUserPresenceData};
+use shared::event_api::payload::{Subscribe, SubscribeCondition};
+use shared::event_api::types::{ChangeMap, CloseCode, EventType, ObjectKind, Opcode};
 use shared::event_api::{payload, Message, MessageData, MessagePayload};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 
-use self::dedupe::Dedupe;
 use self::topic_map::TopicMap;
 use super::socket::Socket;
 use crate::global::{AtomicTicket, Global};
 use crate::http::v3::error::ConnectionError;
 use crate::http::v3::topic_map::Subscription;
-use crate::subscription::EventTopic;
+use crate::subscription::{EventTopic, Payload};
 use crate::utils::jitter;
 
-mod dedupe;
 pub mod error;
 mod parser;
 mod topic_map;
@@ -107,10 +110,6 @@ mod v3 {
 		}
 	}
 }
-
-const MAX_CONDITIONS: usize = 10;
-const MAX_CONDITION_KEY_LEN: usize = 64;
-const MAX_CONDITION_VALUE_LEN: usize = 128;
 
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new().route("/", any(handle)).route("/*any", any(handle))
@@ -214,19 +213,26 @@ struct Connection {
 	ttl: Pin<Box<tokio::time::Sleep>>,
 	/// The interval for sending heartbeats.
 	heartbeat_interval: tokio::time::Interval,
-	/// The interval for cleaning up subscriptions, we auto unsubscribe from
-	/// subscriptions that have been marked as auto.
-	subscription_cleanup_interval: tokio::time::Interval,
 	/// A map of subscriptions that this connection is subscribed to.
 	topics: TopicMap,
 	/// The initial subscriptions that this connection should subscribe to.
 	initial_subs: Option<Vec<payload::Subscribe>>,
-	/// A deduplication cache for dispatch events.
-	dedupe: Dedupe,
 	/// Drop guard for the metrics
 	_connection_duration_drop_guard: v3::ConnectionDurationDropGuard,
 	/// Drop guard for the metrics
 	_current_connection_drop_guard: v3::CurrentConnectionDropGuard,
+	
+	presence_lru: const_lru::ConstLru<UserId, PresenceCacheValue, 1024, u16>,
+	personal_emote_set_lru: const_lru::ConstLru<EmoteSetId, (chrono::DateTime<chrono::Utc>, usize), 1024, u16>,
+	badge_lru: const_lru::ConstLru<BadgeId, chrono::DateTime<chrono::Utc>, 255, u8>, 
+	paint_lru: const_lru::ConstLru<PaintId, chrono::DateTime<chrono::Utc>, 1024, u16>,
+}
+
+struct PresenceCacheValue {
+	personal_emote_sets: Vec<EmoteSetId>,
+	active_badge: Option<BadgeId>, 
+	active_paint: Option<PaintId>,
+	active_profile_picture: Option<UserProfilePictureId>,
 }
 
 /// The implementation of the socket.
@@ -254,13 +260,15 @@ impl Connection {
 			// Same as above for the heartbeat interval.
 			heartbeat_interval: tokio::time::interval(jitter(global.config().api.heartbeat_interval)),
 			// And again for the subscription cleanup interval.
-			subscription_cleanup_interval: tokio::time::interval(jitter(global.config().api.subscription_cleanup_interval)),
 			initial_subs,
-			dedupe: Dedupe::new(),
 			_ticket: ticket,
 			global,
 			_connection_duration_drop_guard: v3::ConnectionDurationDropGuard::new(connection_kind),
 			_current_connection_drop_guard: v3::CurrentConnectionDropGuard::new(connection_kind),
+			presence_lru: const_lru::ConstLru::new(),
+			badge_lru: const_lru::ConstLru::new(),
+			paint_lru: const_lru::ConstLru::new(),
+			personal_emote_set_lru: const_lru::ConstLru::new(),
 		}
 	}
 
@@ -399,18 +407,8 @@ impl Connection {
 	/// Handle a subscription request.
 	async fn handle_subscription(
 		&mut self,
-		auto: Option<u32>,
 		subscribe: &payload::Subscribe,
 	) -> Result<(), ConnectionError> {
-		if subscribe.condition.is_empty() {
-			self.send_error(
-				"Wildcard event target subscription requires authentication",
-				HashMap::new(),
-				Some(CloseCode::InsufficientPrivilege),
-			)
-			.await?;
-		}
-
 		if let Some(subscription_limit) = self.global.config().api.subscription_limit {
 			if self.topics.len() >= subscription_limit {
 				self.send_error("Too Many Active Subscriptions!", HashMap::new(), Some(CloseCode::RateLimit))
@@ -418,112 +416,66 @@ impl Connection {
 			}
 		}
 
-		if subscribe.condition.len() > MAX_CONDITIONS {
-			self.send_error(
-				"Subscription Condition Too Large",
-				vec![
-					("condition_keys".to_string(), serde_json::json!(subscribe.condition.len())),
-					("condition_keys_most".to_string(), serde_json::json!(MAX_CONDITIONS)),
-				]
-				.into_iter()
-				.collect(),
-				Some(CloseCode::RateLimit),
-			)
-			.await?;
-		}
-
-		if let Some((key, value)) = subscribe
-			.condition
-			.iter()
-			.find(|(k, v)| k.len() > MAX_CONDITION_KEY_LEN || v.len() > MAX_CONDITION_VALUE_LEN)
-		{
-			self.send_error(
-				"Subscription Condition Too Large",
-				vec![
-					("key".to_string(), serde_json::json!(key)),
-					("value".to_string(), serde_json::json!(value)),
-					("key_length".to_string(), serde_json::json!(key.len())),
-					("value_length".to_string(), serde_json::json!(value.len())),
-					("key_length_most".to_string(), serde_json::json!(MAX_CONDITION_KEY_LEN)),
-					("value_length_most".to_string(), serde_json::json!(MAX_CONDITION_VALUE_LEN)),
-				]
-				.into_iter()
-				.collect(),
-				Some(CloseCode::RateLimit),
-			)
-			.await?;
-		}
-
-		let mut condition = subscribe.condition.clone();
-
-		// We have to parse the id here to convert old ids to new ones
-		if let Entry::Occupied(mut id_condition) = condition.entry("object_id".to_string()) {
-			// If the id is not a valid id, we just keep the orginal entry
-			if let Ok(id) = Id::<()>::from_str(id_condition.get()) {
-				id_condition.insert(id.to_string());
-			}
-		}
-
-		let topic = EventTopic::new(subscribe.ty, &condition);
-		let topic_key = topic.as_key();
-		match self.topics.get_mut(&topic_key) {
-			Some(o) => {
-				if o.auto().is_some() {
-					o.set_auto(auto);
-				} else if auto.is_none() {
-					self.send_error(
-						"Already subscribed to this event",
-						HashMap::new(),
-						Some(CloseCode::AlreadySubscribed),
-					)
+		let scope = match subscribe.condition.clone().try_into() {
+			Ok(scope) => scope,
+			Err(()) => {
+				self.send_error("Invalid Subscription Condition", HashMap::new(), Some(CloseCode::InvalidPayload))
 					.await?;
-				}
-			}
-			None => {
-				self.topics.insert(
-					topic_key,
-					Subscription::new(auto, self.global.subscription_manager().subscribe(topic).await?),
-				);
-			}
-		}
+				return Ok(());
+			},
+		};
 
-		tracing::debug!("subscribed to event: {topic}");
+		let topic = EventTopic::new(subscribe.ty, scope);
 
-		if auto.is_none() {
-			self.send_ack(
-				Opcode::Subscribe,
-				serde_json::json!({
-					"id": self.seq,
-					"type": subscribe.ty.as_str(),
-					"condition": subscribe.condition,
-				}),
+		let topic_key = topic.as_key();
+
+		if self.topics.contains_key(&topic_key) {
+			self.send_error(
+				"Already subscribed to this event",
+				HashMap::new(),
+				Some(CloseCode::AlreadySubscribed),
 			)
 			.await?;
 		}
+
+		self.topics.insert(
+			topic_key,
+			Subscription::new(self.global.subscription_manager().subscribe(topic).await?),
+		);
+
+		self.send_ack(
+			Opcode::Subscribe,
+			serde_json::json!({
+				"id": self.seq,
+				"type": subscribe.ty.as_str(),
+				"condition": subscribe.condition,
+			}),
+		)
+		.await?;
 
 		Ok(())
 	}
 
 	/// Handle an unsubscribe request.
-	async fn handle_unsubscribe(&mut self, auto: bool, unsubscribe: &payload::Unsubscribe) -> Result<(), ConnectionError> {
-		if unsubscribe.condition.is_empty() {
+	async fn handle_unsubscribe(&mut self, unsubscribe: &payload::Unsubscribe) -> Result<(), ConnectionError> {
+		if matches!(unsubscribe.condition, SubscribeCondition::Unknown) {
 			let count = self.topics.len();
-			self.topics.retain(|topic, _| topic.0 != unsubscribe.ty);
+			self.topics.remove_all(unsubscribe.ty);
 			if count == self.topics.len() {
-				if auto {
-					return Ok(());
-				}
-
 				self.send_error("Not subscribed to this event", HashMap::new(), Some(CloseCode::NotSubscribed))
 					.await?;
 			}
 		} else {
-			let topic = EventTopic::new(unsubscribe.ty, &unsubscribe.condition).as_key();
-			if self.topics.remove(&topic).is_none() {
-				if auto {
+			let topic = EventTopic::new(unsubscribe.ty, match unsubscribe.condition.clone().try_into() {
+				Ok(scope) => scope,
+				Err(()) => {
+					self.send_error("Invalid Subscription Condition", HashMap::new(), Some(CloseCode::InvalidPayload))
+						.await?;
 					return Ok(());
-				}
-
+				},
+			}).as_key();
+		
+			if self.topics.remove(&topic).is_none() {
 				self.send_error("Not subscribed to this event", HashMap::new(), Some(CloseCode::NotSubscribed))
 					.await?;
 			}
@@ -585,10 +537,10 @@ impl Connection {
 				.await?;
 			}
 			MessageData::Subscribe(subscribe) => {
-				self.handle_subscription(None, &subscribe).await?;
+				self.handle_subscription(&subscribe).await?;
 			}
 			MessageData::Unsubscribe(unsubscribe) => {
-				self.handle_unsubscribe(false, &unsubscribe).await?;
+				self.handle_unsubscribe(&unsubscribe).await?;
 			}
 			MessageData::Bridge(bridge) => {
 				// Subscription bridge is a way of interacting with the API through the socket.
@@ -616,37 +568,69 @@ impl Connection {
 	}
 
 	async fn handle_dispatch(&mut self, payload: &Message<payload::Dispatch>) -> Result<(), ConnectionError> {
-		// Check if the dispatch is a whisper to a connection.
-		if let Some(whisper) = &payload.data.whisper {
-			if &self.id.to_string() != whisper {
-				return Ok(());
-			}
-		}
-
-		// Check if the dispatch is a duplicate.
-		if let Some(hash) = payload.data.hash {
-			if !self.dedupe.insert(hash) {
-				return Ok(());
-			}
-		}
-
-		// Check if the dispatch adds or removes subscriptions or hashes.
-		if let Some(effect) = &payload.data.effect {
-			for add in &effect.add_subscriptions {
-				self.handle_subscription(Some(payload.data.hash.unwrap_or(0)), add).await?;
-			}
-
-			for remove in &effect.remove_subscriptions {
-				self.handle_unsubscribe(true, remove).await?;
-			}
-
-			for hash in &effect.remove_hashes {
-				self.dedupe.remove(hash);
-			}
-		}
-
 		// If everything is good, send the dispatch to the client.
 		self.send_message(&payload.data).await?;
+
+		Ok(())
+	}
+
+	async fn handle_presence(&mut self, payload: &InternalEventUserPresenceData) -> Result<(), ConnectionError> {
+		if let Some(badge) = payload.active_badge.as_ref() {
+			if self.badge_lru.get(&badge.id).map(|t| t != &badge.updated_at).unwrap_or(true) {
+				self.send_message(&payload::Dispatch {
+					ty: EventType::CreateCosmetic,
+					body: ChangeMap {
+						id: badge.id.cast(),
+						kind: ObjectKind::Cosmetic,
+						object: serde_json::json!({
+							"data": {
+								"id": badge.id.to_string(),
+								"name": badge.name,
+								"tag": badge.tags.first().map(|s| s.as_ref()).unwrap_or(""),
+								"tooltip": badge.description.as_deref().unwrap_or(""),
+								"host": {
+									"files": [],
+									"url": "",
+								},
+							},
+						}),
+						..Default::default()
+					},
+				}).await?;
+			}
+
+			self.badge_lru.insert(badge.id, badge.updated_at);
+		}
+
+		if let Some(paint) = payload.active_paint.as_ref() {
+			if self.paint_lru.get(&paint.id).map(|t| t != &paint.updated_at).unwrap_or(true) {
+				self.send_message(&payload::Dispatch {
+					ty: EventType::CreateCosmetic,
+					body: ChangeMap {
+						id: paint.id.cast(),
+						kind: ObjectKind::Cosmetic,
+						object: serde_json::json!({
+							"data": {
+								"id": paint.id.to_string(),
+								"name": paint.name,
+								"tag": paint.tags.first().map(|s| s.as_ref()).unwrap_or(""),
+								"tooltip": paint.description.as_deref().unwrap_or(""),
+								"host": {
+									"files": [],
+									"url": "",
+								},
+							},
+						}),
+						..Default::default()
+					},
+				}).await?;
+			}
+
+			self.paint_lru.insert(paint.id, paint.updated_at);
+		}
+
+		if let Some(user_state) = self.presence_lru.get(&payload.id) {
+		}
 
 		Ok(())
 	}
@@ -656,7 +640,7 @@ impl Connection {
 		// On the first cycle, we subscribe to the initial subscriptions.
 		if let Some(initial_subs) = self.initial_subs.take() {
 			for sub in &initial_subs {
-				self.handle_subscription(None, sub).await?;
+				self.handle_subscription(sub).await?;
 			}
 		}
 
@@ -695,7 +679,10 @@ impl Connection {
 				self.handle_message(serde_json::from_slice(&msg)?).await
 			},
 			Some(payload) = self.topics.next() => {
-				self.handle_dispatch(payload.as_ref()).await
+				match payload {
+					Payload::Dispatch(payload) => self.handle_dispatch(payload.as_ref()).await,
+					Payload::Presence(payload) => self.handle_presence(payload.as_ref()).await,
+				}
 			}
 			_ = self.heartbeat_interval.tick() => {
 				tracing::debug!("sending heartbeat");
@@ -705,22 +692,6 @@ impl Connection {
 				}).await?;
 
 				self.heartbeat_count += 1;
-
-				Ok(())
-			},
-			_ = self.subscription_cleanup_interval.tick() => {
-				// When we receive a subscription cleanup tick, we remove all subscriptions that have been marked as auto.
-				self.topics.retain(|_, s| {
-					if let Some(auto) = s.auto() {
-						self.dedupe.remove(&auto);
-						false
-					} else {
-						true
-					}
-				});
-
-				// We then shrink the topics map to free up memory.
-				self.topics.shrink_to_fit();
 
 				Ok(())
 			},
