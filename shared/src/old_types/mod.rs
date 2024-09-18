@@ -26,6 +26,7 @@ use crate::database::user::editor::{
 	UserEditorState,
 };
 use crate::database::user::{FullUser, UserId};
+use crate::database::Id;
 
 pub mod cosmetic;
 pub mod image;
@@ -94,6 +95,19 @@ pub struct UserPartialModel {
 }
 
 impl UserPartialModel {
+	pub fn deleted_user() -> Self {
+		Self {
+			id: UserId::nil(),
+			user_type: UserTypeModel::Regular,
+			username: "*DeletedUser".to_string(),
+			display_name: "*DeletedUser".to_string(),
+			avatar_url: String::new(),
+			style: UserStyle::default(),
+			role_ids: Vec::new(),
+			connections: Vec::new(),
+		}
+	}
+
 	pub fn from_db(
 		user: FullUser,
 		paint: Option<CosmeticPaintModel>,
@@ -1015,4 +1029,37 @@ impl serde::Serialize for BanEffect {
 	{
 		self.bits().serialize(serializer)
 	}
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct Entitlement {
+	pub id: Id<()>,
+	#[serde(flatten)]
+	pub data: EntitlementData,
+	pub user: UserPartialModel,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum EntitlementKind {
+	Paint,
+	Badge,
+	EmoteSet,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum EntitlementData {
+	Role {
+		ref_id: RoleId,
+	},
+	Paint {
+		ref_id: PaintId,
+	},
+	Badge {
+		ref_id: BadgeId,
+	},
+	EmoteSet {
+		ref_id: EmoteSetId,
+	},
 }

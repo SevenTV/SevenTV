@@ -9,7 +9,7 @@ use crate::typesense::types::TypesenseCollection;
 pub struct Paint {
 	pub id: PaintId,
 	pub name: String,
-	pub description: String,
+	pub description: Option<String>,
 	pub tags: Vec<String>,
 	pub created_by: UserId,
 	pub created_at: i64,

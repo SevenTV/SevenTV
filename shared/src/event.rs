@@ -21,7 +21,7 @@ use crate::database::user::connection::UserConnection;
 use crate::database::user::editor::{UserEditor, UserEditorPermissions};
 use crate::database::user::profile_picture::UserProfilePicture;
 use crate::database::user::session::{UserSession, UserSessionId};
-use crate::database::user::{FullUser, User, UserId};
+use crate::database::user::{FullUser, User};
 use crate::database::Id;
 use crate::event_api::types::{ChangeField, ChangeFieldType};
 use crate::event_api::{self};
@@ -137,7 +137,7 @@ impl InternalEventData {
 			InternalEventData::Paint { after, .. } => after.id.cast(),
 			InternalEventData::Badge { after, .. } => after.id.cast(),
 			InternalEventData::Role { after, .. } => after.id.cast(),
-			InternalEventData::UserPresence(data) => data.id.cast(),
+			InternalEventData::UserPresence(data) => data.user.id.cast(),
 		}
 	}
 
@@ -267,14 +267,19 @@ impl TryFrom<InternalEvent> for StoredEvent {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct InternalEventUserPresenceData {
-	pub id: UserId,
+	pub user: FullUser,
 	pub platform: EventUserPresencePlatform,
 	pub active_badge: Option<Badge>,
 	pub active_paint: Option<Paint>,
-	pub active_profile_picture: Option<UserProfilePicture>,
-	pub personal_emote_sets: Vec<EmoteSet>,
+	pub personal_emote_sets: Vec<InternalEventUserPresenceDataEmoteSet>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct InternalEventUserPresenceDataEmoteSet {
+	pub emote_set: EmoteSet,
+	pub emotes: Vec<Emote>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]

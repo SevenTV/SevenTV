@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -13,15 +13,15 @@ use scuffle_foundations::context::ContextFutExt;
 use scuffle_foundations::telemetry::metrics::metrics;
 use shared::database::badge::BadgeId;
 use shared::database::emote_set::EmoteSetId;
-use shared::database::image_set::Image;
 use shared::database::paint::PaintId;
-use shared::database::user::profile_picture::UserProfilePictureId;
 use shared::database::user::UserId;
 use shared::database::Id;
-use shared::event::{EventUserPresencePlatform, InternalEventUserPresenceData};
+use shared::event::InternalEventUserPresenceData;
 use shared::event_api::payload::{Subscribe, SubscribeCondition};
-use shared::event_api::types::{ChangeMap, CloseCode, EventType, ObjectKind, Opcode};
+use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, CloseCode, EventType, ObjectKind, Opcode};
 use shared::event_api::{payload, Message, MessageData, MessagePayload};
+use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticModel, CosmeticPaintModel};
+use shared::old_types::{EmotePartialModel, EmoteSetModel, Entitlement, EntitlementData, UserPartialModel};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 
@@ -221,18 +221,18 @@ struct Connection {
 	_connection_duration_drop_guard: v3::ConnectionDurationDropGuard,
 	/// Drop guard for the metrics
 	_current_connection_drop_guard: v3::CurrentConnectionDropGuard,
-	
+
 	presence_lru: const_lru::ConstLru<UserId, PresenceCacheValue, 1024, u16>,
-	personal_emote_set_lru: const_lru::ConstLru<EmoteSetId, (chrono::DateTime<chrono::Utc>, usize), 1024, u16>,
-	badge_lru: const_lru::ConstLru<BadgeId, chrono::DateTime<chrono::Utc>, 255, u8>, 
+	personal_emote_set_lru: const_lru::ConstLru<EmoteSetId, chrono::DateTime<chrono::Utc>, 1024, u16>,
+	badge_lru: const_lru::ConstLru<BadgeId, chrono::DateTime<chrono::Utc>, 255, u8>,
 	paint_lru: const_lru::ConstLru<PaintId, chrono::DateTime<chrono::Utc>, 1024, u16>,
 }
 
+#[derive(Default)]
 struct PresenceCacheValue {
 	personal_emote_sets: Vec<EmoteSetId>,
-	active_badge: Option<BadgeId>, 
+	active_badge: Option<BadgeId>,
 	active_paint: Option<PaintId>,
-	active_profile_picture: Option<UserProfilePictureId>,
 }
 
 /// The implementation of the socket.
@@ -474,7 +474,7 @@ impl Connection {
 					return Ok(());
 				},
 			}).as_key();
-		
+
 			if self.topics.remove(&topic).is_none() {
 				self.send_error("Not subscribed to this event", HashMap::new(), Some(CloseCode::NotSubscribed))
 					.await?;
@@ -575,28 +575,29 @@ impl Connection {
 	}
 
 	async fn handle_presence(&mut self, payload: &InternalEventUserPresenceData) -> Result<(), ConnectionError> {
+		let mut dispatches = vec![];
+
 		if let Some(badge) = payload.active_badge.as_ref() {
 			if self.badge_lru.get(&badge.id).map(|t| t != &badge.updated_at).unwrap_or(true) {
-				self.send_message(&payload::Dispatch {
+				let object = CosmeticModel {
+					id: badge.id,
+					data: CosmeticBadgeModel::from_db(badge.clone(), &self.global.config().api.cdn_origin),
+					kind: CosmeticKind::Badge,
+				};
+				let object = serde_json::to_value(object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize badge");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(payload::Dispatch {
 					ty: EventType::CreateCosmetic,
 					body: ChangeMap {
 						id: badge.id.cast(),
 						kind: ObjectKind::Cosmetic,
-						object: serde_json::json!({
-							"data": {
-								"id": badge.id.to_string(),
-								"name": badge.name,
-								"tag": badge.tags.first().map(|s| s.as_ref()).unwrap_or(""),
-								"tooltip": badge.description.as_deref().unwrap_or(""),
-								"host": {
-									"files": [],
-									"url": "",
-								},
-							},
-						}),
+						object,
 						..Default::default()
 					},
-				}).await?;
+				});
 			}
 
 			self.badge_lru.insert(badge.id, badge.updated_at);
@@ -604,32 +605,233 @@ impl Connection {
 
 		if let Some(paint) = payload.active_paint.as_ref() {
 			if self.paint_lru.get(&paint.id).map(|t| t != &paint.updated_at).unwrap_or(true) {
-				self.send_message(&payload::Dispatch {
+				let object = CosmeticModel {
+					id: paint.id,
+					data: CosmeticPaintModel::from_db(paint.clone(), &self.global.config().api.cdn_origin),
+					kind: CosmeticKind::Paint,
+				};
+				let object = serde_json::to_value(object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize badge");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(payload::Dispatch {
 					ty: EventType::CreateCosmetic,
 					body: ChangeMap {
 						id: paint.id.cast(),
 						kind: ObjectKind::Cosmetic,
-						object: serde_json::json!({
-							"data": {
-								"id": paint.id.to_string(),
-								"name": paint.name,
-								"tag": paint.tags.first().map(|s| s.as_ref()).unwrap_or(""),
-								"tooltip": paint.description.as_deref().unwrap_or(""),
-								"host": {
-									"files": [],
-									"url": "",
-								},
-							},
-						}),
+						object,
 						..Default::default()
 					},
-				}).await?;
+				});
 			}
 
 			self.paint_lru.insert(paint.id, paint.updated_at);
 		}
 
-		if let Some(user_state) = self.presence_lru.get(&payload.id) {
+		let partial_user = UserPartialModel::from_db(payload.user.clone(), None, None, &self.global.config().api.cdn_origin);
+
+		for emote_set in &payload.personal_emote_sets {
+			if self.personal_emote_set_lru.get(&emote_set.emote_set.id).map(|t| t != &emote_set.emote_set.updated_at).unwrap_or(true) {
+				let object = EmoteSetModel::from_db(emote_set.emote_set.clone(), std::iter::empty(), Some(partial_user.clone()));
+				let object = serde_json::to_value(object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize emote set");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(payload::Dispatch {
+					ty: EventType::CreateEmoteSet,
+					body: ChangeMap {
+						id: emote_set.emote_set.id.cast(),
+						kind: ObjectKind::EmoteSet,
+						object,
+						..Default::default()
+					},
+				});
+
+				let pushed = emote_set.emotes.iter().enumerate().map(|(i, emote)| {
+					let value = EmotePartialModel::from_db(emote.clone(), Some(UserPartialModel::deleted_user()), &self.global.config().api.cdn_origin);
+					let value = serde_json::to_value(value).map_err(|e| {
+						tracing::error!(error = %e, "failed to serialize emote");
+						ConnectionError::ClosedByServer(CloseCode::ServerError)
+					})?;
+
+					Ok(ChangeField {
+						key: "emotes".to_string(),
+						index: Some(i),
+						ty: ChangeFieldType::Object,
+						value,
+						..Default::default()
+					})
+				}).collect::<Result<Vec<_>, ConnectionError>>()?;
+
+				dispatches.push(payload::Dispatch {
+					ty: EventType::UpdateEmoteSet,
+					body: ChangeMap {
+						id: emote_set.emote_set.id.cast(),
+						kind: ObjectKind::EmoteSet,
+						object: serde_json::Value::Null,
+						pushed,
+						..Default::default()
+					},
+				});
+			}
+
+			self.personal_emote_set_lru.insert(emote_set.emote_set.id, emote_set.emote_set.updated_at);
+		}
+
+		let user_state = self.presence_lru.entry(payload.user.id).or_insert_with(PresenceCacheValue::default);
+
+		if user_state.active_badge != payload.active_badge.as_ref().map(|b| b.id) {
+			if let Some(active_badge) = user_state.active_badge {
+				let object = Entitlement {
+					id: Id::<()>::nil(),
+					data: EntitlementData::Badge { ref_id: active_badge },
+					user: partial_user.clone(),
+				};
+				let value = serde_json::to_value(&object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize entitlement");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(
+					payload::Dispatch {
+						ty: EventType::DeleteEntitlement,
+						body: ChangeMap {
+							id: object.id,
+							kind: ObjectKind::Entitlement,
+							object: value,
+							..Default::default()
+						},
+					}
+				);
+			}
+
+			if let Some(badge) = payload.active_badge.as_ref() {
+				let object = Entitlement {
+					id: Id::<()>::nil(),
+					data: EntitlementData::Badge { ref_id: badge.id },
+					user: partial_user.clone(),
+				};
+				let value = serde_json::to_value(&object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize entitlement");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(payload::Dispatch {
+					ty: EventType::CreateEntitlement,
+					body: ChangeMap {
+						id: object.id.cast(),
+						kind: ObjectKind::Cosmetic,
+						object: value,
+						..Default::default()
+					},
+				});
+			}
+
+			user_state.active_badge = payload.active_badge.as_ref().map(|b| b.id);
+		}
+
+		if user_state.active_paint != payload.active_paint.as_ref().map(|b| b.id) {
+			if let Some(active_paint) = user_state.active_paint {
+				let object = Entitlement {
+					id: Id::<()>::nil(),
+					data: EntitlementData::Paint { ref_id: active_paint },
+					user: partial_user.clone(),
+				};
+				let value = serde_json::to_value(&object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize entitlement");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(payload::Dispatch {
+					ty: EventType::DeleteEntitlement,
+					body: ChangeMap {
+						id: object.id,
+						kind: ObjectKind::Entitlement,
+						object: value,
+						..Default::default()
+					},
+				});
+			}
+
+			if let Some(paint) = payload.active_paint.as_ref() {
+				let object = Entitlement {
+					id: Id::<()>::nil(),
+					data: EntitlementData::Paint { ref_id: paint.id },
+					user: partial_user.clone(),
+				};
+				let value = serde_json::to_value(&object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize entitlement");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(payload::Dispatch {
+					ty: EventType::CreateEntitlement,
+					body: ChangeMap {
+						id: object.id.cast(),
+						kind: ObjectKind::Cosmetic,
+						object: value,
+						..Default::default()
+					},
+				});
+			}
+
+			user_state.active_paint = payload.active_paint.as_ref().map(|p| p.id);
+		}
+
+		// Added
+		for sen in &payload.personal_emote_sets {
+			if !user_state.personal_emote_sets.contains(&sen.emote_set.id) {
+				let object = Entitlement {
+					id: Id::<()>::nil(),
+					data: EntitlementData::EmoteSet { ref_id: sen.emote_set.id },
+					user: partial_user.clone(),
+				};
+				let value = serde_json::to_value(&object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize entitlement");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(payload::Dispatch {
+					ty: EventType::CreateEntitlement,
+					body: ChangeMap {
+						id: object.id.cast(),
+						kind: ObjectKind::Entitlement,
+						object: value,
+						..Default::default()
+					},
+				});
+			}
+		}
+
+		// Removed
+		for sen in &user_state.personal_emote_sets {
+			if !payload.personal_emote_sets.iter().any(|e| *sen == e.emote_set.id) {
+				let object = Entitlement {
+					id: Id::<()>::nil(),
+					data: EntitlementData::EmoteSet { ref_id: *sen },
+					user: partial_user.clone(),
+				};
+				let value = serde_json::to_value(&object).map_err(|e| {
+					tracing::error!(error = %e, "failed to serialize entitlement");
+					ConnectionError::ClosedByServer(CloseCode::ServerError)
+				})?;
+
+				dispatches.push(payload::Dispatch {
+					ty: EventType::DeleteEntitlement,
+					body: ChangeMap {
+						id: object.id,
+						kind: ObjectKind::Entitlement,
+						object: value,
+						..Default::default()
+					},
+				});
+			}
+		}
+
+		for dispatch in dispatches {
+			self.send_message(&dispatch).await?;
 		}
 
 		Ok(())
