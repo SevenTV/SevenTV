@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -18,7 +19,10 @@ use shared::database::user::editor::{EditorUserPermission, UserEditorId};
 use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
 use shared::database::user::{User, UserId, UserStyle};
 use shared::database::{Id, MongoCollection};
-use shared::event::{EventUserPresencePlatform, InternalEvent, InternalEventData, InternalEventPayload, InternalEventUserPresenceData};
+use shared::event::{
+	EventUserPresencePlatform, InternalEvent, InternalEventData, InternalEventPayload, InternalEventUserPresenceData,
+	InternalEventUserPresenceDataEmoteSet,
+};
 use shared::old_types::{
 	EmoteSetModel, EmoteSetPartialModel, UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel,
 };
@@ -386,19 +390,6 @@ pub async fn create_user_presence(
 			None
 		};
 
-		let active_profile_picture =
-			if let Some(id) = user
-				.style
-				.active_profile_picture
-				.and_then(|id| user.has(UserPermission::UseCustomProfilePicture).then_some(id))
-			{
-				global.user_profile_picture_id_loader.load(id).await.map_err(|()| {
-					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load profile picture")
-				})?
-			} else {
-				None
-			};
-
 		let personal_emote_sets = global
 			.emote_set_by_id_loader
 			.load_many(
@@ -413,24 +404,45 @@ pub async fn create_user_presence(
 			.into_values()
 			.collect::<Vec<_>>();
 
+		let emote_ids: HashSet<_> = personal_emote_sets
+			.iter()
+			.flat_map(|s| s.emotes.iter().map(|e| e.id))
+			.collect();
+
+		let emotes = global
+			.emote_by_id_loader
+			.load_many(emote_ids)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
+		let mut sets = vec![];
+
+		for set in personal_emote_sets {
+			let emotes = set.emotes.iter().filter_map(|e| emotes.get(&e.id).cloned()).collect();
+			sets.push(InternalEventUserPresenceDataEmoteSet { emote_set: set, emotes });
+		}
+
 		let payload = rmp_serde::to_vec_named(&InternalEventPayload::new(Some(InternalEvent {
 			actor: None,
 			session_id: None,
 			data: InternalEventData::UserPresence(InternalEventUserPresenceData {
-				id,
+				user,
 				platform: match presence.data.platform {
-					UserPresencePlatform::Twitch => EventUserPresencePlatform::Twitch(presence.data.id.parse().map_err(|_| {
-						ApiError::bad_request(ApiErrorCode::BadRequest, "data.id is not a valid twitch id")
-					})?),
-					UserPresencePlatform::Kick => EventUserPresencePlatform::Kick(presence.data.id.parse().map_err(|_| {
-						ApiError::bad_request(ApiErrorCode::BadRequest, "data.id is not a valid kick id")
-					})?),
+					UserPresencePlatform::Twitch => {
+						EventUserPresencePlatform::Twitch(presence.data.id.parse().map_err(|_| {
+							ApiError::bad_request(ApiErrorCode::BadRequest, "data.id is not a valid twitch id")
+						})?)
+					}
+					UserPresencePlatform::Kick => {
+						EventUserPresencePlatform::Kick(presence.data.id.parse().map_err(|_| {
+							ApiError::bad_request(ApiErrorCode::BadRequest, "data.id is not a valid kick id")
+						})?)
+					}
 					UserPresencePlatform::Youtube => EventUserPresencePlatform::Youtube(presence.data.id),
 				},
 				active_badge,
 				active_paint,
-				active_profile_picture,
-				personal_emote_sets,
+				personal_emote_sets: sets,
 			}),
 			timestamp: chrono::Utc::now(),
 		})))

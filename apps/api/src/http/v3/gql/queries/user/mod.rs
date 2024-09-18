@@ -453,7 +453,7 @@ impl UserStyle {
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
-			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin)))
+			.map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin)))
 	}
 
 	async fn badge<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<CosmeticBadgeModel>, ApiError> {
@@ -470,7 +470,7 @@ impl UserStyle {
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
-			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin)))
+			.map(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin)))
 	}
 }
 
