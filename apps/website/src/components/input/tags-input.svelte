@@ -4,6 +4,8 @@
 	import TextInput from "./text-input.svelte";
 	import { t } from "svelte-i18n";
 
+	const LIMIT = 10;
+
 	export let tags = ["lorem", "ipsum"];
 
 	function removeTag(i: number) {
@@ -14,7 +16,7 @@
 	let tagInput: string;
 
 	function onTagInput(e: KeyboardEvent) {
-		if (e.key === "Enter" && tagInput) {
+		if (e.key === "Enter" && tagInput && tags.length < LIMIT) {
 			tags = [...tags, tagInput];
 			tagInput = "";
 			e.preventDefault();

@@ -10,21 +10,37 @@
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 
+	const TAGS_SEPERATOR = " ";
+
 	let query: string | null = $page.url.searchParams.get("q");
 	let numPage: string | null = $page.url.searchParams.get("p");
+	let tags: string[] = $page.url.searchParams.get("t")?.split(TAGS_SEPERATOR) ?? [];
+	let animated: boolean = $page.url.searchParams.get("a") == "1";
+	let staticFilter: boolean = $page.url.searchParams.get("s") == "1";
+	let overlaying: boolean = $page.url.searchParams.get("o") == "1";
+	let exactMatch: boolean = $page.url.searchParams.get("em") == "1";
 
 	$: {
 		let url = new URL($page.url);
+
 		if (query) {
 			url.searchParams.set("q", query);
 		} else {
 			url.searchParams.delete("q");
 		}
+
 		if (numPage) {
 			url.searchParams.set("p", numPage);
 		} else {
 			url.searchParams.delete("p");
 		}
+
+		if (tags) {
+			url.searchParams.set("t", tags.join(TAGS_SEPERATOR));
+		} else {
+			url.searchParams.delete("t");
+		}
+
 		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
 	}
 
@@ -82,7 +98,7 @@
 			</TextInput>
 		</Expandable>
 		<Expandable title={$t("labels.tags")} expanded={false}>
-			<TagsInput />
+			<TagsInput bind:tags={tags} />
 		</Expandable>
 		<!-- <Expandable title={$t("pages.directory.sorting.title")} expanded={false}>
 			<div class="row">
@@ -106,10 +122,10 @@
 		</Expandable> -->
 		<Expandable title={$t("labels.filters")} expanded={false}>
 			<div class="filters">
-				<Checkbox>{$t("pages.directory.filters.animated")}</Checkbox>
-				<Checkbox>{$t("pages.directory.filters.static")}</Checkbox>
-				<Checkbox>{$t("flags.overlaying")}</Checkbox>
-				<Checkbox>{$t("pages.directory.filters.exact_match")}</Checkbox>
+				<Checkbox bind:value={animated}>{$t("pages.directory.filters.animated")}</Checkbox>
+				<Checkbox bind:value={staticFilter}>{$t("pages.directory.filters.static")}</Checkbox>
+				<Checkbox bind:value={overlaying}>{$t("flags.overlaying")}</Checkbox>
+				<Checkbox bind:value={exactMatch}>{$t("pages.directory.filters.exact_match")}</Checkbox>
 			</div>
 		</Expandable>
 		<!-- <Expandable title={$t("pages.directory.size.title")} expanded={false}>
