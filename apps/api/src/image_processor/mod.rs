@@ -141,6 +141,7 @@ fn event_to_image_set(event: &event_callback::Success) -> anyhow::Result<ImageSe
 			path: input.path.as_ref().map(|p| p.path.clone()).unwrap_or_default(),
 			mime: input.content_type.clone(),
 			size: input.size as i64,
+			scale: 1,
 		}),
 		outputs: event
 			.files
@@ -152,6 +153,7 @@ fn event_to_image_set(event: &event_callback::Success) -> anyhow::Result<ImageSe
 				width: file.width as i32,
 				height: file.height as i32,
 				frame_count: file.frame_count as i32,
+				scale: file.scale.unwrap_or(1) as i32,
 			})
 			.collect(),
 	})

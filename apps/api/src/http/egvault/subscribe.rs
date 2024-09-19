@@ -12,7 +12,7 @@ use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
 use super::metadata::{CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
-use super::{create_checkout_session_params, find_or_create_customer};
+use super::{create_checkout_session_params, find_or_create_customer, CheckoutProduct};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Query;
@@ -100,7 +100,6 @@ pub async fn subscribe(
 						#[query(serde)]
 						kind: &kind,
 						active: true,
-						gift: query.gift_for.is_some(),
 					}
 				}
 			})
@@ -111,11 +110,7 @@ pub async fn subscribe(
 			})?
 			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "subscription product not found"))?;
 
-		let variant = product
-			.variants
-			.into_iter()
-			.find(|v| v.kind == kind && v.gift == query.gift_for.is_some())
-			.unwrap();
+		let variant = product.variants.into_iter().find(|v| v.kind == kind && v.active).unwrap();
 
 		let customer_id = match authed_user.stripe_customer_id.clone() {
 			Some(id) => id,
@@ -135,7 +130,10 @@ pub async fn subscribe(
 			&global,
 			session.ip(),
 			customer_id,
-			&variant.id,
+			match &query.gift_for {
+				Some(_) => CheckoutProduct::Gift(product.provider_id),
+				None => CheckoutProduct::Price(variant.id.0.clone()),
+			},
 			product.default_currency,
 			&variant.currency_prices,
 		)
@@ -175,7 +173,15 @@ pub async fn subscribe(
 
 			params.mode = Some(stripe::CheckoutSessionMode::Payment);
 			params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
-				description: Some("Gift subscription payment".to_string()),
+				description: Some(format!(
+					"Gift subscription for {} (7TV:{})",
+					receiving_user
+						.connections
+						.first()
+						.map(|c| { format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id) })
+						.unwrap_or_else(|| "Unknown User".to_owned()),
+					receiving_user.id
+				)),
 				..Default::default()
 			});
 
@@ -186,6 +192,7 @@ pub async fn subscribe(
 						InvoiceMetadata::Gift {
 							customer_id: authed_user.id,
 							user_id: receiving_user.id,
+							product_id: variant.id.clone(),
 							subscription_product_id: Some(product.id),
 						}
 						.to_stripe(),

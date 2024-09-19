@@ -43,7 +43,7 @@ async fn main(settings: Matches<Config>) {
 			.ok();
 	});
 
-	if global.config().download_cosmetics {
+	if global.config.download_cosmetics {
 		let job = download_cosmetics::run(global.clone());
 
 		tokio::select! {

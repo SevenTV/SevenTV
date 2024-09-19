@@ -1,56 +1,39 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use shared::database::emote_set::EmoteSetId;
-use shared::database::global::{GlobalConfig, GlobalConfigAlerts};
-use shared::database::MongoCollection;
+use shared::database::emote_set::{EmoteSet, EmoteSetId};
+use shared::database::global::GlobalConfig;
 
-use super::{Job, ProcessOutcome};
+use super::JobOutcome;
 use crate::global::Global;
 use crate::types;
 
-pub struct SystemJob {
-	global: Arc<Global>,
+pub struct RunInput<'a> {
+	pub global: &'a Arc<Global>,
+	pub global_config: &'a mut GlobalConfig,
+    pub emote_sets: &'a mut HashMap<EmoteSetId, EmoteSet>,
 }
 
-impl Job for SystemJob {
-	type T = types::System;
+pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
+	let RunInput { global, global_config, emote_sets } = input;
 
-	const NAME: &'static str = "transfer_system";
+    let Some(system) = global.main_source_db.collection::<types::System>("system").find_one(bson::doc! {}).await? else {
+        anyhow::bail!("system not found");
+    };
 
-	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			GlobalConfig::collection(global.target_db()).drop().await?;
-			let indexes = GlobalConfig::indexes();
-			if !indexes.is_empty() {
-				GlobalConfig::collection(global.target_db()).create_indexes(indexes).await?;
-			}
-		}
+    let emote_set_id = EmoteSetId::from(system.emote_set_id);
+    if !emote_sets.contains_key(&emote_set_id) {
+        anyhow::bail!("emote set not found");
+    }
 
-		Ok(Self { global })
-	}
+    global_config.emote_set_id = emote_set_id;
+    global_config.country_currency_overrides = HashMap::from_iter([
+        
+    ]);
 
-	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
-		Some(self.global.source_db().collection("system"))
-	}
+    let mut outcome = JobOutcome::new("system");
 
-	async fn process(&mut self, system: Self::T) -> ProcessOutcome {
-		let mut outcome = ProcessOutcome::default();
+    outcome.processed_documents += 1;
 
-		let emote_set_id: EmoteSetId = system.emote_set_id.into();
-
-		let config = GlobalConfig {
-			id: (),
-			alerts: GlobalConfigAlerts::default(),
-			emote_set_id,
-			automod_rule_ids: vec![],
-			country_currency_overrides: HashMap::new(),
-		};
-		match GlobalConfig::collection(self.global.target_db()).insert_one(config).await {
-			Ok(_) => outcome.inserted_rows += 1,
-			Err(e) => outcome.errors.push(e.into()),
-		}
-
-		outcome
-	}
+	Ok(outcome)
 }

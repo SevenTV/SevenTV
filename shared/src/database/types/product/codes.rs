@@ -26,7 +26,7 @@ pub struct RedeemCodeSubscriptionEffect {
 	/// If not set then the sub will not be given to the user if they do not
 	/// have a sub. However the entitlements will still require a sub to be
 	/// active.
-	pub trial_days: Option<u32>,
+	pub trial_days: Option<i32>,
 }
 
 pub type RedeemCodeId = Id<RedeemCode>;
@@ -47,7 +47,7 @@ pub struct RedeemCode {
 	pub tags: Vec<String>,
 	pub code: String,
 	pub remaining_uses: i32,
-	pub active_period: TimePeriod,
+	pub active_period: Option<TimePeriod>,
 	pub subscription_effect: Option<RedeemCodeSubscriptionEffect>,
 	pub created_by: UserId,
 	#[serde(flatten)]

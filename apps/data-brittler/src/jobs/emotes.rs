@@ -5,12 +5,10 @@ use anyhow::Context;
 use futures::StreamExt;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId, EmoteMerged};
 use shared::database::image_set::{self, ImageSet, ImageSetInput};
-use shared::database::queries::filter;
 use shared::database::user::UserId;
-use shared::database::MongoCollection;
 use shared::old_types::EmoteFlagsModel;
 
-use super::{JobOutcome, ProcessOutcome};
+use super::{CdnFileRename, JobOutcome, ProcessOutcome};
 use crate::global::Global;
 use crate::types::EmoteLifecycle;
 use crate::{error, types};
@@ -18,15 +16,22 @@ use crate::{error, types};
 pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
 	pub emotes: &'a mut HashMap<EmoteId, Emote>,
+	pub public_cdn_rename: &'a mut Vec<CdnFileRename>,
+	pub internal_cdn_rename: &'a mut Vec<CdnFileRename>,
 }
 
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("emotes");
 
-	let RunInput { global, emotes } = input;
+	let RunInput {
+		global,
+		emotes,
+		internal_cdn_rename,
+		public_cdn_rename,
+	} = input;
 
 	let mut cursor = global
-		.source_db()
+		.main_source_db
 		.collection::<types::Emote>("emotes")
 		.find(bson::doc! {})
 		.await
@@ -35,7 +40,13 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	while let Some(emote) = cursor.next().await {
 		match emote {
 			Ok(emote) => {
-				outcome += process(ProcessInput { emotes, emote });
+				outcome += process(ProcessInput {
+					emotes,
+					emote,
+					internal_cdn_rename,
+					public_cdn_rename,
+				});
+				outcome.processed_documents += 1;
 			}
 			Err(e) => {
 				outcome.errors.push(e.into());
@@ -49,10 +60,17 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 struct ProcessInput<'a> {
 	emotes: &'a mut HashMap<EmoteId, Emote>,
 	emote: types::Emote,
+	public_cdn_rename: &'a mut Vec<CdnFileRename>,
+	internal_cdn_rename: &'a mut Vec<CdnFileRename>,
 }
 
 fn process(input: ProcessInput<'_>) -> ProcessOutcome {
-	let ProcessInput { emotes, emote } = input;
+	let ProcessInput {
+		emotes,
+		emote,
+		internal_cdn_rename,
+		public_cdn_rename,
+	} = input;
 
 	let owner_id = UserId::from(emote.owner_id);
 
@@ -94,19 +112,31 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 
 		let aspect_ratio = v.input_file.width as f64 / v.input_file.height as f64;
 
-		let input_file = match image_set::Image::try_from(v.input_file) {
+		let input_file = match image_set::Image::try_from(v.input_file.clone()) {
 			Ok(input_file) => input_file,
 			Err(e) => {
 				return ProcessOutcome::default().with_error(error::Error::InvalidCdnFile(e));
 			}
 		};
 
-		let outputs = match v.image_files.into_iter().map(image_set::Image::try_from).collect() {
+		let outputs: Vec<_> = match v.image_files.clone().into_iter().map(image_set::Image::try_from).collect() {
 			Ok(outputs) => outputs,
 			Err(e) => {
 				return ProcessOutcome::default().with_error(error::Error::InvalidCdnFile(e));
 			}
 		};
+
+		internal_cdn_rename.push(CdnFileRename {
+			old_path: v.input_file.key.clone(),
+			new_path: input_file.path.clone(),
+		});
+
+		for (old, new) in v.image_files.iter().zip(outputs.iter()) {
+			public_cdn_rename.push(CdnFileRename {
+				old_path: old.key.clone(),
+				new_path: new.path.clone(),
+			});
+		}
 
 		let image_set = ImageSet {
 			input: ImageSetInput::Image(input_file),
@@ -140,30 +170,4 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 	}
 
 	ProcessOutcome::default()
-}
-
-pub async fn skip(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
-	let mut outcome = JobOutcome::new("emotes");
-
-	let RunInput { global, emotes } = input;
-
-	let mut cursor = Emote::collection(global.target_db())
-		.find(filter::filter! {
-			Emote {}
-		})
-		.await
-		.context("query")?;
-
-	while let Some(emote) = cursor.next().await {
-		match emote {
-			Ok(emote) => {
-				emotes.insert(emote.id.into(), emote);
-			}
-			Err(e) => {
-				outcome.errors.push(e.into());
-			}
-		}
-	}
-
-	Ok(outcome)
 }

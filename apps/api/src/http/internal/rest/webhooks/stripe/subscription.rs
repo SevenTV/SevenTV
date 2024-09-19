@@ -192,20 +192,28 @@ pub async fn updated(
 			return Ok(Some(period.subscription_id));
 		}
 		(true, 1) => {
-			tx.insert_one(StripeError {
-				id: StripeErrorId::new(),
-				event_id,
-				error_kind: StripeErrorKind::SubscriptionItemChanged,
-			}, None).await?;
+			tx.insert_one(
+				StripeError {
+					id: StripeErrorId::new(),
+					event_id,
+					error_kind: StripeErrorKind::SubscriptionItemChanged,
+				},
+				None,
+			)
+			.await?;
 		}
 		(true, _) => {
 			// n > 1
 			// the subscription has more than one product now
-			tx.insert_one(StripeError {
-				id: StripeErrorId::new(),
-				event_id,
-				error_kind: StripeErrorKind::SubscriptionMultipleProducts,
-			}, None).await?;
+			tx.insert_one(
+				StripeError {
+					id: StripeErrorId::new(),
+					event_id,
+					error_kind: StripeErrorKind::SubscriptionMultipleProducts,
+				},
+				None,
+			)
+			.await?;
 		}
 		(false, 1) => {
 			// nothing changed, still one product

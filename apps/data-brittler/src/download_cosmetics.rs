@@ -3,7 +3,6 @@ use std::sync::Arc;
 use anyhow::Context;
 use futures::TryStreamExt;
 use mongodb::bson::doc;
-use tokio::io::AsyncWriteExt;
 
 use crate::global::Global;
 use crate::types::{self, Cosmetic, PaintData};
@@ -14,7 +13,7 @@ use crate::types::{self, Cosmetic, PaintData};
 
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let mut cosmetics = global
-		.source_db()
+		.main_source_db
 		.collection::<Cosmetic>("cosmetics")
 		.find(doc! {})
 		.await
@@ -45,7 +44,7 @@ pub enum RequestImageError {
 
 pub async fn request_image(global: &Arc<Global>, url: &str) -> Result<bytes::Bytes, RequestImageError> {
 	tracing::debug!(url = %url, "requesting image");
-	match global.http_client().get(url).send().await {
+	match global.http_client.get(url).send().await {
 		Ok(res) if res.status().is_success() => match res.bytes().await {
 			Ok(bytes) => Ok(bytes),
 			Err(e) => Err(e.into()),
@@ -74,14 +73,9 @@ async fn process_cosmetic(global: &Arc<Global>, c: Cosmetic) -> anyhow::Result<(
 	let image = request_image(global, &download_url).await?;
 	let path = format!("local/cosmetics/{}", c.id);
 
-	tokio::fs::OpenOptions::new()
-		.create(true)
-		.write(true)
-		.truncate(true)
-		.open(&path)
-		.await?
-		.write_all(&image)
-		.await?;
+	tracing::info!(cosmetic_id = %c.id, "writing image to disk {}KB", image.len() / 1024);
+
+	tokio::fs::write(&path, &image).await?;
 
 	Ok(())
 }

@@ -14,7 +14,7 @@ use shared::database::user::UserId;
 use shared::database::Id;
 
 use super::metadata::{CheckoutSessionMetadata, StripeMetadata, SubscriptionMetadata};
-use super::{create_checkout_session_params, find_or_create_customer};
+use super::{create_checkout_session_params, find_or_create_customer, CheckoutProduct};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -232,7 +232,7 @@ pub async fn redeem(
 						&global,
 						session.ip(),
 						customer_id,
-						&variant.id,
+						CheckoutProduct::Price(variant.id.0.clone()),
 						product.default_currency,
 						&variant.currency_prices,
 					)
@@ -245,7 +245,7 @@ pub async fn redeem(
 							user_id: authed_user.id,
 							customer_id: None,
 						}.to_stripe()),
-						trial_period_days: Some(*trial_days),
+						trial_period_days: Some(*trial_days as u32),
 						trial_settings: Some(stripe::CreateCheckoutSessionSubscriptionDataTrialSettings {
 							end_behavior: stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehavior {
 								missing_payment_method:

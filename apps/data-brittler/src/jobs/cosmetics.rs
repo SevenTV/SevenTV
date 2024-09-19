@@ -1,24 +1,21 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::{io, vec};
 
 use anyhow::Context;
 use bson::oid::ObjectId;
 use futures::StreamExt;
+use scuffle_image_processor_proto::EventCallback;
+use shared::database;
 use shared::database::badge::{Badge, BadgeId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintId, PaintLayer, PaintLayerId, PaintLayerType};
 use shared::database::user::UserId;
-use shared::database::{self, MongoCollection};
+use tokio::sync::mpsc;
 
-use super::{JobOutcome, ProcessOutcome};
+use super::{CdnFileRename, JobOutcome, ProcessOutcome};
 use crate::global::Global;
 use crate::{download_cosmetics, error, types};
-
-pub struct CosmeticsJob {
-	global: Arc<Global>,
-	all_tasks: HashSet<String>,
-}
 
 async fn request_image(global: &Arc<Global>, cosmetic_id: ObjectId, url: &str) -> Result<bytes::Bytes, ProcessOutcome> {
 	download_cosmetics::request_image(&global, url).await.map_err(|e| match e {
@@ -33,7 +30,8 @@ pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
 	pub badges: &'a mut HashMap<BadgeId, Badge>,
 	pub paints: &'a mut HashMap<PaintId, Paint>,
-	pub pending_tasks: &'a mut HashMap<String, PendingTask>,
+	pub cdn_rename: &'a mut Vec<CdnFileRename>,
+	pub pending_tasks: &'a mut Vec<(PendingTask, mpsc::Receiver<EventCallback>)>,
 }
 
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
@@ -44,10 +42,11 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 		badges,
 		paints,
 		pending_tasks,
+		cdn_rename,
 	} = input;
 
 	let mut cursor = global
-		.source_db()
+		.main_source_db
 		.collection::<types::Cosmetic>("cosmetics")
 		.find(bson::doc! {})
 		.await
@@ -62,8 +61,10 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 					badges,
 					paints,
 					cosmetic,
+					cdn_rename,
 				})
 				.await;
+				outcome.processed_documents += 1;
 			}
 			Err(e) => {
 				outcome.errors.push(e.into());
@@ -74,16 +75,18 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	Ok(outcome)
 }
 
+#[derive(Debug)]
 pub enum PendingTask {
 	Badge(BadgeId),
-	Paint(PaintId),
+	Paint(PaintId, PaintLayerId),
 }
 
 struct ProcessInput<'a> {
 	global: &'a Arc<Global>,
-	pending_tasks: &'a mut HashMap<String, PendingTask>,
+	pending_tasks: &'a mut Vec<(PendingTask, tokio::sync::mpsc::Receiver<EventCallback>)>,
 	badges: &'a mut HashMap<BadgeId, Badge>,
 	paints: &'a mut HashMap<PaintId, Paint>,
+	cdn_rename: &'a mut Vec<CdnFileRename>,
 	cosmetic: types::Cosmetic,
 }
 
@@ -96,9 +99,10 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		pending_tasks,
 		badges,
 		paints,
+		cdn_rename,
 	} = input;
 
-	let ip = global.image_processor();
+	let ip = &global.image_processor;
 
 	match cosmetic.data {
 		types::CosmeticData::Badge { tooltip, tag } => {
@@ -133,7 +137,9 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 						}),
 					error: None,
 				}) => {
-					pending_tasks.insert(id.clone(), PendingTask::Badge(badge_id.into()));
+					let (tx, rx) = tokio::sync::mpsc::channel(10);
+					pending_tasks.push((PendingTask::Badge(badge_id.into()), rx));
+					global.all_tasks.lock().await.insert(id.clone(), tx);
 					ImageSetInput::Pending {
 						task_id: id,
 						path: path.path,
@@ -163,6 +169,13 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 					search_updated_at: None,
 				},
 			);
+
+			for file in &["1x", "2x", "3x"] {
+				cdn_rename.push(CdnFileRename {
+					old_path: format!("badge/{}/{}", cosmetic.id, file),
+					new_path: format!("badge/{}/{}.webp", badge_id, file),
+				});
+			}
 		}
 		types::CosmeticData::Paint { data, drop_shadows } => {
 			let paint_id = cosmetic.id.into();
@@ -221,7 +234,9 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 								}),
 							error: None,
 						}) => {
-							pending_tasks.insert(id.clone(), PendingTask::Paint(paint_id.into()));
+							let (tx, rx) = tokio::sync::mpsc::channel(10);
+							pending_tasks.push((PendingTask::Paint(paint_id.into(), layer_id), rx));
+							global.all_tasks.lock().await.insert(id.clone(), tx);
 							ImageSetInput::Pending {
 								task_id: id,
 								path: path.path,
@@ -256,7 +271,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 				Paint {
 					id: paint_id,
 					name: cosmetic.name,
-					description: String::new(),
+					description: None,
 					tags: vec![],
 					data: paint_data,
 					created_by: UserId::nil(),

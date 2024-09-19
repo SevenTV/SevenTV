@@ -284,11 +284,15 @@ pub async fn paid(
 				.collect::<Vec<_>>();
 
 			if items.len() != 1 {
-				tx.insert_one(StripeError {
-					id: StripeErrorId::new(),
-					event_id,
-					error_kind: StripeErrorKind::SubscriptionInvoiceInvalidItems,
-				}, None).await?;
+				tx.insert_one(
+					StripeError {
+						id: StripeErrorId::new(),
+						event_id,
+						error_kind: StripeErrorKind::SubscriptionInvoiceInvalidItems,
+					},
+					None,
+				)
+				.await?;
 
 				return Ok(None);
 			}
@@ -309,11 +313,15 @@ pub async fn paid(
 				)
 				.await?
 			else {
-				tx.insert_one(StripeError {
-					id: StripeErrorId::new(),
-					event_id,
-					error_kind: StripeErrorKind::SubscriptionInvoiceNoProduct,
-				}, None).await?;
+				tx.insert_one(
+					StripeError {
+						id: StripeErrorId::new(),
+						event_id,
+						error_kind: StripeErrorKind::SubscriptionInvoiceNoProduct,
+					},
+					None,
+				)
+				.await?;
 
 				return Ok(None);
 			};
@@ -396,28 +404,13 @@ pub async fn paid(
 			Some(InvoiceMetadata::Gift {
 				customer_id,
 				user_id,
+				product_id,
 				subscription_product_id: Some(subscription_product_id),
 			}),
 		) => {
 			// gift code session
 			// the gift sub payment was successful, now we add one subscription period for
 			// the recipient
-			let items = invoice_items(invoice.lines.as_ref())
-				.map_err(TransactionError::Custom)?
-				.into_iter()
-				.collect::<Vec<_>>();
-
-			if items.len() != 1 {
-				tx.insert_one(StripeError {
-					id: StripeErrorId::new(),
-					event_id,
-					error_kind: StripeErrorKind::GiftInvoiceNoProduct,
-				}, None).await?;
-
-				return Ok(None);
-			}
-
-			let stripe_product_id = items.into_iter().next().unwrap();
 
 			let subscription_product = global
 				.subscription_product_by_id_loader
@@ -443,7 +436,7 @@ pub async fn paid(
 			let period_duration = subscription_product
 				.variants
 				.iter()
-				.find(|v| v.id == stripe_product_id)
+				.find(|v| v.id == product_id)
 				.map(|v| match v.kind {
 					SubscriptionProductKind::Monthly => chrono::Months::new(1),
 					SubscriptionProductKind::Yearly => chrono::Months::new(12),
@@ -494,7 +487,7 @@ pub async fn paid(
 					provider_id: None,
 					start,
 					end,
-					product_id: stripe_product_id,
+					product_id,
 					is_trial: false,
 					created_by: SubscriptionPeriodCreatedBy::Gift {
 						gifter: customer_id,

@@ -3,12 +3,12 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use futures::StreamExt;
-use shared::clickhouse::emote_stat::EmoteStat;
 use shared::database::emote::EmoteId;
+use shared::database::emote_set::EmoteSetId;
 use shared::database::entitlement::EntitlementEdgeKind;
 use shared::database::user::editor::UserEditorId;
 use shared::database::user::UserId;
-use shared::database::{self, stored_event, MongoCollection};
+use shared::database::{self, stored_event};
 use shared::old_types::EmoteFlagsModel;
 
 use super::{JobOutcome, ProcessOutcome};
@@ -20,21 +20,34 @@ struct ProcessInput<'a> {
 	pub audit_log: AuditLog,
 	pub stats: &'a mut BTreeMap<(EmoteId, time::Date), i32>,
 	pub events: &'a mut Vec<stored_event::StoredEvent>,
+	pub emote_filter: &'a Box<dyn Fn(&EmoteId) -> bool + 'a>,
+	pub user_filter: &'a Box<dyn Fn(&UserId) -> bool + 'a>,
+	pub emote_set_filter: &'a Box<dyn Fn(&EmoteSetId) -> bool + 'a>,
 }
 
 pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
 	pub stats: &'a mut BTreeMap<(EmoteId, time::Date), i32>,
 	pub events: &'a mut Vec<stored_event::StoredEvent>,
+	pub emote_filter: Box<dyn Fn(&EmoteId) -> bool + 'a>,
+	pub user_filter: Box<dyn Fn(&UserId) -> bool + 'a>,
+	pub emote_set_filter: Box<dyn Fn(&EmoteSetId) -> bool + 'a>,
 }
 
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("audit_logs");
 
-	let RunInput { global, stats, events } = input;
+	let RunInput {
+		global,
+		stats,
+		events,
+		emote_filter,
+		emote_set_filter,
+		user_filter,
+	} = input;
 
 	let mut cursor = global
-		.source_db()
+		.main_source_db
 		.collection::<AuditLog>("audit_logs")
 		.find(bson::doc! {})
 		.await
@@ -47,7 +60,11 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 					audit_log,
 					stats,
 					events,
+					emote_filter: &emote_filter,
+					user_filter: &user_filter,
+					emote_set_filter: &emote_set_filter,
 				});
+				outcome.processed_documents += 1;
 			}
 			Err(e) => {
 				outcome.errors.push(e.into());
@@ -65,9 +82,35 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		audit_log,
 		stats,
 		events,
+		emote_filter,
+		user_filter,
+		emote_set_filter,
 	} = input;
 
 	let mut data = vec![];
+
+	match audit_log.kind {
+		AuditLogKind::CreateEmote
+		| AuditLogKind::ProcessEmote
+		| AuditLogKind::UpdateEmote
+		| AuditLogKind::MergeEmote
+		| AuditLogKind::DeleteEmote => {
+			if !emote_filter(&audit_log.target_id.into()) {
+				return outcome;
+			}
+		}
+		AuditLogKind::CreateEmoteSet | AuditLogKind::UpdateEmoteSet | AuditLogKind::DeleteEmoteSet => {
+			if !emote_set_filter(&audit_log.target_id.into()) {
+				return outcome;
+			}
+		}
+		AuditLogKind::CreateUser | AuditLogKind::EditUser | AuditLogKind::DeleteUser => {
+			if !user_filter(&audit_log.target_id.into()) {
+				return outcome;
+			}
+		}
+		_ => {}
+	}
 
 	match audit_log.kind {
 		AuditLogKind::CreateEmote => data.push(stored_event::StoredEventData::Emote {
@@ -370,28 +413,4 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 	}));
 
 	outcome
-}
-
-pub async fn skip(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
-	let mut outcome = JobOutcome::new("audit_logs");
-
-	let RunInput { global, stats, .. } = input;
-
-	let mut cursor = global
-		.clickhouse()
-		.query("SELECT ?fields FROM emote_stats")
-		.fetch::<EmoteStat>()?;
-
-	while let Some(stat) = cursor.next().await.transpose() {
-		match stat {
-			Ok(stat) => {
-				*stats.entry((stat.emote_id, stat.date)).or_default() += stat.count;
-			}
-			Err(e) => {
-				outcome.errors.push(e.into());
-			}
-		}
-	}
-
-	Ok(outcome)
 }

@@ -28,6 +28,14 @@ impl TryFrom<ImageFile> for Image {
 
 		let ty = key.next().ok_or(anyhow::anyhow!("missing type"))?;
 
+		let scale = match value.name.as_str() {
+			"1x_static" | "1x" => 1,
+			"2x_static" | "2x" => 2,
+			"3x_static" | "3x" => 3,
+			"4x_static" | "4x" => 4,
+			_ => 1,
+		};
+
 		let new_path = if ty == "user" {
 			let id = Id::<()>::from_str(key.next().ok_or(anyhow::anyhow!("missing id"))?)
 				.with_context(|| format!("invalid id: {}", value.key))?;
@@ -57,6 +65,7 @@ impl TryFrom<ImageFile> for Image {
 
 		Ok(Self {
 			path: new_path,
+			scale,
 			mime: value.content_type,
 			size: value.size as i64,
 			width: value.width as i32,

@@ -29,8 +29,6 @@ pub struct Config {
 	/// Path to the report file
 	#[settings(default = PathBuf::from("./local/report.md"))]
 	pub report_path: PathBuf,
-	/// Stripe API key
-	pub stripe_key: String,
 	/// image processor config
 	pub image_processor: ImageProcessorConfig,
 
@@ -85,6 +83,12 @@ pub struct Config {
 	/// Run special events job
 	pub special_events: Option<bool>,
 
+	/// Run redeem codes job
+	pub redeem_codes: Option<bool>,
+
+	/// Run emote stats job
+	pub emote_stats: Option<bool>,
+
 	/// Truncate tables before inserting data
 	pub truncate: bool,
 
@@ -124,6 +128,8 @@ impl Config {
 			|| self.subscriptions.is_some_and(|r| r)
 			|| self.special_events.is_some_and(|r| r)
 			|| self.cron_jobs.is_some_and(|r| r)
+			|| self.redeem_codes.is_some_and(|r| r)
+			|| self.emote_stats.is_some_and(|r| r)
 	}
 
 	pub fn should_run_users(&self) -> bool {
@@ -188,5 +194,13 @@ impl Config {
 
 	pub fn should_run_special_events(&self) -> bool {
 		self.special_events.unwrap_or_else(|| !self.any_run())
+	}
+
+	pub fn should_run_redeem_codes(&self) -> bool {
+		self.redeem_codes.unwrap_or_else(|| !self.any_run())
+	}
+
+	pub fn should_run_emote_stats(&self) -> bool {
+		self.emote_stats.unwrap_or_else(|| !self.any_run())
 	}
 }

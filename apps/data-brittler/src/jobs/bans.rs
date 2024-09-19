@@ -2,10 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use futures::StreamExt;
-use shared::database::queries::filter;
 use shared::database::role::permissions::{Permissions, UserPermission};
 use shared::database::user::ban::UserBan;
-use shared::database::MongoCollection;
 
 use super::{JobOutcome, ProcessOutcome};
 use crate::global::Global;
@@ -22,7 +20,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let RunInput { global, bans } = input;
 
 	let mut cursor = global
-		.source_db()
+		.main_source_db
 		.collection::<types::Ban>("bans")
 		.find(bson::doc! {})
 		.await
@@ -32,6 +30,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 		match ban {
 			Ok(ban) => {
 				outcome += process(ProcessInput { ban, bans });
+				outcome.processed_documents += 1;
 			}
 			Err(e) => {
 				outcome.errors.push(e.into());
@@ -48,7 +47,7 @@ struct ProcessInput<'a> {
 }
 
 fn process(input: ProcessInput<'_>) -> ProcessOutcome {
-	let mut outcome = ProcessOutcome::default();
+	let outcome = ProcessOutcome::default();
 
 	let mut permissions = Permissions::default();
 	permissions.user.deny(UserPermission::Login);
@@ -70,30 +69,4 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 	});
 
 	outcome
-}
-
-pub async fn skip(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
-	let mut outcome = JobOutcome::new("bans");
-
-	let RunInput { global, bans } = input;
-
-	let mut cursor = UserBan::collection(global.target_db())
-		.find(filter::filter! {
-			UserBan {}
-		})
-		.await
-		.context("query")?;
-
-	while let Some(ban) = cursor.next().await {
-		match ban {
-			Ok(ban) => {
-				bans.push(ban);
-			}
-			Err(e) => {
-				outcome.errors.push(e.into());
-			}
-		}
-	}
-
-	Ok(outcome)
 }

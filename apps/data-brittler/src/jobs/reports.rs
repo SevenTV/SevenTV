@@ -1,153 +1,131 @@
-use std::future::IntoFuture;
+use std::collections::HashSet;
 use std::sync::Arc;
 
-use fnv::FnvHashSet;
-use mongodb::options::InsertManyOptions;
+use anyhow::Context;
+use futures::StreamExt;
 use shared::database::ticket::{
 	Ticket, TicketId, TicketKind, TicketMember, TicketMemberKind, TicketMessage, TicketMessageId, TicketPriority,
 	TicketTarget,
 };
 use shared::database::user::UserId;
-use shared::database::MongoCollection;
 
-use super::{Job, ProcessOutcome};
+use super::{JobOutcome, ProcessOutcome};
 use crate::global::Global;
+use crate::types;
 use crate::types::ReportStatus;
-use crate::{error, types};
 
-pub struct ReportsJob {
-	global: Arc<Global>,
-	all_members: FnvHashSet<(TicketId, UserId)>,
-	tickets: Vec<Ticket>,
-	ticket_messages: Vec<TicketMessage>,
+pub struct RunInput<'a> {
+	pub global: &'a Arc<Global>,
+	pub tickets: &'a mut Vec<Ticket>,
+	pub ticket_messages: &'a mut Vec<TicketMessage>,
 }
 
-impl Job for ReportsJob {
-	type T = types::Report;
+pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
+	let mut outcome = JobOutcome::new("reports");
 
-	const NAME: &'static str = "transfer_reports";
+	let RunInput {
+		global,
+		tickets,
+		ticket_messages,
+	} = input;
 
-	async fn new(global: Arc<Global>) -> anyhow::Result<Self> {
-		if global.config().truncate {
-			tracing::info!("dropping tickets and ticket_messages collections");
-			Ticket::collection(global.target_db()).drop().await?;
-			let indexes = Ticket::indexes();
-			if !indexes.is_empty() {
-				Ticket::collection(global.target_db()).create_indexes(indexes).await?;
-			}
-			TicketMessage::collection(global.target_db()).drop().await?;
-			let indexes = TicketMessage::indexes();
-			if !indexes.is_empty() {
-				TicketMessage::collection(global.target_db()).create_indexes(indexes).await?;
-			}
-		}
+	let mut cursor = global
+		.main_source_db
+		.collection::<types::Report>("reports")
+		.find(bson::doc! {})
+		.await
+		.context("query")?;
 
-		Ok(Self {
-			global,
-			all_members: FnvHashSet::default(),
-			tickets: vec![],
-			ticket_messages: vec![],
-		})
-	}
+	let mut all_members = HashSet::new();
 
-	async fn collection(&self) -> Option<mongodb::Collection<Self::T>> {
-		Some(self.global.source_db().collection("reports"))
-	}
-
-	async fn process(&mut self, report: Self::T) -> ProcessOutcome {
-		// Only emote reports because reporting users was never implemented
-
-		let ticket_id = report.id.into();
-
-		let message_id = TicketMessageId::with_timestamp(report.id.timestamp().to_chrono());
-
-		self.ticket_messages.push(TicketMessage {
-			id: message_id,
-			ticket_id,
-			user_id: report.actor_id.into(),
-			content: report.body,
-			files: vec![],
-			search_updated_at: None,
-			updated_at: chrono::Utc::now(),
-		});
-
-		let mut members = vec![];
-
-		let op = report.actor_id.into();
-		members.push(TicketMember {
-			user_id: op,
-			kind: TicketMemberKind::Member,
-			notifications: true,
-			last_read: Some(message_id),
-		});
-		self.all_members.insert((ticket_id, op));
-
-		for assignee in report.assignee_ids {
-			let assignee = assignee.into();
-			if self.all_members.insert((ticket_id, assignee)) {
-				members.push(TicketMember {
-					user_id: assignee,
-					kind: TicketMemberKind::Assigned,
-					notifications: true,
-					last_read: Some(message_id),
+	while let Some(report) = cursor.next().await {
+		match report {
+			Ok(report) => {
+				outcome += process(ProcessInput {
+					all_members: &mut all_members,
+					tickets,
+					ticket_messages,
+					report,
 				});
+				outcome.processed_documents += 1;
+			}
+			Err(e) => {
+				outcome.errors.push(e.into());
 			}
 		}
-
-		self.tickets.push(Ticket {
-			id: ticket_id,
-			priority: TicketPriority::Medium,
-			members,
-			title: report.subject,
-			tags: vec![],
-			country_code: None,
-			kind: TicketKind::Abuse,
-			targets: vec![TicketTarget::Emote(report.target_id.into())],
-			author_id: report.actor_id.into(),
-			open: report.status == ReportStatus::Open,
-			locked: false,
-			search_updated_at: None,
-			updated_at: chrono::Utc::now(),
-		});
-
-		ProcessOutcome::default()
 	}
 
-	async fn finish(self) -> ProcessOutcome {
-		tracing::info!("finishing reports job");
+	Ok(outcome)
+}
 
-		let mut outcome = ProcessOutcome::default();
+struct ProcessInput<'a> {
+	all_members: &'a mut HashSet<(TicketId, UserId)>,
+	tickets: &'a mut Vec<Ticket>,
+	ticket_messages: &'a mut Vec<TicketMessage>,
+	report: types::Report,
+}
 
-		let insert_options = InsertManyOptions::builder().ordered(false).build();
-		let tickets = Ticket::collection(self.global.target_db());
-		let ticket_messages = TicketMessage::collection(self.global.target_db());
+fn process(input: ProcessInput<'_>) -> ProcessOutcome {
+	let ProcessInput {
+		all_members,
+		tickets,
+		ticket_messages,
+		report,
+	} = input;
 
-		let res = tokio::join!(
-			tickets
-				.insert_many(&self.tickets)
-				.with_options(insert_options.clone())
-				.into_future(),
-			ticket_messages
-				.insert_many(&self.ticket_messages)
-				.with_options(insert_options.clone())
-				.into_future(),
-		);
-		let res = vec![res.0, res.1]
-			.into_iter()
-			.zip(vec![self.tickets.len(), self.ticket_messages.len()]);
+	// Only emote reports because reporting users was never implemented
+	let ticket_id = report.id.into();
 
-		for (res, len) in res {
-			match res {
-				Ok(res) => {
-					outcome.inserted_rows += res.inserted_ids.len() as u64;
-					if res.inserted_ids.len() != len {
-						outcome.errors.push(error::Error::InsertMany);
-					}
-				}
-				Err(e) => outcome.errors.push(e.into()),
-			}
+	let message_id = TicketMessageId::with_timestamp(report.id.timestamp().to_chrono());
+
+	ticket_messages.push(TicketMessage {
+		id: message_id,
+		ticket_id,
+		user_id: report.actor_id.into(),
+		content: report.body,
+		files: vec![],
+		search_updated_at: None,
+		updated_at: chrono::Utc::now(),
+	});
+
+	let mut members = vec![];
+
+	let op = report.actor_id.into();
+	members.push(TicketMember {
+		user_id: op,
+		kind: TicketMemberKind::Member,
+		notifications: true,
+		last_read: Some(message_id),
+	});
+	all_members.insert((ticket_id, op));
+
+	for assignee in report.assignee_ids {
+		let assignee = assignee.into();
+		if all_members.insert((ticket_id, assignee)) {
+			members.push(TicketMember {
+				user_id: assignee,
+				kind: TicketMemberKind::Assigned,
+				notifications: true,
+				last_read: Some(message_id),
+			});
 		}
-
-		outcome
 	}
+
+	tickets.push(Ticket {
+		id: ticket_id,
+		priority: TicketPriority::Medium,
+		members,
+		title: report.subject,
+		tags: vec![],
+		country_code: None,
+		kind: TicketKind::Abuse,
+		targets: vec![TicketTarget::Emote(report.target_id.into())],
+		author_id: report.actor_id.into(),
+		open: report.status == ReportStatus::Open,
+		locked: false,
+		search_updated_at: None,
+		updated_at: chrono::Utc::now(),
+	});
+
+	ProcessOutcome::default()
 }

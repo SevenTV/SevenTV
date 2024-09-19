@@ -9,9 +9,10 @@ use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, Entitlem
 use shared::database::paint::PaintId;
 use shared::database::product::subscription::SubscriptionId;
 use shared::database::product::SubscriptionProductId;
-use shared::database::MongoCollection;
+use shared::database::role::RoleId;
+use shared::database::user::{User, UserId};
 
-use super::prices::NEW_PRODUCT_ID;
+use super::prices::NEW_SUBSCRIPTION_PRODUCT_ID;
 use super::{JobOutcome, ProcessOutcome};
 use crate::global::Global;
 use crate::types;
@@ -154,6 +155,8 @@ pub struct RunInput<'a> {
 	pub edges: &'a mut HashSet<EntitlementEdge>,
 	pub badge_filter: Box<dyn Fn(BadgeId) -> bool + 'a>,
 	pub paint_filter: Box<dyn Fn(PaintId) -> bool + 'a>,
+	pub role_filter: Box<dyn Fn(RoleId) -> bool + 'a>,
+	pub users: &'a mut HashMap<UserId, User>,
 }
 
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
@@ -164,10 +167,12 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 		edges,
 		badge_filter,
 		paint_filter,
+		role_filter,
+		users,
 	} = input;
 
 	let mut cursor = global
-		.source_db()
+		.main_source_db
 		.collection::<types::Entitlement>("entitlements")
 		.find(bson::doc! {})
 		.await
@@ -186,7 +191,10 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 					skipped: &skipped,
 					badge_filter: &badge_filter,
 					paint_filter: &paint_filter,
+					role_filter: &role_filter,
+					users,
 				});
+				outcome.processed_documents += 1;
 			}
 			Err(e) => {
 				outcome.errors.push(e.into());
@@ -201,7 +209,9 @@ struct ProcessInput<'a> {
 	entitlement: types::Entitlement,
 	badge_filter: &'a Box<dyn Fn(BadgeId) -> bool + 'a>,
 	paint_filter: &'a Box<dyn Fn(PaintId) -> bool + 'a>,
+	role_filter: &'a Box<dyn Fn(RoleId) -> bool + 'a>,
 	skipped: &'a HashMap<EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool)>,
+	users: &'a mut HashMap<UserId, User>,
 	edges: &'a mut HashSet<EntitlementEdge>,
 }
 
@@ -212,32 +222,54 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		skipped,
 		badge_filter,
 		paint_filter,
+		role_filter,
+		users,
 	} = input;
 
 	let Some(user_id) = entitlement.user_id else {
 		return ProcessOutcome::default();
 	};
 
+	let Some(user) = users.get_mut(&user_id.into()) else {
+		return ProcessOutcome::default();
+	};
+
 	let to = match entitlement.data {
-		EntitlementData::Badge { ref_id, .. } => {
+		EntitlementData::Badge { ref_id, selected } => {
 			let badge_id = ref_id.into();
 
-			if !badge_filter(&badge_id) {
+			if !badge_filter(badge_id) {
 				return ProcessOutcome::default();
+			}
+
+			if selected {
+				user.style.active_badge_id = Some(badge_id);
 			}
 
 			EntitlementEdgeKind::Badge { badge_id: ref_id.into() }
 		}
-		EntitlementData::Paint { ref_id, .. } => {
+		EntitlementData::Paint { ref_id, selected } => {
 			let paint_id = ref_id.into();
 
-			if !paint_filter(&paint_id) {
+			if !paint_filter(paint_id) {
 				return ProcessOutcome::default();
+			}
+
+			if selected {
+				user.style.active_paint_id = Some(paint_id);
 			}
 
 			EntitlementEdgeKind::Paint { paint_id: ref_id.into() }
 		}
-		// ignore role & emote set entitlements because they are handled by the user job
+		EntitlementData::Role { ref_id } => {
+			let role_id = ref_id.into();
+
+			if !role_filter(role_id) {
+				return ProcessOutcome::default();
+			}
+
+			EntitlementEdgeKind::Role { role_id: role_id.into() }
+		}
 		_ => return ProcessOutcome::default(),
 	};
 
@@ -248,7 +280,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 					from: EntitlementEdgeKind::Subscription {
 						subscription_id: SubscriptionId {
 							user_id: user_id.into(),
-							product_id: SubscriptionProductId::from_str(NEW_PRODUCT_ID).unwrap(),
+							product_id: SubscriptionProductId::from_str(NEW_SUBSCRIPTION_PRODUCT_ID).unwrap(),
 						},
 					},
 					to: custom_edge.clone(),

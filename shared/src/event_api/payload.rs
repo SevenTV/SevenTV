@@ -139,7 +139,7 @@ pub enum SubscribeConditionChannelPlatform {
 #[doc(hidden)]
 pub enum ContextChannel {
 	#[serde(rename = "channel")]
-	Channel
+	Channel,
 }
 
 impl MessagePayload for Subscribe {

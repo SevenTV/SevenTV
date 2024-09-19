@@ -11,14 +11,10 @@ pub enum Error {
 	DuplicateUserConnection { platform: Platform, platform_id: String },
 	#[error("user connection without platform id")]
 	MissingPlatformId { user_id: ObjectId, platform: Platform },
-	#[error("failed to deserialize")]
-	Deserialize(mongodb::error::Error),
+	#[error("mongo failed: {0}")]
+	Mongo(#[from] mongodb::error::Error),
 	#[error("failed to serialize json data")]
 	SerializeJson(#[from] serde_json::Error),
-	#[error("failed to query database")]
-	Db(#[from] mongodb::error::Error),
-	#[error("failed to insert all documents")]
-	InsertMany,
 	#[error("failed to query clickhouse")]
 	Clickhouse(#[from] clickhouse::error::Error),
 
@@ -34,8 +30,6 @@ pub enum Error {
 	InvalidStripeId(stripe::ParseIdError),
 	#[error("{0}")]
 	Stripe(#[from] stripe::StripeError),
-	#[error("invalid recurring interval")]
-	InvalidRecurringInterval(stripe::RecurringInterval),
 	#[error("invalid subscription cycle")]
 	InvalidSubscriptionCycle,
 
@@ -64,6 +58,15 @@ pub enum Error {
 
 	#[error("not implemented")]
 	NotImplemented(&'static str),
+
+	#[error("redeem code: {0}")]
+	RedeemCode(String),
+
+	#[error("failed to rename cdn file: {0:#}")]
+	CdnRename(anyhow::Error),
+
+	#[error("failed to run emote stats: {0:#}")]
+	EmoteStats(anyhow::Error),
 }
 
 impl Error {
@@ -71,18 +74,14 @@ impl Error {
 		match self {
 			Self::DuplicateUserConnection { .. } => "DuplicateUserConnection",
 			Self::MissingPlatformId { .. } => "MissingPlatformId",
-			Self::Deserialize(_) => "Deserialize",
+			Self::Mongo(_) => "Deserialize",
 			Self::SerializeJson(_) => "SerializeJson",
-			Self::Db(_) => "Db",
-			Self::InsertMany => "InsertMany",
 			Self::Clickhouse(_) => "Clickhouse",
 			Self::EmoteSetEmoteNoName { .. } => "EmoteSetEmoteNoName",
 			Self::UnsupportedAuditLogKind(_) => "UnsupportedAuditLogKind",
 			Self::Timestamp(_) => "Timestamp",
 			Self::Stripe(_) => "Stripe",
-			Self::InvalidRecurringInterval(_) => "InvalidRecurringInterval",
 			Self::InvalidSubscriptionCycle => "InvalidSubscriptionCycle",
-			// Self::DuplicateEmoteModRequest { .. } => "DuplicateEmoteModRequest",
 			Self::InvalidStripeId(_) => "InvalidStripeId",
 			Self::Reqwest(_) => "Reqwest",
 			Self::Io(_) => "Io",
@@ -92,6 +91,9 @@ impl Error {
 			Self::ImageProcessor(_) => "ImageProcessor",
 			Self::OnceCellSet(_) => "OnceCellSet",
 			Self::NotImplemented(_) => "NotImplemented",
+			Self::RedeemCode(_) => "RedeemCode",
+			Self::CdnRename(_) => "CdnRename",
+			Self::EmoteStats(_) => "EmoteStats",
 		}
 	}
 

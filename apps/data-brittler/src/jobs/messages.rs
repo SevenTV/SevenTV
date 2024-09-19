@@ -9,7 +9,6 @@ use shared::database::emote::EmoteId;
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
-use shared::database::MongoCollection;
 
 use super::ProcessOutcome;
 use crate::global::Global;
@@ -18,19 +17,24 @@ use crate::types;
 
 pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
+	pub emote_filter: Box<dyn Fn(&EmoteId) -> bool + 'a>,
 	pub mod_requests: &'a mut Vec<EmoteModerationRequest>,
 }
 
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("messages");
 
-	let RunInput { global, mod_requests } = input;
+	let RunInput {
+		global,
+		mod_requests,
+		emote_filter,
+	} = input;
 
 	let mut read = HashMap::new();
 
 	tracing::info!("loading messages_read collection");
 	let mut cursor = global
-		.source_db()
+		.main_source_db
 		.collection::<types::MessageRead>("messages_read")
 		.find(doc! {})
 		.await
@@ -49,7 +53,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut dedupe_mod_requests = HashSet::new();
 
 	let mut cursor = global
-		.source_db()
+		.main_source_db
 		.collection::<types::Message>("messages")
 		.find(doc! {})
 		.await
@@ -61,9 +65,11 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome += process(ProcessInput {
 					read: &mut read,
 					dedupe_mod_requests: &mut dedupe_mod_requests,
+					emote_filter: &emote_filter,
 					mod_requests,
 					message,
 				});
+				outcome.processed_documents += 1;
 			}
 			Err(e) => {
 				outcome.errors.push(e.into());
@@ -78,6 +84,7 @@ struct ProcessInput<'a> {
 	pub read: &'a mut HashMap<ObjectId, bool>,
 	pub dedupe_mod_requests: &'a mut HashSet<(EmoteId, EmoteModerationRequestKind)>,
 	pub mod_requests: &'a mut Vec<EmoteModerationRequest>,
+	pub emote_filter: &'a Box<dyn Fn(&EmoteId) -> bool + 'a>,
 	pub message: types::Message,
 }
 
@@ -87,6 +94,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		dedupe_mod_requests,
 		mod_requests,
 		message,
+		emote_filter,
 	} = input;
 
 	let outcome = ProcessOutcome::default();
@@ -111,6 +119,10 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		// inbox messages are not tickets
 		_ => return outcome,
 	};
+
+	if !emote_filter(&emote_id) {
+		return outcome;
+	}
 
 	let status = match read.get(&message.id) {
 		Some(true) => EmoteModerationRequestStatus::Approved,

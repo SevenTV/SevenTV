@@ -8,9 +8,8 @@ mod emote_set;
 mod entitlement;
 mod image_file;
 mod message;
-mod price;
+mod redeem_code;
 mod report;
-mod role;
 mod subscription;
 mod system;
 mod user;
@@ -23,11 +22,11 @@ pub use emote_set::*;
 pub use entitlement::*;
 pub use image_file::*;
 pub use message::*;
-pub use price::*;
+pub use redeem_code::*;
 pub use report::*;
 pub use subscription::*;
-pub use system::*;
 pub use user::*;
+pub use system::*;
 
 #[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]

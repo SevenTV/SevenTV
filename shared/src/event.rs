@@ -442,19 +442,29 @@ impl InternalEventPayload {
 		self,
 		cdn_base_url: &url::Url,
 		seq: u64,
-	) -> anyhow::Result<(Vec<event_api::Message<event_api::payload::Dispatch>>, Vec<InternalEventUserPresenceData>)> {
+	) -> anyhow::Result<(
+		Vec<event_api::Message<event_api::payload::Dispatch>>,
+		Vec<InternalEventUserPresenceData>,
+	)> {
 		let mut presence_data = Vec::new();
 
-		let mut events = HashMap::<(event_api::types::EventType, Id, event_api::types::ObjectKind), Vec<InternalEvent>>::new();
+		let mut events =
+			HashMap::<(event_api::types::EventType, Id, event_api::types::ObjectKind), Vec<InternalEvent>>::new();
 
 		for event in self.events {
 			match event {
-				InternalEvent { data: InternalEventData::UserPresence(data), ..} => {
+				InternalEvent {
+					data: InternalEventData::UserPresence(data),
+					..
+				} => {
 					presence_data.push(data);
 				}
 				event => {
 					if let Some(event_type) = event.data.event_api_event_type() {
-						events.entry((event_type, event.data.id(), event.data.event_api_kind())).or_default().push(event);
+						events
+							.entry((event_type, event.data.id(), event.data.event_api_kind()))
+							.or_default()
+							.push(event);
 					}
 				}
 			};
@@ -819,10 +829,7 @@ impl InternalEventPayload {
 				..Default::default()
 			};
 
-			let dispatch = event_api::payload::Dispatch {
-				ty: event_type,
-				body,
-			};
+			let dispatch = event_api::payload::Dispatch { ty: event_type, body };
 			messages.push(event_api::Message::new(dispatch, seq));
 		}
 
