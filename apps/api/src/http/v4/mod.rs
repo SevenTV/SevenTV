@@ -6,9 +6,12 @@ use axum::Router;
 use crate::global::Global;
 
 mod gql;
+mod rest;
 
 pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
-	Router::new().nest("/gql", gql::routes(global))
+	Router::new()
+		.nest("/gql", gql::routes(global))
+		.nest("/rest", rest::routes())
 }
 
 pub fn export_gql_schema() -> String {
