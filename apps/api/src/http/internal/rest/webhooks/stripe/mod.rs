@@ -1,13 +1,17 @@
+use std::net::IpAddr;
 use std::sync::Arc;
 
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
+use axum::Extension;
 use mongodb::options::UpdateOptions;
 use shared::database::queries::{filter, update};
 use shared::database::webhook_event::WebhookEvent;
+use tokio::sync::OnceCell;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::middleware::session::Session;
 use crate::sub_refresh_job;
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -17,6 +21,36 @@ mod customer;
 mod invoice;
 mod price;
 mod subscription;
+
+/// https://docs.stripe.com/ips#webhook-notifications
+async fn verify_stripe_ip(global: &Arc<Global>, ip: &IpAddr) -> bool {
+	#[derive(serde::Deserialize)]
+	struct Response {
+		#[serde(rename = "WEBHOOKS")]
+		webhooks: Vec<IpAddr>,
+	}
+
+	static STRIPE_IPS: OnceCell<Response> = OnceCell::const_new();
+
+	match STRIPE_IPS
+		.get_or_try_init(|| async {
+			global
+				.http_client
+				.get("https://stripe.com/files/ips/ips_webhooks.json")
+				.send()
+				.await?
+				.json()
+				.await
+		})
+		.await
+	{
+		Ok(res) => res.webhooks.contains(ip),
+		Err(e) => {
+			tracing::error!(err = %e, "failed to fetch stripe ip list");
+			false
+		}
+	}
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum StripeRequest {
@@ -37,7 +71,12 @@ impl std::fmt::Display for StripeRequest {
 	}
 }
 
-pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, payload: String) -> Result<StatusCode, ApiError> {
+pub async fn handle(
+	State(global): State<Arc<Global>>,
+	Extension(session): Extension<Session>,
+	headers: HeaderMap,
+	payload: String,
+) -> Result<StatusCode, ApiError> {
 	let sig = headers
 		.get("stripe-signature")
 		.and_then(|v| v.to_str().ok())
@@ -48,8 +87,9 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 		ApiError::bad_request(ApiErrorCode::StripeError, "failed to parse webhook")
 	})?;
 
-	// TODO: verify request is coming from stripe ip
-	// https://docs.stripe.com/ips#webhook-notifications
+	if !verify_stripe_ip(&global, &session.ip()).await {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid ip"));
+	}
 
 	let stripe_client = global.stripe_client.safe(&event.id).await;
 

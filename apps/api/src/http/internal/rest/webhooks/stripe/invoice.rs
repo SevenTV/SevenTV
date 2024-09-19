@@ -547,10 +547,6 @@ pub async fn payment_failed(
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
-	// TODO: Show the user an error message.
-	// TODO: Collect new payment information and update the subscriptions default
-	// payment method.
-
 	let id: InvoiceId = invoice.id.into();
 
 	tx.update_one(

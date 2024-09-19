@@ -85,9 +85,6 @@ pub struct RedeemRequest {
 pub struct RedeemResponse {
 	/// Url that the website will open
 	authorize_url: Option<String>,
-	/// list of ids of cosmetics that the user received
-	/// TODO: is this needed?
-	items: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -288,16 +285,13 @@ pub async fn redeem(
 
 					Ok(RedeemResponse {
 						authorize_url: Some(url),
-						items: vec![],
 					})
 				} else {
 					// the effects contain no subscription products
 					grant_entitlements(&mut tx, &code, authed_user.id).await?;
 
-					// TODO: do we need to return the items you get from the redeem code?
 					Ok(RedeemResponse {
 						authorize_url: None,
-						items: vec![],
 					})
 				}
 			}
