@@ -7,7 +7,7 @@ use axum::{Extension, Json};
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
 use shared::database::queries::filter;
-use shared::database::role::permissions::RateLimitResource;
+use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
@@ -78,6 +78,13 @@ pub async fn subscribe(
 		return Err(ApiError::bad_request(
 			ApiErrorCode::BadRequest,
 			"payment method not supported",
+		));
+	}
+
+	if !authed_user.has(UserPermission::Billing) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"this user isn't allowed to use billing features",
 		));
 	}
 

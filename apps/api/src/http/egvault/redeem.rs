@@ -9,7 +9,7 @@ use shared::database::product::codes::{CodeEffect, RedeemCode, RedeemCodeSubscri
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
-use shared::database::role::permissions::RateLimitResource;
+use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::user::UserId;
 use shared::database::Id;
 
@@ -112,6 +112,13 @@ pub async fn redeem(
 ) -> Result<impl IntoResponse, ApiError> {
 	let authed_user = session.user()?;
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultRedeem, &session);
+
+	if !authed_user.has(UserPermission::Billing) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"this user isn't allowed to use billing features",
+		));
+	}
 
 	req.http(&global, async {
 		let session = &session;

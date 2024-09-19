@@ -30,11 +30,24 @@ pub async fn cancel_subscription(
 		TargetUser::Other(id) => id,
 	};
 
-	// TODO: is this the right permission?
-	if !auth_user.has(UserPermission::ManageAny) && target_id != auth_user.id {
+	let target = global
+		.user_loader
+		.load(&global, target_id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load target user"))?
+		.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "target user not found"))?;
+
+	if !target.has(UserPermission::Billing) {
 		return Err(ApiError::forbidden(
 			ApiErrorCode::LackingPrivileges,
-			"you are not allowed to manage this user",
+			"this user isn't allowed to use billing features",
+		));
+	}
+
+	if target_id != auth_user.id && !auth_user.has(UserPermission::ManageBilling) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"you are not allowed to manage billing",
 		));
 	}
 
@@ -162,16 +175,29 @@ pub async fn reactivate_subscription(
 ) -> Result<impl IntoResponse, ApiError> {
 	let auth_user = session.user()?;
 
-	let target_user_id = match target {
+	let target_id = match target {
 		TargetUser::Me => auth_user.id,
 		TargetUser::Other(id) => id,
 	};
 
-	// TODO: is this the right permission?
-	if !auth_user.has(UserPermission::ManageAny) && target_user_id != auth_user.id {
+	let target = global
+		.user_loader
+		.load(&global, target_id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load target user"))?
+		.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "target user not found"))?;
+
+	if !target.has(UserPermission::Billing) {
 		return Err(ApiError::forbidden(
 			ApiErrorCode::LackingPrivileges,
-			"you are not allowed to manage this user",
+			"this user isn't allowed to use billing features",
+		));
+	}
+
+	if target_id != auth_user.id && !auth_user.has(UserPermission::ManageBilling) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"you are not allowed to manage billing",
 		));
 	}
 
@@ -187,7 +213,7 @@ pub async fn reactivate_subscription(
 						SubscriptionPeriod {
 							#[query(flatten)]
 							subscription_id: SubscriptionId {
-								user_id: target_user_id,
+								user_id: target_id,
 							},
 							#[query(selector = "lt")]
 							start: chrono::Utc::now(),

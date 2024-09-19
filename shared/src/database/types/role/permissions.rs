@@ -268,11 +268,16 @@ pub enum UserPermission {
 	/// Allows the user to manage other users
 	ManageAny = 128,
 
+	/// Allows the user to manage their own billing settings and subscriptions
+	Billing = 256,
+	/// Allows the user to manage other users billing settings and subscriptions
+	ManageBilling = 512,
+
 	/// Allows the user to moderate other users (ban, unban, etc.)
-	Moderate = 256,
+	Moderate = 1024,
 
 	/// View hidden users
-	ViewHidden = 512,
+	ViewHidden = 2048,
 }
 
 impl BitMask for UserPermission {
