@@ -405,10 +405,7 @@ impl Connection {
 	}
 
 	/// Handle a subscription request.
-	async fn handle_subscription(
-		&mut self,
-		subscribe: &payload::Subscribe,
-	) -> Result<(), ConnectionError> {
+	async fn handle_subscription(&mut self, subscribe: &payload::Subscribe) -> Result<(), ConnectionError> {
 		if let Some(subscription_limit) = self.global.config().api.subscription_limit {
 			if self.topics.len() >= subscription_limit {
 				self.send_error("Too Many Active Subscriptions!", HashMap::new(), Some(CloseCode::RateLimit))
@@ -419,10 +416,14 @@ impl Connection {
 		let scope = match subscribe.condition.clone().try_into() {
 			Ok(scope) => scope,
 			Err(()) => {
-				self.send_error("Invalid Subscription Condition", HashMap::new(), Some(CloseCode::InvalidPayload))
-					.await?;
+				self.send_error(
+					"Invalid Subscription Condition",
+					HashMap::new(),
+					Some(CloseCode::InvalidPayload),
+				)
+				.await?;
 				return Ok(());
-			},
+			}
 		};
 
 		let topic = EventTopic::new(subscribe.ty, scope);
@@ -466,14 +467,22 @@ impl Connection {
 					.await?;
 			}
 		} else {
-			let topic = EventTopic::new(unsubscribe.ty, match unsubscribe.condition.clone().try_into() {
-				Ok(scope) => scope,
-				Err(()) => {
-					self.send_error("Invalid Subscription Condition", HashMap::new(), Some(CloseCode::InvalidPayload))
+			let topic = EventTopic::new(
+				unsubscribe.ty,
+				match unsubscribe.condition.clone().try_into() {
+					Ok(scope) => scope,
+					Err(()) => {
+						self.send_error(
+							"Invalid Subscription Condition",
+							HashMap::new(),
+							Some(CloseCode::InvalidPayload),
+						)
 						.await?;
-					return Ok(());
+						return Ok(());
+					}
 				},
-			}).as_key();
+			)
+			.as_key();
 
 			if self.topics.remove(&topic).is_none() {
 				self.send_error("Not subscribed to this event", HashMap::new(), Some(CloseCode::NotSubscribed))
@@ -632,8 +641,14 @@ impl Connection {
 		let partial_user = UserPartialModel::from_db(payload.user.clone(), None, None, &self.global.config().api.cdn_origin);
 
 		for emote_set in &payload.personal_emote_sets {
-			if self.personal_emote_set_lru.get(&emote_set.emote_set.id).map(|t| t != &emote_set.emote_set.updated_at).unwrap_or(true) {
-				let object = EmoteSetModel::from_db(emote_set.emote_set.clone(), std::iter::empty(), Some(partial_user.clone()));
+			if self
+				.personal_emote_set_lru
+				.get(&emote_set.emote_set.id)
+				.map(|t| t != &emote_set.emote_set.updated_at)
+				.unwrap_or(true)
+			{
+				let object =
+					EmoteSetModel::from_db(emote_set.emote_set.clone(), std::iter::empty(), Some(partial_user.clone()));
 				let object = serde_json::to_value(object).map_err(|e| {
 					tracing::error!(error = %e, "failed to serialize emote set");
 					ConnectionError::ClosedByServer(CloseCode::ServerError)
@@ -649,21 +664,30 @@ impl Connection {
 					},
 				});
 
-				let pushed = emote_set.emotes.iter().enumerate().map(|(i, emote)| {
-					let value = EmotePartialModel::from_db(emote.clone(), Some(UserPartialModel::deleted_user()), &self.global.config().api.cdn_origin);
-					let value = serde_json::to_value(value).map_err(|e| {
-						tracing::error!(error = %e, "failed to serialize emote");
-						ConnectionError::ClosedByServer(CloseCode::ServerError)
-					})?;
+				let pushed = emote_set
+					.emotes
+					.iter()
+					.enumerate()
+					.map(|(i, emote)| {
+						let value = EmotePartialModel::from_db(
+							emote.clone(),
+							Some(UserPartialModel::deleted_user()),
+							&self.global.config().api.cdn_origin,
+						);
+						let value = serde_json::to_value(value).map_err(|e| {
+							tracing::error!(error = %e, "failed to serialize emote");
+							ConnectionError::ClosedByServer(CloseCode::ServerError)
+						})?;
 
-					Ok(ChangeField {
-						key: "emotes".to_string(),
-						index: Some(i),
-						ty: ChangeFieldType::Object,
-						value,
-						..Default::default()
+						Ok(ChangeField {
+							key: "emotes".to_string(),
+							index: Some(i),
+							ty: ChangeFieldType::Object,
+							value,
+							..Default::default()
+						})
 					})
-				}).collect::<Result<Vec<_>, ConnectionError>>()?;
+					.collect::<Result<Vec<_>, ConnectionError>>()?;
 
 				dispatches.push(payload::Dispatch {
 					ty: EventType::UpdateEmoteSet,
@@ -677,10 +701,14 @@ impl Connection {
 				});
 			}
 
-			self.personal_emote_set_lru.insert(emote_set.emote_set.id, emote_set.emote_set.updated_at);
+			self.personal_emote_set_lru
+				.insert(emote_set.emote_set.id, emote_set.emote_set.updated_at);
 		}
 
-		let user_state = self.presence_lru.entry(payload.user.id).or_insert_with(PresenceCacheValue::default);
+		let user_state = self
+			.presence_lru
+			.entry(payload.user.id)
+			.or_default();
 
 		if user_state.active_badge != payload.active_badge.as_ref().map(|b| b.id) {
 			if let Some(active_badge) = user_state.active_badge {
@@ -694,17 +722,15 @@ impl Connection {
 					ConnectionError::ClosedByServer(CloseCode::ServerError)
 				})?;
 
-				dispatches.push(
-					payload::Dispatch {
-						ty: EventType::DeleteEntitlement,
-						body: ChangeMap {
-							id: object.id,
-							kind: ObjectKind::Entitlement,
-							object: value,
-							..Default::default()
-						},
-					}
-				);
+				dispatches.push(payload::Dispatch {
+					ty: EventType::DeleteEntitlement,
+					body: ChangeMap {
+						id: object.id,
+						kind: ObjectKind::Entitlement,
+						object: value,
+						..Default::default()
+					},
+				});
 			}
 
 			if let Some(badge) = payload.active_badge.as_ref() {
@@ -785,7 +811,9 @@ impl Connection {
 			if !user_state.personal_emote_sets.contains(&sen.emote_set.id) {
 				let object = Entitlement {
 					id: Id::<()>::nil(),
-					data: EntitlementData::EmoteSet { ref_id: sen.emote_set.id },
+					data: EntitlementData::EmoteSet {
+						ref_id: sen.emote_set.id,
+					},
 					user: partial_user.clone(),
 				};
 				let value = serde_json::to_value(&object).map_err(|e| {

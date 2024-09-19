@@ -1,13 +1,15 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use anyhow::Context;
 use futures::StreamExt;
-use shared::database::emote::EmoteId;
-use shared::database::emote_set::EmoteSetId;
+use shared::database::emote::{Emote, EmoteId};
+use shared::database::emote_set::{EmoteSet, EmoteSetId};
 use shared::database::entitlement::EntitlementEdgeKind;
+use shared::database::role::{Role, RoleId};
+use shared::database::ticket::{Ticket, TicketId};
 use shared::database::user::editor::UserEditorId;
-use shared::database::user::UserId;
+use shared::database::user::{User, UserId};
 use shared::database::{self, stored_event};
 use shared::old_types::EmoteFlagsModel;
 
@@ -20,18 +22,22 @@ struct ProcessInput<'a> {
 	pub audit_log: AuditLog,
 	pub stats: &'a mut BTreeMap<(EmoteId, time::Date), i32>,
 	pub events: &'a mut Vec<stored_event::StoredEvent>,
-	pub emote_filter: &'a Box<dyn Fn(&EmoteId) -> bool + 'a>,
-	pub user_filter: &'a Box<dyn Fn(&UserId) -> bool + 'a>,
-	pub emote_set_filter: &'a Box<dyn Fn(&EmoteSetId) -> bool + 'a>,
+	pub emotes: &'a HashMap<EmoteId, Emote>,
+	pub users: &'a HashMap<UserId, User>,
+	pub emote_sets: &'a HashMap<EmoteSetId, EmoteSet>,
+	pub roles: &'a HashMap<RoleId, Role>,
+	pub tickets: &'a HashMap<TicketId, Ticket>,
 }
 
 pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
 	pub stats: &'a mut BTreeMap<(EmoteId, time::Date), i32>,
 	pub events: &'a mut Vec<stored_event::StoredEvent>,
-	pub emote_filter: Box<dyn Fn(&EmoteId) -> bool + 'a>,
-	pub user_filter: Box<dyn Fn(&UserId) -> bool + 'a>,
-	pub emote_set_filter: Box<dyn Fn(&EmoteSetId) -> bool + 'a>,
+	pub emotes: &'a HashMap<EmoteId, Emote>,
+	pub users: &'a HashMap<UserId, User>,
+	pub emote_sets: &'a HashMap<EmoteSetId, EmoteSet>,
+	pub roles: &'a HashMap<RoleId, Role>,
+	pub tickets: &'a HashMap<TicketId, Ticket>,
 }
 
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
@@ -41,9 +47,11 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 		global,
 		stats,
 		events,
-		emote_filter,
-		emote_set_filter,
-		user_filter,
+		emotes,
+		emote_sets,
+		users,
+		roles,
+		tickets,
 	} = input;
 
 	let mut cursor = global
@@ -60,9 +68,11 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 					audit_log,
 					stats,
 					events,
-					emote_filter: &emote_filter,
-					user_filter: &user_filter,
-					emote_set_filter: &emote_set_filter,
+					emotes,
+					emote_sets,
+					users,
+					roles,
+					tickets,
 				});
 				outcome.processed_documents += 1;
 			}
@@ -82,9 +92,11 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		audit_log,
 		stats,
 		events,
-		emote_filter,
-		user_filter,
-		emote_set_filter,
+		emotes,
+		emote_sets,
+		users,
+		roles,
+		tickets,
 	} = input;
 
 	let mut data = vec![];
@@ -95,17 +107,22 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		| AuditLogKind::UpdateEmote
 		| AuditLogKind::MergeEmote
 		| AuditLogKind::DeleteEmote => {
-			if !emote_filter(&audit_log.target_id.into()) {
+			if !emotes.contains_key(&audit_log.target_id.into()) {
 				return outcome;
 			}
 		}
 		AuditLogKind::CreateEmoteSet | AuditLogKind::UpdateEmoteSet | AuditLogKind::DeleteEmoteSet => {
-			if !emote_set_filter(&audit_log.target_id.into()) {
+			if !emote_sets.contains_key(&audit_log.target_id.into()) {
 				return outcome;
 			}
 		}
 		AuditLogKind::CreateUser | AuditLogKind::EditUser | AuditLogKind::DeleteUser => {
-			if !user_filter(&audit_log.target_id.into()) {
+			if !users.contains_key(&audit_log.target_id.into()) {
+				return outcome;
+			}
+		}
+		AuditLogKind::CreateReport | AuditLogKind::UpdateReport => {
+			if !tickets.contains_key(&audit_log.target_id.into()) {
 				return outcome;
 			}
 		}
@@ -250,12 +267,16 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 							});
 						}
 					}
-					AuditLogChange::EmoteSetEmotes(emotes) => {
-						for (emote_id, alias) in emotes
+					AuditLogChange::EmoteSetEmotes(changed_emotes) => {
+						for (emote_id, alias) in changed_emotes
 							.added
 							.into_iter()
 							.filter_map(|e| e.id.map(|id| (EmoteId::from(id), e.name)))
 						{
+							if !emotes.contains_key(&emote_id) {
+								continue;
+							}
+
 							data.push(stored_event::StoredEventData::EmoteSet {
 								target_id: audit_log.target_id.into(),
 								data: stored_event::StoredEventEmoteSetData::AddEmote {
@@ -268,7 +289,11 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 								.entry((emote_id, audit_log.id.timestamp().to_time_0_3().date()))
 								.or_default() += 1;
 						}
-						for emote_id in emotes.removed.into_iter().filter_map(|e| e.id.map(EmoteId::from)) {
+						for emote_id in changed_emotes.removed.into_iter().filter_map(|e| e.id.map(EmoteId::from)) {
+							if !emotes.contains_key(&emote_id) {
+								continue;
+							}
+
 							data.push(stored_event::StoredEventData::EmoteSet {
 								target_id: audit_log.target_id.into(),
 								data: stored_event::StoredEventEmoteSetData::RemoveEmote { emote_id },
@@ -278,13 +303,16 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 								.entry((emote_id, audit_log.id.timestamp().to_time_0_3().date()))
 								.or_default() -= 1;
 						}
-						for update in emotes
+						for update in changed_emotes
 							.updated
 							.into_iter()
 							.filter(|e| e.new.id.is_some() && e.old.id.is_some())
 							.filter(|e| e.old.id == e.new.id && e.old.name != e.new.name)
 						{
 							let emote_id = update.new.id.unwrap().into();
+							if !emotes.contains_key(&emote_id) {
+								continue;
+							}
 
 							data.push(stored_event::StoredEventData::EmoteSet {
 								target_id: audit_log.target_id.into(),
@@ -316,6 +344,10 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 								editor_id: editor.into(),
 							};
 
+							if !users.contains_key(&editor_id.editor_id) {
+								continue;
+							}
+
 							data.push(stored_event::StoredEventData::UserEditor {
 								target_id: editor_id,
 								data: stored_event::StoredEventUserEditorData::AddEditor {
@@ -329,6 +361,10 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 								editor_id: editor.into(),
 							};
 
+							if !users.contains_key(&editor_id.editor_id) {
+								continue;
+							}
+
 							data.push(stored_event::StoredEventData::UserEditor {
 								target_id: editor_id,
 								data: stored_event::StoredEventUserEditorData::RemoveEditor {
@@ -337,8 +373,12 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 							});
 						}
 					}
-					AuditLogChange::UserRoles(roles) => {
-						for role in roles.added.into_iter().flatten() {
+					AuditLogChange::UserRoles(changed_roles) => {
+						for role in changed_roles.added.into_iter().flatten() {
+							if !roles.contains_key(&role.into()) {
+								continue;
+							}
+
 							data.push(stored_event::StoredEventData::User {
 								target_id: audit_log.target_id.into(),
 								data: stored_event::StoredEventUserData::AddEntitlement {
@@ -346,7 +386,11 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 								},
 							});
 						}
-						for role in roles.removed.into_iter().flatten() {
+						for role in changed_roles.removed.into_iter().flatten() {
+							if !roles.contains_key(&role.into()) {
+								continue;
+							}
+
 							data.push(stored_event::StoredEventData::User {
 								target_id: audit_log.target_id.into(),
 								data: stored_event::StoredEventUserData::RemoveEntitlement {

@@ -290,9 +290,7 @@ pub async fn redeem(
 					// the effects contain no subscription products
 					grant_entitlements(&mut tx, &code, authed_user.id).await?;
 
-					Ok(RedeemResponse {
-						authorize_url: None,
-					})
+					Ok(RedeemResponse { authorize_url: None })
 				}
 			}
 		})

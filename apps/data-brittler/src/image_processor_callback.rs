@@ -59,8 +59,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		let message = message.context("consumer closed")?.context("failed to get message")?;
 
 		// decode
-		let subject = match Subject::from_string(&message.subject, &global.config.image_processor.event_queue_topic_prefix)
-		{
+		let subject = match Subject::from_string(&message.subject, &global.config.image_processor.event_queue_topic_prefix) {
 			Ok(subject) => subject,
 			Err(err) => {
 				tracing::warn!(error = %err, subject = %message.subject, "failed to decode subject");

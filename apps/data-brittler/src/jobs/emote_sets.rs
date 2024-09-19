@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use futures::StreamExt;
-use shared::database::emote::EmoteId;
+use shared::database::emote::{Emote, EmoteId};
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetId, EmoteSetKind};
 use shared::database::user::{User, UserId};
 use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
@@ -17,7 +17,7 @@ pub struct RunInput<'a> {
 	pub emote_sets: &'a mut HashMap<EmoteSetId, EmoteSet>,
 	pub rankings: &'a mut HashMap<EmoteId, i32>,
 	pub users: &'a mut HashMap<UserId, User>,
-	pub filter: Box<dyn Fn(&EmoteId) -> bool + 'a>,
+	pub emotes: &'a HashMap<EmoteId, Emote>,
 }
 
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
@@ -26,7 +26,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let RunInput {
 		global,
 		emote_sets,
-		filter,
+		emotes,
 		users,
 		rankings,
 	} = input;
@@ -45,7 +45,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 					emote_sets,
 					emote_set,
 					users,
-					filter: &filter,
+					emotes,
 				});
 				outcome.processed_documents += 1;
 			}
@@ -82,7 +82,7 @@ struct ProcessInput<'a> {
 	emote_sets: &'a mut HashMap<EmoteSetId, EmoteSet>,
 	emote_set: types::EmoteSet,
 	users: &'a mut HashMap<UserId, User>,
-	filter: &'a Box<dyn Fn(&EmoteId) -> bool + 'a>,
+	emotes: &'a HashMap<EmoteId, Emote>,
 }
 
 fn process(input: ProcessInput<'_>) -> ProcessOutcome {
@@ -91,7 +91,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 	let ProcessInput {
 		emote_sets,
 		emote_set,
-		filter,
+		emotes,
 		users,
 	} = input;
 
@@ -121,10 +121,10 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		EmoteSetKind::Global | EmoteSetKind::Special => {}
 	}
 
-	let mut emotes = vec![];
+	let mut collected_emotes = vec![];
 
 	for (emote_id, e) in emote_set.emotes.into_iter().flatten().filter_map(|e| e.id.map(|id| (id, e))) {
-		if !filter(&emote_id.into()) {
+		if !emotes.contains_key(&emote_id.into()) {
 			continue;
 		}
 
@@ -149,7 +149,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 			continue;
 		};
 
-		emotes.push(EmoteSetEmote {
+		collected_emotes.push(EmoteSetEmote {
 			id: emote_id.into(),
 			alias: emote_name,
 			added_at: e.timestamp.map(|t| t.into_chrono()).unwrap_or_default(),
@@ -166,7 +166,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 			name: emote_set.name,
 			description: None,
 			tags: emote_set.tags,
-			emotes,
+			emotes: collected_emotes,
 			capacity: Some(emote_set.capacity),
 			owner_id: matches!(kind, EmoteSetKind::Personal | EmoteSetKind::Normal).then_some(emote_set.owner_id.into()),
 			origin_config: None,

@@ -42,4 +42,3 @@ pub fn default_products() -> Vec<SubscriptionProduct> {
 		search_updated_at: None,
 	}]
 }
-

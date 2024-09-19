@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -16,7 +16,7 @@ use crate::types::ReportStatus;
 
 pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
-	pub tickets: &'a mut Vec<Ticket>,
+	pub tickets: &'a mut HashMap<TicketId, Ticket>,
 	pub ticket_messages: &'a mut Vec<TicketMessage>,
 }
 
@@ -60,7 +60,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 
 struct ProcessInput<'a> {
 	all_members: &'a mut HashSet<(TicketId, UserId)>,
-	tickets: &'a mut Vec<Ticket>,
+	tickets: &'a mut HashMap<TicketId, Ticket>,
 	ticket_messages: &'a mut Vec<TicketMessage>,
 	report: types::Report,
 }
@@ -111,21 +111,24 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		}
 	}
 
-	tickets.push(Ticket {
-		id: ticket_id,
-		priority: TicketPriority::Medium,
-		members,
-		title: report.subject,
-		tags: vec![],
-		country_code: None,
-		kind: TicketKind::Abuse,
-		targets: vec![TicketTarget::Emote(report.target_id.into())],
-		author_id: report.actor_id.into(),
-		open: report.status == ReportStatus::Open,
-		locked: false,
-		search_updated_at: None,
-		updated_at: chrono::Utc::now(),
-	});
+	tickets.insert(
+		ticket_id,
+		Ticket {
+			id: ticket_id,
+			priority: TicketPriority::Medium,
+			members,
+			title: report.subject,
+			tags: vec![],
+			country_code: None,
+			kind: TicketKind::Abuse,
+			targets: vec![TicketTarget::Emote(report.target_id.into())],
+			author_id: report.actor_id.into(),
+			open: report.status == ReportStatus::Open,
+			locked: false,
+			search_updated_at: None,
+			updated_at: chrono::Utc::now(),
+		},
+	);
 
 	ProcessOutcome::default()
 }

@@ -78,7 +78,7 @@ pub enum InternalEventData {
 		after: User,
 		data: InternalEventUserData,
 	},
-	UserPresence(InternalEventUserPresenceData),
+	UserPresence(Box<InternalEventUserPresenceData>),
 	UserProfilePicture {
 		after: UserProfilePicture,
 		data: StoredEventUserProfilePictureData,
@@ -457,7 +457,7 @@ impl InternalEventPayload {
 					data: InternalEventData::UserPresence(data),
 					..
 				} => {
-					presence_data.push(data);
+					presence_data.push(*data);
 				}
 				event => {
 					if let Some(event_type) = event.data.event_api_event_type() {

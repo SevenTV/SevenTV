@@ -38,12 +38,9 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut paint_events = HashMap::new();
 
 	special_events().into_iter().for_each(|s| {
-		s.entitlements.iter().for_each(|e| match e {
-			EntitlementEdgeKind::Paint { paint_id } => {
-				paint_events.insert(*paint_id, s.special_event.id);
-			}
-			_ => {}
-		});
+		s.entitlements.iter().for_each(|e| if let EntitlementEdgeKind::Paint { paint_id } = e {
+  				paint_events.insert(*paint_id, s.special_event.id);
+  			});
 	});
 
 	while let Some(redeem_code) = cursor.next().await {

@@ -1050,16 +1050,8 @@ pub enum EntitlementKind {
 #[derive(Debug, serde::Serialize)]
 #[serde(tag = "kind", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum EntitlementData {
-	Role {
-		ref_id: RoleId,
-	},
-	Paint {
-		ref_id: PaintId,
-	},
-	Badge {
-		ref_id: BadgeId,
-	},
-	EmoteSet {
-		ref_id: EmoteSetId,
-	},
+	Role { ref_id: RoleId },
+	Paint { ref_id: PaintId },
+	Badge { ref_id: BadgeId },
+	EmoteSet { ref_id: EmoteSetId },
 }

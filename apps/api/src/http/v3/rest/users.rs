@@ -425,7 +425,7 @@ pub async fn create_user_presence(
 		let payload = rmp_serde::to_vec_named(&InternalEventPayload::new(Some(InternalEvent {
 			actor: None,
 			session_id: None,
-			data: InternalEventData::UserPresence(InternalEventUserPresenceData {
+			data: InternalEventData::UserPresence(Box::new(InternalEventUserPresenceData {
 				user,
 				platform: match presence.data.platform {
 					UserPresencePlatform::Twitch => {
@@ -443,7 +443,7 @@ pub async fn create_user_presence(
 				active_badge,
 				active_paint,
 				personal_emote_sets: sets,
-			}),
+			})),
 			timestamp: chrono::Utc::now(),
 		})))
 		.map_err(|err| {

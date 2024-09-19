@@ -25,8 +25,8 @@ pub use message::*;
 pub use redeem_code::*;
 pub use report::*;
 pub use subscription::*;
-pub use user::*;
 pub use system::*;
+pub use user::*;
 
 #[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]

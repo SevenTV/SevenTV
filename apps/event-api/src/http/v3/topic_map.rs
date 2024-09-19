@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, pin::Pin};
+use std::collections::BTreeMap;
+use std::pin::Pin;
 
 use futures_util::Stream;
 use shared::event_api::types::EventType;
@@ -52,18 +53,17 @@ impl TopicMap {
 	/// Poll the entries in the map.
 	fn poll_entries(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Option<Payload>> {
 		let mut removals = Vec::new();
-		let resp = self.0.iter_mut().find_map(|(key, subscription)| {
-			match subscription.0.as_mut().poll_next(cx) {
-				std::task::Poll::Ready(Some(msg)) => {
-					Some(std::task::Poll::Ready(Some(msg)))
-				},
+		let resp = self
+			.0
+			.iter_mut()
+			.find_map(|(key, subscription)| match subscription.0.as_mut().poll_next(cx) {
+				std::task::Poll::Ready(Some(msg)) => Some(std::task::Poll::Ready(Some(msg))),
 				std::task::Poll::Ready(None) => {
 					removals.push(*key);
 					None
-				},
-				std::task::Poll::Pending => None
-			}
-		});
+				}
+				std::task::Poll::Pending => None,
+			});
 
 		removals.into_iter().for_each(|k| {
 			self.0.remove(&k);
@@ -73,7 +73,8 @@ impl TopicMap {
 	}
 }
 
-// This does not need to be pinned because the underlying subscriptions are already pinned.
+// This does not need to be pinned because the underlying subscriptions are
+// already pinned.
 impl Unpin for TopicMap {}
 
 /// Allows iterating over the subscriptions in the map.

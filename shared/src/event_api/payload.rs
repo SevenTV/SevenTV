@@ -106,7 +106,7 @@ impl Subscribe {
 	pub fn new_from_hash(ty: EventType, hash: &HashMap<String, String>) -> Option<Self> {
 		Some(Self {
 			ty,
-			condition: serde_json::from_value(serde_json::to_value(&hash).ok()?).ok()?,
+			condition: serde_json::from_value(serde_json::to_value(hash).ok()?).ok()?,
 		})
 	}
 }

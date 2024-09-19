@@ -21,7 +21,7 @@ use shared::database::product::subscription::SubscriptionPeriod;
 use shared::database::product::SubscriptionProduct;
 use shared::database::role::{Role, RoleId};
 use shared::database::stored_event::StoredEvent;
-use shared::database::ticket::{Ticket, TicketMessage};
+use shared::database::ticket::{Ticket, TicketId, TicketMessage};
 use shared::database::user::ban::UserBan;
 use shared::database::user::editor::UserEditor;
 use shared::database::user::profile_picture::UserProfilePicture;
@@ -37,6 +37,7 @@ pub mod audit_logs;
 pub mod bans;
 pub mod cosmetics;
 pub mod emote_sets;
+pub mod emote_stats;
 pub mod emotes;
 pub mod entitlements;
 pub mod messages;
@@ -45,9 +46,8 @@ pub mod redeem_codes;
 pub mod reports;
 pub mod roles;
 pub mod subscriptions;
-pub mod users;
 pub mod system;
-pub mod emote_stats;
+pub mod users;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CdnFileRename {
@@ -134,7 +134,7 @@ pub struct JobRunner {
 	pub bans: Vec<UserBan>,
 	pub entitlements: HashSet<EntitlementEdge>,
 	pub mod_requests: Vec<EmoteModerationRequest>,
-	pub tickets: Vec<Ticket>,
+	pub tickets: HashMap<TicketId, Ticket>,
 	pub ticket_messages: Vec<TicketMessage>,
 
 	pub redeem_codes: HashMap<String, RedeemCode>,
@@ -197,7 +197,7 @@ impl JobRunner {
 		.await
 		.context("emotes")?;
 		emotes.fetch_time = start.elapsed().as_secs_f64();
-		self.true_emote_usage = HashMap::from_iter(self.emotes.iter().map(|(k, _)| (*k, 0)));
+		self.true_emote_usage = HashMap::from_iter(self.emotes.keys().map(|k| (*k, 0)));
 		tracing::info!("emotes took {:.2}s", start.elapsed().as_secs_f64());
 
 		let start = Instant::now();
@@ -221,7 +221,7 @@ impl JobRunner {
 			emote_sets: &mut self.emote_sets,
 			rankings: &mut self.true_emote_usage,
 			users: &mut self.users,
-			filter: Box::new(|emote_id| self.emotes.contains_key(&emote_id)),
+			emotes: &self.emotes,
 		})
 		.await
 		.context("emote sets")?;
@@ -233,9 +233,9 @@ impl JobRunner {
 			global,
 			edges: &mut self.entitlements,
 			users: &mut self.users,
-			role_filter: Box::new(|role_id| self.roles.contains_key(&role_id)),
-			badge_filter: Box::new(|badge_id| self.badges.contains_key(&badge_id)),
-			paint_filter: Box::new(|paint_id| self.paints.contains_key(&paint_id)),
+			roles: &self.roles,
+			badges: &self.badges,
+			paints: &self.paints,
 		})
 		.await
 		.context("entitlements")?;
@@ -245,7 +245,7 @@ impl JobRunner {
 		let start = Instant::now();
 		let mut messages = messages::run(messages::RunInput {
 			global,
-			emote_filter: Box::new(|emote_id| self.emotes.contains_key(&emote_id)),
+			emotes: &self.emotes,
 			mod_requests: &mut self.mod_requests,
 		})
 		.await
@@ -254,13 +254,26 @@ impl JobRunner {
 		tracing::info!("messages took {:.2}s", start.elapsed().as_secs_f64());
 
 		let start = Instant::now();
+		let mut reports = reports::run(reports::RunInput {
+			global,
+			ticket_messages: &mut self.ticket_messages,
+			tickets: &mut self.tickets,
+		})
+		.await
+		.context("reports")?;
+		reports.fetch_time = start.elapsed().as_secs_f64();
+		tracing::info!("reports took {:.2}s", start.elapsed().as_secs_f64());
+
+		let start = Instant::now();
 		let mut audit_logs = audit_logs::run(audit_logs::RunInput {
 			global,
 			stats: &mut self.emote_stats,
 			events: &mut self.stored_events,
-			emote_filter: Box::new(|emote_id| self.emotes.contains_key(&emote_id)),
-			emote_set_filter: Box::new(|emote_set_id| self.emote_sets.contains_key(&emote_set_id)),
-			user_filter: Box::new(|user_id| self.users.contains_key(&user_id)),
+			emotes: &self.emotes,
+			emote_sets: &self.emote_sets,
+			users: &self.users,
+			roles: &self.roles,
+			tickets: &self.tickets,
 		})
 		.await
 		.context("audit logs")?;
@@ -276,17 +289,6 @@ impl JobRunner {
 		.context("subscriptions")?;
 		subscriptions.fetch_time = start.elapsed().as_secs_f64();
 		tracing::info!("subscriptions took {:.2}s", start.elapsed().as_secs_f64());
-
-		let start = Instant::now();
-		let mut reports = reports::run(reports::RunInput {
-			global,
-			ticket_messages: &mut self.ticket_messages,
-			tickets: &mut self.tickets,
-		})
-		.await
-		.context("reports")?;
-		reports.fetch_time = start.elapsed().as_secs_f64();
-		tracing::info!("reports took {:.2}s", start.elapsed().as_secs_f64());
 
 		self.cron_jobs = default_cron_jobs();
 		self.special_events = subscriptions::benefits::special_events()
@@ -311,7 +313,9 @@ impl JobRunner {
 			global,
 			global_config: &mut self.system,
 			emote_sets: &mut self.emote_sets,
-		}).await.context("system")?;
+		})
+		.await
+		.context("system")?;
 		tracing::info!("system took {:.2}s", start.elapsed().as_secs_f64());
 
 		Ok(JobOutcomes {
@@ -382,7 +386,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	tracing::info!("fetched all data in {:.2}s", timer.elapsed().as_secs_f64());
 
 	let mut futures = Vec::<BoxFuture<JobOutcome>>::new();
-	
+
 	macro_rules! insert_future {
 		($should_run:expr, $fut:expr) => {
 			if $should_run {
@@ -398,41 +402,45 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 			match callback.event {
 				Some(event_callback::Event::Start(_)) => {
 					continue;
-				},
+				}
 				Some(event_callback::Event::Cancel(_)) => {
 					tracing::info!("task canceled {:?}", task);
 					match task {
 						cosmetics::PendingTask::Badge(badge_id) => {
 							runner.badges.remove(badge_id);
-						},
+						}
 						cosmetics::PendingTask::Paint(paint_id, _) => {
 							runner.paints.remove(paint_id);
-						},
+						}
 					}
 					runner.pending_tasks.remove(0);
-				},
+				}
 				Some(event_callback::Event::Fail(err)) => {
 					tracing::error!("task failed {:?}: {:?}", task, err);
 					match task {
 						cosmetics::PendingTask::Badge(badge_id) => {
 							runner.badges.remove(badge_id);
-						},
+						}
 						cosmetics::PendingTask::Paint(paint_id, _) => {
 							runner.paints.remove(paint_id);
-						},
+						}
 					}
 					runner.pending_tasks.remove(0);
-				},
+				}
 				Some(event_callback::Event::Success(success)) => {
-					let outputs: Vec<_> = success.files.into_iter().map(|i| Image {
-						path: i.path.map(|p| p.path).unwrap_or_default(),
-						mime: i.content_type,
-						size: i.size as i64,
-						width: i.width as i32,
-						height: i.height as i32,
-						frame_count: i.frame_count as i32,
-						scale: i.scale.unwrap_or(1) as i32,
-					}).collect();
+					let outputs: Vec<_> = success
+						.files
+						.into_iter()
+						.map(|i| Image {
+							path: i.path.map(|p| p.path).unwrap_or_default(),
+							mime: i.content_type,
+							size: i.size as i64,
+							width: i.width as i32,
+							height: i.height as i32,
+							frame_count: i.frame_count as i32,
+							scale: i.scale.unwrap_or(1) as i32,
+						})
+						.collect();
 					let input = success.input_metadata.unwrap();
 
 					match task {
@@ -449,64 +457,226 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 								}),
 								outputs,
 							}
-						},
+						}
 						cosmetics::PendingTask::Paint(paint_id, layer_id) => {
 							if let Some(paint) = runner.paints.get_mut(paint_id) {
-								paint.data.layers.iter_mut().find(|l| l.id == *layer_id).unwrap().ty = PaintLayerType::Image(ImageSet {
-									input: ImageSetInput::Image(Image {
-										frame_count: input.frame_count as i32,
-										width: input.width as i32,
-										height: input.height as i32,
-										path: input.path.map(|p| p.path).unwrap_or_default(),
-										mime: input.content_type,
-										size: input.size as i64,
-										scale: 1,
-									}),
-									outputs,
-								});
+								paint.data.layers.iter_mut().find(|l| l.id == *layer_id).unwrap().ty =
+									PaintLayerType::Image(ImageSet {
+										input: ImageSetInput::Image(Image {
+											frame_count: input.frame_count as i32,
+											width: input.width as i32,
+											height: input.height as i32,
+											path: input.path.map(|p| p.path).unwrap_or_default(),
+											mime: input.content_type,
+											size: input.size as i64,
+											scale: 1,
+										}),
+										outputs,
+									});
 							}
-						},
+						}
 					}
 					runner.pending_tasks.remove(0);
 				}
 				None => continue,
 			}
-			tracing::info!("processed {}/{} pending tasks", total_pending-runner.pending_tasks.len(), total_pending);
+			tracing::info!(
+				"processed {}/{} pending tasks",
+				total_pending - runner.pending_tasks.len(),
+				total_pending
+			);
 		}
-		let outcome = tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.cosmetics, runner.badges.into_values())).await.unwrap();
-		tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcome, runner.paints.into_values())).await.unwrap()
+		let outcome = tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.cosmetics,
+			runner.badges.into_values(),
+		))
+		.await
+		.unwrap();
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcome,
+			runner.paints.into_values(),
+		))
+		.await
+		.unwrap()
 	});
-	insert_future!(global.config.should_run_bans(), async { tokio::spawn(batch_insert(global.target_db.clone(),global.config.truncate,  outcomes.bans, runner.bans.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_emotes(),  async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.emotes, runner.emotes.into_values())).await.unwrap() });
-	insert_future!(global.config.should_run_users(),  async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.users, runner.users.into_values())).await.unwrap() });
-	insert_future!(global.config.should_run_emote_sets(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.emote_sets, runner.emote_sets.into_values())).await.unwrap() });
-	insert_future!(global.config.should_run_entitlements(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.entitlements, runner.entitlements.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_messages(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.messages, runner.mod_requests.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_audit_logs(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.audit_logs, runner.stored_events.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_subscriptions(), async { tokio::spawn(batch_insert(global.target_db.clone(),global.config.truncate,  outcomes.subscriptions, runner.subscription_periods.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_reports(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.reports, runner.ticket_messages.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_redeem_codes(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.redeem_codes, runner.redeem_codes.into_values())).await.unwrap() });
-	insert_future!(global.config.should_run_prices(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, JobOutcome::new("products"), runner.subscription_products.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_cron_jobs(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, JobOutcome::new("cron_jobs"), runner.cron_jobs.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_special_events(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, JobOutcome::new("special_events"), runner.special_events.into_iter())).await.unwrap() });
-	insert_future!(global.config.should_run_roles(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, JobOutcome::new("roles"), runner.roles.into_values())).await.unwrap() });
-	insert_future!(global.config.should_run_system(), async { tokio::spawn(batch_insert(global.target_db.clone(), global.config.truncate, outcomes.system, std::iter::once(runner.system))).await.unwrap() });
+	insert_future!(global.config.should_run_bans(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.bans,
+			runner.bans.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_emotes(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.emotes,
+			runner.emotes.into_values(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_users(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.users,
+			runner.users.into_values(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_emote_sets(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.emote_sets,
+			runner.emote_sets.into_values(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_entitlements(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.entitlements,
+			runner.entitlements.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_messages(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.messages,
+			runner.mod_requests.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_audit_logs(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.audit_logs,
+			runner.stored_events.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_subscriptions(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.subscriptions,
+			runner.subscription_periods.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_reports(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.reports,
+			runner.ticket_messages.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_redeem_codes(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.redeem_codes,
+			runner.redeem_codes.into_values(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_prices(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			JobOutcome::new("products"),
+			runner.subscription_products.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_cron_jobs(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			JobOutcome::new("cron_jobs"),
+			runner.cron_jobs.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_special_events(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			JobOutcome::new("special_events"),
+			runner.special_events.into_iter(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_roles(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			JobOutcome::new("roles"),
+			runner.roles.into_values(),
+		))
+		.await
+		.unwrap()
+	});
+	insert_future!(global.config.should_run_system(), async {
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcomes.system,
+			std::iter::once(runner.system),
+		))
+		.await
+		.unwrap()
+	});
 	insert_future!(global.config.should_run_cdn_rename(), async {
 		let mut outcome = JobOutcome::new("cdn_rename");
 		let start = Instant::now();
 
 		fn write_file(file: &str, content: &[CdnFileRename]) -> anyhow::Result<()> {
 			let content = serde_json::to_vec(content).context("serialize")?;
-			std::fs::write(&file, content).context("write")
+			std::fs::write(file, content).context("write")
 		}
 
 		let public_cdn_rename = runner.public_cdn_rename;
-		if let Err(err) = tokio::task::spawn_blocking(move || write_file("./local/public_cdn_rename.json", &public_cdn_rename)).await.unwrap() {
+		if let Err(err) =
+			tokio::task::spawn_blocking(move || write_file("./local/public_cdn_rename.json", &public_cdn_rename))
+				.await
+				.unwrap()
+		{
 			outcome.errors.push(error::Error::CdnRename(err));
 		}
 
 		let internal_cdn_rename = runner.internal_cdn_rename;
-		if let Err(err) = tokio::task::spawn_blocking(move || write_file("./local/internal_cdn_rename.json", &internal_cdn_rename)).await.unwrap() {
+		if let Err(err) =
+			tokio::task::spawn_blocking(move || write_file("./local/internal_cdn_rename.json", &internal_cdn_rename))
+				.await
+				.unwrap()
+		{
 			outcome.errors.push(error::Error::CdnRename(err));
 		}
 
@@ -525,7 +695,10 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 			truncate: global.config.truncate,
 			emote_stats: runner.emote_stats,
 			true_emote_stats: runner.true_emote_usage,
-		})).await.unwrap() {
+		}))
+		.await
+		.unwrap()
+		{
 			outcome.errors.push(error::Error::EmoteStats(err));
 		}
 

@@ -4,12 +4,12 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use futures::StreamExt;
-use shared::database::badge::BadgeId;
+use shared::database::badge::{Badge, BadgeId};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
-use shared::database::paint::PaintId;
+use shared::database::paint::{PaintId, Paint};
 use shared::database::product::subscription::SubscriptionId;
 use shared::database::product::SubscriptionProductId;
-use shared::database::role::RoleId;
+use shared::database::role::{Role, RoleId};
 use shared::database::user::{User, UserId};
 
 use super::prices::NEW_SUBSCRIPTION_PRODUCT_ID;
@@ -153,9 +153,9 @@ fn custom_edges() -> impl IntoIterator<Item = EntitlementEdge> {
 pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
 	pub edges: &'a mut HashSet<EntitlementEdge>,
-	pub badge_filter: Box<dyn Fn(BadgeId) -> bool + 'a>,
-	pub paint_filter: Box<dyn Fn(PaintId) -> bool + 'a>,
-	pub role_filter: Box<dyn Fn(RoleId) -> bool + 'a>,
+	pub badges: &'a HashMap<BadgeId, Badge>,
+	pub paints: &'a HashMap<PaintId, Paint>,
+	pub roles: &'a HashMap<RoleId, Role>,
 	pub users: &'a mut HashMap<UserId, User>,
 }
 
@@ -165,9 +165,9 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let RunInput {
 		global,
 		edges,
-		badge_filter,
-		paint_filter,
-		role_filter,
+		badges,
+		paints,
+		roles,
 		users,
 	} = input;
 
@@ -189,9 +189,9 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 					edges,
 					entitlement,
 					skipped: &skipped,
-					badge_filter: &badge_filter,
-					paint_filter: &paint_filter,
-					role_filter: &role_filter,
+					badges,
+					paints,
+					roles,
 					users,
 				});
 				outcome.processed_documents += 1;
@@ -207,9 +207,9 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 
 struct ProcessInput<'a> {
 	entitlement: types::Entitlement,
-	badge_filter: &'a Box<dyn Fn(BadgeId) -> bool + 'a>,
-	paint_filter: &'a Box<dyn Fn(PaintId) -> bool + 'a>,
-	role_filter: &'a Box<dyn Fn(RoleId) -> bool + 'a>,
+	badges: &'a HashMap<BadgeId, Badge>,
+	paints: &'a HashMap<PaintId, Paint>,
+	roles: &'a HashMap<RoleId, Role>,
 	skipped: &'a HashMap<EntitlementEdgeKind, (EntitlementEdgeKind, Option<EntitlementEdgeManagedBy>, bool)>,
 	users: &'a mut HashMap<UserId, User>,
 	edges: &'a mut HashSet<EntitlementEdge>,
@@ -220,9 +220,9 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		entitlement,
 		edges,
 		skipped,
-		badge_filter,
-		paint_filter,
-		role_filter,
+		badges,
+		paints,
+		roles,
 		users,
 	} = input;
 
@@ -238,7 +238,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		EntitlementData::Badge { ref_id, selected } => {
 			let badge_id = ref_id.into();
 
-			if !badge_filter(badge_id) {
+			if !badges.contains_key(&badge_id) {
 				return ProcessOutcome::default();
 			}
 
@@ -251,7 +251,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		EntitlementData::Paint { ref_id, selected } => {
 			let paint_id = ref_id.into();
 
-			if !paint_filter(paint_id) {
+			if !paints.contains_key(&paint_id) {
 				return ProcessOutcome::default();
 			}
 
@@ -264,11 +264,11 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		EntitlementData::Role { ref_id } => {
 			let role_id = ref_id.into();
 
-			if !role_filter(role_id) {
+			if !roles.contains_key(&role_id) {
 				return ProcessOutcome::default();
 			}
 
-			EntitlementEdgeKind::Role { role_id: role_id.into() }
+			EntitlementEdgeKind::Role { role_id }
 		}
 		_ => return ProcessOutcome::default(),
 	};

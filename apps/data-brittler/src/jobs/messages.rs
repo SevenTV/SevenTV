@@ -5,7 +5,7 @@ use anyhow::Context;
 use bson::doc;
 use futures::StreamExt;
 use mongodb::bson::oid::ObjectId;
-use shared::database::emote::EmoteId;
+use shared::database::emote::{Emote, EmoteId};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
@@ -17,7 +17,7 @@ use crate::types;
 
 pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
-	pub emote_filter: Box<dyn Fn(&EmoteId) -> bool + 'a>,
+	pub emotes: &'a HashMap<EmoteId, Emote>,
 	pub mod_requests: &'a mut Vec<EmoteModerationRequest>,
 }
 
@@ -27,7 +27,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let RunInput {
 		global,
 		mod_requests,
-		emote_filter,
+		emotes,
 	} = input;
 
 	let mut read = HashMap::new();
@@ -65,7 +65,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome += process(ProcessInput {
 					read: &mut read,
 					dedupe_mod_requests: &mut dedupe_mod_requests,
-					emote_filter: &emote_filter,
+					emotes,
 					mod_requests,
 					message,
 				});
@@ -84,7 +84,7 @@ struct ProcessInput<'a> {
 	pub read: &'a mut HashMap<ObjectId, bool>,
 	pub dedupe_mod_requests: &'a mut HashSet<(EmoteId, EmoteModerationRequestKind)>,
 	pub mod_requests: &'a mut Vec<EmoteModerationRequest>,
-	pub emote_filter: &'a Box<dyn Fn(&EmoteId) -> bool + 'a>,
+	pub emotes: &'a HashMap<EmoteId, Emote>,
 	pub message: types::Message,
 }
 
@@ -94,7 +94,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		dedupe_mod_requests,
 		mod_requests,
 		message,
-		emote_filter,
+		emotes,
 	} = input;
 
 	let outcome = ProcessOutcome::default();
@@ -120,7 +120,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		_ => return outcome,
 	};
 
-	if !emote_filter(&emote_id) {
+	if !emotes.contains_key(&emote_id) {
 		return outcome;
 	}
 

@@ -29,9 +29,21 @@ impl TryFrom<SubscribeCondition> for EventScope {
 	fn try_from(value: SubscribeCondition) -> Result<Self, Self::Error> {
 		match value {
 			SubscribeCondition::ObjectId { object_id } => Ok(Self::Id(object_id)),
-			SubscribeCondition::Channel { id, platform: SubscribeConditionChannelPlatform::Twitch, .. } => Ok(Self::Presence(EventUserPresencePlatform::Twitch(id.parse().map_err(|_| ())?))),
-			SubscribeCondition::Channel { id, platform: SubscribeConditionChannelPlatform::Kick, .. } => Ok(Self::Presence(EventUserPresencePlatform::Kick(id.parse().map_err(|_| ())?))),
-			SubscribeCondition::Channel { id, platform: SubscribeConditionChannelPlatform::Youtube, .. } => Ok(Self::Presence(EventUserPresencePlatform::Youtube(id))),
+			SubscribeCondition::Channel {
+				id,
+				platform: SubscribeConditionChannelPlatform::Twitch,
+				..
+			} => Ok(Self::Presence(EventUserPresencePlatform::Twitch(id.parse().map_err(|_| ())?))),
+			SubscribeCondition::Channel {
+				id,
+				platform: SubscribeConditionChannelPlatform::Kick,
+				..
+			} => Ok(Self::Presence(EventUserPresencePlatform::Kick(id.parse().map_err(|_| ())?))),
+			SubscribeCondition::Channel {
+				id,
+				platform: SubscribeConditionChannelPlatform::Youtube,
+				..
+			} => Ok(Self::Presence(EventUserPresencePlatform::Youtube(id))),
 			_ => Err(()),
 		}
 	}

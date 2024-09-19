@@ -18,7 +18,7 @@ use crate::global::Global;
 use crate::{download_cosmetics, error, types};
 
 async fn request_image(global: &Arc<Global>, cosmetic_id: ObjectId, url: &str) -> Result<bytes::Bytes, ProcessOutcome> {
-	download_cosmetics::request_image(&global, url).await.map_err(|e| match e {
+	download_cosmetics::request_image(global, url).await.map_err(|e| match e {
 		download_cosmetics::RequestImageError::Reqwest(e) => ProcessOutcome::error(e),
 		download_cosmetics::RequestImageError::Status(status) => {
 			ProcessOutcome::error(error::Error::ImageDownload { cosmetic_id, status })
@@ -138,7 +138,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 					error: None,
 				}) => {
 					let (tx, rx) = tokio::sync::mpsc::channel(10);
-					pending_tasks.push((PendingTask::Badge(badge_id.into()), rx));
+					pending_tasks.push((PendingTask::Badge(badge_id), rx));
 					global.all_tasks.lock().await.insert(id.clone(), tx);
 					ImageSetInput::Pending {
 						task_id: id,
@@ -157,7 +157,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 
 			let tags = tag.map(|t| vec![t]).unwrap_or_default();
 			badges.insert(
-				badge_id.into(),
+				badge_id,
 				Badge {
 					id: cosmetic.id.into(),
 					name: cosmetic.name,
@@ -235,7 +235,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 							error: None,
 						}) => {
 							let (tx, rx) = tokio::sync::mpsc::channel(10);
-							pending_tasks.push((PendingTask::Paint(paint_id.into(), layer_id), rx));
+							pending_tasks.push((PendingTask::Paint(paint_id, layer_id), rx));
 							global.all_tasks.lock().await.insert(id.clone(), tx);
 							ImageSetInput::Pending {
 								task_id: id,
@@ -267,7 +267,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 			};
 
 			paints.insert(
-				paint_id.into(),
+				paint_id,
 				Paint {
 					id: paint_id,
 					name: cosmetic.name,

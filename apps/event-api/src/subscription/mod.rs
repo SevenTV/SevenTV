@@ -240,7 +240,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 									let presence_data = Arc::new(presence_data);
 
 									let mut missed = true;
-									
+
 									let topic = EventTopic::new(EventType::UserPresence, EventScope::Presence(presence_data.platform.clone()));
 									if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(topic.as_key()) {
 										if subscription.get().send(Payload::Presence(Arc::clone(&presence_data))).is_err() {
