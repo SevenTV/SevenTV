@@ -93,7 +93,7 @@ impl AuditLog {
 			shared::database::stored_event::StoredEventData::Emote {
 				target_id,
 				data: StoredEventEmoteData::Process {
-					event: ImageProcessorEvent::Success(_),
+					event: ImageProcessorEvent::Success,
 				},
 			} => (AuditLogKind::ProcessEmote, target_id.into(), 2, vec![]),
 			shared::database::stored_event::StoredEventData::Emote {

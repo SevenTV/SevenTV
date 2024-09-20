@@ -19,8 +19,8 @@ pub async fn handle_success(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: EmoteId,
-	event: &event_callback::Success,
-	metadata: &HashMap<String, String>,
+	event: event_callback::Success,
+	metadata: HashMap<String, String>,
 ) -> TransactionResult<(), anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
 
@@ -117,7 +117,7 @@ pub async fn handle_success(
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {
-				event: ImageProcessorEvent::Success(Some(event.clone().into())),
+				event: ImageProcessorEvent::Success,
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -130,18 +130,20 @@ pub async fn handle_fail(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	_: &Arc<Global>,
 	id: EmoteId,
-	event: &event_callback::Fail,
+	event: event_callback::Fail,
 ) -> TransactionResult<(), anyhow::Error> {
-	// TODO(troy): should we delete this emote?
-	// Perhaps it would be benificial to create an audit log entry for why this
-	// emote failed to process. and then set the state to failed stating this emote
-	// was deleted because ... (reason)
 	let after = tx
-		.find_one_and_delete(
+		.find_one_and_update(
 			filter::filter! {
 				Emote {
 					#[query(rename = "_id")]
 					id,
+				}
+			},
+			update::update! {
+				#[query(set)]
+				Emote {
+					deleted: true,
 				}
 			},
 			None,
@@ -155,7 +157,7 @@ pub async fn handle_fail(
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {
-				event: ImageProcessorEvent::Fail(event.clone()),
+				event: event.into(),
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -168,7 +170,6 @@ pub async fn handle_start(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: EmoteId,
-	event: &event_callback::Start,
 ) -> TransactionResult<(), anyhow::Error> {
 	let after = global
 		.emote_by_id_loader
@@ -183,7 +184,7 @@ pub async fn handle_start(
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {
-				event: ImageProcessorEvent::Start(*event),
+				event: ImageProcessorEvent::Start,
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -196,7 +197,6 @@ pub async fn handle_cancel(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: EmoteId,
-	event: &event_callback::Cancel,
 ) -> TransactionResult<(), anyhow::Error> {
 	let after = global
 		.emote_by_id_loader
@@ -211,7 +211,7 @@ pub async fn handle_cancel(
 		data: InternalEventData::Emote {
 			after,
 			data: StoredEventEmoteData::Process {
-				event: ImageProcessorEvent::Cancel(*event),
+				event: ImageProcessorEvent::Cancel,
 			},
 		},
 		timestamp: chrono::Utc::now(),

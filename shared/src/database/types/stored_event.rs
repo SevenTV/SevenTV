@@ -105,15 +105,25 @@ pub enum StoredEventData {
 	},
 }
 
-// TODO: don't do this
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ImageProcessorEvent {
-	/// The event callback is only None for old events
-	Success(Option<Box<event_callback::Success>>),
-	Fail(event_callback::Fail),
-	Cancel(event_callback::Cancel),
-	Start(event_callback::Start),
+	Success,
+	Fail {
+		code: Option<i32>,
+		message: Option<String>,
+	},
+	Cancel,
+	Start,
+}
+
+impl From<event_callback::Fail> for ImageProcessorEvent {
+	fn from(value: event_callback::Fail) -> Self {
+		Self::Fail {
+			code: value.error.as_ref().map(|e| e.code),
+			message: value.error.map(|e| e.message),
+		}
+	}
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
