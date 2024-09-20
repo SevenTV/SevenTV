@@ -97,15 +97,21 @@ async fn login(
 		let csrf = Id::<()>::new().to_string();
 		cookies.add(new_cookie(&global, (CSRF_COOKIE, csrf.clone())));
 
+		let redirect_uri = global
+			.config
+			.api
+			.api_origin
+			.join(&format!("/v4/auth/callback&platform={}", query.platform.as_str()))
+			.map_err(|e| {
+				tracing::error!(err = %e, "failed to generate redirect_uri");
+				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect_uri")
+			})?;
+
 		let redirect_url = format!(
 			"{}client_id={}&redirect_uri={}&response_type=code&scope={}&state={}",
 			url,
 			config.client_id,
-			urlencoding::encode(&format!(
-				"{}/v4/auth/callback&platform={}",
-				global.config.api.api_origin,
-				query.platform.as_str()
-			)),
+			urlencoding::encode(redirect_uri.as_str()),
 			urlencoding::encode(scope),
 			csrf
 		);
