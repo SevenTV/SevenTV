@@ -174,10 +174,26 @@ impl Emote {
 		vec![]
 	}
 
-	async fn trending(&self) -> Result<Option<u32>, ApiError> {
-		// TODO: implement with clickhouse
-		// Err(ApiError::NOT_IMPLEMENTED)
-		Ok(None)
+	async fn trending<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<u32>, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let options = SearchOptions::builder()
+			.query("*".to_owned())
+			.sort_by(vec!["score_trending_week:desc".to_owned()])
+			.page(1)
+			.per_page(50)
+			.build();
+
+		let result = search::<shared::typesense::types::emote::Emote>(global, options)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to search");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
+			})?;
+
+		Ok(result.hits.into_iter().position(|e| e == self.id.id()).map(|p| p as u32 + 1))
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]

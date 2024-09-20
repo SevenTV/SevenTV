@@ -270,6 +270,7 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 
 			let action = match data {
 				StoredEventEmoteModerationRequestData::Create => ActionKind::EmoteModerationRequestCreate,
+				StoredEventEmoteModerationRequestData::ChangeStatus { .. } => ActionKind::EmoteModerationRequestChangeStatus,
 			};
 
 			(target, action, secondary)
@@ -564,6 +565,7 @@ pub enum ActionKind {
 	TicketMessageCreate = 800,
 
 	EmoteModerationRequestCreate = 900,
+	EmoteModerationRequestChangeStatus = 901,
 
 	PaintCreate = 1000,
 	PaintChangeName = 1001,

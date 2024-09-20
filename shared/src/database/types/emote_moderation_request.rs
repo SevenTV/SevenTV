@@ -13,7 +13,7 @@ pub enum EmoteModerationRequestKind {
 
 impl_typesense_type!(EmoteModerationRequestKind, Int32);
 
-#[derive(Debug, Clone, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
 #[repr(i32)]
 pub enum EmoteModerationRequestStatus {
 	Pending = 0,

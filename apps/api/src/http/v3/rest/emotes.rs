@@ -166,6 +166,7 @@ pub async fn create_emote(
 				merged: None,
 				aspect_ratio: -1.0,
 				scores: Default::default(),
+				deleted: false,
 				search_updated_at: None,
 				updated_at: chrono::Utc::now(),
 			};

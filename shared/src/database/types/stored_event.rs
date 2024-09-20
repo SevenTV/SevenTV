@@ -2,7 +2,7 @@ use scuffle_image_processor_proto::event_callback;
 
 use super::badge::BadgeId;
 use super::emote::{EmoteFlags, EmoteId};
-use super::emote_moderation_request::EmoteModerationRequestId;
+use super::emote_moderation_request::{EmoteModerationRequestId, EmoteModerationRequestStatus};
 use super::emote_set::EmoteSetId;
 use super::entitlement::EntitlementEdgeKind;
 use super::paint::{PaintData, PaintId};
@@ -260,6 +260,10 @@ pub enum StoredEventTicketMessageData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum StoredEventEmoteModerationRequestData {
 	Create,
+	ChangeStatus {
+		old: EmoteModerationRequestStatus,
+		new: EmoteModerationRequestStatus,
+	},
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
@@ -283,7 +287,7 @@ pub enum StoredEventBadgeData {
 pub enum StoredEventRoleData {
 	Create,
 	ChangeName { old: String, new: String },
-	ChangeColor { old: i32, new: i32 },
+	ChangeColor { old: Option<i32>, new: Option<i32> },
 	ChangePermissions { old: Box<Permissions>, new: Box<Permissions> },
 	ChangeRank { old: i32, new: i32 },
 	AddEntitlement { target: EntitlementEdgeKind },

@@ -6,13 +6,16 @@ use shared::database::emote_moderation_request::{
 };
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::EmoteModerationRequestPermission;
-use shared::database::MongoCollection;
+use shared::database::stored_event::StoredEventEmoteModerationRequestData;
+use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::message::InboxMessage;
+use crate::transactions::{with_transaction, TransactionError};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/resolvers/mutation/mutation.messages.go
 
@@ -32,6 +35,11 @@ impl MessagesMutation {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
+
 		let ids: Vec<EmoteModerationRequestId> = message_ids.into_iter().map(|id| id.id()).collect();
 
 		let status = if read && approved {
@@ -42,9 +50,15 @@ impl MessagesMutation {
 			EmoteModerationRequestStatus::Pending
 		};
 
-		// TODO: events?
-		let res = EmoteModerationRequest::collection(&global.db)
-			.update_many(
+		let res = with_transaction(global, |mut tx| async move {
+			let requests = tx.find(filter::filter! {
+				EmoteModerationRequest {
+					#[query(rename = "_id", selector = "in")]
+					id: &ids,
+				}
+			}, None).await?;
+
+			let res = tx.update(
 				filter::filter! {
 					EmoteModerationRequest {
 						#[query(rename = "_id", selector = "in")]
@@ -58,14 +72,44 @@ impl MessagesMutation {
 						status: status,
 					}
 				},
+				None,
 			)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update moderation requests");
-				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update moderation requests")
-			})?;
+			.await?;
 
-		Ok(res.modified_count as u32)
+			if res.modified_count != requests.len() as u64 {
+				return Err(TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "at least one message was not found")));
+			}
+
+			for req in requests {
+				let old = req.status;
+
+				let mut after = req;
+				after.status = status;
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::EmoteModerationRequest {
+						after,
+						data: StoredEventEmoteModerationRequestData::ChangeStatus {
+							old,
+							new: status,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			Ok(res.modified_count as u32)
+		}).await;
+
+		match res {
+			Ok(res) => Ok(res),
+			Err(e) => {
+				tracing::error!(error = %e, "failed to update moderation requests");
+				Err(ApiError::internal_server_error(ApiErrorCode::TransactionError, "failed to update moderation requests"))
+			}
+		}
 	}
 
 	async fn send_inbox_message(

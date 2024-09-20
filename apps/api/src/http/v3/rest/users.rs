@@ -616,11 +616,9 @@ struct UpdateUserConnectionBody {
 #[tracing::instrument(skip_all, fields(id = %id, connection_id = %connection_id))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.update-connection.go#L34
 pub async fn update_user_connection_by_id(
-	State(global): State<Arc<Global>>,
 	Path((id, connection_id)): Path<(UserId, String)>,
-	Json(body): Json<UpdateUserConnectionBody>,
+	Json(_body): Json<UpdateUserConnectionBody>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let _ = (global, body);
-	// TODO: implement
+	// won't be implemented
 	Ok(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 }

@@ -72,7 +72,7 @@ impl CosmeticsMutation {
 			Err(e) => {
 				tracing::error!(error = %e, "failed to insert paint");
 				Err(ApiError::internal_server_error(
-					ApiErrorCode::MutationError,
+					ApiErrorCode::TransactionError,
 					"failed to insert paint",
 				))
 			}
@@ -350,7 +350,7 @@ impl CosmeticOps {
 			Err(e) => {
 				tracing::error!(error = %e, "failed to insert paint");
 				Err(ApiError::internal_server_error(
-					ApiErrorCode::MutationError,
+					ApiErrorCode::TransactionError,
 					"failed to insert paint",
 				))
 			}
