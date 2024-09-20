@@ -441,8 +441,8 @@ impl EmotesQuery {
 
 			if let Some(true) = filter.exact_match {
 				if !query.is_empty() {
-					// TODO: prevent injection
-					filters.push(format!("default_name: {query}"));
+					let sanitized = query.replace('`', "");
+					filters.push(format!("default_name: `{}`", sanitized.trim_end_matches('\\')));
 				}
 			}
 

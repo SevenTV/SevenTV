@@ -150,8 +150,8 @@ impl MessagesQuery {
 		];
 
 		if let Some(country) = country {
-			// TODO: prevent injection
-			filters.push(format!("country_code: {}", country));
+			let sanitized = country.replace('`', "");
+			filters.push(format!("country_code: {}", sanitized.trim_end_matches('\\')));
 		}
 
 		let options = SearchOptions::builder()
