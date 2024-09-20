@@ -52,10 +52,24 @@ async fn create_checkout_session_params(
 	static SUCCESS_URL: OnceLock<String> = OnceLock::new();
 	static CANCEL_URL: OnceLock<String> = OnceLock::new();
 
-	let success_url =
-		SUCCESS_URL.get_or_init(|| format!("{}/subscribe/complete?with_provider=stripe", global.config.api.website_origin));
-	let cancel_url =
-		CANCEL_URL.get_or_init(|| format!("{}/subscribe/cancel?with_provider=stripe", global.config.api.website_origin));
+	let success_url = SUCCESS_URL.get_or_init(|| {
+		global
+			.config
+			.api
+			.website_origin
+			.join("/subscribe/complete?with_provider=stripe")
+			.unwrap()
+			.to_string()
+	});
+	let cancel_url = CANCEL_URL.get_or_init(|| {
+		global
+			.config
+			.api
+			.website_origin
+			.join("/subscribe/cancel?with_provider=stripe")
+			.unwrap()
+			.to_string()
+	});
 
 	let mut currency = default_currency;
 

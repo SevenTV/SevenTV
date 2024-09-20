@@ -282,7 +282,7 @@ pub struct InternalEventUserPresenceDataEmoteSet {
 	pub emotes: Vec<Emote>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventEmoteSetData {
 	Create,
@@ -300,10 +300,12 @@ pub enum InternalEventEmoteSetData {
 	},
 	AddEmote {
 		emote: Box<Emote>,
+		emote_owner: Option<FullUser>,
 		emote_set_emote: EmoteSetEmote,
 	},
 	RemoveEmote {
 		emote: Option<Box<Emote>>,
+		emote_owner: Option<FullUser>,
 		emote_set_emote: EmoteSetEmote,
 		index: usize,
 	},
@@ -324,7 +326,7 @@ impl From<InternalEventEmoteSetData> for StoredEventEmoteSetData {
 			InternalEventEmoteSetData::ChangeTags { added, removed } => {
 				StoredEventEmoteSetData::ChangeTags { added, removed }
 			}
-			InternalEventEmoteSetData::AddEmote { emote, emote_set_emote } => StoredEventEmoteSetData::AddEmote {
+			InternalEventEmoteSetData::AddEmote { emote, emote_set_emote, .. } => StoredEventEmoteSetData::AddEmote {
 				emote_id: emote.id,
 				alias: emote_set_emote.alias,
 			},
@@ -551,7 +553,7 @@ impl InternalEventPayload {
 						});
 					}
 					InternalEventData::EmoteSet {
-						data: InternalEventEmoteSetData::AddEmote { emote, emote_set_emote },
+						data: InternalEventEmoteSetData::AddEmote { emote, emote_owner, emote_set_emote },
 						after,
 					} => {
 						let index = after
@@ -560,9 +562,11 @@ impl InternalEventPayload {
 							.position(|e| e.id == emote.id)
 							.context("failed to find emote in set")?;
 
+							let owner = emote_owner.map(|u| UserPartialModel::from_db(u, None, None, cdn_base_url));
+
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
-							Some(EmotePartialModel::from_db(*emote, None, cdn_base_url)),
+							Some(EmotePartialModel::from_db(*emote, owner, cdn_base_url)),
 						);
 						let active_emote = serde_json::to_value(active_emote)?;
 
@@ -578,14 +582,17 @@ impl InternalEventPayload {
 						data:
 							InternalEventEmoteSetData::RemoveEmote {
 								emote,
+								emote_owner,
 								emote_set_emote,
 								index,
 							},
 						..
 					} => {
+						let owner = emote_owner.map(|u| UserPartialModel::from_db(u, None, None, cdn_base_url));
+
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
-							emote.map(|emote| EmotePartialModel::from_db(*emote, None, cdn_base_url)),
+							emote.map(|emote| EmotePartialModel::from_db(*emote, owner, cdn_base_url)),
 						);
 						let active_emote = serde_json::to_value(active_emote)?;
 

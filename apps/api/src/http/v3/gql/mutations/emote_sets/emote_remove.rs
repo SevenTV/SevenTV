@@ -68,6 +68,17 @@ pub async fn emote_remove(
 			"emote not found in set",
 		)))?;
 
+	let emote_owner = if let Some(e) = &emote {
+		global.user_loader.load_fast(global, e.owner_id).await.map_err(|_| {
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::LoadError,
+				"failed to load emote owner",
+			))
+		})?
+	} else {
+		None
+	};
+
 	tx.register_event(InternalEvent {
 		actor: Some(authed_user.clone()),
 		session_id: session.user_session_id(),
@@ -75,6 +86,7 @@ pub async fn emote_remove(
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::RemoveEmote {
 				emote: emote.map(Box::new),
+				emote_owner,
 				emote_set_emote: old_emote_set_emote.clone(),
 				index,
 			},

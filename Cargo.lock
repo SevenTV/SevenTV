@@ -1216,15 +1216,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "const-lru"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df6e177825970fee44e66f247adbfd1844480027d21e64ccec91e6e7579c2ad0"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1830,12 +1821,12 @@ dependencies = [
  "axum-macros",
  "bson",
  "chrono",
- "const-lru",
  "fnv",
  "futures",
  "futures-util",
  "hex",
  "hyper 1.4.1",
+ "lru",
  "once_cell",
  "pin-project",
  "rand 0.8.5",
