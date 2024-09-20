@@ -38,7 +38,7 @@ pub async fn run(input: RunInput) -> anyhow::Result<()> {
 	let mut inserter = clickhouse
 		.insert("emote_stats")
 		.context("insert")?
-		.with_timeouts(Some(Duration::from_secs(5)), Some(Duration::from_secs(20)));
+		.with_timeouts(Some(Duration::from_secs(120)), Some(Duration::from_secs(120)));
 	let now = OffsetDateTime::now_utc().date();
 
 	for (emote_id, count) in true_emote_stats {
