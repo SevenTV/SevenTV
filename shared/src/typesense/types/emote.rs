@@ -32,6 +32,7 @@ pub struct Emote {
 	pub score_top_monthly: i32,
 	#[typesense(default_sort)]
 	pub score_top_all_time: i32,
+	pub deleted: bool,
 	pub created_at: i64,
 	pub updated_at: i64,
 	pub search_updated_at: i64,
@@ -62,6 +63,7 @@ impl From<database::emote::Emote> for Emote {
 			score_trending_day: value.scores.trending_day,
 			score_trending_week: value.scores.trending_week,
 			score_trending_month: value.scores.trending_month,
+			deleted: value.deleted,
 			created_at: value.id.timestamp().timestamp_millis(),
 			updated_at: value.updated_at.timestamp_millis(),
 			search_updated_at: Utc::now().timestamp_millis(),

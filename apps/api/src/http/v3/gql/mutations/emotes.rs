@@ -100,16 +100,20 @@ impl EmoteOps {
 				));
 			}
 
-			// TODO: don't allow deletion of emotes that are in use
-			// TODO: delete files from s3
-
 			let res = with_transaction(global, |mut tx| async move {
 				let emote = tx
-					.find_one_and_delete(
+					.find_one_and_update(
 						filter::filter! {
 							DbEmote {
 								#[query(rename = "_id")]
 								id: self.id.id(),
+							}
+						},
+						update::update! {
+							#[query(set)]
+							DbEmote {
+								deleted: true,
+								updated_at: chrono::Utc::now(),
 							}
 						},
 						None,

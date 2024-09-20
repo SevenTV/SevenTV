@@ -414,7 +414,7 @@ impl EmotesQuery {
 		let limit = limit.unwrap_or(30);
 		let page = page.unwrap_or_default().max(1);
 
-		let mut filters = Vec::new();
+		let mut filters = vec!["deleted: false".to_owned()];
 
 		if !session.has(EmotePermission::ViewUnlisted) {
 			filters.push("flag_public_listed: true".to_owned());
