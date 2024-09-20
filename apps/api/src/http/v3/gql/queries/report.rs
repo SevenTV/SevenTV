@@ -10,7 +10,7 @@ use super::user::{User, UserPartial};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
-use crate::search::{search, SearchOptions};
+use crate::search::{search, sorted_results, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/reports.gql
 
@@ -180,16 +180,16 @@ impl ReportsQuery {
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load tickets"))?;
 
-		let messages = global
+		let mut messages = global
 			.ticket_message_by_ticket_id_loader
 			.load_many(tickets.keys().copied())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket messages"))?;
 
-		Ok(tickets
-			.into_values()
+		Ok(sorted_results(result.hits, tickets)
+			.into_iter()
 			.filter_map(|ticket| {
-				let messages = messages.get(&ticket.id).cloned().unwrap_or_default();
+				let messages = messages.remove(&ticket.id).unwrap_or_default();
 
 				Report::from_db(ticket, messages)
 			})

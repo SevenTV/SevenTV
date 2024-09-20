@@ -1,24 +1,22 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use anyhow::Context as _;
+use scuffle_image_processor_proto::EventCallback;
 use shared::image_processor::ImageProcessor;
+use tokio::sync::Mutex;
 
 use crate::config::Config;
 
 pub struct Global {
-	config: Config,
-	clickhouse: clickhouse::Client,
-	stripe_client: stripe::Client,
-	main_source_db: mongodb::Database,
-	egvault_source_db: mongodb::Database,
-	target_db: mongodb::Database,
-	http_client: reqwest::Client,
-	image_processor: ImageProcessor,
-	_nats: async_nats::Client,
-	jetstream: async_nats::jetstream::Context,
-	all_tasks: tokio::sync::OnceCell<HashSet<String>>,
-	users_job_token: tokio_util::sync::CancellationToken,
-	entitlement_job_token: tokio_util::sync::CancellationToken,
+	pub config: Config,
+	pub clickhouse: clickhouse::Client,
+	pub main_source_db: mongodb::Database,
+	pub egvault_source_db: mongodb::Database,
+	pub target_db: mongodb::Database,
+	pub http_client: reqwest::Client,
+	pub image_processor: ImageProcessor,
+	pub jetstream: async_nats::jetstream::Context,
+	pub all_tasks: Mutex<HashMap<String, tokio::sync::mpsc::Sender<EventCallback>>>,
 }
 
 impl Global {
@@ -39,10 +37,9 @@ impl Global {
 
 		let image_processor = ImageProcessor::new(&config.image_processor).await?;
 
-		let (nats, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
+		let (_, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
 
 		Ok(Self {
-			stripe_client: stripe::Client::new(&config.stripe_key),
 			config,
 			clickhouse,
 			main_source_db: mongo_source
@@ -56,59 +53,8 @@ impl Global {
 				.unwrap_or_else(|| mongo_target.database("7tv-new")),
 			http_client: reqwest::Client::new(),
 			image_processor,
-			_nats: nats,
 			jetstream,
-			all_tasks: tokio::sync::OnceCell::new(),
-			users_job_token: tokio_util::sync::CancellationToken::new(),
-			entitlement_job_token: tokio_util::sync::CancellationToken::new(),
+			all_tasks: Default::default(),
 		})
-	}
-
-	pub fn config(&self) -> &Config {
-		&self.config
-	}
-
-	pub fn clickhouse(&self) -> &clickhouse::Client {
-		&self.clickhouse
-	}
-
-	pub fn source_db(&self) -> &mongodb::Database {
-		&self.main_source_db
-	}
-
-	pub fn egvault_source_db(&self) -> &mongodb::Database {
-		&self.egvault_source_db
-	}
-
-	pub fn target_db(&self) -> &mongodb::Database {
-		&self.target_db
-	}
-
-	pub fn http_client(&self) -> &reqwest::Client {
-		&self.http_client
-	}
-
-	pub fn stripe_client(&self) -> &stripe::Client {
-		&self.stripe_client
-	}
-
-	pub fn image_processor(&self) -> &ImageProcessor {
-		&self.image_processor
-	}
-
-	pub fn jetstream(&self) -> &async_nats::jetstream::Context {
-		&self.jetstream
-	}
-
-	pub fn all_tasks(&self) -> &tokio::sync::OnceCell<HashSet<String>> {
-		&self.all_tasks
-	}
-
-	pub fn users_job_token(&self) -> &tokio_util::sync::CancellationToken {
-		&self.users_job_token
-	}
-
-	pub fn entitlement_job_token(&self) -> &tokio_util::sync::CancellationToken {
-		&self.entitlement_job_token
 	}
 }

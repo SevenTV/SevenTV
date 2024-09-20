@@ -191,7 +191,7 @@ impl<'a> serde::Deserialize<'a> for CloseCode {
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(u8)]
 pub enum EventType {
 	AnySystem,
@@ -223,6 +223,8 @@ pub enum EventType {
 	DeleteCosmetic,
 
 	Whisper,
+
+	UserPresence,
 }
 
 impl EventType {
@@ -251,6 +253,7 @@ impl EventType {
 			Self::UpdateCosmetic => "cosmetic.update",
 			Self::DeleteCosmetic => "cosmetic.delete",
 			Self::Whisper => "whisper.self",
+			Self::UserPresence => "user.presence",
 		}
 	}
 }

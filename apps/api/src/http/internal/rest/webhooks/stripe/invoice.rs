@@ -9,6 +9,7 @@ use shared::database::product::{
 	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant,
 };
 use shared::database::queries::{filter, update};
+use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
 use stripe::{FinalizeInvoiceParams, Object};
 
 use crate::global::Global;
@@ -39,6 +40,17 @@ pub enum StripeRequest {
 	CreatedRetrieveCustomer,
 	CreatedFinalizeInvoice,
 	PaidRetrieveSubscription,
+}
+
+impl std::fmt::Display for StripeRequest {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::CreatedRetrieveSubscription => write!(f, "created_retrieve_subscription"),
+			Self::CreatedRetrieveCustomer => write!(f, "created_retrieve_customer"),
+			Self::CreatedFinalizeInvoice => write!(f, "created_finalize_invoice"),
+			Self::PaidRetrieveSubscription => write!(f, "paid_retrieve_subscription"),
+		}
+	}
 }
 
 /// Creates the invoice object and finalize it.
@@ -246,6 +258,7 @@ pub async fn paid(
 	global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,
 	mut tx: TransactionSession<'_, ApiError>,
+	event_id: stripe::EventId,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
 	updated(global, &mut tx, &invoice).await?;
@@ -271,11 +284,17 @@ pub async fn paid(
 				.collect::<Vec<_>>();
 
 			if items.len() != 1 {
-				// TODO: record an error to be investigated
-				return Err(TransactionError::Custom(ApiError::bad_request(
-					ApiErrorCode::StripeError,
-					"invalid number of invoice line items",
-				)));
+				tx.insert_one(
+					StripeError {
+						id: StripeErrorId::new(),
+						event_id,
+						error_kind: StripeErrorKind::SubscriptionInvoiceInvalidItems,
+					},
+					None,
+				)
+				.await?;
+
+				return Ok(None);
 			}
 
 			let stripe_product_id = items.into_iter().next().unwrap();
@@ -294,11 +313,17 @@ pub async fn paid(
 				)
 				.await?
 			else {
-				// TODO: record an error to be investigated
-				return Err(TransactionError::Custom(ApiError::bad_request(
-					ApiErrorCode::StripeError,
-					"no subscription product found",
-				)));
+				tx.insert_one(
+					StripeError {
+						id: StripeErrorId::new(),
+						event_id,
+						error_kind: StripeErrorKind::SubscriptionInvoiceNoProduct,
+					},
+					None,
+				)
+				.await?;
+
+				return Ok(None);
 			};
 
 			// This invoice is for one of our subscription products.
@@ -379,23 +404,13 @@ pub async fn paid(
 			Some(InvoiceMetadata::Gift {
 				customer_id,
 				user_id,
+				product_id,
 				subscription_product_id: Some(subscription_product_id),
 			}),
 		) => {
 			// gift code session
 			// the gift sub payment was successful, now we add one subscription period for
 			// the recipient
-			let items = invoice_items(invoice.lines.as_ref())
-				.map_err(TransactionError::Custom)?
-				.into_iter()
-				.collect::<Vec<_>>();
-
-			if items.len() != 1 {
-				// TODO: record an error to be investigated
-				return Ok(None);
-			}
-
-			let stripe_product_id = items.into_iter().next().unwrap();
 
 			let subscription_product = global
 				.subscription_product_by_id_loader
@@ -421,7 +436,7 @@ pub async fn paid(
 			let period_duration = subscription_product
 				.variants
 				.iter()
-				.find(|v| v.id == stripe_product_id)
+				.find(|v| v.id == product_id)
 				.map(|v| match v.kind {
 					SubscriptionProductKind::Monthly => chrono::Months::new(1),
 					SubscriptionProductKind::Yearly => chrono::Months::new(12),
@@ -472,7 +487,7 @@ pub async fn paid(
 					provider_id: None,
 					start,
 					end,
-					product_id: stripe_product_id,
+					product_id,
 					is_trial: false,
 					created_by: SubscriptionPeriodCreatedBy::Gift {
 						gifter: customer_id,
@@ -525,10 +540,6 @@ pub async fn payment_failed(
 	mut tx: TransactionSession<'_, ApiError>,
 	invoice: stripe::Invoice,
 ) -> TransactionResult<(), ApiError> {
-	// TODO: Show the user an error message.
-	// TODO: Collect new payment information and update the subscriptions default
-	// payment method.
-
 	let id: InvoiceId = invoice.id.into();
 
 	tx.update_one(

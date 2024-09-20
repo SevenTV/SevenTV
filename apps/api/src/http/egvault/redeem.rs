@@ -9,11 +9,12 @@ use shared::database::product::codes::{CodeEffect, RedeemCode, RedeemCodeSubscri
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
-use shared::database::role::permissions::RateLimitResource;
+use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::user::UserId;
+use shared::database::Id;
 
 use super::metadata::{CheckoutSessionMetadata, StripeMetadata, SubscriptionMetadata};
-use super::{create_checkout_session_params, find_or_create_customer};
+use super::{create_checkout_session_params, find_or_create_customer, CheckoutProduct};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -84,15 +85,21 @@ pub struct RedeemRequest {
 pub struct RedeemResponse {
 	/// Url that the website will open
 	authorize_url: Option<String>,
-	/// list of ids of cosmetics that the user received
-	/// TODO: is this needed?
-	items: Vec<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 enum StripeRequest {
 	CreateCustomer,
 	CreateCheckoutSession,
+}
+
+impl std::fmt::Display for StripeRequest {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::CreateCustomer => write!(f, "create_customer"),
+			Self::CreateCheckoutSession => write!(f, "create_checkout_session"),
+		}
+	}
 }
 
 pub async fn redeem(
@@ -103,10 +110,17 @@ pub async fn redeem(
 	let authed_user = session.user()?;
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultRedeem, &session);
 
+	if !authed_user.has(UserPermission::Billing) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"this user isn't allowed to use billing features",
+		));
+	}
+
 	req.http(&global, async {
 		let session = &session;
 
-		let stripe_client = global.stripe_client.safe().await;
+		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
 		let res = with_transaction(&global, |mut tx| {
 			let global = Arc::clone(&global);
@@ -218,7 +232,7 @@ pub async fn redeem(
 						&global,
 						session.ip(),
 						customer_id,
-						&variant.id,
+						CheckoutProduct::Price(variant.id.0.clone()),
 						product.default_currency,
 						&variant.currency_prices,
 					)
@@ -231,7 +245,7 @@ pub async fn redeem(
 							user_id: authed_user.id,
 							customer_id: None,
 						}.to_stripe()),
-						trial_period_days: Some(*trial_days),
+						trial_period_days: Some(*trial_days as u32),
 						trial_settings: Some(stripe::CreateCheckoutSessionSubscriptionDataTrialSettings {
 							end_behavior: stripe::CreateCheckoutSessionSubscriptionDataTrialSettingsEndBehavior {
 								missing_payment_method:
@@ -271,17 +285,12 @@ pub async fn redeem(
 
 					Ok(RedeemResponse {
 						authorize_url: Some(url),
-						items: vec![],
 					})
 				} else {
 					// the effects contain no subscription products
 					grant_entitlements(&mut tx, &code, authed_user.id).await?;
 
-					// TODO: do we need to return the items you get from the redeem code?
-					Ok(RedeemResponse {
-						authorize_url: None,
-						items: vec![],
-					})
+					Ok(RedeemResponse { authorize_url: None })
 				}
 			}
 		})

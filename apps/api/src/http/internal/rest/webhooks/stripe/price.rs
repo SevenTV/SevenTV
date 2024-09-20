@@ -10,9 +10,6 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
-// we only have one request
-pub type StripeRequest = ();
-
 pub async fn updated(
 	_global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,
@@ -20,7 +17,7 @@ pub async fn updated(
 	price: stripe::Price,
 ) -> TransactionResult<(), ApiError> {
 	let price = stripe::Price::retrieve(
-		stripe_client.client(super::StripeRequest::Price(())).await.deref(),
+		stripe_client.client(super::StripeRequest::Price).await.deref(),
 		&price.id,
 		&["currency_options"],
 	)

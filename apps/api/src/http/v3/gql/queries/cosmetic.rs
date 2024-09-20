@@ -51,7 +51,7 @@ impl CosmeticsQuery {
 					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to query paints")
 				})?
 				.into_iter()
-				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
+				.map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
 				.collect();
 
 			let badges = Badge::collection(&global.db)
@@ -64,7 +64,7 @@ impl CosmeticsQuery {
 					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to query badges")
 				})?
 				.into_iter()
-				.filter_map(|b: Badge| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
+				.map(|b: Badge| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
 				.collect();
 
 			Ok(CosmeticsQueryResponse { paints, badges })
@@ -75,7 +75,7 @@ impl CosmeticsQuery {
 				.await
 				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paints"))?
 				.into_values()
-				.filter_map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
+				.map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
 				.collect();
 
 			let badges = global
@@ -84,7 +84,7 @@ impl CosmeticsQuery {
 				.await
 				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badges"))?
 				.into_values()
-				.filter_map(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
+				.map(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
 				.collect();
 
 			Ok(CosmeticsQueryResponse { paints, badges })

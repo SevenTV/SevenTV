@@ -35,6 +35,7 @@ hyper = { version = "1", features = ["full"] }
 tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
 axum = { version = "0.7", features = ["ws"] }
 tower = "0.5.0"
+tinystr = "0.7"
 
 [features]
 default = []

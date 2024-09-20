@@ -58,11 +58,7 @@ pub fn parse_path_subscriptions(uri: &str) -> Vec<payload::Subscribe> {
 				})
 				.unwrap_or_default();
 
-			Some(payload::Subscribe {
-				ty,
-				condition,
-				ttl: None,
-			})
+			payload::Subscribe::new_from_hash(ty, &condition)
 		})
 		.collect()
 }

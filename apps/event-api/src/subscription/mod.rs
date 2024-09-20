@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
+use event_topic::EventScope;
 use futures_util::StreamExt;
 use scuffle_foundations::telemetry::metrics::metrics;
-use shared::event::InternalEventPayload;
+use shared::event::{InternalEventPayload, InternalEventUserPresenceData};
 use shared::event_api::types::EventType;
 use shared::event_api::{payload, Message};
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
@@ -13,10 +14,14 @@ use crate::global::Global;
 /// The reason we use Arc is because we want to avoid cloning the payload (1000
 /// ish bytes) for every subscriber. Arc is a reference counted pointer, so it
 /// is cheap to clone.
-pub type Payload = Arc<Message<payload::Dispatch>>;
+#[derive(Debug, Clone)]
+pub enum Payload {
+	Dispatch(Arc<Message<payload::Dispatch>>),
+	Presence(Arc<InternalEventUserPresenceData>),
+}
 
 mod error;
-mod event_topic;
+pub mod event_topic;
 mod recv;
 
 #[metrics]
@@ -181,38 +186,34 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 						};
 
 						match payload.into_old_messages(&global.config().api.cdn_origin, seq) {
-							Ok(messages) => {
+							Ok((messages, presence_data)) => {
 								for message in messages {
 									// There is always only one condition map
-									let Some(condition) = message.data.condition.first() else {
-										tracing::warn!("missing condition");
-										continue;
-									};
-
-									let topic = EventTopic::new(message.data.ty, condition);
+									let topic = EventTopic::new(message.data.ty, EventScope::Id(message.data.body.id));
 
 									let mut keys = vec![topic.as_key()];
 									match keys[0].0 {
 										EventType::SystemAnnouncement => {
-											keys.push(topic.copy_cond(EventType::AnySystem).as_key());
+											keys.push(topic.copy_scope(EventType::AnySystem).as_key());
 										},
 										EventType::CreateEmote | EventType::UpdateEmote | EventType::DeleteEmote => {
-											keys.push(topic.copy_cond(EventType::AnyEmote).as_key());
+											keys.push(topic.copy_scope(EventType::AnyEmote).as_key());
 										},
 										EventType::CreateEmoteSet | EventType::UpdateEmoteSet | EventType::DeleteEmoteSet => {
-											keys.push(topic.copy_cond(EventType::AnyEmoteSet).as_key());
+											keys.push(topic.copy_scope(EventType::AnyEmoteSet).as_key());
 										},
 										EventType::CreateUser | EventType::UpdateUser | EventType::DeleteUser => {
-											keys.push(topic.copy_cond(EventType::AnyUser).as_key());
+											keys.push(topic.copy_scope(EventType::AnyUser).as_key());
 										},
 										EventType::CreateEntitlement | EventType::UpdateEntitlement | EventType::DeleteEntitlement => {
-											keys.push(topic.copy_cond(EventType::AnyEntitlement).as_key());
+											keys.push(topic.copy_scope(EventType::AnyEntitlement).as_key());
 										},
 										EventType::CreateCosmetic | EventType::UpdateCosmetic | EventType::DeleteCosmetic => {
-											keys.push(topic.copy_cond(EventType::AnyCosmetic).as_key());
+											keys.push(topic.copy_scope(EventType::AnyCosmetic).as_key());
 										},
 										EventType::Whisper => {}
 										EventType::AnySystem | EventType::AnyEmote | EventType::AnyEmoteSet | EventType::AnyUser | EventType::AnyEntitlement | EventType::AnyCosmetic => {}
+										EventType::UserPresence => {}
 									}
 
 									let message = Arc::new(message);
@@ -220,11 +221,32 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 									let mut missed = true;
 									for key in keys {
 										if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(key) {
-											if subscription.get().send(Arc::clone(&message)).is_err() {
+											if subscription.get().send(Payload::Dispatch(Arc::clone(&message))).is_err() {
 												subscription.remove();
 											} else {
 												missed = false;
 											}
+										}
+									}
+
+									if missed {
+										subscription::nats_events(subscription::NatsEventKind::Miss).inc();
+									} else {
+										subscription::nats_events(subscription::NatsEventKind::Hit).inc();
+									}
+								}
+
+								for presence_data in presence_data {
+									let presence_data = Arc::new(presence_data);
+
+									let mut missed = true;
+
+									let topic = EventTopic::new(EventType::UserPresence, EventScope::Presence(presence_data.platform.clone()));
+									if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(topic.as_key()) {
+										if subscription.get().send(Payload::Presence(Arc::clone(&presence_data))).is_err() {
+											subscription.remove();
+										} else {
+											missed = false;
 										}
 									}
 

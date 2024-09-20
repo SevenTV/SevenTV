@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
@@ -12,7 +12,7 @@ use rsa::Pkcs1v15Sign;
 use sha2::Digest;
 use shared::database::queries::{filter, update};
 use shared::database::webhook_event::WebhookEvent;
-use tokio::sync::{OnceCell, RwLock};
+use tokio::sync::Mutex;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -25,11 +25,13 @@ mod subscription;
 pub mod types;
 
 async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
-	static PAYPAL_KEY_CACHE: OnceCell<RwLock<HashMap<String, rsa::RsaPublicKey>>> = OnceCell::const_new();
+	static PAYPAL_KEY_CACHE: OnceLock<Mutex<HashMap<String, rsa::RsaPublicKey>>> = OnceLock::new();
 
-	let cache = PAYPAL_KEY_CACHE.get_or_init(|| async { RwLock::new(HashMap::new()) }).await;
+	let cache = PAYPAL_KEY_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
 
-	if let Some(key) = cache.read().await.get(cert_url) {
+	let mut lock = cache.lock().await;
+
+	if let Some(key) = lock.get(cert_url) {
 		return Ok(key.clone());
 	}
 
@@ -71,7 +73,7 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 		ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to parse public key")
 	})?;
 
-	cache.write().await.insert(cert_url.to_string(), public_key.clone());
+	lock.insert(cert_url.to_string(), public_key.clone());
 
 	Ok(public_key)
 }
@@ -133,7 +135,7 @@ pub async fn handle(
 		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to deserialize payload")
 	})?;
 
-	let stripe_client = global.stripe_client.safe().await;
+	let stripe_client = global.stripe_client.safe(&event.id).await;
 
 	let res = with_transaction(&global, |mut tx| {
 		let global = Arc::clone(&global);

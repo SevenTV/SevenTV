@@ -1,7 +1,6 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::collections::HashMap;
 
 use anyhow::Context;
-use itertools::Itertools;
 
 use crate::database::badge::Badge;
 use crate::database::emote::{Emote, EmoteFlags};
@@ -56,6 +55,14 @@ pub struct InternalEvent {
 	pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[repr(u8)]
+pub enum EventUserPresencePlatform {
+	Twitch(u32),
+	Kick(u32),
+	Youtube(String),
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InternalEventData {
@@ -71,6 +78,7 @@ pub enum InternalEventData {
 		after: User,
 		data: InternalEventUserData,
 	},
+	UserPresence(Box<InternalEventUserPresenceData>),
 	UserProfilePicture {
 		after: UserProfilePicture,
 		data: StoredEventUserProfilePictureData,
@@ -129,6 +137,7 @@ impl InternalEventData {
 			InternalEventData::Paint { after, .. } => after.id.cast(),
 			InternalEventData::Badge { after, .. } => after.id.cast(),
 			InternalEventData::Role { after, .. } => after.id.cast(),
+			InternalEventData::UserPresence(data) => data.user.id.cast(),
 		}
 	}
 
@@ -147,6 +156,7 @@ impl InternalEventData {
 			InternalEventData::Paint { .. } => event_api::types::ObjectKind::Cosmetic,
 			InternalEventData::Badge { .. } => event_api::types::ObjectKind::Cosmetic,
 			InternalEventData::Role { .. } => event_api::types::ObjectKind::Role,
+			InternalEventData::UserPresence { .. } => event_api::types::ObjectKind::User,
 		}
 	}
 
@@ -170,8 +180,10 @@ impl InternalEventData {
 	}
 }
 
-impl From<InternalEvent> for StoredEvent {
-	fn from(payload: InternalEvent) -> Self {
+impl TryFrom<InternalEvent> for StoredEvent {
+	type Error = ();
+
+	fn try_from(payload: InternalEvent) -> Result<Self, Self::Error> {
 		let data = match payload.data {
 			InternalEventData::Emote { after, data } => StoredEventData::Emote {
 				target_id: after.id,
@@ -241,17 +253,33 @@ impl From<InternalEvent> for StoredEvent {
 				target_id: after.id,
 				data,
 			},
+			InternalEventData::UserPresence { .. } => return Err(()),
 		};
 
-		Self {
+		Ok(Self {
 			id: StoredEventId::with_timestamp(payload.timestamp),
 			actor_id: payload.actor.map(|u| u.id),
 			data,
 			session_id: payload.session_id,
 			updated_at: payload.timestamp,
 			search_updated_at: None,
-		}
+		})
 	}
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct InternalEventUserPresenceData {
+	pub user: FullUser,
+	pub platform: EventUserPresencePlatform,
+	pub active_badge: Option<Badge>,
+	pub active_paint: Option<Paint>,
+	pub personal_emote_sets: Vec<InternalEventUserPresenceDataEmoteSet>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct InternalEventUserPresenceDataEmoteSet {
+	pub emote_set: EmoteSet,
+	pub emotes: Vec<Emote>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
@@ -414,31 +442,44 @@ impl InternalEventPayload {
 		self,
 		cdn_base_url: &url::Url,
 		seq: u64,
-	) -> anyhow::Result<Vec<event_api::Message<event_api::payload::Dispatch>>> {
-		let events = self
-			.events
-			.into_iter()
-			.filter_map(|e| {
-				Some((
-					e.data.event_api_event_type()?,
-					e.data.id(),
-					e.data.event_api_kind(),
-					e.actor.as_ref().map(|a| a.id),
-					e,
-				))
-			})
-			.into_group_map_by(|(t, id, k, a, _)| (*t, *id, *k, *a));
+	) -> anyhow::Result<(
+		Vec<event_api::Message<event_api::payload::Dispatch>>,
+		Vec<InternalEventUserPresenceData>,
+	)> {
+		let mut presence_data = Vec::new();
+
+		let mut events =
+			HashMap::<(event_api::types::EventType, Id, event_api::types::ObjectKind), Vec<InternalEvent>>::new();
+
+		for event in self.events {
+			match event {
+				InternalEvent {
+					data: InternalEventData::UserPresence(data),
+					..
+				} => {
+					presence_data.push(*data);
+				}
+				event => {
+					if let Some(event_type) = event.data.event_api_event_type() {
+						events
+							.entry((event_type, event.data.id(), event.data.event_api_kind()))
+							.or_default()
+							.push(event);
+					}
+				}
+			};
+		}
 
 		let mut messages = vec![];
 
-		for ((event_type, id, kind, _), events) in events {
+		for ((event_type, id, kind), events) in events {
 			let mut updated = vec![];
 			let mut pushed = vec![];
 			let mut pulled = vec![];
 			let mut versions_nested = vec![];
 			let mut event_actor = None;
 
-			for (_, _, _, _, payload) in events {
+			for payload in events {
 				event_actor = event_actor.or(payload.actor);
 
 				match payload.data {
@@ -788,23 +829,10 @@ impl InternalEventPayload {
 				..Default::default()
 			};
 
-			let mut hasher = DefaultHasher::new();
-			body.hash(&mut hasher);
-			self.timestamp.hash(&mut hasher);
-			let hash = hasher.finish();
-
-			let dispatch = event_api::payload::Dispatch {
-				ty: event_type,
-				hash: Some(hash as u32),
-				effect: None,
-				matches: vec![],
-				condition: vec![std::iter::once(("object_id".to_string(), body.id.to_string())).collect()],
-				whisper: None,
-				body,
-			};
+			let dispatch = event_api::payload::Dispatch { ty: event_type, body };
 			messages.push(event_api::Message::new(dispatch, seq));
 		}
 
-		Ok(messages)
+		Ok((messages, presence_data))
 	}
 }

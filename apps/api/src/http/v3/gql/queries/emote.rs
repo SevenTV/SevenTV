@@ -16,7 +16,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::RateLimitGuard;
-use crate::search::{search, SearchOptions};
+use crate::search::{search, sorted_results, SearchOptions};
 
 #[derive(Default)]
 pub struct EmotesQuery;
@@ -162,10 +162,8 @@ impl Emote {
 
 		Ok(UserSearchResult {
 			total: result.found as u32,
-			items: result
-				.hits
+			items: sorted_results(result.hits, users)
 				.into_iter()
-				.filter_map(|id| users.get(&id).cloned())
 				.map(|u| UserPartial::from_db(global, u))
 				.collect(),
 		})
@@ -216,7 +214,10 @@ impl Emote {
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load event")
 			})?;
 
-		Ok(events.into_values().filter_map(AuditLog::from_db).collect())
+		Ok(sorted_results(result.hits, events)
+			.into_iter()
+			.filter_map(AuditLog::from_db)
+			.collect())
 	}
 
 	async fn reports(&self) -> Vec<Report> {
@@ -427,21 +428,21 @@ impl EmotesQuery {
 
 		if let Some(filter) = &filter {
 			if let Some(true) = filter.animated {
-				filters.push(format!("flag_animated: true"));
+				filters.push("flag_animated: true".to_string());
 			}
 
 			if let Some(true) = filter.zero_width {
-				filters.push(format!("flag_default_zero_width: true"));
+				filters.push("flag_default_zero_width: true".to_string());
 			}
 
 			if let Some(true) = filter.personal_use {
-				filters.push(format!("flag_approved_personal: true"));
+				filters.push("flag_approved_personal: true".to_string());
 			}
 
 			if let Some(true) = filter.exact_match {
 				if !query.is_empty() {
-					// TODO: prevent injection
-					filters.push(format!("default_name: {query}"));
+					let sanitized = query.replace('`', "");
+					filters.push(format!("default_name: `{}`", sanitized.trim_end_matches('\\')));
 				}
 			}
 
@@ -511,10 +512,8 @@ impl EmotesQuery {
 		Ok(EmoteSearchResult {
 			count: result.found as u32,
 			max_page: result.found as u32 / limit + 1,
-			items: result
-				.hits
+			items: sorted_results(result.hits, emotes)
 				.into_iter()
-				.filter_map(|id| emotes.get(&id).cloned())
 				.map(|e| Emote::from_db(global, e))
 				.collect(),
 		})

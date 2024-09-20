@@ -15,7 +15,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::RateLimitGuard;
-use crate::search::{search, SearchOptions};
+use crate::search::{search, sorted_results, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
 
@@ -203,7 +203,10 @@ impl User {
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load events"))?;
 
-		Ok(events.into_values().filter_map(AuditLog::from_db).collect())
+		Ok(sorted_results(result.hits, events)
+			.into_iter()
+			.filter_map(AuditLog::from_db)
+			.collect())
 	}
 
 	async fn connections<'ctx>(&self) -> Result<Vec<UserConnection>, ApiError> {
@@ -450,7 +453,7 @@ impl UserStyle {
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
-			.and_then(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin)))
+			.map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin)))
 	}
 
 	async fn badge<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<CosmeticBadgeModel>, ApiError> {
@@ -467,7 +470,7 @@ impl UserStyle {
 			.load(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
-			.and_then(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin)))
+			.map(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin)))
 	}
 }
 
@@ -581,10 +584,8 @@ impl UsersQuery {
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users")
 			})?;
 
-		Ok(result
-			.hits
+		Ok(sorted_results(result.hits, users)
 			.into_iter()
-			.filter_map(|id| users.get(&id).cloned())
 			.map(|u| UserPartial::from_db(global, u))
 			.collect())
 	}

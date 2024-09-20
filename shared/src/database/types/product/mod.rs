@@ -214,6 +214,7 @@ pub struct SubscriptionProduct {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionProductId,
+	pub provider_id: stripe::ProductId,
 	pub variants: Vec<SubscriptionProductVariant>,
 	pub default_variant_idx: i32,
 	pub name: String,
@@ -231,7 +232,6 @@ pub struct SubscriptionProductVariant {
 	pub id: ProductId,
 	pub paypal_id: Option<String>,
 	pub active: bool,
-	pub gift: bool,
 	pub kind: SubscriptionProductKind,
 	pub currency_prices: HashMap<stripe::Currency, i64>,
 }

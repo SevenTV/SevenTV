@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -17,12 +18,16 @@ use shared::database::user::connection::Platform;
 use shared::database::user::editor::{EditorUserPermission, UserEditorId};
 use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
 use shared::database::user::{User, UserId, UserStyle};
-use shared::database::MongoCollection;
+use shared::database::{Id, MongoCollection};
+use shared::event::{
+	EventUserPresencePlatform, InternalEvent, InternalEventData, InternalEventPayload, InternalEventUserPresenceData,
+	InternalEventUserPresenceDataEmoteSet,
+};
 use shared::old_types::{
 	EmoteSetModel, EmoteSetPartialModel, UserConnectionModel, UserConnectionPartialModel, UserEditorModel, UserModel,
 };
 
-use super::types::PresenceModel;
+use super::types::{PresenceKind, PresenceModel, UserPresencePlatform, UserPresenceWriteRequest};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
@@ -327,12 +332,141 @@ pub async fn upload_user_profile_picture(
 #[tracing::instrument(skip_all, fields(id = %id))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/users/users.presence.write.go#L41
 pub async fn create_user_presence(
-	// State(global): State<Arc<Global>>,
+	State(global): State<Arc<Global>>,
 	Path(id): Path<UserId>,
-	Json(_presence): Json<PresenceModel>,
+	Extension(session): Extension<Session>,
+	Json(presence): Json<UserPresenceWriteRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-	// TODO: decide what to do with this
-	Ok(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
+	let req = RateLimitRequest::new(RateLimitResource::UserPresenceWrite, &session);
+
+	req.http(&global, async {
+		if presence.kind != PresenceKind::Channel {
+			return Err(ApiError::not_implemented(
+				ApiErrorCode::BadRequest,
+				"only channel presence (1) is supported",
+			));
+		}
+
+		if presence.data.id.is_empty() {
+			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "missing data.id"));
+		} else if presence.data.id.len() > 100 || !presence.data.id.is_ascii() {
+			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "data.id is invalid"));
+		}
+
+		let Some(user) = global
+			.user_loader
+			.load(&global, id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+		else {
+			return Err(ApiError::not_found(ApiErrorCode::LoadError, "user not found"));
+		};
+
+		let active_badge = if let Some(id) = user
+			.style
+			.active_badge_id
+			.and_then(|id| user.computed.entitlements.badges.contains(&id).then_some(id))
+		{
+			global
+				.badge_by_id_loader
+				.load(id)
+				.await
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
+		} else {
+			None
+		};
+
+		let active_paint = if let Some(id) = user
+			.style
+			.active_paint_id
+			.and_then(|id| user.computed.entitlements.paints.contains(&id).then_some(id))
+		{
+			global
+				.paint_by_id_loader
+				.load(id)
+				.await
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
+		} else {
+			None
+		};
+
+		let personal_emote_sets = global
+			.emote_set_by_id_loader
+			.load_many(
+				user.computed.entitlements.emote_sets.iter().copied().chain(
+					user.style
+						.personal_emote_set_id
+						.and_then(|id| user.has(UserPermission::UsePersonalEmoteSet).then_some(id)),
+				),
+			)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.into_values()
+			.collect::<Vec<_>>();
+
+		let emote_ids: HashSet<_> = personal_emote_sets
+			.iter()
+			.flat_map(|s| s.emotes.iter().map(|e| e.id))
+			.collect();
+
+		let emotes = global
+			.emote_by_id_loader
+			.load_many(emote_ids)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
+		let mut sets = vec![];
+
+		for set in personal_emote_sets {
+			let emotes = set.emotes.iter().filter_map(|e| emotes.get(&e.id).cloned()).collect();
+			sets.push(InternalEventUserPresenceDataEmoteSet { emote_set: set, emotes });
+		}
+
+		let payload = rmp_serde::to_vec_named(&InternalEventPayload::new(Some(InternalEvent {
+			actor: None,
+			session_id: None,
+			data: InternalEventData::UserPresence(Box::new(InternalEventUserPresenceData {
+				user,
+				platform: match presence.data.platform {
+					UserPresencePlatform::Twitch => {
+						EventUserPresencePlatform::Twitch(presence.data.id.parse().map_err(|_| {
+							ApiError::bad_request(ApiErrorCode::BadRequest, "data.id is not a valid twitch id")
+						})?)
+					}
+					UserPresencePlatform::Kick => {
+						EventUserPresencePlatform::Kick(presence.data.id.parse().map_err(|_| {
+							ApiError::bad_request(ApiErrorCode::BadRequest, "data.id is not a valid kick id")
+						})?)
+					}
+					UserPresencePlatform::Youtube => EventUserPresencePlatform::Youtube(presence.data.id),
+				},
+				active_badge,
+				active_paint,
+				personal_emote_sets: sets,
+			})),
+			timestamp: chrono::Utc::now(),
+		})))
+		.map_err(|err| {
+			tracing::error!(error = %err, "failed to serialize event");
+			ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to serialize event")
+		})?;
+
+		global.nats.publish("api.v4.events", payload.into()).await.map_err(|err| {
+			tracing::error!(error = %err, "failed to publish event");
+			ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to publish event")
+		})?;
+
+		let now = chrono::Utc::now();
+
+		Ok(Json(PresenceModel {
+			id: Id::nil(),
+			user_id: id,
+			timestamp: now.timestamp_millis(),
+			ttl: now.timestamp_millis(),
+			kind: PresenceKind::Channel,
+		}))
+	})
+	.await
 }
 
 #[utoipa::path(

@@ -8,6 +8,7 @@ use axum::Extension;
 use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
+use shared::database::Id;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -29,18 +30,31 @@ pub async fn cancel_subscription(
 		TargetUser::Other(id) => id,
 	};
 
-	// TODO: is this the right permission?
-	if !auth_user.has(UserPermission::ManageAny) && target_id != auth_user.id {
+	let target = global
+		.user_loader
+		.load(&global, target_id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load target user"))?
+		.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "target user not found"))?;
+
+	if !target.has(UserPermission::Billing) {
 		return Err(ApiError::forbidden(
 			ApiErrorCode::LackingPrivileges,
-			"you are not allowed to manage this user",
+			"this user isn't allowed to use billing features",
+		));
+	}
+
+	if target_id != auth_user.id && !auth_user.has(UserPermission::ManageBilling) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"you are not allowed to manage billing",
 		));
 	}
 
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultPaymentMethod, &session);
 
 	req.http(&global, async {
-		let stripe_client = global.stripe_client.safe().await;
+		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
 		let res = with_transaction(&global, |mut tx| {
 			let global = Arc::clone(&global);
@@ -71,7 +85,7 @@ pub async fn cancel_subscription(
 				match period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
 						stripe::Subscription::update(
-							stripe_client.client(()).await.deref(),
+							stripe_client.client("update").await.deref(),
 							&id,
 							stripe::UpdateSubscription {
 								cancel_at_period_end: Some(true),
@@ -161,23 +175,36 @@ pub async fn reactivate_subscription(
 ) -> Result<impl IntoResponse, ApiError> {
 	let auth_user = session.user()?;
 
-	let target_user_id = match target {
+	let target_id = match target {
 		TargetUser::Me => auth_user.id,
 		TargetUser::Other(id) => id,
 	};
 
-	// TODO: is this the right permission?
-	if !auth_user.has(UserPermission::ManageAny) && target_user_id != auth_user.id {
+	let target = global
+		.user_loader
+		.load(&global, target_id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load target user"))?
+		.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "target user not found"))?;
+
+	if !target.has(UserPermission::Billing) {
 		return Err(ApiError::forbidden(
 			ApiErrorCode::LackingPrivileges,
-			"you are not allowed to manage this user",
+			"this user isn't allowed to use billing features",
+		));
+	}
+
+	if target_id != auth_user.id && !auth_user.has(UserPermission::ManageBilling) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"you are not allowed to manage billing",
 		));
 	}
 
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, &session);
 
 	req.http(&global, async {
-		let stripe_client = global.stripe_client.safe().await;
+		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
 		let res = with_transaction(&global, |mut tx| async move {
 			let period = tx
@@ -186,7 +213,7 @@ pub async fn reactivate_subscription(
 						SubscriptionPeriod {
 							#[query(flatten)]
 							subscription_id: SubscriptionId {
-								user_id: target_user_id,
+								user_id: target_id,
 							},
 							#[query(selector = "lt")]
 							start: chrono::Utc::now(),
@@ -204,7 +231,7 @@ pub async fn reactivate_subscription(
 			match period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
 					stripe::Subscription::update(
-						stripe_client.client(()).await.deref(),
+						stripe_client.client("update").await.deref(),
 						&id,
 						stripe::UpdateSubscription {
 							cancel_at_period_end: Some(false),

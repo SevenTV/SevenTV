@@ -44,9 +44,6 @@ pub async fn refunded(
 	Ok(())
 }
 
-// we only have one request
-pub type StripeRequest = ();
-
 /// Marks the associated invoice as disputed.
 ///
 /// Called for `charge.dispute.created`, `charge.dispute.updated`,
@@ -58,7 +55,7 @@ pub async fn dispute_updated(
 	dispute: stripe::Dispute,
 ) -> TransactionResult<(), ApiError> {
 	let charge = stripe::Charge::retrieve(
-		stripe_client.client(super::StripeRequest::Charge(())).await.deref(),
+		stripe_client.client(super::StripeRequest::Charge).await.deref(),
 		&dispute.charge.id(),
 		&[],
 	)

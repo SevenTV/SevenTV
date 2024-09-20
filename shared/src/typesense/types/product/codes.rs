@@ -18,8 +18,8 @@ pub struct RedeemCode {
 	pub tags: Vec<String>,
 	pub code: String,
 	pub remaining_uses: i32,
-	pub active_from: i64,
-	pub active_to: i64,
+	pub active_from: Option<i64>,
+	pub active_to: Option<i64>,
 	pub entitlements: Vec<EntitlementEdgeKindString>,
 	pub created_by: UserId,
 	pub special_event_id: Option<SpecialEventId>,
@@ -38,8 +38,8 @@ impl From<database::product::codes::RedeemCode> for RedeemCode {
 			tags: value.tags,
 			code: value.code,
 			remaining_uses: value.remaining_uses,
-			active_from: value.active_period.start.timestamp_millis(),
-			active_to: value.active_period.end.timestamp_millis(),
+			active_from: value.active_period.as_ref().map(|p| p.start.timestamp_millis()),
+			active_to: value.active_period.as_ref().map(|p| p.end.timestamp_millis()),
 			entitlements: match &value.effect {
 				CodeEffect::DirectEntitlement { entitlements } => {
 					entitlements.iter().cloned().map(EntitlementEdgeKindString).collect()

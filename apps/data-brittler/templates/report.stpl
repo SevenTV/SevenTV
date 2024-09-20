@@ -8,9 +8,9 @@ Average speed: `<%= (*total_documents as f64 / took_seconds) as u64 %> documents
 
 ## Stats
 
-| Job | Processed Documents | Rows | Duration | Problems |
-|-----|---------------------|------|----------|----------|
-<% for o in &outcomes { %>| `<%= o.job_name %>` | <%= o.processed_documents %> | <%= o.inserted_rows %> | <%= format!("{:.2}", o.took_seconds) %>s | <%= o.errors.len() %> |
+| Job | Processed Documents | Rows | Fetch Duration | Insert Duration | Problems |
+|-----|---------------------|------|----------|----------|----------|
+<% for o in &outcomes { %>| `<%= o.job_name %>` | <%= o.processed_documents %> | <%= o.inserted_rows %> | <%= format!("{:.2}", o.fetch_time) %>s | <%= format!("{:.2}", o.insert_time) %>s | <%= o.errors.len() %> |
 <% } %>
 ## Problems<% if !outcomes.iter().all(|o| o.errors.is_empty()) { %>
 

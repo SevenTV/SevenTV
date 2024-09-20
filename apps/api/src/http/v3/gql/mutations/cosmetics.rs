@@ -283,7 +283,6 @@ impl CosmeticOps {
 			})?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))?;
 
-		CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin)
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))
+		Ok(CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin))
 	}
 }

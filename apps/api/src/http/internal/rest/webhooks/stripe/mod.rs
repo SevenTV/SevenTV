@@ -1,14 +1,17 @@
+use std::net::IpAddr;
 use std::sync::Arc;
 
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
+use axum::Extension;
 use mongodb::options::UpdateOptions;
 use shared::database::queries::{filter, update};
 use shared::database::webhook_event::WebhookEvent;
+use tokio::sync::OnceCell;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::stripe_client::SafeStripeClient;
+use crate::http::middleware::session::Session;
 use crate::sub_refresh_job;
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -19,15 +22,61 @@ mod invoice;
 mod price;
 mod subscription;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum StripeRequest {
-	Price(price::StripeRequest),
-	CheckoutSession(checkout_session::StripeRequest),
-	Invoice(invoice::StripeRequest),
-	Charge(charge::StripeRequest),
+/// https://docs.stripe.com/ips#webhook-notifications
+async fn verify_stripe_ip(global: &Arc<Global>, ip: &IpAddr) -> bool {
+	#[derive(serde::Deserialize)]
+	struct Response {
+		#[serde(rename = "WEBHOOKS")]
+		webhooks: Vec<IpAddr>,
+	}
+
+	static STRIPE_IPS: OnceCell<Response> = OnceCell::const_new();
+
+	match STRIPE_IPS
+		.get_or_try_init(|| async {
+			global
+				.http_client
+				.get("https://stripe.com/files/ips/ips_webhooks.json")
+				.send()
+				.await?
+				.json()
+				.await
+		})
+		.await
+	{
+		Ok(res) => res.webhooks.contains(ip),
+		Err(e) => {
+			tracing::error!(err = %e, "failed to fetch stripe ip list");
+			false
+		}
+	}
 }
 
-pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, payload: String) -> Result<StatusCode, ApiError> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum StripeRequest {
+	Price,
+	CheckoutSession(checkout_session::StripeRequest),
+	Invoice(invoice::StripeRequest),
+	Charge,
+}
+
+impl std::fmt::Display for StripeRequest {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Price => write!(f, "price"),
+			Self::CheckoutSession(r) => write!(f, "checkout_session:{}", r),
+			Self::Invoice(r) => write!(f, "invoice:{}", r),
+			Self::Charge => write!(f, "charge"),
+		}
+	}
+}
+
+pub async fn handle(
+	State(global): State<Arc<Global>>,
+	Extension(session): Extension<Session>,
+	headers: HeaderMap,
+	payload: String,
+) -> Result<StatusCode, ApiError> {
 	let sig = headers
 		.get("stripe-signature")
 		.and_then(|v| v.to_str().ok())
@@ -38,8 +87,11 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 		ApiError::bad_request(ApiErrorCode::StripeError, "failed to parse webhook")
 	})?;
 
-	// TODO: verify request is coming from stripe ip
-	// https://docs.stripe.com/ips#webhook-notifications
+	if !verify_stripe_ip(&global, &session.ip()).await {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid ip"));
+	}
+
+	let stripe_client = global.stripe_client.safe(&event.id).await;
 
 	let res = with_transaction(&global, |mut tx| {
 		let global = Arc::clone(&global);
@@ -70,8 +122,6 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 				return Ok(None);
 			}
 
-			let stripe_client: SafeStripeClient<StripeRequest> = global.stripe_client.safe().await;
-
 			let prev_attributes = event.data.previous_attributes;
 
 			// https://kappa.lol/2NwAU
@@ -100,7 +150,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 					invoice::updated(&global, &mut tx, &iv).await?;
 				}
 				(stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv)) => {
-					return invoice::paid(&global, stripe_client, tx, iv).await;
+					return invoice::paid(&global, stripe_client, tx, event.id, iv).await;
 				}
 				(stripe::EventType::InvoiceDeleted, stripe::EventObject::Invoice(iv)) => {
 					invoice::deleted(&global, tx, iv).await?;
@@ -115,6 +165,7 @@ pub async fn handle(State(global): State<Arc<Global>>, headers: HeaderMap, paylo
 					return subscription::updated(
 						&global,
 						tx,
+						event.id,
 						chrono::DateTime::from_timestamp(event.created, 0)
 							.ok_or_else(|| TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "webhook event created_at is missing")))?,
 						sub,

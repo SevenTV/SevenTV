@@ -2,7 +2,6 @@ pub mod ban;
 pub mod ban_template;
 pub mod connection;
 pub mod editor;
-pub mod presence;
 pub mod profile_picture;
 pub mod relation;
 pub mod session;
@@ -91,13 +90,13 @@ pub struct UserStyle {
 	pub active_emote_set_id: Option<EmoteSetId>,
 	pub active_profile_picture: Option<UserProfilePictureId>,
 	pub pending_profile_picture: Option<UserProfilePictureId>,
+	pub personal_emote_set_id: Option<EmoteSetId>,
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	std::iter::once(MongoGenericCollection::new::<User>())
 		.chain(ban_template::collections())
 		.chain(editor::collections())
-		.chain(presence::collections())
 		.chain(relation::collections())
 		.chain(session::collections())
 		.chain(profile_picture::collections())

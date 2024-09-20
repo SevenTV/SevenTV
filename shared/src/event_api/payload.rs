@@ -9,7 +9,7 @@ use std::collections::HashMap;
 // The reason this is desirable is because if we made a mistake in one of the payloads here we
 // would like to know about it rather than silently ignoring it, and potentially causing
 // issues.
-use super::types::{self, ChangeMap, CloseCode, EventType, SessionEffect};
+use super::types::{self, ChangeMap, CloseCode, EventType};
 use super::MessagePayload;
 use crate::database::user::UserId;
 use crate::database::Id;
@@ -95,15 +95,51 @@ impl MessagePayload for Resume {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Subscribe {
 	#[serde(rename = "type")]
 	pub ty: EventType,
 	#[serde(default)]
-	pub condition: HashMap<String, String>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	#[serde(default)]
-	pub ttl: Option<i64>,
+	pub condition: SubscribeCondition,
+}
+
+impl Subscribe {
+	pub fn new_from_hash(ty: EventType, hash: &HashMap<String, String>) -> Option<Self> {
+		Some(Self {
+			ty,
+			condition: serde_json::from_value(serde_json::to_value(hash).ok()?).ok()?,
+		})
+	}
+}
+
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+pub enum SubscribeCondition {
+	ObjectId {
+		object_id: Id<()>,
+	},
+	Channel {
+		#[doc(hidden)]
+		ctx: ContextChannel,
+		platform: SubscribeConditionChannelPlatform,
+		id: String,
+	},
+	#[default]
+	Unknown,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SubscribeConditionChannelPlatform {
+	Twitch,
+	Kick,
+	Youtube,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[doc(hidden)]
+pub enum ContextChannel {
+	#[serde(rename = "channel")]
+	Channel,
 }
 
 impl MessagePayload for Subscribe {
@@ -118,7 +154,7 @@ pub struct Unsubscribe {
 	#[serde(rename = "type")]
 	pub ty: EventType,
 	#[serde(default)]
-	pub condition: HashMap<String, String>,
+	pub condition: SubscribeCondition,
 }
 
 impl MessagePayload for Unsubscribe {
@@ -133,21 +169,6 @@ pub struct Dispatch {
 	#[serde(rename = "type")]
 	pub ty: EventType,
 	pub body: ChangeMap,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub hash: Option<u32>,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub effect: Option<SessionEffect>,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub matches: Vec<u32>,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub condition: Vec<HashMap<String, String>>,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub whisper: Option<String>,
 }
 
 impl MessagePayload for Dispatch {

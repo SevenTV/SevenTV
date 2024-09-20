@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use shared::database::product::codes::RedeemCodeId;
-use shared::database::product::SubscriptionProductId;
+use shared::database::product::{ProductId, SubscriptionProductId};
 use shared::database::user::UserId;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -16,6 +16,7 @@ pub enum InvoiceMetadata {
 		customer_id: UserId,
 		#[serde(default, skip_serializing_if = "Option::is_none")]
 		subscription_product_id: Option<SubscriptionProductId>,
+		product_id: ProductId,
 	},
 }
 

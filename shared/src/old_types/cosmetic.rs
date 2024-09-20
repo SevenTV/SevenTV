@@ -78,10 +78,10 @@ impl CosmeticPaintModel {
 }
 
 impl CosmeticPaintModel {
-	pub fn from_db(value: Paint, cdn_base_url: &url::Url) -> Option<Self> {
+	pub fn from_db(value: Paint, cdn_base_url: &url::Url) -> Self {
 		let first_layer = value.data.layers.first();
 
-		Some(Self {
+		Self {
 			id: value.id,
 			name: value.name,
 			color: first_layer.and_then(|l| match l.ty {
@@ -152,7 +152,7 @@ impl CosmeticPaintModel {
 					_ => None,
 				})
 				.unwrap_or_default(),
-		})
+		}
 	}
 }
 
@@ -307,17 +307,17 @@ impl CosmeticBadgeModel {
 }
 
 impl CosmeticBadgeModel {
-	pub fn from_db(value: Badge, cdn_base_url: &url::Url) -> Option<Self> {
+	pub fn from_db(value: Badge, cdn_base_url: &url::Url) -> Self {
 		let id = value.id.cast();
 		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url);
 
-		Some(Self {
+		Self {
 			id,
 			name: value.name,
 			tag: value.tags.into_iter().next().unwrap_or_default(),
 			tooltip: value.description.unwrap_or_default(),
 			host,
-		})
+		}
 	}
 }
 

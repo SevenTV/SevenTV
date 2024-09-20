@@ -4,7 +4,7 @@ use std::sync::{Arc, OnceLock};
 
 use axum::routing::{get, patch, post};
 use axum::Router;
-use shared::database::product::{CustomerId, ProductId};
+use shared::database::product::CustomerId;
 use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId};
 use shared::database::MongoCollection;
@@ -35,11 +35,16 @@ pub fn routes() -> Router<Arc<Global>> {
 		.route("/redeem", post(redeem::redeem))
 }
 
+pub enum CheckoutProduct {
+	Price(stripe::PriceId),
+	Gift(stripe::ProductId),
+}
+
 async fn create_checkout_session_params(
 	global: &Arc<Global>,
 	ip: std::net::IpAddr,
 	customer_id: CustomerId,
-	product_id: &ProductId,
+	product_id: CheckoutProduct,
 	default_currency: stripe::Currency,
 	currency_prices: &HashMap<stripe::Currency, i64>,
 ) -> stripe::CreateCheckoutSession<'static> {
@@ -62,12 +67,26 @@ async fn create_checkout_session_params(
 		}
 	}
 
-	stripe::CreateCheckoutSession {
-		line_items: Some(vec![stripe::CreateCheckoutSessionLineItems {
-			price: Some(product_id.to_string()),
+	let line = match product_id {
+		CheckoutProduct::Gift(gift_id) => stripe::CreateCheckoutSessionLineItems {
+			price_data: Some(stripe::CreateCheckoutSessionLineItemsPriceData {
+				product: Some(gift_id.to_string()),
+				unit_amount: currency_prices.get(&currency).copied(),
+				currency,
+				..Default::default()
+			}),
 			quantity: Some(1),
 			..Default::default()
-		}]),
+		},
+		CheckoutProduct::Price(price_id) => stripe::CreateCheckoutSessionLineItems {
+			price: Some(price_id.to_string()),
+			quantity: Some(1),
+			..Default::default()
+		},
+	};
+
+	stripe::CreateCheckoutSession {
+		line_items: Some(vec![line]),
 		customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
 			address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
 			..Default::default()
