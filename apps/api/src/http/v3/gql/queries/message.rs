@@ -153,7 +153,10 @@ impl MessagesQuery {
 
 		if let Some(country) = country {
 			let sanitized = country.replace('`', "");
-			filters.push(format!("country_code: {}", sanitized.trim_end_matches('\\')));
+			let sanitized = sanitized.trim_end_matches('\\');
+			if !sanitized.is_empty() {
+				filters.push(format!("country_code: `{}`", sanitized));
+			}
 		}
 
 		let options = SearchOptions::builder()

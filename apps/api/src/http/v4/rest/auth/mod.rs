@@ -29,8 +29,8 @@ const CSRF_COOKIE: &str = "seventv-login-csrf";
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.route("/login", get(login))
-		.route("logout", get(logout))
-		.route("callback", get(callback))
+		.route("/logout", get(logout))
+		.route("/callback", get(callback))
 }
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
