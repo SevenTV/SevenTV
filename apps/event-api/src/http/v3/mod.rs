@@ -706,9 +706,7 @@ impl Connection {
 				.put(emote_set.emote_set.id, emote_set.emote_set.updated_at);
 		}
 
-		let user_state = self
-			.presence_lru
-			.get_or_insert_mut_ref(&payload.user.id, Default::default);
+		let user_state = self.presence_lru.get_or_insert_mut_ref(&payload.user.id, Default::default);
 
 		if user_state.active_badge != payload.active_badge.as_ref().map(|b| b.id) {
 			if let Some(active_badge) = user_state.active_badge {

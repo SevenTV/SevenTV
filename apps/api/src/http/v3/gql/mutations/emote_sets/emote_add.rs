@@ -205,7 +205,10 @@ pub async fn emote_add(
 	}
 
 	let emote_owner = global.user_loader.load_fast(global, emote.owner_id).await.map_err(|_| {
-		TransactionError::Custom(ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote owner"))
+		TransactionError::Custom(ApiError::internal_server_error(
+			ApiErrorCode::LoadError,
+			"failed to load emote owner",
+		))
 	})?;
 
 	tx.register_event(InternalEvent {
