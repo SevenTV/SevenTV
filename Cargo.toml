@@ -1,7 +1,12 @@
 [workspace]
 
 members = [
-    "apps/*",
+    "apps/api",
+    "apps/cdn",
+    "apps/data-brittler",
+    "apps/event-api",
+    "apps/mongo-change-stream",
+    "apps/mongo-typesense",
     "macros",
     "shared",
 ]
