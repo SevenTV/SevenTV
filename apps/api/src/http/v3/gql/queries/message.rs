@@ -53,6 +53,8 @@ pub struct ModRequestMessage {
 
 impl ModRequestMessage {
 	fn from_db(mod_request: EmoteModerationRequest) -> Self {
+		let country = mod_request.country_code.unwrap_or_default();
+
 		Self {
 			id: mod_request.id.into(),
 			kind: MessageKind::ModRequest,
@@ -66,8 +68,8 @@ impl ModRequestMessage {
 				EmoteModerationRequestKind::PublicListing => "list".to_string(),
 				EmoteModerationRequestKind::PersonalUse => "personal_use".to_string(),
 			},
-			actor_country_name: String::new(),
-			actor_country_code: mod_request.country_code.unwrap_or_default(),
+			actor_country_name: country.clone(),
+			actor_country_code: country,
 		}
 	}
 }

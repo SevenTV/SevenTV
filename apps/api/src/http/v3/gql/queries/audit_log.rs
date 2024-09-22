@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use async_graphql::{indexmap, ComplexObject, Context, ScalarType, SimpleObject};
@@ -83,7 +84,11 @@ async_graphql::scalar!(AuditLogKind);
 
 impl AuditLog {
 	pub fn from_db(audit_log: shared::database::stored_event::StoredEvent) -> Option<Self> {
-		let actor_id = audit_log.actor_id.map(UserId::from).unwrap_or(UserId::nil()).into();
+		let actor_id = audit_log
+			.actor_id
+			.map(UserId::from)
+			.unwrap_or_else(|| UserId::from_str("01FRG0ZGSR00084PQ73P1BYDX8").unwrap()) // system user
+			.into();
 
 		let (kind, target_id, target_kind, changes) = match audit_log.data {
 			shared::database::stored_event::StoredEventData::Emote {

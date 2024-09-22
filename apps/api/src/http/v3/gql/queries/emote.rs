@@ -200,7 +200,7 @@ impl Emote {
 	async fn activity<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+		#[graphql(validator(maximum = 300))] limit: Option<u32>,
 	) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
