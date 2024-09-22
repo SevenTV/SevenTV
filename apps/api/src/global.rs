@@ -9,7 +9,6 @@ use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::server::HealthCheck;
 use shared::clickhouse::init_clickhouse;
 use shared::database::badge::Badge;
-use shared::database::emote::Emote;
 use shared::database::emote_moderation_request::EmoteModerationRequest;
 use shared::database::emote_set::EmoteSet;
 use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
@@ -33,7 +32,7 @@ use shared::ip::GeoIpResolver;
 use shared::redis::setup_redis;
 
 use crate::config::Config;
-use crate::dataloader::emote::EmoteByUserIdLoader;
+use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
 use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
 use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
@@ -62,7 +61,7 @@ pub struct Global {
 	pub role_by_id_loader: DataLoader<LoaderById<Role>>,
 	pub paint_by_id_loader: DataLoader<LoaderById<Paint>>,
 	pub badge_by_id_loader: DataLoader<LoaderById<Badge>>,
-	pub emote_by_id_loader: DataLoader<LoaderById<Emote>>,
+	pub emote_by_id_loader: DataLoader<EmoteByIdLoader>,
 	pub emote_by_user_id_loader: DataLoader<EmoteByUserIdLoader>,
 	pub emote_set_by_id_loader: DataLoader<LoaderById<EmoteSet>>,
 	pub emote_set_by_user_id_loader: DataLoader<EmoteSetByUserIdLoader>,
@@ -152,7 +151,7 @@ impl Global {
 			role_by_id_loader: LoaderById::new(db.clone()),
 			paint_by_id_loader: LoaderById::new(db.clone()),
 			badge_by_id_loader: LoaderById::new(db.clone()),
-			emote_by_id_loader: LoaderById::new(db.clone()),
+			emote_by_id_loader: EmoteByIdLoader::new(db.clone()),
 			emote_by_user_id_loader: EmoteByUserIdLoader::new(db.clone()),
 			emote_set_by_id_loader: LoaderById::new(db.clone()),
 			emote_set_by_user_id_loader: EmoteSetByUserIdLoader::new(db.clone()),

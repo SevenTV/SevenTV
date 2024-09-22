@@ -98,22 +98,22 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		// handle event
 		match event_callback.event.context("missing event")? {
 			event_callback::Event::Success(event) => {
-				if let Err(err) = handle_success(&global, subject, &event, &event_callback.metadata).await {
+				if let Err(err) = handle_success(&global, subject, event, event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle success event");
 				}
 			}
 			event_callback::Event::Fail(event) => {
-				if let Err(err) = handle_fail(&global, subject, &event, &event_callback.metadata).await {
+				if let Err(err) = handle_fail(&global, subject, event, event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle fail event");
 				}
 			}
 			event_callback::Event::Cancel(event) => {
-				if let Err(err) = handle_cancel(&global, subject, &event, &event_callback.metadata).await {
+				if let Err(err) = handle_cancel(&global, subject, event, event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle cancel event");
 				}
 			}
 			event_callback::Event::Start(event) => {
-				if let Err(err) = handle_start(&global, subject, &event, &event_callback.metadata).await {
+				if let Err(err) = handle_start(&global, subject, event, event_callback.metadata).await {
 					tracing::error!(error = %err, "failed to handle start event");
 				}
 			}
@@ -130,25 +130,25 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-fn event_to_image_set(event: &event_callback::Success) -> anyhow::Result<ImageSet> {
-	let input = event.input_metadata.as_ref().context("missing input metadata")?;
+fn event_to_image_set(event: event_callback::Success) -> anyhow::Result<ImageSet> {
+	let input = event.input_metadata.context("missing input metadata")?;
 
 	Ok(ImageSet {
 		input: ImageSetInput::Image(Image {
 			frame_count: input.frame_count as i32,
 			width: input.width as i32,
 			height: input.height as i32,
-			path: input.path.as_ref().map(|p| p.path.clone()).unwrap_or_default(),
-			mime: input.content_type.clone(),
+			path: input.path.map(|p| p.path).unwrap_or_default(),
+			mime: input.content_type,
 			size: input.size as i64,
 			scale: 1,
 		}),
 		outputs: event
 			.files
-			.iter()
+			.into_iter()
 			.map(|file| Image {
-				path: file.path.clone().unwrap_or_default().path,
-				mime: file.content_type.clone(),
+				path: file.path.unwrap_or_default().path,
+				mime: file.content_type,
 				size: file.size as i64,
 				width: file.width as i32,
 				height: file.height as i32,
@@ -162,8 +162,8 @@ fn event_to_image_set(event: &event_callback::Success) -> anyhow::Result<ImageSe
 async fn handle_success(
 	global: &Arc<Global>,
 	subject: Subject,
-	event: &event_callback::Success,
-	metadata: &HashMap<String, String>,
+	event: event_callback::Success,
+	metadata: HashMap<String, String>,
 ) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
@@ -180,8 +180,8 @@ async fn handle_success(
 async fn handle_fail(
 	global: &Arc<Global>,
 	subject: Subject,
-	event: &event_callback::Fail,
-	_metadata: &HashMap<String, String>,
+	event: event_callback::Fail,
+	_metadata: HashMap<String, String>,
 ) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
@@ -198,15 +198,15 @@ async fn handle_fail(
 async fn handle_start(
 	global: &Arc<Global>,
 	subject: Subject,
-	event: &event_callback::Start,
-	_metadata: &HashMap<String, String>,
+	_event: event_callback::Start,
+	_metadata: HashMap<String, String>,
 ) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
-			Subject::Emote(id) => emote::handle_start(tx, global, id, event).await,
-			Subject::ProfilePicture(id) => profile_picture::handle_start(tx, global, id, event).await,
-			Subject::PaintLayer(id, ..) => paint_layer::handle_start(tx, global, id, event).await,
-			Subject::Badge(id) => badge::handle_start(tx, global, id, event).await,
+			Subject::Emote(id) => emote::handle_start(tx, global, id).await,
+			Subject::ProfilePicture(id) => profile_picture::handle_start(tx, global, id).await,
+			Subject::PaintLayer(id, ..) => paint_layer::handle_start(tx, global, id).await,
+			Subject::Badge(id) => badge::handle_start(tx, global, id).await,
 		}
 	})
 	.await
@@ -216,15 +216,15 @@ async fn handle_start(
 async fn handle_cancel(
 	global: &Arc<Global>,
 	subject: Subject,
-	event: &event_callback::Cancel,
-	_metadata: &HashMap<String, String>,
+	_event: event_callback::Cancel,
+	_metadata: HashMap<String, String>,
 ) -> anyhow::Result<()> {
 	with_transaction(global, |tx| async move {
 		match subject {
-			Subject::Emote(id) => emote::handle_cancel(tx, global, id, event).await,
-			Subject::ProfilePicture(id) => profile_picture::handle_cancel(tx, global, id, event).await,
-			Subject::PaintLayer(id, ..) => paint_layer::handle_cancel(tx, global, id, event).await,
-			Subject::Badge(id) => badge::handle_cancel(tx, global, id, event).await,
+			Subject::Emote(id) => emote::handle_cancel(tx, global, id).await,
+			Subject::ProfilePicture(id) => profile_picture::handle_cancel(tx, global, id).await,
+			Subject::PaintLayer(id, ..) => paint_layer::handle_cancel(tx, global, id).await,
+			Subject::Badge(id) => badge::handle_cancel(tx, global, id).await,
 		}
 	})
 	.await

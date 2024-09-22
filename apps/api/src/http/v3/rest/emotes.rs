@@ -56,7 +56,7 @@ pub struct XEmoteData {
         ("X-Emote-Data" = XEmoteData, Header, description = "The properties of the emote"),
     ),
 )]
-#[tracing::instrument(skip(global))]
+#[tracing::instrument(skip_all)]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/emotes/emotes.create.go#L58
 pub async fn create_emote(
 	State(global): State<Arc<Global>>,
@@ -166,6 +166,7 @@ pub async fn create_emote(
 				merged: None,
 				aspect_ratio: -1.0,
 				scores: Default::default(),
+				deleted: false,
 				search_updated_at: None,
 				updated_at: chrono::Utc::now(),
 			};

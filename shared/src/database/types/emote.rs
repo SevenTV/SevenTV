@@ -29,6 +29,7 @@ pub struct Emote {
 	pub attribution: Vec<EmoteAttribution>,
 	pub merged: Option<EmoteMerged>,
 	pub scores: EmoteScores,
+	pub deleted: bool,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]

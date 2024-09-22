@@ -1,14 +1,15 @@
-use std::future::IntoFuture;
 use std::sync::Arc;
 
 use async_graphql::{Context, InputObject, Object};
-use futures::{TryFutureExt, TryStreamExt};
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::queries::filter::Filter;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::RolePermission;
 use shared::database::role::{Role as DbRole, RoleId};
-use shared::database::MongoCollection;
+use shared::database::stored_event::StoredEventRoleData;
+use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
@@ -17,6 +18,7 @@ use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::role::Role;
 use crate::http::v3::validators::NameValidator;
+use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
 pub struct RolesMutation;
@@ -53,50 +55,63 @@ impl RolesMutation {
 			));
 		}
 
-		// TODO: events, and this should be in a transaction
-		let roles: Vec<shared::database::role::Role> = shared::database::role::Role::collection(&global.db)
-			.find(filter::filter! {
-				DbRole {}
-			})
-			.with_options(FindOptions::builder().sort(doc! { "rank": 1 }).build())
-			.into_future()
-			.and_then(|f| f.try_collect())
-			.await
-			.map_err(|err| {
-				tracing::error!("failed to load: {err}");
-				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load roles")
+		let res = with_transaction::<_, (), _, _>(global, |mut tx| async move {
+			let roles = tx
+				.find(
+					filter::filter! {
+						DbRole {}
+					},
+					FindOptions::builder().sort(doc! { "rank": 1 }).build(),
+				)
+				.await?;
+
+			let mut rank = 0;
+
+			while roles.iter().any(|r| r.rank == rank) {
+				rank += 1;
+			}
+
+			let role = shared::database::role::Role {
+				id: RoleId::new(),
+				name: data.name,
+				description: None,
+				tags: vec![],
+				permissions: role_permissions,
+				hoist: false,
+				color: Some(data.color),
+				rank,
+				created_by: authed_user.id,
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+				applied_rank: None,
+			};
+
+			tx.register_event(InternalEvent {
+				actor: Some(authed_user.clone()),
+				session_id: session.user_session_id(),
+				data: InternalEventData::Role {
+					after: role.clone(),
+					data: StoredEventRoleData::Create,
+				},
+				timestamp: chrono::Utc::now(),
 			})?;
 
-		let mut rank = 0;
+			tx.insert_one::<shared::database::role::Role>(&role, None).await?;
 
-		while roles.iter().any(|r| r.rank == rank) {
-			rank += 1;
+			Ok(role)
+		})
+		.await;
+
+		match res {
+			Ok(role) => Ok(Role::from_db(role)),
+			Err(e) => {
+				tracing::error!(error = %e, "failed to create role");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"failed to create role",
+				))
+			}
 		}
-
-		let role = shared::database::role::Role {
-			id: RoleId::new(),
-			name: data.name,
-			description: None,
-			tags: vec![],
-			permissions: role_permissions,
-			hoist: false,
-			color: Some(data.color),
-			rank,
-			created_by: authed_user.id,
-			updated_at: chrono::Utc::now(),
-			search_updated_at: None,
-			applied_rank: None,
-		};
-
-		shared::database::role::Role::collection(&global.db)
-			.insert_one(&role)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to insert role");
-				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert role")
-			})?;
-
-		Ok(Role::from_db(role))
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
@@ -146,43 +161,131 @@ impl RolesMutation {
 			}
 		};
 
-		// TODO: events
-		let role = shared::database::role::Role::collection(&global.db)
-			.find_one_and_update(
-				filter::filter! {
-					DbRole {
-						#[query(rename = "_id")]
-						id: role_id.id(),
-					}
-				},
-				update::update! {
-					#[query(set)]
-					DbRole {
-						#[query(serde, optional)]
-						permissions,
-						#[query(optional)]
-						name: data.name,
-						#[query(optional)]
-						color: data.color,
-						#[query(optional)]
-						rank: data.position.map(|p| p as i32),
-						updated_at: chrono::Utc::now(),
-					}
-				},
-			)
-			.with_options(
-				FindOneAndUpdateOptions::builder()
-					.return_document(ReturnDocument::After)
-					.build(),
-			)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update role");
-				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to update role")
-			})?
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to update role"))?;
+		let res = with_transaction(global, |mut tx| async move {
+			let before_role = tx
+				.find_one_and_update(
+					filter::filter! {
+						DbRole {
+							#[query(rename = "_id")]
+							id: role_id.id(),
+						}
+					},
+					update::update! {
+						#[query(set)]
+						DbRole {
+							#[query(serde, optional)]
+							permissions: permissions.clone(),
+							#[query(optional)]
+							name: data.name.clone(),
+							#[query(optional)]
+							color: data.color,
+							#[query(optional)]
+							rank: data.position.map(|p| p as i32),
+							updated_at: chrono::Utc::now(),
+						}
+					},
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::Before)
+						.build(),
+				)
+				.await?
+				.ok_or_else(|| {
+					TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "failed to update role"))
+				})?;
 
-		Ok(Role::from_db(role))
+			let mut after_role = before_role.clone();
+
+			if let Some(permissions) = &permissions {
+				after_role.permissions = permissions.clone();
+			}
+
+			if let Some(name) = &data.name {
+				after_role.name = name.clone();
+			}
+
+			if let Some(color) = data.color {
+				after_role.color = Some(color);
+			}
+
+			if let Some(position) = data.position {
+				after_role.rank = position as i32;
+			}
+
+			if permissions.is_some() {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::Role {
+						after: after_role.clone(),
+						data: StoredEventRoleData::ChangePermissions {
+							old: Box::new(before_role.permissions),
+							new: Box::new(after_role.permissions.clone()),
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if data.name.is_some() {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::Role {
+						after: after_role.clone(),
+						data: StoredEventRoleData::ChangeName {
+							old: before_role.name,
+							new: after_role.name.clone(),
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if data.color.is_some() {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::Role {
+						after: after_role.clone(),
+						data: StoredEventRoleData::ChangeColor {
+							old: before_role.color,
+							new: after_role.color,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if data.position.is_some() {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::Role {
+						after: after_role.clone(),
+						data: StoredEventRoleData::ChangeRank {
+							old: before_role.rank,
+							new: after_role.rank,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			Ok(after_role)
+		})
+		.await;
+
+		match res {
+			Ok(role) => Ok(Role::from_db(role)),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "failed to edit role");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"failed to edit role",
+				))
+			}
+		}
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
@@ -195,40 +298,95 @@ impl RolesMutation {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = session.user()?;
 
-		let role = global
-			.role_by_id_loader
-			.load(role_id.id())
-			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load role"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "role not found"))?;
+		let res = with_transaction(global, |mut tx| async move {
+			let role = tx
+				.find_one(
+					filter::filter! {
+						DbRole {
+							#[query(rename = "_id")]
+							id: role_id.id(),
+						}
+					},
+					None,
+				)
+				.await?
+				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "role not found")))?;
 
-		if !authed_user.computed.permissions.is_superset_of(&role.permissions) {
-			return Err(ApiError::forbidden(
-				ApiErrorCode::LackingPrivileges,
-				"the role has a higher permission level than you",
-			));
-		}
+			if !authed_user.computed.permissions.is_superset_of(&role.permissions) {
+				return Err(TransactionError::Custom(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"the role has a higher permission level than you",
+				)));
+			}
 
-		// TODO: events
-		let res = shared::database::role::Role::collection(&global.db)
-			.delete_one(filter::filter! {
-				DbRole {
-					#[query(rename = "_id")]
-					id: role_id.id(),
+			let res = tx
+				.delete_one(
+					filter::filter! {
+						DbRole {
+							#[query(rename = "_id")]
+							id: role_id.id(),
+						}
+					},
+					None,
+				)
+				.await?;
+
+			if res.deleted_count == 0 {
+				return Err(TransactionError::Custom(ApiError::not_found(
+					ApiErrorCode::LoadError,
+					"role not found",
+				)));
+			}
+
+			tx.delete(Filter::or([
+				filter::filter! {
+					EntitlementEdge {
+						#[query(rename = "_id", flatten)]
+						id: EntitlementEdgeId {
+							#[query(serde)]
+							from: EntitlementEdgeKind::Role {
+								role_id: role_id.id(),
+							},
+						}
+					}
+				},
+				filter::filter! {
+					EntitlementEdge {
+						#[query(rename = "_id", flatten)]
+						id: EntitlementEdgeId {
+							#[query(serde)]
+							to: EntitlementEdgeKind::Role {
+								role_id: role_id.id(),
+							},
+						}
+					}
 				}
-			})
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to delete role");
-				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to delete role")
+			]), None).await?;
+
+			tx.register_event(InternalEvent {
+				actor: Some(authed_user.clone()),
+				session_id: session.user_session_id(),
+				data: InternalEventData::Role {
+					after: role,
+					data: StoredEventRoleData::Delete,
+				},
+				timestamp: chrono::Utc::now(),
 			})?;
 
-		// TODO: remove entitlement edges
+			Ok(())
+		})
+		.await;
 
-		if res.deleted_count > 0 {
-			Ok(String::new())
-		} else {
-			Err(ApiError::not_found(ApiErrorCode::LoadError, "role not found"))
+		match res {
+			Ok(_) => Ok(String::new()),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "failed to delete role");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"failed to delete role",
+				))
+			}
 		}
 	}
 }

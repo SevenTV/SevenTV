@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::num::NonZeroUsize;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -222,10 +223,10 @@ struct Connection {
 	/// Drop guard for the metrics
 	_current_connection_drop_guard: v3::CurrentConnectionDropGuard,
 
-	presence_lru: const_lru::ConstLru<UserId, PresenceCacheValue, 1024, u16>,
-	personal_emote_set_lru: const_lru::ConstLru<EmoteSetId, chrono::DateTime<chrono::Utc>, 1024, u16>,
-	badge_lru: const_lru::ConstLru<BadgeId, chrono::DateTime<chrono::Utc>, 255, u8>,
-	paint_lru: const_lru::ConstLru<PaintId, chrono::DateTime<chrono::Utc>, 1024, u16>,
+	presence_lru: lru::LruCache<UserId, PresenceCacheValue>,
+	personal_emote_set_lru: lru::LruCache<EmoteSetId, chrono::DateTime<chrono::Utc>>,
+	badge_lru: lru::LruCache<BadgeId, chrono::DateTime<chrono::Utc>>,
+	paint_lru: lru::LruCache<PaintId, chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Default)]
@@ -265,10 +266,10 @@ impl Connection {
 			global,
 			_connection_duration_drop_guard: v3::ConnectionDurationDropGuard::new(connection_kind),
 			_current_connection_drop_guard: v3::CurrentConnectionDropGuard::new(connection_kind),
-			presence_lru: const_lru::ConstLru::new(),
-			badge_lru: const_lru::ConstLru::new(),
-			paint_lru: const_lru::ConstLru::new(),
-			personal_emote_set_lru: const_lru::ConstLru::new(),
+			presence_lru: lru::LruCache::new(NonZeroUsize::new(1024).unwrap()),
+			badge_lru: lru::LruCache::new(NonZeroUsize::new(60).unwrap()),
+			paint_lru: lru::LruCache::new(NonZeroUsize::new(250).unwrap()),
+			personal_emote_set_lru: lru::LruCache::new(NonZeroUsize::new(1024).unwrap()),
 		}
 	}
 
@@ -609,7 +610,7 @@ impl Connection {
 				});
 			}
 
-			self.badge_lru.insert(badge.id, badge.updated_at);
+			self.badge_lru.put(badge.id, badge.updated_at);
 		}
 
 		if let Some(paint) = payload.active_paint.as_ref() {
@@ -635,7 +636,7 @@ impl Connection {
 				});
 			}
 
-			self.paint_lru.insert(paint.id, paint.updated_at);
+			self.paint_lru.put(paint.id, paint.updated_at);
 		}
 
 		let partial_user = UserPartialModel::from_db(payload.user.clone(), None, None, &self.global.config().api.cdn_origin);
@@ -702,13 +703,12 @@ impl Connection {
 			}
 
 			self.personal_emote_set_lru
-				.insert(emote_set.emote_set.id, emote_set.emote_set.updated_at);
+				.put(emote_set.emote_set.id, emote_set.emote_set.updated_at);
 		}
 
 		let user_state = self
 			.presence_lru
-			.entry(payload.user.id)
-			.or_default();
+			.get_or_insert_mut_ref(&payload.user.id, Default::default);
 
 		if user_state.active_badge != payload.active_badge.as_ref().map(|b| b.id) {
 			if let Some(active_badge) = user_state.active_badge {

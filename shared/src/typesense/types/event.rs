@@ -32,10 +32,10 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 			let action = match data {
 				StoredEventEmoteData::Upload => ActionKind::EmoteUpload,
 				StoredEventEmoteData::Process { event } => match event {
-					ImageProcessorEvent::Success(_) => ActionKind::EmoteProcessSuccess,
-					ImageProcessorEvent::Fail(_) => ActionKind::EmoteProcessFailure,
-					ImageProcessorEvent::Cancel(_) => ActionKind::EmoteProcessCancel,
-					ImageProcessorEvent::Start(_) => ActionKind::EmoteProcessStart,
+					ImageProcessorEvent::Success => ActionKind::EmoteProcessSuccess,
+					ImageProcessorEvent::Fail { .. } => ActionKind::EmoteProcessFailure,
+					ImageProcessorEvent::Cancel => ActionKind::EmoteProcessCancel,
+					ImageProcessorEvent::Start => ActionKind::EmoteProcessStart,
 				},
 				StoredEventEmoteData::ChangeName { .. } => ActionKind::EmoteChangeName,
 				StoredEventEmoteData::ChangeFlags { .. } => ActionKind::EmoteChangeFlags,
@@ -251,10 +251,10 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 			let action = match data {
 				StoredEventUserProfilePictureData::Create => ActionKind::UserProfilePictureCreate,
 				StoredEventUserProfilePictureData::Process { event } => match event {
-					ImageProcessorEvent::Success(_) => ActionKind::UserProfilePictureProcessSuccess,
-					ImageProcessorEvent::Fail(_) => ActionKind::UserProfilePictureProcessFailure,
-					ImageProcessorEvent::Cancel(_) => ActionKind::UserProfilePictureProcessCancel,
-					ImageProcessorEvent::Start(_) => ActionKind::UserProfilePictureProcessStart,
+					ImageProcessorEvent::Success => ActionKind::UserProfilePictureProcessSuccess,
+					ImageProcessorEvent::Fail { .. } => ActionKind::UserProfilePictureProcessFailure,
+					ImageProcessorEvent::Cancel => ActionKind::UserProfilePictureProcessCancel,
+					ImageProcessorEvent::Start => ActionKind::UserProfilePictureProcessStart,
 				},
 			};
 
@@ -270,6 +270,7 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 
 			let action = match data {
 				StoredEventEmoteModerationRequestData::Create => ActionKind::EmoteModerationRequestCreate,
+				StoredEventEmoteModerationRequestData::ChangeStatus { .. } => ActionKind::EmoteModerationRequestChangeStatus,
 			};
 
 			(target, action, secondary)
@@ -283,10 +284,10 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 				StoredEventPaintData::ChangeName { .. } => ActionKind::PaintChangeName,
 				StoredEventPaintData::ChangeData { .. } => ActionKind::PaintChangeData,
 				StoredEventPaintData::Process { event } => match event {
-					ImageProcessorEvent::Success(_) => ActionKind::PaintProcessSuccess,
-					ImageProcessorEvent::Fail(_) => ActionKind::PaintProcessFailure,
-					ImageProcessorEvent::Cancel(_) => ActionKind::PaintProcessCancel,
-					ImageProcessorEvent::Start(_) => ActionKind::PaintProcessStart,
+					ImageProcessorEvent::Success => ActionKind::PaintProcessSuccess,
+					ImageProcessorEvent::Fail { .. } => ActionKind::PaintProcessFailure,
+					ImageProcessorEvent::Cancel => ActionKind::PaintProcessCancel,
+					ImageProcessorEvent::Start => ActionKind::PaintProcessStart,
 				},
 			};
 
@@ -299,10 +300,10 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 			let action = match data {
 				StoredEventBadgeData::Create => ActionKind::BadgeCreate,
 				StoredEventBadgeData::Process { event } => match event {
-					ImageProcessorEvent::Success(_) => ActionKind::BadgeProcessSuccess,
-					ImageProcessorEvent::Fail(_) => ActionKind::BadgeProcessFailure,
-					ImageProcessorEvent::Cancel(_) => ActionKind::BadgeProcessCancel,
-					ImageProcessorEvent::Start(_) => ActionKind::BadgeProcessStart,
+					ImageProcessorEvent::Success => ActionKind::BadgeProcessSuccess,
+					ImageProcessorEvent::Fail { .. } => ActionKind::BadgeProcessFailure,
+					ImageProcessorEvent::Cancel => ActionKind::BadgeProcessCancel,
+					ImageProcessorEvent::Start => ActionKind::BadgeProcessStart,
 				},
 			};
 
@@ -564,6 +565,7 @@ pub enum ActionKind {
 	TicketMessageCreate = 800,
 
 	EmoteModerationRequestCreate = 900,
+	EmoteModerationRequestChangeStatus = 901,
 
 	PaintCreate = 1000,
 	PaintChangeName = 1001,

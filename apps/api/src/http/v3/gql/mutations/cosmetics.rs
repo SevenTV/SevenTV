@@ -1,20 +1,24 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{
 	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
 };
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::PaintPermission;
-use shared::database::MongoCollection;
+use shared::database::stored_event::StoredEventPaintData;
+use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::cosmetic::{CosmeticPaintFunction, CosmeticPaintModel, CosmeticPaintShape};
 use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::validators::NameValidator;
+use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
 pub struct CosmeticsMutation;
@@ -30,6 +34,10 @@ impl CosmeticsMutation {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let id = PaintId::new();
 
@@ -42,12 +50,33 @@ impl CosmeticsMutation {
 			..Default::default()
 		};
 
-		Paint::collection(&global.db).insert_one(paint).await.map_err(|e| {
-			tracing::error!(error = %e, "failed to insert paint");
-			ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert paint")
-		})?;
+		let res = with_transaction::<(), (), _, _>(global, |mut tx| async move {
+			tx.insert_one(paint.clone(), None).await?;
 
-		Ok(id.into())
+			tx.register_event(InternalEvent {
+				actor: Some(authed_user.clone()),
+				session_id: session.user_session_id(),
+				data: InternalEventData::Paint {
+					after: paint,
+					data: StoredEventPaintData::Create,
+				},
+				timestamp: chrono::Utc::now(),
+			})?;
+
+			Ok(())
+		})
+		.await;
+
+		match res {
+			Ok(_) => Ok(id.into()),
+			Err(e) => {
+				tracing::error!(error = %e, "failed to insert paint");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"failed to insert paint",
+				))
+			}
+		}
 	}
 
 	async fn cosmetics(&self, id: GqlObjectId) -> CosmeticOps {
@@ -247,6 +276,10 @@ impl CosmeticOps {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
 		let _ = global
 			.paint_by_id_loader
@@ -258,8 +291,8 @@ impl CosmeticOps {
 		let name = definition.name.clone();
 		let data = definition.into_db(self.id.id(), global).await?;
 
-		let paint = Paint::collection(&global.db)
-			.find_one_and_update(
+		let res = with_transaction(global, |mut tx| async move {
+			let before_paint = tx.find_one_and_update(
 				filter::filter! {
 					Paint {
 						#[query(rename = "_id")]
@@ -269,20 +302,58 @@ impl CosmeticOps {
 				update::update! {
 					#[query(set)]
 					Paint {
-						name,
+						name: &name,
 						#[query(serde)]
-						data,
+						data: &data,
 						updated_at: chrono::Utc::now(),
 					}
 				},
-			)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update paint");
-				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to update paint")
-			})?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))?;
+				FindOneAndUpdateOptions::builder().return_document(ReturnDocument::Before).build(),
+			).await?
+			.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "paint not found")))?;
 
-		Ok(CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin))
+			let after_paint = Paint {
+				name,
+				data,
+				..before_paint
+			};
+
+			if before_paint.name != after_paint.name {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::Paint {
+						after: after_paint.clone(),
+						data: StoredEventPaintData::ChangeName { old: before_paint.name, new: after_paint.name.clone() },
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if before_paint.data != after_paint.data {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::Paint {
+						after: after_paint.clone(),
+						data: StoredEventPaintData::ChangeData { old: before_paint.data, new: after_paint.data.clone() },
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			Ok(after_paint)
+		}).await;
+
+		match res {
+			Ok(paint) => Ok(CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin)),
+			Err(e) => {
+				tracing::error!(error = %e, "failed to insert paint");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"failed to insert paint",
+				))
+			}
+		}
 	}
 }

@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::sync::Arc;
 
 use shared::database::queries::{filter, update};
@@ -29,6 +30,13 @@ const GOOGLE_AUTH_URL: &str =
 	"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&include_granted_scopes=true&";
 const GOOGLE_AUTH_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonly";
 
+fn redirect_uri(global: &Arc<Global>, platform: impl Display) -> Result<url::Url, ApiError> {
+	global.config.api.api_origin.join(&format!("/v3/auth?callback=true&platform={}", platform)).map_err(|e| {
+		tracing::error!(err = %e, "failed to generate redirect_uri");
+		ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect_uri")
+	})
+}
+
 /// https://gist.github.com/lennartkloock/412323105bc913c7064664dc4f1568cb
 pub async fn handle_callback(
 	global: &Arc<Global>,
@@ -59,10 +67,7 @@ pub async fn handle_callback(
 		global,
 		platform,
 		&code,
-		format!(
-			"{}/v3/auth?callback=true&platform={}",
-			global.config.api.api_origin, query.platform
-		),
+		redirect_uri(global, query.platform)?.to_string(),
 	)
 	.await?;
 
@@ -247,21 +252,21 @@ pub async fn handle_callback(
 			cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
 			cookies.remove(global, CSRF_COOKIE);
 
-			Ok(format!(
-				"{}/auth/callback?platform={}&token={}",
-				global.config.api.website_origin, query.platform, token
-			))
+			global.config.api.website_origin.join(&format!("/auth/callback?platform={}&token={}", query.platform, token)).map_err(|e| {
+				tracing::error!(err = %e, "failed to generate redirect url");
+				TransactionError::Custom(ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect url"))
+			})
 		} else {
-			Ok(format!(
-				"{}/auth/callback?platform={}",
-				global.config.api.website_origin, query.platform
-			))
+			global.config.api.website_origin.join(&format!("/auth/callback?platform={}", platform)).map_err(|e| {
+				tracing::error!(err = %e, "failed to generate redirect url");
+				TransactionError::Custom(ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect url"))
+			})
 		}
 	})
 	.await;
 
 	match res {
-		Ok(redirect_url) => Ok(redirect_url),
+		Ok(redirect_url) => Ok(redirect_url.to_string()),
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");
@@ -308,14 +313,13 @@ pub fn handle_login(
 		),
 	));
 
+	let redirect_uri = redirect_uri(global, &platform)?;
+
 	let redirect_url = format!(
 		"{}client_id={}&redirect_uri={}&response_type=code&scope={}&state={}",
 		url,
 		config.client_id,
-		urlencoding::encode(&format!(
-			"{}/v3/auth?callback=true&platform={}",
-			global.config.api.api_origin, platform
-		)),
+		urlencoding::encode(redirect_uri.as_str()),
 		urlencoding::encode(scope),
 		csrf.random()
 	);

@@ -17,7 +17,7 @@ pub async fn handle_success(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	_: &Arc<Global>,
 	id: UserProfilePictureId,
-	event: &event_callback::Success,
+	event: event_callback::Success,
 ) -> TransactionResult<(), anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
 
@@ -79,7 +79,7 @@ pub async fn handle_success(
 		data: InternalEventData::UserProfilePicture {
 			after: profile_picture,
 			data: StoredEventUserProfilePictureData::Process {
-				event: ImageProcessorEvent::Success(Some(event.clone().into())),
+				event: ImageProcessorEvent::Success,
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -92,7 +92,7 @@ pub async fn handle_fail(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: UserProfilePictureId,
-	event: &event_callback::Fail,
+	event: event_callback::Fail,
 ) -> TransactionResult<(), anyhow::Error> {
 	let after = global
 		.user_profile_picture_id_loader
@@ -107,7 +107,7 @@ pub async fn handle_fail(
 		data: InternalEventData::UserProfilePicture {
 			after,
 			data: StoredEventUserProfilePictureData::Process {
-				event: ImageProcessorEvent::Fail(event.clone()),
+				event: event.into(),
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -120,7 +120,6 @@ pub async fn handle_start(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: UserProfilePictureId,
-	event: &event_callback::Start,
 ) -> TransactionResult<(), anyhow::Error> {
 	let after = global
 		.user_profile_picture_id_loader
@@ -135,7 +134,7 @@ pub async fn handle_start(
 		data: InternalEventData::UserProfilePicture {
 			after,
 			data: StoredEventUserProfilePictureData::Process {
-				event: ImageProcessorEvent::Start(*event),
+				event: ImageProcessorEvent::Start,
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -148,7 +147,6 @@ pub async fn handle_cancel(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: UserProfilePictureId,
-	event: &event_callback::Cancel,
 ) -> TransactionResult<(), anyhow::Error> {
 	let after = global
 		.user_profile_picture_id_loader
@@ -163,7 +161,7 @@ pub async fn handle_cancel(
 		data: InternalEventData::UserProfilePicture {
 			after,
 			data: StoredEventUserProfilePictureData::Process {
-				event: ImageProcessorEvent::Cancel(*event),
+				event: ImageProcessorEvent::Cancel,
 			},
 		},
 		timestamp: chrono::Utc::now(),

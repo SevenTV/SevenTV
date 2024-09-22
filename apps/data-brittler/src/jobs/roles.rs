@@ -272,6 +272,7 @@ pub fn roles() -> Vec<Role> {
 			id: "62b48deb791a15a25c2a0354",
 			rank: 1,
 			allowed: &[
+				UserPermission::Billing.into(),
 				UserPermission::UseBadge.into(),
 				UserPermission::UsePaint.into(),
 				UserPermission::Login.into(),

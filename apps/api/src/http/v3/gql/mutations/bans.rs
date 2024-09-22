@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object, SimpleObject};
-use mongodb::options::ReturnDocument;
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{
 	AdminPermission, EmotePermission, EmoteSetPermission, FlagPermission, Permissions, PermissionsExt, UserPermission,
@@ -9,7 +9,6 @@ use shared::database::role::permissions::{
 use shared::database::stored_event::StoredEventUserBanData;
 use shared::database::user::ban::UserBan;
 use shared::database::user::User;
-use shared::database::MongoCollection;
 use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::BanEffect;
@@ -64,7 +63,7 @@ impl BansMutation {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 		let session = ctx
 			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
 		let authed_user = session.user()?;
 
 		// check if victim exists
@@ -164,36 +163,113 @@ impl BansMutation {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		// TODO: events?
-		let ban = UserBan::collection(&global.db)
-			.find_one_and_update(
-				filter::filter! {
-					UserBan {
-						#[query(rename = "_id")]
-						id: ban_id.id(),
-					}
-				},
-				update::update! {
-					#[query(set)]
-					UserBan {
-						#[query(optional)]
-						reason,
-						expires_at: expire_at,
-						#[query(optional, serde)]
-						permissions: effects.map(ban_effect_to_permissions),
-						updated_at: chrono::Utc::now(),
-					}
-				},
-			)
-			.return_document(ReturnDocument::After)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to update user ban");
-				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update user ban")
-			})?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "ban not found"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
 
-		Ok(Some(Ban::from_db(ban.user_id.into(), ban)))
+		let res = with_transaction(global, |mut tx| async move {
+			let ban_before = tx
+				.find_one_and_update(
+					filter::filter! {
+						UserBan {
+							#[query(rename = "_id")]
+							id: ban_id.id(),
+						}
+					},
+					update::update! {
+						#[query(set)]
+						UserBan {
+							#[query(optional)]
+							reason: reason.clone(),
+							#[query(optional)]
+							expires_at: expire_at,
+							#[query(optional, serde)]
+							permissions: effects.map(ban_effect_to_permissions),
+							updated_at: chrono::Utc::now(),
+						}
+					},
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::Before)
+						.build(),
+				)
+				.await?
+				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "ban not found")))?;
+
+			let mut ban_after = ban_before.clone();
+
+			if let Some(reason) = reason.clone() {
+				ban_after.reason = reason;
+			}
+
+			if let Some(effects) = effects {
+				ban_after.permissions = ban_effect_to_permissions(effects);
+			}
+
+			if let Some(expire_at) = expire_at {
+				ban_after.expires_at = Some(expire_at);
+			}
+
+			if reason.is_some() {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::UserBan {
+						after: ban_after.clone(),
+						data: StoredEventUserBanData::ChangeReason {
+							old: ban_before.reason,
+							new: ban_after.reason.clone(),
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if effects.is_some() {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::UserBan {
+						after: ban_after.clone(),
+						data: StoredEventUserBanData::ChangeUserBanPermissions {
+							old: Box::new(ban_before.permissions),
+							new: Box::new(ban_after.permissions.clone()),
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			if expire_at.is_some() {
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::UserBan {
+						after: ban_after.clone(),
+						data: StoredEventUserBanData::ChangeExpiresAt {
+							old: ban_before.expires_at,
+							new: ban_after.expires_at,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			Ok(ban_after)
+		})
+		.await;
+
+		match res {
+			Ok(ban) => Ok(Some(Ban::from_db(ban.user_id.into(), ban))),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
 	}
 }
 

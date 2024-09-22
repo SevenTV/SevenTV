@@ -16,7 +16,7 @@ pub async fn handle_success(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	_: &Arc<Global>,
 	id: BadgeId,
-	event: &event_callback::Success,
+	event: event_callback::Success,
 ) -> TransactionResult<(), anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
 
@@ -50,7 +50,7 @@ pub async fn handle_success(
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {
-				event: ImageProcessorEvent::Success(Some(event.clone().into())),
+				event: ImageProcessorEvent::Success,
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -63,7 +63,7 @@ pub async fn handle_fail(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: BadgeId,
-	event: &event_callback::Fail,
+	event: event_callback::Fail,
 ) -> TransactionResult<(), anyhow::Error> {
 	let after = global
 		.badge_by_id_loader
@@ -78,7 +78,7 @@ pub async fn handle_fail(
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {
-				event: ImageProcessorEvent::Fail(event.clone()),
+				event: event.into(),
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -91,7 +91,6 @@ pub async fn handle_start(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: BadgeId,
-	event: &event_callback::Start,
 ) -> TransactionResult<(), anyhow::Error> {
 	let after = global
 		.badge_by_id_loader
@@ -106,7 +105,7 @@ pub async fn handle_start(
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {
-				event: ImageProcessorEvent::Start(*event),
+				event: ImageProcessorEvent::Start,
 			},
 		},
 		timestamp: chrono::Utc::now(),
@@ -119,7 +118,6 @@ pub async fn handle_cancel(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	global: &Arc<Global>,
 	id: BadgeId,
-	event: &event_callback::Cancel,
 ) -> TransactionResult<(), anyhow::Error> {
 	let after = global
 		.badge_by_id_loader
@@ -134,7 +132,7 @@ pub async fn handle_cancel(
 		data: InternalEventData::Badge {
 			after,
 			data: StoredEventBadgeData::Process {
-				event: ImageProcessorEvent::Cancel(*event),
+				event: ImageProcessorEvent::Cancel,
 			},
 		},
 		timestamp: chrono::Utc::now(),
