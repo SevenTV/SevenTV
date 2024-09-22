@@ -292,25 +292,29 @@ impl CosmeticOps {
 		let data = definition.into_db(self.id.id(), global).await?;
 
 		let res = with_transaction(global, |mut tx| async move {
-			let before_paint = tx.find_one_and_update(
-				filter::filter! {
-					Paint {
-						#[query(rename = "_id")]
-						id: self.id.id(),
-					}
-				},
-				update::update! {
-					#[query(set)]
-					Paint {
-						name: &name,
-						#[query(serde)]
-						data: &data,
-						updated_at: chrono::Utc::now(),
-					}
-				},
-				FindOneAndUpdateOptions::builder().return_document(ReturnDocument::Before).build(),
-			).await?
-			.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "paint not found")))?;
+			let before_paint = tx
+				.find_one_and_update(
+					filter::filter! {
+						Paint {
+							#[query(rename = "_id")]
+							id: self.id.id(),
+						}
+					},
+					update::update! {
+						#[query(set)]
+						Paint {
+							name: &name,
+							#[query(serde)]
+							data: &data,
+							updated_at: chrono::Utc::now(),
+						}
+					},
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::Before)
+						.build(),
+				)
+				.await?
+				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "paint not found")))?;
 
 			let after_paint = Paint {
 				name,
@@ -324,7 +328,10 @@ impl CosmeticOps {
 					session_id: session.user_session_id(),
 					data: InternalEventData::Paint {
 						after: after_paint.clone(),
-						data: StoredEventPaintData::ChangeName { old: before_paint.name, new: after_paint.name.clone() },
+						data: StoredEventPaintData::ChangeName {
+							old: before_paint.name,
+							new: after_paint.name.clone(),
+						},
 					},
 					timestamp: chrono::Utc::now(),
 				})?;
@@ -336,14 +343,18 @@ impl CosmeticOps {
 					session_id: session.user_session_id(),
 					data: InternalEventData::Paint {
 						after: after_paint.clone(),
-						data: StoredEventPaintData::ChangeData { old: before_paint.data, new: after_paint.data.clone() },
+						data: StoredEventPaintData::ChangeData {
+							old: before_paint.data,
+							new: after_paint.data.clone(),
+						},
 					},
 					timestamp: chrono::Utc::now(),
 				})?;
 			}
 
 			Ok(after_paint)
-		}).await;
+		})
+		.await;
 
 		match res {
 			Ok(paint) => Ok(CosmeticPaintModel::from_db(paint, &global.config.api.cdn_origin)),

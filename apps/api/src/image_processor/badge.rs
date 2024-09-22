@@ -77,9 +77,7 @@ pub async fn handle_fail(
 		session_id: None,
 		data: InternalEventData::Badge {
 			after,
-			data: StoredEventBadgeData::Process {
-				event: event.into(),
-			},
+			data: StoredEventBadgeData::Process { event: event.into() },
 		},
 		timestamp: chrono::Utc::now(),
 	})?;

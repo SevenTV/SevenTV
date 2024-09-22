@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObject};
+use fred::prelude::KeysInterface;
 use shared::database::emote::EmoteId;
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 use shared::database::user::UserId;
@@ -179,21 +180,21 @@ impl Emote {
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let options = SearchOptions::builder()
-			.query("*".to_owned())
-			.sort_by(vec!["score_trending_week:desc".to_owned()])
-			.page(1)
-			.per_page(50)
-			.build();
+		let value: Option<String> = global.redis.get("emote_stats:trending_week").await.map_err(|err| {
+			tracing::error!(error = %err, "failed to get trending emote stats");
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to get trending emote stats")
+		})?;
 
-		let result = search::<shared::typesense::types::emote::Emote>(global, options)
-			.await
-			.map_err(|err| {
-				tracing::error!(error = %err, "failed to search");
-				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
-			})?;
+		let Some(value) = value else {
+			return Ok(None);
+		};
 
-		Ok(result.hits.into_iter().position(|e| e == self.id.id()).map(|p| p as u32 + 1))
+		let values: Vec<EmoteId> = serde_json::from_str(&value).map_err(|err| {
+			tracing::error!(error = %err, "failed to parse trending emote stats");
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to parse trending emote stats")
+		})?;
+
+		Ok(values.into_iter().position(|e| e == self.id.id()).map(|p| p as u32 + 1))
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]

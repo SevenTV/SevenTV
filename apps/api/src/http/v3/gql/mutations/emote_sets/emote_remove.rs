@@ -86,7 +86,7 @@ pub async fn emote_remove(
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::RemoveEmote {
 				emote: emote.map(Box::new),
-				emote_owner,
+				emote_owner: emote_owner.map(Box::new),
 				emote_set_emote: old_emote_set_emote.clone(),
 				index,
 			},

@@ -156,9 +156,7 @@ pub async fn handle_fail(
 		session_id: None,
 		data: InternalEventData::Emote {
 			after,
-			data: StoredEventEmoteData::Process {
-				event: event.into(),
-			},
+			data: StoredEventEmoteData::Process { event: event.into() },
 		},
 		timestamp: chrono::Utc::now(),
 	})?;

@@ -6,7 +6,7 @@ use anyhow::Context;
 use futures::StreamExt;
 use shared::database::badge::{Badge, BadgeId};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
-use shared::database::paint::{PaintId, Paint};
+use shared::database::paint::{Paint, PaintId};
 use shared::database::product::subscription::SubscriptionId;
 use shared::database::product::SubscriptionProductId;
 use shared::database::role::{Role, RoleId};

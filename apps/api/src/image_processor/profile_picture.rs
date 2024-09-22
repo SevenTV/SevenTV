@@ -106,9 +106,7 @@ pub async fn handle_fail(
 		session_id: None,
 		data: InternalEventData::UserProfilePicture {
 			after,
-			data: StoredEventUserProfilePictureData::Process {
-				event: event.into(),
-			},
+			data: StoredEventUserProfilePictureData::Process { event: event.into() },
 		},
 		timestamp: chrono::Utc::now(),
 	})?;

@@ -300,12 +300,12 @@ pub enum InternalEventEmoteSetData {
 	},
 	AddEmote {
 		emote: Box<Emote>,
-		emote_owner: Option<FullUser>,
+		emote_owner: Option<Box<FullUser>>,
 		emote_set_emote: EmoteSetEmote,
 	},
 	RemoveEmote {
 		emote: Option<Box<Emote>>,
-		emote_owner: Option<FullUser>,
+		emote_owner: Option<Box<FullUser>>,
 		emote_set_emote: EmoteSetEmote,
 		index: usize,
 	},
@@ -326,7 +326,9 @@ impl From<InternalEventEmoteSetData> for StoredEventEmoteSetData {
 			InternalEventEmoteSetData::ChangeTags { added, removed } => {
 				StoredEventEmoteSetData::ChangeTags { added, removed }
 			}
-			InternalEventEmoteSetData::AddEmote { emote, emote_set_emote, .. } => StoredEventEmoteSetData::AddEmote {
+			InternalEventEmoteSetData::AddEmote {
+				emote, emote_set_emote, ..
+			} => StoredEventEmoteSetData::AddEmote {
 				emote_id: emote.id,
 				alias: emote_set_emote.alias,
 			},
@@ -553,7 +555,12 @@ impl InternalEventPayload {
 						});
 					}
 					InternalEventData::EmoteSet {
-						data: InternalEventEmoteSetData::AddEmote { emote, emote_owner, emote_set_emote },
+						data:
+							InternalEventEmoteSetData::AddEmote {
+								emote,
+								emote_owner,
+								emote_set_emote,
+							},
 						after,
 					} => {
 						let index = after
@@ -562,7 +569,7 @@ impl InternalEventPayload {
 							.position(|e| e.id == emote.id)
 							.context("failed to find emote in set")?;
 
-							let owner = emote_owner.map(|u| UserPartialModel::from_db(u, None, None, cdn_base_url));
+						let owner = emote_owner.map(|u| UserPartialModel::from_db(*u, None, None, cdn_base_url));
 
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
@@ -588,7 +595,7 @@ impl InternalEventPayload {
 							},
 						..
 					} => {
-						let owner = emote_owner.map(|u| UserPartialModel::from_db(u, None, None, cdn_base_url));
+						let owner = emote_owner.map(|u| UserPartialModel::from_db(*u, None, None, cdn_base_url));
 
 						let active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,

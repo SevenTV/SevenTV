@@ -338,30 +338,34 @@ impl RolesMutation {
 				)));
 			}
 
-			tx.delete(Filter::or([
-				filter::filter! {
-					EntitlementEdge {
-						#[query(rename = "_id", flatten)]
-						id: EntitlementEdgeId {
-							#[query(serde)]
-							from: EntitlementEdgeKind::Role {
-								role_id: role_id.id(),
-							},
+			tx.delete(
+				Filter::or([
+					filter::filter! {
+						EntitlementEdge {
+							#[query(rename = "_id", flatten)]
+							id: EntitlementEdgeId {
+								#[query(serde)]
+								from: EntitlementEdgeKind::Role {
+									role_id: role_id.id(),
+								},
+							}
 						}
-					}
-				},
-				filter::filter! {
-					EntitlementEdge {
-						#[query(rename = "_id", flatten)]
-						id: EntitlementEdgeId {
-							#[query(serde)]
-							to: EntitlementEdgeKind::Role {
-								role_id: role_id.id(),
-							},
+					},
+					filter::filter! {
+						EntitlementEdge {
+							#[query(rename = "_id", flatten)]
+							id: EntitlementEdgeId {
+								#[query(serde)]
+								to: EntitlementEdgeKind::Role {
+									role_id: role_id.id(),
+								},
+							}
 						}
-					}
-				}
-			]), None).await?;
+					},
+				]),
+				None,
+			)
+			.await?;
 
 			tx.register_event(InternalEvent {
 				actor: Some(authed_user.clone()),

@@ -109,10 +109,7 @@ pub enum StoredEventData {
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ImageProcessorEvent {
 	Success,
-	Fail {
-		code: Option<i32>,
-		message: Option<String>,
-	},
+	Fail { code: Option<i32>, message: Option<String> },
 	Cancel,
 	Start,
 }

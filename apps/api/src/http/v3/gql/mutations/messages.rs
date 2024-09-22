@@ -51,33 +51,42 @@ impl MessagesMutation {
 		};
 
 		let res = with_transaction(global, |mut tx| async move {
-			let requests = tx.find(filter::filter! {
-				EmoteModerationRequest {
-					#[query(rename = "_id", selector = "in")]
-					id: &ids,
-				}
-			}, None).await?;
+			let requests = tx
+				.find(
+					filter::filter! {
+						EmoteModerationRequest {
+							#[query(rename = "_id", selector = "in")]
+							id: &ids,
+						}
+					},
+					None,
+				)
+				.await?;
 
-			let res = tx.update(
-				filter::filter! {
-					EmoteModerationRequest {
-						#[query(rename = "_id", selector = "in")]
-						id: ids,
-					}
-				},
-				update::update! {
-					#[query(set)]
-					EmoteModerationRequest {
-						#[query(serde)]
-						status: status,
-					}
-				},
-				None,
-			)
-			.await?;
+			let res = tx
+				.update(
+					filter::filter! {
+						EmoteModerationRequest {
+							#[query(rename = "_id", selector = "in")]
+							id: ids,
+						}
+					},
+					update::update! {
+						#[query(set)]
+						EmoteModerationRequest {
+							#[query(serde)]
+							status: status,
+						}
+					},
+					None,
+				)
+				.await?;
 
 			if res.modified_count != requests.len() as u64 {
-				return Err(TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "at least one message was not found")));
+				return Err(TransactionError::Custom(ApiError::not_found(
+					ApiErrorCode::LoadError,
+					"at least one message was not found",
+				)));
 			}
 
 			for req in requests {
@@ -91,23 +100,24 @@ impl MessagesMutation {
 					session_id: session.user_session_id(),
 					data: InternalEventData::EmoteModerationRequest {
 						after,
-						data: StoredEventEmoteModerationRequestData::ChangeStatus {
-							old,
-							new: status,
-						},
+						data: StoredEventEmoteModerationRequestData::ChangeStatus { old, new: status },
 					},
 					timestamp: chrono::Utc::now(),
 				})?;
 			}
 
 			Ok(res.modified_count as u32)
-		}).await;
+		})
+		.await;
 
 		match res {
 			Ok(res) => Ok(res),
 			Err(e) => {
 				tracing::error!(error = %e, "failed to update moderation requests");
-				Err(ApiError::internal_server_error(ApiErrorCode::TransactionError, "failed to update moderation requests"))
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"failed to update moderation requests",
+				))
 			}
 		}
 	}

@@ -138,7 +138,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 			data.push(stored_event::StoredEventData::Emote {
 				target_id: audit_log.target_id.into(),
 				data: stored_event::StoredEventEmoteData::Process {
-					event: stored_event::ImageProcessorEvent::Success(None),
+					event: stored_event::ImageProcessorEvent::Success,
 				},
 			});
 		}

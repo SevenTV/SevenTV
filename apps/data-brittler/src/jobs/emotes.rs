@@ -161,6 +161,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 				search_updated_at: None,
 				updated_at: chrono::Utc::now(),
 				attribution: vec![],
+				deleted: false,
 				merged: v.state.replace_id.map(|id| EmoteMerged {
 					target_id: id.into(),
 					at: chrono::Utc::now(),

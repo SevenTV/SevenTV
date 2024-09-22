@@ -84,10 +84,7 @@ impl EmoteByIdLoader {
 	}
 
 	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self {
-			db,
-			config,
-		})
+		DataLoader::new(Self { db, config })
 	}
 }
 
