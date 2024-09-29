@@ -41,7 +41,7 @@
 
 <style lang="scss">
 	.tags {
-		margin-top: 0.75rem;
+		margin-top: 0.25rem;
 
 		display: flex;
 		align-items: center;

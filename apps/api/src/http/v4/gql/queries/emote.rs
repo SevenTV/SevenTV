@@ -121,15 +121,17 @@ impl EmoteQuery {
 		}
 
 		if let Some(tags) = tags {
-			let condition = match tags.match_ {
-				TagsMatch::All => " && ",
-				TagsMatch::Any => " || ",
-			};
+			if !tags.tags.is_empty() {
+				let condition = match tags.match_ {
+					TagsMatch::All => " && ",
+					TagsMatch::Any => " || ",
+				};
 
-			filter_by.push(format!(
-				"({})",
-				tags.tags.into_iter().map(|t| format!("tags:={}", t)).join(condition)
-			));
+				filter_by.push(format!(
+					"({})",
+					tags.tags.into_iter().map(|t| format!("tags:={}", t)).join(condition)
+				));
+			}
 		}
 
 		if let Some(filters) = filters {
@@ -146,8 +148,11 @@ impl EmoteQuery {
 			}
 
 			if let (Some(true), Some(query)) = (filters.exact_match, &query) {
-				// TODO: prevent injection
-				filter_by.push(format!("default_name: {}", query.clone()));
+				let sanitized = query.replace('`', "");
+				let sanitized = sanitized.trim_end_matches('\\');
+				if !sanitized.is_empty() {
+					filter_by.push(format!("default_name: `{}`", sanitized));
+				}
 			}
 		}
 

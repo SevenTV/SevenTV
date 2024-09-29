@@ -11,7 +11,7 @@
 
 	const limit = 36;
 
-	$: results = queryEmotes(data.query, limit, data.page, SortBy.TopAllTime);
+	$: results = queryEmotes(data.query, data.tags, SortBy.TopAllTime, data.filters, data.page, limit);
 </script>
 
 <svelte:head>

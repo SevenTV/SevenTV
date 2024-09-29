@@ -1,3 +1,7 @@
+<script lang="ts" context="module">
+	export const TAGS_SEPERATOR = " ";
+</script>
+
 <script lang="ts">
 	import Expandable from "$/components/expandable.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
@@ -10,15 +14,29 @@
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 
-	const TAGS_SEPERATOR = " ";
-
 	let query: string | null = $page.url.searchParams.get("q");
 	let numPage: string | null = $page.url.searchParams.get("p");
 	let tags: string[] = $page.url.searchParams.get("t")?.split(TAGS_SEPERATOR) ?? [];
 	let animated: boolean = $page.url.searchParams.get("a") == "1";
 	let staticFilter: boolean = $page.url.searchParams.get("s") == "1";
 	let overlaying: boolean = $page.url.searchParams.get("o") == "1";
-	let exactMatch: boolean = $page.url.searchParams.get("em") == "1";
+	let exactMatch: boolean = $page.url.searchParams.get("e") == "1";
+
+	function unsetStaticFilter() {
+		staticFilter = false;
+	}
+
+	function unsetAnimated() {
+		animated = false;
+	}
+
+	$: if (animated) {
+		unsetStaticFilter();
+	}
+
+	$: if (staticFilter) {
+		unsetAnimated();
+	}
 
 	$: {
 		let url = new URL($page.url);
@@ -39,6 +57,30 @@
 			url.searchParams.set("t", tags.join(TAGS_SEPERATOR));
 		} else {
 			url.searchParams.delete("t");
+		}
+
+		if (animated) {
+			url.searchParams.set("a", "1");
+		} else {
+			url.searchParams.delete("a");
+		}
+
+		if (staticFilter) {
+			url.searchParams.set("s", "1");
+		} else {
+			url.searchParams.delete("s");
+		}
+
+		if (overlaying) {
+			url.searchParams.set("o", "1");
+		} else {
+			url.searchParams.delete("o");
+		}
+
+		if (exactMatch) {
+			url.searchParams.set("e", "1");
+		} else {
+			url.searchParams.delete("e");
 		}
 
 		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
