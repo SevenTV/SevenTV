@@ -15,6 +15,11 @@
 
 	let flags: string[] = [];
 
+	let picture: HTMLPictureElement;
+
+	// 60% * 10rem is the max size for the image
+	$: size = picture?.clientWidth ?? (0.6 * 10 * 16);
+
 	// From least supported to best supported
 	const FORMAT_SORT_ORDER = [
 		"image/avif",
@@ -85,10 +90,8 @@
 		// add srcset
 		for (let i = 0; i < grouped.length; i++) {
 			const srcSet = grouped[i].images
-				.reduce((res, a) => {
-					return res + `${a.url} ${a.scale}x, `;
-				}, "")
-				.slice(0, -2);
+				.map((i) => `${i.url} ${i.width}w`)
+				.join(", ");
 			grouped[i].srcSet = srcSet;
 		}
 
@@ -124,11 +127,12 @@
 	on:click={onClick}
 	{...$$restProps}
 >
-	<picture>
+	<picture bind:this={picture}>
 		{#each preparedVariants.variants as variant}
 			<source
 				type={variant.type}
 				srcset={variant.srcSet}
+				sizes="{size}px"
 				media={variant.media}
 			/>
 		{/each}
