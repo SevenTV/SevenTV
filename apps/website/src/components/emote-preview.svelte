@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Emote } from "$/gql/graphql";
+	import type { Emote, Image } from "$/gql/graphql";
 	import Flags, { determineHighlightColor } from "./flags.svelte";
 	import Checkbox from "./input/checkbox.svelte";
 
@@ -15,9 +15,90 @@
 
 	let flags: string[] = [];
 
-	$: imageUrl = data.images
-		.sort((a, b) => b.size - a.size)
-		.find((i) => data.flags.animated === i.frameCount > 1)?.url;
+	// From least supported to best supported
+	const FORMAT_SORT_ORDER = [
+		"image/avif",
+		"image/webp",
+		"image/gif",
+		"image/png",
+	];
+
+	function formatSortOrder(image: Image): number {
+		let index = FORMAT_SORT_ORDER.indexOf(image.mime);
+
+		// Static images first
+		if (image.frameCount > 1) {
+			index += FORMAT_SORT_ORDER.length;
+		}
+
+		return index;
+	}
+
+	// This function prepares the variants for the <picture> element by grouping them by format, sorting them by scale and generating the required media and srcSet tags.
+	// It also returns the best supported variant for use in the fallback <img> element which is the smallest GIF or PNG.
+	function prepareVariants(images: Image[]): {
+		bestSupported: Image | null;
+		variants: { type: string; srcSet: string; media: string }[];
+	} {
+		if (!images) return { bestSupported: null, variants: [] };
+
+		const animated = images.some((i) => i.frameCount > 1);
+
+		images.sort((a, b) => a.scale - b.scale);
+
+		const grouped: {
+			type: string;
+			srcSet: string;
+			media: string;
+			images: Image[];
+		}[] = Object.values(
+			images.reduce(
+				(res, i) => {
+					const index = formatSortOrder(i);
+					if (!res[index]) {
+						// Always true
+						let media = "(min-width: 0px)";
+						if (i.frameCount === 1 && animated) {
+							media += " and (prefers-reduced-motion: reduce)";
+						}
+						res[index] = { type: i.mime, srcSet: "", media, images: [] };
+					}
+					res[index].images.push(i);
+					return res;
+				},
+				{} as {
+					[key: number]: {
+						type: string;
+						srcSet: string;
+						media: string;
+						images: Image[];
+					};
+				},
+			),
+		);
+
+		const bestSupported =
+			grouped[FORMAT_SORT_ORDER.indexOf("image/gif")]?.images[0] ??
+			grouped[FORMAT_SORT_ORDER.indexOf("image/png")]?.images[0] ??
+			null;
+
+		// add srcset
+		for (let i = 0; i < grouped.length; i++) {
+			const srcSet = grouped[i].images
+				.reduce((res, a) => {
+					return res + `${a.url} ${a.scale}x, `;
+				}, "")
+				.slice(0, -2);
+			grouped[i].srcSet = srcSet;
+		}
+
+		return {
+			bestSupported,
+			variants: grouped,
+		};
+	}
+
+	$: preparedVariants = prepareVariants(data.images);
 
 	$: highlight = determineHighlightColor(flags, ignoredFlagsForHighlight);
 
@@ -43,15 +124,23 @@
 	on:click={onClick}
 	{...$$restProps}
 >
-	<img
-		class="image"
-		class:loading
-		src={imageUrl}
-		alt={data.defaultName}
-		loading="lazy"
-		style="animation-delay: {-index * 10}ms"
-		on:load={() => (loading = false)}
-	/>
+	<picture>
+		{#each preparedVariants.variants as variant}
+			<source
+				type={variant.type}
+				srcset={variant.srcSet}
+				media={variant.media}
+			/>
+		{/each}
+		<img
+			class="image"
+			src="{preparedVariants.bestSupported?.url}"
+			style="animation-delay: {-index * 10}ms"
+			on:load={() => (loading = false)}
+			alt={data.defaultName}
+			class:loading
+		/>
+	</picture>
 	{#if !emoteOnly}
 		<span class="name">{data.defaultName}</span>
 		<span class="user">{data.owner.mainConnection?.platformDisplayName}</span>
@@ -91,7 +180,7 @@
 			border-color: var(--border-active);
 		}
 
-		&.emote-only > .image {
+		&.emote-only .image {
 			max-width: unset;
 			max-height: unset;
 			margin: 0;
@@ -115,14 +204,19 @@
 		}
 	}
 
+	picture {
+		line-height: 0;
+
+		width: 100%;
+		max-width: 60%;
+		max-height: 50%;
+	}
+
 	.image {
-		flex-grow: 1;
 		object-fit: contain;
 
 		width: 100%;
 		height: 100%;
-		max-width: 60%;
-		max-height: 50%;
 
 		margin-bottom: 0.5rem;
 	}

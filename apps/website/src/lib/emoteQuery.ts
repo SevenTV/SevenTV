@@ -23,6 +23,7 @@ export async function queryEmotes(query: string | null, limit: number, page: num
                                 url
                                 mime
                                 size
+								scale
                                 width
                                 frameCount
                             }

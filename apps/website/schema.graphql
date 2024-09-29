@@ -69,6 +69,7 @@ type Image {
 	frameCount: Int!
 	height: Int!
 	mime: String!
+	scale: Int!
 	size: Int!
 	url: String!
 	width: Int!

@@ -35,7 +35,7 @@
 			url.searchParams.delete("p");
 		}
 
-		if (tags) {
+		if (tags && tags.length > 0) {
 			url.searchParams.set("t", tags.join(TAGS_SEPERATOR));
 		} else {
 			url.searchParams.delete("t");
