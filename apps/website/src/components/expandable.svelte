@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { isMobileLayout } from "$/lib/utils";
 	import { CaretDown } from "phosphor-svelte";
 
 	export let title: string;
-	export let expanded = true;
+	export let expanded = !isMobileLayout();
 </script>
 
 <div class="expandable" {...$$restProps}>

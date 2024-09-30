@@ -1,6 +1,7 @@
 import { graphql } from "$/gql";
 import { error } from "@sveltejs/kit";
 import type { LayoutLoadEvent } from "./$types";
+import type { Emote } from "$/gql/graphql";
 
 export async function load({ parent, params }: LayoutLoadEvent) {
 	const client = (await parent()).client;
@@ -22,6 +23,8 @@ export async function load({ parent, params }: LayoutLoadEvent) {
 						mime
 						size
 						width
+						height
+						scale
 						frameCount
 					}
 				}
@@ -41,6 +44,6 @@ export async function load({ parent, params }: LayoutLoadEvent) {
 	}
 
 	return {
-		emote: res.data.emotes.emote,
+		emote: res.data.emotes.emote as Emote,
 	};
 }

@@ -13,7 +13,6 @@
 	} from "phosphor-svelte";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags from "$/components/flags.svelte";
-	import ImagePreview from "../image-preview.svelte";
 	import Button from "../input/button.svelte";
 	import { t } from "svelte-i18n";
 	import DropDown from "../drop-down.svelte";
@@ -24,7 +23,9 @@
 	import ReportEmoteDialog from "../dialogs/report-emote-dialog.svelte";
 	import DeleteEmoteDialog from "../dialogs/delete-emote-dialog.svelte";
 	import MenuButton from "../input/menu-button.svelte";
-	import type { Emote } from "$/gql/graphql";
+	import type { Emote, Image } from "$/gql/graphql";
+	import { formatSortIndex } from "../emote-preview.svelte";
+	import EmoteInfoImage from "./emote-info-image.svelte";
 
 	export let data: Emote;
 
@@ -52,6 +53,30 @@
 	let transferDialogMode = DialogMode.Hidden;
 	let deleteDialogMode = DialogMode.Hidden;
 	let reportDialogMode = DialogMode.Hidden;
+
+	$: images = prepareImages(data.images);
+
+	function prepareImages(images: Image[]): Image[][] {
+		const animated = images.some((i) => i.frameCount > 1);
+
+		const result: Image[][] = [];
+
+		for (let i = 0; i < images.length; i++) {
+			const image = images[i];
+
+			if (animated && image.frameCount === 1) {
+				continue;
+			}
+
+			if (!result[image.scale]) {
+				result[image.scale] = [];
+			}
+
+			result[image.scale][formatSortIndex(image)] = image;
+		}
+
+		return result;
+	}
 </script>
 
 {#if !$$slots.default}
@@ -93,10 +118,11 @@
 		<Tags tags={data.tags} />
 	</div>
 	<div class="previews">
-		<ImagePreview size={32} src={data.images[0].url} />
-		<ImagePreview size={64} src={data.images[1].url} />
-		<ImagePreview size={96} src={data.images[2].url} />
-		<ImagePreview size={128} src={data.images[3].url} />
+		{#each images as group}
+			{#if group}
+				<EmoteInfoImage images={group} />
+			{/if}
+		{/each}
 	</div>
 	<div class="buttons">
 		<slot>

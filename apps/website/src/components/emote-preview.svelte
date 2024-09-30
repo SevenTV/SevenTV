@@ -1,3 +1,24 @@
+<script lang="ts" context="module">
+	// From least supported to best supported
+	const FORMAT_SORT_ORDER = [
+		"image/avif",
+		"image/webp",
+		"image/gif",
+		"image/png",
+	];
+
+	export function formatSortIndex(image: Image): number {
+		let index = FORMAT_SORT_ORDER.indexOf(image.mime);
+
+		// Static images first
+		if (image.frameCount > 1) {
+			index += FORMAT_SORT_ORDER.length;
+		}
+
+		return index;
+	}
+</script>
+
 <script lang="ts">
 	import type { Emote, Image } from "$/gql/graphql";
 	import Flags, { determineHighlightColor } from "./flags.svelte";
@@ -20,25 +41,6 @@
 	// 60% * 10rem is the max size for the image
 	$: size = picture?.clientWidth ?? (0.6 * 10 * 16);
 
-	// From least supported to best supported
-	const FORMAT_SORT_ORDER = [
-		"image/avif",
-		"image/webp",
-		"image/gif",
-		"image/png",
-	];
-
-	function formatSortOrder(image: Image): number {
-		let index = FORMAT_SORT_ORDER.indexOf(image.mime);
-
-		// Static images first
-		if (image.frameCount > 1) {
-			index += FORMAT_SORT_ORDER.length;
-		}
-
-		return index;
-	}
-
 	// This function prepares the variants for the <picture> element by grouping them by format, sorting them by scale and generating the required media and srcSet tags.
 	// It also returns the best supported variant for use in the fallback <img> element which is the smallest GIF or PNG.
 	function prepareVariants(images: Image[]): {
@@ -59,7 +61,7 @@
 		}[] = Object.values(
 			images.reduce(
 				(res, i) => {
-					const index = formatSortOrder(i);
+					const index = formatSortIndex(i);
 					if (!res[index]) {
 						// Always true
 						let media = "(min-width: 0px)";
@@ -147,7 +149,9 @@
 	</picture>
 	{#if !emoteOnly}
 		<span class="name">{data.defaultName}</span>
-		<span class="user">{data.owner.mainConnection?.platformDisplayName}</span>
+		{#if data.owner?.mainConnection?.platformDisplayName}
+			<span class="user">{data.owner.mainConnection.platformDisplayName}</span>
+		{/if}
 	{/if}
 	<div class="flags">
 		{#if selectionMode}
@@ -184,9 +188,9 @@
 			border-color: var(--border-active);
 		}
 
-		&.emote-only .image {
-			max-width: unset;
-			max-height: unset;
+		&.emote-only picture {
+			max-width: 100%;
+			max-height: 100%;
 			margin: 0;
 		}
 	}
@@ -209,6 +213,8 @@
 	}
 
 	picture {
+		flex-grow: 1;
+		margin-bottom: 0.5rem;
 		line-height: 0;
 
 		width: 100%;
@@ -221,8 +227,6 @@
 
 		width: 100%;
 		height: 100%;
-
-		margin-bottom: 0.5rem;
 	}
 
 	.name {

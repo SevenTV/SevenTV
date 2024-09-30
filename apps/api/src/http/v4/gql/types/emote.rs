@@ -25,7 +25,7 @@ pub struct Emote {
 
 #[ComplexObject]
 impl Emote {
-	pub async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
+	pub async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -34,10 +34,9 @@ impl Emote {
 			.user_loader
 			.load(global, self.owner_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
-		Ok(user.into())
+		Ok(user.map(Into::into))
 	}
 }
 

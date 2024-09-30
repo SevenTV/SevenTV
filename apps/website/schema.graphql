@@ -13,7 +13,7 @@ type Emote {
 	flags: EmoteFlags!
 	id: Id!
 	images: [Image!]!
-	owner: User!
+	owner: User
 	ownerId: Id!
 	scores: EmoteScores!
 	searchUpdatedAt: DateTime

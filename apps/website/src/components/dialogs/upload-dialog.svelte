@@ -5,7 +5,6 @@
 	import { Theme, theme } from "$/store/layout";
 	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../input/button.svelte";
-	import ImagePreview from "../image-preview.svelte";
 	import { browser } from "$app/environment";
 	import Tags from "../emotes/tags.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
@@ -82,10 +81,12 @@
 				<span class="name">{name || $t("dialogs.upload.untitled")}</span>
 				<Tags {tags} />
 				<div class="previews">
-					<ImagePreview size={32} src={imageSrc} />
-					<ImagePreview size={64} src={imageSrc} />
-					<ImagePreview size={96} src={imageSrc} />
-					<ImagePreview size={128} src={imageSrc} />
+					{#each [32, 64, 96, 128] as resolution}
+						<div class="preview">
+							<img src={imageSrc} alt="Upload Preview" />
+							<span class="size-text">{resolution}x{resolution}</span>
+						</div>
+					{/each}
 				</div>
 				<div class="buttons">
 					<Button secondary on:click={toggleTheme}>
@@ -274,6 +275,18 @@
 				justify-content: center;
 				align-items: flex-end;
 				gap: 1rem;
+
+				.preview {
+					display: flex;
+					flex-direction: column;
+					gap: 1rem;
+					align-items: center;
+				}
+
+				.size-text {
+					color: var(--text-light);
+					font-size: 0.75rem;
+				}
 			}
 		}
 	}

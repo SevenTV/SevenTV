@@ -13,3 +13,7 @@ export function numberFormat() {
 		unitDisplay: "narrow",
 	});
 }
+
+export function isMobileLayout(): boolean {
+	return window.matchMedia("screen and (max-width: 960px)").matches;
+}
