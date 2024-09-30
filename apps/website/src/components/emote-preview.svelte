@@ -141,6 +141,7 @@
 		<img
 			class="image"
 			src="{preparedVariants.bestSupported?.url}"
+			loading="lazy"
 			style="animation-delay: {-index * 10}ms"
 			on:load={() => (loading = false)}
 			alt={data.defaultName}

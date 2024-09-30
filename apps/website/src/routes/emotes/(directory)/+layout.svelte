@@ -134,7 +134,7 @@
 			{/if}
 		</nav>
 		<hr />
-		<Expandable title={$t("labels.search")}>
+		<Expandable title={$t("labels.search")} expanded={true}>
 			<TextInput placeholder={$t("common.emotes", { values: { count: 1 } })} bind:value={query}>
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
