@@ -44,6 +44,8 @@
 
 		if (!emote.flags.publicListed) flags.push("unlisted");
 
+		if (emote.ranking && emote.ranking < 50) flags.push("trending");
+
 		return flags;
 	}
 </script>

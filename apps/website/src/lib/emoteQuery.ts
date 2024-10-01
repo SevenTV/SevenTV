@@ -45,9 +45,7 @@ export async function queryEmotes(query: string | null, tags: string[], sort: So
 										width
 										frameCount
 									}
-									scores {
-										trendingMonth
-									}
+									ranking(ranking: TRENDING_WEEKLY)
 								}
 							}
 						}

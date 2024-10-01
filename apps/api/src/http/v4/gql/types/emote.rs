@@ -1,6 +1,7 @@
-use std::sync::Arc;
+use std::{fmt::Display, sync::Arc};
 
-use async_graphql::{ComplexObject, SimpleObject, Context};
+use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
+use fred::prelude::KeysInterface;
 use shared::database::{emote::EmoteId, user::UserId};
 
 use crate::{global::Global, http::error::{ApiError, ApiErrorCode}};
@@ -23,9 +24,34 @@ pub struct Emote {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
+enum Ranking {
+	TrendingDaily,
+	TrendingWeekly,
+	TrendingMonthly,
+	TopDaily,
+	TopWeekly,
+	TopMonthly,
+	TopAllTime,
+}
+
+impl Display for Ranking {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::TrendingDaily => write!(f, "trending_day"),
+			Self::TrendingWeekly => write!(f, "trending_week"),
+			Self::TrendingMonthly => write!(f, "trending_month"),
+			Self::TopDaily => write!(f, "top_daily"),
+			Self::TopWeekly => write!(f, "top_weekly"),
+			Self::TopMonthly => write!(f, "top_monthly"),
+			Self::TopAllTime => write!(f, "top_all_time"),
+		}
+	}
+}
+
 #[ComplexObject]
 impl Emote {
-	pub async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -37,6 +63,28 @@ impl Emote {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
 		Ok(user.map(Into::into))
+	}
+
+	async fn ranking<'ctx>(&self, ctx: &Context<'ctx>, ranking: Ranking) -> Result<Option<u32>, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let value: Option<String> = global.redis.get(format!("emote_stats:{ranking}")).await.map_err(|err| {
+			tracing::error!(error = %err, "failed to get trending emote stats");
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to get trending emote stats")
+		})?;
+
+		let Some(value) = value else {
+			return Ok(None);
+		};
+
+		let values: Vec<EmoteId> = serde_json::from_str(&value).map_err(|err| {
+			tracing::error!(error = %err, "failed to parse trending emote stats");
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to parse trending emote stats")
+		})?;
+
+		Ok(values.into_iter().position(|e| e == self.id).map(|p| p as u32 + 1))
 	}
 }
 

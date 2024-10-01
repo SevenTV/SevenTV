@@ -15,6 +15,7 @@ type Emote {
 	images: [Image!]!
 	owner: User
 	ownerId: Id!
+	ranking(ranking: Ranking!): Int
 	scores: EmoteScores!
 	searchUpdatedAt: DateTime
 	tags: [String!]!
@@ -53,12 +54,12 @@ type EmoteScores {
 
 input Filters {
 	animated: Boolean
+	defaultZeroWidth: Boolean
 	"""
 	defaults to false when unset
 	"""
 	exactMatch: Boolean
 	nsfw: Boolean
-	defaultZeroWidth: Boolean
 }
 
 
@@ -85,6 +86,16 @@ enum Platform {
 
 type Query {
 	emotes: EmoteQuery!
+}
+
+enum Ranking {
+	TOP_ALL_TIME
+	TOP_DAILY
+	TOP_MONTHLY
+	TOP_WEEKLY
+	TRENDING_DAILY
+	TRENDING_MONTHLY
+	TRENDING_WEEKLY
 }
 
 input Sort {
