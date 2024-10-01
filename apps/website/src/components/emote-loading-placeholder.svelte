@@ -2,7 +2,7 @@
 	export let index = 0;
 </script>
 
-<div class="placeholder" style="animation-delay: {-index * 10}ms"></div>
+<div class="placeholder loading-animation" style:animation-delay="{-index * 10}ms"></div>
 
 <style lang="scss">
 	.placeholder {
@@ -14,18 +14,5 @@
 		border-radius: 0.25rem;
 
 		background-color: var(--preview);
-		animation: loading 1s infinite;
-	}
-
-	@keyframes loading {
-		0% {
-			opacity: 0.5;
-		}
-		50% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0.5;
-		}
 	}
 </style>

@@ -22,7 +22,7 @@
 				alt="Preview"
 				style:width="{first.width}px"
 				style:height="{first.height}px"
-				class:loading
+				class:loading-animation={loading}
 				on:load={() => (loading = false)}
 			/>
 		</picture>
@@ -31,18 +31,6 @@
 </div>
 
 <style lang="scss">
-	@keyframes loading {
-		0% {
-			opacity: 0.5;
-		}
-		50% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0.5;
-		}
-	}
-
 	.image {
 		display: flex;
 		flex-direction: column;
@@ -50,9 +38,8 @@
 		align-items: center;
 	}
 
-	.loading {
+	.loading-animation {
 		background-color: var(--preview);
-		animation: loading 1s infinite;
 	}
 
 	.size-text {

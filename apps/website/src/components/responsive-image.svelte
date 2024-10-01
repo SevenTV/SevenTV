@@ -111,28 +111,15 @@
 		class="image"
 		src="{preparedVariants.bestSupported?.url}"
 		loading="lazy"
-		style="animation-delay: {-index * 10}ms"
+		style:animation-delay="{-index * 10}ms"
 		on:load={() => (loading = false)}
 		alt={alt}
-		class:loading
+		class:loading-animation={loading}
 	/>
 </picture>
 
 <style lang="scss">
-	.loading {
-		animation: loading 1s infinite;
+	.loading-animation {
 		background-color: var(--preview);
-	}
-
-	@keyframes loading {
-		0% {
-			opacity: 0.5;
-		}
-		50% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0.5;
-		}
 	}
 </style>

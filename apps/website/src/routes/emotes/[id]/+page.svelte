@@ -11,6 +11,9 @@
 	import { getContextClient } from "@urql/svelte";
 	import { graphql } from "$/gql";
 
+	const PAGE_SIZE = 24;
+	const MAX_PAGE = 10;
+
 	export let data: LayoutData;
 
 	let page = 1;
@@ -22,10 +25,10 @@
 
 		const result = await client
 			.query(
-				graphql(`query EmoteChannels($emoteId: Id!, $page: Int!) {
+				graphql(`query EmoteChannels($emoteId: Id!, $page: Int!, $limit: Int!) {
 					emotes {
 						emote(id: $emoteId) {
-							channels(page: $page, limit: 24) {
+							channels(page: $page, limit: $limit) {
 								id
 								mainConnection {
 									platformDisplayName
@@ -48,7 +51,7 @@
 						}
 					}
 				}`),
-				{ emoteId, page }
+				{ emoteId, page, limit: PAGE_SIZE }
 			)
 			.toPromise();
 
@@ -68,7 +71,7 @@
 			<Button disabled={page <= 1} on:click={() => (page--)}>
 				<CaretLeft slot="icon" />
 			</Button>
-			<Button on:click={() => (page++)}>
+			<Button disabled={page >= MAX_PAGE} on:click={() => (page++)}>
 				<CaretRight slot="icon" />
 			</Button>
 		</div>
@@ -81,7 +84,9 @@
 </div>
 <div class="channels">
 	{#await channels}
-		Loading
+		{#each Array(PAGE_SIZE) as _, i}
+			<div class="preview loading-animation" style:animation-delay="{-i * 10}ms"></div>
+		{/each}
 	{:then result}
 		{#each result as channel}
 			<ChannelPreview user={channel} />
@@ -114,6 +119,13 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
 		justify-content: center;
-		gap: 1rem;
+		column-gap: 0.5rem;
+		row-gap: 1rem;
+
+		.preview {
+			border-radius: 0.5rem;
+			background-color: var(--preview);
+			height: 3rem;
+		}
 	}
 </style>
