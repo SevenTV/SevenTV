@@ -32,7 +32,7 @@
 	});
 </script>
 
-<IconContext values={{ size: "1.2rem", weight: "bold", style: "flex-shrink: 0" }}>
+<IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>
 	<header>
 		<a href="#main" class="skip-to-main">{$t("common.skip_to_content")}</a>
 		<TopNav />

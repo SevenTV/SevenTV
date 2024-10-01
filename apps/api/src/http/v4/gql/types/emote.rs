@@ -4,7 +4,11 @@ use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use fred::prelude::KeysInterface;
 use shared::database::{emote::EmoteId, user::UserId};
 
-use crate::{global::Global, http::error::{ApiError, ApiErrorCode}};
+use crate::{
+	global::Global,
+	http::error::{ApiError, ApiErrorCode},
+	search::{search, sorted_results, SearchOptions},
+};
 
 use super::{Image, User};
 
@@ -86,6 +90,43 @@ impl Emote {
 
 		Ok(values.into_iter().position(|e| e == self.id).map(|p| p as u32 + 1))
 	}
+
+	async fn channels<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		#[graphql(validator(maximum = 10))] page: Option<u32>,
+		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+	) -> Result<Vec<User>, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let options = SearchOptions::builder()
+			.query("*".to_owned())
+			.filter_by(format!("emotes: {}", self.id))
+			.sort_by(vec!["role_hoist_rank:desc".to_owned()])
+			.page(page)
+			.per_page(limit.unwrap_or(30))
+			.build();
+
+		let result = search::<shared::typesense::types::user::User>(global, options)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to search");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
+			})?;
+
+		let users = global
+			.user_loader
+			.load_fast_many(global, result.hits.iter().copied())
+			.await
+			.map_err(|()| {
+				tracing::error!("failed to load users");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users")
+			})?;
+
+		Ok(sorted_results(result.hits, users).into_iter().map(Into::into).collect())
+	}
 }
 
 impl Emote {
@@ -162,6 +203,7 @@ impl From<shared::database::emote::EmoteScores> for EmoteScores {
 }
 
 #[derive(Debug, Clone, SimpleObject)]
+#[graphql(complex)]
 pub struct EmoteAttribution {
 	pub user_id: UserId,
 	pub added_at: chrono::DateTime<chrono::Utc>,
@@ -173,5 +215,22 @@ impl From<shared::database::emote::EmoteAttribution> for EmoteAttribution {
 			user_id: value.user_id,
 			added_at: value.added_at,
 		}
+	}
+}
+
+#[ComplexObject]
+impl EmoteAttribution {
+	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let user = global
+			.user_loader
+			.load(global, self.user_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(user.map(Into::into))
 	}
 }

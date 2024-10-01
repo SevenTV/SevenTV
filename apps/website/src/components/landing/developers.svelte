@@ -7,7 +7,7 @@
 
 <section class="developers">
 	<div class="column">
-		<GithubLogo size="2.5rem" />
+		<GithubLogo size={2.5 * 16} />
 		<h2>Source-Available</h2>
 		<p>
 			Our entire codebase is available on GitHub with a source-available license. Anyone can view
@@ -16,7 +16,7 @@
 		<Button primary big href={PUBLIC_GITHUB_LINK}>Contribute</Button>
 	</div>
 	<div class="column">
-		<Code size="2.5rem" />
+		<Code size={2.5 * 16} />
 		<h2>Developer Portal</h2>
 		<p>This area exists to provide documentation for developers to integrate with our API.</p>
 		<Button primary big href={PUBLIC_DEVELOPER_PORTAL}>Get Started</Button>

@@ -11,13 +11,13 @@
 
 <div class="nav-bar">
 	<nav class="tabs">
-		<TabLink href="/emotes" title={$t("common.trending")} responsive>
-			<Fire />
-			<Fire weight="fill" slot="active" />
-		</TabLink>
-		<TabLink href="/emotes/top" title={$t("common.top")} responsive>
+		<TabLink href="/emotes" title={$t("common.top")} responsive>
 			<Trophy />
 			<Trophy weight="fill" slot="active" />
+		</TabLink>
+		<TabLink href="/emotes/trending" title={$t("common.trending")} responsive>
+			<Fire />
+			<Fire weight="fill" slot="active" />
 		</TabLink>
 		<!-- <TabLink href="/emotes/global" title={$t("common.emotes", { values: { count: 2 } })} responsive>
 			<GlobeHemisphereWest />

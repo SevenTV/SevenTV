@@ -10,7 +10,7 @@
 	<button class="header" on:click={() => (expanded = !expanded)} class:expanded>
 		{title}
 		<div class="icon">
-			<CaretDown size="1rem" />
+			<CaretDown size={1 * 16} />
 		</div>
 	</button>
 	{#if expanded}

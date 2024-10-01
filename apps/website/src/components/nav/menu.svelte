@@ -48,7 +48,7 @@
 <nav class="menu" transition:fade={{ duration: 100 }}>
 	{#if menu === Menu.Root}
 		{#if $user}
-			<a class="profile" href="/user/ayyybubu">
+			<a class="profile" href="/users/ayyybubu">
 				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
 				<span class="name">
 					ayyybubu
@@ -59,7 +59,7 @@
 					<Role name="Subscriber" />
 				</div>
 				<div class="caret">
-					<CaretRight size="1.2rem" />
+					<CaretRight size={1.2 * 16} />
 				</div>
 			</a>
 			<hr class="hide-on-mobile" />

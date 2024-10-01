@@ -60,7 +60,7 @@
 			EmoteName
 		</div>
 		<CountryFlag code="fr" name="France" height={1.2 * 16} style="justify-self: end" />
-		<a class="field" href="/user/username">
+		<a class="field" href="/users/username">
 			<User />
 			Username
 			<SealCheck weight="fill" color="var(--store)" />

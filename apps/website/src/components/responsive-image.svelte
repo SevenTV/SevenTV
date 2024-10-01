@@ -19,7 +19,6 @@
 	}
 </script>
 
-
 <script lang="ts">
 	import type { Image } from "$/gql/graphql";
 

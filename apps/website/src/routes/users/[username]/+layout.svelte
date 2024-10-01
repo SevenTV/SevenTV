@@ -116,36 +116,36 @@
 				</div>
 			{/if}
 			<hr />
-			<TabLink title={$t("pages.user.active_emotes")} href="/user/{data.username}" big>
+			<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.username}" big>
 				<Lightning />
 				<Lightning weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title={$t("pages.user.uploaded_emotes")} href="/user/{data.username}/uploaded" big>
+			<TabLink title={$t("pages.user.uploaded_emotes")} href="/users/{data.username}/uploaded" big>
 				<Upload />
 				<Upload weight="fill" slot="active" />
 			</TabLink>
 			<TabLink
 				title={$t("common.emote_sets", { values: { count: 2 } })}
-				href="/user/{data.username}/emote-sets"
+				href="/users/{data.username}/emote-sets"
 				big
 			>
 				<FolderSimple />
 				<FolderSimple weight="fill" slot="active" />
 			</TabLink>
 			<hr />
-			<TabLink title={$t("common.cosmetics")} href="/user/{data.username}/cosmetics" big>
+			<TabLink title={$t("common.cosmetics")} href="/users/{data.username}/cosmetics" big>
 				<PaintBrush />
 				<PaintBrush weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title={$t("common.activity")} href="/user/{data.username}/activity" big>
+			<TabLink title={$t("common.activity")} href="/users/{data.username}/activity" big>
 				<Pulse />
 				<Pulse weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title={$t("common.analytics")} href="/user/{data.username}/analytics" big>
+			<TabLink title={$t("common.analytics")} href="/users/{data.username}/analytics" big>
 				<ChartLineUp />
 				<ChartLineUp weight="fill" slot="active" />
 			</TabLink>
-			<TabLink title={$t("common.mod_comments")} href="/user/{data.username}/mod-comments" big>
+			<TabLink title={$t("common.mod_comments")} href="/users/{data.username}/mod-comments" big>
 				<ChatCircleText />
 				<ChatCircleText weight="fill" slot="active" />
 			</TabLink>
@@ -157,38 +157,38 @@
 	<div class="content">
 		<div class="header hide-on-desktop">
 			<nav class="tabs">
-				<TabLink title={$t("pages.user.about")} href="/user/{data.username}/about">
+				<TabLink title={$t("pages.user.about")} href="/users/{data.username}/about">
 					<IdentificationCard />
 					<IdentificationCard weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title={$t("common.active")} href="/user/{data.username}">
+				<TabLink title={$t("common.active")} href="/users/{data.username}">
 					<Lightning />
 					<Lightning weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title={$t("pages.user.uploaded")} href="/user/{data.username}/uploaded">
+				<TabLink title={$t("pages.user.uploaded")} href="/users/{data.username}/uploaded">
 					<Upload />
 					<Upload weight="fill" slot="active" />
 				</TabLink>
 				<TabLink
 					title={$t("common.emote_sets", { values: { count: 2 } })}
-					href="/user/{data.username}/emote-sets"
+					href="/users/{data.username}/emote-sets"
 				>
 					<FolderSimple />
 					<FolderSimple weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title={$t("common.cosmetics")} href="/user/{data.username}/cosmetics">
+				<TabLink title={$t("common.cosmetics")} href="/users/{data.username}/cosmetics">
 					<PaintBrush />
 					<PaintBrush weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title={$t("common.activity")} href="/user/{data.username}/activity">
+				<TabLink title={$t("common.activity")} href="/users/{data.username}/activity">
 					<Pulse />
 					<Pulse weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title={$t("common.analytics")} href="/user/{data.username}/analytics">
+				<TabLink title={$t("common.analytics")} href="/users/{data.username}/analytics">
 					<ChartLineUp />
 					<ChartLineUp weight="fill" slot="active" />
 				</TabLink>
-				<TabLink title={$t("common.mod_comments")} href="/user/{data.username}/mod-comments">
+				<TabLink title={$t("common.mod_comments")} href="/users/{data.username}/mod-comments">
 					<ChatCircleText />
 					<ChatCircleText weight="fill" slot="active" />
 				</TabLink>

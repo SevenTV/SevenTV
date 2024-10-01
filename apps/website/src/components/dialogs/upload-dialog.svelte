@@ -119,7 +119,7 @@
 						bind:this={fileInput}
 						bind:files
 					/>
-					<UploadSimple size="1.5rem" color="var(--text-light)" />
+					<UploadSimple size={1.5 * 16} color="var(--text-light)" />
 					<h2>{$t("dialogs.upload.drag_drop")}</h2>
 					<Button secondary on:click={browse}>{$t("dialogs.upload.browse_files")}</Button>
 					<span class="details">

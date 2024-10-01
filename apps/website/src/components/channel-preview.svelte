@@ -1,39 +1,19 @@
 <script lang="ts">
+	import type { User } from "$/gql/graphql";
 	import Button from "./input/button.svelte";
+	import UserProfilePicture from "./user-profile-picture.svelte";
 
-	export let user = "channelName";
-	export let index = 0;
+	export let user: User;
 	export let big: boolean = false;
 	export let size: number = 2;
 </script>
 
-<Button href="/user/{user}" {big}>
-	<div class="image" style="animation-delay: {-index * 10}ms; width: {size}rem;" slot="icon"></div>
-	<span class="user">{user}</span>
+<Button href="/users/{user.id}" {big}>
+	<UserProfilePicture {user} size={size * 16} slot="icon" />
+	<span class="user">{user.mainConnection?.platformDisplayName}</span>
 </Button>
 
 <style lang="scss">
-	.image {
-		flex-shrink: 0;
-		aspect-ratio: 1 / 1;
-		border-radius: 50%;
-
-		background-color: var(--preview);
-		animation: loading 1s infinite;
-	}
-
-	@keyframes loading {
-		0% {
-			opacity: 0.5;
-		}
-		50% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0.5;
-		}
-	}
-
 	.user {
 		flex-grow: 1;
 		overflow: hidden;

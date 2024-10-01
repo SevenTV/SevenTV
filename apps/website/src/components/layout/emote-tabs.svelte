@@ -20,7 +20,7 @@
 		<Pulse />
 		<Pulse weight="fill" slot="active" />
 	</TabLink>
-	<TabLink title={$t("common.statistics")} href="/emotes/{id}/statistics" responsive>
+	<!-- <TabLink title={$t("common.statistics")} href="/emotes/{id}/statistics" responsive>
 		<ChartLineUp />
 		<ChartLineUp weight="fill" slot="active" />
 	</TabLink>
@@ -31,7 +31,7 @@
 	<TabLink title={$t("common.mod_comments")} href="/emotes/{id}/mod-comments" responsive>
 		<ChatText />
 		<ChatText weight="fill" slot="active" />
-	</TabLink>
+	</TabLink> -->
 </nav>
 
 <style lang="scss">

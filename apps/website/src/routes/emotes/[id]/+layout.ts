@@ -3,7 +3,7 @@ import { error } from "@sveltejs/kit";
 import type { LayoutLoadEvent } from "./$types";
 import type { Emote } from "$/gql/graphql";
 
-export async function load({ parent, params }: LayoutLoadEvent) {
+export async function load({ parent, fetch, params }: LayoutLoadEvent) {
 	const client = (await parent()).client;
 
 	const res = await client.query(graphql(`
@@ -13,11 +13,51 @@ export async function load({ parent, params }: LayoutLoadEvent) {
 					id
 					defaultName
 					owner {
+						id
 						mainConnection {
 							platformDisplayName
+							platformAvatarUrl
+						}
+						style {
+							activeProfilePicture {
+								images {
+									url
+									mime
+									size
+									width
+									height
+									scale
+									frameCount
+								}
+							}
 						}
 					}
 					tags
+					flags {
+						defaultZeroWidth
+						publicListed
+					}
+					attribution {
+						user {
+							mainConnection {
+								platformDisplayName
+								platformAvatarUrl
+							}
+							style {
+								activeProfilePicture {
+									images {
+										url
+										mime
+										size
+										width
+										height
+										scale
+										frameCount
+									}
+								}
+							}
+						}
+					}
 					images {
 						url
 						mime
@@ -32,6 +72,8 @@ export async function load({ parent, params }: LayoutLoadEvent) {
 		}
 	`), {
 		id: params.id,
+	}, {
+		fetch,
 	}).toPromise();
 
 	if (res.error || !res.data) {

@@ -12,7 +12,7 @@
 		Flag,
 	} from "phosphor-svelte";
 	import Tags from "$/components/emotes/tags.svelte";
-	import Flags from "$/components/flags.svelte";
+	import Flags, { emoteToFlags } from "$/components/flags.svelte";
 	import Button from "../input/button.svelte";
 	import { t } from "svelte-i18n";
 	import DropDown from "../drop-down.svelte";
@@ -26,8 +26,11 @@
 	import type { Emote, Image } from "$/gql/graphql";
 	import EmoteInfoImage from "./emote-info-image.svelte";
 	import { formatSortIndex } from "../responsive-image.svelte";
+	import UserProfilePicture from "../user-profile-picture.svelte";
 
 	export let data: Emote;
+
+	$: flags = emoteToFlags(data);
 
 	enum MoreMenuMode {
 		Root,
@@ -87,30 +90,27 @@
 	<DeleteEmoteDialog bind:mode={deleteDialogMode} />
 {/if}
 <div class="top-bar">
-	<a href="/user/ayyybubu" class="user-info">
-		<img
-			src="/test-profile-pic.jpeg"
-			width="44"
-			height="44"
-			alt="profile"
-			class="profile-picture"
-		/>
-		<span class="username">ayyybubu</span>
-		<div class="artists">
-			<ArrowBendDownRight size="0.75rem" color="var(--text-light)" />
-			<a href="/user/ayyybubu" class="profile">
-				<img
-					src="/test-profile-pic.jpeg"
-					width="16"
-					height="16"
-					alt="ayyybubu"
-					title="ayyybubu"
-					class="artist-picture"
-				/>
-			</a>
-		</div>
-	</a>
-	<Flags flags={["active", "global", "trending", "overlaying"]} />
+	<Flags {flags} />
+	{#if data.owner}
+		<a href="/users/{data.owner.id}" class="user-info">
+			<UserProfilePicture user={data.owner} />
+			<div class="name-container">
+				<span class="username">{data.owner.mainConnection?.platformDisplayName}</span>
+				{#if data.attribution.length > 0}
+					<div class="artists">
+						<ArrowBendDownRight size="0.75rem" color="var(--text-light)" />
+						{#each data.attribution as artist}
+							{#if artist.user}
+								<a href="/users/{artist.user.id}" class="profile">
+									<UserProfilePicture user={artist.user} size={16} />
+								</a>
+							{/if}
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</a>
+	{/if}
 </div>
 <div class="emote-info">
 	<div class="heading">
@@ -198,26 +198,21 @@
 	.top-bar {
 		display: flex;
 		justify-content: space-between;
+		flex-direction: row-reverse;
 		align-items: center;
 		gap: 1rem;
 	}
 
 	.user-info {
-		display: grid;
-		grid-template-columns: auto auto;
-		grid-template-rows: auto auto;
+		display: flex;
 		align-items: center;
 		column-gap: 0.5rem;
-		row-gap: 0.25rem;
 		text-decoration: none;
 
-		.profile-picture {
-			grid-row: 1 / -1;
-
-			width: 2.75rem;
-			height: 2.75rem;
-			border-radius: 50%;
-			border: 2px solid var(--staff);
+		.name-container {
+			display: flex;
+			flex-direction: column;
+			gap: 0.25rem;
 		}
 
 		.username {

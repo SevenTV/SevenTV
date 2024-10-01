@@ -54,7 +54,7 @@
 		{:else}
 			{$t("labels.select")}
 		{/if}
-		<CaretDown slot="icon-right" size="1rem" />
+		<CaretDown slot="icon-right" size={1 * 16} />
 	</Button>
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>

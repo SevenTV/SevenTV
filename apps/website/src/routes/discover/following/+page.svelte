@@ -20,7 +20,7 @@
 				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
-				<Plus color="var(--primary)" size="1rem" />
+				<Plus color="var(--primary)" size={1 * 16} />
 				<span class="details">{$t("activities.added_to_set")}</span>
 			</span>
 		</div>
@@ -39,7 +39,7 @@
 				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
-				<Plus color="var(--primary)" size="1rem" />
+				<Plus color="var(--primary)" size={1 * 16} />
 				<span class="details">{$t("activities.added_to_set")}</span>
 			</span>
 		</div>
@@ -61,7 +61,7 @@
 				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
-				<Plus color="var(--primary)" size="1rem" />
+				<Plus color="var(--primary)" size={1 * 16} />
 				<span class="details">{$t("activities.added_to_set")}</span>
 			</span>
 		</div>
@@ -83,7 +83,7 @@
 				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
-				<Plus color="var(--primary)" size="1rem" />
+				<Plus color="var(--primary)" size={1 * 16} />
 				<span class="details">{$t("activities.added_to_set")}</span>
 			</span>
 		</div>
@@ -105,7 +105,7 @@
 				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
-				<Plus color="var(--primary)" size="1rem" />
+				<Plus color="var(--primary)" size={1 * 16} />
 				<span class="details">{$t("activities.added_to_set")}</span>
 			</span>
 		</div>
@@ -125,7 +125,7 @@
 				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
-				<Plus color="var(--primary)" size="1rem" />
+				<Plus color="var(--primary)" size={1 * 16} />
 				<span class="details">{$t("activities.added_to_set")}</span>
 			</span>
 		</div>
@@ -144,7 +144,7 @@
 				<span class="time"> · <FromNow date={moment()} /></span>
 			</span>
 			<span>
-				<Plus color="var(--primary)" size="1rem" />
+				<Plus color="var(--primary)" size={1 * 16} />
 				<span class="details">{$t("activities.added_to_set")}</span>
 			</span>
 		</div>

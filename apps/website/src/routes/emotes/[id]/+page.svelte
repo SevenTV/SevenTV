@@ -7,18 +7,68 @@
 	import type { LayoutData } from "./$types";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
+	import type { User } from "$/gql/graphql";
+	import { getContextClient } from "@urql/svelte";
+	import { graphql } from "$/gql";
 
 	export let data: LayoutData;
+
+	let page = 1;
+
+	$: channels = queryChannels(data.emote.id, page);
+
+	async function queryChannels(emoteId: string, page: number): Promise<User[]> {
+		const client = getContextClient();
+
+		const result = await client
+			.query(
+				graphql(`query EmoteChannels($emoteId: Id!, $page: Int!) {
+					emotes {
+						emote(id: $emoteId) {
+							channels(page: $page, limit: 24) {
+								id
+								mainConnection {
+									platformDisplayName
+									platformAvatarUrl
+								}
+								style {
+									activeProfilePicture {
+										images {
+											url
+											mime
+											size
+											width
+											height
+											scale
+											frameCount
+										}
+									}
+								}
+							}
+						}
+					}
+				}`),
+				{ emoteId, page }
+			)
+			.toPromise();
+
+		if (result.error || !result.data || !result.data.emotes.emote) {
+			console.error(result.error);
+			throw result.error;
+		}
+
+		return result.data.emotes.emote.channels as User[];
+	}
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.id} />
+	<EmoteTabs id={data.emote.id} />
 	<div class="inputs">
 		<div class="buttons">
-			<Button disabled>
+			<Button disabled={page <= 1} on:click={() => (page--)}>
 				<CaretLeft slot="icon" />
 			</Button>
-			<Button>
+			<Button on:click={() => (page++)}>
 				<CaretRight slot="icon" />
 			</Button>
 		</div>
@@ -30,9 +80,13 @@
 	</div>
 </div>
 <div class="channels">
-	{#each Array(20) as _, i}
-		<ChannelPreview index={i} user="channel{i}" />
-	{/each}
+	{#await channels}
+		Loading
+	{:then result}
+		{#each result as channel}
+			<ChannelPreview user={channel} />
+		{/each}
+	{/await}
 </div>
 
 <style lang="scss">

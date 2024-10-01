@@ -30,9 +30,13 @@
 
 <a
 	href="/emotes/{data.id}"
+	data-sveltekit-preload-data="tap"
 	class="emote"
 	class:emote-only={emoteOnly}
-	style:border-color={selected ? "var(--primary)" : `${highlight}80`}
+	class:selected
+	style={highlight
+		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
+		: "--highlight: transparent; --highlight-active: var(--border-active);"}
 	style:background-color="var(--bg-{bg})"
 	title={data.defaultName}
 	on:click={onClick}
@@ -75,9 +79,15 @@
 		border-radius: 0.25rem;
 		cursor: pointer;
 
+		border-color: var(--highlight);
+
+		&.selected {
+			border-color: var(--primary);
+		}
+
 		&:hover,
 		&:focus-visible {
-			border-color: var(--border-active);
+			border-color: var(--highlight-active);
 		}
 
 		& > :global(picture) {
@@ -88,7 +98,6 @@
 			width: 100%;
 			max-width: 60%;
 			max-height: 50%;
-
 		}
 
 		& > :global(picture > img) {

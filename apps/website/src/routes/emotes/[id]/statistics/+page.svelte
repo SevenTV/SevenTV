@@ -8,7 +8,7 @@
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.id} />
+	<EmoteTabs id={data.emote.id} />
 	<div class="buttons">
 		<Select
 			options={[

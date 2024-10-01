@@ -6,7 +6,7 @@
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.id} />
+	<EmoteTabs id={data.emote.id} />
 </div>
 
 <style lang="scss">

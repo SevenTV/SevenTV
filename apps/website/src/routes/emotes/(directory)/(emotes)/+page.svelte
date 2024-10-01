@@ -11,11 +11,11 @@
 
 	const limit = 36;
 
-	$: results = queryEmotes(data.query, data.tags, SortBy.TrendingWeekly, data.filters, data.page, limit);
+	$: results = queryEmotes(data.query, data.tags, SortBy.TopAllTime, data.filters, data.page, limit);
 </script>
 
 <svelte:head>
-	<title>{$t("page_titles.trending_emotes")} - {$t("page_titles.suffix")}</title>
+	<title>{$t("page_titles.top_emotes")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 {#await results}
@@ -28,7 +28,6 @@
 			index={i}
 			data={result}
 			emoteOnly={$emotesLayout === Layout.SmallGrid}
-			ignoredFlagsForHighlight={["trending"]}
 		/>
 	{/each}
 {/await}

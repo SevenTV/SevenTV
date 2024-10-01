@@ -33,7 +33,7 @@
 		{#each tags as tag, i}
 			<Button secondary on:click={() => removeTag(i)}>
 				<span>{tag}</span>
-				<X size="1rem" />
+				<X size={1 * 16} />
 			</Button>
 		{/each}
 	</div>

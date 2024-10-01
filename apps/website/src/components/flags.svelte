@@ -116,7 +116,7 @@
 	{#each flags as flag}
 		{#if iconOnly && icons[flag]}
 			<span class="flag icon-only" style="color: {colors[flag]}">
-				<svelte:component this={icons[flag]} size="1rem" />
+				<svelte:component this={icons[flag]} size={1 * 16} />
 			</span>
 		{:else}
 			<span
@@ -124,14 +124,14 @@
 				class:has-icon={icons[flag]}
 				style="color: {colors[flag]}; background-color: {colors[flag]}1a"
 			>
-				<svelte:component this={icons[flag]} size="1rem" />
+				<svelte:component this={icons[flag]} size={1 * 16} />
 				<span class:hide-on-mobile={icons[flag]}>{names[flag] || flag.replace("_", " ")}</span>
 			</span>
 		{/if}
 	{/each}
 	{#if add}
 		<Button secondary on:click={add} title="Add" style="padding: 0.3rem 0.5rem; border: none;">
-			<Plus size="1rem" slot="icon" />
+			<Plus size={1 * 16} slot="icon" />
 		</Button>
 	{/if}
 </div>

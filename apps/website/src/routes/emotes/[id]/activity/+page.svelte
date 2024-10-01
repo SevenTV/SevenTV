@@ -33,7 +33,7 @@
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.id} />
+	<EmoteTabs id={data.emote.id} />
 </div>
 <div class="activities">
 	{#each activities as activity, index}
@@ -41,7 +41,7 @@
 			<IconContext
 				values={{
 					style: "grid-area: icon; margin: 0 0.5rem;",
-					size: "1.2rem",
+					size: 1.2 * 16,
 					color: "var(--primary)",
 				}}
 			>

@@ -9,6 +9,7 @@ scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339
 type Emote {
 	aspectRatio: Float!
 	attribution: [EmoteAttribution!]!
+	channels(limit: Int, page: Int): [User!]!
 	defaultName: String!
 	flags: EmoteFlags!
 	id: Id!
@@ -24,6 +25,7 @@ type Emote {
 
 type EmoteAttribution {
 	addedAt: DateTime!
+	user: User
 	userId: Id!
 }
 
@@ -151,12 +153,21 @@ type UserConnection {
 	updatedAt: DateTime!
 }
 
+type UserProfilePicture {
+	id: Id!
+	images: [Image!]!
+	updatedAt: DateTime!
+	userId: Id!
+}
+
 type UserStyle {
 	activeBadgeId: Id
 	activeEmoteSetId: Id
 	activePaintId: Id
-	activeProfilePicture: Id
-	pendingProfilePicture: Id
+	activeProfilePicture: UserProfilePicture
+	activeProfilePictureId: Id
+	pendingProfilePicture: UserProfilePicture
+	pendingProfilePictureId: Id
 }
 
 directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT

@@ -6,7 +6,7 @@
 </script>
 
 <div class="sub-grid" {...$$restProps}>
-	<IconContext values={{ weight: "bold", size: "1.2rem", color: "var(--store)" }}>
+	<IconContext values={{ weight: "bold", size: 1.2 * 16, color: "var(--store)" }}>
 		<span class="key">{$t("sub_info.plan")}</span>
 		<span class="value">
 			<Sparkle />
