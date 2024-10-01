@@ -24,8 +24,8 @@
 	import DeleteEmoteDialog from "../dialogs/delete-emote-dialog.svelte";
 	import MenuButton from "../input/menu-button.svelte";
 	import type { Emote, Image } from "$/gql/graphql";
-	import { formatSortIndex } from "../emote-preview.svelte";
 	import EmoteInfoImage from "./emote-info-image.svelte";
+	import { formatSortIndex } from "../responsive-image.svelte";
 
 	export let data: Emote;
 

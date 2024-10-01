@@ -22,7 +22,7 @@ export function load({ url }: LayoutLoadEvent) {
 	}
 
 	if (url.searchParams.get("o") === "1") {
-		filters.overlaying = true;
+		filters.defaultZeroWidth = true;
 	}
 
 	if (url.searchParams.get("e") === "1") {

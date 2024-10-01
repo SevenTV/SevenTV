@@ -5,8 +5,7 @@
 		global: GlobeSimple,
 		trending: Fire,
 		overlaying: StackSimple,
-		verified: SealCheck,
-		public: Eye,
+		unlisted: EyeSlash,
 
 		// Emote set flags
 		default: House,
@@ -26,8 +25,7 @@
 		global: "#57ab5a",
 		trending: "#e0823d",
 		overlaying: "#fc8dc7",
-		verified: "#fc8dc7",
-		public: "#ffffff",
+		unlisted: "#eb3d26",
 	};
 
 	export function determineHighlightColor(flags: string[], ignoredFlags: string[] = []) {
@@ -38,11 +36,21 @@
 		}
 		return null;
 	}
+
+	export function emoteToFlags(emote: Emote): string[] {
+		const flags: string[] = [];
+
+		if (emote.flags.defaultZeroWidth) flags.push("overlaying");
+
+		if (!emote.flags.publicListed) flags.push("unlisted");
+
+		return flags;
+	}
 </script>
 
 <script lang="ts">
 	import {
-		Eye,
+		EyeSlash,
 		Fire,
 		FolderSimple,
 		GlobeSimple,
@@ -50,7 +58,6 @@
 		Lightning,
 		PencilSimple,
 		Plus,
-		SealCheck,
 		Smiley,
 		StackSimple,
 		Star,
@@ -58,6 +65,7 @@
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
+	import type { Emote, EmoteFlags } from "$/gql/graphql";
 
 	const names: { [key: string]: string } = {
 		// Emote flags
@@ -65,8 +73,7 @@
 		global: $t("flags.global"),
 		trending: $t("flags.trending"),
 		overlaying: $t("flags.overlaying"),
-		verified: $t("flags.verified"),
-		public: $t("flags.public"),
+		unlisted: $t("flags.unlisted"),
 
 		// Emote set flags
 		default: $t("flags.default"),

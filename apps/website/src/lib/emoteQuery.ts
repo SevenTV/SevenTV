@@ -29,7 +29,13 @@ export async function queryEmotes(query: string | null, tags: string[], sort: So
 										}
 									}
 									flags {
-										animated
+										# animated
+										# approvedPersonal
+										defaultZeroWidth
+										# deniedPersonal
+										# nsfw
+										# private
+										publicListed
 									}
 									images {
 										url
@@ -38,6 +44,9 @@ export async function queryEmotes(query: string | null, tags: string[], sort: So
 										scale
 										width
 										frameCount
+									}
+									scores {
+										trendingMonth
 									}
 								}
 							}

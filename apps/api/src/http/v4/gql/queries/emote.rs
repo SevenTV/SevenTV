@@ -71,7 +71,7 @@ struct Sort {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, InputObject)]
 struct Filters {
 	animated: Option<bool>,
-	overlaying: Option<bool>,
+	default_zero_width: Option<bool>,
 	nsfw: Option<bool>,
 	/// defaults to false when unset
 	exact_match: Option<bool>,
@@ -139,8 +139,8 @@ impl EmoteQuery {
 				filter_by.push(format!("flag_animated: {}", animated));
 			}
 
-			if let Some(overlaying) = filters.overlaying {
-				filter_by.push(format!("flag_default_zero_width: {}", overlaying));
+			if let Some(default_zero_width) = filters.default_zero_width {
+				filter_by.push(format!("flag_default_zero_width: {}", default_zero_width));
 			}
 
 			if let Some(nsfw) = filters.nsfw {

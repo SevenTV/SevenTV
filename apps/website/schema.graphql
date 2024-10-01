@@ -58,7 +58,7 @@ input Filters {
 	"""
 	exactMatch: Boolean
 	nsfw: Boolean
-	overlaying: Boolean
+	defaultZeroWidth: Boolean
 }
 
 
