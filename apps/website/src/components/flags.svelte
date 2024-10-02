@@ -6,6 +6,7 @@
 		trending: Fire,
 		overlaying: StackSimple,
 		unlisted: EyeSlash,
+		personal_use_denied: EyeSlash,
 
 		// Emote set flags
 		default: House,
@@ -26,6 +27,7 @@
 		trending: "#e0823d",
 		overlaying: "#fc8dc7",
 		unlisted: "#eb3d26",
+		personal_use_denied: "#eb3d26",
 	};
 
 	export function determineHighlightColor(flags: string[], ignoredFlags: string[] = []) {
@@ -43,6 +45,8 @@
 		if (emote.flags.defaultZeroWidth) flags.push("overlaying");
 
 		if (!emote.flags.publicListed) flags.push("unlisted");
+
+		if (emote.flags.deniedPersonal) flags.push("personal_use_denied");
 
 		if (emote.ranking && emote.ranking < 50) flags.push("trending");
 
@@ -67,7 +71,7 @@
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
-	import type { Emote, EmoteFlags } from "$/gql/graphql";
+	import type { Emote } from "$/gql/graphql";
 
 	const names: { [key: string]: string } = {
 		// Emote flags
@@ -76,6 +80,7 @@
 		trending: $t("flags.trending"),
 		overlaying: $t("flags.overlaying"),
 		unlisted: $t("flags.unlisted"),
+		personal_use_denied: $t("flags.personal_use_denied"),
 
 		// Emote set flags
 		default: $t("flags.default"),
