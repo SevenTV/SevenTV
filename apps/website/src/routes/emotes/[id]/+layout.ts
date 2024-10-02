@@ -6,6 +6,7 @@ import type { Emote } from "$/gql/graphql";
 export async function load({ parent, fetch, params }: LayoutLoadEvent) {
 	const client = (await parent()).client;
 
+	// TODO: Don't do this in load function because it takes too long
 	const res = await client.query(graphql(`
 		query OneEmote($id: Id!) {
 			emotes {

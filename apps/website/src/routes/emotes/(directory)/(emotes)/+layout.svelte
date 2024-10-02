@@ -1,10 +1,9 @@
 <script lang="ts">
 	import Button from "$/components/input/button.svelte";
 	import { DialogMode } from "$/components/dialogs/dialog.svelte";
-	import EmoteContainer from "$/components/layout/emote-container.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { emotesLayout, defaultEmoteSetDialogMode } from "$/store/layout";
+	import { defaultEmoteSetDialogMode } from "$/store/layout";
 	import { Fire, FolderSimple, Trophy, Upload } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 </script>
@@ -36,9 +35,7 @@
 		<LayoutButtons />
 	</div>
 </div>
-<EmoteContainer scrollable layout={$emotesLayout}>
-	<slot />
-</EmoteContainer>
+<slot />
 
 <style lang="scss">
 	.nav-bar {

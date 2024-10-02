@@ -101,7 +101,7 @@ impl EmoteQuery {
 		sort: Sort,
 		filters: Option<Filters>,
 		#[graphql(validator(maximum = 100))] page: Option<u32>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+		#[graphql(validator(maximum = 250))] limit: Option<u32>,
 	) -> Result<Vec<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

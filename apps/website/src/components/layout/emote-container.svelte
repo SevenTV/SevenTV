@@ -3,12 +3,16 @@
 
 	export let scrollable = false;
 	export let layout: Layout | null = null;
+	export let clientWidth: number | undefined;
+	export let clientHeight: number | undefined;
 </script>
 
 <div
 	class="emotes"
 	class:small-grid={layout === Layout.SmallGrid}
 	class:scrollable
+	bind:clientWidth={clientWidth}
+	bind:clientHeight={clientHeight}
 	{...$$restProps}
 >
 	<slot />

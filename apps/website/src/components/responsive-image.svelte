@@ -28,10 +28,7 @@
 
 	let loading: boolean = true;
 
-	let picture: HTMLPictureElement;
-
-	// 60% * 10rem is the max size for the image
-	$: size = picture?.clientWidth ?? (0.6 * 10 * 16);
+	let pictureWidth: number;
 
 	// This function prepares the variants for the <picture> element by grouping them by format, sorting them by scale and generating the required media and srcSet tags.
 	// It also returns the best supported variant for use in the fallback <img> element which is the smallest GIF or PNG.
@@ -98,12 +95,12 @@
 	$: preparedVariants = prepareVariants(images);
 </script>
 
-<picture bind:this={picture} {...$$restProps}>
+<picture bind:clientWidth={pictureWidth} {...$$restProps}>
 	{#each preparedVariants.variants as variant}
 		<source
 			type={variant.type}
 			srcset={variant.srcSet}
-			sizes="{size}px"
+			sizes="{pictureWidth}px"
 			media={variant.media}
 		/>
 	{/each}
