@@ -12,7 +12,7 @@ use crate::{
 	http::{
 		error::{ApiError, ApiErrorCode},
 		middleware::session::Session,
-		v4::gql::types::Emote,
+		v4::gql::types::{Emote, SearchResult},
 	},
 	search::{search, SearchOptions},
 };
@@ -101,8 +101,8 @@ impl EmoteQuery {
 		sort: Sort,
 		filters: Option<Filters>,
 		#[graphql(validator(maximum = 100))] page: Option<u32>,
-		#[graphql(validator(maximum = 250))] limit: Option<u32>,
-	) -> Result<Vec<Emote>, ApiError> {
+		#[graphql(validator(maximum = 250))] per_page: Option<u32>,
+	) -> Result<SearchResult<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -110,7 +110,7 @@ impl EmoteQuery {
 			.data::<Session>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 
-		let limit = limit.unwrap_or(30);
+		let per_page = per_page.unwrap_or(30);
 		let page = page.unwrap_or_default().max(1);
 
 		let mut filter_by = Vec::new();
@@ -199,7 +199,7 @@ impl EmoteQuery {
 			.query_by(query.is_some().then_some(vec!["default_name".to_owned(), "tags".to_owned()]))
 			.query(query.unwrap_or("*".to_owned()))
 			.query_by_weights(vec![4, 1])
-			.per_page(limit)
+			.per_page(per_page)
 			.page(page)
 			.filter_by(Some(filter_by.join(" && ")))
 			.sort_by(sort_by)
@@ -219,11 +219,17 @@ impl EmoteQuery {
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
-		Ok(result
-			.hits
-			.into_iter()
-			.filter_map(|id| emotes.get(&id).cloned())
-			.map(|e| Emote::from_db(e, &global.config.api.cdn_origin))
-			.collect())
+		let result = SearchResult {
+			items: result
+				.hits
+				.into_iter()
+				.filter_map(|id| emotes.get(&id).cloned())
+				.map(|e| Emote::from_db(e, &global.config.api.cdn_origin))
+				.collect(),
+			total_count: result.found,
+			page_count: result.found.div_ceil(per_page as u64).min(100),
+		};
+
+		Ok(result)
 	}
 }

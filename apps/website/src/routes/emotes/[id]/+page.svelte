@@ -7,51 +7,57 @@
 	import type { LayoutData } from "./$types";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
-	import type { User } from "$/gql/graphql";
+	import type { UserSearchResult } from "$/gql/graphql";
 	import { getContextClient } from "@urql/svelte";
 	import { graphql } from "$/gql";
 
 	const PAGE_SIZE = 24;
-	const MAX_PAGE = 10;
 
 	export let data: LayoutData;
 
 	let page = 1;
 
+	let totalCount: number | null = null;
+	let pageCount = 0;
+
 	$: channels = queryChannels(data.emote.id, page);
 
-	async function queryChannels(emoteId: string, page: number): Promise<User[]> {
+	async function queryChannels(emoteId: string, page: number): Promise<UserSearchResult> {
 		const client = getContextClient();
 
 		const result = await client
 			.query(
-				graphql(`query EmoteChannels($emoteId: Id!, $page: Int!, $limit: Int!) {
+				graphql(`query EmoteChannels($emoteId: Id!, $page: Int!, $perPage: Int!) {
 					emotes {
 						emote(id: $emoteId) {
-							channels(page: $page, limit: $limit) {
-								id
-								mainConnection {
-									platformDisplayName
-									platformAvatarUrl
-								}
-								style {
-									activeProfilePicture {
-										images {
-											url
-											mime
-											size
-											width
-											height
-											scale
-											frameCount
+							channels(page: $page, perPage: $perPage) {
+								items {
+									id
+									mainConnection {
+										platformDisplayName
+										platformAvatarUrl
+									}
+									style {
+										activeProfilePicture {
+											images {
+												url
+												mime
+												size
+												width
+												height
+												scale
+												frameCount
+											}
 										}
 									}
 								}
+								totalCount
+								pageCount
 							}
 						}
 					}
 				}`),
-				{ emoteId, page, limit: PAGE_SIZE }
+				{ emoteId, page, perPage: PAGE_SIZE }
 			)
 			.toPromise();
 
@@ -60,18 +66,21 @@
 			throw result.error;
 		}
 
-		return result.data.emotes.emote.channels as User[];
+		totalCount = result.data.emotes.emote.channels.totalCount;
+		pageCount = result.data.emotes.emote.channels.pageCount;
+
+		return result.data.emotes.emote.channels as UserSearchResult;
 	}
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.emote.id} />
+	<EmoteTabs id={data.emote.id} channelCount={totalCount} />
 	<div class="inputs">
 		<div class="buttons">
 			<Button disabled={page <= 1} on:click={() => (page--)}>
 				<CaretLeft slot="icon" />
 			</Button>
-			<Button disabled={page >= MAX_PAGE} on:click={() => (page++)}>
+			<Button disabled={page >= pageCount} on:click={() => (page++)}>
 				<CaretRight slot="icon" />
 			</Button>
 		</div>
@@ -88,7 +97,7 @@
 			<div class="preview loading-animation" style:animation-delay="{-i * 10}ms"></div>
 		{/each}
 	{:then result}
-		{#each result as channel}
+		{#each result.items as channel}
 			<ChannelPreview user={channel} />
 		{/each}
 	{/await}

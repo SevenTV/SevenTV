@@ -15,5 +15,6 @@
 <EmoteLoader
 	load={(page, limit) =>
 		queryEmotes(data.query, data.tags, SortBy.TrendingWeekly, data.filters, page, limit)}
-	page={data.page ?? 1}
+	numPage={data.page ?? 1}
+	updateUrl
 />

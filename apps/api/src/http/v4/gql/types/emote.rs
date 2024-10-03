@@ -10,7 +10,7 @@ use crate::{
 	search::{search, sorted_results, SearchOptions},
 };
 
-use super::{Image, User};
+use super::{Image, SearchResult, User};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]
@@ -95,18 +95,20 @@ impl Emote {
 		&self,
 		ctx: &Context<'ctx>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
-	) -> Result<Vec<User>, ApiError> {
+		#[graphql(validator(maximum = 100))] per_page: Option<u32>,
+	) -> Result<SearchResult<User>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let per_page = per_page.unwrap_or(30);
 
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
 			.filter_by(format!("emotes: {}", self.id))
 			.sort_by(vec!["role_hoist_rank:desc".to_owned()])
 			.page(page)
-			.per_page(limit.unwrap_or(30))
+			.per_page(per_page)
 			.build();
 
 		let result = search::<shared::typesense::types::user::User>(global, options)
@@ -125,7 +127,13 @@ impl Emote {
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users")
 			})?;
 
-		Ok(sorted_results(result.hits, users).into_iter().map(Into::into).collect())
+		let result = SearchResult {
+			items: sorted_results(result.hits, users).into_iter().map(Into::into).collect(),
+			total_count: result.found,
+			page_count: result.found.div_ceil(per_page as u64).min(10),
+		};
+
+		Ok(result)
 	}
 }
 

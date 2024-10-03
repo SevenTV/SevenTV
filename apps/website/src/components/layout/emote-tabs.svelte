@@ -5,11 +5,14 @@
 	import { t } from "svelte-i18n";
 
 	export let id: string;
+	export let channelCount: number | null = null;
+
+	$: channelTabTitle = $t('common.channels', { values: { count: channelCount ?? 2 } }) + (channelCount ? ` (${numberFormat().format(channelCount)})`: "");
 </script>
 
 <nav class="links">
 	<TabLink
-		title="{$t('common.channels', { values: { count: 2 } })} ({numberFormat().format(1020)})"
+		title={channelTabTitle}
 		href="/emotes/{id}"
 		responsive
 	>

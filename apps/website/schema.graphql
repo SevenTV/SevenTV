@@ -9,7 +9,7 @@ scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339
 type Emote {
 	aspectRatio: Float!
 	attribution: [EmoteAttribution!]!
-	channels(limit: Int, page: Int): [User!]!
+	channels(page: Int, perPage: Int): UserSearchResult!
 	defaultName: String!
 	flags: EmoteFlags!
 	id: Id!
@@ -41,7 +41,7 @@ type EmoteFlags {
 
 type EmoteQuery {
 	emote(id: Id!): Emote
-	search(filters: Filters, limit: Int, page: Int, query: String, sort: Sort!, tags: Tags): [Emote!]!
+	search(filters: Filters, page: Int, perPage: Int, query: String, sort: Sort!, tags: Tags): EmoteSearchResult!
 }
 
 type EmoteScores {
@@ -52,6 +52,12 @@ type EmoteScores {
 	trendingDay: Int!
 	trendingMonth: Int!
 	trendingWeek: Int!
+}
+
+type EmoteSearchResult {
+	items: [Emote!]!
+	pageCount: Int!
+	totalCount: Int!
 }
 
 input Filters {
@@ -158,6 +164,12 @@ type UserProfilePicture {
 	images: [Image!]!
 	updatedAt: DateTime!
 	userId: Id!
+}
+
+type UserSearchResult {
+	items: [User!]!
+	pageCount: Int!
+	totalCount: Int!
 }
 
 type UserStyle {

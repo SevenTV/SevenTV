@@ -15,7 +15,6 @@
 	import { goto } from "$app/navigation";
 
 	let query: string | null = $page.url.searchParams.get("q");
-	let numPage: string | null = $page.url.searchParams.get("p");
 	let tags: string[] = $page.url.searchParams.get("t")?.split(TAGS_SEPERATOR) ?? [];
 	let animated: boolean = $page.url.searchParams.get("a") == "1";
 	let staticFilter: boolean = $page.url.searchParams.get("s") == "1";
@@ -45,12 +44,6 @@
 			url.searchParams.set("q", query);
 		} else {
 			url.searchParams.delete("q");
-		}
-
-		if (numPage) {
-			url.searchParams.set("p", numPage);
-		} else {
-			url.searchParams.delete("p");
 		}
 
 		if (tags && tags.length > 0) {

@@ -1,10 +1,10 @@
 import { graphql } from "$/gql";
-import type { Emote, Filters, SortBy } from "$/gql/graphql";
+import type { EmoteSearchResult, Filters, SortBy } from "$/gql/graphql";
 import { getContextClient } from "@urql/svelte";
 
 let timeout: NodeJS.Timeout | number | null = null;
 
-export async function queryEmotes(query: string | null, tags: string[], sort: SortBy, filters: Filters | null, page: number | null, limit: number): Promise<Emote[]> {
+export async function queryEmotes(query: string | null, tags: string[], sort: SortBy, filters: Filters | null, page: number | null, perPage: number): Promise<EmoteSearchResult> {
 	if (timeout) {
 		clearTimeout(timeout);
 	}
@@ -18,34 +18,38 @@ export async function queryEmotes(query: string | null, tags: string[], sort: So
 			const res = await client
 				.query(
 					graphql(`
-						query EmoteSearch($query: String, $tags: [String!]!, $sortBy: SortBy!, $filters: Filters, $page: Int, $limit: Int!) {
+						query EmoteSearch($query: String, $tags: [String!]!, $sortBy: SortBy!, $filters: Filters, $page: Int, $perPage: Int!) {
 							emotes {
-								search(query: $query, tags: { tags: $tags, match: ANY }, sort: { sortBy: $sortBy, order: DESCENDING }, filters: $filters, page: $page, limit: $limit) {
-									id
-									defaultName
-									owner {
-										mainConnection {
-											platformDisplayName
+								search(query: $query, tags: { tags: $tags, match: ANY }, sort: { sortBy: $sortBy, order: DESCENDING }, filters: $filters, page: $page, perPage: $perPage) {
+									items {
+										id
+										defaultName
+										owner {
+											mainConnection {
+												platformDisplayName
+											}
 										}
+										flags {
+											# animated
+											# approvedPersonal
+											defaultZeroWidth
+											# deniedPersonal
+											# nsfw
+											# private
+											publicListed
+										}
+										images {
+											url
+											mime
+											size
+											scale
+											width
+											frameCount
+										}
+										ranking(ranking: TRENDING_WEEKLY)
 									}
-									flags {
-										# animated
-										# approvedPersonal
-										defaultZeroWidth
-										# deniedPersonal
-										# nsfw
-										# private
-										publicListed
-									}
-									images {
-										url
-										mime
-										size
-										scale
-										width
-										frameCount
-									}
-									ranking(ranking: TRENDING_WEEKLY)
+									totalCount
+									pageCount
 								}
 							}
 						}
@@ -56,7 +60,7 @@ export async function queryEmotes(query: string | null, tags: string[], sort: So
 						sortBy: sort,
 						filters,
 						page,
-						limit: limit,
+						perPage,
 					},
 				)
 				.toPromise();
@@ -66,7 +70,7 @@ export async function queryEmotes(query: string | null, tags: string[], sort: So
 				throw res.error;
 			}
 
-			resolve(res.data.emotes.search as Emote[]);
+			resolve(res.data.emotes.search as EmoteSearchResult);
 		}, 200);
 	});
 }
