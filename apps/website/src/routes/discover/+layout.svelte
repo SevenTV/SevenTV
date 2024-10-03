@@ -31,9 +31,9 @@
 				<MagnifyingGlass slot="icon" />
 			</TextInput>
 			<div class="channels">
-				{#each Array(5) as _, i}
+				<!-- {#each Array(5) as _, i}
 					<ChannelPreview size={1.5} index={i} user="followed{i}" />
-				{/each}
+				{/each} -->
 			</div>
 		</div>
 	</aside>

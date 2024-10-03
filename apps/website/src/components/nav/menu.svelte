@@ -55,8 +55,8 @@
 					<SealCheck size="0.8rem" />
 				</span>
 				<div class="roles">
-					<Role name="Staff" />
-					<Role name="Subscriber" />
+					<!-- <Role name="Staff" />
+					<Role name="Subscriber" /> -->
 				</div>
 				<div class="caret">
 					<CaretRight size={1.2 * 16} />

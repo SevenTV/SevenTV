@@ -4,6 +4,8 @@
 
 	export let user: User;
 	export let size: number = 44;
+
+	$: alt = user.mainConnection ? `${user.mainConnection?.platformDisplayName}'s Profile Picture` : "Profile Picture";
 </script>
 
 {#if user.style.activeProfilePicture}
@@ -12,7 +14,7 @@
 		height={size}
 		style={"border-radius: 50%; border: 2px solid; border-color: " + (user.highestRoleColor?.hex ?? "transparent")}
 		images={user.style.activeProfilePicture.images}
-		alt={user.mainConnection?.platformDisplayName ?? "profile"}
+		{alt}
 		{...$$restProps}
 	/>
 {:else}
@@ -21,7 +23,7 @@
 		style:border-color={user.highestRoleColor?.hex ?? "transparent"}
 		width={size}
 		height={size}
-		alt={user.mainConnection?.platformDisplayName ?? "profile"}
+		{alt}
 		class="profile-picture"
 		{...$$restProps}
 	/>

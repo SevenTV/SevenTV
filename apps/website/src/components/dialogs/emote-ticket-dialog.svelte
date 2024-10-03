@@ -24,7 +24,7 @@
 		<h1>Emote queue</h1>
 		<hr />
 		<div class="emote">
-			<EmoteInfo id="emoteName">
+			<!-- <EmoteInfo>
 				<Button secondary>
 					<NotePencil slot="icon" />
 					Edit
@@ -41,7 +41,7 @@
 					<Gavel slot="icon" />
 					Ban Owner
 				</Button>
-			</EmoteInfo>
+			</EmoteInfo> -->
 		</div>
 		<hr />
 		<div class="tabs">
