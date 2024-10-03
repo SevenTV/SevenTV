@@ -14,7 +14,7 @@ use crate::{
 	http::error::{ApiError, ApiErrorCode},
 };
 
-use super::{Color, Role, UserProfilePicture};
+use super::{Color, Role, UserEditor, UserProfilePicture};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]
@@ -78,6 +78,21 @@ impl User {
 		}
 
 		Ok(roles.into_iter().map(Into::into).collect())
+	}
+
+	pub async fn editors<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let editors = global
+			.user_editor_by_user_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
+			.unwrap_or_default();
+
+		Ok(editors.into_iter().map(Into::into).collect())
 	}
 }
 

@@ -19,11 +19,16 @@
 	import { t } from "svelte-i18n";
 	import UserProfilePicture from "$/components/user-profile-picture.svelte";
 	import Connections from "$/components/profile/connections.svelte";
+	import ChannelPreview from "$/components/channel-preview.svelte";
+	import { UserEditorState } from "$/gql/graphql";
 
 	export let data: LayoutData;
 
 	let connectionsExpanded = false;
 	let editorsExpanded = false;
+
+	$: hasConnections = data.user.connections.length > 0;
+	$: hasEditors = data.user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted);
 </script>
 
 <svelte:head>
@@ -43,7 +48,7 @@
 		</span>
 		<div class="roles">
 			{#each data.user.roles.reverse() as role}
-				<Role role={role} />
+				<Role {role} />
 			{/each}
 		</div>
 		<!-- <div class="data">
@@ -72,36 +77,45 @@
 			</Button>
 		</div> -->
 		<nav class="link-list hide-on-mobile">
-			<Button big on:click={() => (connectionsExpanded = !connectionsExpanded)}>
-				<Link slot="icon" />
-				{$t("common.connections")}
+			{#if hasConnections}
+				<Button big on:click={() => (connectionsExpanded = !connectionsExpanded)}>
+					<Link slot="icon" />
+					{$t("common.connections")}
+					{#if connectionsExpanded}
+						<CaretDown slot="icon-right" style="margin-left: auto" />
+					{:else}
+						<CaretRight slot="icon-right" style="margin-left: auto" />
+					{/if}
+				</Button>
 				{#if connectionsExpanded}
-					<CaretDown slot="icon-right" style="margin-left: auto" />
-				{:else}
-					<CaretRight slot="icon-right" style="margin-left: auto" />
+					<div class="expanded">
+						<Connections user={data.user} />
+					</div>
 				{/if}
-			</Button>
-			{#if connectionsExpanded}
-				<div class="expanded">
-					<Connections user={data.user} />
-				</div>
 			{/if}
-			<Button big on:click={() => (editorsExpanded = !editorsExpanded)}>
-				<UserCircle slot="icon" />
-				{$t("common.editors")}
+			{#if hasEditors}
+				<Button big on:click={() => (editorsExpanded = !editorsExpanded)}>
+					<UserCircle slot="icon" />
+					{$t("common.editors")}
+					{#if editorsExpanded}
+						<CaretDown slot="icon-right" style="margin-left: auto" />
+					{:else}
+						<CaretRight slot="icon-right" style="margin-left: auto" />
+					{/if}
+				</Button>
 				{#if editorsExpanded}
-					<CaretDown slot="icon-right" style="margin-left: auto" />
-				{:else}
-					<CaretRight slot="icon-right" style="margin-left: auto" />
+					<div class="expanded">
+						{#each data.user.editors as editor}
+							{#if editor.editor && editor.state === UserEditorState.Accepted}
+								<ChannelPreview size={1.5} user={editor.editor} />
+							{/if}
+						{/each}
+					</div>
 				{/if}
-			</Button>
-			{#if editorsExpanded}
-				<div class="expanded">
-					<!-- <ChannelPreview size={1.5} index={0} />
-					<ChannelPreview size={1.5} index={1} /> -->
-				</div>
 			{/if}
-			<hr />
+			{#if hasConnections || hasEditors}
+				<hr />
+			{/if}
 			<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.user.id}" big>
 				<Lightning />
 				<Lightning weight="fill" slot="active" />

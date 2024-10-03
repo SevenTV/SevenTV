@@ -43,6 +43,32 @@ export async function load({ parent, fetch, params }: LayoutLoadEvent) {
 							hex
 						}
 					}
+					editors {
+						editor {
+							id
+							mainConnection {
+								platformDisplayName
+								platformAvatarUrl
+							}
+							style {
+								activeProfilePicture {
+									images {
+										url
+										mime
+										size
+										width
+										height
+										scale
+										frameCount
+									}
+								}
+							}
+							highestRoleColor {
+								hex
+							}
+						}
+						state
+					}
 				}
 			}
 		}

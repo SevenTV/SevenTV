@@ -25,18 +25,20 @@
 </script>
 
 {#each user.connections as connection}
-	<Button href={connectionLink(connection)} target="_blank" {big}>
-		{#if connection.platform === Platform.Twitch}
-			<TwitchLogo slot="icon" />
-		{:else if connection.platform === Platform.Google}
-			<YoutubeLogo slot="icon" />
-		{:else if connection.platform === Platform.Discord}
-			<DiscordLogo slot="icon" />
-		{:else if connection.platform === Platform.Kick}
-			<KickLogo slot="icon" />
-		{:else}
-			<Link slot="icon" />
-		{/if}
-		<span>{connection.platformDisplayName}</span>
-	</Button>
+	{#if connection.platformDisplayName.length !== 0}
+		<Button href={connectionLink(connection)} target="_blank" {big}>
+			{#if connection.platform === Platform.Twitch}
+				<TwitchLogo slot="icon" />
+			{:else if connection.platform === Platform.Google}
+				<YoutubeLogo slot="icon" />
+			{:else if connection.platform === Platform.Discord}
+				<DiscordLogo slot="icon" />
+			{:else if connection.platform === Platform.Kick}
+				<KickLogo slot="icon" />
+			{:else}
+				<Link slot="icon" />
+			{/if}
+			<span>{connection.platformDisplayName}</span>
+		</Button>
+	{/if}
 {/each}

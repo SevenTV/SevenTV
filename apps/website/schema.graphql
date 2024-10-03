@@ -161,6 +161,7 @@ enum TagsMatch {
 
 type User {
 	connections: [UserConnection!]!
+	editors: [UserEditor!]!
 	highestRoleColor: Color
 	highestRoleRank: Int!
 	id: Id!
@@ -181,6 +182,24 @@ type UserConnection {
 	platformId: String!
 	platformUsername: String!
 	updatedAt: DateTime!
+}
+
+type UserEditor {
+	addedAt: DateTime!
+	addedById: Id!
+	editor: User
+	editorId: Id!
+	notes: String
+	searchUpdatedAt: DateTime
+	state: UserEditorState!
+	updatedAt: DateTime!
+	userId: Id!
+}
+
+enum UserEditorState {
+	ACCEPTED
+	PENDING
+	REJECTED
 }
 
 type UserProfilePicture {
