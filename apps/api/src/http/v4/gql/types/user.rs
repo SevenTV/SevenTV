@@ -5,6 +5,7 @@ use shared::database::{
 	badge::BadgeId,
 	emote_set::EmoteSetId,
 	paint::PaintId,
+	role::RoleId,
 	user::{profile_picture::UserProfilePictureId, UserId},
 };
 
@@ -13,16 +14,23 @@ use crate::{
 	http::error::{ApiError, ApiErrorCode},
 };
 
-use super::UserProfilePicture;
+use super::{Color, Role, UserProfilePicture};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]
 pub struct User {
 	pub id: UserId,
-	pub style: UserStyle,
 	pub connections: Vec<UserConnection>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+
+	// Computed fields
+	pub highest_role_rank: i32,
+	pub highest_role_color: Option<Color>,
+	pub role_ids: Vec<RoleId>,
+
+	#[graphql(skip)]
+	pub(crate) full_user: shared::database::user::FullUser,
 }
 
 #[ComplexObject]
@@ -30,85 +38,72 @@ impl User {
 	pub async fn main_connection(&self) -> Option<&UserConnection> {
 		self.connections.first()
 	}
-}
 
-impl From<shared::database::user::User> for User {
-	fn from(value: shared::database::user::User) -> Self {
-		Self {
-			id: value.id,
-			style: value.style.into(),
-			connections: value.connections.into_iter().map(Into::into).collect(),
-			updated_at: value.updated_at,
-			search_updated_at: value.search_updated_at,
+	pub async fn style<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserStyle, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		Ok(UserStyle {
+			active_badge_id: self.full_user.style.active_badge_id,
+			active_paint_id: self.full_user.style.active_paint_id,
+			active_emote_set_id: self.full_user.style.active_emote_set_id,
+			active_profile_picture_id: self.full_user.style.active_profile_picture,
+			active_profile_picture: self
+				.full_user
+				.active_profile_picture
+				.as_ref()
+				.map(|p| UserProfilePicture::from_db(p.clone(), &global.config.api.cdn_origin)),
+			pending_profile_picture_id: self.full_user.style.pending_profile_picture,
+		})
+	}
+
+	pub async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let mut loaded = global
+			.role_by_id_loader
+			.load_many(self.role_ids.iter().copied())
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load roles"))?;
+
+		let mut roles = Vec::with_capacity(loaded.len());
+
+		for id in &self.role_ids {
+			if let Some(role) = loaded.remove(id) {
+				roles.push(role);
+			}
 		}
+
+		Ok(roles.into_iter().map(Into::into).collect())
 	}
 }
 
 impl From<shared::database::user::FullUser> for User {
 	fn from(value: shared::database::user::FullUser) -> Self {
-		Self::from(value.user)
+		Self {
+			id: value.id,
+			connections: value.connections.iter().cloned().map(Into::into).collect(),
+			updated_at: value.updated_at,
+			search_updated_at: value.search_updated_at,
+			highest_role_rank: value.computed.highest_role_rank,
+			highest_role_color: value.computed.highest_role_color.map(Color),
+			role_ids: value.computed.roles.clone(),
+			full_user: value,
+		}
 	}
 }
 
 #[derive(Debug, Clone, SimpleObject)]
-#[graphql(complex)]
 pub struct UserStyle {
 	pub active_badge_id: Option<BadgeId>,
 	pub active_paint_id: Option<PaintId>,
 	pub active_emote_set_id: Option<EmoteSetId>,
 	pub active_profile_picture_id: Option<UserProfilePictureId>,
+	pub active_profile_picture: Option<UserProfilePicture>,
 	pub pending_profile_picture_id: Option<UserProfilePictureId>,
-}
-
-impl From<shared::database::user::UserStyle> for UserStyle {
-	fn from(value: shared::database::user::UserStyle) -> Self {
-		Self {
-			active_badge_id: value.active_badge_id,
-			active_paint_id: value.active_paint_id,
-			active_emote_set_id: value.active_emote_set_id,
-			active_profile_picture_id: value.active_profile_picture,
-			pending_profile_picture_id: value.pending_profile_picture,
-		}
-	}
-}
-
-#[ComplexObject]
-impl UserStyle {
-	async fn active_profile_picture<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserProfilePicture>, ApiError> {
-		let global: &Arc<Global> = ctx
-			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
-
-		let Some(profile_picture_id) = self.active_profile_picture_id else {
-			return Ok(None);
-		};
-
-		let profile_picture = global
-			.user_profile_picture_id_loader
-			.load(profile_picture_id)
-			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user profile picture"))?;
-
-		Ok(profile_picture.map(|p| UserProfilePicture::from_db(p, &global.config.api.cdn_origin)))
-	}
-
-	async fn pending_profile_picture<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserProfilePicture>, ApiError> {
-		let global: &Arc<Global> = ctx
-			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
-
-		let Some(profile_picture_id) = self.pending_profile_picture_id else {
-			return Ok(None);
-		};
-
-		let profile_picture = global
-			.user_profile_picture_id_loader
-			.load(profile_picture_id)
-			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user profile picture"))?;
-
-		Ok(profile_picture.map(|p| UserProfilePicture::from_db(p, &global.config.api.cdn_origin)))
-	}
 }
 
 #[derive(Debug, Clone, SimpleObject)]

@@ -28,6 +28,9 @@ export async function queryEmotes(query: string | null, tags: string[], sort: So
 											mainConnection {
 												platformDisplayName
 											}
+											highestRoleColor {
+												hex
+											}
 										}
 										flags {
 											# animated

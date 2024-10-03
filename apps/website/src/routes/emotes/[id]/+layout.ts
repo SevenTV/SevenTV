@@ -32,6 +32,9 @@ export async function load({ parent, fetch, params }: LayoutLoadEvent) {
 								}
 							}
 						}
+						highestRoleColor {
+							hex
+						}
 					}
 					tags
 					flags {
@@ -56,6 +59,9 @@ export async function load({ parent, fetch, params }: LayoutLoadEvent) {
 										frameCount
 									}
 								}
+							}
+							highestRoleColor {
+								hex
 							}
 						}
 					}

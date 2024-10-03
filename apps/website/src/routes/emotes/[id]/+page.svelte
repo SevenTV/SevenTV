@@ -50,6 +50,9 @@
 											}
 										}
 									}
+									highestRoleColor {
+										hex
+									}
 								}
 								totalCount
 								pageCount

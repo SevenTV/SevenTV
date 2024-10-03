@@ -1,4 +1,11 @@
 
+type Color {
+	b: Int!
+	g: Int!
+	hex: String!
+	r: Int!
+}
+
 """
 Implement the DateTime<Utc> scalar
 
@@ -94,6 +101,7 @@ enum Platform {
 
 type Query {
 	emotes: EmoteQuery!
+	users: UserQuery!
 }
 
 enum Ranking {
@@ -104,6 +112,18 @@ enum Ranking {
 	TRENDING_DAILY
 	TRENDING_MONTHLY
 	TRENDING_WEEKLY
+}
+
+type Role {
+	color: Color
+	createdBy: User
+	createdById: Id!
+	description: String
+	id: Id!
+	name: String!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
 }
 
 input Sort {
@@ -141,8 +161,12 @@ enum TagsMatch {
 
 type User {
 	connections: [UserConnection!]!
+	highestRoleColor: Color
+	highestRoleRank: Int!
 	id: Id!
 	mainConnection: UserConnection
+	roleIds: [Id!]!
+	roles: [Role!]!
 	searchUpdatedAt: DateTime
 	style: UserStyle!
 	updatedAt: DateTime!
@@ -166,6 +190,10 @@ type UserProfilePicture {
 	userId: Id!
 }
 
+type UserQuery {
+	user(id: Id!): User
+}
+
 type UserSearchResult {
 	items: [User!]!
 	pageCount: Int!
@@ -178,7 +206,6 @@ type UserStyle {
 	activePaintId: Id
 	activeProfilePicture: UserProfilePicture
 	activeProfilePictureId: Id
-	pendingProfilePicture: UserProfilePicture
 	pendingProfilePictureId: Id
 }
 

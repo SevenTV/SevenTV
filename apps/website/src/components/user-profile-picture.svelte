@@ -10,23 +10,26 @@
 	<ResponsiveImage
 		width={size}
 		height={size}
-		style="border-radius: 50%; border: 2px solid var(--staff);"
+		style={"border-radius: 50%; border: 2px solid; border-color: " + (user.highestRoleColor?.hex ?? "transparent")}
 		images={user.style.activeProfilePicture.images}
 		alt={user.mainConnection?.platformDisplayName ?? "profile"}
+		{...$$restProps}
 	/>
 {:else}
 	<img
 		src={user.mainConnection?.platformAvatarUrl}
+		style:border-color={user.highestRoleColor?.hex ?? "transparent"}
 		width={size}
 		height={size}
 		alt={user.mainConnection?.platformDisplayName ?? "profile"}
 		class="profile-picture"
+		{...$$restProps}
 	/>
 {/if}
 
 <style lang="scss">
 	.profile-picture {
 		border-radius: 50%;
-		border: 2px solid var(--staff);
+		border: 2px solid;
 	}
 </style>
