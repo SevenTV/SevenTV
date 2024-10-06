@@ -1,6 +1,11 @@
-export default function mouseTrap(el: HTMLElement, cb: (e: MouseEvent) => void) {
+import type { ActionReturn } from "svelte/action";
+
+interface Attributes {
+	'on:outsideClick': (e: CustomEvent<MouseEvent>) => void;
+};
+
+export default function mouseTrap(el: HTMLElement): ActionReturn<undefined, Attributes> {
 	const state = {
-		cb,
 		el,
 		willTrigger: false,
 		ready: false,
@@ -19,17 +24,14 @@ export default function mouseTrap(el: HTMLElement, cb: (e: MouseEvent) => void) 
 	const onMouseUp = (e: MouseEvent) => {
 		state.willTrigger = state.willTrigger && e.button === 0 && !state.el.contains(e.target as Node);
 		if (state.willTrigger) {
-			state.cb(e);
+			el.dispatchEvent(new CustomEvent("outsideClick", { detail: e }));
 		}
 	};
 
 	window.addEventListener("mouseup", onMouseUp);
 
 	return {
-		update(cb: (e: MouseEvent) => void) {
-			state.cb = cb;
-		},
-		destroy() {
+		destroy: () => {
 			window.removeEventListener("mousedown", onMouseDown);
 			window.removeEventListener("mouseup", onMouseUp);
 		},

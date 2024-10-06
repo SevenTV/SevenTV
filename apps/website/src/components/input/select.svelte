@@ -37,7 +37,14 @@
 	}
 </script>
 
-<div use:mouseTrap={close} class="select" class:grow class:expanded {...$$restProps}>
+<div
+	use:mouseTrap
+	on:outsideClick={close}
+	class="select"
+	class:grow
+	class:expanded
+	{...$$restProps}
+>
 	<select bind:value={selected} on:click={toggle} on:keypress={toggle}>
 		{#each options as option}
 			<option value={option.value}>

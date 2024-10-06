@@ -49,7 +49,8 @@
 
 <dialog
 	bind:this={dialog}
-	use:mouseTrap={close}
+	use:mouseTrap
+	on:outsideClick={close}
 	aria-modal="true"
 	transition:fade={{ duration: 100 }}
 	style="width: {width}rem"
@@ -59,7 +60,7 @@
 			<X slot="icon" />
 		</Button>
 	{/if}
-	<div class="trap" use:mouseTrap={close}>
+	<div class="trap" use:mouseTrap on:outsideClick={close}>
 		<slot />
 	</div>
 </dialog>

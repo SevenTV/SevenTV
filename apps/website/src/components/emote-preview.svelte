@@ -49,14 +49,16 @@
 			<span class="user" style:color={data.owner.highestRoleColor?.hex}>{data.owner.mainConnection.platformDisplayName}</span>
 		{/if}
 	{/if}
-	<div class="flags">
-		{#if selectionMode}
-			<Checkbox bind:value={selected} />
-		{/if}
-		{#if !emoteOnly}
-			<Flags {flags} iconOnly style="flex-direction: column; gap: 0.4rem;" />
-		{/if}
-	</div>
+	{#if selectionMode || flags.length > 0}
+		<div class="flags">
+			{#if selectionMode}
+				<Checkbox bind:value={selected} />
+			{/if}
+			{#if !emoteOnly && flags.length > 0}
+				<Flags {flags} iconOnly style="flex-direction: column; gap: 0.4rem;" />
+			{/if}
+		</div>
+	{/if}
 </a>
 
 <style lang="scss">

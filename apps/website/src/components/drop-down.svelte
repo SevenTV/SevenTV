@@ -27,7 +27,8 @@
 
 <div
 	class="dropdown"
-	use:mouseTrap={close}
+	use:mouseTrap
+	on:outsideClick={close}
 	class:hide-on-mobile={hideOnMobile}
 	class:hide-on-desktop={hideOnDesktop}
 >
