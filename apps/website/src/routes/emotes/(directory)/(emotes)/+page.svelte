@@ -13,8 +13,6 @@
 </svelte:head>
 
 <EmoteLoader
-	load={(page, perPage) =>
-		queryEmotes(data.query, data.tags, SortBy.TopAllTime, data.filters, page, perPage)}
-	numPage={data.page ?? 1}
-	updateUrl
+	load={(client, page, perPage) =>
+		queryEmotes(client, data.query, data.tags, SortBy.TopAllTime, data.filters, page, perPage)}
 />

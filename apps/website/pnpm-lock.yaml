@@ -14,6 +14,9 @@ importers:
       '@urql/svelte':
         specifier: ^4.2.1
         version: 4.2.1(@urql/core@5.0.6(graphql@16.9.0))(svelte@4.2.19)
+      svelte-infinite-loading:
+        specifier: ^1.4.0
+        version: 1.4.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.10.0
@@ -2584,6 +2587,9 @@ packages:
     hasBin: true
     peerDependencies:
       svelte: ^3 || ^4
+
+  svelte-infinite-loading@1.4.0:
+    resolution: {integrity: sha512-Jo+f/yr/HmZQuIiiKKzAHVFXdAUWHW2RBbrcQTil8JVk1sCm/riy7KTJVzjBgQvHasrFQYKF84zvtc9/Y4lFYg==}
 
   svelte2tsx@0.7.19:
     resolution: {integrity: sha512-PME/9mILn9wOihtk2dxu9tmf2+B9X6oWuqYPJRKSjqU4wq3Pc6+fOuYV7T3H+QF5afmA1oDobfXC6dzmK9NAVw==}
@@ -5640,6 +5646,8 @@ snapshots:
       sade: 1.8.1
       svelte: 4.2.19
       tiny-glob: 0.2.9
+
+  svelte-infinite-loading@1.4.0: {}
 
   svelte2tsx@0.7.19(svelte@4.2.19)(typescript@5.6.2):
     dependencies:

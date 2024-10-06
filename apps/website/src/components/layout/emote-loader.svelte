@@ -1,114 +1,64 @@
 <script lang="ts">
 	import type { EmoteSearchResult } from "$/gql/graphql";
-	import EmoteLoadingPlaceholder from "../emote-loading-placeholder.svelte";
+	import { emotesLayout, Layout } from "$/store/layout";
+	import { getContextClient, type Client } from "@urql/svelte";
 	import EmotePreview from "../emote-preview.svelte";
 	import EmoteContainer from "./emote-container.svelte";
-	import { Layout, emotesLayout } from "$/store/layout";
-	import { CaretLeft, CaretRight } from "phosphor-svelte";
-	import Button from "../input/button.svelte";
-	import { goto } from "$app/navigation";
-	import { page } from "$app/stores";
+	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";
 
-	const MAX_PER_PAGE = 250;
+	const PER_PAGE = 36;
 
-	export let load: (page: number, perPage: number) => Promise<EmoteSearchResult>;
-	export let updateUrl = false;
-	export let numPage = 1;
+	export let load: (client: Client, page: number, perPage: number) => Promise<EmoteSearchResult>;
 
-	let containerWidth: number | undefined;
-	let containerHeight: number | undefined;
+	let page = 1;
+	let results: EmoteSearchResult | null = null;
 
-	$: emoteSize = $emotesLayout === Layout.SmallGrid ? 5 * 16 : 10 * 16;
-	const EMOTE_GAP = 1 * 16;
-
-	$: perPage = calculatePerPage(containerWidth, containerHeight, emoteSize);
-
-	function calculatePerPage(width: number | undefined, height: number | undefined, emoteSize: number) {
-		if (!width || !height) {
-			return undefined;
-		}
-
-		const rows = Math.floor(width / (emoteSize + EMOTE_GAP));
-		const columns = Math.floor(height / (emoteSize + EMOTE_GAP));
-
-		return Math.min(rows * columns, MAX_PER_PAGE);
+	function reset() {
+		page = 1;
+		results = null;
 	}
 
-	$: results = perPage
-		? load(numPage, perPage).then((result) => {
-				pageCount = result.pageCount;
+	$: load, reset();
 
-				if (numPage > pageCount) {
-					numPage = pageCount;
-				}
+	const client = getContextClient();
 
-				return result;
-			})
-		: null;
+	function handleInfinite(e: InfiniteEvent) {
+		load(client, page++, PER_PAGE).then((result) => {
+			if (results) {
+				results.pageCount = result.pageCount;
+				results.totalCount = result.totalCount;
+				results.items.push(...result.items);
+			} else {
+				results = result;
+			}
 
-	let pageCount: number | null = null;
+			if (results.items.length > 0) {
+				e.detail.loaded();
+			}
 
-	$: if (updateUrl) {
-		let url = new URL($page.url);
-
-		if (numPage && numPage > 1) {
-			url.searchParams.set("p", numPage.toString());
-		} else {
-			url.searchParams.delete("p");
-		}
-
-		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+			if (results.pageCount <= page) {
+				e.detail.complete();
+			}
+		});
 	}
 </script>
 
-<EmoteContainer
-	scrollable
-	layout={$emotesLayout}
-	style="flex-grow: 1"
-	bind:clientWidth={containerWidth}
-	bind:clientHeight={containerHeight}
->
-	{#await results}
-		{#each Array(perPage ?? 36) as _, i}
-			<EmoteLoadingPlaceholder index={i} />
+<EmoteContainer scrollable layout={$emotesLayout} style="flex-grow: 1">
+	{#if results}
+		{#each results.items as data, i}
+			<EmotePreview {data} index={i} emoteOnly={$emotesLayout === Layout.SmallGrid} />
 		{/each}
-	{:then results}
-		{#if results}
-			{#each results.items as data, i}
-				<EmotePreview index={i} {data} emoteOnly={$emotesLayout === Layout.SmallGrid} />
-			{/each}
-		{/if}
-	{/await}
+	{/if}
+	<div class="spinner">
+		<InfiniteLoading identifier={load} on:infinite={handleInfinite} spinner="spiral">
+			<p slot="noMore">No more emotes</p>
+			<p slot="noResults">No emotes</p>
+		</InfiniteLoading>
+	</div>
 </EmoteContainer>
-<div class="buttons">
-	<Button disabled={numPage <= 1} on:click={() => numPage--} hideOnMobile>
-		<CaretLeft slot="icon" />
-		Previous Page
-	</Button>
-	<Button disabled={numPage <= 1} on:click={() => numPage--} hideOnDesktop>
-		<CaretLeft slot="icon" />
-	</Button>
-	<span>
-		Page {numPage}
-		{#if pageCount}
-			of {pageCount}
-		{/if}
-	</span>
-	<Button disabled={!pageCount || numPage >= pageCount} on:click={() => numPage++} hideOnMobile>
-		<CaretRight slot="icon-right" />
-		Next Page
-	</Button>
-	<Button disabled={!pageCount || numPage >= pageCount} on:click={() => numPage++} hideOnDesktop>
-		<CaretRight slot="icon" />
-	</Button>
-</div>
 
 <style lang="scss">
-	.buttons {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		flex-wrap: wrap;
-		column-gap: 1rem;
+	.spinner {
+		grid-column: 1 / -1;
 	}
 </style>

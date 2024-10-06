@@ -1,15 +1,13 @@
 import { graphql } from "$/gql";
 import type { EmoteSearchResult, Filters, SortBy } from "$/gql/graphql";
-import { getContextClient } from "@urql/svelte";
+import { Client } from "@urql/svelte";
 
 let timeout: NodeJS.Timeout | number | null = null;
 
-export async function queryEmotes(query: string | null, tags: string[], sort: SortBy, filters: Filters | null, page: number | null, perPage: number): Promise<EmoteSearchResult> {
+export async function queryEmotes(client: Client, query: string | null, tags: string[], sort: SortBy, filters: Filters | null, page: number | null, perPage: number): Promise<EmoteSearchResult> {
 	if (timeout) {
 		clearTimeout(timeout);
 	}
-
-	const client = getContextClient();
 
 	// Small timeout to prevent spamming requests when user is typing
 

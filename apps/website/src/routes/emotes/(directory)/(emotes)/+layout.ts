@@ -8,9 +8,6 @@ export function load({ url }: LayoutLoadEvent) {
 	const tags = url.searchParams.get("t");
 	const tagsArray = tags ? tags.split(TAGS_SEPERATOR) : [];
 
-    const pageQuery = url.searchParams.get("p");
-    const page = pageQuery ? Number(pageQuery) : null;
-
 	let filters: Filters = {};
 
 	if (url.searchParams.get("a") === "1") {
@@ -32,7 +29,6 @@ export function load({ url }: LayoutLoadEvent) {
     return {
         query,
 		tags: tagsArray,
-        page,
 		filters,
     };
 }
