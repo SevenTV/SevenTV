@@ -2,7 +2,6 @@
 	import { SortBy } from "$/gql/graphql";
 	import { t } from "svelte-i18n";
 	import type { PageData } from "./$types";
-	import { queryEmotes } from "$/lib/emoteQuery";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
 
 	export let data: PageData;
@@ -13,6 +12,10 @@
 </svelte:head>
 
 <EmoteLoader
-	load={(client, page, perPage) =>
-		queryEmotes(client, data.query, data.tags, SortBy.TopAllTime, data.filters, page, perPage)}
+	options={{
+		query: data.query,
+		tags: data.tags,
+		sortBy: SortBy.TopAllTime,
+		filters: data.filters,
+	}}
 />

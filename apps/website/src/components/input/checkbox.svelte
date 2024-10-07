@@ -113,6 +113,14 @@
 			& + .checkbox {
 				background-color: var(--secondary-disabled);
 			}
+
+			&:checked + .checkbox {
+				background-color: gray;
+			}
+
+			&:indeterminate + .checkbox {
+				background-color: gray;
+			}
 		}
 	}
 </style>

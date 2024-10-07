@@ -19,8 +19,7 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
 		grid-template-rows: repeat(auto-fill, minmax(10rem, 1fr));
-
-		justify-content: space-evenly;
+		place-items: center;
 		gap: 1rem;
 
 		&.scrollable {

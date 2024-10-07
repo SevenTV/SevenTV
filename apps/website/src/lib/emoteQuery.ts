@@ -11,7 +11,7 @@ export async function queryEmotes(client: Client, query: string | null, tags: st
 
 	// Small timeout to prevent spamming requests when user is typing
 
-	return new Promise((resolve) => {
+	return new Promise((resolve, reject) => {
 		timeout = setTimeout(async () => {
 			const res = await client
 				.query(
@@ -67,11 +67,11 @@ export async function queryEmotes(client: Client, query: string | null, tags: st
 				.toPromise();
 
 			if (res.error || !res.data) {
-				console.error(res.error);
-				throw res.error;
+				console.error("error fetching emotes", res.error);
+				reject(res.error);
+			} else {
+				resolve(res.data.emotes.search as EmoteSearchResult);
 			}
-
-			resolve(res.data.emotes.search as EmoteSearchResult);
 		}, 200);
 	});
 }
