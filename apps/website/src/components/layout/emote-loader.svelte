@@ -7,7 +7,6 @@
 	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";
 	import { isMobileLayout } from "$/lib/utils";
 	import Spinner from "../spinner.svelte";
-	import EmoteLoadingPlaceholder from "../emote-loading-placeholder.svelte";
 	import { queryEmotes } from "$/lib/emoteQuery";
 
 	const PER_PAGE = 36;
@@ -17,9 +16,8 @@
 		tags: string[];
 		sortBy: SortBy;
 		filters: Filters;
-	};
+	}
 
-	// export let load: (client: Client, page: number, perPage: number) => Promise<EmoteSearchResult>;
 	export let options: LoadOptions;
 
 	let page = 1;
@@ -35,25 +33,35 @@
 	const client = getContextClient();
 
 	function handleInfinite(event: InfiniteEvent) {
-		queryEmotes(client, options.query, options.tags, options.sortBy, options.filters, page++, PER_PAGE).then((result) => {
-			if (results) {
-				results.pageCount = result.pageCount;
-				results.totalCount = result.totalCount;
-				results.items.push(...result.items);
-			} else {
-				results = result;
-			}
+		queryEmotes(
+			client,
+			options.query,
+			options.tags,
+			options.sortBy,
+			options.filters,
+			page++,
+			PER_PAGE,
+		)
+			.then((result) => {
+				if (results) {
+					results.pageCount = result.pageCount;
+					results.totalCount = result.totalCount;
+					results.items.push(...result.items);
+				} else {
+					results = result;
+				}
 
-			if (results.items.length > 0) {
-				event.detail.loaded();
-			}
+				if (results.items.length > 0) {
+					event.detail.loaded();
+				}
 
-			if (results.pageCount <= page) {
-				event.detail.complete();
-			}
-		}).catch(() => {
-			event.detail.error();
-		});
+				if (results.pageCount <= page) {
+					event.detail.complete();
+				}
+			})
+			.catch(() => {
+				event.detail.error();
+			});
 	}
 </script>
 
@@ -62,13 +70,16 @@
 		{#each results.items as data, i}
 			<EmotePreview {data} index={i} emoteOnly={$emotesLayout === Layout.SmallGrid} />
 		{/each}
-	{:else}
-		{#each Array(PER_PAGE) as _, i}
-			<EmoteLoadingPlaceholder index={i} />
-		{/each}
 	{/if}
 	<div class="loading">
-		<InfiniteLoading identifier={options} on:infinite={handleInfinite}>
+		<InfiniteLoading
+			distance={500}
+			identifier={{
+				options: options,
+				layout: $emotesLayout,
+			}}
+			on:infinite={handleInfinite}
+		>
 			<p slot="noMore">No more emotes</p>
 			<p slot="noResults">No emotes</p>
 			<Spinner slot="spinner" />

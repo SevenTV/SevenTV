@@ -85,6 +85,9 @@
 				<slot />
 			{/if}
 		</svelte:fragment>
+		{#if active}
+			{title}
+		{/if}
 	</Button>
 {:else if $$slots["icon-right"]}
 	<Button

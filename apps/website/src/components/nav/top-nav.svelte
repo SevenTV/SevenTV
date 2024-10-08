@@ -49,9 +49,9 @@
 		</TextInput>
 	</HideOn> -->
 	<div class="user-actions">
-		<Button hideOnDesktop>
+		<!-- <Button hideOnDesktop>
 			<MagnifyingGlass slot="icon" />
-		</Button>
+		</Button> -->
 		{#if $user}
 			<DropDown hideOnMobile>
 				<Button>

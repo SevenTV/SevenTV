@@ -18,7 +18,6 @@
 	.emotes {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-		grid-template-rows: repeat(auto-fill, minmax(10rem, 1fr));
 		place-items: center;
 		gap: 1rem;
 
@@ -30,7 +29,6 @@
 
 		&.small-grid {
 			grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
-			grid-template-rows: repeat(auto-fill, minmax(5rem, 1fr));
 			gap: 0.5rem;
 		}
 	}
@@ -38,7 +36,6 @@
 	@media screen and (max-width: 960px) {
 		.emotes {
 			grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
-			grid-template-rows: repeat(auto-fill, minmax(8rem, 1fr));
 			gap: 0.5rem;
 		}
 	}
