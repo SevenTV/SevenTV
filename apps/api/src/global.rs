@@ -32,6 +32,7 @@ use shared::ip::GeoIpResolver;
 use shared::redis::setup_redis;
 
 use crate::config::Config;
+use crate::dataloader::active_subscription_period::{ActiveSubscriptionPeriodByUserIdLoader, SubscriptionPeriodsByUserIdLoader};
 use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
 use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
@@ -77,6 +78,8 @@ pub struct Global {
 	pub subscription_product_by_id_loader: DataLoader<LoaderById<SubscriptionProduct>>,
 	pub subscription_products_loader: DataLoader<SubscriptionProductsLoader>,
 	pub subscription_by_id_loader: DataLoader<LoaderById<Subscription>>,
+	pub subscription_periods_by_user_id_loader: DataLoader<SubscriptionPeriodsByUserIdLoader>,
+	pub active_subscription_period_by_user_id_loader: DataLoader<ActiveSubscriptionPeriodByUserIdLoader>,
 	pub redeem_code_by_id_loader: DataLoader<LoaderById<RedeemCode>>,
 	pub user_by_id_loader: DataLoader<LoaderById<User>>,
 	pub user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
@@ -168,6 +171,8 @@ impl Global {
 			subscription_product_by_id_loader: LoaderById::new(db.clone()),
 			subscription_products_loader: SubscriptionProductsLoader::new(db.clone()),
 			subscription_by_id_loader: LoaderById::new(db.clone()),
+			subscription_periods_by_user_id_loader: SubscriptionPeriodsByUserIdLoader::new(db.clone()),
+			active_subscription_period_by_user_id_loader: ActiveSubscriptionPeriodByUserIdLoader::new(db.clone()),
 			redeem_code_by_id_loader: LoaderById::new(db.clone()),
 			user_by_id_loader: LoaderById::new(db.clone()),
 			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),

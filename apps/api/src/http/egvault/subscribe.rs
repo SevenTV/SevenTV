@@ -4,7 +4,6 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
 use shared::database::queries::filter;
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
@@ -147,26 +146,15 @@ pub async fn subscribe(
 				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
-			// TODO: should we dataload this?
-			let is_subscribed = SubscriptionPeriod::collection(&global.db)
-				.find_one(filter::filter! {
-					SubscriptionPeriod {
-						#[query(flatten)]
-						subscription_id: SubscriptionId {
-							user_id: receiving_user.id,
-						},
-						#[query(selector = "lt")]
-						start: chrono::Utc::now(),
-						#[query(selector = "gt")]
-						end: chrono::Utc::now(),
-					}
-				})
+			let is_subscribed = global
+				.active_subscription_period_by_user_id_loader
+				.load(receiving_user.id)
 				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to load subscription periods");
+				.map_err(|()| {
 					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods")
 				})?
 				.is_some();
+
 			if is_subscribed {
 				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "user is already subscribed"));
 			}
@@ -205,24 +193,12 @@ pub async fn subscribe(
 
 			receiving_user.id
 		} else {
-			// TODO: should we dataload this?
-			let is_subscribed = SubscriptionPeriod::collection(&global.db)
-				.find_one(filter::filter! {
-					SubscriptionPeriod {
-						#[query(flatten)]
-						subscription_id: SubscriptionId {
-							user_id: authed_user.id,
-						},
-						#[query(selector = "lt")]
-						start: chrono::Utc::now(),
-						#[query(selector = "gt")]
-						end: chrono::Utc::now(),
-					}
-				})
+			let is_subscribed = global
+				.active_subscription_period_by_user_id_loader
+				.load(authed_user.id)
 				.await
-				.map_err(|e| {
-					tracing::error!(error = %e, "failed to load subscription periods");
-					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods")
+				.map_err(|()| {
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription period")
 				})?
 				.is_some();
 
