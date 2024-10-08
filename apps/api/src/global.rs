@@ -35,9 +35,10 @@ use crate::config::Config;
 use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
 use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
+use crate::dataloader::subscription_products::SubscriptionProductsLoader;
 use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
 use crate::dataloader::user::UserByPlatformIdLoader;
-use crate::dataloader::user_bans::UserBanByUserIdLoader;
+use crate::dataloader::user_ban::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
 use crate::dataloader::user_session::UserSessionUpdaterBatcher;
 use crate::ratelimit::RateLimiter;
@@ -74,6 +75,7 @@ pub struct Global {
 	pub entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
 	pub entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
 	pub subscription_product_by_id_loader: DataLoader<LoaderById<SubscriptionProduct>>,
+	pub subscription_products_loader: DataLoader<SubscriptionProductsLoader>,
 	pub subscription_by_id_loader: DataLoader<LoaderById<Subscription>>,
 	pub redeem_code_by_id_loader: DataLoader<LoaderById<RedeemCode>>,
 	pub user_by_id_loader: DataLoader<LoaderById<User>>,
@@ -164,6 +166,7 @@ impl Global {
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
 			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
 			subscription_product_by_id_loader: LoaderById::new(db.clone()),
+			subscription_products_loader: SubscriptionProductsLoader::new(db.clone()),
 			subscription_by_id_loader: LoaderById::new(db.clone()),
 			redeem_code_by_id_loader: LoaderById::new(db.clone()),
 			user_by_id_loader: LoaderById::new(db.clone()),
