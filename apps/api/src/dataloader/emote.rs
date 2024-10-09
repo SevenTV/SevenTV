@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::future::IntoFuture;
+use std::sync::Arc;
 
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
@@ -10,6 +12,45 @@ use shared::database::emote::{Emote, EmoteId};
 use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
+
+use crate::global::Global;
+
+pub async fn load_emotes(
+	global: &Arc<Global>,
+	ids: impl IntoIterator<Item = EmoteId>,
+) -> Result<HashMap<EmoteId, Emote>, ()> {
+	let mut results = HashMap::new();
+
+	let mut i = 0;
+
+	let mut ids = ids.into_iter().collect::<Vec<_>>();
+
+	while !ids.is_empty() && i < 10 {
+		let emotes = global.emote_by_id_loader.load_many(ids.iter().copied()).await?;
+
+		ids.clear();
+
+		for emote in emotes.into_values().filter(|e| !e.deleted) {
+			if let Some(merged) = emote.merged {
+				ids.push(merged.target_id);
+			} else {
+				results.insert(emote.id, emote);
+			}
+		}
+
+		i += 1;
+	}
+
+	if !ids.is_empty() {
+		tracing::warn!(ids = ?ids, "failed to load emotes due to too many merges");
+	}
+
+	Ok(results)
+}
+
+pub async fn load_emote(global: &Arc<Global>, id: EmoteId) -> Result<Option<Emote>, ()> {
+	Ok(load_emotes(global, [id]).await?.into_iter().next().map(|(_, e)| e))
+}
 
 pub struct EmoteByUserIdLoader {
 	db: mongodb::Database,
@@ -51,7 +92,6 @@ impl Loader for EmoteByUserIdLoader {
 				Emote {
 					#[query(selector = "in")]
 					owner_id: keys,
-					deleted: false,
 				}
 			})
 			.into_future()
@@ -103,7 +143,6 @@ impl Loader for EmoteByIdLoader {
 				Emote {
 					#[query(rename = "_id", selector = "in")]
 					id: keys,
-					deleted: false,
 				}
 			})
 			.into_future()

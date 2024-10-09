@@ -13,6 +13,7 @@ use shared::typesense::types::event::EventId;
 use super::audit_log::AuditLog;
 use super::report::Report;
 use super::user::{UserPartial, UserSearchResult};
+use crate::dataloader::emote::{load_emote, load_emotes};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -54,9 +55,7 @@ impl Emote {
 		let host = ImageHost::from_image_set(&value.image_set, &global.config.api.cdn_origin);
 		let state = EmoteVersionState::from_db(&value.flags);
 		let listed = value.flags.contains(shared::database::emote::EmoteFlags::PublicListed);
-		let lifecycle = if value.merged.is_some() {
-			EmoteLifecycleModel::Deleted
-		} else if value.image_set.input.is_pending() {
+		let lifecycle = if value.image_set.input.is_pending() {
 			EmoteLifecycleModel::Pending
 		} else {
 			EmoteLifecycleModel::Live
@@ -383,9 +382,7 @@ impl EmotesQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote = global
-			.emote_by_id_loader
-			.load(id.id())
+		let emote = load_emote(global, id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
 
@@ -402,13 +399,12 @@ impl EmotesQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote = global
-			.emote_by_id_loader
-			.load_many(list.into_iter().map(|i| i.id()))
-			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+		let emotes = load_emotes(global, list.into_iter().map(|i| i.id())).await.map_err(|()| {
+			tracing::error!("failed to load emotes");
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes")
+		})?;
 
-		Ok(emote.into_values().map(|e| Emote::from_db(global, e).into()).collect())
+		Ok(emotes.into_values().map(|e| Emote::from_db(global, e).into()).collect())
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
@@ -520,9 +516,7 @@ impl EmotesQuery {
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
-		let emotes = global
-			.emote_by_id_loader
-			.load_many(result.hits.iter().copied())
+		let emotes = load_emotes(global, result.hits.iter().copied())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
