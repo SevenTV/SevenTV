@@ -19,24 +19,40 @@ pub async fn load_emotes(
 	global: &Arc<Global>,
 	ids: impl IntoIterator<Item = EmoteId>,
 ) -> Result<HashMap<EmoteId, Emote>, ()> {
-	let mut results = HashMap::new();
+	let mut results = global.emote_by_id_loader.load_many(ids).await?;
+
+	let mut ids = Vec::new();
+
+	results.retain(|_, e| {
+		if e.deleted {
+			false
+		} else if let Some(merged) = &e.merged {
+			ids.push(merged.target_id);
+			false
+		} else {
+			true
+		}
+	});
+
+	if ids.is_empty() {
+		return Ok(results);
+	}
 
 	let mut i = 0;
-
-	let mut ids = ids.into_iter().collect::<Vec<_>>();
 
 	while !ids.is_empty() && i < 10 {
 		let emotes = global.emote_by_id_loader.load_many(ids.iter().copied()).await?;
 
-		ids.clear();
-
-		for emote in emotes.into_values().filter(|e| !e.deleted) {
-			if let Some(merged) = emote.merged {
+		results.extend(emotes.into_iter().filter(|(_, e)| {
+			if e.deleted {
+				false
+			} else if let Some(merged) = &e.merged {
 				ids.push(merged.target_id);
+				false
 			} else {
-				results.insert(emote.id, emote);
+				true
 			}
-		}
+		}));
 
 		i += 1;
 	}
