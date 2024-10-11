@@ -4,6 +4,7 @@ use std::sync::Arc;
 use shared::database::emote_set::EmoteSetEmote;
 use shared::old_types::{EmotePartialModel, UserPartialModel};
 
+use crate::dataloader::emote::load_emotes;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -13,9 +14,7 @@ pub async fn load_emote_set(
 	emote_set_emotes: Vec<EmoteSetEmote>,
 	session: &Session,
 ) -> Result<impl Iterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>, ApiError> {
-	let emotes = global
-		.emote_by_id_loader
-		.load_many(emote_set_emotes.iter().map(|emote| emote.id))
+	let emotes = load_emotes(global, emote_set_emotes.iter().map(|emote| emote.id))
 		.await
 		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 

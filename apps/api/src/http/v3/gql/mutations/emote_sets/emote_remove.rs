@@ -7,6 +7,7 @@ use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
 use shared::database::queries::{filter, update};
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
+use crate::dataloader::emote::load_emote;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -26,7 +27,7 @@ pub async fn emote_remove(
 			TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
 		})?;
 
-	let emote = global.emote_by_id_loader.load(emote_id).await.map_err(|()| {
+	let emote = load_emote(global, emote_id).await.map_err(|()| {
 		TransactionError::Custom(ApiError::internal_server_error(
 			ApiErrorCode::LoadError,
 			"failed to load emote",

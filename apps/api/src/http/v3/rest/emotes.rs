@@ -16,6 +16,7 @@ use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::{EmoteFlagsModel, EmotePartialModel, UserPartialModel};
 
 use super::types::EmoteModel;
+use crate::dataloader::emote::load_emote;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -225,9 +226,7 @@ pub async fn get_emote_by_id(
 	Path(id): Path<EmoteId>,
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let emote = global
-		.emote_by_id_loader
-		.load(id)
+	let emote = load_emote(&global, id)
 		.await
 		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
 		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;

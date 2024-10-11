@@ -9,6 +9,7 @@ use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
 use super::emote::{Emote, EmotePartial};
 use super::user::UserPartial;
+use crate::dataloader::emote::load_emote;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -86,9 +87,7 @@ impl ActiveEmote {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote = global
-			.emote_by_id_loader
-			.load(self.id.id())
+		let emote = load_emote(global, self.id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
 

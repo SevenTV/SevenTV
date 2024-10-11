@@ -28,6 +28,7 @@ use shared::old_types::{
 };
 
 use super::types::{PresenceKind, PresenceModel, UserPresencePlatform, UserPresenceWriteRequest};
+use crate::dataloader::emote::load_emotes;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
@@ -409,9 +410,7 @@ pub async fn create_user_presence(
 			.flat_map(|s| s.emotes.iter().map(|e| e.id))
 			.collect();
 
-		let emotes = global
-			.emote_by_id_loader
-			.load_many(emote_ids)
+		let emotes = load_emotes(&global, emote_ids)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
