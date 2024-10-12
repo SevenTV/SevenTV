@@ -23,7 +23,7 @@ const JETSTREAM_NAME: &str = "image-processor-callback";
 const JETSTREAM_CONSUMER_NAME: &str = "image-processor-callback-consumer";
 
 pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
-	let config = &global.config.api.image_processor;
+	let config = &global.config.image_processor;
 
 	let subject = Subject::wildcard(&config.event_queue_topic_prefix);
 
@@ -62,7 +62,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 
 		// decode
 		let subject =
-			match Subject::from_string(&message.subject, &global.config.api.image_processor.event_queue_topic_prefix) {
+			match Subject::from_string(&message.subject, &global.config.image_processor.event_queue_topic_prefix) {
 				Ok(subject) => subject,
 				Err(err) => {
 					tracing::warn!(error = %err, subject = %message.subject, "failed to decode subject");

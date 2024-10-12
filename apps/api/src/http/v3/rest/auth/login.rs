@@ -302,14 +302,14 @@ pub fn handle_login(
 ) -> Result<String, ApiError> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
-		Platform::Twitch if global.config.api.connections.twitch.enabled => {
-			(TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.api.connections.twitch)
+		Platform::Twitch if global.config.connections.twitch.enabled => {
+			(TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.connections.twitch)
 		}
-		Platform::Discord if global.config.api.connections.discord.enabled => {
-			(DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config.api.connections.discord)
+		Platform::Discord if global.config.connections.discord.enabled => {
+			(DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config.connections.discord)
 		}
-		Platform::Google if global.config.api.connections.google.enabled => {
-			(GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.api.connections.google)
+		Platform::Google if global.config.connections.google.enabled => {
+			(GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.connections.google)
 		}
 		_ => {
 			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "unsupported platform"));

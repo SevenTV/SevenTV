@@ -58,12 +58,12 @@ pub async fn exchange_code(
 	redirect_uri: String,
 ) -> Result<TokenResponse, ConnectionError> {
 	let (endpoint, config) = match platform {
-		Platform::Twitch => ("https://id.twitch.tv/oauth2/token", &global.config.api.connections.twitch),
+		Platform::Twitch => ("https://id.twitch.tv/oauth2/token", &global.config.connections.twitch),
 		Platform::Discord => (
 			"https://discord.com/api/v10/oauth2/token",
-			&global.config.api.connections.discord,
+			&global.config.connections.discord,
 		),
-		Platform::Google => ("https://oauth2.googleapis.com/token", &global.config.api.connections.google),
+		Platform::Google => ("https://oauth2.googleapis.com/token", &global.config.connections.google),
 		_ => return Err(ConnectionError::UnsupportedPlatform),
 	};
 

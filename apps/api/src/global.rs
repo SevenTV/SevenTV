@@ -112,7 +112,7 @@ impl Global {
 
 		let clickhouse = init_clickhouse(&config.clickhouse).await?;
 
-		let image_processor = ImageProcessor::new(&config.api.image_processor)
+		let image_processor = ImageProcessor::new(&config.image_processor)
 			.await
 			.context("image processor setup")?;
 
@@ -130,13 +130,13 @@ impl Global {
 
 		let stripe_client = stripe_client::StripeClientManager::new(&config);
 
-		let geoip = if let Some(config) = config.api.geoip.as_ref() {
+		let geoip = if let Some(config) = config.geoip.as_ref() {
 			Some(GeoIpResolver::new(config).await.context("geoip resolver")?)
 		} else {
 			None
 		};
 
-		let redis = setup_redis(&config.api.redis).await?;
+		let redis = setup_redis(&config.redis).await?;
 
 		tracing::info!("connected to redis");
 

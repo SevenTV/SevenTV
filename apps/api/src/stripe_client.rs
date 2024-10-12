@@ -16,12 +16,12 @@ pub struct StripeClientManager {
 impl StripeClientManager {
 	pub fn new(config: &Config) -> Self {
 		Self {
-			client: stripe::Client::new(&config.api.stripe.api_key).with_app_info(
+			client: stripe::Client::new(&config.stripe.api_key).with_app_info(
 				env!("CARGO_PKG_NAME").to_string(),
 				Some(env!("CARGO_PKG_VERSION").to_string()),
 				Some(config.api.api_origin.to_string()),
 			),
-			semaphore: Arc::new(tokio::sync::Semaphore::new(config.api.stripe.concurrent_requests)),
+			semaphore: Arc::new(tokio::sync::Semaphore::new(config.stripe.concurrent_requests)),
 		}
 	}
 
