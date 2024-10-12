@@ -10,7 +10,6 @@ use crate::types::{self, Cosmetic, PaintData};
 /// In case you run into rate limiting problems with imgur, you can run this
 /// first to request and store all image files before issuing the processing
 /// jobs.
-
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let mut cosmetics = global
 		.main_source_db
@@ -58,7 +57,7 @@ async fn process_cosmetic(global: &Arc<Global>, c: Cosmetic) -> anyhow::Result<(
 	tokio::fs::create_dir_all("local/cosmetics").await?;
 
 	let download_url = match c.data {
-		types::CosmeticData::Badge { .. } => format!("https://cdn.7tv.app/badge/{}/2x", c.id),
+		types::CosmeticData::Badge { .. } => format!("https://cdn.7tv.app/badge/{}/3x", c.id),
 		types::CosmeticData::Paint {
 			data: PaintData::Url {
 				image_url: Some(image_url),

@@ -10,7 +10,7 @@ use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
+use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::search::{search, sorted_results, SearchOptions};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/messages.gql
@@ -131,7 +131,7 @@ impl MessagesQuery {
 		&self,
 		ctx: &Context<'ctx>,
 		#[graphql(validator(maximum = 50))] page: Option<u32>,
-		#[graphql(validator(maximum = 250))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 250))] limit: Option<u32>,
 		#[graphql(validator(max_length = 100))] wish: Option<String>,
 		#[graphql(validator(max_length = 100))] country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {
@@ -153,7 +153,10 @@ impl MessagesQuery {
 
 		if let Some(country) = country {
 			let sanitized = country.replace('`', "");
-			filters.push(format!("country_code: {}", sanitized.trim_end_matches('\\')));
+			let sanitized = sanitized.trim_end_matches('\\');
+			if !sanitized.is_empty() {
+				filters.push(format!("country_code: `{}`", sanitized));
+			}
 		}
 
 		let options = SearchOptions::builder()

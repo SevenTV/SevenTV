@@ -61,72 +61,73 @@ services:
         limits:
           memory: ${NATS_MEMORY:-4G}
 
-  minio:
-    image: ghcr.io/scuffletv/ci/minio:latest
-    pull_policy: "always"
-    restart: unless-stopped
-    ports:
-      - "${MINIO_BIND:-127.0.0.1:9000}:9000"
-      - "${MINIO_CONSOLE_BIND:-127.0.0.1:9001}:9001"
-    environment:
-      - "MINIO_ACCESS_KEY=seventvkey"
-      - "MINIO_SECRET_KEY=seventvkey" 
-    volumes:
-      - minio:/data
-    command: server /data --console-address ":9001"
-    deploy:
-      resources:
-        limits:
-          memory: ${MINIO_MEMORY:-4G}
+  # minio:
+  #   image: ghcr.io/scuffletv/ci/minio:latest
+  #   pull_policy: "always"
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${MINIO_BIND:-127.0.0.1:9000}:9000"
+  #     - "${MINIO_CONSOLE_BIND:-127.0.0.1:9001}:9001"
+  #   environment:
+  #     - "MINIO_ACCESS_KEY=seventvkey"
+  #     - "MINIO_SECRET_KEY=seventvkey" 
+  #   volumes:
+  #     - minio:/data
+  #   command: server /data --console-address ":9001"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: ${MINIO_MEMORY:-4G}
 
-  minio-setup:
-    image: minio/mc:latest
-    pull_policy: "always"
-    restart: "no"
-    depends_on:
-      - minio
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        set -eux;
-        /usr/bin/mc config host add myminio http://minio:9000 seventvkey seventvkey || true; 
-        /usr/bin/mc mb myminio/seventv-cdn || true;
-        /usr/bin/mc anonymous set download myminio/seventv-cdn || true;
-        /usr/bin/mc mb myminio/seventv-cdn-private || true;
-        exit 0;
+  # minio-setup:
+  #   image: minio/mc:latest
+  #   pull_policy: "always"
+  #   restart: "no"
+  #   depends_on:
+  #     - minio
+  #   entrypoint:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       set -eux;
+  #       /usr/bin/mc config host add myminio http://minio:9000 seventvkey seventvkey || true; 
+  #       /usr/bin/mc mb myminio/seventv-cdn || true;
+  #       /usr/bin/mc anonymous set download myminio/seventv-cdn || true;
+  #       /usr/bin/mc mb myminio/seventv-cdn-private || true;
+  #       exit 0;
 
-  image-processor:
-    image: ghcr.io/scuffletv/image-processor:latest
-    pull_policy: "always"
-    restart: unless-stopped
-    ports:
-      - "${IMAGE_PROCESSOR_BIND:-127.0.0.1:50051}:50051"
-    command: --config /config/image-processor.toml
-    volumes:
-      - ./dev/image-processor.toml:/config/image-processor.toml
-    deploy:
-      resources:
-        limits:
-          cpus: ${IMAGE_PROCESSOR_CPUS:-1}
-          memory: ${IMAGE_PROCESSOR_MEMORY:-4G}
-    depends_on:
-      - mongodb
-      - nats
-      - minio
+  # image-processor:
+  #   image: ghcr.io/scuffletv/image-processor:latest
+  #   pull_policy: "always"
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${IMAGE_PROCESSOR_BIND:-127.0.0.1:50051}:50051"
+  #   command: --config /config/image-processor.toml
+  #   volumes:
+  #     - ./dev/image-processor.toml:/config/image-processor.toml
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: ${IMAGE_PROCESSOR_CPUS:-1}
+  #         memory: ${IMAGE_PROCESSOR_MEMORY:-4G}
+  #   depends_on:
+  #     - mongodb
+  #     - nats
+  #     - minio
 
-  clickhouse:
-    image: bitnami/clickhouse:latest
-    pull_policy: "always"
-    restart: unless-stopped
-    ports:
-      - "${CLICKHOUSE_BIND:-127.0.0.1:8123}:8123"
-      - "${CLICKHOUSE_BIND:-127.0.0.1:19000}:9000"
-    environment:
-      - CLICKHOUSE_ADMIN_USER=default
-      - CLICKHOUSE_ADMIN_PASSWORD=default
-    volumes:
-      - clickhouse:/bitnami/clickhouse
+  # clickhouse:
+  #   image: bitnami/clickhouse:latest
+  #   pull_policy: "always"
+  #   restart: unless-stopped
+  #   # user: root
+  #   ports:
+  #     - "${CLICKHOUSE_BIND:-127.0.0.1:8123}:8123"
+  #     - "${CLICKHOUSE_BIND:-127.0.0.1:19000}:9000"
+  #   environment:
+  #     - CLICKHOUSE_ADMIN_USER=default
+  #     - CLICKHOUSE_ADMIN_PASSWORD=default
+  #   volumes:
+  #     - clickhouse:/bitnami/clickhouse
 
   redis:
     image: bitnami/redis:latest
@@ -146,7 +147,7 @@ services:
 volumes:
   mongodb:
   typesense:
-  minio:
+  # minio:
   nats:
   clickhouse:
   redis:

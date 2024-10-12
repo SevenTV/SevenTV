@@ -14,8 +14,8 @@ use super::report::Report;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::RateLimitGuard;
 use crate::search::{search, sorted_results, SearchOptions};
+use crate::http::guards::RateLimitGuard;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/users.gql
 
@@ -176,7 +176,7 @@ impl User {
 	async fn activity<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] limit: Option<u32>,
 	) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -546,7 +546,7 @@ impl UsersQuery {
 		ctx: &Context<'ctx>,
 		#[graphql(validator(max_length = 100))] query: String,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] limit: Option<u32>,
 	) -> Result<Vec<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

@@ -23,7 +23,7 @@ const JETSTREAM_NAME: &str = "image-processor-callback";
 const JETSTREAM_CONSUMER_NAME: &str = "image-processor-callback-consumer";
 
 pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
-	let config = &global.config.api.image_processor;
+	let config = &global.config.image_processor;
 
 	let subject = Subject::wildcard(&config.event_queue_topic_prefix);
 
@@ -61,19 +61,18 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		let message = message.context("consumer closed")?.context("failed to get message")?;
 
 		// decode
-		let subject =
-			match Subject::from_string(&message.subject, &global.config.api.image_processor.event_queue_topic_prefix) {
-				Ok(subject) => subject,
-				Err(err) => {
-					tracing::warn!(error = %err, subject = %message.subject, "failed to decode subject");
-					message
-						.ack()
-						.await
-						.map_err(|e| anyhow::anyhow!(e))
-						.context("failed to ack message")?;
-					continue;
-				}
-			};
+		let subject = match Subject::from_string(&message.subject, &global.config.image_processor.event_queue_topic_prefix) {
+			Ok(subject) => subject,
+			Err(err) => {
+				tracing::warn!(error = %err, subject = %message.subject, "failed to decode subject");
+				message
+					.ack()
+					.await
+					.map_err(|e| anyhow::anyhow!(e))
+					.context("failed to ack message")?;
+				continue;
+			}
+		};
 
 		let event_callback = match EventCallback::decode(message.payload.as_ref()) {
 			Ok(callback) => callback,

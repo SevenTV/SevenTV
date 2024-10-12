@@ -21,6 +21,7 @@ pub struct RunInput<'a> {
 	pub mod_requests: &'a mut Vec<EmoteModerationRequest>,
 }
 
+#[tracing::instrument(skip_all, name = "messages")]
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("messages");
 
@@ -72,6 +73,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome.processed_documents += 1;
 			}
 			Err(e) => {
+				tracing::error!("{:#}", e);
 				outcome.errors.push(e.into());
 			}
 		}

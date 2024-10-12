@@ -30,13 +30,13 @@ tokio-rustls = "0.26"
 fnv = "1.0"
 rustls-pemfile = "2.1"
 rustls = "0.23"
-async-nats = "0.36.0"
+async-nats = "0.37.0"
 utoipa = { version = "4.2", features = ["repr"] }
 serde_repr = "0.1"
 tokio-util = "0.7"
 bitmask-enum = "2"
-enum-impl = "0.1"
-clickhouse = { version = "0.12.2", features = ["uuid", "time"] }
+quick-impl = "0.1.4"
+clickhouse = { version = "0.13.0", features = ["uuid", "time"] }
 time = "0.3.36"
 uuid = { version = "1.9.1", features = ["serde"] }
 mongodb = "3.0"
@@ -60,7 +60,7 @@ typed-builder = "0.20.0"
 aws-sdk-s3 = { version = "1.45.0", features = ["behavior-version-latest"] }
 url = "2.3.1"
 maxminddb = "0.24.0"
-reqwest = { version = "0.12.7" }
+reqwest = { version = "0.12.8", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
 flate2 = "1.0.33"
 tar = "0.4.41"
 fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "partial-tracing"]}

@@ -21,14 +21,18 @@ async fn fetch(
 	cursor: Result<clickhouse::query::RowCursor<EmoteStat>, clickhouse::error::Error>,
 	mut cb: impl FnMut(EmoteStat),
 ) -> anyhow::Result<()> {
-	let mut cursor = cursor?;
+	let mut cursor = cursor.context("cursor")?;
 
-	while let Some(stat) = cursor.next().await? {
+	while let Some(stat) = cursor.next().await.context("next")? {
 		cb(stat);
 	}
 
 	Ok(())
 }
+
+const QUERY_BY_TIME: &str = "SELECT CAST(SUM(count), 'Int32') count, CAST(emote_id, 'UUID') emote_id FROM emote_stats WHERE date >= ?::date GROUP BY emote_id";
+const QUERY_ALL_TIME: &str =
+	"SELECT CAST(SUM(count), 'Int32') count, CAST(emote_id, 'UUID') emote_id FROM emote_stats GROUP BY emote_id";
 
 pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 	tracing::info!("started emote stats job");
@@ -68,7 +72,7 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 	fetch(
 		global
 			.clickhouse
-			.query("SELECT sum(count) count, emote_id FROM emote_stats WHERE date >= ? GROUP BY emote_id")
+			.query(QUERY_BY_TIME)
 			.bind((now - time::Duration::days(2)).to_string())
 			.fetch(),
 		|stat| {
@@ -86,7 +90,7 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 	fetch(
 		global
 			.clickhouse
-			.query("SELECT sum(count) count, emote_id FROM emote_stats WHERE date >= ? GROUP BY emote_id")
+			.query(QUERY_BY_TIME)
 			.bind((now - time::Duration::weeks(1)).to_string())
 			.fetch(),
 		|stat| {
@@ -104,7 +108,7 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 	fetch(
 		global
 			.clickhouse
-			.query("SELECT sum(count) count, emote_id FROM emote_stats WHERE date >= ? GROUP BY emote_id")
+			.query(QUERY_BY_TIME)
 			.bind((now - time::Duration::days(30)).to_string())
 			.fetch(),
 		|stat| {
@@ -119,16 +123,10 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 	tracing::info!("fetched {total} entries for last month");
 
 	total = 0;
-	fetch(
-		global
-			.clickhouse
-			.query("SELECT sum(count) count, emote_id FROM emote_stats GROUP BY emote_id")
-			.fetch(),
-		|stat| {
-			update_stat!(scores, stat, top_all_time, global_config.trending_emote_count);
-			total += 1;
-		},
-	)
+	fetch(global.clickhouse.query(QUERY_ALL_TIME).fetch(), |stat| {
+		update_stat!(scores, stat, top_all_time, global_config.trending_emote_count);
+		total += 1;
+	})
 	.await
 	.context("all time")?;
 

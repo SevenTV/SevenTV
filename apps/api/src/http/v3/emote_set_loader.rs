@@ -4,24 +4,25 @@ use std::sync::Arc;
 use shared::database::emote_set::EmoteSetEmote;
 use shared::old_types::{EmotePartialModel, UserPartialModel};
 
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 
-pub async fn load_emote_set(
-	global: &Arc<Global>,
+pub async fn load_emote_set<'a>(
+	global: &'a Arc<Global>,
 	emote_set_emotes: Vec<EmoteSetEmote>,
-	session: &Session,
-) -> Result<impl Iterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>, ApiError> {
+	session: &'a Session,
+) -> Result<impl Iterator<Item = (EmoteSetEmote, EmotePartialModel)> + 'a, ApiError> {
 	let emotes = global
 		.emote_by_id_loader
-		.load_many(emote_set_emotes.iter().map(|emote| emote.id))
+		.load_many_merged(emote_set_emotes.iter().map(|emote| emote.id))
 		.await
 		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 	let users = global
 		.user_loader
-		.load_fast_many(global, emotes.values().map(|emote| emote.owner_id))
+		.load_fast_many(global, emotes.emotes.values().map(|emote| emote.owner_id))
 		.await
 		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?;
 
@@ -38,17 +39,11 @@ pub async fn load_emote_set(
 		.map(|user| (user.id, user))
 		.collect::<HashMap<_, _>>();
 
-	let emotes = emotes
-		.into_iter()
-		.map(|(id, emote)| {
-			let owner = users.get(&emote.owner_id).cloned();
+	Ok(emote_set_emotes.into_iter().filter_map(move |emote_set_emote| {
+		let emote = emotes.get(emote_set_emote.id).cloned()?;
+		let owner = users.get(&emote.owner_id).cloned();
+		let partial = EmotePartialModel::from_db(emote, owner, &global.config.api.cdn_origin);
 
-			(id, EmotePartialModel::from_db(emote, owner, &global.config.api.cdn_origin))
-		})
-		.collect::<HashMap<_, _>>();
-
-	Ok(emote_set_emotes.into_iter().map(move |emote| {
-		let partial = emotes.get(&emote.id).cloned();
-		(emote, partial)
+		Some((emote_set_emote, partial))
 	}))
 }

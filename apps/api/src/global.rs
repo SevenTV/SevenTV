@@ -32,12 +32,16 @@ use shared::ip::GeoIpResolver;
 use shared::redis::setup_redis;
 
 use crate::config::Config;
+use crate::dataloader::active_subscription_period::{
+	ActiveSubscriptionPeriodByUserIdLoader, SubscriptionPeriodsByUserIdLoader,
+};
 use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
 use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
+use crate::dataloader::subscription_products::SubscriptionProductsLoader;
 use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
 use crate::dataloader::user::UserByPlatformIdLoader;
-use crate::dataloader::user_bans::UserBanByUserIdLoader;
+use crate::dataloader::user_ban::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
 use crate::dataloader::user_session::UserSessionUpdaterBatcher;
 use crate::ratelimit::RateLimiter;
@@ -74,7 +78,10 @@ pub struct Global {
 	pub entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
 	pub entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
 	pub subscription_product_by_id_loader: DataLoader<LoaderById<SubscriptionProduct>>,
+	pub subscription_products_loader: DataLoader<SubscriptionProductsLoader>,
 	pub subscription_by_id_loader: DataLoader<LoaderById<Subscription>>,
+	pub subscription_periods_by_user_id_loader: DataLoader<SubscriptionPeriodsByUserIdLoader>,
+	pub active_subscription_period_by_user_id_loader: DataLoader<ActiveSubscriptionPeriodByUserIdLoader>,
 	pub redeem_code_by_id_loader: DataLoader<LoaderById<RedeemCode>>,
 	pub user_by_id_loader: DataLoader<LoaderById<User>>,
 	pub user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
@@ -107,7 +114,7 @@ impl Global {
 
 		let clickhouse = init_clickhouse(&config.clickhouse).await?;
 
-		let image_processor = ImageProcessor::new(&config.api.image_processor)
+		let image_processor = ImageProcessor::new(&config.image_processor)
 			.await
 			.context("image processor setup")?;
 
@@ -125,13 +132,13 @@ impl Global {
 
 		let stripe_client = stripe_client::StripeClientManager::new(&config);
 
-		let geoip = if let Some(config) = config.api.geoip.as_ref() {
+		let geoip = if let Some(config) = config.geoip.as_ref() {
 			Some(GeoIpResolver::new(config).await.context("geoip resolver")?)
 		} else {
 			None
 		};
 
-		let redis = setup_redis(&config.api.redis).await?;
+		let redis = setup_redis(&config.redis).await?;
 
 		tracing::info!("connected to redis");
 
@@ -164,7 +171,10 @@ impl Global {
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
 			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
 			subscription_product_by_id_loader: LoaderById::new(db.clone()),
+			subscription_products_loader: SubscriptionProductsLoader::new(db.clone()),
 			subscription_by_id_loader: LoaderById::new(db.clone()),
+			subscription_periods_by_user_id_loader: SubscriptionPeriodsByUserIdLoader::new(db.clone()),
+			active_subscription_period_by_user_id_loader: ActiveSubscriptionPeriodByUserIdLoader::new(db.clone()),
 			redeem_code_by_id_loader: LoaderById::new(db.clone()),
 			user_by_id_loader: LoaderById::new(db.clone()),
 			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),
@@ -202,16 +212,10 @@ impl Global {
 impl HealthCheck for Global {
 	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output = bool> + Send + '_>> {
 		Box::pin(async {
-			tracing::info!("running health check");
+			tracing::debug!("running health check");
 
-			if !match self.db.run_command(doc! { "ping": 1 }).await {
-				Ok(r) => r.get_bool("ok").unwrap_or(false),
-				Err(err) => {
-					tracing::error!(%err, "failed to ping database");
-
-					false
-				}
-			} {
+			if let Err(err) = self.db.run_command(doc! { "ping": 1 }).await {
+				tracing::error!(%err, "failed to ping database");
 				return false;
 			}
 

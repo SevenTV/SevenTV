@@ -17,10 +17,10 @@ use shared::old_types::UserEditorModelPermission;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard, UserGuard};
 use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
 use crate::transactions::{with_transaction, TransactionError};
+use crate::http::guards::{PermissionGuard, RateLimitGuard, UserGuard};
 
 #[derive(Default)]
 pub struct UsersMutation;

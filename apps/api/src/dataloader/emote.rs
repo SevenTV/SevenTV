@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::future::IntoFuture;
 
 use bson::doc;
@@ -6,10 +7,112 @@ use itertools::Itertools;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::emote::{Emote, EmoteId};
+use shared::database::emote::{Emote, EmoteId, EmoteMerged};
 use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
+
+pub struct MergedResult {
+	pub emotes: HashMap<EmoteId, Emote>,
+	pub merged_ids: HashMap<EmoteId, EmoteId>,
+}
+
+impl MergedResult {
+	pub fn get(&self, mut id: EmoteId) -> Option<&Emote> {
+		for _ in 0..10 {
+			match self.merged_ids.get(&id) {
+				Some(target_id) => id = *target_id,
+				None => return self.emotes.get(&id),
+			}
+		}
+
+		None
+	}
+}
+
+pub trait EmoteByIdLoaderExt {
+	async fn load_exclude_deleted(&self, id: EmoteId) -> Result<Option<Emote>, ()>;
+	async fn load_many_exclude_deleted(&self, ids: impl IntoIterator<Item = EmoteId>)
+		-> Result<HashMap<EmoteId, Emote>, ()>;
+	async fn load_many_merged(&self, ids: impl IntoIterator<Item = EmoteId>) -> Result<MergedResult, ()>;
+}
+
+impl EmoteByIdLoaderExt for DataLoader<EmoteByIdLoader> {
+	async fn load_exclude_deleted(&self, id: EmoteId) -> Result<Option<Emote>, ()> {
+		let Some(result) = self.load(id).await? else {
+			return Ok(None);
+		};
+
+		if result.deleted || result.merged.is_some() {
+			Ok(None)
+		} else {
+			Ok(Some(result))
+		}
+	}
+
+	async fn load_many_exclude_deleted(
+		&self,
+		ids: impl IntoIterator<Item = EmoteId>,
+	) -> Result<HashMap<EmoteId, Emote>, ()> {
+		let results = self.load_many(ids).await?;
+
+		Ok(results
+			.into_iter()
+			.filter(|(_, e)| !e.deleted && e.merged.is_none())
+			.collect())
+	}
+
+	async fn load_many_merged(&self, ids: impl IntoIterator<Item = EmoteId>) -> Result<MergedResult, ()> {
+		let mut emotes = self.load_many(ids).await?;
+
+		let mut merged_ids = HashMap::new();
+
+		emotes.retain(|_, e| {
+			if e.deleted {
+				false
+			} else if let Some(merged) = &e.merged {
+				merged_ids.insert(e.id, merged.target_id);
+				false
+			} else {
+				true
+			}
+		});
+
+		if merged_ids.is_empty() {
+			return Ok(MergedResult { emotes, merged_ids });
+		}
+
+		let mut i = 0;
+
+		let mut ids = merged_ids.values().copied().collect::<Vec<_>>();
+
+		while !ids.is_empty() && i < 10 {
+			let additional_emotes = self.load_many(ids.drain(..)).await?;
+
+			emotes.extend(additional_emotes.into_iter().filter(|(_, e)| {
+				if e.deleted {
+					false
+				} else if let Some(merged) = &e.merged {
+					merged_ids.insert(e.id, merged.target_id);
+					if !merged_ids.contains_key(&merged.target_id) {
+						ids.push(merged.target_id);
+					}
+					false
+				} else {
+					true
+				}
+			}));
+
+			i += 1;
+		}
+
+		if !ids.is_empty() {
+			tracing::warn!(ids = ?ids, "failed to load emotes due to too many merges");
+		}
+
+		Ok(MergedResult { emotes, merged_ids })
+	}
+}
 
 pub struct EmoteByUserIdLoader {
 	db: mongodb::Database,
@@ -52,6 +155,8 @@ impl Loader for EmoteByUserIdLoader {
 					#[query(selector = "in")]
 					owner_id: keys,
 					deleted: false,
+					#[query(serde)]
+					merged: None::<EmoteMerged>,
 				}
 			})
 			.into_future()
@@ -103,7 +208,6 @@ impl Loader for EmoteByIdLoader {
 				Emote {
 					#[query(rename = "_id", selector = "in")]
 					id: keys,
-					deleted: false,
 				}
 			})
 			.into_future()

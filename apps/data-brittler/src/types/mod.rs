@@ -70,7 +70,11 @@ where
 	D: Deserializer<'de>,
 {
 	let s = String::deserialize(deserializer)?;
-	if s.is_empty() { Ok(None) } else { Ok(Some(s)) }
+	if s.is_empty() {
+		Ok(None)
+	} else {
+		Ok(Some(s))
+	}
 }
 
 fn null_to_default<'de, T, D>(deserializer: D) -> Result<T, D::Error>

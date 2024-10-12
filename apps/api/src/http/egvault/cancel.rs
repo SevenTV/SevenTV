@@ -108,7 +108,7 @@ pub async fn cancel_subscription(
 						global
 							.http_client
 							.post(format!("https://api.paypal.com/v1/billing/subscriptions/{id}/cancel"))
-							.bearer_auth(&global.config.api.paypal.api_key)
+							.bearer_auth(&global.config.paypal.api_key)
 							.json(&serde_json::json!({
 								"reason": "Subscription canceled by user"
 							}))

@@ -25,6 +25,7 @@ pub struct RunInput<'a> {
 	pub public_cdn_rename: &'a mut Vec<CdnFileRename>,
 }
 
+#[tracing::instrument(skip_all, name = "users")]
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("users");
 
@@ -63,6 +64,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome.processed_documents += 1;
 			}
 			Err(e) => {
+				tracing::error!("{:#}", e);
 				outcome.errors.push(e.into());
 			}
 		}

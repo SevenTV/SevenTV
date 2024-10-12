@@ -168,7 +168,6 @@ impl JobRunner {
 			badges: &mut self.badges,
 			paints: &mut self.paints,
 			pending_tasks: &mut self.pending_tasks,
-			cdn_rename: &mut self.public_cdn_rename,
 		})
 		.await
 		.context("cosmetics")?;
@@ -335,6 +334,7 @@ impl JobRunner {
 	}
 }
 
+#[tracing::instrument(skip_all, name = "batch_insert", fields(job_name = %outcome.job_name, collection = %M::COLLECTION_NAME))]
 async fn batch_insert<M: MongoCollection + serde::Serialize>(
 	db: mongodb::Database,
 	truncate: bool,
@@ -345,6 +345,7 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 
 	if truncate {
 		if let Err(err) = M::collection(&db).drop().await {
+			tracing::error!("failed to drop collection: {:#}", err);
 			outcome.errors.push(err.into());
 			return outcome;
 		}
@@ -352,6 +353,7 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 		let indexes = M::indexes();
 		if !indexes.is_empty() {
 			if let Err(err) = M::collection(&db).create_indexes(indexes).await {
+				tracing::error!("failed to create indexes: {:#}", err);
 				outcome.errors.push(err.into());
 				return outcome;
 			}
@@ -367,12 +369,15 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 		Ok(result) => {
 			outcome.inserted_rows += result.inserted_ids.len() as u64;
 		}
-		Err(e) => outcome.errors.push(e.into()),
+		Err(e) => {
+			tracing::error!("failed to insert documents: {:#}", e);
+			outcome.errors.push(e.into());
+		}
 	}
 
 	outcome.insert_time += start.elapsed().as_secs_f64();
 
-	tracing::info!("{} took {:.2}s", outcome.job_name, start.elapsed().as_secs_f64());
+	tracing::info!("{}({}) took {:.2}s", outcome.job_name, M::COLLECTION_NAME, start.elapsed().as_secs_f64());
 
 	outcome
 }
@@ -524,11 +529,20 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		.unwrap()
 	});
 	insert_future!(global.config.should_run_users(), async {
-		tokio::spawn(batch_insert(
+		let outcome = tokio::spawn(batch_insert(
 			global.target_db.clone(),
 			global.config.truncate,
 			outcomes.users,
 			runner.users.into_values(),
+		))
+		.await
+		.unwrap();
+
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcome,
+			runner.profile_pictures.into_iter(),
 		))
 		.await
 		.unwrap()

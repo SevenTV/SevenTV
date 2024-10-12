@@ -11,7 +11,7 @@ serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 once_cell = "1.19"
 thiserror = "1.0"
-async-nats = "0.36.0"
+async-nats = "0.37.0"
 anyhow = "1"
 tokio-stream = { version = "0.1", features = ["sync"] }
 futures-util = "0.3"
@@ -23,7 +23,7 @@ sha2 = "0.10"
 urlencoding = "2"
 url = "2"
 futures = "0.3"
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+reqwest = { version = "0.12.8", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
 rand = "0.8"
 lru = "0.12.4"
 fnv = "1"
@@ -32,7 +32,7 @@ bson = "2"
 shared = { workspace = true }
 
 hyper = { version = "1", features = ["full"] }
-tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
+tower-http = { version = "0.6.1", features = ["trace", "cors", "request-id"]}
 axum = { version = "0.7", features = ["ws"] }
 tower = "0.5.0"
 tinystr = "0.7"

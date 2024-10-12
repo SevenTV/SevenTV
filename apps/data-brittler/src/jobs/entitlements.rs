@@ -159,6 +159,7 @@ pub struct RunInput<'a> {
 	pub users: &'a mut HashMap<UserId, User>,
 }
 
+#[tracing::instrument(skip_all, name = "entitlements")]
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("entitlements");
 
@@ -197,6 +198,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome.processed_documents += 1;
 			}
 			Err(e) => {
+				tracing::error!("{:#}", e);
 				outcome.errors.push(e.into());
 			}
 		}

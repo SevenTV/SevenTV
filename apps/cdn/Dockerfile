@@ -2,16 +2,16 @@ FROM ubuntu:latest
 
 WORKDIR /app
 
-ARG BINARY_PATH=target/release-lto/cdn
+ARG BUILD_TARGET=release-lto
 
 # Copy the binary from the host machine
 # This assumes that you have already built the binary using the
 # `cargo build --profile release-lto` command.
-RUN --mount=type=bind,src=${BINARY_PATH},dst=/mount/cdn \
+RUN --mount=type=bind,src=target/${BUILD_TARGET}/cdn,dst=/mount/cdn \
     cp /mount/cdn /app/cdn && \
     chmod +x /app/cdn && \
     apt update && \
-    apt install -y ca-certificates libjemalloc2 && \
+    apt install -y ca-certificates libjemalloc2 libssl3 && \
     rm -rf /var/lib/apt/lists/*
 
 STOPSIGNAL SIGTERM
@@ -21,7 +21,7 @@ USER 1000
 # This is our default configuration for jemalloc
 # See https://github.com/jemalloc/jemalloc/blob/dev/TUNING.md for more information
 # on the various options.
-ARG JEMALLOC_CONF="background_thread:true,tcache_max:4096,metadata_thp:always,dirty_decay_ms:1000,muzzy_decay_ms:0,narenas:8,abort_conf:true"
+ARG JEMALLOC_CONF="background_thread:true,tcache_max:4096,metadata_thp:always,dirty_decay_ms:3000,muzzy_decay_ms:3000,abort_conf:true"
 
 # Set the environment variables for jemalloc
 ENV _RJEM_MALLOC_CONF=${JEMALLOC_CONF} \
