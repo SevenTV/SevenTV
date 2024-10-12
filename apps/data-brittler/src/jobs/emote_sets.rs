@@ -50,6 +50,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome.processed_documents += 1;
 			}
 			Err(e) => {
+				tracing::error!("{:#}", e);
 				outcome.errors.push(e.into());
 			}
 		}

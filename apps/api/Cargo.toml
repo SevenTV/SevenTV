@@ -28,7 +28,7 @@ x509-certificate = "0.23.1"
 rsa = "0.9.6"
 
 async-trait = "0.1.80"
-async-nats = "0.36.0"
+async-nats = "0.37.0"
 anyhow = "1"
 jwt-next = "0.17.0"
 hmac = "0.12.1"
@@ -55,10 +55,10 @@ utoipa = { version = "4.2", features = ["repr"] }
 itertools = "0.13"
 mongodb = "3.0"
 bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
-clickhouse = "0.12"
+clickhouse = "0.13.0"
 typesense_codegen = { git = "https://github.com/typesense/typesense-rust.git" }
 
-tower-http = { version = "0.5", features = ["trace", "cors", "request-id"]}
+tower-http = { version = "0.6.1", features = ["trace", "cors", "request-id"]}
 axum = "0.7"
 tower = "0.5.0"
 spin = "0.9"

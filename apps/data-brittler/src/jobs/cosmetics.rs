@@ -34,6 +34,7 @@ pub struct RunInput<'a> {
 	pub pending_tasks: &'a mut Vec<(PendingTask, mpsc::Receiver<EventCallback>)>,
 }
 
+#[tracing::instrument(skip_all, name = "cosmetics")]
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("cosmetics");
 
@@ -67,6 +68,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome.processed_documents += 1;
 			}
 			Err(e) => {
+				tracing::error!("{:#}", e);
 				outcome.errors.push(e.into());
 			}
 		}

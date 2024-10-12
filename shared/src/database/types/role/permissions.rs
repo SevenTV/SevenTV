@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not};
 
 use bitmask_enum::bitmask;
-use enum_impl::EnumImpl;
+use quick_impl::QuickImpl;
 
 pub trait BitMask:
 	BitAnd<Output = Self>
@@ -713,27 +713,27 @@ impl FromIterator<Permission> for Permissions {
 	}
 }
 
-#[derive(Debug, Clone, Copy, EnumImpl)]
+#[derive(Debug, Clone, Copy, QuickImpl)]
 pub enum Permission {
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	Emote(EmotePermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	Role(RolePermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	EmoteSet(EmoteSetPermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	Badge(BadgePermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	Paint(PaintPermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	User(UserPermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	Ticket(TicketPermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	EmoteModerationRequest(EmoteModerationRequestPermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	Admin(AdminPermission),
-	#[enum_impl(impl from)]
+	#[quick_impl(impl From)]
 	Flags(FlagPermission),
 }
 

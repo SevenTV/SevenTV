@@ -119,6 +119,7 @@ services:
     image: bitnami/clickhouse:latest
     pull_policy: "always"
     restart: unless-stopped
+    # user: root
     ports:
       - "${CLICKHOUSE_BIND:-127.0.0.1:8123}:8123"
       - "${CLICKHOUSE_BIND:-127.0.0.1:19000}:9000"

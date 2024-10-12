@@ -20,6 +20,7 @@ pub struct RunInput<'a> {
 	pub ticket_messages: &'a mut Vec<TicketMessage>,
 }
 
+#[tracing::instrument(skip_all, name = "reports")]
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("reports");
 
@@ -50,6 +51,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome.processed_documents += 1;
 			}
 			Err(e) => {
+				tracing::error!("{:#}", e);
 				outcome.errors.push(e.into());
 			}
 		}

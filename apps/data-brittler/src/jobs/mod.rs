@@ -335,6 +335,7 @@ impl JobRunner {
 	}
 }
 
+#[tracing::instrument(skip_all, name = "batch_insert", fields(job_name = %outcome.job_name, collection = %M::COLLECTION_NAME))]
 async fn batch_insert<M: MongoCollection + serde::Serialize>(
 	db: mongodb::Database,
 	truncate: bool,
@@ -345,6 +346,7 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 
 	if truncate {
 		if let Err(err) = M::collection(&db).drop().await {
+			tracing::error!("failed to drop collection: {:#}", err);
 			outcome.errors.push(err.into());
 			return outcome;
 		}
@@ -352,6 +354,7 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 		let indexes = M::indexes();
 		if !indexes.is_empty() {
 			if let Err(err) = M::collection(&db).create_indexes(indexes).await {
+				tracing::error!("failed to create indexes: {:#}", err);
 				outcome.errors.push(err.into());
 				return outcome;
 			}
@@ -367,7 +370,10 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 		Ok(result) => {
 			outcome.inserted_rows += result.inserted_ids.len() as u64;
 		}
-		Err(e) => outcome.errors.push(e.into()),
+		Err(e) => {
+			tracing::error!("failed to insert documents: {:#}", e);
+			outcome.errors.push(e.into());
+		},
 	}
 
 	outcome.insert_time += start.elapsed().as_secs_f64();

@@ -40,6 +40,7 @@ pub struct RunInput<'a> {
 	pub tickets: &'a HashMap<TicketId, Ticket>,
 }
 
+#[tracing::instrument(skip_all, name = "audit_logs")]
 pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 	let mut outcome = JobOutcome::new("audit_logs");
 
@@ -77,6 +78,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 				outcome.processed_documents += 1;
 			}
 			Err(e) => {
+				tracing::error!("{:#}", e);
 				outcome.errors.push(e.into());
 			}
 		}

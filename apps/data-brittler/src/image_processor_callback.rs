@@ -95,6 +95,11 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		let tasks = global.all_tasks.lock().await;
 		let Some(task) = tasks.get(&event_callback.id) else {
 			tracing::warn!(event_callback = ?event_callback, "task not found");
+			message
+				.ack()
+				.await
+				.map_err(|e| anyhow::anyhow!(e))
+				.context("failed to ack message")?;
 			continue;
 		};
 

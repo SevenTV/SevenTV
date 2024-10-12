@@ -21,9 +21,9 @@ async fn fetch(
 	cursor: Result<clickhouse::query::RowCursor<EmoteStat>, clickhouse::error::Error>,
 	mut cb: impl FnMut(EmoteStat),
 ) -> anyhow::Result<()> {
-	let mut cursor = cursor?;
+	let mut cursor = cursor.context("cursor")?;
 
-	while let Some(stat) = cursor.next().await? {
+	while let Some(stat) = cursor.next().await.context("next")? {
 		cb(stat);
 	}
 
