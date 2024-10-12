@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::future::IntoFuture;
+use std::future::{Future, IntoFuture};
 use std::sync::Arc;
 
 use bson::doc;
@@ -15,11 +15,12 @@ use shared::database::MongoCollection;
 
 use crate::global::Global;
 
-pub async fn load_emotes(
-	global: &Arc<Global>,
-	ids: impl IntoIterator<Item = EmoteId>,
-) -> Result<HashMap<EmoteId, Emote>, ()> {
-	let mut results = global.emote_by_id_loader.load_many(ids).await?;
+pub async fn load_emotes_generic<F, Fut>(global: &Arc<Global>, loader: F) -> Result<HashMap<EmoteId, Emote>, ()>
+where
+	F: FnOnce() -> Fut,
+	Fut: Future<Output = Result<HashMap<EmoteId, Emote>, ()>>,
+{
+	let mut results = loader().await?;
 
 	let mut ids = Vec::new();
 
@@ -64,8 +65,29 @@ pub async fn load_emotes(
 	Ok(results)
 }
 
+pub async fn load_emotes(
+	global: &Arc<Global>,
+	ids: impl IntoIterator<Item = EmoteId>,
+) -> Result<HashMap<EmoteId, Emote>, ()> {
+	load_emotes_generic(global, || global.emote_by_id_loader.load_many(ids)).await
+}
+
 pub async fn load_emote(global: &Arc<Global>, id: EmoteId) -> Result<Option<Emote>, ()> {
 	Ok(load_emotes(global, [id]).await?.into_iter().next().map(|(_, e)| e))
+}
+
+pub async fn load_emotes_by_user_id(global: &Arc<Global>, owner_id: UserId) -> Result<HashMap<EmoteId, Emote>, ()> {
+	load_emotes_generic(global, || async {
+		Ok(global
+			.emote_by_user_id_loader
+			.load(owner_id)
+			.await?
+			.unwrap_or_default()
+			.into_iter()
+			.map(|e| (e.id, e))
+			.collect())
+	})
+	.await
 }
 
 pub struct EmoteByUserIdLoader {

@@ -11,6 +11,7 @@ use super::audit_log::AuditLog;
 use super::emote::Emote;
 use super::emote_set::EmoteSet;
 use super::report::Report;
+use crate::dataloader::emote::load_emotes_by_user_id;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -162,14 +163,11 @@ impl User {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emotes = global
-			.emote_by_user_id_loader
-			.load(self.id.id())
+		let emotes = load_emotes_by_user_id(global, self.id.id())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?
-			.unwrap_or_default();
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
-		Ok(emotes.into_iter().map(|e| Emote::from_db(global, e)).collect())
+		Ok(emotes.into_iter().map(|(_, e)| Emote::from_db(global, e)).collect())
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
