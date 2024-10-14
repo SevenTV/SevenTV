@@ -22,6 +22,7 @@ where
 {
 	let mut results = loader().await?;
 
+	let mut merged_ids = HashMap::new();
 	let mut ids = Vec::new();
 
 	results.retain(|_, e| {
@@ -29,6 +30,7 @@ where
 			false
 		} else if let Some(merged) = &e.merged {
 			ids.push(merged.target_id);
+			merged_ids.insert(e.id, merged.target_id);
 			false
 		} else {
 			true
@@ -49,6 +51,7 @@ where
 				false
 			} else if let Some(merged) = &e.merged {
 				ids.push(merged.target_id);
+				merged_ids.insert(e.id, merged.target_id);
 				false
 			} else {
 				true
@@ -60,6 +63,12 @@ where
 
 	if !ids.is_empty() {
 		tracing::warn!(ids = ?ids, "failed to load emotes due to too many merges");
+	}
+
+	for (id, target_id) in merged_ids {
+		if let Some(target) = results.get(&target_id) {
+			results.insert(id, target.clone());
+		}
 	}
 
 	Ok(results)
