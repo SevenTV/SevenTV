@@ -210,16 +210,10 @@ impl Global {
 impl HealthCheck for Global {
 	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output = bool> + Send + '_>> {
 		Box::pin(async {
-			tracing::info!("running health check");
+			tracing::debug!("running health check");
 
-			if !match self.db.run_command(doc! { "ping": 1 }).await {
-				Ok(r) => r.get_bool("ok").unwrap_or(false),
-				Err(err) => {
-					tracing::error!(%err, "failed to ping database");
-
-					false
-				}
-			} {
+			if let Err(err) = self.db.run_command(doc! { "ping": 1 }).await {
+				tracing::error!(%err, "failed to ping database");
 				return false;
 			}
 

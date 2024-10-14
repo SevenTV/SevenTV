@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim
+FROM ubuntu:latest
 
 WORKDIR /app
 
@@ -7,7 +7,10 @@ WORKDIR /app
 # `cargo build --profile release-lto` command.
 RUN --mount=type=bind,src=target/release-lto/api,dst=/mount/api \
     cp /mount/api /app/api && \
-    chmod +x /app/api
+    chmod +x /app/api && \
+    apt update && \
+    apt install -y ca-certificates libjemalloc2 libssl3 && \
+    rm -rf /var/lib/apt/lists/*
 
 STOPSIGNAL SIGTERM
 

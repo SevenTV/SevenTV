@@ -14,7 +14,7 @@ fnv = "1.0.7"
 regex = "1.10.5"
 once_cell = "1.19.0"
 
-reqwest = "0.12.5"
+reqwest = { version = "0.12.8", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
 bytes = "1.6.0"
 scuffle-config = "0.0.1"
 scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", default-features = false, features = [
