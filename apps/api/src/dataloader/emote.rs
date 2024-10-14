@@ -46,6 +46,8 @@ where
 	while !ids.is_empty() && i < 10 {
 		let emotes = global.emote_by_id_loader.load_many(ids.iter().copied()).await?;
 
+		ids.clear();
+
 		results.extend(emotes.into_iter().filter(|(_, e)| {
 			if e.deleted {
 				false
