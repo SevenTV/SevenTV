@@ -5,7 +5,7 @@ use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
-use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetKind};
+use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlags, EmoteSetKind};
 use shared::database::queries::{filter, update};
 use shared::database::stored_event::StoredEventEmoteModerationRequestData;
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
@@ -180,9 +180,9 @@ pub async fn emote_add(
 		alias: alias.clone(),
 		flags: {
 			if emote.flags.contains(EmoteFlags::DefaultZeroWidth) {
-				EmoteSetEmoteFlag::ZeroWidth
+				EmoteSetEmoteFlags::ZeroWidth
 			} else {
-				EmoteSetEmoteFlag::default()
+				EmoteSetEmoteFlags::default()
 			}
 		},
 		added_at: chrono::Utc::now(),

@@ -11,7 +11,7 @@ pub struct EmoteSetEmote {
 	pub alias: String,
 	#[serde(with = "crate::database::serde")]
 	pub added_at: chrono::DateTime<chrono::Utc>,
-	pub flags: EmoteSetEmoteFlag,
+	pub flags: EmoteSetEmoteFlags,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	#[serde(default)]
 	pub added_by_id: Option<UserId>,
@@ -21,18 +21,18 @@ pub struct EmoteSetEmote {
 }
 
 #[bitmask(i32)]
-pub enum EmoteSetEmoteFlag {
+pub enum EmoteSetEmoteFlags {
 	ZeroWidth = 1 << 0,
 	OverrideConflicts = 1 << 1,
 }
 
-impl Default for EmoteSetEmoteFlag {
+impl Default for EmoteSetEmoteFlags {
 	fn default() -> Self {
-		EmoteSetEmoteFlag::none()
+		EmoteSetEmoteFlags::none()
 	}
 }
 
-impl serde::Serialize for EmoteSetEmoteFlag {
+impl serde::Serialize for EmoteSetEmoteFlags {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -41,12 +41,12 @@ impl serde::Serialize for EmoteSetEmoteFlag {
 	}
 }
 
-impl<'a> serde::Deserialize<'a> for EmoteSetEmoteFlag {
-	fn deserialize<D>(deserializer: D) -> Result<EmoteSetEmoteFlag, D::Error>
+impl<'a> serde::Deserialize<'a> for EmoteSetEmoteFlags {
+	fn deserialize<D>(deserializer: D) -> Result<EmoteSetEmoteFlags, D::Error>
 	where
 		D: serde::Deserializer<'a>,
 	{
 		let bits = i32::deserialize(deserializer)?;
-		Ok(EmoteSetEmoteFlag::from(bits))
+		Ok(EmoteSetEmoteFlags::from(bits))
 	}
 }

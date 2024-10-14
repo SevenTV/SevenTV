@@ -14,7 +14,7 @@ use crate::{
 	http::error::{ApiError, ApiErrorCode},
 };
 
-use super::{Color, Role, UserEditor, UserProfilePicture};
+use super::{Color, EmoteSet, Role, UserEditor, UserProfilePicture};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]
@@ -112,6 +112,7 @@ impl From<shared::database::user::FullUser> for User {
 }
 
 #[derive(Debug, Clone, SimpleObject)]
+#[graphql(complex)]
 pub struct UserStyle {
 	pub active_badge_id: Option<BadgeId>,
 	pub active_paint_id: Option<PaintId>,
@@ -119,6 +120,27 @@ pub struct UserStyle {
 	pub active_profile_picture_id: Option<UserProfilePictureId>,
 	pub active_profile_picture: Option<UserProfilePicture>,
 	pub pending_profile_picture_id: Option<UserProfilePictureId>,
+}
+
+#[ComplexObject]
+impl UserStyle {
+	async fn active_emote_set<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<EmoteSet>, ApiError> {
+		let Some(active_emote_set_id) = self.active_emote_set_id else {
+			return Ok(None);
+		};
+
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let emote_set = global
+			.emote_set_by_id_loader
+			.load(active_emote_set_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load active emote set"))?;
+
+		Ok(emote_set.map(Into::into))
+	}
 }
 
 #[derive(Debug, Clone, SimpleObject)]
