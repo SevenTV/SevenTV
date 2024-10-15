@@ -513,7 +513,7 @@ impl EmotesQuery {
 
 		Ok(EmoteSearchResult {
 			count: result.found as u32,
-			max_page: result.found as u32 / limit + 1,
+			max_page: (result.found as u32 / limit + 1).min(100),
 			items: sorted_results(result.hits, emotes)
 				.into_iter()
 				.map(|e| Emote::from_db(global, e))
