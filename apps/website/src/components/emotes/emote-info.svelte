@@ -27,10 +27,9 @@
 	import EmoteInfoImage from "./emote-info-image.svelte";
 	import { formatSortIndex } from "../responsive-image.svelte";
 	import UserProfilePicture from "../user-profile-picture.svelte";
+	import EmoteLoadingPlaceholder from "../emote-loading-placeholder.svelte";
 
-	export let data: Emote;
-
-	$: flags = emoteToFlags(data);
+	export let data: Emote | null;
 
 	enum MoreMenuMode {
 		Root,
@@ -56,8 +55,6 @@
 	let transferDialogMode = DialogMode.Hidden;
 	let deleteDialogMode = DialogMode.Hidden;
 	let reportDialogMode = DialogMode.Hidden;
-
-	$: images = prepareImages(data.images);
 
 	function prepareImages(images: Image[]): Image[][] {
 		const animated = images.some((i) => i.frameCount > 1);
@@ -89,109 +86,124 @@
 	<ReportEmoteDialog bind:mode={reportDialogMode} />
 	<DeleteEmoteDialog bind:mode={deleteDialogMode} />
 {/if}
-<div class="top-bar">
-	<Flags {flags} />
-	{#if data.owner}
-		<a href="/users/{data.owner.id}" class="user-info">
-			<UserProfilePicture user={data.owner} />
-			<div class="name-container">
-				<span class="username" style:color={data.owner.highestRoleColor?.hex}>{data.owner.mainConnection?.platformDisplayName}</span>
-				{#if data.attribution.length > 0}
-					<div class="artists">
-						<ArrowBendDownRight size="0.75rem" color="var(--text-light)" />
-						{#each data.attribution as artist}
-							{#if artist.user}
-								<a href="/users/{artist.user.id}" class="profile">
-									<UserProfilePicture user={artist.user} size={16} />
-								</a>
-							{/if}
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</a>
-	{/if}
-</div>
-<div class="emote-info">
-	<div class="heading">
-		<h1>{data.defaultName}</h1>
-		<Tags tags={data.tags} />
-	</div>
-	<div class="previews">
-		{#each images as group}
-			{#if group}
-				<EmoteInfoImage images={group} />
-			{/if}
-		{/each}
-	</div>
-	<div class="buttons">
-		<slot>
-			<Button primary>
-				<Plus slot="icon" />
-				{$t("pages.emote.use_emote")}
-			</Button>
-			<Button secondary on:click={() => (addEmoteDialogMode = DialogMode.Shown)}>
-				<FolderPlus slot="icon" />
-				{$t("pages.emote.add_to")}
-			</Button>
-			<Button secondary hideOnMobile on:click={() => (editDialogMode = DialogMode.Shown)}>
-				<NotePencil slot="icon" />
-				{$t("labels.edit")}
-			</Button>
-			<Button secondary hideOnDesktop on:click={() => (editDialogMode = DialogMode.Shown)}>
-				<NotePencil slot="icon" />
-			</Button>
-			<DropDown>
-				<Button secondary hideOnMobile on:click={() => (moreMenuMode = MoreMenuMode.Root)}>
-					{$t("labels.more")}
-					<CaretDown slot="icon-right" />
-				</Button>
-				<Button secondary hideOnDesktop>
-					<CaretDown slot="icon" />
-				</Button>
-				<div slot="dropdown" class="dropdown">
-					{#if moreMenuMode === MoreMenuMode.Root}
-						<MenuButton on:click={() => (transferDialogMode = DialogMode.Shown)}>
-							<PaperPlaneRight />
-							{$t("pages.emote.transfer")}
-						</MenuButton>
-						<MenuButton>
-							<ArrowsMerge style="transform: rotate(-90deg)" />
-							{$t("pages.emote.merge")}
-						</MenuButton>
-						<MenuButton showCaret on:click={() => (moreMenuMode = MoreMenuMode.DownloadFormat)}>
-							<Download />
-							{$t("labels.download")}
-						</MenuButton>
-						<MenuButton on:click={() => (reportDialogMode = DialogMode.Shown)}>
-							<Flag />
-							{$t("labels.report")}
-						</MenuButton>
-						<hr />
-						<MenuButton
-							style="color: var(--danger)"
-							on:click={() => (deleteDialogMode = DialogMode.Shown)}
-						>
-							<Trash />
-							{$t("labels.delete")}
-						</MenuButton>
-					{:else if moreMenuMode === MoreMenuMode.DownloadFormat}
-						{#each ["GIF", "WEBP", "AVIF"] as format}
-							<MenuButton showCaret on:click={() => clickFormat(format)}>
-								{format}
-							</MenuButton>
-						{/each}
-					{:else if moreMenuMode === MoreMenuMode.DownloadSize}
-						{#each [1, 2, 3, 4] as size}
-							<MenuButton on:click={() => download(size)}>
-								{size}x {$t("pages.emote.size")}
-							</MenuButton>
-						{/each}
+{#if data}
+	<div class="top-bar">
+		<Flags flags={emoteToFlags(data)} />
+		{#if data.owner}
+			<a href="/users/{data.owner.id}" class="user-info">
+				<UserProfilePicture user={data.owner} />
+				<div class="name-container">
+					<span class="username" style:color={data.owner.highestRoleColor?.hex}>{data.owner.mainConnection?.platformDisplayName}</span>
+					{#if data.attribution.length > 0}
+						<div class="artists">
+							<ArrowBendDownRight size="0.75rem" color="var(--text-light)" />
+							{#each data.attribution as artist}
+								{#if artist.user}
+									<a href="/users/{artist.user.id}" class="profile">
+										<UserProfilePicture user={artist.user} size={16} />
+									</a>
+								{/if}
+							{/each}
+						</div>
 					{/if}
 				</div>
-			</DropDown>
-		</slot>
+			</a>
+		{/if}
 	</div>
+{/if}
+<div class="emote-info">
+	<div class="heading">
+		{#if data}
+			<h1>{data.defaultName}</h1>
+			<Tags tags={data.tags} />
+		{:else}
+			<h1>Loading</h1>
+		{/if}
+	</div>
+	<div class="previews">
+		{#if data}
+			{#each prepareImages(data.images) as group}
+				{#if group}
+					<EmoteInfoImage images={group} />
+				{/if}
+			{/each}
+		{:else}
+			<EmoteLoadingPlaceholder index={0} size={32} />
+			<EmoteLoadingPlaceholder index={2} size={64} />
+			<EmoteLoadingPlaceholder index={3} size={96} />
+			<EmoteLoadingPlaceholder index={3} size={128} />
+		{/if}
+	</div>
+	{#if data}
+		<div class="buttons">
+			<slot>
+				<Button primary>
+					<Plus slot="icon" />
+					{$t("pages.emote.use_emote")}
+				</Button>
+				<Button secondary on:click={() => (addEmoteDialogMode = DialogMode.Shown)}>
+					<FolderPlus slot="icon" />
+					{$t("pages.emote.add_to")}
+				</Button>
+				<Button secondary hideOnMobile on:click={() => (editDialogMode = DialogMode.Shown)}>
+					<NotePencil slot="icon" />
+					{$t("labels.edit")}
+				</Button>
+				<Button secondary hideOnDesktop on:click={() => (editDialogMode = DialogMode.Shown)}>
+					<NotePencil slot="icon" />
+				</Button>
+				<DropDown>
+					<Button secondary hideOnMobile on:click={() => (moreMenuMode = MoreMenuMode.Root)}>
+						{$t("labels.more")}
+						<CaretDown slot="icon-right" />
+					</Button>
+					<Button secondary hideOnDesktop>
+						<CaretDown slot="icon" />
+					</Button>
+					<div slot="dropdown" class="dropdown">
+						{#if moreMenuMode === MoreMenuMode.Root}
+							<MenuButton on:click={() => (transferDialogMode = DialogMode.Shown)}>
+								<PaperPlaneRight />
+								{$t("pages.emote.transfer")}
+							</MenuButton>
+							<MenuButton>
+								<ArrowsMerge style="transform: rotate(-90deg)" />
+								{$t("pages.emote.merge")}
+							</MenuButton>
+							<MenuButton showCaret on:click={() => (moreMenuMode = MoreMenuMode.DownloadFormat)}>
+								<Download />
+								{$t("labels.download")}
+							</MenuButton>
+							<MenuButton on:click={() => (reportDialogMode = DialogMode.Shown)}>
+								<Flag />
+								{$t("labels.report")}
+							</MenuButton>
+							<hr />
+							<MenuButton
+								style="color: var(--danger)"
+								on:click={() => (deleteDialogMode = DialogMode.Shown)}
+							>
+								<Trash />
+								{$t("labels.delete")}
+							</MenuButton>
+						{:else if moreMenuMode === MoreMenuMode.DownloadFormat}
+							{#each ["GIF", "WEBP", "AVIF"] as format}
+								<MenuButton showCaret on:click={() => clickFormat(format)}>
+									{format}
+								</MenuButton>
+							{/each}
+						{:else if moreMenuMode === MoreMenuMode.DownloadSize}
+							{#each [1, 2, 3, 4] as size}
+								<MenuButton on:click={() => download(size)}>
+									{size}x {$t("pages.emote.size")}
+								</MenuButton>
+							{/each}
+						{/if}
+					</div>
+				</DropDown>
+			</slot>
+		</div>
+	{/if}
 </div>
 
 <style lang="scss">

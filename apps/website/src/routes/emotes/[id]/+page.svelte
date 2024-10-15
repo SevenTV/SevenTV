@@ -20,11 +20,15 @@
 	let totalCount: number | null = null;
 	let pageCount = 0;
 
-	$: channels = queryChannels(data.emote.id, page);
+	let channels: Promise<UserSearchResult> | null = null;
+
+	$: data.streamed.emote.then((emote) => {
+		channels = queryChannels(emote.id, page);
+	});
+
+	const client = getContextClient();
 
 	async function queryChannels(emoteId: string, page: number): Promise<UserSearchResult> {
-		const client = getContextClient();
-
 		const result = await client
 			.query(
 				graphql(`query EmoteChannels($emoteId: Id!, $page: Int!, $perPage: Int!) {
@@ -77,33 +81,43 @@
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.emote.id} channelCount={totalCount} />
-	<div class="inputs">
-		<div class="buttons">
-			<Button disabled={page <= 1} on:click={() => (page--)}>
-				<CaretLeft slot="icon" />
-			</Button>
-			<Button disabled={page >= pageCount} on:click={() => (page++)}>
-				<CaretRight slot="icon" />
-			</Button>
+	{#await data.streamed.emote then emote}
+		<EmoteTabs id={emote.id} channelCount={totalCount} />
+	{/await}
+	{#if channels}
+		<div class="inputs">
+			<div class="buttons">
+				<Button disabled={page <= 1} on:click={() => (page--)}>
+					<CaretLeft slot="icon" />
+				</Button>
+				<Button disabled={page >= pageCount} on:click={() => (page++)}>
+					<CaretRight slot="icon" />
+				</Button>
+			</div>
+			<HideOn mobile>
+				<TextInput placeholder={$t("labels.search")} style="max-width: 12.5rem">
+					<MagnifyingGlass slot="icon" />
+				</TextInput>
+			</HideOn>
 		</div>
-		<HideOn mobile>
-			<TextInput placeholder={$t("labels.search")} style="max-width: 12.5rem">
-				<MagnifyingGlass slot="icon" />
-			</TextInput>
-		</HideOn>
-	</div>
+	{/if}
 </div>
 <div class="channels">
-	{#await channels}
+	{#if channels}
+		{#await channels}
+			{#each Array(PAGE_SIZE) as _, i}
+				<div class="preview loading-animation" style:animation-delay="{-i * 10}ms"></div>
+			{/each}
+		{:then result}
+			{#each result.items as channel}
+				<ChannelPreview user={channel} />
+			{/each}
+		{/await}
+	{:else}
 		{#each Array(PAGE_SIZE) as _, i}
 			<div class="preview loading-animation" style:animation-delay="{-i * 10}ms"></div>
 		{/each}
-	{:then result}
-		{#each result.items as channel}
-			<ChannelPreview user={channel} />
-		{/each}
-	{/await}
+	{/if}
 </div>
 
 <style lang="scss">

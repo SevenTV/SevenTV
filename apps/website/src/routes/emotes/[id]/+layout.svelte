@@ -7,12 +7,20 @@
 </script>
 
 <svelte:head>
-	<title>{data.emote.defaultName} - {$t("page_titles.suffix")}</title>
+	{#await data.streamed.emote}
+		<title>Loading - {$t("page_titles.suffix")}</title>
+	{:then emote}
+		<title>{emote.defaultName} - {$t("page_titles.suffix")}</title>
+	{/await}
 </svelte:head>
 
 <div class="layout">
 	<div>
-		<EmoteInfo data={data.emote} />
+		{#await data.streamed.emote}
+			<EmoteInfo data={null} />
+		{:then emote}
+			<EmoteInfo data={emote} />
+		{/await}
 	</div>
 	<div class="tabs">
 		<slot />
