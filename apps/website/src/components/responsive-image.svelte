@@ -23,6 +23,10 @@
 	import type { Image } from "$/gql/graphql";
 
 	export let images: Image[];
+	export let width: number;
+	export let height: number;
+	export let round: boolean = false;
+	export let borderColor: string | null = null;
 	export let alt = "";
 	export let index = 0;
 
@@ -102,21 +106,36 @@
 			srcset={variant.srcSet}
 			sizes="{pictureWidth}px"
 			media={variant.media}
+			width={width}
+			height={height}
 		/>
 	{/each}
 	<img
 		class="image"
+		class:round={round}
+		class:border={borderColor}
+		style:border-color={borderColor}
 		src="{preparedVariants.bestSupported?.url}"
 		loading="lazy"
 		style:animation-delay="{-index * 10}ms"
 		on:load={() => (loading = false)}
 		alt={alt}
 		class:loading-animation={loading}
+		width={width}
+		height={height}
 	/>
 </picture>
 
 <style lang="scss">
 	.loading-animation {
 		background-color: var(--preview);
+	}
+
+	.image.round {
+		border-radius: 50%;
+	}
+
+	.image.border {
+		border: 2px solid;
 	}
 </style>

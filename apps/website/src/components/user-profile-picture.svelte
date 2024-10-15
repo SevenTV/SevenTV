@@ -12,9 +12,10 @@
 	<ResponsiveImage
 		width={size}
 		height={size}
-		style={"border-radius: 50%; border: 2px solid; border-color: " + (user.highestRoleColor?.hex ?? "transparent")}
 		images={user.style.activeProfilePicture.images}
 		{alt}
+		round
+		borderColor={user.highestRoleColor?.hex}
 		{...$$restProps}
 	/>
 {:else}
