@@ -3,7 +3,6 @@ use std::sync::Arc;
 use scuffle_foundations::http::server::axum::extract::{Path, State};
 use scuffle_foundations::http::server::axum::routing::get;
 use scuffle_foundations::http::server::axum::{Json, Router};
-
 use shared::database::badge::BadgeId;
 use shared::database::emote::EmoteId;
 use shared::database::user::UserId;

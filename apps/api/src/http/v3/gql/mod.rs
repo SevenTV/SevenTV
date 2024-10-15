@@ -28,7 +28,6 @@ pub fn schema(global: Option<Arc<Global>>) -> V3Schema {
 		.enable_federation()
 		.enable_subscription_in_federation()
 		.extension(extensions::Analyzer)
-		.extension(extensions::Tracing)
 		.limit_complexity(400); // We don't want to allow too complex queries to be executed
 
 	if let Some(global) = global {

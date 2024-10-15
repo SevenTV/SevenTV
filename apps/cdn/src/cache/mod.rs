@@ -107,8 +107,7 @@ impl Cache {
 			inner: moka::future::Cache::builder()
 				.expire_after(CacheExpiry)
 				.weigher(|k, v: &CachedResponse| {
-					u32::try_from(v.data.len() + std::mem::size_of_val(v) + std::mem::size_of_val(k))
-						.unwrap_or(u32::MAX)
+					u32::try_from(v.data.len() + std::mem::size_of_val(v) + std::mem::size_of_val(k)).unwrap_or(u32::MAX)
 				})
 				.max_capacity(capacity.bytes() as u64)
 				.build(),
