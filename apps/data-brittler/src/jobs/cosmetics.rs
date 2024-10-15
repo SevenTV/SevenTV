@@ -114,7 +114,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 				Ok(data) => bytes::Bytes::from(data),
 				Err(e) => {
 					if let io::ErrorKind::NotFound = e.kind() {
-						let download_url = format!("https://cdn.7tv.app/badge/{}/2x", cosmetic.id);
+						let download_url = format!("https://cdn.7tv.app/badge/{}/3x", cosmetic.id);
 						match request_image(global, cosmetic.id, &download_url).await {
 							Ok(data) => data,
 							Err(outcome) => return outcome,
