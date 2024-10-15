@@ -48,7 +48,10 @@ pub struct IncomingRequestConfig {
 	/// The IP header to use for incoming requests
 	pub ip_header: Option<String>,
 	/// A set of trusted proxies that we should use for incoming requests
-	pub trusteded_proxies: Vec<ipnet::IpNet>,
+	pub trusted_proxies: Vec<ipnet::IpNet>,
+	/// IP Ranges that are trusted and can ignore the proxy header (if not
+	/// provided)
+	pub trusted_ranges: Vec<ipnet::IpNet>,
 }
 
 #[auto_settings]

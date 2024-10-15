@@ -2,15 +2,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context as _;
-use axum::extract::{MatchedPath, Request};
+use axum::extract::{MatchedPath, Request, State};
 use axum::http::HeaderName;
 use axum::response::Response;
 use axum::routing::get;
-use axum::Router;
+use axum::{Extension, Router};
 use error::ApiErrorCode;
 use hyper::Method;
 use middleware::ip::IpMiddleware;
-use middleware::session::SessionMiddleware;
+use middleware::session::{Session, SessionMiddleware};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use tower::ServiceBuilder;
 use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
@@ -121,9 +121,31 @@ fn routes(global: Arc<Global>) -> Router {
 		)
 }
 
-#[tracing::instrument]
-async fn root() -> &'static str {
-	"Welcome to the 7TV API!"
+#[derive(serde::Serialize)]
+struct RootResp {
+	message: &'static str,
+	version: &'static str,
+	ip: std::net::IpAddr,
+	country: Option<String>,
+}
+
+#[tracing::instrument(skip_all)]
+async fn root(
+	State(global): State<Arc<Global>>,
+	Extension(session): Extension<Session>,
+) -> impl axum::response::IntoResponse {
+	let resp = RootResp {
+		message: "Welcome to the 7TV API!",
+		version: env!("CARGO_PKG_VERSION"),
+		ip: session.ip(),
+		country: global
+			.geoip()
+			.and_then(|geoip| geoip.lookup(session.ip()))
+			.and_then(|l| l.iso_code)
+			.map(Into::into),
+	};
+
+	axum::Json(resp)
 }
 
 #[tracing::instrument]
