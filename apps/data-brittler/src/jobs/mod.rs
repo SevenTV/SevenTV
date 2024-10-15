@@ -687,7 +687,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 
 		let internal_cdn_rename = runner.internal_cdn_rename;
 		if let Err(err) =
-			tokio::task::spawn_blocking(move || write_file("./local/internal_cdn_rename.json", &internal_cdn_rename))
+			tokio::task::spawn_blocking(move || write_file("./local/private_cdn_rename.json", &internal_cdn_rename))
 				.await
 				.unwrap()
 		{
