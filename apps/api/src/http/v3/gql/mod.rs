@@ -17,6 +17,7 @@ mod types;
 pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
 	Router::new()
 		.route("/", post(graphql_handler))
+		.route("/batch", post(graphql_batch_handler))
 		.route("/playground", get(playground))
 		.layer(Extension(schema(Some(Arc::clone(global)))))
 }
@@ -39,7 +40,7 @@ pub fn schema(global: Option<Arc<Global>>) -> V3Schema {
 }
 
 #[derive(utoipa::OpenApi)]
-#[openapi(paths(graphql_handler, playground))]
+#[openapi(paths(graphql_handler, graphql_batch_handler, playground))]
 pub struct Docs;
 
 #[utoipa::path(post, path = "/v3/gql", tag = "gql")]
@@ -51,6 +52,17 @@ pub async fn graphql_handler(
 	let req = req.into_inner().data(session).data(RateLimitResponseStore::new());
 
 	schema.execute(req).await.into()
+}
+
+#[utoipa::path(post, path = "/v3/gql/batch", tag = "gql")]
+pub async fn graphql_batch_handler(
+	Extension(schema): Extension<V3Schema>,
+	Extension(session): Extension<Session>,
+	req: async_graphql_axum::GraphQLBatchRequest,
+) -> async_graphql_axum::GraphQLResponse {
+	let req = req.into_inner().data(session).data(RateLimitResponseStore::new());
+
+	schema.execute_batch(req).await.into()
 }
 
 #[utoipa::path(get, path = "/v3/gql/playground", tag = "gql")]
