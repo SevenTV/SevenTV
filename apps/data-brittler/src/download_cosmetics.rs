@@ -10,7 +10,6 @@ use crate::types::{self, Cosmetic, PaintData};
 /// In case you run into rate limiting problems with imgur, you can run this
 /// first to request and store all image files before issuing the processing
 /// jobs.
-
 pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let mut cosmetics = global
 		.main_source_db

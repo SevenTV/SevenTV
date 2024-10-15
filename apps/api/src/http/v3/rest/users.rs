@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -11,6 +10,7 @@ use hyper::StatusCode;
 use mongodb::bson::doc;
 use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
 use serde::Deserialize;
+use shared::database::emote::EmoteFlags;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{FlagPermission, PermissionsExt, RateLimitResource, UserPermission};
@@ -28,7 +28,7 @@ use shared::old_types::{
 };
 
 use super::types::{PresenceKind, PresenceModel, UserPresencePlatform, UserPresenceWriteRequest};
-use crate::dataloader::emote::load_emotes;
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
@@ -405,19 +405,28 @@ pub async fn create_user_presence(
 			.into_values()
 			.collect::<Vec<_>>();
 
-		let emote_ids: HashSet<_> = personal_emote_sets
-			.iter()
-			.flat_map(|s| s.emotes.iter().map(|e| e.id))
-			.collect();
-
-		let emotes = load_emotes(&global, emote_ids)
+		let emotes = global
+			.emote_by_id_loader
+			.load_many_merged(
+				personal_emote_sets
+					.iter()
+					.flat_map(|s| s.emotes.iter().map(|e| e.id))
+					.collect::<Vec<_>>(),
+			)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 		let mut sets = vec![];
 
 		for set in personal_emote_sets {
-			let emotes = set.emotes.iter().filter_map(|e| emotes.get(&e.id).cloned()).collect();
+			let emotes = set
+				.emotes
+				.iter()
+				.filter_map(|e| emotes.get(e.id))
+				.filter(|e| e.flags.contains(EmoteFlags::ApprovedPersonal))
+				.cloned()
+				.collect();
+
 			sets.push(InternalEventUserPresenceDataEmoteSet { emote_set: set, emotes });
 		}
 

@@ -13,7 +13,7 @@ use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
-use crate::dataloader::emote::load_emote;
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -32,7 +32,9 @@ impl EmotesMutation {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote = load_emote(global, id.id())
+		let emote = global
+			.emote_by_id_loader
+			.load_exclude_deleted(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;

@@ -4,7 +4,6 @@ use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObj
 use fred::prelude::KeysInterface;
 use shared::database::emote::EmoteId;
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
-use shared::database::user::UserId;
 use shared::old_types::image::ImageHost;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState};
@@ -13,7 +12,7 @@ use shared::typesense::types::event::EventId;
 use super::audit_log::AuditLog;
 use super::report::Report;
 use super::user::{UserPartial, UserSearchResult};
-use crate::dataloader::emote::{load_emote, load_emotes};
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -83,23 +82,6 @@ impl Emote {
 			state,
 			listed,
 			personal_use: value.flags.contains(shared::database::emote::EmoteFlags::ApprovedPersonal),
-		}
-	}
-
-	pub fn deleted_emote() -> Self {
-		Self {
-			id: GqlObjectId(EmoteId::nil().cast()),
-			name: "*DeletedEmote".to_string(),
-			lifecycle: EmoteLifecycleModel::Deleted,
-			flags: EmoteFlagsModel::none(),
-			tags: vec![],
-			animated: false,
-			owner_id: GqlObjectId(UserId::nil().cast()),
-			host: ImageHost::default(),
-			versions: vec![],
-			state: vec![],
-			listed: false,
-			personal_use: false,
 		}
 	}
 }
@@ -382,7 +364,9 @@ impl EmotesQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote = load_emote(global, id.id())
+		let emote = global
+			.emote_by_id_loader
+			.load_exclude_deleted(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
 
@@ -399,10 +383,14 @@ impl EmotesQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emotes = load_emotes(global, list.into_iter().map(|i| i.id())).await.map_err(|()| {
-			tracing::error!("failed to load emotes");
-			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes")
-		})?;
+		let emotes = global
+			.emote_by_id_loader
+			.load_many_exclude_deleted(list.into_iter().map(|i| i.id()))
+			.await
+			.map_err(|()| {
+				tracing::error!("failed to load emotes");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes")
+			})?;
 
 		Ok(emotes.into_values().map(|e| Emote::from_db(global, e).into()).collect())
 	}
@@ -427,6 +415,7 @@ impl EmotesQuery {
 		let limit = limit.unwrap_or(30);
 		let page = page.unwrap_or_default().max(1);
 
+		// This filters out deleted & merged emotes
 		let mut filters = vec!["deleted: false".to_owned()];
 
 		if !session.has(EmotePermission::ViewUnlisted) {
@@ -516,7 +505,9 @@ impl EmotesQuery {
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
 			})?;
 
-		let emotes = load_emotes(global, result.hits.iter().copied())
+		let emotes = global
+			.emote_by_id_loader
+			.load_many_exclude_deleted(result.hits.iter().copied())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 

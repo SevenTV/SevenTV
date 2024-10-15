@@ -373,7 +373,7 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 		Err(e) => {
 			tracing::error!("failed to insert documents: {:#}", e);
 			outcome.errors.push(e.into());
-		},
+		}
 	}
 
 	outcome.insert_time += start.elapsed().as_secs_f64();

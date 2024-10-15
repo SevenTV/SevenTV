@@ -32,7 +32,9 @@ use shared::ip::GeoIpResolver;
 use shared::redis::setup_redis;
 
 use crate::config::Config;
-use crate::dataloader::active_subscription_period::{ActiveSubscriptionPeriodByUserIdLoader, SubscriptionPeriodsByUserIdLoader};
+use crate::dataloader::active_subscription_period::{
+	ActiveSubscriptionPeriodByUserIdLoader, SubscriptionPeriodsByUserIdLoader,
+};
 use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
 use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
