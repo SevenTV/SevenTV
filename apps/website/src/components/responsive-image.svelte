@@ -23,8 +23,8 @@
 	import type { Image } from "$/gql/graphql";
 
 	export let images: Image[];
-	export let width: number;
-	export let height: number;
+	export let width: number | null = null;
+	export let height: number | null = null;
 	export let round: boolean = false;
 	export let borderColor: string | null = null;
 	export let alt = "";

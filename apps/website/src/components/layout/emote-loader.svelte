@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { EmoteSearchResult, Filters, SortBy } from "$/gql/graphql";
+	import type { EmoteSearchResult } from "$/gql/graphql";
 	import { emotesLayout, Layout } from "$/store/layout";
 	import { getContextClient, type Client } from "@urql/svelte";
 	import EmotePreview from "../emote-preview.svelte";
@@ -7,18 +7,14 @@
 	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";
 	import { isMobileLayout } from "$/lib/utils";
 	import Spinner from "../spinner.svelte";
-	import { queryEmotes } from "$/lib/emoteQuery";
 
 	const PER_PAGE = 36;
 
-	interface LoadOptions {
-		query: string | null;
-		tags: string[];
-		sortBy: SortBy;
-		filters: Filters;
-	}
-
-	export let options: LoadOptions;
+	export let load: (
+		client: Client,
+		page: number,
+		perPage: number,
+	) => Promise<EmoteSearchResult>;
 
 	let page = 1;
 	let results: EmoteSearchResult | null = null;
@@ -28,20 +24,12 @@
 		results = null;
 	}
 
-	$: options, reset();
+	$: load, reset();
 
 	const client = getContextClient();
 
 	function handleInfinite(event: InfiniteEvent) {
-		queryEmotes(
-			client,
-			options.query,
-			options.tags,
-			options.sortBy,
-			options.filters,
-			page++,
-			PER_PAGE,
-		)
+		load(client, page++, PER_PAGE)
 			.then((result) => {
 				if (results) {
 					results.pageCount = result.pageCount;
@@ -75,7 +63,7 @@
 		<InfiniteLoading
 			distance={500}
 			identifier={{
-				options: options,
+				load,
 				layout: $emotesLayout,
 			}}
 			on:infinite={handleInfinite}

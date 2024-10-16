@@ -3,6 +3,7 @@
 	import { t } from "svelte-i18n";
 	import type { PageData } from "./$types";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
+	import { queryEmotes } from "$/lib/emoteQuery";
 
 	export let data: PageData;
 </script>
@@ -12,10 +13,6 @@
 </svelte:head>
 
 <EmoteLoader
-	options={{
-		query: data.query,
-		tags: data.tags,
-		sortBy: SortBy.TopAllTime,
-		filters: data.filters,
-	}}
+	load={(client, page, perPage) =>
+		queryEmotes(client, data.query, data.tags, SortBy.TopAllTime, data.filters, page, perPage)}
 />

@@ -1,7 +1,11 @@
-use async_graphql::{ComplexObject, Enum, SimpleObject};
+use std::sync::Arc;
+
+use async_graphql::{ComplexObject, Enum, SimpleObject, Context};
 use shared::database::{emote::EmoteId, emote_set::EmoteSetId, user::UserId};
 
-use super::SearchResult;
+use crate::{global::Global, http::error::{ApiError, ApiErrorCode}};
+
+use super::{Emote, SearchResult};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]
@@ -77,6 +81,7 @@ impl From<shared::database::emote_set::EmoteSetKind> for EmoteSetKind {
 }
 
 #[derive(Debug, Clone, SimpleObject)]
+#[graphql(complex)]
 pub struct EmoteSetEmote {
 	pub id: EmoteId,
 	pub alias: String,
@@ -84,6 +89,23 @@ pub struct EmoteSetEmote {
 	pub flags: EmoteSetEmoteFlags,
 	pub added_by_id: Option<UserId>,
 	pub origin_set_id: Option<EmoteSetId>,
+}
+
+#[ComplexObject]
+impl EmoteSetEmote {
+	pub async fn emote<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Emote>, ApiError> {
+		let global: &Arc<Global> = ctx
+		.data()
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let emote = global
+			.emote_by_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
+
+		Ok(emote.map(|e| Emote::from_db(e, &global.config.api.cdn_origin)))
+	}
 }
 
 impl From<shared::database::emote_set::EmoteSetEmote> for EmoteSetEmote {

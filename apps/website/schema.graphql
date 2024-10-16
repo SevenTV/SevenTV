@@ -67,6 +67,51 @@ type EmoteSearchResult {
 	totalCount: Int!
 }
 
+type EmoteSet {
+	capacity: Int
+	description: String
+	emotes(page: Int, perPage: Int): EmoteSetEmoteSearchResult!
+	id: Id!
+	kind: EmoteSetKind!
+	name: String!
+	ownerId: Id
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type EmoteSetEmote {
+	addedAt: DateTime!
+	addedById: Id
+	alias: String!
+	emote: Emote
+	flags: EmoteSetEmoteFlags!
+	id: Id!
+	originSetId: Id
+}
+
+type EmoteSetEmoteFlags {
+	overrideConflicts: Boolean!
+	zeroWidth: Boolean!
+}
+
+type EmoteSetEmoteSearchResult {
+	items: [EmoteSetEmote!]!
+	pageCount: Int!
+	totalCount: Int!
+}
+
+enum EmoteSetKind {
+	GLOBAL
+	NORMAL
+	PERSONAL
+	SPECIAL
+}
+
+type EmoteSetQuery {
+	emoteSet(id: Id!): EmoteSet
+}
+
 input Filters {
 	animated: Boolean
 	defaultZeroWidth: Boolean
@@ -100,6 +145,7 @@ enum Platform {
 }
 
 type Query {
+	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
 	users: UserQuery!
 }
@@ -221,6 +267,7 @@ type UserSearchResult {
 
 type UserStyle {
 	activeBadgeId: Id
+	activeEmoteSet: EmoteSet
 	activeEmoteSetId: Id
 	activePaintId: Id
 	activeProfilePicture: UserProfilePicture

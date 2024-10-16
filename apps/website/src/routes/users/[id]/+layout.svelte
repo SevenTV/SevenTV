@@ -194,9 +194,7 @@
 				</TabLink> -->
 			</nav>
 		</div>
-		<div class="page">
-			<slot />
-		</div>
+		<slot />
 	</div>
 </div>
 
@@ -278,12 +276,6 @@
 			&::-webkit-scrollbar {
 				display: none;
 			}
-		}
-
-		.page {
-			overflow: auto;
-			overflow: overlay;
-			scrollbar-gutter: stable;
 		}
 	}
 
