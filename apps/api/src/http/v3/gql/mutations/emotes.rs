@@ -167,10 +167,8 @@ impl EmoteOps {
 			if let Some(input_flags) = params.flags {
 				if input_flags.contains(EmoteFlagsModel::Private) {
 					flags |= EmoteFlags::Private;
-					flags &= !EmoteFlags::PublicListed;
 				} else {
 					flags &= !EmoteFlags::Private;
-					flags |= EmoteFlags::PublicListed;
 				}
 
 				if input_flags.contains(EmoteFlagsModel::ZeroWidth) {
@@ -185,10 +183,8 @@ impl EmoteOps {
 				if let Some(listed) = params.listed {
 					if listed {
 						flags |= EmoteFlags::PublicListed;
-						flags &= !EmoteFlags::Private;
 					} else {
 						flags &= !EmoteFlags::PublicListed;
-						flags |= EmoteFlags::Private;
 					}
 				}
 
