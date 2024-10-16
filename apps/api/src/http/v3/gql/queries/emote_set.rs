@@ -54,6 +54,7 @@ impl EmoteSet {
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct ActiveEmote {
 	pub id: GqlObjectId,
+	pub timestamp: chrono::DateTime<chrono::Utc>,
 	pub name: String,
 	pub flags: ActiveEmoteFlagModel,
 	// timestamp
@@ -71,6 +72,7 @@ impl ActiveEmote {
 	pub fn new(value: EmoteSetEmote, emote: DbEmote) -> Self {
 		Self {
 			id: emote.id.into(),
+			timestamp: value.added_at,
 			name: value.alias,
 			flags: value.flags.into(),
 			actor_id: value.added_by_id,
@@ -82,10 +84,6 @@ impl ActiveEmote {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ActiveEmote {
-	async fn timestamp(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
-	}
-
 	async fn data<'ctx>(&self, ctx: &Context<'ctx>) -> Result<EmotePartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -142,9 +140,13 @@ impl EmoteSet {
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
-		Ok(active_emotes
+		let mut emotes: Vec<_> = active_emotes
 			.filter_map(|e| emotes.get(e.id).map(|emote| ActiveEmote::new(e.clone(), emote.clone())))
-			.collect())
+			.collect();
+
+		emotes.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+
+		Ok(emotes)
 	}
 
 	async fn emote_count(&self) -> Result<u32, ApiError> {

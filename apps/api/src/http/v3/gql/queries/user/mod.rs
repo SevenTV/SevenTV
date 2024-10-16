@@ -152,12 +152,14 @@ impl User {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote_sets = global
+		let mut emote_sets = global
 			.emote_set_by_user_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 			.unwrap_or_default();
+
+		emote_sets.sort_by(|a, b| a.id.cmp(&b.id));
 
 		Ok(emote_sets.into_iter().map(EmoteSet::from_db).collect())
 	}
@@ -167,12 +169,14 @@ impl User {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emotes = global
+		let mut emotes = global
 			.emote_by_user_id_loader
 			.load(self.id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?
 			.unwrap_or_default();
+
+		emotes.sort_by(|a, b| a.id.cmp(&b.id));
 
 		Ok(emotes.into_iter().map(|e| Emote::from_db(global, e)).collect())
 	}

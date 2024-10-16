@@ -82,7 +82,7 @@ impl RolesQuery {
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let roles: Vec<DbRole> = DbRole::collection(&global.db)
+		let mut roles: Vec<DbRole> = DbRole::collection(&global.db)
 			.find(filter::filter!(DbRole {}))
 			.with_options(FindOptions::builder().sort(doc! { "rank": -1 }).build())
 			.into_future()
@@ -92,6 +92,11 @@ impl RolesQuery {
 				tracing::error!("failed to load: {err}");
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load roles")
 			})?;
+
+		roles.sort_by(|a, b| match a.rank.cmp(&b.rank) {
+			std::cmp::Ordering::Equal => a.id.cmp(&b.id),
+			other => other,
+		});
 
 		Ok(roles.into_iter().map(Role::from_db).collect())
 	}
