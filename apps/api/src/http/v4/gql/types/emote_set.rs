@@ -1,18 +1,43 @@
-use async_graphql::{Enum, SimpleObject};
+use async_graphql::{ComplexObject, Enum, SimpleObject};
 use shared::database::{emote::EmoteId, emote_set::EmoteSetId, user::UserId};
 
+use super::SearchResult;
+
 #[derive(Debug, Clone, SimpleObject)]
+#[graphql(complex)]
 pub struct EmoteSet {
 	pub id: EmoteSetId,
 	pub name: String,
 	pub description: Option<String>,
 	pub tags: Vec<String>,
-	pub emotes: Vec<EmoteSetEmote>,
 	pub capacity: Option<i32>,
 	pub owner_id: Option<UserId>,
 	pub kind: EmoteSetKind,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+
+	#[graphql(skip)]
+	pub emotes: Vec<EmoteSetEmote>,
+}
+
+#[ComplexObject]
+impl EmoteSet {
+	pub async fn emotes(
+		&self,
+		#[graphql(validator(maximum = 100))] page: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 250))] per_page: Option<u32>,
+	) -> SearchResult<EmoteSetEmote> {
+		let chunk_size = per_page.map(|p| p as usize).unwrap_or(self.emotes.len());
+		let page = page.map(|p| p.saturating_sub(1)).unwrap_or(0) as usize;
+
+		let items = self.emotes.chunks(chunk_size).nth(page).unwrap_or_default().to_vec();
+
+		SearchResult {
+			items,
+			total_count: self.emotes.len() as u64,
+			page_count: (self.emotes.len() as u64 / chunk_size as u64) + 1,
+		}
+	}
 }
 
 impl From<shared::database::emote_set::EmoteSet> for EmoteSet {

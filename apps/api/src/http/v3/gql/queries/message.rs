@@ -131,7 +131,7 @@ impl MessagesQuery {
 		&self,
 		ctx: &Context<'ctx>,
 		#[graphql(validator(maximum = 50))] page: Option<u32>,
-		#[graphql(validator(maximum = 250))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 250))] limit: Option<u32>,
 		#[graphql(validator(max_length = 100))] wish: Option<String>,
 		#[graphql(validator(max_length = 100))] country: Option<String>,
 	) -> Result<ModRequestMessageList, ApiError> {

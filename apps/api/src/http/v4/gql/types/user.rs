@@ -124,7 +124,10 @@ pub struct UserStyle {
 
 #[ComplexObject]
 impl UserStyle {
-	async fn active_emote_set<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<EmoteSet>, ApiError> {
+	async fn active_emote_set<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+	) -> Result<Option<EmoteSet>, ApiError> {
 		let Some(active_emote_set_id) = self.active_emote_set_id else {
 			return Ok(None);
 		};

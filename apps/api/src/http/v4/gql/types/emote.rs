@@ -95,7 +95,7 @@ impl Emote {
 		&self,
 		ctx: &Context<'ctx>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
-		#[graphql(validator(maximum = 100))] per_page: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
 	) -> Result<SearchResult<User>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()

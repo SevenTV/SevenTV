@@ -176,7 +176,7 @@ impl User {
 	async fn activity<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] limit: Option<u32>,
 	) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -546,7 +546,7 @@ impl UsersQuery {
 		ctx: &Context<'ctx>,
 		#[graphql(validator(max_length = 100))] query: String,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] limit: Option<u32>,
 	) -> Result<Vec<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

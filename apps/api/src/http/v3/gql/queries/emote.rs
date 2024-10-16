@@ -112,7 +112,7 @@ impl Emote {
 		&self,
 		ctx: &Context<'_>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] limit: Option<u32>,
 	) -> Result<UserSearchResult, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -182,7 +182,7 @@ impl Emote {
 	async fn activity<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		#[graphql(validator(maximum = 300))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 300))] limit: Option<u32>,
 	) -> Result<Vec<AuditLog>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -401,7 +401,7 @@ impl EmotesQuery {
 		ctx: &Context<'_>,
 		query: String,
 		#[graphql(validator(maximum = 100))] page: Option<u32>,
-		#[graphql(validator(maximum = 100))] limit: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] limit: Option<u32>,
 		filter: Option<EmoteSearchFilter>,
 		sort: Option<EmoteSearchSort>,
 	) -> Result<EmoteSearchResult, ApiError> {
