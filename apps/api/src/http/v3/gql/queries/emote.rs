@@ -455,7 +455,7 @@ impl EmotesQuery {
 
 			match filter.category {
 				None | Some(EmoteSearchCategory::Top) => {
-					sort_by.push("score_top_all_time:desc".to_owned());
+					sort_by.push(format!("score_top_all_time:{order}"));
 				}
 				Some(EmoteSearchCategory::Featured) | Some(EmoteSearchCategory::TrendingDay) => {
 					sort_by.push(format!("score_trending_day:{order}"));
