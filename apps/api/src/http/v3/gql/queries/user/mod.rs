@@ -125,7 +125,7 @@ impl User {
 			.iter()
 			.map(|b| (CosmeticKind::Badge, b.cast::<()>()));
 
-		let cosmetics = paints
+		let mut cosmetics: Vec<_> = paints
 			.chain(badges)
 			.map(|(kind, id)| UserCosmetic {
 				id: id.into(),
@@ -134,6 +134,11 @@ impl User {
 				kind,
 			})
 			.collect();
+
+		cosmetics.sort_by(|a, b| match a.kind.cmp(&b.kind) {
+			std::cmp::Ordering::Equal => a.id.cmp(&b.id),
+			other => other,
+		});
 
 		Ok(cosmetics)
 	}

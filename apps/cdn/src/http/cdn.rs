@@ -5,6 +5,7 @@ use scuffle_foundations::http::server::axum::routing::get;
 use scuffle_foundations::http::server::axum::{Json, Router};
 use shared::database::badge::BadgeId;
 use shared::database::emote::EmoteId;
+use shared::database::paint::{PaintId, PaintLayerId};
 use shared::database::user::UserId;
 
 use crate::cache::key::{CacheKey, ImageFile};
@@ -16,7 +17,8 @@ pub fn routes() -> Router<Arc<Global>> {
 		.route("/", get(root))
 		.route("/badge/:id/:file", get(badge))
 		.route("/emote/:id/:file", get(emote))
-		.route("/user/:user/:avatar_id/:file", get(user_profile_picture))
+		.route("/user/:user/profile-picture/:avatar_id/:file", get(user_profile_picture))
+		.route("/paint/:id/layer/:layer/:file", get(paint_layer))
 		.route("/JUICERS.png", get(juicers))
 }
 
@@ -41,21 +43,45 @@ async fn root(State(global): State<Arc<Global>>) -> Json<Welcome> {
 	})
 }
 
-async fn badge(Path((id, file)): Path<(BadgeId, ImageFile)>, State(global): State<Arc<Global>>) -> CachedResponse {
-	global.cache.handle_request(&global, CacheKey::Badge { id, file }).await
+async fn badge(Path((badge_id, file)): Path<(BadgeId, ImageFile)>, State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Badge { badge_id, file }).await
 }
 
-async fn emote(Path((id, file)): Path<(EmoteId, ImageFile)>, State(global): State<Arc<Global>>) -> CachedResponse {
-	global.cache.handle_request(&global, CacheKey::Emote { id, file }).await
+async fn emote(Path((emote_id, file)): Path<(EmoteId, ImageFile)>, State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Emote { emote_id, file }).await
 }
 
 async fn user_profile_picture(
-	Path((user, avatar_id, file)): Path<(UserId, String, ImageFile)>,
+	Path((user_id, avatar_id, file)): Path<(UserId, String, ImageFile)>,
 	State(global): State<Arc<Global>>,
 ) -> CachedResponse {
 	global
 		.cache
-		.handle_request(&global, CacheKey::UserProfilePicture { user, avatar_id, file })
+		.handle_request(
+			&global,
+			CacheKey::UserProfilePicture {
+				user_id,
+				avatar_id,
+				file,
+			},
+		)
+		.await
+}
+
+async fn paint_layer(
+	Path((paint_id, layer_id, file)): Path<(PaintId, PaintLayerId, ImageFile)>,
+	State(global): State<Arc<Global>>,
+) -> CachedResponse {
+	global
+		.cache
+		.handle_request(
+			&global,
+			CacheKey::Paint {
+				paint_id,
+				layer_id,
+				file,
+			},
+		)
 		.await
 }
 

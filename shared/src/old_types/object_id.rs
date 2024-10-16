@@ -5,7 +5,7 @@ use async_graphql::{Scalar, ScalarType};
 
 use crate::database::Id;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct GqlObjectId(pub Id<()>);
 
 impl GqlObjectId {

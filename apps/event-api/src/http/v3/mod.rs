@@ -124,7 +124,7 @@ async fn handle(
 	req: Request,
 ) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
 	let (ticket, active) = global.inc_active_connections();
-	if let Some(limit) = global.config().api.connection_limit {
+	if let Some(limit) = global.config.event_api.connection_limit {
 		// if we exceed the connection limit, we return a 503.
 		if active >= limit {
 			tracing::debug!("connection limit reached: {} >= {limit}", active);
@@ -256,10 +256,10 @@ impl Connection {
 			id: Id::new(),
 			// We jitter the TTL to prevent all connections from expiring at the same time, which
 			// would cause a thundering herd.
-			ttl: Box::pin(tokio::time::sleep(jitter(global.config().api.ttl))),
+			ttl: Box::pin(tokio::time::sleep(jitter(global.config.event_api.ttl))),
 			topics: TopicMap::default(),
 			// Same as above for the heartbeat interval.
-			heartbeat_interval: tokio::time::interval(jitter(global.config().api.heartbeat_interval)),
+			heartbeat_interval: tokio::time::interval(jitter(global.config.event_api.heartbeat_interval)),
 			// And again for the subscription cleanup interval.
 			initial_subs,
 			_ticket: ticket,
@@ -282,10 +282,16 @@ impl Connection {
 			.send_message(payload::Hello {
 				heartbeat_interval: self.heartbeat_interval.period().as_millis() as u32,
 				session_id: self.id,
-				subscription_limit: self.global.config().api.subscription_limit.map(|s| s as i32).unwrap_or(-1),
+				subscription_limit: self
+					.global
+					.config
+					.event_api
+					.subscription_limit
+					.map(|s| s as i32)
+					.unwrap_or(-1),
 				actor: None,
 				instance: Some(payload::HelloInstanceInfo {
-					name: "event-api".to_string(),
+					name: self.global.config.pod.name.clone(),
 					population: self.global.active_connections() as i32,
 				}),
 			})
@@ -407,7 +413,7 @@ impl Connection {
 
 	/// Handle a subscription request.
 	async fn handle_subscription(&mut self, subscribe: &payload::Subscribe) -> Result<(), ConnectionError> {
-		if let Some(subscription_limit) = self.global.config().api.subscription_limit {
+		if let Some(subscription_limit) = self.global.config.event_api.subscription_limit {
 			if self.topics.len() >= subscription_limit {
 				self.send_error("Too Many Active Subscriptions!", HashMap::new(), Some(CloseCode::RateLimit))
 					.await?;
@@ -442,7 +448,7 @@ impl Connection {
 
 		self.topics.insert(
 			topic_key,
-			Subscription::new(self.global.subscription_manager().subscribe(topic).await?),
+			Subscription::new(self.global.subscription_manager.subscribe(topic).await?),
 		);
 
 		self.send_ack(
@@ -556,8 +562,8 @@ impl Connection {
 				// Subscription bridge is a way of interacting with the API through the socket.
 				let res = self
 					.global
-					.http_client()
-					.post(&self.global.config().api.bridge_url)
+					.http_client
+					.post(&self.global.config.event_api.bridge_url)
 					.json(&bridge.body)
 					.send()
 					.await?
@@ -591,7 +597,7 @@ impl Connection {
 			if self.badge_lru.get(&badge.id).map(|t| t != &badge.updated_at).unwrap_or(true) {
 				let object = CosmeticModel {
 					id: badge.id,
-					data: CosmeticBadgeModel::from_db(badge.clone(), &self.global.config().api.cdn_origin),
+					data: CosmeticBadgeModel::from_db(badge.clone(), &self.global.config.event_api.cdn_origin),
 					kind: CosmeticKind::Badge,
 				};
 				let object = serde_json::to_value(object).map_err(|e| {
@@ -617,7 +623,7 @@ impl Connection {
 			if self.paint_lru.get(&paint.id).map(|t| t != &paint.updated_at).unwrap_or(true) {
 				let object = CosmeticModel {
 					id: paint.id,
-					data: CosmeticPaintModel::from_db(paint.clone(), &self.global.config().api.cdn_origin),
+					data: CosmeticPaintModel::from_db(paint.clone(), &self.global.config.event_api.cdn_origin),
 					kind: CosmeticKind::Paint,
 				};
 				let object = serde_json::to_value(object).map_err(|e| {
@@ -639,7 +645,8 @@ impl Connection {
 			self.paint_lru.put(paint.id, paint.updated_at);
 		}
 
-		let partial_user = UserPartialModel::from_db(payload.user.clone(), None, None, &self.global.config().api.cdn_origin);
+		let partial_user =
+			UserPartialModel::from_db(payload.user.clone(), None, None, &self.global.config.event_api.cdn_origin);
 
 		for emote_set in &payload.personal_emote_sets {
 			if self
@@ -673,7 +680,7 @@ impl Connection {
 						let value = EmotePartialModel::from_db(
 							emote.clone(),
 							Some(UserPartialModel::deleted_user()),
-							&self.global.config().api.cdn_origin,
+							&self.global.config.event_api.cdn_origin,
 						);
 						let value = serde_json::to_value(value).map_err(|e| {
 							tracing::error!(error = %e, "failed to serialize emote");

@@ -58,21 +58,15 @@ impl SubAge {
 			acc
 		});
 
-		let mut extra = chrono::Duration::zero();
-		let mut months = 0;
-		let mut days = 0;
-		for period in &merged_periods {
-			let calc = date_component::date_component::calculate(&period.start, &(period.end + extra));
+		let days = merged_periods
+			.iter()
+			.map(|p| (p.end.min(now) - p.start))
+			.sum::<chrono::Duration>()
+			.num_days() as i32;
 
-			// Time that was extra in the period
-			extra = chrono::Duration::days(calc.day as i64)
-				+ chrono::Duration::hours(calc.hour as i64)
-				+ chrono::Duration::minutes(calc.minute as i64)
-				+ chrono::Duration::seconds(calc.second as i64);
-
-			months += calc.month as i32 + calc.year as i32 * 12;
-			days += calc.interval_days as i32;
-		}
+		let months = days as f64 / (365.25 / 12.0);
+		let extra = chrono::Duration::days((months.fract() * 30.44).round() as i64);
+		let months = months as i32;
 
 		SubAge {
 			extra,

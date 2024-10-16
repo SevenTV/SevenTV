@@ -5,7 +5,6 @@ use std::time::Instant;
 use ::http::HeaderValue;
 use anyhow::Context;
 use quinn::crypto::rustls::QuicServerConfig;
-use ratelimit::{RateLimitDropGuard, RateLimiter};
 use scuffle_foundations::http::server::axum::body::HttpBody;
 use scuffle_foundations::http::server::axum::extract::{MatchedPath, Request};
 use scuffle_foundations::http::server::axum::response::Response;
@@ -13,6 +12,8 @@ use scuffle_foundations::http::server::axum::Router;
 use scuffle_foundations::http::server::stream::{Body, IncomingConnection, IntoResponse, MakeService, ServiceHandler};
 use scuffle_foundations::telemetry::metrics::metrics;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use shared::http::ip::IpMiddleware;
+use shared::http::ratelimit::{RateLimitDropGuard, RateLimiter};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
@@ -24,7 +25,6 @@ use self::http::{ActionKind, ConnectionDropGuard, SocketKind};
 use crate::global::Global;
 
 mod cdn;
-mod ratelimit;
 
 #[derive(Clone)]
 struct TraceRequestId;
@@ -81,6 +81,7 @@ fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 						}),
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
+				.layer(IpMiddleware::new(global.config.cdn.incoming_request.clone()))
 				.layer(PropagateRequestIdLayer::x_request_id()),
 		)
 		.layer(CorsLayer::permissive())

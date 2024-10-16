@@ -4,7 +4,9 @@ use std::path::PathBuf;
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
-use shared::config::{ClickhouseConfig, DatabaseConfig, ImageProcessorConfig, NatsConfig, RedisConfig, TypesenseConfig};
+use shared::config::{
+	ClickhouseConfig, DatabaseConfig, ImageProcessorConfig, IncomingRequestConfig, NatsConfig, RedisConfig, TypesenseConfig,
+};
 use shared::ip::GeoIpConfig;
 
 #[auto_settings]
@@ -40,18 +42,6 @@ pub struct Api {
 
 	/// IP Header config
 	pub incoming_request: IncomingRequestConfig,
-}
-
-#[auto_settings]
-#[serde(default)]
-pub struct IncomingRequestConfig {
-	/// The IP header to use for incoming requests
-	pub ip_header: Option<String>,
-	/// A set of trusted proxies that we should use for incoming requests
-	pub trusted_proxies: Vec<ipnet::IpNet>,
-	/// IP Ranges that are trusted and can ignore the proxy header (if not
-	/// provided)
-	pub trusted_ranges: Vec<ipnet::IpNet>,
 }
 
 #[auto_settings]

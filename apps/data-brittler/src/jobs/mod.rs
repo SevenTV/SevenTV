@@ -377,7 +377,12 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 
 	outcome.insert_time += start.elapsed().as_secs_f64();
 
-	tracing::info!("{}({}) took {:.2}s", outcome.job_name, M::COLLECTION_NAME, start.elapsed().as_secs_f64());
+	tracing::info!(
+		"{}({}) took {:.2}s",
+		outcome.job_name,
+		M::COLLECTION_NAME,
+		start.elapsed().as_secs_f64()
+	);
 
 	outcome
 }
@@ -598,10 +603,19 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		.unwrap()
 	});
 	insert_future!(global.config.should_run_reports(), async {
-		tokio::spawn(batch_insert(
+		let outcome = tokio::spawn(batch_insert(
 			global.target_db.clone(),
 			global.config.truncate,
 			outcomes.reports,
+			runner.tickets.into_values(),
+		))
+		.await
+		.unwrap();
+
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcome,
 			runner.ticket_messages.into_iter(),
 		))
 		.await

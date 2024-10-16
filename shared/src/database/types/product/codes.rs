@@ -50,7 +50,6 @@ pub struct RedeemCode {
 	pub active_period: Option<TimePeriod>,
 	pub subscription_effect: Option<RedeemCodeSubscriptionEffect>,
 	pub created_by: UserId,
-	#[serde(flatten)]
 	pub effect: CodeEffect,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,

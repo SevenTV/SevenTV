@@ -9,9 +9,9 @@ use axum::routing::get;
 use axum::{Extension, Router};
 use error::ApiErrorCode;
 use hyper::Method;
-use middleware::ip::IpMiddleware;
 use middleware::session::{Session, SessionMiddleware};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use shared::http::ip::IpMiddleware;
 use tower::ServiceBuilder;
 use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
 use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
@@ -114,7 +114,7 @@ fn routes(global: Arc<Global>) -> Router {
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
 				.layer(PropagateRequestIdLayer::x_request_id())
-				.layer(IpMiddleware::new(global.clone()))
+				.layer(IpMiddleware::new(global.config.api.incoming_request.clone()))
 				.layer(CookieMiddleware)
 				.layer(SessionMiddleware::new(global.clone()))
 				.layer(cors_layer(&global)),

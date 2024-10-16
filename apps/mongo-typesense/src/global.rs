@@ -159,7 +159,7 @@ impl Global {
 			return state.nats_healthy && state.db_healthy && state.typesense_healthy;
 		}
 
-		tracing::info!("running health check");
+		tracing::debug!("running health check");
 
 		state.nats_healthy = matches!(self.nats.connection_state(), async_nats::connection::State::Connected);
 		if !state.nats_healthy {

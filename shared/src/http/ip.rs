@@ -5,15 +5,12 @@ use std::sync::Arc;
 use axum::extract::Request;
 use axum::response::{IntoResponse, Response};
 
-use crate::global::Global;
-use crate::http::error::{ApiError, ApiErrorCode};
-
 #[derive(Clone)]
-pub struct IpMiddleware(Arc<Global>);
+pub struct IpMiddleware(Arc<crate::config::IncomingRequestConfig>);
 
 impl IpMiddleware {
-	pub fn new(global: Arc<Global>) -> Self {
-		Self(global)
+	pub fn new(config: crate::config::IncomingRequestConfig) -> Self {
+		Self(Arc::new(config))
 	}
 }
 
@@ -23,7 +20,7 @@ impl<S> tower::Layer<S> for IpMiddleware {
 	fn layer(&self, inner: S) -> Self::Service {
 		IpMiddlewareService {
 			inner,
-			global: self.0.clone(),
+			config: self.0.clone(),
 		}
 	}
 }
@@ -31,18 +28,20 @@ impl<S> tower::Layer<S> for IpMiddleware {
 #[derive(Clone)]
 pub struct IpMiddlewareService<S> {
 	inner: S,
-	global: Arc<Global>,
+	config: Arc<crate::config::IncomingRequestConfig>,
 }
 
 impl<S> IpMiddlewareService<S> {
-	fn modify<B>(&mut self, req: &mut Request<B>) -> Result<(), ApiError> {
-		let connecting_ip = req
-			.extensions()
-			.get::<std::net::IpAddr>()
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing connecting ip address"))?;
+	fn modify<B>(&mut self, req: &mut Request<B>) -> Result<(), axum::response::Response> {
+		let connecting_ip = req.extensions().get::<std::net::IpAddr>().ok_or_else(|| {
+			axum::response::Response::builder()
+				.status(axum::http::StatusCode::INTERNAL_SERVER_ERROR)
+				.body("missing connecting ip address".into())
+				.unwrap()
+		})?;
 
-		let trusted_proxies = &self.global.config.api.incoming_request.trusted_proxies;
-		let trusted_ranges = &self.global.config.api.incoming_request.trusted_ranges;
+		let trusted_proxies = &self.config.trusted_proxies;
+		let trusted_ranges = &self.config.trusted_ranges;
 
 		if trusted_proxies.is_empty() || trusted_ranges.iter().any(|net| net.contains(connecting_ip)) {
 			return Ok(());
@@ -50,24 +49,42 @@ impl<S> IpMiddlewareService<S> {
 
 		// If the IP is not a trusted proxy, we should return a 403.
 		if trusted_proxies.iter().all(|net| !net.contains(connecting_ip)) {
-			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "ip is not trusted"));
+			return Err(axum::response::Response::builder()
+				.status(axum::http::StatusCode::FORBIDDEN)
+				.body("ip is not trusted".into())
+				.unwrap());
 		}
 
-		let Some(header) = &self.global.config.api.incoming_request.ip_header else {
+		let Some(header) = &self.config.ip_header else {
 			return Ok(());
 		};
 
 		let ips = req
 			.headers()
 			.get(header)
-			.ok_or_else(|| ApiError::forbidden(ApiErrorCode::BadRequest, "missing ip header"))?
+			.ok_or_else(|| {
+				axum::response::Response::builder()
+					.status(axum::http::StatusCode::FORBIDDEN)
+					.body("missing ip header".into())
+					.unwrap()
+			})?
 			.to_str()
-			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "ip header is not a valid string"))?
+			.map_err(|_| {
+				axum::response::Response::builder()
+					.status(axum::http::StatusCode::BAD_REQUEST)
+					.body("ip header not valid".into())
+					.unwrap()
+			})?
 			.split(',')
 			.map(|ip| ip.trim())
 			.map(|ip| ip.parse::<std::net::IpAddr>())
 			.collect::<Result<Vec<_>, _>>()
-			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid ip header"))?;
+			.map_err(|_| {
+				axum::response::Response::builder()
+					.status(axum::http::StatusCode::BAD_REQUEST)
+					.body("invalid ip header".into())
+					.unwrap()
+			})?;
 
 		for ip in ips.into_iter().rev() {
 			if trusted_proxies.iter().all(|net| !net.contains(&ip)) {

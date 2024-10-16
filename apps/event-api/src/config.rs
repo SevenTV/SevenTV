@@ -4,7 +4,7 @@ use std::time::Duration;
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
-use shared::config::{NatsConfig, PodConfig};
+use shared::config::{IncomingRequestConfig, NatsConfig, PodConfig, RateLimit, TlsConfig};
 
 #[auto_settings]
 #[serde(default)]
@@ -17,8 +17,8 @@ pub struct Config {
 	pub telemetry: TelemetrySettings,
 	/// Runtime configuration
 	pub runtime: RuntimeSettings,
-	/// Api configuration
-	pub api: Api,
+	/// EventApi configuration
+	pub event_api: EventApi,
 }
 
 impl Bootstrap for Config {
@@ -35,23 +35,34 @@ impl Bootstrap for Config {
 
 #[auto_settings]
 #[serde(default)]
-pub struct Api {
-	/// bind
-	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 3000)))]
+pub struct EventApi {
+	/// Bind address
+	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 8000)))]
 	pub bind: SocketAddr,
+	/// Bind address for secure connections, only used if tls is provided.
+	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 8443)))]
+	pub secure_bind: SocketAddr,
+	/// The number of workers handling requests
+	#[settings(default = 1)]
+	pub workers: usize,
+	/// With Http3
+	pub http3: bool,
+	/// The server name to use for the CDN
+	#[settings(default = "SevenTV".into())]
+	pub server_name: String,
+	/// Allow insecure connections to the CDN (only used if tls is provided)
+	#[settings(default = false)]
+	pub allow_insecure: bool,
+	/// A TLS configuration for the CDN
+	pub tls: Option<TlsConfig>,
 	/// API heartbeat interval
 	#[settings(default = Duration::from_secs(45))]
 	pub heartbeat_interval: Duration,
-	/// Subscription Cleanup Interval
-	#[settings(default = Duration::from_secs(60 * 2))]
-	pub subscription_cleanup_interval: Duration,
 	/// API subscription limit
 	#[settings(default = Some(500))]
 	pub subscription_limit: Option<usize>,
 	/// API connection limit
 	pub connection_limit: Option<usize>,
-	/// API connection target
-	pub connection_target: Option<usize>,
 	/// API connection time limit
 	#[settings(default = Duration::from_secs(60 * 60))]
 	pub ttl: Duration,
@@ -61,4 +72,9 @@ pub struct Api {
 	/// Cdn Origin
 	#[settings(default = "https://cdn.7tv.app".parse().unwrap())]
 	pub cdn_origin: url::Url,
+	/// Rate limit configuration
+	#[settings(default = RateLimit::default())]
+	pub rate_limit: RateLimit,
+	/// IP Header config
+	pub incoming_request: IncomingRequestConfig,
 }

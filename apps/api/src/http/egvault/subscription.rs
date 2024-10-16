@@ -17,6 +17,7 @@ use crate::sub_refresh_job;
 pub struct SubscriptionResponse {
 	pub active: bool,
 	pub age: u32,
+	pub months: u32,
 	pub renew: bool,
 	/// Date of the next renewal
 	pub end_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -48,6 +49,7 @@ pub async fn subscription(
 		return Ok(Json(SubscriptionResponse {
 			active: false,
 			age: 0,
+			months: 0,
 			renew: false,
 			end_at: None,
 			subscription: None,
@@ -108,6 +110,7 @@ pub async fn subscription(
 	Ok(Json(SubscriptionResponse {
 		active: true,
 		age: age.days as u32,
+		months: age.months as u32,
 		renew,
 		end_at: Some(end_at),
 		subscription: Some(types::Subscription {
