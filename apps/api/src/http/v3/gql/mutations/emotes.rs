@@ -158,7 +158,9 @@ impl EmoteOps {
 		}
 
 		let res = with_transaction(global, |mut tx| async move {
-			let new_default_name = params.name.or(params.version_name);
+			// only set new default name if it's different from the current one
+			let mut new_default_name = params.name.or(params.version_name);
+			new_default_name.take_if(|n| n == &self.emote.default_name);
 
 			let mut flags = self.emote.flags;
 

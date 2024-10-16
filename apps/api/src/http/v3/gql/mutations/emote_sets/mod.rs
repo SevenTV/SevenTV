@@ -367,7 +367,7 @@ impl EmoteSetOps {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
-	async fn update<'ctx>(&self, ctx: &Context<'ctx>, data: UpdateEmoteSetInput) -> Result<EmoteSet, ApiError> {
+	async fn update<'ctx>(&self, ctx: &Context<'ctx>, mut data: UpdateEmoteSetInput) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -419,6 +419,8 @@ impl EmoteSetOps {
 					"legacy origins are not supported",
 				)));
 			}
+
+			data.name.take_if(|n| n == &self.emote_set.name);
 
 			let emote_set = tx
 				.find_one_and_update(
