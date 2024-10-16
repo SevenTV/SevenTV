@@ -16,9 +16,9 @@ use shared::old_types::object_id::GqlObjectId;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::PermissionGuard;
-use crate::http::v3::validators::NameValidator;
 use crate::transactions::{with_transaction, TransactionError};
+use crate::http::guards::PermissionGuard;
+use crate::http::validators::NameValidator;
 
 #[derive(Default)]
 pub struct CosmeticsMutation;

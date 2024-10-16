@@ -16,7 +16,7 @@ use image::{ImageFile, ImageFormat, ImageHost};
 
 use crate::database::badge::BadgeId;
 use crate::database::emote::{Emote, EmoteFlags, EmoteId};
-use crate::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetId, EmoteSetKind};
+use crate::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlags, EmoteSetId, EmoteSetKind};
 use crate::database::paint::PaintId;
 use crate::database::role::permissions::{PermissionsExt, UserPermission};
 use crate::database::role::RoleId;
@@ -244,12 +244,12 @@ pub struct EmoteSetModel {
 impl EmoteSetModel {
 	pub fn from_db(
 		value: EmoteSet,
-		emotes: impl IntoIterator<Item = (EmoteSetEmote, Option<EmotePartialModel>)>,
+		emotes: impl IntoIterator<Item = (EmoteSetEmote, EmotePartialModel)>,
 		owner: Option<UserPartialModel>,
 	) -> Self {
 		let emotes = emotes
 			.into_iter()
-			.map(|(emote, data)| ActiveEmoteModel::from_db(emote, data))
+			.map(|(emote, data)| ActiveEmoteModel::from_db(emote, Some(data)))
 			.collect::<Vec<_>>();
 
 		Self {
@@ -716,15 +716,15 @@ pub enum ActiveEmoteFlagModel {
 
 async_graphql::scalar!(ActiveEmoteFlagModel);
 
-impl From<EmoteSetEmoteFlag> for ActiveEmoteFlagModel {
-	fn from(value: EmoteSetEmoteFlag) -> Self {
+impl From<EmoteSetEmoteFlags> for ActiveEmoteFlagModel {
+	fn from(value: EmoteSetEmoteFlags) -> Self {
 		let mut flags = Self::none();
 
-		if value.contains(EmoteSetEmoteFlag::ZeroWidth) {
+		if value.contains(EmoteSetEmoteFlags::ZeroWidth) {
 			flags |= Self::ZeroWidth;
 		}
 
-		if value.contains(EmoteSetEmoteFlag::OverrideConflicts) {
+		if value.contains(EmoteSetEmoteFlags::OverrideConflicts) {
 			flags |= Self::OverrideBetterTTV | Self::OverrideTwitchGlobal | Self::OverrideTwitchSubscriber;
 		}
 
@@ -838,7 +838,7 @@ impl EmotePartialModel {
 			owner,
 			state: EmoteVersionState::from_db(&value.flags),
 			flags: value.flags.into(),
-			lifecycle: if value.merged.is_some() {
+			lifecycle: if value.merged.is_some() || value.deleted {
 				EmoteLifecycleModel::Deleted
 			} else if value.image_set.input.is_pending() {
 				EmoteLifecycleModel::Pending

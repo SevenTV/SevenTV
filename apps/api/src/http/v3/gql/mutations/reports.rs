@@ -19,9 +19,9 @@ use shared::old_types::object_id::GqlObjectId;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::report::{Report, ReportStatus};
 use crate::transactions::{with_transaction, TransactionError};
+use crate::http::guards::PermissionGuard;
 
 #[derive(Default)]
 pub struct ReportsMutation;

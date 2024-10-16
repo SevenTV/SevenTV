@@ -17,14 +17,15 @@ use shared::database::user::FullUserRef;
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 use shared::old_types::object_id::GqlObjectId;
 
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::http::v3::validators::{EmoteNameValidator, NameValidator};
+use crate::http::validators::{EmoteNameValidator, NameValidator};
 use crate::transactions::{with_transaction, TransactionError};
+use crate::http::guards::{PermissionGuard, RateLimitGuard};
 
 mod emote_add;
 mod emote_remove;
@@ -334,7 +335,24 @@ impl EmoteSetOps {
 		.await;
 
 		match res {
-			Ok(emote_set) => Ok(emote_set.emotes.into_iter().map(ActiveEmote::from_db).collect()),
+			Ok(emote_set) => {
+				let emotes = global
+					.emote_by_id_loader
+					.load_many_merged(emote_set.emotes.iter().map(|e| e.id))
+					.await
+					.map_err(|_| {
+						ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load emotes, however the operation was successful",
+						)
+					})?;
+
+				Ok(emote_set
+					.emotes
+					.into_iter()
+					.filter_map(|e| emotes.get(e.id).map(|emote| ActiveEmote::new(e, emote.clone())))
+					.collect())
+			}
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");

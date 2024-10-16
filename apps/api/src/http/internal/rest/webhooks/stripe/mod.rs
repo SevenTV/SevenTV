@@ -82,7 +82,7 @@ pub async fn handle(
 		.and_then(|v| v.to_str().ok())
 		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "missing stripe-signature header"))?;
 
-	let event = stripe::Webhook::construct_event(&payload, sig, &global.config.api.stripe.webhook_secret).map_err(|e| {
+	let event = stripe::Webhook::construct_event(&payload, sig, &global.config.stripe.webhook_secret).map_err(|e| {
 		tracing::error!(error = %e, "failed to parse webhook");
 		ApiError::bad_request(ApiErrorCode::StripeError, "failed to parse webhook")
 	})?;

@@ -1,4 +1,3 @@
-use async_graphql::SDLExportOptions;
 use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::settings::cli::Matches;
 use tokio::fs;
@@ -25,19 +24,9 @@ async fn main(settings: Matches<Config>) {
 	rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
 
 	if let Some(export_path) = settings.settings.export_schema_path {
-		fs::write(
-			&export_path,
-			http::v3::gql::schema(None).sdl_with_options(
-				SDLExportOptions::default()
-					.federation()
-					.include_specified_by()
-					.sorted_arguments()
-					.sorted_enum_items()
-					.sorted_fields(),
-			),
-		)
-		.await
-		.expect("failed to write schema path");
+		fs::write(&export_path, http::v4::export_gql_schema())
+			.await
+			.expect("failed to write schema path");
 
 		tracing::info!(path = ?export_path, "saved gql schema");
 
@@ -45,6 +34,8 @@ async fn main(settings: Matches<Config>) {
 	}
 
 	tracing::info!("starting api");
+
+	scuffle_foundations::telemetry::server::require_health_check();
 
 	let global = global::Global::new(settings.settings)
 		.await
@@ -65,20 +56,42 @@ async fn main(settings: Matches<Config>) {
 	let shutdown = tokio::spawn(async move {
 		signal.recv().await;
 		tracing::info!("received shutdown signal, waiting for jobs to finish");
-		handler.shutdown().await;
-		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv())
-			.await
-			.ok();
+		tokio::select! {
+			_ = handler.shutdown() => {},
+			_ = signal.recv() => {
+				tracing::warn!("received second shutdown signal, forcing exit");
+			},
+			_ = tokio::time::sleep(std::time::Duration::from_secs(60)) => {
+				tracing::warn!("shutdown timed out, forcing exit");
+			},
+		}
 	});
 
 	tracing::info!("started api");
 
+	let ctx = scuffle_foundations::context::Context::global();
+
 	tokio::select! {
-		r = http_handle => tracing::warn!("http server exited: {:?}", r),
-		r = image_processor_handle => tracing::warn!("image processor handler exited: {:?}", r),
-		r = cron_handle => tracing::warn!("cron handler exited: {:?}", r),
-		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
+		r = http_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("http server exited: {:?}", r);
+			}
+		},
+		r = image_processor_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("image processor handler exited: {:?}", r);
+			}
+		},
+		r = cron_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("cron handler exited: {:?}", r);
+			}
+		},
 	}
+
+	drop(ctx);
+
+	shutdown.await.expect("shutdown failed");
 
 	tracing::info!("stopping api");
 	std::process::exit(0);

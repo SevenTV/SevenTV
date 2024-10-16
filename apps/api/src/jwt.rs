@@ -28,7 +28,7 @@ pub trait JwtState: Sized {
 	fn from_claims(claims: &Claims) -> Option<Self>;
 
 	fn serialize(&self, global: &Arc<Global>) -> Option<String> {
-		let config = global.config.api.jwt.clone();
+		let config = global.config.jwt.clone();
 
 		let key = Hmac::<Sha256>::new_from_slice(config.secret.as_bytes()).ok()?;
 		let mut claims = self.to_claims();
@@ -43,7 +43,7 @@ pub trait JwtState: Sized {
 	}
 
 	fn verify(global: &Arc<Global>, token: &str) -> Option<Self> {
-		let config = global.config.api.jwt.clone();
+		let config = global.config.jwt.clone();
 
 		let key = Hmac::<Sha256>::new_from_slice(config.secret.as_bytes()).ok()?;
 		let token: Token<Header, Claims, _> = token.verify_with_key(&key).ok()?;

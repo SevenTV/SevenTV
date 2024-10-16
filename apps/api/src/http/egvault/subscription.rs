@@ -2,13 +2,8 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::{Extension, Json};
-use futures::TryStreamExt;
-use shared::database::product::subscription::{
-	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionState,
-};
+use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionPeriodCreatedBy, SubscriptionState};
 use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
-use shared::database::queries::filter;
-use shared::database::MongoCollection;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -38,27 +33,12 @@ pub async fn subscription(
 		TargetUser::Other(id) => id,
 	};
 
-	// TODO: should we dataload this?
-	let periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
-		.find(filter::filter! {
-			SubscriptionPeriod {
-				#[query(flatten)]
-				subscription_id: SubscriptionId {
-					user_id: user,
-				},
-			}
-		})
+	let periods: Vec<_> = global
+		.subscription_periods_by_user_id_loader
+		.load(user)
 		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to find subscription period");
-			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find subscription period")
-		})?
-		.try_collect()
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to collect subscription periods");
-			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to collect subscription periods")
-		})?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods"))?
+		.unwrap_or_default();
 
 	let Some(active_period) = periods
 		.iter()

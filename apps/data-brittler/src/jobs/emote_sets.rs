@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use futures::StreamExt;
 use shared::database::emote::{Emote, EmoteId};
-use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlag, EmoteSetId, EmoteSetKind};
+use shared::database::emote_set::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlags, EmoteSetId, EmoteSetKind};
 use shared::database::user::{User, UserId};
 use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
@@ -129,17 +129,17 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 			continue;
 		}
 
-		let mut flags = EmoteSetEmoteFlag::none();
+		let mut flags = EmoteSetEmoteFlags::none();
 
 		if e.flags.contains(ActiveEmoteFlagModel::ZeroWidth) {
-			flags |= EmoteSetEmoteFlag::ZeroWidth;
+			flags |= EmoteSetEmoteFlags::ZeroWidth;
 		}
 		if e.flags.intersects(
 			ActiveEmoteFlagModel::OverrideTwitchSubscriber
 				| ActiveEmoteFlagModel::OverrideTwitchGlobal
 				| ActiveEmoteFlagModel::OverrideBetterTTV,
 		) {
-			flags |= EmoteSetEmoteFlag::OverrideConflicts;
+			flags |= EmoteSetEmoteFlags::OverrideConflicts;
 		}
 
 		let Some(emote_name) = e.name else {

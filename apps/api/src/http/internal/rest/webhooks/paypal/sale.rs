@@ -65,7 +65,7 @@ pub async fn completed(
 	let paypal_sub: types::Subscription = global
 		.http_client
 		.get(format!("https://api.paypal.com/v1/billing/subscriptions/{provider_id}"))
-		.bearer_auth(&global.config.api.paypal.api_key)
+		.bearer_auth(&global.config.paypal.api_key)
 		.send()
 		.await
 		.map_err(|e| {

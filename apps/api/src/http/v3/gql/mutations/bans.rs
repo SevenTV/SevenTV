@@ -16,9 +16,9 @@ use shared::old_types::BanEffect;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::user::{User as GqlUser, UserPartial};
 use crate::transactions::{with_transaction, TransactionError};
+use crate::http::guards::PermissionGuard;
 
 #[derive(Default)]
 pub struct BansMutation;

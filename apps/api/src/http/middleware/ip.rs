@@ -41,9 +41,10 @@ impl<S> IpMiddlewareService<S> {
 			.get::<std::net::IpAddr>()
 			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing connecting ip address"))?;
 
-		let trusted_proxies = &self.global.config.api.incoming_request.trusteded_proxies;
+		let trusted_proxies = &self.global.config.api.incoming_request.trusted_proxies;
+		let trusted_ranges = &self.global.config.api.incoming_request.trusted_ranges;
 
-		if trusted_proxies.is_empty() {
+		if trusted_proxies.is_empty() || trusted_ranges.iter().any(|net| net.contains(connecting_ip)) {
 			return Ok(());
 		}
 
@@ -53,19 +54,17 @@ impl<S> IpMiddlewareService<S> {
 		}
 
 		let Some(header) = &self.global.config.api.incoming_request.ip_header else {
-			tracing::warn!("missing ip_header but trusted proxies are enabled");
 			return Ok(());
 		};
 
 		let ips = req
 			.headers()
 			.get(header)
-			.ok_or_else(|| ApiError::forbidden(ApiErrorCode::BadRequest, "missing ip header"))?;
-		let ips = ips
+			.ok_or_else(|| ApiError::forbidden(ApiErrorCode::BadRequest, "missing ip header"))?
 			.to_str()
-			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "ip header is not a valid string"))?;
-		let ips = ips.split(',').map(|ip| ip.trim());
-		let ips = ips
+			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "ip header is not a valid string"))?
+			.split(',')
+			.map(|ip| ip.trim())
 			.map(|ip| ip.parse::<std::net::IpAddr>())
 			.collect::<Result<Vec<_>, _>>()
 			.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid ip header"))?;
@@ -76,8 +75,6 @@ impl<S> IpMiddlewareService<S> {
 				return Ok(());
 			}
 		}
-
-		tracing::warn!("no ips found in header that are not trusted proxies");
 
 		Ok(())
 	}

@@ -13,12 +13,14 @@ use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote::Emote;
-use crate::http::v3::validators::{EmoteNameValidator, TagsValidator};
+use crate::http::validators::{EmoteNameValidator, TagsValidator};
+use crate::http::guards::PermissionGuard;
+use crate::http::guards::RateLimitGuard;
 use crate::transactions::{with_transaction, TransactionError};
 
 #[derive(Default)]
@@ -33,7 +35,7 @@ impl EmotesMutation {
 
 		let emote = global
 			.emote_by_id_loader
-			.load(id.id())
+			.load_exclude_deleted(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;
