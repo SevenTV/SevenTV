@@ -292,7 +292,8 @@ impl EmoteSetOps {
 pub struct UpdateEmoteSetInput {
 	#[graphql(validator(custom = "NameValidator"))]
 	name: Option<String>,
-	capacity: Option<u32>,
+	#[graphql(validator(minimum = 1))]
+	capacity: Option<i32>,
 	origins: Option<Vec<EmoteSetOriginInput>>,
 }
 
@@ -380,35 +381,27 @@ impl EmoteSetOps {
 
 		let res = with_transaction(global, |mut tx| async move {
 			let new_capacity = if let Some(capacity) = data.capacity {
-				if capacity > i32::MAX as u32 {
-					return Err(TransactionError::Custom(ApiError::bad_request(
-						ApiErrorCode::BadRequest,
-						"emote set capacity is too large",
-					)));
-				}
-
-				if capacity == 0 {
-					return Err(TransactionError::Custom(ApiError::bad_request(
-						ApiErrorCode::BadRequest,
-						"emote set capacity cannot be 0",
-					)));
-				}
-
-				if capacity < self.emote_set.emotes.len() as u32 {
+				if capacity < self.emote_set.emotes.len() as i32 {
 					return Err(TransactionError::Custom(ApiError::bad_request(
 						ApiErrorCode::BadRequest,
 						"emote set capacity cannot be less than the number of emotes in the set",
 					)));
 				}
 
-				if capacity as i32 > target.computed.permissions.emote_set_capacity.unwrap_or_default().max(0) {
+				let max_capacity = if self.emote_set.kind == EmoteSetKind::Personal {
+					target.computed.permissions.personal_emote_set_capacity
+				} else {
+					target.computed.permissions.emote_set_capacity
+				};
+
+				if capacity > max_capacity.unwrap_or_default().max(0) {
 					return Err(TransactionError::Custom(ApiError::bad_request(
 						ApiErrorCode::LackingPrivileges,
 						"emote set capacity cannot exceed user's capacity",
 					)));
 				}
 
-				Some(capacity as i32)
+				Some(capacity)
 			} else {
 				None
 			};
