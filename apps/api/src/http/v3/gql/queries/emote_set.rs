@@ -149,8 +149,28 @@ impl EmoteSet {
 		Ok(emotes)
 	}
 
-	async fn emote_count(&self) -> Result<u32, ApiError> {
-		Ok(self.emotes.len() as u32)
+	async fn emote_count<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+	) -> Result<u32, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		// We have to load all the emotes to get the count, this is quite inefficient.
+		let emotes = global
+			.emote_by_id_loader
+			.load_many_merged(self.emotes.iter().map(|e| e.id))
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
+		let active_emotes = self
+			.emotes
+			.iter()
+			.filter(|e| emotes.get(e.id).is_some())
+			.count();
+
+		Ok(active_emotes as u32)
 	}
 
 	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {

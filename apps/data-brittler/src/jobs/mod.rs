@@ -543,6 +543,15 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		.await
 		.unwrap();
 
+		let outcome = tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcome,
+			runner.editors.into_iter().map(|(_, e)| e),
+		))
+		.await
+		.unwrap();
+
 		tokio::spawn(batch_insert(
 			global.target_db.clone(),
 			global.config.truncate,

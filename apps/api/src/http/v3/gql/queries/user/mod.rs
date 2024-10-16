@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
+use itertools::Itertools;
 use shared::database::user::{FullUser, UserId};
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;
@@ -191,9 +192,25 @@ impl User {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		// TODO(troy): this is likely not a very good use of our query system
+		// We essentially need to know the IDs of all emote_sets owned by this user
+		// so that we can find the events related to those emote_sets.
+		// Ideally we should just query this on typesense using a JOIN.
+		// This is a temporary solution until we have a better way to query this.
+		let targets = global
+			.emote_set_by_user_id_loader
+			.load(self.id.id())
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.unwrap_or_default()
+			.into_iter()
+			.map(|s| EventId::EmoteSet(s.id))
+			.chain(std::iter::once(EventId::User(self.id.id())))
+			.join(", ");
+
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
-			.filter_by(format!("target_id: {}", EventId::User(self.id.id())))
+			.filter_by(format!("target_id: [{targets}]"))
 			.sort_by(vec!["created_at:desc".to_owned()])
 			.page(None)
 			.per_page(limit.unwrap_or(20))

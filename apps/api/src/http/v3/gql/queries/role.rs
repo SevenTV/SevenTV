@@ -93,7 +93,7 @@ impl RolesQuery {
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load roles")
 			})?;
 
-		roles.sort_by(|a, b| match a.rank.cmp(&b.rank) {
+		roles.sort_by(|a, b| match b.rank.cmp(&a.rank) {
 			std::cmp::Ordering::Equal => a.id.cmp(&b.id),
 			other => other,
 		});
