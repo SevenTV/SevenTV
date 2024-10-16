@@ -368,7 +368,10 @@ impl EmoteSetOps {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
-	async fn update<'ctx>(&self, ctx: &Context<'ctx>, mut data: UpdateEmoteSetInput) -> Result<EmoteSet, ApiError> {
+	async fn update<'ctx>(&self, ctx: &Context<'ctx>, data: UpdateEmoteSetInput) -> Result<EmoteSet, ApiError> {
+		// TODO: A bug in either the compiler or macro expansion, which causes the linter to think we do not need a mutable `data` variable here.
+		let mut data = data;
+
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

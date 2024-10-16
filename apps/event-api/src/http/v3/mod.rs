@@ -3,12 +3,10 @@ use std::num::NonZeroUsize;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use axum::extract::{ws, RawQuery, Request, State, WebSocketUpgrade};
+use axum::extract::{ws, Path, RawQuery, Request, State, WebSocketUpgrade};
 use axum::http::header::HeaderMap;
 use axum::http::HeaderValue;
 use axum::response::{IntoResponse, Response, Sse};
-use axum::routing::any;
-use axum::Router;
 use parser::{parse_json_subscriptions, parse_query_uri};
 use scuffle_foundations::context::ContextFutExt;
 use scuffle_foundations::telemetry::metrics::metrics;
@@ -112,12 +110,9 @@ mod v3 {
 	}
 }
 
-pub fn routes() -> Router<Arc<Global>> {
-	Router::new().route("/", any(handle)).route("/*any", any(handle))
-}
-
-async fn handle(
+pub async fn handle(
 	State(global): State<Arc<Global>>,
+	path: Option<Path<String>>,
 	RawQuery(query): RawQuery,
 	headers: HeaderMap,
 	upgrade: Option<WebSocketUpgrade>,
@@ -133,7 +128,7 @@ async fn handle(
 	}
 
 	// Parse the initial subscriptions from the path.
-	let initial_subs = if let Some(query) = query.as_ref().and_then(|q| q.contains('@').then_some(q)) {
+	let initial_subs = if let Some(query) = path.as_ref().and_then(|q| q.contains('@').then_some(q)) {
 		Some(parser::parse_path_subscriptions(
 			&urlencoding::decode(query).unwrap_or_default(),
 		))

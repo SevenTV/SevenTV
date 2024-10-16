@@ -2,6 +2,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use std::time::Instant;
 
+use axum::routing::any;
 use ::http::HeaderValue;
 use anyhow::Context;
 use quinn::crypto::rustls::QuicServerConfig;
@@ -41,7 +42,8 @@ impl MakeRequestId for TraceRequestId {
 
 fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 	Router::new()
-		.nest("/v3", v3::routes())
+		.route("/v3", any(v3::handle))
+		.route("/v3*any", any(v3::handle))
 		.with_state(Arc::clone(global))
 		.layer(
 			ServiceBuilder::new()

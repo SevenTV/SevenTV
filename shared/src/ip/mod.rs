@@ -6,6 +6,7 @@ use scuffle_foundations::settings::auto_settings;
 use url::Url;
 
 #[auto_settings]
+#[serde(default)]
 pub struct GeoIpConfig {
 	#[settings(default = "./GeoLite2-Country.mmdb".parse().unwrap())]
 	pub path: PathBuf,
@@ -14,6 +15,7 @@ pub struct GeoIpConfig {
 }
 
 #[auto_settings]
+#[serde(default)]
 pub struct GeoIpConfigDownload {
 	pub account_id: String,
 	pub api_token: String,
