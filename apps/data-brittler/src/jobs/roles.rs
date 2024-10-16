@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use shared::database::role::permissions::{
-	AdminPermission, EmoteModerationRequestPermission, EmotePermission, EmoteSetPermission, PaintPermission, Permission,
-	Permissions, RateLimitResource, RateLimits, TicketPermission, UserPermission,
+	AdminPermission, EmoteModerationRequestPermission, EmotePermission, EmoteSetPermission, PaintPermission, Permission, Permissions, RateLimitResource, RateLimits, RolePermission, TicketPermission, UserPermission
 };
 use shared::database::role::{Role, RoleId};
 use shared::database::user::UserId;
@@ -119,6 +118,7 @@ pub fn roles() -> Vec<Role> {
 				UserPermission::ManageAny.into(),
 				UserPermission::Moderate.into(),
 				UserPermission::ViewHidden.into(),
+				RolePermission::Assign.into(),
 			],
 			..Default::default()
 		},
