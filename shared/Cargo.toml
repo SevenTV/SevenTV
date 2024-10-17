@@ -67,5 +67,6 @@ fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client
 ipnet = { version = "2.9.0", features = ["serde"] }
 spin = "0.9.8"
 axum = "0.7"
+regex = "1.10.6"
 
 macros = { workspace = true }

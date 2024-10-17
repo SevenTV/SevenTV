@@ -5,6 +5,7 @@ use axum::Router;
 use crate::global::Global;
 
 pub mod auth;
+pub mod bridge;
 pub mod config;
 pub mod emote_sets;
 pub mod emotes;
@@ -20,4 +21,5 @@ pub fn routes() -> Router<Arc<Global>> {
 		.nest("/emote-sets", emote_sets::routes())
 		.nest("/users", users::routes())
 		.nest("/entitlements", entitlements::routes())
+		.nest("/bridge", bridge::routes())
 }

@@ -149,10 +149,7 @@ impl EmoteSet {
 		Ok(emotes)
 	}
 
-	async fn emote_count<'ctx>(
-		&self,
-		ctx: &Context<'ctx>,
-	) -> Result<u32, ApiError> {
+	async fn emote_count<'ctx>(&self, ctx: &Context<'ctx>) -> Result<u32, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -164,11 +161,7 @@ impl EmoteSet {
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
-		let active_emotes = self
-			.emotes
-			.iter()
-			.filter(|e| emotes.get(e.id).is_some())
-			.count();
+		let active_emotes = self.emotes.iter().filter(|e| emotes.get(e.id).is_some()).count();
 
 		Ok(active_emotes as u32)
 	}

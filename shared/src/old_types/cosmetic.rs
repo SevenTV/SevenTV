@@ -1,6 +1,7 @@
 use super::{is_default, ImageHost, UserPartialModel};
 use crate::database::badge::{Badge, BadgeId};
 use crate::database::paint::{Paint, PaintId, PaintLayerType, PaintRadialGradientShape, PaintShadow};
+use crate::database::user::profile_picture::UserProfilePictureId;
 use crate::database::user::UserId;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -325,7 +326,7 @@ impl CosmeticBadgeModel {
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct CosmeticAvatarModel {
-	pub id: UserId,
+	pub id: UserProfilePictureId,
 	pub user: UserPartialModel,
 	#[serde(skip_serializing_if = "is_default", rename = "as")]
 	pub aas: String,

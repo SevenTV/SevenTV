@@ -230,14 +230,72 @@ impl MessagePayload for EndOfStream {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Bridge {
-	pub command: String,
-	pub sid: String,
-	pub ip: String,
-	pub body: serde_json::Value,
+	pub command: BridgeCommand,
+	pub body: BridgeBody,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum BridgeCommand {
+	#[serde(rename = "userstate")]
+	UserState,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BridgeBody {
+	pub identifiers: Vec<BridgeBodyIdentifier>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BridgeBodyIdentifier(String);
+
+impl BridgeBodyIdentifier {
+	pub fn new(username: &str) -> Self {
+		Self(format!("username:{}", username.to_lowercase()))
+	}
+
+	pub fn username(&self) -> &str {
+		self.0.strip_prefix("username:").unwrap()
+	}
+}
+
+impl serde::Serialize for BridgeBodyIdentifier {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_str(&self.0)
+	}
+}
+
+impl<'de> serde::Deserialize<'de> for BridgeBodyIdentifier {
+	fn deserialize<D>(deserializer: D) -> Result<BridgeBodyIdentifier, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		let string = String::deserialize(deserializer)?;
+
+		static ID_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+
+		let id_regex = ID_REGEX.get_or_init(|| regex::Regex::new(r"^username:[a-zA-Z0-9_]{1,100}$").unwrap());
+
+		if id_regex.is_match(&string) {
+			Ok(BridgeBodyIdentifier(string.to_lowercase()))
+		} else {
+			Err(serde::de::Error::custom(
+				"invalid bridge body identifier, must match regex: ^username:[a-zA-Z0-9_]{1,100}$",
+			))
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum BridgePlatform {
+	Twitch,
+	Kick,
+	Youtube,
 }
 
 impl MessagePayload for Bridge {

@@ -49,7 +49,20 @@ pub enum ApiErrorCode {
 
 impl ApiErrorCode {
 	pub fn as_str(&self) -> &'static str {
-		"UNKNOWN"
+		match self {
+			Self::Unknown => "UNKNOWN",
+			Self::LoginRequired => "LOGIN_REQUIRED",
+			Self::TransactionError => "TRANSACTION_ERROR",
+			Self::MissingContext => "MISSING_CONTEXT",
+			Self::RateLimitExceeded => "RATE_LIMIT_EXCEEDED",
+			Self::StripeError => "STRIPE_ERROR",
+			Self::PaypalError => "PAYPAL_ERROR",
+			Self::BadRequest => "BAD_REQUEST",
+			Self::MutationError => "MUTATION_ERROR",
+			Self::LoadError => "LOAD_ERROR",
+			Self::LackingPrivileges => "LACKING_PRIVILEGES",
+			Self::ImageProcessorError => "IMAGE_PROCESSOR_ERROR",
+		}
 	}
 }
 

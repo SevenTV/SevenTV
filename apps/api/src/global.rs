@@ -40,7 +40,7 @@ use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
 use crate::dataloader::subscription_products::SubscriptionProductsLoader;
 use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
-use crate::dataloader::user::UserByPlatformIdLoader;
+use crate::dataloader::user::{UserByPlatformIdLoader, UserByPlatformUsernameLoader};
 use crate::dataloader::user_ban::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
 use crate::dataloader::user_session::UserSessionUpdaterBatcher;
@@ -85,6 +85,7 @@ pub struct Global {
 	pub redeem_code_by_id_loader: DataLoader<LoaderById<RedeemCode>>,
 	pub user_by_id_loader: DataLoader<LoaderById<User>>,
 	pub user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
+	pub user_by_platform_username_loader: DataLoader<UserByPlatformUsernameLoader>,
 	pub user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
 	pub user_ban_by_user_id_loader: DataLoader<UserBanByUserIdLoader>,
 	pub user_profile_picture_id_loader: DataLoader<LoaderById<UserProfilePicture>>,
@@ -178,6 +179,7 @@ impl Global {
 			redeem_code_by_id_loader: LoaderById::new(db.clone()),
 			user_by_id_loader: LoaderById::new(db.clone()),
 			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),
+			user_by_platform_username_loader: UserByPlatformUsernameLoader::new(db.clone()),
 			user_ban_by_id_loader: LoaderById::new(db.clone()),
 			user_ban_by_user_id_loader: UserBanByUserIdLoader::new(db.clone()),
 			user_profile_picture_id_loader: LoaderById::new(db.clone()),

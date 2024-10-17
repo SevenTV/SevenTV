@@ -7,6 +7,7 @@ use axum::extract::{ws, Path, RawQuery, Request, State, WebSocketUpgrade};
 use axum::http::header::HeaderMap;
 use axum::http::HeaderValue;
 use axum::response::{IntoResponse, Response, Sse};
+use axum::Extension;
 use parser::{parse_json_subscriptions, parse_query_uri};
 use scuffle_foundations::context::ContextFutExt;
 use scuffle_foundations::telemetry::metrics::metrics;
@@ -114,6 +115,7 @@ pub async fn handle(
 	State(global): State<Arc<Global>>,
 	path: Option<Path<String>>,
 	RawQuery(query): RawQuery,
+	Extension(ip): Extension<std::net::IpAddr>,
 	headers: HeaderMap,
 	upgrade: Option<WebSocketUpgrade>,
 	req: Request,
@@ -143,42 +145,44 @@ pub async fn handle(
 	};
 
 	if let Some(upgrade) = upgrade {
-		Ok(handle_ws(State(global), initial_subs, ticket, upgrade).await)
+		Ok(handle_ws(global, initial_subs, ticket, upgrade, ip).await)
 	} else if req.method() == hyper::Method::GET {
-		handle_sse(State(global), initial_subs, ticket).await
+		handle_sse(global, initial_subs, ticket, ip).await
 	} else {
 		Err((hyper::StatusCode::METHOD_NOT_ALLOWED, "method not allowed"))
 	}
 }
 
 async fn handle_ws(
-	State(global): State<Arc<Global>>,
+	global: Arc<Global>,
 	initial_subs: Option<Vec<Subscribe>>,
 	ticket: AtomicTicket,
 	upgrade: WebSocketUpgrade,
+	ip: std::net::IpAddr,
 ) -> Response<axum::body::Body> {
 	upgrade
 		.max_frame_size(1024 * 16)
 		.max_message_size(1024 * 18)
 		.write_buffer_size(1024 * 16)
-		.on_upgrade(|ws| async {
-			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket);
+		.on_upgrade(move |ws| async move {
+			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket, ip);
 
 			tokio::spawn(socket.serve());
 		})
 }
 
 async fn handle_sse(
-	State(global): State<Arc<Global>>,
+	global: Arc<Global>,
 	initial_subs: Option<Vec<Subscribe>>,
 	ticket: AtomicTicket,
+	ip: std::net::IpAddr,
 ) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
 	// Handle the SSE request.
 	let (sender, response) = tokio::sync::mpsc::channel(1);
 
 	let response = Sse::new(ReceiverStream::new(response));
 
-	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket);
+	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket, ip);
 
 	tokio::spawn(socket.serve());
 
@@ -217,6 +221,7 @@ struct Connection {
 	_connection_duration_drop_guard: v3::ConnectionDurationDropGuard,
 	/// Drop guard for the metrics
 	_current_connection_drop_guard: v3::CurrentConnectionDropGuard,
+	ip: std::net::IpAddr,
 
 	presence_lru: lru::LruCache<UserId, PresenceCacheValue>,
 	personal_emote_set_lru: lru::LruCache<EmoteSetId, chrono::DateTime<chrono::Utc>>,
@@ -238,6 +243,7 @@ impl Connection {
 		global: Arc<Global>,
 		initial_subs: Option<Vec<payload::Subscribe>>,
 		ticket: AtomicTicket,
+		ip: std::net::IpAddr,
 	) -> Self {
 		let connection_kind = match socket {
 			Socket::WebSocket(_) => v3::ConnectionKind::Websocket,
@@ -247,6 +253,7 @@ impl Connection {
 		Self {
 			socket,
 			seq: 0,
+			ip,
 			heartbeat_count: 0,
 			id: Id::new(),
 			// We jitter the TTL to prevent all connections from expiring at the same time, which
@@ -559,11 +566,14 @@ impl Connection {
 					.global
 					.http_client
 					.post(&self.global.config.event_api.bridge_url)
+					// Forward the IP to the API for rate limiting.
+					.header("CF-Connecting-IP", self.ip.to_string())
 					.json(&bridge.body)
 					.send()
 					.await?
 					.error_for_status()?;
-				let body = res.json::<Vec<Message<payload::Dispatch>>>().await?;
+
+				let body = res.json::<Vec<payload::Dispatch>>().await?;
 
 				for msg in body {
 					self.handle_dispatch(&msg).await?;
@@ -578,9 +588,9 @@ impl Connection {
 		Ok(())
 	}
 
-	async fn handle_dispatch(&mut self, payload: &Message<payload::Dispatch>) -> Result<(), ConnectionError> {
+	async fn handle_dispatch(&mut self, payload: &payload::Dispatch) -> Result<(), ConnectionError> {
 		// If everything is good, send the dispatch to the client.
-		self.send_message(&payload.data).await?;
+		self.send_message(&payload).await?;
 
 		Ok(())
 	}
@@ -910,7 +920,7 @@ impl Connection {
 			},
 			Some(payload) = self.topics.next() => {
 				match payload {
-					Payload::Dispatch(payload) => self.handle_dispatch(payload.as_ref()).await,
+					Payload::Dispatch(payload) => self.handle_dispatch(&payload.data).await,
 					Payload::Presence(payload) => self.handle_presence(payload.as_ref()).await,
 				}
 			}

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use shared::database::role::permissions::{
-	AdminPermission, EmoteModerationRequestPermission, EmotePermission, EmoteSetPermission, PaintPermission, Permission, Permissions, RateLimitResource, RateLimits, RolePermission, TicketPermission, UserPermission
+	AdminPermission, EmoteModerationRequestPermission, EmotePermission, EmoteSetPermission, PaintPermission, Permission,
+	Permissions, RateLimitResource, RateLimits, RolePermission, TicketPermission, UserPermission,
 };
 use shared::database::role::{Role, RoleId};
 use shared::database::user::UserId;

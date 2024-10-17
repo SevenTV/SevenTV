@@ -43,6 +43,7 @@ rustls = "0.23"
 rustls-pemfile = "2.1"
 hyper-util = { version = "0.1", features = ["tokio", "server", "http1", "http2"] }
 h3 = "0.0.6"
+regex = "1.10.6"
 
 [features]
 default = []

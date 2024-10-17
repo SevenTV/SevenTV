@@ -2,9 +2,9 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use std::time::Instant;
 
-use axum::routing::any;
 use ::http::HeaderValue;
 use anyhow::Context;
+use axum::routing::any;
 use quinn::crypto::rustls::QuicServerConfig;
 use scuffle_foundations::http::server::axum::body::HttpBody;
 use scuffle_foundations::http::server::axum::extract::{MatchedPath, Request};
