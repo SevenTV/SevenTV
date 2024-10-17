@@ -70,7 +70,7 @@ pub async fn emote_add(
 			if !emote.deleted {
 				return Err(TransactionError::Custom(ApiError::conflict(
 					ApiErrorCode::BadRequest,
-					"this emote is already in the set or has a conflicting name",
+					"this emote has a conflicting name",
 				)));
 			}
 		}
