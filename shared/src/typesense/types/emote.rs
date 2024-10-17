@@ -63,7 +63,8 @@ impl From<database::emote::Emote> for Emote {
 			score_trending_day: value.scores.trending_day,
 			score_trending_week: value.scores.trending_week,
 			score_trending_month: value.scores.trending_month,
-			deleted: value.deleted,
+			// If its merged for the purposes of search we report it as deleted
+			deleted: value.deleted || value.merged.is_some(),
 			created_at: value.id.timestamp().timestamp_millis(),
 			updated_at: value.updated_at.timestamp_millis(),
 			search_updated_at: Utc::now().timestamp_millis(),

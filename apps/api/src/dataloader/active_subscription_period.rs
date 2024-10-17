@@ -1,27 +1,27 @@
-use std::collections::HashMap;
 use std::future::IntoFuture;
 
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
+use itertools::Itertools;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::filter;
-use shared::database::user::connection::{Platform, UserConnection};
-use shared::database::user::User;
+use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-pub struct UserByPlatformIdLoader {
+pub struct SubscriptionPeriodsByUserIdLoader {
 	db: mongodb::Database,
 	config: BatcherConfig,
 }
 
-impl UserByPlatformIdLoader {
+impl SubscriptionPeriodsByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		Self::new_with_config(
 			db,
 			BatcherConfig {
-				name: "UserByPlatformIdLoader".to_string(),
+				name: "SubscriptionPeriodsByUserIdLoader".to_string(),
 				concurrency: 50,
 				max_batch_size: 1_000,
 				sleep_duration: std::time::Duration::from_millis(5),
@@ -34,9 +34,9 @@ impl UserByPlatformIdLoader {
 	}
 }
 
-impl Loader for UserByPlatformIdLoader {
-	type Key = (Platform, String);
-	type Value = User;
+impl Loader for SubscriptionPeriodsByUserIdLoader {
+	type Key = UserId;
+	type Value = Vec<SubscriptionPeriod>;
 
 	fn config(&self) -> BatcherConfig {
 		self.config.clone()
@@ -46,18 +46,16 @@ impl Loader for UserByPlatformIdLoader {
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
-		let users: Vec<User> = User::collection(&self.db)
-			.find(filter::Filter::or(keys.iter().map(|(platform, platform_id)| {
-				filter::filter! {
-					User {
-						#[query(flatten)]
-						connections: UserConnection {
-							platform,
-							platform_id,
-						},
-					}
+		let results: Vec<_> = SubscriptionPeriod::collection(&self.db)
+			.find(filter::filter! {
+				SubscriptionPeriod {
+					#[query(flatten)]
+					subscription_id: SubscriptionId {
+						#[query(selector = "in")]
+						user_id: keys,
+					},
 				}
-			})))
+			})
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
@@ -65,29 +63,21 @@ impl Loader for UserByPlatformIdLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		let mut results = HashMap::new();
-
-		for user in users {
-			for connection in &user.connections {
-				results.insert((connection.platform, connection.platform_id.clone()), user.clone());
-			}
-		}
-
-		Ok(results)
+		Ok(results.into_iter().into_group_map_by(|p| p.subscription_id.user_id))
 	}
 }
 
-pub struct UserByPlatformUsernameLoader {
+pub struct ActiveSubscriptionPeriodByUserIdLoader {
 	db: mongodb::Database,
 	config: BatcherConfig,
 }
 
-impl UserByPlatformUsernameLoader {
+impl ActiveSubscriptionPeriodByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		Self::new_with_config(
 			db,
 			BatcherConfig {
-				name: "UserByPlatformUserameLoader".to_string(),
+				name: "ActiveSubscriptionPeriodByUserIdLoader".to_string(),
 				concurrency: 50,
 				max_batch_size: 1_000,
 				sleep_duration: std::time::Duration::from_millis(5),
@@ -100,9 +90,9 @@ impl UserByPlatformUsernameLoader {
 	}
 }
 
-impl Loader for UserByPlatformUsernameLoader {
-	type Key = (Platform, String);
-	type Value = User;
+impl Loader for ActiveSubscriptionPeriodByUserIdLoader {
+	type Key = UserId;
+	type Value = SubscriptionPeriod;
 
 	fn config(&self) -> BatcherConfig {
 		self.config.clone()
@@ -112,18 +102,20 @@ impl Loader for UserByPlatformUsernameLoader {
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
-		let users: Vec<User> = User::collection(&self.db)
-			.find(filter::Filter::or(keys.iter().map(|(platform, platform_username)| {
-				filter::filter! {
-					User {
-						#[query(flatten)]
-						connections: UserConnection {
-							platform,
-							platform_username,
-						},
-					}
+		let results: Vec<_> = SubscriptionPeriod::collection(&self.db)
+			.find(filter::filter! {
+				SubscriptionPeriod {
+					#[query(flatten)]
+					subscription_id: SubscriptionId {
+						#[query(selector = "in")]
+						user_id: keys,
+					},
+					#[query(selector = "lt")]
+					start: chrono::Utc::now(),
+					#[query(selector = "gt")]
+					end: chrono::Utc::now(),
 				}
-			})))
+			})
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
@@ -131,14 +123,6 @@ impl Loader for UserByPlatformUsernameLoader {
 				tracing::error!("failed to load: {err}");
 			})?;
 
-		let mut results = HashMap::new();
-
-		for user in users {
-			for connection in &user.connections {
-				results.insert((connection.platform, connection.platform_username.clone()), user.clone());
-			}
-		}
-
-		Ok(results)
+		Ok(results.into_iter().map(|p| (p.subscription_id.user_id, p)).collect())
 	}
 }

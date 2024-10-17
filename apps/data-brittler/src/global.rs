@@ -27,17 +27,27 @@ impl Global {
 			.await
 			.context("source database setup")?;
 
+		tracing::info!("source database setup complete");
+
 		let mongo_egvault_source = shared::database::setup_database(&config.egvault_source_database, false)
 			.await
 			.context("egvault source database setup")?;
+
+		tracing::info!("egvault source database setup complete");
 
 		let mongo_target = shared::database::setup_and_init_database(&config.target_database)
 			.await
 			.context("target database setup")?;
 
+		tracing::info!("target database setup complete");
+
 		let image_processor = ImageProcessor::new(&config.image_processor).await?;
 
+		tracing::info!("image processor setup complete");
+
 		let (_, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
+
+		tracing::info!("nats setup complete");
 
 		Ok(Self {
 			config,

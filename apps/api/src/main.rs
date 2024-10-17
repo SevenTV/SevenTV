@@ -46,6 +46,8 @@ async fn main(settings: Matches<Config>) {
 
 	tracing::info!("starting api");
 
+	scuffle_foundations::telemetry::server::require_health_check();
+
 	let global = global::Global::new(settings.settings)
 		.await
 		.expect("failed to initialize global");
@@ -65,20 +67,42 @@ async fn main(settings: Matches<Config>) {
 	let shutdown = tokio::spawn(async move {
 		signal.recv().await;
 		tracing::info!("received shutdown signal, waiting for jobs to finish");
-		handler.shutdown().await;
-		tokio::time::timeout(std::time::Duration::from_secs(60), signal.recv())
-			.await
-			.ok();
+		tokio::select! {
+			_ = handler.shutdown() => {},
+			_ = signal.recv() => {
+				tracing::warn!("received second shutdown signal, forcing exit");
+			},
+			_ = tokio::time::sleep(std::time::Duration::from_secs(60)) => {
+				tracing::warn!("shutdown timed out, forcing exit");
+			},
+		}
 	});
 
 	tracing::info!("started api");
 
+	let ctx = scuffle_foundations::context::Context::global();
+
 	tokio::select! {
-		r = http_handle => tracing::warn!("http server exited: {:?}", r),
-		r = image_processor_handle => tracing::warn!("image processor handler exited: {:?}", r),
-		r = cron_handle => tracing::warn!("cron handler exited: {:?}", r),
-		_ = shutdown => tracing::warn!("failed to cancel context in time, force exit"),
+		r = http_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("http server exited: {:?}", r);
+			}
+		},
+		r = image_processor_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("image processor handler exited: {:?}", r);
+			}
+		},
+		r = cron_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("cron handler exited: {:?}", r);
+			}
+		},
 	}
+
+	drop(ctx);
+
+	shutdown.await.expect("shutdown failed");
 
 	tracing::info!("stopping api");
 	std::process::exit(0);

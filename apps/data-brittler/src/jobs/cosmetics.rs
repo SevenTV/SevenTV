@@ -13,7 +13,7 @@ use shared::database::paint::{Paint, PaintId, PaintLayer, PaintLayerId, PaintLay
 use shared::database::user::UserId;
 use tokio::sync::mpsc;
 
-use super::{CdnFileRename, JobOutcome, ProcessOutcome};
+use super::{JobOutcome, ProcessOutcome};
 use crate::global::Global;
 use crate::{download_cosmetics, error, types};
 
@@ -30,7 +30,6 @@ pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
 	pub badges: &'a mut HashMap<BadgeId, Badge>,
 	pub paints: &'a mut HashMap<PaintId, Paint>,
-	pub cdn_rename: &'a mut Vec<CdnFileRename>,
 	pub pending_tasks: &'a mut Vec<(PendingTask, mpsc::Receiver<EventCallback>)>,
 }
 
@@ -43,7 +42,6 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 		badges,
 		paints,
 		pending_tasks,
-		cdn_rename,
 	} = input;
 
 	let mut cursor = global
@@ -62,7 +60,6 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 					badges,
 					paints,
 					cosmetic,
-					cdn_rename,
 				})
 				.await;
 				outcome.processed_documents += 1;
@@ -88,7 +85,6 @@ struct ProcessInput<'a> {
 	pending_tasks: &'a mut Vec<(PendingTask, tokio::sync::mpsc::Receiver<EventCallback>)>,
 	badges: &'a mut HashMap<BadgeId, Badge>,
 	paints: &'a mut HashMap<PaintId, Paint>,
-	cdn_rename: &'a mut Vec<CdnFileRename>,
 	cosmetic: types::Cosmetic,
 }
 
@@ -101,7 +97,6 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		pending_tasks,
 		badges,
 		paints,
-		cdn_rename,
 	} = input;
 
 	let ip = &global.image_processor;
@@ -114,7 +109,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 				Ok(data) => bytes::Bytes::from(data),
 				Err(e) => {
 					if let io::ErrorKind::NotFound = e.kind() {
-						let download_url = format!("https://cdn.7tv.app/badge/{}/2x", cosmetic.id);
+						let download_url = format!("https://cdn.7tv.app/badge/{}/3x", cosmetic.id);
 						match request_image(global, cosmetic.id, &download_url).await {
 							Ok(data) => data,
 							Err(outcome) => return outcome,
@@ -171,13 +166,6 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 					search_updated_at: None,
 				},
 			);
-
-			for file in &["1x", "2x", "3x"] {
-				cdn_rename.push(CdnFileRename {
-					old_path: format!("badge/{}/{}", cosmetic.id, file),
-					new_path: format!("badge/{}/{}.webp", badge_id, file),
-				});
-			}
 		}
 		types::CosmeticData::Paint { data, drop_shadows } => {
 			let paint_id = cosmetic.id.into();

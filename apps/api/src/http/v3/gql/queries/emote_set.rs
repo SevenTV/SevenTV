@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use mongodb::bson::doc;
+use shared::database::emote::Emote as DbEmote;
 use shared::database::emote_set::EmoteSetEmote;
 use shared::database::user::UserId;
 use shared::old_types::object_id::GqlObjectId;
@@ -9,6 +10,7 @@ use shared::old_types::{ActiveEmoteFlagModel, EmoteSetFlagModel};
 
 use super::emote::{Emote, EmotePartial};
 use super::user::UserPartial;
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -52,6 +54,7 @@ impl EmoteSet {
 #[graphql(complex, rename_fields = "snake_case")]
 pub struct ActiveEmote {
 	pub id: GqlObjectId,
+	pub timestamp: chrono::DateTime<chrono::Utc>,
 	pub name: String,
 	pub flags: ActiveEmoteFlagModel,
 	// timestamp
@@ -60,42 +63,33 @@ pub struct ActiveEmote {
 	pub origin_id: Option<GqlObjectId>,
 
 	#[graphql(skip)]
-	pub actor_id: Option<UserId>,
+	actor_id: Option<UserId>,
+	#[graphql(skip)]
+	emote: DbEmote,
 }
 
 impl ActiveEmote {
-	pub fn from_db(value: EmoteSetEmote) -> Self {
+	pub fn new(value: EmoteSetEmote, emote: DbEmote) -> Self {
 		Self {
-			id: value.id.into(),
+			id: emote.id.into(),
+			timestamp: value.added_at,
 			name: value.alias,
 			flags: value.flags.into(),
 			actor_id: value.added_by_id,
 			origin_id: value.origin_set_id.map(Into::into),
+			emote,
 		}
 	}
 }
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ActiveEmote {
-	async fn timestamp(&self) -> chrono::DateTime<chrono::Utc> {
-		self.id.0.timestamp()
-	}
-
 	async fn data<'ctx>(&self, ctx: &Context<'ctx>) -> Result<EmotePartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote = global
-			.emote_by_id_loader
-			.load(self.id.id())
-			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
-
-		Ok(emote
-			.map(|e| Emote::from_db(global, e))
-			.unwrap_or_else(Emote::deleted_emote)
-			.into())
+		Ok(Emote::from_db(global, self.emote.clone()).into())
 	}
 
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
@@ -118,18 +112,58 @@ impl ActiveEmote {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmoteSet {
-	async fn emotes(&self, limit: Option<u32>, _origins: Option<bool>) -> Result<Vec<ActiveEmote>, ApiError> {
-		Ok(self
+	async fn emotes<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		limit: Option<u32>,
+		origins: Option<bool>,
+	) -> Result<Vec<ActiveEmote>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let active_emotes = self
 			.emotes
 			.iter()
-			.take(limit.unwrap_or(100000) as usize)
-			.cloned()
-			.map(ActiveEmote::from_db)
-			.collect())
+			.filter(|e| {
+				if let Some(false) = origins {
+					e.origin_set_id.is_none()
+				} else {
+					true
+				}
+			})
+			.take(limit.unwrap_or(u32::MAX) as usize);
+
+		let emotes = global
+			.emote_by_id_loader
+			.load_many_merged(active_emotes.clone().map(|e| e.id))
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
+		let mut emotes: Vec<_> = active_emotes
+			.filter_map(|e| emotes.get(e.id).map(|emote| ActiveEmote::new(e.clone(), emote.clone())))
+			.collect();
+
+		emotes.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+
+		Ok(emotes)
 	}
 
-	async fn emote_count(&self) -> Result<u32, ApiError> {
-		Ok(self.emotes.len() as u32)
+	async fn emote_count<'ctx>(&self, ctx: &Context<'ctx>) -> Result<u32, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		// We have to load all the emotes to get the count, this is quite inefficient.
+		let emotes = global
+			.emote_by_id_loader
+			.load_many_merged(self.emotes.iter().map(|e| e.id))
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
+		let active_emotes = self.emotes.iter().filter(|e| emotes.get(e.id).is_some()).count();
+
+		Ok(active_emotes as u32)
 	}
 
 	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {

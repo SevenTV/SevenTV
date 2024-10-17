@@ -4,7 +4,9 @@ use std::path::PathBuf;
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
-use shared::config::{ClickhouseConfig, DatabaseConfig, ImageProcessorConfig, NatsConfig, RedisConfig, TypesenseConfig};
+use shared::config::{
+	ClickhouseConfig, DatabaseConfig, ImageProcessorConfig, IncomingRequestConfig, NatsConfig, RedisConfig, TypesenseConfig,
+};
 use shared::ip::GeoIpConfig;
 
 #[auto_settings]
@@ -13,49 +15,33 @@ pub struct Api {
 	/// http options
 	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 8080)))]
 	pub bind: SocketAddr,
+
 	/// worker count
 	#[settings(default = 1)]
 	pub workers: usize,
+
 	/// website origin
 	#[settings(default = "https://7tv.app".parse().unwrap())]
 	pub website_origin: url::Url,
+
 	/// cdn base url
 	#[settings(default = "https://cdn.7tv.app/".parse().unwrap())]
 	pub cdn_origin: url::Url,
+
 	/// public domain
 	#[settings(default = "7tv.io".into())]
 	pub domain: String,
+
 	/// base url
 	#[settings(default = "https://7tv.io".parse().unwrap())]
 	pub api_origin: url::Url,
-	/// connection config
-	pub connections: ConnectionsConfig,
-	/// jwt config
-	pub jwt: JwtConfig,
-	/// image processor config
-	pub image_processor: ImageProcessorConfig,
+
 	/// Event API nats prefix
 	#[settings(default = "api.events".into())]
 	pub nats_event_subject: String,
-	/// Stripe config
-	pub stripe: StripeConfig,
-	/// PayPal config
-	pub paypal: PayPalConfig,
-	/// GeoIP config
-	pub geoip: Option<GeoIpConfig>,
+
 	/// IP Header config
 	pub incoming_request: IncomingRequestConfig,
-	/// Redis config
-	pub redis: RedisConfig,
-}
-
-#[auto_settings]
-#[serde(default)]
-pub struct IncomingRequestConfig {
-	/// The IP header to use for incoming requests
-	pub ip_header: Option<String>,
-	/// A set of trusted proxies that we should use for incoming requests
-	pub trusteded_proxies: Vec<ipnet::IpNet>,
 }
 
 #[auto_settings]
@@ -160,6 +146,27 @@ pub struct Config {
 
 	/// Runtime configuration
 	pub runtime: RuntimeSettings,
+
+	/// jwt config
+	pub jwt: JwtConfig,
+
+	/// image processor config
+	pub image_processor: ImageProcessorConfig,
+
+	/// connection config
+	pub connections: ConnectionsConfig,
+
+	/// Redis config
+	pub redis: RedisConfig,
+
+	/// Stripe config
+	pub stripe: StripeConfig,
+
+	/// PayPal config
+	pub paypal: PayPalConfig,
+
+	/// GeoIP config
+	pub geoip: Option<GeoIpConfig>,
 }
 
 impl Bootstrap for Config {

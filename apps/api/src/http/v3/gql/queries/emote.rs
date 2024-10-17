@@ -4,7 +4,6 @@ use async_graphql::{ComplexObject, Context, Enum, InputObject, Object, SimpleObj
 use fred::prelude::KeysInterface;
 use shared::database::emote::EmoteId;
 use shared::database::role::permissions::{EmotePermission, PermissionsExt};
-use shared::database::user::UserId;
 use shared::old_types::image::ImageHost;
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::{EmoteFlagsModel, EmoteLifecycleModel, EmoteVersionState};
@@ -13,6 +12,7 @@ use shared::typesense::types::event::EventId;
 use super::audit_log::AuditLog;
 use super::report::Report;
 use super::user::{UserPartial, UserSearchResult};
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -54,9 +54,7 @@ impl Emote {
 		let host = ImageHost::from_image_set(&value.image_set, &global.config.api.cdn_origin);
 		let state = EmoteVersionState::from_db(&value.flags);
 		let listed = value.flags.contains(shared::database::emote::EmoteFlags::PublicListed);
-		let lifecycle = if value.merged.is_some() {
-			EmoteLifecycleModel::Deleted
-		} else if value.image_set.input.is_pending() {
+		let lifecycle = if value.image_set.input.is_pending() {
 			EmoteLifecycleModel::Pending
 		} else {
 			EmoteLifecycleModel::Live
@@ -84,23 +82,6 @@ impl Emote {
 			state,
 			listed,
 			personal_use: value.flags.contains(shared::database::emote::EmoteFlags::ApprovedPersonal),
-		}
-	}
-
-	pub fn deleted_emote() -> Self {
-		Self {
-			id: GqlObjectId(EmoteId::nil().cast()),
-			name: "*DeletedEmote".to_string(),
-			lifecycle: EmoteLifecycleModel::Deleted,
-			flags: EmoteFlagsModel::none(),
-			tags: vec![],
-			animated: false,
-			owner_id: GqlObjectId(UserId::nil().cast()),
-			host: ImageHost::default(),
-			versions: vec![],
-			state: vec![],
-			listed: false,
-			personal_use: false,
 		}
 	}
 }
@@ -385,7 +366,7 @@ impl EmotesQuery {
 
 		let emote = global
 			.emote_by_id_loader
-			.load(id.id())
+			.load_exclude_deleted(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
 
@@ -402,13 +383,16 @@ impl EmotesQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote = global
+		let emotes = global
 			.emote_by_id_loader
-			.load_many(list.into_iter().map(|i| i.id()))
+			.load_many_exclude_deleted(list.into_iter().map(|i| i.id()))
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+			.map_err(|()| {
+				tracing::error!("failed to load emotes");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes")
+			})?;
 
-		Ok(emote.into_values().map(|e| Emote::from_db(global, e).into()).collect())
+		Ok(emotes.into_values().map(|e| Emote::from_db(global, e).into()).collect())
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
@@ -431,6 +415,7 @@ impl EmotesQuery {
 		let limit = limit.unwrap_or(30);
 		let page = page.unwrap_or_default().max(1);
 
+		// This filters out deleted & merged emotes
 		let mut filters = vec!["deleted: false".to_owned()];
 
 		if !session.has(EmotePermission::ViewUnlisted) {
@@ -470,7 +455,7 @@ impl EmotesQuery {
 
 			match filter.category {
 				None | Some(EmoteSearchCategory::Top) => {
-					sort_by.push("score_top_all_time:desc".to_owned());
+					sort_by.push(format!("score_top_all_time:{order}"));
 				}
 				Some(EmoteSearchCategory::Featured) | Some(EmoteSearchCategory::TrendingDay) => {
 					sort_by.push(format!("score_trending_day:{order}"));
@@ -522,13 +507,13 @@ impl EmotesQuery {
 
 		let emotes = global
 			.emote_by_id_loader
-			.load_many(result.hits.iter().copied())
+			.load_many_exclude_deleted(result.hits.iter().copied())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 		Ok(EmoteSearchResult {
 			count: result.found as u32,
-			max_page: result.found as u32 / limit + 1,
+			max_page: (result.found as u32 / limit + 1).min(100),
 			items: sorted_results(result.hits, emotes)
 				.into_iter()
 				.map(|e| Emote::from_db(global, e))

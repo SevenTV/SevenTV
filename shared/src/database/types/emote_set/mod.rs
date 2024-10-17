@@ -46,9 +46,13 @@ pub struct EmoteSet {
 #[serde(deny_unknown_fields)]
 #[repr(u8)]
 pub enum EmoteSetKind {
+	/// Normal emote set
 	Normal = 0,
+	/// Personal emote set
 	Personal = 1,
+	/// Like a normal emote set but for multiple people
 	Global = 2,
+	/// Like a personal emote set but for multiple people
 	Special = 3,
 }
 

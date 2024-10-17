@@ -18,6 +18,7 @@ pub mod mongo {
 	pub use shared::database::user::ban::*;
 	pub use shared::database::user::ban_template::*;
 	pub use shared::database::user::editor::*;
+	pub use shared::database::user::profile_picture::*;
 	pub use shared::database::user::relation::*;
 	pub use shared::database::user::*;
 }

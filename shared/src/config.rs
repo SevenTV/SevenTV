@@ -185,3 +185,118 @@ pub struct ClickhouseConfig {
 	#[settings(default = "7tv".into())]
 	pub database: String,
 }
+
+#[auto_settings]
+#[serde(default)]
+pub struct RateLimit {
+	#[settings(default = default_ipv6_buckets())]
+	pub ipv6_buckets: Vec<RateLimitPrefixBucket>,
+	#[settings(default = default_ipv4_buckets())]
+	pub ipv4_buckets: Vec<RateLimitPrefixBucket>,
+	#[settings(default = default_range_buckets())]
+	pub range_buckets: Vec<RateLimitRangeBucket>,
+}
+
+pub fn default_ipv6_buckets() -> Vec<RateLimitPrefixBucket> {
+	vec![
+		RateLimitPrefixBucket {
+			prefix_length: 128,
+			concurrent_connections: 50,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 64,
+			concurrent_connections: 100,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 48,
+			concurrent_connections: 1000,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 32,
+			concurrent_connections: 10000,
+		},
+	]
+}
+
+pub fn default_ipv4_buckets() -> Vec<RateLimitPrefixBucket> {
+	vec![
+		RateLimitPrefixBucket {
+			prefix_length: 32,
+			concurrent_connections: 125,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 24,
+			concurrent_connections: 250,
+		},
+		RateLimitPrefixBucket {
+			prefix_length: 16,
+			concurrent_connections: 10000,
+		},
+	]
+}
+
+pub fn default_range_buckets() -> Vec<RateLimitRangeBucket> {
+	vec![
+		// private ipv4
+		RateLimitRangeBucket {
+			range: "10.0.0.0/8".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		// private ipv4
+		RateLimitRangeBucket {
+			range: "172.16.0.0/12".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		// private ipv4
+		RateLimitRangeBucket {
+			range: "192.168.0.0/16".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		// loopback ipv4
+		RateLimitRangeBucket {
+			range: "127.0.0.0/8".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		// private ipv6
+		RateLimitRangeBucket {
+			range: "fc00::/7".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		// link local ipv6
+		RateLimitRangeBucket {
+			range: "fe80::/10".parse().unwrap(),
+			concurrent_connections: None,
+		},
+		// ipv6 loopback
+		RateLimitRangeBucket {
+			range: "::1/128".parse().unwrap(),
+			concurrent_connections: None,
+		},
+	]
+}
+
+#[auto_settings]
+#[derive(Copy)]
+pub struct RateLimitRangeBucket {
+	pub range: ipnet::IpNet,
+	pub concurrent_connections: Option<u64>,
+}
+
+#[auto_settings]
+#[derive(Copy)]
+pub struct RateLimitPrefixBucket {
+	pub prefix_length: u8,
+	pub concurrent_connections: u64,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct IncomingRequestConfig {
+	/// The IP header to use for incoming requests
+	pub ip_header: Option<String>,
+	/// A set of trusted proxies that we should use for incoming requests
+	pub trusted_proxies: Vec<ipnet::IpNet>,
+	/// IP Ranges that are trusted and can ignore the proxy header (if not
+	/// provided)
+	pub trusted_ranges: Vec<ipnet::IpNet>,
+}

@@ -81,7 +81,9 @@ impl<S> Id<S> {
 	pub const fn is_object_id_compatible(&self) -> bool {
 		self.timestamp_ms() % 1000 == 0 // MongoDB ObjectId has a timestamp resolution of 1 second
 			&& self.random() <= u64::MAX as u128 // MongoDB ObjectId has a random value of 8 bytes
-			&& self.timestamp_ms() / 1000 <= u32::MAX as u64 // MongoDB ObjectId has a timestamp value of 4 bytes
+			&& self.timestamp_ms() / 1000 <= u32::MAX as u64 // MongoDB ObjectId has a
+		                                            // timestamp value of 4
+		                                            // bytes
 	}
 
 	pub const fn as_object_id(&self) -> Option<ObjectId> {
@@ -113,7 +115,7 @@ impl<S> Id<S> {
 	}
 
 	pub const fn is_one(&self) -> bool {
-		self.0.0 == 1
+		self.0 .0 == 1
 	}
 
 	pub const fn timestamp_ms(&self) -> u64 {
