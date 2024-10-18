@@ -3,6 +3,8 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::{Extension, Json};
 use shared::database::entitlement::EntitlementEdgeKind;
+use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
+use shared::database::graph::{Direction, GraphTraverse};
 use shared::database::product::SubscriptionBenefitCondition;
 
 use crate::global::Global;
@@ -61,17 +63,20 @@ pub async fn products(
 		})
 		.collect();
 
+	let traverse = &EntitlementEdgeGraphTraverse {
+		inbound_loader: &global.entitlement_edge_inbound_loader,
+		outbound_loader: &global.entitlement_edge_outbound_loader,
+	};
+
 	// follow the graph
-	let edges = global
-		.entitlement_edge_outbound_loader
-		.load_many(months_benefit_ids)
+	let edges = traverse
+		.traversal(Direction::Outbound, months_benefit_ids)
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load entitlement edges"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to traverse entitlement edges"))?;
 
 	// find the paints
 	let current_paints = edges
-		.into_values()
-		.flatten()
+		.into_iter()
 		.filter_map(|e| match e.id.to {
 			EntitlementEdgeKind::Paint { paint_id } => Some(paint_id),
 			_ => None,
