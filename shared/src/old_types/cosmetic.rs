@@ -1,6 +1,7 @@
 use super::{is_default, ImageHost, UserPartialModel};
 use crate::database::badge::{Badge, BadgeId};
 use crate::database::paint::{Paint, PaintId, PaintLayerType, PaintRadialGradientShape, PaintShadow};
+use crate::database::user::profile_picture::UserProfilePictureId;
 use crate::database::user::UserId;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -33,7 +34,7 @@ impl CosmeticModelData for CosmeticAvatarModel {
 	type Id = UserId;
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/cosmetic.model.go#L21
 pub enum CosmeticKind {
@@ -325,7 +326,7 @@ impl CosmeticBadgeModel {
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct CosmeticAvatarModel {
-	pub id: UserId,
+	pub id: UserProfilePictureId,
 	pub user: UserPartialModel,
 	#[serde(skip_serializing_if = "is_default", rename = "as")]
 	pub aas: String,

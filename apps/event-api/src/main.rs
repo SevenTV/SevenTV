@@ -13,6 +13,8 @@ mod utils;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
+	rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
+
 	tracing::info!("starting event-api");
 
 	let global = Arc::new(

@@ -1,0 +1,4 @@
+export_schema_path = "apps/website/schema.graphql"
+
+[telemetry.server]
+enabled = false

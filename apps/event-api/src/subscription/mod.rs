@@ -120,11 +120,11 @@ impl SubscriptionManager {
 /// This function will block until the global context is done or when the NATS
 /// connection is closed. Calling this function multiple times will deadlock.
 pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
-	let mut events_rx = global.subscription_manager().events_tx().lock().await;
+	let mut events_rx = global.subscription_manager.events_tx().lock().await;
 
 	// We subscribe to all events.
 	// The .> wildcard is used to subscribe to all events.
-	let mut sub = global.nats().subscribe("api.v4.events").await?;
+	let mut sub = global.nats.subscribe("api.v4.events").await?;
 
 	// fnv::FnvHashMap is used because it is faster than the default HashMap for our
 	// use case.
@@ -185,7 +185,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 							}
 						};
 
-						match payload.into_old_messages(&global.config().api.cdn_origin, seq) {
+						match payload.into_old_messages(&global.config.event_api.cdn_origin, seq) {
 							Ok((messages, presence_data)) => {
 								for message in messages {
 									// There is always only one condition map

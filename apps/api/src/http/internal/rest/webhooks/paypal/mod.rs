@@ -108,7 +108,7 @@ pub async fn handle(
 			ApiError::bad_request(ApiErrorCode::BadRequest, "missing or invalid paypal-transmission-id header")
 		})?;
 
-	let webhook_id = &global.config.api.paypal.webhook_id;
+	let webhook_id = &global.config.paypal.webhook_id;
 
 	let timestamp = headers
 		.get("paypal-transmission-time")

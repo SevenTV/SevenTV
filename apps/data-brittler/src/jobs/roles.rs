@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use shared::database::role::permissions::{
 	AdminPermission, EmoteModerationRequestPermission, EmotePermission, EmoteSetPermission, PaintPermission, Permission,
-	Permissions, RateLimitResource, RateLimits, TicketPermission, UserPermission,
+	Permissions, RateLimitResource, RateLimits, RolePermission, TicketPermission, UserPermission,
 };
 use shared::database::role::{Role, RoleId};
 use shared::database::user::UserId;
@@ -98,7 +98,7 @@ pub fn roles() -> Vec<Role> {
 			name: "Event Coordinator",
 			id: "631ef5ea03e9beb96f849a7e",
 			rank: 600,
-			color: Some(849892095),
+			color: Some(-1237797377),
 			hoist: true,
 			..Default::default()
 		},
@@ -119,6 +119,7 @@ pub fn roles() -> Vec<Role> {
 				UserPermission::ManageAny.into(),
 				UserPermission::Moderate.into(),
 				UserPermission::ViewHidden.into(),
+				RolePermission::Assign.into(),
 			],
 			..Default::default()
 		},
@@ -150,7 +151,7 @@ pub fn roles() -> Vec<Role> {
 			name: "Translator",
 			id: "62f99d0ce46eb00e438a6984",
 			rank: 350,
-			color: Some(849892095),
+			color: Some(-1309985537),
 			hoist: true,
 			..Default::default()
 		},

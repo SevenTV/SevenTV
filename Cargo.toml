@@ -13,7 +13,8 @@ members = [
 
 resolver = "2"
 
-[profile.release]
+[profile.release-debug]
+inherits = "release"
 strip = false
 debug = true
 lto = "thin"

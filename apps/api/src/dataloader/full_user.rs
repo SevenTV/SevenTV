@@ -184,6 +184,15 @@ impl FullUserLoader {
 			)
 			.await?;
 
+		roles.sort_by_key(|r| r.rank);
+
+		for user in users.values_mut() {
+			user.computed.permissions = compute_permissions(&roles, &user.computed.entitlements.roles);
+			if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
+				user.computed.permissions.merge(active_bans.permissions());
+			}
+		}
+
 		let profile_pictures = global
 			.user_profile_picture_id_loader
 			.load_many(users.values().filter_map(|user| {
@@ -195,14 +204,7 @@ impl FullUserLoader {
 			}))
 			.await?;
 
-		roles.sort_by_key(|r| r.rank);
-
 		for user in users.values_mut() {
-			user.computed.permissions = compute_permissions(&roles, &user.computed.entitlements.roles);
-			if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
-				user.computed.permissions.merge(active_bans.permissions());
-			}
-
 			user.computed.highest_role_rank = compute_highest_role_rank(&roles, &user.computed.entitlements.roles);
 			user.computed.highest_role_color = compute_highest_role_color(&roles, &user.computed.entitlements.roles);
 			user.computed.roles = roles

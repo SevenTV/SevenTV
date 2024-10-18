@@ -168,7 +168,6 @@ impl JobRunner {
 			badges: &mut self.badges,
 			paints: &mut self.paints,
 			pending_tasks: &mut self.pending_tasks,
-			cdn_rename: &mut self.public_cdn_rename,
 		})
 		.await
 		.context("cosmetics")?;
@@ -373,12 +372,17 @@ async fn batch_insert<M: MongoCollection + serde::Serialize>(
 		Err(e) => {
 			tracing::error!("failed to insert documents: {:#}", e);
 			outcome.errors.push(e.into());
-		},
+		}
 	}
 
 	outcome.insert_time += start.elapsed().as_secs_f64();
 
-	tracing::info!("{} took {:.2}s", outcome.job_name, start.elapsed().as_secs_f64());
+	tracing::info!(
+		"{}({}) took {:.2}s",
+		outcome.job_name,
+		M::COLLECTION_NAME,
+		start.elapsed().as_secs_f64()
+	);
 
 	outcome
 }
@@ -530,11 +534,29 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		.unwrap()
 	});
 	insert_future!(global.config.should_run_users(), async {
-		tokio::spawn(batch_insert(
+		let outcome = tokio::spawn(batch_insert(
 			global.target_db.clone(),
 			global.config.truncate,
 			outcomes.users,
 			runner.users.into_values(),
+		))
+		.await
+		.unwrap();
+
+		let outcome = tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcome,
+			runner.editors.into_iter().map(|(_, e)| e),
+		))
+		.await
+		.unwrap();
+
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcome,
+			runner.profile_pictures.into_iter(),
 		))
 		.await
 		.unwrap()
@@ -590,10 +612,19 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		.unwrap()
 	});
 	insert_future!(global.config.should_run_reports(), async {
-		tokio::spawn(batch_insert(
+		let outcome = tokio::spawn(batch_insert(
 			global.target_db.clone(),
 			global.config.truncate,
 			outcomes.reports,
+			runner.tickets.into_values(),
+		))
+		.await
+		.unwrap();
+
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcome,
 			runner.ticket_messages.into_iter(),
 		))
 		.await
@@ -679,7 +710,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 
 		let internal_cdn_rename = runner.internal_cdn_rename;
 		if let Err(err) =
-			tokio::task::spawn_blocking(move || write_file("./local/internal_cdn_rename.json", &internal_cdn_rename))
+			tokio::task::spawn_blocking(move || write_file("./local/private_cdn_rename.json", &internal_cdn_rename))
 				.await
 				.unwrap()
 		{

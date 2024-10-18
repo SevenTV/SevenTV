@@ -131,14 +131,15 @@ impl Guard for RateLimitGuard {
 	}
 }
 
+#[derive(Clone)]
 pub struct RateLimitResponseStore {
-	used: spin::Mutex<HashMap<RateLimitResource, i64>>,
+	used: Arc<spin::Mutex<HashMap<RateLimitResource, i64>>>,
 }
 
 impl RateLimitResponseStore {
 	pub fn new() -> Self {
 		Self {
-			used: spin::Mutex::new(HashMap::new()),
+			used: Arc::new(spin::Mutex::new(HashMap::new())),
 		}
 	}
 

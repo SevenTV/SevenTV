@@ -1972,6 +1972,31 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 						},
 					],
 				),
+				BenefitWithEntitlements::new(
+					todo!("idk what this is supposed to be"),
+					"October 2024 Paint Bundle",
+					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
+						start: "2024-10-01T00:00:00.000Z".parse().unwrap(),
+						end: "2024-11-01T00:00:00.000Z".parse().unwrap(),
+					}),
+					vec![
+						EntitlementEdgeKind::Paint {
+							paint_id: "66f7f86d1cf9362138a24371".parse().unwrap(),
+						},
+						EntitlementEdgeKind::Paint {
+							paint_id: "66f7f9c2daf243ce8c7933cc".parse().unwrap(),
+						},
+						EntitlementEdgeKind::Paint {
+							paint_id: "66f811f15805fc78a29f584e".parse().unwrap(),
+						},
+						EntitlementEdgeKind::Paint {
+							paint_id: "66f81697daf243ce8c793605".parse().unwrap(),
+						},
+						EntitlementEdgeKind::Paint {
+							paint_id: "66f81744c48e0757a94b330d".parse().unwrap(),
+						},
+					],
+				),
 			]
 		})
 		.iter()
