@@ -98,7 +98,7 @@ pub fn roles() -> Vec<Role> {
 			name: "Event Coordinator",
 			id: "631ef5ea03e9beb96f849a7e",
 			rank: 600,
-			color: Some(849892095),
+			color: Some(-1237797377),
 			hoist: true,
 			..Default::default()
 		},
@@ -151,7 +151,7 @@ pub fn roles() -> Vec<Role> {
 			name: "Translator",
 			id: "62f99d0ce46eb00e438a6984",
 			rank: 350,
-			color: Some(849892095),
+			color: Some(-1309985537),
 			hoist: true,
 			..Default::default()
 		},
