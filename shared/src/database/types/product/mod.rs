@@ -203,7 +203,6 @@ pub type SubscriptionProductId = Id<SubscriptionProduct>;
 /// There are only two kinds of subscriptions: monthly and yearly.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscription_products")]
-#[mongo(index(fields(kind = 1), unique))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(index(fields("benifits.id" = 1)))]
 #[mongo(search = "crate::typesense::types::product::SubscriptionProduct")]
