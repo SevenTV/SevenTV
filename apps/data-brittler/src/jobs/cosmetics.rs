@@ -10,6 +10,7 @@ use shared::database;
 use shared::database::badge::{Badge, BadgeId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{Paint, PaintId, PaintLayer, PaintLayerId, PaintLayerType};
+use shared::database::user::profile_picture::UserProfilePictureId;
 use shared::database::user::UserId;
 use tokio::sync::mpsc;
 
@@ -78,6 +79,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 pub enum PendingTask {
 	Badge(BadgeId),
 	Paint(PaintId, PaintLayerId),
+	UserProfilePicture(UserProfilePictureId),
 }
 
 struct ProcessInput<'a> {

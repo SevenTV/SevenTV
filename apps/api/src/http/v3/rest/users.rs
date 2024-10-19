@@ -184,7 +184,7 @@ pub async fn upload_user_profile_picture(
 
 	let target_user = other_user.as_ref().unwrap_or(authed_user);
 
-	if target_user.computed.permissions.has(UserPermission::UseCustomProfilePicture) {
+	if !target_user.computed.permissions.has(UserPermission::UseCustomProfilePicture) {
 		return Err(ApiError::forbidden(
 			ApiErrorCode::LackingPrivileges,
 			"user cannot set custom profile picture",

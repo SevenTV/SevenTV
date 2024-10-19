@@ -24,7 +24,7 @@ use shared::database::stored_event::StoredEvent;
 use shared::database::ticket::{Ticket, TicketId, TicketMessage};
 use shared::database::user::ban::UserBan;
 use shared::database::user::editor::UserEditor;
-use shared::database::user::profile_picture::UserProfilePicture;
+use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
 use shared::database::user::{User, UserId};
 use shared::database::MongoCollection;
 use tokio::sync::mpsc;
@@ -118,7 +118,7 @@ pub struct JobRunner {
 	pub emotes: HashMap<EmoteId, Emote>,
 	pub users: HashMap<UserId, User>,
 	pub editors: HashMap<(UserId, UserId), UserEditor>,
-	pub profile_pictures: Vec<UserProfilePicture>,
+	pub profile_pictures: HashMap<UserProfilePictureId, UserProfilePicture>,
 	pub emote_sets: HashMap<EmoteSetId, EmoteSet>,
 	pub true_emote_usage: HashMap<EmoteId, i32>,
 
@@ -202,6 +202,7 @@ impl JobRunner {
 		let start = Instant::now();
 		let mut users = users::run(users::RunInput {
 			global,
+			pending_tasks: &mut self.pending_tasks,
 			entitlements: &mut self.entitlements,
 			users: &mut self.users,
 			editors: &mut self.editors,
@@ -422,6 +423,9 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 						cosmetics::PendingTask::Paint(paint_id, _) => {
 							runner.paints.remove(paint_id);
 						}
+						cosmetics::PendingTask::UserProfilePicture(picture_id) => {
+							runner.profile_pictures.remove(picture_id);
+						}
 					}
 					runner.pending_tasks.remove(0);
 				}
@@ -433,6 +437,9 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 						}
 						cosmetics::PendingTask::Paint(paint_id, _) => {
 							runner.paints.remove(paint_id);
+						}
+						cosmetics::PendingTask::UserProfilePicture(picture_id) => {
+							runner.profile_pictures.remove(picture_id);
 						}
 					}
 					runner.pending_tasks.remove(0);
@@ -485,6 +492,20 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 									});
 							}
 						}
+						cosmetics::PendingTask::UserProfilePicture(picture_id) => {
+							runner.profile_pictures.get_mut(picture_id).unwrap().image_set = ImageSet {
+								input: ImageSetInput::Image(Image {
+									frame_count: input.frame_count as i32,
+									width: input.width as i32,
+									height: input.height as i32,
+									path: input.path.map(|p| p.path).unwrap_or_default(),
+									mime: input.content_type,
+									size: input.size as i64,
+									scale: 1,
+								}),
+								outputs,
+							};
+						}
 					}
 					runner.pending_tasks.remove(0);
 				}
@@ -504,11 +525,20 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		))
 		.await
 		.unwrap();
-		tokio::spawn(batch_insert(
+		let outcome = tokio::spawn(batch_insert(
 			global.target_db.clone(),
 			global.config.truncate,
 			outcome,
 			runner.paints.into_values(),
+		))
+		.await
+		.unwrap();
+
+		tokio::spawn(batch_insert(
+			global.target_db.clone(),
+			global.config.truncate,
+			outcome,
+			runner.profile_pictures.into_values(),
 		))
 		.await
 		.unwrap()
@@ -543,20 +573,11 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 		.await
 		.unwrap();
 
-		let outcome = tokio::spawn(batch_insert(
-			global.target_db.clone(),
-			global.config.truncate,
-			outcome,
-			runner.editors.into_values(),
-		))
-		.await
-		.unwrap();
-
 		tokio::spawn(batch_insert(
 			global.target_db.clone(),
 			global.config.truncate,
 			outcome,
-			runner.profile_pictures.into_iter(),
+			runner.editors.into_values(),
 		))
 		.await
 		.unwrap()

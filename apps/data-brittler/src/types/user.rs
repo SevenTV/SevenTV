@@ -14,6 +14,7 @@ pub struct User {
 	pub email: Option<String>,
 	#[serde(default)]
 	pub avatar: Option<UserAvatar>,
+	pub avatar_id: Option<String>,
 	// pub biography: String,
 	pub editors: Vec<UserEditor>,
 	pub role_ids: Vec<ObjectId>,

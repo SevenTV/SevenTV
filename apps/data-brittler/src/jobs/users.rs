@@ -3,22 +3,26 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use futures::StreamExt;
+use scuffle_image_processor_proto::EventCallback;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::image_set::{self, ImageSet, ImageSetInput};
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::editor::{UserEditor, UserEditorId, UserEditorState};
-use shared::database::user::profile_picture::UserProfilePicture;
+use shared::database::user::profile_picture::{UserProfilePicture, UserProfilePictureId};
 use shared::database::user::settings::UserSettings;
 use shared::database::user::{User, UserCached, UserId, UserStyle};
 
+use super::cosmetics::PendingTask;
 use super::{CdnFileRename, JobOutcome, ProcessOutcome};
+use crate::download_cosmetics::request_image;
 use crate::global::Global;
 use crate::{error, types};
 
 pub struct RunInput<'a> {
 	pub global: &'a Arc<Global>,
 	pub users: &'a mut HashMap<UserId, User>,
-	pub profile_pictures: &'a mut Vec<UserProfilePicture>,
+	pub pending_tasks: &'a mut Vec<(PendingTask, tokio::sync::mpsc::Receiver<EventCallback>)>,
+	pub profile_pictures: &'a mut HashMap<UserProfilePictureId, UserProfilePicture>,
 	pub editors: &'a mut HashMap<(UserId, UserId), UserEditor>,
 	pub entitlements: &'a mut HashSet<EntitlementEdge>,
 	pub internal_cdn_rename: &'a mut Vec<CdnFileRename>,
@@ -31,6 +35,7 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 
 	let RunInput {
 		global,
+		pending_tasks,
 		users,
 		profile_pictures,
 		editors,
@@ -52,15 +57,18 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 		match user {
 			Ok(user) => {
 				outcome += process(ProcessInput {
+					global,
 					users,
 					profile_pictures,
 					editors,
 					entitlements,
 					user,
+					pending_tasks,
 					all_connections: &mut all_connections,
 					internal_cdn_rename,
 					public_cdn_rename,
-				});
+				})
+				.await;
 				outcome.processed_documents += 1;
 			}
 			Err(e) => {
@@ -74,8 +82,10 @@ pub async fn run(input: RunInput<'_>) -> anyhow::Result<JobOutcome> {
 }
 
 struct ProcessInput<'a> {
+	pub global: &'a Arc<Global>,
 	pub users: &'a mut HashMap<UserId, User>,
-	pub profile_pictures: &'a mut Vec<UserProfilePicture>,
+	pub pending_tasks: &'a mut Vec<(PendingTask, tokio::sync::mpsc::Receiver<EventCallback>)>,
+	pub profile_pictures: &'a mut HashMap<UserProfilePictureId, UserProfilePicture>,
 	pub editors: &'a mut HashMap<(UserId, UserId), UserEditor>,
 	pub entitlements: &'a mut HashSet<EntitlementEdge>,
 	pub all_connections: &'a mut HashSet<(Platform, String)>,
@@ -84,8 +94,10 @@ struct ProcessInput<'a> {
 	pub user: types::User,
 }
 
-fn process(input: ProcessInput<'_>) -> ProcessOutcome {
+async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 	let ProcessInput {
+		global,
+		pending_tasks,
 		users,
 		profile_pictures,
 		editors,
@@ -102,10 +114,17 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 
 	let mut outcome = ProcessOutcome::default();
 
-	let active_profile_picture = match user.avatar {
-		Some(types::UserAvatar::Processed {
-			input_file, image_files, ..
-		}) => {
+	let ip = &global.image_processor;
+
+	let new_pfp_id = UserProfilePictureId::new();
+
+	let active_profile_picture = match (user.avatar, user.avatar_id) {
+		(
+			Some(types::UserAvatar::Processed {
+				input_file, image_files, ..
+			}),
+			_,
+		) => {
 			let new = match image_set::Image::try_from(input_file.clone()) {
 				Ok(input_file) => input_file,
 				Err(e) => {
@@ -137,12 +156,66 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 				outputs,
 			})
 		}
-		Some(types::UserAvatar::Pending { .. }) => None,
+		(Some(types::UserAvatar::Pending { .. }), _) => None,
+		(_, Some(pfp_id)) => {
+			let image_data = match tokio::fs::read(format!("local/pfp/{}:{}", user.id, pfp_id)).await {
+				Ok(data) => Some(bytes::Bytes::from(data)),
+				Err(e) => {
+					if let std::io::ErrorKind::NotFound = e.kind() {
+						let download_url = format!("https://cdn.7tv.app/pp/{}/{}", user.id, pfp_id);
+						match request_image(global, &download_url).await {
+							Ok(data) => Some(data),
+							Err(_) => None,
+						}
+					} else {
+						None
+					}
+				}
+			};
+
+			let input = if let Some(image_data) = image_data {
+				match ip.upload_profile_picture(new_pfp_id, user.id.into(), image_data, None).await {
+					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
+						tracing::error!(error = ?error, "failed to start processing image");
+						None
+					}
+					Ok(scuffle_image_processor_proto::ProcessImageResponse {
+						id,
+						upload_info:
+							Some(scuffle_image_processor_proto::ProcessImageResponseUploadInfo {
+								path: Some(path),
+								content_type,
+								size,
+							}),
+						error: None,
+					}) => {
+						let (tx, rx) = tokio::sync::mpsc::channel(10);
+						pending_tasks.push((PendingTask::UserProfilePicture(new_pfp_id), rx));
+						global.all_tasks.lock().await.insert(id.clone(), tx);
+						Some(ImageSetInput::Pending {
+							task_id: id,
+							path: path.path,
+							mime: content_type,
+							size: size as i64,
+						})
+					}
+					Err(err) => {
+						tracing::error!(error = ?err, "failed to start send image processor request");
+						None
+					}
+					_ => None,
+				}
+			} else {
+				None
+			};
+
+			input.map(|input| ImageSet { input, outputs: vec![] })
+		}
 		_ => None,
 	};
 
 	let profile_picture = active_profile_picture.map(|p| UserProfilePicture {
-		id: Default::default(),
+		id: new_pfp_id,
 		user_id: user.id.into(),
 		image_set: p,
 		updated_at: chrono::Utc::now(),
@@ -250,7 +323,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 	);
 
 	if let Some(profile_picture) = profile_picture {
-		profile_pictures.push(profile_picture);
+		profile_pictures.insert(profile_picture.id, profile_picture);
 	}
 
 	for editor in user.editors {
