@@ -1,10 +1,8 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
 use chrono::{DateTime, TimeZone, Utc};
 use hmac::{Hmac, Mac};
 use jwt_next::{Claims, Header, RegisteredClaims, SignWithKey, Token, VerifyWithKey};
-use mongodb::bson::oid::ObjectId;
 use sha2::Sha256;
 use shared::database::user::session::{UserSession, UserSessionId};
 use shared::database::user::UserId;
@@ -14,8 +12,7 @@ use crate::http::middleware::session::Session;
 
 pub struct AuthJwtPayload {
 	pub user_id: UserId,
-	/// `None` for old sessions because sessions weren't saved server-side
-	pub session_id: Option<UserSessionId>,
+	pub session_id: UserSessionId,
 	pub expiration: Option<DateTime<Utc>>,
 	pub issued_at: DateTime<Utc>,
 	pub not_before: Option<DateTime<Utc>>,
@@ -93,7 +90,7 @@ impl JwtState for AuthJwtPayload {
 				expiration: self.expiration.map(|x| x.timestamp() as u64),
 				not_before: self.not_before.map(|x| x.timestamp() as u64),
 				issued_at: Some(self.issued_at.timestamp() as u64),
-				json_web_token_id: self.session_id.map(|s| s.to_string()),
+				json_web_token_id: Some(self.session_id.to_string()),
 			},
 			private: Default::default(),
 		}
@@ -116,12 +113,8 @@ impl JwtState for AuthJwtPayload {
 		// New tokens encode the user id as ULID in the subject field (`sub`) and the
 		// session id as ULID in the jwt id (`jti`) field.
 
-		let user_id = if let Some(user_id) = claims.private.get("u") {
-			let user_id = ObjectId::from_str(user_id.as_str()?).ok()?;
-			UserId::from(user_id)
-		} else {
-			claims.registered.subject.as_ref().and_then(|x| x.parse().ok())?
-		};
+		// Old tokens don't have the `sub` field, so they will fail here
+		let user_id = claims.registered.subject.as_ref().and_then(|x| x.parse().ok())?;
 
 		Some(Self {
 			audience: claims.registered.audience.clone(),
@@ -134,13 +127,7 @@ impl JwtState for AuthJwtPayload {
 				.registered
 				.not_before
 				.and_then(|x| Utc.timestamp_opt(x as i64, 0).single()),
-			session_id: claims
-				.registered
-				.json_web_token_id
-				.as_ref()
-				.map(|s| s.parse())
-				.transpose()
-				.ok()?,
+			session_id: claims.registered.json_web_token_id.as_ref()?.parse().ok()?,
 			user_id,
 		})
 	}
@@ -150,7 +137,7 @@ impl From<UserSession> for AuthJwtPayload {
 	fn from(session: UserSession) -> Self {
 		AuthJwtPayload {
 			user_id: session.user_id,
-			session_id: Some(session.id),
+			session_id: session.id,
 			expiration: Some(session.expires_at),
 			issued_at: session.id.timestamp(),
 			not_before: None,
