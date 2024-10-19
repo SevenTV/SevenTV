@@ -56,7 +56,7 @@ impl Default for PaintLayer {
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum PaintLayerType {
-	SingleColor(u32),
+	SingleColor(i32),
 	LinearGradient {
 		angle: i32,
 		repeating: bool,
@@ -81,7 +81,7 @@ impl Default for PaintLayerType {
 #[serde(deny_unknown_fields)]
 pub struct PaintGradientStop {
 	pub at: f64,
-	pub color: u32,
+	pub color: i32,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
@@ -96,7 +96,7 @@ pub enum PaintRadialGradientShape {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PaintShadow {
-	pub color: u32,
+	pub color: i32,
 	pub offset_x: f64,
 	pub offset_y: f64,
 	pub blur: f64,

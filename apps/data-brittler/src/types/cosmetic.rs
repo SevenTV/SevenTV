@@ -54,7 +54,7 @@ impl From<GradientStop> for database::paint::PaintGradientStop {
 	fn from(value: GradientStop) -> Self {
 		Self {
 			at: value.at,
-			color: value.color as u32,
+			color: value.color,
 		}
 	}
 }
@@ -70,7 +70,7 @@ pub struct PaintDropShadow {
 impl From<PaintDropShadow> for database::paint::PaintShadow {
 	fn from(value: PaintDropShadow) -> Self {
 		Self {
-			color: value.color as u32,
+			color: value.color,
 			offset_x: value.x_offset,
 			offset_y: value.y_offset,
 			blur: value.radius,

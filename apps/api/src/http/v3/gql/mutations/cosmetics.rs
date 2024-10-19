@@ -90,7 +90,7 @@ pub struct CosmeticPaintInput {
 	#[graphql(validator(custom = "NameValidator"))]
 	name: String,
 	function: CosmeticPaintFunction,
-	color: Option<u32>,
+	color: Option<i32>,
 	#[graphql(validator(minimum = 0, maximum = 360))]
 	angle: Option<u32>,
 	shape: Option<CosmeticPaintShape>,
@@ -235,7 +235,7 @@ impl CosmeticPaintInput {
 pub struct CosmeticPaintStopInput {
 	#[graphql(validator(minimum = 0, maximum = 1))]
 	at: f64,
-	color: u32,
+	color: i32,
 }
 
 #[derive(InputObject)]
@@ -244,7 +244,7 @@ pub struct CosmeticPaintShadowInput {
 	x_offset: f64,
 	y_offset: f64,
 	radius: f64,
-	color: u32,
+	color: i32,
 }
 
 impl CosmeticPaintShadowInput {
