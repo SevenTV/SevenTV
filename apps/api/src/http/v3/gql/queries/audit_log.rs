@@ -157,9 +157,15 @@ pub struct EmoteVersionStateChange {
 
 impl From<EmoteFlags> for EmoteVersionStateChange {
 	fn from(value: EmoteFlags) -> Self {
+		let allow_personal = match (value.contains(EmoteFlags::ApprovedPersonal), value.contains(EmoteFlags::DeniedPersonal)) {
+			(true, false) => Some(true),
+			(false, true) => Some(false),
+			_ => None,
+		};
+
 		Self {
 			listed: Some(value.contains(EmoteFlags::PublicListed)),
-			allow_personal: Some(value.contains(EmoteFlags::ApprovedPersonal)),
+			allow_personal,
 		}
 	}
 }
@@ -190,10 +196,9 @@ impl AuditLogChange {
 				array_value: None,
 			}),
 			StoredEventEmoteData::ChangeFlags { old, new } => {
-				if new.contains(EmoteFlags::ApprovedPersonal)
-					|| old.contains(EmoteFlags::ApprovedPersonal)
-					|| new.contains(EmoteFlags::PublicListed)
-					|| old.contains(EmoteFlags::PublicListed)
+				if new.contains(EmoteFlags::ApprovedPersonal) != old.contains(EmoteFlags::ApprovedPersonal)
+					|| new.contains(EmoteFlags::DeniedPersonal) != old.contains(EmoteFlags::DeniedPersonal)
+					|| new.contains(EmoteFlags::PublicListed) != old.contains(EmoteFlags::PublicListed)
 				{
 					Some(Self {
 						format: AuditLogChangeFormat::ArrayValue,
