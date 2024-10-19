@@ -105,52 +105,64 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		types::CosmeticData::Badge { tooltip, tag } => {
 			let badge_id = cosmetic.id.into();
 
-			let image_data = match tokio::fs::read(format!("local/cosmetics/{}", cosmetic.id)).await {
-				Ok(data) => bytes::Bytes::from(data),
-				Err(e) => {
-					if let io::ErrorKind::NotFound = e.kind() {
-						let download_url = format!("https://cdn.7tv.app/badge/{}/3x", cosmetic.id);
-						match request_image(global, cosmetic.id, &download_url).await {
-							Ok(data) => data,
-							Err(outcome) => return outcome,
+			let image_set = if global.config.should_run_cosmetics() {
+				let image_data = match tokio::fs::read(format!("local/cosmetics/{}", cosmetic.id)).await {
+					Ok(data) => bytes::Bytes::from(data),
+					Err(e) => {
+						if let io::ErrorKind::NotFound = e.kind() {
+							let download_url = format!("https://cdn.7tv.app/badge/{}/3x", cosmetic.id);
+							match request_image(global, cosmetic.id, &download_url).await {
+								Ok(data) => data,
+								Err(outcome) => return outcome,
+							}
+						} else {
+							return outcome.with_error(e);
 						}
-					} else {
-						return outcome.with_error(e);
 					}
+				};
+
+				let input = match ip.upload_badge(badge_id, image_data).await {
+					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
+						return outcome.with_error(error::Error::ImageProcessor(error));
+					}
+					Ok(scuffle_image_processor_proto::ProcessImageResponse {
+						id,
+						upload_info:
+							Some(scuffle_image_processor_proto::ProcessImageResponseUploadInfo {
+								path: Some(path),
+								content_type,
+								size,
+							}),
+						error: None,
+					}) => {
+						let (tx, rx) = tokio::sync::mpsc::channel(10);
+						pending_tasks.push((PendingTask::Badge(badge_id), rx));
+						global.all_tasks.lock().await.insert(id.clone(), tx);
+						ImageSetInput::Pending {
+							task_id: id,
+							path: path.path,
+							mime: content_type,
+							size: size as i64,
+						}
+					}
+					Err(e) => return outcome.with_error(e),
+					_ => {
+						return outcome.with_error(error::Error::NotImplemented("missing image upload info"));
+					}
+				};
+
+				ImageSet { input, outputs: vec![] }
+			} else {
+				ImageSet {
+					input: ImageSetInput::Pending {
+						mime: "image/png".to_string(),
+						path: format!("badge/{}", cosmetic.id),
+						size: 0,
+						task_id: "0".to_string(),
+					},
+					outputs: vec![],
 				}
 			};
-
-			let input = match ip.upload_badge(badge_id, image_data).await {
-				Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
-					return outcome.with_error(error::Error::ImageProcessor(error));
-				}
-				Ok(scuffle_image_processor_proto::ProcessImageResponse {
-					id,
-					upload_info:
-						Some(scuffle_image_processor_proto::ProcessImageResponseUploadInfo {
-							path: Some(path),
-							content_type,
-							size,
-						}),
-					error: None,
-				}) => {
-					let (tx, rx) = tokio::sync::mpsc::channel(10);
-					pending_tasks.push((PendingTask::Badge(badge_id), rx));
-					global.all_tasks.lock().await.insert(id.clone(), tx);
-					ImageSetInput::Pending {
-						task_id: id,
-						path: path.path,
-						mime: content_type,
-						size: size as i64,
-					}
-				}
-				Err(e) => return outcome.with_error(e),
-				_ => {
-					return outcome.with_error(error::Error::NotImplemented("missing image upload info"));
-				}
-			};
-
-			let image_set = ImageSet { input, outputs: vec![] };
 
 			let tags = tag.map(|t| vec![t]).unwrap_or_default();
 			badges.insert(
@@ -172,75 +184,79 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 
 			let layer_id = PaintLayerId::new();
 
-			let layer = match data {
-				types::PaintData::LinearGradient {
-					stops, repeat, angle, ..
-				} => Some(PaintLayerType::LinearGradient {
-					angle,
-					repeating: repeat,
-					stops: stops.into_iter().map(Into::into).collect(),
-				}),
-				types::PaintData::RadialGradient {
-					stops,
-					repeat,
-					angle,
-					shape,
-					..
-				} => Some(PaintLayerType::RadialGradient {
-					angle,
-					repeating: repeat,
-					stops: stops.into_iter().map(Into::into).collect(),
-					shape,
-				}),
-				types::PaintData::Url {
-					image_url: Some(image_url),
-					..
-				} => {
-					let image_data = match tokio::fs::read(format!("local/cosmetics/{}", cosmetic.id)).await {
-						Ok(data) => bytes::Bytes::from(data),
-						Err(e) => {
-							if let io::ErrorKind::NotFound = e.kind() {
-								match request_image(global, cosmetic.id, &image_url).await {
-									Ok(data) => data,
-									Err(outcome) => return outcome,
+			let layer = if global.config.should_run_cosmetics() {
+				match data {
+					types::PaintData::LinearGradient {
+						stops, repeat, angle, ..
+					} => Some(PaintLayerType::LinearGradient {
+						angle,
+						repeating: repeat,
+						stops: stops.into_iter().map(Into::into).collect(),
+					}),
+					types::PaintData::RadialGradient {
+						stops,
+						repeat,
+						angle,
+						shape,
+						..
+					} => Some(PaintLayerType::RadialGradient {
+						angle,
+						repeating: repeat,
+						stops: stops.into_iter().map(Into::into).collect(),
+						shape,
+					}),
+					types::PaintData::Url {
+						image_url: Some(image_url),
+						..
+					} => {
+						let image_data = match tokio::fs::read(format!("local/cosmetics/{}", cosmetic.id)).await {
+							Ok(data) => bytes::Bytes::from(data),
+							Err(e) => {
+								if let io::ErrorKind::NotFound = e.kind() {
+									match request_image(global, cosmetic.id, &image_url).await {
+										Ok(data) => data,
+										Err(outcome) => return outcome,
+									}
+								} else {
+									return outcome.with_error(e);
 								}
-							} else {
-								return outcome.with_error(e);
 							}
-						}
-					};
+						};
 
-					let input = match ip.upload_paint_layer(paint_id, layer_id, image_data).await {
-						Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
-							return outcome.with_error(error::Error::ImageProcessor(error));
-						}
-						Ok(scuffle_image_processor_proto::ProcessImageResponse {
-							id,
-							upload_info:
-								Some(scuffle_image_processor_proto::ProcessImageResponseUploadInfo {
-									path: Some(path),
-									content_type,
-									size,
-								}),
-							error: None,
-						}) => {
-							let (tx, rx) = tokio::sync::mpsc::channel(10);
-							pending_tasks.push((PendingTask::Paint(paint_id, layer_id), rx));
-							global.all_tasks.lock().await.insert(id.clone(), tx);
-							ImageSetInput::Pending {
-								task_id: id,
-								path: path.path,
-								mime: content_type,
-								size: size as i64,
+						let input = match ip.upload_paint_layer(paint_id, layer_id, image_data).await {
+							Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
+								return outcome.with_error(error::Error::ImageProcessor(error));
 							}
-						}
-						Err(e) => return outcome.with_error(e),
-						_ => return outcome.with_error(error::Error::NotImplemented("missing image upload info")),
-					};
+							Ok(scuffle_image_processor_proto::ProcessImageResponse {
+								id,
+								upload_info:
+									Some(scuffle_image_processor_proto::ProcessImageResponseUploadInfo {
+										path: Some(path),
+										content_type,
+										size,
+									}),
+								error: None,
+							}) => {
+								let (tx, rx) = tokio::sync::mpsc::channel(10);
+								pending_tasks.push((PendingTask::Paint(paint_id, layer_id), rx));
+								global.all_tasks.lock().await.insert(id.clone(), tx);
+								ImageSetInput::Pending {
+									task_id: id,
+									path: path.path,
+									mime: content_type,
+									size: size as i64,
+								}
+							}
+							Err(e) => return outcome.with_error(e),
+							_ => return outcome.with_error(error::Error::NotImplemented("missing image upload info")),
+						};
 
-					Some(PaintLayerType::Image(ImageSet { input, outputs: vec![] }))
+						Some(PaintLayerType::Image(ImageSet { input, outputs: vec![] }))
+					}
+					types::PaintData::Url { image_url: None, .. } => None,
 				}
-				types::PaintData::Url { image_url: None, .. } => None,
+			} else {
+				None
 			};
 
 			let paint_data = database::paint::PaintData {

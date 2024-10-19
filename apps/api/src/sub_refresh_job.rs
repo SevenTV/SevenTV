@@ -4,9 +4,7 @@ use std::sync::Arc;
 use futures::TryStreamExt;
 use shared::database::duration::DurationUnit;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
-use shared::database::product::subscription::{
-	Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionState,
-};
+use shared::database::product::subscription::{Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState};
 use shared::database::product::SubscriptionBenefitCondition;
 use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
@@ -90,9 +88,11 @@ impl SubAge {
 		match condition {
 			SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => self.days + next_period >= *d,
 			SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => self.months + next_period >= *m,
-			SubscriptionBenefitCondition::TimePeriod(tp) => {
-				self.periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end)
-			}
+			SubscriptionBenefitCondition::TimePeriod(tp) => self.periods.iter().any(|p| {
+				(p.start <= tp.start && p.end >= tp.start)
+					|| (p.start <= tp.end && p.end >= tp.end)
+					|| (p.start >= tp.start && p.end <= tp.end)
+			}),
 		}
 	}
 }
@@ -191,18 +191,10 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 			new_edges.push(user_edge);
 		}
 
-		let state = if active_periods.iter().all(|period| {
-			matches!(
-				period.created_by,
-				SubscriptionPeriodCreatedBy::Invoice {
-					cancel_at_period_end: true,
-					..
-				}
-			)
-		}) {
-			SubscriptionState::CancelAtEnd
-		} else {
+		let state = if active_periods.iter().any(|period| period.auto_renew) {
 			SubscriptionState::Active
+		} else {
+			SubscriptionState::CancelAtEnd
 		};
 
 		Subscription::collection(&global.db)

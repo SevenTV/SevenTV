@@ -387,9 +387,10 @@ pub async fn paid(
 					end,
 					product_id: stripe_product_id,
 					is_trial: stripe_sub.trial_end.is_some(),
+					auto_renew: !stripe_sub.cancel_at_period_end,
+					gifted_by: None,
 					created_by: SubscriptionPeriodCreatedBy::Invoice {
 						invoice_id: invoice.id.clone().into(),
-						cancel_at_period_end: stripe_sub.cancel_at_period_end,
 					},
 					updated_at: chrono::Utc::now(),
 					search_updated_at: None,
@@ -490,9 +491,10 @@ pub async fn paid(
 					end,
 					product_id,
 					is_trial: false,
-					created_by: SubscriptionPeriodCreatedBy::Gift {
-						gifter: customer_id,
-						invoice: invoice.id.into(),
+					gifted_by: Some(customer_id),
+					auto_renew: false,
+					created_by: SubscriptionPeriodCreatedBy::Invoice {
+						invoice_id: invoice.id.into(),
 					},
 					updated_at: chrono::Utc::now(),
 					search_updated_at: None,

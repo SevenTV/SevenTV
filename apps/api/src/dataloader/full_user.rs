@@ -84,7 +84,7 @@ impl FullUserLoader {
 
 		Ok(users
 			.into_iter()
-			.filter_map(|user| {
+			.filter_map(|mut user| {
 				let mut computed = computed.get(&user.id)?.clone();
 
 				if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
@@ -95,6 +95,22 @@ impl FullUserLoader {
 					.style
 					.active_profile_picture
 					.and_then(|id| profile_pictures.get(&id).cloned());
+
+				user.style.active_badge_id = user.style.active_badge_id.and_then(|id| {
+					if computed.permissions.has(UserPermission::UseBadge) && computed.entitlements.badges.contains(&id) {
+						Some(id)
+					} else {
+						None
+					}
+				});
+
+				user.style.active_paint_id = user.style.active_paint_id.and_then(|id| {
+					if computed.permissions.has(UserPermission::UsePaint) && computed.entitlements.paints.contains(&id) {
+						Some(id)
+					} else {
+						None
+					}
+				});
 
 				Some((
 					user.id,
@@ -217,6 +233,24 @@ impl FullUserLoader {
 				.style
 				.active_profile_picture
 				.and_then(|id| profile_pictures.get(&id).cloned());
+
+			user.user.style.active_badge_id = user.style.active_badge_id.and_then(|id| {
+				if user.computed.permissions.has(UserPermission::UseBadge) && user.computed.entitlements.badges.contains(&id)
+				{
+					Some(id)
+				} else {
+					None
+				}
+			});
+
+			user.user.style.active_paint_id = user.style.active_paint_id.and_then(|id| {
+				if user.computed.permissions.has(UserPermission::UsePaint) && user.computed.entitlements.paints.contains(&id)
+				{
+					Some(id)
+				} else {
+					None
+				}
+			});
 		}
 
 		Ok(users)

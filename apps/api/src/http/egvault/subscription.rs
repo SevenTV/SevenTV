@@ -82,10 +82,7 @@ pub async fn subscription(
 		ProviderSubscriptionId::Paypal(_) => types::Provider::Paypal,
 	});
 
-	let customer_id = match active_period.created_by {
-		SubscriptionPeriodCreatedBy::Gift { gifter, .. } => gifter,
-		_ => active_period.subscription_id.user_id,
-	};
+	let customer_id = active_period.gifted_by.unwrap_or(active_period.subscription_id.user_id);
 
 	let internal = matches!(active_period.created_by, SubscriptionPeriodCreatedBy::System { .. });
 

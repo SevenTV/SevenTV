@@ -13,7 +13,7 @@ use super::prices::NEW_SUBSCRIPTION_PRODUCT_ID;
 use super::{JobOutcome, ProcessOutcome};
 use crate::error;
 use crate::global::Global;
-use crate::types::{self, SubscriptionCycleUnit, SubscriptionProvider};
+use crate::types::{self, SubscriptionCycleStatus, SubscriptionCycleUnit, SubscriptionProvider};
 
 pub mod benefits;
 
@@ -71,17 +71,17 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		return outcome;
 	};
 
-	let Some(subscription_id) = subscription.provider_id else {
-		return outcome;
-	};
-
-	let provider_id = match subscription.provider {
-		SubscriptionProvider::Stripe => match stripe::SubscriptionId::from_str(&subscription_id) {
-			Ok(id) => id.into(),
-			Err(e) => return outcome.with_error(error::Error::InvalidStripeId(e)),
-		},
-		SubscriptionProvider::Paypal => ProviderSubscriptionId::Paypal(subscription_id),
-		_ => return outcome,
+	let provider_id = if let Some(subscription_id) = subscription.provider_id {
+		match subscription.provider {
+			SubscriptionProvider::Stripe => match stripe::SubscriptionId::from_str(&subscription_id) {
+				Ok(id) => Some(id.into()),
+				Err(e) => return outcome.with_error(error::Error::InvalidStripeId(e)),
+			},
+			SubscriptionProvider::Paypal => Some(ProviderSubscriptionId::Paypal(subscription_id)),
+			_ => return outcome,
+		}
+	} else {
+		None
 	};
 
 	let sub_id = SubscriptionId {
@@ -111,7 +111,7 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 
 	periods.push(SubscriptionPeriod {
 		id: subscription.id.into(),
-		provider_id: Some(provider_id),
+		provider_id,
 		product_id: match subscription.provider {
 			SubscriptionProvider::Stripe => ProductId::from_str(&plan_id).unwrap(),
 			SubscriptionProvider::Paypal => match plan_id.as_str() {
@@ -125,8 +125,10 @@ fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		start,
 		end,
 		is_trial: subscription.cycle.trial_end_at.is_some(),
+		auto_renew: matches!(subscription.cycle.status, SubscriptionCycleStatus::Ongoing),
+		gifted_by: (subscription.subscriber_id != subscription.customer_id).then(|| subscription.customer_id.into()),
 		created_by: SubscriptionPeriodCreatedBy::System {
-			reason: Some("Data migration job".to_string()),
+			reason: Some("Data migration".to_string()),
 		},
 		updated_at: chrono::Utc::now(),
 		search_updated_at: None,

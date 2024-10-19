@@ -121,6 +121,8 @@ pub struct SubscriptionPeriod {
 	#[serde(with = "crate::database::serde")]
 	pub end: chrono::DateTime<chrono::Utc>,
 	pub is_trial: bool,
+	pub auto_renew: bool,
+	pub gifted_by: Option<UserId>,
 	pub created_by: SubscriptionPeriodCreatedBy,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -133,20 +135,9 @@ pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case", tag = "type")]
 pub enum SubscriptionPeriodCreatedBy {
-	RedeemCode {
-		redeem_code_id: RedeemCodeId,
-	},
-	Invoice {
-		invoice_id: InvoiceId,
-		cancel_at_period_end: bool,
-	},
-	Gift {
-		gifter: UserId,
-		invoice: InvoiceId,
-	},
-	System {
-		reason: Option<String>,
-	},
+	RedeemCode { redeem_code_id: RedeemCodeId },
+	Invoice { invoice_id: InvoiceId },
+	System { reason: Option<String> },
 }
 
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {

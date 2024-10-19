@@ -206,8 +206,6 @@ impl Global {
 			tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 		}
 
-		
-
 		self.semaphore.clone().acquire_owned().await.ok()
 	}
 

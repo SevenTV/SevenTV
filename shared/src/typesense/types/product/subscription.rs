@@ -12,9 +12,8 @@ use crate::typesense::types::{impl_typesense_type, TypesenseCollection, Typesens
 #[repr(i32)]
 pub enum SubscriptionCreatedByKind {
 	RedeemCode = 0,
-	Gift = 1,
-	Invoice = 2,
-	System = 3,
+	Invoice = 1,
+	System = 2,
 }
 
 impl SubscriptionCreatedByKind {
@@ -35,9 +34,6 @@ impl SubscriptionCreatedByKind {
 			}
 			database::product::subscription::SubscriptionPeriodCreatedBy::System { reason } => {
 				(SubscriptionCreatedByKind::System, None, None, reason)
-			}
-			database::product::subscription::SubscriptionPeriodCreatedBy::Gift { .. } => {
-				(SubscriptionCreatedByKind::Gift, None, None, None)
 			}
 		}
 	}
@@ -67,6 +63,8 @@ pub struct SubscriptionPeriod {
 	pub provider_id: Option<String>,
 	pub start: i64,
 	pub end: i64,
+	pub auto_renew: bool,
+	pub gifted_by: Option<UserId>,
 	pub created_by_kind: SubscriptionCreatedByKind,
 	pub created_by_redeem_code_id: Option<RedeemCodeId>,
 	pub created_by_invoice_id: Option<InvoiceId>,
@@ -89,6 +87,8 @@ impl From<crate::database::product::subscription::SubscriptionPeriod> for Subscr
 				Some(ProviderSubscriptionId::Paypal(_)) => Some(SubscriptionProvider::Paypal),
 				None => None,
 			},
+			auto_renew: value.auto_renew,
+			gifted_by: value.gifted_by,
 			provider_id: value.provider_id.map(|id| id.to_string()),
 			user_id: value.subscription_id.user_id,
 			product_id: value.subscription_id.product_id,

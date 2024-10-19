@@ -10,6 +10,7 @@ pub struct Subscription {
 	pub provider_id: Option<String>,
 	pub started_at: super::DateTime,
 	pub subscriber_id: ObjectId,
+	pub customer_id: ObjectId,
 	pub cycle: SubscriptionCycle,
 	pub plan_id: Option<String>,
 	// pub product_id: String,
@@ -35,6 +36,7 @@ pub enum SubscriptionProvider {
 #[derive(Debug, serde::Deserialize)]
 pub struct SubscriptionCycle {
 	pub unit: SubscriptionCycleUnit,
+	pub status: SubscriptionCycleStatus,
 	pub timestamp: Option<super::DateTime>,
 	pub trial_end_at: Option<super::DateTime>,
 }

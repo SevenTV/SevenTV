@@ -2123,7 +2123,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
-					"66213702469f00cda34b99de",
+					"66213702469f00cda34b99df",
 					"TwitchCon 2024 San Diego",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66d2ff0208cb56e1d5e1bffd".parse().unwrap(),
@@ -2133,7 +2133,7 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					}),
 				),
 				SpecialEventWithEntitlements::new(
-					"66213702469f00cda34b99de",
+					"66213702469f00cda34b99e0",
 					"Disco Elysium - SE Party 2024",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66e83e691ab6daa41ce1059e".parse().unwrap(),

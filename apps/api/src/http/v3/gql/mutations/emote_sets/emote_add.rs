@@ -122,7 +122,10 @@ pub async fn emote_add(
 							updated_at: chrono::Utc::now(),
 						},
 					},
-					FindOneAndUpdateOptions::builder().upsert(true).build(),
+					FindOneAndUpdateOptions::builder()
+						.upsert(true)
+						.return_document(ReturnDocument::After)
+						.build(),
 				)
 				.await?
 				.ok_or_else(|| {
