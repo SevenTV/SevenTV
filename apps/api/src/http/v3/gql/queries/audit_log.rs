@@ -190,8 +190,10 @@ impl AuditLogChange {
 				array_value: None,
 			}),
 			StoredEventEmoteData::ChangeFlags { old, new } => {
-				if (new.contains(EmoteFlags::ApprovedPersonal) && old.contains(EmoteFlags::ApprovedPersonal))
-					|| (new.contains(EmoteFlags::PublicListed) && old.contains(EmoteFlags::PublicListed))
+				if new.contains(EmoteFlags::ApprovedPersonal)
+					|| old.contains(EmoteFlags::ApprovedPersonal)
+					|| new.contains(EmoteFlags::PublicListed)
+					|| old.contains(EmoteFlags::PublicListed)
 				{
 					Some(Self {
 						format: AuditLogChangeFormat::ArrayValue,
