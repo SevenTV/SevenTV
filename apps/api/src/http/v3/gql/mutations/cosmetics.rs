@@ -94,7 +94,6 @@ pub struct CosmeticPaintInput {
 	#[graphql(validator(minimum = 0, maximum = 360))]
 	angle: Option<u32>,
 	shape: Option<CosmeticPaintShape>,
-	#[graphql(validator(url))]
 	image_url: Option<String>,
 	repeat: bool,
 	stops: Vec<CosmeticPaintStopInput>,
@@ -140,8 +139,8 @@ impl CosmeticPaintInput {
 				}
 			}
 			CosmeticPaintFunction::Url => {
-				let Some(image_url) = self.image_url else {
-					return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "missing image url"));
+				let Some(image_url) = self.image_url.and_then(|u| url::Url::parse(&u).ok()) else {
+					return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid image url"));
 				};
 
 				// TODO(troy): This allows for anyone to pass any url and we will blindly do a
