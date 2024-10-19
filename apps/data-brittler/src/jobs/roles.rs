@@ -92,6 +92,7 @@ pub fn roles() -> Vec<Role> {
 			color: Some(-12171521),
 			hoist: true,
 			allowed: &[AdminPermission::Admin.into()],
+			personal_emote_set_capacity: Some(100),
 			..Default::default()
 		},
 		RoleBuilder {
@@ -287,6 +288,7 @@ pub fn roles() -> Vec<Role> {
 				TicketPermission::Message.into(),
 			],
 			emote_set_capacity: Some(1000),
+			personal_emote_set_capacity: Some(5),
 			emote_moderation_request_priority: Some(1),
 			emote_moderation_request_limit: Some(5),
 			ratelimits: HashMap::from([
