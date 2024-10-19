@@ -93,7 +93,7 @@ pub struct Global {
 	pub user_session_by_id_loader: DataLoader<LoaderById<UserSession>>,
 	pub user_session_updater_batcher: DataLoader<UserSessionUpdaterBatcher>,
 	pub user_loader: FullUserLoader,
-	pub typesense: typesense_codegen::apis::configuration::Configuration,
+	pub typesense: typesense_rs::apis::ApiClient,
 	pub updater: MongoUpdater,
 }
 
@@ -121,13 +121,13 @@ impl Global {
 
 		tracing::info!("connected to image processor");
 
-		let typesense = typesense_codegen::apis::configuration::Configuration {
+		let typesense = typesense_rs::apis::configuration::Configuration {
 			base_path: config.typesense.uri.clone(),
 			api_key: config
 				.typesense
 				.api_key
 				.clone()
-				.map(|key| typesense_codegen::apis::configuration::ApiKey { key, prefix: None }),
+				.map(|key| typesense_rs::apis::configuration::ApiKey { key, prefix: None }),
 			..Default::default()
 		};
 
@@ -188,7 +188,7 @@ impl Global {
 			user_session_updater_batcher: UserSessionUpdaterBatcher::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			stripe_client,
-			typesense,
+			typesense: typesense_rs::apis::ApiClient::new(Arc::new(typesense)),
 			mongo,
 			updater: MongoUpdater::new(
 				db.clone(),

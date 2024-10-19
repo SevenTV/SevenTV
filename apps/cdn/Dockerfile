@@ -11,7 +11,7 @@ RUN --mount=type=bind,src=target/${BUILD_TARGET}/cdn,dst=/mount/cdn \
     cp /mount/cdn /app/cdn && \
     chmod +x /app/cdn && \
     apt update && \
-    apt install -y ca-certificates libjemalloc2 libssl3 && \
+    apt install -y ca-certificates libjemalloc2 && \
     rm -rf /var/lib/apt/lists/*
 
 STOPSIGNAL SIGTERM

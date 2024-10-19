@@ -547,7 +547,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 			global.target_db.clone(),
 			global.config.truncate,
 			outcome,
-			runner.editors.into_iter().map(|(_, e)| e),
+			runner.editors.into_values(),
 		))
 		.await
 		.unwrap();

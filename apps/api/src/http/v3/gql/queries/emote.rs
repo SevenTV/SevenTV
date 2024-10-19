@@ -424,6 +424,7 @@ impl EmotesQuery {
 		}
 
 		let mut query_by = vec!["default_name".to_owned()];
+		let mut prefix = vec!["true".to_owned()];
 		let mut query_by_weights = vec![4];
 
 		let mut sort_by = vec!["_text_match(buckets: 10):desc".to_owned()];
@@ -484,6 +485,7 @@ impl EmotesQuery {
 
 		if filter.as_ref().map_or(false, |f| !f.ignore_tags.unwrap_or_default()) {
 			query_by.push("tags".to_owned());
+			prefix.push("false".to_owned());
 			query_by_weights.push(1);
 		}
 
@@ -495,6 +497,10 @@ impl EmotesQuery {
 			.filter_by(filters.join(" && "))
 			.sort_by(sort_by)
 			.query_by_weights(query_by_weights)
+			.prefix(prefix)
+			.prioritize_exact_match(true)
+			.prioritize_token_position(true)
+			.prioritize_num_matching_fields(false)
 			.exaustive(true)
 			.build();
 

@@ -9,6 +9,7 @@ use scuffle_foundations::telemetry::server::HealthCheck;
 use shared::clickhouse::emote_stat::EmoteStat;
 use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
 use shared::database::updater::MongoUpdater;
+use typesense_rs::apis::Api;
 
 use crate::batcher::clickhouse::ClickhouseInsert;
 use crate::batcher::CollectionBatcher;
@@ -20,7 +21,7 @@ pub struct Global {
 	pub jetstream: async_nats::jetstream::Context,
 	pub database: mongodb::Database,
 	pub config: Config,
-	pub typesense: typesense_codegen::apis::configuration::Configuration,
+	pub typesense: Arc<typesense_rs::apis::ApiClient>,
 	pub event_batcher: CollectionBatcher<mongo::StoredEvent>,
 	pub user_batcher: CollectionBatcher<mongo::User>,
 	pub automod_rule_batcher: CollectionBatcher<mongo::AutomodRule>,
@@ -74,15 +75,17 @@ impl Global {
 			.default_database()
 			.ok_or_else(|| anyhow::anyhow!("no default database"))?;
 
-		let typesense = typesense_codegen::apis::configuration::Configuration {
-			base_path: config.typesense.uri.clone(),
-			api_key: config
-				.typesense
-				.api_key
-				.clone()
-				.map(|key| typesense_codegen::apis::configuration::ApiKey { key, prefix: None }),
-			..Default::default()
-		};
+		let typesense = Arc::new(typesense_rs::apis::ApiClient::new(Arc::new(
+			typesense_rs::apis::configuration::Configuration {
+				base_path: config.typesense.uri.clone(),
+				api_key: config
+					.typesense
+					.api_key
+					.clone()
+					.map(|key| typesense_rs::apis::configuration::ApiKey { key, prefix: None }),
+				..Default::default()
+			},
+		)));
 
 		let clickhouse = shared::clickhouse::init_clickhouse(&config.clickhouse).await?;
 
@@ -173,7 +176,7 @@ impl Global {
 				false
 			}
 		};
-		state.typesense_healthy = match typesense_codegen::apis::health_api::health(&self.typesense).await {
+		state.typesense_healthy = match self.typesense.health_api().health().await {
 			Ok(r) => {
 				if r.ok {
 					true

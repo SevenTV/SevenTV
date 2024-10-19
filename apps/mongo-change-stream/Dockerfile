@@ -11,7 +11,7 @@ RUN --mount=type=bind,src=target/${BUILD_TARGET}/mongo-change-stream,dst=/mount/
     cp /mount/mongo-change-stream /app/mongo-change-stream && \
     chmod +x /app/mongo-change-stream && \
     apt update && \
-    apt install -y ca-certificates libjemalloc2 libssl3 && \
+    apt install -y ca-certificates libjemalloc2 && \
     rm -rf /var/lib/apt/lists/*
 
 STOPSIGNAL SIGTERM

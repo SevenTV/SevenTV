@@ -11,7 +11,7 @@ RUN --mount=type=bind,src=target/${BUILD_TARGET}/api,dst=/mount/api \
     cp /mount/api /app/api && \
     chmod +x /app/api && \
     apt update && \
-    apt install -y ca-certificates libjemalloc2 libssl3 && \
+    apt install -y ca-certificates libjemalloc2 && \
     rm -rf /var/lib/apt/lists/*
 
 STOPSIGNAL SIGTERM

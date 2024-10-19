@@ -24,12 +24,9 @@ pub mod mongo {
 }
 
 pub mod typesense {
-	pub use shared::typesense::types::emote_set::*;
 	pub use shared::typesense::types::product::special_event::*;
 	pub use shared::typesense::types::product::subscription::*;
 	pub use shared::typesense::types::product::*;
 	pub use shared::typesense::types::role::*;
-	pub use shared::typesense::types::user::editor::*;
-	pub use shared::typesense::types::user::relation::*;
 	pub use shared::typesense::types::user::*;
 }

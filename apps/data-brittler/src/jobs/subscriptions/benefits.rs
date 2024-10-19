@@ -1973,7 +1973,7 @@ pub fn sub_monthly_benefits() -> impl IntoIterator<Item = BenefitWithEntitlement
 					],
 				),
 				BenefitWithEntitlements::new(
-					todo!("idk what this is supposed to be"),
+					"66f7f86d1cf9362138a23371".parse().unwrap(),
 					"October 2024 Paint Bundle",
 					SubscriptionBenefitCondition::TimePeriod(TimePeriod {
 						start: "2024-10-01T00:00:00.000Z".parse().unwrap(),
@@ -2117,6 +2117,26 @@ pub fn special_events() -> impl IntoIterator<Item = SpecialEventWithEntitlements
 					"TwitchCon 2024 Rotterdam",
 					vec![EntitlementEdgeKind::Paint {
 						paint_id: "66213702469f00cda34b38de".parse().unwrap(),
+					}],
+					Some(EntitlementEdgeManagedBy::RedeemCode {
+						redeem_code_id: RedeemCodeId::nil(),
+					}),
+				),
+				SpecialEventWithEntitlements::new(
+					"66213702469f00cda34b99de",
+					"TwitchCon 2024 San Diego",
+					vec![EntitlementEdgeKind::Paint {
+						paint_id: "66d2ff0208cb56e1d5e1bffd".parse().unwrap(),
+					}],
+					Some(EntitlementEdgeManagedBy::RedeemCode {
+						redeem_code_id: RedeemCodeId::nil(),
+					}),
+				),
+				SpecialEventWithEntitlements::new(
+					"66213702469f00cda34b99de",
+					"Disco Elysium - SE Party 2024",
+					vec![EntitlementEdgeKind::Paint {
+						paint_id: "66e83e691ab6daa41ce1059e".parse().unwrap(),
 					}],
 					Some(EntitlementEdgeManagedBy::RedeemCode {
 						redeem_code_id: RedeemCodeId::nil(),

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use scuffle_foundations::batcher::dataloader::DataLoader;
 use scuffle_foundations::batcher::Batcher;
 use serde::de::DeserializeOwned;
@@ -23,7 +25,7 @@ where
 	M: DeserializeOwned + Clone + 'static,
 	M::Typesense: TypesenseCollection + serde::Serialize + 'static,
 {
-	pub fn new(mongo: mongodb::Database, typesense: typesense_codegen::apis::configuration::Configuration) -> Self {
+	pub fn new(mongo: mongodb::Database, typesense: Arc<typesense_rs::apis::ApiClient>) -> Self {
 		Self {
 			loader: LoaderById::new(mongo.clone()),
 			inserter: TypesenseInsert::new(typesense),

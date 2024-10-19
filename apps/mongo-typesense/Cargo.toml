@@ -19,7 +19,7 @@ tracing = "0.1"
 anyhow = "1.0"
 futures = "0.3"
 bytes = "1.0"
-typesense_codegen = { git = "https://github.com/typesense/typesense-rust.git" }
+typesense-rs = { version = "27.0.0", features = ["bon"] }
 tokio-util = "0.7"
 chrono = "0.4"
 const_format = "0.2"

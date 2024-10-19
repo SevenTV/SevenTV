@@ -40,40 +40,42 @@ async fn event_api(
 		.await
 		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?;
 
-	let results = users.into_values().filter_map(|user| {
-        if let Some(pfp) = &user.active_profile_picture {
-            Some(CosmeticModel {
-                id: user.id,
-                kind: CosmeticKind::Avatar,
-                data: CosmeticAvatarModel {
-                    id: pfp.id,
-                    aas: "".to_owned(),
-                    host: ImageHost::from_image_set(&pfp.image_set, &global.config.api.cdn_origin),
-                    user: UserPartialModel::from_db(user, None, None, &global.config.api.cdn_origin)
-                }
-            })
-        } else {
-            None
-        }
-    })
-    .map(|cosmetic| {
-        let object = serde_json::to_value(&cosmetic).map_err(|e| {
-            tracing::error!(error = %e, "failed to serialize cosmetic");
-            ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to serialize cosmetic")
-        })?;
+	let results = users
+		.into_values()
+		.filter_map(|user| {
+			if let Some(pfp) = &user.active_profile_picture {
+				Some(CosmeticModel {
+					id: user.id,
+					kind: CosmeticKind::Avatar,
+					data: CosmeticAvatarModel {
+						id: pfp.id,
+						aas: "".to_owned(),
+						host: ImageHost::from_image_set(&pfp.image_set, &global.config.api.cdn_origin),
+						user: UserPartialModel::from_db(user, None, None, &global.config.api.cdn_origin),
+					},
+				})
+			} else {
+				None
+			}
+		})
+		.map(|cosmetic| {
+			let object = serde_json::to_value(&cosmetic).map_err(|e| {
+				tracing::error!(error = %e, "failed to serialize cosmetic");
+				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to serialize cosmetic")
+			})?;
 
-        Ok::<_, ApiError>(Dispatch {
-            ty: EventType::CreateCosmetic,
-            body: ChangeMap {
-                id: cosmetic.data.user.id.cast(),
-                kind: ObjectKind::Cosmetic,
-                contextual: true,
-                object,
-                ..Default::default()
-            }
-        })
-    })
-    .collect::<Result<Vec<_>, _>>()?;
+			Ok::<_, ApiError>(Dispatch {
+				ty: EventType::CreateCosmetic,
+				body: ChangeMap {
+					id: cosmetic.data.user.id.cast(),
+					kind: ObjectKind::Cosmetic,
+					contextual: true,
+					object,
+					..Default::default()
+				},
+			})
+		})
+		.collect::<Result<Vec<_>, _>>()?;
 
 	Ok(Json(results))
 }

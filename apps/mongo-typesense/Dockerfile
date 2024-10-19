@@ -11,7 +11,7 @@ RUN --mount=type=bind,src=target/${BUILD_TARGET}/mongo-typesense,dst=/mount/mong
     cp /mount/mongo-typesense /app/mongo-typesense && \
     chmod +x /app/mongo-typesense && \
     apt update && \
-    apt install -y ca-certificates libjemalloc2 libssl3 && \
+    apt install -y ca-certificates libjemalloc2 && \
     rm -rf /var/lib/apt/lists/*
 
 STOPSIGNAL SIGTERM

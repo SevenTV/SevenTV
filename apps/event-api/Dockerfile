@@ -11,7 +11,7 @@ RUN --mount=type=bind,src=target/${BUILD_TARGET}/event-api,dst=/mount/event-api 
     cp /mount/event-api /app/event-api && \
     chmod +x /app/event-api && \
     apt update && \
-    apt install -y ca-certificates libjemalloc2 libssl3 && \
+    apt install -y ca-certificates libjemalloc2 && \
     rm -rf /var/lib/apt/lists/*
 
 STOPSIGNAL SIGTERM

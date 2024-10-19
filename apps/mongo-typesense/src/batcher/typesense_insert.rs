@@ -3,17 +3,18 @@ use std::sync::Arc;
 use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherNormalMode};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::typesense::types::TypesenseCollection;
-use typesense_codegen::apis::documents_api::{ImportDocumentsError, IndexDocumentError};
-use typesense_codegen::models::ImportDocumentsImportDocumentsParametersParameter;
+use typesense_rs::apis::documents_api::{ImportDocumentsError, ImportDocumentsParams, IndexDocumentError};
+use typesense_rs::apis::Api;
+use typesense_rs::models;
 
 pub struct TypesenseInsert<T> {
-	client: typesense_codegen::apis::configuration::Configuration,
+	client: Arc<typesense_rs::apis::ApiClient>,
 	config: BatcherConfig,
 	_phantom: std::marker::PhantomData<T>,
 }
 
 impl<T: TypesenseCollection + serde::Serialize + 'static> TypesenseInsert<T> {
-	pub fn new(client: typesense_codegen::apis::configuration::Configuration) -> Batcher<Self> {
+	pub fn new(client: Arc<typesense_rs::apis::ApiClient>) -> Batcher<Self> {
 		Self::new_with_config(
 			client,
 			BatcherConfig {
@@ -25,10 +26,7 @@ impl<T: TypesenseCollection + serde::Serialize + 'static> TypesenseInsert<T> {
 		)
 	}
 
-	pub fn new_with_config(
-		client: typesense_codegen::apis::configuration::Configuration,
-		config: BatcherConfig,
-	) -> Batcher<Self> {
+	pub fn new_with_config(client: Arc<typesense_rs::apis::ApiClient>, config: BatcherConfig) -> Batcher<Self> {
 		Batcher::new(Self {
 			client,
 			config,
@@ -40,7 +38,7 @@ impl<T: TypesenseCollection + serde::Serialize + 'static> TypesenseInsert<T> {
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum TypesenseInsertError {
 	#[error("failed to import documents: {0}")]
-	Import(#[from] Arc<typesense_codegen::apis::Error<ImportDocumentsError>>),
+	Import(#[from] Arc<typesense_rs::apis::Error<ImportDocumentsError>>),
 	#[error("insert document error")]
 	Insert(IndexDocumentError),
 	#[error("failed to serialize document: {0}")]
@@ -76,17 +74,18 @@ impl<T: TypesenseCollection + serde::Serialize + 'static> BatchOperation for Typ
 			.map_err(TypesenseInsertError::Serialize)?
 			.join("\n");
 
-		let r = typesense_codegen::apis::documents_api::import_documents(
-			&self.client,
-			T::COLLECTION_NAME,
-			body,
-			Some(ImportDocumentsImportDocumentsParametersParameter {
-				action: Some("upsert".into()),
-				..Default::default()
-			}),
-		)
-		.await
-		.map_err(Arc::new)?;
+		let r = self
+			.client
+			.documents_api()
+			.import_documents(
+				ImportDocumentsParams::builder()
+					.collection_name(T::COLLECTION_NAME.to_owned())
+					.action(models::IndexAction::Upsert)
+					.body(body)
+					.build(),
+			)
+			.await
+			.map_err(Arc::new)?;
 
 		#[derive(serde::Deserialize)]
 		#[serde(untagged)]
