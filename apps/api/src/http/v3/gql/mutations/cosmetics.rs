@@ -225,7 +225,11 @@ impl CosmeticPaintInput {
 
 		Ok(PaintData {
 			layers: vec![layer],
-			shadows: self.shadows.iter().map(|shadow| shadow.to_db()).collect(),
+			shadows: self
+				.shadows
+				.iter()
+				.map(|shadow| shadow.try_into())
+				.collect::<Result<_, _>>()?,
 		})
 	}
 }
@@ -241,20 +245,31 @@ pub struct CosmeticPaintStopInput {
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintShadowInput {
-	x_offset: f64,
-	y_offset: f64,
-	radius: f64,
+	x_offset: String,
+	y_offset: String,
+	radius: String,
 	color: i32,
 }
 
-impl CosmeticPaintShadowInput {
-	pub fn to_db(&self) -> PaintShadow {
-		PaintShadow {
-			color: self.color,
-			offset_x: self.x_offset,
-			offset_y: self.y_offset,
-			blur: self.radius,
-		}
+impl TryFrom<&CosmeticPaintShadowInput> for PaintShadow {
+	type Error = ApiError;
+
+	fn try_from(value: &CosmeticPaintShadowInput) -> Result<Self, Self::Error> {
+		Ok(PaintShadow {
+			color: value.color,
+			offset_x: value
+				.x_offset
+				.parse::<f64>()
+				.map_err(|e| ApiError::bad_request(ApiErrorCode::BadRequest, e.to_string()))?,
+			offset_y: value
+				.y_offset
+				.parse::<f64>()
+				.map_err(|e| ApiError::bad_request(ApiErrorCode::BadRequest, e.to_string()))?,
+			blur: value
+				.radius
+				.parse::<f64>()
+				.map_err(|e| ApiError::bad_request(ApiErrorCode::BadRequest, e.to_string()))?,
+		})
 	}
 }
 
