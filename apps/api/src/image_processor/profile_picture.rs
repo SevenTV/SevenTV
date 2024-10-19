@@ -67,6 +67,7 @@ pub async fn handle_success(
 					pending_profile_picture: &None,
 				},
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,

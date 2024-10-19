@@ -115,6 +115,7 @@ impl EmoteOps {
 							DbEmote {
 								deleted: true,
 								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
 							}
 						},
 						None,
@@ -225,6 +226,7 @@ impl EmoteOps {
 							#[query(optional)]
 							tags: params.tags.as_ref(),
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					FindOneAndUpdateOptions::builder()
@@ -345,6 +347,7 @@ impl EmoteOps {
 								at: chrono::Utc::now(),
 							},
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					None,

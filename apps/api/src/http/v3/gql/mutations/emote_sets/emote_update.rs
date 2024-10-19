@@ -68,6 +68,7 @@ pub async fn emote_update(
 					},
 					emotes_changed_since_reindex: true,
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				},
 			},
 			FindOneAndUpdateOptions::builder()

@@ -53,7 +53,7 @@ scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.gi
 humantime-serde = "1"
 bytes = "1.6.0"
 serde-enum-str = "0.4.0"
-typesense-rs = { version = "27.0.0", features = ["bon"] }
+typesense-rs = { version = "27.0.1", features = ["bon"] }
 itertools = "0.13"
 const_format = "0.2"
 typed-builder = "0.20.0"

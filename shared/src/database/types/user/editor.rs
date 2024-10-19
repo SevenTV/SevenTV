@@ -38,7 +38,6 @@ impl std::str::FromStr for UserEditorId {
 #[mongo(index(fields("_id.user_id" = 1, "_id.editor_id" = 1)))]
 #[mongo(index(fields("_id.editor_id" = 1, "_id.user_id" = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::user::editor::UserEditor")]
 #[serde(deny_unknown_fields)]
 pub struct UserEditor {

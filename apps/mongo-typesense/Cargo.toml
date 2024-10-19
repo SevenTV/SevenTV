@@ -19,10 +19,11 @@ tracing = "0.1"
 anyhow = "1.0"
 futures = "0.3"
 bytes = "1.0"
-typesense-rs = { version = "27.0.0", features = ["bon"] }
+typesense-rs = { version = "27.0.1", features = ["bon"] }
 tokio-util = "0.7"
 chrono = "0.4"
 const_format = "0.2"
 clickhouse = { version = "0.13.0", features = ["time", "uuid", "rustls-tls"] }
 rustls = { version = "0.23", features = ["aws-lc-rs"] }
 time = { version = "0.3", features = ["serde"] }
+rand = "0.8"

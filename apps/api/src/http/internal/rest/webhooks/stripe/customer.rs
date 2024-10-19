@@ -41,6 +41,8 @@ pub async fn created(
 			#[query(set)]
 			User {
 				stripe_customer_id: Some(CustomerId::from(customer.id)),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,

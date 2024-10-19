@@ -3216,6 +3216,7 @@ dependencies = [
  "fnv",
  "futures",
  "mongodb",
+ "rand 0.8.5",
  "rustls 0.23.14",
  "scuffle-foundations",
  "serde",
@@ -6122,9 +6123,9 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 
 [[package]]
 name = "typesense-rs"
-version = "27.0.0"
+version = "27.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05df03741d501a196058388406204d53ba6ebdae493af9501a1675ba87b2aa79"
+checksum = "0e93f7878b7f80d4d0c90ed515e82f418c9ed6366b29c143ebd057801637ecda"
 dependencies = [
  "async-trait",
  "bon",

@@ -523,6 +523,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 					#[query(set)]
 					mongo::User {
 						updated_at: now,
+						search_updated_at: &None,
 					}
 				},
 				true,
@@ -542,6 +543,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 						#[query(set)]
 						mongo::User {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					false,
@@ -559,6 +561,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 						#[query(set)]
 						mongo::Role {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					false,
@@ -577,6 +580,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 						#[query(set)]
 						mongo::SpecialEvent {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					false,
@@ -592,6 +596,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 						#[query(set)]
 						mongo::User {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					true,
@@ -622,6 +627,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 							#[query(set)]
 							mongo::Subscription {
 								updated_at: now,
+								search_updated_at: &None,
 							}
 						},
 						false,
@@ -644,6 +650,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 							#[query(set)]
 							mongo::SubscriptionProduct {
 								updated_at: now,
+								search_updated_at: &None,
 							}
 						},
 						false,
@@ -664,6 +671,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 							#[query(set)]
 							mongo::Product {
 								updated_at: now,
+								search_updated_at: &None,
 							}
 						},
 						false,
@@ -991,6 +999,7 @@ impl SupportedMongoCollection for mongo::Role {
 					#[query(set)]
 					mongo::User {
 						updated_at: now,
+						search_updated_at: &None,
 					}
 				},
 				true,
@@ -1145,6 +1154,7 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 						#[query(set)]
 						mongo::User {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					true,
@@ -1165,6 +1175,7 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 						#[query(set)]
 						mongo::EmoteSet {
 							updated_at: now,
+							search_updated_at: &None,
 							#[query(flatten)]
 							origin_config: mongo::EmoteSetOriginConfig {
 								needs_resync: false,

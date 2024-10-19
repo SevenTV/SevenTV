@@ -56,7 +56,7 @@ itertools = "0.13"
 mongodb = "3.0"
 bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
 clickhouse = "0.13.0"
-typesense-rs = { version = "27.0.0", features = ["bon"] }
+typesense-rs = { version = "27.0.1", features = ["bon"] }
 
 tower-http = { version = "0.6.1", features = ["trace", "cors", "request-id"]}
 axum = "0.7"

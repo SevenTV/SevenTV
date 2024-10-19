@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use rand::Rng;
 use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::context::Context;
 use scuffle_foundations::settings::cli::Matches;
@@ -57,10 +58,29 @@ async fn main(settings: Matches<Config>) -> anyhow::Result<()> {
 	tokio::spawn({
 		let global = global.clone();
 		async move {
-			let mut interval = tokio::time::interval(std::time::Duration::from_secs(2));
+			let mut last_requests = global.request_count();
+
+			fn jitter() -> std::time::Duration {
+				let mut rng = rand::thread_rng();
+				let secs = rng.gen_range(0..10);
+				std::time::Duration::from_secs(secs)
+			}
+
 			loop {
-				interval.tick().await;
-				global.log_stats().await;
+				tokio::time::sleep(std::time::Duration::from_secs(60) + jitter()).await;
+				if !global.wait_healthy().await {
+					continue;
+				}
+
+				let new_requests = global.request_count();
+				let delta = new_requests - last_requests;
+				last_requests = new_requests;
+
+				// We are likely not busy processing requests so we should attempt to check if
+				// any objects are not correctly indexed
+				if delta < 1000 {
+					global.reindex().await;
+				}
 			}
 		}
 	});

@@ -202,7 +202,7 @@ async fn setup(global: &Arc<Global>, stream: async_nats::jetstream::stream::Stre
 							);
 						}
 					),*
-					crate::types::mongo::UserProfilePicture::COLLECTION_NAME => {
+					crate::types::mongo::UserProfilePicture::COLLECTION_NAME | crate::types::mongo::UserSession::COLLECTION_NAME => {
 						message.ack_with(AckKind::Term).await.ok();
 					}
 					_ => {

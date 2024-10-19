@@ -7,7 +7,7 @@ use itertools::Itertools;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
-use shared::database::emote::{Emote, EmoteId, EmoteMerged};
+use shared::database::emote::{Emote, EmoteId};
 use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
@@ -156,7 +156,7 @@ impl Loader for EmoteByUserIdLoader {
 					owner_id: keys,
 					deleted: false,
 					#[query(serde)]
-					merged: None::<EmoteMerged>,
+					merged: &None,
 				}
 			})
 			.into_future()

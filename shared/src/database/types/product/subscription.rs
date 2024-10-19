@@ -40,6 +40,7 @@ impl FromStr for SubscriptionId {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscriptions")]
 #[mongo(index(fields("_id.user_id" = 1, "_id.product_id" = 1)))]
+#[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(search = "crate::typesense::types::product::subscription::Subscription")]
 #[serde(deny_unknown_fields)]
 pub struct Subscription {
@@ -106,7 +107,6 @@ impl From<stripe::SubscriptionId> for ProviderSubscriptionId {
 #[mongo(index(fields(subscription_id = 1)))]
 #[mongo(index(fields(product_ids = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::product::subscription::SubscriptionPeriod")]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionPeriod {

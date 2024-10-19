@@ -156,6 +156,7 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 							#[query(serde)]
 							scores,
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					false,

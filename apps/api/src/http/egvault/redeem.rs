@@ -147,6 +147,11 @@ pub async fn redeem(
 							RedeemCode {
 								remaining_uses: -1,
 							},
+							#[query(set)]
+							RedeemCode {
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
 						},
 						None,
 					)

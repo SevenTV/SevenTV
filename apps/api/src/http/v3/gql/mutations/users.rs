@@ -117,6 +117,7 @@ impl UserOps {
 								active_emote_set_id: data.emote_set_id.map(|id| id.id()),
 							},
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						},
 						#[query(pull)]
 						update_pull,
@@ -333,6 +334,7 @@ impl UserOps {
 								#[query(serde)]
 								permissions,
 								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
 							},
 							#[query(set_on_insert)]
 							DbUserEditor {
@@ -342,7 +344,6 @@ impl UserOps {
 								notes: None,
 								added_at: now,
 								added_by_id: authed_user.id,
-								search_updated_at: None,
 							}
 						},
 						FindOneAndUpdateOptions::builder()
@@ -484,7 +485,9 @@ impl UserOps {
 									#[query(flatten)]
 									style: UserStyle {
 										active_paint_id: update.id.id(),
-									}
+									},
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
 								}
 							},
 						)
@@ -553,7 +556,9 @@ impl UserOps {
 									#[query(flatten)]
 									style: UserStyle {
 										active_badge_id: update.id.id(),
-									}
+									},
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
 								},
 							},
 						)

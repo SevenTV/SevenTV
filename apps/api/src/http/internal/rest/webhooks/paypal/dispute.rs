@@ -36,6 +36,7 @@ pub async fn updated(
 				#[query(serde)]
 				disputed: Some(disputed),
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,

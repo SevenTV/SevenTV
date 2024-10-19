@@ -399,7 +399,7 @@ impl EmotesQuery {
 	async fn emotes(
 		&self,
 		ctx: &Context<'_>,
-		query: String,
+		#[graphql(validator(max_length = 100))] query: String,
 		#[graphql(validator(maximum = 100))] page: Option<u32>,
 		#[graphql(validator(maximum = 100))] limit: Option<u32>,
 		filter: Option<EmoteSearchFilter>,

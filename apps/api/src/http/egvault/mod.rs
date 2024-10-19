@@ -198,6 +198,7 @@ async fn find_or_create_customer(
 				User {
 					stripe_customer_id: &id,
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				}
 			},
 		)

@@ -218,15 +218,15 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 					Subscription {
 						#[query(serde)]
 						state,
-						ended_at: None::<chrono::DateTime<chrono::Utc>>,
+						ended_at: &None,
 						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
 					},
 					#[query(set_on_insert)]
 					Subscription {
 						#[query(rename = "_id", serde)]
 						id: subscription_id,
 						created_at: chrono::Utc::now(),
-						search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
 					}
 				},
 			)
@@ -256,13 +256,13 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 						state: SubscriptionState::Ended,
 						ended_at: Some(sub_age.expected_end),
 						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
 					},
 					#[query(set_on_insert)]
 					Subscription {
 						#[query(rename = "_id", serde)]
 						id: subscription_id,
 						created_at: chrono::Utc::now(),
-						search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
 					}
 				},
 			)

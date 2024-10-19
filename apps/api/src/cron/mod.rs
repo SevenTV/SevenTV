@@ -84,6 +84,7 @@ async fn fetch_job(global: &Arc<Global>, id: Id) -> Result<Option<CronJob>, mong
 					held_until: now + chrono::Duration::minutes(1),
 					updated_at: now,
 					currently_running_by: id,
+					search_updated_at: &None,
 				}
 			},
 		)
@@ -111,6 +112,7 @@ async fn lease_job(global: &Arc<Global>, lease_id: Id, cron_job_id: CronJobId) -
 					CronJob {
 						held_until: now + chrono::Duration::minutes(1),
 						updated_at: now,
+						search_updated_at: &None,
 					}
 				},
 			)
@@ -166,11 +168,12 @@ async fn complete_job(
 			update::update! {
 				#[query(set)]
 				CronJob {
-					currently_running_by: None::<Id>,
+					currently_running_by: &None,
 					next_run,
 					last_run: Some(now),
 					held_until: now,
 					updated_at: now,
+					search_updated_at: &None,
 				}
 			},
 		)
@@ -185,6 +188,9 @@ async fn free_job(
 	cron_job_id: CronJobId,
 ) -> Result<(), mongodb::error::Error> {
 	tracing::info!("freeing job");
+
+	let now = chrono::Utc::now();
+
 	CronJob::collection(&global.db)
 		.find_one_and_update(
 			filter::filter! {
@@ -196,10 +202,11 @@ async fn free_job(
 			update::update! {
 				#[query(set)]
 				CronJob {
-					next_run: chrono::Utc::now() + chrono::Duration::minutes(1),
-					held_until: chrono::Utc::now(),
-					updated_at: chrono::Utc::now(),
-					currently_running_by: None::<Id>,
+					next_run: now + chrono::Duration::minutes(1),
+					held_until: now,
+					updated_at: now,
+					search_updated_at: &None,
+					currently_running_by: &None,
 				}
 			},
 		)

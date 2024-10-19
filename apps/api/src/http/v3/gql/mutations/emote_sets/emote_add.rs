@@ -118,7 +118,7 @@ pub async fn emote_add(
 								.permissions
 								.emote_moderation_request_priority
 								.unwrap_or_default(),
-							search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
+							search_updated_at: &None,
 							updated_at: chrono::Utc::now(),
 						},
 					},
@@ -194,6 +194,7 @@ pub async fn emote_add(
 		EmoteSet {
 			emotes_changed_since_reindex: true,
 			updated_at: chrono::Utc::now(),
+			search_updated_at: &None,
 		},
 	});
 

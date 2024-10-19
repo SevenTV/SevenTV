@@ -33,7 +33,6 @@ pub type UserId = Id<User>;
 #[mongo(index(fields("style.active_emote_set_id" = 1)))]
 #[mongo(index(fields("paypal_sub_id" = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::user::User")]
 #[serde(deny_unknown_fields)]
 pub struct User {

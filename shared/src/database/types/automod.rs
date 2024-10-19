@@ -8,7 +8,6 @@ pub type AutomodRuleId = Id<AutomodRule>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "automod_rules")]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::automod::AutomodRule")]
 #[serde(deny_unknown_fields)]
 pub struct AutomodRule {

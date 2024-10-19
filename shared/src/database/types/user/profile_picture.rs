@@ -9,7 +9,6 @@ pub type UserProfilePictureId = Id<UserProfilePicture>;
 #[mongo(collection_name = "user_profile_pictures")]
 #[mongo(index(fields(user_id = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[serde(deny_unknown_fields)]
 pub struct UserProfilePicture {
 	#[mongo(id)]

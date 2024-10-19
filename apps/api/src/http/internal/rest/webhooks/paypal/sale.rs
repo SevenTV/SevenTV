@@ -153,6 +153,7 @@ pub async fn completed(
 					User {
 						stripe_customer_id: Some(&customer_id),
 						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
 					}
 				},
 				None,
@@ -324,6 +325,7 @@ pub async fn refunded(
 			Invoice {
 				refunded: true,
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,

@@ -8,7 +8,6 @@ pub type PaintId = Id<Paint>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq)]
 #[mongo(collection_name = "paints")]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = 1)))]
 #[mongo(search = "crate::typesense::types::paint::Paint")]
 #[serde(deny_unknown_fields)]
 pub struct Paint {

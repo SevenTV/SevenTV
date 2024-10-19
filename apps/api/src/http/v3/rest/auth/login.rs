@@ -173,6 +173,7 @@ pub async fn handle_callback(
 						updated_at: chrono::Utc::now(),
 					},
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				}
 			},
 			None,

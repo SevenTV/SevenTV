@@ -240,6 +240,7 @@ pub async fn updated(
 				items: items,
 				failed: false,
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,
@@ -554,6 +555,7 @@ pub async fn payment_failed(
 			Invoice {
 				failed: true,
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,

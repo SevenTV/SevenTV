@@ -9,7 +9,6 @@ pub type UserBanTemplateId = Id<UserBanTemplate>;
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "user_ban_templates")]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::user::ban_template::UserBanTemplate")]
 #[serde(deny_unknown_fields)]
 pub struct UserBanTemplate {

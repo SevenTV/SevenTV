@@ -206,6 +206,8 @@ impl Global {
 			tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 		}
 
+		
+
 		self.semaphore.clone().acquire_owned().await.ok()
 	}
 
@@ -213,23 +215,69 @@ impl Global {
 		self.request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 	}
 
-	pub async fn log_stats(&self) {
-		let state = self.health_state.lock().await;
-		let Some(last_check) = state.last_check else {
-			return;
-		};
+	pub fn request_count(&self) -> usize {
+		self.request_count.load(std::sync::atomic::Ordering::Relaxed)
+	}
 
-		let elapsed = last_check.elapsed();
+	pub async fn reindex(&self) {
+		macro_rules! reindex_collection {
+			($($collection:ty),*$(,)?) => {
+				{
+					[
+						$(
+							shared::database::updater::MongoReq::update::<$collection>(
+								shared::database::queries::filter::filter! {
+									$collection {
+										search_updated_at: &None,
+									}
+								},
+								shared::database::queries::update::update! {
+									#[query(set)]
+									$collection {
+										updated_at: chrono::Utc::now(),
+									}
+								},
+								true,
+							),
+						)*
+					]
+				}
+			}
+		}
 
-		tracing::info!(
-			nats_healthy = state.nats_healthy,
-			db_healthy = state.db_healthy,
-			typesense_healthy = state.typesense_healthy,
-			last_check = elapsed.as_secs_f64(),
-			inflight = self.config.triggers.typesense_concurrency.max(1) - self.semaphore.available_permits(),
-			requests = self.request_count.swap(0, std::sync::atomic::Ordering::Relaxed),
-			"stats",
-		);
+		for result in self
+			.updater
+			.bulk(reindex_collection! {
+				crate::types::mongo::RedeemCode,
+				crate::types::mongo::SpecialEvent,
+				crate::types::mongo::Invoice,
+				crate::types::mongo::Product,
+				crate::types::mongo::SubscriptionProduct,
+				crate::types::mongo::SubscriptionPeriod,
+				crate::types::mongo::UserBanTemplate,
+				crate::types::mongo::UserBan,
+				crate::types::mongo::UserEditor,
+				crate::types::mongo::User,
+				crate::types::mongo::UserRelation,
+				crate::types::mongo::StoredEvent,
+				crate::types::mongo::AutomodRule,
+				crate::types::mongo::Badge,
+				crate::types::mongo::EmoteModerationRequest,
+				crate::types::mongo::EmoteSet,
+				crate::types::mongo::Emote,
+				crate::types::mongo::Page,
+				crate::types::mongo::Paint,
+				crate::types::mongo::Role,
+				crate::types::mongo::Ticket,
+				crate::types::mongo::TicketMessage,
+				crate::types::mongo::Subscription,
+			})
+			.await
+		{
+			if let Err(e) = result {
+				tracing::error!("failed to reindex: {e}");
+			}
+		}
 	}
 }
 

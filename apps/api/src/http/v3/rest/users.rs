@@ -305,6 +305,7 @@ pub async fn upload_user_profile_picture(
 							active_profile_picture: Some(profile_picture_id),
 						},
 						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
 					}
 				},
 			)

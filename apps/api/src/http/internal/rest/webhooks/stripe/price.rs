@@ -55,6 +55,7 @@ pub async fn updated(
 				#[query(serde)]
 				currency_prices: currency_prices.clone(),
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,
@@ -80,6 +81,7 @@ pub async fn updated(
 					currency_prices: currency_prices,
 				},
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,
@@ -118,6 +120,7 @@ pub async fn deleted(
 			#[query(set)]
 			SubscriptionProduct {
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,
