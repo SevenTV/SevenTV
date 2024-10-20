@@ -27,9 +27,7 @@ impl Cookies {
 	}
 
 	pub fn remove(&self, global: &Arc<Global>, name: impl Into<Cookie<'static>>) {
-		let mut cookie: Cookie = name.into();
-		cookie.set_domain(format!(".{}", global.config.api.domain));
-		cookie.set_path("/");
+		let cookie = new_cookie(global, name).build();
 		self.0.lock().unwrap().remove(cookie);
 	}
 }
