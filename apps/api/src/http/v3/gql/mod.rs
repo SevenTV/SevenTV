@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{extensions, EmptySubscription, Schema};
 use axum::response::{self, IntoResponse};
-use axum::routing::{get, post};
+use axum::routing::{get, any};
 use axum::{Extension, Router};
 use guards::RateLimitResponseStore;
 
@@ -16,7 +16,7 @@ mod types;
 
 pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
 	Router::new()
-		.route("/", post(graphql_handler))
+		.route("/", any(graphql_handler))
 		.route("/playground", get(playground))
 		.layer(Extension(schema(Some(Arc::clone(global)))))
 }
