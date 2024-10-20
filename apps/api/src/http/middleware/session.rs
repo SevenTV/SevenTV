@@ -16,7 +16,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::{RateLimitRequest, RateLimitResponse};
 
-pub const AUTH_COOKIE: &str = "seventv-new-auth";
+pub const AUTH_COOKIE: &str = "seventv-auth";
 
 #[derive(Debug, Clone)]
 pub struct Session(Arc<AuthState>, std::net::IpAddr);
