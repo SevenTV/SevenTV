@@ -30,6 +30,7 @@ use super::socket::Socket;
 use crate::global::{AtomicTicket, Global};
 use crate::http::v3::error::ConnectionError;
 use crate::http::v3::topic_map::Subscription;
+use crate::subscription::event_topic::EventScope;
 use crate::subscription::{EventTopic, Payload};
 use crate::utils::jitter;
 
@@ -422,7 +423,7 @@ impl Connection {
 			}
 		}
 
-		let scope = match subscribe.condition.clone().try_into() {
+		let scope: EventScope = match subscribe.condition.clone().try_into() {
 			Ok(scope) => scope,
 			Err(()) => {
 				self.send_error(
@@ -435,8 +436,19 @@ impl Connection {
 			}
 		};
 
-		let topic = EventTopic::new(subscribe.ty, scope);
+		if let SubscribeCondition::Channel { .. } = subscribe.condition {
+			let topic = EventTopic::new(EventType::UserPresence, scope.clone());
+			let topic_key = topic.as_key();
 
+			if !self.topics.contains_key(&topic_key) {
+				self.topics.insert(
+					topic_key,
+					Subscription::new(self.global.subscription_manager.subscribe(topic).await?),
+				);
+			}
+		}
+
+		let topic = EventTopic::new(subscribe.ty, scope);
 		let topic_key = topic.as_key();
 
 		if self.topics.contains_key(&topic_key) {
