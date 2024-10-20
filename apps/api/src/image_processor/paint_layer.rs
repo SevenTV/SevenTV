@@ -30,7 +30,6 @@ pub async fn handle_success(
 					data: PaintData {
 						#[query(flatten)]
 						layers: PaintLayer {
-							#[query(rename = "_id")]
 							id: layer_id,
 						}
 					}
