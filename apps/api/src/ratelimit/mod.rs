@@ -25,7 +25,7 @@ use crate::http::middleware::session::Session;
 /// - User: The user id of the user
 /// - UserSession: The user session id of the user
 pub struct RateLimiter {
-	redis: fred::clients::RedisClient,
+	redis: fred::clients::RedisPool,
 	ratelimit: fred::types::Function,
 }
 
@@ -140,8 +140,8 @@ impl RateLimitResponse {
 const LUA_SCRIPT: &str = include_str!("limit.lua");
 
 impl RateLimiter {
-	pub async fn new(redis: fred::clients::RedisClient) -> anyhow::Result<Self> {
-		let lib = fred::types::Library::from_code(&redis, LUA_SCRIPT).await?;
+	pub async fn new(redis: fred::clients::RedisPool) -> anyhow::Result<Self> {
+		let lib = fred::types::Library::from_code(redis.next(), LUA_SCRIPT).await?;
 
 		Ok(Self {
 			ratelimit: lib

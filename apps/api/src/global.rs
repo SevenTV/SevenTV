@@ -49,7 +49,7 @@ use crate::stripe_client;
 
 pub struct Global {
 	pub nats: async_nats::Client,
-	pub redis: fred::clients::RedisClient,
+	pub redis: fred::clients::RedisPool,
 	pub rate_limiter: RateLimiter,
 	geoip: Option<GeoIpResolver>,
 	pub jetstream: async_nats::jetstream::Context,
@@ -194,7 +194,7 @@ impl Global {
 				db.clone(),
 				BatcherConfig {
 					name: "MongoUpdater".to_string(),
-					concurrency: 50,
+					concurrency: 500,
 					max_batch_size: 5_000,
 					sleep_duration: std::time::Duration::from_millis(300),
 				},

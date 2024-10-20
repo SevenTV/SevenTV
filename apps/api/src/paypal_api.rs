@@ -2,10 +2,8 @@ use std::sync::Arc;
 
 use fred::prelude::KeysInterface;
 
-use crate::{
-	global::Global,
-	http::error::{ApiError, ApiErrorCode},
-};
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 #[derive(serde::Deserialize)]
 struct PaypalTokenResponse {
@@ -52,7 +50,7 @@ pub async fn api_key(global: &Arc<Global>) -> Result<String, ApiError> {
 
 			global
 				.redis
-				.set(
+				.set::<(), _, _>(
 					"paypal_api_key",
 					&token.access_token,
 					Some(fred::types::Expiration::EX(ex)),

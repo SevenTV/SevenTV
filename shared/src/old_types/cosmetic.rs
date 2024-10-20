@@ -311,8 +311,9 @@ impl CosmeticBadgeModel {
 	pub fn from_db(mut value: Badge, cdn_base_url: &url::Url) -> Self {
 		let id = value.id.cast();
 
-		// This is a temporary fix, to only return files below 3x resolution because the extension has a bug
-		value.image_set.outputs = value.image_set.outputs.into_iter().filter(|i| i.scale == 1).collect();
+		// This is a temporary fix, to only return files below 3x resolution because the
+		// extension has a bug
+		value.image_set.outputs.retain(|i| i.scale < 3);
 
 		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url);
 

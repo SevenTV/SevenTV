@@ -1,8 +1,8 @@
 use anyhow::Context;
-use fred::prelude::{ClientLike, RedisClient};
+use fred::prelude::{ClientLike, RedisPool};
 use fred::types::{RedisConfig, Server, ServerConfig, TracingConfig};
 
-pub async fn setup_redis(config: &crate::config::RedisConfig) -> anyhow::Result<RedisClient> {
+pub async fn setup_redis(config: &crate::config::RedisConfig) -> anyhow::Result<RedisPool> {
 	let server_config = match &config.sentinel_service_name {
 		Some(sentinel_service_name) => ServerConfig::Sentinel {
 			hosts: config
@@ -27,7 +27,7 @@ pub async fn setup_redis(config: &crate::config::RedisConfig) -> anyhow::Result<
 		},
 	};
 
-	let config = RedisConfig {
+	let cfg = RedisConfig {
 		server: server_config,
 		database: Some(config.database),
 		fail_fast: true,
@@ -37,7 +37,7 @@ pub async fn setup_redis(config: &crate::config::RedisConfig) -> anyhow::Result<
 		..Default::default()
 	};
 
-	let client = RedisClient::new(config, None, None, None);
+	let client = RedisPool::new(cfg, None, None, None, config.max_connections).context("pool")?;
 
 	client.init().await?;
 

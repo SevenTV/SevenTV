@@ -121,7 +121,7 @@ impl Global {
 				database.clone(),
 				BatcherConfig {
 					name: "MongoUpdater".to_string(),
-					concurrency: 50,
+					concurrency: 500,
 					max_batch_size: 5_000,
 					sleep_duration: std::time::Duration::from_millis(300),
 				},

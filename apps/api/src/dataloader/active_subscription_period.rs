@@ -7,6 +7,7 @@ use mongodb::options::ReadPreference;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use shared::database::loader::dataloader::BatchLoad;
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::filter;
 use shared::database::user::UserId;
@@ -23,9 +24,9 @@ impl SubscriptionPeriodsByUserIdLoader {
 			db,
 			BatcherConfig {
 				name: "SubscriptionPeriodsByUserIdLoader".to_string(),
-				concurrency: 50,
-				max_batch_size: 1_000,
-				sleep_duration: std::time::Duration::from_millis(5),
+				concurrency: 500,
+				max_batch_size: 1000,
+				sleep_duration: std::time::Duration::from_millis(20),
 			},
 		)
 	}
@@ -47,16 +48,19 @@ impl Loader for SubscriptionPeriodsByUserIdLoader {
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
+		let _batch = BatchLoad::new(&self.config.name, keys.len());
+
 		let results: Vec<_> = SubscriptionPeriod::collection(&self.db)
 			.find(filter::filter! {
 				SubscriptionPeriod {
 					#[query(flatten)]
 					subscription_id: SubscriptionId {
 						#[query(selector = "in")]
-						user_id: keys,
+						user_id: &keys,
 					},
 				}
 			})
+			.batch_size(1000)
 			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
@@ -80,9 +84,9 @@ impl ActiveSubscriptionPeriodByUserIdLoader {
 			db,
 			BatcherConfig {
 				name: "ActiveSubscriptionPeriodByUserIdLoader".to_string(),
-				concurrency: 50,
-				max_batch_size: 1_000,
-				sleep_duration: std::time::Duration::from_millis(5),
+				concurrency: 500,
+				max_batch_size: 1000,
+				sleep_duration: std::time::Duration::from_millis(20),
 			},
 		)
 	}
@@ -104,6 +108,8 @@ impl Loader for ActiveSubscriptionPeriodByUserIdLoader {
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
+		let _batch = BatchLoad::new(&self.config.name, keys.len());
+
 		let results: Vec<_> = SubscriptionPeriod::collection(&self.db)
 			.find(filter::filter! {
 				SubscriptionPeriod {
@@ -118,6 +124,7 @@ impl Loader for ActiveSubscriptionPeriodByUserIdLoader {
 					end: chrono::Utc::now(),
 				}
 			})
+			.batch_size(1000)
 			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())

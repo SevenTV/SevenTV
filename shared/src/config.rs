@@ -43,6 +43,9 @@ pub struct RedisConfig {
 	/// Redis Sentinel configuration
 	#[settings(default = None)]
 	pub sentinel_service_name: Option<String>,
+	#[settings(default = 10)]
+	/// The number of redis connections to pool
+	pub pool_size: usize,
 }
 
 #[auto_settings]

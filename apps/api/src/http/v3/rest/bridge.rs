@@ -22,6 +22,12 @@ async fn event_api(
 	State(global): State<Arc<Global>>,
 	Json(body): Json<BridgeBody>,
 ) -> Result<Json<Vec<Dispatch>>, ApiError> {
+	if body.identifiers.len() > 100 {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "too many identifiers"));
+	} else if body.identifiers.is_empty() {
+		return Ok(Json(Vec::new()));
+	}
+
 	let users = global
 		.user_by_platform_username_loader
 		.load_many(body.identifiers.iter().map(|i| (Platform::Twitch, i.username().to_owned())))

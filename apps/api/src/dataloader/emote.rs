@@ -9,6 +9,7 @@ use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput}
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::emote::{Emote, EmoteId};
+use shared::database::loader::dataloader::BatchLoad;
 use shared::database::queries::filter;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
@@ -126,9 +127,9 @@ impl EmoteByUserIdLoader {
 			db,
 			BatcherConfig {
 				name: "EmoteByUserIdLoader".to_string(),
-				concurrency: 50,
-				max_batch_size: 1_000,
-				sleep_duration: std::time::Duration::from_millis(5),
+				concurrency: 500,
+				max_batch_size: 1000,
+				sleep_duration: std::time::Duration::from_millis(20),
 			},
 		)
 	}
@@ -154,12 +155,13 @@ impl Loader for EmoteByUserIdLoader {
 			.find(filter::filter! {
 				Emote {
 					#[query(selector = "in")]
-					owner_id: keys,
+					owner_id: &keys,
 					deleted: false,
 					#[query(serde)]
 					merged: &None,
 				}
 			})
+			.batch_size(1000)
 			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
@@ -183,9 +185,9 @@ impl EmoteByIdLoader {
 			db,
 			BatcherConfig {
 				name: "EmoteByIdLoader".to_string(),
-				concurrency: 50,
-				max_batch_size: 1_000,
-				sleep_duration: std::time::Duration::from_millis(5),
+				concurrency: 500,
+				max_batch_size: 1000,
+				sleep_duration: std::time::Duration::from_millis(20),
 			},
 		)
 	}
@@ -205,13 +207,18 @@ impl Loader for EmoteByIdLoader {
 
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
+		let _batch = BatchLoad::new(&self.config.name, keys.len());
+
 		let results: Vec<Emote> = Emote::collection(&self.db)
 			.find(filter::filter! {
 				Emote {
 					#[query(rename = "_id", selector = "in")]
-					id: keys,
+					id: &keys,
 				}
 			})
+			.batch_size(1000)
 			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())

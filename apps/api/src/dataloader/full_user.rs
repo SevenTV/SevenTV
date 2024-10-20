@@ -3,9 +3,11 @@ use std::sync::{Arc, Weak};
 
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
+use shared::database::loader::dataloader::BatchLoad;
 use shared::database::role::permissions::{Permissions, PermissionsExt, UserPermission};
 use shared::database::role::{Role, RoleId};
 use shared::database::user::ban::ActiveBans;
@@ -268,9 +270,9 @@ impl UserComputedLoader {
 			global,
 			BatcherConfig {
 				name: "UserComputedLoader".to_string(),
-				concurrency: 50,
-				max_batch_size: 1_000,
-				sleep_duration: std::time::Duration::from_millis(5),
+				concurrency: 500,
+				max_batch_size: 1000,
+				sleep_duration: std::time::Duration::from_millis(20),
 			},
 		)
 	}
@@ -290,6 +292,10 @@ impl Loader for UserComputedLoader {
 
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
+		let _batch = BatchLoad::new(&self.config.name, keys.len());
+
 		let global = &self.global.upgrade().ok_or(())?;
 
 		let traverse = &EntitlementEdgeGraphTraverse {

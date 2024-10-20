@@ -19,7 +19,7 @@ impl<T: TypesenseCollection + serde::Serialize + 'static> TypesenseInsert<T> {
 			client,
 			BatcherConfig {
 				name: format!("TypesenseInsert<{}>", T::COLLECTION_NAME),
-				concurrency: 50,
+				concurrency: 500,
 				max_batch_size: 10_000,
 				sleep_duration: std::time::Duration::from_millis(100),
 			},

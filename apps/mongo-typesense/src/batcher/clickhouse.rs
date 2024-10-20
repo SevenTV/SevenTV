@@ -16,7 +16,7 @@ impl<T: ClickhouseCollection + serde::Serialize + 'static> ClickhouseInsert<T> {
 			client,
 			BatcherConfig {
 				name: format!("ClickhouseInsert<{}>", T::COLLECTION_NAME),
-				concurrency: 50,
+				concurrency: 500,
 				max_batch_size: 10_000,
 				sleep_duration: std::time::Duration::from_millis(100),
 			},

@@ -53,7 +53,7 @@ pin-project = "1"
 thiserror = "1"
 utoipa = { version = "4.2", features = ["repr"] }
 itertools = "0.13"
-mongodb = "3.0"
+mongodb = { version = "3.0", features = ["snappy-compression", "zlib-compression", "zstd-compression"] }
 bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
 clickhouse = "0.13.0"
 typesense-rs = { version = "27.0.1", features = ["bon"] }

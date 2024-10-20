@@ -14,12 +14,12 @@ mod global;
 mod http;
 mod image_processor;
 mod jwt;
+mod paypal_api;
 mod ratelimit;
 mod search;
 mod stripe_client;
 mod sub_refresh_job;
 mod transactions;
-mod paypal_api;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
