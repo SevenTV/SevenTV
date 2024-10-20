@@ -308,12 +308,8 @@ impl CosmeticBadgeModel {
 }
 
 impl CosmeticBadgeModel {
-	pub fn from_db(mut value: Badge, cdn_base_url: &url::Url) -> Self {
+	pub fn from_db(value: Badge, cdn_base_url: &url::Url) -> Self {
 		let id = value.id.cast();
-
-		// This is a temporary fix to only return 1x resolution because the
-		// extension has a bug
-		value.image_set.outputs.retain(|i| i.scale == 1);
 
 		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url);
 

@@ -312,7 +312,13 @@ impl ImageProcessor {
 		let req = self.make_request(
 			Some(self.make_input_upload(format!("badge/{id}/input.{{ext}}"), data)),
 			self.make_task(
-				self.make_output(format!("badge/{id}/{{scale}}x{{static}}.{{ext}}")),
+				image_processor::Output {
+					resize: Some(image_processor::output::Resize::Scaling(image_processor::Scaling {
+						base: Some(image_processor::scaling::Base::BaseHeight(18)),
+						scales: vec![1, 2, 3, 4],
+					})),
+					..self.make_output(format!("badge/{id}/{{scale}}x{{static}}.{{ext}}"))
+				},
 				self.make_events(
 					Subject::Badge(id),
 					[("badge_id".to_string(), id.to_string())].into_iter().collect(),
