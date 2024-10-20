@@ -17,6 +17,7 @@ pub mod stripe_errors;
 pub mod ticket;
 pub mod user;
 pub mod webhook_event;
+pub mod paypal_webhook_event;
 
 pub use macros::MongoCollection;
 pub use mongodb;
@@ -96,6 +97,7 @@ fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 		.chain(user::mongo_collections())
 		.chain(emote_moderation_request::mongo_collections())
 		.chain(webhook_event::mongo_collections())
+		.chain(paypal_webhook_event::mongo_collections())
 		.chain(cron_job::mongo_collections())
 }
 
