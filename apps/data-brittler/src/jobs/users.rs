@@ -166,7 +166,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 			})
 		}
 		(Some(types::UserAvatar::Pending { .. }), _) => None,
-		(_, Some(pfp_id)) if global.config.should_run_cosmetics() => {
+		(_, Some(pfp_id)) if global.config.should_run_cosmetics() && global.config.legacy_user_pfps.unwrap_or(true) => {
 			new_pfp_id = pfp_id.parse().unwrap();
 
 			let image_data = match tokio::fs::read(format!("local/cosmetics/{}:{}", user.id, pfp_id)).await {

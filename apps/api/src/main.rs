@@ -44,7 +44,7 @@ async fn main(settings: Matches<Config>) {
 		return;
 	}
 
-	tracing::info!("starting api");
+	tracing::info!("starting api with {:?}", settings.settings.runtime);
 
 	scuffle_foundations::telemetry::server::require_health_check();
 

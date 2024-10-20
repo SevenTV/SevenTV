@@ -38,6 +38,9 @@ pub struct Config {
 	/// Run users job
 	pub users: Option<bool>,
 
+	/// Copy over legacy user profile pictures
+	pub legacy_user_pfps: Option<bool>,
+
 	/// Run bans job
 	pub bans: Option<bool>,
 

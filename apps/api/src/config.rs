@@ -177,6 +177,6 @@ impl Bootstrap for Config {
 	}
 
 	fn runtime_mode(&self) -> RuntimeSettings {
-		self.runtime.clone()
+		RuntimeSettings::Steal { threads: 0, name: "".into() }
 	}
 }
