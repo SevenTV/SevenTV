@@ -27,4 +27,6 @@ ARG JEMALLOC_CONF="background_thread:true,tcache_max:4096,metadata_thp:always,di
 ENV _RJEM_MALLOC_CONF=${JEMALLOC_CONF} \
     MALLOC_CONF=${JEMALLOC_CONF}
 
+COPY ./local/GeoLite2-Country.mmdb .
+
 ENTRYPOINT ["/app/api"]

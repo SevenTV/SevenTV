@@ -38,6 +38,7 @@ pub async fn completed(
 	let metadata = session
 		.metadata
 		.as_ref()
+		.filter(|m| !m.is_empty())
 		.map(CheckoutSessionMetadata::from_stripe)
 		.transpose()
 		.map_err(|err| {
@@ -196,6 +197,7 @@ pub async fn expired(
 	let metadata = session
 		.metadata
 		.as_ref()
+		.filter(|m| !m.is_empty())
 		.map(CheckoutSessionMetadata::from_stripe)
 		.transpose()
 		.map_err(|err| {

@@ -116,15 +116,24 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 
 	let ip = &global.image_processor;
 
-	let new_pfp_id = UserProfilePictureId::new();
+	let mut new_pfp_id = UserProfilePictureId::new();
+
+	user.avatar_id = if let Some("") = user.avatar_id.as_deref() {
+		None
+	} else {
+		user.avatar_id
+	};
 
 	let active_profile_picture = match (user.avatar, user.avatar_id) {
 		(
 			Some(types::UserAvatar::Processed {
+				id,
 				input_file, image_files, ..
 			}),
 			_,
 		) => {
+			new_pfp_id = id.into();
+
 			let new = match image_set::Image::try_from(input_file.clone()) {
 				Ok(input_file) => input_file,
 				Err(e) => {
@@ -157,17 +166,23 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 			})
 		}
 		(Some(types::UserAvatar::Pending { .. }), _) => None,
-		(_, Some(pfp_id)) => {
-			let image_data = match tokio::fs::read(format!("local/pfp/{}:{}", user.id, pfp_id)).await {
+		(_, Some(pfp_id)) if global.config.should_run_cosmetics() => {
+			new_pfp_id = pfp_id.parse().unwrap();
+
+			let image_data = match tokio::fs::read(format!("local/cosmetics/{}:{}", user.id, pfp_id)).await {
 				Ok(data) => Some(bytes::Bytes::from(data)),
 				Err(e) => {
 					if let std::io::ErrorKind::NotFound = e.kind() {
 						let download_url = format!("https://cdn.7tv.app/pp/{}/{}", user.id, pfp_id);
 						match request_image(global, &download_url).await {
 							Ok(data) => Some(data),
-							Err(_) => None,
+							Err(err) => {
+								tracing::error!(error = ?err, "failed to download image: {download_url}");
+								None
+							},
 						}
 					} else {
+						tracing::error!(error = ?e, "failed to read image from disk");
 						None
 					}
 				}
@@ -192,6 +207,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 						let (tx, rx) = tokio::sync::mpsc::channel(10);
 						pending_tasks.push((PendingTask::UserProfilePicture(new_pfp_id), rx));
 						global.all_tasks.lock().await.insert(id.clone(), tx);
+						tracing::info!(task_id = %id, "started send image processor request");
 						Some(ImageSetInput::Pending {
 							task_id: id,
 							path: path.path,

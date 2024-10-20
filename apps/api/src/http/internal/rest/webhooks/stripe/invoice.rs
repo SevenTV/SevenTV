@@ -63,6 +63,7 @@ pub async fn created(
 	let metadata = invoice
 		.metadata
 		.as_ref()
+		.filter(|m| !m.is_empty())
 		.map(InvoiceMetadata::from_stripe)
 		.transpose()
 		.map_err(|err| {
@@ -267,6 +268,7 @@ pub async fn paid(
 	let metadata = invoice
 		.metadata
 		.as_ref()
+		.filter(|m| !m.is_empty())
 		.map(InvoiceMetadata::from_stripe)
 		.transpose()
 		.map_err(|err| {

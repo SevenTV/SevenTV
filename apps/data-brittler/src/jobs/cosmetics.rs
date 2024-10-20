@@ -140,6 +140,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 						let (tx, rx) = tokio::sync::mpsc::channel(10);
 						pending_tasks.push((PendingTask::Badge(badge_id), rx));
 						global.all_tasks.lock().await.insert(id.clone(), tx);
+						tracing::info!(task_id = %id, "started send image processor request");
 						ImageSetInput::Pending {
 							task_id: id,
 							path: path.path,
@@ -242,6 +243,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 								let (tx, rx) = tokio::sync::mpsc::channel(10);
 								pending_tasks.push((PendingTask::Paint(paint_id, layer_id), rx));
 								global.all_tasks.lock().await.insert(id.clone(), tx);
+								tracing::info!(task_id = %id, "started send image processor request");
 								ImageSetInput::Pending {
 									task_id: id,
 									path: path.path,

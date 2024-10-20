@@ -17,6 +17,7 @@ pub async fn created(
 	let Some(metadata) = customer
 		.metadata
 		.as_ref()
+		.filter(|m| !m.is_empty())
 		.map(CustomerMetadata::from_stripe)
 		.transpose()
 		.map_err(|err| {

@@ -29,7 +29,7 @@ pub enum UserAvatar {
 		pending_id: ObjectId,
 	},
 	Processed {
-		// id: ObjectId,
+		id: ObjectId,
 		input_file: ImageFile,
 		image_files: Vec<ImageFile>,
 	},
