@@ -69,6 +69,7 @@ impl ImageHost {
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/model.go#L52
 pub struct ImageFile {
 	pub name: String,
+	pub static_name: String,
 	pub width: u32,
 	pub height: u32,
 	pub frame_count: u32,
@@ -83,6 +84,7 @@ impl From<&Image> for ImageFile {
 		let name = name.split('/').last().unwrap_or(&name).to_string();
 
 		Self {
+			static_name: name.clone(),
 			name,
 			width: value.width as u32,
 			height: value.height as u32,
