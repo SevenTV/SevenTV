@@ -19,7 +19,53 @@ use crate::http::v3::emote_set_loader::load_emote_set;
 pub struct Docs;
 
 pub fn routes() -> Router<Arc<Global>> {
-	Router::new().route("/:id", get(get_emote_set_by_id))
+	Router::new()
+		.route("/global", get(get_global_emote_set))
+		.route("/:id", get(get_emote_set_by_id))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v3/emote-sets/global",
+    tag = "emote-sets",
+    responses(
+        (status = 200, description = "Emote Set", body = EmoteSetModel, content_type = "application/json"),
+        // (status = 404, description = "Emote Set Not Found", body = ApiError)
+    ),
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_global_emote_set(
+	State(global): State<Arc<Global>>,
+	Extension(session): Extension<Session>,
+) -> Result<impl IntoResponse, ApiError> {
+	let config = global
+		.global_config_loader
+		.load(())
+		.await
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load global config"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "global config not found"))?;
+
+	let mut emote_set = global
+		.emote_set_by_id_loader
+		.load(config.emote_set_id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load global emote set"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "global emote set not found"))?;
+
+	let owner = match emote_set.owner_id {
+		Some(owner_id) => global
+			.user_loader
+			.load_fast(&global, owner_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.and_then(|owner| session.can_view(&owner).then_some(owner))
+			.map(|owner| UserPartialModel::from_db(owner, None, None, &global.config.api.cdn_origin)),
+		None => None,
+	};
+
+	let emotes = load_emote_set(&global, std::mem::take(&mut emote_set.emotes), &session).await?;
+
+	Ok(Json(EmoteSetModel::from_db(emote_set, emotes, owner)))
 }
 
 #[utoipa::path(
