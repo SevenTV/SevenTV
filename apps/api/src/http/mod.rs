@@ -15,7 +15,7 @@ use shared::http::ip::IpMiddleware;
 use tower::ServiceBuilder;
 use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
 use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultOnFailure, TraceLayer};
 use tracing::Span;
 
 use self::error::ApiError;
@@ -108,6 +108,7 @@ fn routes(global: Arc<Global>) -> Router {
 
 							span
 						})
+						.on_failure(DefaultOnFailure::new().level(tracing::Level::DEBUG))
 						.on_response(|res: &Response, _, span: &Span| {
 							span.record("response.status_code", res.status().as_u16());
 						}),
