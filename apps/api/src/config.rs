@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
-use scuffle_foundations::telemetry::settings::TelemetrySettings;
+use scuffle_foundations::telemetry::settings::{OpentelemetrySettingsSampler, TelemetrySettings};
 use shared::config::{
 	ClickhouseConfig, DatabaseConfig, ImageProcessorConfig, IncomingRequestConfig, NatsConfig, RedisConfig, TypesenseConfig,
 };
@@ -173,10 +173,14 @@ impl Bootstrap for Config {
 	type Settings = Self;
 
 	fn telemetry_config(&self) -> Option<TelemetrySettings> {
-		Some(self.telemetry.clone())
+		let mut telementry = self.telemetry.clone();
+
+		telementry.opentelemetry.sampler = OpentelemetrySettingsSampler::RatioSimple(0.01);
+
+		Some(telementry)
 	}
 
 	fn runtime_mode(&self) -> RuntimeSettings {
-		RuntimeSettings::Steal { threads: 0, name: "".into() }
+		self.runtime.clone()
 	}
 }

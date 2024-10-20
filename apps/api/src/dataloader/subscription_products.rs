@@ -2,6 +2,7 @@ use std::future::IntoFuture;
 
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
+use mongodb::options::ReadPreference;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::product::SubscriptionProduct;
@@ -45,6 +46,7 @@ impl Loader for SubscriptionProductsLoader {
 			.find(filter::filter! {
 				SubscriptionProduct {}
 			})
+			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await

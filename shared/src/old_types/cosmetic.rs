@@ -86,7 +86,7 @@ impl CosmeticPaintModel {
 			id: value.id,
 			name: value.name,
 			color: first_layer.and_then(|l| match l.ty {
-				PaintLayerType::SingleColor(c) => Some(c as i32),
+				PaintLayerType::SingleColor(c) => Some(c),
 				_ => None,
 			}),
 			gradients: vec![],
@@ -144,7 +144,7 @@ impl CosmeticPaintModel {
 						stops
 							.iter()
 							.map(|s| CosmeticPaintGradientStop {
-								color: s.color as i32,
+								color: s.color,
 								at: s.at,
 								center_at: [0.0, 0.0],
 							})
@@ -226,7 +226,7 @@ pub struct CosmeticPaintShadow {
 impl From<PaintShadow> for CosmeticPaintShadow {
 	fn from(s: PaintShadow) -> Self {
 		Self {
-			color: s.color as i32,
+			color: s.color,
 			x_offset: s.offset_x,
 			y_offset: s.offset_y,
 			radius: s.blur,

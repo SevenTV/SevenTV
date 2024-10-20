@@ -1,6 +1,7 @@
 use std::future::IntoFuture;
 
 use futures::{TryFutureExt, TryStreamExt};
+use mongodb::options::ReadPreference;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use serde::de::DeserializeOwned;
@@ -56,6 +57,7 @@ impl<T: MongoCollection + DeserializeOwned + Clone + 'static> Loader for LoaderB
 					"$in": bson::to_bson(&keys).unwrap(),
 				}
 			})
+			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await

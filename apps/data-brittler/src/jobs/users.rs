@@ -128,7 +128,9 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 		(
 			Some(types::UserAvatar::Processed {
 				id,
-				input_file, image_files, ..
+				input_file,
+				image_files,
+				..
 			}),
 			_,
 		) => {
@@ -179,7 +181,7 @@ async fn process(input: ProcessInput<'_>) -> ProcessOutcome {
 							Err(err) => {
 								tracing::error!(error = ?err, "failed to download image: {download_url}");
 								None
-							},
+							}
 						}
 					} else {
 						tracing::error!(error = ?e, "failed to read image from disk");

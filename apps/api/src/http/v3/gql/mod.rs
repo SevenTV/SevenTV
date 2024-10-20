@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{extensions, EmptySubscription, Schema};
 use axum::response::{self, IntoResponse};
-use axum::routing::{get, any};
+use axum::routing::{any, get};
 use axum::{Extension, Router};
 use guards::RateLimitResponseStore;
 

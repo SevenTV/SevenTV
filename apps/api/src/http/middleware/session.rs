@@ -41,10 +41,7 @@ impl Session {
 
 	pub fn user_session(&self) -> Option<&UserSession> {
 		match &*self.0 {
-			AuthState::Authenticated {
-				session,
-				..
-			} => Some(session),
+			AuthState::Authenticated { session, .. } => Some(session),
 			_ => None,
 		}
 	}

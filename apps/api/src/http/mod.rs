@@ -13,6 +13,7 @@ use middleware::session::{Session, SessionMiddleware};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::http::ip::IpMiddleware;
 use tower::ServiceBuilder;
+use tower_http::compression::CompressionLayer;
 use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
 use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
 use tower_http::trace::{DefaultOnFailure, TraceLayer};
@@ -91,6 +92,7 @@ fn routes(global: Arc<Global>) -> Router {
 		.fallback(not_found)
 		.layer(
 			ServiceBuilder::new()
+				.layer(CompressionLayer::new())
 				.layer(
 					TraceLayer::new_for_http()
 						.make_span_with(|req: &Request| {

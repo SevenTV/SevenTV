@@ -3,6 +3,7 @@ use std::future::IntoFuture;
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
+use mongodb::options::ReadPreference;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::emote_set::EmoteSet;
@@ -50,6 +51,7 @@ impl Loader for EmoteSetByUserIdLoader {
 					owner_id: keys,
 				}
 			})
+			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await

@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use macros::MongoCollection;
 
-use crate::database::Id;
-
 use super::MongoGenericCollection;
+use crate::database::Id;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "paypal_webhook_events")]

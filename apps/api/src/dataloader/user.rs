@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::future::IntoFuture;
 
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
+use itertools::Itertools;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
@@ -46,14 +47,17 @@ impl Loader for UserByPlatformIdLoader {
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
+		let grouped = keys.iter().map(|(k, v)| (k, v)).into_group_map();
+
 		let users: Vec<User> = User::collection(&self.db)
-			.find(filter::Filter::or(keys.iter().map(|(platform, platform_id)| {
+			.find(filter::Filter::or(grouped.into_iter().map(|(platform, platform_ids)| {
 				filter::filter! {
 					User {
-						#[query(flatten)]
+						#[query(elem_match)]
 						connections: UserConnection {
 							platform,
-							platform_id,
+							#[query(selector = "in")]
+							platform_id: platform_ids,
 						},
 					}
 				}
@@ -67,9 +71,16 @@ impl Loader for UserByPlatformIdLoader {
 
 		let mut results = HashMap::new();
 
+		let keys = keys.into_iter().collect::<HashSet<_>>();
+
 		for user in users {
 			for connection in &user.connections {
-				results.insert((connection.platform, connection.platform_id.clone()), user.clone());
+				let key = (connection.platform, connection.platform_id.clone());
+				if !keys.contains(&key) {
+					continue;
+				}
+
+				results.insert(key, user.clone());
 			}
 		}
 
@@ -112,18 +123,23 @@ impl Loader for UserByPlatformUsernameLoader {
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		tracing::Span::current().make_root();
 
+		let grouped = keys.iter().map(|(k, v)| (k, v)).into_group_map();
+
 		let users: Vec<User> = User::collection(&self.db)
-			.find(filter::Filter::or(keys.iter().map(|(platform, platform_username)| {
-				filter::filter! {
-					User {
-						#[query(flatten)]
-						connections: UserConnection {
-							platform,
-							platform_username,
-						},
+			.find(filter::Filter::or(grouped.into_iter().map(
+				|(platform, platform_usernames)| {
+					filter::filter! {
+						User {
+							#[query(elem_match)]
+							connections: UserConnection {
+								platform,
+								#[query(selector = "in")]
+								platform_username: platform_usernames,
+							},
+						}
 					}
-				}
-			})))
+				},
+			)))
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
@@ -132,10 +148,16 @@ impl Loader for UserByPlatformUsernameLoader {
 			})?;
 
 		let mut results = HashMap::new();
+		let keys = keys.into_iter().collect::<HashSet<_>>();
 
 		for user in users {
 			for connection in &user.connections {
-				results.insert((connection.platform, connection.platform_username.clone()), user.clone());
+				let key = (connection.platform, connection.platform_username.clone());
+				if !keys.contains(&key) {
+					continue;
+				}
+
+				results.insert(key, user.clone());
 			}
 		}
 

@@ -3,6 +3,7 @@ use std::future::IntoFuture;
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
+use mongodb::options::ReadPreference;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use shared::database::queries::filter;
@@ -53,6 +54,7 @@ impl Loader for UserEditorByUserIdLoader {
 					},
 				}
 			})
+			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
@@ -107,6 +109,7 @@ impl Loader for UserEditorByEditorIdLoader {
 					},
 				}
 			})
+			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await

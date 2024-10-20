@@ -4,6 +4,7 @@ use std::future::IntoFuture;
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
+use mongodb::options::ReadPreference;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
@@ -159,6 +160,7 @@ impl Loader for EmoteByUserIdLoader {
 					merged: &None,
 				}
 			})
+			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await
@@ -210,6 +212,7 @@ impl Loader for EmoteByIdLoader {
 					id: keys,
 				}
 			})
+			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
 			.and_then(|f| f.try_collect())
 			.await

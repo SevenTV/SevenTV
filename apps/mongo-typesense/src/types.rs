@@ -1,6 +1,7 @@
 pub mod mongo {
 	pub use shared::database::automod::*;
 	pub use shared::database::badge::*;
+	pub use shared::database::cron_job::*;
 	pub use shared::database::emote::*;
 	pub use shared::database::emote_moderation_request::*;
 	pub use shared::database::emote_set::*;
@@ -22,7 +23,6 @@ pub mod mongo {
 	pub use shared::database::user::relation::*;
 	pub use shared::database::user::session::*;
 	pub use shared::database::user::*;
-	pub use shared::database::cron_job::*;
 	pub use shared::database::webhook_event::*;
 }
 

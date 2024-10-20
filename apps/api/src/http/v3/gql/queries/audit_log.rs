@@ -157,7 +157,10 @@ pub struct EmoteVersionStateChange {
 
 impl From<EmoteFlags> for EmoteVersionStateChange {
 	fn from(value: EmoteFlags) -> Self {
-		let allow_personal = match (value.contains(EmoteFlags::ApprovedPersonal), value.contains(EmoteFlags::DeniedPersonal)) {
+		let allow_personal = match (
+			value.contains(EmoteFlags::ApprovedPersonal),
+			value.contains(EmoteFlags::DeniedPersonal),
+		) {
 			(true, false) => Some(true),
 			(false, true) => Some(false),
 			_ => None,

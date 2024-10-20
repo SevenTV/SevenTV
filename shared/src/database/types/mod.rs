@@ -10,6 +10,7 @@ pub mod global;
 pub mod image_set;
 pub mod page;
 pub mod paint;
+pub mod paypal_webhook_event;
 pub mod product;
 pub mod role;
 pub mod stored_event;
@@ -17,7 +18,6 @@ pub mod stripe_errors;
 pub mod ticket;
 pub mod user;
 pub mod webhook_event;
-pub mod paypal_webhook_event;
 
 pub use macros::MongoCollection;
 pub use mongodb;
