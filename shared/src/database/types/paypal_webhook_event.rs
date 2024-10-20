@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use macros::MongoCollection;
 
 use crate::database::Id;
@@ -12,6 +14,7 @@ pub struct PaypalWebhookEvent {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: Id<PaypalWebhookEvent>,
+	pub headers: HashMap<String, String>,
 	pub event: serde_json::Value,
 }
 

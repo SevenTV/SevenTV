@@ -137,6 +137,15 @@ pub async fn handle(
 			if let Err(e) = PaypalWebhookEvent::collection(&global.db)
 				.insert_one(PaypalWebhookEvent {
 					id: Default::default(),
+					headers: headers
+						.into_iter()
+						.map(|(k, v)| {
+							(
+								k.map(|s| s.to_string()).unwrap_or_default(),
+								v.to_str().unwrap_or_default().to_owned(),
+							)
+						})
+						.collect(),
 					event,
 				})
 				.await
