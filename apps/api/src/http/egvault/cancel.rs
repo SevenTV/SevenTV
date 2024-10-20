@@ -15,6 +15,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
 use crate::http::middleware::session::Session;
 use crate::http::v3::rest::users::TargetUser;
+use crate::paypal_api;
 use crate::ratelimit::RateLimitRequest;
 use crate::transactions::{with_transaction, TransactionError};
 
@@ -104,11 +105,13 @@ pub async fn cancel_subscription(
 						Ok(())
 					}
 					Some(ProviderSubscriptionId::Paypal(id)) => {
+						let api_key = paypal_api::api_key(&global).await.map_err(TransactionError::Custom)?;
+
 						// https://developer.paypal.com/docs/api/subscriptions/v1/#subscriptions_cancel
 						global
 							.http_client
 							.post(format!("https://api.paypal.com/v1/billing/subscriptions/{id}/cancel"))
-							.bearer_auth(&global.config.paypal.api_key)
+							.bearer_auth(&api_key)
 							.json(&serde_json::json!({
 								"reason": "Subscription canceled by user"
 							}))

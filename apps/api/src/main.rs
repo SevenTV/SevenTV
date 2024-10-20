@@ -19,6 +19,7 @@ mod search;
 mod stripe_client;
 mod sub_refresh_job;
 mod transactions;
+mod paypal_api;
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {

@@ -13,6 +13,7 @@ use stripe::{CreateInvoice, FinalizeInvoiceParams};
 use super::types;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::paypal_api;
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
@@ -62,10 +63,12 @@ pub async fn completed(
 	};
 
 	// retrieve the paypal subscription
+	let api_key = paypal_api::api_key(global).await.map_err(TransactionError::Custom)?;
+
 	let paypal_sub: types::Subscription = global
 		.http_client
 		.get(format!("https://api.paypal.com/v1/billing/subscriptions/{provider_id}"))
-		.bearer_auth(&global.config.paypal.api_key)
+		.bearer_auth(api_key)
 		.send()
 		.await
 		.map_err(|e| {
