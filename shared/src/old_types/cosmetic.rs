@@ -311,7 +311,7 @@ impl CosmeticBadgeModel {
 	pub fn from_db(value: Badge, cdn_base_url: &url::Url) -> Self {
 		let id = value.id.cast();
 
-		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url);
+		let host = ImageHost::from_image_set_with_options(&value.image_set, cdn_base_url, true);
 
 		Self {
 			id,

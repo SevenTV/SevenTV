@@ -12,7 +12,7 @@ pub struct ImageHost {
 }
 
 impl ImageHost {
-	pub fn from_image_set(image_set: &ImageSet, cdn_base_url: &url::Url) -> Self {
+	pub fn from_image_set_with_options(image_set: &ImageSet, cdn_base_url: &url::Url, webp_only: bool) -> Self {
 		let url = image_set.outputs.first().and_then(|i| {
 			let path = i.path.clone();
 			// keep everything until last '/'
@@ -35,7 +35,13 @@ impl ImageHost {
 			.iter()
 			.filter(|i| (i.frame_count > 1) == animated)
 			// Filter out any images with formats that should not be returned by the v3 api
-			.filter(|i| ImageFormat::from_mime(&i.mime).is_some())
+			.filter(|i| {
+				let Some(format) = ImageFormat::from_mime(&i.mime) else {
+					return false;
+				};
+
+				!webp_only || format == ImageFormat::Webp
+			})
 			.map(Into::into)
 			.collect();
 
@@ -46,6 +52,10 @@ impl ImageHost {
 			url: url.unwrap_or_default(),
 			files,
 		}
+	}
+
+	pub fn from_image_set(image_set: &ImageSet, cdn_base_url: &url::Url) -> Self {
+		Self::from_image_set_with_options(image_set, cdn_base_url, false)
 	}
 }
 
