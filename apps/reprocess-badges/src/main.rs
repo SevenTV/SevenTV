@@ -1,17 +1,12 @@
-use scuffle_foundations::{
-	bootstrap::{bootstrap, Bootstrap},
-	settings::{auto_settings, cli::Matches},
-};
-use shared::{
-	config::{DatabaseConfig, ImageProcessorConfig},
-	database::{
-		badge::Badge,
-		image_set::{ImageSet, ImageSetInput},
-		queries::{filter, update},
-		MongoCollection,
-	},
-	image_processor::ImageProcessor,
-};
+use scuffle_foundations::bootstrap::{bootstrap, Bootstrap};
+use scuffle_foundations::settings::auto_settings;
+use scuffle_foundations::settings::cli::Matches;
+use shared::config::{DatabaseConfig, ImageProcessorConfig};
+use shared::database::badge::Badge;
+use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::queries::{filter, update};
+use shared::database::MongoCollection;
+use shared::image_processor::ImageProcessor;
 
 mod badges;
 
