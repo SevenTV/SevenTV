@@ -33,22 +33,26 @@ pub struct IpMiddlewareService<S> {
 
 impl<S> IpMiddlewareService<S> {
 	fn modify<B>(&mut self, req: &mut Request<B>) -> Result<(), axum::response::Response> {
-		let connecting_ip = req.extensions().get::<std::net::IpAddr>().ok_or_else(|| {
-			axum::response::Response::builder()
-				.status(axum::http::StatusCode::INTERNAL_SERVER_ERROR)
-				.body("missing connecting ip address".into())
-				.unwrap()
-		})?;
+		let connecting_ip = req
+			.extensions()
+			.get::<std::net::IpAddr>()
+			.ok_or_else(|| {
+				axum::response::Response::builder()
+					.status(axum::http::StatusCode::INTERNAL_SERVER_ERROR)
+					.body("missing connecting ip address".into())
+					.unwrap()
+			})?
+			.to_canonical();
 
 		let trusted_proxies = &self.config.trusted_proxies;
 		let trusted_ranges = &self.config.trusted_ranges;
 
-		if trusted_proxies.is_empty() || trusted_ranges.iter().any(|net| net.contains(connecting_ip)) {
+		if trusted_proxies.is_empty() || trusted_ranges.iter().any(|net| net.contains(&connecting_ip)) {
 			return Ok(());
 		}
 
 		// If the IP is not a trusted proxy, we should return a 403.
-		if trusted_proxies.iter().all(|net| !net.contains(connecting_ip)) {
+		if trusted_proxies.iter().all(|net| !net.contains(&connecting_ip)) {
 			return Err(axum::response::Response::builder()
 				.status(axum::http::StatusCode::FORBIDDEN)
 				.body("ip is not trusted".into())
