@@ -79,13 +79,13 @@ pub struct ImageFile {
 
 impl From<&Image> for ImageFile {
 	fn from(value: &Image) -> Self {
-		let name = value.path.clone();
 		// trim everything until last '/'
-		let name = name.split('/').last().unwrap_or(&name).to_string();
+		let name = value.path.split('/').last().unwrap_or(&value.path).to_string();
+		let (name, ext) = name.split_once('.').unwrap_or((&name, ""));
 
 		Self {
-			static_name: name.clone(),
-			name,
+			static_name: format!("{}_static.{}", name, ext),
+			name: format!("{}.{}", name, ext),
 			width: value.width as u32,
 			height: value.height as u32,
 			frame_count: value.frame_count as u32,
