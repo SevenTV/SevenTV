@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.38", features = ["full"] }
 shared = { workspace = true }
+bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
+futures = "0.3"
