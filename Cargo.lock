@@ -4349,6 +4349,7 @@ version = "0.1.0"
 dependencies = [
  "bson",
  "futures",
+ "scuffle-foundations",
  "shared",
  "tokio",
 ]

@@ -1,12 +1,30 @@
 use futures::TryStreamExt;
+use scuffle_foundations::{
+	bootstrap::{bootstrap, Bootstrap},
+	settings::{auto_settings, cli::Matches},
+};
 use shared::{
 	config::DatabaseConfig,
 	database::{badge::Badge, queries::filter, MongoCollection},
 };
 
-#[tokio::main]
-async fn main() {
-	let config = DatabaseConfig { uri: "".to_string() };
+mod badges;
+
+#[auto_settings]
+#[serde(default)]
+struct Config {
+	database: DatabaseConfig,
+}
+
+impl Bootstrap for Config {
+	type Settings = Self;
+}
+
+#[bootstrap]
+async fn main(settings: Matches<Config>) {
+	let config = DatabaseConfig {
+		uri: settings.settings.database.uri.clone(),
+	};
 
 	let mongo = shared::database::setup_database(&config, false).await.unwrap();
 	let db = mongo.default_database().unwrap();
@@ -21,4 +39,6 @@ async fn main() {
 	while let Some(badge) = badges.try_next().await.unwrap() {
 		println!("{:?}", badge);
 	}
+
+	std::process::exit(0);
 }
