@@ -177,8 +177,8 @@ impl RateLimiter {
 					request.limit,
 					request.ticket_count,
 					request.interval_seconds,
-					request.punishment_ttl.unwrap_or(0).max(0),
 					request.punishment_threshold.unwrap_or(0).max(0),
+					request.punishment_ttl.unwrap_or(0).max(0),
 				],
 			)
 			.await
