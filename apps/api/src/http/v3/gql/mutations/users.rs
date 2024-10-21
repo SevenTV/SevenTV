@@ -134,6 +134,13 @@ impl UserOps {
 			};
 
 			if let Some(true) = data.unlink {
+				if old_user.user.connections.len() == 1 {
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
+						"cannot remove last connection",
+					)));
+				}
+
 				let connection = old_user
 					.user
 					.connections
