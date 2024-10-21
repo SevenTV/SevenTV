@@ -45,22 +45,22 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 	let cert_pem = reqwest::get(cert_url)
 		.await
 		.map_err(|e| {
-			tracing::error!(error = %e, "failed to download cert");
+			tracing::error!(url = %cert_url, error = %e, "failed to download cert");
 			ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to download cert")
 		})?
 		.text()
 		.await
 		.map_err(|e| {
-			tracing::error!(error = %e, "failed to read cert");
+			tracing::error!(url = %cert_url, error = %e, "failed to read cert");
 			ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to read cert")
 		})?;
 	let cert = x509_certificate::X509Certificate::from_pem(&cert_pem).map_err(|e| {
-		tracing::error!(error = %e, "failed to parse cert");
+		tracing::error!(url = %cert_url, error = %e, "failed to parse cert");
 		ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to parse cert")
 	})?;
 
 	if cert.time_constraints_valid(None) {
-		tracing::warn!("cert is expired or not yet valid");
+		tracing::warn!(url = %cert_url, "cert is expired or not yet valid");
 		return Err(ApiError::internal_server_error(
 			ApiErrorCode::PaypalError,
 			"cert is expired or not yet valid",
@@ -71,7 +71,7 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 	// paypal domain.
 
 	let public_key = rsa::RsaPublicKey::from_pkcs1_der(&cert.public_key_data()).map_err(|e| {
-		tracing::error!(error = %e, "failed to parse public key");
+		tracing::error!(url = %cert_url, error = %e, "failed to parse public key");
 		ApiError::internal_server_error(ApiErrorCode::PaypalError, "failed to parse public key")
 	})?;
 
