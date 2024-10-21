@@ -42,6 +42,7 @@ async fn main(settings: Matches<Config>) {
 
 		let data = tokio::fs::read(job.input).await.expect("failed to read input file");
 
+		// The api should be running and will take care of the image processor callback
 		match ip.upload_badge(job.id, data.into()).await {
 			Ok(scuffle_image_processor_proto::ProcessImageResponse {
 				id,
