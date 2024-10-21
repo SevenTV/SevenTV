@@ -3,21 +3,27 @@ use std::str::FromStr;
 
 use shared::database::badge::BadgeId;
 use shared::database::emote::EmoteId;
+use shared::database::paint::{PaintId, PaintLayerId};
 use shared::database::user::UserId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CacheKey {
 	Badge {
-		id: BadgeId,
+		badge_id: BadgeId,
 		file: ImageFile,
 	},
 	Emote {
-		id: EmoteId,
+		emote_id: EmoteId,
 		file: ImageFile,
 	},
 	UserProfilePicture {
-		user: UserId,
+		user_id: UserId,
 		avatar_id: String,
+		file: ImageFile,
+	},
+	Paint {
+		paint_id: PaintId,
+		layer_id: PaintLayerId,
 		file: ImageFile,
 	},
 	Misc {
@@ -29,10 +35,19 @@ pub enum CacheKey {
 impl Display for CacheKey {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::Badge { id, file } => write!(f, "badge/{id}/{file}"),
-			Self::Emote { id, file } => write!(f, "emote/{id}/{file}"),
-			Self::UserProfilePicture { user, avatar_id, file } => {
-				write!(f, "user/{user}/{avatar_id}/{file}")
+			Self::Badge { badge_id, file } => write!(f, "badge/{badge_id}/{file}"),
+			Self::Emote { emote_id, file } => write!(f, "emote/{emote_id}/{file}"),
+			Self::Paint {
+				paint_id,
+				layer_id,
+				file,
+			} => write!(f, "paint/{paint_id}/layer/{layer_id}/{file}"),
+			Self::UserProfilePicture {
+				user_id,
+				avatar_id,
+				file,
+			} => {
+				write!(f, "user/{user_id}/profile-picture/{avatar_id}/{file}")
 			}
 			Self::Misc { key } => write!(f, "misc/{key}"),
 			Self::Juicers => write!(f, "JUICERS.png"),

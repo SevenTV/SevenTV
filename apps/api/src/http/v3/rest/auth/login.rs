@@ -145,45 +145,85 @@ pub async fn handle_callback(
 
 				tx.insert_one::<User>(&user, None).await?;
 
-				user.id
+				return Ok(user);
 			}
 		};
 
 		// upsert the connection
-		tx.find_one_and_update(
-			filter::filter! {
-				User {
-					#[query(rename = "_id")]
-					id: user_id,
-					#[query(elem_match)]
-					connections: UserConnection {
-						platform,
-						platform_id: &user_data.id,
+		let updated = tx
+			.find_one_and_update(
+				filter::filter! {
+					User {
+						#[query(rename = "_id")]
+						id: user_id,
+						#[query(elem_match)]
+						connections: UserConnection {
+							platform,
+							platform_id: &user_data.id,
+						}
 					}
-				}
-			},
-			update::update! {
-				#[query(set)]
-				User {
-					#[query(flatten, index = "$")]
-					connections: UserConnection {
-						platform_username: user_data.username,
-						platform_display_name: user_data.display_name,
-						platform_avatar_url: user_data.avatar,
+				},
+				update::update! {
+					#[query(set)]
+					User {
+						#[query(flatten, index = "$")]
+						connections: UserConnection {
+							platform_username: &user_data.username,
+							platform_display_name: &user_data.display_name,
+							platform_avatar_url: &user_data.avatar,
+							updated_at: chrono::Utc::now(),
+						},
 						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
+					}
+				},
+				None,
+			)
+			.await?;
+
+		let updated = match updated {
+			Some(user) => user,
+			None => tx
+				.find_one_and_update(
+					filter::filter! {
+						User {
+							#[query(rename = "_id")]
+							id: user_id,
+						}
 					},
-					updated_at: chrono::Utc::now(),
-				}
-			},
-			None,
-		)
-		.await?
-		.ok_or_else(|| {
-			TransactionError::Custom(ApiError::internal_server_error(
-				ApiErrorCode::LoadError,
-				"failed to load user",
-			))
-		})
+					update::update! {
+						#[query(push)]
+						User {
+							#[query(serde)]
+							connections: UserConnection {
+								platform,
+								platform_id: user_data.id,
+								platform_username: user_data.username,
+								platform_display_name: user_data.display_name,
+								platform_avatar_url: user_data.avatar,
+								allow_login: true,
+								updated_at: chrono::Utc::now(),
+								linked_at: chrono::Utc::now(),
+							},
+						},
+						#[query(set)]
+						User {
+							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
+						}
+					},
+					None,
+				)
+				.await?
+				.ok_or_else(|| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::MutationError,
+						"failed to insert connection",
+					))
+				})?,
+		};
+
+		Ok(updated)
 	})
 	.await;
 
@@ -302,14 +342,14 @@ pub fn handle_login(
 ) -> Result<String, ApiError> {
 	// redirect to platform auth url
 	let (url, scope, config) = match platform {
-		Platform::Twitch if global.config.api.connections.twitch.enabled => {
-			(TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.api.connections.twitch)
+		Platform::Twitch if global.config.connections.twitch.enabled => {
+			(TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.connections.twitch)
 		}
-		Platform::Discord if global.config.api.connections.discord.enabled => {
-			(DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config.api.connections.discord)
+		Platform::Discord if global.config.connections.discord.enabled => {
+			(DISCORD_AUTH_URL, DISCORD_AUTH_SCOPE, &global.config.connections.discord)
 		}
-		Platform::Google if global.config.api.connections.google.enabled => {
-			(GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.api.connections.google)
+		Platform::Google if global.config.connections.google.enabled => {
+			(GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.connections.google)
 		}
 		_ => {
 			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "unsupported platform"));

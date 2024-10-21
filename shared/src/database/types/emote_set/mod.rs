@@ -20,7 +20,6 @@ pub type EmoteSetId = Id<EmoteSet>;
 #[mongo(index(fields(_id = 1, "emotes.alias" = 1), unique))]
 #[mongo(index(fields("origin_config.origins.id" = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::emote_set::EmoteSet")]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSet {
@@ -46,9 +45,13 @@ pub struct EmoteSet {
 #[serde(deny_unknown_fields)]
 #[repr(u8)]
 pub enum EmoteSetKind {
+	/// Normal emote set
 	Normal = 0,
+	/// Personal emote set
 	Personal = 1,
+	/// Like a normal emote set but for multiple people
 	Global = 2,
+	/// Like a personal emote set but for multiple people
 	Special = 3,
 }
 

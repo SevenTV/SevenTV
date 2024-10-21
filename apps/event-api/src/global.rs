@@ -7,11 +7,11 @@ use crate::config::Config;
 use crate::subscription;
 
 pub struct Global {
-	nats: async_nats::Client,
-	config: Config,
-	subscription_manager: subscription::SubscriptionManager,
+	pub nats: async_nats::Client,
+	pub config: Config,
+	pub subscription_manager: subscription::SubscriptionManager,
 	active_connections: Arc<std::sync::atomic::AtomicUsize>,
-	http_client: reqwest::Client,
+	pub http_client: reqwest::Client,
 }
 
 /// An atomic ticket.
@@ -61,34 +61,14 @@ impl Global {
 	pub fn inc_active_connections(&self) -> (AtomicTicket, usize) {
 		AtomicTicket::new(self.active_connections.clone())
 	}
-
-	/// The subscription manager.
-	pub fn subscription_manager(&self) -> &subscription::SubscriptionManager {
-		&self.subscription_manager
-	}
-
-	/// The NATS client.
-	pub fn nats(&self) -> &async_nats::Client {
-		&self.nats
-	}
-
-	/// The configuration.
-	pub fn config(&self) -> &Config {
-		&self.config
-	}
-
-	/// Global HTTP client.
-	pub fn http_client(&self) -> &reqwest::Client {
-		&self.http_client
-	}
 }
 
 impl HealthCheck for Global {
 	fn check(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = bool> + Send + '_>> {
 		Box::pin(async {
-			tracing::info!("running health check");
+			tracing::debug!("running health check");
 
-			if !matches!(self.nats().connection_state(), async_nats::connection::State::Connected) {
+			if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
 				tracing::error!("nats not connected");
 				return false;
 			}

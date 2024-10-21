@@ -3,9 +3,11 @@ use std::sync::{Arc, Weak};
 
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
+use shared::database::loader::dataloader::BatchLoad;
 use shared::database::role::permissions::{Permissions, PermissionsExt, UserPermission};
 use shared::database::role::{Role, RoleId};
 use shared::database::user::ban::ActiveBans;
@@ -84,7 +86,7 @@ impl FullUserLoader {
 
 		Ok(users
 			.into_iter()
-			.filter_map(|user| {
+			.filter_map(|mut user| {
 				let mut computed = computed.get(&user.id)?.clone();
 
 				if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
@@ -95,6 +97,22 @@ impl FullUserLoader {
 					.style
 					.active_profile_picture
 					.and_then(|id| profile_pictures.get(&id).cloned());
+
+				user.style.active_badge_id = user.style.active_badge_id.and_then(|id| {
+					if computed.permissions.has(UserPermission::UseBadge) && computed.entitlements.badges.contains(&id) {
+						Some(id)
+					} else {
+						None
+					}
+				});
+
+				user.style.active_paint_id = user.style.active_paint_id.and_then(|id| {
+					if computed.permissions.has(UserPermission::UsePaint) && computed.entitlements.paints.contains(&id) {
+						Some(id)
+					} else {
+						None
+					}
+				});
 
 				Some((
 					user.id,
@@ -184,6 +202,15 @@ impl FullUserLoader {
 			)
 			.await?;
 
+		roles.sort_by_key(|r| r.rank);
+
+		for user in users.values_mut() {
+			user.computed.permissions = compute_permissions(&roles, &user.computed.entitlements.roles);
+			if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
+				user.computed.permissions.merge(active_bans.permissions());
+			}
+		}
+
 		let profile_pictures = global
 			.user_profile_picture_id_loader
 			.load_many(users.values().filter_map(|user| {
@@ -195,14 +222,7 @@ impl FullUserLoader {
 			}))
 			.await?;
 
-		roles.sort_by_key(|r| r.rank);
-
 		for user in users.values_mut() {
-			user.computed.permissions = compute_permissions(&roles, &user.computed.entitlements.roles);
-			if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
-				user.computed.permissions.merge(active_bans.permissions());
-			}
-
 			user.computed.highest_role_rank = compute_highest_role_rank(&roles, &user.computed.entitlements.roles);
 			user.computed.highest_role_color = compute_highest_role_color(&roles, &user.computed.entitlements.roles);
 			user.computed.roles = roles
@@ -215,6 +235,24 @@ impl FullUserLoader {
 				.style
 				.active_profile_picture
 				.and_then(|id| profile_pictures.get(&id).cloned());
+
+			user.user.style.active_badge_id = user.style.active_badge_id.and_then(|id| {
+				if user.computed.permissions.has(UserPermission::UseBadge) && user.computed.entitlements.badges.contains(&id)
+				{
+					Some(id)
+				} else {
+					None
+				}
+			});
+
+			user.user.style.active_paint_id = user.style.active_paint_id.and_then(|id| {
+				if user.computed.permissions.has(UserPermission::UsePaint) && user.computed.entitlements.paints.contains(&id)
+				{
+					Some(id)
+				} else {
+					None
+				}
+			});
 		}
 
 		Ok(users)
@@ -232,9 +270,9 @@ impl UserComputedLoader {
 			global,
 			BatcherConfig {
 				name: "UserComputedLoader".to_string(),
-				concurrency: 50,
-				max_batch_size: 1_000,
-				sleep_duration: std::time::Duration::from_millis(5),
+				concurrency: 500,
+				max_batch_size: 1000,
+				sleep_duration: std::time::Duration::from_millis(20),
 			},
 		)
 	}
@@ -254,6 +292,10 @@ impl Loader for UserComputedLoader {
 
 	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
 	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+		tracing::Span::current().make_root();
+
+		let _batch = BatchLoad::new(&self.config.name, keys.len());
+
 		let global = &self.global.upgrade().ok_or(())?;
 
 		let traverse = &EntitlementEdgeGraphTraverse {

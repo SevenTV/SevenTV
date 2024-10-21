@@ -3,12 +3,11 @@ use std::num::NonZeroUsize;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use axum::extract::{ws, RawQuery, Request, State, WebSocketUpgrade};
+use axum::extract::{ws, Path, RawQuery, Request, State, WebSocketUpgrade};
 use axum::http::header::HeaderMap;
 use axum::http::HeaderValue;
 use axum::response::{IntoResponse, Response, Sse};
-use axum::routing::any;
-use axum::Router;
+use axum::Extension;
 use parser::{parse_json_subscriptions, parse_query_uri};
 use scuffle_foundations::context::ContextFutExt;
 use scuffle_foundations::telemetry::metrics::metrics;
@@ -31,6 +30,7 @@ use super::socket::Socket;
 use crate::global::{AtomicTicket, Global};
 use crate::http::v3::error::ConnectionError;
 use crate::http::v3::topic_map::Subscription;
+use crate::subscription::event_topic::EventScope;
 use crate::subscription::{EventTopic, Payload};
 use crate::utils::jitter;
 
@@ -112,19 +112,17 @@ mod v3 {
 	}
 }
 
-pub fn routes() -> Router<Arc<Global>> {
-	Router::new().route("/", any(handle)).route("/*any", any(handle))
-}
-
-async fn handle(
+pub async fn handle(
 	State(global): State<Arc<Global>>,
+	path: Option<Path<String>>,
 	RawQuery(query): RawQuery,
+	Extension(ip): Extension<std::net::IpAddr>,
 	headers: HeaderMap,
 	upgrade: Option<WebSocketUpgrade>,
 	req: Request,
 ) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
 	let (ticket, active) = global.inc_active_connections();
-	if let Some(limit) = global.config().api.connection_limit {
+	if let Some(limit) = global.config.event_api.connection_limit {
 		// if we exceed the connection limit, we return a 503.
 		if active >= limit {
 			tracing::debug!("connection limit reached: {} >= {limit}", active);
@@ -133,7 +131,7 @@ async fn handle(
 	}
 
 	// Parse the initial subscriptions from the path.
-	let initial_subs = if let Some(query) = query.as_ref().and_then(|q| q.contains('@').then_some(q)) {
+	let initial_subs = if let Some(query) = path.as_ref().and_then(|q| q.contains('@').then_some(q)) {
 		Some(parser::parse_path_subscriptions(
 			&urlencoding::decode(query).unwrap_or_default(),
 		))
@@ -148,42 +146,44 @@ async fn handle(
 	};
 
 	if let Some(upgrade) = upgrade {
-		Ok(handle_ws(State(global), initial_subs, ticket, upgrade).await)
+		Ok(handle_ws(global, initial_subs, ticket, upgrade, ip).await)
 	} else if req.method() == hyper::Method::GET {
-		handle_sse(State(global), initial_subs, ticket).await
+		handle_sse(global, initial_subs, ticket, ip).await
 	} else {
 		Err((hyper::StatusCode::METHOD_NOT_ALLOWED, "method not allowed"))
 	}
 }
 
 async fn handle_ws(
-	State(global): State<Arc<Global>>,
+	global: Arc<Global>,
 	initial_subs: Option<Vec<Subscribe>>,
 	ticket: AtomicTicket,
 	upgrade: WebSocketUpgrade,
+	ip: std::net::IpAddr,
 ) -> Response<axum::body::Body> {
 	upgrade
 		.max_frame_size(1024 * 16)
 		.max_message_size(1024 * 18)
 		.write_buffer_size(1024 * 16)
-		.on_upgrade(|ws| async {
-			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket);
+		.on_upgrade(move |ws| async move {
+			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket, ip);
 
 			tokio::spawn(socket.serve());
 		})
 }
 
 async fn handle_sse(
-	State(global): State<Arc<Global>>,
+	global: Arc<Global>,
 	initial_subs: Option<Vec<Subscribe>>,
 	ticket: AtomicTicket,
+	ip: std::net::IpAddr,
 ) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
 	// Handle the SSE request.
 	let (sender, response) = tokio::sync::mpsc::channel(1);
 
 	let response = Sse::new(ReceiverStream::new(response));
 
-	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket);
+	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket, ip);
 
 	tokio::spawn(socket.serve());
 
@@ -222,6 +222,7 @@ struct Connection {
 	_connection_duration_drop_guard: v3::ConnectionDurationDropGuard,
 	/// Drop guard for the metrics
 	_current_connection_drop_guard: v3::CurrentConnectionDropGuard,
+	ip: std::net::IpAddr,
 
 	presence_lru: lru::LruCache<UserId, PresenceCacheValue>,
 	personal_emote_set_lru: lru::LruCache<EmoteSetId, chrono::DateTime<chrono::Utc>>,
@@ -243,6 +244,7 @@ impl Connection {
 		global: Arc<Global>,
 		initial_subs: Option<Vec<payload::Subscribe>>,
 		ticket: AtomicTicket,
+		ip: std::net::IpAddr,
 	) -> Self {
 		let connection_kind = match socket {
 			Socket::WebSocket(_) => v3::ConnectionKind::Websocket,
@@ -252,14 +254,15 @@ impl Connection {
 		Self {
 			socket,
 			seq: 0,
+			ip,
 			heartbeat_count: 0,
 			id: Id::new(),
 			// We jitter the TTL to prevent all connections from expiring at the same time, which
 			// would cause a thundering herd.
-			ttl: Box::pin(tokio::time::sleep(jitter(global.config().api.ttl))),
+			ttl: Box::pin(tokio::time::sleep(jitter(global.config.event_api.ttl))),
 			topics: TopicMap::default(),
 			// Same as above for the heartbeat interval.
-			heartbeat_interval: tokio::time::interval(jitter(global.config().api.heartbeat_interval)),
+			heartbeat_interval: tokio::time::interval(jitter(global.config.event_api.heartbeat_interval)),
 			// And again for the subscription cleanup interval.
 			initial_subs,
 			_ticket: ticket,
@@ -282,10 +285,16 @@ impl Connection {
 			.send_message(payload::Hello {
 				heartbeat_interval: self.heartbeat_interval.period().as_millis() as u32,
 				session_id: self.id,
-				subscription_limit: self.global.config().api.subscription_limit.map(|s| s as i32).unwrap_or(-1),
+				subscription_limit: self
+					.global
+					.config
+					.event_api
+					.subscription_limit
+					.map(|s| s as i32)
+					.unwrap_or(-1),
 				actor: None,
 				instance: Some(payload::HelloInstanceInfo {
-					name: "event-api".to_string(),
+					name: self.global.config.pod.name.clone(),
 					population: self.global.active_connections() as i32,
 				}),
 			})
@@ -407,14 +416,14 @@ impl Connection {
 
 	/// Handle a subscription request.
 	async fn handle_subscription(&mut self, subscribe: &payload::Subscribe) -> Result<(), ConnectionError> {
-		if let Some(subscription_limit) = self.global.config().api.subscription_limit {
+		if let Some(subscription_limit) = self.global.config.event_api.subscription_limit {
 			if self.topics.len() >= subscription_limit {
 				self.send_error("Too Many Active Subscriptions!", HashMap::new(), Some(CloseCode::RateLimit))
 					.await?;
 			}
 		}
 
-		let scope = match subscribe.condition.clone().try_into() {
+		let scope: EventScope = match subscribe.condition.clone().try_into() {
 			Ok(scope) => scope,
 			Err(()) => {
 				self.send_error(
@@ -427,8 +436,19 @@ impl Connection {
 			}
 		};
 
-		let topic = EventTopic::new(subscribe.ty, scope);
+		if let SubscribeCondition::Channel { .. } = subscribe.condition {
+			let topic = EventTopic::new(EventType::UserPresence, scope.clone());
+			let topic_key = topic.as_key();
 
+			if !self.topics.contains_key(&topic_key) {
+				self.topics.insert(
+					topic_key,
+					Subscription::new(self.global.subscription_manager.subscribe(topic).await?),
+				);
+			}
+		}
+
+		let topic = EventTopic::new(subscribe.ty, scope);
 		let topic_key = topic.as_key();
 
 		if self.topics.contains_key(&topic_key) {
@@ -442,7 +462,7 @@ impl Connection {
 
 		self.topics.insert(
 			topic_key,
-			Subscription::new(self.global.subscription_manager().subscribe(topic).await?),
+			Subscription::new(self.global.subscription_manager.subscribe(topic).await?),
 		);
 
 		self.send_ack(
@@ -556,13 +576,16 @@ impl Connection {
 				// Subscription bridge is a way of interacting with the API through the socket.
 				let res = self
 					.global
-					.http_client()
-					.post(&self.global.config().api.bridge_url)
+					.http_client
+					.post(&self.global.config.event_api.bridge_url)
+					// Forward the IP to the API for rate limiting.
+					.header("CF-Connecting-IP", self.ip.to_string())
 					.json(&bridge.body)
 					.send()
 					.await?
 					.error_for_status()?;
-				let body = res.json::<Vec<Message<payload::Dispatch>>>().await?;
+
+				let body = res.json::<Vec<payload::Dispatch>>().await?;
 
 				for msg in body {
 					self.handle_dispatch(&msg).await?;
@@ -577,9 +600,9 @@ impl Connection {
 		Ok(())
 	}
 
-	async fn handle_dispatch(&mut self, payload: &Message<payload::Dispatch>) -> Result<(), ConnectionError> {
+	async fn handle_dispatch(&mut self, payload: &payload::Dispatch) -> Result<(), ConnectionError> {
 		// If everything is good, send the dispatch to the client.
-		self.send_message(&payload.data).await?;
+		self.send_message(&payload).await?;
 
 		Ok(())
 	}
@@ -591,7 +614,7 @@ impl Connection {
 			if self.badge_lru.get(&badge.id).map(|t| t != &badge.updated_at).unwrap_or(true) {
 				let object = CosmeticModel {
 					id: badge.id,
-					data: CosmeticBadgeModel::from_db(badge.clone(), &self.global.config().api.cdn_origin),
+					data: CosmeticBadgeModel::from_db(badge.clone(), &self.global.config.event_api.cdn_origin),
 					kind: CosmeticKind::Badge,
 				};
 				let object = serde_json::to_value(object).map_err(|e| {
@@ -617,7 +640,7 @@ impl Connection {
 			if self.paint_lru.get(&paint.id).map(|t| t != &paint.updated_at).unwrap_or(true) {
 				let object = CosmeticModel {
 					id: paint.id,
-					data: CosmeticPaintModel::from_db(paint.clone(), &self.global.config().api.cdn_origin),
+					data: CosmeticPaintModel::from_db(paint.clone(), &self.global.config.event_api.cdn_origin),
 					kind: CosmeticKind::Paint,
 				};
 				let object = serde_json::to_value(object).map_err(|e| {
@@ -639,7 +662,8 @@ impl Connection {
 			self.paint_lru.put(paint.id, paint.updated_at);
 		}
 
-		let partial_user = UserPartialModel::from_db(payload.user.clone(), None, None, &self.global.config().api.cdn_origin);
+		let partial_user =
+			UserPartialModel::from_db(payload.user.clone(), None, None, &self.global.config.event_api.cdn_origin);
 
 		for emote_set in &payload.personal_emote_sets {
 			if self
@@ -673,7 +697,7 @@ impl Connection {
 						let value = EmotePartialModel::from_db(
 							emote.clone(),
 							Some(UserPartialModel::deleted_user()),
-							&self.global.config().api.cdn_origin,
+							&self.global.config.event_api.cdn_origin,
 						);
 						let value = serde_json::to_value(value).map_err(|e| {
 							tracing::error!(error = %e, "failed to serialize emote");
@@ -908,7 +932,7 @@ impl Connection {
 			},
 			Some(payload) = self.topics.next() => {
 				match payload {
-					Payload::Dispatch(payload) => self.handle_dispatch(payload.as_ref()).await,
+					Payload::Dispatch(payload) => self.handle_dispatch(&payload.data).await,
 					Payload::Presence(payload) => self.handle_presence(payload.as_ref()).await,
 				}
 			}

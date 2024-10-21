@@ -10,7 +10,6 @@ pub type SpecialEventId = Id<SpecialEvent>;
 #[derive(Debug, Clone, Serialize, Deserialize, MongoCollection)]
 #[mongo(collection_name = "special_events")]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::product::special_event::SpecialEvent")]
 #[serde(deny_unknown_fields)]
 pub struct SpecialEvent {

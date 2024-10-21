@@ -6,7 +6,7 @@ use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::codes::{CodeEffect, RedeemCode, RedeemCodeSubscriptionEffect};
-use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriod};
+use shared::database::product::subscription::SubscriptionId;
 use shared::database::product::TimePeriod;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
@@ -126,7 +126,6 @@ pub async fn redeem(
 			let global = Arc::clone(&global);
 
 			async move {
-				// TODO: should we dataload this?
 				let code = tx
 					.find_one_and_update(
 						filter::filter! {
@@ -148,6 +147,11 @@ pub async fn redeem(
 							RedeemCode {
 								remaining_uses: -1,
 							},
+							#[query(set)]
+							RedeemCode {
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
 						},
 						None,
 					)
@@ -156,24 +160,16 @@ pub async fn redeem(
 						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "redeem code not found"))
 					})?;
 
-				// TODO: should we dataload this?
-				let not_subscribed = tx
-					.find_one(
-						filter::filter! {
-							SubscriptionPeriod {
-								#[query(flatten)]
-								subscription_id: SubscriptionId {
-									user_id: authed_user.id,
-								},
-								#[query(selector = "lt")]
-								start: chrono::Utc::now(),
-								#[query(selector = "gt")]
-								end: chrono::Utc::now(),
-							}
-						},
-						None,
-					)
-					.await?
+				let not_subscribed = global
+					.active_subscription_period_by_user_id_loader
+					.load(authed_user.id)
+					.await
+					.map_err(|()| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load subscription period",
+						))
+					})?
 					.is_none();
 
 				// If the user is not subscribed and the redeem code has a subscription effect

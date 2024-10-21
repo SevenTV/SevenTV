@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
-use shared::config::{S3BucketConfig, TlsConfig};
+use shared::config::{IncomingRequestConfig, RateLimit, S3BucketConfig, TlsConfig};
 
 #[auto_settings]
 #[serde(default)]
@@ -20,30 +20,7 @@ impl Bootstrap for Config {
 	type Settings = Self;
 
 	fn telemetry_config(&self) -> Option<TelemetrySettings> {
-		let mut settings = self.telemetry.clone();
-		settings
-			.metrics
-			.labels
-			.entry("server_name".to_string())
-			.or_insert(self.cdn.server_name.clone());
-		if let Ok(host_info) = sys_metrics::host::get_host_info() {
-			settings
-				.metrics
-				.labels
-				.entry("system".to_string())
-				.or_insert(host_info.system);
-			settings
-				.metrics
-				.labels
-				.entry("kernel_version".to_string())
-				.or_insert(host_info.kernel_version);
-			settings
-				.metrics
-				.labels
-				.entry("hostname".to_string())
-				.or_insert(host_info.hostname);
-		}
-		Some(settings)
+		Some(self.telemetry.clone())
 	}
 
 	fn runtime_mode(&self) -> RuntimeSettings {
@@ -88,107 +65,6 @@ pub struct Cdn {
 	/// Rate limit configuration
 	#[settings(default = RateLimit::default())]
 	pub rate_limit: RateLimit,
-}
-
-#[auto_settings]
-#[serde(default)]
-pub struct RateLimit {
-	#[settings(default = default_ipv6_buckets())]
-	pub ipv6_buckets: Vec<RateLimitPrefixBucket>,
-	#[settings(default = default_ipv4_buckets())]
-	pub ipv4_buckets: Vec<RateLimitPrefixBucket>,
-	#[settings(default = default_range_buckets())]
-	pub range_buckets: Vec<RateLimitRangeBucket>,
-}
-
-fn default_ipv6_buckets() -> Vec<RateLimitPrefixBucket> {
-	vec![
-		RateLimitPrefixBucket {
-			prefix_length: 128,
-			concurrent_connections: 50,
-		},
-		RateLimitPrefixBucket {
-			prefix_length: 64,
-			concurrent_connections: 100,
-		},
-		RateLimitPrefixBucket {
-			prefix_length: 48,
-			concurrent_connections: 1000,
-		},
-		RateLimitPrefixBucket {
-			prefix_length: 32,
-			concurrent_connections: 10000,
-		},
-	]
-}
-
-fn default_ipv4_buckets() -> Vec<RateLimitPrefixBucket> {
-	vec![
-		RateLimitPrefixBucket {
-			prefix_length: 32,
-			concurrent_connections: 125,
-		},
-		RateLimitPrefixBucket {
-			prefix_length: 24,
-			concurrent_connections: 250,
-		},
-		RateLimitPrefixBucket {
-			prefix_length: 16,
-			concurrent_connections: 10000,
-		},
-	]
-}
-
-fn default_range_buckets() -> Vec<RateLimitRangeBucket> {
-	vec![
-		// private ipv4
-		RateLimitRangeBucket {
-			range: "10.0.0.0/8".parse().unwrap(),
-			concurrent_connections: None,
-		},
-		// private ipv4
-		RateLimitRangeBucket {
-			range: "172.16.0.0/12".parse().unwrap(),
-			concurrent_connections: None,
-		},
-		// private ipv4
-		RateLimitRangeBucket {
-			range: "192.168.0.0/16".parse().unwrap(),
-			concurrent_connections: None,
-		},
-		// loopback ipv4
-		RateLimitRangeBucket {
-			range: "127.0.0.0/8".parse().unwrap(),
-			concurrent_connections: None,
-		},
-		// private ipv6
-		RateLimitRangeBucket {
-			range: "fc00::/7".parse().unwrap(),
-			concurrent_connections: None,
-		},
-		// link local ipv6
-		RateLimitRangeBucket {
-			range: "fe80::/10".parse().unwrap(),
-			concurrent_connections: None,
-		},
-		// ipv6 loopback
-		RateLimitRangeBucket {
-			range: "::1/128".parse().unwrap(),
-			concurrent_connections: None,
-		},
-	]
-}
-
-#[auto_settings]
-#[derive(Copy)]
-pub struct RateLimitRangeBucket {
-	pub range: ipnet::IpNet,
-	pub concurrent_connections: Option<u64>,
-}
-
-#[auto_settings]
-#[derive(Copy)]
-pub struct RateLimitPrefixBucket {
-	pub prefix_length: u8,
-	pub concurrent_connections: u64,
+	/// IP Header config
+	pub incoming_request: IncomingRequestConfig,
 }

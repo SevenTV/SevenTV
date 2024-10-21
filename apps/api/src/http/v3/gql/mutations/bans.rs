@@ -113,6 +113,7 @@ impl BansMutation {
 						User {
 							has_bans: true,
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					None,
@@ -187,6 +188,7 @@ impl BansMutation {
 							#[query(optional, serde)]
 							permissions: effects.map(ban_effect_to_permissions),
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					FindOneAndUpdateOptions::builder()

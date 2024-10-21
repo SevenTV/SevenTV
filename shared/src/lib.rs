@@ -4,6 +4,7 @@ pub mod database;
 pub mod event;
 pub mod event_api;
 pub mod grpc;
+pub mod http;
 pub mod image_processor;
 pub mod ip;
 pub mod nats;

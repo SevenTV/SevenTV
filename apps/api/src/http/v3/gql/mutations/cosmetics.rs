@@ -90,11 +90,10 @@ pub struct CosmeticPaintInput {
 	#[graphql(validator(custom = "NameValidator"))]
 	name: String,
 	function: CosmeticPaintFunction,
-	color: Option<u32>,
+	color: Option<i32>,
 	#[graphql(validator(minimum = 0, maximum = 360))]
 	angle: Option<u32>,
 	shape: Option<CosmeticPaintShape>,
-	#[graphql(validator(url))]
 	image_url: Option<String>,
 	repeat: bool,
 	stops: Vec<CosmeticPaintStopInput>,
@@ -140,8 +139,8 @@ impl CosmeticPaintInput {
 				}
 			}
 			CosmeticPaintFunction::Url => {
-				let Some(image_url) = self.image_url else {
-					return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "missing image url"));
+				let Some(image_url) = self.image_url.and_then(|u| url::Url::parse(&u).ok()) else {
+					return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid image url"));
 				};
 
 				// TODO(troy): This allows for anyone to pass any url and we will blindly do a
@@ -226,7 +225,11 @@ impl CosmeticPaintInput {
 
 		Ok(PaintData {
 			layers: vec![layer],
-			shadows: self.shadows.iter().map(|shadow| shadow.to_db()).collect(),
+			shadows: self
+				.shadows
+				.iter()
+				.map(|shadow| shadow.try_into())
+				.collect::<Result<_, _>>()?,
 		})
 	}
 }
@@ -236,26 +239,37 @@ impl CosmeticPaintInput {
 pub struct CosmeticPaintStopInput {
 	#[graphql(validator(minimum = 0, maximum = 1))]
 	at: f64,
-	color: u32,
+	color: i32,
 }
 
 #[derive(InputObject)]
 #[graphql(rename_fields = "snake_case")]
 pub struct CosmeticPaintShadowInput {
-	x_offset: f64,
-	y_offset: f64,
-	radius: f64,
-	color: u32,
+	x_offset: String,
+	y_offset: String,
+	radius: String,
+	color: i32,
 }
 
-impl CosmeticPaintShadowInput {
-	pub fn to_db(&self) -> PaintShadow {
-		PaintShadow {
-			color: self.color,
-			offset_x: self.x_offset,
-			offset_y: self.y_offset,
-			blur: self.radius,
-		}
+impl TryFrom<&CosmeticPaintShadowInput> for PaintShadow {
+	type Error = ApiError;
+
+	fn try_from(value: &CosmeticPaintShadowInput) -> Result<Self, Self::Error> {
+		Ok(PaintShadow {
+			color: value.color,
+			offset_x: value
+				.x_offset
+				.parse::<f64>()
+				.map_err(|e| ApiError::bad_request(ApiErrorCode::BadRequest, e.to_string()))?,
+			offset_y: value
+				.y_offset
+				.parse::<f64>()
+				.map_err(|e| ApiError::bad_request(ApiErrorCode::BadRequest, e.to_string()))?,
+			blur: value
+				.radius
+				.parse::<f64>()
+				.map_err(|e| ApiError::bad_request(ApiErrorCode::BadRequest, e.to_string()))?,
+		})
 	}
 }
 
@@ -307,6 +321,7 @@ impl CosmeticOps {
 							#[query(serde)]
 							data: &data,
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					FindOneAndUpdateOptions::builder()

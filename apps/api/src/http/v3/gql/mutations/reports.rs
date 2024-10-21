@@ -164,6 +164,7 @@ impl ReportsMutation {
 					#[query(serde, optional)]
 					priority: new_priority.as_ref(),
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				},
 			}
 			.into();
@@ -205,6 +206,11 @@ impl ReportsMutation {
 								#[query(serde)]
 								members: member,
 							},
+							#[query(set)]
+							Ticket {
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
 						});
 					}
 					(Some('-'), Ok(user_id)) => {
@@ -232,6 +238,11 @@ impl ReportsMutation {
 								members: TicketMember {
 									user_id,
 								},
+							},
+							#[query(set)]
+							Ticket {
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
 							},
 						});
 					}

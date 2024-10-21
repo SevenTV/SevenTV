@@ -40,6 +40,7 @@ impl FromStr for SubscriptionId {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscriptions")]
 #[mongo(index(fields("_id.user_id" = 1, "_id.product_id" = 1)))]
+#[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(search = "crate::typesense::types::product::subscription::Subscription")]
 #[serde(deny_unknown_fields)]
 pub struct Subscription {
@@ -106,7 +107,6 @@ impl From<stripe::SubscriptionId> for ProviderSubscriptionId {
 #[mongo(index(fields(subscription_id = 1)))]
 #[mongo(index(fields(product_ids = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::product::subscription::SubscriptionPeriod")]
 #[serde(deny_unknown_fields)]
 pub struct SubscriptionPeriod {
@@ -121,6 +121,8 @@ pub struct SubscriptionPeriod {
 	#[serde(with = "crate::database::serde")]
 	pub end: chrono::DateTime<chrono::Utc>,
 	pub is_trial: bool,
+	pub auto_renew: bool,
+	pub gifted_by: Option<UserId>,
 	pub created_by: SubscriptionPeriodCreatedBy,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -133,20 +135,9 @@ pub type SubscriptionPeriodId = Id<SubscriptionPeriod>;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case", tag = "type")]
 pub enum SubscriptionPeriodCreatedBy {
-	RedeemCode {
-		redeem_code_id: RedeemCodeId,
-	},
-	Invoice {
-		invoice_id: InvoiceId,
-		cancel_at_period_end: bool,
-	},
-	Gift {
-		gifter: UserId,
-		invoice: InvoiceId,
-	},
-	System {
-		reason: Option<String>,
-	},
+	RedeemCode { redeem_code_id: RedeemCodeId },
+	Invoice { invoice_id: InvoiceId },
+	System { reason: Option<String> },
 }
 
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {

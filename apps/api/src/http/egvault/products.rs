@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::{Extension, Json};
-use futures::TryStreamExt;
 use shared::database::entitlement::EntitlementEdgeKind;
-use shared::database::product::{SubscriptionBenefitCondition, SubscriptionProduct};
-use shared::database::queries::filter;
-use shared::database::MongoCollection;
+use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
+use shared::database::graph::{Direction, GraphTraverse};
+use shared::database::product::SubscriptionBenefitCondition;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -17,22 +16,12 @@ pub async fn products(
 	State(global): State<Arc<Global>>,
 	Extension(session): Extension<Session>,
 ) -> Result<Json<Vec<types::Product>>, ApiError> {
-	// TODO: dataload this
-	let products: Vec<SubscriptionProduct> = SubscriptionProduct::collection(&global.db)
-		.find(filter::filter! {
-			SubscriptionProduct {}
-		})
+	let products = global
+		.subscription_products_loader
+		.load(())
 		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to query subscription products");
-			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to query subscription products")
-		})?
-		.try_collect()
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to collect subscription products");
-			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to collect subscription products")
-		})?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription products"))?
+		.unwrap_or_default();
 
 	let currency = if let Some(country_code) = global.geoip().and_then(|g| g.lookup(session.ip())).and_then(|c| c.iso_code) {
 		let global = global
@@ -74,17 +63,20 @@ pub async fn products(
 		})
 		.collect();
 
+	let traverse = &EntitlementEdgeGraphTraverse {
+		inbound_loader: &global.entitlement_edge_inbound_loader,
+		outbound_loader: &global.entitlement_edge_outbound_loader,
+	};
+
 	// follow the graph
-	let edges = global
-		.entitlement_edge_outbound_loader
-		.load_many(months_benefit_ids)
+	let edges = traverse
+		.traversal(Direction::Outbound, months_benefit_ids)
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load entitlement edges"))?;
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to traverse entitlement edges"))?;
 
 	// find the paints
 	let current_paints = edges
-		.into_values()
-		.flatten()
+		.into_iter()
 		.filter_map(|e| match e.id.to {
 			EntitlementEdgeKind::Paint { paint_id } => Some(paint_id),
 			_ => None,

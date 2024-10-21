@@ -2,20 +2,21 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context as _;
-use axum::extract::{MatchedPath, Request};
+use axum::extract::{MatchedPath, Request, State};
 use axum::http::HeaderName;
 use axum::response::Response;
 use axum::routing::get;
-use axum::Router;
+use axum::{Extension, Router};
 use error::ApiErrorCode;
 use hyper::Method;
-use middleware::ip::IpMiddleware;
-use middleware::session::SessionMiddleware;
+use middleware::session::{Session, SessionMiddleware};
 use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use shared::http::ip::IpMiddleware;
 use tower::ServiceBuilder;
+use tower_http::compression::CompressionLayer;
 use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
 use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultOnFailure, TraceLayer};
 use tracing::Span;
 
 use self::error::ApiError;
@@ -91,6 +92,7 @@ fn routes(global: Arc<Global>) -> Router {
 		.fallback(not_found)
 		.layer(
 			ServiceBuilder::new()
+				.layer(CompressionLayer::new())
 				.layer(
 					TraceLayer::new_for_http()
 						.make_span_with(|req: &Request| {
@@ -108,22 +110,45 @@ fn routes(global: Arc<Global>) -> Router {
 
 							span
 						})
+						.on_failure(DefaultOnFailure::new().level(tracing::Level::DEBUG))
 						.on_response(|res: &Response, _, span: &Span| {
 							span.record("response.status_code", res.status().as_u16());
 						}),
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
 				.layer(PropagateRequestIdLayer::x_request_id())
-				.layer(IpMiddleware::new(global.clone()))
+				.layer(IpMiddleware::new(global.config.api.incoming_request.clone()))
 				.layer(CookieMiddleware)
 				.layer(SessionMiddleware::new(global.clone()))
 				.layer(cors_layer(&global)),
 		)
 }
 
-#[tracing::instrument]
-async fn root() -> &'static str {
-	"Welcome to the 7TV API!"
+#[derive(serde::Serialize)]
+struct RootResp {
+	message: &'static str,
+	version: &'static str,
+	ip: std::net::IpAddr,
+	country: Option<String>,
+}
+
+#[tracing::instrument(skip_all)]
+async fn root(
+	State(global): State<Arc<Global>>,
+	Extension(session): Extension<Session>,
+) -> impl axum::response::IntoResponse {
+	let resp = RootResp {
+		message: "Welcome to the 7TV API!",
+		version: env!("CARGO_PKG_VERSION"),
+		ip: session.ip(),
+		country: global
+			.geoip()
+			.and_then(|geoip| geoip.lookup(session.ip()))
+			.and_then(|l| l.iso_code)
+			.map(Into::into),
+	};
+
+	axum::Json(resp)
 }
 
 #[tracing::instrument]

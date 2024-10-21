@@ -4,9 +4,7 @@ use std::sync::Arc;
 use futures::TryStreamExt;
 use shared::database::duration::DurationUnit;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
-use shared::database::product::subscription::{
-	Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionState,
-};
+use shared::database::product::subscription::{Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState};
 use shared::database::product::SubscriptionBenefitCondition;
 use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
@@ -58,21 +56,15 @@ impl SubAge {
 			acc
 		});
 
-		let mut extra = chrono::Duration::zero();
-		let mut months = 0;
-		let mut days = 0;
-		for period in &merged_periods {
-			let calc = date_component::date_component::calculate(&period.start, &(period.end + extra));
+		let days = merged_periods
+			.iter()
+			.map(|p| (p.end.min(now) - p.start))
+			.sum::<chrono::Duration>()
+			.num_days() as i32;
 
-			// Time that was extra in the period
-			extra = chrono::Duration::days(calc.day as i64)
-				+ chrono::Duration::hours(calc.hour as i64)
-				+ chrono::Duration::minutes(calc.minute as i64)
-				+ chrono::Duration::seconds(calc.second as i64);
-
-			months += calc.month as i32 + calc.year as i32 * 12;
-			days += calc.interval_days as i32;
-		}
+		let months = days as f64 / (365.25 / 12.0);
+		let extra = chrono::Duration::days((months.fract() * 30.44).round() as i64);
+		let months = months as i32;
 
 		SubAge {
 			extra,
@@ -96,9 +88,11 @@ impl SubAge {
 		match condition {
 			SubscriptionBenefitCondition::Duration(DurationUnit::Days(d)) => self.days + next_period >= *d,
 			SubscriptionBenefitCondition::Duration(DurationUnit::Months(m)) => self.months + next_period >= *m,
-			SubscriptionBenefitCondition::TimePeriod(tp) => {
-				self.periods.iter().any(|p| p.start <= tp.start && p.end >= tp.end)
-			}
+			SubscriptionBenefitCondition::TimePeriod(tp) => self.periods.iter().any(|p| {
+				(p.start <= tp.start && p.end >= tp.start)
+					|| (p.start <= tp.end && p.end >= tp.end)
+					|| (p.start >= tp.start && p.end <= tp.end)
+			}),
 		}
 	}
 }
@@ -197,18 +191,10 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 			new_edges.push(user_edge);
 		}
 
-		let state = if active_periods.iter().all(|period| {
-			matches!(
-				period.created_by,
-				SubscriptionPeriodCreatedBy::Invoice {
-					cancel_at_period_end: true,
-					..
-				}
-			)
-		}) {
-			SubscriptionState::CancelAtEnd
-		} else {
+		let state = if active_periods.iter().any(|period| period.auto_renew) {
 			SubscriptionState::Active
+		} else {
+			SubscriptionState::CancelAtEnd
 		};
 
 		Subscription::collection(&global.db)
@@ -224,15 +210,15 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 					Subscription {
 						#[query(serde)]
 						state,
-						ended_at: None::<chrono::DateTime<chrono::Utc>>,
+						ended_at: &None,
 						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
 					},
 					#[query(set_on_insert)]
 					Subscription {
 						#[query(rename = "_id", serde)]
 						id: subscription_id,
 						created_at: chrono::Utc::now(),
-						search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
 					}
 				},
 			)
@@ -262,13 +248,13 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 						state: SubscriptionState::Ended,
 						ended_at: Some(sub_age.expected_end),
 						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
 					},
 					#[query(set_on_insert)]
 					Subscription {
 						#[query(rename = "_id", serde)]
 						id: subscription_id,
 						created_at: chrono::Utc::now(),
-						search_updated_at: None::<chrono::DateTime<chrono::Utc>>,
 					}
 				},
 			)

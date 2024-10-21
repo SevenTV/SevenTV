@@ -202,6 +202,12 @@ async fn setup(global: &Arc<Global>, stream: async_nats::jetstream::stream::Stre
 							);
 						}
 					),*
+					crate::types::mongo::UserProfilePicture::COLLECTION_NAME
+						| crate::types::mongo::UserSession::COLLECTION_NAME
+						| crate::types::mongo::WebhookEvent::COLLECTION_NAME
+						| crate::types::mongo::CronJob::COLLECTION_NAME => {
+						message.ack_with(AckKind::Term).await.ok();
+					}
 					_ => {
 						tracing::warn!(collection = %$str, "unknown collection");
 						message.ack_with(AckKind::Term).await.ok();

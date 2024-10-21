@@ -77,8 +77,20 @@ impl User {
 			twitch_names: twitch_names.into_iter().collect(),
 			has_bans: value.has_bans,
 			has_2fa: value.two_fa.is_some(),
-			active_badge_id: value.style.active_badge_id,
-			active_paint_id: value.style.active_paint_id,
+			active_badge_id: value.style.active_badge_id.and_then(|id| {
+				value
+					.cached
+					.entitlements
+					.contains(&EntitlementEdgeKind::Badge { badge_id: id })
+					.then_some(id)
+			}),
+			active_paint_id: value.style.active_paint_id.and_then(|id| {
+				value
+					.cached
+					.entitlements
+					.contains(&EntitlementEdgeKind::Paint { paint_id: id })
+					.then_some(id)
+			}),
 			active_emote_set_id: value.style.active_emote_set_id,
 			entitlement_grants: granted_entitlements
 				.into_iter()

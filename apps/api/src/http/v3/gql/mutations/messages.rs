@@ -76,6 +76,8 @@ impl MessagesMutation {
 						EmoteModerationRequest {
 							#[query(serde)]
 							status: status,
+							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					None,

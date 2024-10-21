@@ -9,6 +9,7 @@ use scuffle_foundations::telemetry::server::HealthCheck;
 use shared::clickhouse::emote_stat::EmoteStat;
 use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
 use shared::database::updater::MongoUpdater;
+use typesense_rs::apis::Api;
 
 use crate::batcher::clickhouse::ClickhouseInsert;
 use crate::batcher::CollectionBatcher;
@@ -20,7 +21,7 @@ pub struct Global {
 	pub jetstream: async_nats::jetstream::Context,
 	pub database: mongodb::Database,
 	pub config: Config,
-	pub typesense: typesense_codegen::apis::configuration::Configuration,
+	pub typesense: Arc<typesense_rs::apis::ApiClient>,
 	pub event_batcher: CollectionBatcher<mongo::StoredEvent>,
 	pub user_batcher: CollectionBatcher<mongo::User>,
 	pub automod_rule_batcher: CollectionBatcher<mongo::AutomodRule>,
@@ -74,15 +75,17 @@ impl Global {
 			.default_database()
 			.ok_or_else(|| anyhow::anyhow!("no default database"))?;
 
-		let typesense = typesense_codegen::apis::configuration::Configuration {
-			base_path: config.typesense.uri.clone(),
-			api_key: config
-				.typesense
-				.api_key
-				.clone()
-				.map(|key| typesense_codegen::apis::configuration::ApiKey { key, prefix: None }),
-			..Default::default()
-		};
+		let typesense = Arc::new(typesense_rs::apis::ApiClient::new(Arc::new(
+			typesense_rs::apis::configuration::Configuration {
+				base_path: config.typesense.uri.clone(),
+				api_key: config
+					.typesense
+					.api_key
+					.clone()
+					.map(|key| typesense_rs::apis::configuration::ApiKey { key, prefix: None }),
+				..Default::default()
+			},
+		)));
 
 		let clickhouse = shared::clickhouse::init_clickhouse(&config.clickhouse).await?;
 
@@ -118,7 +121,7 @@ impl Global {
 				database.clone(),
 				BatcherConfig {
 					name: "MongoUpdater".to_string(),
-					concurrency: 50,
+					concurrency: 500,
 					max_batch_size: 5_000,
 					sleep_duration: std::time::Duration::from_millis(300),
 				},
@@ -159,7 +162,7 @@ impl Global {
 			return state.nats_healthy && state.db_healthy && state.typesense_healthy;
 		}
 
-		tracing::info!("running health check");
+		tracing::debug!("running health check");
 
 		state.nats_healthy = matches!(self.nats.connection_state(), async_nats::connection::State::Connected);
 		if !state.nats_healthy {
@@ -173,7 +176,7 @@ impl Global {
 				false
 			}
 		};
-		state.typesense_healthy = match typesense_codegen::apis::health_api::health(&self.typesense).await {
+		state.typesense_healthy = match self.typesense.health_api().health().await {
 			Ok(r) => {
 				if r.ok {
 					true
@@ -210,23 +213,69 @@ impl Global {
 		self.request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 	}
 
-	pub async fn log_stats(&self) {
-		let state = self.health_state.lock().await;
-		let Some(last_check) = state.last_check else {
-			return;
-		};
+	pub fn request_count(&self) -> usize {
+		self.request_count.load(std::sync::atomic::Ordering::Relaxed)
+	}
 
-		let elapsed = last_check.elapsed();
+	pub async fn reindex(&self) {
+		macro_rules! reindex_collection {
+			($($collection:ty),*$(,)?) => {
+				{
+					[
+						$(
+							shared::database::updater::MongoReq::update::<$collection>(
+								shared::database::queries::filter::filter! {
+									$collection {
+										search_updated_at: &None,
+									}
+								},
+								shared::database::queries::update::update! {
+									#[query(set)]
+									$collection {
+										updated_at: chrono::Utc::now(),
+									}
+								},
+								true,
+							),
+						)*
+					]
+				}
+			}
+		}
 
-		tracing::info!(
-			nats_healthy = state.nats_healthy,
-			db_healthy = state.db_healthy,
-			typesense_healthy = state.typesense_healthy,
-			last_check = elapsed.as_secs_f64(),
-			inflight = self.config.triggers.typesense_concurrency.max(1) - self.semaphore.available_permits(),
-			requests = self.request_count.swap(0, std::sync::atomic::Ordering::Relaxed),
-			"stats",
-		);
+		for result in self
+			.updater
+			.bulk(reindex_collection! {
+				crate::types::mongo::RedeemCode,
+				crate::types::mongo::SpecialEvent,
+				crate::types::mongo::Invoice,
+				crate::types::mongo::Product,
+				crate::types::mongo::SubscriptionProduct,
+				crate::types::mongo::SubscriptionPeriod,
+				crate::types::mongo::UserBanTemplate,
+				crate::types::mongo::UserBan,
+				crate::types::mongo::UserEditor,
+				crate::types::mongo::User,
+				crate::types::mongo::UserRelation,
+				crate::types::mongo::StoredEvent,
+				crate::types::mongo::AutomodRule,
+				crate::types::mongo::Badge,
+				crate::types::mongo::EmoteModerationRequest,
+				crate::types::mongo::EmoteSet,
+				crate::types::mongo::Emote,
+				crate::types::mongo::Page,
+				crate::types::mongo::Paint,
+				crate::types::mongo::Role,
+				crate::types::mongo::Ticket,
+				crate::types::mongo::TicketMessage,
+				crate::types::mongo::Subscription,
+			})
+			.await
+		{
+			if let Err(e) = result {
+				tracing::error!("failed to reindex: {e}");
+			}
+		}
 	}
 }
 

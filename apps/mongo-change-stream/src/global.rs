@@ -36,7 +36,7 @@ impl Global {
 impl HealthCheck for Global {
 	fn check(&self) -> std::pin::Pin<Box<dyn Future<Output = bool> + Send + '_>> {
 		Box::pin(async {
-			tracing::info!("running health check");
+			tracing::debug!("running health check");
 
 			if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
 				tracing::error!("nats not connected");

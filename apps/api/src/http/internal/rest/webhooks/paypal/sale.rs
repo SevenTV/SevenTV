@@ -13,6 +13,7 @@ use stripe::{CreateInvoice, FinalizeInvoiceParams};
 use super::types;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::paypal_api;
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
@@ -62,10 +63,12 @@ pub async fn completed(
 	};
 
 	// retrieve the paypal subscription
+	let api_key = paypal_api::api_key(global).await.map_err(TransactionError::Custom)?;
+
 	let paypal_sub: types::Subscription = global
 		.http_client
 		.get(format!("https://api.paypal.com/v1/billing/subscriptions/{provider_id}"))
-		.bearer_auth(&global.config.api.paypal.api_key)
+		.bearer_auth(api_key)
 		.send()
 		.await
 		.map_err(|e| {
@@ -153,6 +156,7 @@ pub async fn completed(
 					User {
 						stripe_customer_id: Some(&customer_id),
 						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
 					}
 				},
 				None,
@@ -288,10 +292,9 @@ pub async fn completed(
 					.unwrap_or_else(chrono::Utc::now),
 				end: next_billing_time,
 				is_trial: false,
-				created_by: SubscriptionPeriodCreatedBy::Invoice {
-					invoice_id,
-					cancel_at_period_end: false,
-				},
+				auto_renew: true,
+				gifted_by: None,
+				created_by: SubscriptionPeriodCreatedBy::Invoice { invoice_id },
 				updated_at: chrono::Utc::now(),
 				search_updated_at: None,
 			},
@@ -324,6 +327,7 @@ pub async fn refunded(
 			Invoice {
 				refunded: true,
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,

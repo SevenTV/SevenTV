@@ -156,11 +156,11 @@ async fn logout(
 			}
 		}
 
-		cookies.remove(global, AUTH_COOKIE);
-
 		Ok(())
 	})
 	.await;
+
+	cookies.remove(global, AUTH_COOKIE);
 
 	match res {
 		Ok(_) => Response::builder()

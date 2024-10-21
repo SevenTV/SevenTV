@@ -17,7 +17,6 @@ impl From<CronJobId> for bson::Bson {
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "cron_jobs")]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(index(fields(enabled = 1, next_run = 1, held_until = 1)))]
 #[serde(deny_unknown_fields)]
 pub struct CronJob {

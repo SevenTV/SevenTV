@@ -20,7 +20,7 @@ impl Global {
 impl HealthCheck for Global {
 	fn check(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = bool> + Send + '_>> {
 		Box::pin(async {
-			tracing::info!("running health check");
+			tracing::debug!("running health check");
 
 			true
 		})

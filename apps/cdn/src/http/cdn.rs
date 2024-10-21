@@ -3,22 +3,23 @@ use std::sync::Arc;
 use scuffle_foundations::http::server::axum::extract::{Path, State};
 use scuffle_foundations::http::server::axum::routing::get;
 use scuffle_foundations::http::server::axum::{Json, Router};
+use shared::database::badge::BadgeId;
+use shared::database::emote::EmoteId;
+use shared::database::paint::{PaintId, PaintLayerId};
+use shared::database::user::UserId;
 
-// use shared::database::badge::BadgeId;
-// use shared::database::emote::EmoteId;
-// use shared::database::user::UserId;
-
-// use crate::cache::key::{CacheKey, ImageFile};
+use crate::cache::key::{CacheKey, ImageFile};
 use crate::cache::CachedResponse;
 use crate::global::Global;
 
 pub fn routes() -> Router<Arc<Global>> {
-	Router::new().route("/", get(root)).route("/*key", get(any))
-	// .route("/badge/:id/:file", get(badge))
-	// .route("/emote/:id/:file", get(emote))
-	// .route("/user/:user/:avatar_id/:file", get(user_profile_picture))
-	// .route("/misc/*key", get(misc))
-	// .route("/JUICERS.png", get(juicers))
+	Router::new()
+		.route("/", get(root))
+		.route("/badge/:id/:file", get(badge))
+		.route("/emote/:id/:file", get(emote))
+		.route("/user/:user/profile-picture/:avatar_id/:file", get(user_profile_picture))
+		.route("/paint/:id/layer/:layer/:file", get(paint_layer))
+		.route("/JUICERS.png", get(juicers))
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -42,32 +43,48 @@ async fn root(State(global): State<Arc<Global>>) -> Json<Welcome> {
 	})
 }
 
-async fn any(Path(key): Path<String>, State(global): State<Arc<Global>>) -> CachedResponse {
-	global.cache.handle_request(&global, key).await
+async fn badge(Path((badge_id, file)): Path<(BadgeId, ImageFile)>, State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Badge { badge_id, file }).await
 }
 
-// async fn badge(Path((id, file)): Path<(BadgeId, ImageFile)>, State(global):
-// State<Arc<Global>>) -> CachedResponse { 	global.cache.handle_request(&global,
-// CacheKey::Badge { id, file }).await }
+async fn emote(Path((emote_id, file)): Path<(EmoteId, ImageFile)>, State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Emote { emote_id, file }).await
+}
 
-// async fn emote(Path((id, file)): Path<(EmoteId, ImageFile)>, State(global):
-// State<Arc<Global>>) -> CachedResponse { 	global.cache.handle_request(&global,
-// CacheKey::Emote { id, file }).await }
+async fn user_profile_picture(
+	Path((user_id, avatar_id, file)): Path<(UserId, String, ImageFile)>,
+	State(global): State<Arc<Global>>,
+) -> CachedResponse {
+	global
+		.cache
+		.handle_request(
+			&global,
+			CacheKey::UserProfilePicture {
+				user_id,
+				avatar_id,
+				file,
+			},
+		)
+		.await
+}
 
-// async fn user_profile_picture(
-// 	Path((user, avatar_id, file)): Path<(UserId, String, ImageFile)>,
-// 	State(global): State<Arc<Global>>,
-// ) -> CachedResponse {
-// 	global
-// 		.cache
-// 		.handle_request(&global, CacheKey::UserProfilePicture { user, avatar_id,
-// file }) 		.await
-// }
+async fn paint_layer(
+	Path((paint_id, layer_id, file)): Path<(PaintId, PaintLayerId, ImageFile)>,
+	State(global): State<Arc<Global>>,
+) -> CachedResponse {
+	global
+		.cache
+		.handle_request(
+			&global,
+			CacheKey::Paint {
+				paint_id,
+				layer_id,
+				file,
+			},
+		)
+		.await
+}
 
-// async fn misc(Path(key): Path<String>, State(global): State<Arc<Global>>) ->
-// CachedResponse { 	global.cache.handle_request(&global, CacheKey::Misc { key
-// }).await }
-
-// async fn juicers(State(global): State<Arc<Global>>) -> CachedResponse {
-// 	global.cache.handle_request(&global, CacheKey::Juicers).await
-// }
+async fn juicers(State(global): State<Arc<Global>>) -> CachedResponse {
+	global.cache.handle_request(&global, CacheKey::Juicers).await
+}

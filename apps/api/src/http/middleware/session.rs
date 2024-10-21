@@ -23,25 +23,8 @@ pub struct Session(Arc<AuthState>, std::net::IpAddr);
 
 #[derive(Debug, Clone)]
 enum AuthState {
-	Authenticated { kind: AuthSessionKind, user: Box<FullUser> },
+	Authenticated { session: UserSession, user: Box<FullUser> },
 	Unauthenticated { default: Box<UserComputed> },
-}
-
-#[derive(Debug, Clone)]
-pub enum AuthSessionKind {
-	/// The user session
-	Session(UserSession),
-	/// Old user sessions, only user id available
-	Old(UserId),
-}
-
-impl AuthSessionKind {
-	pub fn user_id(&self) -> UserId {
-		match self {
-			AuthSessionKind::Session(session) => session.user_id,
-			AuthSessionKind::Old(user_id) => *user_id,
-		}
-	}
 }
 
 impl Session {
@@ -58,10 +41,7 @@ impl Session {
 
 	pub fn user_session(&self) -> Option<&UserSession> {
 		match &*self.0 {
-			AuthState::Authenticated {
-				kind: AuthSessionKind::Session(session),
-				..
-			} => Some(session),
+			AuthState::Authenticated { session, .. } => Some(session),
 			_ => None,
 		}
 	}
@@ -152,36 +132,28 @@ impl<S> SessionMiddlewareService<S> {
 				ApiError::unauthorized(ApiErrorCode::BadRequest, "invalid token")
 			})?;
 
-			let kind = match jwt.session_id {
-				Some(session_id) => {
-					let session = self
-						.global
-						.user_session_by_id_loader
-						.load(session_id)
-						.await
-						.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load session"))?
-						.ok_or_else(|| {
-							cookies.remove(&self.global, AUTH_COOKIE);
-							ApiError::unauthorized(ApiErrorCode::BadRequest, "session not found")
-						})?;
+			let session = self
+				.global
+				.user_session_by_id_loader
+				.load(jwt.session_id)
+				.await
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load session"))?
+				.ok_or_else(|| {
+					cookies.remove(&self.global, AUTH_COOKIE);
+					ApiError::unauthorized(ApiErrorCode::BadRequest, "session not found")
+				})?;
 
-					if session.expires_at < chrono::Utc::now() {
-						cookies.remove(&self.global, AUTH_COOKIE);
-						return Err(ApiError::unauthorized(ApiErrorCode::BadRequest, "session expired"));
-					}
+			if session.expires_at < chrono::Utc::now() {
+				cookies.remove(&self.global, AUTH_COOKIE);
+				return Err(ApiError::unauthorized(ApiErrorCode::BadRequest, "session expired"));
+			}
 
-					self.global.user_session_updater_batcher.load(session.id).await.ok();
-
-					AuthSessionKind::Session(session)
-				}
-				// old session
-				None => AuthSessionKind::Old(jwt.user_id),
-			};
+			self.global.user_session_updater_batcher.load(session.id).await.ok();
 
 			let user = self
 				.global
 				.user_loader
-				.load(&self.global, kind.user_id())
+				.load(&self.global, session.user_id)
 				.await
 				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 				.ok_or_else(|| {
@@ -191,7 +163,7 @@ impl<S> SessionMiddlewareService<S> {
 
 			Session(
 				Arc::new(AuthState::Authenticated {
-					kind,
+					session,
 					user: Box::new(user),
 				}),
 				ip,

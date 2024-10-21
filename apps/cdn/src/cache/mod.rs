@@ -2,7 +2,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
 use bytes::{Bytes, BytesMut};
-// use key::CacheKey;
+use key::CacheKey;
 use scuffle_foundations::http::server::axum::http::header::{self, HeaderMap};
 use scuffle_foundations::http::server::axum::http::{HeaderValue, Response, StatusCode};
 use scuffle_foundations::http::server::stream::{Body, IntoResponse};
@@ -15,8 +15,6 @@ use crate::global::Global;
 pub mod key;
 
 const ONE_WEEK: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24 * 7);
-
-type CacheKey = String;
 
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
@@ -109,8 +107,7 @@ impl Cache {
 			inner: moka::future::Cache::builder()
 				.expire_after(CacheExpiry)
 				.weigher(|k, v: &CachedResponse| {
-					u32::try_from(v.data.len() + k.len() + std::mem::size_of_val(v) + std::mem::size_of_val(k))
-						.unwrap_or(u32::MAX)
+					u32::try_from(v.data.len() + std::mem::size_of_val(v) + std::mem::size_of_val(k)).unwrap_or(u32::MAX)
 				})
 				.max_capacity(capacity.bytes() as u64)
 				.build(),

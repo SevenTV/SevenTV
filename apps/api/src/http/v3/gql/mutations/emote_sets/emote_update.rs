@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use mongodb::options::FindOneAndUpdateOptions;
-use shared::database::emote::EmoteId;
+use shared::database::emote::{Emote, EmoteId};
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
 use shared::database::queries::{filter, update};
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
@@ -12,7 +12,7 @@ use crate::http::middleware::session::Session;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn emote_update(
-	global: &Arc<Global>,
+	_: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	session: &Session,
 	emote_set: &EmoteSet,
@@ -26,17 +26,17 @@ pub async fn emote_update(
 			TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
 		})?;
 
-	let emote = global
-		.emote_by_id_loader
-		.load(emote_id)
-		.await
-		.map_err(|()| {
-			TransactionError::Custom(ApiError::internal_server_error(
-				ApiErrorCode::LoadError,
-				"failed to load emote",
-			))
-		})?
+	let emote = tx
+		.find_one(filter::filter! { Emote { #[query(rename = "_id")] id: emote_id } }, None)
+		.await?
 		.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found")))?;
+
+	if emote.deleted || emote.merged.is_some() {
+		return Err(TransactionError::Custom(ApiError::not_found(
+			ApiErrorCode::BadRequest,
+			"emote not found",
+		)));
+	}
 
 	let new_name = name.unwrap_or(emote.default_name.clone());
 
@@ -68,6 +68,7 @@ pub async fn emote_update(
 					},
 					emotes_changed_since_reindex: true,
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				},
 			},
 			FindOneAndUpdateOptions::builder()

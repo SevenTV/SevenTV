@@ -10,8 +10,10 @@ use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::traits::SignatureScheme;
 use rsa::Pkcs1v15Sign;
 use sha2::Digest;
+use shared::database::paypal_webhook_event::PaypalWebhookEvent;
 use shared::database::queries::{filter, update};
 use shared::database::webhook_event::WebhookEvent;
+use shared::database::MongoCollection;
 use tokio::sync::Mutex;
 
 use crate::global::Global;
@@ -108,7 +110,7 @@ pub async fn handle(
 			ApiError::bad_request(ApiErrorCode::BadRequest, "missing or invalid paypal-transmission-id header")
 		})?;
 
-	let webhook_id = &global.config.api.paypal.webhook_id;
+	let webhook_id = &global.config.paypal.webhook_id;
 
 	let timestamp = headers
 		.get("paypal-transmission-time")
@@ -129,6 +131,32 @@ pub async fn handle(
 		tracing::error!(error = %e, "failed to verify signature");
 		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to verify signature")
 	})?;
+
+	match serde_json::from_slice::<serde_json::Value>(&payload) {
+		Ok(event) => {
+			if let Err(e) = PaypalWebhookEvent::collection(&global.db)
+				.insert_one(PaypalWebhookEvent {
+					id: Default::default(),
+					headers: headers
+						.into_iter()
+						.map(|(k, v)| {
+							(
+								k.map(|s| s.to_string()).unwrap_or_default(),
+								v.to_str().unwrap_or_default().to_owned(),
+							)
+						})
+						.collect(),
+					event,
+				})
+				.await
+			{
+				tracing::error!(error = %e, "failed to insert paypal event");
+			}
+		}
+		Err(e) => {
+			tracing::warn!(error = %e, "failed to deserialize payload");
+		}
+	}
 
 	let event: types::Event = serde_json::from_slice(&payload).map_err(|e| {
 		tracing::error!(error = %e, "failed to deserialize payload");

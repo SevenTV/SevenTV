@@ -10,6 +10,7 @@ pub mod global;
 pub mod image_set;
 pub mod page;
 pub mod paint;
+pub mod paypal_webhook_event;
 pub mod product;
 pub mod role;
 pub mod stored_event;
@@ -96,6 +97,7 @@ fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 		.chain(user::mongo_collections())
 		.chain(emote_moderation_request::mongo_collections())
 		.chain(webhook_event::mongo_collections())
+		.chain(paypal_webhook_event::mongo_collections())
 		.chain(cron_job::mongo_collections())
 }
 

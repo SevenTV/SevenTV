@@ -8,7 +8,6 @@ pub type PaintId = Id<Paint>;
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq)]
 #[mongo(collection_name = "paints")]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = 1)))]
 #[mongo(search = "crate::typesense::types::paint::Paint")]
 #[serde(deny_unknown_fields)]
 pub struct Paint {
@@ -57,7 +56,7 @@ impl Default for PaintLayer {
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum PaintLayerType {
-	SingleColor(u32),
+	SingleColor(i32),
 	LinearGradient {
 		angle: i32,
 		repeating: bool,
@@ -82,7 +81,7 @@ impl Default for PaintLayerType {
 #[serde(deny_unknown_fields)]
 pub struct PaintGradientStop {
 	pub at: f64,
-	pub color: u32,
+	pub color: i32,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
@@ -97,7 +96,7 @@ pub enum PaintRadialGradientShape {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PaintShadow {
-	pub color: u32,
+	pub color: i32,
 	pub offset_x: f64,
 	pub offset_y: f64,
 	pub blur: f64,

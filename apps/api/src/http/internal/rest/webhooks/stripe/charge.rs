@@ -35,6 +35,7 @@ pub async fn refunded(
 				#[query(serde)]
 				refunded: true,
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,
@@ -87,6 +88,7 @@ pub async fn dispute_updated(
 				#[query(serde)]
 				disputed,
 				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,

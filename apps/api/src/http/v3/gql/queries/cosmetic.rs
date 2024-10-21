@@ -40,8 +40,7 @@ impl CosmeticsQuery {
 
 		if list.is_empty() {
 			// return all cosmetics when empty list is provided
-
-			let paints = Paint::collection(&global.db)
+			let mut paints: Vec<_> = Paint::collection(&global.db)
 				.find(filter::filter!(Paint {}))
 				.into_future()
 				.and_then(|f| f.try_collect::<Vec<Paint>>())
@@ -54,7 +53,9 @@ impl CosmeticsQuery {
 				.map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
 				.collect();
 
-			let badges = Badge::collection(&global.db)
+			paints.sort_by(|a, b| a.id.cmp(&b.id));
+
+			let mut badges: Vec<_> = Badge::collection(&global.db)
 				.find(filter::filter!(Badge {}))
 				.into_future()
 				.and_then(|f| f.try_collect::<Vec<Badge>>())
@@ -67,9 +68,11 @@ impl CosmeticsQuery {
 				.map(|b: Badge| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
 				.collect();
 
+			badges.sort_by(|a, b| a.id.cmp(&b.id));
+
 			Ok(CosmeticsQueryResponse { paints, badges })
 		} else {
-			let paints = global
+			let mut paints: Vec<_> = global
 				.paint_by_id_loader
 				.load_many(list.clone().into_iter().map(|id| id.id()))
 				.await
@@ -78,7 +81,9 @@ impl CosmeticsQuery {
 				.map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin))
 				.collect();
 
-			let badges = global
+			paints.sort_by(|a, b| a.id.cmp(&b.id));
+
+			let mut badges: Vec<_> = global
 				.badge_by_id_loader
 				.load_many(list.into_iter().map(|id| id.id()))
 				.await
@@ -86,6 +91,8 @@ impl CosmeticsQuery {
 				.into_values()
 				.map(|b| CosmeticBadgeModel::from_db(b, &global.config.api.cdn_origin))
 				.collect();
+
+			badges.sort_by(|a, b| a.id.cmp(&b.id));
 
 			Ok(CosmeticsQueryResponse { paints, badges })
 		}

@@ -13,20 +13,21 @@ pub mod ticket;
 pub mod user;
 
 pub use macros::TypesenseCollection;
-pub use typesense_codegen;
+#[doc(hidden)]
+pub use typesense_rs;
 
 pub trait TypesenseCollection: Send + Sync {
 	const COLLECTION_NAME: &'static str;
 
 	type Id: std::fmt::Debug + Clone + serde::Serialize + serde::de::DeserializeOwned;
 
-	fn schema() -> typesense_codegen::models::CollectionSchema;
-	fn fields() -> Vec<typesense_codegen::models::Field>;
+	fn schema() -> typesense_rs::models::CollectionSchema;
+	fn fields() -> Vec<typesense_rs::models::Field>;
 }
 
 struct TypesenseGenericCollection {
 	name: &'static str,
-	schema: typesense_codegen::models::CollectionSchema,
+	schema: typesense_rs::models::CollectionSchema,
 }
 
 impl TypesenseGenericCollection {
@@ -42,13 +43,24 @@ impl TypesenseGenericCollection {
 		Ok(None)
 	}
 
-	#[tracing::instrument(skip(self, config), fields(collection = self.name))]
-	pub async fn init(self, config: &typesense_codegen::apis::configuration::Configuration) -> anyhow::Result<()> {
-		let result = match typesense_codegen::apis::collections_api::get_collection(config, self.name).await {
+	#[tracing::instrument(skip_all, fields(collection = self.name))]
+	pub async fn init(self, client: &typesense_rs::apis::ApiClient) -> anyhow::Result<()> {
+		let result = match client
+			.collections_api()
+			.get_collection(GetCollectionParams::builder().collection_name(self.name.to_owned()).build())
+			.await
+		{
 			Ok(result) => result,
-			Err(typesense_codegen::apis::Error::ResponseError(err)) if err.status == hyper::StatusCode::NOT_FOUND => {
+			Err(typesense_rs::apis::Error::ResponseError(err)) if err.status == hyper::StatusCode::NOT_FOUND => {
 				tracing::debug!("collection not found, creating");
-				typesense_codegen::apis::collections_api::create_collection(config, self.schema.clone()).await?
+				client
+					.collections_api()
+					.create_collection(
+						CreateCollectionParams::builder()
+							.collection_schema(self.schema.clone())
+							.build(),
+					)
+					.await?
 			}
 			Err(err) => {
 				anyhow::bail!("failed to get collection: {err}");
@@ -57,7 +69,15 @@ impl TypesenseGenericCollection {
 
 		if let Some(migration) = self.determine_migration(result)? {
 			tracing::debug!("applying migration");
-			typesense_codegen::apis::collections_api::update_collection(config, self.name, migration).await?;
+			client
+				.collections_api()
+				.update_collection(
+					UpdateCollectionParams::builder()
+						.collection_name(self.name.to_owned())
+						.collection_update_schema(migration)
+						.build(),
+				)
+				.await?;
 		}
 
 		Ok(())
@@ -163,7 +183,9 @@ macro_rules! impl_typesense_type {
 }
 
 pub(crate) use impl_typesense_type;
-use typesense_codegen::models::{CollectionResponse, CollectionUpdateSchema};
+use typesense_rs::apis::collections_api::{CreateCollectionParams, GetCollectionParams, UpdateCollectionParams};
+use typesense_rs::apis::Api;
+use typesense_rs::models::{CollectionResponse, CollectionUpdateSchema};
 
 impl_typesense_type!(String, String);
 impl_typesense_type!(i32, Int32);
@@ -245,7 +267,7 @@ fn typesense_collections() -> impl IntoIterator<Item = TypesenseGenericCollectio
 		.chain(emote_set::typesense_collections())
 }
 
-pub async fn init_typesense(client: &typesense_codegen::apis::configuration::Configuration) -> anyhow::Result<()> {
+pub async fn init_typesense(client: &typesense_rs::apis::ApiClient) -> anyhow::Result<()> {
 	let collections = typesense_collections().into_iter().collect::<Vec<_>>();
 
 	for collection in collections {

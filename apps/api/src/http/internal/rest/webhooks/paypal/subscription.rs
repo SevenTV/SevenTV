@@ -39,6 +39,7 @@ pub async fn cancelled(
 				SubscriptionPeriod {
 					end: now,
 					updated_at: now,
+					search_updated_at: &None,
 				}
 			},
 			FindOneAndUpdateOptions::builder()

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 use mongodb::options::FindOneAndUpdateOptions;
-use shared::database::emote::EmoteId;
+use shared::database::emote::{Emote, EmoteId};
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
 use shared::database::queries::{filter, update};
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
@@ -26,12 +26,9 @@ pub async fn emote_remove(
 			TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
 		})?;
 
-	let emote = global.emote_by_id_loader.load(emote_id).await.map_err(|()| {
-		TransactionError::Custom(ApiError::internal_server_error(
-			ApiErrorCode::LoadError,
-			"failed to load emote",
-		))
-	})?;
+	let emote = tx
+		.find_one(filter::filter! { Emote { #[query(rename = "_id")] id: emote_id } }, None)
+		.await?;
 
 	let emote_set = tx
 		.find_one_and_update(
@@ -56,6 +53,7 @@ pub async fn emote_remove(
 				EmoteSet {
 					emotes_changed_since_reindex: true,
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				},
 			},
 			FindOneAndUpdateOptions::builder()

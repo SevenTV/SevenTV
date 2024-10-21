@@ -2,13 +2,8 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::{Extension, Json};
-use futures::TryStreamExt;
-use shared::database::product::subscription::{
-	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionState,
-};
+use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionPeriodCreatedBy, SubscriptionState};
 use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
-use shared::database::queries::filter;
-use shared::database::MongoCollection;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -22,6 +17,7 @@ use crate::sub_refresh_job;
 pub struct SubscriptionResponse {
 	pub active: bool,
 	pub age: u32,
+	pub months: u32,
 	pub renew: bool,
 	/// Date of the next renewal
 	pub end_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -38,27 +34,12 @@ pub async fn subscription(
 		TargetUser::Other(id) => id,
 	};
 
-	// TODO: should we dataload this?
-	let periods: Vec<_> = SubscriptionPeriod::collection(&global.db)
-		.find(filter::filter! {
-			SubscriptionPeriod {
-				#[query(flatten)]
-				subscription_id: SubscriptionId {
-					user_id: user,
-				},
-			}
-		})
+	let periods: Vec<_> = global
+		.subscription_periods_by_user_id_loader
+		.load(user)
 		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to find subscription period");
-			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find subscription period")
-		})?
-		.try_collect()
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to collect subscription periods");
-			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to collect subscription periods")
-		})?;
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods"))?
+		.unwrap_or_default();
 
 	let Some(active_period) = periods
 		.iter()
@@ -68,6 +49,7 @@ pub async fn subscription(
 		return Ok(Json(SubscriptionResponse {
 			active: false,
 			age: 0,
+			months: 0,
 			renew: false,
 			end_at: None,
 			subscription: None,
@@ -100,10 +82,7 @@ pub async fn subscription(
 		ProviderSubscriptionId::Paypal(_) => types::Provider::Paypal,
 	});
 
-	let customer_id = match active_period.created_by {
-		SubscriptionPeriodCreatedBy::Gift { gifter, .. } => gifter,
-		_ => active_period.subscription_id.user_id,
-	};
+	let customer_id = active_period.gifted_by.unwrap_or(active_period.subscription_id.user_id);
 
 	let internal = matches!(active_period.created_by, SubscriptionPeriodCreatedBy::System { .. });
 
@@ -128,6 +107,7 @@ pub async fn subscription(
 	Ok(Json(SubscriptionResponse {
 		active: true,
 		age: age.days as u32,
+		months: age.months as u32,
 		renew,
 		end_at: Some(end_at),
 		subscription: Some(types::Subscription {

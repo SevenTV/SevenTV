@@ -1,6 +1,7 @@
 use super::{is_default, ImageHost, UserPartialModel};
 use crate::database::badge::{Badge, BadgeId};
 use crate::database::paint::{Paint, PaintId, PaintLayerType, PaintRadialGradientShape, PaintShadow};
+use crate::database::user::profile_picture::UserProfilePictureId;
 use crate::database::user::UserId;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -33,7 +34,7 @@ impl CosmeticModelData for CosmeticAvatarModel {
 	type Id = UserId;
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 // https://github.com/SevenTV/API/blob/6d36bb52c8f7731979882db553e8dbc0153a38bf/data/model/cosmetic.model.go#L21
 pub enum CosmeticKind {
@@ -85,7 +86,7 @@ impl CosmeticPaintModel {
 			id: value.id,
 			name: value.name,
 			color: first_layer.and_then(|l| match l.ty {
-				PaintLayerType::SingleColor(c) => Some(c as i32),
+				PaintLayerType::SingleColor(c) => Some(c),
 				_ => None,
 			}),
 			gradients: vec![],
@@ -143,7 +144,7 @@ impl CosmeticPaintModel {
 						stops
 							.iter()
 							.map(|s| CosmeticPaintGradientStop {
-								color: s.color as i32,
+								color: s.color,
 								at: s.at,
 								center_at: [0.0, 0.0],
 							})
@@ -225,7 +226,7 @@ pub struct CosmeticPaintShadow {
 impl From<PaintShadow> for CosmeticPaintShadow {
 	fn from(s: PaintShadow) -> Self {
 		Self {
-			color: s.color as i32,
+			color: s.color,
 			x_offset: s.offset_x,
 			y_offset: s.offset_y,
 			radius: s.blur,
@@ -309,6 +310,7 @@ impl CosmeticBadgeModel {
 impl CosmeticBadgeModel {
 	pub fn from_db(value: Badge, cdn_base_url: &url::Url) -> Self {
 		let id = value.id.cast();
+
 		let host = ImageHost::from_image_set(&value.image_set, cdn_base_url);
 
 		Self {
@@ -325,7 +327,7 @@ impl CosmeticBadgeModel {
 #[serde(deny_unknown_fields)]
 #[serde(default)]
 pub struct CosmeticAvatarModel {
-	pub id: UserId,
+	pub id: UserProfilePictureId,
 	pub user: UserPartialModel,
 	#[serde(skip_serializing_if = "is_default", rename = "as")]
 	pub aas: String,

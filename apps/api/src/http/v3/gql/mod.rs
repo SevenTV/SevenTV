@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{extensions, EmptySubscription, Schema};
 use axum::response::{self, IntoResponse};
-use axum::routing::{get, post};
+use axum::routing::{any, get};
 use axum::{Extension, Router};
 use guards::RateLimitResponseStore;
 
@@ -16,7 +16,7 @@ mod types;
 
 pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
 	Router::new()
-		.route("/", post(graphql_handler))
+		.route("/", any(graphql_handler))
 		.route("/playground", get(playground))
 		.layer(Extension(schema(Some(Arc::clone(global)))))
 }
@@ -28,7 +28,6 @@ pub fn schema(global: Option<Arc<Global>>) -> V3Schema {
 		.enable_federation()
 		.enable_subscription_in_federation()
 		.extension(extensions::Analyzer)
-		.extension(extensions::Tracing)
 		.limit_complexity(400); // We don't want to allow too complex queries to be executed
 
 	if let Some(global) = global {
@@ -46,11 +45,11 @@ pub struct Docs;
 pub async fn graphql_handler(
 	Extension(schema): Extension<V3Schema>,
 	Extension(session): Extension<Session>,
-	req: async_graphql_axum::GraphQLRequest,
+	req: async_graphql_axum::GraphQLBatchRequest,
 ) -> async_graphql_axum::GraphQLResponse {
 	let req = req.into_inner().data(session).data(RateLimitResponseStore::new());
 
-	schema.execute(req).await.into()
+	schema.execute_batch(req).await.into()
 }
 
 #[utoipa::path(get, path = "/v3/gql/playground", tag = "gql")]

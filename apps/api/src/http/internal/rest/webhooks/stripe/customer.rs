@@ -17,6 +17,7 @@ pub async fn created(
 	let Some(metadata) = customer
 		.metadata
 		.as_ref()
+		.filter(|m| !m.is_empty())
 		.map(CustomerMetadata::from_stripe)
 		.transpose()
 		.map_err(|err| {
@@ -41,6 +42,8 @@ pub async fn created(
 			#[query(set)]
 			User {
 				stripe_customer_id: Some(CustomerId::from(customer.id)),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: &None,
 			}
 		},
 		None,

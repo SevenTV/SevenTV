@@ -30,7 +30,6 @@ pub async fn handle_success(
 					data: PaintData {
 						#[query(flatten)]
 						layers: PaintLayer {
-							#[query(rename = "_id")]
 							id: layer_id,
 						}
 					}
@@ -48,6 +47,7 @@ pub async fn handle_success(
 						}
 					},
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				}
 			},
 			FindOneAndUpdateOptions::builder()

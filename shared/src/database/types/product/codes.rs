@@ -35,7 +35,6 @@ pub type RedeemCodeId = Id<RedeemCode>;
 #[mongo(collection_name = "redeem_codes")]
 #[mongo(index(fields(code = 1), unique))]
 #[mongo(index(fields(search_updated_at = 1)))]
-#[mongo(index(fields(_id = 1, updated_at = -1)))]
 #[mongo(search = "crate::typesense::types::product::codes::RedeemCode")]
 #[serde(deny_unknown_fields)]
 pub struct RedeemCode {
@@ -50,7 +49,6 @@ pub struct RedeemCode {
 	pub active_period: Option<TimePeriod>,
 	pub subscription_effect: Option<RedeemCodeSubscriptionEffect>,
 	pub created_by: UserId,
-	#[serde(flatten)]
 	pub effect: CodeEffect,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,

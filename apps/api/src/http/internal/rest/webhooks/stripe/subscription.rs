@@ -112,6 +112,7 @@ pub async fn deleted(
 				SubscriptionPeriod {
 					end: ended_at,
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				}
 			},
 			FindOneAndUpdateOptions::builder()
@@ -178,6 +179,7 @@ pub async fn updated(
 						SubscriptionPeriod {
 							end: event_created,
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					FindOneAndUpdateOptions::builder()
@@ -230,26 +232,19 @@ pub async fn updated(
 						SubscriptionPeriod {
 							#[query(serde)]
 							provider_id: Some(ProviderSubscriptionId::Stripe(subscription.id.into())),
-							#[query(selector = "lt")]
-							start: chrono::Utc::now(),
-							#[query(selector = "gt")]
-							end: chrono::Utc::now(),
+							gifted_by: &None,
 							#[query(serde)]
 							created_by: SubscriptionPeriodCreatedBy::Invoice {
 								invoice_id: invoice.id().into(),
-								cancel_at_period_end: false,
 							},
 						}
 					},
 					update::update! {
 						#[query(set)]
 						SubscriptionPeriod {
-							#[query(serde)]
-							created_by: SubscriptionPeriodCreatedBy::Invoice {
-								invoice_id: invoice.id().into(),
-								cancel_at_period_end: subscription.cancel_at_period_end,
-							},
+							auto_renew: !subscription.cancel_at_period_end,
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					FindOneAndUpdateOptions::builder()

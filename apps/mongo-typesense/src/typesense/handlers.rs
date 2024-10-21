@@ -20,7 +20,9 @@ use shared::database::user::editor::UserEditorId;
 use shared::database::user::relation::UserRelationId;
 use shared::database::user::UserId;
 use shared::database::{MongoCollection, SearchableMongoCollection};
-use shared::typesense::types::{TypesenseCollection, TypesenseString};
+use shared::typesense::types::TypesenseCollection;
+use typesense_rs::apis::documents_api::DeleteDocumentParams;
+use typesense_rs::apis::Api;
 
 use crate::global::Global;
 use crate::types::{mongo, typesense};
@@ -113,13 +115,19 @@ macro_rules! default_impl {
 				id: Self::Id,
 				_: ChangeStreamEvent<Document>,
 			) -> anyhow::Result<()> {
-				typesense_codegen::apis::documents_api::delete_document(
-					&global.typesense,
-					<$mongo_collection as SearchableMongoCollection>::Typesense::COLLECTION_NAME,
-					&id.to_string(),
-				)
-				.await
-				.context("failed to delete document")?;
+				global
+					.typesense
+					.documents_api()
+					.delete_document(
+						DeleteDocumentParams::builder()
+							.collection_name(
+								<$mongo_collection as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into(),
+							)
+							.document_id(id.to_string())
+							.build(),
+					)
+					.await
+					.context("failed to delete document")?;
 				Ok(())
 			}
 
@@ -193,13 +201,18 @@ default_impl!(ticket_message_batcher, mongo::TicketMessage);
 impl SupportedMongoCollection for mongo::UserEditor {
 	#[tracing::instrument(skip_all, fields(user_id = %id.user_id, editor_id = %id.editor_id))]
 	async fn handle_delete(global: &Arc<Global>, id: UserEditorId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::UserEditor::COLLECTION_NAME,
-			&TypesenseString(id).to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -244,13 +257,18 @@ impl SupportedMongoCollection for mongo::UserEditor {
 
 impl SupportedMongoCollection for mongo::UserRelation {
 	async fn handle_delete(global: &Arc<Global>, id: UserRelationId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::UserRelation::COLLECTION_NAME,
-			&TypesenseString(id).to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -294,13 +312,18 @@ impl SupportedMongoCollection for mongo::UserRelation {
 
 impl SupportedMongoCollection for mongo::User {
 	async fn handle_delete(global: &Arc<Global>, id: UserId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::User::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -500,6 +523,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 					#[query(set)]
 					mongo::User {
 						updated_at: now,
+						search_updated_at: &None,
 					}
 				},
 				true,
@@ -519,6 +543,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 						#[query(set)]
 						mongo::User {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					false,
@@ -536,6 +561,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 						#[query(set)]
 						mongo::Role {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					false,
@@ -554,6 +580,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 						#[query(set)]
 						mongo::SpecialEvent {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					false,
@@ -569,6 +596,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 						#[query(set)]
 						mongo::User {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					true,
@@ -599,6 +627,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 							#[query(set)]
 							mongo::Subscription {
 								updated_at: now,
+								search_updated_at: &None,
 							}
 						},
 						false,
@@ -621,6 +650,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 							#[query(set)]
 							mongo::SubscriptionProduct {
 								updated_at: now,
+								search_updated_at: &None,
 							}
 						},
 						false,
@@ -641,6 +671,7 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 							#[query(set)]
 							mongo::Product {
 								updated_at: now,
+								search_updated_at: &None,
 							}
 						},
 						false,
@@ -664,13 +695,18 @@ impl SupportedMongoCollection for mongo::EntitlementEdge {
 
 impl SupportedMongoCollection for mongo::Product {
 	async fn handle_delete(global: &Arc<Global>, id: ProductId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::Product::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -733,13 +769,18 @@ impl SupportedMongoCollection for mongo::SubscriptionProduct {
 		id: SubscriptionProductId,
 		_: ChangeStreamEvent<Document>,
 	) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::SubscriptionProduct::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -804,13 +845,18 @@ impl SupportedMongoCollection for mongo::SubscriptionProduct {
 
 impl SupportedMongoCollection for mongo::Subscription {
 	async fn handle_delete(global: &Arc<Global>, id: SubscriptionId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::SubscriptionProduct::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -869,13 +915,18 @@ impl SupportedMongoCollection for mongo::Subscription {
 
 impl SupportedMongoCollection for mongo::Role {
 	async fn handle_delete(global: &Arc<Global>, id: RoleId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::Role::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -948,6 +999,7 @@ impl SupportedMongoCollection for mongo::Role {
 					#[query(set)]
 					mongo::User {
 						updated_at: now,
+						search_updated_at: &None,
 					}
 				},
 				true,
@@ -968,13 +1020,18 @@ impl SupportedMongoCollection for mongo::Role {
 
 impl SupportedMongoCollection for mongo::SpecialEvent {
 	async fn handle_delete(global: &Arc<Global>, id: SpecialEventId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::SpecialEvent::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -1033,13 +1090,18 @@ impl SupportedMongoCollection for mongo::SpecialEvent {
 
 impl SupportedMongoCollection for mongo::EmoteSet {
 	async fn handle_delete(global: &Arc<Global>, id: EmoteSetId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		typesense_codegen::apis::documents_api::delete_document(
-			&global.typesense,
-			typesense::EmoteSet::COLLECTION_NAME,
-			&id.to_string(),
-		)
-		.await
-		.context("failed to delete document")?;
+		global
+			.typesense
+			.documents_api()
+			.delete_document(
+				DeleteDocumentParams::builder()
+					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
+					.document_id(id.to_string())
+					.build(),
+			)
+			.await
+			.context("failed to delete document")?;
+
 		Ok(())
 	}
 
@@ -1092,6 +1154,7 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 						#[query(set)]
 						mongo::User {
 							updated_at: now,
+							search_updated_at: &None,
 						}
 					},
 					true,
@@ -1112,6 +1175,7 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 						#[query(set)]
 						mongo::EmoteSet {
 							updated_at: now,
+							search_updated_at: &None,
 							#[query(flatten)]
 							origin_config: mongo::EmoteSetOriginConfig {
 								needs_resync: false,

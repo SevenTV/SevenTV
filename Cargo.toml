@@ -3,7 +3,6 @@
 members = [
     "apps/api",
     "apps/cdn",
-    "apps/data-brittler",
     "apps/event-api",
     "apps/mongo-change-stream",
     "apps/mongo-typesense",
@@ -13,7 +12,8 @@ members = [
 
 resolver = "2"
 
-[profile.release]
+[profile.release-debug]
+inherits = "release"
 strip = false
 debug = true
 lto = "thin"

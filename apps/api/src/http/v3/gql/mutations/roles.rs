@@ -182,6 +182,7 @@ impl RolesMutation {
 							#[query(optional)]
 							rank: data.position.map(|p| p as i32),
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					FindOneAndUpdateOptions::builder()

@@ -21,9 +21,10 @@ impl<'a, E: Debug> TransactionSession<'a, E> {
 		Self(inner, PhantomData)
 	}
 
-	fn reset(&mut self) -> Result<(), TransactionError<E>> {
+	async fn reset(&mut self) -> Result<(), TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		this.events.clear();
+		this.session.start_transaction().await?;
 		Ok(())
 	}
 
@@ -263,8 +264,7 @@ where
 	Fut: std::future::Future<Output = TransactionResult<T, E>> + 'a,
 	E: Debug,
 {
-	let mut session = global.mongo.start_session().await?;
-	session.start_transaction().await?;
+	let session = global.mongo.start_session().await?;
 
 	let mut session = TransactionSession::new(Arc::new(Mutex::new(SessionInner {
 		global,
@@ -280,7 +280,7 @@ where
 		}
 
 		retry_count += 1;
-		session.reset()?;
+		session.reset().await?;
 		let result = (f.clone())(session.clone()).await;
 		let mut session_inner = session.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		match result {
@@ -322,10 +322,9 @@ where
 				}
 			},
 			Err(err) => {
-				tracing::warn!(error = %err, "transaction error");
-
 				if let TransactionError::Mongo(err) = &err {
 					if err.contains_label(TRANSIENT_TRANSACTION_ERROR) {
+						tracing::warn!(error = %err, "transaction error");
 						continue 'retry_operation;
 					}
 				}

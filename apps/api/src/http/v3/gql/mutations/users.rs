@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument, UpdateOptions};
+use shared::database::badge::BadgeId;
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::paint::PaintId;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, RolePermission, UserPermission};
 use shared::database::user::connection::UserConnection as DbUserConnection;
@@ -117,6 +119,7 @@ impl UserOps {
 								active_emote_set_id: data.emote_set_id.map(|id| id.id()),
 							},
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						},
 						#[query(pull)]
 						update_pull,
@@ -233,188 +236,174 @@ impl UserOps {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = session.user()?;
 
+		if !authed_user.has(UserPermission::InviteEditors) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you do not have permission to modify editors",
+			));
+		}
+
 		let res = with_transaction(global, |mut tx| async move {
-			// load all editors, we have to do this to know the old permissions Sadge
-			let editors = global
-				.user_editor_by_user_id_loader
-				.load(authed_user.id)
-				.await
-				.map_err(|_| {
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::LoadError,
-						"failed to load editors",
-					))
-				})?
-				.unwrap_or_default();
+			let editor_id = UserEditorId {
+				user_id: self.id.id(),
+				editor_id: editor_id.id(),
+			};
 
-			if let Some(permissions) = data.permissions {
-				if permissions == UserEditorModelPermission::none() {
-					let editor_id = UserEditorId {
-						user_id: self.id.id(),
-						editor_id: editor_id.id(),
-					};
+			let permissions = data.permissions.unwrap_or(UserEditorModelPermission::none());
 
-					// Remove editor
-					let res = tx
-						.find_one_and_delete(
-							filter::filter! {
-								DbUserEditor {
-									#[query(serde, rename = "_id")]
-									id: editor_id,
-								}
-							},
-							None,
-						)
-						.await?;
+			if permissions.is_none() {
+				// Remove editor
+				let res = tx
+					.find_one_and_delete(
+						filter::filter! {
+							DbUserEditor {
+								#[query(rename = "_id", serde)]
+								id: editor_id,
+							}
+						},
+						None,
+					)
+					.await?;
 
-					if let Some(editor) = res {
-						let editor_user = global
-							.user_loader
-							.load_fast(global, editor.id.editor_id)
-							.await
-							.map_err(|_| {
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::LoadError,
-									"failed to load user",
-								))
-							})?
-							.ok_or_else(|| {
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::LoadError,
-									"failed to load user",
-								))
-							})?;
-
-						tx.register_event(InternalEvent {
-							actor: Some(authed_user.clone()),
-							session_id: session.user_session_id(),
-							data: InternalEventData::UserEditor {
-								after: editor,
-								data: InternalEventUserEditorData::RemoveEditor {
-									editor: Box::new(editor_user.user),
-								},
-							},
-							timestamp: chrono::Utc::now(),
+				if let Some(editor) = res {
+					let editor_user = global
+						.user_loader
+						.load_fast(global, editor.id.editor_id)
+						.await
+						.map_err(|_| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load user",
+							))
+						})?
+						.ok_or_else(|| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load user",
+							))
 						})?;
-					}
+
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::UserEditor {
+							after: editor,
+							data: InternalEventUserEditorData::RemoveEditor {
+								editor: Box::new(editor_user.user),
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+			} else {
+				let old_permissions = tx
+					.find_one(
+						filter::filter! {
+							DbUserEditor {
+								#[query(rename = "_id", serde)]
+								id: editor_id,
+							}
+						},
+						None,
+					)
+					.await?
+					.as_ref()
+					.map(|e| e.permissions);
+
+				// Add or update editor
+				let permissions = permissions.to_db();
+
+				if old_permissions == Some(permissions) {
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
+						"permissions are the same",
+					)));
+				}
+
+				let now = chrono::Utc::now();
+
+				let editor = tx
+					.find_one_and_update(
+						filter::filter! {
+							DbUserEditor {
+								#[query(serde, rename = "_id")]
+								id: editor_id,
+							}
+						},
+						update::update! {
+							#[query(set)]
+							DbUserEditor {
+								#[query(serde)]
+								permissions,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
+							#[query(set_on_insert)]
+							DbUserEditor {
+								// TODO: Once the new website allows for pending editors, this should be changed to Pending
+								#[query(serde)]
+								state: UserEditorState::Accepted,
+								notes: None,
+								added_at: now,
+								added_by_id: authed_user.id,
+							}
+						},
+						FindOneAndUpdateOptions::builder()
+							.upsert(true)
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load editor",
+						))
+					})?;
+
+				// updated
+				let editor_user = global
+					.user_loader
+					.load_fast(global, editor.id.editor_id)
+					.await
+					.map_err(|_| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load user",
+						))
+					})?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load user",
+						))
+					})?;
+
+				if old_permissions.is_none() {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::UserEditor {
+							after: editor,
+							data: InternalEventUserEditorData::AddEditor {
+								editor: Box::new(editor_user.user),
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
 				} else {
-					let old_permissions = editors
-						.iter()
-						.find(|e| e.id.editor_id == editor_id.id())
-						.map(|e| e.permissions);
-
-					// Add or update editor
-					let editor_id = UserEditorId {
-						user_id: self.id.id(),
-						editor_id: editor_id.id(),
-					};
-
-					let permissions = permissions.to_db();
-
-					let editor = tx
-						.find_one_and_update(
-							filter::filter! {
-								DbUserEditor {
-									#[query(serde, rename = "_id")]
-									id: editor_id,
-								}
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::UserEditor {
+							after: editor,
+							data: InternalEventUserEditorData::EditPermissions {
+								old: old_permissions.unwrap_or_default(),
+								editor: Box::new(editor_user.user),
 							},
-							update::update! {
-								#[query(set)]
-								DbUserEditor {
-									#[query(serde)]
-									permissions,
-									updated_at: chrono::Utc::now(),
-								}
-							},
-							FindOneAndUpdateOptions::builder()
-								.return_document(ReturnDocument::After)
-								.build(),
-						)
-						.await?;
-
-					if let Some(editor) = editor {
-						// updated
-						let editor_user = global
-							.user_loader
-							.load_fast(global, editor.id.editor_id)
-							.await
-							.map_err(|_| {
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::LoadError,
-									"failed to load user",
-								))
-							})?
-							.ok_or_else(|| {
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::LoadError,
-									"failed to load user",
-								))
-							})?;
-
-						tx.register_event(InternalEvent {
-							actor: Some(authed_user.clone()),
-							session_id: session.user_session_id(),
-							data: InternalEventData::UserEditor {
-								after: editor,
-								data: InternalEventUserEditorData::EditPermissions {
-									old: old_permissions.unwrap_or_default(),
-									editor: Box::new(editor_user.user),
-								},
-							},
-							timestamp: chrono::Utc::now(),
-						})?;
-					} else {
-						// didn't exist
-						if authed_user.has(UserPermission::InviteEditors) {
-							return Err(TransactionError::Custom(ApiError::forbidden(
-								ApiErrorCode::LackingPrivileges,
-								"you do not have permission to invite editors",
-							)));
-						}
-
-						let editor = DbUserEditor {
-							id: editor_id,
-							state: UserEditorState::Pending,
-							notes: None,
-							permissions,
-							added_by_id: authed_user.id,
-							added_at: chrono::Utc::now(),
-							updated_at: chrono::Utc::now(),
-							search_updated_at: None,
-						};
-
-						let editor_user = global
-							.user_loader
-							.load_fast(global, editor.id.editor_id)
-							.await
-							.map_err(|_| {
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::LoadError,
-									"failed to load user",
-								))
-							})?
-							.ok_or_else(|| {
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::LoadError,
-									"failed to load user",
-								))
-							})?;
-
-						tx.insert_one::<DbUserEditor>(&editor, None).await?;
-
-						tx.register_event(InternalEvent {
-							actor: Some(authed_user.clone()),
-							session_id: session.user_session_id(),
-							data: InternalEventData::UserEditor {
-								after: editor,
-								data: InternalEventUserEditorData::AddEditor {
-									editor: Box::new(editor_user.user),
-								},
-							},
-							timestamp: chrono::Utc::now(),
-						})?;
-					}
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
 				}
 			}
 
@@ -476,13 +465,63 @@ impl UserOps {
 		let res = with_transaction(global, |mut tx| async move {
 			match update.kind {
 				CosmeticKind::Paint => {
+					let id: Option<PaintId> = if update.id.0.is_nil() { None } else { Some(update.id.id()) };
+
 					// check if user has paint
-					if !user.computed.entitlements.paints.contains(&update.id.id()) {
+					if id.is_some_and(|id| !user.computed.entitlements.paints.contains(&id)) {
 						return Err(TransactionError::Custom(ApiError::forbidden(
 							ApiErrorCode::LoadError,
 							"you do not have permission to use this paint",
 						)));
 					}
+
+					if user.style.active_paint_id == id {
+						return Ok(true);
+					}
+
+					let new = if let Some(id) = id {
+						Some(
+							global
+								.paint_by_id_loader
+								.load(id)
+								.await
+								.map_err(|_| {
+									TransactionError::Custom(ApiError::internal_server_error(
+										ApiErrorCode::LoadError,
+										"failed to load paint",
+									))
+								})?
+								.ok_or_else(|| {
+									TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))
+								})?,
+						)
+					} else {
+						None
+					};
+
+					let old = if let Some(paint_id) = user.style.active_paint_id {
+						global.paint_by_id_loader.load(paint_id).await.map_err(|_| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load badge",
+							))
+						})?
+					} else {
+						None
+					};
+
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::User {
+							after: user.user.clone(),
+							data: InternalEventUserData::ChangeActivePaint {
+								old: old.map(Box::new),
+								new: new.map(Box::new),
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
 
 					let res = User::collection(&global.db)
 						.update_one(
@@ -497,8 +536,10 @@ impl UserOps {
 								User {
 									#[query(flatten)]
 									style: UserStyle {
-										active_paint_id: update.id.id(),
-									}
+										active_paint_id: id,
+									},
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
 								}
 							},
 						)
@@ -507,27 +548,39 @@ impl UserOps {
 					Ok(res.modified_count == 1)
 				}
 				CosmeticKind::Badge => {
+					let id: Option<BadgeId> = if update.id.0.is_nil() { None } else { Some(update.id.id()) };
+
 					// check if user has paint
-					if !user.computed.entitlements.badges.contains(&update.id.id()) {
+					if id.is_some_and(|id| !user.computed.entitlements.badges.contains(&id)) {
 						return Err(TransactionError::Custom(ApiError::forbidden(
 							ApiErrorCode::LoadError,
 							"you do not have permission to use this badge",
 						)));
 					}
 
-					let new = global
-						.badge_by_id_loader
-						.load(update.id.id())
-						.await
-						.map_err(|_| {
-							TransactionError::Custom(ApiError::internal_server_error(
-								ApiErrorCode::LoadError,
-								"failed to load badge",
-							))
-						})?
-						.ok_or_else(|| {
-							TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))
-						})?;
+					if user.style.active_badge_id == id {
+						return Ok(true);
+					}
+
+					let new = if let Some(id) = id {
+						Some(
+							global
+								.badge_by_id_loader
+								.load(id)
+								.await
+								.map_err(|_| {
+									TransactionError::Custom(ApiError::internal_server_error(
+										ApiErrorCode::LoadError,
+										"failed to load badge",
+									))
+								})?
+								.ok_or_else(|| {
+									TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))
+								})?,
+						)
+					} else {
+						None
+					};
 
 					let old = if let Some(badge_id) = user.style.active_badge_id {
 						global.badge_by_id_loader.load(badge_id).await.map_err(|_| {
@@ -547,7 +600,7 @@ impl UserOps {
 							after: user.user.clone(),
 							data: InternalEventUserData::ChangeActiveBadge {
 								old: old.map(Box::new),
-								new: Some(Box::new(new)),
+								new: new.map(Box::new),
 							},
 						},
 						timestamp: chrono::Utc::now(),
@@ -566,8 +619,10 @@ impl UserOps {
 								User {
 									#[query(flatten)]
 									style: UserStyle {
-										active_badge_id: update.id.id(),
-									}
+										active_badge_id: id,
+									},
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
 								},
 							},
 						)

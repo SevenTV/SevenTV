@@ -32,12 +32,16 @@ use shared::ip::GeoIpResolver;
 use shared::redis::setup_redis;
 
 use crate::config::Config;
+use crate::dataloader::active_subscription_period::{
+	ActiveSubscriptionPeriodByUserIdLoader, SubscriptionPeriodsByUserIdLoader,
+};
 use crate::dataloader::emote::{EmoteByIdLoader, EmoteByUserIdLoader};
 use crate::dataloader::emote_set::EmoteSetByUserIdLoader;
 use crate::dataloader::full_user::FullUserLoader;
+use crate::dataloader::subscription_products::SubscriptionProductsLoader;
 use crate::dataloader::ticket_message::TicketMessageByTicketIdLoader;
-use crate::dataloader::user::UserByPlatformIdLoader;
-use crate::dataloader::user_bans::UserBanByUserIdLoader;
+use crate::dataloader::user::{UserByPlatformIdLoader, UserByPlatformUsernameLoader};
+use crate::dataloader::user_ban::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
 use crate::dataloader::user_session::UserSessionUpdaterBatcher;
 use crate::ratelimit::RateLimiter;
@@ -45,7 +49,7 @@ use crate::stripe_client;
 
 pub struct Global {
 	pub nats: async_nats::Client,
-	pub redis: fred::clients::RedisClient,
+	pub redis: fred::clients::RedisPool,
 	pub rate_limiter: RateLimiter,
 	geoip: Option<GeoIpResolver>,
 	pub jetstream: async_nats::jetstream::Context,
@@ -74,10 +78,14 @@ pub struct Global {
 	pub entitlement_edge_inbound_loader: DataLoader<EntitlementEdgeInboundLoader>,
 	pub entitlement_edge_outbound_loader: DataLoader<EntitlementEdgeOutboundLoader>,
 	pub subscription_product_by_id_loader: DataLoader<LoaderById<SubscriptionProduct>>,
+	pub subscription_products_loader: DataLoader<SubscriptionProductsLoader>,
 	pub subscription_by_id_loader: DataLoader<LoaderById<Subscription>>,
+	pub subscription_periods_by_user_id_loader: DataLoader<SubscriptionPeriodsByUserIdLoader>,
+	pub active_subscription_period_by_user_id_loader: DataLoader<ActiveSubscriptionPeriodByUserIdLoader>,
 	pub redeem_code_by_id_loader: DataLoader<LoaderById<RedeemCode>>,
 	pub user_by_id_loader: DataLoader<LoaderById<User>>,
 	pub user_by_platform_id_loader: DataLoader<UserByPlatformIdLoader>,
+	pub user_by_platform_username_loader: DataLoader<UserByPlatformUsernameLoader>,
 	pub user_ban_by_id_loader: DataLoader<LoaderById<UserBan>>,
 	pub user_ban_by_user_id_loader: DataLoader<UserBanByUserIdLoader>,
 	pub user_profile_picture_id_loader: DataLoader<LoaderById<UserProfilePicture>>,
@@ -85,7 +93,7 @@ pub struct Global {
 	pub user_session_by_id_loader: DataLoader<LoaderById<UserSession>>,
 	pub user_session_updater_batcher: DataLoader<UserSessionUpdaterBatcher>,
 	pub user_loader: FullUserLoader,
-	pub typesense: typesense_codegen::apis::configuration::Configuration,
+	pub typesense: typesense_rs::apis::ApiClient,
 	pub updater: MongoUpdater,
 }
 
@@ -107,31 +115,31 @@ impl Global {
 
 		let clickhouse = init_clickhouse(&config.clickhouse).await?;
 
-		let image_processor = ImageProcessor::new(&config.api.image_processor)
+		let image_processor = ImageProcessor::new(&config.image_processor)
 			.await
 			.context("image processor setup")?;
 
 		tracing::info!("connected to image processor");
 
-		let typesense = typesense_codegen::apis::configuration::Configuration {
+		let typesense = typesense_rs::apis::configuration::Configuration {
 			base_path: config.typesense.uri.clone(),
 			api_key: config
 				.typesense
 				.api_key
 				.clone()
-				.map(|key| typesense_codegen::apis::configuration::ApiKey { key, prefix: None }),
+				.map(|key| typesense_rs::apis::configuration::ApiKey { key, prefix: None }),
 			..Default::default()
 		};
 
 		let stripe_client = stripe_client::StripeClientManager::new(&config);
 
-		let geoip = if let Some(config) = config.api.geoip.as_ref() {
+		let geoip = if let Some(config) = config.geoip.as_ref() {
 			Some(GeoIpResolver::new(config).await.context("geoip resolver")?)
 		} else {
 			None
 		};
 
-		let redis = setup_redis(&config.api.redis).await?;
+		let redis = setup_redis(&config.redis).await?;
 
 		tracing::info!("connected to redis");
 
@@ -164,10 +172,14 @@ impl Global {
 			entitlement_edge_inbound_loader: EntitlementEdgeInboundLoader::new(db.clone()),
 			entitlement_edge_outbound_loader: EntitlementEdgeOutboundLoader::new(db.clone()),
 			subscription_product_by_id_loader: LoaderById::new(db.clone()),
+			subscription_products_loader: SubscriptionProductsLoader::new(db.clone()),
 			subscription_by_id_loader: LoaderById::new(db.clone()),
+			subscription_periods_by_user_id_loader: SubscriptionPeriodsByUserIdLoader::new(db.clone()),
+			active_subscription_period_by_user_id_loader: ActiveSubscriptionPeriodByUserIdLoader::new(db.clone()),
 			redeem_code_by_id_loader: LoaderById::new(db.clone()),
 			user_by_id_loader: LoaderById::new(db.clone()),
 			user_by_platform_id_loader: UserByPlatformIdLoader::new(db.clone()),
+			user_by_platform_username_loader: UserByPlatformUsernameLoader::new(db.clone()),
 			user_ban_by_id_loader: LoaderById::new(db.clone()),
 			user_ban_by_user_id_loader: UserBanByUserIdLoader::new(db.clone()),
 			user_profile_picture_id_loader: LoaderById::new(db.clone()),
@@ -176,13 +188,13 @@ impl Global {
 			user_session_updater_batcher: UserSessionUpdaterBatcher::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			stripe_client,
-			typesense,
+			typesense: typesense_rs::apis::ApiClient::new(Arc::new(typesense)),
 			mongo,
 			updater: MongoUpdater::new(
 				db.clone(),
 				BatcherConfig {
 					name: "MongoUpdater".to_string(),
-					concurrency: 50,
+					concurrency: 500,
 					max_batch_size: 5_000,
 					sleep_duration: std::time::Duration::from_millis(300),
 				},
@@ -202,16 +214,10 @@ impl Global {
 impl HealthCheck for Global {
 	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output = bool> + Send + '_>> {
 		Box::pin(async {
-			tracing::info!("running health check");
+			tracing::debug!("running health check");
 
-			if !match self.db.run_command(doc! { "ping": 1 }).await {
-				Ok(r) => r.get_bool("ok").unwrap_or(false),
-				Err(err) => {
-					tracing::error!(%err, "failed to ping database");
-
-					false
-				}
-			} {
+			if let Err(err) = self.db.run_command(doc! { "ping": 1 }).await {
+				tracing::error!(%err, "failed to ping database");
 				return false;
 			}
 

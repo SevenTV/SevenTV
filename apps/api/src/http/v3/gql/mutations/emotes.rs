@@ -13,6 +13,7 @@ use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::object_id::GqlObjectId;
 use shared::old_types::EmoteFlagsModel;
 
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -33,7 +34,7 @@ impl EmotesMutation {
 
 		let emote = global
 			.emote_by_id_loader
-			.load(id.id())
+			.load_exclude_deleted(id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;
@@ -114,6 +115,7 @@ impl EmoteOps {
 							DbEmote {
 								deleted: true,
 								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
 							}
 						},
 						None,
@@ -157,17 +159,17 @@ impl EmoteOps {
 		}
 
 		let res = with_transaction(global, |mut tx| async move {
-			let new_default_name = params.name.or(params.version_name);
+			// only set new default name if it's different from the current one
+			let mut new_default_name = params.name.or(params.version_name);
+			new_default_name.take_if(|n| n == &self.emote.default_name);
 
 			let mut flags = self.emote.flags;
 
 			if let Some(input_flags) = params.flags {
 				if input_flags.contains(EmoteFlagsModel::Private) {
 					flags |= EmoteFlags::Private;
-					flags &= !EmoteFlags::PublicListed;
 				} else {
 					flags &= !EmoteFlags::Private;
-					flags |= EmoteFlags::PublicListed;
 				}
 
 				if input_flags.contains(EmoteFlagsModel::ZeroWidth) {
@@ -182,10 +184,8 @@ impl EmoteOps {
 				if let Some(listed) = params.listed {
 					if listed {
 						flags |= EmoteFlags::PublicListed;
-						flags &= !EmoteFlags::Private;
 					} else {
 						flags &= !EmoteFlags::PublicListed;
-						flags |= EmoteFlags::Private;
 					}
 				}
 
@@ -226,6 +226,7 @@ impl EmoteOps {
 							#[query(optional)]
 							tags: params.tags.as_ref(),
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					FindOneAndUpdateOptions::builder()
@@ -346,6 +347,7 @@ impl EmoteOps {
 								at: chrono::Utc::now(),
 							},
 							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
 						}
 					},
 					None,

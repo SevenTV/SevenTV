@@ -30,7 +30,7 @@ pub async fn handle_success(
 			Emote {
 				#[query(bit = "or")]
 				flags: EmoteFlags::Animated
-			}
+			},
 		})
 	} else {
 		None
@@ -56,6 +56,7 @@ pub async fn handle_success(
 					image_set,
 					aspect_ratio,
 					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				},
 				#[query(bit)]
 				bit_update
@@ -144,6 +145,8 @@ pub async fn handle_fail(
 				#[query(set)]
 				Emote {
 					deleted: true,
+					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
 				}
 			},
 			None,

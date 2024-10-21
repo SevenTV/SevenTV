@@ -263,7 +263,7 @@ pub fn derive(input: TokenStream) -> syn::Result<TokenStream> {
 		};
 
 		quote! {
-			fields.push(#crate_::typesense_codegen::models::Field {
+			fields.push(#crate_::typesense_rs::models::Field {
 				name: #name.to_string(),
 				r#type: #ty.to_string(),
 				optional: #optional,
@@ -319,20 +319,21 @@ pub fn derive(input: TokenStream) -> syn::Result<TokenStream> {
 
 			type Id = #id;
 
-			fn fields() -> Vec<#crate_::typesense_codegen::models::Field> {
+			fn fields() -> Vec<#crate_::typesense_rs::models::Field> {
 				let mut fields = Vec::new();
 				#(#schema_fields)*
 				fields
 			}
 
-			fn schema() -> #crate_::typesense_codegen::models::CollectionSchema {
-				#crate_::typesense_codegen::models::CollectionSchema {
+			fn schema() -> #crate_::typesense_rs::models::CollectionSchema {
+				#crate_::typesense_rs::models::CollectionSchema {
 					name: Self::COLLECTION_NAME.into(),
 					fields: Self::fields(),
 					default_sorting_field: #default_sort,
 					token_separators: #token_separators,
 					symbols_to_index: #index_symbols,
 					enable_nested_fields: #nested_fields,
+					..Default::default()
 				}
 			}
 		}

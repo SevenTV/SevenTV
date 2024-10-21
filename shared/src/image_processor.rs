@@ -228,9 +228,9 @@ impl ImageProcessor {
 		upload_ip: Option<std::net::IpAddr>,
 	) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
-			Some(self.make_input_upload(format!("/emote/{id}/input.{{ext}}"), data)),
+			Some(self.make_input_upload(format!("emote/{id}/input.{{ext}}"), data)),
 			self.make_task(
-				self.make_output(format!("/emote/{id}/{{scale}}x{{static}}.{{ext}}")),
+				self.make_output(format!("emote/{id}/{{scale}}x{{static}}.{{ext}}")),
 				self.make_events(Subject::Emote(id), {
 					let mut map = std::collections::HashMap::new();
 					map.insert("emote_id".to_string(), id.to_string());
@@ -254,9 +254,9 @@ impl ImageProcessor {
 		upload_ip: Option<std::net::IpAddr>,
 	) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
-			Some(self.make_input_upload(format!("/user/{user_id}/profile-picture/{id}/input.{{ext}}"), data)),
+			Some(self.make_input_upload(format!("user/{user_id}/profile-picture/{id}/input.{{ext}}"), data)),
 			self.make_task(
-				self.make_output(format!("/user/{user_id}/profile-picture/{id}/{{scale}}x{{static}}.{{ext}}")),
+				self.make_output(format!("user/{user_id}/profile-picture/{id}/{{scale}}x{{static}}.{{ext}}")),
 				self.make_events(Subject::ProfilePicture(id), {
 					let mut map = std::collections::HashMap::new();
 					map.insert("user_id".to_string(), user_id.to_string());
@@ -279,7 +279,7 @@ impl ImageProcessor {
 		data: Bytes,
 	) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
-			Some(self.make_input_upload(format!("/paint/{id}/layer/{layer_id}/input.{{ext}}"), data)),
+			Some(self.make_input_upload(format!("paint/{id}/layer/{layer_id}/input.{{ext}}"), data)),
 			image_processor::Task {
 				limits: Some(image_processor::Limits {
 					max_input_frame_count: Some(1000),
@@ -290,7 +290,7 @@ impl ImageProcessor {
 				..self.make_task(
 					scuffle_image_processor_proto::Output {
 						max_aspect_ratio: None,
-						..self.make_output(format!("/paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
+						..self.make_output(format!("paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
 					},
 					self.make_events(
 						Subject::PaintLayer(id, layer_id),
@@ -310,9 +310,15 @@ impl ImageProcessor {
 
 	pub async fn upload_badge(&self, id: BadgeId, data: Bytes) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
-			Some(self.make_input_upload(format!("/badge/{id}/input.{{ext}}"), data)),
+			Some(self.make_input_upload(format!("badge/{id}/input.{{ext}}"), data)),
 			self.make_task(
-				self.make_output(format!("/badge/{id}/{{scale}}x{{static}}.{{ext}}")),
+				image_processor::Output {
+					resize: Some(image_processor::output::Resize::Scaling(image_processor::Scaling {
+						base: Some(image_processor::scaling::Base::BaseHeight(18)),
+						scales: vec![1, 2, 3, 4],
+					})),
+					..self.make_output(format!("badge/{id}/{{scale}}x{{static}}.{{ext}}"))
+				},
 				self.make_events(
 					Subject::Badge(id),
 					[("badge_id".to_string(), id.to_string())].into_iter().collect(),
