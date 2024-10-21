@@ -311,19 +311,27 @@ impl ImageProcessor {
 	pub async fn upload_badge(&self, id: BadgeId, data: Bytes) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
 			Some(self.make_input_upload(format!("badge/{id}/input.{{ext}}"), data)),
-			self.make_task(
-				image_processor::Output {
-					resize: Some(image_processor::output::Resize::Scaling(image_processor::Scaling {
-						base: Some(image_processor::scaling::Base::BaseHeight(18)),
-						scales: vec![1, 2, 3, 4],
-					})),
-					..self.make_output(format!("badge/{id}/{{scale}}x{{static}}.{{ext}}"))
-				},
-				self.make_events(
-					Subject::Badge(id),
-					[("badge_id".to_string(), id.to_string())].into_iter().collect(),
-				),
-			),
+			image_processor::Task {
+				limits: Some(image_processor::Limits {
+					max_input_frame_count: None,
+					max_input_width: None,
+					max_input_height: None,
+					..Default::default()
+				}),
+				..self.make_task(
+					image_processor::Output {
+						resize: Some(image_processor::output::Resize::Scaling(image_processor::Scaling {
+							base: Some(image_processor::scaling::Base::BaseHeight(18)),
+							scales: vec![1, 2, 3, 4],
+						})),
+						..self.make_output(format!("badge/{id}/{{scale}}x{{static}}.{{ext}}"))
+					},
+					self.make_events(
+						Subject::Badge(id),
+						[("badge_id".to_string(), id.to_string())].into_iter().collect(),
+					),
+				)
+			},
 		);
 
 		self.send_req(req).await
