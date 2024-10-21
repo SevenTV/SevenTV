@@ -8,7 +8,7 @@ use shared::database::paint::PaintId;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, RolePermission, UserPermission};
 use shared::database::user::connection::UserConnection as DbUserConnection;
-use shared::database::user::editor::{UserEditor as DbUserEditor, UserEditorId, UserEditorState};
+use shared::database::user::editor::{EditorUserPermission, UserEditor as DbUserEditor, UserEditorId, UserEditorState};
 use shared::database::user::{User, UserStyle};
 use shared::database::MongoCollection;
 use shared::event::{InternalEvent, InternalEventData, InternalEventUserData, InternalEventUserEditorData};
@@ -19,7 +19,7 @@ use shared::old_types::UserEditorModelPermission;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard, UserGuard};
+use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
 use crate::transactions::{with_transaction, TransactionError};
@@ -42,9 +42,7 @@ pub struct UserOps {
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl UserOps {
-	#[graphql(
-		guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1).and(UserGuard(self.id.id()).or(PermissionGuard::one(UserPermission::ManageAny)))"
-	)]
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1)")]
 	async fn connections<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -58,6 +56,30 @@ impl UserOps {
 			.data::<Session>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = session.user()?;
+
+		if authed_user.id != self.id.id() && !authed_user.has(UserPermission::ManageAny) {
+			let editor = global
+				.user_editor_by_id_loader
+				.load(UserEditorId {
+					editor_id: authed_user.id,
+					user_id: self.id.id(),
+				})
+				.await
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
+						"you do not have permission to modify connections",
+					)
+				})?;
+
+			if editor.state != UserEditorState::Accepted || !editor.permissions.has(EditorUserPermission::ManageProfile) {
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"you do not have permission to modify connections, you need the ManageProfile permission",
+				));
+			}
+		}
 
 		let res = with_transaction(global, |mut tx| async move {
 			let old_user = global
@@ -134,7 +156,7 @@ impl UserOps {
 			};
 
 			if let Some(true) = data.unlink {
-				if old_user.user.connections.len() == 1 {
+				if user.connections.is_empty() {
 					return Err(TransactionError::Custom(ApiError::bad_request(
 						ApiErrorCode::BadRequest,
 						"cannot remove last connection",
@@ -226,9 +248,7 @@ impl UserOps {
 		}
 	}
 
-	#[graphql(
-		guard = "RateLimitGuard::new(RateLimitResource::UserChangeEditor, 1).and(UserGuard(self.id.id()).or(PermissionGuard::one(UserPermission::ManageAny)))"
-	)]
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeEditor, 1)")]
 	async fn editors(
 		&self,
 		ctx: &Context<'_>,
@@ -246,8 +266,38 @@ impl UserOps {
 		if !authed_user.has(UserPermission::InviteEditors) {
 			return Err(ApiError::forbidden(
 				ApiErrorCode::LackingPrivileges,
-				"you do not have permission to modify editors",
+				"you are not allowed to invite editors",
 			));
+		}
+
+		let permissions = data.permissions.unwrap_or(UserEditorModelPermission::none());
+
+		// They should be able to remove themselves from the editor list
+		if authed_user.id != self.id.id()
+			&& !authed_user.has(UserPermission::ManageAny)
+			&& (editor_id.id() != authed_user.id() || permissions.is_none())
+		{
+			let editor = global
+				.user_editor_by_id_loader
+				.load(UserEditorId {
+					editor_id: authed_user.id,
+					user_id: self.id.id(),
+				})
+				.await
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
+						"you do not have permission to modify editors",
+					)
+				})?;
+
+			if editor.state != UserEditorState::Accepted || !editor.permissions.has(EditorUserPermission::ManageEditors) {
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"you do not have permission to modify editors, you need the ManageEditors permission",
+				));
+			}
 		}
 
 		let res = with_transaction(global, |mut tx| async move {
@@ -255,8 +305,6 @@ impl UserOps {
 				user_id: self.id.id(),
 				editor_id: editor_id.id(),
 			};
-
-			let permissions = data.permissions.unwrap_or(UserEditorModelPermission::none());
 
 			if permissions.is_none() {
 				// Remove editor
@@ -446,9 +494,7 @@ impl UserOps {
 		}
 	}
 
-	#[graphql(
-		guard = "RateLimitGuard::new(RateLimitResource::UserChangeCosmetics, 1).and(UserGuard(self.id.id()).or(PermissionGuard::one(UserPermission::ManageAny)))"
-	)]
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeCosmetics, 1)")]
 	async fn cosmetics<'ctx>(&self, ctx: &Context<'ctx>, update: UserCosmeticUpdate) -> Result<bool, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -460,6 +506,30 @@ impl UserOps {
 
 		if !update.selected {
 			return Ok(true);
+		}
+
+		if authed_user.id != self.id.id() && !authed_user.has(UserPermission::ManageAny) {
+			let editor = global
+				.user_editor_by_id_loader
+				.load(UserEditorId {
+					editor_id: authed_user.id,
+					user_id: self.id.id(),
+				})
+				.await
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
+						"you do not have permission to change this user's cosmetics",
+					)
+				})?;
+
+			if editor.state != UserEditorState::Accepted || !editor.permissions.has(EditorUserPermission::ManageProfile) {
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"you do not have permission to modify this user's cosmetics, you need the ManageProfile permission",
+				));
+			}
 		}
 
 		let user = global

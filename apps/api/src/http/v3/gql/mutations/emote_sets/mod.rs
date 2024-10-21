@@ -96,8 +96,8 @@ impl EmoteSetsMutation {
 			let editor = global
 				.user_editor_by_id_loader
 				.load(UserEditorId {
-					user_id: authed_user.id,
-					editor_id: user_id.id(),
+					user_id: user_id.id(),
+					editor_id: authed_user.id,
 				})
 				.await
 				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
