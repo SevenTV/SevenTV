@@ -1,13 +1,14 @@
 [workspace]
 
 members = [
-    "apps/api",
-    "apps/cdn",
-    "apps/event-api",
-    "apps/mongo-change-stream",
-    "apps/mongo-typesense",
-    "macros",
-    "shared",
+	"apps/api",
+	"apps/cdn",
+	"apps/event-api",
+	"apps/mongo-change-stream",
+	"apps/mongo-typesense",
+	"apps/reprocess-badges",
+	"macros",
+	"shared",
 ]
 
 resolver = "2"
