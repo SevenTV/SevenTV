@@ -1,12 +1,8 @@
-use futures::TryStreamExt;
 use scuffle_foundations::{
 	bootstrap::{bootstrap, Bootstrap},
 	settings::{auto_settings, cli::Matches},
 };
-use shared::{
-	config::DatabaseConfig,
-	database::{badge::Badge, queries::filter, MongoCollection},
-};
+use shared::config::DatabaseConfig;
 
 mod badges;
 
@@ -29,14 +25,7 @@ async fn main(settings: Matches<Config>) {
 	let mongo = shared::database::setup_database(&config, false).await.unwrap();
 	let db = mongo.default_database().unwrap();
 
-	let mut badges = Badge::collection(&db)
-		.find(filter::filter! {
-			Badge {}
-		})
-		.await
-		.unwrap();
-
-	while let Some(badge) = badges.try_next().await.unwrap() {
+	for badge in badges::jobs() {
 		println!("{:?}", badge);
 	}
 
