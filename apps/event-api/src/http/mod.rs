@@ -1,191 +1,441 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
+use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::Instant;
 
+use ::http::HeaderValue;
 use anyhow::Context;
-use futures_util::Future;
-use http_body_util::{Full, StreamBody};
-use hyper::body::{Bytes, Incoming};
-use hyper::service::service_fn;
-use hyper::{header, StatusCode};
-use hyper_util::rt::{TokioExecutor, TokioIo};
-use hyper_util::server::conn::auto::Builder;
-use scuffle_utils::context::ContextExt;
-use scuffle_utils::http::router::middleware::Middleware;
-use scuffle_utils::http::router::Router;
-use scuffle_utils::http::{error_handler, RouteError};
-use scuffle_utils::prelude::FutureTimeout;
-use tokio::net::{TcpSocket, TcpStream};
-use tokio_rustls::TlsAcceptor;
-use tokio_stream::wrappers::ReceiverStream;
+use axum::routing::any;
+use quinn::crypto::rustls::QuicServerConfig;
+use scuffle_foundations::http::server::axum::body::HttpBody;
+use scuffle_foundations::http::server::axum::extract::{MatchedPath, Request};
+use scuffle_foundations::http::server::axum::response::Response;
+use scuffle_foundations::http::server::axum::Router;
+use scuffle_foundations::http::server::stream::{Body, IncomingConnection, IntoResponse, MakeService, ServiceHandler};
+use scuffle_foundations::telemetry::metrics::metrics;
+use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use shared::http::ip::IpMiddleware;
+use shared::http::ratelimit::{RateLimitDropGuard, RateLimiter};
+use tower::ServiceBuilder;
+use tower_http::cors::CorsLayer;
+use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
+use tower_http::set_header::SetResponseHeaderLayer;
+use tower_http::trace::{DefaultOnFailure, TraceLayer};
+use tracing::Span;
 
-use self::error::EventError;
+use self::http::{ActionKind, ConnectionDropGuard, SocketKind};
 use crate::global::Global;
 
-mod error;
-pub mod socket;
-pub mod v3;
+mod socket;
+mod v3;
 
-type Body = http_body_util::Either<Full<Bytes>, StreamBody<ReceiverStream<Result<hyper::body::Frame<Bytes>, Infallible>>>>;
+#[derive(Clone)]
+struct TraceRequestId;
 
-/// Add CORS headers to the response.
-pub fn cors_middleware(_: &Arc<Global>) -> Middleware<Body, RouteError<EventError>> {
-	// TODO: make this configurable
-	Middleware::post(|mut resp| async move {
-		resp.headers_mut()
-			.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse().unwrap());
-		resp.headers_mut()
-			.insert(header::ACCESS_CONTROL_ALLOW_METHODS, "*".parse().unwrap());
-		resp.headers_mut()
-			.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, "*".parse().unwrap());
-		resp.headers_mut()
-			.insert(header::ACCESS_CONTROL_EXPOSE_HEADERS, "Date".parse().unwrap());
-		resp.headers_mut().insert("Timing-Allow-Origin", "*".parse().unwrap());
-		resp.headers_mut().insert(
-			header::ACCESS_CONTROL_MAX_AGE,
-			Duration::from_secs(86400).as_secs().to_string().parse().unwrap(),
-		);
-
-		Ok(resp)
-	})
+impl MakeRequestId for TraceRequestId {
+	fn make_request_id<B>(&mut self, _: &Request<B>) -> Option<RequestId> {
+		tracing::Span::current()
+			.trace_id()
+			.and_then(|id| id.to_string().parse().ok())
+			.map(RequestId::new)
+	}
 }
 
-pub fn routes(global: &Arc<Global>) -> Router<Incoming, Body, RouteError<EventError>> {
-	let weak = Arc::downgrade(global);
+fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
+	Router::new()
+		.route("/v3", any(v3::handle))
+		.route("/v3*any", any(v3::handle))
+		.with_state(Arc::clone(global))
+		.layer(
+			ServiceBuilder::new()
+				.layer(SetResponseHeaderLayer::overriding(
+					::http::header::SERVER,
+					server_name.parse::<HeaderValue>().unwrap(),
+				))
+				.option_layer(if global.config.event_api.http3 && global.config.event_api.tls.is_some() {
+					Some(SetResponseHeaderLayer::overriding(
+						::http::header::ALT_SVC,
+						format!("h3=\":{}\"; ma=2592000", global.config.event_api.secure_bind.port())
+							.parse::<HeaderValue>()
+							.unwrap(),
+					))
+				} else {
+					None
+				})
+				.layer(
+					TraceLayer::new_for_http()
+						.make_span_with(|req: &Request| {
+							let matched_path = req.extensions().get::<MatchedPath>().map(MatchedPath::as_str);
 
-	Router::builder()
-		.data(weak)
-		.error_handler(|req, err| async move { error_handler(req, err).await.map(Body::Left) })
-		.middleware(cors_middleware(global))
-		// Handle the v3 API, we have to use a wildcard because of the path format.
-		.any("/v3*", v3::handle)
-		// Not found handler.
-		.not_found(|_| async move { Err((StatusCode::NOT_FOUND, "not found").into()) })
-		.build()
+							let span = tracing::info_span!(
+								"request",
+								"request.method" = %req.method(),
+								"request.uri" = %req.uri(),
+								"request.matched_path" = %matched_path.unwrap_or("<not found>"),
+								"response.status_code" = tracing::field::Empty,
+							);
+
+							span.make_root();
+
+							span
+						})
+						.on_failure(DefaultOnFailure::new().level(tracing::Level::DEBUG))
+						.on_response(|res: &Response, _, span: &Span| {
+							span.record("response.status_code", res.status().as_u16());
+						}),
+				)
+				.layer(IpMiddleware::new(global.config.event_api.incoming_request.clone()))
+				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
+				.layer(PropagateRequestIdLayer::x_request_id()),
+		)
+		.layer(CorsLayer::permissive())
 }
 
-pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
-	let config = global.config();
-	tracing::info!(
-		"[api] listening on http{}://{}",
-		if config.api.tls.is_some() { "s" } else { "" },
-		config.api.bind
-	);
-	let socket = if config.api.bind.is_ipv6() {
-		TcpSocket::new_v6()?
-	} else {
-		TcpSocket::new_v4()?
-	};
+#[derive(Clone)]
+struct AnyService<A: ServiceHandler, B: ServiceHandler> {
+	kind: SocketKind,
+	started_at: Instant,
+	request_count: Arc<AtomicUsize>,
+	_guard: Arc<(ConnectionDropGuard, RateLimitDropGuard)>,
+	inner: AnyServiceInner<A, B>,
+}
 
-	let tls_acceptor = if let Some(tls) = &config.api.tls {
-		tracing::info!("tls enabled");
-		let cert = tokio::fs::read(&tls.cert).await.context("ssl cert")?;
-		let key = tokio::fs::read(&tls.key).await.context("ssl private key")?;
+impl<A: ServiceHandler, B: ServiceHandler> AnyService<A, B> {
+	fn new_a(kind: SocketKind, svc: A, limiter: RateLimitDropGuard) -> Self {
+		Self::new(kind, AnyServiceInner::Left(svc), limiter)
+	}
 
-		let key = rustls_pemfile::pkcs8_private_keys(&mut std::io::BufReader::new(std::io::Cursor::new(key)))
-			.next()
-			.ok_or_else(|| anyhow::anyhow!("ssl private key missing"))?
-			.context("ssl private key parse")?;
+	fn new_b(kind: SocketKind, svc: B, limiter: RateLimitDropGuard) -> Self {
+		Self::new(kind, AnyServiceInner::Right(svc), limiter)
+	}
 
-		let certs = rustls_pemfile::certs(&mut std::io::BufReader::new(std::io::Cursor::new(cert)))
-			.collect::<Result<Vec<_>, _>>()
-			.context("ssl cert parse")?;
+	fn new(kind: SocketKind, svc: AnyServiceInner<A, B>, limiter: RateLimitDropGuard) -> Self {
+		Self {
+			kind,
+			request_count: Arc::new(AtomicUsize::new(0)),
+			started_at: Instant::now(),
+			_guard: Arc::new((ConnectionDropGuard::new(kind), limiter)),
+			inner: svc,
+		}
+	}
+}
 
-		let mut tls_config = rustls::ServerConfig::builder()
-			.with_no_client_auth()
-			.with_single_cert(certs, key.into())
-			.context("ssl config")?;
+#[derive(Clone, Copy, Debug)]
+enum AnyServiceInner<A: ServiceHandler, B: ServiceHandler> {
+	Left(A),
+	Right(B),
+}
 
-		tls_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+#[metrics]
+mod http {
+	use scuffle_foundations::http::server::stream;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
+	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
+	use serde::{Deserialize, Serialize};
 
-		Some(Arc::new(tokio_rustls::TlsAcceptor::from(Arc::new(tls_config))))
-	} else {
-		tracing::info!("tls disabled");
-		None
-	};
+	pub struct ConnectionDropGuard(SocketKind);
 
-	let router = Arc::new(routes(&global));
-
-	socket.set_reuseaddr(true).context("socket reuseaddr")?;
-	socket.set_reuseport(true).context("socket reuseport")?;
-	socket.bind(config.api.bind).context("socket bind")?;
-	let listener = socket.listen(config.api.listen_backlog)?;
-
-	while let Ok(r) = listener.accept().context(global.ctx()).await {
-		if let Some(fut) = handle_socket(&global, &router, &tls_acceptor, r)? {
-			tokio::spawn(fut);
+	impl Drop for ConnectionDropGuard {
+		fn drop(&mut self) {
+			connections(self.0).dec();
 		}
 	}
 
-	Ok(())
-}
-
-/// Create a new socket future.
-fn handle_socket(
-	global: &Arc<Global>,
-	router: &Arc<Router<Incoming, Body, RouteError<EventError>>>,
-	tls_acceptor: &Option<Arc<TlsAcceptor>>,
-	socket: std::io::Result<(TcpStream, SocketAddr)>,
-) -> anyhow::Result<Option<impl Future<Output = ()>>> {
-	let (socket, addr) = socket.context("socket accept")?;
-
-	if let Some(limit) = global.config().api.connection_limit {
-		let active = global.active_connections();
-		if active >= limit {
-			tracing::debug!("connection limit reached");
-			return Ok(None);
+	impl ConnectionDropGuard {
+		pub fn new(socket: SocketKind) -> Self {
+			connections(socket).inc();
+			Self(socket)
 		}
 	}
 
-	let router = router.clone();
-	let service = service_fn(move |mut req| {
-		req.extensions_mut().insert(addr);
-		let this = router.clone();
-		async move { this.handle(req).await }
-	});
+	pub fn connections(socket: SocketKind) -> Gauge;
 
-	let tls_acceptor = tls_acceptor.clone();
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+	pub enum ActionKind {
+		Error,
+		Hijack,
+		Ready,
+		Request,
+		Close,
+	}
 
-	tracing::trace!("accepted connection from {addr}");
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+	pub enum SocketKind {
+		Tcp,
+		TlsTcp,
+		Quic,
+	}
 
-	Ok(Some(async move {
-		let mut http = Builder::new(TokioExecutor::new());
+	impl From<stream::SocketKind> for SocketKind {
+		fn from(value: stream::SocketKind) -> Self {
+			match value {
+				stream::SocketKind::Tcp => Self::Tcp,
+				stream::SocketKind::TlsTcp => Self::TlsTcp,
+				stream::SocketKind::Quic => Self::Quic,
+			}
+		}
+	}
 
-		// TODO: make this configurable
-		http.http1().half_close(true).max_buf_size(16 * 1024).writev(true);
+	pub fn actions(socket: SocketKind, action: ActionKind) -> Counter;
 
-		http.http2()
-			.max_concurrent_streams(1024)
-			.max_frame_size(16 * 1024)
-			.max_send_buf_size(16 * 1024)
-			.max_header_list_size(16 * 1024);
+	pub fn status_code(socket: SocketKind, status: String) -> Counter;
 
-		// if we are using tls we need to do a tls handshake first
-		let result = if let Some(tls_acceptor) = tls_acceptor {
-			let socket = match tls_acceptor.accept(socket).timeout(Duration::from_secs(5)).await {
-				Ok(Ok(socket)) => socket,
-				Ok(Err(err)) => {
-					tracing::debug!("tls handshake error: {:?}", err);
-					return;
-				}
-				Err(_) => {
-					tracing::debug!("tls handshake timeout");
-					return;
-				}
+	#[builder = HistogramBuilder::default()]
+	pub fn socket_request_count(socket: SocketKind) -> Histogram;
+
+	#[builder = HistogramBuilder::default()]
+	pub fn socket_duration(socket: SocketKind) -> Histogram;
+
+	#[builder = HistogramBuilder::default()]
+	pub fn request_duration(socket: SocketKind) -> Histogram;
+
+	pub fn bytes_sent(socket: SocketKind) -> Counter;
+}
+
+impl<A: ServiceHandler, B: ServiceHandler> ServiceHandler for AnyService<A, B> {
+	fn on_error(&self, err: scuffle_foundations::http::server::Error) -> impl std::future::Future<Output = ()> + Send {
+		http::actions(self.kind, ActionKind::Error).inc();
+
+		tracing::debug!("error while handling request: {:#}", err);
+
+		async move {
+			match &self.inner {
+				AnyServiceInner::Left(a) => a.on_error(err).await,
+				AnyServiceInner::Right(b) => b.on_error(err).await,
+			}
+		}
+	}
+
+	fn on_hijack(&self) -> impl std::future::Future<Output = ()> + Send {
+		http::actions(self.kind, ActionKind::Hijack).inc();
+
+		async move {
+			match &self.inner {
+				AnyServiceInner::Left(a) => a.on_hijack().await,
+				AnyServiceInner::Right(b) => b.on_hijack().await,
+			}
+		}
+	}
+
+	fn on_ready(&self) -> impl std::future::Future<Output = ()> + Send {
+		http::actions(self.kind, ActionKind::Ready).inc();
+
+		async move {
+			match &self.inner {
+				AnyServiceInner::Left(a) => a.on_ready().await,
+				AnyServiceInner::Right(b) => b.on_ready().await,
+			}
+		}
+	}
+
+	fn on_request(
+		&self,
+		req: Request,
+	) -> impl std::future::Future<Output = impl scuffle_foundations::http::server::stream::IntoResponse> + Send {
+		http::actions(self.kind, ActionKind::Request).inc();
+
+		self.request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+		let start = Instant::now();
+
+		async move {
+			let request = match &self.inner {
+				AnyServiceInner::Left(a) => a.on_request(req).await.into_response(),
+				AnyServiceInner::Right(b) => b.on_request(req).await.into_response(),
 			};
 
-			tracing::debug!("tls handshake complete");
+			let size = request.body().size_hint();
 
-			// We need to allow upgrades because we have to upgrade to a websocket.
-			http.serve_connection_with_upgrades(TokioIo::new(socket), service).await
-		} else {
-			// See above.
-			http.serve_connection_with_upgrades(TokioIo::new(socket), service).await
+			http::bytes_sent(self.kind).inc_by(size.exact().unwrap_or(size.lower()));
+			http::status_code(self.kind, request.status().as_u16().to_string()).inc();
+			http::request_duration(self.kind).observe(start.elapsed().as_secs_f64());
+
+			request
+		}
+	}
+
+	fn on_close(&self) -> impl std::future::Future<Output = ()> + Send {
+		http::actions(self.kind, ActionKind::Close).inc();
+
+		http::socket_duration(self.kind).observe(self.started_at.elapsed().as_secs_f64());
+		http::socket_request_count(self.kind).observe(self.request_count.load(std::sync::atomic::Ordering::Relaxed) as f64);
+
+		async move {
+			match &self.inner {
+				AnyServiceInner::Left(a) => a.on_close().await,
+				AnyServiceInner::Right(b) => b.on_close().await,
+			}
+		}
+	}
+}
+
+#[derive(Clone)]
+struct CustomMakeService {
+	redirect_uncrypted: Option<u16>,
+	server_name: Arc<str>,
+	routes: Router,
+	limiter: Arc<RateLimiter>,
+}
+
+#[derive(Clone, Debug)]
+struct RedirectUncrypted {
+	port: u16,
+	server_name: Arc<str>,
+}
+
+impl ServiceHandler for RedirectUncrypted {
+	fn on_request(
+		&self,
+		req: Request,
+	) -> impl std::future::Future<Output = impl scuffle_foundations::http::server::stream::IntoResponse> + Send {
+		let Some(host) = req.headers().get(::http::header::HOST).and_then(|h| h.to_str().ok()) else {
+			return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
 		};
 
-		if let Err(err) = result {
-			tracing::debug!("connection error: {:?}", err);
+		let mut builder = ::http::Uri::builder().scheme("https");
+
+		{
+			let Some(uri) = format!("https://{host}").parse::<::http::Uri>().ok() else {
+				return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
+			};
+
+			let Some(host) = uri.host() else {
+				return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
+			};
+
+			if self.port != 443 {
+				builder = builder.authority(format!("{host}:{}", self.port));
+			} else {
+				builder = builder.authority(host);
+			}
 		}
-	}))
+
+		if let Some(path_and_query) = req.uri().path_and_query() {
+			builder = builder.path_and_query(path_and_query.clone());
+		}
+
+		let Ok(uri) = builder.build() else {
+			return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
+		};
+
+		let Ok(response) = ::http::Response::builder()
+			.status(::http::StatusCode::PERMANENT_REDIRECT)
+			.header(::http::header::LOCATION, uri.to_string())
+			.header(
+				::http::header::SERVER,
+				self.server_name.as_ref().parse::<HeaderValue>().unwrap(),
+			)
+			.body(Body::empty())
+		else {
+			return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
+		};
+
+		std::future::ready(response)
+	}
+}
+
+impl MakeService for CustomMakeService {
+	fn make_service(
+		&self,
+		incoming: &impl IncomingConnection,
+	) -> impl std::future::Future<Output = Option<impl ServiceHandler>> + Send {
+		let Some(ticket) = self.limiter.acquire(incoming.remote_addr().ip()) else {
+			return std::future::ready(None);
+		};
+
+		let service = if let (Some(port), false) = (self.redirect_uncrypted, incoming.is_encrypted()) {
+			AnyService::new_b(
+				incoming.socket_kind().into(),
+				RedirectUncrypted {
+					port,
+					server_name: self.server_name.clone(),
+				},
+				ticket,
+			)
+		} else {
+			AnyService::new_a(incoming.socket_kind().into(), self.routes.clone(), ticket)
+		};
+
+		std::future::ready(Some(service))
+	}
+}
+
+#[tracing::instrument(name = "cdn", level = "info", skip(global))]
+pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
+	let mut builder = scuffle_foundations::http::server::Server::builder()
+		.with_workers(if global.config.event_api.workers == 0 {
+			num_cpus::get()
+		} else {
+			global.config.event_api.workers
+		})
+		.with_http({
+			let mut http = hyper_util::server::conn::auto::Builder::new(Default::default());
+
+			http.http1().max_buf_size(8_192);
+
+			http.http2().max_send_buf_size(8_192);
+
+			http
+		});
+
+	if let Some(tls) = global.config.event_api.tls.as_ref() {
+		let cert = tokio::fs::read(&tls.cert).await.context("failed to read cert")?;
+		let key = tokio::fs::read(&tls.key).await.context("failed to read key")?;
+
+		let certs = rustls_pemfile::certs(&mut std::io::Cursor::new(cert))
+			.collect::<std::result::Result<Vec<_>, _>>()
+			.context("invalid cert")?;
+		let key = rustls_pemfile::pkcs8_private_keys(&mut std::io::Cursor::new(key))
+			.next()
+			.context("missing key")?
+			.context("invalid key")?;
+
+		let tls_config = rustls::ServerConfig::builder()
+			.with_no_client_auth()
+			.with_single_cert(certs, key.into())
+			.context("failed to build tls config")?;
+
+		if global.config.event_api.http3 {
+			let mut tls_config = tls_config.clone();
+			tls_config.max_early_data_size = u32::MAX;
+			tls_config.alpn_protocols = vec![b"h3".to_vec()];
+
+			let server_config = quinn::ServerConfig::with_crypto(Arc::new(
+				QuicServerConfig::try_from(tls_config.clone()).context("failed to build quic config")?,
+			));
+
+			builder = builder.with_http3(h3::server::builder(), server_config);
+		}
+
+		builder = builder
+			.bind(global.config.event_api.secure_bind)
+			.with_tls(tls_config)
+			.with_insecure(global.config.event_api.bind);
+	} else {
+		builder = builder.bind(global.config.event_api.bind);
+	}
+
+	let server_name = global.config.event_api.server_name.clone().into();
+
+	let mut server = builder
+		// Bug with keep-alive timeout, doesn't take in account streaming connections
+		.with_keep_alive_timeout(None)
+		.build(CustomMakeService {
+			routes: routes(&global, &server_name),
+			server_name,
+			limiter: RateLimiter::new(&global.config.event_api.rate_limit),
+			redirect_uncrypted: if !global.config.event_api.allow_insecure && global.config.event_api.tls.is_some() {
+				Some(global.config.event_api.secure_bind.port())
+			} else {
+				None
+			},
+		})
+		.context("failed to build HTTP server")?;
+
+	server.start().await.context("failed to start HTTP server")?;
+
+	server.wait().await.context("HTTP server failed")?;
+
+	Ok(())
 }

@@ -1,21 +1,63 @@
 use std::sync::Arc;
 
+use event_topic::EventScope;
 use futures_util::StreamExt;
+use scuffle_foundations::telemetry::metrics::metrics;
+use shared::event::{InternalEventPayload, InternalEventUserPresenceData};
+use shared::event_api::types::EventType;
 use shared::event_api::{payload, Message};
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
 
 use crate::global::Global;
-use shared::event_api::types::EventType;
 
 /// The payload of a message.
 /// The reason we use Arc is because we want to avoid cloning the payload (1000
 /// ish bytes) for every subscriber. Arc is a reference counted pointer, so it
 /// is cheap to clone.
-pub type Payload = Arc<Message<payload::Dispatch>>;
+#[derive(Debug, Clone)]
+pub enum Payload {
+	Dispatch(Arc<Message<payload::Dispatch>>),
+	Presence(Arc<InternalEventUserPresenceData>),
+}
 
 mod error;
-mod event_topic;
+pub mod event_topic;
 mod recv;
+
+#[metrics]
+mod subscription {
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum SubscriptionKind {
+		Cap,
+		Len,
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum Endpoint {
+		V3,
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[serde(rename_all = "snake_case")]
+	pub enum NatsEventKind {
+		Hit,
+		Miss,
+	}
+
+	/// The number of unique subscriptions
+	pub fn unique_subscriptions(kind: SubscriptionKind) -> Gauge;
+
+	/// The number of total subscriptions
+	pub fn total_subscriptions(endpoint: Endpoint) -> Gauge;
+
+	/// The number of NATs events
+	pub fn nats_events(kind: NatsEventKind) -> Counter;
+}
 
 pub use error::SubscriptionError;
 pub use event_topic::{EventTopic, TopicKey};
@@ -78,15 +120,19 @@ impl SubscriptionManager {
 /// This function will block until the global context is done or when the NATS
 /// connection is closed. Calling this function multiple times will deadlock.
 pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
-	let mut events_rx = global.subscription_manager().events_tx().lock().await;
+	let mut events_rx = global.subscription_manager.events_tx().lock().await;
 
 	// We subscribe to all events.
 	// The .> wildcard is used to subscribe to all events.
-	let mut sub = global.nats().subscribe(format!("{}.>", global.config().nats.subject)).await?;
+	let mut sub = global.nats.subscribe("api.v4.events").await?;
 
 	// fnv::FnvHashMap is used because it is faster than the default HashMap for our
 	// use case.
 	let mut subscriptions = fnv::FnvHashMap::default();
+
+	let ctx = scuffle_foundations::context::Context::global();
+
+	let mut seq = 0;
 
 	loop {
 		tokio::select! {
@@ -98,21 +144,22 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 								let (btx, brx) = broadcast::channel(16);
 
 								if tx.send(brx).is_ok() {
-									global.metrics().incr_total_subscriptions();
+									subscription::total_subscriptions(subscription::Endpoint::V3).inc();
 									entry.insert(btx);
 								}
 							}
 							std::collections::hash_map::Entry::Occupied(entry) => {
 								if tx.send(entry.get().subscribe()).is_ok() {
-									global.metrics().incr_total_subscriptions();
+									subscription::total_subscriptions(subscription::Endpoint::V3).inc();
 								}
 							},
 						}
 
-						global.metrics().set_unique_subscriptions(subscriptions.len(), subscriptions.capacity());
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Len).set(subscriptions.len() as i64);
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Cap).set(subscriptions.capacity() as i64);
 					}
 					Event::Unsubscribe { topic } => {
-						global.metrics().decr_total_subscriptions();
+						subscription::total_subscriptions(subscription::Endpoint::V3).dec();
 						match subscriptions.entry(topic) {
 							std::collections::hash_map::Entry::Occupied(entry) => {
 								if entry.get().receiver_count() == 0 {
@@ -122,72 +169,100 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 							std::collections::hash_map::Entry::Vacant(_) => {}
 						}
 
-						global.metrics().set_unique_subscriptions(subscriptions.len(), subscriptions.capacity());
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Len).set(subscriptions.len() as i64);
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Cap).set(subscriptions.capacity() as i64);
 					}
 				}
 			}
 			message = sub.next() => {
-				tracing::trace!("received message: {:?}", message);
 				match message {
 					Some(message) => {
-						let subject = message.subject.strip_prefix(&global.config().nats.subject).unwrap_or(&message.subject).trim_matches('.');
-
-						let Ok(topic) = subject.parse::<EventTopic>() else {
-							tracing::warn!("invalid topic: {:?}", subject);
-							continue;
+						let payload: InternalEventPayload = match rmp_serde::from_slice(&message.payload) {
+							Ok(payload) => payload,
+							Err(err) => {
+								tracing::warn!(err = ?err, "malformed message");
+								break;
+							}
 						};
 
-						let mut keys = vec![topic.as_key()];
-						match keys[0].0 {
-							EventType::SystemAnnouncement => {
-								keys.push(topic.copy_cond(EventType::AnySystem).as_key());
-							},
-							EventType::CreateEmote | EventType::UpdateEmote | EventType::DeleteEmote => {
-								keys.push(topic.copy_cond(EventType::AnyEmote).as_key());
-							},
-							EventType::CreateEmoteSet | EventType::UpdateEmoteSet | EventType::DeleteEmoteSet => {
-								keys.push(topic.copy_cond(EventType::AnyEmoteSet).as_key());
-							},
-							EventType::CreateUser | EventType::UpdateUser | EventType::DeleteUser => {
-								keys.push(topic.copy_cond(EventType::AnyUser).as_key());
-							},
-							EventType::CreateEntitlement | EventType::UpdateEntitlement | EventType::DeleteEntitlement => {
-								keys.push(topic.copy_cond(EventType::AnyEntitlement).as_key());
-							},
-							EventType::CreateCosmetic | EventType::UpdateCosmetic | EventType::DeleteCosmetic => {
-								keys.push(topic.copy_cond(EventType::AnyCosmetic).as_key());
-							},
-							EventType::Whisper => {}
-							EventType::AnySystem | EventType::AnyEmote | EventType::AnyEmoteSet | EventType::AnyUser | EventType::AnyEntitlement | EventType::AnyCosmetic => {}
-						}
+						match payload.into_old_messages(&global.config.event_api.cdn_origin, seq) {
+							Ok((messages, presence_data)) => {
+								for message in messages {
+									// There is always only one condition map
+									let topic = EventTopic::new(message.data.ty, EventScope::Id(message.data.body.id));
 
-						let mut msg = None;
-						let mut missed = true;
-						for key in keys {
-							if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(key) {
-								if msg.is_none() {
-									msg = Some(Arc::new(match serde_json::from_slice(&message.payload) {
-										Ok(msg) => msg,
-										Err(err) => {
-											tracing::warn!("malformed message: {:?}: {}", err, String::from_utf8_lossy(&message.payload));
-											break;
+									let mut keys = vec![topic.as_key()];
+									match keys[0].0 {
+										EventType::SystemAnnouncement => {
+											keys.push(topic.copy_scope(EventType::AnySystem).as_key());
+										},
+										EventType::CreateEmote | EventType::UpdateEmote | EventType::DeleteEmote => {
+											keys.push(topic.copy_scope(EventType::AnyEmote).as_key());
+										},
+										EventType::CreateEmoteSet | EventType::UpdateEmoteSet | EventType::DeleteEmoteSet => {
+											keys.push(topic.copy_scope(EventType::AnyEmoteSet).as_key());
+										},
+										EventType::CreateUser | EventType::UpdateUser | EventType::DeleteUser => {
+											keys.push(topic.copy_scope(EventType::AnyUser).as_key());
+										},
+										EventType::CreateEntitlement | EventType::UpdateEntitlement | EventType::DeleteEntitlement => {
+											keys.push(topic.copy_scope(EventType::AnyEntitlement).as_key());
+										},
+										EventType::CreateCosmetic | EventType::UpdateCosmetic | EventType::DeleteCosmetic => {
+											keys.push(topic.copy_scope(EventType::AnyCosmetic).as_key());
+										},
+										EventType::Whisper => {}
+										EventType::AnySystem | EventType::AnyEmote | EventType::AnyEmoteSet | EventType::AnyUser | EventType::AnyEntitlement | EventType::AnyCosmetic => {}
+										EventType::UserPresence => {}
+									}
+
+									let message = Arc::new(message);
+
+									let mut missed = true;
+									for key in keys {
+										if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(key) {
+											if subscription.get().send(Payload::Dispatch(Arc::clone(&message))).is_err() {
+												subscription.remove();
+											} else {
+												missed = false;
+											}
 										}
-									}));
+									}
+
+									if missed {
+										subscription::nats_events(subscription::NatsEventKind::Miss).inc();
+									} else {
+										subscription::nats_events(subscription::NatsEventKind::Hit).inc();
+									}
 								}
 
-								if subscription.get().send(msg.clone().unwrap()).is_err() {
-									subscription.remove();
-								} else {
-									missed = false;
+								for presence_data in presence_data {
+									let presence_data = Arc::new(presence_data);
+
+									let mut missed = true;
+
+									let topic = EventTopic::new(EventType::UserPresence, EventScope::Presence(presence_data.platform.clone()));
+									if let std::collections::hash_map::Entry::Occupied(subscription) = subscriptions.entry(topic.as_key()) {
+										if subscription.get().send(Payload::Presence(Arc::clone(&presence_data))).is_err() {
+											subscription.remove();
+										} else {
+											missed = false;
+										}
+									}
+
+									if missed {
+										subscription::nats_events(subscription::NatsEventKind::Miss).inc();
+									} else {
+										subscription::nats_events(subscription::NatsEventKind::Hit).inc();
+									}
 								}
-							}
+							},
+							Err(err) => {
+								tracing::warn!(error = %err, "failed to parse message");
+							},
 						}
 
-						if missed {
-							global.metrics().observe_nats_event_miss();
-						} else {
-							global.metrics().observe_nats_event_hit();
-						}
+						seq += 1;
 					},
 					None => {
 						tracing::warn!("subscription closed");
@@ -195,7 +270,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 					}
 				}
 			}
-			_ = global.ctx().done() => {
+			_ = ctx.done() => {
 				break;
 			}
 		}

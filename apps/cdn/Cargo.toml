@@ -1,0 +1,33 @@
+[package]
+name = "cdn"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.39.2", features = ["full"] }
+tokio-util = "0.7.11"
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["http3"]}
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6.1", features = ["trace", "cors", "request-id", "set-header"] }
+tracing = "0.1.40"
+aws-sdk-s3 = { version = "1.45.0", features = ["behavior-version-latest"] }
+futures = "0.3.30"
+anyhow = "1.0.86"
+bytes = "1.7.1"
+moka = { version = "0.12.8", features = ["future"] }
+scc = "2.1.16"
+thiserror = "1.0.63"
+serde = "1.0.208"
+chrono = "0.4.38"
+rustls = "0.23"
+rustls-pemfile = "2"
+quinn = "0.11"
+h3 = "0.0.6"
+http = "1"
+hyper-util = "0.1.7"
+num_cpus = "1.16.0"
+sys_metrics = "0.2"
+size = { version = "=0.5.0-preview2", features = ["serde"] }
+ipnet = { version = "2.9.0", features = ["serde"] }
+spin = "0.9.8"
+shared = { workspace = true }

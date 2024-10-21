@@ -5,20 +5,68 @@ edition = "2021"
 license = "Apache-2.0 with Commons Clause"
 
 [dependencies]
-ulid = "1.0"
 hex = "0.4"
 tracing = "0.1"
 serde = { version = "1.0" }
 serde_json = "1.0"
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 prometheus-client = "0.22"
-tokio = "1.0"
+tokio = "1.38"
 anyhow = "1.0"
-hyper = { version = "1", features = ["server"] }
+hyper = { version = "1", features = ["server", "http1", "http2"] }
 http-body-util = "0.1"
-hyper-util = { version = "0.1", features = ["tokio", "server"] }
-scuffle-utils = { version = "0.0.5", features = ["prelude"] }
-scuffle-config = "0.0.1"
+hyper-util = { version = "0.1", features = ["tokio", "server", "http1", "http2"] }
+scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
 once_cell = "1.19"
-tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter", "json"] }
+tracing-subscriber = { version = "0.3", features = [
+    "fmt",
+    "env-filter",
+    "json",
+] }
 thiserror = "1.0"
+memory-stats = "1"
+tokio-stream = "0.1"
+tokio-rustls = "0.26"
+fnv = "1.0"
+rustls-pemfile = "2.1"
+rustls = "0.23"
+async-nats = "0.37.0"
+utoipa = { version = "4.2", features = ["repr"] }
+serde_repr = "0.1"
+tokio-util = "0.7"
+bitmask-enum = "2"
+quick-impl = "0.1.4"
+clickhouse = { version = "0.13.0", features = ["uuid", "time"] }
+time = "0.3.36"
+uuid = { version = "1.9.1", features = ["serde"] }
+mongodb = "3.0"
+bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
+ulid = { version = "1.1", features = ["serde", "uuid"] }
+tonic = { version = "0.12", features = ["tls"]}
+http = { version = "1.1" }
+tower = { version = "0.4.0", features = ["discover"] }
+trust-dns-resolver = "0.23"
+futures = "0.3"
+async-stripe = { version = "0.39.1", features = ["runtime-tokio-hyper-rustls"] }
+async-graphql = { version = "7.0.6", default-features = false }
+scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["client", "serde"] }
+humantime-serde = "1"
+bytes = "1.6.0"
+serde-enum-str = "0.4.0"
+typesense-rs = { version = "27.0.1", features = ["bon"] }
+itertools = "0.13"
+const_format = "0.2"
+typed-builder = "0.20.0"
+aws-sdk-s3 = { version = "1.45.0", features = ["behavior-version-latest"] }
+url = "2.3.1"
+maxminddb = "0.24.0"
+reqwest = { version = "0.12.8", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
+flate2 = "1.0.33"
+tar = "0.4.41"
+fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "partial-tracing"]}
+ipnet = { version = "2.9.0", features = ["serde"] }
+spin = "0.9.8"
+axum = "0.7"
+regex = "1.10.6"
+
+macros = { workspace = true }

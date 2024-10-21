@@ -1,10 +1,13 @@
 // use hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode as
 // WsCloseCode;
 
+use std::hash::Hash;
+
 // See the comment on the `payload.rs` file for a description of what this file
 // is.
 use super::payload::{Subscribe, Unsubscribe};
-use crate::object_id::ObjectId;
+use crate::database::Id;
+use crate::old_types::UserPartialModel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
@@ -188,7 +191,7 @@ impl<'a> serde::Deserialize<'a> for CloseCode {
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(u8)]
 pub enum EventType {
 	AnySystem,
@@ -220,6 +223,8 @@ pub enum EventType {
 	DeleteCosmetic,
 
 	Whisper,
+
+	UserPresence,
 }
 
 impl EventType {
@@ -248,6 +253,7 @@ impl EventType {
 			Self::UpdateCosmetic => "cosmetic.update",
 			Self::DeleteCosmetic => "cosmetic.delete",
 			Self::Whisper => "whisper.self",
+			Self::UserPresence => "user.presence",
 		}
 	}
 }
@@ -308,18 +314,18 @@ fn is_false(v: &bool) -> bool {
 	!*v
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChangeMap {
 	#[serde(default)]
-	pub id: ObjectId,
+	pub id: Id,
 	pub kind: ObjectKind,
 	#[serde(skip_serializing_if = "is_false")]
 	#[serde(default)]
 	pub contextual: bool,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	#[serde(default)]
-	pub actor: Option<UserModelPartial>,
+	pub actor: Option<UserPartialModel>,
 	#[serde(skip_serializing_if = "Vec::is_empty")]
 	#[serde(default)]
 	pub added: Vec<ChangeField>,
@@ -340,262 +346,22 @@ pub struct ChangeMap {
 	pub object: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct UserModelPartial {
-	pub id: ObjectId,
-	#[serde(rename = "type")]
-	pub ty: String,
-	pub username: String,
-	pub display_name: String,
-	pub avatar_url: String,
-	pub style: UserStyle,
-	pub roles: Vec<ObjectId>,
-	pub connections: Vec<UserConnectionPartial>,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct UserStyle {
-	pub color: i32,
-	pub paint_id: Option<ObjectId>,
-	pub badge_id: Option<ObjectId>,
-	pub paint: Option<CosmeticPaint>,
-	pub badge: Option<CosmeticBadgeModel>,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct CosmeticBadgeModel {
-	pub id: ObjectId,
-	pub name: String,
-	pub tag: String,
-	pub tooltip: String,
-	pub host: ImageHost,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct CosmeticPaint {
-	pub id: ObjectId,
-	pub name: String,
-	pub color: Option<i32>,
-	pub gradients: Vec<CosmeticPaintGradient>,
-	pub shadows: Vec<CosmeticPaintShadow>,
-	pub text: Option<CosmeticPaintText>,
-	pub function: CosmeticPaintFunction,
-	pub repeat: bool,
-	pub angle: i32,
-	pub shape: String,
-	pub image_url: String,
-	pub stops: Vec<CosmeticPaintGradientStop>,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct CosmeticPaintGradient {
-	pub function: CosmeticPaintFunction,
-	pub canvas_repeat: CosmeticPaintCanvasRepeat,
-	pub canvas_size: [i32; 2],
-	pub at: [i32; 2],
-	pub stops: Vec<CosmeticPaintGradientStop>,
-	pub image_url: String,
-	pub shape: String,
-	pub angle: i32,
-	pub repeat: bool,
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum CosmeticPaintFunction {
-	#[default]
-	LinearGradient,
-	RadialGradient,
-	Url,
-}
-
-impl std::fmt::Display for CosmeticPaintFunction {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Self::LinearGradient => f.write_str("LINEAR_GRADIENT"),
-			Self::RadialGradient => f.write_str("RADIAL_GRADIENT"),
-			Self::Url => f.write_str("URL"),
-		}
+impl Hash for ChangeMap {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.id.hash(state);
+		self.kind.hash(state);
+		self.contextual.hash(state);
+		self.actor.as_ref().map(|a| a.id).hash(state);
+		self.added.hash(state);
+		self.updated.hash(state);
+		self.removed.hash(state);
+		self.pushed.hash(state);
+		self.pulled.hash(state);
+		self.object.hash(state);
 	}
 }
 
-impl serde::Serialize for CosmeticPaintFunction {
-	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-		serializer.serialize_str(self.to_string().as_str())
-	}
-}
-
-impl<'a> serde::Deserialize<'a> for CosmeticPaintFunction {
-	fn deserialize<D: serde::Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
-		let s = String::deserialize(deserializer)?;
-		match s.as_str() {
-			"LINEAR_GRADIENT" => Ok(Self::LinearGradient),
-			"RADIAL_GRADIENT" => Ok(Self::RadialGradient),
-			"URL" => Ok(Self::Url),
-			_ => Err(serde::de::Error::custom("invalid paint function")),
-		}
-	}
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct CosmeticPaintGradientStop {
-	pub at: f64,
-	pub color: i32,
-	pub center_at: [f64; 2],
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum CosmeticPaintCanvasRepeat {
-	#[default]
-	NoRepeat,
-	RepeatX,
-	RepeatY,
-	Revert,
-	Round,
-	Space,
-}
-
-impl std::fmt::Display for CosmeticPaintCanvasRepeat {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Self::NoRepeat => f.write_str("no-repeat"),
-			Self::RepeatX => f.write_str("repeat-x"),
-			Self::RepeatY => f.write_str("repeat-y"),
-			Self::Revert => f.write_str("revet"),
-			Self::Round => f.write_str("round"),
-			Self::Space => f.write_str("space"),
-		}
-	}
-}
-
-impl serde::Serialize for CosmeticPaintCanvasRepeat {
-	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-		serializer.serialize_str(self.to_string().as_str())
-	}
-}
-
-impl<'a> serde::Deserialize<'a> for CosmeticPaintCanvasRepeat {
-	fn deserialize<D: serde::Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
-		let s = String::deserialize(deserializer)?;
-		match s.as_str() {
-			"no-repeat" => Ok(Self::NoRepeat),
-			"repeat-x" => Ok(Self::RepeatX),
-			"repeat-y" => Ok(Self::RepeatY),
-			"revet" => Ok(Self::Revert),
-			"round" => Ok(Self::Round),
-			"space" => Ok(Self::Space),
-			_ => Err(serde::de::Error::custom("invalid paint canvas repeat")),
-		}
-	}
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct CosmeticPaintShadow {
-	pub offset_x: f64,
-	pub offset_y: f64,
-	pub radius: f64,
-	pub color: i32,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct CosmeticPaintText {
-	pub weight: u8,
-	pub shadows: Vec<CosmeticPaintShadow>,
-	pub transform: Option<CosmeticPaintTextTransform>,
-	pub stroke: Option<CosmeticPaintStroke>,
-	pub variant: String,
-}
-
-#[derive(Debug, Clone)]
-pub enum CosmeticPaintTextTransform {
-	Uppercase,
-	Lowercase,
-}
-
-impl std::fmt::Display for CosmeticPaintTextTransform {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Self::Uppercase => f.write_str("uppercase"),
-			Self::Lowercase => f.write_str("lowercase"),
-		}
-	}
-}
-
-impl serde::Serialize for CosmeticPaintTextTransform {
-	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-		serializer.serialize_str(self.to_string().as_str())
-	}
-}
-
-impl<'a> serde::Deserialize<'a> for CosmeticPaintTextTransform {
-	fn deserialize<D: serde::Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
-		let s = String::deserialize(deserializer)?;
-		match s.as_str() {
-			"uppercase" => Ok(Self::Uppercase),
-			"lowercase" => Ok(Self::Lowercase),
-			_ => Err(serde::de::Error::custom("invalid paint text transform")),
-		}
-	}
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct CosmeticPaintStroke {
-	pub color: i32,
-	pub width: f64,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct UserConnectionPartial {
-	pub id: String,
-	pub platform: String,
-	pub username: String,
-	pub display_name: String,
-	pub linked_at: i64,
-	pub emote_capacity: i32,
-	pub emote_set_id: Option<ObjectId>,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct ImageHost {
-	pub url: String,
-	pub files: Vec<ImageHostFile>,
-}
-
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct ImageHostFile {
-	pub name: String,
-	pub static_name: String,
-	pub width: i32,
-	pub height: i32,
-	pub frame_count: i32,
-	pub size: i64,
-	pub format: String,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, Hash)]
 #[serde(deny_unknown_fields)]
 pub struct ChangeField {
 	pub key: String,
@@ -613,9 +379,10 @@ pub struct ChangeField {
 	pub value: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u16)]
 pub enum ObjectKind {
+	#[default]
 	User = 1,
 	Emote = 2,
 	EmoteSet = 3,
@@ -684,12 +451,13 @@ impl<'a> serde::Deserialize<'a> for ObjectKind {
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChangeFieldType {
 	String,
 	Number,
 	Bool,
 	Object,
+	#[default]
 	Empty,
 }
 

@@ -1,6 +1,13 @@
+pub mod clickhouse;
 pub mod config;
+pub mod database;
+pub mod event;
 pub mod event_api;
-pub mod health;
-pub mod logging;
-pub mod metrics;
-pub mod object_id;
+pub mod grpc;
+pub mod http;
+pub mod image_processor;
+pub mod ip;
+pub mod nats;
+pub mod old_types;
+pub mod redis;
+pub mod typesense;

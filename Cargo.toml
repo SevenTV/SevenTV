@@ -1,26 +1,29 @@
 [workspace]
 
 members = [
-    "apps/*",
+    "apps/api",
+    "apps/cdn",
+    "apps/event-api",
+    "apps/mongo-change-stream",
+    "apps/mongo-typesense",
+    "macros",
     "shared",
 ]
 
 resolver = "2"
 
-[profile.dev]
-opt-level = 1
-
-[profile.release]
-strip = true
+[profile.release-debug]
+inherits = "release"
+strip = false
+debug = true
+lto = "thin"
 
 [profile.release-lto]
 inherits = "release"
 lto = "fat"
-
-[profile.release-debug]
-inherits = "release"
-debug = true
-strip = false
+debug = false
+strip = true
 
 [workspace.dependencies]
 shared = { path = "shared" }
+macros = { path = "macros" }

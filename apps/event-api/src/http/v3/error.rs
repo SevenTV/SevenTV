@@ -2,7 +2,7 @@ use shared::event_api::types::CloseCode;
 
 use crate::http::socket::SocketError;
 
-type WsCloseCode = hyper_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
+type WsCloseCode = axum::extract::ws::CloseCode;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectionError {
@@ -25,23 +25,23 @@ pub enum ConnectionError {
 }
 
 impl ConnectionError {
-	pub const fn as_str(&self) -> &'static str {
+	pub const fn as_code(&self) -> &'static str {
 		match self {
 			Self::Socket(_) => "CLIENT_CLOSED_ABNORMAL",
 			Self::ClientClosed(code) => match code {
-				None | Some(WsCloseCode::Normal) => "CLIENT_CLOSED_CLEAN",
-				Some(WsCloseCode::Away) => "CLIENT_CLOSED_AWAY",
-				Some(WsCloseCode::Protocol) => "CLIENT_CLOSED_PROTOCOL",
-				Some(WsCloseCode::Unsupported) => "CLIENT_CLOSED_UNSUPPORTED",
-				Some(WsCloseCode::Status) => "CLIENT_CLOSED_STATUS",
-				Some(WsCloseCode::Abnormal) => "CLIENT_CLOSED_ABNORMAL",
-				Some(WsCloseCode::Invalid) => "CLIENT_CLOSED_INVALID",
-				Some(WsCloseCode::Policy) => "CLIENT_CLOSED_POLICY",
-				Some(WsCloseCode::Size) => "CLIENT_CLOSED_SIZE",
-				Some(WsCloseCode::Extension) => "CLIENT_CLOSED_EXTENSION",
-				Some(WsCloseCode::Error) => "CLIENT_CLOSED_ERROR",
-				Some(WsCloseCode::Restart) => "CLIENT_CLOSED_RESTART",
-				Some(WsCloseCode::Again) => "CLIENT_CLOSED_AGAIN",
+				None | Some(1000) => "CLIENT_CLOSED_CLEAN",
+				Some(1001) => "CLIENT_CLOSED_AWAY",
+				Some(1002) => "CLIENT_CLOSED_PROTOCOL",
+				Some(1003) => "CLIENT_CLOSED_UNSUPPORTED",
+				Some(1005) => "CLIENT_CLOSED_STATUS",
+				Some(1006) => "CLIENT_CLOSED_ABNORMAL",
+				Some(1007) => "CLIENT_CLOSED_INVALID",
+				Some(1008) => "CLIENT_CLOSED_POLICY",
+				Some(1009) => "CLIENT_CLOSED_SIZE",
+				Some(1010) => "CLIENT_CLOSED_EXTENSION",
+				Some(1011) => "CLIENT_CLOSED_ERROR",
+				Some(1012) => "CLIENT_CLOSED_RESTART",
+				Some(1013) => "CLIENT_CLOSED_AGAIN",
 				_ => "CLIENT_CLOSED_UNKNOWN",
 			},
 			Self::Subscription(_) => "SUBSCRIPTION_ERROR",

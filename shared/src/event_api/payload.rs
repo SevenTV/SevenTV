@@ -1,25 +1,28 @@
 use std::collections::HashMap;
 
 // There is a lot of code in this file. I will try to explain it as best as I can.
-// These are the structs that were used in the previous implementation of the event-api, for the payloads.
-// When events are dispatched on NATs or received from the websocket, they SHOULD be in the form of these structs.
-// All of these structs have #[serde(default)] and #[serde(deny_unknown_fields)], this is because if we receive a
-// payload, with a value we don't recognize rather than ignoring it (which was previously the case), we will now error.
-// The reason this is desirable is because if we made a mistake in one of the payloads here we would like to know about
-// it rather than silently ignoring it, and potentially causing issues.
-use super::types::{self, ChangeMap, CloseCode, EventType, SessionEffect};
+// These are the structs that were used in the previous implementation of the event-api, for
+// the payloads. When events are dispatched on NATs or received from the websocket, they SHOULD
+// be in the form of these structs. All of these structs have #[serde(default)] and
+// #[serde(deny_unknown_fields)], this is because if we receive a payload, with a value we
+// don't recognize rather than ignoring it (which was previously the case), we will now error.
+// The reason this is desirable is because if we made a mistake in one of the payloads here we
+// would like to know about it rather than silently ignoring it, and potentially causing
+// issues.
+use super::types::{self, ChangeMap, CloseCode, EventType};
 use super::MessagePayload;
-use crate::object_id::ObjectId;
+use crate::database::user::UserId;
+use crate::database::Id;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct Hello {
 	pub heartbeat_interval: u32,
-	pub session_id: ObjectId,
+	pub session_id: Id,
 	pub subscription_limit: i32,
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub actor: Option<ObjectId>,
+	pub actor: Option<UserId>,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub instance: Option<HelloInstanceInfo>,
 }
@@ -92,15 +95,51 @@ impl MessagePayload for Resume {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Subscribe {
 	#[serde(rename = "type")]
 	pub ty: EventType,
 	#[serde(default)]
-	pub condition: HashMap<String, String>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	#[serde(default)]
-	pub ttl: Option<i64>,
+	pub condition: SubscribeCondition,
+}
+
+impl Subscribe {
+	pub fn new_from_hash(ty: EventType, hash: &HashMap<String, String>) -> Option<Self> {
+		Some(Self {
+			ty,
+			condition: serde_json::from_value(serde_json::to_value(hash).ok()?).ok()?,
+		})
+	}
+}
+
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+pub enum SubscribeCondition {
+	ObjectId {
+		object_id: Id<()>,
+	},
+	Channel {
+		#[doc(hidden)]
+		ctx: ContextChannel,
+		platform: SubscribeConditionChannelPlatform,
+		id: String,
+	},
+	#[default]
+	Unknown,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SubscribeConditionChannelPlatform {
+	Twitch,
+	Kick,
+	Youtube,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[doc(hidden)]
+pub enum ContextChannel {
+	#[serde(rename = "channel")]
+	Channel,
 }
 
 impl MessagePayload for Subscribe {
@@ -115,7 +154,7 @@ pub struct Unsubscribe {
 	#[serde(rename = "type")]
 	pub ty: EventType,
 	#[serde(default)]
-	pub condition: HashMap<String, String>,
+	pub condition: SubscribeCondition,
 }
 
 impl MessagePayload for Unsubscribe {
@@ -130,21 +169,6 @@ pub struct Dispatch {
 	#[serde(rename = "type")]
 	pub ty: EventType,
 	pub body: ChangeMap,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub hash: Option<u32>,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub effect: Option<SessionEffect>,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub matches: Vec<u32>,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub condition: Vec<HashMap<String, String>>,
-	#[serde(skip_serializing)]
-	#[serde(default)]
-	pub whisper: Option<String>,
 }
 
 impl MessagePayload for Dispatch {
@@ -171,7 +195,7 @@ impl MessagePayload for Signal {
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct SignalUser {
-	pub id: ObjectId,
+	pub id: UserId,
 	pub channel_id: String,
 	pub username: String,
 	pub display_name: String,
@@ -206,14 +230,72 @@ impl MessagePayload for EndOfStream {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Bridge {
-	pub command: String,
-	pub sid: String,
-	pub ip: String,
-	pub body: serde_json::Value,
+	pub command: BridgeCommand,
+	pub body: BridgeBody,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum BridgeCommand {
+	#[serde(rename = "userstate")]
+	UserState,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BridgeBody {
+	pub identifiers: Vec<BridgeBodyIdentifier>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BridgeBodyIdentifier(String);
+
+impl BridgeBodyIdentifier {
+	pub fn new(username: &str) -> Self {
+		Self(format!("username:{}", username.to_lowercase()))
+	}
+
+	pub fn username(&self) -> &str {
+		self.0.strip_prefix("username:").unwrap()
+	}
+}
+
+impl serde::Serialize for BridgeBodyIdentifier {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_str(&self.0)
+	}
+}
+
+impl<'de> serde::Deserialize<'de> for BridgeBodyIdentifier {
+	fn deserialize<D>(deserializer: D) -> Result<BridgeBodyIdentifier, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		let string = String::deserialize(deserializer)?;
+
+		static ID_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+
+		let id_regex = ID_REGEX.get_or_init(|| regex::Regex::new(r"^username:[a-zA-Z0-9_]{1,100}$").unwrap());
+
+		if id_regex.is_match(&string) {
+			Ok(BridgeBodyIdentifier(string.to_lowercase()))
+		} else {
+			Err(serde::de::Error::custom(
+				"invalid bridge body identifier, must match regex: ^username:[a-zA-Z0-9_]{1,100}$",
+			))
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum BridgePlatform {
+	Twitch,
+	Kick,
+	Youtube,
 }
 
 impl MessagePayload for Bridge {

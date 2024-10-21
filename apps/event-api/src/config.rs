@@ -1,59 +1,80 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use serde::Deserialize;
-use shared::config::TlsConfig;
+use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
+use scuffle_foundations::settings::auto_settings;
+use scuffle_foundations::telemetry::settings::TelemetrySettings;
+use shared::config::{IncomingRequestConfig, NatsConfig, PodConfig, RateLimit, TlsConfig};
 
-#[derive(Debug, Deserialize, config::Config, Default)]
+#[auto_settings]
 #[serde(default)]
-pub struct Extra {
-	/// Api configuration
-	pub api: Api,
+pub struct Config {
+	/// Pod configuration
+	pub pod: PodConfig,
+	/// Nats configuration
+	pub nats: NatsConfig,
+	/// Telemetry configuration
+	pub telemetry: TelemetrySettings,
+	/// Runtime configuration
+	pub runtime: RuntimeSettings,
+	/// EventApi configuration
+	pub event_api: EventApi,
 }
 
-#[derive(Debug, Deserialize, config::Config)]
-#[serde(default)]
-pub struct Api {
-	/// API bind
-	pub bind: SocketAddr,
-	/// Max Listen Conn
-	pub listen_backlog: u32,
-	/// API heartbeat interval
-	pub heartbeat_interval: Duration,
-	/// Subscription Cleanup Interval
-	pub subscription_cleanup_interval: Duration,
-	/// API subscription limit
-	pub subscription_limit: Option<usize>,
-	/// API connection limit
-	pub connection_limit: Option<usize>,
-	/// API connection target
-	pub connection_target: Option<usize>,
-	/// API connection time limit
-	pub ttl: Duration,
-	/// API v3 enabled
-	pub v3: bool,
-	/// API bridge url
-	pub bridge_url: String,
-	/// TLS configuration
-	pub tls: Option<TlsConfig>,
-}
+impl Bootstrap for Config {
+	type Settings = Self;
 
-impl Default for Api {
-	fn default() -> Self {
-		Self {
-			bind: SocketAddr::new([0, 0, 0, 0].into(), 3000),
-			listen_backlog: 128,
-			connection_limit: None,
-			connection_target: None,
-			heartbeat_interval: Duration::from_secs(45),
-			subscription_cleanup_interval: Duration::from_secs(60 * 2),
-			subscription_limit: Some(500),
-			ttl: Duration::from_secs(60 * 60),
-			v3: true,
-			bridge_url: "http://localhost:9700".to_string(),
-			tls: None,
-		}
+	fn telemetry_config(&self) -> Option<TelemetrySettings> {
+		Some(self.telemetry.clone())
+	}
+
+	fn runtime_mode(&self) -> RuntimeSettings {
+		self.runtime.clone()
 	}
 }
 
-pub type Config = shared::config::Config<Extra>;
+#[auto_settings]
+#[serde(default)]
+pub struct EventApi {
+	/// Bind address
+	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 8000)))]
+	pub bind: SocketAddr,
+	/// Bind address for secure connections, only used if tls is provided.
+	#[settings(default = SocketAddr::from(([0, 0, 0, 0], 8443)))]
+	pub secure_bind: SocketAddr,
+	/// The number of workers handling requests
+	#[settings(default = 1)]
+	pub workers: usize,
+	/// With Http3
+	pub http3: bool,
+	/// The server name to use for the CDN
+	#[settings(default = "SevenTV".into())]
+	pub server_name: String,
+	/// Allow insecure connections to the CDN (only used if tls is provided)
+	#[settings(default = false)]
+	pub allow_insecure: bool,
+	/// A TLS configuration for the CDN
+	pub tls: Option<TlsConfig>,
+	/// API heartbeat interval
+	#[settings(default = Duration::from_secs(45))]
+	pub heartbeat_interval: Duration,
+	/// API subscription limit
+	#[settings(default = Some(500))]
+	pub subscription_limit: Option<usize>,
+	/// API connection limit
+	pub connection_limit: Option<usize>,
+	/// API connection time limit
+	#[settings(default = Duration::from_secs(60 * 60))]
+	pub ttl: Duration,
+	/// API bridge url
+	#[settings(default = "http://localhost:9700".to_string())]
+	pub bridge_url: String,
+	/// Cdn Origin
+	#[settings(default = "https://cdn.7tv.app".parse().unwrap())]
+	pub cdn_origin: url::Url,
+	/// Rate limit configuration
+	#[settings(default = RateLimit::default())]
+	pub rate_limit: RateLimit,
+	/// IP Header config
+	pub incoming_request: IncomingRequestConfig,
+}

@@ -1,19 +1,17 @@
 use std::sync::Arc;
 
 use anyhow::Context as _;
-use scuffle_utils::context::Context;
+use scuffle_foundations::telemetry::server::HealthCheck;
 
 use crate::config::Config;
-use crate::{metrics, subscription};
+use crate::subscription;
 
 pub struct Global {
-	ctx: Context,
-	nats: async_nats::Client,
-	config: Config,
-	subscription_manager: subscription::SubscriptionManager,
+	pub nats: async_nats::Client,
+	pub config: Config,
+	pub subscription_manager: subscription::SubscriptionManager,
 	active_connections: Arc<std::sync::atomic::AtomicUsize>,
-	http_client: reqwest::Client,
-	metrics: metrics::Metrics,
+	pub http_client: reqwest::Client,
 }
 
 /// An atomic ticket.
@@ -40,19 +38,12 @@ impl Drop for AtomicTicket {
 }
 
 impl Global {
-	pub async fn new(ctx: Context, config: Config) -> anyhow::Result<Self> {
-		let nats = async_nats::connect(&config.nats.url).await.context("nats connect")?;
+	pub async fn new(config: Config) -> anyhow::Result<Self> {
+		let (nats, _) = shared::nats::setup_nats("event-api", &config.nats)
+			.await
+			.context("nats connect")?;
 
 		Ok(Self {
-			metrics: metrics::Metrics::new(
-				config
-					.monitoring
-					.labels
-					.iter()
-					.map(|x| (x.key.clone(), x.value.clone()))
-					.collect(),
-			),
-			ctx,
 			nats,
 			config,
 			subscription_manager: Default::default(),
@@ -70,75 +61,19 @@ impl Global {
 	pub fn inc_active_connections(&self) -> (AtomicTicket, usize) {
 		AtomicTicket::new(self.active_connections.clone())
 	}
-
-	/// The subscription manager.
-	pub fn subscription_manager(&self) -> &subscription::SubscriptionManager {
-		&self.subscription_manager
-	}
-
-	/// The global context.
-	pub fn ctx(&self) -> &Context {
-		&self.ctx
-	}
-
-	/// The NATS client.
-	pub fn nats(&self) -> &async_nats::Client {
-		&self.nats
-	}
-
-	/// The configuration.
-	pub fn config(&self) -> &Config {
-		&self.config
-	}
-
-	/// Global HTTP client.
-	pub fn http_client(&self) -> &reqwest::Client {
-		&self.http_client
-	}
-
-	/// Global metrics.
-	pub fn metrics(&self) -> &metrics::Metrics {
-		&self.metrics
-	}
 }
 
-impl shared::metrics::MetricsProvider for Global {
-	fn ctx(&self) -> &scuffle_utils::context::Context {
-		&self.ctx
-	}
+impl HealthCheck for Global {
+	fn check(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = bool> + Send + '_>> {
+		Box::pin(async {
+			tracing::debug!("running health check");
 
-	fn bind(&self) -> std::net::SocketAddr {
-		self.config.monitoring.bind
-	}
-
-	fn registry(&self) -> &prometheus_client::registry::Registry {
-		self.metrics.registry()
-	}
-
-	fn pre_hook(&self) {
-		self.metrics.observe_memory()
-	}
-}
-
-impl shared::health::HealthProvider for Global {
-	fn bind(&self) -> std::net::SocketAddr {
-		self.config.health.bind
-	}
-
-	fn ctx(&self) -> &scuffle_utils::context::Context {
-		&self.ctx
-	}
-
-	fn healthy(&self, path: &str) -> bool {
-		(match path {
-			"/capacity" => {
-				if let Some(limit) = self.config.api.connection_target.or(self.config.api.connection_limit) {
-					self.active_connections() < limit
-				} else {
-					true
-				}
+			if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
+				tracing::error!("nats not connected");
+				return false;
 			}
-			_ => true,
-		}) && matches!(self.nats.connection_state(), async_nats::connection::State::Connected)
+
+			true
+		})
 	}
 }

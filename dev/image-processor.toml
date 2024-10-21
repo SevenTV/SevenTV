@@ -1,0 +1,42 @@
+# [telemetry.logging]
+# level = "trace"
+
+[database]
+uri = "mongodb://mongodb:27017/image-processor?replicaSet=rs0&directConnection=true"
+
+[[drives]]
+name = "seventv-cdn"
+kind = "s3"
+bucket = "seventv-cdn"
+endpoint = "http://minio:9000"
+access_key = "seventvkey"
+secret_key = "seventvkey"
+force_path_style = true
+
+[[drives]]
+name = "seventv-cdn-private"
+kind = "s3"
+bucket = "seventv-cdn-private"
+endpoint = "http://minio:9000"
+access_key = "seventvkey"
+secret_key = "seventvkey"
+force_path_style = true
+
+[[drives]]
+kind = "public-http"
+
+[[event_queues]]
+name = "nats"
+kind = "nats"
+url = "nats://nats:4222"
+message_encoding = "protobuf"
+
+[management.grpc]
+enabled = true
+bind = "0.0.0.0:50051"
+
+[management.http]
+enabled = false
+
+[telemetry.server]
+enabled = false

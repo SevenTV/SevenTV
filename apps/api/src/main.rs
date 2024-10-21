@@ -1,61 +1,110 @@
-use std::sync::Arc;
-
-use cap::Cap;
-use scuffle_utils::context::Context;
-use scuffle_utils::prelude::FutureTimeout;
+use async_graphql::SDLExportOptions;
+use scuffle_foundations::bootstrap::bootstrap;
+use scuffle_foundations::settings::cli::Matches;
+use tokio::fs;
 use tokio::signal::unix::SignalKind;
 
+use crate::config::Config;
+
 mod config;
+mod connections;
+mod cron;
+mod dataloader;
 mod global;
-mod metrics;
+mod http;
+mod image_processor;
+mod jwt;
+mod paypal_api;
+mod ratelimit;
+mod search;
+mod stripe_client;
+mod sub_refresh_job;
+mod transactions;
 
-#[global_allocator]
-static ALLOCATOR: Cap<tikv_jemallocator::Jemalloc> = Cap::new(tikv_jemallocator::Jemalloc, usize::max_value());
+#[bootstrap]
+async fn main(settings: Matches<Config>) {
+	rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
 
-#[tokio::main]
-async fn main() {
-	let config = shared::config::parse(true, Some("config".into())).expect("failed to parse config");
-	shared::logging::init(&config.logging.level, config.logging.mode).expect("failed to initialize logging");
+	if let Some(export_path) = settings.settings.export_schema_path {
+		fs::write(
+			&export_path,
+			http::v3::gql::schema(None).sdl_with_options(
+				SDLExportOptions::default()
+					.federation()
+					.include_specified_by()
+					.sorted_arguments()
+					.sorted_enum_items()
+					.sorted_fields(),
+			),
+		)
+		.await
+		.expect("failed to write schema path");
 
-	if let Some(path) = config.config_file.as_ref() {
-		tracing::info!("using config file: {path}");
+		tracing::info!(path = ?export_path, "saved gql schema");
+
+		return;
 	}
 
-	if let Some(limit) = config.memory.limit {
-		tracing::info!("setting memory limit to {limit} bytes");
-		ALLOCATOR.set_limit(limit).expect("failed to set memory limit");
-	}
+	tracing::info!("starting api with {:?}", settings.settings.runtime);
 
-	tracing::info!("starting event-api");
+	scuffle_foundations::telemetry::server::require_health_check();
 
-	let (ctx, handler) = Context::new();
+	let global = global::Global::new(settings.settings)
+		.await
+		.expect("failed to initialize global");
 
-	let global = Arc::new(global::Global::new(ctx, config).await.expect("failed to initialize global"));
+	scuffle_foundations::telemetry::server::register_health_check(global.clone());
 
-	let mut signal = scuffle_utils::signal::SignalHandler::new()
+	let mut signal = scuffle_foundations::signal::SignalHandler::new()
 		.with_signal(SignalKind::interrupt())
 		.with_signal(SignalKind::terminate());
 
-	let health_handle = tokio::spawn(shared::health::run(global.clone()));
-	let metrics_handle = tokio::spawn(shared::metrics::run(global.clone()));
+	let http_handle = tokio::spawn(http::run(global.clone()));
+	let image_processor_handle = tokio::spawn(image_processor::run(global.clone()));
+	let cron_handle = tokio::spawn(cron::run(global.clone()));
 
-	tokio::select! {
-		_ = signal.recv() => tracing::info!("received shutdown signal"),
-		r = health_handle => tracing::warn!("health server exited: {:?}", r),
-		r = metrics_handle => tracing::warn!("metrics server exited: {:?}", r),
-	}
+	let handler = scuffle_foundations::context::Handler::global();
 
-	drop(global);
-
-	tokio::select! {
-		_ = signal.recv() => tracing::info!("received second shutdown signal, forcing exit"),
-		r = handler.cancel().timeout(std::time::Duration::from_secs(60)) => {
-			if r.is_err() {
-				tracing::warn!("failed to cancel context in time, force exit");
-			}
+	let shutdown = tokio::spawn(async move {
+		signal.recv().await;
+		tracing::info!("received shutdown signal, waiting for jobs to finish");
+		tokio::select! {
+			_ = handler.shutdown() => {},
+			_ = signal.recv() => {
+				tracing::warn!("received second shutdown signal, forcing exit");
+			},
+			_ = tokio::time::sleep(std::time::Duration::from_secs(60)) => {
+				tracing::warn!("shutdown timed out, forcing exit");
+			},
 		}
+	});
+
+	tracing::info!("started api");
+
+	let ctx = scuffle_foundations::context::Context::global();
+
+	tokio::select! {
+		r = http_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("http server exited: {:?}", r);
+			}
+		},
+		r = image_processor_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("image processor handler exited: {:?}", r);
+			}
+		},
+		r = cron_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("cron handler exited: {:?}", r);
+			}
+		},
 	}
 
-	tracing::info!("stopping event-api");
+	drop(ctx);
+
+	shutdown.await.expect("shutdown failed");
+
+	tracing::info!("stopping api");
 	std::process::exit(0);
 }
