@@ -1,6 +1,7 @@
 use scuffle_foundations::bootstrap::{bootstrap, Bootstrap};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::settings::cli::Matches;
+use scuffle_foundations::telemetry::settings::{LoggingSettings, MetricsSettings, OpentelemetrySettings, ServerSettings};
 use shared::config::{DatabaseConfig, ImageProcessorConfig};
 use shared::database::badge::Badge;
 use shared::database::image_set::{ImageSet, ImageSetInput};
@@ -19,10 +20,33 @@ struct Config {
 
 impl Bootstrap for Config {
 	type Settings = Self;
+
+	fn telemetry_config(&self) -> Option<scuffle_foundations::telemetry::settings::TelemetrySettings> {
+		Some(scuffle_foundations::telemetry::settings::TelemetrySettings {
+			metrics: MetricsSettings {
+				enabled: false,
+				..Default::default()
+			},
+			logging: LoggingSettings {
+				enabled: true,
+				..Default::default()
+			},
+			server: ServerSettings {
+				enabled: false,
+				..Default::default()
+			},
+			opentelemetry: OpentelemetrySettings {
+				enabled: false,
+				..Default::default()
+			},
+		})
+	}
 }
 
 #[bootstrap]
 async fn main(settings: Matches<Config>) {
+	tracing::info!("starting");
+
 	let mongo = shared::database::setup_database(&settings.settings.database, false)
 		.await
 		.unwrap();
@@ -33,9 +57,15 @@ async fn main(settings: Matches<Config>) {
 		.expect("failed to initialize image processor");
 
 	for job in badges::jobs() {
-		tracing::info!("reprocessing {:?}", job.input);
+		tracing::info!(id = %job.id, "reprocessing {:?}", job.input);
 
-		let data = tokio::fs::read(job.input).await.expect("failed to read input file");
+		let data = match tokio::fs::read(job.input).await {
+			Ok(data) => data,
+			Err(e) => {
+				tracing::error!(id = %job.id, error = ?e, "failed to read input file");
+				continue;
+			}
+		};
 
 		// The api should be running and will take care of the image processor callback
 		match ip.upload_badge(job.id, data.into()).await {
@@ -59,7 +89,7 @@ async fn main(settings: Matches<Config>) {
 					outputs: vec![],
 				};
 
-				Badge::collection(&db)
+				if let Err(e) = Badge::collection(&db)
 					.update_one(
 						filter::filter! {
 							Badge {
@@ -78,14 +108,16 @@ async fn main(settings: Matches<Config>) {
 						},
 					)
 					.await
-					.expect("failed to clear image set");
+				{
+					tracing::error!(id = %job.id, error = ?e, "failed to update badge");
+				}
 			}
 			Ok(res) => {
-				tracing::error!(res = ?res, "invalid image processor response");
+				tracing::error!(id = %job.id, res = ?res, "invalid image processor response");
 				continue;
 			}
 			Err(e) => {
-				tracing::error!(error = ?e, "failed to start send image processor request");
+				tracing::error!(id = %job.id, error = ?e, "failed to start send image processor request");
 				continue;
 			}
 		}
