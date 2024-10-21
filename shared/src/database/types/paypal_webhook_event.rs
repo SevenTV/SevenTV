@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use bytes::Bytes;
 use macros::MongoCollection;
 
 use super::MongoGenericCollection;
@@ -13,8 +12,18 @@ pub struct PaypalWebhookEvent {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: Id<PaypalWebhookEvent>,
-	pub headers: HashMap<String, String>,
-	pub event: serde_json::Value,
+	pub headers: Vec<PaypalWebhookEventHeader>,
+	#[serde(with = "crate::database::serde")]
+	pub event: Bytes,
+	pub response_code: i32,
+	pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PaypalWebhookEventHeader {
+	pub key: String,
+	pub value: String,
 }
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {

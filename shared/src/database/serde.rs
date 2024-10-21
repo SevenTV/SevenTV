@@ -1,4 +1,5 @@
 use bson::DateTime as BsonDateTime;
+use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -43,6 +44,21 @@ impl<T: SerdeHelper> SerdeHelper for Vec<T> {
 
 	fn from_bson(bson: Self::BsonType) -> Self {
 		bson.into_iter().map(|t| T::from_bson(t)).collect()
+	}
+}
+
+impl SerdeHelper for Bytes {
+	type BsonType = bson::Binary;
+
+	fn as_bson(&self) -> Self::BsonType {
+		bson::Binary {
+			subtype: bson::spec::BinarySubtype::Generic,
+			bytes: self.to_vec(),
+		}
+	}
+
+	fn from_bson(bson: Self::BsonType) -> Self {
+		Self::from(bson.bytes)
 	}
 }
 

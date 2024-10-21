@@ -10,7 +10,7 @@ use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::traits::SignatureScheme;
 use rsa::Pkcs1v15Sign;
 use sha2::Digest;
-use shared::database::paypal_webhook_event::PaypalWebhookEvent;
+use shared::database::paypal_webhook_event::{PaypalWebhookEvent, PaypalWebhookEventHeader};
 use shared::database::queries::{filter, update};
 use shared::database::webhook_event::WebhookEvent;
 use shared::database::MongoCollection;
@@ -88,6 +88,36 @@ pub async fn handle(
 	headers: HeaderMap,
 	payload: bytes::Bytes,
 ) -> Result<StatusCode, ApiError> {
+	let result = handle_webhook(&global, &headers, &payload).await;
+
+	if let Err(e) = PaypalWebhookEvent::collection(&global.db)
+		.insert_one(PaypalWebhookEvent {
+			id: Default::default(),
+			headers: headers
+				.iter()
+				.filter_map(|(k, v)| {
+					Some(PaypalWebhookEventHeader {
+						key: k.to_string(),
+						value: v.to_str().ok()?.to_string(),
+					})
+				})
+				.collect(),
+			event: payload,
+			error: result
+				.as_ref()
+				.err()
+				.map(|e| format!("{} {}", e.status_code.as_str(), e.error)),
+			response_code: result.as_ref().unwrap_or_else(|e| &e.status_code).as_u16() as i32,
+		})
+		.await
+	{
+		tracing::error!(error = %e, "failed to insert paypal event");
+	}
+
+	result
+}
+
+async fn handle_webhook(global: &Arc<Global>, headers: &HeaderMap, payload: &bytes::Bytes) -> Result<StatusCode, ApiError> {
 	let cert_url = headers
 		.get("paypal-cert-url")
 		.and_then(|v| v.to_str().ok())
@@ -121,7 +151,7 @@ pub async fn handle(
 
 	let crc = crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
 	let mut crc = crc.digest();
-	crc.update(&payload);
+	crc.update(payload);
 	let crc = crc.finalize();
 
 	let hash = sha2::Sha256::digest(format!("{transmision_id}|{timestamp}|{webhook_id}|{crc}").as_bytes());
@@ -132,41 +162,15 @@ pub async fn handle(
 		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to verify signature")
 	})?;
 
-	match serde_json::from_slice::<serde_json::Value>(&payload) {
-		Ok(event) => {
-			if let Err(e) = PaypalWebhookEvent::collection(&global.db)
-				.insert_one(PaypalWebhookEvent {
-					id: Default::default(),
-					headers: headers
-						.into_iter()
-						.map(|(k, v)| {
-							(
-								k.map(|s| s.to_string()).unwrap_or_default(),
-								v.to_str().unwrap_or_default().to_owned(),
-							)
-						})
-						.collect(),
-					event,
-				})
-				.await
-			{
-				tracing::error!(error = %e, "failed to insert paypal event");
-			}
-		}
-		Err(e) => {
-			tracing::warn!(error = %e, "failed to deserialize payload");
-		}
-	}
-
-	let event: types::Event = serde_json::from_slice(&payload).map_err(|e| {
+	let event: types::Event = serde_json::from_slice(payload).map_err(|e| {
 		tracing::error!(error = %e, "failed to deserialize payload");
 		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to deserialize payload")
 	})?;
 
 	let stripe_client = global.stripe_client.safe(&event.id).await;
 
-	let res = with_transaction(&global, |mut tx| {
-		let global = Arc::clone(&global);
+	let res = with_transaction(global, |mut tx| {
+		let global = Arc::clone(global);
 
 		async move {
 			let res = tx
@@ -223,7 +227,7 @@ pub async fn handle(
 
 	match res {
 		Ok(Some(sub_id)) => {
-			sub_refresh_job::refresh(&global, sub_id).await?;
+			sub_refresh_job::refresh(global, sub_id).await?;
 			Ok(StatusCode::OK)
 		}
 		Ok(None) => Ok(StatusCode::OK),
