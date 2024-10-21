@@ -9,3 +9,6 @@ shared = { workspace = true }
 bson = { version = "2.11", features = ["chrono-0_4", "uuid-1"] }
 futures = "0.3"
 scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
+scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["client"] }
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }

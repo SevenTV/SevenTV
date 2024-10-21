@@ -4348,10 +4348,13 @@ name = "reprocess-badges"
 version = "0.1.0"
 dependencies = [
  "bson",
+ "chrono",
  "futures",
  "scuffle-foundations",
+ "scuffle-image-processor-proto",
  "shared",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
