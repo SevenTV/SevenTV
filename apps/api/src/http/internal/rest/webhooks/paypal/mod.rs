@@ -60,7 +60,7 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 	})?;
 
 	if cert.time_constraints_valid(None) {
-		tracing::warn!(url = %cert_url, "cert is expired or not yet valid");
+		tracing::warn!(url = %cert_url, not_after = %cert.validity_not_after(), not_before = %cert.validity_not_before(), "cert is expired or not yet valid");
 		return Err(ApiError::internal_server_error(
 			ApiErrorCode::PaypalError,
 			"cert is expired or not yet valid",
