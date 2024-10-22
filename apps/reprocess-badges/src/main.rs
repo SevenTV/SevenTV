@@ -5,7 +5,6 @@ use scuffle_foundations::telemetry::settings::{LoggingSettings, MetricsSettings,
 use shared::config::{DatabaseConfig, ImageProcessorConfig};
 use shared::database::badge::Badge;
 use shared::database::image_set::{ImageSet, ImageSetInput};
-use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
 use shared::image_processor::ImageProcessor;
 
@@ -56,19 +55,19 @@ async fn main(settings: Matches<Config>) {
 		.await
 		.expect("failed to initialize image processor");
 
-	for job in badges::jobs() {
-		tracing::info!(id = %job.id, "reprocessing {:?}", job.input);
+	for job in badges::new_badges() {
+		tracing::info!(id = %job.badge.id, "processing {:?}", job.input);
 
 		let data = match tokio::fs::read(job.input).await {
 			Ok(data) => data,
 			Err(e) => {
-				tracing::error!(id = %job.id, error = ?e, "failed to read input file");
+				tracing::error!(id = %job.badge.id, error = ?e, "failed to read input file");
 				continue;
 			}
 		};
 
 		// The api should be running and will take care of the image processor callback
-		match ip.upload_badge(job.id, data.into()).await {
+		match ip.upload_badge(job.badge.id, data.into()).await {
 			Ok(scuffle_image_processor_proto::ProcessImageResponse {
 				id,
 				upload_info:
@@ -79,7 +78,9 @@ async fn main(settings: Matches<Config>) {
 					}),
 				error: None,
 			}) => {
-				let image_set = ImageSet {
+				let mut badge = job.badge.clone();
+
+				badge.image_set = ImageSet {
 					input: ImageSetInput::Pending {
 						task_id: id,
 						path: path.path,
@@ -89,35 +90,16 @@ async fn main(settings: Matches<Config>) {
 					outputs: vec![],
 				};
 
-				if let Err(e) = Badge::collection(&db)
-					.update_one(
-						filter::filter! {
-							Badge {
-								#[query(rename = "_id")]
-								id: job.id,
-							}
-						},
-						update::update! {
-							#[query(set)]
-							Badge {
-								#[query(serde)]
-								image_set,
-								updated_at: chrono::Utc::now(),
-								search_updated_at: &None,
-							}
-						},
-					)
-					.await
-				{
-					tracing::error!(id = %job.id, error = ?e, "failed to update badge");
+				if let Err(e) = Badge::collection(&db).insert_one(badge).await {
+					tracing::error!(id = %job.badge.id, error = ?e, "failed to update badge");
 				}
 			}
 			Ok(res) => {
-				tracing::error!(id = %job.id, res = ?res, "invalid image processor response");
+				tracing::error!(id = %job.badge.id, res = ?res, "invalid image processor response");
 				continue;
 			}
 			Err(e) => {
-				tracing::error!(id = %job.id, error = ?e, "failed to start send image processor request");
+				tracing::error!(id = %job.badge.id, error = ?e, "failed to start send image processor request");
 				continue;
 			}
 		}

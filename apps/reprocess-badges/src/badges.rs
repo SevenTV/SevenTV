@@ -1,12 +1,110 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use shared::database::badge::BadgeId;
+use shared::database::{
+	badge::{Badge, BadgeId},
+	image_set::ImageSet, user::UserId,
+};
 
 #[derive(Debug)]
 pub struct BadgeReprocessJob {
 	pub id: BadgeId,
 	pub input: PathBuf,
+}
+
+#[derive(Debug)]
+pub struct NewBadgeJob {
+	pub badge: Badge,
+	pub input: PathBuf,
+}
+
+pub fn new_badges() -> Vec<NewBadgeJob> {
+	vec![
+		NewBadgeJob {
+			badge: Badge {
+				id: BadgeId::from_str("01JAT9B20KQK8DK8FT13XV83YC").unwrap(),
+				name: "7TV Subscriber - 3 Years".to_string(),
+				description: Some("7TV Subscriber (3 Years)".to_string()),
+				tags: vec!["sub36".to_string()],
+				image_set: ImageSet {
+					input: shared::database::image_set::ImageSetInput::Pending {
+						task_id: String::new(),
+						path: String::new(),
+						mime: String::new(),
+						size: 0,
+					},
+					outputs: vec![],
+				},
+				created_by_id: UserId::nil(),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			},
+			input: "./local/badges/sub36.avif".into(),
+		},
+		NewBadgeJob {
+			badge: Badge {
+				id: BadgeId::from_str("01JAT9BASQDPE5VV0PMXRYND9E").unwrap(),
+				name: "7TV Subscriber - 3 Years & a Quarter".to_string(),
+				description: Some("7TV Subscriber (3 Years & a Quarter)".to_string()),
+				tags: vec!["sub39".to_string()],
+				image_set: ImageSet {
+					input: shared::database::image_set::ImageSetInput::Pending {
+						task_id: String::new(),
+						path: String::new(),
+						mime: String::new(),
+						size: 0,
+					},
+					outputs: vec![],
+				},
+				created_by_id: UserId::nil(),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			},
+			input: "./local/badges/sub39.avif".into(),
+		},
+		NewBadgeJob {
+			badge: Badge {
+				id: BadgeId::from_str("01JAT9BH1BBRB8Q45AJVVND54R").unwrap(),
+				name: "7TV Subscriber - 3 Years & a Half".to_string(),
+				description: Some("7TV Subscriber (3 Years & a Half)".to_string()),
+				tags: vec!["sub42".to_string()],
+				image_set: ImageSet {
+					input: shared::database::image_set::ImageSetInput::Pending {
+						task_id: String::new(),
+						path: String::new(),
+						mime: String::new(),
+						size: 0,
+					},
+					outputs: vec![],
+				},
+				created_by_id: UserId::nil(),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			},
+			input: "./local/badges/sub42.avif".into(),
+		},
+		NewBadgeJob {
+			badge: Badge {
+				id: BadgeId::from_str("01JAT9BPCRSDK1BQSM17278GJN").unwrap(),
+				name: "7TV Subscriber - 3 Years & Three Quarters".to_string(),
+				description: Some("7TV Subscriber (3 Years & Three Quarters)".to_string()),
+				tags: vec!["sub45".to_string()],
+				image_set: ImageSet {
+					input: shared::database::image_set::ImageSetInput::Pending {
+						task_id: String::new(),
+						path: String::new(),
+						mime: String::new(),
+						size: 0,
+					},
+					outputs: vec![],
+				},
+				created_by_id: UserId::nil(),
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+			},
+			input: "./local/badges/sub45.avif".into(),
+		},
+	]
 }
 
 pub fn jobs() -> Vec<BadgeReprocessJob> {
