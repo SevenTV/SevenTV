@@ -12,7 +12,12 @@ pub struct ImageHost {
 }
 
 impl ImageHost {
-	pub fn from_image_set_with_options(image_set: &ImageSet, cdn_base_url: &url::Url, webp_only: bool, without_protocol: bool) -> Self {
+	pub fn from_image_set_with_options(
+		image_set: &ImageSet,
+		cdn_base_url: &url::Url,
+		webp_only: bool,
+		without_protocol: bool,
+	) -> Self {
 		let url = image_set.outputs.first().and_then(|i| {
 			let path = i.path.clone();
 			// keep everything until last '/'

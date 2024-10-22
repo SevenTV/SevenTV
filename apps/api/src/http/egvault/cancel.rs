@@ -5,11 +5,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Extension;
-use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionState};
+use shared::database::product::subscription::{
+	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState,
+};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::Id;
-use shared::database::product::subscription::Subscription;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -157,21 +158,28 @@ pub async fn cancel_subscription(
 					}
 				}
 
-				// This would get updated by the sub refresh job eventually but we want it to reflect instantly
-				tx.update_one(filter::filter! {
-					Subscription {
-						#[query(rename = "_id", serde)]
-						id: period.subscription_id,
-					}
-				}, update::update! {
-					#[query(set)]
-					Subscription {
-						#[query(serde)]
-						state: SubscriptionState::CancelAtEnd,
-						updated_at: chrono::Utc::now(),
-						search_updated_at: &None,
-					}
-				}, None).await.map_err(|e| {
+				// This would get updated by the sub refresh job eventually but we want it to
+				// reflect instantly
+				tx.update_one(
+					filter::filter! {
+						Subscription {
+							#[query(rename = "_id", serde)]
+							id: period.subscription_id,
+						}
+					},
+					update::update! {
+						#[query(set)]
+						Subscription {
+							#[query(serde)]
+							state: SubscriptionState::CancelAtEnd,
+							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
+						}
+					},
+					None,
+				)
+				.await
+				.map_err(|e| {
 					tracing::error!(error = %e, "failed to update subscription");
 					TransactionError::Custom(ApiError::internal_server_error(
 						ApiErrorCode::MutationError,
@@ -278,21 +286,28 @@ pub async fn reactivate_subscription(
 						))
 					})?;
 
-					// This would get updated by the sub refresh job eventually but we want it to reflect instantly
-					tx.update_one(filter::filter! {
-						Subscription {
-							#[query(rename = "_id", serde)]
-							id: period.subscription_id,
-						}
-					}, update::update! {
-						#[query(set)]
-						Subscription {
-							#[query(serde)]
-							state: SubscriptionState::Active,
-							updated_at: chrono::Utc::now(),
-							search_updated_at: &None,
-						}
-					}, None).await.map_err(|e| {
+					// This would get updated by the sub refresh job eventually but we want it to
+					// reflect instantly
+					tx.update_one(
+						filter::filter! {
+							Subscription {
+								#[query(rename = "_id", serde)]
+								id: period.subscription_id,
+							}
+						},
+						update::update! {
+							#[query(set)]
+							Subscription {
+								#[query(serde)]
+								state: SubscriptionState::Active,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							}
+						},
+						None,
+					)
+					.await
+					.map_err(|e| {
 						tracing::error!(error = %e, "failed to update subscription");
 						TransactionError::Custom(ApiError::internal_server_error(
 							ApiErrorCode::MutationError,
