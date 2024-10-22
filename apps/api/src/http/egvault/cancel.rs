@@ -86,7 +86,7 @@ pub async fn cancel_subscription(
 
 				match period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
-						let stripe_sub = stripe::Subscription::update(
+						stripe::Subscription::update(
 							stripe_client.client("update").await.deref(),
 							&id,
 							stripe::UpdateSubscription {
@@ -102,41 +102,6 @@ pub async fn cancel_subscription(
 								"failed to update stripe subscription",
 							))
 						})?;
-
-						let state = match stripe_sub.status {
-							stripe::SubscriptionStatus::Active => {
-								if stripe_sub.cancel_at_period_end {
-									SubscriptionState::CancelAtEnd
-								} else {
-									SubscriptionState::Active
-								}
-							},
-							stripe::SubscriptionStatus::Trialing => SubscriptionState::Active,
-							_ => SubscriptionState::Ended,
-						};
-
-						tx.update_one(filter::filter! {
-							Subscription {
-								#[query(rename = "_id", serde)]
-								id: period.subscription_id,
-							}
-						}, update::update! {
-							#[query(set)]
-							Subscription {
-								#[query(serde)]
-								state,
-								updated_at: chrono::Utc::now(),
-								search_updated_at: &None,
-							}
-						}, None).await.map_err(|e| {
-							tracing::error!(error = %e, "failed to update subscription");
-							TransactionError::Custom(ApiError::internal_server_error(
-								ApiErrorCode::MutationError,
-								"failed to update subscription",
-							))
-						})?;
-
-						Ok(())
 					}
 					Some(ProviderSubscriptionId::Paypal(id)) => {
 						let api_key = paypal_api::api_key(&global).await.map_err(TransactionError::Custom)?;
@@ -159,30 +124,13 @@ pub async fn cancel_subscription(
 								))
 							})?;
 
-						if response.status().is_success() {
-							tx.update_one(filter::filter! {
-								Subscription {
-									#[query(rename = "_id", serde)]
-									id: period.subscription_id,
-								}
-							}, update::update! {
-								#[query(set)]
-								Subscription {
-									#[query(serde)]
-									state: SubscriptionState::CancelAtEnd,
-									updated_at: chrono::Utc::now(),
-									search_updated_at: &None,
-								}
-							}, None).await.map_err(|e| {
-								tracing::error!(error = %e, "failed to update subscription");
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::MutationError,
-									"failed to update subscription",
-								))
-							})?;
+						if !response.status().is_success() {
+							tracing::error!(status = %response.status(), "failed to cancel paypal subscription");
+							return Err(TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::PaypalError,
+								"failed to cancel paypal subscription",
+							)));
 						}
-
-						Ok(())
 					}
 					None => {
 						// This is a gifted or system subscription
@@ -206,10 +154,32 @@ pub async fn cancel_subscription(
 							None,
 						)
 						.await?;
-
-						Ok(())
 					}
 				}
+
+				// This would get updated by the sub refresh job eventually but we want it to reflect instantly
+				tx.update_one(filter::filter! {
+					Subscription {
+						#[query(rename = "_id", serde)]
+						id: period.subscription_id,
+					}
+				}, update::update! {
+					#[query(set)]
+					Subscription {
+						#[query(serde)]
+						state: SubscriptionState::CancelAtEnd,
+						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
+					}
+				}, None).await.map_err(|e| {
+					tracing::error!(error = %e, "failed to update subscription");
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::MutationError,
+						"failed to update subscription",
+					))
+				})?;
+
+				Ok(())
 			}
 		})
 		.await;
@@ -291,7 +261,7 @@ pub async fn reactivate_subscription(
 
 			match period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
-					let stripe_sub = stripe::Subscription::update(
+					stripe::Subscription::update(
 						stripe_client.client("update").await.deref(),
 						&id,
 						stripe::UpdateSubscription {
@@ -308,18 +278,7 @@ pub async fn reactivate_subscription(
 						))
 					})?;
 
-					let state = match stripe_sub.status {
-						stripe::SubscriptionStatus::Active => {
-							if stripe_sub.cancel_at_period_end {
-								SubscriptionState::CancelAtEnd
-							} else {
-								SubscriptionState::Active
-							}
-						},
-						stripe::SubscriptionStatus::Trialing => SubscriptionState::Active,
-						_ => SubscriptionState::Ended,
-					};
-
+					// This would get updated by the sub refresh job eventually but we want it to reflect instantly
 					tx.update_one(filter::filter! {
 						Subscription {
 							#[query(rename = "_id", serde)]
@@ -329,7 +288,7 @@ pub async fn reactivate_subscription(
 						#[query(set)]
 						Subscription {
 							#[query(serde)]
-							state,
+							state: SubscriptionState::Active,
 							updated_at: chrono::Utc::now(),
 							search_updated_at: &None,
 						}
