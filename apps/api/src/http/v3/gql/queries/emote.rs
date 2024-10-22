@@ -161,7 +161,7 @@ impl Emote {
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let value: Option<String> = global.redis.get("emote_stats:trending_week").await.map_err(|err| {
+		let value: Option<String> = global.redis.get("emote_stats:trending_day").await.map_err(|err| {
 			tracing::error!(error = %err, "failed to get trending emote stats");
 			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to get trending emote stats")
 		})?;
