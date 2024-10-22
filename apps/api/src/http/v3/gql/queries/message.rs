@@ -154,7 +154,7 @@ impl MessagesQuery {
 		let mut country_filters = vec![];
 
 		for country in country.unwrap_or_default() {
-			if country.len() <= 100 {
+			if country.len() > 100 {
 				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "country code is too long"));
 			}
 
@@ -163,7 +163,7 @@ impl MessagesQuery {
 		}
 
 		if !country_filters.is_empty() {
-			filters.push(country_filters.join(" || "));
+			filters.push(format!("({})", country_filters.join(" || ")));
 		}
 
 		let options = SearchOptions::builder()
