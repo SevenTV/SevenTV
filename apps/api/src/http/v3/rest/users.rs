@@ -12,6 +12,7 @@ use mongodb::bson::doc;
 use scuffle_image_processor_proto::{self as image_processor, ProcessImageResponse, ProcessImageResponseUploadInfo};
 use serde::Deserialize;
 use shared::database::emote::EmoteFlags;
+use shared::database::emote_set::EmoteSetKind;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{FlagPermission, PermissionsExt, RateLimitResource, UserPermission};
@@ -96,7 +97,15 @@ pub async fn get_user_by_id(
 		.load(user.id)
 		.await
 		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
-		.unwrap_or_default();
+		.unwrap_or_default()
+		.into_iter()
+		.filter(|set| {
+			let requires_perm = set.kind == EmoteSetKind::Personal || set.kind == EmoteSetKind::Special;
+
+			!requires_perm || user.has(UserPermission::UsePersonalEmoteSet)
+		})
+		.map(|emote_set| EmoteSetPartialModel::from_db(emote_set, None))
+		.collect();
 
 	let editors = global
 		.user_editor_by_user_id_loader
@@ -119,10 +128,7 @@ pub async fn get_user_by_id(
 		user,
 		None,
 		None,
-		emote_sets
-			.into_iter()
-			.map(|emote_set| EmoteSetPartialModel::from_db(emote_set, None))
-			.collect(),
+		emote_sets,
 		editors.into_iter().filter_map(UserEditorModel::from_db).collect(),
 		&global.config.api.cdn_origin,
 	);
@@ -569,6 +575,11 @@ pub async fn get_user_by_platform_id(
 		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 		.unwrap_or_default()
 		.into_iter()
+		.filter(|set| {
+			let requires_perm = set.kind == EmoteSetKind::Personal || set.kind == EmoteSetKind::Special;
+
+			!requires_perm || user.has(UserPermission::UsePersonalEmoteSet)
+		})
 		.map(|s| EmoteSetPartialModel::from_db(s, None))
 		.collect::<Vec<_>>();
 
