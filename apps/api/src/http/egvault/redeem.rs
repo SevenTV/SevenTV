@@ -128,20 +128,35 @@ pub async fn redeem(
 			async move {
 				let code = tx
 					.find_one_and_update(
-						filter::filter! {
-							RedeemCode {
-								code: body.code,
-								#[query(selector = "gt")]
-								remaining_uses: 0,
-								#[query(flatten)]
-								active_period: TimePeriod {
-									#[query(selector = "lt")]
-									start: chrono::Utc::now(),
+						filter::Filter::and([
+							filter::filter! {
+								RedeemCode {
+									code: body.code,
 									#[query(selector = "gt")]
-									end: chrono::Utc::now(),
-								},
+									remaining_uses: 0,
+								}
 							}
-						},
+							.into(),
+							filter::Filter::or([
+								filter::filter! {
+									RedeemCode {
+										#[query(flatten)]
+										active_period: TimePeriod {
+											#[query(selector = "lt")]
+											start: chrono::Utc::now(),
+											#[query(selector = "gt")]
+											end: chrono::Utc::now(),
+										},
+									}
+								},
+								filter::filter! {
+									RedeemCode {
+										#[query(serde)]
+										active_period: &None,
+									}
+								},
+							]),
+						]),
 						update::update! {
 							#[query(inc)]
 							RedeemCode {
