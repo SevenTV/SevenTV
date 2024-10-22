@@ -21,7 +21,9 @@ use shared::event_api::payload::{Subscribe, SubscribeCondition};
 use shared::event_api::types::{ChangeField, ChangeFieldType, ChangeMap, CloseCode, EventType, ObjectKind, Opcode};
 use shared::event_api::{payload, Message, MessageData, MessagePayload};
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticModel, CosmeticPaintModel};
-use shared::old_types::{EmotePartialModel, EmoteSetModel, Entitlement, EntitlementData, UserPartialModel};
+use shared::old_types::{
+	ActiveEmoteModel, EmotePartialModel, EmoteSetModel, Entitlement, EntitlementData, UserPartialModel,
+};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 
@@ -689,17 +691,24 @@ impl Connection {
 					},
 				});
 
+				let mut emotes: HashMap<_, _> = emote_set.emotes.iter().map(|e| (e.id, e)).collect();
+
 				let pushed = emote_set
+					.emote_set
 					.emotes
 					.iter()
 					.enumerate()
-					.map(|(i, emote)| {
-						let value = EmotePartialModel::from_db(
-							emote.clone(),
-							Some(UserPartialModel::deleted_user()),
-							&self.global.config.event_api.cdn_origin,
-						);
-						let value = serde_json::to_value(value).map_err(|e| {
+					.map(|(i, emote_set_emote)| {
+						let emote = emotes.remove(&emote_set_emote.id).map(|e| {
+							EmotePartialModel::from_db(
+								e.clone(),
+								Some(UserPartialModel::deleted_user()),
+								&self.global.config.event_api.cdn_origin,
+							)
+						});
+
+						let active_emote = ActiveEmoteModel::from_db(emote_set_emote.clone(), emote);
+						let value = serde_json::to_value(active_emote).map_err(|e| {
 							tracing::error!(error = %e, "failed to serialize emote");
 							ConnectionError::ClosedByServer(CloseCode::ServerError)
 						})?;
