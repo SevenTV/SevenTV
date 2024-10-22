@@ -21,7 +21,7 @@ use crate::database::user::connection::UserConnection;
 use crate::database::user::editor::{UserEditor, UserEditorPermissions};
 use crate::database::user::profile_picture::UserProfilePicture;
 use crate::database::user::session::{UserSession, UserSessionId};
-use crate::database::user::{FullUser, User};
+use crate::database::user::{FullUser, User, UserId};
 use crate::database::Id;
 use crate::event_api::types::{ChangeField, ChangeFieldType};
 use crate::event_api::{self};
@@ -280,6 +280,8 @@ pub struct InternalEventUserPresenceData {
 pub struct InternalEventUserPresenceDataEmoteSet {
 	pub emote_set: EmoteSet,
 	pub emotes: Vec<Emote>,
+	#[serde(default)]
+	pub emote_owners: HashMap<UserId, FullUser>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

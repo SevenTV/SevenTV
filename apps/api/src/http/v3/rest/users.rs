@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -417,18 +418,33 @@ pub async fn create_user_presence(
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
+		let owners = global
+			.user_loader
+			.load_fast_many(&global, emotes.emotes.iter().map(|(_, e)| e.owner_id))
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
 		let mut sets = vec![];
 
 		for set in personal_emote_sets {
-			let emotes = set
-				.emotes
-				.iter()
-				.filter_map(|e| emotes.get(e.id))
-				.filter(|e| e.flags.contains(EmoteFlags::ApprovedPersonal))
-				.cloned()
-				.collect();
+			let mut set_emotes = Vec::new();
+			let mut emote_owners = HashMap::new();
 
-			sets.push(InternalEventUserPresenceDataEmoteSet { emote_set: set, emotes });
+			for emote in set.emotes.iter().filter_map(|e| emotes.get(e.id)) {
+				if emote.flags.contains(EmoteFlags::ApprovedPersonal) {
+					set_emotes.push(emote.clone());
+				}
+
+				if let Some(owner) = owners.get(&emote.owner_id) {
+					emote_owners.insert(owner.id, owner.clone());
+				}
+			}
+
+			sets.push(InternalEventUserPresenceDataEmoteSet {
+				emote_set: set,
+				emotes: set_emotes,
+				emote_owners,
+			});
 		}
 
 		let payload = rmp_serde::to_vec_named(&InternalEventPayload::new(Some(InternalEvent {

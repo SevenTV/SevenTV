@@ -700,11 +700,20 @@ impl Connection {
 					.enumerate()
 					.map(|(i, emote_set_emote)| {
 						let emote = emotes.remove(&emote_set_emote.id).map(|e| {
-							EmotePartialModel::from_db(
-								e.clone(),
-								Some(UserPartialModel::deleted_user()),
-								&self.global.config.event_api.cdn_origin,
-							)
+							let owner = emote_set
+								.emote_owners
+								.get(&e.owner_id)
+								.map(|u| {
+									UserPartialModel::from_db(
+										u.clone(),
+										None,
+										None,
+										&self.global.config.event_api.cdn_origin,
+									)
+								})
+								.unwrap_or_else(UserPartialModel::deleted_user);
+
+							EmotePartialModel::from_db(e.clone(), Some(owner), &self.global.config.event_api.cdn_origin)
 						});
 
 						let active_emote = ActiveEmoteModel::from_db(emote_set_emote.clone(), emote);
