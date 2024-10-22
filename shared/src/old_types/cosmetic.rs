@@ -132,7 +132,7 @@ impl CosmeticPaintModel {
 			image_url: first_layer
 				.and_then(|l| match &l.ty {
 					PaintLayerType::Image(image_set) => {
-						let host = ImageHost::from_image_set(image_set, cdn_base_url);
+						let host = ImageHost::from_image_set_with_options(image_set, cdn_base_url, false, false);
 						host.files.first().map(|f| format!("{}/{}", host.url, f.name))
 					}
 					_ => None,
@@ -311,7 +311,7 @@ impl CosmeticBadgeModel {
 	pub fn from_db(value: Badge, cdn_base_url: &url::Url) -> Self {
 		let id = value.id.cast();
 
-		let host = ImageHost::from_image_set_with_options(&value.image_set, cdn_base_url, true);
+		let host = ImageHost::from_image_set_with_options(&value.image_set, cdn_base_url, true, true);
 
 		Self {
 			id,

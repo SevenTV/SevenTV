@@ -12,7 +12,7 @@ pub struct ImageHost {
 }
 
 impl ImageHost {
-	pub fn from_image_set_with_options(image_set: &ImageSet, cdn_base_url: &url::Url, webp_only: bool) -> Self {
+	pub fn from_image_set_with_options(image_set: &ImageSet, cdn_base_url: &url::Url, webp_only: bool, without_protocol: bool) -> Self {
 		let url = image_set.outputs.first().and_then(|i| {
 			let path = i.path.clone();
 			// keep everything until last '/'
@@ -20,6 +20,10 @@ impl ImageHost {
 			cdn_base_url
 				.join(&split.split_last()?.1.join("/"))
 				.map(|u| {
+					if !without_protocol {
+						return u.to_string();
+					}
+
 					u.as_str()
 						.trim_start_matches("https:")
 						.trim_start_matches("http:")
@@ -55,7 +59,7 @@ impl ImageHost {
 	}
 
 	pub fn from_image_set(image_set: &ImageSet, cdn_base_url: &url::Url) -> Self {
-		Self::from_image_set_with_options(image_set, cdn_base_url, false)
+		Self::from_image_set_with_options(image_set, cdn_base_url, false, true)
 	}
 }
 
