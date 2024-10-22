@@ -39,7 +39,6 @@ pub fn new_cookie<'c, C: Into<Cookie<'c>>>(global: &Arc<Global>, base: C) -> Coo
 		.path("/")
 		.secure(true)
 		.same_site(cookie::SameSite::None)
-		.partitioned(true) // fixes third party cookeis, https://developer.mozilla.org/en-US/docs/Web/Privacy/Privacy_sandbox/Partitioned_cookies
 }
 
 #[derive(Default, Clone, Debug, Copy)]
