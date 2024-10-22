@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use mongodb::bson::doc;
-use shared::database::emote::{Emote as DbEmote, EmoteFlags};
+use shared::database::emote::Emote as DbEmote;
 use shared::database::emote_set::EmoteSetEmote;
 use shared::database::user::UserId;
 use shared::old_types::object_id::GqlObjectId;
@@ -141,15 +141,7 @@ impl EmoteSet {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 		let mut emotes: Vec<_> = active_emotes
-			.filter_map(|e| {
-				let emote = emotes.get(e.id)?;
-
-				if self.flags.contains(EmoteSetFlagModel::Personal) && !emote.flags.contains(EmoteFlags::ApprovedPersonal) {
-					return None;
-				}
-
-				Some(ActiveEmote::new(e.clone(), emote.clone()))
-			})
+			.filter_map(|e| emotes.get(e.id).map(|emote| ActiveEmote::new(e.clone(), emote.clone())))
 			.collect();
 
 		emotes.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
