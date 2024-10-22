@@ -46,6 +46,13 @@ pub async fn emote_add(
 		)));
 	}
 
+	if emote.flags.contains(EmoteFlags::Private) && emote_set.owner_id.is_none_or(|id| authed_user.id != id) {
+		return Err(TransactionError::Custom(ApiError::bad_request(
+			ApiErrorCode::BadRequest,
+			"emote is private",
+		)));
+	}
+
 	let alias = name.unwrap_or_else(|| emote.default_name.clone());
 
 	// This may be a problem if the emote has been deleted.
