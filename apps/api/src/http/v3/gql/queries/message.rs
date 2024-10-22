@@ -133,7 +133,7 @@ impl MessagesQuery {
 		#[graphql(validator(maximum = 50))] page: Option<u32>,
 		#[graphql(validator(maximum = 250))] limit: Option<u32>,
 		#[graphql(validator(max_length = 100))] wish: Option<String>,
-		#[graphql(validator(max_length = 100))] country: Option<String>,
+		#[graphql(validator(max_items = 100))] country: Option<Vec<String>>,
 	) -> Result<ModRequestMessageList, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -151,9 +151,19 @@ impl MessagesQuery {
 			format!("status: {}", EmoteModerationRequestStatus::Pending as i32),
 		];
 
-		if let Some(country) = country {
+		let mut country_filters = vec![];
+
+		for country in country.unwrap_or_default() {
+			if country.len() <= 100 {
+				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "country code is too long"));
+			}
+
 			let sanitized = country.replace('`', "");
-			filters.push(format!("country_code: {}", sanitized.trim_end_matches('\\')));
+			country_filters.push(format!("country_code: {}", sanitized.trim_end_matches('\\')));
+		}
+
+		if !country_filters.is_empty() {
+			filters.push(country_filters.join(" || "));
 		}
 
 		let options = SearchOptions::builder()
