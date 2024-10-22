@@ -5,10 +5,11 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Extension;
-use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
+use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionState};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::Id;
+use shared::database::product::subscription::Subscription;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -85,7 +86,7 @@ pub async fn cancel_subscription(
 
 				match period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
-						stripe::Subscription::update(
+						let stripe_sub = stripe::Subscription::update(
 							stripe_client.client("update").await.deref(),
 							&id,
 							stripe::UpdateSubscription {
@@ -102,13 +103,46 @@ pub async fn cancel_subscription(
 							))
 						})?;
 
+						let state = match stripe_sub.status {
+							stripe::SubscriptionStatus::Active => {
+								if stripe_sub.cancel_at_period_end {
+									SubscriptionState::CancelAtEnd
+								} else {
+									SubscriptionState::Active
+								}
+							},
+							stripe::SubscriptionStatus::Trialing => SubscriptionState::Active,
+							_ => SubscriptionState::Ended,
+						};
+
+						tx.update_one(filter::filter! {
+							Subscription {
+								#[query(rename = "_id", serde)]
+								id: period.subscription_id,
+							}
+						}, update::update! {
+							#[query(set)]
+							Subscription {
+								#[query(serde)]
+								state,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							}
+						}, None).await.map_err(|e| {
+							tracing::error!(error = %e, "failed to update subscription");
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::MutationError,
+								"failed to update subscription",
+							))
+						})?;
+
 						Ok(())
 					}
 					Some(ProviderSubscriptionId::Paypal(id)) => {
 						let api_key = paypal_api::api_key(&global).await.map_err(TransactionError::Custom)?;
 
 						// https://developer.paypal.com/docs/api/subscriptions/v1/#subscriptions_cancel
-						global
+						let response = global
 							.http_client
 							.post(format!("https://api.paypal.com/v1/billing/subscriptions/{id}/cancel"))
 							.bearer_auth(&api_key)
@@ -124,6 +158,29 @@ pub async fn cancel_subscription(
 									"failed to cancel paypal subscription",
 								))
 							})?;
+
+						if response.status().is_success() {
+							tx.update_one(filter::filter! {
+								Subscription {
+									#[query(rename = "_id", serde)]
+									id: period.subscription_id,
+								}
+							}, update::update! {
+								#[query(set)]
+								Subscription {
+									#[query(serde)]
+									state: SubscriptionState::CancelAtEnd,
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
+								}
+							}, None).await.map_err(|e| {
+								tracing::error!(error = %e, "failed to update subscription");
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::MutationError,
+									"failed to update subscription",
+								))
+							})?;
+						}
 
 						Ok(())
 					}
@@ -234,7 +291,7 @@ pub async fn reactivate_subscription(
 
 			match period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
-					stripe::Subscription::update(
+					let stripe_sub = stripe::Subscription::update(
 						stripe_client.client("update").await.deref(),
 						&id,
 						stripe::UpdateSubscription {
@@ -248,6 +305,39 @@ pub async fn reactivate_subscription(
 						TransactionError::Custom(ApiError::internal_server_error(
 							ApiErrorCode::MutationError,
 							"failed to update stripe subscription",
+						))
+					})?;
+
+					let state = match stripe_sub.status {
+						stripe::SubscriptionStatus::Active => {
+							if stripe_sub.cancel_at_period_end {
+								SubscriptionState::CancelAtEnd
+							} else {
+								SubscriptionState::Active
+							}
+						},
+						stripe::SubscriptionStatus::Trialing => SubscriptionState::Active,
+						_ => SubscriptionState::Ended,
+					};
+
+					tx.update_one(filter::filter! {
+						Subscription {
+							#[query(rename = "_id", serde)]
+							id: period.subscription_id,
+						}
+					}, update::update! {
+						#[query(set)]
+						Subscription {
+							#[query(serde)]
+							state,
+							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
+						}
+					}, None).await.map_err(|e| {
+						tracing::error!(error = %e, "failed to update subscription");
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::MutationError,
+							"failed to update subscription",
 						))
 					})?;
 
