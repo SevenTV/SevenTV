@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use axum::body::Bytes;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
@@ -63,8 +62,13 @@ pub async fn create_emote(
 	State(global): State<Arc<Global>>,
 	Extension(session): Extension<Session>,
 	headers: HeaderMap,
-	body: Bytes,
+	body: axum::body::Body,
 ) -> Result<impl IntoResponse, ApiError> {
+	let body = axum::body::to_bytes(body, 7 * 1024 * 1024).await.map_err(|e| {
+		tracing::error!(error = %e, "body too large");
+		ApiError::bad_request(ApiErrorCode::BadRequest, "body too large")
+	})?;
+
 	let authed_user = session.user()?;
 
 	if !session.has(EmotePermission::Upload) {
