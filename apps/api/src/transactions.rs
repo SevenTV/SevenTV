@@ -309,11 +309,12 @@ where
 						return Ok(output);
 					}
 					Err(err) => {
-						tracing::warn!(error = %err, "transaction commit error");
+						tracing::debug!(error = %err, "transaction commit error");
 
 						if err.contains_label(UNKNOWN_TRANSACTION_COMMIT_RESULT) {
 							continue 'retry_commit;
 						} else if err.contains_label(TRANSIENT_TRANSACTION_ERROR) {
+							tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 							continue 'retry_operation;
 						}
 
@@ -324,7 +325,9 @@ where
 			Err(err) => {
 				if let TransactionError::Mongo(err) = &err {
 					if err.contains_label(TRANSIENT_TRANSACTION_ERROR) {
-						tracing::warn!(error = %err, "transaction error");
+						tracing::debug!(error = %err, "transaction error");
+
+						tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 						continue 'retry_operation;
 					}
 				}
