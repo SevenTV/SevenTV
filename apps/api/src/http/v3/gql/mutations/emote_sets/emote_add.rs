@@ -46,7 +46,7 @@ pub async fn emote_add(
 		)));
 	}
 
-	if emote.flags.contains(EmoteFlags::Private) && emote_set.owner_id.is_none_or(|id| authed_user.id != id) {
+	if emote.flags.contains(EmoteFlags::Private) && emote_set.owner_id.is_none_or(|id| emote.owner_id != id) {
 		return Err(TransactionError::Custom(ApiError::bad_request(
 			ApiErrorCode::BadRequest,
 			"emote is private",
