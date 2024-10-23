@@ -66,22 +66,19 @@ pub async fn completed(
 		return Ok(None);
 	};
 
-	let user = global
-		.user_loader
-		.load_fast(global, period.subscription_id.user_id)
-		.await
-		.map_err(|()| {
-			TransactionError::Custom(ApiError::internal_server_error(
-				ApiErrorCode::LoadError,
-				"failed to load user",
-			))
-		})?
+	let user = tx
+		.find_one(
+			filter::filter! {
+				User {
+					#[query(rename = "_id")]
+					id: period.subscription_id.user_id,
+				}
+			},
+			None,
+		)
+		.await?
 		.ok_or_else(|| {
-			tracing::warn!(provider_id = %provider_id, "user for paypal subscription not found");
-			TransactionError::Custom(ApiError::internal_server_error(
-				ApiErrorCode::LoadError,
-				"user for paypal subscription not found",
-			))
+			TransactionError::Custom(ApiError::internal_server_error(ApiErrorCode::LoadError, "user not found"))
 		})?;
 
 	// retrieve the paypal subscription
@@ -111,7 +108,7 @@ pub async fn completed(
 		})?;
 
 	// get or create the stripe customer
-	let customer_id = match user.user.stripe_customer_id {
+	let customer_id = match user.stripe_customer_id {
 		Some(id) => id,
 		None => {
 			// no stripe customer yet
@@ -281,7 +278,7 @@ pub async fn completed(
 			id: invoice_id.clone(),
 			items: vec![stripe_product_id.clone()],
 			customer_id,
-			user_id: user.user.id,
+			user_id: user.id,
 			paypal_payment_id: Some(sale.id.clone()),
 			status,
 			failed: false,
@@ -297,7 +294,7 @@ pub async fn completed(
 
 	if let Some(next_billing_time) = paypal_sub.billing_info.next_billing_time {
 		let subscription_id = SubscriptionId {
-			user_id: user.user.id,
+			user_id: user.id,
 			product_id: product.id,
 		};
 
