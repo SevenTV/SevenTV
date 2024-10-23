@@ -10,16 +10,14 @@ use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::traits::SignatureScheme;
 use rsa::Pkcs1v15Sign;
 use sha2::Digest;
-use shared::database::paypal_webhook_event::{PaypalWebhookEvent, PaypalWebhookEventHeader};
 use shared::database::queries::{filter, update};
 use shared::database::webhook_event::WebhookEvent;
-use shared::database::MongoCollection;
 use tokio::sync::Mutex;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::sub_refresh_job;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction_with_mutex, TransactionError};
 
 mod dispute;
 mod sale;
@@ -80,6 +78,35 @@ async fn paypal_key(cert_url: &str) -> Result<rsa::RsaPublicKey, ApiError> {
 	Ok(public_key)
 }
 
+#[derive(Debug, Clone)]
+enum PaypalMutexKey {
+	Sale(String),
+	Dispute(String),
+	Subscription(String),
+}
+
+impl PaypalMutexKey {
+	fn from_paypal(resource: &types::Resource) -> Self {
+		match resource {
+			types::Resource::Sale(sale) => Self::Sale(sale.id.clone()),
+			types::Resource::Dispute(dispute) => Self::Dispute(dispute.dispute_id.clone()),
+			types::Resource::Subscription(subscription) => Self::Subscription(subscription.id.clone()),
+		}
+	}
+}
+
+impl std::fmt::Display for PaypalMutexKey {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		const PREFIX: &str = "mutex:internal:webhook:paypal";
+
+		match self {
+			Self::Sale(id) => write!(f, "{PREFIX}:{}", id),
+			Self::Dispute(id) => write!(f, "{PREFIX}:{}", id),
+			Self::Subscription(id) => write!(f, "{PREFIX}:{}", id),
+		}
+	}
+}
+
 /// https://developer.paypal.com/api/rest/webhooks/rest
 /// Needlessly complicated because PayPal has a weird way of signing their
 /// webhooks
@@ -88,36 +115,6 @@ pub async fn handle(
 	headers: HeaderMap,
 	payload: bytes::Bytes,
 ) -> Result<StatusCode, ApiError> {
-	let result = handle_webhook(&global, &headers, &payload).await;
-
-	if let Err(e) = PaypalWebhookEvent::collection(&global.db)
-		.insert_one(PaypalWebhookEvent {
-			id: Default::default(),
-			headers: headers
-				.iter()
-				.filter_map(|(k, v)| {
-					Some(PaypalWebhookEventHeader {
-						key: k.to_string(),
-						value: v.to_str().ok()?.to_string(),
-					})
-				})
-				.collect(),
-			event: payload,
-			error: result
-				.as_ref()
-				.err()
-				.map(|e| format!("{} {}", e.status_code.as_str(), e.error)),
-			response_code: result.as_ref().unwrap_or_else(|e| &e.status_code).as_u16() as i32,
-		})
-		.await
-	{
-		tracing::error!(error = %e, "failed to insert paypal event");
-	}
-
-	result
-}
-
-async fn handle_webhook(global: &Arc<Global>, headers: &HeaderMap, payload: &bytes::Bytes) -> Result<StatusCode, ApiError> {
 	let cert_url = headers
 		.get("paypal-cert-url")
 		.and_then(|v| v.to_str().ok())
@@ -151,7 +148,7 @@ async fn handle_webhook(global: &Arc<Global>, headers: &HeaderMap, payload: &byt
 
 	let crc = crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
 	let mut crc = crc.digest();
-	crc.update(payload);
+	crc.update(&payload);
 	let crc = crc.finalize();
 
 	let hash = sha2::Sha256::digest(format!("{transmision_id}|{timestamp}|{webhook_id}|{crc}").as_bytes());
@@ -162,16 +159,18 @@ async fn handle_webhook(global: &Arc<Global>, headers: &HeaderMap, payload: &byt
 		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to verify signature")
 	})?;
 
-	let event: types::Event = serde_json::from_slice(payload).map_err(|e| {
+	let event: types::Event = serde_json::from_slice(&payload).map_err(|e| {
 		tracing::error!(error = %e, "failed to deserialize payload");
 		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to deserialize payload")
 	})?;
 
 	let stripe_client = global.stripe_client.safe(&event.id).await;
 
-	let res = with_transaction(global, |mut tx| {
-		let global = Arc::clone(global);
+	let global = &global;
 
+	let mutex_key = PaypalMutexKey::from_paypal(&event.resource);
+
+	let res = transaction_with_mutex(global, Some(mutex_key.into()), |mut tx| {
 		async move {
 			let res = tx
 				.update_one(
@@ -197,20 +196,20 @@ async fn handle_webhook(global: &Arc<Global>, headers: &HeaderMap, payload: &byt
 				return Ok(None);
 			}
 
-			match (event.event_type, event.ressource) {
+			match (event.event_type, event.resource) {
 				(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => {
-					return sale::completed(&global, stripe_client, tx, sale).await;
+					return sale::completed(global, stripe_client, tx, sale).await;
 				}
 				(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale))
-				| (types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(&global, tx, sale).await?,
+				| (types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(global, tx, sale).await?,
 				(types::EventType::CustomerDisputeCreated, types::Resource::Dispute(dispute))
 				| (types::EventType::CustomerDisputeUpdated, types::Resource::Dispute(dispute))
 				| (types::EventType::CustomerDisputeResolved, types::Resource::Dispute(dispute)) => {
-					dispute::updated(&global, tx, dispute).await?
+					dispute::updated(global, tx, dispute).await?
 				}
 				(types::EventType::BillingSubscriptionCancelled, types::Resource::Subscription(subscription))
 				| (types::EventType::BillingSubscriptionSuspended, types::Resource::Subscription(subscription)) => {
-					return subscription::cancelled(&global, tx, *subscription).await;
+					return subscription::cancelled(global, tx, *subscription).await;
 				}
 				_ => {
 					return Err(TransactionError::Custom(ApiError::bad_request(

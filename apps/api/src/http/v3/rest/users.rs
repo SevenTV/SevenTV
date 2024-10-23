@@ -426,7 +426,7 @@ pub async fn create_user_presence(
 
 		let owners = global
 			.user_loader
-			.load_fast_many(&global, emotes.emotes.iter().map(|(_, e)| e.owner_id))
+			.load_fast_many(&global, emotes.emotes.values().map(|e| e.owner_id))
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 

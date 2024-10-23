@@ -18,7 +18,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::validators::NameValidator;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction, transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 #[derive(Default)]
 pub struct CosmeticsMutation;
@@ -50,7 +50,7 @@ impl CosmeticsMutation {
 			..Default::default()
 		};
 
-		let res = with_transaction::<(), (), _, _>(global, |mut tx| async move {
+		let res = transaction::<(), (), _, _>(global, |mut tx| async move {
 			tx.insert_one(paint.clone(), None).await?;
 
 			tx.register_event(InternalEvent {
@@ -295,80 +295,79 @@ impl CosmeticOps {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = session.user()?;
 
-		let _ = global
-			.paint_by_id_loader
-			.load(self.id.id())
-			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))?;
-
 		let name = definition.name.clone();
 		let data = definition.into_db(self.id.id(), global).await?;
 
-		let res = with_transaction(global, |mut tx| async move {
-			let before_paint = tx
-				.find_one_and_update(
-					filter::filter! {
-						Paint {
-							#[query(rename = "_id")]
-							id: self.id.id(),
-						}
-					},
-					update::update! {
-						#[query(set)]
-						Paint {
-							name: &name,
-							#[query(serde)]
-							data: &data,
-							updated_at: chrono::Utc::now(),
-							search_updated_at: &None,
-						}
-					},
-					FindOneAndUpdateOptions::builder()
-						.return_document(ReturnDocument::Before)
-						.build(),
-				)
-				.await?
-				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "paint not found")))?;
-
-			let after_paint = Paint {
-				name,
-				data,
-				..before_paint
-			};
-
-			if before_paint.name != after_paint.name {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Paint {
-						after: after_paint.clone(),
-						data: StoredEventPaintData::ChangeName {
-							old: before_paint.name,
-							new: after_paint.name.clone(),
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::Paint(self.id.id()).into()),
+			|mut tx| async move {
+				let before_paint = tx
+					.find_one_and_update(
+						filter::filter! {
+							Paint {
+								#[query(rename = "_id")]
+								id: self.id.id(),
+							}
 						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
-
-			if before_paint.data != after_paint.data {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Paint {
-						after: after_paint.clone(),
-						data: StoredEventPaintData::ChangeData {
-							old: before_paint.data,
-							new: after_paint.data.clone(),
+						update::update! {
+							#[query(set)]
+							Paint {
+								name: &name,
+								#[query(serde)]
+								data: &data,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							}
 						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::Before)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))
+					})?;
 
-			Ok(after_paint)
-		})
+				let after_paint = Paint {
+					name,
+					data,
+					..before_paint
+				};
+
+				if before_paint.name != after_paint.name {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Paint {
+							after: after_paint.clone(),
+							data: StoredEventPaintData::ChangeName {
+								old: before_paint.name,
+								new: after_paint.name.clone(),
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if before_paint.data != after_paint.data {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Paint {
+							after: after_paint.clone(),
+							data: StoredEventPaintData::ChangeData {
+								old: before_paint.data,
+								new: after_paint.data.clone(),
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				Ok(after_paint)
+			},
+		)
 		.await;
 
 		match res {

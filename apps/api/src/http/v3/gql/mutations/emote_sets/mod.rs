@@ -25,7 +25,7 @@ use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
 use crate::http::v3::gql::types::ListItemAction;
 use crate::http::v3::validators::{EmoteNameValidator, NameValidator};
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction, transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 mod emote_add;
 mod emote_remove;
@@ -129,7 +129,7 @@ impl EmoteSetsMutation {
 			));
 		}
 
-		let res = with_transaction(global, |mut tx| async move {
+		let res = transaction(global, |mut tx| async move {
 			let emote_set = DbEmoteSet {
 				id: Default::default(),
 				owner_id: Some(user_id.id()),
@@ -326,13 +326,17 @@ impl EmoteSetOps {
 
 		self.check_perms(global, session, EditorEmoteSetPermission::Manage).await?;
 
-		let res = with_transaction(global, |tx| async move {
-			match action {
-				ListItemAction::Add => emote_add(global, tx, session, &self.emote_set, id.id(), name).await,
-				ListItemAction::Remove => emote_remove(global, tx, session, &self.emote_set, id.id()).await,
-				ListItemAction::Update => emote_update(global, tx, session, &self.emote_set, id.id(), name).await,
-			}
-		})
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::EmoteSet(self.id.id()).into()),
+			|tx| async move {
+				match action {
+					ListItemAction::Add => emote_add(global, tx, session, &self.emote_set, id.id(), name).await,
+					ListItemAction::Remove => emote_remove(global, tx, session, &self.emote_set, id.id()).await,
+					ListItemAction::Update => emote_update(global, tx, session, &self.emote_set, id.id(), name).await,
+				}
+			},
+		)
 		.await;
 
 		match res {
@@ -383,105 +387,109 @@ impl EmoteSetOps {
 
 		let target = self.check_perms(global, sesison, EditorEmoteSetPermission::Manage).await?;
 
-		let res = with_transaction(global, |mut tx| async move {
-			let new_capacity = if let Some(capacity) = data.capacity {
-				if capacity < self.emote_set.emotes.len() as i32 {
-					return Err(TransactionError::Custom(ApiError::bad_request(
-						ApiErrorCode::BadRequest,
-						"emote set capacity cannot be less than the number of emotes in the set",
-					)));
-				}
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::EmoteSet(self.id.id()).into()),
+			|mut tx| async move {
+				let new_capacity = if let Some(capacity) = data.capacity {
+					if capacity < self.emote_set.emotes.len() as i32 {
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
+							"emote set capacity cannot be less than the number of emotes in the set",
+						)));
+					}
 
-				let max_capacity = if self.emote_set.kind == EmoteSetKind::Personal {
-					target.computed.permissions.personal_emote_set_capacity
+					let max_capacity = if self.emote_set.kind == EmoteSetKind::Personal {
+						target.computed.permissions.personal_emote_set_capacity
+					} else {
+						target.computed.permissions.emote_set_capacity
+					};
+
+					if capacity > max_capacity.unwrap_or_default().max(0) {
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::LackingPrivileges,
+							"emote set capacity cannot exceed user's capacity",
+						)));
+					}
+
+					Some(capacity)
 				} else {
-					target.computed.permissions.emote_set_capacity
+					None
 				};
 
-				if capacity > max_capacity.unwrap_or_default().max(0) {
-					return Err(TransactionError::Custom(ApiError::bad_request(
-						ApiErrorCode::LackingPrivileges,
-						"emote set capacity cannot exceed user's capacity",
+				if data.origins.is_some() {
+					return Err(TransactionError::Custom(ApiError::not_implemented(
+						ApiErrorCode::BadRequest,
+						"legacy origins are not supported",
 					)));
 				}
 
-				Some(capacity)
-			} else {
-				None
-			};
+				data.name.take_if(|n| n == &self.emote_set.name);
 
-			if data.origins.is_some() {
-				return Err(TransactionError::Custom(ApiError::not_implemented(
-					ApiErrorCode::BadRequest,
-					"legacy origins are not supported",
-				)));
-			}
-
-			data.name.take_if(|n| n == &self.emote_set.name);
-
-			let emote_set = tx
-				.find_one_and_update(
-					filter::filter! {
-						DbEmoteSet {
-							#[query(rename = "_id")]
-							id: self.emote_set.id,
-						}
-					},
-					update::update! {
-						#[query(set)]
-						DbEmoteSet {
-							#[query(optional)]
-							name: data.name.as_ref(),
-							#[query(optional)]
-							capacity: new_capacity,
-							updated_at: chrono::Utc::now(),
-							search_updated_at: &None,
-						}
-					},
-					FindOneAndUpdateOptions::builder()
-						.return_document(ReturnDocument::After)
-						.build(),
-				)
-				.await?
-				.ok_or_else(|| {
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::LoadError,
-						"failed to load emote set",
-					))
-				})?;
-
-			if let Some(new_name) = data.name {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: sesison.user_session_id(),
-					data: InternalEventData::EmoteSet {
-						after: emote_set.clone(),
-						data: InternalEventEmoteSetData::ChangeName {
-							old: self.emote_set.name.clone(),
-							new: new_name,
+				let emote_set = tx
+					.find_one_and_update(
+						filter::filter! {
+							DbEmoteSet {
+								#[query(rename = "_id")]
+								id: self.emote_set.id,
+							}
 						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
-
-			if let Some(new_capacity) = new_capacity {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: sesison.user_session_id(),
-					data: InternalEventData::EmoteSet {
-						after: emote_set.clone(),
-						data: InternalEventEmoteSetData::ChangeCapacity {
-							old: self.emote_set.capacity,
-							new: Some(new_capacity),
+						update::update! {
+							#[query(set)]
+							DbEmoteSet {
+								#[query(optional)]
+								name: data.name.as_ref(),
+								#[query(optional)]
+								capacity: new_capacity,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							}
 						},
-					},
-					timestamp: Utc::now(),
-				})?;
-			}
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load emote set",
+						))
+					})?;
 
-			Ok(emote_set)
-		})
+				if let Some(new_name) = data.name {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: sesison.user_session_id(),
+						data: InternalEventData::EmoteSet {
+							after: emote_set.clone(),
+							data: InternalEventEmoteSetData::ChangeName {
+								old: self.emote_set.name.clone(),
+								new: new_name,
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if let Some(new_capacity) = new_capacity {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: sesison.user_session_id(),
+						data: InternalEventData::EmoteSet {
+							after: emote_set.clone(),
+							data: InternalEventEmoteSetData::ChangeCapacity {
+								old: self.emote_set.capacity,
+								new: Some(new_capacity),
+							},
+						},
+						timestamp: Utc::now(),
+					})?;
+				}
+
+				Ok(emote_set)
+			},
+		)
 		.await;
 
 		match res {
@@ -522,33 +530,37 @@ impl EmoteSetOps {
 
 		let authed_user = session.user()?;
 
-		let res = with_transaction(global, |mut tx| async move {
-			let emote_set = tx
-				.find_one_and_delete(
-					filter::filter!(DbEmoteSet {
-						#[query(rename = "_id")]
-						id: self.emote_set.id
-					}),
-					None,
-				)
-				.await?;
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::EmoteSet(self.id.id()).into()),
+			|mut tx| async move {
+				let emote_set = tx
+					.find_one_and_delete(
+						filter::filter!(DbEmoteSet {
+							#[query(rename = "_id")]
+							id: self.emote_set.id
+						}),
+						None,
+					)
+					.await?;
 
-			if let Some(emote_set) = emote_set {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::EmoteSet {
-						after: emote_set,
-						data: InternalEventEmoteSetData::Delete,
-					},
-					timestamp: Utc::now(),
-				})?;
+				if let Some(emote_set) = emote_set {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::EmoteSet {
+							after: emote_set,
+							data: InternalEventEmoteSetData::Delete,
+						},
+						timestamp: Utc::now(),
+					})?;
 
-				Ok(true)
-			} else {
-				Ok(false)
-			}
-		})
+					Ok(true)
+				} else {
+					Ok(false)
+				}
+			},
+		)
 		.await;
 
 		match res {

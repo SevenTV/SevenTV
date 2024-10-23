@@ -12,6 +12,7 @@ use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::Id;
 
+use super::EgVaultMutexKey;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
@@ -19,7 +20,7 @@ use crate::http::middleware::session::Session;
 use crate::http::v3::rest::users::TargetUser;
 use crate::paypal_api;
 use crate::ratelimit::RateLimitRequest;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction_with_mutex, TransactionError};
 
 pub async fn cancel_subscription(
 	State(global): State<Arc<Global>>,
@@ -59,7 +60,7 @@ pub async fn cancel_subscription(
 	req.http(&global, async {
 		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
-		let res = with_transaction(&global, |mut tx| {
+		let res = transaction_with_mutex(&global, Some(EgVaultMutexKey::User(target_id).into()), |mut tx| {
 			let global = Arc::clone(&global);
 
 			async move {
@@ -245,7 +246,7 @@ pub async fn reactivate_subscription(
 	req.http(&global, async {
 		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
-		let res = with_transaction(&global, |mut tx| async move {
+		let res = transaction_with_mutex(&global, Some(EgVaultMutexKey::User(target_id).into()), |mut tx| async move {
 			let period = tx
 				.find_one(
 					filter::filter! {

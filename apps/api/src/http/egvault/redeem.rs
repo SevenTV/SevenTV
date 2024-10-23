@@ -14,12 +14,12 @@ use shared::database::user::UserId;
 use shared::database::Id;
 
 use super::metadata::{CheckoutSessionMetadata, StripeMetadata, SubscriptionMetadata};
-use super::{create_checkout_session_params, find_or_create_customer, CheckoutProduct};
+use super::{create_checkout_session_params, find_or_create_customer, CheckoutProduct, EgVaultMutexKey};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::ratelimit::RateLimitRequest;
-use crate::transactions::{with_transaction, TransactionError, TransactionResult, TransactionSession};
+use crate::transactions::{transaction_with_mutex, TransactionError, TransactionResult, TransactionSession};
 
 pub async fn grant_entitlements(
 	tx: &mut TransactionSession<'_, ApiError>,
@@ -122,7 +122,7 @@ pub async fn redeem(
 
 		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
-		let res = with_transaction(&global, |mut tx| {
+		let res = transaction_with_mutex(&global, Some(EgVaultMutexKey::User(authed_user.id).into()), |mut tx| {
 			let global = Arc::clone(&global);
 
 			async move {

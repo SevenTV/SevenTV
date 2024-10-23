@@ -6,7 +6,7 @@ pub struct Event {
 	pub create_time: chrono::DateTime<chrono::Utc>,
 	pub event_type: EventType,
 	#[serde(flatten)]
-	pub ressource: Resource,
+	pub resource: Resource,
 }
 
 #[derive(Debug, Copy, Clone, serde::Deserialize)]
@@ -73,7 +73,7 @@ pub enum SaleState {
 /// https://developer.paypal.com/docs/api/customer-disputes/v1/#definition-dispute
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Dispute {
-	// pub dispute_id: String,
+	pub dispute_id: String,
 	pub status: DisputeStatus,
 	pub disputed_transactions: Vec<DisputedTransaction>,
 	// pub dispute_amount: Amount,
