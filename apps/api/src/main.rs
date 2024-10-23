@@ -14,6 +14,7 @@ mod global;
 mod http;
 mod image_processor;
 mod jwt;
+mod mutex;
 mod paypal_api;
 mod ratelimit;
 mod search;

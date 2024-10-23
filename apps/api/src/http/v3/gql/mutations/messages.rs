@@ -15,7 +15,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::message::InboxMessage;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction, TransactionError};
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/resolvers/mutation/mutation.messages.go
 
@@ -50,7 +50,7 @@ impl MessagesMutation {
 			EmoteModerationRequestStatus::Pending
 		};
 
-		let res = with_transaction(global, |mut tx| async move {
+		let res = transaction(global, |mut tx| async move {
 			let requests = tx
 				.find(
 					filter::filter! {

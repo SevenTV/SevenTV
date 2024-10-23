@@ -18,7 +18,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::user::{User as GqlUser, UserPartial};
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 #[derive(Default)]
 pub struct BansMutation;
@@ -85,7 +85,7 @@ impl BansMutation {
 			));
 		}
 
-		let res = with_transaction(global, |mut tx| async move {
+		let res = transaction_with_mutex(global, Some(GeneralMutexKey::User(victim.id).into()), |mut tx| async move {
 			let ban = UserBan {
 				id: Default::default(),
 				user_id: victim.id,
@@ -169,7 +169,7 @@ impl BansMutation {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = session.user()?;
 
-		let res = with_transaction(global, |mut tx| async move {
+		let res = transaction_with_mutex(global, Some(GeneralMutexKey::Ban(ban_id.id()).into()), |mut tx| async move {
 			let ban_before = tx
 				.find_one_and_update(
 					filter::filter! {

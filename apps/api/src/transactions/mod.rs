@@ -6,13 +6,22 @@ use std::sync::Arc;
 use futures::TryStreamExt;
 use mongodb::error::{TRANSIENT_TRANSACTION_ERROR, UNKNOWN_TRANSACTION_COMMIT_RESULT};
 use mongodb::results::{DeleteResult, InsertManyResult, InsertOneResult, UpdateResult};
+use shared::database::badge::BadgeId;
+use shared::database::emote::EmoteId;
+use shared::database::emote_set::EmoteSetId;
+use shared::database::paint::PaintId;
 use shared::database::queries::{filter, update};
+use shared::database::role::RoleId;
 use shared::database::stored_event::StoredEvent;
+use shared::database::ticket::TicketId;
+use shared::database::user::ban::UserBanId;
+use shared::database::user::UserId;
 use shared::database::MongoCollection;
 use shared::event::{InternalEvent, InternalEventPayload};
 use spin::Mutex;
 
 use crate::global::Global;
+use crate::mutex::{MutexAquireRequest, MutexError};
 
 pub struct TransactionSession<'a, E>(Arc<Mutex<SessionInner<'a>>>, PhantomData<E>);
 
@@ -254,11 +263,62 @@ pub enum TransactionError<E: Debug> {
 	Custom(E),
 	#[error("too many failures")]
 	TooManyFailures,
+	#[error("redis error: {0}")]
+	Redis(#[from] fred::error::RedisError),
+	#[error("mutex error: {0}")]
+	Mutex(#[from] MutexError),
 }
 
 pub type TransactionResult<T, E> = Result<T, TransactionError<E>>;
 
-pub async fn with_transaction<'a, T, E, F, Fut>(global: &'a Arc<Global>, f: F) -> TransactionResult<T, E>
+#[derive(Debug, Clone)]
+pub enum GeneralMutexKey {
+	User(UserId),
+	Emote(EmoteId),
+	EmoteSet(EmoteSetId),
+	Paint(PaintId),
+	Badge(BadgeId),
+	Ban(UserBanId),
+	Ticket(TicketId),
+	Role(RoleId),
+}
+
+impl std::fmt::Display for GeneralMutexKey {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		const PREFIX: &str = "mutex:general";
+
+		match self {
+			Self::User(id) => write!(f, "{PREFIX}:user:{}", id),
+			Self::Emote(id) => write!(f, "{PREFIX}:emote:{}", id),
+			Self::EmoteSet(id) => write!(f, "{PREFIX}:emote_set:{}", id),
+			Self::Paint(id) => write!(f, "{PREFIX}:paint:{}", id),
+			Self::Badge(id) => write!(f, "{PREFIX}:badge:{}", id),
+			Self::Ban(id) => write!(f, "{PREFIX}:ban:{}", id),
+			Self::Ticket(id) => write!(f, "{PREFIX}:ticket:{}", id),
+			Self::Role(id) => write!(f, "{PREFIX}:role:{}", id),
+		}
+	}
+}
+
+pub async fn transaction_with_mutex<'a, K, T, E, F, Fut>(
+	global: &'a Arc<Global>,
+	req: Option<MutexAquireRequest<K>>,
+	f: F,
+) -> TransactionResult<T, E>
+where
+	K: std::fmt::Display,
+	F: FnOnce(TransactionSession<'a, E>) -> Fut + Clone + 'a,
+	Fut: std::future::Future<Output = TransactionResult<T, E>> + 'a,
+	E: Debug,
+{
+	if let Some(req) = req {
+		global.mutex.acquire(req, transaction(global, f)).await?
+	} else {
+		transaction(global, f).await
+	}
+}
+
+pub async fn transaction<'a, T, E, F, Fut>(global: &'a Arc<Global>, f: F) -> TransactionResult<T, E>
 where
 	F: FnOnce(TransactionSession<'a, E>) -> Fut + Clone + 'a,
 	Fut: std::future::Future<Output = TransactionResult<T, E>> + 'a,
@@ -275,7 +335,7 @@ where
 	let mut retry_count = 0;
 
 	'retry_operation: loop {
-		if retry_count > 3 {
+		if retry_count > 10 {
 			return Err(TransactionError::TooManyFailures);
 		}
 

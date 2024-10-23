@@ -21,7 +21,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::validators;
 use crate::ratelimit::RateLimitRequest;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction, TransactionError};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_emote, get_emote_by_id), components(schemas(XEmoteData)))]
@@ -159,7 +159,7 @@ pub async fn create_emote(
 			flags |= EmoteFlags::Private;
 		}
 
-		let res = with_transaction(&global, |mut tx| async move {
+		let res = transaction(&global, |mut tx| async move {
 			let emote = Emote {
 				id: emote_id,
 				owner_id: authed_user.id,

@@ -22,7 +22,7 @@ use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::user::{UserConnection, UserEditor};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 #[derive(Default)]
 pub struct UsersMutation;
@@ -81,136 +81,142 @@ impl UserOps {
 			}
 		}
 
-		let res = with_transaction(global, |mut tx| async move {
-			let old_user = global
-				.user_loader
-				.load(global, self.id.id())
-				.await
-				.map_err(|_| {
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::LoadError,
-						"failed to load user",
-					))
-				})?
-				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found")))?;
-
-			let emote_set = if let Some(emote_set_id) = data.emote_set_id {
-				// check if set exists
-				let emote_set = global
-					.emote_set_by_id_loader
-					.load(emote_set_id.id())
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::User(self.id.id()).into()),
+			|mut tx| async move {
+				let old_user = global
+					.user_loader
+					.load(global, self.id.id())
 					.await
 					.map_err(|_| {
 						TransactionError::Custom(ApiError::internal_server_error(
 							ApiErrorCode::LoadError,
-							"failed to load emote set",
+							"failed to load user",
 						))
 					})?
 					.ok_or_else(|| {
-						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
 					})?;
 
-				Some(emote_set)
-			} else {
-				None
-			};
+				let emote_set = if let Some(emote_set_id) = data.emote_set_id {
+					// check if set exists
+					let emote_set = global
+						.emote_set_by_id_loader
+						.load(emote_set_id.id())
+						.await
+						.map_err(|_| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load emote set",
+							))
+						})?
+						.ok_or_else(|| {
+							TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))
+						})?;
 
-			let update_pull = data.unlink.is_some_and(|u| u).then_some(update::update! {
-				#[query(pull)]
-				User {
-					connections: DbUserConnection {
-						platform_id: id.clone(),
-					}
-				}
-			});
-
-			let Some(user) = tx
-				.find_one_and_update(
-					filter::filter! {
-						User {
-							#[query(rename = "_id")]
-							id: self.id.id(),
-						}
-					},
-					update::update! {
-						#[query(set)]
-						User {
-							#[query(flatten)]
-							style: UserStyle {
-								#[query(optional)]
-								active_emote_set_id: data.emote_set_id.map(|id| id.id()),
-							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: &None,
-						},
-						#[query(pull)]
-						update_pull,
-					},
-					FindOneAndUpdateOptions::builder()
-						.return_document(ReturnDocument::After)
-						.build(),
-				)
-				.await?
-			else {
-				return Ok(None);
-			};
-
-			if let Some(true) = data.unlink {
-				if user.connections.is_empty() {
-					return Err(TransactionError::Custom(ApiError::bad_request(
-						ApiErrorCode::BadRequest,
-						"cannot remove last connection",
-					)));
-				}
-
-				let connection = old_user
-					.user
-					.connections
-					.into_iter()
-					.find(|c| c.platform_id == id)
-					.ok_or_else(|| {
-						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "connection not found"))
-					})?;
-
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::User {
-						after: user.clone(),
-						data: InternalEventUserData::RemoveConnection { connection },
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
-
-			if let Some(emote_set) = emote_set {
-				let old = if let Some(set_id) = old_user.user.style.active_emote_set_id {
-					global.emote_set_by_id_loader.load(set_id).await.map_err(|_| {
-						TransactionError::Custom(ApiError::internal_server_error(
-							ApiErrorCode::LoadError,
-							"failed to load emote set",
-						))
-					})?
+					Some(emote_set)
 				} else {
 					None
 				};
 
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::User {
-						after: user.clone(),
-						data: InternalEventUserData::ChangeActiveEmoteSet {
-							old: old.map(Box::new),
-							new: Some(Box::new(emote_set)),
-						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
+				let update_pull = data.unlink.is_some_and(|u| u).then_some(update::update! {
+					#[query(pull)]
+					User {
+						connections: DbUserConnection {
+							platform_id: id.clone(),
+						}
+					}
+				});
 
-			Ok(Some(user))
-		})
+				let Some(user) = tx
+					.find_one_and_update(
+						filter::filter! {
+							User {
+								#[query(rename = "_id")]
+								id: self.id.id(),
+							}
+						},
+						update::update! {
+							#[query(set)]
+							User {
+								#[query(flatten)]
+								style: UserStyle {
+									#[query(optional)]
+									active_emote_set_id: data.emote_set_id.map(|id| id.id()),
+								},
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
+							#[query(pull)]
+							update_pull,
+						},
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+				else {
+					return Ok(None);
+				};
+
+				if let Some(true) = data.unlink {
+					if user.connections.is_empty() {
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
+							"cannot remove last connection",
+						)));
+					}
+
+					let connection = old_user
+						.user
+						.connections
+						.into_iter()
+						.find(|c| c.platform_id == id)
+						.ok_or_else(|| {
+							TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "connection not found"))
+						})?;
+
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::User {
+							after: user.clone(),
+							data: InternalEventUserData::RemoveConnection { connection },
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if let Some(emote_set) = emote_set {
+					let old = if let Some(set_id) = old_user.user.style.active_emote_set_id {
+						global.emote_set_by_id_loader.load(set_id).await.map_err(|_| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load emote set",
+							))
+						})?
+					} else {
+						None
+					};
+
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::User {
+							after: user.clone(),
+							data: InternalEventUserData::ChangeActiveEmoteSet {
+								old: old.map(Box::new),
+								new: Some(Box::new(emote_set)),
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				Ok(Some(user))
+			},
+		)
 		.await;
 
 		match res {
@@ -300,27 +306,126 @@ impl UserOps {
 			}
 		}
 
-		let res = with_transaction(global, |mut tx| async move {
-			let editor_id = UserEditorId {
-				user_id: self.id.id(),
-				editor_id: editor_id.id(),
-			};
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::User(self.id.id()).into()),
+			|mut tx| async move {
+				let editor_id = UserEditorId {
+					user_id: self.id.id(),
+					editor_id: editor_id.id(),
+				};
 
-			if permissions.is_none() {
-				// Remove editor
-				let res = tx
-					.find_one_and_delete(
-						filter::filter! {
-							DbUserEditor {
-								#[query(rename = "_id", serde)]
-								id: editor_id,
-							}
-						},
-						None,
-					)
-					.await?;
+				if permissions.is_none() {
+					// Remove editor
+					let res = tx
+						.find_one_and_delete(
+							filter::filter! {
+								DbUserEditor {
+									#[query(rename = "_id", serde)]
+									id: editor_id,
+								}
+							},
+							None,
+						)
+						.await?;
 
-				if let Some(editor) = res {
+					if let Some(editor) = res {
+						let editor_user = global
+							.user_loader
+							.load_fast(global, editor.id.editor_id)
+							.await
+							.map_err(|_| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
+									"failed to load user",
+								))
+							})?
+							.ok_or_else(|| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::LoadError,
+									"failed to load user",
+								))
+							})?;
+
+						tx.register_event(InternalEvent {
+							actor: Some(authed_user.clone()),
+							session_id: session.user_session_id(),
+							data: InternalEventData::UserEditor {
+								after: editor,
+								data: InternalEventUserEditorData::RemoveEditor {
+									editor: Box::new(editor_user.user),
+								},
+							},
+							timestamp: chrono::Utc::now(),
+						})?;
+					}
+				} else {
+					let old_permissions = tx
+						.find_one(
+							filter::filter! {
+								DbUserEditor {
+									#[query(rename = "_id", serde)]
+									id: editor_id,
+								}
+							},
+							None,
+						)
+						.await?
+						.as_ref()
+						.map(|e| e.permissions);
+
+					// Add or update editor
+					let permissions = permissions.to_db();
+
+					if old_permissions == Some(permissions) {
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
+							"permissions are the same",
+						)));
+					}
+
+					let now = chrono::Utc::now();
+
+					let editor = tx
+						.find_one_and_update(
+							filter::filter! {
+								DbUserEditor {
+									#[query(serde, rename = "_id")]
+									id: editor_id,
+								}
+							},
+							update::update! {
+								#[query(set)]
+								DbUserEditor {
+									#[query(serde)]
+									permissions,
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
+								},
+								#[query(set_on_insert)]
+								DbUserEditor {
+									// TODO: Once the new website allows for pending editors, this should be changed to Pending
+									#[query(serde)]
+									state: UserEditorState::Accepted,
+									notes: None,
+									added_at: now,
+									added_by_id: authed_user.id,
+								}
+							},
+							FindOneAndUpdateOptions::builder()
+								.upsert(true)
+								.return_document(ReturnDocument::After)
+								.build(),
+						)
+						.await?
+						.ok_or_else(|| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load editor",
+							))
+						})?;
+
+					// updated
 					let editor_user = global
 						.user_loader
 						.load_fast(global, editor.id.editor_id)
@@ -338,132 +443,37 @@ impl UserOps {
 							))
 						})?;
 
-					tx.register_event(InternalEvent {
-						actor: Some(authed_user.clone()),
-						session_id: session.user_session_id(),
-						data: InternalEventData::UserEditor {
-							after: editor,
-							data: InternalEventUserEditorData::RemoveEditor {
-								editor: Box::new(editor_user.user),
+					if old_permissions.is_none() {
+						tx.register_event(InternalEvent {
+							actor: Some(authed_user.clone()),
+							session_id: session.user_session_id(),
+							data: InternalEventData::UserEditor {
+								after: editor,
+								data: InternalEventUserEditorData::AddEditor {
+									editor: Box::new(editor_user.user),
+								},
 							},
-						},
-						timestamp: chrono::Utc::now(),
-					})?;
-				}
-			} else {
-				let old_permissions = tx
-					.find_one(
-						filter::filter! {
-							DbUserEditor {
-								#[query(rename = "_id", serde)]
-								id: editor_id,
-							}
-						},
-						None,
-					)
-					.await?
-					.as_ref()
-					.map(|e| e.permissions);
-
-				// Add or update editor
-				let permissions = permissions.to_db();
-
-				if old_permissions == Some(permissions) {
-					return Err(TransactionError::Custom(ApiError::bad_request(
-						ApiErrorCode::BadRequest,
-						"permissions are the same",
-					)));
+							timestamp: chrono::Utc::now(),
+						})?;
+					} else {
+						tx.register_event(InternalEvent {
+							actor: Some(authed_user.clone()),
+							session_id: session.user_session_id(),
+							data: InternalEventData::UserEditor {
+								after: editor,
+								data: InternalEventUserEditorData::EditPermissions {
+									old: old_permissions.unwrap_or_default(),
+									editor: Box::new(editor_user.user),
+								},
+							},
+							timestamp: chrono::Utc::now(),
+						})?;
+					}
 				}
 
-				let now = chrono::Utc::now();
-
-				let editor = tx
-					.find_one_and_update(
-						filter::filter! {
-							DbUserEditor {
-								#[query(serde, rename = "_id")]
-								id: editor_id,
-							}
-						},
-						update::update! {
-							#[query(set)]
-							DbUserEditor {
-								#[query(serde)]
-								permissions,
-								updated_at: chrono::Utc::now(),
-								search_updated_at: &None,
-							},
-							#[query(set_on_insert)]
-							DbUserEditor {
-								// TODO: Once the new website allows for pending editors, this should be changed to Pending
-								#[query(serde)]
-								state: UserEditorState::Accepted,
-								notes: None,
-								added_at: now,
-								added_by_id: authed_user.id,
-							}
-						},
-						FindOneAndUpdateOptions::builder()
-							.upsert(true)
-							.return_document(ReturnDocument::After)
-							.build(),
-					)
-					.await?
-					.ok_or_else(|| {
-						TransactionError::Custom(ApiError::internal_server_error(
-							ApiErrorCode::LoadError,
-							"failed to load editor",
-						))
-					})?;
-
-				// updated
-				let editor_user = global
-					.user_loader
-					.load_fast(global, editor.id.editor_id)
-					.await
-					.map_err(|_| {
-						TransactionError::Custom(ApiError::internal_server_error(
-							ApiErrorCode::LoadError,
-							"failed to load user",
-						))
-					})?
-					.ok_or_else(|| {
-						TransactionError::Custom(ApiError::internal_server_error(
-							ApiErrorCode::LoadError,
-							"failed to load user",
-						))
-					})?;
-
-				if old_permissions.is_none() {
-					tx.register_event(InternalEvent {
-						actor: Some(authed_user.clone()),
-						session_id: session.user_session_id(),
-						data: InternalEventData::UserEditor {
-							after: editor,
-							data: InternalEventUserEditorData::AddEditor {
-								editor: Box::new(editor_user.user),
-							},
-						},
-						timestamp: chrono::Utc::now(),
-					})?;
-				} else {
-					tx.register_event(InternalEvent {
-						actor: Some(authed_user.clone()),
-						session_id: session.user_session_id(),
-						data: InternalEventData::UserEditor {
-							after: editor,
-							data: InternalEventUserEditorData::EditPermissions {
-								old: old_permissions.unwrap_or_default(),
-								editor: Box::new(editor_user.user),
-							},
-						},
-						timestamp: chrono::Utc::now(),
-					})?;
-				}
-			}
-
-			Ok(())
-		})
+				Ok(())
+			},
+		)
 		.await;
 
 		match res {
@@ -539,8 +549,12 @@ impl UserOps {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
-		let res = with_transaction(global, |mut tx| async move {
-			match update.kind {
+		let res =
+			transaction_with_mutex(
+				global,
+				Some(GeneralMutexKey::User(self.id.id()).into()),
+				|mut tx| async move {
+					match update.kind {
 				CosmeticKind::Paint => {
 					let id: Option<PaintId> = if update.id.0.is_nil() { None } else { Some(update.id.id()) };
 
@@ -712,8 +726,9 @@ impl UserOps {
 					"avatar cosmetics mutations are not supported via this endpoint, use the upload endpoint instead",
 				))),
 			}
-		})
-		.await;
+				},
+			)
+			.await;
 
 		match res {
 			Ok(b) => Ok(b),
@@ -764,119 +779,123 @@ impl UserOps {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
-		let res = with_transaction(global, |mut tx| async move {
-			let roles = match action {
-				ListItemAction::Add => {
-					let edge_id = EntitlementEdgeId {
-						from: EntitlementEdgeKind::User { user_id: self.id.id() },
-						to: EntitlementEdgeKind::Role { role_id: role_id.id() },
-						managed_by: None,
-					};
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::User(self.id.id()).into()),
+			|mut tx| async move {
+				let roles = match action {
+					ListItemAction::Add => {
+						let edge_id = EntitlementEdgeId {
+							from: EntitlementEdgeKind::User { user_id: self.id.id() },
+							to: EntitlementEdgeKind::Role { role_id: role_id.id() },
+							managed_by: None,
+						};
 
-					let res = tx
-						.update_one(
-							filter::filter! {
-								EntitlementEdge {
-									#[query(rename = "_id", serde)]
-									id: &edge_id
-								}
-							},
-							update::update! {
-								#[query(set_on_insert)]
-								EntitlementEdge {
-									#[query(serde, rename = "_id")]
-									id: edge_id,
-								}
-							},
-							Some(UpdateOptions::builder().upsert(true).build()),
-						)
-						.await?;
-
-					if res.upserted_id.is_some() {
-						tx.register_event(InternalEvent {
-							actor: Some(authed_user.clone()),
-							session_id: session.user_session_id(),
-							data: InternalEventData::User {
-								after: target_user.user.clone(),
-								data: InternalEventUserData::AddEntitlement {
-									target: EntitlementEdgeKind::Role { role_id: role_id.id() },
-								},
-							},
-							timestamp: chrono::Utc::now(),
-						})?;
-					}
-
-					let no_role = !target_user.computed.roles.contains(&role_id.id());
-
-					target_user
-						.computed
-						.entitlements
-						.roles
-						.iter()
-						.copied()
-						// If the user didnt have the role before, we add it
-						.chain(no_role.then_some(role_id.id()))
-						.map(Into::into)
-						.collect()
-				}
-				ListItemAction::Remove => {
-					if tx
-						.delete_one(
-							filter::filter! {
-								EntitlementEdge {
-									#[query(rename = "_id", serde)]
-									id: EntitlementEdgeId {
-										from: EntitlementEdgeKind::User { user_id: self.id.id() },
-										to: EntitlementEdgeKind::Role { role_id: role_id.id() },
-										managed_by: None,
+						let res = tx
+							.update_one(
+								filter::filter! {
+									EntitlementEdge {
+										#[query(rename = "_id", serde)]
+										id: &edge_id
 									}
-								}
-							},
-							None,
-						)
-						.await?
-						.deleted_count == 1
-					{
-						tx.register_event(InternalEvent {
-							actor: Some(authed_user.clone()),
-							session_id: session.user_session_id(),
-							data: InternalEventData::User {
-								after: target_user.user.clone(),
-								data: InternalEventUserData::RemoveEntitlement {
-									target: EntitlementEdgeKind::Role { role_id: role_id.id() },
 								},
-							},
-							timestamp: chrono::Utc::now(),
-						})?;
+								update::update! {
+									#[query(set_on_insert)]
+									EntitlementEdge {
+										#[query(serde, rename = "_id")]
+										id: edge_id,
+									}
+								},
+								Some(UpdateOptions::builder().upsert(true).build()),
+							)
+							.await?;
+
+						if res.upserted_id.is_some() {
+							tx.register_event(InternalEvent {
+								actor: Some(authed_user.clone()),
+								session_id: session.user_session_id(),
+								data: InternalEventData::User {
+									after: target_user.user.clone(),
+									data: InternalEventUserData::AddEntitlement {
+										target: EntitlementEdgeKind::Role { role_id: role_id.id() },
+									},
+								},
+								timestamp: chrono::Utc::now(),
+							})?;
+						}
+
+						let no_role = !target_user.computed.roles.contains(&role_id.id());
+
+						target_user
+							.computed
+							.entitlements
+							.roles
+							.iter()
+							.copied()
+							// If the user didnt have the role before, we add it
+							.chain(no_role.then_some(role_id.id()))
+							.map(Into::into)
+							.collect()
 					}
+					ListItemAction::Remove => {
+						if tx
+							.delete_one(
+								filter::filter! {
+									EntitlementEdge {
+										#[query(rename = "_id", serde)]
+										id: EntitlementEdgeId {
+											from: EntitlementEdgeKind::User { user_id: self.id.id() },
+											to: EntitlementEdgeKind::Role { role_id: role_id.id() },
+											managed_by: None,
+										}
+									}
+								},
+								None,
+							)
+							.await?
+							.deleted_count == 1
+						{
+							tx.register_event(InternalEvent {
+								actor: Some(authed_user.clone()),
+								session_id: session.user_session_id(),
+								data: InternalEventData::User {
+									after: target_user.user.clone(),
+									data: InternalEventUserData::RemoveEntitlement {
+										target: EntitlementEdgeKind::Role { role_id: role_id.id() },
+									},
+								},
+								timestamp: chrono::Utc::now(),
+							})?;
+						}
 
-					// They might have the role via some other entitlement.
-					let role_via_edge = target_user.computed.raw_entitlements.iter().flat_map(|e| e.iter()).any(|e| {
-						e.id.to == EntitlementEdgeKind::Role { role_id: role_id.id() }
-							&& (e.id.from != EntitlementEdgeKind::User { user_id: self.id.id() }
-								|| e.id.managed_by.is_some())
-					});
+						// They might have the role via some other entitlement.
+						let role_via_edge = target_user.computed.raw_entitlements.iter().flat_map(|e| e.iter()).any(|e| {
+							e.id.to == EntitlementEdgeKind::Role { role_id: role_id.id() }
+								&& (e.id.from != EntitlementEdgeKind::User { user_id: self.id.id() }
+									|| e.id.managed_by.is_some())
+						});
 
-					target_user
-						.computed
-						.entitlements
-						.roles
-						.iter()
-						.copied()
-						.filter(|id| role_via_edge || *id != role_id.id())
-						.map(Into::into)
-						.collect()
-				}
-				ListItemAction::Update => {
-					return Err(TransactionError::Custom(ApiError::not_implemented(
-						ApiErrorCode::BadRequest,
-						"update role is not implemented",
-					)));
-				}
-			};
+						target_user
+							.computed
+							.entitlements
+							.roles
+							.iter()
+							.copied()
+							.filter(|id| role_via_edge || *id != role_id.id())
+							.map(Into::into)
+							.collect()
+					}
+					ListItemAction::Update => {
+						return Err(TransactionError::Custom(ApiError::not_implemented(
+							ApiErrorCode::BadRequest,
+							"update role is not implemented",
+						)));
+					}
+				};
 
-			Ok(roles)
-		})
+				Ok(roles)
+			},
+		)
 		.await;
 
 		match res {

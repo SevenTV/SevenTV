@@ -16,7 +16,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::http::middleware::session::{Session, AUTH_COOKIE};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction, TransactionError};
 
 const CSRF_COOKIE: &str = "seventv-csrf";
 
@@ -74,7 +74,7 @@ pub async fn handle_callback(
 	// query user data from platform
 	let user_data = connections::get_user_data(global, platform, &token.access_token).await?;
 
-	let user = with_transaction(global, |mut tx| async move {
+	let user = transaction(global, |mut tx| async move {
 		let user = tx
 			.find_one(
 				filter::filter! {
@@ -249,7 +249,7 @@ pub async fn handle_callback(
 		return Err(ApiError::forbidden(ApiErrorCode::LackingPrivileges, "not allowed to login"));
 	}
 
-	let res = with_transaction(global, |mut tx| async move {
+	let res = transaction(global, |mut tx| async move {
 		if csrf_payload.user_id.is_none() {
 			let user_session = UserSession {
 				id: Default::default(),

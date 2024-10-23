@@ -20,7 +20,7 @@ use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote::Emote;
 use crate::http::v3::validators::{EmoteNameValidator, TagsValidator};
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 #[derive(Default)]
 pub struct EmotesMutation;
@@ -101,41 +101,45 @@ impl EmoteOps {
 				));
 			}
 
-			let res = with_transaction(global, |mut tx| async move {
-				let emote = tx
-					.find_one_and_update(
-						filter::filter! {
-							DbEmote {
-								#[query(rename = "_id")]
-								id: self.id.id(),
-							}
-						},
-						update::update! {
-							#[query(set)]
-							DbEmote {
-								deleted: true,
-								updated_at: chrono::Utc::now(),
-								search_updated_at: &None,
-							}
-						},
-						None,
-					)
-					.await?
-					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
-					.map_err(TransactionError::Custom)?;
+			let res = transaction_with_mutex(
+				global,
+				Some(GeneralMutexKey::Emote(self.id.id()).into()),
+				|mut tx| async move {
+					let emote = tx
+						.find_one_and_update(
+							filter::filter! {
+								DbEmote {
+									#[query(rename = "_id")]
+									id: self.id.id(),
+								}
+							},
+							update::update! {
+								#[query(set)]
+								DbEmote {
+									deleted: true,
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
+								}
+							},
+							None,
+						)
+						.await?
+						.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
+						.map_err(TransactionError::Custom)?;
 
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Emote {
-						after: emote.clone(),
-						data: StoredEventEmoteData::Delete,
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Emote {
+							after: emote.clone(),
+							data: StoredEventEmoteData::Delete,
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
 
-				Ok(emote)
-			})
+					Ok(emote)
+				},
+			)
 			.await;
 
 			return match res {
@@ -158,147 +162,151 @@ impl EmoteOps {
 			));
 		}
 
-		let res = with_transaction(global, |mut tx| async move {
-			// only set new default name if it's different from the current one
-			let mut new_default_name = params.name.or(params.version_name);
-			new_default_name.take_if(|n| n == &self.emote.default_name);
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::Emote(self.id.id()).into()),
+			|mut tx| async move {
+				// only set new default name if it's different from the current one
+				let mut new_default_name = params.name.or(params.version_name);
+				new_default_name.take_if(|n| n == &self.emote.default_name);
 
-			let mut flags = self.emote.flags;
+				let mut flags = self.emote.flags;
 
-			if let Some(input_flags) = params.flags {
-				if input_flags.contains(EmoteFlagsModel::Private) {
-					flags |= EmoteFlags::Private;
-				} else {
-					flags &= !EmoteFlags::Private;
-				}
-
-				if input_flags.contains(EmoteFlagsModel::ZeroWidth) {
-					flags |= EmoteFlags::DefaultZeroWidth;
-				} else {
-					flags &= !EmoteFlags::DefaultZeroWidth;
-				}
-			}
-
-			// changing visibility and owner requires manage any perms
-			let new_owner_id = if authed_user.has(EmotePermission::ManageAny) {
-				if let Some(listed) = params.listed {
-					if listed {
-						flags |= EmoteFlags::PublicListed;
+				if let Some(input_flags) = params.flags {
+					if input_flags.contains(EmoteFlagsModel::Private) {
+						flags |= EmoteFlags::Private;
 					} else {
-						flags &= !EmoteFlags::PublicListed;
+						flags &= !EmoteFlags::Private;
+					}
+
+					if input_flags.contains(EmoteFlagsModel::ZeroWidth) {
+						flags |= EmoteFlags::DefaultZeroWidth;
+					} else {
+						flags &= !EmoteFlags::DefaultZeroWidth;
 					}
 				}
 
-				if let Some(personal_use) = params.personal_use {
-					if personal_use {
-						flags |= EmoteFlags::ApprovedPersonal;
-						flags &= !EmoteFlags::DeniedPersonal;
-					} else {
-						flags &= !EmoteFlags::ApprovedPersonal;
-						flags |= EmoteFlags::DeniedPersonal;
+				// changing visibility and owner requires manage any perms
+				let new_owner_id = if authed_user.has(EmotePermission::ManageAny) {
+					if let Some(listed) = params.listed {
+						if listed {
+							flags |= EmoteFlags::PublicListed;
+						} else {
+							flags &= !EmoteFlags::PublicListed;
+						}
 					}
+
+					if let Some(personal_use) = params.personal_use {
+						if personal_use {
+							flags |= EmoteFlags::ApprovedPersonal;
+							flags &= !EmoteFlags::DeniedPersonal;
+						} else {
+							flags &= !EmoteFlags::ApprovedPersonal;
+							flags |= EmoteFlags::DeniedPersonal;
+						}
+					}
+
+					params.owner_id.map(|id| id.id())
+				} else {
+					None
+				};
+
+				let new_flags = (flags != self.emote.flags).then_some(flags);
+
+				let emote = tx
+					.find_one_and_update(
+						filter::filter! {
+							DbEmote {
+								#[query(rename = "_id")]
+								id: self.id.id(),
+							}
+						},
+						update::update! {
+							#[query(set)]
+							DbEmote {
+								#[query(optional)]
+								default_name: new_default_name.as_ref(),
+								#[query(optional)]
+								owner_id: new_owner_id,
+								#[query(optional)]
+								flags: new_flags,
+								#[query(optional)]
+								tags: params.tags.as_ref(),
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							}
+						},
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
+					.map_err(TransactionError::Custom)?;
+
+				if let Some(new_default_name) = new_default_name {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Emote {
+							after: emote.clone(),
+							data: StoredEventEmoteData::ChangeName {
+								old: self.emote.default_name.clone(),
+								new: new_default_name,
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
 				}
 
-				params.owner_id.map(|id| id.id())
-			} else {
-				None
-			};
-
-			let new_flags = (flags != self.emote.flags).then_some(flags);
-
-			let emote = tx
-				.find_one_and_update(
-					filter::filter! {
-						DbEmote {
-							#[query(rename = "_id")]
-							id: self.id.id(),
-						}
-					},
-					update::update! {
-						#[query(set)]
-						DbEmote {
-							#[query(optional)]
-							default_name: new_default_name.as_ref(),
-							#[query(optional)]
-							owner_id: new_owner_id,
-							#[query(optional)]
-							flags: new_flags,
-							#[query(optional)]
-							tags: params.tags.as_ref(),
-							updated_at: chrono::Utc::now(),
-							search_updated_at: &None,
-						}
-					},
-					FindOneAndUpdateOptions::builder()
-						.return_document(ReturnDocument::After)
-						.build(),
-				)
-				.await?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
-				.map_err(TransactionError::Custom)?;
-
-			if let Some(new_default_name) = new_default_name {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Emote {
-						after: emote.clone(),
-						data: StoredEventEmoteData::ChangeName {
-							old: self.emote.default_name.clone(),
-							new: new_default_name,
+				if let Some(new_owner_id) = new_owner_id {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Emote {
+							after: emote.clone(),
+							data: StoredEventEmoteData::ChangeOwner {
+								old: self.emote.owner_id,
+								new: new_owner_id,
+							},
 						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
 
-			if let Some(new_owner_id) = new_owner_id {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Emote {
-						after: emote.clone(),
-						data: StoredEventEmoteData::ChangeOwner {
-							old: self.emote.owner_id,
-							new: new_owner_id,
+				if let Some(new_flags) = new_flags {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Emote {
+							after: emote.clone(),
+							data: StoredEventEmoteData::ChangeFlags {
+								old: self.emote.flags,
+								new: new_flags,
+							},
 						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
 
-			if let Some(new_flags) = new_flags {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Emote {
-						after: emote.clone(),
-						data: StoredEventEmoteData::ChangeFlags {
-							old: self.emote.flags,
-							new: new_flags,
+				if let Some(new_tags) = params.tags {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Emote {
+							after: emote.clone(),
+							data: StoredEventEmoteData::ChangeTags {
+								old: self.emote.tags.clone(),
+								new: new_tags,
+							},
 						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
+						timestamp: Utc::now(),
+					})?;
+				}
 
-			if let Some(new_tags) = params.tags {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Emote {
-						after: emote.clone(),
-						data: StoredEventEmoteData::ChangeTags {
-							old: self.emote.tags.clone(),
-							new: new_tags,
-						},
-					},
-					timestamp: Utc::now(),
-				})?;
-			}
-
-			Ok(emote)
-		})
+				Ok(emote)
+			},
+		)
 		.await;
 
 		match res {
@@ -329,49 +337,53 @@ impl EmoteOps {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = session.user()?;
 
-		let res = with_transaction(global, |mut tx| async move {
-			let emote = tx
-				.find_one_and_update(
-					filter::filter! {
-						DbEmote {
-							#[query(rename = "_id")]
-							id: self.id.id(),
-						}
-					},
-					update::update! {
-						#[query(set)]
-						DbEmote {
-							#[query(serde)]
-							merged: EmoteMerged {
-								target_id: target_id.id(),
-								at: chrono::Utc::now(),
-							},
-							updated_at: chrono::Utc::now(),
-							search_updated_at: &None,
-						}
-					},
-					None,
-				)
-				.await?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
-				.map_err(TransactionError::Custom)?;
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::Emote(self.id.id()).into()),
+			|mut tx| async move {
+				let emote = tx
+					.find_one_and_update(
+						filter::filter! {
+							DbEmote {
+								#[query(rename = "_id")]
+								id: self.id.id(),
+							}
+						},
+						update::update! {
+							#[query(set)]
+							DbEmote {
+								#[query(serde)]
+								merged: EmoteMerged {
+									target_id: target_id.id(),
+									at: chrono::Utc::now(),
+								},
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							}
+						},
+						None,
+					)
+					.await?
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
+					.map_err(TransactionError::Custom)?;
 
-			tx.register_event(InternalEvent {
-				actor: Some(authed_user.clone()),
-				session_id: session.user_session_id(),
-				data: InternalEventData::Emote {
-					after: emote.clone(),
-					data: StoredEventEmoteData::Merge {
-						new_emote_id: target_id.id(),
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::Emote {
+						after: emote.clone(),
+						data: StoredEventEmoteData::Merge {
+							new_emote_id: target_id.id(),
+						},
 					},
-				},
-				timestamp: chrono::Utc::now(),
-			})?;
+					timestamp: chrono::Utc::now(),
+				})?;
 
-			// TODO: schedule emote merge job
+				// TODO: schedule emote merge job
 
-			Ok(emote)
-		})
+				Ok(emote)
+			},
+		)
 		.await;
 
 		match res {

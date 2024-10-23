@@ -21,7 +21,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::report::{Report, ReportStatus};
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction, transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 #[derive(Default)]
 pub struct ReportsMutation;
@@ -51,7 +51,7 @@ impl ReportsMutation {
 			.and_then(|c| c.iso_code)
 			.map(|c| c.to_string());
 
-		let res = with_transaction(global, |mut tx| async move {
+		let res = transaction(global, |mut tx| async move {
 			let ticket_id = TicketId::new();
 
 			let message = TicketMessage {
@@ -147,199 +147,203 @@ impl ReportsMutation {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load ticket"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "ticket not found"))?;
 
-		let transaction_result = with_transaction(global, |mut tx| async move {
-			let new_open = if let Some(status) = data.status {
-				let new = status == ReportStatus::Open || status == ReportStatus::Assigned;
+		let transaction_result = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::Ticket(report_id.id()).into()),
+			|mut tx| async move {
+				let new_open = if let Some(status) = data.status {
+					let new = status == ReportStatus::Open || status == ReportStatus::Assigned;
 
-				(new != ticket.open).then_some(new)
-			} else {
-				None
-			};
-
-			let mut update: update::Update<_> = update::update! {
-				#[query(set)]
-				Ticket {
-					#[query(optional)]
-					open: new_open,
-					#[query(serde, optional)]
-					priority: new_priority.as_ref(),
-					updated_at: chrono::Utc::now(),
-					search_updated_at: &None,
-				},
-			}
-			.into();
-
-			let mut event_ticket_data = None;
-
-			if let Some(assignee) = data.assignee {
-				let mut chars = assignee.chars();
-				match (chars.next(), UserId::from_str(chars.as_str())) {
-					(Some('+'), Ok(user_id)) => {
-						let member = TicketMember {
-							user_id,
-							kind: TicketMemberKind::Assigned,
-							notifications: true,
-							last_read: None,
-						};
-
-						let member_user = global
-							.user_loader
-							.load_fast(global, user_id)
-							.await
-							.map_err(|_| {
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::LoadError,
-									"failed to load user",
-								))
-							})?
-							.ok_or_else(|| {
-								TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
-							})?;
-
-						event_ticket_data = Some(InternalEventTicketData::AddMember {
-							member: Box::new(member_user.user),
-						});
-
-						update = update.extend_one(update::update! {
-							#[query(push)]
-							Ticket {
-								#[query(serde)]
-								members: member,
-							},
-							#[query(set)]
-							Ticket {
-								updated_at: chrono::Utc::now(),
-								search_updated_at: &None,
-							},
-						});
-					}
-					(Some('-'), Ok(user_id)) => {
-						let member_user = global
-							.user_loader
-							.load_fast(global, user_id)
-							.await
-							.map_err(|_| {
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::LoadError,
-									"failed to load user",
-								))
-							})?
-							.ok_or_else(|| {
-								TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
-							})?;
-
-						event_ticket_data = Some(InternalEventTicketData::RemoveMember {
-							member: Box::new(member_user.user),
-						});
-
-						update = update.extend_one(update::update! {
-							#[query(pull)]
-							Ticket {
-								members: TicketMember {
-									user_id,
-								},
-							},
-							#[query(set)]
-							Ticket {
-								updated_at: chrono::Utc::now(),
-								search_updated_at: &None,
-							},
-						});
-					}
-					_ => {
-						return Err(TransactionError::Custom(ApiError::bad_request(
-							ApiErrorCode::BadRequest,
-							"invalid ticket status",
-						)));
-					}
-				}
-			}
-
-			let ticket = tx
-				.find_one_and_update(
-					filter::filter! {
-						Ticket {
-							#[query(rename = "_id")]
-							id: report_id.id(),
-						}
-					},
-					update,
-					FindOneAndUpdateOptions::builder()
-						.return_document(ReturnDocument::After)
-						.build(),
-				)
-				.await?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "ticket not found"))
-				.map_err(TransactionError::Custom)?;
-
-			if let Some(new_priority) = new_priority {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Ticket {
-						after: ticket.clone(),
-						data: InternalEventTicketData::ChangePriority {
-							old: ticket.priority.clone(),
-							new: new_priority,
-						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
-
-			if let Some(new_open) = new_open {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Ticket {
-						after: ticket.clone(),
-						data: InternalEventTicketData::ChangeOpen {
-							old: ticket.open,
-							new: new_open,
-						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
-
-			if let Some(event_ticket_data) = event_ticket_data {
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::Ticket {
-						after: ticket.clone(),
-						data: event_ticket_data,
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
-
-			if let Some(note) = data.note {
-				let message = TicketMessage {
-					id: TicketMessageId::new(),
-					ticket_id: ticket.id,
-					user_id: authed_user.id,
-					content: note.content.unwrap_or_default(),
-					files: vec![],
-					search_updated_at: None,
-					updated_at: Utc::now(),
+					(new != ticket.open).then_some(new)
+				} else {
+					None
 				};
 
-				tx.insert_one::<TicketMessage>(&message, None).await?;
-
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::TicketMessage {
-						after: message,
-						data: StoredEventTicketMessageData::Create,
+				let mut update: update::Update<_> = update::update! {
+					#[query(set)]
+					Ticket {
+						#[query(optional)]
+						open: new_open,
+						#[query(serde, optional)]
+						priority: new_priority.as_ref(),
+						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
 					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
+				}
+				.into();
 
-			Ok(ticket)
-		})
+				let mut event_ticket_data = None;
+
+				if let Some(assignee) = data.assignee {
+					let mut chars = assignee.chars();
+					match (chars.next(), UserId::from_str(chars.as_str())) {
+						(Some('+'), Ok(user_id)) => {
+							let member = TicketMember {
+								user_id,
+								kind: TicketMemberKind::Assigned,
+								notifications: true,
+								last_read: None,
+							};
+
+							let member_user = global
+								.user_loader
+								.load_fast(global, user_id)
+								.await
+								.map_err(|_| {
+									TransactionError::Custom(ApiError::internal_server_error(
+										ApiErrorCode::LoadError,
+										"failed to load user",
+									))
+								})?
+								.ok_or_else(|| {
+									TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
+								})?;
+
+							event_ticket_data = Some(InternalEventTicketData::AddMember {
+								member: Box::new(member_user.user),
+							});
+
+							update = update.extend_one(update::update! {
+								#[query(push)]
+								Ticket {
+									#[query(serde)]
+									members: member,
+								},
+								#[query(set)]
+								Ticket {
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
+								},
+							});
+						}
+						(Some('-'), Ok(user_id)) => {
+							let member_user = global
+								.user_loader
+								.load_fast(global, user_id)
+								.await
+								.map_err(|_| {
+									TransactionError::Custom(ApiError::internal_server_error(
+										ApiErrorCode::LoadError,
+										"failed to load user",
+									))
+								})?
+								.ok_or_else(|| {
+									TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
+								})?;
+
+							event_ticket_data = Some(InternalEventTicketData::RemoveMember {
+								member: Box::new(member_user.user),
+							});
+
+							update = update.extend_one(update::update! {
+								#[query(pull)]
+								Ticket {
+									members: TicketMember {
+										user_id,
+									},
+								},
+								#[query(set)]
+								Ticket {
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
+								},
+							});
+						}
+						_ => {
+							return Err(TransactionError::Custom(ApiError::bad_request(
+								ApiErrorCode::BadRequest,
+								"invalid ticket status",
+							)));
+						}
+					}
+				}
+
+				let ticket = tx
+					.find_one_and_update(
+						filter::filter! {
+							Ticket {
+								#[query(rename = "_id")]
+								id: report_id.id(),
+							}
+						},
+						update,
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "ticket not found"))
+					.map_err(TransactionError::Custom)?;
+
+				if let Some(new_priority) = new_priority {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Ticket {
+							after: ticket.clone(),
+							data: InternalEventTicketData::ChangePriority {
+								old: ticket.priority.clone(),
+								new: new_priority,
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if let Some(new_open) = new_open {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Ticket {
+							after: ticket.clone(),
+							data: InternalEventTicketData::ChangeOpen {
+								old: ticket.open,
+								new: new_open,
+							},
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if let Some(event_ticket_data) = event_ticket_data {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::Ticket {
+							after: ticket.clone(),
+							data: event_ticket_data,
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				if let Some(note) = data.note {
+					let message = TicketMessage {
+						id: TicketMessageId::new(),
+						ticket_id: ticket.id,
+						user_id: authed_user.id,
+						content: note.content.unwrap_or_default(),
+						files: vec![],
+						search_updated_at: None,
+						updated_at: Utc::now(),
+					};
+
+					tx.insert_one::<TicketMessage>(&message, None).await?;
+
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::TicketMessage {
+							after: message,
+							data: StoredEventTicketMessageData::Create,
+						},
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
+
+				Ok(ticket)
+			},
+		)
 		.await;
 
 		match transaction_result {

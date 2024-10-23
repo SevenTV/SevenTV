@@ -13,7 +13,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::sub_refresh_job;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction_with_mutex, TransactionError};
 
 mod charge;
 mod checkout_session;
@@ -21,6 +21,47 @@ mod customer;
 mod invoice;
 mod price;
 mod subscription;
+
+#[derive(Debug, Clone)]
+enum StripeMutexKey {
+	Invoice(stripe::InvoiceId),
+	Subscription(stripe::SubscriptionId),
+	Charge(stripe::ChargeId),
+	Price(stripe::PriceId),
+	Dispute(stripe::DisputeId),
+	Customer(stripe::CustomerId),
+	CheckoutSession(stripe::CheckoutSessionId),
+}
+
+impl StripeMutexKey {
+	fn from_stripe(value: &stripe::EventObject) -> Option<Self> {
+		match value {
+			stripe::EventObject::Invoice(iv) => Some(Self::Invoice(iv.id.clone())),
+			stripe::EventObject::Subscription(sub) => Some(Self::Subscription(sub.id.clone())),
+			stripe::EventObject::Charge(ch) => Some(Self::Charge(ch.id.clone())),
+			stripe::EventObject::Price(p) => Some(Self::Price(p.id.clone())),
+			stripe::EventObject::Dispute(d) => Some(Self::Dispute(d.id.clone())),
+			stripe::EventObject::Customer(c) => Some(Self::Customer(c.id.clone())),
+			stripe::EventObject::CheckoutSession(s) => Some(Self::CheckoutSession(s.id.clone())),
+			_ => None,
+		}
+	}
+}
+
+impl std::fmt::Display for StripeMutexKey {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		const PREFIX: &str = "mutex:internal:webook:stripe";
+		match self {
+			Self::Invoice(id) => write!(f, "{PREFIX}:invoice:{}", id),
+			Self::Subscription(id) => write!(f, "{PREFIX}:subscription:{}", id),
+			Self::Charge(id) => write!(f, "{PREFIX}:charge:{}", id),
+			Self::Price(id) => write!(f, "{PREFIX}:price:{}", id),
+			Self::Dispute(id) => write!(f, "{PREFIX}:dispute:{}", id),
+			Self::Customer(id) => write!(f, "{PREFIX}:customer:{}", id),
+			Self::CheckoutSession(id) => write!(f, "{PREFIX}:checkout_session:{}", id),
+		}
+	}
+}
 
 /// https://docs.stripe.com/ips#webhook-notifications
 async fn verify_stripe_ip(global: &Arc<Global>, ip: &IpAddr) -> bool {
@@ -93,7 +134,9 @@ pub async fn handle(
 
 	let stripe_client = global.stripe_client.safe(&event.id).await;
 
-	let res = with_transaction(&global, |mut tx| {
+	let mutex_key = StripeMutexKey::from_stripe(&event.data.object);
+
+	let res = transaction_with_mutex(&global, mutex_key.map(Into::into), |mut tx| {
 		let global = Arc::clone(&global);
 
 		async move {

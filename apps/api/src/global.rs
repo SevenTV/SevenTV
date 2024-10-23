@@ -44,6 +44,7 @@ use crate::dataloader::user::{UserByPlatformIdLoader, UserByPlatformUsernameLoad
 use crate::dataloader::user_ban::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
 use crate::dataloader::user_session::UserSessionUpdaterBatcher;
+use crate::mutex::DistributedMutex;
 use crate::ratelimit::RateLimiter;
 use crate::stripe_client;
 
@@ -95,6 +96,7 @@ pub struct Global {
 	pub user_loader: FullUserLoader,
 	pub typesense: typesense_rs::apis::ApiClient,
 	pub updater: MongoUpdater,
+	pub mutex: DistributedMutex,
 }
 
 impl Global {
@@ -143,15 +145,20 @@ impl Global {
 
 		tracing::info!("connected to redis");
 
-		let rate_limiter = RateLimiter::new(redis.clone()).await?;
+		let rate_limiter = RateLimiter::new(redis.clone()).await.context("rate limiter")?;
 
-		tracing::info!("connected to rate limiter");
+		tracing::info!("connected to redis rate limiter");
+
+		let mutex = DistributedMutex::new(redis.clone()).await.context("mutex")?;
+
+		tracing::info!("connected to redis mutex");
 
 		Ok(Arc::new_cyclic(|weak| Self {
 			nats,
 			geoip,
 			redis,
 			rate_limiter,
+			mutex,
 			jetstream,
 			image_processor,
 			event_by_id_loader: LoaderById::new(db.clone()),

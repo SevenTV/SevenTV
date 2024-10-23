@@ -35,6 +35,19 @@ pub fn routes() -> Router<Arc<Global>> {
 		.route("/redeem", post(redeem::redeem))
 }
 
+#[derive(Debug, Clone)]
+pub enum EgVaultMutexKey {
+	User(UserId),
+}
+
+impl std::fmt::Display for EgVaultMutexKey {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::User(user_id) => write!(f, "mutex:egvault:user:{user_id}"),
+		}
+	}
+}
+
 pub enum CheckoutProduct {
 	Price(stripe::PriceId),
 	Gift(stripe::ProductId),

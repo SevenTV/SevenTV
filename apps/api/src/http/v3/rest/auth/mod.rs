@@ -22,7 +22,7 @@ use crate::http::extract::Query;
 use crate::http::middleware::cookies::Cookies;
 use crate::http::middleware::session::{Session, AUTH_COOKIE};
 use crate::ratelimit::RateLimitRequest;
-use crate::transactions::{with_transaction, TransactionError};
+use crate::transactions::{transaction, TransactionError};
 
 mod login;
 
@@ -128,7 +128,7 @@ async fn logout(
 	Extension(session): Extension<Session>,
 ) -> Result<impl IntoResponse, ApiError> {
 	let global = &global;
-	let res = with_transaction(global, |mut tx| async move {
+	let res = transaction(global, |mut tx| async move {
 		// is a new session
 		if let Some(user_session) = session.user_session() {
 			let user_session = tx

@@ -12,7 +12,7 @@ use shared::database::image_set::{Image, ImageSet, ImageSetInput};
 use shared::image_processor::Subject;
 
 use crate::global::Global;
-use crate::transactions::with_transaction;
+use crate::transactions::{transaction_with_mutex, GeneralMutexKey};
 
 mod badge;
 mod emote;
@@ -164,7 +164,14 @@ async fn handle_success(
 	event: event_callback::Success,
 	metadata: HashMap<String, String>,
 ) -> anyhow::Result<()> {
-	with_transaction(global, |tx| async move {
+	let mutex_key = match subject {
+		Subject::Emote(id) => Some(GeneralMutexKey::Emote(id)),
+		Subject::ProfilePicture(_) => None,
+		Subject::PaintLayer(id, ..) => Some(GeneralMutexKey::Paint(id)),
+		Subject::Badge(id) => Some(GeneralMutexKey::Badge(id)),
+	};
+
+	transaction_with_mutex(global, mutex_key.map(Into::into), |tx| async move {
 		match subject {
 			Subject::Emote(id) => emote::handle_success(tx, global, id, event, metadata).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_success(tx, global, id, event).await,
@@ -182,7 +189,14 @@ async fn handle_fail(
 	event: event_callback::Fail,
 	_metadata: HashMap<String, String>,
 ) -> anyhow::Result<()> {
-	with_transaction(global, |tx| async move {
+	let mutex_key = match subject {
+		Subject::Emote(id) => Some(GeneralMutexKey::Emote(id)),
+		Subject::ProfilePicture(_) => None,
+		Subject::PaintLayer(id, ..) => Some(GeneralMutexKey::Paint(id)),
+		Subject::Badge(id) => Some(GeneralMutexKey::Badge(id)),
+	};
+
+	transaction_with_mutex(global, mutex_key.map(Into::into), |tx| async move {
 		match subject {
 			Subject::Emote(id) => emote::handle_fail(tx, global, id, event).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_fail(tx, global, id, event).await,
@@ -200,7 +214,14 @@ async fn handle_start(
 	_event: event_callback::Start,
 	_metadata: HashMap<String, String>,
 ) -> anyhow::Result<()> {
-	with_transaction(global, |tx| async move {
+	let mutex_key = match subject {
+		Subject::Emote(id) => Some(GeneralMutexKey::Emote(id)),
+		Subject::ProfilePicture(_) => None,
+		Subject::PaintLayer(id, ..) => Some(GeneralMutexKey::Paint(id)),
+		Subject::Badge(id) => Some(GeneralMutexKey::Badge(id)),
+	};
+
+	transaction_with_mutex(global, mutex_key.map(Into::into), |tx| async move {
 		match subject {
 			Subject::Emote(id) => emote::handle_start(tx, global, id).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_start(tx, global, id).await,
@@ -218,7 +239,14 @@ async fn handle_cancel(
 	_event: event_callback::Cancel,
 	_metadata: HashMap<String, String>,
 ) -> anyhow::Result<()> {
-	with_transaction(global, |tx| async move {
+	let mutex_key = match subject {
+		Subject::Emote(id) => Some(GeneralMutexKey::Emote(id)),
+		Subject::ProfilePicture(_) => None,
+		Subject::PaintLayer(id, ..) => Some(GeneralMutexKey::Paint(id)),
+		Subject::Badge(id) => Some(GeneralMutexKey::Badge(id)),
+	};
+
+	transaction_with_mutex(global, mutex_key.map(Into::into), |tx| async move {
 		match subject {
 			Subject::Emote(id) => emote::handle_cancel(tx, global, id).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_cancel(tx, global, id).await,
