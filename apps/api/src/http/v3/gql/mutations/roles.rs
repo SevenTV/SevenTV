@@ -121,8 +121,6 @@ impl RolesMutation {
 		role_id: GqlObjectId,
 		data: EditRoleInput,
 	) -> Result<Role, ApiError> {
-		return Err(ApiError::not_implemented(ApiErrorCode::Unknown, "currently broken xd"));
-
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -131,40 +129,61 @@ impl RolesMutation {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = session.user()?;
 
-		let permissions = match (data.allowed, data.denied) {
-			(Some(allowed), Some(denied)) => {
-				let allowed: u64 = allowed
-					.parse()
-					.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid allowed permission"))?;
-				let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
-				let denied: u64 = denied
-					.parse()
-					.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid denied permission"))?;
-				let denied = shared::old_types::role_permission::RolePermission::from(denied);
-
-				let role_permissions =
-					shared::old_types::role_permission::RolePermission::to_new_permissions(allowed, denied);
-
-				if !authed_user.computed.permissions.is_superset_of(&role_permissions) {
-					return Err(ApiError::forbidden(
-						ApiErrorCode::LackingPrivileges,
-						"the role has a higher permission level than you",
-					));
-				}
-
-				Some(role_permissions)
-			}
-			(None, None) => None,
-			_ => {
-				return Err(ApiError::bad_request(
-					ApiErrorCode::LackingPrivileges,
-					"must provide both allowed and denied permissions",
-				));
-			}
-		};
-
 		let res = with_transaction(global, |mut tx| async move {
-			let before_role = tx
+			let role = tx
+				.find_one(
+					filter::filter! {
+						DbRole {
+							#[query(rename = "_id")]
+							id: role_id.id(),
+						}
+					},
+					None,
+				)
+				.await?
+				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "role not found")))?;
+
+			let permissions = match (data.allowed, data.denied) {
+				(Some(allowed), Some(denied)) => {
+					let allowed: u64 = allowed.parse().map_err(|_| {
+						TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
+							"invalid allowed permission",
+						))
+					})?;
+					let allowed = shared::old_types::role_permission::RolePermission::from(allowed);
+					let denied: u64 = denied.parse().map_err(|_| {
+						TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
+							"invalid denied permission",
+						))
+					})?;
+					let denied = shared::old_types::role_permission::RolePermission::from(denied);
+
+					let mut role_permissions = role.permissions.clone();
+					role_permissions.merge(shared::old_types::role_permission::RolePermission::to_new_permissions(
+						allowed, denied,
+					));
+
+					if !authed_user.computed.permissions.is_superset_of(&role_permissions) {
+						return Err(TransactionError::Custom(ApiError::forbidden(
+							ApiErrorCode::LackingPrivileges,
+							"the role has a higher permission level than you",
+						)));
+					}
+
+					Some(role_permissions)
+				}
+				(None, None) => None,
+				_ => {
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::LackingPrivileges,
+						"must provide both allowed and denied permissions",
+					)));
+				}
+			};
+
+			let after_role = tx
 				.find_one_and_update(
 					filter::filter! {
 						DbRole {
@@ -188,31 +207,13 @@ impl RolesMutation {
 						}
 					},
 					FindOneAndUpdateOptions::builder()
-						.return_document(ReturnDocument::Before)
+						.return_document(ReturnDocument::After)
 						.build(),
 				)
 				.await?
 				.ok_or_else(|| {
 					TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "failed to update role"))
 				})?;
-
-			let mut after_role = before_role.clone();
-
-			if let Some(permissions) = &permissions {
-				after_role.permissions = permissions.clone();
-			}
-
-			if let Some(name) = &data.name {
-				after_role.name = name.clone();
-			}
-
-			if let Some(color) = data.color {
-				after_role.color = Some(color);
-			}
-
-			if let Some(position) = data.position {
-				after_role.rank = position as i32;
-			}
 
 			if permissions.is_some() {
 				tx.register_event(InternalEvent {
@@ -221,7 +222,7 @@ impl RolesMutation {
 					data: InternalEventData::Role {
 						after: after_role.clone(),
 						data: StoredEventRoleData::ChangePermissions {
-							old: Box::new(before_role.permissions),
+							old: Box::new(role.permissions),
 							new: Box::new(after_role.permissions.clone()),
 						},
 					},
@@ -236,7 +237,7 @@ impl RolesMutation {
 					data: InternalEventData::Role {
 						after: after_role.clone(),
 						data: StoredEventRoleData::ChangeName {
-							old: before_role.name,
+							old: role.name,
 							new: after_role.name.clone(),
 						},
 					},
@@ -251,7 +252,7 @@ impl RolesMutation {
 					data: InternalEventData::Role {
 						after: after_role.clone(),
 						data: StoredEventRoleData::ChangeColor {
-							old: before_role.color,
+							old: role.color,
 							new: after_role.color,
 						},
 					},
@@ -266,7 +267,7 @@ impl RolesMutation {
 					data: InternalEventData::Role {
 						after: after_role.clone(),
 						data: StoredEventRoleData::ChangeRank {
-							old: before_role.rank,
+							old: role.rank,
 							new: after_role.rank,
 						},
 					},
