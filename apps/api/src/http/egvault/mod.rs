@@ -8,6 +8,7 @@ use shared::database::product::CustomerId;
 use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId};
 use shared::database::MongoCollection;
+use stripe::CreateCheckoutSessionPaymentMethodOptions;
 use subscribe::Prefill;
 
 use crate::global::Global;
@@ -51,6 +52,44 @@ impl std::fmt::Display for EgVaultMutexKey {
 pub enum CheckoutProduct {
 	Price(stripe::PriceId),
 	Gift(stripe::ProductId),
+}
+
+fn all_of_them() -> Vec<stripe::PaymentMethodType> {
+	vec![
+		stripe::PaymentMethodType::AcssDebit,
+		stripe::PaymentMethodType::Affirm,
+		stripe::PaymentMethodType::AfterpayClearpay,
+		stripe::PaymentMethodType::Alipay,
+		stripe::PaymentMethodType::AuBecsDebit,
+		stripe::PaymentMethodType::BacsDebit,
+		stripe::PaymentMethodType::Bancontact,
+		stripe::PaymentMethodType::Blik,
+		stripe::PaymentMethodType::Boleto,
+		stripe::PaymentMethodType::Card,
+		stripe::PaymentMethodType::Cashapp,
+		stripe::PaymentMethodType::CustomerBalance,
+		stripe::PaymentMethodType::Eps,
+		stripe::PaymentMethodType::Fpx,
+		stripe::PaymentMethodType::Giropay,
+		stripe::PaymentMethodType::Grabpay,
+		stripe::PaymentMethodType::Ideal,
+		stripe::PaymentMethodType::Klarna,
+		stripe::PaymentMethodType::Konbini,
+		stripe::PaymentMethodType::Link,
+		stripe::PaymentMethodType::Oxxo,
+		stripe::PaymentMethodType::P24,
+		stripe::PaymentMethodType::Paynow,
+		stripe::PaymentMethodType::Paypal,
+		stripe::PaymentMethodType::Pix,
+		stripe::PaymentMethodType::Promptpay,
+		stripe::PaymentMethodType::RevolutPay,
+		stripe::PaymentMethodType::SepaDebit,
+		stripe::PaymentMethodType::Sofort,
+		stripe::PaymentMethodType::Swish,
+		stripe::PaymentMethodType::UsBankAccount,
+		stripe::PaymentMethodType::WechatPay,
+		stripe::PaymentMethodType::Zip,
+	]
 }
 
 async fn create_checkout_session_params(
@@ -131,6 +170,7 @@ async fn create_checkout_session_params(
 		expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),
 		success_url: Some(success_url),
 		cancel_url: Some(cancel_url),
+		payment_method_types: Some(all_of_them()),
 		..Default::default()
 	}
 }
