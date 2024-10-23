@@ -121,6 +121,8 @@ impl RolesMutation {
 		role_id: GqlObjectId,
 		data: EditRoleInput,
 	) -> Result<Role, ApiError> {
+		return Err(ApiError::not_implemented(ApiErrorCode::Unknown, "currently broken xd"));
+
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
