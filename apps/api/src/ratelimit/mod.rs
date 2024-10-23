@@ -50,8 +50,8 @@ impl From<std::net::IpAddr> for RateLimitIdentifier {
 impl std::fmt::Display for RateLimitIdentifier {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			RateLimitIdentifier::Ip(ip) => write!(f, "ip:{}", ip),
-			RateLimitIdentifier::UserId(id) => write!(f, "user:{}", id),
+			RateLimitIdentifier::Ip(ip) => write!(f, "ip:[{}]", ip),
+			RateLimitIdentifier::UserId(id) => write!(f, "user:[{}]", id),
 		}
 	}
 }
@@ -172,7 +172,7 @@ impl RateLimiter {
 			.ratelimit
 			.fcall(
 				&self.redis,
-				vec![format!("ratelimit:{}:{}", request.resource.as_str(), request.id).as_str()],
+				vec![format!("ratelimit:v1:{}:{}", request.resource.as_str(), request.id).as_str()],
 				vec![
 					request.limit,
 					request.ticket_count,
