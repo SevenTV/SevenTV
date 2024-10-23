@@ -8,7 +8,6 @@ use shared::database::product::CustomerId;
 use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId};
 use shared::database::MongoCollection;
-use stripe::CreateCheckoutSessionPaymentMethodOptions;
 use subscribe::Prefill;
 
 use crate::global::Global;
@@ -54,41 +53,41 @@ pub enum CheckoutProduct {
 	Gift(stripe::ProductId),
 }
 
-fn all_of_them() -> Vec<stripe::PaymentMethodType> {
+fn all_of_them() -> Vec<stripe::CreateCheckoutSessionPaymentMethodTypes> {
 	vec![
-		stripe::PaymentMethodType::AcssDebit,
-		stripe::PaymentMethodType::Affirm,
-		stripe::PaymentMethodType::AfterpayClearpay,
-		stripe::PaymentMethodType::Alipay,
-		stripe::PaymentMethodType::AuBecsDebit,
-		stripe::PaymentMethodType::BacsDebit,
-		stripe::PaymentMethodType::Bancontact,
-		stripe::PaymentMethodType::Blik,
-		stripe::PaymentMethodType::Boleto,
-		stripe::PaymentMethodType::Card,
-		stripe::PaymentMethodType::Cashapp,
-		stripe::PaymentMethodType::CustomerBalance,
-		stripe::PaymentMethodType::Eps,
-		stripe::PaymentMethodType::Fpx,
-		stripe::PaymentMethodType::Giropay,
-		stripe::PaymentMethodType::Grabpay,
-		stripe::PaymentMethodType::Ideal,
-		stripe::PaymentMethodType::Klarna,
-		stripe::PaymentMethodType::Konbini,
-		stripe::PaymentMethodType::Link,
-		stripe::PaymentMethodType::Oxxo,
-		stripe::PaymentMethodType::P24,
-		stripe::PaymentMethodType::Paynow,
-		stripe::PaymentMethodType::Paypal,
-		stripe::PaymentMethodType::Pix,
-		stripe::PaymentMethodType::Promptpay,
-		stripe::PaymentMethodType::RevolutPay,
-		stripe::PaymentMethodType::SepaDebit,
-		stripe::PaymentMethodType::Sofort,
-		stripe::PaymentMethodType::Swish,
-		stripe::PaymentMethodType::UsBankAccount,
-		stripe::PaymentMethodType::WechatPay,
-		stripe::PaymentMethodType::Zip,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::AcssDebit,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Affirm,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::AfterpayClearpay,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Alipay,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::AuBecsDebit,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::BacsDebit,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Bancontact,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Blik,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Boleto,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Card,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Cashapp,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::CustomerBalance,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Eps,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Fpx,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Giropay,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Grabpay,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Ideal,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Klarna,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Konbini,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Link,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Oxxo,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::P24,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Paynow,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Paypal,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Pix,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Promptpay,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::RevolutPay,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::SepaDebit,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Sofort,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Swish,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::UsBankAccount,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::WechatPay,
+		stripe::CreateCheckoutSessionPaymentMethodTypes::Zip,
 	]
 }
 
