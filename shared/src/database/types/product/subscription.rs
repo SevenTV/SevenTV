@@ -106,6 +106,7 @@ impl From<stripe::SubscriptionId> for ProviderSubscriptionId {
 #[mongo(index(fields(user_id = 1, start = 1, end = 1)))]
 #[mongo(index(fields(subscription_id = 1)))]
 #[mongo(index(fields(product_ids = 1)))]
+#[mongo(index(fields(provider_id = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(search = "crate::typesense::types::product::subscription::SubscriptionPeriod")]
 #[serde(deny_unknown_fields)]

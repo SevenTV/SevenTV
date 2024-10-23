@@ -1,6 +1,8 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
+use bson::doc;
+use mongodb::options::FindOneOptions;
 use shared::database::product::invoice::Invoice;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
@@ -47,20 +49,40 @@ pub async fn completed(
 		return Ok(None);
 	};
 
-	let Some(user) = tx
+	let Some(period) = tx
 		.find_one(
 			filter::filter! {
-				User {
-					paypal_sub_id: Some(&provider_id),
+				SubscriptionPeriod {
+					#[query(serde)]
+					provider_id: Some(ProviderSubscriptionId::Paypal(provider_id.clone())),
 				}
 			},
-			None,
+			FindOneOptions::builder().sort(doc! { "start": -1 }).build(),
 		)
 		.await?
 	else {
 		// no user found
+		tracing::warn!(provider_id = %provider_id, "user for paypal subscription not found");
 		return Ok(None);
 	};
+
+	let user = global
+		.user_loader
+		.load_fast(global, period.subscription_id.user_id)
+		.await
+		.map_err(|()| {
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::LoadError,
+				"failed to load user",
+			))
+		})?
+		.ok_or_else(|| {
+			tracing::warn!(provider_id = %provider_id, "user for paypal subscription not found");
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::LoadError,
+				"user for paypal subscription not found",
+			))
+		})?;
 
 	// retrieve the paypal subscription
 	let api_key = paypal_api::api_key(global).await.map_err(TransactionError::Custom)?;
@@ -89,7 +111,7 @@ pub async fn completed(
 		})?;
 
 	// get or create the stripe customer
-	let customer_id = match user.stripe_customer_id {
+	let customer_id = match user.user.stripe_customer_id {
 		Some(id) => id,
 		None => {
 			// no stripe customer yet
@@ -259,7 +281,7 @@ pub async fn completed(
 			id: invoice_id.clone(),
 			items: vec![stripe_product_id.clone()],
 			customer_id,
-			user_id: user.id,
+			user_id: user.user.id,
 			paypal_payment_id: Some(sale.id.clone()),
 			status,
 			failed: false,
@@ -275,7 +297,7 @@ pub async fn completed(
 
 	if let Some(next_billing_time) = paypal_sub.billing_info.next_billing_time {
 		let subscription_id = SubscriptionId {
-			user_id: user.id,
+			user_id: user.user.id,
 			product_id: product.id,
 		};
 
