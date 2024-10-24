@@ -154,6 +154,16 @@ pub async fn handle_fail(
 		.await?
 		.ok_or(TransactionError::Custom(anyhow::anyhow!("emote not found")))?;
 
+	tx.delete(
+		filter::filter! {
+			EmoteModerationRequest {
+				emote_id: id,
+			}
+		},
+		None,
+	)
+	.await?;
+
 	tx.register_event(InternalEvent {
 		actor: None,
 		session_id: None,

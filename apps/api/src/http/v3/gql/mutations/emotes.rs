@@ -5,6 +5,7 @@ use chrono::Utc;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags, EmoteMerged};
+use shared::database::emote_moderation_request::EmoteModerationRequest;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{EmotePermission, PermissionsExt, RateLimitResource};
 use shared::database::stored_event::StoredEventEmoteData;
@@ -126,6 +127,16 @@ impl EmoteOps {
 						.await?
 						.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
 						.map_err(TransactionError::Custom)?;
+
+					tx.delete(
+						filter::filter! {
+							EmoteModerationRequest {
+								emote_id: self.id.id(),
+							}
+						},
+						None,
+					)
+					.await?;
 
 					tx.register_event(InternalEvent {
 						actor: Some(authed_user.clone()),
