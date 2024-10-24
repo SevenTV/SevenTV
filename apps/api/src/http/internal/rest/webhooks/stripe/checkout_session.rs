@@ -181,7 +181,9 @@ pub async fn completed(
 					TransactionError::Custom(ApiError::not_found(ApiErrorCode::StripeError, "redeem code not found"))
 				})?;
 
-			grant_entitlements(&mut tx, &redeem_code, user_id).await?;
+			grant_entitlements(global, &redeem_code, user_id)
+				.await
+				.map_err(TransactionError::Custom)?;
 		}
 		_ => {}
 	}

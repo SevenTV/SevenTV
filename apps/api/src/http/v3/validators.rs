@@ -17,7 +17,7 @@ pub fn check_emote_name(value: impl AsRef<str>) -> bool {
 	static REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
 
 	REGEX
-		.get_or_init(|| regex::Regex::new(r"^[\w\-():!+|.'?><\p{Emoji_Presentation}*#]{1,100}$").unwrap())
+		.get_or_init(|| regex::Regex::new(r"^[\w\-():!+|.'?><\p{Emoji_Presentation}*$#]{1,100}$").unwrap())
 		.is_match(value.as_ref())
 }
 
@@ -38,7 +38,7 @@ pub fn check_name(value: impl AsRef<str>) -> bool {
 	static REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
 
 	REGEX
-		.get_or_init(|| regex::Regex::new(r"^[\w\-():!+|.'?><\p{Emoji_Presentation}*# ]{1,100}$").unwrap())
+		.get_or_init(|| regex::Regex::new(r"^[\w\-():!+|.'?><\p{Emoji_Presentation}*$# ]{1,100}$").unwrap())
 		.is_match(value.as_ref())
 }
 
