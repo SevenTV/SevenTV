@@ -53,44 +53,6 @@ pub enum CheckoutProduct {
 	Gift(stripe::ProductId),
 }
 
-fn all_of_them() -> Vec<stripe::CreateCheckoutSessionPaymentMethodTypes> {
-	vec![
-		stripe::CreateCheckoutSessionPaymentMethodTypes::AcssDebit,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Affirm,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::AfterpayClearpay,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Alipay,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::AuBecsDebit,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::BacsDebit,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Bancontact,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Blik,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Boleto,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Card,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Cashapp,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::CustomerBalance,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Eps,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Fpx,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Giropay,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Grabpay,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Ideal,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Klarna,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Konbini,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Link,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Oxxo,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::P24,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Paynow,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Paypal,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Pix,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Promptpay,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::RevolutPay,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::SepaDebit,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Sofort,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Swish,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::UsBankAccount,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::WechatPay,
-		stripe::CreateCheckoutSessionPaymentMethodTypes::Zip,
-	]
-}
-
 async fn create_checkout_session_params(
 	global: &Arc<Global>,
 	ip: std::net::IpAddr,
@@ -169,7 +131,6 @@ async fn create_checkout_session_params(
 		expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),
 		success_url: Some(success_url),
 		cancel_url: Some(cancel_url),
-		payment_method_types: Some(all_of_them()),
 		..Default::default()
 	}
 }

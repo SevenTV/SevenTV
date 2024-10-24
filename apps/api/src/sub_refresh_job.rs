@@ -1,16 +1,20 @@
 use std::collections::HashSet;
+use std::convert::Infallible;
 use std::sync::Arc;
 
 use futures::TryStreamExt;
 use shared::database::duration::DurationUnit;
+use shared::database::emote_set::{EmoteSet, EmoteSetId, EmoteSetKind};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::subscription::{Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState};
 use shared::database::product::SubscriptionBenefitCondition;
 use shared::database::queries::{filter, update};
 use shared::database::MongoCollection;
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::transactions::{transaction_with_mutex, TransactionError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubAge {
@@ -289,6 +293,79 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 				tracing::error!(error = %e, "failed to insert entitlement edges");
 				ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert entitlement edges")
 			})?;
+	}
+
+	if EmoteSet::collection(&global.db)
+		.find_one(filter::filter! {
+			EmoteSet {
+				owner_id: subscription_id.user_id,
+				#[query(serde)]
+				kind: EmoteSetKind::Personal,
+			}
+		})
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to update emote set");
+			ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update emote set")
+		})?
+		.is_none()
+	{
+		transaction_with_mutex(
+			global,
+			Some(format!("mutex:user:sub:personal:{}", subscription_id.user_id).into()),
+			|mut tx| async move {
+				if tx
+					.find_one(
+						filter::filter! {
+							EmoteSet {
+								owner_id: subscription_id.user_id,
+								#[query(serde)]
+								kind: EmoteSetKind::Personal,
+							}
+						},
+						None,
+					)
+					.await?
+					.is_some()
+				{
+					return Ok(());
+				}
+
+				let set = EmoteSet {
+					id: EmoteSetId::new(),
+					name: "Personal Emote Set".to_string(),
+					owner_id: Some(subscription_id.user_id),
+					kind: EmoteSetKind::Personal,
+					updated_at: chrono::Utc::now(),
+					origin_config: None,
+					capacity: Some(5), // TODO: this is hard coded however we should likely get this from the sub product
+					description: None,
+					emotes: vec![],
+					emotes_changed_since_reindex: false,
+					tags: vec![],
+					search_updated_at: None,
+				};
+
+				tx.insert_one::<EmoteSet>(&set, None).await?;
+
+				tx.register_event(InternalEvent {
+					actor: None,
+					session_id: None,
+					timestamp: chrono::Utc::now(),
+					data: InternalEventData::EmoteSet {
+						after: set,
+						data: InternalEventEmoteSetData::Create,
+					},
+				})?;
+
+				Ok::<_, TransactionError<Infallible>>(())
+			},
+		)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to create personal emote set");
+			ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to create personal emote set")
+		})?;
 	}
 
 	Ok(())
