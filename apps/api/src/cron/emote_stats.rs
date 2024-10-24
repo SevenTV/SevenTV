@@ -43,6 +43,7 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 	let mut top_weekly = BTreeSet::<(i32, EmoteId)>::new();
 	let mut top_monthly = BTreeSet::<(i32, EmoteId)>::new();
 	let mut top_all_time = BTreeSet::<(i32, EmoteId)>::new();
+
 	let mut trending_day = BTreeSet::<(i32, EmoteId)>::new();
 	let mut trending_week = BTreeSet::<(i32, EmoteId)>::new();
 	let mut trending_month = BTreeSet::<(i32, EmoteId)>::new();
@@ -77,7 +78,6 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 			.fetch(),
 		|stat| {
 			update_stat!(scores, stat, top_daily, global_config.trending_emote_count);
-			update_stat!(scores, stat, trending_day, global_config.trending_emote_count);
 			total += 1;
 		},
 	)
@@ -95,7 +95,6 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 			.fetch(),
 		|stat| {
 			update_stat!(scores, stat, top_weekly, global_config.trending_emote_count);
-			update_stat!(scores, stat, trending_week, global_config.trending_emote_count);
 			total += 1;
 		},
 	)
@@ -113,7 +112,6 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 			.fetch(),
 		|stat| {
 			update_stat!(scores, stat, top_monthly, global_config.trending_emote_count);
-			update_stat!(scores, stat, trending_month, global_config.trending_emote_count);
 			total += 1;
 		},
 	)
@@ -133,6 +131,47 @@ pub async fn run(global: &Arc<Global>, _job: CronJob) -> anyhow::Result<()> {
 	tracing::info!("fetched {total} entries for all time");
 
 	tracing::info!("found {} entries", scores.len());
+
+	for (id, scores) in &mut scores {
+		if scores.top_weekly > 100 {
+			scores.trending_day = ((scores.top_daily as f64 / scores.top_weekly as f64) * 1_000_000.0)
+				.floor()
+				.max(0.0) as i32;
+		}
+
+		if scores.top_monthly > 200 {
+			scores.trending_week = ((scores.top_weekly as f64 / scores.top_monthly as f64) * 1_000_000.0)
+				.floor()
+				.max(0.0) as i32;
+		}
+
+		if scores.top_all_time > 500 {
+			scores.trending_month = ((scores.top_monthly as f64 / scores.top_all_time as f64) * 1_000_000.0)
+				.floor()
+				.max(0.0) as i32;
+		}
+
+		if scores.trending_day > 0 {
+			trending_day.insert((scores.trending_day, *id));
+			if trending_day.len() > global_config.trending_emote_count {
+				trending_day.pop_first();
+			}
+		}
+
+		if scores.trending_week > 0 {
+			trending_week.insert((scores.trending_week, *id));
+			if trending_week.len() > global_config.trending_emote_count {
+				trending_week.pop_first();
+			}
+		}
+
+		if scores.trending_month > 0 {
+			trending_month.insert((scores.trending_month, *id));
+			if trending_month.len() > global_config.trending_emote_count {
+				trending_month.pop_first();
+			}
+		}
+	}
 
 	let scores = scores.into_iter().collect::<Vec<_>>();
 	let chunks = scores.chunks(10000);
