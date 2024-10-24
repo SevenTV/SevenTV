@@ -19,6 +19,7 @@ pub enum EmoteModerationRequestStatus {
 	Pending = 0,
 	Approved = 1,
 	Denied = 2,
+	EmoteDeleted = 3,
 }
 
 impl_typesense_type!(EmoteModerationRequestStatus, Int32);
@@ -30,6 +31,7 @@ pub type EmoteModerationRequestId = Id<EmoteModerationRequest>;
 #[allow(clippy::duplicated_attributes)]
 #[mongo(index(fields(kind = 1, user_id = 1, status = 1)))]
 #[mongo(index(fields(kind = 1, emote_id = 1), unique))]
+#[mongo(index(fields(status = 1, emote_id = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(search = "crate::typesense::types::emote_moderation_request::EmoteModerationRequest")]
 #[serde(deny_unknown_fields)]
