@@ -1,6 +1,8 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
+use bson::doc;
+use mongodb::options::FindOneOptions;
 use shared::database::product::invoice::Invoice;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
@@ -47,20 +49,37 @@ pub async fn completed(
 		return Ok(None);
 	};
 
-	let Some(user) = tx
+	let Some(period) = tx
+		.find_one(
+			filter::filter! {
+				SubscriptionPeriod {
+					#[query(serde)]
+					provider_id: Some(ProviderSubscriptionId::Paypal(provider_id.clone())),
+				}
+			},
+			FindOneOptions::builder().sort(doc! { "start": -1 }).build(),
+		)
+		.await?
+	else {
+		// no user found
+		tracing::warn!(provider_id = %provider_id, "user for paypal subscription not found");
+		return Ok(None);
+	};
+
+	let user = tx
 		.find_one(
 			filter::filter! {
 				User {
-					paypal_sub_id: Some(&provider_id),
+					#[query(rename = "_id")]
+					id: period.subscription_id.user_id,
 				}
 			},
 			None,
 		)
 		.await?
-	else {
-		// no user found
-		return Ok(None);
-	};
+		.ok_or_else(|| {
+			TransactionError::Custom(ApiError::internal_server_error(ApiErrorCode::LoadError, "user not found"))
+		})?;
 
 	// retrieve the paypal subscription
 	let api_key = paypal_api::api_key(global).await.map_err(TransactionError::Custom)?;

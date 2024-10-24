@@ -34,7 +34,6 @@ pub type UserId = Id<User>;
 #[mongo(index(fields("paypal_sub_id" = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(search = "crate::typesense::types::user::User")]
-#[serde(deny_unknown_fields)]
 pub struct User {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
@@ -52,8 +51,6 @@ pub struct User {
 	/// populated by first searching for the user in stripe or, if not found,
 	/// creating a new customer
 	pub stripe_customer_id: Option<CustomerId>,
-	/// The PayPal subscription ID for this user, if any
-	pub paypal_sub_id: Option<String>,
 	pub cached: UserCached,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
