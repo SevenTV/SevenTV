@@ -4,6 +4,7 @@ use std::sync::{Arc, OnceLock};
 
 use axum::routing::{get, patch, post};
 use axum::Router;
+use metadata::{CustomerMetadata, StripeMetadata};
 use shared::database::product::CustomerId;
 use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId};
@@ -38,6 +39,7 @@ pub fn routes() -> Router<Arc<Global>> {
 #[derive(Debug, Clone)]
 pub enum EgVaultMutexKey {
 	User(UserId),
+	CustomerCreate(UserId),
 	// RedeemCode(String),
 }
 
@@ -45,6 +47,7 @@ impl std::fmt::Display for EgVaultMutexKey {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Self::User(user_id) => write!(f, "mutex:egvault:user:{user_id}"),
+			Self::CustomerCreate(user_id) => write!(f, "mutex:egvault:customer_create:{user_id}"),
 			// Self::RedeemCode(code) => write!(f, "mutex:egvault:redeem_code:{code}"),
 		}
 	}
@@ -174,51 +177,62 @@ async fn find_or_create_customer(
 	user_id: UserId,
 	prefill: Option<Prefill>,
 ) -> Result<CustomerId, ApiError> {
-	let id = match find_customer(global, user_id).await? {
-		Some(id) => id,
-		None => {
-			// no customer found, create one
+	global
+		.mutex
+		.acquire(EgVaultMutexKey::CustomerCreate(user_id), || async {
+			let id = match find_customer(global, user_id).await? {
+				Some(id) => id,
+				None => {
+					// no customer found, create one
+					let name = prefill.as_ref().map(|p| format!("{} {}", p.first_name, p.last_name));
 
-			let name = prefill.as_ref().map(|p| format!("{} {}", p.first_name, p.last_name));
+					let customer = stripe::Customer::create(
+						stripe_client.deref(),
+						stripe::CreateCustomer {
+							email: prefill.map(|p| p.email).as_deref(),
+							name: name.as_deref(),
+							metadata: Some(
+								CustomerMetadata {
+									user_id,
+									paypal_id: None,
+								}
+								.to_stripe(),
+							),
+							..Default::default()
+						},
+					)
+					.await
+					.map_err(|e| {
+						tracing::error!(error = %e, "failed to create customer");
+						ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create customer")
+					})?;
 
-			let customer = stripe::Customer::create(
-				stripe_client.deref(),
-				stripe::CreateCustomer {
-					email: prefill.map(|p| p.email).as_deref(),
-					name: name.as_deref(),
-					metadata: Some([("USER_ID".to_string(), user_id.to_string())].into()),
-					..Default::default()
-				},
-			)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to create customer");
-				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create customer")
-			})?;
-
-			customer.id.into()
-		}
-	};
-
-	User::collection(&global.db)
-		.update_one(
-			filter::filter! {
-				User {
-					#[query(rename = "_id")]
-					id: user_id,
+					customer.id.into()
 				}
-			},
-			update::update! {
-				#[query(set)]
-				User {
-					stripe_customer_id: &id,
-					updated_at: chrono::Utc::now(),
-					search_updated_at: &None,
-				}
-			},
-		)
+			};
+
+			User::collection(&global.db)
+				.update_one(
+					filter::filter! {
+						User {
+							#[query(rename = "_id")]
+							id: user_id,
+						}
+					},
+					update::update! {
+						#[query(set)]
+						User {
+							stripe_customer_id: &id,
+							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
+						}
+					},
+				)
+				.await
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update user"))?;
+
+			Ok(id)
+		})
 		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to update user"))?;
-
-	Ok(id)
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to acquire mutex"))?
 }

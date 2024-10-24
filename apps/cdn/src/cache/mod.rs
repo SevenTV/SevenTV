@@ -2,17 +2,15 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
 use bytes::{Bytes, BytesMut};
-use key::CacheKey;
 use scuffle_foundations::http::server::axum::http::header::{self, HeaderMap};
 use scuffle_foundations::http::server::axum::http::{HeaderValue, Response, StatusCode};
 use scuffle_foundations::http::server::stream::{Body, IntoResponse};
 use scuffle_foundations::telemetry::metrics::metrics;
+use shared::cdn::key::CacheKey;
 use tokio::sync::OnceCell;
 
 use crate::config;
 use crate::global::Global;
-
-pub mod key;
 
 const ONE_WEEK: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24 * 7);
 
@@ -132,6 +130,12 @@ impl Cache {
 
 	pub fn inflight(&self) -> u64 {
 		self.inflight.len() as u64
+	}
+
+	#[tracing::instrument(skip_all, name = "cache::purge", fields(key = %key))]
+	pub async fn purge(&self, key: CacheKey) {
+		tracing::info!("purging key");
+		self.inner.invalidate(&key).await;
 	}
 
 	pub async fn handle_request(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
@@ -339,11 +343,21 @@ impl CachedResponse {
 			hits: Arc::new(AtomicUsize::new(0)),
 		}
 	}
+
+	pub fn redirect(uri: String) -> Self {
+		Self {
+			data: CachedData::Redirect(uri),
+			date: chrono::Utc::now(),
+			max_age: std::time::Duration::ZERO,
+			hits: Arc::new(AtomicUsize::new(0)),
+		}
+	}
 }
 
 #[derive(Debug, Clone)]
 pub enum CachedData {
 	Bytes { content_type: Option<String>, data: Bytes },
+	Redirect(String),
 	NotFound,
 	InternalServerError,
 }
@@ -352,6 +366,7 @@ impl CachedData {
 	pub fn len(&self) -> usize {
 		match self {
 			Self::Bytes { data, .. } => data.len(),
+			Self::Redirect(_) => 0,
 			Self::NotFound => 0,
 			Self::InternalServerError => 0,
 		}
@@ -371,6 +386,11 @@ impl IntoResponse for CachedData {
 				headers.insert(header::CONTENT_LENGTH, data.len().to_string().try_into().unwrap());
 
 				(headers, Body::from(data)).into_response()
+			}
+			Self::Redirect(uri) => {
+				let mut headers = HeaderMap::new();
+				headers.insert(header::LOCATION, uri.try_into().unwrap());
+				(headers, StatusCode::PERMANENT_REDIRECT).into_response()
 			}
 			Self::NotFound => StatusCode::NOT_FOUND.into_response(),
 			Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -404,9 +424,15 @@ impl IntoResponse for CachedResponse {
 				.insert(header::AGE, age.num_seconds().to_string().try_into().unwrap());
 			data.headers_mut().insert(
 				header::CACHE_CONTROL,
-				format!("public, max-age={}, immutable", self.max_age.as_secs())
-					.try_into()
-					.unwrap(),
+				// We cache images for 1 week by default on the client however we want to purge intermediate caches
+				// after 1 day to avoid stale content if we purge the CDN cache.
+				format!(
+					"public, max-age={}, s-maxage={}, immutable",
+					self.max_age.as_secs(),
+					60 * 60 * 24
+				)
+				.try_into()
+				.unwrap(),
 			);
 		}
 

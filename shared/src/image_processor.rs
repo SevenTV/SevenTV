@@ -185,7 +185,8 @@ impl ImageProcessor {
 			],
 			upscale: true,
 			skip_impossible_formats: true,
-			min_aspect_ratio: None,
+			// To allow for 1x32 images
+			min_aspect_ratio: Some(1.0 / 32.0),
 			max_aspect_ratio: Some(3.0),
 			resize_method: image_processor::ResizeMethod::Fit as i32,
 			resize_algorithm: image_processor::ResizeAlgorithm::Lanczos3 as i32,
@@ -221,6 +222,7 @@ impl ImageProcessor {
 		}
 	}
 
+	#[tracing::instrument(skip_all, name = "ImageProcessor::upload_emote", fields(emote_id = %id))]
 	pub async fn upload_emote(
 		&self,
 		id: EmoteId,
@@ -246,6 +248,7 @@ impl ImageProcessor {
 		self.send_req(req).await
 	}
 
+	#[tracing::instrument(skip_all, name = "ImageProcessor::upload_profile_picture", fields(user_id = %user_id, profile_picture_id = %id))]
 	pub async fn upload_profile_picture(
 		&self,
 		id: UserProfilePictureId,
@@ -272,6 +275,7 @@ impl ImageProcessor {
 		self.send_req(req).await
 	}
 
+	#[tracing::instrument(skip_all, name = "ImageProcessor::upload_paint_layer", fields(paint_id = %id, layer_id = %layer_id))]
 	pub async fn upload_paint_layer(
 		&self,
 		id: PaintId,
@@ -308,6 +312,7 @@ impl ImageProcessor {
 		self.send_req(req).await
 	}
 
+	#[tracing::instrument(skip_all, name = "ImageProcessor::upload_badge", fields(badge_id = %id))]
 	pub async fn upload_badge(&self, id: BadgeId, data: Bytes) -> tonic::Result<image_processor::ProcessImageResponse> {
 		let req = self.make_request(
 			Some(self.make_input_upload(format!("badge/{id}/input.{{ext}}"), data)),
@@ -324,6 +329,91 @@ impl ImageProcessor {
 					[("badge_id".to_string(), id.to_string())].into_iter().collect(),
 				),
 			),
+		);
+
+		self.send_req(req).await
+	}
+
+	#[tracing::instrument(skip_all, name = "ImageProcessor::reprocess_badge", fields(badge_id = %id))]
+	pub async fn reprocess_badge(
+		&self,
+		source_file: String,
+		id: BadgeId,
+	) -> tonic::Result<image_processor::ProcessImageResponse> {
+		let mut task = self.make_task(
+			image_processor::Output {
+				resize: Some(image_processor::output::Resize::Scaling(image_processor::Scaling {
+					base: Some(image_processor::scaling::Base::BaseHeight(18)),
+					scales: vec![1, 2, 3, 4],
+				})),
+				..self.make_output(format!("badge/{id}/{{scale}}x{{static}}.{{ext}}"))
+			},
+			self.make_events(
+				Subject::Badge(id),
+				[
+					("badge_id".to_string(), id.to_string()),
+					("reprocess".to_string(), "true".to_string()),
+				]
+				.into_iter()
+				.collect(),
+			),
+		);
+
+		task.input = Some(image_processor::Input {
+			path: Some(image_processor::input::Path::DrivePath(image_processor::DrivePath {
+				path: source_file,
+				drive: self.input_drive_name.clone(),
+				acl: None,
+			})),
+			metadata: None,
+		});
+
+		let req = self.make_request(None, task);
+
+		self.send_req(req).await
+	}
+
+	#[tracing::instrument(skip_all, name = "ImageProcessor::reprocess_paint_layer", fields(paint_id = %id, layer_id = %layer_id))]
+	pub async fn reprocess_paint_layer(
+		&self,
+		source_file: String,
+		id: PaintId,
+		layer_id: PaintLayerId,
+	) -> tonic::Result<image_processor::ProcessImageResponse> {
+		let req = self.make_request(
+			None,
+			image_processor::Task {
+				limits: Some(image_processor::Limits {
+					max_input_frame_count: Some(1000),
+					max_input_width: Some(1500),
+					max_input_height: Some(1500),
+					..Default::default()
+				}),
+				input: Some(image_processor::Input {
+					path: Some(image_processor::input::Path::DrivePath(image_processor::DrivePath {
+						path: source_file,
+						drive: self.input_drive_name.clone(),
+						acl: None,
+					})),
+					metadata: None,
+				}),
+				..self.make_task(
+					scuffle_image_processor_proto::Output {
+						max_aspect_ratio: None,
+						..self.make_output(format!("paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
+					},
+					self.make_events(
+						Subject::PaintLayer(id, layer_id),
+						[
+							("paint_id".to_string(), id.to_string()),
+							("layer_id".to_string(), layer_id.to_string()),
+							("reprocess".to_string(), "true".to_string()),
+						]
+						.into_iter()
+						.collect(),
+					),
+				)
+			},
 		);
 
 		self.send_req(req).await

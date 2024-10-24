@@ -3,11 +3,10 @@ use std::num::NonZeroUsize;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use axum::extract::{ws, Path, RawQuery, Request, State, WebSocketUpgrade};
+use axum::extract::{ws, Path, Query, RawQuery, Request, State, WebSocketUpgrade};
 use axum::http::header::HeaderMap;
 use axum::http::HeaderValue;
 use axum::response::{IntoResponse, Response, Sse};
-use axum::Extension;
 use parser::{parse_json_subscriptions, parse_query_uri};
 use scuffle_foundations::context::ContextFutExt;
 use scuffle_foundations::telemetry::metrics::metrics;
@@ -42,11 +41,15 @@ mod topic_map;
 
 #[metrics]
 mod v3 {
+	use std::sync::Arc;
+
 	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
 	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
 	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
 	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
 	use tokio::time::Instant;
+
+	use super::Metadata;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 	#[serde(rename_all = "snake_case")]
@@ -63,53 +66,73 @@ mod v3 {
 	}
 
 	/// The current number of connections
-	pub fn current_connections(kind: ConnectionKind) -> Gauge;
+	pub fn current_connections(kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> Gauge;
 
 	pub struct CurrentConnectionDropGuard {
+		metadata: Metadata,
 		kind: ConnectionKind,
 	}
 
 	impl Drop for CurrentConnectionDropGuard {
 		fn drop(&mut self) {
-			current_connections(self.kind).dec();
+			current_connections(self.kind, &self.metadata.app, &self.metadata.version).dec();
 		}
 	}
 
 	impl CurrentConnectionDropGuard {
-		pub fn new(kind: ConnectionKind) -> Self {
-			current_connections(kind).inc();
+		pub fn new(kind: ConnectionKind, metadata: Metadata) -> Self {
+			current_connections(kind, &metadata.app, &metadata.version).inc();
 
-			Self { kind }
+			Self { kind, metadata }
 		}
 	}
 
 	/// The number of client closes
-	pub fn client_closes(code: &'static str, kind: ConnectionKind) -> Counter;
+	pub fn client_closes(code: &'static str, kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> Counter;
 
 	/// The number of commands issued
-	pub fn commands(kind: CommandKind, command: String) -> Counter;
+	pub fn commands(kind: CommandKind, command: &'static str, app: &Arc<str>, version: &Arc<str>) -> Counter;
 
 	/// The number of seconds used on connections
 	#[builder = HistogramBuilder::default()]
-	pub fn connection_duration_seconds(kind: ConnectionKind) -> Histogram;
+	pub fn connection_duration_seconds(kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> Histogram;
 
 	pub struct ConnectionDurationDropGuard {
 		kind: ConnectionKind,
 		start: Instant,
+		metadata: Metadata,
 	}
 
 	impl ConnectionDurationDropGuard {
-		pub fn new(kind: ConnectionKind) -> Self {
+		pub fn new(kind: ConnectionKind, metadata: Metadata) -> Self {
 			Self {
 				kind,
 				start: Instant::now(),
+				metadata,
 			}
 		}
 	}
 
 	impl Drop for ConnectionDurationDropGuard {
 		fn drop(&mut self) {
-			connection_duration_seconds(self.kind).observe(self.start.elapsed().as_secs_f64());
+			connection_duration_seconds(self.kind, &self.metadata.app, &self.metadata.version)
+				.observe(self.start.elapsed().as_secs_f64());
+		}
+	}
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct Metadata {
+	pub app: Arc<str>,
+	pub version: Arc<str>,
+}
+
+impl Default for Metadata {
+	fn default() -> Self {
+		Self {
+			app: Arc::from("unknown"),
+			version: Arc::from("unknown"),
 		}
 	}
 }
@@ -118,11 +141,38 @@ pub async fn handle(
 	State(global): State<Arc<Global>>,
 	path: Option<Path<String>>,
 	RawQuery(query): RawQuery,
-	Extension(ip): Extension<std::net::IpAddr>,
+	Query(mut metadata): Query<Metadata>,
 	headers: HeaderMap,
 	upgrade: Option<WebSocketUpgrade>,
 	req: Request,
 ) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
+	if metadata.app.len() > 32 {
+		return Err((hyper::StatusCode::BAD_REQUEST, "app metadata too long"));
+	} else if metadata.version.len() > 16 {
+		return Err((hyper::StatusCode::BAD_REQUEST, "version metadata too long"));
+	}
+
+	if metadata.app.is_empty() {
+		metadata.app = Arc::from("unknown");
+	}
+
+	if metadata.version.is_empty() {
+		metadata.version = Arc::from("unknown");
+	}
+
+	if metadata.app.as_ref() == "unknown" && metadata.version.as_ref() == "unknown" {
+		if let Some(user_agent) = headers.get(http::header::USER_AGENT).and_then(|v| v.to_str().ok()) {
+			let (app, version) = user_agent.split_once('/').unwrap_or(("", ""));
+			if app == "Chatterino" {
+				metadata.app = Arc::from(app);
+				metadata.version = Arc::from(version.split_once(' ').map_or(version, |(v, _)| v));
+			} else if app == "okhttp" {
+				metadata.app = Arc::from("okhttp");
+				metadata.version = Arc::from(version);
+			}
+		}
+	}
+
 	let (ticket, active) = global.inc_active_connections();
 	if let Some(limit) = global.config.event_api.connection_limit {
 		// if we exceed the connection limit, we return a 503.
@@ -148,9 +198,9 @@ pub async fn handle(
 	};
 
 	if let Some(upgrade) = upgrade {
-		Ok(handle_ws(global, initial_subs, ticket, upgrade, ip).await)
+		Ok(handle_ws(global, initial_subs, ticket, upgrade, metadata).await)
 	} else if req.method() == hyper::Method::GET {
-		handle_sse(global, initial_subs, ticket, ip).await
+		handle_sse(global, initial_subs, ticket, metadata).await
 	} else {
 		Err((hyper::StatusCode::METHOD_NOT_ALLOWED, "method not allowed"))
 	}
@@ -161,14 +211,14 @@ async fn handle_ws(
 	initial_subs: Option<Vec<Subscribe>>,
 	ticket: AtomicTicket,
 	upgrade: WebSocketUpgrade,
-	ip: std::net::IpAddr,
+	metadata: Metadata,
 ) -> Response<axum::body::Body> {
 	upgrade
 		.max_frame_size(1024 * 16)
 		.max_message_size(1024 * 18)
 		.write_buffer_size(1024 * 16)
 		.on_upgrade(move |ws| async move {
-			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket, ip);
+			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket, metadata);
 
 			tokio::spawn(socket.serve());
 		})
@@ -178,14 +228,14 @@ async fn handle_sse(
 	global: Arc<Global>,
 	initial_subs: Option<Vec<Subscribe>>,
 	ticket: AtomicTicket,
-	ip: std::net::IpAddr,
+	metadata: Metadata,
 ) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
 	// Handle the SSE request.
 	let (sender, response) = tokio::sync::mpsc::channel(1);
 
 	let response = Sse::new(ReceiverStream::new(response));
 
-	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket, ip);
+	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket, metadata);
 
 	tokio::spawn(socket.serve());
 
@@ -224,7 +274,8 @@ struct Connection {
 	_connection_duration_drop_guard: v3::ConnectionDurationDropGuard,
 	/// Drop guard for the metrics
 	_current_connection_drop_guard: v3::CurrentConnectionDropGuard,
-	ip: std::net::IpAddr,
+
+	metadata: Metadata,
 
 	presence_lru: lru::LruCache<UserId, PresenceCacheValue>,
 	personal_emote_set_lru: lru::LruCache<EmoteSetId, chrono::DateTime<chrono::Utc>>,
@@ -246,7 +297,7 @@ impl Connection {
 		global: Arc<Global>,
 		initial_subs: Option<Vec<payload::Subscribe>>,
 		ticket: AtomicTicket,
-		ip: std::net::IpAddr,
+		metadata: Metadata,
 	) -> Self {
 		let connection_kind = match socket {
 			Socket::WebSocket(_) => v3::ConnectionKind::Websocket,
@@ -256,7 +307,6 @@ impl Connection {
 		Self {
 			socket,
 			seq: 0,
-			ip,
 			heartbeat_count: 0,
 			id: Id::new(),
 			// We jitter the TTL to prevent all connections from expiring at the same time, which
@@ -269,8 +319,9 @@ impl Connection {
 			initial_subs,
 			_ticket: ticket,
 			global,
-			_connection_duration_drop_guard: v3::ConnectionDurationDropGuard::new(connection_kind),
-			_current_connection_drop_guard: v3::CurrentConnectionDropGuard::new(connection_kind),
+			_connection_duration_drop_guard: v3::ConnectionDurationDropGuard::new(connection_kind, metadata.clone()),
+			_current_connection_drop_guard: v3::CurrentConnectionDropGuard::new(connection_kind, metadata.clone()),
+			metadata,
 			presence_lru: lru::LruCache::new(NonZeroUsize::new(1024).unwrap()),
 			badge_lru: lru::LruCache::new(NonZeroUsize::new(60).unwrap()),
 			paint_lru: lru::LruCache::new(NonZeroUsize::new(250).unwrap()),
@@ -353,10 +404,22 @@ impl Connection {
 
 				match self.socket {
 					Socket::Sse(_) => {
-						v3::client_closes(err.as_code(), v3::ConnectionKind::EventStream).inc();
+						v3::client_closes(
+							err.as_code(),
+							v3::ConnectionKind::EventStream,
+							&self.metadata.app,
+							&self.metadata.version,
+						)
+						.inc();
 					}
 					Socket::WebSocket(_) => {
-						v3::client_closes(err.as_code(), v3::ConnectionKind::Websocket).inc();
+						v3::client_closes(
+							err.as_code(),
+							v3::ConnectionKind::Websocket,
+							&self.metadata.app,
+							&self.metadata.version,
+						)
+						.inc();
 					}
 				}
 				false
@@ -411,7 +474,13 @@ impl Connection {
 	/// Send a message to the client.
 	async fn send_message(&mut self, data: impl MessagePayload + serde::Serialize) -> Result<(), ConnectionError> {
 		self.seq += 1;
-		v3::commands(v3::CommandKind::Server, data.opcode().to_string()).inc();
+		v3::commands(
+			v3::CommandKind::Server,
+			data.opcode().as_str(),
+			&self.metadata.app,
+			&self.metadata.version,
+		)
+		.inc();
 		self.socket.send(Message::new(data, self.seq - 1)).await?;
 		Ok(())
 	}
@@ -453,29 +522,22 @@ impl Connection {
 		let topic = EventTopic::new(subscribe.ty, scope);
 		let topic_key = topic.as_key();
 
-		if self.topics.contains_key(&topic_key) {
-			self.send_error(
-				"Already subscribed to this event",
-				HashMap::new(),
-				Some(CloseCode::AlreadySubscribed),
+		if !self.topics.contains_key(&topic_key) {
+			self.topics.insert(
+				topic_key,
+				Subscription::new(self.global.subscription_manager.subscribe(topic).await?),
+			);
+
+			self.send_ack(
+				Opcode::Subscribe,
+				serde_json::json!({
+					"id": self.seq,
+					"type": subscribe.ty.as_str(),
+					"condition": subscribe.condition,
+				}),
 			)
 			.await?;
 		}
-
-		self.topics.insert(
-			topic_key,
-			Subscription::new(self.global.subscription_manager.subscribe(topic).await?),
-		);
-
-		self.send_ack(
-			Opcode::Subscribe,
-			serde_json::json!({
-				"id": self.seq,
-				"type": subscribe.ty.as_str(),
-				"condition": subscribe.condition,
-			}),
-		)
-		.await?;
 
 		Ok(())
 	}
@@ -527,7 +589,13 @@ impl Connection {
 
 	/// Handle a message from the client.
 	async fn handle_message(&mut self, msg: Message) -> Result<(), ConnectionError> {
-		v3::commands(v3::CommandKind::Client, msg.opcode.to_string()).inc();
+		v3::commands(
+			v3::CommandKind::Client,
+			msg.opcode.as_str(),
+			&self.metadata.app,
+			&self.metadata.version,
+		)
+		.inc();
 
 		// We match on the opcode so that we can deserialize the data into the correct
 		// type.
@@ -545,8 +613,8 @@ impl Connection {
 				MessageData::Unsubscribe(msg)
 			}
 			Opcode::Bridge => {
-				let msg = serde_json::from_value::<payload::Bridge>(msg.data)?;
-				MessageData::Bridge(msg)
+				// Bridge is no longer supported.
+				return Ok(());
 			}
 			_ => {
 				self.send_error("Invalid Opcode", HashMap::new(), Some(CloseCode::UnknownOperation))
@@ -574,25 +642,7 @@ impl Connection {
 			MessageData::Unsubscribe(unsubscribe) => {
 				self.handle_unsubscribe(&unsubscribe).await?;
 			}
-			MessageData::Bridge(bridge) => {
-				// Subscription bridge is a way of interacting with the API through the socket.
-				let res = self
-					.global
-					.http_client
-					.post(&self.global.config.event_api.bridge_url)
-					// Forward the IP to the API for rate limiting.
-					.header("CF-Connecting-IP", self.ip.to_string())
-					.json(&bridge.body)
-					.send()
-					.await?
-					.error_for_status()?;
-
-				let body = res.json::<Vec<payload::Dispatch>>().await?;
-
-				for msg in body {
-					self.handle_dispatch(&msg).await?;
-				}
-			}
+			MessageData::Bridge(_) => {}
 			_ => {
 				self.send_error("Invalid Opcode", HashMap::new(), Some(CloseCode::UnknownOperation))
 					.await?;
@@ -698,7 +748,7 @@ impl Connection {
 					.emotes
 					.iter()
 					.enumerate()
-					.map(|(i, emote_set_emote)| {
+					.filter_map(|(i, emote_set_emote)| {
 						let emote = emotes.remove(&emote_set_emote.id).map(|e| {
 							let owner = emote_set
 								.emote_owners
@@ -714,15 +764,16 @@ impl Connection {
 								.unwrap_or_else(UserPartialModel::deleted_user);
 
 							EmotePartialModel::from_db(e.clone(), Some(owner), &self.global.config.event_api.cdn_origin)
-						});
-
-						let active_emote = ActiveEmoteModel::from_db(emote_set_emote.clone(), emote);
-						let value = serde_json::to_value(active_emote).map_err(|e| {
-							tracing::error!(error = %e, "failed to serialize emote");
-							ConnectionError::ClosedByServer(CloseCode::ServerError)
 						})?;
 
-						Ok(ChangeField {
+						let active_emote = ActiveEmoteModel::from_db(emote_set_emote.clone(), Some(emote));
+						let value = serde_json::to_value(active_emote)
+							.map_err(|e| {
+								tracing::error!(error = %e, "failed to serialize emote");
+							})
+							.ok()?;
+
+						Some(ChangeField {
 							key: "emotes".to_string(),
 							index: Some(i),
 							ty: ChangeFieldType::Object,
@@ -730,7 +781,7 @@ impl Connection {
 							..Default::default()
 						})
 					})
-					.collect::<Result<Vec<_>, ConnectionError>>()?;
+					.collect::<Vec<_>>();
 
 				dispatches.push(payload::Dispatch {
 					ty: EventType::UpdateEmoteSet,
@@ -748,7 +799,18 @@ impl Connection {
 				.put(emote_set.emote_set.id, emote_set.emote_set.updated_at);
 		}
 
-		let user_state = self.presence_lru.get_or_insert_mut_ref(&payload.user.id, Default::default);
+		let user_state = self.presence_lru.get_or_insert_mut_ref(&payload.user.id, || {
+			dispatches.push(payload::Dispatch {
+				ty: EventType::ResetEntitlement,
+				body: ChangeMap {
+					id: payload.user.id.cast(),
+					kind: ObjectKind::User,
+					..Default::default()
+				},
+			});
+
+			Default::default()
+		});
 
 		if user_state.active_badge != payload.active_badge.as_ref().map(|b| b.id) {
 			if let Some(active_badge) = user_state.active_badge {
@@ -926,7 +988,11 @@ impl Connection {
 
 				let msg = match msg {
 					ws::Message::Close(frame) => {
-						tracing::debug!("received close message");
+						tracing::debug!("received close message: {:?}", frame);
+						// This is a weird issue with the tungstenite library.
+						// we need to do a single read after this point to send the reply close frame back to the client.
+						// if we don't, the client will not receive the close frame and will not know the connection is closed.
+						self.socket.recv().await.ok();
 						return Err(ConnectionError::ClientClosed(frame.map(|f| f.code)));
 					}
 					ws::Message::Ping(payload) => {

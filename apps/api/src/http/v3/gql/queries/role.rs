@@ -77,6 +77,7 @@ impl Role {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl RolesQuery {
+	#[tracing::instrument(skip_all, name = "RolesQuery::roles")]
 	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -101,6 +102,7 @@ impl RolesQuery {
 		Ok(roles.into_iter().map(Role::from_db).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "RolesQuery::role")]
 	async fn role<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Role>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()

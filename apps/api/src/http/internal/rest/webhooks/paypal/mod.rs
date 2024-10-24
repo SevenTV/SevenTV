@@ -89,6 +89,7 @@ impl PaypalMutexKey {
 	fn from_paypal(resource: &types::Resource) -> Self {
 		match resource {
 			types::Resource::Sale(sale) => Self::Sale(sale.id.clone()),
+			types::Resource::Refund(refund) => Self::Sale(refund.sale_id.clone()),
 			types::Resource::Dispute(dispute) => Self::Dispute(dispute.dispute_id.clone()),
 			types::Resource::Subscription(subscription) => Self::Subscription(subscription.id.clone()),
 		}
@@ -110,6 +111,7 @@ impl std::fmt::Display for PaypalMutexKey {
 /// https://developer.paypal.com/api/rest/webhooks/rest
 /// Needlessly complicated because PayPal has a weird way of signing their
 /// webhooks
+#[tracing::instrument(skip_all, name = "webhook::paypal", fields(event_id, event_type))]
 pub async fn handle(
 	State(global): State<Arc<Global>>,
 	headers: HeaderMap,
@@ -164,6 +166,9 @@ pub async fn handle(
 		ApiError::bad_request(ApiErrorCode::PaypalError, "failed to deserialize payload")
 	})?;
 
+	tracing::Span::current().record("event_id", &event.id);
+	tracing::Span::current().record("event_type", event.event_type.as_str());
+
 	let stripe_client = global.stripe_client.safe(&event.id).await;
 
 	let global = &global;
@@ -177,31 +182,39 @@ pub async fn handle(
 					filter::filter! {
 						WebhookEvent {
 							#[query(rename = "_id")]
-							id: event.id.clone(),
+							id: &event.id,
 						}
 					},
 					update::update! {
 						#[query(set_on_insert)]
 						WebhookEvent {
-							id: event.id,
-							epxires_at: event.create_time + chrono::Duration::weeks(1),
+							#[query(rename = "_id")]
+							id: &event.id,
+							expires_at: event.create_time + chrono::Duration::weeks(1),
+						},
+						#[query(inc)]
+						WebhookEvent {
+							received_count: 1,
 						},
 					},
 					UpdateOptions::builder().upsert(true).build(),
 				)
 				.await?;
 
-			if res.matched_count > 0 {
+			if res.upserted_id.is_none() {
 				// already processed
+				tracing::info!("paypal event already processed");
 				return Ok(None);
 			}
+
+			tracing::info!("processing paypal event");
 
 			match (event.event_type, event.resource) {
 				(types::EventType::PaymentSaleCompleted, types::Resource::Sale(sale)) => {
 					return sale::completed(global, stripe_client, tx, sale).await;
 				}
-				(types::EventType::PaymentSaleReversed, types::Resource::Sale(sale))
-				| (types::EventType::PaymentSaleRefunded, types::Resource::Sale(sale)) => sale::refunded(global, tx, sale).await?,
+				(types::EventType::PaymentSaleReversed, types::Resource::Refund(refund))
+				| (types::EventType::PaymentSaleRefunded, types::Resource::Refund(refund)) => sale::refunded(global, tx, refund).await?,
 				(types::EventType::CustomerDisputeCreated, types::Resource::Dispute(dispute))
 				| (types::EventType::CustomerDisputeUpdated, types::Resource::Dispute(dispute))
 				| (types::EventType::CustomerDisputeResolved, types::Resource::Dispute(dispute)) => {
@@ -212,6 +225,7 @@ pub async fn handle(
 					return subscription::cancelled(global, tx, *subscription).await;
 				}
 				_ => {
+					tracing::warn!(event_type = ?event.event_type, "unsupported event type");
 					return Err(TransactionError::Custom(ApiError::bad_request(
 						ApiErrorCode::BadRequest,
 						"invalid event type",

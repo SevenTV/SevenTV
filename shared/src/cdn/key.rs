@@ -1,10 +1,11 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use shared::database::badge::BadgeId;
-use shared::database::emote::EmoteId;
-use shared::database::paint::{PaintId, PaintLayerId};
-use shared::database::user::UserId;
+use crate::database::badge::BadgeId;
+use crate::database::emote::EmoteId;
+use crate::database::paint::{PaintId, PaintLayerId};
+use crate::database::user::profile_picture::UserProfilePictureId;
+use crate::database::user::UserId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CacheKey {
@@ -18,7 +19,7 @@ pub enum CacheKey {
 	},
 	UserProfilePicture {
 		user_id: UserId,
-		avatar_id: String,
+		avatar_id: UserProfilePictureId,
 		file: ImageFile,
 	},
 	Paint {
@@ -26,10 +27,94 @@ pub enum CacheKey {
 		layer_id: PaintLayerId,
 		file: ImageFile,
 	},
-	Misc {
-		key: String,
-	},
-	Juicers,
+}
+
+impl serde::Serialize for CacheKey {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_str(&self.to_string())
+	}
+}
+
+impl<'de> serde::Deserialize<'de> for CacheKey {
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		let s = String::deserialize(deserializer)?;
+		s.parse().map_err(serde::de::Error::custom)
+	}
+}
+
+impl FromStr for CacheKey {
+	type Err = &'static str;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		let mut splits = s.split('/');
+		let prefix = splits.next().ok_or("invalid cache key")?;
+
+		let key = match prefix {
+			"badge" => Self::Badge {
+				badge_id: splits
+					.next()
+					.ok_or("invalid cache key")?
+					.parse()
+					.map_err(|_| "invalid cache key")?,
+				file: splits.next().ok_or("invalid cache key")?.parse()?,
+			},
+			"emote" => Self::Emote {
+				emote_id: splits
+					.next()
+					.ok_or("invalid cache key")?
+					.parse()
+					.map_err(|_| "invalid cache key")?,
+				file: splits.next().ok_or("invalid cache key")?.parse()?,
+			},
+			"user" => {
+				let user_id = splits
+					.next()
+					.ok_or("invalid cache key")?
+					.parse()
+					.map_err(|_| "invalid cache key")?;
+				match splits.next().ok_or("invalid cache key")? {
+					"profile-picture" => Self::UserProfilePicture {
+						user_id,
+						avatar_id: splits
+							.next()
+							.ok_or("invalid cache key")?
+							.parse()
+							.map_err(|_| "invalid cache key")?,
+						file: splits.next().ok_or("invalid cache key")?.parse()?,
+					},
+					_ => return Err("invalid cache key"),
+				}
+			}
+			"paint" => {
+				let paint_id = splits
+					.next()
+					.ok_or("invalid cache key")?
+					.parse()
+					.map_err(|_| "invalid cache key")?;
+				match splits.next().ok_or("invalid cache key")? {
+					"layer" => Self::Paint {
+						paint_id,
+						layer_id: splits
+							.next()
+							.ok_or("invalid cache key")?
+							.parse()
+							.map_err(|_| "invalid cache key")?,
+						file: splits.next().ok_or("invalid cache key")?.parse()?,
+					},
+					_ => return Err("invalid cache key"),
+				}
+			}
+			_ => return Err("invalid cache key"),
+		};
+
+		Ok(key)
+	}
 }
 
 impl Display for CacheKey {
@@ -49,8 +134,6 @@ impl Display for CacheKey {
 			} => {
 				write!(f, "user/{user_id}/profile-picture/{avatar_id}/{file}")
 			}
-			Self::Misc { key } => write!(f, "misc/{key}"),
-			Self::Juicers => write!(f, "JUICERS.png"),
 		}
 	}
 }

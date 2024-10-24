@@ -43,6 +43,7 @@ pub enum CloseCode {
 	NotSubscribed = 4010,
 	InsufficientPrivilege = 4011,
 	Reconnect = 4012,
+	NormalClosure = 4013,
 }
 
 impl CloseCode {
@@ -61,6 +62,7 @@ impl CloseCode {
 			4010 => Some(Self::NotSubscribed),
 			4011 => Some(Self::InsufficientPrivilege),
 			4012 => Some(Self::Reconnect),
+			4013 => Some(Self::NormalClosure),
 			_ => None,
 		}
 	}
@@ -84,6 +86,7 @@ impl CloseCode {
 			Self::NotSubscribed => "NOT_SUBSCRIBED",
 			Self::InsufficientPrivilege => "INSUFFICIENT_PRIVILEGE",
 			Self::Reconnect => "RECONNECT",
+			Self::NormalClosure => "NORMAL_CLOSURE",
 		}
 	}
 
@@ -102,12 +105,25 @@ impl CloseCode {
 			Self::NotSubscribed => "Not Subscribed",
 			Self::InsufficientPrivilege => "Insufficient Privilege",
 			Self::Reconnect => "Reconnect",
+			Self::NormalClosure => "Normal Closure",
 		}
 	}
 
-	// pub const fn into_websocket(self) -> WsCloseCode {
-	// 	WsCloseCode::Library(self.as_u16())
-	// }
+	pub const fn into_websocket(self) -> u16 {
+		match self {
+			CloseCode::AlreadyIdentified
+			| CloseCode::AlreadySubscribed
+			| CloseCode::AuthFailure
+			| CloseCode::InsufficientPrivilege
+			| CloseCode::InvalidPayload
+			| CloseCode::NotSubscribed
+			| CloseCode::RateLimit
+			| CloseCode::UnknownOperation => 1008,
+			CloseCode::Maintenance | CloseCode::Reconnect | CloseCode::Restart => 1001,
+			CloseCode::NormalClosure => 1000,
+			CloseCode::Timeout | CloseCode::ServerError => 1003,
+		}
+	}
 }
 
 impl std::fmt::Display for CloseCode {
@@ -216,6 +232,7 @@ pub enum EventType {
 	CreateEntitlement,
 	UpdateEntitlement,
 	DeleteEntitlement,
+	ResetEntitlement,
 
 	AnyCosmetic,
 	CreateCosmetic,
@@ -248,6 +265,7 @@ impl EventType {
 			Self::CreateEntitlement => "entitlement.create",
 			Self::UpdateEntitlement => "entitlement.update",
 			Self::DeleteEntitlement => "entitlement.delete",
+			Self::ResetEntitlement => "entitlement.reset",
 			Self::AnyCosmetic => "cosmetic.*",
 			Self::CreateCosmetic => "cosmetic.create",
 			Self::UpdateCosmetic => "cosmetic.update",
@@ -287,6 +305,7 @@ impl std::str::FromStr for EventType {
 			"entitlement.create" => Ok(Self::CreateEntitlement),
 			"entitlement.update" => Ok(Self::UpdateEntitlement),
 			"entitlement.delete" => Ok(Self::DeleteEntitlement),
+			"entitlement.reset" => Ok(Self::ResetEntitlement),
 			"cosmetic.*" => Ok(Self::AnyCosmetic),
 			"cosmetic.create" => Ok(Self::CreateCosmetic),
 			"cosmetic.update" => Ok(Self::UpdateCosmetic),

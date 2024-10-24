@@ -19,7 +19,7 @@ impl<S> crate::typesense::types::TypesenseType for Id<S> {
 
 impl<S> fmt::Debug for Id<S> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_tuple(std::any::type_name::<Self>()).field(&self.0).finish()
+		f.debug_tuple(std::any::type_name::<Self>()).field(&self.to_string()).finish()
 	}
 }
 

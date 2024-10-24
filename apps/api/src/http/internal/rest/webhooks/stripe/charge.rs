@@ -4,6 +4,7 @@ use std::sync::Arc;
 use shared::database::product::invoice::{Invoice, InvoiceDisputeStatus};
 use shared::database::product::InvoiceId;
 use shared::database::queries::{filter, update};
+use tracing::Instrument;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -13,6 +14,7 @@ use crate::transactions::{TransactionError, TransactionResult, TransactionSessio
 /// Marks associated invoice as refunded.
 /// Creates a ticket to let staff know that the refund was made and decide what
 /// should happen next.
+#[tracing::instrument(skip_all, name = "stripe::charge::refunded")]
 pub async fn refunded(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
@@ -49,6 +51,7 @@ pub async fn refunded(
 ///
 /// Called for `charge.dispute.created`, `charge.dispute.updated`,
 /// `charge.dispute.closed`
+#[tracing::instrument(skip_all, name = "stripe::charge::dispute_updated")]
 pub async fn dispute_updated(
 	_global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,
@@ -60,6 +63,7 @@ pub async fn dispute_updated(
 		&dispute.charge.id(),
 		&[],
 	)
+	.instrument(tracing::info_span!("charge_retrieve"))
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to retrieve charge");

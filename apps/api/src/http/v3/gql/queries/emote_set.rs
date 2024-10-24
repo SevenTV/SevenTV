@@ -84,6 +84,7 @@ impl ActiveEmote {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl ActiveEmote {
+	#[tracing::instrument(skip_all, name = "ActiveEmote::data")]
 	async fn data<'ctx>(&self, ctx: &Context<'ctx>) -> Result<EmotePartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -92,6 +93,7 @@ impl ActiveEmote {
 		Ok(Emote::from_db(global, self.emote.clone()).into())
 	}
 
+	#[tracing::instrument(skip_all, name = "ActiveEmote::actor")]
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -112,6 +114,7 @@ impl ActiveEmote {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl EmoteSet {
+	#[tracing::instrument(skip_all, name = "EmoteSet::emotes")]
 	async fn emotes<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -149,6 +152,7 @@ impl EmoteSet {
 		Ok(emotes)
 	}
 
+	#[tracing::instrument(skip_all, name = "EmoteSet::emote_count")]
 	async fn emote_count<'ctx>(&self, ctx: &Context<'ctx>) -> Result<u32, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -166,6 +170,7 @@ impl EmoteSet {
 		Ok(active_emotes as u32)
 	}
 
+	#[tracing::instrument(skip_all, name = "EmoteSet::owner")]
 	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<UserPartial>, ApiError> {
 		let Some(id) = self.owner_id else {
 			return Ok(None);
@@ -200,6 +205,7 @@ pub enum EmoteSetName {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteSetsQuery {
+	#[tracing::instrument(skip_all, name = "EmoteSetsQuery::emote_set")]
 	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -216,6 +222,7 @@ impl EmoteSetsQuery {
 	}
 
 	#[graphql(name = "emoteSetsByID")]
+	#[tracing::instrument(skip_all, name = "EmoteSetsQuery::emote_sets_by_id")]
 	async fn emote_sets_by_id<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -237,6 +244,7 @@ impl EmoteSetsQuery {
 		Ok(emote_sets)
 	}
 
+	#[tracing::instrument(skip_all, name = "EmoteSetsQuery::named_emote_set")]
 	async fn named_emote_set<'ctx>(&self, ctx: &Context<'ctx>, name: EmoteSetName) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

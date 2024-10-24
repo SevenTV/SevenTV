@@ -7,7 +7,7 @@ members = [
     "apps/mongo-change-stream",
     "apps/mongo-typesense",
     "macros",
-    "shared", 
+    "shared",
 ]
 
 resolver = "2"

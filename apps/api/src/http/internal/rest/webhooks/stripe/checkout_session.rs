@@ -4,6 +4,7 @@ use std::sync::Arc;
 use shared::database::product::codes::RedeemCode;
 use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::{filter, update};
+use tracing::Instrument;
 
 use crate::global::Global;
 use crate::http::egvault::metadata::{CheckoutSessionMetadata, CustomerMetadata, StripeMetadata};
@@ -29,6 +30,7 @@ impl std::fmt::Display for StripeRequest {
 	}
 }
 
+#[tracing::instrument(skip_all, name = "stripe::checkout_session::completed")]
 pub async fn completed(
 	global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,
@@ -65,6 +67,7 @@ pub async fn completed(
 					TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "missing setup intent"))
 				})?
 				.id();
+
 			let setup_intent = stripe::SetupIntent::retrieve(
 				stripe_client
 					.client(super::StripeRequest::CheckoutSession(StripeRequest::RetrieveSetupIntent))
@@ -73,6 +76,7 @@ pub async fn completed(
 				&setup_intent,
 				&[],
 			)
+			.instrument(tracing::info_span!("setup_intent_retrieve"))
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to retrieve setup intent");
@@ -106,6 +110,7 @@ pub async fn completed(
 					..Default::default()
 				},
 			)
+			.instrument(tracing::info_span!("customer_update"))
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to update customer");
@@ -153,6 +158,7 @@ pub async fn completed(
 						..Default::default()
 					},
 				)
+				.instrument(tracing::info_span!("subscription_update"))
 				.await
 				.map_err(|e| {
 					tracing::error!(error = %e, "failed to update subscription");
@@ -163,7 +169,7 @@ pub async fn completed(
 				})?;
 			}
 		}
-		(stripe::CheckoutSessionMode::Payment, CheckoutSessionMetadata::Redeem { user_id, redeem_code_id }) => {
+		(_, CheckoutSessionMetadata::Redeem { user_id, redeem_code_id }) => {
 			// redeem code session
 			// the customer successfully redeemed the subscription linked to the redeem
 			// code, now we grant access to the entitlements linked to the redeem code
@@ -191,6 +197,7 @@ pub async fn completed(
 	Ok(None)
 }
 
+#[tracing::instrument(skip_all, name = "stripe::checkout_session::expired")]
 pub async fn expired(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

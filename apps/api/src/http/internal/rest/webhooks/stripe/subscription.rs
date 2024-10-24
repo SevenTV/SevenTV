@@ -29,11 +29,18 @@ fn subscription_products(items: stripe::List<stripe::SubscriptionItem>) -> Resul
 }
 
 /// Creates the subscription object in the database.
+#[tracing::instrument(skip_all, name = "stripe::subscription::created")]
 pub async fn created(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	subscription: stripe::Subscription,
+	event_id: stripe::EventId,
 ) -> TransactionResult<Option<SubscriptionId>, ApiError> {
+	if subscription.metadata.is_empty() {
+		tracing::warn!("subscription metadata is missing: {}", subscription.id);
+		return Ok(None);
+	}
+
 	let items = subscription_products(subscription.items).map_err(TransactionError::Custom)?;
 
 	let products = tx
@@ -53,6 +60,17 @@ pub async fn created(
 
 	if products.len() != 1 {
 		// only accept subs with one product
+		tracing::warn!("subscription has more than one product: {}", subscription.id);
+		tx.insert_one(
+			StripeError {
+				id: StripeErrorId::new(),
+				event_id,
+				error_kind: StripeErrorKind::SubscriptionMultipleProducts,
+			},
+			None,
+		)
+		.await?;
+
 		return Ok(None);
 	}
 
@@ -75,6 +93,7 @@ pub async fn created(
 }
 
 /// Sets the subscription current period end to `ended_at`.
+#[tracing::instrument(skip_all, name = "stripe::subscription::deleted")]
 pub async fn deleted(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
@@ -130,6 +149,7 @@ pub async fn deleted(
 /// Ends the current subscription period right away when the subscription
 /// products got removed from the subscription. Otherwise, updates the current
 /// subscription period to include all updated subscription products.
+#[tracing::instrument(skip_all, name = "stripe::subscription::updated")]
 pub async fn updated(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

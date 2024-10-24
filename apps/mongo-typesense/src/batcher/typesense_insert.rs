@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherNormalMode};
-use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::typesense::types::TypesenseCollection;
 use typesense_rs::apis::documents_api::{ImportDocumentsError, ImportDocumentsParams, IndexDocumentError};
 use typesense_rs::apis::Api;
@@ -64,8 +63,6 @@ impl<T: TypesenseCollection + serde::Serialize + 'static> BatchOperation for Typ
 		&self,
 		documents: Vec<Self::Item>,
 	) -> Result<<Self::Mode as BatchMode<Self>>::OperationOutput, Self::Error> {
-		tracing::Span::current().make_root();
-
 		let body = documents
 			.iter()
 			.map(|d| serde_json::to_string(&d))

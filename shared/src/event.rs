@@ -55,6 +55,201 @@ pub struct InternalEvent {
 	pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
+impl InternalEvent {
+	pub fn kind(&self) -> &'static str {
+		match &self.data {
+			InternalEventData::Emote { data, .. } => match data {
+				StoredEventEmoteData::Upload => "emote.upload",
+				StoredEventEmoteData::ChangeName { .. } => "emote.change_name",
+				StoredEventEmoteData::ChangeFlags { .. } => "emote.change_flags",
+				StoredEventEmoteData::ChangeOwner { .. } => "emote.change_owner",
+				StoredEventEmoteData::ChangeTags { .. } => "emote.change_tags",
+				StoredEventEmoteData::Process { .. } => "emote.process",
+				StoredEventEmoteData::Delete => "emote.delete",
+				StoredEventEmoteData::Merge { .. } => "emote.merge",
+			},
+			InternalEventData::EmoteSet { data, .. } => match data {
+				InternalEventEmoteSetData::Create => "emote_set.create",
+				InternalEventEmoteSetData::ChangeName { .. } => "emote_set.change_name",
+				InternalEventEmoteSetData::ChangeTags { .. } => "emote_set.change_tags",
+				InternalEventEmoteSetData::ChangeCapacity { .. } => "emote_set.change_capacity",
+				InternalEventEmoteSetData::AddEmote { .. } => "emote_set.add_emote",
+				InternalEventEmoteSetData::RemoveEmote { .. } => "emote_set.remove_emote",
+				InternalEventEmoteSetData::RenameEmote { .. } => "emote_set.rename_emote",
+				InternalEventEmoteSetData::Delete => "emote_set.delete",
+			},
+			InternalEventData::User { data, .. } => match data {
+				InternalEventUserData::Create => "user.create",
+				InternalEventUserData::ChangeActivePaint { .. } => "user.change_active_paint",
+				InternalEventUserData::ChangeActiveBadge { .. } => "user.change_active_badge",
+				InternalEventUserData::ChangeActiveEmoteSet { .. } => "user.change_active_emote_set",
+				InternalEventUserData::AddConnection { .. } => "user.add_connection",
+				InternalEventUserData::RemoveConnection { .. } => "user.remove_connection",
+				InternalEventUserData::Merge { .. } => "user.merge",
+				InternalEventUserData::Delete => "user.delete",
+				InternalEventUserData::AddEntitlement { .. } => "user.add_entitlement",
+				InternalEventUserData::RemoveEntitlement { .. } => "user.remove_entitlement",
+			},
+			InternalEventData::UserProfilePicture { data, .. } => match data {
+				StoredEventUserProfilePictureData::Create => "user_profile_picture.create",
+				StoredEventUserProfilePictureData::Process { .. } => "user_profile_picture.process",
+			},
+			InternalEventData::UserEditor { data, .. } => match data {
+				InternalEventUserEditorData::AddEditor { .. } => "user_editor.add_editor",
+				InternalEventUserEditorData::RemoveEditor { .. } => "user_editor.remove_editor",
+				InternalEventUserEditorData::EditPermissions { .. } => "user_editor.edit_permissions",
+			},
+			InternalEventData::UserBan { data, .. } => match data {
+				StoredEventUserBanData::Ban => "user_ban.ban",
+				StoredEventUserBanData::ChangeExpiresAt { .. } => "user_ban.change_expires_at",
+				StoredEventUserBanData::ChangeReason { .. } => "user_ban.change_reason",
+				StoredEventUserBanData::ChangeUserBanPermissions { .. } => "user_ban.change_user_ban_permissions",
+				StoredEventUserBanData::Unban => "user_ban.unban",
+			},
+			InternalEventData::UserSession { data, .. } => match data {
+				StoredEventUserSessionData::Create { .. } => "user_session.create",
+				StoredEventUserSessionData::Delete => "user_session.delete",
+			},
+			InternalEventData::Ticket { data, .. } => match data {
+				InternalEventTicketData::Create => "ticket.create",
+				InternalEventTicketData::AddMember { .. } => "ticket.add_member",
+				InternalEventTicketData::RemoveMember { .. } => "ticket.remove_member",
+				InternalEventTicketData::ChangeOpen { .. } => "ticket.change_open",
+				InternalEventTicketData::ChangePriority { .. } => "ticket.change_priority",
+			},
+			InternalEventData::TicketMessage { data, .. } => match data {
+				StoredEventTicketMessageData::Create => "ticket_message.create",
+			},
+			InternalEventData::EmoteModerationRequest { data, .. } => match data {
+				StoredEventEmoteModerationRequestData::Create => "emote_moderation_request.create",
+				StoredEventEmoteModerationRequestData::ChangeStatus { .. } => "emote_moderation_request.change_status",
+			},
+			InternalEventData::Paint { data, .. } => match data {
+				StoredEventPaintData::Create => "paint.create",
+				StoredEventPaintData::ChangeData { .. } => "paint.change_data",
+				StoredEventPaintData::ChangeName { .. } => "paint.change_name",
+				StoredEventPaintData::Process { .. } => "paint.process",
+			},
+			InternalEventData::Badge { data, .. } => match data {
+				StoredEventBadgeData::Create => "badge.create",
+				StoredEventBadgeData::Process { .. } => "badge.process",
+			},
+			InternalEventData::Role { data, .. } => match data {
+				StoredEventRoleData::Create => "role.create",
+				StoredEventRoleData::AddEntitlement { .. } => "role.add_entitlement",
+				StoredEventRoleData::RemoveEntitlement { .. } => "role.remove_entitlement",
+				StoredEventRoleData::ChangeName { .. } => "role.change_name",
+				StoredEventRoleData::ChangePermissions { .. } => "role.change_permissions",
+				StoredEventRoleData::Delete => "role.delete",
+				StoredEventRoleData::ChangeColor { .. } => "role.change_color",
+				StoredEventRoleData::ChangeRank { .. } => "role.change_rank",
+			},
+			InternalEventData::UserPresence(_) => "user_presence.create",
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventEmoteKind {
+	ChangeName,
+	ChangeFlags,
+	ChangeOwner,
+	ChangeTags,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventEmoteSetKind {
+	Create,
+	ChangeName,
+	ChangeTags,
+	ChangeCapacity,
+	AddEmote,
+	RemoveEmote,
+	RenameEmote,
+	Delete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventUserKind {
+	Create,
+	ChangeActivePaint,
+	ChangeActiveBadge,
+	ChangeActiveEmoteSet,
+	AddConnection,
+	RemoveConnection,
+	Merge,
+	Delete,
+	AddEntitlement,
+	RemoveEntitlement,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventUserProfilePictureKind {
+	Process,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventUserEditorKind {
+	AddEditor,
+	RemoveEditor,
+	EditPermissions,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventUserBanKind {
+	Ban,
+	Delete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventUserSessionKind {
+	Create,
+	Delete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventTicketKind {
+	Create,
+	AddMember,
+	RemoveMember,
+	ChangeOpen,
+	ChangePriority,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventTicketMessageKind {
+	Create,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventEmoteModerationRequestKind {
+	Create,
+	Delete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventPaintKind {
+	Create,
+	Delete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventBadgeKind {
+	Create,
+	Delete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventRoleKind {
+	Create,
+	Delete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InternalEventUserPresenceKind {
+	Update,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 #[repr(u8)]
 pub enum EventUserPresencePlatform {
@@ -373,7 +568,10 @@ pub enum InternalEventUserData {
 	RemoveConnection {
 		connection: UserConnection,
 	},
-	Merge,
+	Merge {
+		source_id: UserId,
+		connections: Vec<UserConnection>,
+	},
 	Delete,
 	AddEntitlement {
 		target: EntitlementEdgeKind,
@@ -405,7 +603,7 @@ impl From<InternalEventUserData> for StoredEventUserData {
 			InternalEventUserData::RemoveConnection { connection } => StoredEventUserData::RemoveConnection {
 				platform: connection.platform,
 			},
-			InternalEventUserData::Merge => StoredEventUserData::Merge,
+			InternalEventUserData::Merge { connections, source_id } => StoredEventUserData::Merge { connections, source_id },
 			InternalEventUserData::Delete => StoredEventUserData::Delete,
 			InternalEventUserData::AddEntitlement { target } => StoredEventUserData::AddEntitlement { target },
 			InternalEventUserData::RemoveEntitlement { target } => StoredEventUserData::RemoveEntitlement { target },

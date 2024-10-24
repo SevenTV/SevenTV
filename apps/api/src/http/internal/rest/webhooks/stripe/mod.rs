@@ -112,6 +112,7 @@ impl std::fmt::Display for StripeRequest {
 	}
 }
 
+#[tracing::instrument(skip_all, fields(event_id, event_type), name = "webhook:stripe")]
 pub async fn handle(
 	State(global): State<Arc<Global>>,
 	Extension(session): Extension<Session>,
@@ -127,6 +128,9 @@ pub async fn handle(
 		tracing::error!(error = %e, "failed to parse webhook");
 		ApiError::bad_request(ApiErrorCode::StripeError, "failed to parse webhook")
 	})?;
+
+	tracing::Span::current().record("event_id", event.id.to_string());
+	tracing::Span::current().record("event_type", event.type_.to_string());
 
 	if !verify_stripe_ip(&global, &session.ip()).await {
 		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid ip"));
@@ -151,19 +155,27 @@ pub async fn handle(
 					update::update! {
 						#[query(set_on_insert)]
 						WebhookEvent {
+							#[query(rename = "_id")]
 							id: event.id.to_string(),
-							epxires_at: chrono::DateTime::from_timestamp(event.created, 0)
+							expires_at: chrono::DateTime::from_timestamp(event.created, 0)
 								.ok_or_else(|| TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "webhook event created_at is missing")))? + chrono::Duration::weeks(1),
+						},
+						#[query(inc)]
+						WebhookEvent {
+							received_count: 1,
 						},
 					},
 					UpdateOptions::builder().upsert(true).build(),
 				)
 				.await?;
 
-			if res.matched_count > 0 {
+			if res.upserted_id.is_none() {
 				// already processed
+				tracing::info!("stripe event already processed");
 				return Ok(None);
 			}
+
+			tracing::info!("processing stripe event");
 
 			let prev_attributes = event.data.previous_attributes;
 
@@ -202,7 +214,7 @@ pub async fn handle(
 					invoice::payment_failed(&global, tx, iv).await?;
 				}
 				(stripe::EventType::CustomerSubscriptionCreated, stripe::EventObject::Subscription(sub)) => {
-					return subscription::created(&global, tx, sub).await;
+					return subscription::created(&global, tx, sub, event.id).await;
 				}
 				(stripe::EventType::CustomerSubscriptionUpdated, stripe::EventObject::Subscription(sub)) => {
 					return subscription::updated(

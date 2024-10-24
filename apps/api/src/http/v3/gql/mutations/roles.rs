@@ -26,6 +26,7 @@ pub struct RolesMutation;
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl RolesMutation {
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
+	#[tracing::instrument(skip_all, name = "RolesMutation::create_role")]
 	async fn create_role<'ctx>(&self, ctx: &Context<'ctx>, data: CreateRoleInput) -> Result<Role, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -115,6 +116,7 @@ impl RolesMutation {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
+	#[tracing::instrument(skip_all, name = "RolesMutation::edit_role")]
 	async fn edit_role<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -300,6 +302,7 @@ impl RolesMutation {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(RolePermission::Manage)")]
+	#[tracing::instrument(skip_all, name = "RolesMutation::delete_role")]
 	async fn delete_role<'ctx>(&self, ctx: &Context<'ctx>, role_id: GqlObjectId) -> Result<String, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

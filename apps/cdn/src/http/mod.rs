@@ -2,7 +2,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use std::time::Instant;
 
-use ::http::HeaderValue;
+use ::http::{HeaderName, HeaderValue};
 use anyhow::Context;
 use quinn::crypto::rustls::QuicServerConfig;
 use scuffle_foundations::http::server::axum::body::HttpBody;
@@ -40,13 +40,21 @@ impl MakeRequestId for TraceRequestId {
 
 fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 	Router::new()
-		.nest("/", cdn::routes())
+		.nest("/", cdn::routes(global))
 		.with_state(Arc::clone(global))
 		.layer(
 			ServiceBuilder::new()
 				.layer(SetResponseHeaderLayer::overriding(
 					::http::header::SERVER,
 					server_name.parse::<HeaderValue>().unwrap(),
+				))
+				.layer(tower_http::set_header::SetResponseHeaderLayer::overriding(
+					HeaderName::from_static("x-7tv-cdn-node"),
+					HeaderValue::from_str(&global.config.pod.node_name).unwrap(),
+				))
+				.layer(tower_http::set_header::SetResponseHeaderLayer::overriding(
+					HeaderName::from_static("x-7tv-cdn-pod"),
+					HeaderValue::from_str(&global.config.pod.name).unwrap(),
 				))
 				.option_layer(if global.config.cdn.http3 && global.config.cdn.tls.is_some() {
 					Some(SetResponseHeaderLayer::overriding(

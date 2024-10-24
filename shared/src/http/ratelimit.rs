@@ -78,6 +78,7 @@ impl Limit {
 }
 
 pub struct RateLimiter {
+	enabled: bool,
 	ip_buckets: spin::Mutex<HashMap<LimitType, u64>>,
 	limited_subnets: Vec<config::RateLimitRangeBucket>,
 	ipv4_buckets: Vec<config::RateLimitPrefixBucket>,
@@ -100,6 +101,7 @@ impl Drop for RateLimitDropGuard {
 impl RateLimiter {
 	pub fn new(config: &config::RateLimit) -> Arc<Self> {
 		Arc::new(Self {
+			enabled: config.enabled,
 			ip_buckets: spin::Mutex::new(HashMap::new()),
 			limited_subnets: config.range_buckets.clone(),
 			ipv4_buckets: config.ipv4_buckets.clone(),
@@ -175,7 +177,7 @@ impl RateLimiter {
 		let ip = ip.to_canonical();
 
 		let limits = self.get_limits(ip);
-		if limits.is_empty() {
+		if limits.is_empty() || !self.enabled {
 			return Some(RateLimitDropGuard { ip, limiter: None });
 		}
 

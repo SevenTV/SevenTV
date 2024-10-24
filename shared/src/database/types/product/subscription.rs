@@ -103,7 +103,7 @@ impl From<stripe::SubscriptionId> for ProviderSubscriptionId {
 /// Current or past periods of a subscription (not future)
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "subscription_periods")]
-#[mongo(index(fields(user_id = 1, start = 1, end = 1)))]
+#[mongo(index(fields("subscription_id.user_id" = 1, start = 1, end = 1)))]
 #[mongo(index(fields(subscription_id = 1)))]
 #[mongo(index(fields(product_ids = 1)))]
 #[mongo(index(fields(provider_id = 1)))]

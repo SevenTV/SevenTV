@@ -56,7 +56,7 @@ impl<T: MongoCollection + DeserializeOwned + Clone + 'static> LoaderById<T> {
 				name: format!("LoaderById<{}>", T::COLLECTION_NAME),
 				concurrency: 500,
 				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(20),
+				sleep_duration: std::time::Duration::from_millis(5),
 			},
 		)
 	}
@@ -78,8 +78,8 @@ impl<T: MongoCollection + DeserializeOwned + Clone + 'static> Loader for LoaderB
 		self.config.clone()
 	}
 
-	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
-	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
+	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
+	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		// We use an untyped find here because its not possible to do compile time macro
 		// checks if the type is generic. This is a limitation of rust macros. However
 		// this is entirely safe because every document is guaranteed to have an `_id`

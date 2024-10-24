@@ -1,21 +1,33 @@
 use std::collections::HashMap;
 
+use chrono::{DateTime, Utc};
 use shared::database::product::codes::RedeemCodeId;
 use shared::database::product::{ProductId, SubscriptionProductId};
 use shared::database::user::UserId;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(
-	tag = "KIND",
+	// tag = "KIND",
+	untagged,
 	rename_all = "SCREAMING_SNAKE_CASE",
 	rename_all_fields = "SCREAMING_SNAKE_CASE"
 )]
 pub enum InvoiceMetadata {
+	PaypalLegacy {
+		paypal_id: String,
+	},
 	Gift {
 		user_id: UserId,
 		customer_id: UserId,
 		#[serde(default, skip_serializing_if = "Option::is_none")]
 		subscription_product_id: Option<SubscriptionProductId>,
+		product_id: ProductId,
+	},
+	BoughtPeriod {
+		user_id: UserId,
+		start: DateTime<Utc>,
+		end: DateTime<Utc>,
+		subscription_product_id: SubscriptionProductId,
 		product_id: ProductId,
 	},
 }
@@ -45,6 +57,8 @@ pub enum CheckoutSessionMetadata {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct CustomerMetadata {
 	pub user_id: UserId,
+	#[serde(default, skip_serializing_if = "Option::is_none")]
+	pub paypal_id: Option<String>,
 }
 
 pub trait StripeMetadata: serde::Serialize + serde::de::DeserializeOwned {

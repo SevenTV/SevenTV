@@ -10,7 +10,7 @@ use super::role::permissions::Permissions;
 use super::role::RoleId;
 use super::ticket::{TicketId, TicketMessageId, TicketPriority};
 use super::user::ban::UserBanId;
-use super::user::connection::Platform;
+use super::user::connection::{Platform, UserConnection};
 use super::user::editor::{UserEditorId, UserEditorPermissions};
 use super::user::profile_picture::UserProfilePictureId;
 use super::user::session::UserSessionId;
@@ -23,6 +23,7 @@ pub type StoredEventId = Id<StoredEvent>;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "events")]
 #[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(actor_id = 1)))]
 #[mongo(search = "crate::typesense::types::event::Event")]
 #[serde(deny_unknown_fields)]
 pub struct StoredEvent {
@@ -194,7 +195,10 @@ pub enum StoredEventUserData {
 	RemoveEntitlement {
 		target: EntitlementEdgeKind,
 	},
-	Merge,
+	Merge {
+		source_id: UserId,
+		connections: Vec<UserConnection>,
+	},
 	Delete,
 }
 

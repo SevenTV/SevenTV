@@ -28,6 +28,7 @@ pub struct CosmeticsQueryResponse {
 
 #[Object(name = "CosmeticsRootQuery", rename_fields = "camelCase", rename_args = "snake_case")]
 impl CosmeticsQuery {
+	#[tracing::instrument(skip_all, name = "CosmeticsQuery::cosmetics")]
 	async fn cosmetics<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,

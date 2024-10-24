@@ -36,7 +36,10 @@ async fn event_api(
 
 	let users = global
 		.user_loader
-		.load_fast_user_many(&global, users.into_values())
+		.load_fast_user_many(
+			&global,
+			users.into_values().filter(|user| user.style.active_profile_picture.is_some()),
+		)
 		.await
 		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?;
 
@@ -50,7 +53,12 @@ async fn event_api(
 					data: CosmeticAvatarModel {
 						id: pfp.id,
 						aas: "".to_owned(),
-						host: ImageHost::from_image_set(&pfp.image_set, &global.config.api.cdn_origin),
+						host: ImageHost::from_image_set_with_options(
+							&pfp.image_set,
+							&global.config.api.cdn_origin,
+							false,
+							false,
+						),
 						user: UserPartialModel::from_db(user, None, None, &global.config.api.cdn_origin),
 					},
 				})

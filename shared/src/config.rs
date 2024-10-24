@@ -68,7 +68,11 @@ pub struct TlsConfig {
 #[serde(default)]
 pub struct PodConfig {
 	/// Pod name
+	#[settings(default = std::env::var("POD_NAME").unwrap_or_else(|_| "".into()))]
 	pub name: String,
+	/// Node name
+	#[settings(default = std::env::var("NODE_NAME").unwrap_or_else(|_| "".into()))]
+	pub node_name: String,
 }
 
 #[auto_settings]
@@ -192,6 +196,8 @@ pub struct ClickhouseConfig {
 #[auto_settings]
 #[serde(default)]
 pub struct RateLimit {
+	#[settings(default = false)]
+	pub enabled: bool,
 	#[settings(default = default_ipv6_buckets())]
 	pub ipv6_buckets: Vec<RateLimitPrefixBucket>,
 	#[settings(default = default_ipv4_buckets())]

@@ -36,6 +36,7 @@ pub struct EmoteSetsMutation;
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteSetsMutation {
+	#[tracing::instrument(skip_all, name = "EmoteSetsMutation::emote_set")]
 	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<EmoteSetOps>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -56,6 +57,7 @@ impl EmoteSetsMutation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetCreate, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetsMutation::create_emote_set")]
 	async fn create_emote_set<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -143,7 +145,7 @@ impl EmoteSetsMutation {
 				)
 				.await?;
 
-			if emote_set_count >= target.computed.permissions.emote_set_limit.unwrap_or(0).max(0) as u64 {
+			if emote_set_count >= (target.computed.permissions.emote_set_limit.unwrap_or(0).max(0) as u64) {
 				return Err(TransactionError::Custom(ApiError::bad_request(
 					ApiErrorCode::LackingPrivileges,
 					"maximum emote set limit reached",
@@ -212,6 +214,7 @@ pub struct EmoteSetOps {
 }
 
 impl EmoteSetOps {
+	#[tracing::instrument(skip_all, name = "EmoteSetOps::check_perms")]
 	async fn check_perms<'a>(
 		&self,
 		global: &Arc<Global>,
@@ -330,6 +333,7 @@ impl EmoteSetOps {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOps::emotes")]
 	async fn emotes<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -392,6 +396,7 @@ impl EmoteSetOps {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOps::update")]
 	async fn update<'ctx>(&self, ctx: &Context<'ctx>, data: UpdateEmoteSetInput) -> Result<EmoteSet, ApiError> {
 		// TODO: A bug in either the compiler or macro expansion, which causes the
 		// linter to think we do not need a mutable `data` variable here.
@@ -528,6 +533,7 @@ impl EmoteSetOps {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOps::delete")]
 	async fn delete<'ctx>(&self, ctx: &Context<'ctx>) -> Result<bool, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

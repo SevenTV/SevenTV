@@ -36,6 +36,11 @@ pub struct Api {
 	#[settings(default = "https://7tv.io".parse().unwrap())]
 	pub api_origin: url::Url,
 
+	/// All orgins which are allowed to send CORS requests with credentials
+	/// included
+	#[settings(default = vec!["https://twitch.tv".parse().unwrap(), "https://kick.com".parse().unwrap()])]
+	pub cors_allowed_credential_origins: Vec<url::Url>,
+
 	/// Event API nats prefix
 	#[settings(default = "api.events".into())]
 	pub nats_event_subject: String,
@@ -169,6 +174,29 @@ pub struct Config {
 
 	/// GeoIP config
 	pub geoip: Option<GeoIpConfig>,
+
+	/// CDN purge topic
+	pub cdn: CdnConfig,
+}
+
+#[auto_settings]
+#[serde(default)]
+pub struct CdnConfig {
+	/// CDN purge stream name
+	#[settings(default = "CdnPurge".into())]
+	pub purge_stream_name: String,
+
+	/// CDN purge stream subject
+	#[settings(default = "cdn.purge".into())]
+	pub purge_stream_subject: String,
+
+	/// Cloudflare CDN zone id
+	#[settings(default = "".into())]
+	pub cloudflare_cdn_zone_id: String,
+
+	/// Cloudflare API token
+	#[settings(default = "".into())]
+	pub cloudflare_api_token: String,
 }
 
 impl Bootstrap for Config {
@@ -177,7 +205,12 @@ impl Bootstrap for Config {
 	fn telemetry_config(&self) -> Option<TelemetrySettings> {
 		let mut telementry = self.telemetry.clone();
 
-		telementry.opentelemetry.sampler = OpentelemetrySettingsSampler::RatioSimple(0.01);
+		telementry.opentelemetry.sampler = OpentelemetrySettingsSampler::RatioComplex {
+			error_rate: Some(1.0),
+			head_rate: 0.1,
+			sample_on_error: true,
+			tail_rate: None,
+		};
 
 		Some(telementry)
 	}

@@ -104,6 +104,7 @@ pub struct ModRequestMessageList {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl MessagesQuery {
+	#[tracing::instrument(skip_all, name = "MessagesQuery::announcement")]
 	async fn announcement<'ctx>(&self, ctx: &Context<'ctx>) -> Result<String, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -127,6 +128,7 @@ impl MessagesQuery {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(EmoteModerationRequestPermission::Manage).and(RateLimitGuard::search(1))")]
+	#[tracing::instrument(skip_all, name = "MessagesQuery::mod_requests")]
 	async fn mod_requests<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,

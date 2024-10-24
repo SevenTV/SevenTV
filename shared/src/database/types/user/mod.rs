@@ -41,6 +41,10 @@ pub struct User {
 	pub email: Option<String>,
 	pub email_verified: bool,
 	pub has_bans: bool,
+	/// The user that this user was merged into another user
+	/// Eventually we will have a cron job that will go through and clean up
+	/// these users
+	pub merged_into_id: Option<UserId>,
 	pub settings: UserSettings,
 	pub two_fa: Option<UserTwoFa>,
 	pub style: UserStyle,

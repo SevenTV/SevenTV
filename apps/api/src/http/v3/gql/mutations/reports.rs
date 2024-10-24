@@ -29,6 +29,7 @@ pub struct ReportsMutation;
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl ReportsMutation {
 	#[graphql(guard = "PermissionGuard::one(TicketPermission::Create)")]
+	#[tracing::instrument(skip_all, name = "ReportsMutation::create_report")]
 	async fn create_report<'ctx>(&self, ctx: &Context<'ctx>, data: CreateReportInput) -> Result<Report, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -120,6 +121,7 @@ impl ReportsMutation {
 	}
 
 	#[graphql(guard = "PermissionGuard::all([TicketPermission::ManageAbuse, TicketPermission::ManageGeneric])")]
+	#[tracing::instrument(skip_all, name = "ReportsMutation::edit_report")]
 	async fn edit_report<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,

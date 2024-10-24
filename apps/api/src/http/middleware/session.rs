@@ -4,17 +4,21 @@ use axum::extract::Request;
 use axum::response::{IntoResponse, Response};
 use futures::future::BoxFuture;
 use hyper::header;
+use shared::database::queries::filter;
 use shared::database::role::permissions::{
 	FlagPermission, Permission, Permissions, PermissionsExt, RateLimitResource, UserPermission,
 };
+use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::session::{UserSession, UserSessionId};
 use shared::database::user::{FullUser, UserComputed, UserId};
+use shared::event::{InternalEvent, InternalEventData};
 
 use super::cookies::Cookies;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::{RateLimitRequest, RateLimitResponse};
+use crate::transactions::{transaction, TransactionResult, TransactionSession};
 
 pub const AUTH_COOKIE: &str = "seventv-auth";
 
@@ -69,6 +73,43 @@ impl Session {
 			AuthState::Unauthenticated { default } => &default.permissions,
 		}
 	}
+
+	pub async fn logout(&self, global: &Arc<Global>) -> TransactionResult<(), ApiError> {
+		transaction(global, |mut tx| async move { self.logout_with_tx(&mut tx).await }).await
+	}
+
+	pub async fn logout_with_tx(&self, tx: &mut TransactionSession<'_, ApiError>) -> TransactionResult<(), ApiError> {
+		let Some(user_session) = self.user_session() else {
+			return Ok(());
+		};
+
+		// is a new session
+		let user_session = tx
+			.find_one_and_delete(
+				filter::filter! {
+					UserSession {
+						#[query(rename = "_id")]
+						id: user_session.id,
+					}
+				},
+				None,
+			)
+			.await?;
+
+		if let Some(user_session) = user_session {
+			tx.register_event(InternalEvent {
+				actor: Some(self.user().cloned().unwrap_or_default()),
+				session_id: Some(user_session.id),
+				data: InternalEventData::UserSession {
+					after: user_session,
+					data: StoredEventUserSessionData::Delete,
+				},
+				timestamp: chrono::Utc::now(),
+			})?;
+		}
+
+		Ok(())
+	}
 }
 
 impl PermissionsExt for Session {
@@ -113,61 +154,86 @@ pub struct SessionMiddlewareService<S> {
 	global: Arc<Global>,
 }
 
+pub async fn parse_session(global: &Arc<Global>, ip: std::net::IpAddr, token: &str) -> Result<Option<Session>, ApiError> {
+	let token = token.trim_matches('\"');
+
+	let Some(jwt) = AuthJwtPayload::verify(global, token) else {
+		return Ok(None);
+	};
+
+	let Some(session) = global
+		.user_session_by_id_loader
+		.load(jwt.session_id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load session"))?
+	else {
+		return Ok(None);
+	};
+
+	if session.expires_at < chrono::Utc::now() {
+		return Ok(None);
+	}
+
+	global.user_session_updater_batcher.load(session.id).await.ok();
+
+	let Some(user) = global
+		.user_loader
+		.load(global, session.user_id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+	else {
+		return Ok(None);
+	};
+
+	Ok(Some(Session(
+		Arc::new(AuthState::Authenticated {
+			session,
+			user: Box::new(user),
+		}),
+		ip,
+	)))
+}
+
+/// If the token expires or is invalid and they are trying to login we should
+/// just silently ignore the auth failure and let the request continue as if
+/// they are not logged in. This is to prevent the client from being unable to
+/// login if the token is expired.
+fn request_is_v3_auth<B>(req: &Request<B>) -> bool {
+	(req.uri().path() == "/v3/auth" || req.uri().path().starts_with("/v3/auth/")) && req.method() == hyper::Method::GET
+}
+
 impl<S> SessionMiddlewareService<S> {
-	async fn modify_request<B>(&self, req: &mut Request<B>) -> Result<Option<RateLimitResponse>, ApiError> {
+	#[tracing::instrument(skip_all, name = "SessionMiddleware", fields(user_id, auth_failed))]
+	async fn modify_request<B>(&self, req: &mut Request<B>) -> Result<(Option<RateLimitResponse>, bool), ApiError> {
 		let cookies = req.extensions().get::<Cookies>().expect("cookies not found");
 		let ip = *req.extensions().get::<std::net::IpAddr>().expect("ip not found");
 		let cookie = cookies.get(AUTH_COOKIE);
+		let ignore_auth_failure = req.headers().get("x-ignore-auth-failure").is_some_and(|v| v == "true");
 
-		let session = if let Some(token) = cookie.as_ref().map(|c| c.value()).or_else(|| {
+		let mut session = None;
+		let mut auth_failed = false;
+
+		if let Some(token) = cookie.as_ref().map(|c| c.value()).or_else(|| {
 			req.headers()
 				.get(header::AUTHORIZATION)
 				.and_then(|v| v.to_str().ok())
 				.map(|s| s.trim_start_matches("Bearer "))
 		}) {
-			let token = token.trim_matches('\"');
-
-			let jwt = AuthJwtPayload::verify(&self.global, token).ok_or_else(|| {
+			session = parse_session(&self.global, ip, token).await?;
+			if session.is_none() {
 				cookies.remove(&self.global, AUTH_COOKIE);
-				ApiError::unauthorized(ApiErrorCode::BadRequest, "invalid token")
-			})?;
-
-			let session = self
-				.global
-				.user_session_by_id_loader
-				.load(jwt.session_id)
-				.await
-				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load session"))?
-				.ok_or_else(|| {
-					cookies.remove(&self.global, AUTH_COOKIE);
-					ApiError::unauthorized(ApiErrorCode::BadRequest, "session not found")
-				})?;
-
-			if session.expires_at < chrono::Utc::now() {
-				cookies.remove(&self.global, AUTH_COOKIE);
-				return Err(ApiError::unauthorized(ApiErrorCode::BadRequest, "session expired"));
+				auth_failed = true;
+				if !ignore_auth_failure && !request_is_v3_auth(req) {
+					return Err(ApiError::unauthorized(ApiErrorCode::LoginRequired, "invalid session"));
+				}
 			}
+		}
 
-			self.global.user_session_updater_batcher.load(session.id).await.ok();
+		tracing::Span::current().record("user_id", session.as_ref().and_then(|s| s.user_id()).map(|u| u.to_string()));
+		tracing::Span::current().record("auth_failed", auth_failed);
 
-			let user = self
-				.global
-				.user_loader
-				.load(&self.global, session.user_id)
-				.await
-				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
-				.ok_or_else(|| {
-					cookies.remove(&self.global, AUTH_COOKIE);
-					ApiError::unauthorized(ApiErrorCode::BadRequest, "user not found")
-				})?;
-
-			Session(
-				Arc::new(AuthState::Authenticated {
-					session,
-					user: Box::new(user),
-				}),
-				ip,
-			)
+		let session = if let Some(session) = session {
+			session
 		} else {
 			// Will load only the default permissions
 			let default = self
@@ -199,7 +265,7 @@ impl<S> SessionMiddlewareService<S> {
 
 		req.extensions_mut().insert(session);
 
-		Ok(ratelimit)
+		Ok((ratelimit, auth_failed))
 	}
 }
 
@@ -223,7 +289,7 @@ where
 		let mut this = self.clone();
 
 		Box::pin(async move {
-			let rate_limit_resp = match this.modify_request(&mut req).await {
+			let (rate_limit_resp, auth_failed) = match this.modify_request(&mut req).await {
 				Ok(rate_limit_resp) => rate_limit_resp,
 				Err(err) => return Ok(err.into_response()),
 			};
@@ -232,6 +298,10 @@ where
 
 			if let Some(rate_limit_resp) = rate_limit_resp {
 				resp.headers_mut().extend(rate_limit_resp.header_map());
+			}
+
+			if auth_failed {
+				resp.headers_mut().insert("x-auth-failure", "true".parse().unwrap());
 			}
 
 			Ok(resp)

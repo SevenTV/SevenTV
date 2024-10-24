@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
+use shared::cdn::PurgeRequest;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
@@ -21,7 +22,7 @@ pub async fn handle_success(
 	id: EmoteId,
 	event: event_callback::Success,
 	metadata: HashMap<String, String>,
-) -> TransactionResult<(), anyhow::Error> {
+) -> TransactionResult<PurgeRequest, anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
 
 	let bit_update = if image_set.outputs.iter().any(|i| i.frame_count > 1) {
@@ -40,6 +41,19 @@ pub async fn handle_success(
 		.input
 		.aspect_ratio()
 		.ok_or(TransactionError::Custom(anyhow::anyhow!("failed to get aspect ratio")))?;
+
+	let before = tx
+		.find_one(
+			filter::filter! {
+				Emote {
+					#[query(rename = "_id")]
+					id,
+				}
+			},
+			None,
+		)
+		.await?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("emote not found")))?;
 
 	let after = tx
 		.find_one_and_update(
@@ -68,49 +82,51 @@ pub async fn handle_success(
 		.await?
 		.ok_or(TransactionError::Custom(anyhow::anyhow!("emote not found")))?;
 
-	let country_code = metadata
-		.get("upload_ip")
-		.and_then(|ip| ip.parse().ok())
-		.and_then(|ip| global.geoip()?.lookup(ip))
-		.and_then(|c| c.iso_code);
+	if !after.flags.contains(EmoteFlags::PublicListed) {
+		let country_code = metadata
+			.get("upload_ip")
+			.and_then(|ip| ip.parse().ok())
+			.and_then(|ip| global.geoip()?.lookup(ip))
+			.and_then(|c| c.iso_code);
 
-	let actor = global
-		.user_loader
-		.load(global, after.owner_id)
-		.await
-		.ok()
-		.flatten()
-		.ok_or_else(|| TransactionError::Custom(anyhow::anyhow!("failed to load user")))?;
+		let actor = global
+			.user_loader
+			.load(global, after.owner_id)
+			.await
+			.ok()
+			.flatten()
+			.ok_or_else(|| TransactionError::Custom(anyhow::anyhow!("failed to load user")))?;
 
-	let mod_request = EmoteModerationRequest {
-		id: EmoteModerationRequestId::new(),
-		emote_id: id,
-		user_id: after.owner_id,
-		priority: actor
-			.computed
-			.permissions
-			.emote_moderation_request_priority
-			.unwrap_or_default(),
-		kind: EmoteModerationRequestKind::PublicListing,
-		status: EmoteModerationRequestStatus::Pending,
-		reason: Some("New upload".to_string()),
-		updated_at: chrono::Utc::now(),
-		search_updated_at: None,
-		assigned_to: vec![],
-		country_code: country_code.map(|c| c.to_string()),
-	};
+		let mod_request = EmoteModerationRequest {
+			id: EmoteModerationRequestId::new(),
+			emote_id: id,
+			user_id: after.owner_id,
+			priority: actor
+				.computed
+				.permissions
+				.emote_moderation_request_priority
+				.unwrap_or_default(),
+			kind: EmoteModerationRequestKind::PublicListing,
+			status: EmoteModerationRequestStatus::Pending,
+			reason: Some("New upload".to_string()),
+			updated_at: chrono::Utc::now(),
+			search_updated_at: None,
+			assigned_to: vec![],
+			country_code: country_code.map(|c| c.to_string()),
+		};
 
-	tx.insert_one::<EmoteModerationRequest>(&mod_request, None).await?;
+		tx.insert_one::<EmoteModerationRequest>(&mod_request, None).await?;
 
-	tx.register_event(InternalEvent {
-		actor: Some(actor.clone()),
-		session_id: None,
-		data: InternalEventData::EmoteModerationRequest {
-			after: mod_request,
-			data: StoredEventEmoteModerationRequestData::Create,
-		},
-		timestamp: chrono::Utc::now(),
-	})?;
+		tx.register_event(InternalEvent {
+			actor: Some(actor.clone()),
+			session_id: None,
+			data: InternalEventData::EmoteModerationRequest {
+				after: mod_request,
+				data: StoredEventEmoteModerationRequestData::Create,
+			},
+			timestamp: chrono::Utc::now(),
+		})?;
+	}
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -124,7 +140,9 @@ pub async fn handle_success(
 		timestamp: chrono::Utc::now(),
 	})?;
 
-	Ok(())
+	Ok(PurgeRequest {
+		files: before.image_set.outputs.iter().filter_map(|i| i.path.parse().ok()).collect(),
+	})
 }
 
 pub async fn handle_fail(
@@ -163,6 +181,10 @@ pub async fn handle_fail(
 		None,
 	)
 	.await?;
+
+	let error = event.error.clone().unwrap_or_default();
+
+	tracing::info!("emote {} failed: {:?}: {}", id, error.code(), error.message);
 
 	tx.register_event(InternalEvent {
 		actor: None,

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherNormalMode};
-use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::clickhouse::ClickhouseCollection;
 
 pub struct ClickhouseInsert<T: ClickhouseCollection + serde::Serialize + 'static> {
@@ -55,8 +54,6 @@ impl<T: ClickhouseCollection + serde::Serialize + 'static> BatchOperation for Cl
 		&self,
 		documents: Vec<Self::Item>,
 	) -> Result<<Self::Mode as BatchMode<Self>>::OperationOutput, Self::Error> {
-		tracing::Span::current().make_root();
-
 		let count = documents.len();
 
 		let mut insert = self.client.insert::<T>(T::COLLECTION_NAME).map_err(Arc::new)?;

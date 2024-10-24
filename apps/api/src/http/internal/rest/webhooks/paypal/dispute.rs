@@ -10,6 +10,7 @@ use crate::transactions::{TransactionResult, TransactionSession};
 
 /// Called for `CUSTOMER.DISPUTE.CREATED`, `CUSTOMER.DISPUTE.UPDATED`,
 /// `CUSTOMER.DISPUTE.RESOLVED`
+#[tracing::instrument(skip_all, name = "paypal::dispute::updated")]
 pub async fn updated(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

@@ -5,9 +5,13 @@ use chrono::Utc;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::{Emote as DbEmote, EmoteFlags, EmoteMerged};
-use shared::database::emote_moderation_request::{EmoteModerationRequest, EmoteModerationRequestStatus};
+use shared::database::emote_moderation_request::{
+	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
+};
 use shared::database::queries::{filter, update};
-use shared::database::role::permissions::{EmotePermission, PermissionsExt, RateLimitResource};
+use shared::database::role::permissions::{
+	EmoteModerationRequestPermission, EmotePermission, PermissionsExt, RateLimitResource,
+};
 use shared::database::stored_event::StoredEventEmoteData;
 use shared::database::user::editor::{EditorEmotePermission, UserEditorId, UserEditorState};
 use shared::event::{InternalEvent, InternalEventData};
@@ -28,6 +32,7 @@ pub struct EmotesMutation;
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmotesMutation {
+	#[tracing::instrument(skip_all, name = "EmotesMutation::emote")]
 	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<EmoteOps, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -55,6 +60,7 @@ pub struct EmoteOps {
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmoteOps {
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
+	#[tracing::instrument(skip_all, name = "EmoteOps::update")]
 	async fn update<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -141,10 +147,13 @@ impl EmoteOps {
 							EmoteModerationRequest {
 								#[query(serde)]
 								status: EmoteModerationRequestStatus::EmoteDeleted,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
 							}
 						},
 						None,
-					).await?;
+					)
+					.await?;
 
 					tx.register_event(InternalEvent {
 						actor: Some(authed_user.clone()),
@@ -231,6 +240,91 @@ impl EmoteOps {
 				};
 
 				let new_flags = (flags != self.emote.flags).then_some(flags);
+
+				if authed_user.has(EmoteModerationRequestPermission::Manage) {
+					// Resolve emote moderation request if user has permission to manage them
+
+					if !self.emote.flags.contains(EmoteFlags::PublicListed)
+						&& new_flags.is_some_and(|f| f.contains(EmoteFlags::PublicListed))
+					{
+						tx.find_one_and_update(
+							filter::filter! {
+								EmoteModerationRequest {
+									emote_id: self.id.id(),
+									#[query(serde)]
+									kind: EmoteModerationRequestKind::PublicListing,
+									#[query(serde)]
+									status: EmoteModerationRequestStatus::Pending,
+								}
+							},
+							update::update! {
+								#[query(set)]
+								EmoteModerationRequest {
+									#[query(serde)]
+									status: EmoteModerationRequestStatus::Approved,
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
+								}
+							},
+							None,
+						)
+						.await?;
+					}
+
+					if !self.emote.flags.contains(EmoteFlags::ApprovedPersonal)
+						&& new_flags.is_some_and(|f| f.contains(EmoteFlags::ApprovedPersonal))
+					{
+						tx.find_one_and_update(
+							filter::filter! {
+								EmoteModerationRequest {
+									emote_id: self.id.id(),
+									#[query(serde)]
+									kind: EmoteModerationRequestKind::PersonalUse,
+									#[query(serde)]
+									status: EmoteModerationRequestStatus::Pending,
+								}
+							},
+							update::update! {
+								#[query(set)]
+								EmoteModerationRequest {
+									#[query(serde)]
+									status: EmoteModerationRequestStatus::Approved,
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
+								}
+							},
+							None,
+						)
+						.await?;
+					}
+
+					if !self.emote.flags.contains(EmoteFlags::DeniedPersonal)
+						&& new_flags.is_some_and(|f| f.contains(EmoteFlags::DeniedPersonal))
+					{
+						tx.find_one_and_update(
+							filter::filter! {
+								EmoteModerationRequest {
+									emote_id: self.id.id(),
+									#[query(serde)]
+									kind: EmoteModerationRequestKind::PersonalUse,
+									#[query(serde)]
+									status: EmoteModerationRequestStatus::Pending,
+								}
+							},
+							update::update! {
+								#[query(set)]
+								EmoteModerationRequest {
+									#[query(serde)]
+									status: EmoteModerationRequestStatus::Denied,
+									updated_at: chrono::Utc::now(),
+									search_updated_at: &None,
+								}
+							},
+							None,
+						)
+						.await?;
+					}
+				}
 
 				let emote = tx
 					.find_one_and_update(
@@ -402,7 +496,8 @@ impl EmoteOps {
 						}
 					},
 					None,
-				).await?;
+				)
+				.await?;
 
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),

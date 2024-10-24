@@ -115,7 +115,7 @@ fn split_kinds(data: &StoredEventData) -> (EventId, ActionKind, Vec<EventId>) {
 				}
 				StoredEventUserData::AddConnection { .. } => ActionKind::UserAddConnection,
 				StoredEventUserData::RemoveConnection { .. } => ActionKind::UserRemoveConnection,
-				StoredEventUserData::Merge => ActionKind::UserMerge,
+				StoredEventUserData::Merge { .. } => ActionKind::UserMerge,
 				StoredEventUserData::Delete => ActionKind::UserDelete,
 				StoredEventUserData::AddEntitlement { target } => {
 					match target {

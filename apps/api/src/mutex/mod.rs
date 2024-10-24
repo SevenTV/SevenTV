@@ -1,5 +1,7 @@
 use anyhow::Context;
+use scuffle_foundations::telemetry::opentelemetry::{OpenTelemetrySpanExt, Status};
 use shared::database::Id;
+use tracing::Instrument;
 
 pub struct DistributedMutex {
 	redis: fred::clients::RedisPool,
@@ -55,10 +57,10 @@ impl DistributedMutex {
 		})
 	}
 
-	pub async fn acquire<R, T: std::fmt::Display>(
+	pub async fn acquire<R, T: std::fmt::Display, F: std::future::Future<Output = R>>(
 		&self,
 		req: impl Into<MutexAquireRequest<T>>,
-		f: impl std::future::Future<Output = R>,
+		f: impl FnOnce() -> F,
 	) -> Result<R, MutexError> {
 		let req = req.into();
 		let lock = Id::<()>::new().to_string();
@@ -66,26 +68,38 @@ impl DistributedMutex {
 
 		let mut aquired = false;
 
-		for _ in 0..req.attempts {
-			match self
-				.mutex_lock
-				.fcall::<bool, _, _, _>(&self.redis, &[&key], &[&lock, "5"]) // 5 second lock duration
-				.await?
-			{
-				true => {
-					aquired = true;
-					break;
-				}
-				false => {
-					tokio::time::sleep(req.delay).await;
+		async {
+			for i in 0..req.attempts {
+				match self
+					.mutex_lock
+					.fcall::<bool, _, _, _>(&self.redis, &[&key], &[&lock, "5"]) // 5 second lock duration
+					.await?
+				{
+					true => {
+						aquired = true;
+						tracing::Span::current().record("attempts", i);
+						break;
+					}
+					false => {
+						tokio::time::sleep(req.delay).await;
+					}
 				}
 			}
-		}
 
-		if !aquired {
-			return Err(MutexError::Acquire(req.attempts));
-		}
+			if !aquired {
+				tracing::Span::current().record("attempts", req.attempts);
+				tracing::Span::current().set_status(Status::Error {
+					description: "failed to acquire mutex".into(),
+				});
+				return Err(MutexError::Acquire(req.attempts));
+			}
 
+			Ok(())
+		}
+		.instrument(tracing::info_span!("DistributedMutex::acquire", key = %key, attempts = tracing::field::Empty))
+		.await?;
+
+		let f = f();
 		let mut f = std::pin::pin!(f);
 
 		loop {
@@ -103,16 +117,20 @@ impl DistributedMutex {
 				}
 				// Refresh the lock every 2 seconds
 				_ = tokio::time::sleep(std::time::Duration::from_secs(2)) => {
-					match self
-						.mutex_lock
-						.fcall::<bool, _, _, _>(&self.redis, &[&key], &[&lock])
-						.await?
-					{
-						true => {},
-						false => {
-							return Err(MutexError::Lost);
+					async {
+						match self
+							.mutex_lock
+							.fcall::<bool, _, _, _>(&self.redis, &[&key], &[&lock, "5"])
+							.await?
+						{
+							true => Ok(()),
+							false => {
+								tracing::warn!("lost mutex lock while waiting for operation to complete");
+								tracing::Span::current().set_status(Status::Error { description: "lost mutex lock".into() });
+								Err(MutexError::Lost)
+							}
 						}
-					}
+					}.instrument(tracing::info_span!("DistributedMutex::refresh", key = %key)).await?;
 				}
 			}
 		}

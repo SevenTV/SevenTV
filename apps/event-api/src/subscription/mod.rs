@@ -205,7 +205,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 										EventType::CreateUser | EventType::UpdateUser | EventType::DeleteUser => {
 											keys.push(topic.copy_scope(EventType::AnyUser).as_key());
 										},
-										EventType::CreateEntitlement | EventType::UpdateEntitlement | EventType::DeleteEntitlement => {
+										EventType::CreateEntitlement | EventType::UpdateEntitlement | EventType::DeleteEntitlement | EventType::ResetEntitlement => {
 											keys.push(topic.copy_scope(EventType::AnyEntitlement).as_key());
 										},
 										EventType::CreateCosmetic | EventType::UpdateCosmetic | EventType::DeleteCosmetic => {

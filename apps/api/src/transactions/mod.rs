@@ -33,7 +33,13 @@ impl<'a, E: Debug> TransactionSession<'a, E> {
 	async fn reset(&mut self) -> Result<(), TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		this.events.clear();
+		if this.in_txn {
+			this.session.abort_transaction().await.ok();
+			this.in_txn = false;
+		}
+
 		this.session.start_transaction().await?;
+		this.in_txn = true;
 		Ok(())
 	}
 
@@ -43,7 +49,7 @@ impl<'a, E: Debug> TransactionSession<'a, E> {
 }
 
 impl<E: Debug> TransactionSession<'_, E> {
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::find", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn find<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -60,7 +66,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(find.stream(&mut this.session).try_collect().await?)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::find_one", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn find_one<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -78,7 +84,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::find_one_and_update", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn find_one_and_update<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -96,7 +102,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::find_one_and_delete", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn find_one_and_delete<U: MongoCollection + serde::de::DeserializeOwned>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -114,7 +120,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::update", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn update<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -132,7 +138,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::update_one", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn update_one<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -150,7 +156,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::delete", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn delete<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -167,7 +173,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::delete_one", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn delete_one<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -184,7 +190,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::count", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn count<U: MongoCollection>(
 		&mut self,
 		filter: impl Into<filter::Filter<U>>,
@@ -202,7 +208,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::insert_one", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn insert_one<U: MongoCollection + serde::Serialize>(
 		&mut self,
 		insert: impl Borrow<U>,
@@ -219,7 +225,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
-	#[allow(unused)]
+	#[tracing::instrument(skip_all, name = "TransactionSession::insert_many", fields(collection = %U::COLLECTION_NAME))]
 	pub async fn insert_many<U: MongoCollection + serde::Serialize>(
 		&mut self,
 		items: impl IntoIterator<Item = impl Borrow<U>>,
@@ -236,6 +242,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 		Ok(result)
 	}
 
+	#[tracing::instrument(skip_all, name = "TransactionSession::register_event", fields(event = %event.kind()))]
 	pub fn register_event(&mut self, event: InternalEvent) -> Result<(), TransactionError<E>> {
 		let mut this = self.0.try_lock().ok_or(TransactionError::SessionLocked)?;
 		this.events.push(event);
@@ -246,6 +253,7 @@ impl<E: Debug> TransactionSession<'_, E> {
 struct SessionInner<'a> {
 	global: &'a Arc<Global>,
 	session: mongodb::ClientSession,
+	in_txn: bool,
 	events: Vec<InternalEvent>,
 }
 
@@ -312,7 +320,7 @@ where
 	E: Debug,
 {
 	if let Some(req) = req {
-		global.mutex.acquire(req, transaction(global, f)).await?
+		global.mutex.acquire(req, || transaction(global, f)).await?
 	} else {
 		transaction(global, f).await
 	}
@@ -329,6 +337,7 @@ where
 	let mut session = TransactionSession::new(Arc::new(Mutex::new(SessionInner {
 		global,
 		session,
+		in_txn: false,
 		events: Vec::new(),
 	})));
 

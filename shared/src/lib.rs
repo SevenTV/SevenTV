@@ -1,3 +1,4 @@
+pub mod cdn;
 pub mod clickhouse;
 pub mod config;
 pub mod database;

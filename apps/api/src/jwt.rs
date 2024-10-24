@@ -8,7 +8,6 @@ use shared::database::user::session::{UserSession, UserSessionId};
 use shared::database::user::UserId;
 
 use crate::global::Global;
-use crate::http::middleware::session::Session;
 
 pub struct AuthJwtPayload {
 	pub user_id: UserId,
@@ -148,17 +147,15 @@ impl From<UserSession> for AuthJwtPayload {
 
 pub struct CsrfJwtPayload {
 	pub random: [u8; 32],
-	pub user_id: Option<UserId>,
-	pub _session_id: Option<UserSessionId>,
+	pub session_id: Option<UserSessionId>,
 	pub expiration: DateTime<Utc>,
 }
 
 impl CsrfJwtPayload {
-	pub fn new(session: &Session) -> Self {
+	pub fn new(session_id: Option<UserSessionId>) -> Self {
 		Self {
 			random: rand::random(),
-			_session_id: session.user_session().map(|s| s.id),
-			user_id: session.user_id(),
+			session_id,
 			expiration: Utc::now() + chrono::Duration::minutes(5),
 		}
 	}
@@ -179,7 +176,7 @@ impl JwtState for CsrfJwtPayload {
 			registered: RegisteredClaims {
 				issuer: None,
 				subject: Some("csrf".to_string()),
-				audience: self.user_id.map(|id| id.to_string()),
+				audience: self.session_id.map(|id| id.to_string()),
 				expiration: Some(self.expiration.timestamp() as u64),
 				not_before: None,
 				issued_at: None,
@@ -192,9 +189,7 @@ impl JwtState for CsrfJwtPayload {
 	fn from_claims(claims: &Claims) -> Option<Self> {
 		Some(Self {
 			expiration: Utc.timestamp_opt(claims.registered.expiration? as i64, 0).single()?,
-			user_id: claims.registered.audience.as_ref().and_then(|x| x.parse().ok()),
-			_session_id: None,
-
+			session_id: claims.registered.audience.as_ref().and_then(|x| x.parse().ok()),
 			random: hex::decode(claims.registered.json_web_token_id.as_ref()?)
 				.ok()?
 				.try_into()

@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
 use scuffle_foundations::settings::auto_settings;
 use scuffle_foundations::telemetry::settings::TelemetrySettings;
-use shared::config::{IncomingRequestConfig, RateLimit, S3BucketConfig, TlsConfig};
+use shared::config::{IncomingRequestConfig, NatsConfig, PodConfig, RateLimit, S3BucketConfig, TlsConfig};
 
 #[auto_settings]
 #[serde(default)]
@@ -14,6 +14,10 @@ pub struct Config {
 	pub runtime: RuntimeSettings,
 	/// Api configuration
 	pub cdn: Cdn,
+	/// NATS configuration
+	pub nats: NatsConfig,
+	/// Pod configuration
+	pub pod: PodConfig,
 }
 
 impl Bootstrap for Config {
@@ -67,4 +71,10 @@ pub struct Cdn {
 	pub rate_limit: RateLimit,
 	/// IP Header config
 	pub incoming_request: IncomingRequestConfig,
+	/// NATS Purge Stream
+	#[settings(default = "cdn.purge".to_string())]
+	pub purge_stream_subject: String,
+	/// NATS Purge Stream
+	#[settings(default = "CdnPurge".to_string())]
+	pub purge_stream_name: String,
 }

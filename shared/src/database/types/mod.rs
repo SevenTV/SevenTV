@@ -8,6 +8,7 @@ pub mod emote_set;
 pub mod entitlement;
 pub mod global;
 pub mod image_set;
+// pub mod oauth;
 pub mod page;
 pub mod paint;
 pub mod product;

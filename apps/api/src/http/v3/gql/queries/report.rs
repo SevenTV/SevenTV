@@ -87,6 +87,7 @@ impl Report {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl Report {
+	#[tracing::instrument(skip_all, name = "Report::actor")]
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -102,6 +103,7 @@ impl Report {
 			.into())
 	}
 
+	#[tracing::instrument(skip_all, name = "Report::assignees")]
 	async fn assignees<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -137,6 +139,7 @@ impl ReportsQuery {
 	#[graphql(
 		guard = "PermissionGuard::one(TicketPermission::ManageAbuse).and(RateLimitGuard::new(RateLimitResource::Search, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "ReportsQuery::reports")]
 	async fn reports<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -197,6 +200,7 @@ impl ReportsQuery {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(TicketPermission::ManageAbuse)")]
+	#[tracing::instrument(skip_all, name = "ReportsQuery::report")]
 	async fn report<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Report>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

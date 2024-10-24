@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherError, BatcherNormalMode};
-use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 
 use crate::database::queries::{filter, update};
 use crate::database::MongoCollection;
@@ -94,13 +93,11 @@ impl BatchOperation for Inner {
 		self.config.clone()
 	}
 
-	#[tracing::instrument(skip_all, fields(document_count = documents.len()))]
+	#[tracing::instrument(skip_all, fields(document_count = documents.len(), name = %self.config.name))]
 	async fn process(
 		&self,
 		documents: Vec<Self::Item>,
 	) -> Result<<Self::Mode as BatchMode<Self>>::OperationOutput, Self::Error> {
-		tracing::Span::current().make_root();
-
 		let mut collections = HashMap::new();
 
 		let ops = documents

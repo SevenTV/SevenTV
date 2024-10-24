@@ -72,14 +72,15 @@ impl User {
 		self.id.0.timestamp()
 	}
 
-	async fn style(&self) -> Result<UserStyle, ApiError> {
-		Ok(UserStyle {
+	async fn style(&self) -> UserStyle {
+		UserStyle {
 			color: self.full_user.computed.highest_role_color.unwrap_or_default(),
 			paint_id: self.full_user.user.style.active_paint_id.map(Into::into),
 			badge_id: self.full_user.user.style.active_badge_id.map(Into::into),
-		})
+		}
 	}
 
+	#[tracing::instrument(skip_all, name = "User::editors")]
 	async fn editors<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -95,6 +96,7 @@ impl User {
 		Ok(editors.into_iter().filter_map(|e| UserEditor::from_db(e, false)).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::editor_of")]
 	async fn editor_of<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -110,6 +112,7 @@ impl User {
 		Ok(editors.into_iter().filter_map(|e| UserEditor::from_db(e, true)).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::cosmetics")]
 	async fn cosmetics(&self) -> Result<Vec<UserCosmetic>, ApiError> {
 		let paints = self
 			.full_user
@@ -144,10 +147,11 @@ impl User {
 		Ok(cosmetics)
 	}
 
-	async fn roles(&self) -> Result<Vec<GqlObjectId>, ApiError> {
-		Ok(self.full_user.computed.roles.iter().rev().copied().map(Into::into).collect())
+	async fn roles(&self) -> Vec<GqlObjectId> {
+		self.full_user.computed.roles.iter().rev().copied().map(Into::into).collect()
 	}
 
+	#[tracing::instrument(skip_all, name = "User::emote_sets")]
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -165,6 +169,7 @@ impl User {
 		Ok(emote_sets.into_iter().map(EmoteSet::from_db).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::owned_emotes")]
 	async fn owned_emotes<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -183,6 +188,7 @@ impl User {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "User::activity")]
 	async fn activity<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -235,7 +241,7 @@ impl User {
 			.collect())
 	}
 
-	async fn connections<'ctx>(&self) -> Result<Vec<UserConnection>, ApiError> {
+	async fn connections<'ctx>(&self) -> Vec<UserConnection> {
 		let emote_capacity = self
 			.full_user
 			.computed
@@ -244,12 +250,11 @@ impl User {
 			.unwrap_or_default()
 			.max(0);
 
-		Ok(self
-			.full_user
+		self.full_user
 			.connections
 			.iter()
 			.map(|c| UserConnection::from_db(emote_capacity, c.clone(), &self.full_user.style))
-			.collect())
+			.collect()
 	}
 
 	async fn reports(&self) -> Vec<Report> {
@@ -289,6 +294,7 @@ impl UserEditor {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserEditor {
+	#[tracing::instrument(skip_all, name = "UserEditor::user")]
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -377,19 +383,19 @@ impl UserPartial {
 		self.id.0.timestamp()
 	}
 
-	async fn style(&self) -> Result<UserStyle, ApiError> {
-		Ok(UserStyle {
+	async fn style(&self) -> UserStyle {
+		UserStyle {
 			color: self.full_user.computed.highest_role_color.unwrap_or_default(),
 			paint_id: self.full_user.user.style.active_paint_id.map(Into::into),
 			badge_id: self.full_user.user.style.active_badge_id.map(Into::into),
-		})
+		}
 	}
 
-	async fn roles(&self) -> Result<Vec<GqlObjectId>, ApiError> {
-		Ok(self.full_user.computed.roles.iter().copied().rev().map(Into::into).collect())
+	async fn roles(&self) -> Vec<GqlObjectId> {
+		self.full_user.computed.roles.iter().copied().rev().map(Into::into).collect()
 	}
 
-	async fn connections(&self) -> Result<Vec<UserConnection>, ApiError> {
+	async fn connections(&self) -> Vec<UserConnection> {
 		let emote_capacity = self
 			.full_user
 			.computed
@@ -398,15 +404,15 @@ impl UserPartial {
 			.unwrap_or_default()
 			.max(0);
 
-		Ok(self
-			.full_user
+		self.full_user
 			.connections
 			.iter()
 			.cloned()
 			.map(|c| UserConnection::from_db(emote_capacity, c, &self.full_user.style))
-			.collect())
+			.collect()
 	}
 
+	#[tracing::instrument(skip_all, name = "UserPartial::emote_sets")]
 	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -465,6 +471,7 @@ pub struct UserStyle {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserStyle {
+	#[tracing::instrument(skip_all, name = "UserStyle::paint")]
 	async fn paint<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<CosmeticPaintModel>, ApiError> {
 		let Some(id) = self.paint_id else {
 			return Ok(None);
@@ -482,6 +489,7 @@ impl UserStyle {
 			.map(|p| CosmeticPaintModel::from_db(p, &global.config.api.cdn_origin)))
 	}
 
+	#[tracing::instrument(skip_all, name = "UserStyle::badge")]
 	async fn badge<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<CosmeticBadgeModel>, ApiError> {
 		let Some(id) = self.badge_id else {
 			return Ok(None);
@@ -508,6 +516,7 @@ pub struct UserSearchResult {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl UsersQuery {
+	#[tracing::instrument(skip_all, name = "UsersQuery::actor")]
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
 		let session = ctx
 			.data::<Session>()
@@ -519,7 +528,12 @@ impl UsersQuery {
 		Ok(session.user().ok().map(|u| UserPartial::from_db(global, u.clone()).into()))
 	}
 
+	#[tracing::instrument(skip_all, name = "UsersQuery::user")]
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<User, ApiError> {
+		if id.id::<User>().is_nil() {
+			return Err(ApiError::not_found(ApiErrorCode::LoadError, "user not found"));
+		}
+
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -535,6 +549,7 @@ impl UsersQuery {
 		Ok(user.into())
 	}
 
+	#[tracing::instrument(skip_all, name = "UsersQuery::user_by_connection")]
 	async fn user_by_connection<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -567,6 +582,7 @@ impl UsersQuery {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "UsersQuery::users")]
 	async fn users<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -617,6 +633,7 @@ impl UsersQuery {
 	}
 
 	#[graphql(name = "usersByID")]
+	#[tracing::instrument(skip_all, name = "UsersQuery::users_by_id")]
 	async fn users_by_id<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -628,7 +645,7 @@ impl UsersQuery {
 
 		let users = global
 			.user_loader
-			.load_many(global, list.into_iter().map(|id| id.id()))
+			.load_many(global, list.into_iter().map(|id| id.id()).filter(|id| !id.is_nil()))
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?
 			.into_values()

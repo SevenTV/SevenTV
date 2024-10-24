@@ -4,25 +4,21 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::State;
 use axum::response::{IntoResponse, Redirect, Response};
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::{Extension, Router};
 use hyper::StatusCode;
 use mongodb::bson::doc;
-use shared::database::queries::filter;
 use shared::database::role::permissions::RateLimitResource;
-use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::Platform;
-use shared::database::user::session::UserSession;
-use shared::event::{InternalEvent, InternalEventData};
 
 use self::login::{handle_callback as handle_login_callback, handle_login};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Query;
 use crate::http::middleware::cookies::Cookies;
-use crate::http::middleware::session::{Session, AUTH_COOKIE};
+use crate::http::middleware::session::{parse_session, Session, AUTH_COOKIE};
 use crate::ratelimit::RateLimitRequest;
-use crate::transactions::{transaction, TransactionError};
+use crate::transactions::TransactionError;
 
 mod login;
 
@@ -33,7 +29,7 @@ pub struct Docs;
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.route("/", get(login))
-		.route("/logout", post(logout))
+		.route("/logout", get(logout))
 		.route("/manual", get(manual))
 }
 
@@ -66,14 +62,18 @@ impl Display for LoginRequestPlatform {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
-pub struct LoginRequest {
+struct LoginRequest {
 	pub platform: LoginRequestPlatform,
+	#[serde(default)]
+	pub link_connection: bool,
 	#[serde(default)]
 	pub callback: bool,
 	#[serde(default)]
 	pub code: Option<String>,
 	#[serde(default)]
 	pub state: Option<String>,
+	#[serde(default)]
+	pub token: Option<String>,
 }
 
 #[utoipa::path(
@@ -98,18 +98,32 @@ async fn login(
 	Extension(session): Extension<Session>,
 	Query(query): Query<LoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
+	let session = if let (Some(token), None) = (&query.token, session.user_session()) {
+		parse_session(&global, session.ip(), token)
+			.await?
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::BadRequest, "invalid token"))?
+	} else {
+		session
+	};
+
 	let req = RateLimitRequest::new(RateLimitResource::Login, &session);
 
 	req.http(&global, async {
 		let location = if query.callback {
 			handle_login_callback(&global, &session, query, &cookies).await?
 		} else {
-			handle_login(&global, &session, query.platform.into(), &cookies)?
+			handle_login(&global, &session, query.platform.into(), query.link_connection, &cookies)?
 		};
 
 		Ok::<_, ApiError>(Redirect::to(&location))
 	})
 	.await
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct LogoutRequest {
+	#[serde(default)]
+	pub token: Option<String>,
 }
 
 #[utoipa::path(
@@ -126,50 +140,56 @@ async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
 	Extension(session): Extension<Session>,
+	Query(query): Query<LogoutRequest>,
+	request: axum::extract::Request,
 ) -> Result<impl IntoResponse, ApiError> {
-	let global = &global;
-	let res = transaction(global, |mut tx| async move {
-		// is a new session
-		if let Some(user_session) = session.user_session() {
-			let user_session = tx
-				.find_one_and_delete(
-					filter::filter! {
-						UserSession {
-							#[query(rename = "_id")]
-							id: user_session.id,
-						}
-					},
-					None,
-				)
-				.await?;
-
-			if let Some(user_session) = user_session {
-				tx.register_event(InternalEvent {
-					actor: Some(session.user().unwrap().clone()),
-					session_id: Some(user_session.id),
-					data: InternalEventData::UserSession {
-						after: user_session,
-						data: StoredEventUserSessionData::Delete,
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
-			}
+	if let Some(referer) = request.headers().get(hyper::header::REFERER) {
+		if referer.to_str().ok() != Some(global.config.api.website_origin.as_str()) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only logout from website"));
 		}
+	}
 
-		Ok(())
-	})
-	.await;
+	if let Some(origin) = request.headers().get(hyper::header::ORIGIN) {
+		if origin.to_str().ok() != Some(global.config.api.api_origin.as_str()) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
+		}
+	}
 
-	cookies.remove(global, AUTH_COOKIE);
+	let session = if session.user_session().is_none() {
+		if let Some(token) = &query.token {
+			parse_session(&global, session.ip(), token)
+				.await?
+				.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::BadRequest, "invalid token"))?
+		} else {
+			session
+		}
+	} else {
+		session
+	};
 
-	match res {
-		Ok(_) => Response::builder()
-			.status(StatusCode::NO_CONTENT)
-			.body(Body::empty())
-			.map_err(|err| {
-				tracing::error!(error = %err, "failed to create response");
-				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to create response")
-			}),
+	match session.logout(&global).await {
+		Ok(_) => {
+			cookies.remove(&global, AUTH_COOKIE);
+
+			let website_url = global
+				.config
+				.api
+				.website_origin
+				.join("/auth/callback#logout=true")
+				.map_err(|err| {
+					tracing::error!(error = %err, "failed to join website origin");
+					ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to join website origin")
+				})?;
+
+			Response::builder()
+				.status(StatusCode::TEMPORARY_REDIRECT)
+				.header("Location", website_url.to_string())
+				.body(Body::empty())
+				.map_err(|err| {
+					tracing::error!(error = %err, "failed to create response");
+					ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to create response")
+				})
+		}
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");

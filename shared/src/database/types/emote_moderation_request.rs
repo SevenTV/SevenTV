@@ -33,6 +33,8 @@ pub type EmoteModerationRequestId = Id<EmoteModerationRequest>;
 #[mongo(index(fields(kind = 1, emote_id = 1), unique))]
 #[mongo(index(fields(status = 1, emote_id = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(created_by = 1)))]
+#[mongo(index(fields(assigned_to = 1)))]
 #[mongo(search = "crate::typesense::types::emote_moderation_request::EmoteModerationRequest")]
 #[serde(deny_unknown_fields)]
 pub struct EmoteModerationRequest {

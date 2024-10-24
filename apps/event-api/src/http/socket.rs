@@ -12,98 +12,6 @@ pub enum Socket {
 	Sse(tokio::sync::mpsc::Sender<Result<Event, Infallible>>),
 }
 
-// /// Internally a websocket is a state machine, so we have to keep track of
-// the /// state.
-// pub enum WebSocket {
-// 	Pending(HyperWebsocket),
-// 	Ready(HyperWebsocketStream),
-// }
-
-// impl WebSocket {
-// 	/// Wait for the websocket to be ready.
-// 	pub async fn ready(&mut self) -> Result<(), axum::Error> {
-// 		match self {
-// 			Self::Pending(ws) => {
-// 				tracing::debug!("websocket pending");
-// 				let ws = ws.await?;
-// 				tracing::debug!("websocket ready");
-// 				*self = Self::Ready(ws);
-// 			}
-// 			Self::Ready(_) => {}
-// 		}
-
-// 		Ok(())
-// 	}
-
-// 	/// Send a message over the websocket, this will wait for the websocket to
-// 	/// be ready.
-// 	pub async fn send(&mut self, data: impl SocketMessage) -> Result<(),
-// axum::Error> { 		// Wait for the websocket to be ready.
-// 		self.ready().await?;
-
-// 		match self {
-// 			Self::Ready(ws) => {
-// 				ws.send(data.into_ws()).await?;
-// 			}
-// 			_ => unreachable!("websocket not ready"),
-// 		}
-
-// 		Ok(())
-// 	}
-
-// 	/// Receive a message from the websocket, this will wait for the websocket
-// 	/// to be ready.
-// 	pub async fn recv(&mut self) -> Result<WsMessage, axum::Error> {
-// 		// Wait for the websocket to be ready.
-// 		self.ready().await?;
-
-// 		match self {
-// 			Self::Ready(ws) => Ok(ws
-// 				.next()
-// 				.await
-// 				.ok_or(axum::Error::ConnectionClosed)??),
-// 			_ => unreachable!("websocket not ready"),
-// 		}
-// 	}
-
-// 	/// Close the websocket, if the websocket is not ready, this will wait for
-// 	/// it to be ready.
-// 	pub async fn close(&mut self, close: Option<CloseFrame<'_>>) -> Result<(),
-// axum::Error> { 		// Wait for the websocket to be ready.
-// 		self.ready().await?;
-
-// 		match self {
-// 			Self::Ready(ws) => {
-// 				ws.close(close).await.ok();
-// 			}
-// 			_ => unreachable!("websocket not ready"),
-// 		}
-
-// 		// Not sure if this is needed, if we are the ones closing the websocket
-// 		// however it doesn't hurt to flush it just in case.
-// 		// See https://github.com/snapview/tungstenite-rs/issues/405
-// 		self.flush().await.ok();
-
-// 		Ok(())
-// 	}
-
-// 	/// Flush the websocket, if the websocket is not ready, this will wait for
-// 	/// it to be ready.
-// 	pub async fn flush(&mut self) -> Result<(), axum::Error> {
-// 		// Wait for the websocket to be ready.
-// 		self.ready().await?;
-
-// 		match self {
-// 			Self::Ready(ws) => {
-// 				ws.flush().await?;
-// 			}
-// 			_ => unreachable!("websocket not ready"),
-// 		}
-
-// 		Ok(())
-// 	}
-// }
-
 /// A trait for converting a message into a websocket or SSE message.
 pub trait SocketMessage: Sized {
 	fn into_sse(self) -> Event;
@@ -197,7 +105,7 @@ impl Socket {
 		match self {
 			Self::WebSocket(ws) => {
 				ws.send(ws::Message::Close(Some(CloseFrame {
-					code: WsCloseCode::from(code.as_u16()),
+					code: WsCloseCode::from(code.into_websocket()),
 					reason: reason.to_owned().into(),
 				})))
 				.await?;

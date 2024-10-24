@@ -32,6 +32,7 @@ pub struct AuditLog {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl AuditLog {
+	#[tracing::instrument(skip_all, name = "AuditLog::actor")]
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

@@ -93,6 +93,7 @@ impl Emote {
 		self.id.0.timestamp()
 	}
 
+	#[tracing::instrument(skip_all, name = "Emote::owner")]
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -108,6 +109,7 @@ impl Emote {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "Emote::channels")]
 	async fn channels(
 		&self,
 		ctx: &Context<'_>,
@@ -156,6 +158,7 @@ impl Emote {
 		vec![]
 	}
 
+	#[tracing::instrument(skip_all, name = "Emote::trending")]
 	async fn trending<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<u32>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -179,6 +182,7 @@ impl Emote {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "Emote::activity")]
 	async fn activity<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -264,6 +268,7 @@ impl EmotePartial {
 		self.id.0.timestamp()
 	}
 
+	#[tracing::instrument(skip_all, name = "EmotePartial::owner")]
 	async fn owner(&self, ctx: &Context<'_>) -> Result<UserPartial, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -359,6 +364,7 @@ pub struct EmoteSearchResult {
 
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl EmotesQuery {
+	#[tracing::instrument(skip_all, name = "EmotesQuery::emote")]
 	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: GqlObjectId) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -374,6 +380,7 @@ impl EmotesQuery {
 	}
 
 	#[graphql(name = "emotesByID")]
+	#[tracing::instrument(skip_all, name = "EmotesQuery::emotes_by_id")]
 	async fn emotes_by_id<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -396,6 +403,7 @@ impl EmotesQuery {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "EmotesQuery::emotes")]
 	async fn emotes(
 		&self,
 		ctx: &Context<'_>,

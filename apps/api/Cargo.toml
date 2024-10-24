@@ -70,7 +70,7 @@ ipnet = { version = "2.9.0", features = ["serde"] }
 
 shared = { workspace = true }
 
-fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "partial-tracing", "i-scripts"]}
+fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "i-scripts"]}
 
 [dev-dependencies]
 axum = { version = "0.7", features = ["macros"] }

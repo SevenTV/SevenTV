@@ -10,7 +10,8 @@ use shared::database::product::{
 };
 use shared::database::queries::{filter, update};
 use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
-use stripe::{FinalizeInvoiceParams, Object};
+use stripe::Object;
+use tracing::Instrument;
 
 use crate::global::Global;
 use crate::http::egvault::metadata::{CustomerMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
@@ -38,7 +39,6 @@ fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Resul
 pub enum StripeRequest {
 	CreatedRetrieveSubscription,
 	CreatedRetrieveCustomer,
-	CreatedFinalizeInvoice,
 	PaidRetrieveSubscription,
 }
 
@@ -47,13 +47,13 @@ impl std::fmt::Display for StripeRequest {
 		match self {
 			Self::CreatedRetrieveSubscription => write!(f, "created_retrieve_subscription"),
 			Self::CreatedRetrieveCustomer => write!(f, "created_retrieve_customer"),
-			Self::CreatedFinalizeInvoice => write!(f, "created_finalize_invoice"),
 			Self::PaidRetrieveSubscription => write!(f, "paid_retrieve_subscription"),
 		}
 	}
 }
 
 /// Creates the invoice object and finalize it.
+#[tracing::instrument(skip_all, name = "stripe::invoice::created")]
 pub async fn created(
 	_global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,
@@ -85,7 +85,10 @@ pub async fn created(
 		.id();
 
 	// Invoices are only created for subscriptions
-	let user_id = match (invoice.subscription, metadata) {
+	let user_id = match (invoice.subscription, &metadata) {
+		(_, Some(InvoiceMetadata::PaypalLegacy { .. })) => {
+			return Ok(());
+		}
 		(Some(subscription), _) => {
 			let subscription = stripe::Subscription::retrieve(
 				stripe_client
@@ -95,6 +98,7 @@ pub async fn created(
 				&subscription.id(),
 				&[],
 			)
+			.instrument(tracing::info_span!("subscription_retrieve"))
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to retrieve subscription");
@@ -104,17 +108,23 @@ pub async fn created(
 				))
 			})?;
 
+			// This subscription was not created by us,
+			if subscription.metadata.is_empty() {
+				tracing::warn!("subscription metadata is missing: {}", subscription.id());
+				return Ok(());
+			}
+
 			let metadata = SubscriptionMetadata::from_stripe(&subscription.metadata).map_err(|e| {
 				tracing::error!(error = %e, "failed to deserialize metadata");
 				TransactionError::Custom(ApiError::internal_server_error(
 					ApiErrorCode::StripeError,
-					"failed to deserialize metadata",
+					"failed to deserialize subscription metadata",
 				))
 			})?;
 
 			metadata.customer_id.unwrap_or(metadata.user_id)
 		}
-		(None, Some(InvoiceMetadata::Gift { customer_id, .. })) => customer_id,
+		(None, Some(InvoiceMetadata::Gift { customer_id, .. })) => *customer_id,
 		_ => {
 			let customer = stripe::Customer::retrieve(
 				stripe_client
@@ -124,6 +134,7 @@ pub async fn created(
 				&customer_id,
 				&[],
 			)
+			.instrument(tracing::info_span!("customer_retrieve"))
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to retrieve customer");
@@ -181,27 +192,6 @@ pub async fn created(
 
 	tx.insert_one(db_invoice, None).await?;
 
-	if invoice.status == Some(stripe::InvoiceStatus::Draft) {
-		stripe::Invoice::finalize(
-			stripe_client
-				.client(super::StripeRequest::Invoice(StripeRequest::CreatedFinalizeInvoice))
-				.await
-				.deref(),
-			&invoice.id,
-			FinalizeInvoiceParams {
-				auto_advance: Some(true),
-			},
-		)
-		.await
-		.map_err(|e| {
-			tracing::error!(error = %e, "failed to finalize invoice");
-			TransactionError::Custom(ApiError::internal_server_error(
-				ApiErrorCode::StripeError,
-				"failed to finalize invoice",
-			))
-		})?;
-	}
-
 	Ok(())
 }
 
@@ -209,6 +199,7 @@ pub async fn created(
 ///
 /// Called for `invoice.updated`, `invoice.finalized`,
 /// `invoice.payment_succeeded`
+#[tracing::instrument(skip_all, name = "stripe::invoice::updated")]
 pub async fn updated(
 	_global: &Arc<Global>,
 	tx: &mut TransactionSession<'_, ApiError>,
@@ -256,6 +247,7 @@ pub async fn updated(
 /// trial period. Updates the invoice object.
 ///
 /// Called for `invoice.paid`
+#[tracing::instrument(skip_all, name = "stripe::invoice::paid")]
 pub async fn paid(
 	global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,
@@ -278,6 +270,11 @@ pub async fn paid(
 				"failed to deserialize metadata",
 			))
 		})?;
+
+	if let Some(InvoiceMetadata::PaypalLegacy { .. }) = metadata {
+		// ignore legacy paypal invoices
+		return Ok(None);
+	}
 
 	match (invoice.subscription, metadata) {
 		(Some(subscription), _) => {
@@ -340,6 +337,7 @@ pub async fn paid(
 				&subscription.id(),
 				&[],
 			)
+			.instrument(tracing::info_span!("subscription_retrieve"))
 			.await
 			.map_err(|e| {
 				tracing::error!(error = %e, "failed to retrieve subscription");
@@ -348,6 +346,11 @@ pub async fn paid(
 					"failed to retrieve subscription",
 				))
 			})?;
+
+			if stripe_sub.metadata.is_empty() {
+				tracing::warn!("subscription metadata is missing: {}", stripe_sub.id);
+				return Ok(None);
+			}
 
 			let user_id = SubscriptionMetadata::from_stripe(&stripe_sub.metadata)
 				.map_err(|e| {
@@ -507,6 +510,45 @@ pub async fn paid(
 
 			return Ok(Some(sub_id));
 		}
+		(
+			None,
+			Some(InvoiceMetadata::BoughtPeriod {
+				user_id,
+				start,
+				end,
+				product_id,
+				subscription_product_id,
+			}),
+		) => {
+			let sub_id = SubscriptionId {
+				user_id,
+				product_id: subscription_product_id,
+			};
+
+			// historical period
+			tx.insert_one(
+				SubscriptionPeriod {
+					id: SubscriptionPeriodId::new(),
+					subscription_id: sub_id,
+					provider_id: None,
+					start,
+					end,
+					product_id,
+					is_trial: false,
+					gifted_by: None,
+					auto_renew: false,
+					created_by: SubscriptionPeriodCreatedBy::Invoice {
+						invoice_id: invoice.id.into(),
+					},
+					updated_at: chrono::Utc::now(),
+					search_updated_at: None,
+				},
+				None,
+			)
+			.await?;
+
+			return Ok(Some(sub_id));
+		}
 		_ => {}
 	}
 
@@ -515,6 +557,7 @@ pub async fn paid(
 
 /// Only sent for draft invoices.
 /// Deletes the invoice object.
+#[tracing::instrument(skip_all, name = "stripe::invoice::deleted")]
 pub async fn deleted(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
@@ -540,6 +583,7 @@ pub async fn deleted(
 /// Shows the user an error message.
 /// Should prompt the user to collect new payment information and update the
 /// subscription's default payment method afterwards.
+#[tracing::instrument(skip_all, name = "stripe::invoice::payment_failed")]
 pub async fn payment_failed(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

@@ -5,6 +5,7 @@ use scuffle_foundations::context::ContextFutExt;
 use shared::database::cron_job::{CronJob, CronJobId, CronJobInterval};
 use shared::database::queries::{filter, update};
 use shared::database::{Id, MongoCollection};
+use tracing::Instrument;
 
 use crate::global::Global;
 
@@ -30,37 +31,40 @@ pub async fn run(global: Arc<Global>) {
 		};
 
 		let span = tracing::info_span!("cron_job", job = %job.name, id = ?job.id);
-		let _enter = span.enter();
 
-		let job_id = job.id;
+		async {
+			let job_id = job.id;
 
-		tokio::select! {
-			r = lease_job(&global, leased_id, job_id) => {
-				if let Err(e) = r {
-					tracing::error!(error = %e, "job failed");
-				} else {
-					tracing::info!("lost lock on job");
-				}
-			},
-			r = run_job(&global, job, leased_id).with_context(&ctx) => {
-				match r {
-					Some(Ok(())) => {
-						tracing::info!("job succeeded");
-						continue;
-					},
-					Some(Err(e)) => {
+			tokio::select! {
+				r = lease_job(&global, leased_id, job_id) => {
+					if let Err(e) = r {
 						tracing::error!(error = %e, "job failed");
+					} else {
+						tracing::info!("lost lock on job");
 					}
-					None => {
-						tracing::info!("shutting down, cancelling job");
+				},
+				r = run_job(&global, job, leased_id).with_context(&ctx) => {
+					match r {
+						Some(Ok(())) => {
+							tracing::info!("job succeeded");
+							return;
+						},
+						Some(Err(e)) => {
+							tracing::error!("job failed: {:#}", e);
+						}
+						None => {
+							tracing::info!("shutting down, cancelling job");
+						}
 					}
 				}
 			}
-		}
 
-		if let Err(err) = free_job(&global, leased_id, job_id).await {
-			tracing::error!(error = %err, "failed to free job");
+			if let Err(err) = free_job(&global, leased_id, job_id).await {
+				tracing::error!("failed to free job: {:#}", err);
+			}
 		}
+		.instrument(span)
+		.await;
 	}
 }
 

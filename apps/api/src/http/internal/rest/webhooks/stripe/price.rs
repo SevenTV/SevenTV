@@ -4,12 +4,14 @@ use std::sync::Arc;
 
 use shared::database::product::{Product, ProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
+use tracing::Instrument;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
+#[tracing::instrument(skip_all, name = "stripe::price::updated")]
 pub async fn updated(
 	_global: &Arc<Global>,
 	stripe_client: SafeStripeClient<super::StripeRequest>,
@@ -21,6 +23,7 @@ pub async fn updated(
 		&price.id,
 		&["currency_options"],
 	)
+	.instrument(tracing::info_span!("price_retrieve"))
 	.await
 	.map_err(|e| {
 		tracing::error!(error = %e, "failed to retrieve price");
@@ -91,6 +94,7 @@ pub async fn updated(
 	Ok(())
 }
 
+#[tracing::instrument(skip_all, name = "stripe::price::deleted")]
 pub async fn deleted(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

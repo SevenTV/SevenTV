@@ -5,6 +5,15 @@ use async_graphql::ErrorExtensionValues;
 use axum::response::IntoResponse;
 use axum::Json;
 use hyper::{HeaderMap, StatusCode};
+use scuffle_foundations::telemetry::metrics::metrics;
+use scuffle_foundations::telemetry::opentelemetry::{OpenTelemetrySpanExt, Status};
+
+#[metrics]
+mod error {
+	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+
+	pub fn constructed(status: &'static str, status_code: String) -> Counter;
+}
 
 #[derive(Debug, Clone, Default, serde::Serialize)]
 pub struct ApiError {
@@ -68,6 +77,8 @@ impl ApiErrorCode {
 
 impl ApiError {
 	pub fn new(status_code: StatusCode, error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
+		error::constructed(error_code.as_str(), status_code.to_string()).inc();
+
 		Self {
 			status_code,
 			error_code,
@@ -78,83 +89,35 @@ impl ApiError {
 	}
 
 	pub fn conflict(error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		Self {
-			status_code: StatusCode::CONFLICT,
-			error_code,
-			error: error.into(),
-			status: Cow::Borrowed("conflict"),
-			extra_headers: None,
-		}
+		Self::new(StatusCode::CONFLICT, error_code, error)
 	}
 
 	pub fn internal_server_error(error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		Self {
-			status_code: StatusCode::INTERNAL_SERVER_ERROR,
-			error_code,
-			error: error.into(),
-			status: Cow::Borrowed("internal server error"),
-			extra_headers: None,
-		}
+		Self::new(StatusCode::INTERNAL_SERVER_ERROR, error_code, error)
 	}
 
 	pub fn bad_request(error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		Self {
-			status_code: StatusCode::BAD_REQUEST,
-			error_code,
-			error: error.into(),
-			status: Cow::Borrowed("bad request"),
-			extra_headers: None,
-		}
+		Self::new(StatusCode::BAD_REQUEST, error_code, error)
 	}
 
 	pub fn not_found(error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		Self {
-			status_code: StatusCode::NOT_FOUND,
-			error_code,
-			error: error.into(),
-			status: Cow::Borrowed("not found"),
-			extra_headers: None,
-		}
+		Self::new(StatusCode::NOT_FOUND, error_code, error)
 	}
 
 	pub fn not_implemented(error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		Self {
-			status_code: StatusCode::NOT_IMPLEMENTED,
-			error_code,
-			error: error.into(),
-			status: Cow::Borrowed("not implemented"),
-			extra_headers: None,
-		}
+		Self::new(StatusCode::NOT_IMPLEMENTED, error_code, error)
 	}
 
 	pub fn unauthorized(error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		Self {
-			status_code: StatusCode::UNAUTHORIZED,
-			error_code,
-			error: error.into(),
-			status: Cow::Borrowed("unauthorized"),
-			extra_headers: None,
-		}
+		Self::new(StatusCode::UNAUTHORIZED, error_code, error)
 	}
 
 	pub fn forbidden(error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		Self {
-			status_code: StatusCode::FORBIDDEN,
-			error_code,
-			error: error.into(),
-			status: Cow::Borrowed("forbidden"),
-			extra_headers: None,
-		}
+		Self::new(StatusCode::FORBIDDEN, error_code, error)
 	}
 
 	pub fn too_many_requests(error: impl Into<Cow<'static, str>>) -> Self {
-		Self {
-			status_code: StatusCode::TOO_MANY_REQUESTS,
-			error_code: ApiErrorCode::RateLimitExceeded,
-			error: error.into(),
-			status: Cow::Borrowed("too many requests"),
-			extra_headers: None,
-		}
+		Self::new(StatusCode::TOO_MANY_REQUESTS, ApiErrorCode::RateLimitExceeded, error)
 	}
 
 	pub fn with_extra_headers(mut self, headers: HeaderMap) -> Self {
@@ -165,9 +128,11 @@ impl ApiError {
 
 impl IntoResponse for ApiError {
 	fn into_response(mut self) -> axum::http::Response<axum::body::Body> {
-		// tracing::Span::current().set_status(Status::Error {
-		// 	message: Some(self.message.clone()),
-		// });
+		if self.status_code.is_server_error() {
+			tracing::Span::current().set_status(Status::Error {
+				description: self.error.clone(),
+			});
+		}
 
 		let extra_headers = self.extra_headers.take();
 
@@ -183,14 +148,24 @@ impl IntoResponse for ApiError {
 
 impl From<ApiError> for async_graphql::Error {
 	fn from(value: ApiError) -> Self {
+		if value.status_code.is_server_error() {
+			tracing::Span::current().set_status(Status::Error {
+				description: value.error.clone(),
+			});
+		}
+
 		let mut extensions = ErrorExtensionValues::default();
+
 		extensions.set("code", value.error_code.as_str());
+		extensions.set("status", value.status_code.as_u16());
+
 		// for backward compatibility
 		extensions.set("fields", async_graphql::Value::Object(Default::default()));
 		// The old website expects the error message to be in the format "title:
 		// description"
 		let message = format!("{} {}", value.error_code.as_str(), value.error);
 		extensions.set("message", message.clone());
+
 		if let Some(headers) = &value.extra_headers {
 			extensions.set(
 				"headers",

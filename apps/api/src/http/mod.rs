@@ -30,7 +30,7 @@ pub mod internal;
 pub mod middleware;
 pub mod v3;
 
-const ALLOWED_CORS_HEADERS: [&str; 8] = [
+const ALLOWED_CORS_HEADERS: &[&str] = &[
 	"content-type",
 	"content-length",
 	"accept-encoding",
@@ -39,17 +39,20 @@ const ALLOWED_CORS_HEADERS: [&str; 8] = [
 	"x-emote-data",
 	"x-seventv-platform",
 	"x-seventv-version",
+	"x-ignore-auth-failure",
 ];
 
 fn cors_layer(global: &Arc<Global>) -> CorsLayer {
-	let website_origin = global.config.api.website_origin.clone();
-	let api_origin = global.config.api.api_origin.clone();
+	let mut allowed_orings = global.config.api.cors_allowed_credential_origins.clone();
+	allowed_orings.push(global.config.api.website_origin.clone());
+	allowed_orings.push(global.config.api.api_origin.clone());
+
 	let allow_credentials = AllowCredentials::predicate(move |origin, _| {
 		origin
 			.to_str()
 			.ok()
 			.and_then(|o| url::Url::parse(o).ok())
-			.map(|o| o.origin() == website_origin.origin() || o.origin() == api_origin.origin())
+			.map(|o| allowed_orings.iter().any(|allowed| allowed.origin() == o.origin()))
 			.unwrap_or_default()
 	});
 
@@ -64,9 +67,13 @@ fn cors_layer(global: &Arc<Global>) -> CorsLayer {
 			Method::DELETE,
 		]))
 		.allow_headers(AllowHeaders::list(
-			ALLOWED_CORS_HEADERS.into_iter().map(HeaderName::from_static),
+			ALLOWED_CORS_HEADERS.iter().copied().map(HeaderName::from_static),
 		))
-		.expose_headers(ExposeHeaders::list([HeaderName::from_static("x-access-token")]))
+		.expose_headers(ExposeHeaders::list([
+			HeaderName::from_static("x-access-token"),
+			HeaderName::from_static("x-request-id"),
+			HeaderName::from_static("x-auth-failure"),
+		]))
 		.max_age(MaxAge::exact(Duration::from_secs(7200)))
 }
 
@@ -104,7 +111,12 @@ fn routes(global: Arc<Global>) -> Router {
 								"request.uri" = %req.uri(),
 								"request.matched_path" = %matched_path.unwrap_or("<not found>"),
 								"response.status_code" = tracing::field::Empty,
+								"trace_id" = tracing::field::Empty,
 							);
+
+							if let Some(trace_id) = tracing::Span::current().trace_id() {
+								span.record("trace_id", trace_id.to_string());
+							}
 
 							span.make_root();
 
@@ -117,10 +129,10 @@ fn routes(global: Arc<Global>) -> Router {
 				)
 				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
 				.layer(PropagateRequestIdLayer::x_request_id())
+				.layer(cors_layer(&global))
 				.layer(IpMiddleware::new(global.config.api.incoming_request.clone()))
 				.layer(CookieMiddleware)
-				.layer(SessionMiddleware::new(global.clone()))
-				.layer(cors_layer(&global)),
+				.layer(SessionMiddleware::new(global.clone())),
 		)
 }
 

@@ -6,6 +6,7 @@ use tokio::signal::unix::SignalKind;
 
 use crate::config::Config;
 
+mod cdn_purge;
 mod config;
 mod connections;
 mod cron;
@@ -63,6 +64,7 @@ async fn main(settings: Matches<Config>) {
 	let http_handle = tokio::spawn(http::run(global.clone()));
 	let image_processor_handle = tokio::spawn(image_processor::run(global.clone()));
 	let cron_handle = tokio::spawn(cron::run(global.clone()));
+	let cdn_purge_handle = tokio::spawn(cdn_purge::run(global.clone()));
 
 	let handler = scuffle_foundations::context::Handler::global();
 
@@ -98,6 +100,11 @@ async fn main(settings: Matches<Config>) {
 		r = cron_handle => {
 			if !ctx.is_done() {
 				tracing::warn!("cron handler exited: {:?}", r);
+			}
+		},
+		r = cdn_purge_handle => {
+			if !ctx.is_done() {
+				tracing::warn!("cdn purge handler exited: {:?}", r);
 			}
 		},
 	}

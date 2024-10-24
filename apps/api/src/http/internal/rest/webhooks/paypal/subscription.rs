@@ -13,6 +13,7 @@ use crate::transactions::{TransactionResult, TransactionSession};
 ///
 /// Called for `BILLING.SUBSCRIPTION.CANCELLED` and
 /// `BILLING.SUBSCRIPTION.SUSPENDED`
+#[tracing::instrument(skip_all, name = "paypal::subscription::cancelled")]
 pub async fn cancelled(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
@@ -27,7 +28,7 @@ pub async fn cancelled(
 			filter::filter! {
 				SubscriptionPeriod {
 					#[query(serde)]
-					provider_id: subscription_id,
+					provider_id: &subscription_id,
 					#[query(selector = "lt")]
 					start: now,
 					#[query(selector = "gt")]
@@ -48,6 +49,7 @@ pub async fn cancelled(
 		)
 		.await?
 	else {
+		tracing::warn!("No active period found for subscription paypal sub {}", &subscription_id);
 		return Ok(None);
 	};
 

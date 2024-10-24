@@ -49,6 +49,7 @@ fn ban_effect_to_permissions(effects: BanEffect) -> Permissions {
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl BansMutation {
 	#[graphql(guard = "PermissionGuard::one(UserPermission::Moderate)")]
+	#[tracing::instrument(skip_all, name = "BansMutation::create_ban")]
 	async fn create_ban<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -152,6 +153,7 @@ impl BansMutation {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(UserPermission::Moderate)")]
+	#[tracing::instrument(skip_all, name = "BansMutation::edit_ban")]
 	async fn edit_ban<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -291,6 +293,7 @@ pub struct Ban {
 
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl Ban {
+	#[tracing::instrument(skip_all, name = "Ban::victim")]
 	async fn victim<'ctx>(&self, ctx: &Context<'ctx>) -> Result<GqlUser, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -306,6 +309,7 @@ impl Ban {
 			.into())
 	}
 
+	#[tracing::instrument(skip_all, name = "Ban::actor")]
 	async fn actor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<GqlUser, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

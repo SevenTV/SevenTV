@@ -10,6 +10,7 @@ use shared::database::queries::{filter, update};
 use shared::database::stored_event::StoredEventEmoteModerationRequestData;
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -247,20 +248,20 @@ pub async fn emote_add(
 		// status to determine if they contribute towards the capacity limit
 		// Perhaps we could cache this in redis or something (the merge/deleted status
 		// of an emote at any given time to avoid doing a DB lookup)
-		let emotes = tx
-			.count(
-				filter::filter! {
-					Emote {
-						#[query(rename = "_id", selector = "in")]
-						id: emote_set.emotes.iter().map(|e| e.id).collect::<Vec<_>>(),
-						deleted: false,
-					}
-				},
-				None,
-			)
-			.await?;
+		let emotes = global
+			.emote_by_id_loader
+			.load_many_merged(emote_set.emotes.iter().map(|e| e.id))
+			.await
+			.map_err(|()| {
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::LoadError,
+					"failed to load emotes",
+				))
+			})?;
 
-		if emotes as i32 > capacity {
+		let active_emotes = emote_set.emotes.iter().filter(|e| emotes.get(e.id).is_some()).count();
+
+		if active_emotes as i32 > capacity {
 			return Err(TransactionError::Custom(ApiError::bad_request(
 				ApiErrorCode::LoadError,
 				"emote set is at capacity",

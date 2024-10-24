@@ -25,6 +25,7 @@ pub struct MessagesMutation;
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl MessagesMutation {
 	#[graphql(guard = "PermissionGuard::one(EmoteModerationRequestPermission::Manage)")]
+	#[tracing::instrument(skip_all, name = "MessagesMutation::read_messages")]
 	async fn read_messages<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,

@@ -1,23 +1,29 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use config::Config;
 use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::settings::cli::Matches;
 use tokio::signal::unix::SignalKind;
 
 mod cache;
+mod cdn_purge;
 mod config;
 mod global;
 mod http;
 mod metrics;
 
 #[bootstrap]
-async fn main(settings: Matches<Config>) {
+async fn main(settings: Matches<Config>) -> anyhow::Result<()> {
 	rustls::crypto::aws_lc_rs::default_provider().install_default().unwrap();
 
 	tracing::info!("starting cdn");
 
-	let global = Arc::new(global::Global::new(settings.settings).await);
+	let global = Arc::new(
+		global::Global::new(settings.settings)
+			.await
+			.context("failed to create global")?,
+	);
 
 	scuffle_foundations::telemetry::server::register_health_check(global.clone());
 
@@ -25,9 +31,11 @@ async fn main(settings: Matches<Config>) {
 		.with_signal(SignalKind::interrupt())
 		.with_signal(SignalKind::terminate());
 
-	let app_handle = tokio::spawn(http::run(global.clone()));
+	let app_handle = scuffle_foundations::runtime::spawn(http::run(global.clone()));
+	let purge_handle = scuffle_foundations::runtime::spawn(cdn_purge::run(global.clone()));
+
 	let metrics_handle = if global.config.telemetry.metrics.enabled {
-		Some(tokio::spawn(metrics::recorder()))
+		Some(scuffle_foundations::runtime::spawn(metrics::recorder()))
 	} else {
 		None
 	};
@@ -88,6 +96,19 @@ async fn main(settings: Matches<Config>) {
 				}
 			}
 		},
+		r = purge_handle => {
+			match r {
+				Ok(Err(err)) => {
+					tracing::error!("purge worker exited: {:#}", err);
+				}
+				Err(err) => {
+					tracing::error!("purge worker exited: {:#}", err);
+				}
+				Ok(Ok(())) => {
+					tracing::info!("purge worker exited");
+				}
+			}
+		},
 		s = &mut shutdown => {
 			if let Err(err) = s {
 				tracing::error!("shutdown error: {:#}", err);
@@ -98,5 +119,8 @@ async fn main(settings: Matches<Config>) {
 		}
 	}
 
+	handler.cancel();
 	shutdown.await.unwrap();
+
+	Ok(())
 }

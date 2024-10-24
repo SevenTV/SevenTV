@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
+use shared::cdn::PurgeRequest;
 use shared::database::badge::{Badge, BadgeId};
 use shared::database::queries::{filter, update};
 use shared::database::stored_event::{ImageProcessorEvent, StoredEventBadgeData};
@@ -17,8 +18,22 @@ pub async fn handle_success(
 	_: &Arc<Global>,
 	id: BadgeId,
 	event: event_callback::Success,
-) -> TransactionResult<(), anyhow::Error> {
+) -> TransactionResult<PurgeRequest, anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
+
+	let before = tx
+		.find_one(
+			filter::filter! {
+			Badge {
+				#[query(rename = "_id")]
+				id: id,
+			}
+			},
+			None,
+		)
+		.await?
+		.context("badge not found")
+		.map_err(TransactionError::Custom)?;
 
 	let after = tx
 		.find_one_and_update(
@@ -57,7 +72,9 @@ pub async fn handle_success(
 		timestamp: chrono::Utc::now(),
 	})?;
 
-	Ok(())
+	Ok(PurgeRequest {
+		files: before.image_set.outputs.iter().filter_map(|i| i.path.parse().ok()).collect(),
+	})
 }
 
 pub async fn handle_fail(
@@ -72,6 +89,10 @@ pub async fn handle_fail(
 		.await
 		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query badge")))?
 		.ok_or(TransactionError::Custom(anyhow::anyhow!("failed to query badge")))?;
+
+	let error = event.error.clone().unwrap_or_default();
+
+	tracing::info!("badge {} failed: {:?}: {}", id, error.code(), error.message);
 
 	tx.register_event(InternalEvent {
 		actor: None,

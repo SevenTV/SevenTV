@@ -505,6 +505,7 @@ impl Permissions {
 			.emote_moderation_request_priority
 			.or(self.emote_moderation_request_priority);
 		self.emote_moderation_request_limit = other.emote_moderation_request_limit.or(self.emote_moderation_request_limit);
+		self.emote_set_limit = other.emote_set_limit.or(self.emote_set_limit);
 		self.emote_set_capacity = other.emote_set_capacity.or(self.emote_set_capacity);
 		self.personal_emote_set_capacity = other.personal_emote_set_capacity.or(self.personal_emote_set_capacity);
 

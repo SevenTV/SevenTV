@@ -15,7 +15,6 @@ use super::{MongoCollection, MongoGenericCollection};
 use crate::database::graph::{GraphEdge, GraphKey};
 use crate::typesense::types::impl_typesense_type;
 
-/// https://www.mermaidchart.com/raw/db698878-667d-4aac-a7c7-6c310120ff35?version=v0.1&format=svg
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum EntitlementEdgeKind {

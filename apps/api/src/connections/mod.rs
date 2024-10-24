@@ -100,6 +100,7 @@ pub async fn exchange_code(
 	}
 }
 
+#[derive(Debug, Clone)]
 pub struct PlatformUserData {
 	pub id: String,
 	pub username: String,

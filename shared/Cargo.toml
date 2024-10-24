@@ -63,7 +63,7 @@ maxminddb = "0.24.0"
 reqwest = { version = "0.12.8", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
 flate2 = "1.0.33"
 tar = "0.4.41"
-fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "partial-tracing"]}
+fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "i-scripts"]}
 ipnet = { version = "2.9.0", features = ["serde"] }
 spin = "0.9.8"
 axum = "0.7"

@@ -9,6 +9,7 @@ use crate::http::egvault::metadata::{CustomerMetadata, StripeMetadata};
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
+#[tracing::instrument(skip_all, name = "stripe::customer::created")]
 pub async fn created(
 	_global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use shared::database::badge::BadgeId;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{
 	Paint, PaintData, PaintGradientStop, PaintId, PaintLayer, PaintLayerId, PaintLayerType, PaintShadow,
@@ -23,9 +24,29 @@ use crate::transactions::{transaction, transaction_with_mutex, GeneralMutexKey, 
 #[derive(Default)]
 pub struct CosmeticsMutation;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, async_graphql::Enum)]
+pub enum CosmeticKind {
+	Paint,
+	Badge,
+}
+
+#[derive(SimpleObject)]
+pub struct CosmeticReprocessResults {
+	pub paints: Vec<CosmeticReprocessResult>,
+	pub badges: Vec<CosmeticReprocessResult>,
+}
+
+#[derive(SimpleObject)]
+pub struct CosmeticReprocessResult {
+	pub id: GqlObjectId,
+	pub success: bool,
+	pub error: Option<String>,
+}
+
 #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
 impl CosmeticsMutation {
 	#[graphql(guard = "PermissionGuard::one(PaintPermission::Manage)")]
+	#[tracing::instrument(skip_all, name = "CosmeticsMutation::create_cosmetic_paint")]
 	async fn create_cosmetic_paint<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -81,6 +102,128 @@ impl CosmeticsMutation {
 
 	async fn cosmetics(&self, id: GqlObjectId) -> CosmeticOps {
 		CosmeticOps { id }
+	}
+
+	#[graphql(guard = "PermissionGuard::one(PaintPermission::Manage)")]
+	async fn reprocess_cosmetic_image<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		paint_ids: Option<Vec<GqlObjectId>>,
+		badge_ids: Option<Vec<GqlObjectId>>,
+	) -> Result<CosmeticReprocessResults, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let mut paint_ids = paint_ids
+			.unwrap_or_default()
+			.into_iter()
+			.map(|id| id.id())
+			.collect::<Vec<PaintId>>();
+		let mut badge_ids = badge_ids
+			.unwrap_or_default()
+			.into_iter()
+			.map(|id| id.id())
+			.collect::<Vec<BadgeId>>();
+
+		paint_ids.sort();
+		paint_ids.dedup();
+		badge_ids.sort();
+		badge_ids.dedup();
+
+		let paints = global
+			.paint_by_id_loader
+			.load_many(paint_ids.iter().copied())
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?;
+
+		let badges = global
+			.badge_by_id_loader
+			.load_many(badge_ids.iter().copied())
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?;
+
+		let mut paint_responses = Vec::new();
+
+		for id in paint_ids {
+			let Some(paint) = paints.get(&id) else {
+				paint_responses.push(CosmeticReprocessResult {
+					id: id.into(),
+					success: false,
+					error: Some("paint not found".to_string()),
+				});
+				continue;
+			};
+
+			let mut at_least_one = false;
+
+			for layer in &paint.data.layers {
+				if let PaintLayerType::Image(ImageSet { input, .. }) = &layer.ty {
+					let image = match input {
+						ImageSetInput::Pending { path, .. } => path.clone(),
+						ImageSetInput::Image(image) => image.path.clone(),
+					};
+
+					global
+						.image_processor
+						.reprocess_paint_layer(image, paint.id, layer.id)
+						.await
+						.map_err(|e| {
+							tracing::error!(error = ?e, "failed to reprocess paint layer");
+							ApiError::internal_server_error(
+								ApiErrorCode::ImageProcessorError,
+								"failed to reprocess paint layer",
+							)
+						})?;
+
+					at_least_one = true;
+				}
+			}
+
+			paint_responses.push(CosmeticReprocessResult {
+				id: id.into(),
+				success: at_least_one,
+				error: if at_least_one {
+					None
+				} else {
+					Some("no image layers to reprocess".to_string())
+				},
+			});
+		}
+
+		let mut badge_responses = Vec::new();
+
+		for id in badge_ids {
+			let Some(badge) = badges.get(&id) else {
+				badge_responses.push(CosmeticReprocessResult {
+					id: id.into(),
+					success: false,
+					error: Some("badge not found".to_string()),
+				});
+				continue;
+			};
+
+			let image = match &badge.image_set.input {
+				ImageSetInput::Pending { path, .. } => path.clone(),
+				ImageSetInput::Image(image) => image.path.clone(),
+			};
+
+			global.image_processor.reprocess_badge(image, badge.id).await.map_err(|e| {
+				tracing::error!(error = ?e, "failed to reprocess badge");
+				ApiError::internal_server_error(ApiErrorCode::ImageProcessorError, "failed to reprocess badge")
+			})?;
+
+			badge_responses.push(CosmeticReprocessResult {
+				id: id.into(),
+				success: true,
+				error: None,
+			});
+		}
+
+		Ok(CosmeticReprocessResults {
+			paints: paint_responses,
+			badges: badge_responses,
+		})
 	}
 }
 
@@ -282,6 +425,7 @@ pub struct CosmeticOps {
 #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
 impl CosmeticOps {
 	#[graphql(guard = "PermissionGuard::one(PaintPermission::Manage)")]
+	#[tracing::instrument(skip_all, name = "CosmeticOps::update_paint")]
 	async fn update_paint<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,

@@ -102,17 +102,17 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 				}
 			}
 			event_callback::Event::Fail(event) => {
-				if let Err(err) = handle_fail(&global, subject, event, event_callback.metadata).await {
+				if let Err(err) = handle_fail(&global, subject, event).await {
 					tracing::error!(error = %err, "failed to handle fail event");
 				}
 			}
-			event_callback::Event::Cancel(event) => {
-				if let Err(err) = handle_cancel(&global, subject, event, event_callback.metadata).await {
+			event_callback::Event::Cancel(_) => {
+				if let Err(err) = handle_cancel(&global, subject).await {
 					tracing::error!(error = %err, "failed to handle cancel event");
 				}
 			}
-			event_callback::Event::Start(event) => {
-				if let Err(err) = handle_start(&global, subject, event, event_callback.metadata).await {
+			event_callback::Event::Start(_) => {
+				if let Err(err) = handle_start(&global, subject).await {
 					tracing::error!(error = %err, "failed to handle start event");
 				}
 			}
@@ -171,7 +171,7 @@ async fn handle_success(
 		Subject::Badge(id) => Some(GeneralMutexKey::Badge(id)),
 	};
 
-	transaction_with_mutex(global, mutex_key.map(Into::into), |tx| async move {
+	let purge_keys = transaction_with_mutex(global, mutex_key.map(Into::into), |tx| async move {
 		match subject {
 			Subject::Emote(id) => emote::handle_success(tx, global, id, event, metadata).await,
 			Subject::ProfilePicture(id) => profile_picture::handle_success(tx, global, id, event).await,
@@ -180,15 +180,25 @@ async fn handle_success(
 		}
 	})
 	.await
-	.context("transaction")
+	.context("transaction")?;
+
+	if !purge_keys.files.is_empty() {
+		global
+			.jetstream
+			.publish(
+				format!("{}.request", global.config.cdn.purge_stream_subject),
+				serde_json::to_vec(&purge_keys)
+					.expect("failed to serialize purge keys")
+					.into(),
+			)
+			.await
+			.context("failed to send purge request")?;
+	}
+
+	Ok(())
 }
 
-async fn handle_fail(
-	global: &Arc<Global>,
-	subject: Subject,
-	event: event_callback::Fail,
-	_metadata: HashMap<String, String>,
-) -> anyhow::Result<()> {
+async fn handle_fail(global: &Arc<Global>, subject: Subject, event: event_callback::Fail) -> anyhow::Result<()> {
 	let mutex_key = match subject {
 		Subject::Emote(id) => Some(GeneralMutexKey::Emote(id)),
 		Subject::ProfilePicture(_) => None,
@@ -208,12 +218,7 @@ async fn handle_fail(
 	.context("transaction")
 }
 
-async fn handle_start(
-	global: &Arc<Global>,
-	subject: Subject,
-	_event: event_callback::Start,
-	_metadata: HashMap<String, String>,
-) -> anyhow::Result<()> {
+async fn handle_start(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
 	let mutex_key = match subject {
 		Subject::Emote(id) => Some(GeneralMutexKey::Emote(id)),
 		Subject::ProfilePicture(_) => None,
@@ -233,12 +238,7 @@ async fn handle_start(
 	.context("transaction")
 }
 
-async fn handle_cancel(
-	global: &Arc<Global>,
-	subject: Subject,
-	_event: event_callback::Cancel,
-	_metadata: HashMap<String, String>,
-) -> anyhow::Result<()> {
+async fn handle_cancel(global: &Arc<Global>, subject: Subject) -> anyhow::Result<()> {
 	let mutex_key = match subject {
 		Subject::Emote(id) => Some(GeneralMutexKey::Emote(id)),
 		Subject::ProfilePicture(_) => None,

@@ -10,13 +10,13 @@ use shared::database::user::User;
 use shared::event::{InternalEvent, InternalEventData};
 
 use super::LoginRequest;
-use crate::connections;
+use crate::connections::{self, PlatformUserData};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::http::middleware::session::{Session, AUTH_COOKIE};
 use crate::jwt::{AuthJwtPayload, CsrfJwtPayload, JwtState};
-use crate::transactions::{transaction, TransactionError};
+use crate::transactions::{transaction, TransactionError, TransactionResult, TransactionSession};
 
 const CSRF_COOKIE: &str = "seventv-csrf";
 
@@ -42,10 +42,162 @@ fn redirect_uri(global: &Arc<Global>, platform: impl Display) -> Result<url::Url
 		})
 }
 
+async fn fetch_user_on_callback(
+	tx: &mut TransactionSession<'_, ApiError>,
+	platform: Platform,
+	user_data: &PlatformUserData,
+	user_session: Option<&UserSession>,
+) -> TransactionResult<User, ApiError> {
+	let user = tx
+		.find_one(
+			filter::filter! {
+				User {
+					#[query(elem_match)]
+					connections: UserConnection {
+						platform,
+						platform_id: &user_data.id,
+					}
+				}
+			},
+			None,
+		)
+		.await?;
+
+	let user_id = match (user_session, user) {
+		// user tries to link a different account
+		(Some(user_session), Some(user)) if user_session.user_id != user.id => {
+			// deny log in
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::MutationError,
+				"connection already paired with another user",
+			)));
+		}
+		// user links an already linked account
+		// we know that (user_id == user.id) is true here, or that the account isnt linked yet
+		(Some(user_session), _) => user_session.user_id,
+		// user logs in with an existing account
+		(None, Some(user)) => {
+			let connection = user
+				.connections
+				.iter()
+				.find(|c| c.platform_id == user_data.id)
+				.ok_or_else(|| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::LoadError,
+						"failed to load connection",
+					))
+				})?;
+
+			if !connection.allow_login {
+				return Err(TransactionError::Custom(ApiError::unauthorized(
+					ApiErrorCode::LackingPrivileges,
+					"connection is not allowed to login",
+				)));
+			}
+
+			user.id
+		}
+		// user logs in for the first time
+		(None, None) => {
+			// create new user
+			let user = User {
+				connections: vec![UserConnection {
+					platform,
+					platform_id: user_data.id.clone(),
+					platform_username: user_data.username.clone(),
+					platform_display_name: user_data.display_name.clone(),
+					platform_avatar_url: user_data.avatar.clone(),
+					allow_login: true,
+					updated_at: chrono::Utc::now(),
+					linked_at: chrono::Utc::now(),
+				}],
+				..Default::default()
+			};
+
+			tx.insert_one::<User>(&user, None).await?;
+
+			return Ok(user);
+		}
+	};
+
+	let updated = tx
+		.find_one_and_update(
+			filter::filter! {
+				User {
+					#[query(rename = "_id")]
+					id: user_id,
+					#[query(elem_match)]
+					connections: UserConnection {
+						platform,
+						platform_id: &user_data.id,
+					}
+				}
+			},
+			update::update! {
+				#[query(set)]
+				User {
+					#[query(flatten, index = "$")]
+					connections: UserConnection {
+						platform_username: &user_data.username,
+						platform_display_name: &user_data.display_name,
+						platform_avatar_url: &user_data.avatar,
+						updated_at: chrono::Utc::now(),
+					},
+					updated_at: chrono::Utc::now(),
+					search_updated_at: &None,
+				}
+			},
+			None,
+		)
+		.await?;
+
+	match updated {
+		Some(user) => Ok(user),
+		None => Ok(tx
+			.find_one_and_update(
+				filter::filter! {
+					User {
+						#[query(rename = "_id")]
+						id: user_id,
+					}
+				},
+				update::update! {
+					#[query(push)]
+					User {
+						#[query(serde)]
+						connections: UserConnection {
+							platform,
+							platform_id: user_data.id.clone(),
+							platform_username: user_data.username.clone(),
+							platform_display_name: user_data.display_name.clone(),
+							platform_avatar_url: user_data.avatar.clone(),
+							allow_login: true,
+							updated_at: chrono::Utc::now(),
+							linked_at: chrono::Utc::now(),
+						},
+					},
+					#[query(set)]
+					User {
+						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
+					}
+				},
+				None,
+			)
+			.await?
+			.ok_or_else(|| {
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::MutationError,
+					"failed to insert connection",
+				))
+			})?),
+	}
+}
+
 /// https://gist.github.com/lennartkloock/412323105bc913c7064664dc4f1568cb
 pub async fn handle_callback(
 	global: &Arc<Global>,
-	_session: &Session,
+	old_session: &Session,
 	query: LoginRequest,
 	cookies: &Cookies,
 ) -> Result<String, ApiError> {
@@ -72,256 +224,120 @@ pub async fn handle_callback(
 		connections::exchange_code(global, platform, &code, redirect_uri(global, query.platform)?.to_string()).await?;
 
 	// query user data from platform
-	let user_data = connections::get_user_data(global, platform, &token.access_token).await?;
+	let user_data = &connections::get_user_data(global, platform, &token.access_token).await?;
 
-	let user = transaction(global, |mut tx| async move {
-		let user = tx
-			.find_one(
-				filter::filter! {
-					User {
-						#[query(elem_match)]
-						connections: UserConnection {
-							platform,
-							platform_id: &user_data.id,
-						}
-					}
-				},
-				None,
-			)
-			.await?;
+	let user_session = if let Some(user_session_id) = csrf_payload.session_id {
+		let user_session = global
+			.user_session_by_id_loader
+			.load(user_session_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load session"))?
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::BadRequest, "invalid session"))?;
 
-		let user_id = match (csrf_payload.user_id, user) {
-			// user tries to link a different account
-			(Some(user_id), Some(user)) if user_id != user.id => {
-				// deny log in
-				return Err(TransactionError::Custom(ApiError::bad_request(
-					ApiErrorCode::MutationError,
-					"connection already paired with another user",
-				)));
-			}
-			// user links an already linked account
-			// we know that (user_id == user.id) is true here
-			(Some(user_id), Some(_)) => user_id,
-			// user links a new account
-			(Some(user_id), None) => user_id,
-			// user logs in with an existing account
-			(None, Some(user)) => {
-				let connection = user
-					.connections
-					.iter()
-					.find(|c| c.platform_id == user_data.id)
-					.ok_or_else(|| {
-						TransactionError::Custom(ApiError::internal_server_error(
-							ApiErrorCode::LoadError,
-							"failed to load connection",
-						))
-					})?;
-
-				if !connection.allow_login {
-					return Err(TransactionError::Custom(ApiError::unauthorized(
-						ApiErrorCode::LackingPrivileges,
-						"connection is not allowed to login",
-					)));
-				}
-
-				user.id
-			}
-			// user logs in for the first time
-			(None, None) => {
-				// create new user
-				let user = User {
-					connections: vec![UserConnection {
-						platform,
-						platform_id: user_data.id.clone(),
-						platform_username: user_data.username.clone(),
-						platform_display_name: user_data.display_name.clone(),
-						platform_avatar_url: user_data.avatar.clone(),
-						allow_login: true,
-						updated_at: chrono::Utc::now(),
-						linked_at: chrono::Utc::now(),
-					}],
-					..Default::default()
-				};
-
-				tx.insert_one::<User>(&user, None).await?;
-
-				return Ok(user);
-			}
-		};
-
-		// upsert the connection
-		let updated = tx
-			.find_one_and_update(
-				filter::filter! {
-					User {
-						#[query(rename = "_id")]
-						id: user_id,
-						#[query(elem_match)]
-						connections: UserConnection {
-							platform,
-							platform_id: &user_data.id,
-						}
-					}
-				},
-				update::update! {
-					#[query(set)]
-					User {
-						#[query(flatten, index = "$")]
-						connections: UserConnection {
-							platform_username: &user_data.username,
-							platform_display_name: &user_data.display_name,
-							platform_avatar_url: &user_data.avatar,
-							updated_at: chrono::Utc::now(),
-						},
-						updated_at: chrono::Utc::now(),
-						search_updated_at: &None,
-					}
-				},
-				None,
-			)
-			.await?;
-
-		let updated = match updated {
-			Some(user) => user,
-			None => tx
-				.find_one_and_update(
-					filter::filter! {
-						User {
-							#[query(rename = "_id")]
-							id: user_id,
-						}
-					},
-					update::update! {
-						#[query(push)]
-						User {
-							#[query(serde)]
-							connections: UserConnection {
-								platform,
-								platform_id: user_data.id,
-								platform_username: user_data.username,
-								platform_display_name: user_data.display_name,
-								platform_avatar_url: user_data.avatar,
-								allow_login: true,
-								updated_at: chrono::Utc::now(),
-								linked_at: chrono::Utc::now(),
-							},
-						},
-						#[query(set)]
-						User {
-							updated_at: chrono::Utc::now(),
-							search_updated_at: &None,
-						}
-					},
-					None,
-				)
-				.await?
-				.ok_or_else(|| {
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::MutationError,
-						"failed to insert connection",
-					))
-				})?,
-		};
-
-		Ok(updated)
-	})
-	.await;
-
-	let user = match user {
-		Ok(user) => user,
-		Err(TransactionError::Custom(e)) => return Err(e),
-		Err(e) => {
-			tracing::error!(error = %e, "transaction failed");
-			return Err(ApiError::internal_server_error(
-				ApiErrorCode::TransactionError,
-				"transaction failed",
-			));
+		if user_session.expires_at < chrono::Utc::now() {
+			return Err(ApiError::unauthorized(ApiErrorCode::BadRequest, "session expired"));
 		}
+
+		Some(user_session)
+	} else {
+		None
 	};
 
-	let full_user = global
-		.user_loader
-		.load_user(global, user)
-		.await
-		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+	let user_session = user_session.as_ref();
 
-	if !full_user.has(UserPermission::Login) {
-		return Err(ApiError::forbidden(ApiErrorCode::LackingPrivileges, "not allowed to login"));
-	}
+	let response = transaction(global, |mut tx| async move {
+		let user = fetch_user_on_callback(&mut tx, platform, user_data, user_session).await?;
 
-	let res = transaction(global, |mut tx| async move {
-		if csrf_payload.user_id.is_none() {
-			let user_session = UserSession {
-				id: Default::default(),
-				user_id: full_user.id,
-				// TODO: maybe allow for this to be configurable
-				expires_at: chrono::Utc::now() + chrono::Duration::days(30),
-				last_used_at: chrono::Utc::now(),
-			};
+		// upsert the connection
+		let full_user = global.user_loader.load_user(global, user).await.map_err(|_| {
+			TransactionError::Custom(ApiError::internal_server_error(
+				ApiErrorCode::LoadError,
+				"failed to load user",
+			))
+		})?;
 
-			tx.insert_one::<UserSession>(&user_session, None).await?;
-
-			tx.register_event(InternalEvent {
-				actor: Some(full_user.clone()),
-				session_id: None,
-				data: InternalEventData::UserSession {
-					after: user_session.clone(),
-					data: StoredEventUserSessionData::Create { platform },
-				},
-				timestamp: chrono::Utc::now(),
-			})?;
-
-			// create jwt access token
-			let jwt = AuthJwtPayload::from(user_session.clone());
-			let token = jwt
-				.serialize(global)
-				.ok_or_else(|| {
-					tracing::error!("failed to serialize jwt");
-					ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to serialize jwt")
-				})
-				.map_err(TransactionError::Custom)?;
-
-			// create cookie
-			let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(user_session.expires_at.timestamp())
-				.map_err(|err| {
-					tracing::error!(error = %err, "failed to convert expiration to cookie time");
-					ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to convert expiration to cookie time")
-				})
-				.map_err(TransactionError::Custom)?;
-
-			cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
-			cookies.remove(global, CSRF_COOKIE);
-
-			global
-				.config
-				.api
-				.website_origin
-				.join(&format!("/auth/callback?platform={}&token={}", query.platform, token))
-				.map_err(|e| {
-					tracing::error!(err = %e, "failed to generate redirect url");
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::Unknown,
-						"failed to generate redirect url",
-					))
-				})
-		} else {
-			global
-				.config
-				.api
-				.website_origin
-				.join(&format!("/auth/callback?platform={}", platform))
-				.map_err(|e| {
-					tracing::error!(err = %e, "failed to generate redirect url");
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::Unknown,
-						"failed to generate redirect url",
-					))
-				})
+		if !full_user.has(UserPermission::Login) {
+			return Err(TransactionError::Custom(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"not allowed to login",
+			)));
 		}
+
+		// They were already logged in and therefore we don't need to create a new
+		// session for them.
+		if user_session.is_some() {
+			return global
+				.config
+				.api
+				.website_origin
+				.join(&format!("/auth/callback#platform={}&linked=true", platform))
+				.map_err(|e| {
+					tracing::error!(err = %e, "failed to generate redirect url");
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::Unknown,
+						"failed to generate redirect url",
+					))
+				});
+		}
+
+		let user_session = UserSession {
+			id: Default::default(),
+			user_id: full_user.id,
+			// TODO: maybe allow for this to be configurable
+			expires_at: chrono::Utc::now() + chrono::Duration::days(30),
+			last_used_at: chrono::Utc::now(),
+		};
+
+		tx.insert_one::<UserSession>(&user_session, None).await?;
+
+		tx.register_event(InternalEvent {
+			actor: Some(full_user.clone()),
+			session_id: None,
+			data: InternalEventData::UserSession {
+				after: user_session.clone(),
+				data: StoredEventUserSessionData::Create { platform },
+			},
+			timestamp: chrono::Utc::now(),
+		})?;
+
+		// create jwt access token
+		let jwt = AuthJwtPayload::from(user_session.clone());
+		let token = jwt
+			.serialize(global)
+			.ok_or_else(|| {
+				tracing::error!("failed to serialize jwt");
+				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to serialize jwt")
+			})
+			.map_err(TransactionError::Custom)?;
+
+		// create cookie
+		let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(user_session.expires_at.timestamp())
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to convert expiration to cookie time");
+				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to convert expiration to cookie time")
+			})
+			.map_err(TransactionError::Custom)?;
+
+		cookies.add(new_cookie(global, (AUTH_COOKIE, token.clone())).expires(expiration));
+		cookies.remove(global, CSRF_COOKIE);
+		old_session.logout_with_tx(&mut tx).await?;
+
+		global
+			.config
+			.api
+			.website_origin
+			.join(&format!("/auth/callback#platform={}&token={}", query.platform, token))
+			.map_err(|e| {
+				tracing::error!(err = %e, "failed to generate redirect url");
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::Unknown,
+					"failed to generate redirect url",
+				))
+			})
 	})
 	.await;
 
-	match res {
+	match response {
 		Ok(redirect_url) => Ok(redirect_url.to_string()),
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
@@ -338,6 +354,7 @@ pub fn handle_login(
 	global: &Arc<Global>,
 	session: &Session,
 	platform: Platform,
+	link_connection: bool,
 	cookies: &Cookies,
 ) -> Result<String, ApiError> {
 	// redirect to platform auth url
@@ -356,7 +373,13 @@ pub fn handle_login(
 		}
 	};
 
-	let csrf = CsrfJwtPayload::new(session);
+	let csrf = CsrfJwtPayload::new(if link_connection {
+		Some(session.user_session_id().ok_or_else(|| {
+			ApiError::bad_request(ApiErrorCode::LackingPrivileges, "you need to be logged in to link an account")
+		})?)
+	} else {
+		None
+	});
 
 	cookies.add(new_cookie(
 		global,

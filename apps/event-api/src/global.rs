@@ -11,7 +11,6 @@ pub struct Global {
 	pub config: Config,
 	pub subscription_manager: subscription::SubscriptionManager,
 	active_connections: Arc<std::sync::atomic::AtomicUsize>,
-	pub http_client: reqwest::Client,
 }
 
 /// An atomic ticket.
@@ -47,7 +46,6 @@ impl Global {
 			nats,
 			config,
 			subscription_manager: Default::default(),
-			http_client: reqwest::Client::new(),
 			active_connections: Default::default(),
 		})
 	}

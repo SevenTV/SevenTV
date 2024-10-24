@@ -18,6 +18,7 @@ use shared::database::stored_event::StoredEventEmoteData;
 use shared::database::MongoCollection;
 use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::{EmoteFlagsModel, EmotePartialModel, UserPartialModel};
+use tracing::Instrument;
 
 use super::types::EmoteModel;
 use crate::dataloader::emote::EmoteByIdLoaderExt;
@@ -70,7 +71,7 @@ pub async fn create_emote(
 	body: axum::body::Body,
 ) -> Result<impl IntoResponse, ApiError> {
 	let body = axum::body::to_bytes(body, 7 * 1024 * 1024).await.map_err(|e| {
-		tracing::error!(error = %e, "body too large");
+		tracing::warn!(error = %e, "body too large");
 		ApiError::bad_request(ApiErrorCode::BadRequest, "body too large")
 	})?;
 
@@ -138,7 +139,12 @@ pub async fn create_emote(
 
 		let emote_id = EmoteId::new();
 
-		let input = match global.image_processor.upload_emote(emote_id, body, Some(session.ip())).await {
+		let input = match global
+			.image_processor
+			.upload_emote(emote_id, body, Some(session.ip()))
+			.instrument(tracing::info_span!("image_processor_upload"))
+			.await
+		{
 			Ok(ProcessImageResponse {
 				id,
 				error: None,

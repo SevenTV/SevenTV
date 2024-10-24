@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use serde::{Deserialize, Deserializer};
 use shared::database::product::invoice::InvoiceDisputeStatus;
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -33,10 +36,28 @@ pub enum EventType {
 	BillingSubscriptionPaymentFailed,
 }
 
+impl EventType {
+	pub const fn as_str(&self) -> &'static str {
+		match self {
+			EventType::PaymentSaleCompleted => "PAYMENT.SALE.COMPLETED",
+			EventType::PaymentSaleRefunded => "PAYMENT.SALE.REFUNDED",
+			EventType::PaymentSaleReversed => "PAYMENT.SALE.REVERSED",
+			EventType::CustomerDisputeCreated => "CUSTOMER.DISPUTE.CREATED",
+			EventType::CustomerDisputeUpdated => "CUSTOMER.DISPUTE.UPDATED",
+			EventType::CustomerDisputeResolved => "CUSTOMER.DISPUTE.RESOLVED",
+			EventType::BillingSubscriptionExpired => "BILLING.SUBSCRIPTION.EXPIRED",
+			EventType::BillingSubscriptionCancelled => "BILLING.SUBSCRIPTION.CANCELLED",
+			EventType::BillingSubscriptionSuspended => "BILLING.SUBSCRIPTION.SUSPENDED",
+			EventType::BillingSubscriptionPaymentFailed => "BILLING.SUBSCRIPTION.PAYMENT.FAILED",
+		}
+	}
+}
+
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(tag = "resource_type", content = "resource", rename_all = "snake_case")]
 pub enum Resource {
 	Sale(Sale),
+	Refund(Refund),
 	Dispute(Dispute),
 	Subscription(Box<Subscription>),
 }
@@ -46,7 +67,7 @@ pub enum Resource {
 pub struct Sale {
 	pub id: String,
 	// pub state: SaleState,
-	// pub amount: Amount,
+	pub amount: Amount,
 	/// Only present if the sale is for a subscription
 	pub billing_agreement_id: Option<String>,
 	// pub create_time: chrono::DateTime<chrono::Utc>,
@@ -62,13 +83,28 @@ pub enum SaleState {
 	Denied,
 }
 
-// #[derive(Debug, Clone, serde::Deserialize)]
-// pub struct Amount {
-// 	/// The total amount of the sale as a decimal number.
-// 	/// Negative on refunds.
-// 	pub total: String,
-// 	pub currency: stripe::Currency,
-// }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct Amount {
+	/// The total amount of the sale as a decimal number.
+	/// Negative on refunds.
+	pub total: String,
+	#[serde(deserialize_with = "stripe_currency")]
+	pub currency: stripe::Currency,
+}
+
+fn stripe_currency<'de, D>(deserializer: D) -> Result<stripe::Currency, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let s = String::deserialize(deserializer)?.to_lowercase();
+	stripe::Currency::from_str(&s).map_err(serde::de::Error::custom)
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Refund {
+	pub sale_id: String,
+}
 
 /// https://developer.paypal.com/docs/api/customer-disputes/v1/#definition-dispute
 #[derive(Debug, Clone, serde::Deserialize)]

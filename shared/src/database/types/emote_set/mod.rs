@@ -15,6 +15,7 @@ pub type EmoteSetId = Id<EmoteSet>;
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
 #[mongo(collection_name = "emote_sets")]
 #[mongo(index(fields("emotes.id" = 1)))]
+#[mongo(index(fields("emotes.added_by_id" = 1)))]
 #[mongo(index(fields(owner_id = 1)))]
 #[mongo(index(fields(_id = 1, "emotes.id" = 1), unique))]
 #[mongo(index(fields(_id = 1, "emotes.alias" = 1), unique))]

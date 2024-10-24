@@ -153,6 +153,7 @@ impl RateLimiter {
 		})
 	}
 
+	#[tracing::instrument(skip_all, name = "RateLimiter::acquire", fields(resource = request.resource.as_str()))]
 	pub async fn acquire(&self, request: RateLimitRequest) -> Result<Option<RateLimitResponse>, ApiError> {
 		if request.ticket_count <= 0 || request.interval_seconds <= 0 {
 			return Ok(None);
@@ -172,7 +173,7 @@ impl RateLimiter {
 			.ratelimit
 			.fcall(
 				&self.redis,
-				vec![format!("ratelimit:v1:{}:{}", request.resource.as_str(), request.id).as_str()],
+				vec![format!("ratelimit:v2:{}:{}", request.resource.as_str(), request.id).as_str()],
 				vec![
 					request.limit,
 					request.ticket_count,

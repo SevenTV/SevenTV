@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use scuffle_image_processor_proto::event_callback;
+use shared::cdn::PurgeRequest;
 use shared::database::paint::{Paint, PaintData, PaintId, PaintLayer, PaintLayerId, PaintLayerType};
 use shared::database::queries::{filter, update};
 use shared::database::stored_event::{ImageProcessorEvent, StoredEventPaintData};
@@ -17,8 +19,22 @@ pub async fn handle_success(
 	id: PaintId,
 	layer_id: PaintLayerId,
 	event: event_callback::Success,
-) -> TransactionResult<(), anyhow::Error> {
+) -> TransactionResult<PurgeRequest, anyhow::Error> {
 	let image_set = event_to_image_set(event).map_err(TransactionError::Custom)?;
+
+	let before = tx
+		.find_one(
+			filter::filter! {
+				Paint {
+					#[query(rename = "_id")]
+					id: id,
+				}
+			},
+			None,
+		)
+		.await?
+		.context("paint not found")
+		.map_err(TransactionError::Custom)?;
 
 	let after = tx
 		.find_one_and_update(
@@ -69,7 +85,23 @@ pub async fn handle_success(
 		timestamp: chrono::Utc::now(),
 	})?;
 
-	Ok(())
+	Ok(PurgeRequest {
+		files: before
+			.data
+			.layers
+			.iter()
+			.find(|l| l.id == layer_id)
+			.into_iter()
+			.filter_map(|l| {
+				if let PaintLayerType::Image(image_set) = &l.ty {
+					Some(image_set.outputs.iter().filter_map(|i| i.path.parse().ok()))
+				} else {
+					None
+				}
+			})
+			.flatten()
+			.collect(),
+	})
 }
 
 pub async fn handle_fail(
@@ -84,6 +116,10 @@ pub async fn handle_fail(
 		.await
 		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query paint")))?
 		.ok_or(TransactionError::Custom(anyhow::anyhow!("paint not found")))?;
+
+	let error = event.error.clone().unwrap_or_default();
+
+	tracing::info!("paint {} failed: {:?}: {}", id, error.code(), error.message);
 
 	tx.register_event(InternalEvent {
 		actor: None,

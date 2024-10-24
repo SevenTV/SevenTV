@@ -426,23 +426,32 @@ pub async fn create_user_presence(
 
 		let owners = global
 			.user_loader
-			.load_fast_many(&global, emotes.emotes.values().map(|e| e.owner_id))
+			.load_fast_many(
+				&global,
+				emotes
+					.emotes
+					.values()
+					.filter(|e| e.flags.contains(EmoteFlags::ApprovedPersonal))
+					.map(|e| e.owner_id),
+			)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 		let mut sets = vec![];
 
-		for set in personal_emote_sets {
+		for mut set in personal_emote_sets {
 			let mut set_emotes = Vec::new();
 			let mut emote_owners = HashMap::new();
+
+			set.emotes.retain(|e| emotes.get(e.id).is_some());
 
 			for emote in set.emotes.iter().filter_map(|e| emotes.get(e.id)) {
 				if emote.flags.contains(EmoteFlags::ApprovedPersonal) {
 					set_emotes.push(emote.clone());
-				}
 
-				if let Some(owner) = owners.get(&emote.owner_id) {
-					emote_owners.insert(owner.id, owner.clone());
+					if let Some(owner) = owners.get(&emote.owner_id) {
+						emote_owners.insert(owner.id, owner.clone());
+					}
 				}
 			}
 

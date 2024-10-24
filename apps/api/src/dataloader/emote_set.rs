@@ -6,7 +6,6 @@ use itertools::Itertools;
 use mongodb::options::ReadPreference;
 use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
 use scuffle_foundations::batcher::BatcherConfig;
-use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
 use shared::database::emote_set::EmoteSet;
 use shared::database::loader::dataloader::BatchLoad;
 use shared::database::queries::filter;
@@ -26,7 +25,7 @@ impl EmoteSetByUserIdLoader {
 				name: "EmoteSetByUserIdLoader".to_string(),
 				concurrency: 500,
 				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(20),
+				sleep_duration: std::time::Duration::from_millis(5),
 			},
 		)
 	}
@@ -44,10 +43,8 @@ impl Loader for EmoteSetByUserIdLoader {
 		self.config.clone()
 	}
 
-	#[tracing::instrument(skip_all, fields(key_count = keys.len()))]
-	async fn load(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		tracing::Span::current().make_root();
-
+	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
+	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
 		let _batch = BatchLoad::new(&self.config.name, keys.len());
 
 		let results: Vec<EmoteSet> = EmoteSet::collection(&self.db)

@@ -1,6 +1,6 @@
 use anyhow::Context;
 use fred::prelude::{ClientLike, RedisPool};
-use fred::types::{RedisConfig, Server, ServerConfig, TracingConfig};
+use fred::types::{RedisConfig, Server, ServerConfig};
 
 pub async fn setup_redis(config: &crate::config::RedisConfig) -> anyhow::Result<RedisPool> {
 	let server_config = match &config.sentinel_service_name {
@@ -33,7 +33,6 @@ pub async fn setup_redis(config: &crate::config::RedisConfig) -> anyhow::Result<
 		fail_fast: true,
 		password: config.password.clone(),
 		username: config.username.clone(),
-		tracing: TracingConfig::new(true),
 		..Default::default()
 	};
 
