@@ -8,9 +8,14 @@ use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use scuffle_image_processor_proto as image_processor;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
+use shared::database::emote_moderation_request::{
+	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
+};
 use shared::database::image_set::{ImageSet, ImageSetInput};
+use shared::database::queries::filter;
 use shared::database::role::permissions::{EmotePermission, PermissionsExt, RateLimitResource};
 use shared::database::stored_event::StoredEventEmoteData;
+use shared::database::MongoCollection;
 use shared::event::{InternalEvent, InternalEventData};
 use shared::old_types::{EmoteFlagsModel, EmotePartialModel, UserPartialModel};
 
@@ -100,6 +105,35 @@ pub async fn create_emote(
 	let req = RateLimitRequest::new(RateLimitResource::ProfilePictureUpload, &session);
 
 	req.http(&global, async {
+		let count = EmoteModerationRequest::collection(&global.db)
+			.count_documents(filter::filter! {
+				EmoteModerationRequest {
+					#[query(serde)]
+					kind: EmoteModerationRequestKind::PublicListing,
+					user_id: authed_user.id,
+					#[query(serde)]
+					status: EmoteModerationRequestStatus::Pending,
+				}
+			})
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to count emote moderation requests");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to count emote moderation requests")
+			})?;
+
+		if count as i32
+			> authed_user
+				.computed
+				.permissions
+				.emote_moderation_request_limit
+				.unwrap_or_default()
+		{
+			return Err(ApiError::bad_request(
+				ApiErrorCode::LackingPrivileges,
+				"too many pending moderation requests",
+			));
+		}
+
 		let session = &session;
 
 		let emote_id = EmoteId::new();
