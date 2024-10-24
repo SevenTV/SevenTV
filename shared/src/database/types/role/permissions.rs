@@ -414,6 +414,10 @@ pub struct Permissions {
 
 	#[serde(skip_serializing_if = "Option::is_none")]
 	#[serde(default)]
+	pub emote_set_limit: Option<i32>,
+
+	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(default)]
 	pub emote_set_capacity: Option<i32>,
 
 	#[serde(skip_serializing_if = "Option::is_none")]

@@ -62,6 +62,13 @@ impl EmoteSetsMutation {
 		user_id: GqlObjectId,
 		data: CreateEmoteSetInput,
 	) -> Result<EmoteSet, ApiError> {
+		if data.privileged.unwrap_or(false) {
+			return Err(ApiError::not_implemented(
+				ApiErrorCode::BadRequest,
+				"privileged emote sets are not supported",
+			));
+		}
+
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -113,13 +120,6 @@ impl EmoteSetsMutation {
 			}
 		}
 
-		if data.privileged.unwrap_or(false) {
-			return Err(ApiError::not_implemented(
-				ApiErrorCode::BadRequest,
-				"privileged emote sets are not supported",
-			));
-		}
-
 		let capacity = target.computed.permissions.emote_set_capacity.unwrap_or_default().max(0);
 
 		if capacity == 0 {
@@ -130,6 +130,29 @@ impl EmoteSetsMutation {
 		}
 
 		let res = transaction(global, |mut tx| async move {
+			let emote_set_count = tx
+				.count(
+					filter::filter! {
+						DbEmoteSet {
+							owner_id: Some(user_id.id()),
+						}
+					},
+					None,
+				)
+				.await?;
+
+			if target
+				.computed
+				.permissions
+				.emote_set_limit
+				.is_some_and(|limit| emote_set_count >= limit.max(0) as u64)
+			{
+				return Err(TransactionError::Custom(ApiError::bad_request(
+					ApiErrorCode::LackingPrivileges,
+					"maximum emote set limit reached",
+				)));
+			}
+
 			let emote_set = DbEmoteSet {
 				id: Default::default(),
 				owner_id: Some(user_id.id()),
