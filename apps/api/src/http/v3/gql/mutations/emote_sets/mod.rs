@@ -141,12 +141,7 @@ impl EmoteSetsMutation {
 				)
 				.await?;
 
-			if target
-				.computed
-				.permissions
-				.emote_set_limit
-				.is_some_and(|limit| emote_set_count >= limit.max(0) as u64)
-			{
+			if emote_set_count >= target.computed.permissions.emote_set_limit.unwrap_or(0).max(0) as u64 {
 				return Err(TransactionError::Custom(ApiError::bad_request(
 					ApiErrorCode::LackingPrivileges,
 					"maximum emote set limit reached",
