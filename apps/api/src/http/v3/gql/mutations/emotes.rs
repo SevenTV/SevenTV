@@ -22,9 +22,9 @@ use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
+use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote::Emote;
-use crate::http::v3::validators::{EmoteNameValidator, TagsValidator};
+use crate::http::validators::{EmoteNameValidator, TagsValidator};
 use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 #[derive(Default)]

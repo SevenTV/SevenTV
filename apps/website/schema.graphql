@@ -1,0 +1,284 @@
+
+type Color {
+	b: Int!
+	g: Int!
+	hex: String!
+	r: Int!
+}
+
+"""
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339")
+
+type Emote {
+	aspectRatio: Float!
+	attribution: [EmoteAttribution!]!
+	channels(page: Int, perPage: Int): UserSearchResult!
+	defaultName: String!
+	flags: EmoteFlags!
+	id: Id!
+	images: [Image!]!
+	owner: User
+	ownerId: Id!
+	ranking(ranking: Ranking!): Int
+	scores: EmoteScores!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type EmoteAttribution {
+	addedAt: DateTime!
+	user: User
+	userId: Id!
+}
+
+type EmoteFlags {
+	animated: Boolean!
+	approvedPersonal: Boolean!
+	defaultZeroWidth: Boolean!
+	deniedPersonal: Boolean!
+	nsfw: Boolean!
+	private: Boolean!
+	publicListed: Boolean!
+}
+
+type EmoteQuery {
+	emote(id: Id!): Emote
+	search(filters: Filters, page: Int, perPage: Int, query: String, sort: Sort!, tags: Tags): EmoteSearchResult!
+}
+
+type EmoteScores {
+	topAllTime: Int!
+	topDaily: Int!
+	topMonthly: Int!
+	topWeekly: Int!
+	trendingDay: Int!
+	trendingMonth: Int!
+	trendingWeek: Int!
+}
+
+type EmoteSearchResult {
+	items: [Emote!]!
+	pageCount: Int!
+	totalCount: Int!
+}
+
+type EmoteSet {
+	capacity: Int
+	description: String
+	emotes(page: Int, perPage: Int): EmoteSetEmoteSearchResult!
+	id: Id!
+	kind: EmoteSetKind!
+	name: String!
+	ownerId: Id
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type EmoteSetEmote {
+	addedAt: DateTime!
+	addedById: Id
+	alias: String!
+	emote: Emote
+	flags: EmoteSetEmoteFlags!
+	id: Id!
+	originSetId: Id
+}
+
+type EmoteSetEmoteFlags {
+	overrideConflicts: Boolean!
+	zeroWidth: Boolean!
+}
+
+type EmoteSetEmoteSearchResult {
+	items: [EmoteSetEmote!]!
+	pageCount: Int!
+	totalCount: Int!
+}
+
+enum EmoteSetKind {
+	GLOBAL
+	NORMAL
+	PERSONAL
+	SPECIAL
+}
+
+type EmoteSetQuery {
+	emoteSet(id: Id!): EmoteSet
+}
+
+input Filters {
+	animated: Boolean
+	defaultZeroWidth: Boolean
+	"""
+	defaults to false when unset
+	"""
+	exactMatch: Boolean
+	nsfw: Boolean
+}
+
+
+
+scalar Id
+
+type Image {
+	frameCount: Int!
+	height: Int!
+	mime: String!
+	scale: Int!
+	size: Int!
+	url: String!
+	width: Int!
+}
+
+
+enum Platform {
+	DISCORD
+	GOOGLE
+	KICK
+	TWITCH
+}
+
+type Query {
+	emoteSets: EmoteSetQuery!
+	emotes: EmoteQuery!
+	users: UserQuery!
+}
+
+enum Ranking {
+	TOP_ALL_TIME
+	TOP_DAILY
+	TOP_MONTHLY
+	TOP_WEEKLY
+	TRENDING_DAILY
+	TRENDING_MONTHLY
+	TRENDING_WEEKLY
+}
+
+type Role {
+	color: Color
+	createdBy: User
+	createdById: Id!
+	description: String
+	id: Id!
+	name: String!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+input Sort {
+	order: SortOrder!
+	sortBy: SortBy!
+}
+
+enum SortBy {
+	NAME_ALPHABETICAL
+	TOP_ALL_TIME
+	TOP_DAILY
+	TOP_MONTHLY
+	TOP_WEEKLY
+	TRENDING_DAILY
+	TRENDING_MONTHLY
+	TRENDING_WEEKLY
+	UPLOAD_DATE
+}
+
+enum SortOrder {
+	ASCENDING
+	DESCENDING
+}
+
+
+input Tags {
+	match: TagsMatch!
+	tags: [String!]!
+}
+
+enum TagsMatch {
+	ALL
+	ANY
+}
+
+type User {
+	connections: [UserConnection!]!
+	editors: [UserEditor!]!
+	highestRoleColor: Color
+	highestRoleRank: Int!
+	id: Id!
+	mainConnection: UserConnection
+	roleIds: [Id!]!
+	roles: [Role!]!
+	searchUpdatedAt: DateTime
+	style: UserStyle!
+	updatedAt: DateTime!
+}
+
+type UserConnection {
+	allowLogin: Boolean!
+	linkedAt: DateTime!
+	platform: Platform!
+	platformAvatarUrl: String
+	platformDisplayName: String!
+	platformId: String!
+	platformUsername: String!
+	updatedAt: DateTime!
+}
+
+type UserEditor {
+	addedAt: DateTime!
+	addedById: Id!
+	editor: User
+	editorId: Id!
+	notes: String
+	searchUpdatedAt: DateTime
+	state: UserEditorState!
+	updatedAt: DateTime!
+	userId: Id!
+}
+
+enum UserEditorState {
+	ACCEPTED
+	PENDING
+	REJECTED
+}
+
+type UserProfilePicture {
+	id: Id!
+	images: [Image!]!
+	updatedAt: DateTime!
+	userId: Id!
+}
+
+type UserQuery {
+	user(id: Id!): User
+}
+
+type UserSearchResult {
+	items: [User!]!
+	pageCount: Int!
+	totalCount: Int!
+}
+
+type UserStyle {
+	activeBadgeId: Id
+	activeEmoteSet: EmoteSet
+	activeEmoteSetId: Id
+	activePaintId: Id
+	activeProfilePicture: UserProfilePicture
+	activeProfilePictureId: Id
+	pendingProfilePictureId: Id
+}
+
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @specifiedBy(url: String!) on SCALAR
+extend schema @link(
+	url: "https://specs.apollo.dev/federation/v2.3",
+	import: ["@key", "@tag", "@shareable", "@inaccessible", "@override", "@external", "@provides", "@requires", "@composeDirective", "@interfaceObject"]
+)

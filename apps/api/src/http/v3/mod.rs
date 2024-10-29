@@ -9,7 +9,6 @@ pub mod docs;
 pub mod emote_set_loader;
 pub mod gql;
 pub mod rest;
-mod validators;
 
 pub fn docs() -> utoipa::openapi::OpenApi {
 	#[derive(OpenApi)]

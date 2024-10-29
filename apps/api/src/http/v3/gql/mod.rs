@@ -6,14 +6,11 @@ use axum::extract::FromRequest;
 use axum::response::{self, IntoResponse};
 use axum::routing::{any, get};
 use axum::{Extension, Router};
-use guards::RateLimitResponseStore;
 
 use crate::global::Global;
-use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::guards::RateLimitResponseStore;
 use crate::http::middleware::session::Session;
 
-mod guards;
-mod metrics;
 mod mutations;
 mod queries;
 mod types;
