@@ -15,8 +15,8 @@ use super::user::{UserPartial, UserSearchResult};
 use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::middleware::session::Session;
 use crate::http::guards::RateLimitGuard;
+use crate::http::middleware::session::Session;
 use crate::search::{search, sorted_results, SearchOptions};
 
 #[derive(Default)]

@@ -3,7 +3,9 @@ use std::sync::Arc;
 use async_graphql::{Context, Object};
 use shared::database::user::UserId;
 
-use crate::{global::Global, http::{error::{ApiError, ApiErrorCode}, v4::gql::types::User}};
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::v4::gql::types::User;
 
 #[derive(Default)]
 pub struct UserQuery;

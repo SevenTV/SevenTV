@@ -6,7 +6,7 @@ mod user;
 
 #[derive(Default, SimpleObject)]
 pub struct Query {
-    emotes: emote::EmoteQuery,
+	emotes: emote::EmoteQuery,
 	emote_sets: emote_set::EmoteSetQuery,
 	users: user::UserQuery,
 }

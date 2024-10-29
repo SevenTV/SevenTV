@@ -15,8 +15,8 @@ use shared::old_types::BanEffect;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::middleware::session::Session;
 use crate::http::guards::PermissionGuard;
+use crate::http::middleware::session::Session;
 use crate::http::v3::gql::queries::user::{User as GqlUser, UserPartial};
 use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 

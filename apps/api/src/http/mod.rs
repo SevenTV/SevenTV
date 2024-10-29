@@ -27,11 +27,11 @@ pub mod egvault;
 pub mod error;
 pub mod extract;
 pub mod guards;
-pub mod validators;
 pub mod internal;
 pub mod middleware;
 pub mod v3;
 pub mod v4;
+pub mod validators;
 
 const ALLOWED_CORS_HEADERS: &[&str] = &[
 	"content-type",

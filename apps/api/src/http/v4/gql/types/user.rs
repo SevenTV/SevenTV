@@ -1,20 +1,16 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
-use shared::database::{
-	badge::BadgeId,
-	emote_set::EmoteSetId,
-	paint::PaintId,
-	role::RoleId,
-	user::{profile_picture::UserProfilePictureId, UserId},
-};
-
-use crate::{
-	global::Global,
-	http::error::{ApiError, ApiErrorCode},
-};
+use shared::database::badge::BadgeId;
+use shared::database::emote_set::EmoteSetId;
+use shared::database::paint::PaintId;
+use shared::database::role::RoleId;
+use shared::database::user::profile_picture::UserProfilePictureId;
+use shared::database::user::UserId;
 
 use super::{Color, EmoteSet, Role, UserEditor, UserProfilePicture};
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]
@@ -124,10 +120,7 @@ pub struct UserStyle {
 
 #[ComplexObject]
 impl UserStyle {
-	async fn active_emote_set<'ctx>(
-		&self,
-		ctx: &Context<'ctx>,
-	) -> Result<Option<EmoteSet>, ApiError> {
+	async fn active_emote_set<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<EmoteSet>, ApiError> {
 		let Some(active_emote_set_id) = self.active_emote_set_id else {
 			return Ok(None);
 		};

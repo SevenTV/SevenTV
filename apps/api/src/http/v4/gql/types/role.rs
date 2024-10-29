@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, SimpleObject};
-use shared::database::{role::RoleId, user::UserId};
-
-use crate::{
-	global::Global,
-	http::error::{ApiError, ApiErrorCode},
-};
+use shared::database::role::RoleId;
+use shared::database::user::UserId;
 
 use super::{Color, User};
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]

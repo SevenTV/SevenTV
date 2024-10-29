@@ -1,21 +1,16 @@
-use std::{fmt::Display, sync::Arc};
+use std::fmt::Display;
+use std::sync::Arc;
 
 use async_graphql::{Context, Enum, InputObject, Object};
 use itertools::Itertools;
-use shared::database::{
-	emote::EmoteId,
-	role::permissions::{EmotePermission, PermissionsExt},
-};
+use shared::database::emote::EmoteId;
+use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 
-use crate::{
-	global::Global,
-	http::{
-		error::{ApiError, ApiErrorCode},
-		middleware::session::Session,
-		v4::gql::types::{Emote, SearchResult},
-	},
-	search::{search, SearchOptions},
-};
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::middleware::session::Session;
+use crate::http::v4::gql::types::{Emote, SearchResult};
+use crate::search::{search, SearchOptions};
 
 #[derive(Default)]
 pub struct EmoteQuery;

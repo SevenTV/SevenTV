@@ -2,13 +2,12 @@ use std::sync::Arc;
 
 use async_graphql::{extensions, EmptyMutation, EmptySubscription, Schema};
 use axum::response::{self, IntoResponse};
-use axum::{
-	routing::{get, post},
-	Extension, Router,
-};
+use axum::routing::{get, post};
+use axum::{Extension, Router};
 
+use crate::global::Global;
 use crate::http::guards::RateLimitResponseStore;
-use crate::{global::Global, http::middleware::session::Session};
+use crate::http::middleware::session::Session;
 
 mod queries;
 mod types;

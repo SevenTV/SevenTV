@@ -1,16 +1,15 @@
-use std::{fmt::Display, sync::Arc};
+use std::fmt::Display;
+use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use fred::prelude::KeysInterface;
-use shared::database::{emote::EmoteId, user::UserId};
-
-use crate::{
-	global::Global,
-	http::error::{ApiError, ApiErrorCode},
-	search::{search, sorted_results, SearchOptions},
-};
+use shared::database::emote::EmoteId;
+use shared::database::user::UserId;
 
 use super::{Image, SearchResult, User};
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
+use crate::search::{search, sorted_results, SearchOptions};
 
 #[derive(Debug, Clone, SimpleObject)]
 #[graphql(complex)]

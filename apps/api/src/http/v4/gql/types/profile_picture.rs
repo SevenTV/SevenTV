@@ -1,5 +1,6 @@
 use async_graphql::SimpleObject;
-use shared::database::user::{profile_picture::UserProfilePictureId, UserId};
+use shared::database::user::profile_picture::UserProfilePictureId;
+use shared::database::user::UserId;
 
 use super::Image;
 
