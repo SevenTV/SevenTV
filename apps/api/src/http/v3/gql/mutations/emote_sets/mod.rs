@@ -108,7 +108,9 @@ impl EmoteSetsMutation {
 				})
 				.await
 				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "you are not an editor for this user"))?;
+				.ok_or_else(|| {
+					ApiError::forbidden(ApiErrorCode::LackingPrivileges, "you are not an editor for this user")
+				})?;
 
 			if editor.state != UserEditorState::Accepted
 				|| !editor.permissions.has_emote_set(EditorEmoteSetPermission::Create)
