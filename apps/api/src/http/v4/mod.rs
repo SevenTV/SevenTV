@@ -9,7 +9,7 @@ mod gql;
 mod rest;
 
 pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
-	Router::new().nest("/gql", gql::routes(global)).nest("/rest", rest::routes())
+	Router::new().nest("/gql", gql::routes(global)).nest("/", rest::routes())
 }
 
 pub fn export_gql_schema() -> String {

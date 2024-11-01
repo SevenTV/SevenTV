@@ -1,10 +1,11 @@
+use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use axum::extract::{Query, State};
 use axum::response::{IntoResponse, Redirect, Response};
-use axum::routing::get;
-use axum::{Extension, Router};
+use axum::routing::{get, post};
+use axum::{Extension, Json, Router};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::stored_event::StoredEventUserSessionData;
@@ -38,16 +39,47 @@ const CSRF_COOKIE: &str = "seventv-v4-login-csrf";
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.route("/login", get(login))
-		.route("/logout", get(crate::http::v3::rest::auth::logout))
-		.route("/login/callback", get(login_callback))
+		.route("/login/finish", post(login_finish))
+		.route("/logout", post(crate::http::v3::rest::auth::logout))
 }
 
-fn redirect_uri(global: &Arc<Global>, platform: Platform) -> Result<url::Url, ApiError> {
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum LoginPlatform {
+	Twitch,
+	Discord,
+	Google,
+	Kick,
+}
+
+impl From<LoginPlatform> for Platform {
+	fn from(platform: LoginPlatform) -> Self {
+		match platform {
+			LoginPlatform::Twitch => Platform::Twitch,
+			LoginPlatform::Discord => Platform::Discord,
+			LoginPlatform::Google => Platform::Google,
+			LoginPlatform::Kick => Platform::Kick,
+		}
+	}
+}
+
+impl Display for LoginPlatform {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			LoginPlatform::Twitch => write!(f, "twitch"),
+			LoginPlatform::Discord => write!(f, "discord"),
+			LoginPlatform::Google => write!(f, "google"),
+			LoginPlatform::Kick => write!(f, "kick"),
+		}
+	}
+}
+
+fn redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Url, ApiError> {
 	global
 		.config
 		.api
-		.api_origin
-		.join(&format!("/v4/auth/login/callback&platform={}", platform as i32))
+		.website_origin
+		.join(&format!("/login/callback?platform={}", platform))
 		.map_err(|e| {
 			tracing::error!(err = %e, "failed to generate redirect_uri");
 			ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect_uri")
@@ -56,7 +88,7 @@ fn redirect_uri(global: &Arc<Global>, platform: Platform) -> Result<url::Url, Ap
 
 #[derive(Debug, serde::Deserialize)]
 struct LoginRequest {
-	pub platform: Platform,
+	pub platform: LoginPlatform,
 }
 
 async fn login(
@@ -65,11 +97,13 @@ async fn login(
 	Extension(session): Extension<Session>,
 	Query(query): Query<LoginRequest>,
 ) -> Result<Response, ApiError> {
+	let platform = query.platform.into();
+
 	let req = RateLimitRequest::new(RateLimitResource::Login, &session);
 
 	req.http(&global, async {
 		// redirect to platform auth url
-		let (url, scope, config) = match query.platform.into() {
+		let (url, scope, config) = match platform {
 			Platform::Twitch if global.config.connections.twitch.enabled => {
 				(TWITCH_AUTH_URL, TWITCH_AUTH_SCOPE, &global.config.connections.twitch)
 			}
@@ -104,17 +138,24 @@ async fn login(
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct CallbackRequest {
-	pub platform: Platform,
+struct LoginFinishPayload {
+	pub platform: LoginPlatform,
 	pub code: String,
 	pub state: Id<()>,
 }
 
-async fn login_callback(
+#[derive(Debug, serde::Serialize)]
+struct LoginFinishResponse {
+	pub token: String,
+}
+
+async fn login_finish(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
-	Query(query): Query<CallbackRequest>,
+	Json(payload): Json<LoginFinishPayload>,
 ) -> Result<impl IntoResponse, ApiError> {
+	let platform = payload.platform.into();
+
 	// validate csrf
 	let csrf_cookie = cookies
 		.get(CSRF_COOKIE)
@@ -125,21 +166,21 @@ async fn login_callback(
 		.filter(|id| id.timestamp().signed_duration_since(chrono::Utc::now()).num_seconds() < 300)
 		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid csrf"))?;
 
-	if csrf_payload != query.state {
+	if csrf_payload != payload.state {
 		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid csrf"));
 	}
 
 	// exchange code for access token
 	let token = connections::exchange_code(
 		&global,
-		query.platform,
-		&query.code,
-		redirect_uri(&global, query.platform)?.to_string(),
+		platform,
+		&payload.code,
+		redirect_uri(&global, payload.platform)?.to_string(),
 	)
 	.await?;
 
 	// query user data from platform
-	let user_data = connections::get_user_data(&global, query.platform, &token.access_token).await?;
+	let user_data = connections::get_user_data(&global, platform, &token.access_token).await?;
 
 	let user = transaction(&global, |mut tx| async move {
 		let user = tx
@@ -148,7 +189,7 @@ async fn login_callback(
 					User {
 						#[query(elem_match)]
 						connections: UserConnection {
-							platform: query.platform,
+							platform: platform,
 							platform_id: &user_data.id,
 						}
 					}
@@ -160,7 +201,7 @@ async fn login_callback(
 		let Some(user) = user else {
 			let user = User {
 				connections: vec![UserConnection {
-					platform: query.platform,
+					platform: platform,
 					platform_id: user_data.id.clone(),
 					platform_username: user_data.username.clone(),
 					platform_display_name: user_data.display_name.clone(),
@@ -204,7 +245,7 @@ async fn login_callback(
 						id: user.id,
 						#[query(elem_match)]
 						connections: UserConnection {
-							platform: query.platform,
+							platform: platform,
 							platform_id: &user_data.id,
 						}
 					}
@@ -242,7 +283,7 @@ async fn login_callback(
 						User {
 							#[query(serde)]
 							connections: UserConnection {
-								platform: query.platform,
+								platform: platform,
 								platform_id: user_data.id,
 								platform_username: user_data.username,
 								platform_display_name: user_data.display_name,
@@ -311,9 +352,7 @@ async fn login_callback(
 			session_id: None,
 			data: InternalEventData::UserSession {
 				after: user_session.clone(),
-				data: StoredEventUserSessionData::Create {
-					platform: query.platform,
-				},
+				data: StoredEventUserSessionData::Create { platform: platform },
 			},
 			timestamp: chrono::Utc::now(),
 		})?;
@@ -339,23 +378,12 @@ async fn login_callback(
 		cookies.add(new_cookie(&global, (AUTH_COOKIE, token.clone())).expires(expiration));
 		cookies.remove(&global, CSRF_COOKIE);
 
-		global
-			.config
-			.api
-			.website_origin
-			.join(&format!("/auth/callback&token={}", token))
-			.map_err(|e| {
-				tracing::error!(err = %e, "failed to generate redirect url");
-				TransactionError::Custom(ApiError::internal_server_error(
-					ApiErrorCode::Unknown,
-					"failed to generate redirect url",
-				))
-			})
+		Ok(LoginFinishResponse { token })
 	})
 	.await;
 
 	match res {
-		Ok(redirect_url) => Ok(Redirect::to(redirect_url.as_str())),
+		Ok(response) => Ok(Json(response)),
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");

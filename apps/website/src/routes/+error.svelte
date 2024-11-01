@@ -3,7 +3,22 @@
 	import { page } from "$app/stores";
 	import { t } from "svelte-i18n";
 
-	let title = $page.error?.message ?? "Error";
+	function defaultDetails(status: number): string {
+		if (status === 401) {
+			return "You are unauthorized to view this page.";
+		} else if (status === 403) {
+			return "You do not have permission to view this page.";
+		} else if (status === 404) {
+			return "The page you were looking for could not be found.";
+		} else if (status === 500) {
+			return "You can try refreshing the page. If the problem persists, please contact us.";
+		} else {
+			return "An error occurred.";
+		}
+	}
+
+	$: title = $page.error?.message ?? "Error";
+	$: details = $page.error?.details ?? defaultDetails($page.status);
 </script>
 
 <svelte:head>
@@ -15,21 +30,7 @@
 		<Troll />
 	</div>
 	<h1>{title}</h1>
-	<span>
-		{#if $page.status === 401}
-			You are unauthorized to view this page.
-		{:else if $page.status === 403}
-			You do not have permission to view this page.
-		{:else if $page.status === 404}
-			The page you were looking for could not be found.
-		{:else}
-			An internal error occurred.
-			<br />
-			You can try refreshing the page.
-			<br />
-			If the problem persists, please contact us.
-		{/if}
-	</span>
+	<p>{details}</p>
 	<a href="/">Go Back</a>
 </div>
 

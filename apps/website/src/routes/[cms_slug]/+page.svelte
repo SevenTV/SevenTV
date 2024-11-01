@@ -9,4 +9,4 @@
 	<title>{data.slug} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
-<h1>{data.slug}</h1>
+<h1>CMS: {data.slug}</h1>

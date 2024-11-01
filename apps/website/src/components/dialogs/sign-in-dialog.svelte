@@ -1,20 +1,13 @@
 <script lang="ts">
-	import { user } from "$/store/auth";
 	import Button from "../input/button.svelte";
 	import DiscordLogo from "../icons/discord-logo.svelte";
 	import Logo from "../icons/logo.svelte";
-	import GoogleLogo from "../icons/google-logo.svelte";
 	import TwitchLogo from "../icons/twitch-logo.svelte";
 	import Dialog, { DialogMode } from "./dialog.svelte";
-	import { Envelope } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
+	import { PUBLIC_REST_API_V4 } from "$env/static/public";
 
 	export let mode: DialogMode = DialogMode.Hidden;
-
-	function login() {
-		$user = true;
-		mode = DialogMode.Hidden;
-	}
 </script>
 
 <Dialog bind:mode>
@@ -25,22 +18,18 @@
 			<span class="details">{$t("dialogs.sign_in.subtitle")}</span>
 		</div>
 		<div class="buttons">
-			<Button secondary big on:click={login}>
-				<Envelope slot="icon" />
-				{$t("dialogs.sign_in.email")}
-			</Button>
-			<Button secondary big on:click={login}>
+			<Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=twitch">
 				<TwitchLogo slot="icon" />
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Twitch" } })}
 			</Button>
-			<Button secondary big on:click={login}>
-				<GoogleLogo slot="icon" />
-				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
-			</Button>
-			<Button secondary big on:click={login}>
+			<Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=discord">
 				<DiscordLogo slot="icon" />
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Discord" } })}
 			</Button>
+			<!-- <Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=google">
+				<GoogleLogo slot="icon" />
+				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
+			</Button> -->
 			<a class="trouble" href="/trouble" on:click={() => (mode = DialogMode.Hidden)}>
 				{$t("dialogs.sign_in.trouble")}
 			</a>

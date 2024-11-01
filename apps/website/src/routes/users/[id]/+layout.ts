@@ -80,11 +80,11 @@ export async function load({ parent, fetch, params }: LayoutLoadEvent) {
 
 	if (res.error || !res.data) {
 		console.error(res.error);
-		throw error(500, "Failed to load user");
+		error(500, "Failed to load user");
 	}
 
 	if (!res.data.users.user) {
-		throw error(404, "User not found");
+		error(404, "User not found");
 	}
 
 	return {
