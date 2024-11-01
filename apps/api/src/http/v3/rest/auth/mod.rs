@@ -136,7 +136,7 @@ struct LogoutRequest {
 )]
 #[tracing::instrument(skip(global, cookies))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/logout.auth.route.go#L29
-async fn logout(
+pub async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
 	Extension(session): Extension<Session>,
