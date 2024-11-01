@@ -22,6 +22,7 @@
 	import TextInput from "$/components/input/text-input.svelte";
 	import { DialogMode } from "../dialogs/dialog.svelte";
 	import { t } from "svelte-i18n";
+	import Spinner from "../spinner.svelte";
 
 	let cartDialogMode = DialogMode.Hidden;
 </script>
@@ -104,7 +105,7 @@
 			<button class="profile hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
 				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
 			</button>
-		{:else}
+		{:else if $user === null}
 			<HideOn mobile>
 				<DropDown>
 					<Button>
@@ -116,6 +117,8 @@
 			<Button primary on:click={() => ($signInDialogMode = DialogMode.Shown)}>
 				{$t("common.sign_in")}
 			</Button>
+		{:else}
+			<Spinner />
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}

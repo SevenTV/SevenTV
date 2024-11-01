@@ -19,6 +19,7 @@
 	import { t } from "svelte-i18n";
 	import type { LayoutData } from "./$types";
 	import { setContextClient } from "@urql/svelte";
+	import { fetchMe, sessionToken } from "$/store/auth";
 
 	export let data: LayoutData;
 
@@ -30,6 +31,8 @@
 			$showMobileMenu = false;
 		});
 	});
+
+	$: fetchMe(data.client), $sessionToken;
 </script>
 
 <IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>

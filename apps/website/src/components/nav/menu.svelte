@@ -141,7 +141,7 @@
 		{#if $user}
 			<hr class="hide-on-mobile" />
 			<div class="link-list">
-				<MenuButton on:click={() => ($user = false)}>
+				<MenuButton>
 					<SignOut />
 					{$t("common.sign_out")}
 				</MenuButton>

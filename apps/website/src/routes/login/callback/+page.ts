@@ -35,16 +35,18 @@ export async function load({ url, fetch }: PageLoadEvent) {
 
 	sessionToken.set(data.token);
 
+	let payload = null;
 	const splitToken = data.token.split(".");
 	if (splitToken[1]) {
 		try {
-			const payload = JSON.parse(atob(splitToken[1]));
-			if (payload.sub) {
-				redirect(303, `/users/${payload.sub}`);
-			}
+			payload = JSON.parse(atob(splitToken[1]));
 		} catch (e) {
 			console.error(e);
 		}
+	}
+
+	if (payload.sub) {
+		redirect(303, `/users/${payload.sub}`);
 	}
 
 	redirect(303, "/");
