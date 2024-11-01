@@ -4,7 +4,15 @@ import { Client } from "@urql/svelte";
 
 let timeout: NodeJS.Timeout | number | null = null;
 
-export async function queryEmotes(client: Client, query: string | null, tags: string[], sort: SortBy, filters: Filters | null, page: number | null, perPage: number): Promise<EmoteSearchResult> {
+export async function queryEmotes(
+	client: Client,
+	query: string | null,
+	tags: string[],
+	sort: SortBy,
+	filters: Filters | null,
+	page: number | null,
+	perPage: number,
+): Promise<EmoteSearchResult> {
 	if (timeout) {
 		clearTimeout(timeout);
 	}
@@ -16,9 +24,23 @@ export async function queryEmotes(client: Client, query: string | null, tags: st
 			const res = await client
 				.query(
 					graphql(`
-						query EmoteSearch($query: String, $tags: [String!]!, $sortBy: SortBy!, $filters: Filters, $page: Int, $perPage: Int!) {
+						query EmoteSearch(
+							$query: String
+							$tags: [String!]!
+							$sortBy: SortBy!
+							$filters: Filters
+							$page: Int
+							$perPage: Int!
+						) {
 							emotes {
-								search(query: $query, tags: { tags: $tags, match: ANY }, sort: { sortBy: $sortBy, order: DESCENDING }, filters: $filters, page: $page, perPage: $perPage) {
+								search(
+									query: $query
+									tags: { tags: $tags, match: ANY }
+									sort: { sortBy: $sortBy, order: DESCENDING }
+									filters: $filters
+									page: $page
+									perPage: $perPage
+								) {
 									items {
 										id
 										defaultName

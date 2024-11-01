@@ -31,40 +31,42 @@
 	async function queryChannels(emoteId: string, page: number): Promise<UserSearchResult> {
 		const result = await client
 			.query(
-				graphql(`query EmoteChannels($emoteId: Id!, $page: Int!, $perPage: Int!) {
-					emotes {
-						emote(id: $emoteId) {
-							channels(page: $page, perPage: $perPage) {
-								items {
-									id
-									mainConnection {
-										platformDisplayName
-										platformAvatarUrl
-									}
-									style {
-										activeProfilePicture {
-											images {
-												url
-												mime
-												size
-												width
-												height
-												scale
-												frameCount
+				graphql(`
+					query EmoteChannels($emoteId: Id!, $page: Int!, $perPage: Int!) {
+						emotes {
+							emote(id: $emoteId) {
+								channels(page: $page, perPage: $perPage) {
+									items {
+										id
+										mainConnection {
+											platformDisplayName
+											platformAvatarUrl
+										}
+										style {
+											activeProfilePicture {
+												images {
+													url
+													mime
+													size
+													width
+													height
+													scale
+													frameCount
+												}
 											}
 										}
+										highestRoleColor {
+											hex
+										}
 									}
-									highestRoleColor {
-										hex
-									}
+									totalCount
+									pageCount
 								}
-								totalCount
-								pageCount
 							}
 						}
 					}
-				}`),
-				{ emoteId, page, perPage: PAGE_SIZE }
+				`),
+				{ emoteId, page, perPage: PAGE_SIZE },
 			)
 			.toPromise();
 
@@ -87,10 +89,10 @@
 	{#if channels}
 		<div class="inputs">
 			<div class="buttons">
-				<Button disabled={page <= 1} on:click={() => (page--)}>
+				<Button disabled={page <= 1} on:click={() => page--}>
 					<CaretLeft slot="icon" />
 				</Button>
-				<Button disabled={page >= pageCount} on:click={() => (page++)}>
+				<Button disabled={page >= pageCount} on:click={() => page++}>
 					<CaretRight slot="icon" />
 				</Button>
 			</div>

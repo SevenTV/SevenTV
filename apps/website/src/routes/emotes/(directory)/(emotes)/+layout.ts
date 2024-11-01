@@ -3,7 +3,7 @@ import { TAGS_SEPERATOR } from "../+layout.svelte";
 import type { LayoutLoadEvent } from "./$types";
 
 export function load({ url }: LayoutLoadEvent) {
-    const query = url.searchParams.get("q");
+	const query = url.searchParams.get("q");
 
 	const tags = url.searchParams.get("t");
 	const tagsArray = tags ? tags.split(TAGS_SEPERATOR) : [];
@@ -26,9 +26,9 @@ export function load({ url }: LayoutLoadEvent) {
 		filters.exactMatch = true;
 	}
 
-    return {
-        query,
+	return {
+		query,
 		tags: tagsArray,
 		filters,
-    };
+	};
 }

@@ -46,7 +46,9 @@
 	{#if !emoteOnly}
 		<span class="name">{data.defaultName}</span>
 		{#if data.owner?.mainConnection?.platformDisplayName}
-			<span class="user" style:color={data.owner.highestRoleColor?.hex}>{data.owner.mainConnection.platformDisplayName}</span>
+			<span class="user" style:color={data.owner.highestRoleColor?.hex}
+				>{data.owner.mainConnection.platformDisplayName}</span
+			>
 		{/if}
 	{/if}
 	{#if selectionMode || flags.length > 0}

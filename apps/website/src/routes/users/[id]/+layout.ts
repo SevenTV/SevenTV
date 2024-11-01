@@ -7,45 +7,18 @@ export async function load({ parent, fetch, params }: LayoutLoadEvent) {
 	const client = (await parent()).client;
 
 	// TODO: Don't do this in load function because it takes too long
-	const res = await client.query(graphql(`
-		query OneUser($id: Id!) {
-			users {
-				user(id: $id) {
-					id
-					connections {
-						platform
-						platformUsername
-						platformDisplayName
-					}
-					mainConnection {
-						platformDisplayName
-						platformAvatarUrl
-					}
-					style {
-						activeProfilePicture {
-							images {
-								url
-								mime
-								size
-								width
-								height
-								scale
-								frameCount
-							}
-						}
-					}
-					highestRoleColor {
-						hex
-					}
-					roles {
-						name
-						color {
-							hex
-						}
-					}
-					editors {
-						editor {
+	const res = await client
+		.query(
+			graphql(`
+				query OneUser($id: Id!) {
+					users {
+						user(id: $id) {
 							id
+							connections {
+								platform
+								platformUsername
+								platformDisplayName
+							}
 							mainConnection {
 								platformDisplayName
 								platformAvatarUrl
@@ -66,17 +39,50 @@ export async function load({ parent, fetch, params }: LayoutLoadEvent) {
 							highestRoleColor {
 								hex
 							}
+							roles {
+								name
+								color {
+									hex
+								}
+							}
+							editors {
+								editor {
+									id
+									mainConnection {
+										platformDisplayName
+										platformAvatarUrl
+									}
+									style {
+										activeProfilePicture {
+											images {
+												url
+												mime
+												size
+												width
+												height
+												scale
+												frameCount
+											}
+										}
+									}
+									highestRoleColor {
+										hex
+									}
+								}
+								state
+							}
 						}
-						state
 					}
 				}
-			}
-		}
-	`), {
-		id: params.id,
-	}, {
-		fetch,
-	}).toPromise();
+			`),
+			{
+				id: params.id,
+			},
+			{
+				fetch,
+			},
+		)
+		.toPromise();
 
 	if (res.error || !res.data) {
 		console.error(res.error);

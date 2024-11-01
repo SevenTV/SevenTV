@@ -10,7 +10,9 @@
 
 <Button href="/users/{user.id}" {big}>
 	<UserProfilePicture {user} size={size * 16} slot="icon" />
-	<span class="user" style:color={user.highestRoleColor?.hex}>{user.mainConnection?.platformDisplayName}</span>
+	<span class="user" style:color={user.highestRoleColor?.hex}
+		>{user.mainConnection?.platformDisplayName}</span
+	>
 </Button>
 
 <style lang="scss">

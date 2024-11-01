@@ -10,11 +10,7 @@
 
 	const PER_PAGE = 36;
 
-	export let load: (
-		client: Client,
-		page: number,
-		perPage: number,
-	) => Promise<EmoteSearchResult>;
+	export let load: (client: Client, page: number, perPage: number) => Promise<EmoteSearchResult>;
 
 	let page = 1;
 	let results: EmoteSearchResult | null = null;

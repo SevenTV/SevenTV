@@ -5,7 +5,9 @@
 	export let user: User;
 	export let size: number = 44;
 
-	$: alt = user.mainConnection ? `${user.mainConnection?.platformDisplayName}'s Profile Picture` : "Profile Picture";
+	$: alt = user.mainConnection
+		? `${user.mainConnection?.platformDisplayName}'s Profile Picture`
+		: "Profile Picture";
 </script>
 
 {#if user.style.activeProfilePicture}

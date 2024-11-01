@@ -1,4 +1,3 @@
-
 type Color {
 	b: Int!
 	g: Int!
@@ -48,7 +47,14 @@ type EmoteFlags {
 
 type EmoteQuery {
 	emote(id: Id!): Emote
-	search(filters: Filters, page: Int, perPage: Int, query: String, sort: Sort!, tags: Tags): EmoteSearchResult!
+	search(
+		filters: Filters
+		page: Int
+		perPage: Int
+		query: String
+		sort: Sort!
+		tags: Tags
+	): EmoteSearchResult!
 }
 
 type EmoteScores {
@@ -122,8 +128,6 @@ input Filters {
 	nsfw: Boolean
 }
 
-
-
 scalar Id
 
 type Image {
@@ -135,7 +139,6 @@ type Image {
 	url: String!
 	width: Int!
 }
-
 
 enum Platform {
 	DISCORD
@@ -193,7 +196,6 @@ enum SortOrder {
 	ASCENDING
 	DESCENDING
 }
-
 
 input Tags {
 	match: TagsMatch!
@@ -278,7 +280,19 @@ type UserStyle {
 directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @specifiedBy(url: String!) on SCALAR
-extend schema @link(
-	url: "https://specs.apollo.dev/federation/v2.3",
-	import: ["@key", "@tag", "@shareable", "@inaccessible", "@override", "@external", "@provides", "@requires", "@composeDirective", "@interfaceObject"]
-)
+extend schema
+	@link(
+		url: "https://specs.apollo.dev/federation/v2.3"
+		import: [
+			"@key"
+			"@tag"
+			"@shareable"
+			"@inaccessible"
+			"@override"
+			"@external"
+			"@provides"
+			"@requires"
+			"@composeDirective"
+			"@interfaceObject"
+		]
+	)

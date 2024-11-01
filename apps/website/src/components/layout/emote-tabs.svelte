@@ -7,15 +7,13 @@
 	export let id: string;
 	export let channelCount: number | null = null;
 
-	$: channelTabTitle = $t('common.channels', { values: { count: channelCount ?? 2 } }) + (channelCount ? ` (${numberFormat().format(channelCount)})`: "");
+	$: channelTabTitle =
+		$t("common.channels", { values: { count: channelCount ?? 2 } }) +
+		(channelCount ? ` (${numberFormat().format(channelCount)})` : "");
 </script>
 
 <nav class="links">
-	<TabLink
-		title={channelTabTitle}
-		href="/emotes/{id}"
-		responsive
-	>
+	<TabLink title={channelTabTitle} href="/emotes/{id}" responsive>
 		<Users />
 		<Users weight="fill" slot="active" />
 	</TabLink>

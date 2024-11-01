@@ -1,11 +1,6 @@
 <script lang="ts" context="module">
 	// From least supported to best supported
-	const FORMAT_SORT_ORDER = [
-		"image/avif",
-		"image/webp",
-		"image/gif",
-		"image/png",
-	];
+	const FORMAT_SORT_ORDER = ["image/avif", "image/webp", "image/gif", "image/png"];
 
 	export function formatSortIndex(image: Image): number {
 		let index = FORMAT_SORT_ORDER.indexOf(image.mime);
@@ -84,9 +79,7 @@
 
 		// add srcset
 		for (let i = 0; i < grouped.length; i++) {
-			const srcSet = grouped[i].images
-				.map((i) => `${i.url} ${i.width}w`)
-				.join(", ");
+			const srcSet = grouped[i].images.map((i) => `${i.url} ${i.width}w`).join(", ");
 			grouped[i].srcSet = srcSet;
 		}
 
@@ -106,23 +99,23 @@
 			srcset={variant.srcSet}
 			sizes="{pictureWidth}px"
 			media={variant.media}
-			width={width}
-			height={height}
+			{width}
+			{height}
 		/>
 	{/each}
 	<img
 		class="image"
-		class:round={round}
+		class:round
 		class:border={borderColor}
 		style:border-color={borderColor}
-		src="{preparedVariants.bestSupported?.url}"
+		src={preparedVariants.bestSupported?.url}
 		loading="lazy"
 		style:animation-delay="{-index * 10}ms"
 		on:load={() => (loading = false)}
-		alt={alt}
+		{alt}
 		class:loading-animation={loading}
-		width={width}
-		height={height}
+		{width}
+		{height}
 	/>
 </picture>
 

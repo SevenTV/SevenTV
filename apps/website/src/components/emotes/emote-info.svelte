@@ -93,7 +93,9 @@
 			<a href="/users/{data.owner.id}" class="user-info">
 				<UserProfilePicture user={data.owner} />
 				<div class="name-container">
-					<span class="username" style:color={data.owner.highestRoleColor?.hex}>{data.owner.mainConnection?.platformDisplayName}</span>
+					<span class="username" style:color={data.owner.highestRoleColor?.hex}
+						>{data.owner.mainConnection?.platformDisplayName}</span
+					>
 					{#if data.attribution.length > 0}
 						<div class="artists">
 							<ArrowBendDownRight size="0.75rem" color="var(--text-light)" />

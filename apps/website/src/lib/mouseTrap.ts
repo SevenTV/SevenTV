@@ -1,8 +1,8 @@
 import type { ActionReturn } from "svelte/action";
 
 interface Attributes {
-	'on:outsideClick': (e: CustomEvent<MouseEvent>) => void;
-};
+	"on:outsideClick": (e: CustomEvent<MouseEvent>) => void;
+}
 
 export default function mouseTrap(el: HTMLElement): ActionReturn<undefined, Attributes> {
 	const state = {

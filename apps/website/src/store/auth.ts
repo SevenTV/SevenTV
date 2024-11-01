@@ -3,7 +3,9 @@ import { writable } from "svelte/store";
 
 const LOCAL_STORAGE_KEY = "7tv-token";
 
-export const sessionToken = writable<string | null>(browser && window.localStorage.getItem(LOCAL_STORAGE_KEY) || null);
+export const sessionToken = writable<string | null>(
+	(browser && window.localStorage.getItem(LOCAL_STORAGE_KEY)) || null,
+);
 export const user = writable<boolean | null>(false);
 
 if (browser) {
