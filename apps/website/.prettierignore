@@ -15,3 +15,6 @@ wasm.d.ts
 
 # Ignore country flags
 /static/flags
+
+# Ignore generated files
+schema.graphql
