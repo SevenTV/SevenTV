@@ -1,28 +1,23 @@
 <script lang="ts">
 	import { Theme, theme } from "$/store/layout";
-	import { user } from "$/store/auth";
+	import { logout, user } from "$/store/auth";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
 		Bell,
 		CaretLeft,
 		CaretRight,
-		ChartLine,
 		Code,
 		CreditCard,
-		Gear,
 		GlobeHemisphereWest,
 		House,
 		Key,
 		Moon,
-		PaintBrush,
 		PencilSimple,
 		Prohibit,
-		SealCheck,
 		SignOut,
 		Sliders,
 		Smiley,
-		Star,
 		Sun,
 	} from "phosphor-svelte";
 	import MenuButton from "../input/menu-button.svelte";
@@ -81,7 +76,7 @@
 				{$t("pages.store.title")}
 			</MenuButton> -->
 		</div>
-		{#if $user}
+		<!-- {#if $user}
 			<div class="link-list">
 				<MenuButton href="/cosmetics">
 					<PaintBrush />
@@ -93,7 +88,7 @@
 				</MenuButton>
 			</div>
 			<hr class="hide-on-mobile" />
-		{/if}
+		{/if} -->
 		<div class="link-list">
 			<!-- <MenuButton showCaret on:click={(e) => setMenu(e, Menu.Language)}>
 				<GlobeHemisphereWest />
@@ -103,7 +98,7 @@
 				<Moon />
 				{$t("common.theme")}
 			</MenuButton>
-			{#if $user}
+			<!-- {#if $user}
 				<MenuButton href="/settings" hideOnMobile>
 					<Gear />
 					{$t("common.settings")}
@@ -112,7 +107,7 @@
 					<Gear />
 					{$t("common.settings")}
 				</MenuButton>
-			{/if}
+			{/if} -->
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
@@ -140,7 +135,7 @@
 		{#if $user}
 			<hr class="hide-on-mobile" />
 			<div class="link-list">
-				<MenuButton>
+				<MenuButton on:click={logout}>
 					<SignOut />
 					{$t("common.sign_out")}
 				</MenuButton>
@@ -245,6 +240,7 @@
 			grid-row: 2;
 
 			display: flex;
+			flex-wrap: wrap;
 			gap: 0.25rem;
 		}
 

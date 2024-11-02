@@ -1,5 +1,5 @@
 import { createGqlClient } from "$/lib/gql";
-import { fetchMe, sessionToken, user } from "$/store/auth";
+import { sessionToken } from "$/store/auth";
 import { waitLocale } from "svelte-i18n";
 
 export const ssr = false;
@@ -14,11 +14,9 @@ export async function load() {
 	sessionToken.subscribe(async (token) => {
 		if (token) {
 			localStorage.setItem(LOCALSTORAGE_KEY, token);
-			await fetchMe(client);
 		} else if (token === null) {
 			// Only reset session token when set to null (not undefined)
 			localStorage.removeItem(LOCALSTORAGE_KEY);
-			user.set(null);
 		}
 	});
 

@@ -8,8 +8,6 @@
 	export let data: PageData;
 
 	function load(client: Client, page: number, _perPage: number): Promise<EmoteSearchResult> {
-		console.log("load", _perPage, page);
-
 		return client
 			.query(
 				graphql(`

@@ -29,10 +29,8 @@ export function createGqlClient(): Client {
 
 	exchanges.push(fetchExchange);
 
-	const gqlURL = PUBLIC_GQL_API_V4;
-
 	return createClient({
-		url: gqlURL,
+		url: PUBLIC_GQL_API_V4,
 		exchanges,
 	});
 }

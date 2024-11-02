@@ -1,15 +1,26 @@
 import { graphql } from "$/gql";
 import type { User } from "$/gql/graphql";
-import { Client } from "@urql/svelte";
-import { writable } from "svelte/store";
+import { PUBLIC_REST_API_V4 } from "$env/static/public";
+import { Client, getContextClient } from "@urql/svelte";
+import { derived, writable, type Readable } from "svelte/store";
 
 // Stores should be considered loading when their value is `undefined`
 // Null means the value is known to be empty
 
-export const sessionToken = writable<string | null>(undefined);
-export const user = writable<User | null>(undefined);
+const client = getContextClient();
 
-export async function fetchMe(client: Client) {
+export const sessionToken = writable<string | null>(undefined);
+export const user: Readable<User | null | undefined> = derived(sessionToken, (value, set) => {
+	console.log("fetching user", value);
+
+	if (value === undefined) {
+		return;
+	}
+
+	fetchMe(client).then((user) => set(user));
+});
+
+export async function fetchMe(client: Client): Promise<User | null> {
 	const res = await client.query(graphql(`query Me {
 		users {
 			me {
@@ -49,9 +60,24 @@ export async function fetchMe(client: Client) {
 			console.error(res.error);
 		}
 
-		user.set(null);
+		return null;
+	}
+
+	return res.data.users.me as User;
+}
+
+export async function logout() {
+	const res = await fetch(`${PUBLIC_REST_API_V4}/auth/logout`, {
+		method: "POST",
+		credentials: "include",
+	});
+
+	if (!res.ok) {
+		console.error(await res.json());
 		return;
 	}
 
-	user.set(res.data.users.me as User);
+	console.log("logged out");
+
+	sessionToken.set(null);
 }
