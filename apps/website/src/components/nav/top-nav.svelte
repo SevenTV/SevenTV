@@ -23,6 +23,7 @@
 	import { DialogMode } from "../dialogs/dialog.svelte";
 	import { t } from "svelte-i18n";
 	import Spinner from "../spinner.svelte";
+	import UserProfilePicture from "../user-profile-picture.svelte";
 
 	let cartDialogMode = DialogMode.Hidden;
 </script>
@@ -54,7 +55,7 @@
 			<MagnifyingGlass slot="icon" />
 		</Button> -->
 		{#if $user}
-			<DropDown hideOnMobile>
+			<!-- <DropDown hideOnMobile>
 				<Button>
 					<Badge count={0} slot="icon">
 						<Bell />
@@ -66,9 +67,9 @@
 				<Badge count={0} slot="icon">
 					<Bell />
 				</Badge>
-			</Button>
+			</Button> -->
 
-			<DropDown hideOnMobile>
+			<!-- <DropDown hideOnMobile>
 				<Button>
 					<Badge count={1} slot="icon">
 						<Chat />
@@ -80,13 +81,13 @@
 				<Badge count={1} slot="icon">
 					<Chat />
 				</Badge>
-			</Button>
+			</Button> -->
 
-			<Button on:click={() => (cartDialogMode = DialogMode.Shown)}>
+			<!-- <Button on:click={() => (cartDialogMode = DialogMode.Shown)}>
 				<Badge count={3} slot="icon">
 					<ShoppingCartSimple />
 				</Badge>
-			</Button>
+			</Button> -->
 
 			<Button hideOnDesktop on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
 				<PlusSquare slot="icon" />
@@ -97,13 +98,13 @@
 			</Button>
 			<HideOn mobile>
 				<DropDown>
-					<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
-					<span class="profile-name">ayyybubu</span>
+					<UserProfilePicture user={$user} size={32} />
+					<span class="profile-name">{$user.mainConnection?.platformDisplayName}</span>
 					<Menu slot="dropdown" />
 				</DropDown>
 			</HideOn>
 			<button class="profile hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
-				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
+				<UserProfilePicture user={$user} size={32} />
 			</button>
 		{:else if $user === null}
 			<HideOn mobile>
@@ -178,14 +179,6 @@
 		.profile-name {
 			font-weight: 600;
 			color: var(--staff);
-		}
-
-		.profile-picture {
-			width: 2rem;
-			height: 2rem;
-
-			border-radius: 50%;
-			border: 2px solid var(--staff);
 		}
 	}
 

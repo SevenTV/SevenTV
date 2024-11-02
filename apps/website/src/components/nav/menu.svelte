@@ -29,6 +29,7 @@
 	import { locale, dictionary, t } from "svelte-i18n";
 	import { localeNames } from "$/lib/i18n";
 	import { PUBLIC_DEVELOPER_PORTAL } from "$env/static/public";
+	import UserProfilePicture from "../user-profile-picture.svelte";
 
 	enum Menu {
 		Root,
@@ -48,15 +49,13 @@
 <nav class="menu" transition:fade={{ duration: 100 }}>
 	{#if menu === Menu.Root}
 		{#if $user}
-			<a class="profile" href="/users/ayyybubu">
-				<img class="profile-picture" src="/test-profile-pic.jpeg" alt="profile" />
-				<span class="name">
-					ayyybubu
-					<SealCheck size="0.8rem" />
-				</span>
+			<a class="profile" href="/users/{$user.id}">
+				<UserProfilePicture user={$user} size={3 * 16} style="grid-row: 1 / -1" />
+				<span class="name">{$user.mainConnection?.platformDisplayName}</span>
 				<div class="roles">
-					<!-- <Role name="Staff" />
-					<Role name="Subscriber" /> -->
+					{#each $user.roles as role}
+						<Role {role} />
+					{/each}
 				</div>
 				<div class="caret">
 					<CaretRight size={1.2 * 16} />
@@ -234,15 +233,6 @@
 		align-items: center;
 		row-gap: 0.5rem;
 		column-gap: 0.75rem;
-
-		.profile-picture {
-			grid-row: 1 / -1;
-
-			width: 3rem;
-			height: 3rem;
-			border-radius: 50%;
-			border: 2px solid var(--staff);
-		}
 
 		.name {
 			grid-row: 1;

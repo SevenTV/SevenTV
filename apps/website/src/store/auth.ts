@@ -14,6 +14,32 @@ export async function fetchMe(client: Client) {
 		users {
 			me {
 				id
+				mainConnection {
+					platformDisplayName
+					platformAvatarUrl
+				}
+				style {
+					activeProfilePicture {
+						images {
+							url
+							mime
+							size
+							width
+							height
+							scale
+							frameCount
+						}
+					}
+				}
+				highestRoleColor {
+					hex
+				}
+				roles {
+					name
+					color {
+						hex
+					}
+				}
 			}
 		}
 	}`), {}).toPromise();
