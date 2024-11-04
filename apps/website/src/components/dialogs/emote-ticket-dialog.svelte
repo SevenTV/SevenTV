@@ -1,22 +1,12 @@
 <script lang="ts">
-	import {
-		ArrowsMerge,
-		Check,
-		EyeSlash,
-		Gavel,
-		NotePencil,
-		PaperPlaneRight,
-		Trash,
-	} from "phosphor-svelte";
+	import { Check, EyeSlash, Trash } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
-	import Dialog from "./dialog.svelte";
-	import type { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import TabLink from "../tab-link.svelte";
-	import EmoteInfo from "../emotes/emote-info.svelte";
 
-	export let mode: DialogMode;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
-	let tab: "activity" | "comments" = "activity";
+	let tab: "activity" | "comments" = $state("activity");
 </script>
 
 <Dialog bind:mode width={42}>
@@ -26,19 +16,19 @@
 		<div class="emote">
 			<!-- <EmoteInfo>
 				<Button secondary>
-					<NotePencil slot="icon" />
+					<NotePencil />
 					Edit
 				</Button>
 				<Button secondary>
-					<ArrowsMerge style="transform: rotate(-90deg)" slot="icon" />
+					<ArrowsMerge style="transform: rotate(-90deg)" />
 					Merge
 				</Button>
 				<Button secondary>
-					<PaperPlaneRight slot="icon" />
+					<PaperPlaneRight />
 					Transfer
 				</Button>
 				<Button secondary style="color: var(--danger)">
-					<Gavel slot="icon" />
+					<Gavel />
 					Ban Owner
 				</Button>
 			</EmoteInfo> -->
@@ -48,12 +38,12 @@
 			<TabLink
 				title="Activity Log (17)"
 				matcher={() => tab === "activity"}
-				on:click={() => (tab = "activity")}
+				onclick={() => (tab = "activity")}
 			/>
 			<TabLink
 				title="Mod Comments (12)"
 				matcher={() => tab === "comments"}
-				on:click={() => (tab = "comments")}
+				onclick={() => (tab = "comments")}
 			/>
 		</div>
 		{#if tab === "activity"}
@@ -64,13 +54,19 @@
 		<hr />
 		<div class="buttons">
 			<Button>
-				<Trash slot="icon" color="var(--danger)" />
+				{#snippet icon()}
+					<Trash color="var(--danger)" />
+				{/snippet}
 			</Button>
 			<Button>
-				<EyeSlash slot="icon" color="var(--admin-unlist)" />
+				{#snippet icon()}
+					<EyeSlash color="var(--admin-unlist)" />
+				{/snippet}
 			</Button>
 			<Button>
-				<Check slot="icon" color="var(--admin-approve)" />
+				{#snippet icon()}
+					<Check color="var(--admin-approve)" />
+				{/snippet}
 			</Button>
 		</div>
 	</form>

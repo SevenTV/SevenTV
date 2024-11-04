@@ -7,8 +7,7 @@
 	import YoutubeLogo from "../icons/youtube-logo.svelte";
 	import Button from "../input/button.svelte";
 
-	export let user: User;
-	export let big: boolean = false;
+	let { user, big = false }: { user: User; big?: boolean } = $props();
 
 	function connectionLink(connection: UserConnection): string | undefined {
 		switch (connection.platform) {
@@ -27,17 +26,19 @@
 {#each user.connections as connection}
 	{#if connection.platformDisplayName.length !== 0}
 		<Button href={connectionLink(connection)} target="_blank" {big}>
-			{#if connection.platform === Platform.Twitch}
-				<TwitchLogo slot="icon" />
-			{:else if connection.platform === Platform.Google}
-				<YoutubeLogo slot="icon" />
-			{:else if connection.platform === Platform.Discord}
-				<DiscordLogo slot="icon" />
-			{:else if connection.platform === Platform.Kick}
-				<KickLogo slot="icon" />
-			{:else}
-				<Link slot="icon" />
-			{/if}
+			{#snippet icon()}
+				{#if connection.platform === Platform.Twitch}
+					<TwitchLogo />
+				{:else if connection.platform === Platform.Google}
+					<YoutubeLogo />
+				{:else if connection.platform === Platform.Discord}
+					<DiscordLogo />
+				{:else if connection.platform === Platform.Kick}
+					<KickLogo />
+				{:else}
+					<Link />
+				{/if}
+			{/snippet}
 			<span>{connection.platformDisplayName}</span>
 		</Button>
 	{/if}

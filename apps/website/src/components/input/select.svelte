@@ -1,27 +1,34 @@
-<script lang="ts" generics="C extends ComponentType">
-	// https://stackoverflow.com/a/72532661/10772729
-	// eslint doesn't seem to understand this syntax
-
+<script lang="ts">
 	import mouseTrap from "$/lib/mouseTrap";
 	import { CaretDown } from "phosphor-svelte";
 	import { fade } from "svelte/transition";
 	import Button from "./button.svelte";
-	import type { ComponentType } from "svelte"; // eslint-disable-line @typescript-eslint/no-unused-vars
+	import type { Snippet } from "svelte";
 	import { t } from "svelte-i18n";
+	import type { HTMLAttributes } from "svelte/elements";
 
 	type Option = {
 		value: string;
 		label: string;
-		icon?: C; // eslint-disable-line no-undef
+		icon?: Snippet;
 	};
 
-	export let options: Option[];
-	export let selected: string | null = options[0]?.value ?? null;
-	export let grow: boolean = false;
+	type Props = {
+		options: Option[];
+		selected?: string;
+		grow?: boolean;
+	} & HTMLAttributes<HTMLDivElement>;
 
-	$: selectedLabel = options.find((o) => o.value === selected);
+	let {
+		options,
+		selected = $bindable(options[0]?.value ?? undefined),
+		grow = false,
+		...restProps
+	}: Props = $props();
 
-	let expanded = false;
+	let selectedLabel = $derived(options.find((o) => o.value === selected));
+
+	let expanded = $state(false);
 
 	function toggle() {
 		expanded = !expanded;
@@ -37,39 +44,30 @@
 	}
 </script>
 
-<div
-	use:mouseTrap
-	on:outsideClick={close}
-	class="select"
-	class:grow
-	class:expanded
-	{...$$restProps}
->
-	<select bind:value={selected} on:click={toggle} on:keypress={toggle}>
+<div use:mouseTrap={close} class="select" class:grow class:expanded {...restProps}>
+	<select bind:value={selected} onclick={toggle} onkeypress={toggle}>
 		{#each options as option}
 			<option value={option.value}>
 				{option.value}
 			</option>
 		{/each}
 	</select>
-	<Button secondary tabindex="-1" on:click={toggle}>
+	<Button secondary tabindex={-1} onclick={toggle}>
 		{#if selectedLabel}
-			{#if selectedLabel.icon}
-				<svelte:component this={selectedLabel.icon} />
-			{/if}
+			{@render selectedLabel.icon?.()}
 			{selectedLabel.label}
 		{:else}
 			{$t("labels.select")}
 		{/if}
-		<CaretDown slot="icon-right" size={1 * 16} />
+		{#snippet iconRight()}
+			<CaretDown size={1 * 16} />
+		{/snippet}
 	</Button>
 	{#if expanded}
 		<div class="dropped" transition:fade={{ duration: 100 }}>
 			{#each options as option}
-				<Button on:click={() => select(option.value)}>
-					{#if option.icon}
-						<svelte:component this={option.icon} />
-					{/if}
+				<Button onclick={() => select(option.value)}>
+					{@render option.icon?.()}
 					{option.label}
 				</Button>
 			{/each}

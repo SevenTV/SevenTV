@@ -4,25 +4,27 @@
 	import Notification from "./notification.svelte";
 	import { t } from "svelte-i18n";
 
-	export let popup = false;
+	let { popup = false }: { popup?: boolean } = $props();
 
-	let read = false;
+	let read = $state(false);
 </script>
 
 <div class="container" class:popup>
 	<div class="header">
 		<h1>{$t("common.notifications")}</h1>
-		<Button on:click={() => (read = !read)}>
-			<svelte:fragment slot="icon">
+		<Button onclick={() => (read = !read)}>
+			{#snippet icon()}
 				{#if read}
 					<EnvelopeSimple />
 				{:else}
 					<EnvelopeSimpleOpen />
 				{/if}
-			</svelte:fragment>
+			{/snippet}
 		</Button>
 		<Button>
-			<Gear slot="icon" />
+			{#snippet icon()}
+				<Gear />
+			{/snippet}
 		</Button>
 	</div>
 	<div class="notifications" class:scrollable={popup}>

@@ -3,22 +3,38 @@
 	import Flags, { emoteToFlags, determineHighlightColor } from "./flags.svelte";
 	import Checkbox from "./input/checkbox.svelte";
 	import ResponsiveImage from "./responsive-image.svelte";
+	import type { HTMLAttributes } from "svelte/elements";
 
-	export let data: Emote;
-	export let index = 0;
-	export let bg: "medium" | "light" = "medium";
-	export let emoteOnly = false;
-	export let selectionMode = false;
-	export let selected = false;
-	export let ignoredFlagsForHighlight: string[] = [];
+	type Props = {
+		data: Emote;
+		index?: number;
+		bg?: "medium" | "light";
+		emoteOnly?: boolean;
+		selectionMode?: boolean;
+		selected?: boolean;
+		ignoredFlagsForHighlight?: string[];
+	} & HTMLAttributes<HTMLAnchorElement>;
 
-	$: flags = emoteToFlags(data);
+	let {
+		data,
+		index = 0,
+		bg = "medium",
+		emoteOnly = false,
+		selectionMode = false,
+		selected = $bindable(false),
+		ignoredFlagsForHighlight = [],
+		...restProps
+	}: Props = $props();
 
-	$: highlight = determineHighlightColor(flags, ignoredFlagsForHighlight);
+	let flags = $derived(emoteToFlags(data));
 
-	$: if (!selectionMode) {
-		selected = false;
-	}
+	let highlight = $derived(determineHighlightColor(flags, ignoredFlagsForHighlight));
+
+	$effect(() => {
+		if (selectionMode) {
+			selected = false;
+		}
+	});
 
 	function onClick(e: MouseEvent) {
 		if (selectionMode) {
@@ -39,10 +55,10 @@
 		: "--highlight: transparent; --highlight-active: var(--border-active);"}
 	style:background-color="var(--bg-{bg})"
 	title={data.defaultName}
-	on:click={onClick}
-	{...$$restProps}
+	onclick={onClick}
+	{...restProps}
 >
-	<ResponsiveImage images={data.images} alt={data.defaultName} {index} />
+	<ResponsiveImage images={data.images} {index} />
 	{#if !emoteOnly}
 		<span class="name">{data.defaultName}</span>
 		{#if data.owner?.mainConnection?.platformDisplayName}

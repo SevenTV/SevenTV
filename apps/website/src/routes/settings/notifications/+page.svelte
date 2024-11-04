@@ -15,91 +15,109 @@
 	<div class="content">
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 		<hr />
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 		<hr />
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 	</div>
 	<div class="content">
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 		<hr />
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 		<hr />
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 	</div>
 	<div class="content">
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 		<hr />
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 		<hr />
 		<div class="notification">
 			<Toggle style="align-items: center">
-				<div slot="left-label" class="label">
-					<h3>Notification</h3>
-					<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
-				</div>
+				{#snippet leftLabel()}
+					<div class="label">
+						<h3>Notification</h3>
+						<span class="details">Lorem ipsum dolor, sit amet consectetur adipisicing elit.</span>
+					</div>
+				{/snippet}
 			</Toggle>
 		</div>
 	</div>
 </section>
 
 <style lang="scss">
-	@import "../../../styles/settings.scss";
+	@use "../../../styles/settings.scss";
 
 	h3 {
 		font-size: 0.875rem;

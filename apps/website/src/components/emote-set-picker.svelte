@@ -7,32 +7,37 @@
 	import Radio from "./input/radio.svelte";
 	import { t } from "svelte-i18n";
 
-	export let radioName: string | null = null;
-
-	$: input = radioName ? Radio : Checkbox;
+	let { radioName }: { radioName?: string } = $props();
 </script>
 
+{#snippet pickerLeftLabel()}
+	<div class="emote-set">
+		Emote Set
+		<Flags flags={["600/1000", "default"]} />
+	</div>
+{/snippet}
+
 <TextInput placeholder={$t("labels.search_emote_set")}>
-	<MagnifyingGlass slot="icon" />
+	{#snippet icon()}
+		<MagnifyingGlass />
+	{/snippet}
 </TextInput>
 <Expandable title={$t("common.pinned")}>
 	{#each Array(3) as _, i}
-		<svelte:component this={input} option name={radioName ?? ""}>
-			<div slot="left-label" class="emote-set">
-				Emote Set {i + 1}
-				<Flags flags={["600/1000", "default"]} />
-			</div>
-		</svelte:component>
+		{#if radioName}
+			<Radio name={radioName} option leftLabel={pickerLeftLabel} />
+		{:else}
+			<Checkbox option leftLabel={pickerLeftLabel} />
+		{/if}
 	{/each}
 </Expandable>
 <Expandable title="ayyybubu">
 	{#each Array(3) as _, i}
-		<svelte:component this={input} option name={radioName ?? ""}>
-			<div slot="left-label" class="emote-set">
-				Emote Set {i + 1}
-				<Flags flags={["600/1000", "default"]} />
-			</div>
-		</svelte:component>
+		{#if radioName}
+			<Radio name={radioName} option leftLabel={pickerLeftLabel} />
+		{:else}
+			<Checkbox option leftLabel={pickerLeftLabel} />
+		{/if}
 	{/each}
 </Expandable>
 

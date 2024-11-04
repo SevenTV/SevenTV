@@ -1,22 +1,35 @@
 <script lang="ts">
 	import { CaretRight } from "phosphor-svelte";
+	import type { Snippet } from "svelte";
+	import type { HTMLButtonAttributes, HTMLAnchorAttributes } from "svelte/elements";
 
-	export let href: string | null = null;
-	export let showCaret: boolean = false;
+	type Props = {
+		href?: string;
+		showCaret?: boolean;
+		hideOnMobile?: boolean;
+		hideOnDesktop?: boolean;
+		children?: Snippet;
+	} & HTMLAnchorAttributes &
+		HTMLButtonAttributes;
 
-	export let hideOnMobile: boolean = false;
-	export let hideOnDesktop: boolean = false;
+	let {
+		href,
+		showCaret = false,
+		hideOnMobile = false,
+		hideOnDesktop = false,
+		children,
+		...restProps
+	}: Props = $props();
 </script>
 
 {#if href}
 	<a
 		{href}
-		on:click
 		class:hide-on-mobile={hideOnMobile}
 		class:hide-on-desktop={hideOnDesktop}
-		{...$$restProps}
+		{...restProps}
 	>
-		<slot />
+		{@render children?.()}
 		{#if showCaret}
 			<div class="caret">
 				<CaretRight />
@@ -26,12 +39,11 @@
 {:else}
 	<button
 		type="button"
-		on:click
 		class:hide-on-mobile={hideOnMobile}
 		class:hide-on-desktop={hideOnDesktop}
-		{...$$restProps}
+		{...restProps}
 	>
-		<slot />
+		{@render children?.()}
 		{#if showCaret}
 			<div class="caret">
 				<CaretRight />

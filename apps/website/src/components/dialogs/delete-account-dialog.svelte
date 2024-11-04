@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { Warning } from "phosphor-svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Checkbox from "../input/checkbox.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
 	const reasons = [
 		$t("dialogs.delete_account.reasons.no_longer_use"),
@@ -29,9 +29,11 @@
 			<span class="label">{$t("dialogs.delete_account.choose_reasons")}</span>
 			{#each reasons as reason}
 				<Checkbox option>
-					<span class="label" slot="left-label">
-						{reason}
-					</span>
+					{#snippet leftLabel()}
+						<span class="label">
+							{reason}
+						</span>
+					{/snippet}
 				</Checkbox>
 			{/each}
 		</div>
@@ -40,7 +42,7 @@
 		</TextInput>
 		<div class="buttons">
 			<Button style="color: var(--danger)" submit>{$t("labels.delete")}</Button>
-			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+			<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 		</div>
 	</form>
 </Dialog>

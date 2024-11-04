@@ -1,13 +1,15 @@
 <script lang="ts">
 	import type { User } from "$/gql/graphql";
 	import ResponsiveImage from "./responsive-image.svelte";
+	import { type HTMLAttributes } from "svelte/elements";
 
-	export let user: User;
-	export let size: number = 44;
+	type Props = {
+		user: User;
+		size?: number;
+	} & HTMLAttributes<HTMLImageElement> &
+		HTMLAttributes<HTMLPictureElement>;
 
-	$: alt = user.mainConnection
-		? `${user.mainConnection?.platformDisplayName}'s Profile Picture`
-		: "Profile Picture";
+	let { user, size = 44, ...restProps }: Props = $props();
 </script>
 
 {#if user.style.activeProfilePicture}
@@ -15,10 +17,9 @@
 		width={size}
 		height={size}
 		images={user.style.activeProfilePicture.images}
-		{alt}
 		round
 		borderColor={user.highestRoleColor?.hex}
-		{...$$restProps}
+		{...restProps}
 	/>
 {:else}
 	<img
@@ -26,9 +27,8 @@
 		style:border-color={user.highestRoleColor?.hex ?? "transparent"}
 		width={size}
 		height={size}
-		{alt}
 		class="profile-picture"
-		{...$$restProps}
+		{...restProps}
 	/>
 {/if}
 

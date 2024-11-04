@@ -4,7 +4,7 @@
 	import Button from "../input/button.svelte";
 	import { t } from "svelte-i18n";
 
-	export let type: string;
+	let { type }: { type: string } = $props();
 </script>
 
 <label class="method">

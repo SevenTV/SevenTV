@@ -5,47 +5,63 @@
 	import { CaretDown, DotsThreeVertical, Gift, Star } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
-	export let subbed = false;
+	let { subbed = $bindable(false) }: { subbed?: boolean } = $props();
 </script>
 
 <StoreSection title={$t("common.your_subscription")}>
-	<div class="buttons" slot="header">
-		<Button
-			secondary
-			hideOnMobile
-			on:click={() => (subbed = true)}
-			style={subbed && "color: var(--store)"}
-		>
-			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
-			<span>
-				{subbed
-					? $t("pages.store.subscription.subscribed")
-					: $t("pages.store.subscription.subscribe")}
-			</span>
-			<CaretDown slot="icon-right" />
-		</Button>
-		<Button
-			secondary
-			hideOnDesktop
-			on:click={() => (subbed = true)}
-			style={subbed && "color: var(--store)"}
-		>
-			<Star weight={subbed ? "fill" : "bold"} slot="icon" />
-			<CaretDown slot="icon-right" />
-		</Button>
+	{#snippet header()}
+		<div class="buttons">
+			<Button
+				secondary
+				hideOnMobile
+				onclick={() => (subbed = true)}
+				style={subbed ? "color: var(--store)" : undefined}
+			>
+				{#snippet icon()}
+					<Star weight={subbed ? "fill" : "bold"} />
+				{/snippet}
+				<span>
+					{subbed
+						? $t("pages.store.subscription.subscribed")
+						: $t("pages.store.subscription.subscribe")}
+				</span>
+				{#snippet iconRight()}
+					<CaretDown />
+				{/snippet}
+			</Button>
+			<Button
+				secondary
+				hideOnDesktop
+				onclick={() => (subbed = true)}
+				style={subbed ? "color: var(--store)" : undefined}
+			>
+				{#snippet icon()}
+					<Star weight={subbed ? "fill" : "bold"} />
+				{/snippet}
+				{#snippet iconRight()}
+					<CaretDown />
+				{/snippet}
+			</Button>
 
-		<Button secondary hideOnMobile>
-			<Gift slot="icon" />
-			{$t("labels.gift")}
-		</Button>
-		<Button hideOnDesktop>
-			<Gift slot="icon" />
-		</Button>
+			<Button secondary hideOnMobile>
+				{#snippet icon()}
+					<Gift />
+				{/snippet}
+				{$t("labels.gift")}
+			</Button>
+			<Button hideOnDesktop>
+				{#snippet icon()}
+					<Gift />
+				{/snippet}
+			</Button>
 
-		<Button secondary>
-			<DotsThreeVertical slot="icon" />
-		</Button>
-	</div>
+			<Button secondary>
+				{#snippet icon()}
+					<DotsThreeVertical />
+				{/snippet}
+			</Button>
+		</div>
+	{/snippet}
 	<SubInfo />
 </StoreSection>
 

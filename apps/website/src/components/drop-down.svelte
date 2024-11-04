@@ -1,22 +1,30 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
 	let dropDownIndex = 0;
 </script>
 
 <script lang="ts">
 	import mouseTrap from "$/lib/mouseTrap";
 	import { fade } from "svelte/transition";
+	import { type HTMLAttributes } from "svelte/elements";
+	import type { Snippet } from "svelte";
 
-	export let hideOnMobile = false;
-	export let hideOnDesktop = false;
+	type Props = {
+		dropdown?: Snippet;
+		align?: "left" | "right";
+		children?: Snippet;
+	} & HTMLAttributes<HTMLDivElement>;
 
-	export let align: "left" | "right" = "right";
+	let { dropdown, align = "right", children, ...restProps }: Props = $props();
 
-	let index = dropDownIndex;
-	dropDownIndex += 1;
+	let hideOnMobile = $state(false);
+	let hideOnDesktop = $state(false);
 
-	let expanded = false;
+	let index = dropDownIndex++;
 
-	function toggle() {
+	let expanded = $state(false);
+
+	function toggle(e: MouseEvent) {
+		e.preventDefault();
 		expanded = !expanded;
 	}
 
@@ -27,21 +35,20 @@
 
 <div
 	class="dropdown"
-	use:mouseTrap
-	on:outsideClick={close}
+	use:mouseTrap={close}
 	class:hide-on-mobile={hideOnMobile}
 	class:hide-on-desktop={hideOnDesktop}
 >
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- This is just a wrapper element to catch the underlying click event -->
 	<div
 		class="input-wrapper"
-		on:click|preventDefault={toggle}
+		onclick={toggle}
 		aria-expanded={expanded}
 		aria-controls="dropdown-list-{index}"
-		{...$$restProps}
+		{...restProps}
 	>
-		<slot />
+		{@render children?.()}
 	</div>
 	{#if expanded}
 		<div
@@ -50,7 +57,7 @@
 			transition:fade={{ duration: 100 }}
 			style={align === "left" ? "left: 0" : "right: 0"}
 		>
-			<slot name="dropdown" />
+			{@render dropdown?.()}
 		</div>
 	{/if}
 </div>

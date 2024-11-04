@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Role } from "$/gql/graphql";
 
-	export let role: Role;
+	let { role }: { role: Role } = $props();
 </script>
 
 <span style:color={role.color?.hex}>{role.name}</span>

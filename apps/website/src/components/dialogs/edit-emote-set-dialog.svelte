@@ -1,19 +1,19 @@
 <script lang="ts">
 	import TagsInput from "../input/tags-input.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Checkbox from "../input/checkbox.svelte";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import DeleteEmoteSetDialog from "./delete-emote-set-dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
-	let deleteDialogMode = DialogMode.Hidden;
+	let deleteDialogMode: DialogMode = $state("hidden");
 
 	function onDeleteClick() {
-		mode = DialogMode.Hidden;
-		deleteDialogMode = DialogMode.Shown;
+		mode = "hidden";
+		deleteDialogMode = "shown";
 	}
 </script>
 
@@ -38,10 +38,10 @@
 			</div>
 		</div>
 		<div class="buttons">
-			<Button style="color: var(--danger); margin-right: auto;" on:click={onDeleteClick}>
+			<Button style="color: var(--danger); margin-right: auto;" onclick={onDeleteClick}>
 				{$t("labels.delete")}
 			</Button>
-			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+			<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 			<Button primary submit>{$t("labels.save")}</Button>
 		</div>
 	</form>

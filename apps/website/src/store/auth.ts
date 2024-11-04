@@ -7,7 +7,7 @@ import { derived, writable, type Readable } from "svelte/store";
 // Stores should be considered loading when their value is `undefined`
 // Null means the value is known to be empty
 
-const client = getContextClient();
+// const client = getContextClient();
 
 export const sessionToken = writable<string | null>(undefined);
 export const user: Readable<User | null | undefined> = derived(sessionToken, (value, set) => {
@@ -17,43 +17,50 @@ export const user: Readable<User | null | undefined> = derived(sessionToken, (va
 		return;
 	}
 
-	fetchMe(client).then((user) => set(user));
+	// fetchMe(client).then((user) => set(user));
 });
 
 export async function fetchMe(client: Client): Promise<User | null> {
-	const res = await client.query(graphql(`query Me {
-		users {
-			me {
-				id
-				mainConnection {
-					platformDisplayName
-					platformAvatarUrl
-				}
-				style {
-					activeProfilePicture {
-						images {
-							url
-							mime
-							size
-							width
-							height
-							scale
-							frameCount
+	const res = await client
+		.query(
+			graphql(`
+				query Me {
+					users {
+						me {
+							id
+							mainConnection {
+								platformDisplayName
+								platformAvatarUrl
+							}
+							style {
+								activeProfilePicture {
+									images {
+										url
+										mime
+										size
+										width
+										height
+										scale
+										frameCount
+									}
+								}
+							}
+							highestRoleColor {
+								hex
+							}
+							roles {
+								name
+								color {
+									hex
+								}
+							}
 						}
 					}
 				}
-				highestRoleColor {
-					hex
-				}
-				roles {
-					name
-					color {
-						hex
-					}
-				}
-			}
-		}
-	}`), {}).toPromise();
+			`),
+			{},
+		)
+		.toPromise();
 
 	if (res.error || !res.data || !res.data.users.me) {
 		if (res.error) {

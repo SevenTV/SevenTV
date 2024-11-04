@@ -1,5 +1,6 @@
-<script lang="ts" context="module">
-	export const icons: { [key: string]: typeof GlobeSimple } = {
+<script lang="ts" module>
+	// TODO: Remove `any` as soon as phosphor-svelte fully supports Svelte 5
+	export const icons: { [key: string]: any } = {
 		// Emote flags
 		active: Lightning,
 		global: GlobeSimple,
@@ -72,6 +73,7 @@
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
 	import type { Emote } from "$/gql/graphql";
+	import type { HTMLAttributes } from "svelte/elements";
 
 	const names: { [key: string]: string } = {
 		// Emote flags
@@ -95,32 +97,39 @@
 
 	// Used for emote flags, emote set flags and permissions
 
-	export let iconOnly: boolean = false;
+	type Props = {
+		iconOnly?: boolean;
+		flags: string[];
+		add?: (e: MouseEvent) => void;
+	} & HTMLAttributes<HTMLDivElement>;
 
-	export let flags: string[] = [];
-	export let add: ((e: MouseEvent) => void) | null = null;
+	let { iconOnly = false, flags = [], add, ...restProps }: Props = $props();
 
-	$: flags.sort((a, b) => {
-		const keys = Object.keys(icons);
-		const aIndex = keys.indexOf(a);
-		const bIndex = keys.indexOf(b);
-		if (aIndex === -1 && bIndex === -1) {
-			return 0;
-		}
-		if (aIndex === -1) {
-			return 1;
-		}
-		if (bIndex === -1) {
-			return -1;
-		}
-		return aIndex - bIndex;
+	$effect(() => {
+		flags.sort((a, b) => {
+			const keys = Object.keys(icons);
+			const aIndex = keys.indexOf(a);
+			const bIndex = keys.indexOf(b);
+			if (aIndex === -1 && bIndex === -1) {
+				return 0;
+			}
+			if (aIndex === -1) {
+				return 1;
+			}
+			if (bIndex === -1) {
+				return -1;
+			}
+			return aIndex - bIndex;
+		});
 	});
 </script>
 
-<div class="flags" {...$$restProps}>
+<div class="flags" {...restProps}>
 	{#each flags as flag}
 		{#if iconOnly && icons[flag]}
 			<span class="flag icon-only" style="color: {colors[flag]}">
+				<!-- svelte-ignore svelte_component_deprecated -->
+				<!-- Disable warning until phosphor-svelte has full Svelte 5 support -->
 				<svelte:component this={icons[flag]} size={1 * 16} />
 			</span>
 		{:else}
@@ -129,14 +138,18 @@
 				class:has-icon={icons[flag]}
 				style="color: {colors[flag]}; background-color: {colors[flag]}1a"
 			>
+				<!-- svelte-ignore svelte_component_deprecated -->
+				<!-- Disable warning until phosphor-svelte has full Svelte 5 support -->
 				<svelte:component this={icons[flag]} size={1 * 16} />
 				<span class:hide-on-mobile={icons[flag]}>{names[flag] || flag.replace("_", " ")}</span>
 			</span>
 		{/if}
 	{/each}
 	{#if add}
-		<Button secondary on:click={add} title="Add" style="padding: 0.3rem 0.5rem; border: none;">
-			<Plus size={1 * 16} slot="icon" />
+		<Button secondary onclick={add} title="Add" style="padding: 0.3rem 0.5rem; border: none;">
+			{#snippet icon()}
+				<Plus size={1 * 16} />
+			{/snippet}
 		</Button>
 	{/if}
 </div>
@@ -178,7 +191,7 @@
 	}
 
 	@media screen and (max-width: 960px) {
-		.flag.has-icon:not(.icon-only) {
+		.flag.has-icon {
 			padding: 0.3rem 0.5rem;
 		}
 	}

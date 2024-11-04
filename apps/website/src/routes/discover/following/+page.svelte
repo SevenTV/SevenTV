@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Button from "$/components/input/button.svelte";
-	import EmotePreview from "$/components/emote-preview.svelte";
 	import { discoverFollowingLayout } from "$/store/layout";
 	import { DotsThree, Plus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
@@ -11,7 +10,9 @@
 <div class="uploads {$discoverFollowingLayout}">
 	<div class="upload">
 		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<DotsThree slot="icon" />
+			{#snippet icon()}
+				<DotsThree />
+			{/snippet}
 		</Button>
 		<div class="info">
 			<div class="profile-picture"></div>
@@ -30,7 +31,9 @@
 	</div>
 	<div class="upload">
 		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<DotsThree slot="icon" />
+			{#snippet icon()}
+				<DotsThree />
+			{/snippet}
 		</Button>
 		<div class="info">
 			<div class="profile-picture"></div>
@@ -52,7 +55,9 @@
 	</div>
 	<div class="upload">
 		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<DotsThree slot="icon" />
+			{#snippet icon()}
+				<DotsThree />
+			{/snippet}
 		</Button>
 		<div class="info">
 			<div class="profile-picture"></div>
@@ -74,7 +79,9 @@
 	</div>
 	<div class="upload">
 		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<DotsThree slot="icon" />
+			{#snippet icon()}
+				<DotsThree />
+			{/snippet}
 		</Button>
 		<div class="info">
 			<div class="profile-picture"></div>
@@ -96,7 +103,9 @@
 	</div>
 	<div class="upload">
 		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<DotsThree slot="icon" />
+			{#snippet icon()}
+				<DotsThree />
+			{/snippet}
 		</Button>
 		<div class="info">
 			<div class="profile-picture"></div>
@@ -116,7 +125,9 @@
 	</div>
 	<div class="upload">
 		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<DotsThree slot="icon" />
+			{#snippet icon()}
+				<DotsThree />
+			{/snippet}
 		</Button>
 		<div class="info">
 			<div class="profile-picture"></div>
@@ -135,7 +146,9 @@
 	</div>
 	<div class="upload">
 		<Button style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<DotsThree slot="icon" />
+			{#snippet icon()}
+				<DotsThree />
+			{/snippet}
 		</Button>
 		<div class="info">
 			<div class="profile-picture"></div>

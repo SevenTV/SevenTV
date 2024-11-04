@@ -3,11 +3,13 @@
 	import { CaretLeft } from "phosphor-svelte";
 	import type { PageData } from "./$types";
 
-	export let data: PageData;
+	let { data }: { data: PageData } = $props();
 </script>
 
 <Button href="/direct-messages">
-	<CaretLeft slot="icon" />
+	{#snippet icon()}
+		<CaretLeft />
+	{/snippet}
 	Back
 </Button>
 <h1>DMs with {data.username}</h1>

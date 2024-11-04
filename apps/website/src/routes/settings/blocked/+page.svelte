@@ -5,9 +5,9 @@
 	import { MagnifyingGlass, Prohibit, PencilSimple, Trash } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
-	let selectedMap = Array(10).fill(false);
+	let selectedMap = $state(Array(10).fill(false));
 
-	$: selectMode = selectedMap.some((v) => v);
+	let selectMode = $derived(selectedMap.some((v) => v));
 </script>
 
 <svelte:head>
@@ -23,19 +23,27 @@
 		<nav class="nav-bar">
 			<div class="buttons">
 				<TextInput placeholder={$t("pages.settings.blocked.add_user")}>
-					<Prohibit slot="icon" />
+					{#snippet icon()}
+						<Prohibit />
+					{/snippet}
 				</TextInput>
 				{#if selectMode}
 					<Button style="border: none">
-						<PencilSimple slot="icon" />
+						{#snippet icon()}
+							<PencilSimple />
+						{/snippet}
 					</Button>
 					<Button style="border: none">
-						<Trash slot="icon" />
+						{#snippet icon()}
+							<Trash />
+						{/snippet}
 					</Button>
 				{/if}
 			</div>
 			<TextInput placeholder={$t("labels.search")}>
-				<MagnifyingGlass slot="icon" />
+				{#snippet icon()}
+					<MagnifyingGlass />
+				{/snippet}
 			</TextInput>
 		</nav>
 		<UserTable bind:selectedMap />
@@ -43,7 +51,7 @@
 </section>
 
 <style lang="scss">
-	@import "../../../styles/settings.scss";
+	@use "../../../styles/settings.scss";
 
 	.nav-bar {
 		display: flex;

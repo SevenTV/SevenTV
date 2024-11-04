@@ -1,18 +1,16 @@
 <script lang="ts">
-	import { Layout, emotesLayout } from "$/store/layout";
+	import { emotesLayout } from "$/store/layout";
 	import { GridFour, GridNine } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 </script>
 
-<Button
-	secondary={$emotesLayout === Layout.BigGrid}
-	on:click={() => ($emotesLayout = Layout.BigGrid)}
->
-	<GridFour slot="icon" />
+<Button secondary={$emotesLayout === "big-grid"} onclick={() => ($emotesLayout = "big-grid")}>
+	{#snippet icon()}
+		<GridFour />
+	{/snippet}
 </Button>
-<Button
-	secondary={$emotesLayout === Layout.SmallGrid}
-	on:click={() => ($emotesLayout = Layout.SmallGrid)}
->
-	<GridNine slot="icon" />
+<Button secondary={$emotesLayout === "small-grid"} onclick={() => ($emotesLayout = "small-grid")}>
+	{#snippet icon()}
+		<GridNine />
+	{/snippet}
 </Button>

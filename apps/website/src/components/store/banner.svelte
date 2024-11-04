@@ -1,7 +1,14 @@
 <script lang="ts">
-	export let title: string;
-	export let subtitle: string;
-	export let gradientColor: string = "#9227cf";
+	import type { Snippet } from "svelte";
+
+	interface Props {
+		title: string;
+		subtitle: string;
+		gradientColor?: string;
+		children?: Snippet;
+	}
+
+	let { title, subtitle, gradientColor = "#9227cf", children }: Props = $props();
 </script>
 
 <section class="banner" style="--gradient-color: {gradientColor}">
@@ -9,7 +16,7 @@
 		<h1>{title}</h1>
 		<p>{subtitle}</p>
 	</span>
-	<slot />
+	{@render children?.()}
 </section>
 
 <style lang="scss">

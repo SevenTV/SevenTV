@@ -1,129 +1,93 @@
 <script lang="ts">
 	import { page } from "$app/stores";
-	import { createEventDispatcher } from "svelte";
+	import { type Snippet } from "svelte";
 	import Button from "./input/button.svelte";
 
-	const dispatch = createEventDispatcher();
+	interface Props {
+		title?: string;
+		href?: string;
+		big?: boolean;
+		responsive?: boolean;
+		matcher?: (id: string | null, url: URL, href?: string) => boolean;
+		children?: Snippet;
+		active?: Snippet;
+		iconRight?: Snippet;
+		onclick?: () => void;
+	}
 
-	export let title: string | null = null;
-	export let href: string | null = null;
-	export let big: boolean = false;
-	export let responsive: boolean = false;
-	export let matcher: (id: string | null, url: URL, href: string | null) => boolean = (
-		_id,
-		url,
-		href,
-	) => {
+	function defaultMatcher(_id: string | null, url: URL, href?: string): boolean {
 		return url.pathname === href;
-	};
+	}
+
+	let {
+		title,
+		href,
+		big = false,
+		responsive = false,
+		matcher = defaultMatcher,
+		children,
+		active,
+		iconRight: tabLinkIconRight,
+		onclick,
+	}: Props = $props();
 
 	function scrollIntoView(e: MouseEvent) {
 		if (e.target instanceof HTMLElement) {
 			e.target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
 		}
-		dispatch("click");
+		onclick?.();
 	}
 
-	$: active = matcher($page.route.id, $page.url, href);
+	let isActive = $derived(matcher($page.route.id, $page.url, href));
 </script>
 
-<!-- Ugly ass code here. Found no better solution, sorry -->
 {#if responsive}
-	{#if $$slots["icon-right"]}
-		<Button
-			{href}
-			{big}
-			secondary={active}
-			draggable="false"
-			style={!active && "color: var(--text-light)"}
-			on:click={scrollIntoView}
-			hideOnMobile
-		>
-			<svelte:fragment slot="icon">
-				{#if active}
-					<slot name="active" />
-				{:else}
-					<slot />
-				{/if}
-			</svelte:fragment>
-			<span style="flex-grow: 1">{title}</span>
-			<slot name="icon-right" slot="icon-right" />
-		</Button>
-	{:else}
-		<Button
-			{href}
-			{big}
-			secondary={active}
-			draggable="false"
-			style={!active && "color: var(--text-light)"}
-			on:click={scrollIntoView}
-			hideOnMobile
-		>
-			<svelte:fragment slot="icon">
-				{#if active}
-					<slot name="active" />
-				{:else}
-					<slot />
-				{/if}
-			</svelte:fragment>
-			{title}
-		</Button>
-	{/if}
 	<Button
 		{href}
 		{big}
-		secondary={active}
+		secondary={isActive}
 		draggable="false"
-		style={!active && "color: var(--text-light)"}
-		on:click={scrollIntoView}
-		hideOnDesktop
+		style={isActive ? null : "color: var(--text-light)"}
+		onclick={scrollIntoView}
+		hideOnMobile
+		iconRight={tabLinkIconRight}
+		icon={isActive ? active : children}
 	>
-		<svelte:fragment slot="icon">
-			{#if active}
-				<slot name="active" />
-			{:else}
-				<slot />
-			{/if}
-		</svelte:fragment>
-		{#if active}
+		{#if tabLinkIconRight}
+			<span style="flex-grow: 1">{title}</span>
+		{:else}
 			{title}
 		{/if}
 	</Button>
-{:else if $$slots["icon-right"]}
 	<Button
 		{href}
 		{big}
-		secondary={active}
+		secondary={isActive}
 		draggable="false"
-		style={!active && "color: var(--text-light)"}
-		on:click={scrollIntoView}
+		style={isActive ? null : "color: var(--text-light)"}
+		onclick={scrollIntoView}
+		hideOnDesktop
+		icon={isActive ? active : children}
 	>
-		<svelte:fragment slot="icon">
-			{#if active}
-				<slot name="active" />
-			{:else}
-				<slot />
-			{/if}
-		</svelte:fragment>
-		<span style="flex-grow: 1">{title}</span>
-		<slot name="icon-right" slot="icon-right" />
+		{#if isActive}
+			{title}
+		{/if}
 	</Button>
 {:else}
 	<Button
 		{href}
 		{big}
-		secondary={active}
+		secondary={isActive}
 		draggable="false"
-		style={!active && "color: var(--text-light)"}
-		on:click={scrollIntoView}
+		style={isActive ? null : "color: var(--text-light)"}
+		onclick={scrollIntoView}
+		iconRight={tabLinkIconRight}
+		icon={isActive ? active : children}
 	>
-		<svelte:fragment slot="icon">
-			{#if active}
-				<slot name="active" />
-			{:else}
-				<slot />
-			{/if}
-		</svelte:fragment>
-		{title}
+		{#if tabLinkIconRight}
+			<span style="flex-grow: 1">{title}</span>
+		{:else}
+			{title}
+		{/if}
 	</Button>
 {/if}

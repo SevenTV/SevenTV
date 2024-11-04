@@ -1,5 +1,4 @@
 <script lang="ts">
-	import EmotePreview from "$/components/emote-preview.svelte";
 	import Flags from "$/components/flags.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
 	import moment from "moment/min/moment-with-locales";
@@ -8,17 +7,21 @@
 	import CountryFlag from "../country-flag.svelte";
 	import { t } from "svelte-i18n";
 	import { numberFormat } from "$/lib/utils";
-	import { createEventDispatcher } from "svelte";
 	import EmoteTicketsTableActions from "./emote-tickets-table-actions.svelte";
 	import EmoteTicketsTableActionsHeader from "./emote-tickets-table-actions-header.svelte";
 	import { browser } from "$app/environment";
+	import type { ButtonOptions } from "./emote-ticket.svelte";
 
-	const dispatch = createEventDispatcher();
+	interface Props {
+		buttonOptions: ButtonOptions;
+		selectedMap: boolean[];
+		onclick: (index: number) => void;
+	}
 
-	export let selectedMap: boolean[];
+	let { buttonOptions = $bindable(), selectedMap = $bindable(), onclick }: Props = $props();
 
-	$: allSelected = selectedMap.every((v) => v);
-	$: anySelected = selectedMap.some((v) => v);
+	let allSelected = $derived(selectedMap.every((v) => v));
+	let anySelected = $derived(selectedMap.some((v) => v));
 
 	function selectAllClick() {
 		selectedMap = Array(selectedMap.length).fill(!allSelected);
@@ -30,18 +33,13 @@
 		return position && JSON.parse(position);
 	}
 
-	let actionsPosition: "left" | "right" = loadActionsPosition() || "left";
+	let actionsPosition: "left" | "right" = $state(loadActionsPosition() || "left");
 
-	$: if (actionsPosition && browser) {
-		window.localStorage.setItem("emoteTicketsActionsPosition", JSON.stringify(actionsPosition));
-	}
-
-	export let buttonOptions: {
-		merge: boolean;
-		delete: boolean;
-		unlist: boolean;
-		approve: boolean;
-	};
+	$effect(() => {
+		if (actionsPosition && browser) {
+			window.localStorage.setItem("emoteTicketsActionsPosition", JSON.stringify(actionsPosition));
+		}
+	});
 </script>
 
 <table>
@@ -51,7 +49,7 @@
 				<Checkbox
 					value={allSelected}
 					indeterminate={anySelected && !allSelected}
-					on:click={selectAllClick}
+					onclick={selectAllClick}
 				/>
 			</th>
 			{#if actionsPosition === "left"}
@@ -71,7 +69,7 @@
 	</thead>
 	<tbody>
 		{#each Array(selectedMap.length) as _, i}
-			<tr class="data-row" on:click={() => dispatch("click", i)}>
+			<tr class="data-row" onclick={() => onclick(i)}>
 				<td class="shrink">
 					<Checkbox bind:value={selectedMap[i]} />
 				</td>

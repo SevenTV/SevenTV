@@ -4,8 +4,19 @@
 	import type { PageData } from "./$types";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
 	import { queryEmotes } from "$/lib/emoteQuery";
+	import { untrack } from "svelte";
 
-	export let data: PageData;
+	let { data }: { data: PageData } = $props();
+
+	// TODO: Find out correct type
+	let loader: any;
+
+	$effect(() => {
+		data;
+		untrack(() => {
+			loader?.reset();
+		});
+	});
 </script>
 
 <svelte:head>
@@ -13,6 +24,7 @@
 </svelte:head>
 
 <EmoteLoader
+	bind:this={loader}
 	load={(client, page, perPage) =>
 		queryEmotes(client, data.query, data.tags, SortBy.UploadDate, data.filters, page, perPage)}
 />

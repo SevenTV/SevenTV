@@ -3,38 +3,48 @@
 	import Button from "$/components/input/button.svelte";
 	import { FolderSimple, Smiley, User } from "phosphor-svelte";
 	import { defaultEmoteSetDialogMode } from "$/store/layout";
-	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { t } from "svelte-i18n";
+	import type { Snippet } from "svelte";
+
+	let { children }: { children: Snippet } = $props();
 </script>
 
 <div class="nav-bar">
 	<nav class="tabs">
 		<TabLink href="/emotes/bookmarked" title={$t("common.emotes", { values: { count: 2 } })}>
 			<Smiley />
-			<Smiley weight="fill" slot="active" />
+			{#snippet active()}
+				<Smiley weight="fill" />
+			{/snippet}
 		</TabLink>
 		<TabLink
 			href="/emotes/bookmarked/sets"
 			title={$t("common.emote_sets", { values: { count: 2 } })}
 		>
 			<FolderSimple />
-			<FolderSimple weight="fill" slot="active" />
+			{#snippet active()}
+				<FolderSimple weight="fill" />
+			{/snippet}
 		</TabLink>
 		<TabLink href="/emotes/bookmarked/users" title={$t("common.users", { values: { count: 2 } })}>
 			<User />
-			<User weight="fill" slot="active" />
+			{#snippet active()}
+				<User weight="fill" />
+			{/snippet}
 		</TabLink>
 	</nav>
 	<div class="buttons">
-		<Button secondary hideOnMobile on:click={() => ($defaultEmoteSetDialogMode = DialogMode.Shown)}>
-			<FolderSimple slot="icon" />
+		<Button secondary hideOnMobile onclick={() => ($defaultEmoteSetDialogMode = "shown")}>
+			{#snippet icon()}
+				<FolderSimple />
+			{/snippet}
 			Personal Emotes
 		</Button>
 		<LayoutButtons />
 	</div>
 </div>
-<slot />
+{@render children()}
 
 <style lang="scss">
 	.nav-bar {

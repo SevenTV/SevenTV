@@ -30,14 +30,20 @@
 </script>
 
 <StoreSection title={$t("pages.store.subscription.top_gifters")}>
-	<div class="header" slot="header">
-		<Button>
-			<CaretLeft slot="icon" />
-		</Button>
-		<Button>
-			<CaretRight slot="icon" />
-		</Button>
-	</div>
+	{#snippet header()}
+		<div class="header">
+			<Button>
+				{#snippet icon()}
+					<CaretLeft />
+				{/snippet}
+			</Button>
+			<Button>
+				{#snippet icon()}
+					<CaretRight />
+				{/snippet}
+			</Button>
+		</div>
+	{/snippet}
 	<div class="grid">
 		{#each topGifters as gifter, i}
 			<span class="rank">{i + 1}.</span>
@@ -54,7 +60,9 @@
 		{/each}
 	</div>
 	<Button secondary style="align-self: flex-end">
-		<Gift slot="icon" />
+		{#snippet icon()}
+			<Gift />
+		{/snippet}
 		{$t("labels.gift")}
 	</Button>
 </StoreSection>

@@ -11,7 +11,7 @@
 	import { PaintBrush, Seal, Smiley, Ticket, UserCircle } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
-	let subbed = false;
+	let subbed = $state(false);
 </script>
 
 <svelte:head>

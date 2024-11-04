@@ -1,5 +1,5 @@
 <script lang="ts">
-	export let tags: string[] = [];
+	let { tags = [] }: { tags?: string[] } = $props();
 </script>
 
 <div class="tags">

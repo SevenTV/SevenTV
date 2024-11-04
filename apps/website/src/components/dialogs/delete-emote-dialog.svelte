@@ -1,11 +1,11 @@
 <script lang="ts">
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
-	import { DialogMode } from "./dialog.svelte";
+	import { type DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <EmoteDialog
@@ -17,10 +17,10 @@
 	<TextInput placeholder={$t("dialogs.delete_emote_or_set.reason")}>
 		<span class="label">{$t("dialogs.delete_emote_or_set.reason_for_deletion")}</span>
 	</TextInput>
-	<svelte:fragment slot="buttons">
+	{#snippet buttons()}
 		<Button style="color: var(--danger)" submit>{$t("labels.delete")}</Button>
-		<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
-	</svelte:fragment>
+		<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
+	{/snippet}
 </EmoteDialog>
 
 <style lang="scss">

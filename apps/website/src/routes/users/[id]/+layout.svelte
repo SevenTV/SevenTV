@@ -21,14 +21,17 @@
 	import Connections from "$/components/profile/connections.svelte";
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import { UserEditorState } from "$/gql/graphql";
+	import type { Snippet } from "svelte";
 
-	export let data: LayoutData;
+	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-	let connectionsExpanded = false;
-	let editorsExpanded = false;
+	let connectionsExpanded = $state(false);
+	let editorsExpanded = $state(false);
 
-	$: hasConnections = data.user.connections.length > 0;
-	$: hasEditors = data.user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted);
+	let hasConnections = $derived(data.user.connections.length > 0);
+	let hasEditors = $derived(
+		data.user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted),
+	);
 </script>
 
 <svelte:head>
@@ -65,27 +68,31 @@
 		</div> -->
 		<!-- <div class="buttons">
 			<Button primary style="flex-grow: 1; justify-content: center;">
-				<Heart slot="icon" />
+				<Heart />
 				{$t("labels.follow")}
 			</Button>
 			<Button secondary hideOnMobile>
-				<CaretDown slot="icon" />
+				<CaretDown />
 			</Button>
 			<Button secondary hideOnDesktop>
-				<Gift slot="icon" />
+				<Gift />
 				{$t("labels.gift")}
 			</Button>
 		</div> -->
 		<nav class="link-list hide-on-mobile">
 			{#if hasConnections}
-				<Button big on:click={() => (connectionsExpanded = !connectionsExpanded)}>
-					<Link slot="icon" />
+				<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
+					{#snippet icon()}
+						<Link />
+					{/snippet}
 					{$t("common.connections")}
-					{#if connectionsExpanded}
-						<CaretDown slot="icon-right" style="margin-left: auto" />
-					{:else}
-						<CaretRight slot="icon-right" style="margin-left: auto" />
-					{/if}
+					{#snippet iconRight()}
+						{#if connectionsExpanded}
+							<CaretDown style="margin-left: auto" />
+						{:else}
+							<CaretRight style="margin-left: auto" />
+						{/if}
+					{/snippet}
 				</Button>
 				{#if connectionsExpanded}
 					<div class="expanded">
@@ -94,14 +101,18 @@
 				{/if}
 			{/if}
 			{#if hasEditors}
-				<Button big on:click={() => (editorsExpanded = !editorsExpanded)}>
-					<UserCircle slot="icon" />
+				<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
+					{#snippet icon()}
+						<UserCircle />
+					{/snippet}
 					{$t("common.editors")}
-					{#if editorsExpanded}
-						<CaretDown slot="icon-right" style="margin-left: auto" />
-					{:else}
-						<CaretRight slot="icon-right" style="margin-left: auto" />
-					{/if}
+					{#snippet iconRight()}
+						{#if editorsExpanded}
+							<CaretDown style="margin-left: auto" />
+						{:else}
+							<CaretRight style="margin-left: auto" />
+						{/if}
+					{/snippet}
 				</Button>
 				{#if editorsExpanded}
 					<div class="expanded">
@@ -118,11 +129,15 @@
 			{/if}
 			<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.user.id}" big>
 				<Lightning />
-				<Lightning weight="fill" slot="active" />
+				{#snippet active()}
+					<Lightning weight="fill" />
+				{/snippet}
 			</TabLink>
 			<TabLink title={$t("pages.user.uploaded_emotes")} href="/users/{data.user.id}/uploaded" big>
 				<Upload />
-				<Upload weight="fill" slot="active" />
+				{#snippet active()}
+					<Upload weight="fill" />
+				{/snippet}
 			</TabLink>
 			<TabLink
 				title={$t("common.emote_sets", { values: { count: 2 } })}
@@ -130,28 +145,36 @@
 				big
 			>
 				<FolderSimple />
-				<FolderSimple weight="fill" slot="active" />
+				{#snippet active()}
+					<FolderSimple weight="fill" />
+				{/snippet}
 			</TabLink>
 			<hr />
 			<TabLink title={$t("common.cosmetics")} href="/users/{data.user.id}/cosmetics" big>
 				<PaintBrush />
-				<PaintBrush weight="fill" slot="active" />
+				{#snippet active()}
+					<PaintBrush weight="fill" />
+				{/snippet}
 			</TabLink>
 			<TabLink title={$t("common.activity")} href="/users/{data.user.id}/activity" big>
 				<Pulse />
-				<Pulse weight="fill" slot="active" />
+				{#snippet active()}
+					<Pulse weight="fill" />
+				{/snippet}
 			</TabLink>
 			<!-- <TabLink title={$t("common.analytics")} href="/users/{data.user.id}/analytics" big>
 				<ChartLineUp />
-				<ChartLineUp weight="fill" slot="active" />
+				<ChartLineUp weight="fill" />
 			</TabLink>
 			<TabLink title={$t("common.mod_comments")} href="/users/{data.user.id}/mod-comments" big>
 				<ChatCircleText />
-				<ChatCircleText weight="fill" slot="active" />
+				<ChatCircleText weight="fill" />
 			</TabLink> -->
 		</nav>
 		<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
-			<DotsThreeVertical slot="icon" />
+			{#snippet icon()}
+				<DotsThreeVertical />
+			{/snippet}
 		</Button>
 	</aside>
 	<div class="content">
@@ -159,42 +182,54 @@
 			<nav class="tabs">
 				<TabLink title={$t("pages.user.about")} href="/users/{data.user.id}/about">
 					<IdentificationCard />
-					<IdentificationCard weight="fill" slot="active" />
+					{#snippet active()}
+						<IdentificationCard weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink title={$t("common.active")} href="/users/{data.user.id}">
 					<Lightning />
-					<Lightning weight="fill" slot="active" />
+					{#snippet active()}
+						<Lightning weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink title={$t("pages.user.uploaded")} href="/users/{data.user.id}/uploaded">
 					<Upload />
-					<Upload weight="fill" slot="active" />
+					{#snippet active()}
+						<Upload weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink
 					title={$t("common.emote_sets", { values: { count: 2 } })}
 					href="/users/{data.user.id}/emote-sets"
 				>
 					<FolderSimple />
-					<FolderSimple weight="fill" slot="active" />
+					{#snippet active()}
+						<FolderSimple weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink title={$t("common.cosmetics")} href="/users/{data.user.id}/cosmetics">
 					<PaintBrush />
-					<PaintBrush weight="fill" slot="active" />
+					{#snippet active()}
+						<PaintBrush weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink title={$t("common.activity")} href="/users/{data.user.id}/activity">
 					<Pulse />
-					<Pulse weight="fill" slot="active" />
+					{#snippet active()}
+						<Pulse weight="fill" />
+					{/snippet}
 				</TabLink>
 				<!-- <TabLink title={$t("common.analytics")} href="/users/{data.user.id}/analytics">
 					<ChartLineUp />
-					<ChartLineUp weight="fill" slot="active" />
+					<ChartLineUp weight="fill" />
 				</TabLink>
 				<TabLink title={$t("common.mod_comments")} href="/users/{data.user.id}/mod-comments">
 					<ChatCircleText />
-					<ChatCircleText weight="fill" slot="active" />
+					<ChatCircleText weight="fill" />
 				</TabLink> -->
 			</nav>
 		</div>
-		<slot />
+		{@render children()}
 	</div>
 </div>
 

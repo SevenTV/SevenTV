@@ -2,11 +2,11 @@
 	import type { Image } from "$/gql/graphql";
 
 	// This should contain different file types of the same image
-	export let images: (Image | undefined)[];
+	let { images }: { images: (Image | undefined)[] } = $props();
 
-	$: first = images.find((i) => i);
+	let first = $derived(images.find((i) => i));
 
-	let loading: boolean = true;
+	let loading: boolean = $state(true);
 </script>
 
 <div class="image">
@@ -23,7 +23,7 @@
 				style:width="{first.width}px"
 				style:height="{first.height}px"
 				class:loading-animation={loading}
-				on:load={() => (loading = false)}
+				onload={() => (loading = false)}
 			/>
 		</picture>
 		<span class="size-text">{first.width}x{first.height}</span>

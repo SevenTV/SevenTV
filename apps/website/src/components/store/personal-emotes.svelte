@@ -11,7 +11,9 @@
 		<EmoteSetPreview bg="light" />
 	</div>
 	<Button secondary style="align-self: flex-end">
-		<NotePencil slot="icon" />
+		{#snippet icon()}
+			<NotePencil />
+		{/snippet}
 		{$t("labels.edit")}
 	</Button>
 </StoreSection>

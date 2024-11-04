@@ -1,19 +1,16 @@
 <script lang="ts">
-	import { Layout } from "$/store/layout";
-	import EmoteContainer from "../layout/emote-container.svelte";
-	import EmotePreview from "../emote-preview.svelte";
 	import EmoteSetPicker from "../emote-set-picker.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <Dialog width={35} bind:mode>
 	<div class="layout">
 		<h1>{$t("dialogs.copy_emotes.title")}</h1>
 		<hr />
-		<!-- <EmoteContainer layout={Layout.SmallGrid} style="max-height: 11rem" scrollable>
+		<!-- <EmoteContainer layout={"small-grid"} style="max-height: 11rem" scrollable>
 			{#each Array(100) as _, i}
 				<EmotePreview index={i} emoteOnly />
 			{/each}

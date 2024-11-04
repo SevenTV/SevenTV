@@ -1,20 +1,26 @@
 <script lang="ts">
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
 	import { CaretLeft, CaretRight } from "phosphor-svelte";
-	import type { LayoutData } from "../$types";
 	import Button from "$/components/input/button.svelte";
+	import type { PageData } from "./$types";
 
-	export let data: LayoutData;
+	let { data }: { data: PageData } = $props();
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.emote.id} />
+	{#await data.streamed.emote then emote}
+		<EmoteTabs id={emote.id} />
+	{/await}
 	<div class="buttons">
 		<Button disabled>
-			<CaretLeft slot="icon" />
+			{#snippet icon()}
+				<CaretLeft />
+			{/snippet}
 		</Button>
 		<Button>
-			<CaretRight slot="icon" />
+			{#snippet icon()}
+				<CaretRight />
+			{/snippet}
 		</Button>
 	</div>
 </div>

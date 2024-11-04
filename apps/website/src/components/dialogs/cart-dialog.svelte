@@ -3,14 +3,14 @@
 	import { Trash, Star, User } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import Checkbox from "../input/checkbox.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Select from "../input/select.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
-	let gift = false;
+	let gift = $state(false);
 </script>
 
 <Dialog width={35} bind:mode>
@@ -47,7 +47,9 @@
 						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
-								<Trash slot="icon" />
+								{#snippet icon()}
+									<Trash />
+								{/snippet}
 							</Button>
 						</td>
 					</tr>
@@ -77,7 +79,9 @@
 						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
-								<Trash slot="icon" />
+								{#snippet icon()}
+									<Trash />
+								{/snippet}
 							</Button>
 						</td>
 					</tr>
@@ -86,7 +90,9 @@
 						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
-								<Trash slot="icon" />
+								{#snippet icon()}
+									<Trash />
+								{/snippet}
 							</Button>
 						</td>
 					</tr>
@@ -96,7 +102,9 @@
 		<Checkbox bind:value={gift}>{$t("dialogs.cart.purchase_as_gift")}</Checkbox>
 		{#if gift}
 			<TextInput placeholder={$t("labels.search_users", { values: { count: 1 } })}>
-				<User slot="icon" />
+				{#snippet icon()}
+					<User />
+				{/snippet}
 			</TextInput>
 		{/if}
 		<div class="footer">
@@ -105,7 +113,7 @@
 				<span>{priceFormat().format(7.96)}</span>
 			</div>
 			<div class="buttons">
-				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+				<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 				<Button primary submit>{$t("labels.proceed")}</Button>
 			</div>
 		</div>

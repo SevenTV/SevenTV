@@ -5,7 +5,7 @@
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";
 
-	export let percentage: number = 40;
+	let { percentage = 40 }: { percentage?: number } = $props();
 </script>
 
 <StoreSection>
@@ -38,7 +38,9 @@
 			<div class="header">
 				<h2>{$t("pages.store.subscription.badge_progress.title")}</h2>
 				<Button secondary>
-					<DotsThreeVertical slot="icon" />
+					{#snippet icon()}
+						<DotsThreeVertical />
+					{/snippet}
 				</Button>
 			</div>
 			<div class="badges">

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { EmoteSearchResult } from "$/gql/graphql";
-	import { emotesLayout, Layout } from "$/store/layout";
+	import { emotesLayout } from "$/store/layout";
 	import { getContextClient, type Client } from "@urql/svelte";
 	import EmotePreview from "../emote-preview.svelte";
 	import EmoteContainer from "./emote-container.svelte";
@@ -10,17 +10,22 @@
 
 	const PER_PAGE = 36;
 
-	export let load: (client: Client, page: number, perPage: number) => Promise<EmoteSearchResult>;
-
-	let page = 1;
-	let results: EmoteSearchResult | null = null;
-
-	function reset() {
-		page = 1;
-		results = null;
+	interface Props {
+		load: (client: Client, page: number, perPage: number) => Promise<EmoteSearchResult>;
 	}
 
-	$: load, reset();
+	let { load }: Props = $props();
+
+	let page = $state(1);
+	let results: EmoteSearchResult | undefined = $state();
+
+	let identifier = $state(0);
+
+	export function reset() {
+		page = 1;
+		results = undefined;
+		identifier++;
+	}
 
 	const client = getContextClient();
 
@@ -52,14 +57,15 @@
 <EmoteContainer scrollable={!isMobileLayout()} layout={$emotesLayout} style="flex-grow: 1">
 	{#if results}
 		{#each results.items as data, i}
-			<EmotePreview {data} index={i} emoteOnly={$emotesLayout === Layout.SmallGrid} />
+			<EmotePreview {data} index={i} emoteOnly={$emotesLayout === "small-grid"} />
 		{/each}
 	{/if}
 	<div class="loading">
+		<!-- Still uses old Svelte 4 slots -->
 		<InfiniteLoading
 			distance={500}
 			identifier={{
-				load,
+				identifier,
 				layout: $emotesLayout,
 			}}
 			on:infinite={handleInfinite}

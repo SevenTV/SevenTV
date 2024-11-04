@@ -20,12 +20,12 @@
 	import Button from "../input/button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
-	import { DialogMode } from "../dialogs/dialog.svelte";
+	import { type DialogMode } from "../dialogs/dialog.svelte";
 	import { t } from "svelte-i18n";
 	import Spinner from "../spinner.svelte";
 	import UserProfilePicture from "../user-profile-picture.svelte";
 
-	let cartDialogMode = DialogMode.Hidden;
+	let cartDialogMode: DialogMode = $state("hidden");
 </script>
 
 <CartDialog bind:mode={cartDialogMode} />
@@ -47,12 +47,12 @@
 	</div>
 	<!-- <HideOn mobile>
 		<TextInput placeholder={$t("labels.search")} big style="flex: 0 1 20rem">
-			<MagnifyingGlass slot="icon" />
+			<MagnifyingGlass />
 		</TextInput>
 	</HideOn> -->
 	<div class="user-actions">
 		<!-- <Button hideOnDesktop>
-			<MagnifyingGlass slot="icon" />
+			<MagnifyingGlass />
 		</Button> -->
 		{#if $user}
 			<!-- <DropDown hideOnMobile>
@@ -61,7 +61,7 @@
 						<Bell />
 					</Badge>
 				</Button>
-				<Notifications popup slot="dropdown" />
+				<Notifications popup />
 			</DropDown>
 			<Button href="/notifications" hideOnDesktop>
 				<Badge count={0} slot="icon">
@@ -75,7 +75,7 @@
 						<Chat />
 					</Badge>
 				</Button>
-				<DirectMessages popup slot="dropdown" />
+				<DirectMessages popup />
 			</DropDown>
 			<Button href="/direct-messages" hideOnDesktop>
 				<Badge count={1} slot="icon">
@@ -83,39 +83,49 @@
 				</Badge>
 			</Button> -->
 
-			<!-- <Button on:click={() => (cartDialogMode = DialogMode.Shown)}>
+			<!-- <Button on:click={() => (cartDialogMode = "shown")}>
 				<Badge count={3} slot="icon">
 					<ShoppingCartSimple />
 				</Badge>
 			</Button> -->
 
-			<Button hideOnDesktop on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
-				<PlusSquare slot="icon" />
+			<Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
+				{#snippet icon()}
+					<PlusSquare />
+				{/snippet}
 			</Button>
-			<Button secondary hideOnMobile on:click={() => ($uploadDialogMode = DialogMode.Shown)}>
-				<PlusSquare slot="icon" />
+			<Button secondary hideOnMobile onclick={() => ($uploadDialogMode = "shown")}>
+				{#snippet icon()}
+					<PlusSquare />
+				{/snippet}
 				{$t("dialogs.upload.upload")}
 			</Button>
 			<HideOn mobile>
 				<DropDown>
 					<UserProfilePicture user={$user} size={32} />
 					<span class="profile-name">{$user.mainConnection?.platformDisplayName}</span>
-					<Menu slot="dropdown" />
+					{#snippet dropdown()}
+						<Menu />
+					{/snippet}
 				</DropDown>
 			</HideOn>
-			<button class="profile hide-on-desktop" on:click={() => ($showMobileMenu = !$showMobileMenu)}>
+			<button class="profile hide-on-desktop" onclick={() => ($showMobileMenu = !$showMobileMenu)}>
 				<UserProfilePicture user={$user} size={32} />
 			</button>
 		{:else if $user === null}
 			<HideOn mobile>
 				<DropDown>
 					<Button>
-						<List slot="icon" />
+						{#snippet icon()}
+							<List />
+						{/snippet}
 					</Button>
-					<Menu slot="dropdown" />
+					{#snippet dropdown()}
+						<Menu />
+					{/snippet}
 				</DropDown>
 			</HideOn>
-			<Button primary on:click={() => ($signInDialogMode = DialogMode.Shown)}>
+			<Button primary onclick={() => ($signInDialogMode = "shown")}>
 				{$t("common.sign_in")}
 			</Button>
 		{:else}
@@ -123,8 +133,10 @@
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
-			<Button hideOnDesktop on:click={() => ($showMobileMenu = !$showMobileMenu)}>
-				<List slot="icon" />
+			<Button hideOnDesktop onclick={() => ($showMobileMenu = !$showMobileMenu)}>
+				{#snippet icon()}
+					<List />
+				{/snippet}
 			</Button>
 		{/if}
 	</div>

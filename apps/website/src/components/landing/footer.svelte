@@ -10,12 +10,12 @@
 		PUBLIC_DEVELOPER_PORTAL,
 	} from "$env/static/public";
 
-	let buhing = false;
+	let buhing = $state(false);
 </script>
 
 <footer>
 	<div class="row">
-		<div class="logo-container" on:click={() => (buhing = !buhing)} role="none">
+		<div class="logo-container" onclick={() => (buhing = !buhing)} role="none">
 			{#if buhing}
 				<img src="/buh.webp" alt="7TV" width="32" height="32" />
 			{:else}

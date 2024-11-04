@@ -4,7 +4,7 @@
 	import HideOn from "$/components/hide-on.svelte";
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
 	import { CaretLeft, CaretRight, MagnifyingGlass } from "phosphor-svelte";
-	import type { LayoutData } from "./$types";
+	import type { PageData } from "./$types";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
 	import type { UserSearchResult } from "$/gql/graphql";
@@ -13,17 +13,19 @@
 
 	const PAGE_SIZE = 24;
 
-	export let data: LayoutData;
+	let { data }: { data: PageData } = $props();
 
-	let page = 1;
+	let page = $state(1);
 
-	let totalCount: number | null = null;
-	let pageCount = 0;
+	let totalCount: number | undefined = $state();
+	let pageCount = $state(0);
 
-	let channels: Promise<UserSearchResult> | null = null;
+	let channels: Promise<UserSearchResult> | undefined = $state();
 
-	$: data.streamed.emote.then((emote) => {
-		channels = queryChannels(emote.id, page);
+	$effect(() => {
+		data.streamed.emote.then((emote) => {
+			channels = queryChannels(emote.id, page);
+		});
 	});
 
 	const client = getContextClient();
@@ -89,16 +91,22 @@
 	{#if channels}
 		<div class="inputs">
 			<div class="buttons">
-				<Button disabled={page <= 1} on:click={() => page--}>
-					<CaretLeft slot="icon" />
+				<Button disabled={page <= 1} onclick={() => page--}>
+					{#snippet icon()}
+						<CaretLeft />
+					{/snippet}
 				</Button>
-				<Button disabled={page >= pageCount} on:click={() => page++}>
-					<CaretRight slot="icon" />
+				<Button disabled={page >= pageCount} onclick={() => page++}>
+					{#snippet icon()}
+						<CaretRight />
+					{/snippet}
 				</Button>
 			</div>
 			<HideOn mobile>
 				<TextInput placeholder={$t("labels.search")} style="max-width: 12.5rem">
-					<MagnifyingGlass slot="icon" />
+					{#snippet icon()}
+						<MagnifyingGlass />
+					{/snippet}
 				</TextInput>
 			</HideOn>
 		</div>

@@ -1,13 +1,17 @@
 <script lang="ts">
 	import Flags, { determineHighlightColor } from "./flags.svelte";
 
-	export let name = "Personal Emotes";
-	export let percentage = 0;
-	export let bg: "medium" | "light" = "medium";
+	type Props = {
+		name?: string;
+		percentage?: number;
+		bg?: "medium" | "light";
+	};
 
-	let flags = ["trending", "personal"];
+	let { name = "Personal Emotes", percentage = 0, bg = "medium" }: Props = $props();
 
-	$: highlight = determineHighlightColor(flags);
+	let flags = $state(["trending", "personal"]);
+
+	let highlight = $derived(determineHighlightColor(flags));
 </script>
 
 <a

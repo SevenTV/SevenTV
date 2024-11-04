@@ -1,65 +1,83 @@
 <script lang="ts">
+	import type { Snippet } from "svelte";
+	import type { HTMLButtonAttributes, HTMLAnchorAttributes } from "svelte/elements";
+
 	// different types of buttons:
 	// - links looking like buttons
-	// - real buttons with on:click
+	// - real buttons with onclick
 	//
 	// different styles:
 	// - icon only (square), text only, icon + text
 	// - primary, secondary, no bg
 	// - disabled, active, hover (focus)
 
-	// This prop decides if this is a link looking like button or if it's a real button
-	export let href: string | null = null;
+	type Props = {
+		// href decides if this is a link looking like button or if it's a real button
+		href?: string | null;
+		primary?: boolean;
+		secondary?: boolean;
+		big?: boolean;
+		submit?: boolean;
+		hideOnMobile?: boolean;
+		hideOnDesktop?: boolean;
+		children?: Snippet;
+		icon?: Snippet;
+		iconRight?: Snippet;
+	} & HTMLButtonAttributes &
+		HTMLAnchorAttributes;
 
-	export let primary: boolean = false;
-	export let secondary: boolean = false;
-
-	export let big: boolean = false;
-	export let submit: boolean = false;
-
-	export let hideOnMobile: boolean = false;
-	export let hideOnDesktop: boolean = false;
+	let {
+		href = null,
+		primary = false,
+		secondary = false,
+		big = false,
+		submit = false,
+		hideOnMobile = false,
+		hideOnDesktop = false,
+		children,
+		icon,
+		iconRight,
+		...restProps
+	}: Props = $props();
 </script>
 
 {#if href}
 	<a
 		{href}
-		on:click
-		{...$$restProps}
+		{...restProps}
 		class="button"
 		class:primary
 		class:secondary
 		class:big
-		class:has-text={$$slots.default}
-		class:icon-only={!$$slots.default && ($$slots.icon || $$slots["icon-right"])}
-		class:icon-left={$$slots.icon}
-		class:icon-right={$$slots["icon-right"]}
+		class:has-text={children}
+		class:icon-only={!children && (icon || iconRight)}
+		class:icon-left={icon}
+		class:icon-right={iconRight}
 		class:hide-on-mobile={hideOnMobile}
 		class:hide-on-desktop={hideOnDesktop}
 	>
-		<slot name="icon" />
-		<slot />
-		<slot name="icon-right" />
+		{@render icon?.()}
+		{@render children?.()}
+		{@render iconRight?.()}
 	</a>
 {:else}
 	<button
 		type={submit ? "submit" : "button"}
-		on:click
-		{...$$restProps}
+		{...restProps}
 		class="button"
 		class:primary
 		class:secondary
 		class:big
-		class:has-text={$$slots.default}
-		class:icon-only={!$$slots.default && ($$slots.icon || $$slots["icon-right"])}
-		class:icon-left={$$slots.icon}
-		class:icon-right={$$slots["icon-right"]}
+		class:has-text={children}
+		class:icon-only={!children && (icon || iconRight)}
+		class:icon-left={icon}
+		class:icon-right={iconRight}
 		class:hide-on-mobile={hideOnMobile}
 		class:hide-on-desktop={hideOnDesktop}
 	>
-		<slot name="icon" />
-		<slot />
-		<slot name="icon-right" />
+		{@render icon?.()}
+		{@render children?.()}
+		{@render iconRight?.()}
 	</button>
 {/if}
 

@@ -1,15 +1,23 @@
 <script lang="ts">
-	export let title: string | null = null;
+	import type { Snippet } from "svelte";
+
+	interface Props {
+		title?: string;
+		header?: Snippet;
+		children?: Snippet;
+	}
+
+	let { title, header, children }: Props = $props();
 </script>
 
 <section>
 	{#if title}
 		<div class="header">
 			<h2>{title}</h2>
-			<slot name="header" />
+			{@render header?.()}
 		</div>
 	{/if}
-	<slot />
+	{@render children?.()}
 </section>
 
 <style lang="scss">

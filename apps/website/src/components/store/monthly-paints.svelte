@@ -8,15 +8,19 @@
 </script>
 
 <StoreSection title={$t("pages.store.subscription.monthly_paints")}>
-	<div class="buttons" slot="header">
-		<div class="renew-countdown">
-			<Repeat />
-			<span>{moment.duration(12, "days").humanize()}</span>
+	{#snippet header()}
+		<div class="buttons">
+			<div class="renew-countdown">
+				<Repeat />
+				<span>{moment.duration(12, "days").humanize()}</span>
+			</div>
+			<Button secondary>
+				{#snippet icon()}
+					<DotsThreeVertical />
+				{/snippet}
+			</Button>
 		</div>
-		<Button secondary>
-			<DotsThreeVertical slot="icon" />
-		</Button>
-	</div>
+	{/snippet}
 	{#each Array(2) as _}
 		<PaintPreview />
 	{/each}

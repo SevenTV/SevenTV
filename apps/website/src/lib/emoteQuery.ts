@@ -13,6 +13,8 @@ export async function queryEmotes(
 	page: number | null,
 	perPage: number,
 ): Promise<EmoteSearchResult> {
+	console.log("queryEmotes", query, tags, sort, filters, page, perPage);
+
 	if (timeout) {
 		clearTimeout(timeout);
 	}

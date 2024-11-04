@@ -7,7 +7,7 @@
 		highlight?: string;
 	};
 
-	export let tabs: Tab[];
+	let { tabs }: { tabs: Tab[] } = $props();
 </script>
 
 <ul aria-label="tabs">

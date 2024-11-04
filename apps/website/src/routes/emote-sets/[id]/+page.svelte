@@ -1,7 +1,5 @@
 <script lang="ts">
 	import Button from "$/components/input/button.svelte";
-	import EmoteContainer from "$/components/layout/emote-container.svelte";
-	import EmotePreview from "$/components/emote-preview.svelte";
 	import Tags from "$/components/emotes/tags.svelte";
 	import {
 		Copy,
@@ -13,25 +11,24 @@
 	} from "phosphor-svelte";
 	import type { PageData } from "./$types";
 	import Select from "$/components/input/select.svelte";
-	import { Layout, emotesLayout } from "$/store/layout";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
 	import Flags from "$/components/flags.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
-	import { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 	import CopyEmotesDialog from "$/components/dialogs/copy-emotes-dialog.svelte";
 	import RemoveEmotesDialog from "$/components/dialogs/remove-emotes-dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	export let data: PageData;
+	let { data }: { data: PageData } = $props();
 
-	let enabled = false;
-	let selectionMode = false;
-	let editDialogMode = DialogMode.Hidden;
-	let copyEmotesDialogMode = DialogMode.Hidden;
-	let removeEmotesDialogMode = DialogMode.Hidden;
+	let enabled = $state(false);
+	let selectionMode = $state(false);
+	let editDialogMode: DialogMode = $state("hidden");
+	let copyEmotesDialogMode: DialogMode = $state("hidden");
+	let removeEmotesDialogMode: DialogMode = $state("hidden");
 </script>
 
 <svelte:head>
@@ -47,61 +44,79 @@
 		<Flags flags={["verified", "public"]} style="position: absolute; top: 1rem; right: 1rem;" />
 		<Tags tags={["lorem", "tag"]} />
 		<div class="progress">
-			<progress max="600" value="100" />
+			<progress max="600" value="100"></progress>
 			100/600
 		</div>
 	</div>
 	<div class="controls">
 		<div class="buttons">
-			<Button secondary on:click={() => (selectionMode = !selectionMode)} hideOnDesktop>
+			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnDesktop>
 				{$t("labels.select")}
-				<Toggle bind:value={selectionMode} slot="icon-right" />
+				{#snippet iconRight()}
+					<Toggle bind:value={selectionMode} />
+				{/snippet}
 			</Button>
 			<HideOn mobile={selectionMode}>
-				<Button primary on:click={() => (enabled = !enabled)}>
+				<Button primary onclick={() => (enabled = !enabled)}>
 					{#if enabled}
 						{$t("labels.disable")}
 					{:else}
 						{$t("labels.enable")}
 					{/if}
-					<svelte:fragment slot="icon-right">
+					{#snippet iconRight()}
 						{#if enabled}
 							<LightningSlash />
 						{:else}
 							<Lightning />
 						{/if}
-					</svelte:fragment>
+					{/snippet}
 				</Button>
 			</HideOn>
-			<Button secondary hideOnMobile on:click={() => (editDialogMode = DialogMode.Shown)}>
+			<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
 				{$t("labels.edit")}
-				<NotePencil slot="icon-right" />
+				{#snippet iconRight()}
+					<NotePencil />
+				{/snippet}
 			</Button>
 			<Button secondary hideOnMobile>
 				{$t("pages.emote_set.copy_set")}
-				<Copy slot="icon-right" />
+				{#snippet iconRight()}
+					<Copy />
+				{/snippet}
 			</Button>
 			{#if !selectionMode}
-				<Button secondary hideOnDesktop on:click={() => (editDialogMode = DialogMode.Shown)}>
-					<NotePencil slot="icon-right" />
+				<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
+					{#snippet iconRight()}
+						<NotePencil />
+					{/snippet}
 				</Button>
 				<Button secondary hideOnDesktop>
-					<Copy slot="icon-right" />
+					{#snippet iconRight()}
+						<Copy />
+					{/snippet}
 				</Button>
 			{/if}
-			<Button secondary on:click={() => (selectionMode = !selectionMode)} hideOnMobile>
+			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
 				{$t("labels.selection_mode")}
-				<Toggle bind:value={selectionMode} slot="icon-right" />
+				{#snippet iconRight()}
+					<Toggle bind:value={selectionMode} />
+				{/snippet}
 			</Button>
 			{#if selectionMode}
-				<Button on:click={() => (copyEmotesDialogMode = DialogMode.Shown)}>
-					<Copy slot="icon" />
+				<Button onclick={() => (copyEmotesDialogMode = "shown")}>
+					{#snippet icon()}
+						<Copy />
+					{/snippet}
 				</Button>
 				<Button>
-					<NotePencil slot="icon" />
+					{#snippet icon()}
+						<NotePencil />
+					{/snippet}
 				</Button>
-				<Button on:click={() => (removeEmotesDialogMode = DialogMode.Shown)}>
-					<Trash slot="icon" />
+				<Button onclick={() => (removeEmotesDialogMode = "shown")}>
+					{#snippet icon()}
+						<Trash />
+					{/snippet}
 				</Button>
 			{/if}
 		</div>
@@ -113,7 +128,9 @@
 				]}
 			/>
 			<TextInput placeholder={$t("labels.search")}>
-				<MagnifyingGlass slot="icon" />
+				{#snippet icon()}
+					<MagnifyingGlass />
+				{/snippet}
 			</TextInput>
 			<LayoutButtons />
 		</div>
@@ -124,7 +141,7 @@
 				<EmotePreview
 					name="emoteSetEmote{i}"
 					index={i}
-					emoteOnly={$emotesLayout === Layout.SmallGrid}
+					emoteOnly={$emotesLayout === "small-grid"}
 					{selectionMode}
 				/>
 			{/each}

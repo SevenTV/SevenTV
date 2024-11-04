@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Checkbox from "../input/checkbox.svelte";
@@ -15,7 +15,7 @@
 		$t("dialogs.report_emote.reasons.other"),
 	];
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <Dialog width={40} bind:mode>
@@ -26,7 +26,9 @@
 			<span class="label">{$t("dialogs.report_emote.choose_reasons")}</span>
 			{#each reasons as reason}
 				<Checkbox option>
-					<span class="label" slot="left-label">{reason}</span>
+					{#snippet leftLabel()}
+						<span class="label">{reason}</span>
+					{/snippet}
 				</Checkbox>
 			{/each}
 		</div>
@@ -35,7 +37,7 @@
 		</TextInput>
 		<span class="details">{$t("dialogs.report_emote.disclaimer")}</span>
 		<div class="buttons">
-			<Button on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+			<Button onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 			<Button primary submit>{$t("labels.report")}</Button>
 		</div>
 	</form>

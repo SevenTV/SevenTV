@@ -1,9 +1,9 @@
 <script lang="ts">
 	import EmoteSetPicker from "../emote-set-picker.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <Dialog width={30} bind:mode>

@@ -1,3 +1,5 @@
+<svelte:options runes={true} />
+
 <script lang="ts">
 	import "$/styles/fonts.scss";
 	import "$/styles/variables.scss";
@@ -19,9 +21,9 @@
 	import { t } from "svelte-i18n";
 	import type { LayoutData } from "./$types";
 	import { setContextClient } from "@urql/svelte";
-	import { fetchMe, sessionToken } from "$/store/auth";
+	import type { Snippet } from "svelte";
 
-	export let data: LayoutData;
+	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	setContextClient(data.client);
 
@@ -31,8 +33,6 @@
 			$showMobileMenu = false;
 		});
 	});
-
-	$: fetchMe(data.client), $sessionToken;
 </script>
 
 <IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>
@@ -48,7 +48,7 @@
 		{#if $showMobileMenu}
 			<Menu />
 		{:else}
-			<slot />
+			{@render children()}
 		{/if}
 	</main>
 </IconContext>

@@ -1,9 +1,5 @@
-<script context="module" lang="ts">
-	export enum DialogMode {
-		Hidden = 0,
-		Shown = 1,
-		ShownWithoutClose = 2,
-	}
+<script lang="ts" module>
+	export type DialogMode = "hidden" | "shown" | "shown-without-close";
 </script>
 
 <script lang="ts">
@@ -12,56 +8,63 @@
 	import { X } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import { browser } from "$app/environment";
+	import type { Snippet } from "svelte";
 
 	let dialog: HTMLDialogElement;
 
-	export let mode: DialogMode = DialogMode.Hidden;
-	export let width: number = 25;
+	let {
+		mode = $bindable("hidden"),
+		width = 25,
+		children,
+	}: { mode?: DialogMode; width?: number; children: Snippet } = $props();
 
 	function close() {
-		if (mode === DialogMode.Shown) {
-			mode = DialogMode.Hidden;
+		if (mode === "shown") {
+			mode = "hidden";
 		}
 	}
 
-	$: if (mode) {
-		dialog?.showModal();
+	$effect(() => {
+		if (mode !== "hidden") {
+			dialog?.showModal();
 
-		// Blur to prevent initial visible autofocus
-		if (browser && document.activeElement instanceof HTMLElement) {
-			document.activeElement.blur();
+			// Blur to prevent initial visible autofocus
+			if (browser && document.activeElement instanceof HTMLElement) {
+				document.activeElement.blur();
+			}
+		} else {
+			dialog?.close();
 		}
-	} else {
-		dialog?.close();
-	}
+	});
 
 	function handleKeyDown(event: KeyboardEvent) {
 		if (mode && event.key === "Escape") {
 			close();
-			if (mode === DialogMode.ShownWithoutClose) {
+			if (mode === "shown-without-close") {
 				event.preventDefault();
 			}
 		}
 	}
 </script>
 
-<svelte:window on:keydown={handleKeyDown} />
+<svelte:window onkeydown={handleKeyDown} />
 
 <dialog
 	bind:this={dialog}
-	use:mouseTrap
-	on:outsideClick={close}
+	use:mouseTrap={close}
 	aria-modal="true"
 	transition:fade={{ duration: 100 }}
 	style="width: {width}rem"
 >
-	{#if mode === DialogMode.Shown}
-		<Button on:click={close} style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			<X slot="icon" />
+	{#if mode === "shown"}
+		<Button onclick={close} style="position: absolute; top: 0.5rem; right: 0.5rem;">
+			{#snippet icon()}
+				<X />
+			{/snippet}
 		</Button>
 	{/if}
-	<div class="trap" use:mouseTrap on:outsideClick={close}>
-		<slot />
+	<div use:mouseTrap={close} class="trap">
+		{@render children()}
 	</div>
 </dialog>
 

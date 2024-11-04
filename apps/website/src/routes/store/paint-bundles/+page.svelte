@@ -59,7 +59,9 @@
 		<div class="buttons">
 			<HideOn mobile>
 				<TextInput placeholder={$t("labels.search")} style="max-width: 12.5rem">
-					<MagnifyingGlass slot="icon" />
+					{#snippet icon()}
+						<MagnifyingGlass />
+					{/snippet}
 				</TextInput>
 			</HideOn>
 			<Button hideOnDesktop>
@@ -87,11 +89,15 @@
 				{/each}
 				<div class="buttons">
 					<Button secondary>
-						<Gift slot="icon" />
+						{#snippet icon()}
+							<Gift />
+						{/snippet}
 						{$t("labels.gift")}
 					</Button>
 					<Button secondary>
-						<ShoppingCartSimple slot="icon" />
+						{#snippet icon()}
+							<ShoppingCartSimple />
+						{/snippet}
 						<span>
 							{#if bundle.oldPrice}
 								<del>{priceFormat().format(bundle.oldPrice / 100)}</del>

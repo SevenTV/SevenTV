@@ -1,20 +1,27 @@
 <script lang="ts">
 	import { isMobileLayout } from "$/lib/utils";
 	import { CaretDown } from "phosphor-svelte";
+	import type { Snippet } from "svelte";
+	import type { HTMLAttributes } from "svelte/elements";
 
-	export let title: string;
-	export let expanded = !isMobileLayout();
+	type Props = {
+		title: string;
+		expanded?: boolean;
+		children: Snippet;
+	} & HTMLAttributes<HTMLDivElement>;
+
+	let { title, expanded = !isMobileLayout(), children, ...restProps }: Props = $props();
 </script>
 
-<div class="expandable" {...$$restProps}>
-	<button class="header" on:click={() => (expanded = !expanded)} class:expanded>
+<div class="expandable" {...restProps}>
+	<button class="header" onclick={() => (expanded = !expanded)} class:expanded>
 		{title}
 		<div class="icon">
 			<CaretDown size={1 * 16} />
 		</div>
 	</button>
 	{#if expanded}
-		<slot />
+		{@render children()}
 	{/if}
 </div>
 

@@ -3,17 +3,19 @@
 	import Button from "./button.svelte";
 	import TextInput from "./text-input.svelte";
 	import { t } from "svelte-i18n";
+	import type { Snippet } from "svelte";
 
 	const LIMIT = 10;
 
-	export let tags = ["lorem", "ipsum"];
+	let { tags = $bindable(["lorem", "ipsum"]), children }: { tags?: string[]; children?: Snippet } =
+		$props();
 
 	function removeTag(i: number) {
 		tags.splice(i, 1);
 		tags = [...tags];
 	}
 
-	let tagInput: string;
+	let tagInput: string | undefined = $state();
 
 	function onTagInput(e: KeyboardEvent) {
 		if (e.key === "Enter" && tagInput && tags.length < LIMIT) {
@@ -24,14 +26,16 @@
 	}
 </script>
 
-<TextInput placeholder={$t("labels.enter_tags")} bind:value={tagInput} on:keypress={onTagInput}>
-	<slot />
-	<Tag slot="icon" />
+<TextInput placeholder={$t("labels.enter_tags")} bind:value={tagInput} onkeypress={onTagInput}>
+	{@render children?.()}
+	{#snippet icon()}
+		<Tag />
+	{/snippet}
 </TextInput>
 {#if tags && tags.length > 0}
 	<div class="tags">
 		{#each tags as tag, i}
-			<Button secondary on:click={() => removeTag(i)}>
+			<Button secondary onclick={() => removeTag(i)}>
 				<span>{tag}</span>
 				<X size={1 * 16} />
 			</Button>

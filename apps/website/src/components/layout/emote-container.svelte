@@ -1,17 +1,19 @@
 <script lang="ts">
-	import { Layout } from "$/store/layout";
+	import { type Layout } from "$/store/layout";
+	import type { Snippet } from "svelte";
+	import { type HTMLAttributes } from "svelte/elements";
 
-	export let scrollable = false;
-	export let layout: Layout | null = null;
+	type Props = {
+		scrollable?: boolean;
+		layout?: Layout;
+		children?: Snippet;
+	} & HTMLAttributes<HTMLDivElement>;
+
+	let { scrollable = false, layout, children, ...restProps }: Props = $props();
 </script>
 
-<div
-	class="emotes"
-	class:small-grid={layout === Layout.SmallGrid}
-	class:scrollable
-	{...$$restProps}
->
-	<slot />
+<div class="emotes" class:small-grid={layout === "small-grid"} class:scrollable {...restProps}>
+	{@render children?.()}
 </div>
 
 <style lang="scss">

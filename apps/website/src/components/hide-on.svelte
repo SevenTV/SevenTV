@@ -1,10 +1,15 @@
 <script lang="ts">
-	export let mobile = false;
-	export let desktop = false;
+	import type { Snippet } from "svelte";
+
+	let {
+		mobile = false,
+		desktop = false,
+		children,
+	}: { mobile?: boolean; desktop?: boolean; children: Snippet } = $props();
 </script>
 
 <div class="hide-on" class:hide-on-mobile={mobile} class:hide-on-desktop={desktop}>
-	<slot />
+	{@render children()}
 </div>
 
 <style lang="scss">

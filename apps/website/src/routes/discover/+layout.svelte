@@ -1,11 +1,13 @@
 <script lang="ts">
-	import ChannelPreview from "$/components/channel-preview.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { Heart, MagnifyingGlass, Newspaper } from "phosphor-svelte";
+	import type { Snippet } from "svelte";
 	import { t } from "svelte-i18n";
 
-	function matcher(_id: string | null, url: URL, href: string | null) {
+	let { children }: { children: Snippet } = $props();
+
+	function matcher(_id: string | null, url: URL, href: string | undefined) {
 		if (href === "/discover") return url.pathname === href;
 		return !!href && url.pathname.startsWith(href);
 	}
@@ -17,18 +19,24 @@
 		<nav class="link-list">
 			<TabLink href="/discover" title={$t("common.news")} big {matcher}>
 				<Newspaper />
-				<Newspaper weight="fill" slot="active" />
+				{#snippet active()}
+					<Newspaper weight="fill" />
+				{/snippet}
 			</TabLink>
 			<TabLink href="/discover/following" title={$t("common.following")} big {matcher}>
 				<Heart />
-				<Heart weight="fill" slot="active" />
+				{#snippet active()}
+					<Heart weight="fill" />
+				{/snippet}
 			</TabLink>
 		</nav>
 		<hr class="hide-on-mobile" />
 		<div class="followed hide-on-mobile">
 			<h2>{$t("pages.discover.followed")}</h2>
 			<TextInput placeholder={$t("labels.search")}>
-				<MagnifyingGlass slot="icon" />
+				{#snippet icon()}
+					<MagnifyingGlass />
+				{/snippet}
 			</TextInput>
 			<div class="channels">
 				<!-- {#each Array(5) as _, i}
@@ -38,7 +46,7 @@
 		</div>
 	</aside>
 	<div class="content">
-		<slot />
+		{@render children()}
 	</div>
 </div>
 

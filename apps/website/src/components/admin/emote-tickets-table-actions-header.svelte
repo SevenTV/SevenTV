@@ -1,13 +1,11 @@
 <script lang="ts">
+	import type { ButtonOptions } from "./emote-ticket.svelte";
 	import EmoteTicketsButtonOptions from "./emote-tickets-button-options.svelte";
 
-	export let actionsPosition: "left" | "right" = "left";
-	export let buttonOptions: {
-		merge: boolean;
-		delete: boolean;
-		unlist: boolean;
-		approve: boolean;
-	};
+	let {
+		actionsPosition = $bindable(),
+		buttonOptions = $bindable(),
+	}: { actionsPosition?: "left" | "right"; buttonOptions: ButtonOptions } = $props();
 </script>
 
 <th class="shrink">

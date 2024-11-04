@@ -1,11 +1,17 @@
 <script lang="ts">
-	export let size = 28;
+	import type { HTMLAttributes } from "svelte/elements";
+
+	type Props = {
+		size?: number;
+	} & HTMLAttributes<SVGSVGElement>;
+
+	let { size = 28, ...restProps }: Props = $props();
 </script>
 
 <svg
 	width={size}
 	height={size}
-	{...$$restProps}
+	{...restProps}
 	viewBox="0 0 28 20"
 	fill="none"
 	xmlns="http://www.w3.org/2000/svg"

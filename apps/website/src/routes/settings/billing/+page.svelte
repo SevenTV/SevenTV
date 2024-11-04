@@ -10,7 +10,7 @@
 	import { MagnifyingGlass, Plus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
-	let historyTab: "all" | "subscriptions" | "other" = "all";
+	let historyTab: "all" | "subscriptions" | "other" = $state("all");
 </script>
 
 <svelte:head>
@@ -54,21 +54,23 @@
 				<TabLink
 					title={$t("labels.all")}
 					matcher={() => historyTab === "all"}
-					on:click={() => (historyTab = "all")}
+					onclick={() => (historyTab = "all")}
 				/>
 				<TabLink
 					title={$t("common.subscriptions", { values: { count: 2 } })}
 					matcher={() => historyTab === "subscriptions"}
-					on:click={() => (historyTab = "subscriptions")}
+					onclick={() => (historyTab = "subscriptions")}
 				/>
 				<TabLink
 					title={$t("labels.other")}
 					matcher={() => historyTab === "other"}
-					on:click={() => (historyTab = "other")}
+					onclick={() => (historyTab = "other")}
 				/>
 			</div>
 			<TextInput placeholder={$t("labels.search")}>
-				<MagnifyingGlass slot="icon" />
+				{#snippet icon()}
+					<MagnifyingGlass />
+				{/snippet}
 			</TextInput>
 		</nav>
 		<BillingTable />
@@ -87,14 +89,16 @@
 			<PaymentMethod type="visa" />
 		</div>
 		<Button primary style="align-self: flex-start">
-			<Plus slot="icon" />
+			{#snippet icon()}
+				<Plus />
+			{/snippet}
 			{$t("pages.settings.billing.payment_methods.add_new")}
 		</Button>
 	</div>
 </section>
 
 <style lang="scss">
-	@import "../../../styles/settings.scss";
+	@use "../../../styles/settings.scss";
 
 	h3 {
 		font-size: 0.875rem;

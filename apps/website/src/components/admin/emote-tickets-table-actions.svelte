@@ -1,35 +1,39 @@
 <script lang="ts">
 	import { ArrowsMerge, Check, EyeSlash, Trash } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
+	import type { ButtonOptions } from "./emote-ticket.svelte";
 
-	export let buttonOptions: {
-		merge: boolean;
-		delete: boolean;
-		unlist: boolean;
-		approve: boolean;
-	};
+	let { buttonOptions = $bindable() }: { buttonOptions: ButtonOptions } = $props();
 </script>
 
 <td class="shrink">
 	<div class="buttons">
 		{#if buttonOptions.merge}
 			<Button>
-				<ArrowsMerge slot="icon" style="transform: rotate(-90deg)" color="var(--admin-merge)" />
+				{#snippet icon()}
+					<ArrowsMerge style="transform: rotate(-90deg)" color="var(--admin-merge)" />
+				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.delete}
 			<Button>
-				<Trash slot="icon" color="var(--danger)" />
+				{#snippet icon()}
+					<Trash color="var(--danger)" />
+				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.unlist}
 			<Button>
-				<EyeSlash slot="icon" color="var(--admin-unlist)" />
+				{#snippet icon()}
+					<EyeSlash color="var(--admin-unlist)" />
+				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.approve}
 			<Button>
-				<Check slot="icon" color="var(--admin-approve)" />
+				{#snippet icon()}
+					<Check color="var(--admin-approve)" />
+				{/snippet}
 			</Button>
 		{/if}
 	</div>

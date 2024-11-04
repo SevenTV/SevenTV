@@ -1,6 +1,14 @@
 <script lang="ts">
-	export let index = 0;
-	export let size: number | null = null;
+	import type { Snippet } from "svelte";
+	import type { HTMLAttributes } from "svelte/elements";
+
+	type Props = {
+		index?: number;
+		size?: number;
+		children?: Snippet;
+	} & HTMLAttributes<HTMLDivElement>;
+
+	let { index = 0, size, children, ...restProps }: Props = $props();
 </script>
 
 <div
@@ -8,8 +16,10 @@
 	style:animation-delay="{-index * 10}ms"
 	style:width="{size}px"
 	style:height="{size}px"
-	{...$$restProps}
-></div>
+	{...restProps}
+>
+	{@render children?.()}
+</div>
 
 <style lang="scss">
 	.placeholder {

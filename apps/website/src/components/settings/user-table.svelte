@@ -7,10 +7,10 @@
 	import Flags from "../flags.svelte";
 	import { t } from "svelte-i18n";
 
-	export let selectedMap: boolean[];
+	let { selectedMap = $bindable() }: { selectedMap: boolean[] } = $props();
 
-	$: allSelected = selectedMap.every((v) => v);
-	$: anySelected = selectedMap.some((v) => v);
+	let allSelected = $derived(selectedMap.every((v) => v));
+	let anySelected = $derived(selectedMap.some((v) => v));
 
 	function selectAllClick() {
 		selectedMap = Array(selectedMap.length).fill(!allSelected);
@@ -29,7 +29,7 @@
 					<Checkbox
 						value={allSelected}
 						indeterminate={anySelected && !allSelected}
-						on:click={selectAllClick}
+						onclick={selectAllClick}
 					/>
 				</th>
 				<th>{$t("pages.settings.user_table.name")}</th>
@@ -40,7 +40,7 @@
 		</thead>
 		<tbody>
 			{#each Array(selectedMap.length) as _, i}
-				<tr class="data-row" on:click={() => (selectedMap[i] = !selectedMap[i])}>
+				<tr class="data-row" onclick={() => (selectedMap[i] = !selectedMap[i])}>
 					<td class="shrink">
 						<Checkbox bind:value={selectedMap[i]} />
 					</td>
@@ -61,11 +61,15 @@
 					</td>
 					<td class="shrink">
 						<div class="buttons">
-							<Button on:click={buttonClick}>
-								<PencilSimple slot="icon" />
+							<Button onclick={buttonClick}>
+								{#snippet icon()}
+									<PencilSimple />
+								{/snippet}
 							</Button>
-							<Button on:click={buttonClick}>
-								<Trash slot="icon" />
+							<Button onclick={buttonClick}>
+								{#snippet icon()}
+									<Trash />
+								{/snippet}
 							</Button>
 						</div>
 					</td>

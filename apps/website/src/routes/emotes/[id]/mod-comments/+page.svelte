@@ -1,12 +1,14 @@
 <script lang="ts">
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
-	import type { LayoutData } from "../$types";
+	import type { PageData } from "./$types";
 
-	export let data: LayoutData;
+	let { data }: { data: PageData } = $props();
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.emote.id} />
+	{#await data.streamed.emote then emote}
+		<EmoteTabs id={emote.id} />
+	{/await}
 </div>
 
 <style lang="scss">

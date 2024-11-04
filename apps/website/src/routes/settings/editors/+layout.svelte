@@ -1,5 +1,8 @@
 <script lang="ts">
+	import type { Snippet } from "svelte";
 	import { t } from "svelte-i18n";
+
+	let { children }: { children: Snippet } = $props();
 </script>
 
 <svelte:head>
@@ -12,10 +15,10 @@
 		<span class="details">{$t("pages.settings.editors.details")}</span>
 	</div>
 	<div class="content">
-		<slot />
+		{@render children()}
 	</div>
 </section>
 
 <style lang="scss">
-	@import "../../../styles/settings.scss";
+	@use "../../../styles/settings.scss";
 </style>

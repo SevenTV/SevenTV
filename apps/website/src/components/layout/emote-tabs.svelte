@@ -1,37 +1,41 @@
 <script lang="ts">
 	import { numberFormat } from "$/lib/utils";
 	import TabLink from "../tab-link.svelte";
-	import { Users, ChartLineUp, Graph, ChatText, Pulse } from "phosphor-svelte";
+	import { Users, Pulse } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
-	export let id: string;
-	export let channelCount: number | null = null;
+	let { id, channelCount }: { id: string; channelCount?: number } = $props();
 
-	$: channelTabTitle =
+	let channelTabTitle = $derived(
 		$t("common.channels", { values: { count: channelCount ?? 2 } }) +
-		(channelCount ? ` (${numberFormat().format(channelCount)})` : "");
+			(channelCount ? ` (${numberFormat().format(channelCount)})` : ""),
+	);
 </script>
 
 <nav class="links">
 	<TabLink title={channelTabTitle} href="/emotes/{id}" responsive>
 		<Users />
-		<Users weight="fill" slot="active" />
+		{#snippet active()}
+			<Users weight="fill" />
+		{/snippet}
 	</TabLink>
 	<TabLink title={$t("common.activity")} href="/emotes/{id}/activity" responsive>
 		<Pulse />
-		<Pulse weight="fill" slot="active" />
+		{#snippet active()}
+			<Pulse weight="fill" />
+		{/snippet}
 	</TabLink>
 	<!-- <TabLink title={$t("common.statistics")} href="/emotes/{id}/statistics" responsive>
 		<ChartLineUp />
-		<ChartLineUp weight="fill" slot="active" />
+		<ChartLineUp weight="fill" />
 	</TabLink>
 	<TabLink title={$t("common.suggested_emotes")} href="/emotes/{id}/suggested-emotes" responsive>
 		<Graph />
-		<Graph weight="fill" slot="active" />
+		<Graph weight="fill" />
 	</TabLink>
 	<TabLink title={$t("common.mod_comments")} href="/emotes/{id}/mod-comments" responsive>
 		<ChatText />
-		<ChatText weight="fill" slot="active" />
+		<ChatText weight="fill" />
 	</TabLink> -->
 </nav>
 

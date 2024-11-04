@@ -2,10 +2,10 @@
 	import Button from "../input/button.svelte";
 	import EmoteSetPreview from "../emote-set-preview.svelte";
 	import TextInput from "../input/text-input.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <Dialog width={40} bind:mode>
@@ -21,7 +21,7 @@
 			</TextInput>
 			<div class="buttons">
 				<Button style="color: var(--danger)" submit>{$t("labels.delete")}</Button>
-				<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+				<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 			</div>
 		</div>
 	</form>

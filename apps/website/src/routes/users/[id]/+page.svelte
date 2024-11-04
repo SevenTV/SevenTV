@@ -5,7 +5,7 @@
 	import type { Emote, EmoteSearchResult } from "$/gql/graphql";
 	import type { Client } from "@urql/svelte";
 
-	export let data: PageData;
+	let { data }: { data: PageData } = $props();
 
 	function load(client: Client, page: number, _perPage: number): Promise<EmoteSearchResult> {
 		return client

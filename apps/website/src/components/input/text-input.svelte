@@ -1,32 +1,44 @@
 <script lang="ts">
-	export let value: string | null = null;
-	export let type: "text" | "email" | "password" | "textarea" = "text";
-	export let placeholder: string | null = null;
+	import type { Snippet } from "svelte";
+	import type { HTMLLabelAttributes } from "svelte/elements";
 
-	export let big: boolean = false;
+	type Props = {
+		value?: string;
+		type?: "text" | "email" | "password" | "textarea";
+		placeholder?: string | null;
+		big?: boolean;
+		children?: Snippet;
+		icon?: Snippet;
+		onkeypress?: (e: KeyboardEvent) => void;
+	} & HTMLLabelAttributes;
+
+	let {
+		value = $bindable(),
+		type = "text",
+		placeholder = null,
+		big = false,
+		children,
+		icon,
+		onkeypress,
+		...restProps
+	}: Props = $props();
 </script>
 
-<label
-	class="input"
-	class:big
-	class:has-label={$$slots.default}
-	class:has-icon={$$slots.icon}
-	{...$$restProps}
->
-	<slot />
-	{#if $$slots.icon}
+<label class="input" class:big class:has-label={children} class:has-icon={icon} {...restProps}>
+	{@render children?.()}
+	{#if icon}
 		<div class="icon">
-			<slot name="icon" />
+			{@render icon()}
 		</div>
 	{/if}
 	{#if type === "text"}
-		<input type="text" bind:value {placeholder} on:keypress />
+		<input type="text" bind:value {placeholder} {onkeypress} />
 	{:else if type === "email"}
-		<input type="email" bind:value {placeholder} on:keypress />
+		<input type="email" bind:value {placeholder} {onkeypress} />
 	{:else if type === "password"}
-		<input type="password" bind:value {placeholder} on:keypress />
+		<input type="password" bind:value {placeholder} {onkeypress} />
 	{:else if type === "textarea"}
-		<textarea bind:value {placeholder} on:keypress />
+		<textarea bind:value {placeholder} {onkeypress}></textarea>
 	{/if}
 </label>
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
 	import { Moon, Sun, Trash, UploadSimple, User } from "phosphor-svelte";
-	import { Theme, theme } from "$/store/layout";
+	import { theme, type Theme } from "$/store/layout";
 	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../input/button.svelte";
 	import { browser } from "$app/environment";
@@ -10,37 +10,39 @@
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
 
-	let fileInput: HTMLInputElement;
-	let dragOver = false;
+	let fileInput: HTMLInputElement | undefined = $state();
+	let dragOver = $state(false);
 
-	let name: string;
-	let tags: string[] = [];
-	let files: FileList | null = null;
-	let imageSrc: string;
+	let name: string | undefined = $state();
+	let tags: string[] = $state([]);
+	let files: FileList | null = $state(null);
+	let imageSrc: string | undefined = $state();
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
 	function initialTheme(theme: Theme | null) {
-		if (theme === Theme.System && browser) {
-			return window.matchMedia("prefers-color-scheme: dark") ? Theme.Dark : Theme.Light;
+		if (theme === "system" && browser) {
+			return window.matchMedia("prefers-color-scheme: dark") ? "dark" : "light";
 		}
 		return theme;
 	}
 
-	$: previewTheme = initialTheme($theme);
+	let previewTheme = $state(initialTheme($theme));
 
 	function toggleTheme() {
-		previewTheme = previewTheme === Theme.Dark ? Theme.Light : Theme.Dark;
+		previewTheme = previewTheme === "dark" ? "light" : "dark";
 	}
 
-	$: if (files && files[0]) {
-		const reader = new FileReader();
-		reader.onload = () => (imageSrc = reader.result as string);
-		reader.readAsDataURL(files[0]);
-	}
+	$effect(() => {
+		if (files && files[0]) {
+			const reader = new FileReader();
+			reader.onload = () => (imageSrc = reader.result as string);
+			reader.readAsDataURL(files[0]);
+		}
+	});
 
 	function browse() {
-		fileInput.click();
+		fileInput?.click();
 	}
 
 	function onDrop(e: DragEvent) {
@@ -60,11 +62,13 @@
 		dragOver = false;
 	}
 
-	let messages: string[] = [];
+	let messages: string[] = $state([]);
 
-	let messageInput = "";
+	let messageInput = $state("");
 
 	function sendMessage(e: KeyboardEvent) {
+		e.stopPropagation();
+
 		if (e.key === "Enter" && !e.shiftKey && messageInput.trim().length > 0) {
 			e.preventDefault();
 			messages = [...messages, messageInput];
@@ -89,17 +93,19 @@
 					{/each}
 				</div>
 				<div class="buttons">
-					<Button secondary on:click={toggleTheme}>
-						<svelte:fragment slot="icon">
-							{#if previewTheme === Theme.Dark}
+					<Button secondary onclick={toggleTheme}>
+						{#snippet icon()}
+							{#if previewTheme === "dark"}
 								<Moon />
 							{:else}
 								<Sun />
 							{/if}
-						</svelte:fragment>
+						{/snippet}
 					</Button>
-					<Button secondary on:click={() => (files = null)}>
-						<Trash slot="icon" />
+					<Button secondary onclick={() => (files = null)}>
+						{#snippet icon()}
+							<Trash />
+						{/snippet}
 					</Button>
 				</div>
 			{:else}
@@ -108,9 +114,9 @@
 					role="button"
 					tabindex="-1"
 					class:drag-over={dragOver}
-					on:drop={onDrop}
-					on:dragover={onDragOver}
-					on:dragleave={onDragLeave}
+					ondrop={onDrop}
+					ondragover={onDragOver}
+					ondragleave={onDragLeave}
 				>
 					<input
 						type="file"
@@ -121,7 +127,7 @@
 					/>
 					<UploadSimple size={1.5 * 16} color="var(--text-light)" />
 					<h2>{$t("dialogs.upload.drag_drop")}</h2>
-					<Button secondary on:click={browse}>{$t("dialogs.upload.browse_files")}</Button>
+					<Button secondary onclick={browse}>{$t("dialogs.upload.browse_files")}</Button>
 					<span class="details">
 						{$t("file_limits.max_size", { values: { size: "7MB" } })}
 						<br />
@@ -142,14 +148,16 @@
 				</TagsInput>
 				<TextInput placeholder={$t("labels.search_users", { values: { count: 2 } })}>
 					<span class="label">{$t("labels.emote_attribution")}</span>
-					<User slot="icon" />
+					{#snippet icon()}
+						<User />
+					{/snippet}
 				</TextInput>
 				<Checkbox>{$t("flags.overlaying")}</Checkbox>
 			</div>
 			<div class="footer">
 				<Checkbox>{$t("dialogs.upload.accept_rules")}</Checkbox>
 				<div class="buttons">
-					<Button secondary on:click={() => (mode = DialogMode.Hidden)}>
+					<Button secondary onclick={() => (mode = "hidden")}>
 						{$t("dialogs.upload.discard")}
 					</Button>
 					<Button primary submit>{$t("dialogs.upload.upload")}</Button>
@@ -168,7 +176,7 @@
 				type="text"
 				placeholder={$t("dialogs.upload.chat")}
 				bind:value={messageInput}
-				on:keydown|stopPropagation={sendMessage}
+				onkeydown={sendMessage}
 			/>
 		</section>
 	</form>
@@ -227,10 +235,6 @@
 				color: var(--text);
 				font-size: 1rem;
 				font-weight: 500;
-
-				span {
-					color: var(--primary);
-				}
 			}
 
 			.details {

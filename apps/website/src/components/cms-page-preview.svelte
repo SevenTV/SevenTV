@@ -5,7 +5,7 @@
 	import DropDown from "./drop-down.svelte";
 	import FromNow from "./from-now.svelte";
 
-	export let slug: string;
+	let { slug }: { slug: string } = $props();
 </script>
 
 <a class="preview" href="/{slug}">
@@ -19,7 +19,9 @@
 	<div class="content">
 		<DropDown style="position: absolute; top: 0; right: 0;">
 			<Button>
-				<DotsThree slot="icon" />
+				{#snippet icon()}
+					<DotsThree />
+				{/snippet}
 			</Button>
 		</DropDown>
 		<span class="info">

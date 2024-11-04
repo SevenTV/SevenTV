@@ -49,8 +49,10 @@
 						{priceFormat().format(5.99 + i * 2.5)}
 					</td>
 					<td class="shrink">
-						<Button on:click={() => alert("download invoice")}>
-							<Download slot="icon" />
+						<Button onclick={() => alert("download invoice")}>
+							{#snippet icon()}
+								<Download />
+							{/snippet}
 						</Button>
 					</td>
 				</tr>

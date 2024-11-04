@@ -3,13 +3,13 @@
 	import Button from "./input/button.svelte";
 	import UserProfilePicture from "./user-profile-picture.svelte";
 
-	export let user: User;
-	export let big: boolean = false;
-	export let size: number = 2;
+	let { user, big = false, size = 2 }: { user: User; big?: boolean; size?: number } = $props();
 </script>
 
 <Button href="/users/{user.id}" {big}>
-	<UserProfilePicture {user} size={size * 16} slot="icon" />
+	{#snippet icon()}
+		<UserProfilePicture {user} size={size * 16} />
+	{/snippet}
 	<span class="user" style:color={user.highestRoleColor?.hex}
 		>{user.mainConnection?.platformDisplayName}</span
 	>

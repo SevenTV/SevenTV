@@ -7,14 +7,20 @@
 </script>
 
 <StoreSection title={$t("pages.store.subscription.raffle")}>
-	<span class="header" slot="header">Dec 2023</span>
+	{#snippet header()}
+		<span class="header">Dec 2023</span>
+	{/snippet}
 	<div class="carousel">
 		<Button>
-			<CaretLeft slot="icon" />
+			{#snippet icon()}
+				<CaretLeft />
+			{/snippet}
 		</Button>
 		<!-- <EmotePreview bg="light" /> -->
 		<Button>
-			<CaretRight slot="icon" />
+			{#snippet icon()}
+				<CaretRight />
+			{/snippet}
 		</Button>
 	</div>
 	<div class="footer">
@@ -24,7 +30,9 @@
 			<Crown color="var(--store)" />
 		</div>
 		<Button secondary>
-			<Ticket slot="icon" />
+			{#snippet icon()}
+				<Ticket />
+			{/snippet}
 			{$t("labels.enter")}
 		</Button>
 	</div>

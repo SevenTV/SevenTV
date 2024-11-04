@@ -1,23 +1,35 @@
 <script lang="ts">
-	import EmotePreview from "../emote-preview.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import type { Snippet } from "svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 
-	export let mode: DialogMode = DialogMode.Hidden;
-	export let title: string;
-	export let width: number = 45;
+	let {
+		mode = $bindable("hidden"),
+		title,
+		width = 45,
+		children,
+		preview,
+		buttons,
+	}: {
+		mode: DialogMode;
+		title?: string;
+		width?: number;
+		children?: Snippet;
+		preview?: Snippet;
+		buttons: Snippet;
+	} = $props();
 </script>
 
 <Dialog {width} bind:mode>
 	<form class="layout">
 		<div class="preview">
 			<!-- <EmotePreview /> -->
-			<slot name="preview" />
+			{@render preview?.()}
 		</div>
 		<div class="content">
 			<h1>{title}</h1>
-			<slot />
+			{@render children?.()}
 			<div class="buttons">
-				<slot name="buttons" />
+				{@render buttons()}
 			</div>
 		</div>
 	</form>

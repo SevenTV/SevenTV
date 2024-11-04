@@ -2,11 +2,11 @@
 	import { User } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
-	import { DialogMode } from "./dialog.svelte";
+	import { type DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <EmoteDialog
@@ -19,12 +19,14 @@
 	</span>
 	<TextInput placeholder={$t("labels.search_users", { values: { count: 1 } })}>
 		<span class="label">{$t("dialogs.transfer_emote.receipient")}</span>
-		<User slot="icon" />
+		{#snippet icon()}
+			<User />
+		{/snippet}
 	</TextInput>
-	<svelte:fragment slot="buttons">
-		<Button on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+	{#snippet buttons()}
+		<Button onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 		<Button primary submit>{$t("dialogs.transfer_emote.transfer")}</Button>
-	</svelte:fragment>
+	{/snippet}
 </EmoteDialog>
 
 <style lang="scss">

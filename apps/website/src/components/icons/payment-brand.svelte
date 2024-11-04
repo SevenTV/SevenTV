@@ -40,7 +40,7 @@
 		visa: "Visa",
 	};
 
-	export let type: string;
+	let { type }: { type: string } = $props();
 </script>
 
 <div class="payment-method" title={names[type]}>

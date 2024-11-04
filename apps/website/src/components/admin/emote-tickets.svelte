@@ -11,24 +11,24 @@
 		GridFour,
 	} from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { Layout, adminTicketsLayout } from "$/store/layout";
+	import { adminTicketsLayout } from "$/store/layout";
 	import EmoteTicketsTable from "./emote-tickets-table.svelte";
 	import EmoteTicket from "./emote-ticket.svelte";
 	import { t } from "svelte-i18n";
 	import { numberFormat } from "$/lib/utils";
 	import EmoteTicketDialog from "../dialogs/emote-ticket-dialog.svelte";
-	import { DialogMode } from "../dialogs/dialog.svelte";
+	import { type DialogMode } from "../dialogs/dialog.svelte";
 	import EmoteTicketsButtonOptions from "./emote-tickets-button-options.svelte";
 	import { browser } from "$app/environment";
 
-	let selectedMap: boolean[] = Array(20).fill(false);
+	let selectedMap: boolean[] = $state(Array(20).fill(false));
 
-	$: anySelected = selectedMap.some((v) => v);
+	let anySelected = $derived(selectedMap.some((v) => v));
 
-	let emoteTicketDialogMode = DialogMode.Hidden;
+	let emoteTicketDialogMode: DialogMode = $state("hidden");
 
 	function showEmoteTicketDialog() {
-		emoteTicketDialogMode = DialogMode.Shown;
+		emoteTicketDialogMode = "shown";
 	}
 
 	const defaultButtonOptions = {
@@ -37,6 +37,7 @@
 		unlist: true,
 		approve: true,
 	};
+
 	function loadButtonOptions(): {
 		merge: boolean;
 		delete: boolean;
@@ -48,11 +49,13 @@
 		return options && JSON.parse(options);
 	}
 
-	let buttonOptions = loadButtonOptions() || defaultButtonOptions;
+	let buttonOptions = $state(loadButtonOptions() || defaultButtonOptions);
 
-	$: if (buttonOptions && browser) {
-		window.localStorage.setItem("emoteTicketsButtonOptions", JSON.stringify(buttonOptions));
-	}
+	$effect(() => {
+		if (buttonOptions && browser) {
+			window.localStorage.setItem("emoteTicketsButtonOptions", JSON.stringify(buttonOptions));
+		}
+	});
 </script>
 
 <EmoteTicketDialog bind:mode={emoteTicketDialogMode} />
@@ -64,7 +67,9 @@
 			responsive
 		>
 			<Eye />
-			<Eye weight="fill" slot="active" />
+			{#snippet active()}
+				<Eye weight="fill" />
+			{/snippet}
 		</TabLink>
 		<TabLink
 			title="{$t('pages.admin.tickets.emotes.personal_use')} ({numberFormat().format(412)})"
@@ -72,7 +77,9 @@
 			responsive
 		>
 			<Star />
-			<Star weight="fill" slot="active" />
+			{#snippet active()}
+				<Star weight="fill" />
+			{/snippet}
 		</TabLink>
 		<TabLink
 			title="{$t('pages.admin.tickets.emotes.resolved')} ({numberFormat().format(100_000)})"
@@ -80,47 +87,59 @@
 			responsive
 		>
 			<Checks />
-			<Checks weight="fill" slot="active" />
+			{#snippet active()}
+				<Checks weight="fill" />
+			{/snippet}
 		</TabLink>
 	</div>
 	{#if anySelected}
 		<div class="buttons">
 			<Button>
-				<Trash slot="icon" color="var(--danger)" />
+				{#snippet icon()}
+					<Trash color="var(--danger)" />
+				{/snippet}
 			</Button>
 			<Button>
-				<EyeSlash slot="icon" color="#e0823d" />
+				{#snippet icon()}
+					<EyeSlash color="#e0823d" />
+				{/snippet}
 			</Button>
 			<Button>
-				<Check slot="icon" color="#57ab5a" />
+				{#snippet icon()}
+					<Check color="#57ab5a" />
+				{/snippet}
 			</Button>
 		</div>
 	{/if}
 	<div class="buttons layout">
-		{#if $adminTicketsLayout === Layout.BigGrid}
+		{#if $adminTicketsLayout === "big-grid"}
 			<EmoteTicketsButtonOptions bind:buttonOptions />
 		{/if}
 		<Button
-			secondary={$adminTicketsLayout === Layout.List}
-			on:click={() => ($adminTicketsLayout = Layout.List)}
+			secondary={$adminTicketsLayout === "list"}
+			onclick={() => ($adminTicketsLayout = "list")}
 		>
-			<ListBullets slot="icon" />
+			{#snippet icon()}
+				<ListBullets />
+			{/snippet}
 		</Button>
 		<Button
-			secondary={$adminTicketsLayout === Layout.BigGrid}
-			on:click={() => ($adminTicketsLayout = Layout.BigGrid)}
+			secondary={$adminTicketsLayout === "big-grid"}
+			onclick={() => ($adminTicketsLayout = "big-grid")}
 		>
-			<GridFour slot="icon" />
+			{#snippet icon()}
+				<GridFour />
+			{/snippet}
 		</Button>
 	</div>
 </nav>
 <div class="scroll">
-	{#if $adminTicketsLayout === Layout.List}
-		<EmoteTicketsTable bind:selectedMap bind:buttonOptions on:click={showEmoteTicketDialog} />
+	{#if $adminTicketsLayout === "list"}
+		<EmoteTicketsTable bind:selectedMap bind:buttonOptions onclick={showEmoteTicketDialog} />
 	{:else}
 		<div class="tickets-grid">
 			{#each Array(selectedMap.length) as _}
-				<EmoteTicket bind:buttonOptions on:click={showEmoteTicketDialog} />
+				<EmoteTicket bind:buttonOptions onclick={showEmoteTicketDialog} />
 			{/each}
 		</div>
 	{/if}

@@ -1,12 +1,12 @@
 <script lang="ts">
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
 	import { Check, IconContext, NotePencil, Plus, X } from "phosphor-svelte";
-	import type { LayoutData } from "../$types";
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";
 	import FromNow from "$/components/from-now.svelte";
+	import type { PageData } from "./$types";
 
-	export let data: LayoutData;
+	let { data }: { data: PageData } = $props();
 
 	const activities = [
 		{
@@ -33,7 +33,9 @@
 </script>
 
 <div class="navigation">
-	<EmoteTabs id={data.emote.id} />
+	{#await data.streamed.emote then emote}
+		<EmoteTabs id={emote.id} />
+	{/await}
 </div>
 <div class="activities">
 	{#each activities as activity, index}

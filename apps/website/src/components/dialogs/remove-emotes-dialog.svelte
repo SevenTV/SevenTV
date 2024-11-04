@@ -1,26 +1,26 @@
 <script lang="ts">
-	import { Layout } from "$/store/layout";
+	import { type Layout } from "$/store/layout";
 	import EmoteContainer from "../layout/emote-container.svelte";
 	import EmotePreview from "../emote-preview.svelte";
 	import Button from "../input/button.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <Dialog width={35} bind:mode>
 	<form class="layout">
 		<h1>{$t("dialogs.remove_emote.title", { values: { set: "Cat Emotes" } })}</h1>
 		<hr />
-		<!-- <EmoteContainer layout={Layout.SmallGrid} style="max-height: 11rem" scrollable>
+		<!-- <EmoteContainer layout={"small-grid"} style="max-height: 11rem" scrollable>
 			{#each Array(100) as _, i}
 				<EmotePreview index={i} emoteOnly />
 			{/each}
 		</EmoteContainer> -->
 		<div class="buttons">
 			<Button style="color: var(--danger)" submit>{$t("labels.remove")}</Button>
-			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+			<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 		</div>
 	</form>
 </Dialog>

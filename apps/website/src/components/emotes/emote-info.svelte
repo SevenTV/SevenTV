@@ -16,7 +16,6 @@
 	import Button from "../input/button.svelte";
 	import { t } from "svelte-i18n";
 	import DropDown from "../drop-down.svelte";
-	import { DialogMode } from "../dialogs/dialog.svelte";
 	import AddEmoteDialog from "../dialogs/add-emote-dialog.svelte";
 	import EditEmoteDialog from "../dialogs/edit-emote-dialog.svelte";
 	import TransferEmoteDialog from "../dialogs/transfer-emote-dialog.svelte";
@@ -28,21 +27,19 @@
 	import { formatSortIndex } from "../responsive-image.svelte";
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import EmoteLoadingPlaceholder from "../emote-loading-placeholder.svelte";
+	import type { DialogMode } from "../dialogs/dialog.svelte";
+	import type { Snippet } from "svelte";
 
-	export let data: Emote | null;
+	type MoreMenuMode = "root" | "download-format" | "download-size";
 
-	enum MoreMenuMode {
-		Root,
-		DownloadFormat,
-		DownloadSize,
-	}
+	let { data, children }: { data: Emote | null; children?: Snippet } = $props();
 
-	let moreMenuMode = MoreMenuMode.Root;
-	let downloadFormat: string;
+	let moreMenuMode: MoreMenuMode = $state("root");
+	let downloadFormat: string | undefined = $state();
 
 	function clickFormat(format: string) {
 		downloadFormat = format;
-		moreMenuMode = MoreMenuMode.DownloadSize;
+		moreMenuMode = "download-size";
 	}
 
 	function download(size: number) {
@@ -50,11 +47,11 @@
 		alert(`downloading ${downloadFormat} at ${size}x`);
 	}
 
-	let addEmoteDialogMode = DialogMode.Hidden;
-	let editDialogMode = DialogMode.Hidden;
-	let transferDialogMode = DialogMode.Hidden;
-	let deleteDialogMode = DialogMode.Hidden;
-	let reportDialogMode = DialogMode.Hidden;
+	let addEmoteDialogMode: DialogMode = $state("hidden");
+	let editDialogMode: DialogMode = $state("hidden");
+	let transferDialogMode: DialogMode = $state("hidden");
+	let deleteDialogMode: DialogMode = $state("hidden");
+	let reportDialogMode: DialogMode = $state("hidden");
 
 	function prepareImages(images: Image[]): Image[][] {
 		const animated = images.some((i) => i.frameCount > 1);
@@ -79,7 +76,7 @@
 	}
 </script>
 
-{#if !$$slots.default}
+{#if !children}
 	<AddEmoteDialog bind:mode={addEmoteDialogMode} />
 	<EditEmoteDialog bind:mode={editDialogMode} />
 	<TransferEmoteDialog bind:mode={transferDialogMode} />
@@ -90,12 +87,18 @@
 	<div class="top-bar">
 		<Flags flags={emoteToFlags(data)} />
 		{#if data.owner}
-			<a href="/users/{data.owner.id}" class="user-info">
-				<UserProfilePicture user={data.owner} />
+			<div class="user-info">
+				<a href="/users/{data.owner.id}">
+					<UserProfilePicture user={data.owner} />
+				</a>
 				<div class="name-container">
-					<span class="username" style:color={data.owner.highestRoleColor?.hex}
-						>{data.owner.mainConnection?.platformDisplayName}</span
+					<a
+						href="/users/{data.owner.id}"
+						class="username"
+						style:color={data.owner.highestRoleColor?.hex}
 					>
+						{data.owner.mainConnection?.platformDisplayName}
+					</a>
 					{#if data.attribution.length > 0}
 						<div class="artists">
 							<ArrowBendDownRight size="0.75rem" color="var(--text-light)" />
@@ -109,7 +112,7 @@
 						</div>
 					{/if}
 				</div>
-			</a>
+			</div>
 		{/if}
 	</div>
 {/if}
@@ -138,72 +141,88 @@
 	</div>
 	{#if data}
 		<div class="buttons">
-			<slot>
+			{#snippet fallbackChildren()}
 				<Button primary>
-					<Plus slot="icon" />
+					{#snippet icon()}
+						<Plus />
+					{/snippet}
 					{$t("pages.emote.use_emote")}
 				</Button>
-				<Button secondary on:click={() => (addEmoteDialogMode = DialogMode.Shown)}>
-					<FolderPlus slot="icon" />
+				<Button secondary onclick={() => (addEmoteDialogMode = "shown")}>
+					{#snippet icon()}
+						<FolderPlus />
+					{/snippet}
 					{$t("pages.emote.add_to")}
 				</Button>
-				<Button secondary hideOnMobile on:click={() => (editDialogMode = DialogMode.Shown)}>
-					<NotePencil slot="icon" />
+				<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
+					{#snippet icon()}
+						<NotePencil />
+					{/snippet}
 					{$t("labels.edit")}
 				</Button>
-				<Button secondary hideOnDesktop on:click={() => (editDialogMode = DialogMode.Shown)}>
-					<NotePencil slot="icon" />
+				<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
+					{#snippet icon()}
+						<NotePencil />
+					{/snippet}
 				</Button>
 				<DropDown>
-					<Button secondary hideOnMobile on:click={() => (moreMenuMode = MoreMenuMode.Root)}>
+					<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
 						{$t("labels.more")}
-						<CaretDown slot="icon-right" />
+						{#snippet iconRight()}
+							<CaretDown />
+						{/snippet}
 					</Button>
 					<Button secondary hideOnDesktop>
-						<CaretDown slot="icon" />
+						{#snippet icon()}
+							<CaretDown />
+						{/snippet}
 					</Button>
-					<div slot="dropdown" class="dropdown">
-						{#if moreMenuMode === MoreMenuMode.Root}
-							<MenuButton on:click={() => (transferDialogMode = DialogMode.Shown)}>
-								<PaperPlaneRight />
-								{$t("pages.emote.transfer")}
-							</MenuButton>
-							<MenuButton>
-								<ArrowsMerge style="transform: rotate(-90deg)" />
-								{$t("pages.emote.merge")}
-							</MenuButton>
-							<MenuButton showCaret on:click={() => (moreMenuMode = MoreMenuMode.DownloadFormat)}>
-								<Download />
-								{$t("labels.download")}
-							</MenuButton>
-							<MenuButton on:click={() => (reportDialogMode = DialogMode.Shown)}>
-								<Flag />
-								{$t("labels.report")}
-							</MenuButton>
-							<hr />
-							<MenuButton
-								style="color: var(--danger)"
-								on:click={() => (deleteDialogMode = DialogMode.Shown)}
-							>
-								<Trash />
-								{$t("labels.delete")}
-							</MenuButton>
-						{:else if moreMenuMode === MoreMenuMode.DownloadFormat}
-							{#each ["GIF", "WEBP", "AVIF"] as format}
-								<MenuButton showCaret on:click={() => clickFormat(format)}>
-									{format}
+					{#snippet dropdown()}
+						<div class="dropdown">
+							{#if moreMenuMode === "root"}
+								<MenuButton onclick={() => (transferDialogMode = "shown")}>
+									<PaperPlaneRight />
+									{$t("pages.emote.transfer")}
 								</MenuButton>
-							{/each}
-						{:else if moreMenuMode === MoreMenuMode.DownloadSize}
-							{#each [1, 2, 3, 4] as size}
-								<MenuButton on:click={() => download(size)}>
-									{size}x {$t("pages.emote.size")}
+								<MenuButton>
+									<ArrowsMerge style="transform: rotate(-90deg)" />
+									{$t("pages.emote.merge")}
 								</MenuButton>
-							{/each}
-						{/if}
-					</div>
+								<MenuButton showCaret onclick={() => (moreMenuMode = "download-format")}>
+									<Download />
+									{$t("labels.download")}
+								</MenuButton>
+								<MenuButton onclick={() => (reportDialogMode = "shown")}>
+									<Flag />
+									{$t("labels.report")}
+								</MenuButton>
+								<hr />
+								<MenuButton
+									style="color: var(--danger)"
+									onclick={() => (deleteDialogMode = "shown")}
+								>
+									<Trash />
+									{$t("labels.delete")}
+								</MenuButton>
+							{:else if moreMenuMode === "download-format"}
+								{#each ["GIF", "WEBP", "AVIF"] as format}
+									<MenuButton showCaret onclick={() => clickFormat(format)}>
+										{format}
+									</MenuButton>
+								{/each}
+							{:else if moreMenuMode === "download-size"}
+								{#each [1, 2, 3, 4] as size}
+									<MenuButton onclick={() => download(size)}>
+										{size}x {$t("pages.emote.size")}
+									</MenuButton>
+								{/each}
+							{/if}
+						</div>
+					{/snippet}
 				</DropDown>
-			</slot>
+			{/snippet}
+
+			{@render (children ?? fallbackChildren)()}
 		</div>
 	{/if}
 </div>
@@ -232,6 +251,7 @@
 		.username {
 			font-weight: 500;
 			color: var(--text);
+			text-decoration: none;
 		}
 
 		.artists {

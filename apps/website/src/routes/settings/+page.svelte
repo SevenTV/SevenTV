@@ -10,17 +10,27 @@
 	import Toggle from "$/components/input/toggle.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
-	import { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 	import DeleteAccountDialog from "$/components/dialogs/delete-account-dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	let twoFaActive = false;
-	let deleteAccountDialogMode = DialogMode.Hidden;
+	let twoFaActive = $state(false);
+	let deleteAccountDialogMode: DialogMode = $state("hidden");
 </script>
 
 <svelte:head>
 	<title>{$t("page_titles.account_settings")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
+
+{#snippet twitchLogo()}
+	<TwitchLogo />
+{/snippet}
+{#snippet youtubeLogo()}
+	<YoutubeLogo />
+{/snippet}
+{#snippet kickLogo()}
+	<KickLogo />
+{/snippet}
 
 <DeleteAccountDialog bind:mode={deleteAccountDialogMode} />
 <section>
@@ -37,9 +47,9 @@
 		</span>
 		<Select
 			options={[
-				{ value: "twitch", label: "ayyybubu", icon: TwitchLogo },
-				{ value: "youtube", label: "ayyybubu", icon: YoutubeLogo },
-				{ value: "kick", label: "gambabubu", icon: KickLogo },
+				{ value: "twitch", label: "ayyybubu", icon: twitchLogo },
+				{ value: "youtube", label: "ayyybubu", icon: youtubeLogo },
+				{ value: "kick", label: "gambabubu", icon: kickLogo },
 			]}
 			style="align-self: flex-start"
 		/>
@@ -54,7 +64,9 @@
 			<div class="buttons">
 				<Button secondary>{$t("pages.settings.account.profile.update_profile_picture")}</Button>
 				<Button>
-					<Trash slot="icon" />
+					{#snippet icon()}
+						<Trash />
+					{/snippet}
 				</Button>
 			</div>
 			<span class="limits">
@@ -119,11 +131,15 @@
 	</div>
 	<div class="content">
 		<TextInput type="email" style="max-width: 30rem">
-			<At slot="icon" />
+			{#snippet icon()}
+				<At />
+			{/snippet}
 			<h3>{$t("labels.email")}</h3>
 		</TextInput>
 		<TextInput type="password" style="max-width: 30rem">
-			<Password slot="icon" />
+			{#snippet icon()}
+				<Password />
+			{/snippet}
 			<h3>{$t("labels.password")}</h3>
 		</TextInput>
 		<hr />
@@ -167,7 +183,7 @@
 		<Button
 			secondary
 			style="align-self: flex-start; color: var(--danger);"
-			on:click={() => (deleteAccountDialogMode = DialogMode.Shown)}
+			onclick={() => (deleteAccountDialogMode = "shown")}
 		>
 			{$t("common.delete_account")}
 		</Button>
@@ -175,7 +191,7 @@
 </section>
 
 <style lang="scss">
-	@import "../../styles/settings.scss";
+	@use "../../styles/settings.scss";
 
 	h3 {
 		font-size: 0.875rem;

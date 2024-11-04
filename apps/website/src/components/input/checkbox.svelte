@@ -1,17 +1,40 @@
 <script lang="ts">
-	export let option: boolean = false;
+	import type { Snippet } from "svelte";
+	import type { HTMLLabelAttributes } from "svelte/elements";
 
-	export let value = false;
-	export let disabled = false;
-	export let indeterminate: boolean = false;
+	type Props = {
+		option?: boolean;
+		value?: boolean;
+		disabled?: boolean;
+		indeterminate?: boolean;
+		onclick?: (e: MouseEvent) => void;
+		leftLabel?: Snippet;
+		children?: Snippet;
+	} & HTMLLabelAttributes;
+
+	let {
+		option = false,
+		value = $bindable(false),
+		disabled = false,
+		indeterminate = $bindable(false),
+		onclick,
+		leftLabel,
+		children,
+		...restProps
+	}: Props = $props();
+
+	function handleClick(e: MouseEvent) {
+		e.stopPropagation();
+		onclick?.(e);
+	}
 </script>
 
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-<label class:option class:disabled {...$$restProps} on:click|stopPropagation>
-	<slot name="left-label" />
-	<input type="checkbox" bind:checked={value} bind:indeterminate on:click {disabled} />
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<label class:option class:disabled {...restProps} onclick={handleClick}>
+	{@render leftLabel?.()}
+	<input type="checkbox" bind:checked={value} bind:indeterminate {onclick} {disabled} />
 	<span class="checkbox"></span>
-	<slot />
+	{@render children?.()}
 </label>
 
 <style lang="scss">

@@ -1,16 +1,34 @@
 <script lang="ts">
-	export let option: boolean = false;
-	export let name: string;
+	import type { Snippet } from "svelte";
+	import type { HTMLLabelAttributes } from "svelte/elements";
 
-	export let value = false;
-	export let disabled = false;
+	type Props = {
+		option?: boolean;
+		name: string;
+		value?: boolean;
+		disabled?: boolean;
+		onclick?: (e: MouseEvent) => void;
+		leftLabel?: Snippet;
+		children?: Snippet;
+	} & HTMLLabelAttributes;
+
+	let {
+		option = false,
+		name,
+		value = $bindable(false),
+		disabled = false,
+		onclick,
+		leftLabel,
+		children,
+		...restProps
+	}: Props = $props();
 </script>
 
-<label class:option {...$$restProps}>
-	<slot name="left-label" />
-	<input type="radio" bind:group={value} {name} {disabled} on:click />
+<label class:option {...restProps}>
+	{@render leftLabel?.()}
+	<input type="radio" bind:group={value} {name} {disabled} {onclick} />
 	<span class="checkbox"></span>
-	<slot />
+	{@render children?.()}
 </label>
 
 <style lang="scss">

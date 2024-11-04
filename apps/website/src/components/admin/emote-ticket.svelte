@@ -1,3 +1,12 @@
+<script module lang="ts">
+	export interface ButtonOptions {
+		merge: boolean;
+		delete: boolean;
+		unlist: boolean;
+		approve: boolean;
+	}
+</script>
+
 <script lang="ts">
 	import {
 		ArrowsMerge,
@@ -11,42 +20,44 @@
 	} from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import CountryFlag from "../country-flag.svelte";
-	import EmotePreview from "../emote-preview.svelte";
 	import moment from "moment/min/moment-with-locales";
 	import Flags from "../flags.svelte";
 	import FromNow from "../from-now.svelte";
-	import { createEventDispatcher } from "svelte";
 
-	const dispatch = createEventDispatcher();
-
-	export let buttonOptions: {
-		merge: boolean;
-		delete: boolean;
-		unlist: boolean;
-		approve: boolean;
-	};
+	let {
+		buttonOptions = $bindable(),
+		onclick,
+	}: { buttonOptions: ButtonOptions; onclick: () => void } = $props();
 </script>
 
-<button class="emote-ticket" on:click={() => dispatch("click", 0)}>
+<button class="emote-ticket" {onclick}>
 	<div class="buttons">
 		{#if buttonOptions.approve}
 			<Button>
-				<Check slot="icon" color="var(--admin-approve)" />
+				{#snippet icon()}
+					<Check color="var(--admin-approve)" />
+				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.unlist}
 			<Button>
-				<EyeSlash slot="icon" color="var(--admin-unlist)" />
+				{#snippet icon()}
+					<EyeSlash color="var(--admin-unlist)" />
+				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.delete}
 			<Button>
-				<Trash slot="icon" color="var(--danger)" />
+				{#snippet icon()}
+					<Trash color="var(--danger)" />
+				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.merge}
 			<Button>
-				<ArrowsMerge slot="icon" style="transform: rotate(-90deg)" color="var(--admin-merge)" />
+				{#snippet icon()}
+					<ArrowsMerge style="transform: rotate(-90deg)" color="var(--admin-merge)" />
+				{/snippet}
 			</Button>
 		{/if}
 	</div>

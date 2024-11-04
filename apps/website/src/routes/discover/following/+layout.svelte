@@ -1,9 +1,12 @@
 <script lang="ts">
 	import Button from "$/components/input/button.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { Layout, discoverFollowingLayout } from "$/store/layout";
+	import { discoverFollowingLayout } from "$/store/layout";
 	import { ListDashes, GridFour, Pulse, Upload } from "phosphor-svelte";
+	import type { Snippet } from "svelte";
 	import { t } from "svelte-i18n";
+
+	let { children }: { children: Snippet } = $props();
 </script>
 
 <svelte:head>
@@ -14,29 +17,37 @@
 	<div class="tabs">
 		<TabLink title={$t("pages.discover.uploads")} href="/discover/following">
 			<Upload />
-			<Upload weight="fill" slot="active" />
+			{#snippet active()}
+				<Upload weight="fill" />
+			{/snippet}
 		</TabLink>
 		<TabLink title={$t("common.activity")} href="/discover/following/activity">
 			<Pulse />
-			<Pulse weight="fill" slot="active" />
+			{#snippet active()}
+				<Pulse weight="fill" />
+			{/snippet}
 		</TabLink>
 	</div>
 	<div class="buttons">
 		<Button
-			secondary={$discoverFollowingLayout === Layout.List}
-			on:click={() => ($discoverFollowingLayout = Layout.List)}
+			secondary={$discoverFollowingLayout === "list"}
+			onclick={() => ($discoverFollowingLayout = "list")}
 		>
-			<ListDashes slot="icon" />
+			{#snippet icon()}
+				<ListDashes />
+			{/snippet}
 		</Button>
 		<Button
-			secondary={$discoverFollowingLayout === Layout.BigGrid}
-			on:click={() => ($discoverFollowingLayout = Layout.BigGrid)}
+			secondary={$discoverFollowingLayout === "big-grid"}
+			onclick={() => ($discoverFollowingLayout = "big-grid")}
 		>
-			<GridFour slot="icon" />
+			{#snippet icon()}
+				<GridFour />
+			{/snippet}
 		</Button>
 	</div>
 </div>
-<slot />
+{@render children()}
 
 <style lang="scss">
 	.nav {

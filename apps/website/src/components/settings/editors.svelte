@@ -7,10 +7,10 @@
 	import HideOn from "../hide-on.svelte";
 	import { t } from "svelte-i18n";
 
-	export let showAddEditor: boolean = false;
+	let { showAddEditor = false }: { showAddEditor?: boolean } = $props();
 
-	let selectedMap: boolean[] = Array(20).fill(false);
-	$: selectMode = selectedMap.some((v) => v);
+	let selectedMap: boolean[] = $state(Array(20).fill(false));
+	let selectMode = $derived(selectedMap.some((v) => v));
 </script>
 
 <nav class="nav-bar">
@@ -24,21 +24,29 @@
 		</div>
 		{#if showAddEditor}
 			<TextInput placeholder={$t("pages.settings.editors.add_editor")}>
-				<UserCirclePlus slot="icon" />
+				{#snippet icon()}
+					<UserCirclePlus />
+				{/snippet}
 			</TextInput>
 		{/if}
 		{#if selectMode}
 			<Button style="border: none">
-				<PencilSimple slot="icon" />
+				{#snippet icon()}
+					<PencilSimple />
+				{/snippet}
 			</Button>
 			<Button style="border: none">
-				<Trash slot="icon" />
+				{#snippet icon()}
+					<Trash />
+				{/snippet}
 			</Button>
 		{/if}
 	</div>
 	<HideOn mobile>
 		<TextInput placeholder={$t("labels.search")}>
-			<MagnifyingGlass slot="icon" />
+			{#snippet icon()}
+				<MagnifyingGlass />
+			{/snippet}
 		</TextInput>
 	</HideOn>
 </nav>

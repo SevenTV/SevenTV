@@ -5,9 +5,11 @@
 	import { CaretDown, CaretUp, Flag, PaintBrush, Smiley, Table, Ticket } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
-	$: ticketsSelected = $page.url.pathname.startsWith("/admin/tickets");
+	let { children } = $props();
 
-	function customMatcher(_id: string | null, url: URL, href: string | null) {
+	let ticketsSelected = $derived($page.url.pathname.startsWith("/admin/tickets"));
+
+	function customMatcher(_id: string | null, url: URL, href: string | undefined) {
 		return !!href && url.pathname.startsWith(href);
 	}
 </script>
@@ -18,7 +20,9 @@
 		<nav class="link-list">
 			<TabLink title={$t("pages.admin.overview")} href="/admin" big>
 				<Table />
-				<Table weight="fill" slot="active" />
+				{#snippet active()}
+					<Ticket weight="fill" />
+				{/snippet}
 			</TabLink>
 			<TabLink
 				title={$t("pages.admin.tickets.title")}
@@ -27,14 +31,16 @@
 				big
 			>
 				<Ticket />
-				<Ticket weight="fill" slot="active" />
-				<svelte:fragment slot="icon-right">
+				{#snippet active()}
+					<Ticket weight="fill" />
+				{/snippet}
+				{#snippet iconRight()}
 					{#if ticketsSelected}
 						<CaretUp />
 					{:else}
 						<CaretDown />
 					{/if}
-				</svelte:fragment>
+				{/snippet}
 			</TabLink>
 			{#if ticketsSelected}
 				<div class="indent link-list">
@@ -44,26 +50,33 @@
 						matcher={customMatcher}
 					>
 						<Smiley />
-						<Smiley weight="fill" slot="active" />
+						{#snippet active()}
+							<Smiley weight="fill" />
+						{/snippet}
 					</TabLink>
 					<TabLink
 						title="{$t('pages.admin.tickets.reports')} ({numberFormat().format(2)})"
 						href="/admin/tickets/reports"
 					>
 						<Flag />
-						<Flag weight="fill" slot="active" />
+						{#snippet active()}
+							<Smiley weight="fill" />
+							<Flag weight="fill" />
+						{/snippet}
 					</TabLink>
 				</div>
 			{/if}
 			<TabLink title={$t("common.cosmetics")} href="/admin/cosmetics" big>
 				<PaintBrush />
-				<PaintBrush weight="fill" slot="active" />
+				{#snippet active()}
+					<PaintBrush weight="fill" />
+				{/snippet}
 			</TabLink>
 		</nav>
 		<img src="/modge.webp" width="64" height="64" alt="Modge" class="modge hide-on-mobile" />
 	</aside>
 	<div class="content">
-		<slot />
+		{@render children()}
 	</div>
 </div>
 

@@ -2,7 +2,7 @@
 	import type { PageData } from "./$types";
 	import { t } from "svelte-i18n";
 
-	export let data: PageData;
+	let { data }: { data: PageData } = $props();
 </script>
 
 <svelte:head>

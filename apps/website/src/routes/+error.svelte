@@ -17,8 +17,8 @@
 		}
 	}
 
-	$: title = $page.error?.message ?? "Error";
-	$: details = $page.error?.details ?? defaultDetails($page.status);
+	let title = $derived($page.error?.message ?? "Error");
+	let details = $derived($page.error?.details ?? defaultDetails($page.status));
 </script>
 
 <svelte:head>

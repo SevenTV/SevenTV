@@ -1,15 +1,19 @@
 <script lang="ts">
-	import { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { signInDialogMode } from "$/store/layout";
 	import { user } from "$/store/auth";
 	import { Key, PencilSimple, Bell, CreditCard, Prohibit, MagnifyingGlass } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
+	import type { Snippet } from "svelte";
 
-	$: if (!$user && !$signInDialogMode) {
-		$signInDialogMode = DialogMode.ShownWithoutClose;
-	}
+	let { children }: { children: Snippet } = $props();
+
+	$effect(() => {
+		if (!$user && !$signInDialogMode) {
+			$signInDialogMode = "shown-without-close";
+		}
+	});
 </script>
 
 <svelte:head>
@@ -21,12 +25,16 @@
 		<aside class="side-bar">
 			<h1>{$t("common.settings")}</h1>
 			<TextInput placeholder={$t("labels.search")}>
-				<MagnifyingGlass slot="icon" />
+				{#snippet icon()}
+					<MagnifyingGlass />
+				{/snippet}
 			</TextInput>
 			<nav class="link-list">
 				<TabLink title={$t("pages.settings.account.title")} href="/settings" big>
 					<Key />
-					<Key weight="fill" slot="active" />
+					{#snippet active()}
+						<Key weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink
 					title={$t("common.editors")}
@@ -35,19 +43,27 @@
 					big
 				>
 					<PencilSimple />
-					<PencilSimple weight="fill" slot="active" />
+					{#snippet active()}
+						<PencilSimple weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink title={$t("common.notifications")} href="/settings/notifications" big>
 					<Bell />
-					<Bell weight="fill" slot="active" />
+					{#snippet active()}
+						<Bell weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink title={$t("pages.settings.blocked.title")} href="/settings/blocked" big>
 					<Prohibit />
-					<Prohibit weight="fill" slot="active" />
+					{#snippet active()}
+						<Prohibit weight="fill" />
+					{/snippet}
 				</TabLink>
 				<TabLink title={$t("pages.settings.billing.title")} href="/settings/billing" big>
 					<CreditCard />
-					<CreditCard weight="fill" slot="active" />
+					{#snippet active()}
+						<CreditCard weight="fill" />
+					{/snippet}
 				</TabLink>
 			</nav>
 			<div class="account hide-on-mobile">
@@ -63,7 +79,7 @@
 		</aside>
 		<div class="content">
 			<div class="width-wrapper">
-				<slot />
+				{@render children()}
 			</div>
 		</div>
 	</div>

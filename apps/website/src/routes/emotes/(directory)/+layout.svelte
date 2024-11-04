@@ -1,4 +1,4 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
 	export const TAGS_SEPERATOR = " ";
 </script>
 
@@ -13,13 +13,16 @@
 	import { user } from "$/store/auth";
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
+	import type { Snippet } from "svelte";
 
-	let query: string | null = $page.url.searchParams.get("q");
-	let tags: string[] = $page.url.searchParams.get("t")?.split(TAGS_SEPERATOR) ?? [];
-	let animated: boolean = $page.url.searchParams.get("a") == "1";
-	let staticFilter: boolean = $page.url.searchParams.get("s") == "1";
-	let overlaying: boolean = $page.url.searchParams.get("o") == "1";
-	let exactMatch: boolean = $page.url.searchParams.get("e") == "1";
+	let { children }: { children: Snippet } = $props();
+
+	let query: string | null = $state($page.url.searchParams.get("q"));
+	let tags: string[] = $state($page.url.searchParams.get("t")?.split(TAGS_SEPERATOR) ?? []);
+	let animated: boolean = $state($page.url.searchParams.get("a") == "1");
+	let staticFilter: boolean = $state($page.url.searchParams.get("s") == "1");
+	let overlaying: boolean = $state($page.url.searchParams.get("o") == "1");
+	let exactMatch: boolean = $state($page.url.searchParams.get("e") == "1");
 
 	function unsetStaticFilter() {
 		staticFilter = false;
@@ -29,15 +32,19 @@
 		animated = false;
 	}
 
-	$: if (animated) {
-		unsetStaticFilter();
-	}
+	$effect(() => {
+		if (animated) {
+			unsetStaticFilter();
+		}
+	});
 
-	$: if (staticFilter) {
-		unsetAnimated();
-	}
+	$effect(() => {
+		if (staticFilter) {
+			unsetAnimated();
+		}
+	});
 
-	$: {
+	$effect(() => {
 		let url = new URL($page.url);
 
 		if (query) {
@@ -77,9 +84,9 @@
 		}
 
 		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
-	}
+	});
 
-	function menuMatcher(id: string | null, _url: URL, href: string | null) {
+	function menuMatcher(id: string | null, _url: URL, href: string | undefined) {
 		switch (href) {
 			case "/emotes":
 				return id?.startsWith("/emotes/(directory)/(emotes)") ?? false;
@@ -103,7 +110,9 @@
 				matcher={menuMatcher}
 			>
 				<Smiley />
-				<Smiley weight="fill" slot="active" />
+				{#snippet active()}
+					<Smiley weight="fill" />
+				{/snippet}
 			</TabLink>
 			<TabLink
 				href="/emotes/sets"
@@ -112,7 +121,9 @@
 				matcher={menuMatcher}
 			>
 				<FolderSimple />
-				<FolderSimple weight="fill" slot="active" />
+				{#snippet active()}
+					<FolderSimple weight="fill" />
+				{/snippet}
 			</TabLink>
 			{#if $user}
 				<TabLink
@@ -122,14 +133,18 @@
 					matcher={menuMatcher}
 				>
 					<BookmarkSimple />
-					<BookmarkSimple weight="fill" slot="active" />
+					{#snippet active()}
+						<BookmarkSimple weight="fill" />
+					{/snippet}
 				</TabLink>
 			{/if}
 		</nav>
 		<hr />
 		<Expandable title={$t("labels.search")} expanded={true}>
 			<TextInput placeholder={$t("common.emotes", { values: { count: 1 } })} bind:value={query}>
-				<MagnifyingGlass slot="icon" />
+				{#snippet icon()}
+					<MagnifyingGlass />
+				{/snippet}
 			</TextInput>
 		</Expandable>
 		<Expandable title={$t("labels.tags")}>
@@ -175,13 +190,13 @@
 					grow
 				/>
 				<Button secondary>
-					<PencilSimple slot="icon" />
+					<PencilSimple />
 				</Button>
 			</div>
 		</Expandable> -->
 	</aside>
 	<div class="content">
-		<slot />
+		{@render children()}
 	</div>
 </div>
 

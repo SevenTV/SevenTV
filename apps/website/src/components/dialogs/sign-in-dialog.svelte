@@ -3,11 +3,11 @@
 	import DiscordLogo from "../icons/discord-logo.svelte";
 	import Logo from "../icons/logo.svelte";
 	import TwitchLogo from "../icons/twitch-logo.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 	import { PUBLIC_REST_API_V4 } from "$env/static/public";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <Dialog bind:mode>
@@ -19,18 +19,22 @@
 		</div>
 		<div class="buttons">
 			<Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=twitch">
-				<TwitchLogo slot="icon" />
+				{#snippet icon()}
+					<TwitchLogo />
+				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Twitch" } })}
 			</Button>
 			<Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=discord">
-				<DiscordLogo slot="icon" />
+				{#snippet icon()}
+					<DiscordLogo />
+				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Discord" } })}
 			</Button>
 			<!-- <Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=google">
-				<GoogleLogo slot="icon" />
+				<GoogleLogo />
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
 			</Button> -->
-			<a class="trouble" href="/trouble" on:click={() => (mode = DialogMode.Hidden)}>
+			<a class="trouble" href="/trouble" onclick={() => (mode = "hidden")}>
 				{$t("dialogs.sign_in.trouble")}
 			</a>
 		</div>

@@ -1,14 +1,15 @@
 <script lang="ts">
-	export let count: number;
+	import type { Snippet } from "svelte";
 
-	$: text = count > 99 ? "99+" : count.toString();
+	let { count, children }: { count: number; children: Snippet } = $props();
+
+	let text = $derived(count > 99 ? "99+" : count.toString());
 </script>
 
-<div class="badge-container">
+<div class="badge-container" {children}>
 	{#if count > 0}
 		<span class="badge">{text}</span>
 	{/if}
-	<slot />
 </div>
 
 <style lang="scss">

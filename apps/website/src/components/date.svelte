@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Moment } from "moment/min/moment-with-locales";
 
-	export let date: Moment;
+	let { date }: { date: Moment } = $props();
 </script>
 
 <span title={date.fromNow()}>{date.format("ll")}</span>

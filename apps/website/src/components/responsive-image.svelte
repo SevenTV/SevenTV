@@ -1,4 +1,4 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
 	// From least supported to best supported
 	const FORMAT_SORT_ORDER = ["image/avif", "image/webp", "image/gif", "image/png"];
 
@@ -16,18 +16,30 @@
 
 <script lang="ts">
 	import type { Image } from "$/gql/graphql";
+	import { type HTMLAttributes } from "svelte/elements";
 
-	export let images: Image[];
-	export let width: number | null = null;
-	export let height: number | null = null;
-	export let round: boolean = false;
-	export let borderColor: string | null = null;
-	export let alt = "";
-	export let index = 0;
+	type Props = {
+		images: Image[];
+		width?: number;
+		height?: number;
+		round?: boolean;
+		borderColor?: string;
+		index?: number;
+	} & HTMLAttributes<HTMLPictureElement>;
 
-	let loading: boolean = true;
+	let {
+		images,
+		width,
+		height,
+		round = false,
+		borderColor,
+		index = 0,
+		...restProps
+	}: Props = $props();
 
-	let pictureWidth: number;
+	let loading: boolean = $state(true);
+
+	let pictureWidth: number | undefined = $state();
 
 	// This function prepares the variants for the <picture> element by grouping them by format, sorting them by scale and generating the required media and srcSet tags.
 	// It also returns the best supported variant for use in the fallback <img> element which is the smallest GIF or PNG.
@@ -35,11 +47,13 @@
 		bestSupported: Image | null;
 		variants: { type: string; srcSet: string; media: string }[];
 	} {
+		console.log("prepareVariants");
+
 		if (!images) return { bestSupported: null, variants: [] };
 
 		const animated = images.some((i) => i.frameCount > 1);
 
-		images.sort((a, b) => a.scale - b.scale);
+		images = images.toSorted((a, b) => a.scale - b.scale);
 
 		const grouped: {
 			type: string;
@@ -89,10 +103,18 @@
 		};
 	}
 
-	$: preparedVariants = prepareVariants(images);
+	let preparedVariants = $derived(prepareVariants(images));
+
+	$effect(() => {
+		console.log("images", images);
+	});
+
+	$effect(() => {
+		console.log("variants", preparedVariants);
+	});
 </script>
 
-<picture bind:clientWidth={pictureWidth} {...$$restProps}>
+<picture bind:clientWidth={pictureWidth} {...restProps}>
 	{#each preparedVariants.variants as variant}
 		<source
 			type={variant.type}
@@ -103,6 +125,8 @@
 			{height}
 		/>
 	{/each}
+	<!-- svelte-ignore a11y_missing_attribute -->
+	<!-- Adding an alt here makes it glitch around, idk why but I don't care enough to figure it out -->
 	<img
 		class="image"
 		class:round
@@ -111,8 +135,7 @@
 		src={preparedVariants.bestSupported?.url}
 		loading="lazy"
 		style:animation-delay="{-index * 10}ms"
-		on:load={() => (loading = false)}
-		{alt}
+		onload={() => (loading = false)}
 		class:loading-animation={loading}
 		{width}
 		{height}

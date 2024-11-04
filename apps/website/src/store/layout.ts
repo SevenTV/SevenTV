@@ -1,20 +1,16 @@
 import { writable } from "svelte/store";
 import { browser } from "$app/environment";
-import { DialogMode } from "$/components/dialogs/dialog.svelte";
+import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 
 export const showMobileMenu = writable(false);
 
-export const uploadDialogMode = writable<DialogMode>(DialogMode.Hidden);
+export const uploadDialogMode = writable<DialogMode>("hidden");
 
-export const signInDialogMode = writable<DialogMode>(DialogMode.Hidden);
+export const signInDialogMode = writable<DialogMode>("hidden");
 
-export const defaultEmoteSetDialogMode = writable<DialogMode>(DialogMode.Hidden);
+export const defaultEmoteSetDialogMode = writable<DialogMode>("hidden");
 
-export enum Theme {
-	System = "system-theme",
-	Light = "light-theme",
-	Dark = "dark-theme",
-}
+export type Theme = "system" | "light" | "dark";
 
 export const theme = writable<Theme | null>(loadTheme());
 
@@ -31,28 +27,24 @@ theme.subscribe((value) => {
 		window.localStorage.setItem("theme", JSON.stringify(value));
 	}
 	if (!browser) return;
-	for (const key in Theme) {
-		document.documentElement.classList.remove(Theme[key as keyof typeof Theme]);
+	for (const clas in ["system", "light", "dark"]) {
+		document.documentElement.classList.remove(clas);
 	}
 	if (value) {
-		document.documentElement.classList.add(value);
+		document.documentElement.classList.add(`${value}-theme`);
 	}
 });
 
 // Layout
 
-export enum Layout {
-	SmallGrid = "small-grid",
-	BigGrid = "big-grid",
-	List = "list",
-}
+export type Layout = "small-grid" | "big-grid" | "list";
 
 function loadLayout(key: string, defaultLayout?: Layout) {
 	const savedLayout = browser && window.localStorage.getItem(key);
 	if (savedLayout) {
 		return JSON.parse(savedLayout) as Layout;
 	}
-	return defaultLayout ?? Layout.BigGrid;
+	return defaultLayout ?? "big-grid";
 }
 
 function saveLayout(key: string, value: Layout | null) {
@@ -71,5 +63,5 @@ discoverFollowingLayout.subscribe((value) => saveLayout("discoverFollowingLayout
 
 // Admin tickets
 
-export const adminTicketsLayout = writable(loadLayout("adminTicketsLayout", Layout.List));
+export const adminTicketsLayout = writable(loadLayout("adminTicketsLayout", "list"));
 adminTicketsLayout.subscribe((value) => saveLayout("adminTicketsLayout", value));

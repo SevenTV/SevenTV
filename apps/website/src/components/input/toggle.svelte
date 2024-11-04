@@ -1,16 +1,38 @@
 <script lang="ts">
-	export let value: boolean = false;
-	export let disabled: boolean = false;
+	import type { Snippet } from "svelte";
+	import type { HTMLLabelAttributes } from "svelte/elements";
+
+	type Props = {
+		value?: boolean;
+		disabled?: boolean;
+		onclick?: (e: MouseEvent) => void;
+		leftLabel?: Snippet;
+		children?: Snippet;
+	} & HTMLLabelAttributes;
+
+	let {
+		value = $bindable(false),
+		disabled = false,
+		onclick,
+		leftLabel,
+		children,
+		...restProps
+	}: Props = $props();
+
+	function handleClick(e: MouseEvent) {
+		e.stopPropagation();
+		onclick?.(e);
+	}
 </script>
 
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-<label {...$$restProps} on:click|stopPropagation>
-	<slot name="left-label" />
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<label {...restProps} onclick={handleClick}>
+	{@render leftLabel?.()}
 	<span class="switch">
 		<input type="checkbox" {disabled} bind:checked={value} />
 		<span class="slider"></span>
 	</span>
-	<slot />
+	{@render children?.()}
 </label>
 
 <style lang="scss">

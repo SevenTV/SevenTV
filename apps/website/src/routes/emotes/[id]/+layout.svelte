@@ -2,8 +2,9 @@
 	import type { LayoutData } from "./$types";
 	import { t } from "svelte-i18n";
 	import EmoteInfo from "$/components/emotes/emote-info.svelte";
+	import type { Snippet } from "svelte";
 
-	export let data: LayoutData;
+	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 </script>
 
 <svelte:head>
@@ -23,7 +24,7 @@
 		{/await}
 	</div>
 	<div class="tabs">
-		<slot />
+		{@render children()}
 	</div>
 </div>
 

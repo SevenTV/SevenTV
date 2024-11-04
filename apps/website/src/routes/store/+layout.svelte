@@ -2,6 +2,9 @@
 	import { PaintBrush, Star } from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { t } from "svelte-i18n";
+	import type { Snippet } from "svelte";
+
+	let { children }: { children: Snippet } = $props();
 </script>
 
 <div class="side-bar-layout">
@@ -10,11 +13,15 @@
 		<nav class="link-list">
 			<TabLink href="/store" title={$t("common.subscriptions", { values: { count: 1 } })} big>
 				<Star />
-				<Star weight="fill" slot="active" />
+				{#snippet active()}
+					<Star weight="fill" />
+				{/snippet}
 			</TabLink>
 			<TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>
 				<PaintBrush />
-				<PaintBrush weight="fill" slot="active" />
+				{#snippet active()}
+					<PaintBrush weight="fill" />
+				{/snippet}
 			</TabLink>
 		</nav>
 		<hr />
@@ -24,7 +31,7 @@
 		</label>
 	</aside>
 	<div class="content">
-		<slot />
+		{@render children()}
 	</div>
 </div>
 

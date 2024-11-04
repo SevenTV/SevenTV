@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Theme, theme } from "$/store/layout";
+	import { theme } from "$/store/layout";
 	import { logout, user } from "$/store/auth";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
@@ -26,14 +26,9 @@
 	import { PUBLIC_DEVELOPER_PORTAL } from "$env/static/public";
 	import UserProfilePicture from "../user-profile-picture.svelte";
 
-	enum Menu {
-		Root,
-		Language,
-		Theme,
-		Settings,
-	}
+	type Menu = "root" | "language" | "theme" | "settings";
 
-	let menu = Menu.Root;
+	let menu: Menu = $state("root");
 
 	function setMenu(e: MouseEvent, newMenu: Menu) {
 		menu = newMenu;
@@ -42,7 +37,7 @@
 </script>
 
 <nav class="menu" transition:fade={{ duration: 100 }}>
-	{#if menu === Menu.Root}
+	{#if menu === "root"}
 		{#if $user}
 			<a class="profile" href="/users/{$user.id}">
 				<UserProfilePicture user={$user} size={3 * 16} style="grid-row: 1 / -1" />
@@ -94,7 +89,7 @@
 				<GlobeHemisphereWest />
 				{$t("common.language")}
 			</MenuButton> -->
-			<MenuButton showCaret on:click={(e) => setMenu(e, Menu.Theme)}>
+			<MenuButton showCaret onclick={(e) => setMenu(e, "theme")}>
 				<Moon />
 				{$t("common.theme")}
 			</MenuButton>
@@ -135,46 +130,46 @@
 		{#if $user}
 			<hr class="hide-on-mobile" />
 			<div class="link-list">
-				<MenuButton on:click={logout}>
+				<MenuButton onclick={logout}>
 					<SignOut />
 					{$t("common.sign_out")}
 				</MenuButton>
 			</div>
 		{/if}
-	{:else if menu === Menu.Language}
-		<MenuButton on:click={() => (menu = Menu.Root)}>
+	{:else if menu === "language"}
+		<MenuButton onclick={() => (menu = "root")}>
 			<CaretLeft />
 			{$t("common.language")}
 		</MenuButton>
 		<div class="link-list">
 			{#each Object.keys($dictionary) as l}
-				<MenuButton on:click={() => ($locale = l)}>
+				<MenuButton onclick={() => ($locale = l)}>
 					<GlobeHemisphereWest />
 					{localeNames[l] || l}
 				</MenuButton>
 			{/each}
 		</div>
-	{:else if menu === Menu.Theme}
-		<MenuButton on:click={() => (menu = Menu.Root)}>
+	{:else if menu === "theme"}
+		<MenuButton onclick={() => (menu = "root")}>
 			<CaretLeft />
 			{$t("common.theme")}
 		</MenuButton>
 		<div class="link-list">
-			<MenuButton on:click={() => ($theme = Theme.System)}>
+			<MenuButton onclick={() => ($theme = "system")}>
 				<Sliders />
 				{$t("themes.system")}
 			</MenuButton>
-			<MenuButton on:click={() => ($theme = Theme.Dark)}>
+			<MenuButton onclick={() => ($theme = "dark")}>
 				<Moon />
 				{$t("themes.dark")}
 			</MenuButton>
-			<MenuButton on:click={() => ($theme = Theme.Light)}>
+			<MenuButton onclick={() => ($theme = "light")}>
 				<Sun />
 				{$t("themes.light")}
 			</MenuButton>
 		</div>
-	{:else if menu === Menu.Settings}
-		<MenuButton on:click={() => (menu = Menu.Root)}>
+	{:else if menu === "settings"}
+		<MenuButton onclick={() => (menu = "root")}>
 			<CaretLeft />
 			{$t("common.settings")}
 		</MenuButton>

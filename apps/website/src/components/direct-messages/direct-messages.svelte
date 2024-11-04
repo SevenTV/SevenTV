@@ -5,29 +5,33 @@
 	import MessagePreview from "./message-preview.svelte";
 	import { t } from "svelte-i18n";
 
-	export let popup = false;
+	let { popup = false }: { popup?: boolean } = $props();
 
-	let read = false;
+	let read = $state(false);
 </script>
 
 <div class="dms" class:popup>
 	<div class="header">
 		<h1>{$t("common.direct_messages")}</h1>
-		<Button on:click={() => (read = !read)}>
-			<svelte:fragment slot="icon">
+		<Button onclick={() => (read = !read)}>
+			{#snippet icon()}
 				{#if read}
 					<EnvelopeSimple />
 				{:else}
 					<EnvelopeSimpleOpen />
 				{/if}
-			</svelte:fragment>
+			{/snippet}
 		</Button>
 		<Button>
-			<Gear slot="icon" />
+			{#snippet icon()}
+				<Gear />
+			{/snippet}
 		</Button>
 	</div>
 	<TextInput placeholder="Search" style="margin: 0 1rem">
-		<MagnifyingGlass slot="icon" />
+		{#snippet icon()}
+			<MagnifyingGlass />
+		{/snippet}
 	</TextInput>
 	<div class="messages" class:scrollable={popup}>
 		{#each Array(20) as _, i}

@@ -40,31 +40,49 @@
 	<div class="buttons">
 		<DropDown>
 			<Button primary style="font-size: 1em;">
-				<Logo size={1.25 * 16} slot="icon" />
+				{#snippet icon()}
+					<Logo size={1.25 * 16} />
+				{/snippet}
 				Web Extension
-				<CaretDown slot="icon-right" />
+				{#snippet iconRight()}
+					<CaretDown />
+				{/snippet}
 			</Button>
-			<div slot="dropdown">Idk why this is a dropdown</div>
+			{#snippet dropdown()}
+				<div>Idk why this is a dropdown</div>
+			{/snippet}
 		</DropDown>
 		<DropDown>
 			<Button secondary style="font-size: 1em;">
-				<ChatterinoLogo slot="icon" />
+				{#snippet icon()}
+					<ChatterinoLogo />
+				{/snippet}
 				Chatterino
-				<CaretDown slot="icon-right" />
+				{#snippet iconRight()}
+					<CaretDown />
+				{/snippet}
 			</Button>
-			<div slot="dropdown">Idk why this is a dropdown</div>
+			{#snippet dropdown()}
+				<div>Idk why this is a dropdown</div>
+			{/snippet}
 		</DropDown>
 		<DropDown align="left">
 			<Button secondary style="font-size: 1em;">
-				<DeviceMobile slot="icon" />
+				{#snippet icon()}
+					<DeviceMobile />
+				{/snippet}
 				Mobile Apps
-				<CaretDown slot="icon-right" />
+				{#snippet iconRight()}
+					<CaretDown />
+				{/snippet}
 			</Button>
-			<div slot="dropdown" class="apps-dropdown">
-				<MenuButton href={PUBLIC_CHATSEN_LINK}>Chatsen</MenuButton>
-				<MenuButton href={PUBLIC_FROSTY_LINK}>Frosty</MenuButton>
-				<MenuButton href={PUBLIC_DANK_CHAT_LINK}>DankChat</MenuButton>
-			</div>
+			{#snippet dropdown()}
+				<div class="apps-dropdown">
+					<MenuButton href={PUBLIC_CHATSEN_LINK}>Chatsen</MenuButton>
+					<MenuButton href={PUBLIC_FROSTY_LINK}>Frosty</MenuButton>
+					<MenuButton href={PUBLIC_DANK_CHAT_LINK}>DankChat</MenuButton>
+				</div>
+			{/snippet}
 		</DropDown>
 	</div>
 </section>

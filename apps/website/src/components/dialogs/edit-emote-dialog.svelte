@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { User } from "phosphor-svelte";
 	import TagsInput from "../input/tags-input.svelte";
-	import Dialog, { DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Checkbox from "../input/checkbox.svelte";
 	import Button from "../input/button.svelte";
 	import { t } from "svelte-i18n";
 
-	export let mode: DialogMode = DialogMode.Hidden;
+	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 </script>
 
 <Dialog bind:mode>
@@ -24,7 +24,9 @@
 		</div>
 		<TextInput placeholder={$t("labels.search_users", { values: { count: 2 } })}>
 			<span class="label">{$t("labels.emote_attribution")}</span>
-			<User slot="icon" />
+			{#snippet icon()}
+				<User />
+			{/snippet}
 		</TextInput>
 		<div>
 			<span class="label">{$t("common.settings")}</span>
@@ -36,7 +38,7 @@
 		</div>
 		<div class="buttons">
 			<Button style="color: var(--danger); margin-right: auto;">{$t("labels.delete")}</Button>
-			<Button secondary on:click={() => (mode = DialogMode.Hidden)}>{$t("labels.cancel")}</Button>
+			<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 			<Button primary submit>{$t("labels.save")}</Button>
 		</div>
 	</form>
