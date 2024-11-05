@@ -49,7 +49,7 @@
 		logoutLoading = true;
 		logout().then(() => {
 			logoutLoading = false;
-			// onCloseRequest?.();
+			onCloseRequest?.();
 		});
 	}
 </script>

@@ -92,36 +92,38 @@
 				{/snippet}
 				{$t("dialogs.upload.upload")}
 			</Button>
+		{:else if $user === undefined}
+			<Spinner />
+		{/if}
+
+		{#if $user !== undefined}
 			<HideOn mobile>
 				<DropDown>
-					<UserProfilePicture user={$user} size={32} />
-					<span class="profile-name">{$user.mainConnection?.platformDisplayName}</span>
+					{#if $user}
+						<UserProfilePicture user={$user} size={32} />
+						<span class="profile-name">{$user.mainConnection?.platformDisplayName}</span>
+					{:else}
+						<Button>
+							{#snippet icon()}
+								<List />
+							{/snippet}
+						</Button>
+					{/if}
 					{#snippet dropdown(close)}
 						<Menu onCloseRequest={close} />
 					{/snippet}
 				</DropDown>
 			</HideOn>
+		{/if}
+
+		{#if $user}
 			<button class="profile hide-on-desktop" onclick={() => ($showMobileMenu = !$showMobileMenu)}>
 				<UserProfilePicture user={$user} size={32} />
 			</button>
 		{:else if $user === null}
-			<HideOn mobile>
-				<DropDown>
-					<Button>
-						{#snippet icon()}
-							<List />
-						{/snippet}
-					</Button>
-					{#snippet dropdown(close)}
-						<Menu onCloseRequest={close} />
-					{/snippet}
-				</DropDown>
-			</HideOn>
 			<Button primary onclick={() => ($signInDialogMode = "shown")}>
 				{$t("common.sign_in")}
 			</Button>
-		{:else}
-			<Spinner />
 		{/if}
 		<!-- Only show when logged out on mobile -->
 		{#if !$user}
