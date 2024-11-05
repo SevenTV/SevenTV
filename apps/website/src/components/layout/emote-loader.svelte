@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { EmoteSearchResult } from "$/gql/graphql";
-	import { emotesLayout } from "$/store/layout";
+	import { emotesLayout } from "$/lib/layout";
 	import EmotePreview from "../emote-preview.svelte";
 	import EmoteContainer from "./emote-container.svelte";
 	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";

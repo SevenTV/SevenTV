@@ -1,5 +1,5 @@
-import { uploadDialogMode, signInDialogMode } from "$/store/layout";
-import { user } from "$/store/auth";
+import { uploadDialogMode, signInDialogMode } from "$/lib/layout";
+import { user } from "$/lib/auth";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 

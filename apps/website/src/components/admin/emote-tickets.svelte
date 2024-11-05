@@ -11,7 +11,7 @@
 		GridFour,
 	} from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { adminTicketsLayout } from "$/store/layout";
+	import { adminTicketsLayout } from "$/lib/layout";
 	import EmoteTicketsTable from "./emote-tickets-table.svelte";
 	import EmoteTicket from "./emote-ticket.svelte";
 	import { t } from "svelte-i18n";

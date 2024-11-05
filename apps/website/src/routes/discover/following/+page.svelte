@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from "$/components/input/button.svelte";
-	import { discoverFollowingLayout } from "$/store/layout";
+	import { discoverFollowingLayout } from "$/lib/layout";
 	import { DotsThree, Plus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";

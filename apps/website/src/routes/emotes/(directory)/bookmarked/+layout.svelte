@@ -2,7 +2,7 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import Button from "$/components/input/button.svelte";
 	import { FolderSimple, Smiley, User } from "phosphor-svelte";
-	import { defaultEmoteSetDialogMode } from "$/store/layout";
+	import { defaultEmoteSetDialogMode } from "$/lib/layout";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";

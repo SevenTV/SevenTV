@@ -11,7 +11,7 @@
 		signInDialogMode,
 		uploadDialogMode,
 		defaultEmoteSetDialogMode,
-	} from "$/store/layout";
+	} from "$/lib/layout";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
 	import { IconContext } from "phosphor-svelte";

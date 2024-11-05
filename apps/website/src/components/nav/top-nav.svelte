@@ -2,7 +2,7 @@
 	import Logo from "$/components/icons/logo.svelte";
 	import TopTabs from "./top-tabs.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { showMobileMenu, uploadDialogMode, signInDialogMode } from "$/store/layout";
+	import { showMobileMenu, uploadDialogMode, signInDialogMode } from "$/lib/layout";
 	import { user } from "$/lib/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Layout } from "$/store/layout";
+	import { type Layout } from "$/lib/layout";
 	import type { Snippet } from "svelte";
 	import { type HTMLAttributes } from "svelte/elements";
 
