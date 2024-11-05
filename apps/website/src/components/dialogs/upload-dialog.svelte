@@ -21,8 +21,8 @@
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
 	function initialTheme(theme: Theme | null) {
-		if (theme === "system" && browser) {
-			return window.matchMedia("prefers-color-scheme: dark") ? "dark" : "light";
+		if (theme === "system-theme" && browser) {
+			return window.matchMedia("prefers-color-scheme: dark") ? "dark-theme" : "light-theme";
 		}
 		return theme;
 	}
@@ -30,7 +30,7 @@
 	let previewTheme = $state(initialTheme($theme));
 
 	function toggleTheme() {
-		previewTheme = previewTheme === "dark" ? "light" : "dark";
+		previewTheme = previewTheme === "dark-theme" ? "light-theme" : "dark-theme";
 	}
 
 	$effect(() => {
@@ -95,7 +95,7 @@
 				<div class="buttons">
 					<Button secondary onclick={toggleTheme}>
 						{#snippet icon()}
-							{#if previewTheme === "dark"}
+							{#if previewTheme === "dark-theme"}
 								<Moon />
 							{:else}
 								<Sun />

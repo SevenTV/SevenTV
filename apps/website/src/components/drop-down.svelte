@@ -9,7 +9,7 @@
 	import type { Snippet } from "svelte";
 
 	type Props = {
-		dropdown?: Snippet;
+		dropdown?: Snippet<[() => void]>;
 		align?: "left" | "right";
 		children?: Snippet;
 	} & HTMLAttributes<HTMLDivElement>;
@@ -57,7 +57,7 @@
 			transition:fade={{ duration: 100 }}
 			style={align === "left" ? "left: 0" : "right: 0"}
 		>
-			{@render dropdown?.()}
+			{@render dropdown?.(close)}
 		</div>
 	{/if}
 </div>

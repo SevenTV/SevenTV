@@ -1,25 +1,17 @@
 <script lang="ts">
 	import Logo from "$/components/icons/logo.svelte";
 	import TopTabs from "./top-tabs.svelte";
-	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
 	import { showMobileMenu, uploadDialogMode, signInDialogMode } from "$/store/layout";
 	import { user } from "$/lib/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
-	import DirectMessages from "../direct-messages/direct-messages.svelte";
-	import Notifications from "../notifications/notifications.svelte";
 	import {
-		Bell,
-		Chat,
 		List,
-		MagnifyingGlass,
 		PlusSquare,
-		ShoppingCartSimple,
 	} from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
-	import TextInput from "$/components/input/text-input.svelte";
 	import { type DialogMode } from "../dialogs/dialog.svelte";
 	import { t } from "svelte-i18n";
 	import Spinner from "../spinner.svelte";
@@ -104,8 +96,8 @@
 				<DropDown>
 					<UserProfilePicture user={$user} size={32} />
 					<span class="profile-name">{$user.mainConnection?.platformDisplayName}</span>
-					{#snippet dropdown()}
-						<Menu />
+					{#snippet dropdown(close)}
+						<Menu onCloseRequest={close} />
 					{/snippet}
 				</DropDown>
 			</HideOn>
@@ -120,8 +112,8 @@
 							<List />
 						{/snippet}
 					</Button>
-					{#snippet dropdown()}
-						<Menu />
+					{#snippet dropdown(close)}
+						<Menu onCloseRequest={close} />
 					{/snippet}
 				</DropDown>
 			</HideOn>

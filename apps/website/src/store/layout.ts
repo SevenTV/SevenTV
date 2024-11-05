@@ -10,7 +10,7 @@ export const signInDialogMode = writable<DialogMode>("hidden");
 
 export const defaultEmoteSetDialogMode = writable<DialogMode>("hidden");
 
-export type Theme = "system" | "light" | "dark";
+export type Theme = "system-theme" | "light-theme" | "dark-theme";
 
 export const theme = writable<Theme | null>(loadTheme());
 
@@ -27,11 +27,11 @@ theme.subscribe((value) => {
 		window.localStorage.setItem("theme", JSON.stringify(value));
 	}
 	if (!browser) return;
-	for (const clas in ["system", "light", "dark"]) {
-		document.documentElement.classList.remove(clas);
-	}
+
+	document.documentElement.classList.remove("system-theme", "light-theme", "dark-theme");
+
 	if (value) {
-		document.documentElement.classList.add(`${value}-theme`);
+		document.documentElement.classList.add(value);
 	}
 });
 

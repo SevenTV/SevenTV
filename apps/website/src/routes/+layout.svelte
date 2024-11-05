@@ -19,7 +19,6 @@
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
 	import { t } from "svelte-i18n";
-	import type { LayoutData } from "./$types";
 	import type { Snippet } from "svelte";
 
 	let { children }: { children: Snippet } = $props();
@@ -43,7 +42,7 @@
 	<DefaultEmoteSetDialog bind:mode={$defaultEmoteSetDialogMode} />
 	<main id="main">
 		{#if $showMobileMenu}
-			<Menu />
+			<Menu onCloseRequest={() => ($showMobileMenu = false)} />
 		{:else}
 			{@render children()}
 		{/if}

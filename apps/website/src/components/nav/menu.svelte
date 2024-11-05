@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { theme } from "$/store/layout";
+	import { theme, type Theme } from "$/store/layout";
 	import { logout, user } from "$/lib/auth";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
@@ -25,6 +25,9 @@
 	import { localeNames } from "$/lib/i18n";
 	import { PUBLIC_DEVELOPER_PORTAL } from "$env/static/public";
 	import UserProfilePicture from "../user-profile-picture.svelte";
+	import Spinner from "../spinner.svelte";
+
+	let { onCloseRequest }: { onCloseRequest?: () => void } = $props();
 
 	type Menu = "root" | "language" | "theme" | "settings";
 
@@ -34,12 +37,27 @@
 		menu = newMenu;
 		e.stopPropagation();
 	}
+
+	function setTheme(newTheme: Theme) {
+		$theme = newTheme;
+		onCloseRequest?.();
+	}
+
+	let logoutLoading = $state(false);
+
+	function logoutClick() {
+		logoutLoading = true;
+		logout().then(() => {
+			logoutLoading = false;
+			// onCloseRequest?.();
+		});
+	}
 </script>
 
 <nav class="menu" transition:fade={{ duration: 100 }}>
 	{#if menu === "root"}
 		{#if $user}
-			<a class="profile" href="/users/{$user.id}">
+			<a class="profile" href="/users/{$user.id}" onclick={onCloseRequest}>
 				<UserProfilePicture user={$user} size={3 * 16} style="grid-row: 1 / -1" />
 				<span class="name">{$user.mainConnection?.platformDisplayName}</span>
 				<div class="roles">
@@ -90,7 +108,13 @@
 				{$t("common.language")}
 			</MenuButton> -->
 			<MenuButton showCaret onclick={(e) => setMenu(e, "theme")}>
-				<Moon />
+				{#if $theme === "system-theme"}
+					<Sliders />
+				{:else if $theme === "dark-theme"}
+					<Moon />
+				{:else if $theme === "light-theme"}
+					<Sun />
+				{/if}
 				{$t("common.theme")}
 			</MenuButton>
 			<!-- {#if $user}
@@ -130,8 +154,12 @@
 		{#if $user}
 			<hr class="hide-on-mobile" />
 			<div class="link-list">
-				<MenuButton onclick={logout}>
-					<SignOut />
+				<MenuButton onclick={logoutClick}>
+					{#if logoutLoading}
+						<Spinner size={1.2 * 16} />
+					{:else}
+						<SignOut />
+					{/if}
 					{$t("common.sign_out")}
 				</MenuButton>
 			</div>
@@ -155,15 +183,15 @@
 			{$t("common.theme")}
 		</MenuButton>
 		<div class="link-list">
-			<MenuButton onclick={() => ($theme = "system")}>
+			<MenuButton onclick={() => setTheme("system-theme")}>
 				<Sliders />
 				{$t("themes.system")}
 			</MenuButton>
-			<MenuButton onclick={() => ($theme = "dark")}>
+			<MenuButton onclick={() => setTheme("dark-theme")}>
 				<Moon />
 				{$t("themes.dark")}
 			</MenuButton>
-			<MenuButton onclick={() => ($theme = "light")}>
+			<MenuButton onclick={() => setTheme("light-theme")}>
 				<Sun />
 				{$t("themes.light")}
 			</MenuButton>
@@ -218,7 +246,7 @@
 		border-radius: 0.5rem;
 
 		display: grid;
-		grid-template-columns: auto auto 1fr;
+		grid-template-columns: auto 1fr auto;
 		grid-template-rows: auto auto;
 		align-items: center;
 		row-gap: 0.5rem;
@@ -235,7 +263,7 @@
 			grid-row: 2;
 
 			display: flex;
-			flex-wrap: wrap;
+			// flex-wrap: wrap;
 			gap: 0.25rem;
 		}
 
