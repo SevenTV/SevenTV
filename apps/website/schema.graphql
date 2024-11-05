@@ -212,6 +212,7 @@ type User {
 	highestRoleRank: Int!
 	id: Id!
 	mainConnection: UserConnection
+	ownedEmotes: [Emote!]!
 	roleIds: [Id!]!
 	roles: [Role!]!
 	searchUpdatedAt: DateTime

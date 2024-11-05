@@ -8,7 +8,7 @@ use shared::database::role::RoleId;
 use shared::database::user::profile_picture::UserProfilePictureId;
 use shared::database::user::UserId;
 
-use super::{Color, EmoteSet, Role, UserEditor, UserProfilePicture};
+use super::{Color, Emote, EmoteSet, Role, UserEditor, UserProfilePicture};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -33,6 +33,27 @@ pub struct User {
 impl User {
 	pub async fn main_connection(&self) -> Option<&UserConnection> {
 		self.connections.first()
+	}
+
+	// TODO: Does it make sense to paginate this?
+	pub async fn owned_emotes<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Emote>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let mut emotes = global
+			.emote_by_user_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?
+			.unwrap_or_default();
+
+		emotes.sort_by(|a, b| a.id.cmp(&b.id));
+
+		Ok(emotes
+			.into_iter()
+			.map(|e| Emote::from_db(e, &global.config.api.cdn_origin))
+			.collect())
 	}
 
 	pub async fn style<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserStyle, ApiError> {
