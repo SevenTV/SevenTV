@@ -1,4 +1,3 @@
-import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 import { uploadDialogMode, signInDialogMode } from "$/store/layout";
 import { user } from "$/store/auth";
 import { redirect } from "@sveltejs/kit";

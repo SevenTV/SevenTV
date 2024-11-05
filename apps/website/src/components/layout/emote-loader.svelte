@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { EmoteSearchResult } from "$/gql/graphql";
 	import { emotesLayout } from "$/store/layout";
-	import { getContextClient, type Client } from "@urql/svelte";
 	import EmotePreview from "../emote-preview.svelte";
 	import EmoteContainer from "./emote-container.svelte";
 	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";
@@ -11,7 +10,7 @@
 	const PER_PAGE = 36;
 
 	interface Props {
-		load: (client: Client, page: number, perPage: number) => Promise<EmoteSearchResult>;
+		load: (page: number, perPage: number) => Promise<EmoteSearchResult>;
 	}
 
 	let { load }: Props = $props();
@@ -27,10 +26,8 @@
 		identifier++;
 	}
 
-	const client = getContextClient();
-
 	function handleInfinite(event: InfiniteEvent) {
-		load(client, page++, PER_PAGE)
+		load(page++, PER_PAGE)
 			.then((result) => {
 				if (results) {
 					results.pageCount = result.pageCount;

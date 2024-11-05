@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { theme } from "$/store/layout";
-	import { logout, user } from "$/store/auth";
+	import { logout, user } from "$/lib/auth";
 	import Role from "../profile/role.svelte";
 	import { fade } from "svelte/transition";
 	import {

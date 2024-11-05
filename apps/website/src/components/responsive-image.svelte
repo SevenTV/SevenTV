@@ -47,8 +47,6 @@
 		bestSupported: Image | null;
 		variants: { type: string; srcSet: string; media: string }[];
 	} {
-		console.log("prepareVariants");
-
 		if (!images) return { bestSupported: null, variants: [] };
 
 		const animated = images.some((i) => i.frameCount > 1);
@@ -104,14 +102,6 @@
 	}
 
 	let preparedVariants = $derived(prepareVariants(images));
-
-	$effect(() => {
-		console.log("images", images);
-	});
-
-	$effect(() => {
-		console.log("variants", preparedVariants);
-	});
 </script>
 
 <picture bind:clientWidth={pictureWidth} {...restProps}>

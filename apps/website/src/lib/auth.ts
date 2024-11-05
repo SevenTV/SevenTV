@@ -1,27 +1,39 @@
 import { graphql } from "$/gql";
 import type { User } from "$/gql/graphql";
 import { PUBLIC_REST_API_V4 } from "$env/static/public";
-import { Client, getContextClient } from "@urql/svelte";
 import { derived, writable, type Readable } from "svelte/store";
+import { gqlClient } from "./gql";
+import { browser } from "$app/environment";
+
+const LOCALSTORAGE_KEY = "7tv-token";
 
 // Stores should be considered loading when their value is `undefined`
 // Null means the value is known to be empty
 
-// const client = getContextClient();
-
-export const sessionToken = writable<string | null>(undefined);
+export const sessionToken = writable<string | null | undefined>(browser ? window.localStorage.getItem(LOCALSTORAGE_KEY) : undefined);
 export const user: Readable<User | null | undefined> = derived(sessionToken, (value, set) => {
-	console.log("fetching user", value);
-
-	if (value === undefined) {
+	if (!value) {
+		if (value === null) {
+			set(null);
+		}
 		return;
 	}
 
-	// fetchMe(client).then((user) => set(user));
+	fetchMe().then((user) => set(user));
 });
 
-export async function fetchMe(client: Client): Promise<User | null> {
-	const res = await client
+// Save session token to localstorage when changed
+sessionToken.subscribe(async (token) => {
+	if (token) {
+		localStorage.setItem(LOCALSTORAGE_KEY, token);
+	} else if (token === null) {
+		// Only reset session token when set to null (not undefined)
+		localStorage.removeItem(LOCALSTORAGE_KEY);
+	}
+});
+
+export async function fetchMe(): Promise<User | null> {
+	const res = await gqlClient()
 		.query(
 			graphql(`
 				query Me {
@@ -83,8 +95,6 @@ export async function logout() {
 		console.error(await res.json());
 		return;
 	}
-
-	console.log("logged out");
 
 	sessionToken.set(null);
 }

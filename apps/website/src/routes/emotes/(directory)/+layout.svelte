@@ -10,14 +10,14 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
-	import { user } from "$/store/auth";
+	import { user } from "$/lib/auth";
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";
 
 	let { children }: { children: Snippet } = $props();
 
-	let query: string | null = $state($page.url.searchParams.get("q"));
+	let query: string | undefined = $state($page.url.searchParams.get("q") ?? undefined);
 	let tags: string[] = $state($page.url.searchParams.get("t")?.split(TAGS_SEPERATOR) ?? []);
 	let animated: boolean = $state($page.url.searchParams.get("a") == "1");
 	let staticFilter: boolean = $state($page.url.searchParams.get("s") == "1");

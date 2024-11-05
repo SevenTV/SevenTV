@@ -1,7 +1,7 @@
 import { error, redirect } from "@sveltejs/kit";
 import type { PageLoadEvent } from "./$types";
 import { PUBLIC_REST_API_V4 } from "$env/static/public";
-import { sessionToken } from "$/store/auth";
+import { sessionToken } from "$/lib/auth";
 
 export async function load({ url, fetch }: PageLoadEvent) {
 	const errorName = url.searchParams.get("error");

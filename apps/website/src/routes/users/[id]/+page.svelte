@@ -3,12 +3,12 @@
 	import { graphql } from "$/gql";
 	import type { PageData } from "./$types";
 	import type { Emote, EmoteSearchResult } from "$/gql/graphql";
-	import type { Client } from "@urql/svelte";
+	import { gqlClient } from "$/lib/gql";
 
 	let { data }: { data: PageData } = $props();
 
-	function load(client: Client, page: number, _perPage: number): Promise<EmoteSearchResult> {
-		return client
+	function load(page: number, _perPage: number): Promise<EmoteSearchResult> {
+		return gqlClient()
 			.query(
 				graphql(`
 					query UserActiveEmotes($id: Id!, $page: Int!) {

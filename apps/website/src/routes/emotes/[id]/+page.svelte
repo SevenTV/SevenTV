@@ -8,8 +8,8 @@
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
 	import type { UserSearchResult } from "$/gql/graphql";
-	import { getContextClient } from "@urql/svelte";
 	import { graphql } from "$/gql";
+	import { gqlClient } from "$/lib/gql";
 
 	const PAGE_SIZE = 24;
 
@@ -28,10 +28,8 @@
 		});
 	});
 
-	const client = getContextClient();
-
 	async function queryChannels(emoteId: string, page: number): Promise<UserSearchResult> {
-		const result = await client
+		const result = await gqlClient()
 			.query(
 				graphql(`
 					query EmoteChannels($emoteId: Id!, $page: Int!, $perPage: Int!) {

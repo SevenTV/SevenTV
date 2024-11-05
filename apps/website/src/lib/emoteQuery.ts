@@ -1,11 +1,10 @@
 import { graphql } from "$/gql";
 import type { EmoteSearchResult, Filters, SortBy } from "$/gql/graphql";
-import { Client } from "@urql/svelte";
+import { gqlClient } from "./gql";
 
 let timeout: NodeJS.Timeout | number | null = null;
 
 export async function queryEmotes(
-	client: Client,
 	query: string | null,
 	tags: string[],
 	sort: SortBy,
@@ -13,8 +12,6 @@ export async function queryEmotes(
 	page: number | null,
 	perPage: number,
 ): Promise<EmoteSearchResult> {
-	console.log("queryEmotes", query, tags, sort, filters, page, perPage);
-
 	if (timeout) {
 		clearTimeout(timeout);
 	}
@@ -23,7 +20,7 @@ export async function queryEmotes(
 
 	return new Promise((resolve, reject) => {
 		timeout = setTimeout(async () => {
-			const res = await client
+			const res = await gqlClient()
 				.query(
 					graphql(`
 						query EmoteSearch(

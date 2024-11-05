@@ -2,12 +2,11 @@ import { graphql } from "$/gql";
 import { error } from "@sveltejs/kit";
 import type { LayoutLoadEvent } from "./$types";
 import type { User } from "$/gql/graphql";
+import { gqlClient } from "$/lib/gql";
 
-export async function load({ parent, fetch, params }: LayoutLoadEvent) {
-	const client = (await parent()).client;
-
+export async function load({ fetch, params }: LayoutLoadEvent) {
 	// TODO: Don't do this in load function because it takes too long
-	const res = await client
+	const res = await gqlClient()
 		.query(
 			graphql(`
 				query OneUser($id: Id!) {

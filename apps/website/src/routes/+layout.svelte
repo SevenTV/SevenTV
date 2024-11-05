@@ -20,12 +20,9 @@
 	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
 	import { t } from "svelte-i18n";
 	import type { LayoutData } from "./$types";
-	import { setContextClient } from "@urql/svelte";
 	import type { Snippet } from "svelte";
 
-	let { data, children }: { data: LayoutData; children: Snippet } = $props();
-
-	setContextClient(data.client);
+	let { children }: { children: Snippet } = $props();
 
 	beforeNavigate((nav) => {
 		// Hide menu on navigate

@@ -1,13 +1,11 @@
 import { graphql } from "$/gql";
 import type { LayoutLoadEvent } from "./$types";
 import type { Emote } from "$/gql/graphql";
-import { error } from "@sveltejs/kit";
+import { gqlClient } from "$/lib/gql";
 
-export async function load({ parent, fetch, params }: LayoutLoadEvent) {
-	const client = (await parent()).client;
-
+export async function load({ fetch, params }: LayoutLoadEvent) {
 	// TODO: Don't do this in load function because it takes too long
-	const req = client
+	const req = gqlClient()
 		.query(
 			graphql(`
 				query OneEmote($id: Id!) {

@@ -4,7 +4,7 @@
 	import Badge from "../badge.svelte";
 	import HideOn from "../hide-on.svelte";
 	import { showMobileMenu, uploadDialogMode, signInDialogMode } from "$/store/layout";
-	import { user } from "$/store/auth";
+	import { user } from "$/lib/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
 	import DirectMessages from "../direct-messages/direct-messages.svelte";

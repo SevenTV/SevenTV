@@ -1,10 +1,15 @@
 import { createClient, fetchExchange, cacheExchange, type Exchange, Client } from "@urql/svelte";
 import { get } from "svelte/store";
 import { authExchange } from "@urql/exchange-auth";
-import { sessionToken } from "$/store/auth";
+import { sessionToken } from "$/lib/auth";
 import { PUBLIC_GQL_API_V4 } from "$env/static/public";
 
-export function createGqlClient(): Client {
+// non-reactive on purpose
+let client: Client | undefined = undefined;
+
+export function gqlClient(): Client {
+	if (client) return client;
+
 	const exchanges: Exchange[] = [cacheExchange];
 
 	exchanges.push(
@@ -29,8 +34,10 @@ export function createGqlClient(): Client {
 
 	exchanges.push(fetchExchange);
 
-	return createClient({
+	client = createClient({
 		url: PUBLIC_GQL_API_V4,
 		exchanges,
 	});
+
+	return client;
 }
