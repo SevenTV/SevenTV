@@ -1,3 +1,4 @@
+import type { Role } from "$/gql/graphql";
 import { getNumberFormatter } from "svelte-i18n";
 
 export function priceFormat() {
@@ -16,4 +17,8 @@ export function numberFormat() {
 
 export function isMobileLayout(): boolean {
 	return window.matchMedia("screen and (max-width: 960px)").matches;
+}
+
+export function filterRoles(roles: Role[]) {
+	return roles.filter((r) => r.name !== "Default").reverse();
 }

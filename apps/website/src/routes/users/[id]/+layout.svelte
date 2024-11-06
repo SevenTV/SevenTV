@@ -50,7 +50,7 @@
 			<!-- <SealCheck size="0.8rem" /> -->
 		</span>
 		<div class="roles">
-			{#each data.user.roles.reverse() as role}
+			{#each data.user.roles as role}
 				<Role {role} />
 			{/each}
 		</div>

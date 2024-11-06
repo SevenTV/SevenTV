@@ -1,8 +1,9 @@
 import { graphql } from "$/gql";
 import { error } from "@sveltejs/kit";
 import type { LayoutLoadEvent } from "./$types";
-import type { User } from "$/gql/graphql";
+import type { Role, User } from "$/gql/graphql";
 import { gqlClient } from "$/lib/gql";
+import { filterRoles } from "$/lib/utils";
 
 export async function load({ fetch, params }: LayoutLoadEvent) {
 	// TODO: Don't do this in load function because it takes too long
@@ -91,6 +92,8 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 	if (!res.data.users.user) {
 		error(404, "User not found");
 	}
+
+	res.data.users.user.roles = filterRoles(res.data.users.user.roles as Role[]);
 
 	return {
 		user: res.data.users.user as User,

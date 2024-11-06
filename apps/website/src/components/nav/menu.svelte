@@ -26,6 +26,7 @@
 	import { PUBLIC_DEVELOPER_PORTAL } from "$env/static/public";
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import Spinner from "../spinner.svelte";
+	import { filterRoles } from "$/lib/utils";
 
 	let { onCloseRequest }: { onCloseRequest?: () => void } = $props();
 
@@ -52,6 +53,8 @@
 			onCloseRequest?.();
 		});
 	}
+
+	let reversedRoles = $derived(filterRoles($user?.roles || []));
 </script>
 
 <nav class="menu" transition:fade={{ duration: 100 }}>
@@ -61,7 +64,7 @@
 				<UserProfilePicture user={$user} size={3 * 16} style="grid-row: 1 / -1" />
 				<span class="name">{$user.mainConnection?.platformDisplayName}</span>
 				<div class="roles">
-					{#each $user.roles as role}
+					{#each reversedRoles as role}
 						<Role {role} />
 					{/each}
 				</div>
@@ -263,7 +266,7 @@
 			grid-row: 2;
 
 			display: flex;
-			// flex-wrap: wrap;
+			flex-wrap: wrap;
 			gap: 0.25rem;
 		}
 
