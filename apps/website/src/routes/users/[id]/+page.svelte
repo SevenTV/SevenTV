@@ -2,12 +2,12 @@
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
 	import { graphql } from "$/gql";
 	import type { PageData } from "./$types";
-	import type { Emote, EmoteSearchResult } from "$/gql/graphql";
+	import type { EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 
 	let { data }: { data: PageData } = $props();
 
-	function load(page: number, _perPage: number): Promise<EmoteSearchResult> {
+	function load(page: number, _perPage: number): Promise<EmoteSetEmoteSearchResult> {
 		return gqlClient()
 			.query(
 				graphql(`
@@ -17,6 +17,7 @@
 								style {
 									activeEmoteSet {
 										emotes(page: $page, perPage: 100) {
+											__typename
 											items {
 												alias
 												flags {
@@ -80,20 +81,7 @@
 					throw new Error("No emotes found");
 				}
 
-				return {
-					items: emotes.items
-						.filter((item) => item.emote)
-						.map((item) => {
-							const emote = item.emote!;
-
-							emote.defaultName = item.alias || emote!.defaultName;
-							emote.flags.defaultZeroWidth = item.flags.zeroWidth || emote.flags.defaultZeroWidth;
-
-							return emote as Emote;
-						}),
-					totalCount: emotes.totalCount,
-					pageCount: emotes.pageCount,
-				};
+				return emotes as EmoteSetEmoteSearchResult;
 			});
 	}
 </script>

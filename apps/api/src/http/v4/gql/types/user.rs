@@ -56,6 +56,23 @@ impl User {
 			.collect())
 	}
 
+	pub async fn owned_emote_sets<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<EmoteSet>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let mut emote_sets = global
+			.emote_set_by_user_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.unwrap_or_default();
+
+		emote_sets.sort_by(|a, b| a.id.cmp(&b.id));
+
+		Ok(emote_sets.into_iter().map(Into::into).collect())
+	}
+
 	pub async fn style<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserStyle, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

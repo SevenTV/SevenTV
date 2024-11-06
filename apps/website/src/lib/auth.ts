@@ -10,7 +10,9 @@ const LOCALSTORAGE_KEY = "7tv-token";
 // Stores should be considered loading when their value is `undefined`
 // Null means the value is known to be empty
 
-export const sessionToken = writable<string | null | undefined>(browser ? window.localStorage.getItem(LOCALSTORAGE_KEY) : undefined);
+export const sessionToken = writable<string | null | undefined>(
+	browser ? window.localStorage.getItem(LOCALSTORAGE_KEY) : undefined,
+);
 export const user: Readable<User | null | undefined> = derived(sessionToken, (value, set) => {
 	if (!value) {
 		if (value === null) {

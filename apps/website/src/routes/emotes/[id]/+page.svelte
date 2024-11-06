@@ -23,6 +23,7 @@
 	let channels: Promise<UserSearchResult> | undefined = $state();
 
 	$effect(() => {
+		page; // trigger reactivity when page changes
 		data.streamed.emote.then((emote) => {
 			channels = queryChannels(emote.id, page);
 		});

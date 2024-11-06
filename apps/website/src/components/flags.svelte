@@ -53,6 +53,17 @@
 
 		return flags;
 	}
+
+	export function emoteSetToFlags(set: EmoteSet): string[] {
+		switch (set.kind) {
+			case EmoteSetKind.Global:
+				return ["global"];
+			case EmoteSetKind.Personal:
+				return ["personal"];
+			default:
+				return [];
+		}
+	}
 </script>
 
 <script lang="ts">
@@ -72,7 +83,7 @@
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
-	import type { Emote } from "$/gql/graphql";
+	import { EmoteSetKind, type Emote, type EmoteSet } from "$/gql/graphql";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	const names: { [key: string]: string } = {
@@ -105,8 +116,8 @@
 
 	let { iconOnly = false, flags = [], add, ...restProps }: Props = $props();
 
-	$effect(() => {
-		flags.sort((a, b) => {
+	let sortedFlags = $derived(
+		flags.toSorted((a, b) => {
 			const keys = Object.keys(icons);
 			const aIndex = keys.indexOf(a);
 			const bIndex = keys.indexOf(b);
@@ -120,12 +131,12 @@
 				return -1;
 			}
 			return aIndex - bIndex;
-		});
-	});
+		}),
+	);
 </script>
 
 <div class="flags" {...restProps}>
-	{#each flags as flag}
+	{#each sortedFlags as flag}
 		{#if iconOnly && icons[flag]}
 			<span class="flag icon-only" style="color: {colors[flag]}">
 				<!-- svelte-ignore svelte_component_deprecated -->

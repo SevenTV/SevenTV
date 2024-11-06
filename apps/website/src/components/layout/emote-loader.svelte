@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { EmoteSearchResult } from "$/gql/graphql";
+	import type { Emote, EmoteSearchResult, EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import { emotesLayout } from "$/lib/layout";
 	import EmotePreview from "../emote-preview.svelte";
 	import EmoteContainer from "./emote-container.svelte";
@@ -10,10 +10,11 @@
 	const PER_PAGE = 36;
 
 	interface Props {
-		load: (page: number, perPage: number) => Promise<EmoteSearchResult>;
+		load: (page: number, perPage: number) => Promise<EmoteSearchResult | EmoteSetEmoteSearchResult>;
+		scrollable?: boolean;
 	}
 
-	let { load }: Props = $props();
+	let { load, scrollable = !isMobileLayout() }: Props = $props();
 
 	let page = $state(1);
 	let results: EmoteSearchResult | undefined = $state();
@@ -29,12 +30,31 @@
 	function handleInfinite(event: InfiniteEvent) {
 		load(page++, PER_PAGE)
 			.then((result) => {
+				// Convert EmoteSetEmoteSearchResult to EmoteSearchResult
+				if (result.__typename === "EmoteSetEmoteSearchResult") {
+					// @ts-ignore I know what I'm doing
+					result.__typename = "EmoteSearchResult";
+					// @ts-ignore
+					result.items = result.items
+						.filter((item) => item.emote)
+						.map((item) => {
+							const emote = item.emote!;
+
+							emote.defaultName = item.alias || emote!.defaultName;
+							emote.flags.defaultZeroWidth = item.flags.zeroWidth || emote.flags.defaultZeroWidth;
+
+							return emote as Emote;
+						}) as Emote[];
+				}
+
+				result = result as EmoteSearchResult;
+
 				if (results) {
 					results.pageCount = result.pageCount;
 					results.totalCount = result.totalCount;
 					results.items.push(...result.items);
 				} else {
-					results = result;
+					results = result as EmoteSearchResult;
 				}
 
 				if (results.items.length > 0) {
@@ -51,7 +71,7 @@
 	}
 </script>
 
-<EmoteContainer scrollable={!isMobileLayout()} layout={$emotesLayout} style="flex-grow: 1">
+<EmoteContainer {scrollable} layout={$emotesLayout} style="flex-grow: 1">
 	{#if results}
 		{#each results.items as data, i}
 			<EmotePreview {data} index={i} emoteOnly={$emotesLayout === "small-grid"} />

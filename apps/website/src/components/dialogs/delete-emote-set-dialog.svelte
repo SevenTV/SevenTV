@@ -11,7 +11,7 @@
 <Dialog width={40} bind:mode>
 	<form class="layout">
 		<div class="preview">
-			<EmoteSetPreview />
+			<!-- <EmoteSetPreview /> -->
 		</div>
 		<div class="content">
 			<h1>{$t("dialogs.delete_emote_or_set.title", { values: { name: "Cat Emotes" } })}</h1>

@@ -6,10 +6,7 @@
 	import { user } from "$/lib/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
-	import {
-		List,
-		PlusSquare,
-	} from "phosphor-svelte";
+	import { List, PlusSquare } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import { type DialogMode } from "../dialogs/dialog.svelte";

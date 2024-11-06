@@ -13,7 +13,7 @@
 	import Select from "$/components/input/select.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
-	import Flags from "$/components/flags.svelte";
+	import Flags, { emoteSetToFlags } from "$/components/flags.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
@@ -21,6 +21,10 @@
 	import CopyEmotesDialog from "$/components/dialogs/copy-emotes-dialog.svelte";
 	import RemoveEmotesDialog from "$/components/dialogs/remove-emotes-dialog.svelte";
 	import { t } from "svelte-i18n";
+	import { gqlClient } from "$/lib/gql";
+	import { graphql } from "$/gql";
+	import EmoteLoader from "$/components/layout/emote-loader.svelte";
+	import type { EmoteSetEmoteSearchResult } from "$/gql/graphql";
 
 	let { data }: { data: PageData } = $props();
 
@@ -29,10 +33,78 @@
 	let editDialogMode: DialogMode = $state("hidden");
 	let copyEmotesDialogMode: DialogMode = $state("hidden");
 	let removeEmotesDialogMode: DialogMode = $state("hidden");
+
+	async function queryEmotes(page: number, perPage: number) {
+		const res = await gqlClient().query(
+			graphql(`
+				query EmotesInSet($id: Id!, $page: Int!, $perPage: Int!) {
+					emoteSets {
+						emoteSet(id: $id) {
+							emotes(page: $page, perPage: $perPage) {
+								__typename
+								items {
+									alias
+									flags {
+										zeroWidth
+									}
+									emote {
+										id
+										defaultName
+										owner {
+											mainConnection {
+												platformDisplayName
+											}
+											highestRoleColor {
+												hex
+											}
+										}
+										flags {
+											# animated
+											# approvedPersonal
+											defaultZeroWidth
+											# deniedPersonal
+											# nsfw
+											# private
+											publicListed
+										}
+										images {
+											url
+											mime
+											size
+											scale
+											width
+											frameCount
+										}
+										ranking(ranking: TRENDING_WEEKLY)
+									}
+								}
+								totalCount
+								pageCount
+							}
+						}
+					}
+				}
+			`),
+			{ id: data.emoteSet.id, page, perPage },
+		);
+
+		if (res.error || !res.data) {
+			console.error(res.error);
+			throw res.error;
+		}
+
+		const emotes = res.data.emoteSets.emoteSet?.emotes;
+
+		if (!emotes) {
+			throw new Error("No emotes found");
+		}
+
+		return emotes as EmoteSetEmoteSearchResult;
+	}
 </script>
 
 <svelte:head>
-	<title>{data.id} - {$t("page_titles.suffix")}</title>
+	<title>{data.emoteSet.name} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <EditEmoteSetDialog bind:mode={editDialogMode} />
@@ -40,13 +112,18 @@
 <RemoveEmotesDialog bind:mode={removeEmotesDialogMode} />
 <div class="layout">
 	<div class="set-info">
-		<h1>{data.id}</h1>
-		<Flags flags={["verified", "public"]} style="position: absolute; top: 1rem; right: 1rem;" />
-		<Tags tags={["lorem", "tag"]} />
-		<div class="progress">
-			<progress max="600" value="100"></progress>
-			100/600
-		</div>
+		<h1>{data.emoteSet.name}</h1>
+		<Flags
+			flags={emoteSetToFlags(data.emoteSet)}
+			style="position: absolute; top: 1rem; right: 1rem;"
+		/>
+		<Tags tags={data.emoteSet.tags} />
+		{#if data.emoteSet.capacity}
+			<div class="progress">
+				<progress value={data.emoteSet.emotes.totalCount} max={data.emoteSet.capacity}></progress>
+				{data.emoteSet.emotes.totalCount}/{data.emoteSet.capacity}
+			</div>
+		{/if}
 	</div>
 	<div class="controls">
 		<div class="buttons">
@@ -136,16 +213,7 @@
 		</div>
 	</div>
 	<div class="content">
-		<!-- <EmoteContainer layout={$emotesLayout}>
-			{#each Array(100) as _, i}
-				<EmotePreview
-					name="emoteSetEmote{i}"
-					index={i}
-					emoteOnly={$emotesLayout === "small-grid"}
-					{selectionMode}
-				/>
-			{/each}
-		</EmoteContainer> -->
+		<EmoteLoader load={queryEmotes} scrollable={false} />
 	</div>
 </div>
 
@@ -158,32 +226,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
-	}
-
-	progress[value] {
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		appearance: none;
-		border: none;
-
-		width: 100%;
-		height: 0.5rem;
-
-		&,
-		&::-webkit-progress-bar {
-			border-radius: 0.25rem;
-			background-color: var(--secondary);
-		}
-
-		&::-moz-progress-bar {
-			border-radius: 0.25rem;
-			background-color: var(--primary);
-		}
-
-		&::-webkit-progress-value {
-			border-radius: 0.25rem;
-			background-color: var(--primary);
-		}
 	}
 
 	.set-info {

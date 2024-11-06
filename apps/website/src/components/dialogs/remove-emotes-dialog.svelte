@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { type Layout } from "$/lib/layout";
-	import EmoteContainer from "../layout/emote-container.svelte";
-	import EmotePreview from "../emote-preview.svelte";
 	import Button from "../input/button.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
