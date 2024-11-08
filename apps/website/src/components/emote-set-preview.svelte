@@ -121,6 +121,10 @@
 
 			background-color: var(--bg-light);
 
+			&::-webkit-progress-bar {
+				background-color: var(--bg-light);
+			}
+
 			&::-moz-progress-bar {
 				background-color: var(--secondary);
 			}

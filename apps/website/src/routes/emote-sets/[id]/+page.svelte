@@ -1,22 +1,8 @@
 <script lang="ts">
-	import Button from "$/components/input/button.svelte";
 	import Tags from "$/components/emotes/tags.svelte";
-	import {
-		Copy,
-		Lightning,
-		LightningSlash,
-		MagnifyingGlass,
-		NotePencil,
-		Trash,
-	} from "phosphor-svelte";
 	import type { PageData } from "./$types";
-	import Select from "$/components/input/select.svelte";
-	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
-	import Toggle from "$/components/input/toggle.svelte";
 	import Flags, { emoteSetToFlags } from "$/components/flags.svelte";
-	import HideOn from "$/components/hide-on.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
-	import TextInput from "$/components/input/text-input.svelte";
 	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 	import CopyEmotesDialog from "$/components/dialogs/copy-emotes-dialog.svelte";
 	import RemoveEmotesDialog from "$/components/dialogs/remove-emotes-dialog.svelte";
@@ -28,8 +14,8 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let enabled = $state(false);
-	let selectionMode = $state(false);
+	// let enabled = $state(false);
+	// let selectionMode = $state(false);
 	let editDialogMode: DialogMode = $state("hidden");
 	let copyEmotesDialogMode: DialogMode = $state("hidden");
 	let removeEmotesDialogMode: DialogMode = $state("hidden");
@@ -125,7 +111,7 @@
 			</div>
 		{/if}
 	</div>
-	<div class="controls">
+	<!-- <div class="controls">
 		<div class="buttons">
 			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnDesktop>
 				{$t("labels.select")}
@@ -211,7 +197,7 @@
 			</TextInput>
 			<LayoutButtons />
 		</div>
-	</div>
+	</div> -->
 	<div class="content">
 		<EmoteLoader load={queryEmotes} scrollable={false} />
 	</div>
@@ -259,20 +245,22 @@
 		}
 	}
 
-	.controls {
-		display: flex;
-		gap: 0.5rem;
-		flex-wrap: wrap-reverse;
-		justify-content: space-between;
-	}
+	// .controls {
+	// 	display: flex;
+	// 	gap: 0.5rem;
+	// 	flex-wrap: wrap-reverse;
+	// 	justify-content: space-between;
+	// }
 
-	.buttons {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-	}
+	// .buttons {
+	// 	display: flex;
+	// 	gap: 0.5rem;
+	// 	align-items: center;
+	// }
 
 	.content {
+		flex-grow: 1;
+
 		overflow: auto;
 		overflow: overlay;
 		scrollbar-gutter: stable;

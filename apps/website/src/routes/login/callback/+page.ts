@@ -19,35 +19,25 @@ export async function load({ url, fetch }: PageLoadEvent) {
 		error(400, { message: "Invalid URL" });
 	}
 
-	const data = await fetch(`${PUBLIC_REST_API_V4}/auth/login/finish`, {
+	const req = fetch(`${PUBLIC_REST_API_V4}/auth/login/finish`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify({ platform, code, state }),
 		credentials: "include",
-	}).then((res) => res.json());
+	}).then((res) => res.json()).then((res) => {
+		if (res.error || !res.token || typeof res.token !== "string") {
+			console.error(res);
+			throw res.error;
+		}
 
-	if (data.error || !data.token) {
-		console.error(data);
-		error(500, { message: "Sign-in Error", details: data.error });
-	}
+		return res.token as string;
+	});
 
-	sessionToken.set(data.token);
-
-	let payload = null;
-	const splitToken = data.token.split(".");
-	if (splitToken[1]) {
-		try {
-			payload = JSON.parse(atob(splitToken[1]));
-		} catch (e) {
-			console.error(e);
+	return {
+		streamed: {
+			loginRequest: req,
 		}
 	}
-
-	if (payload.sub) {
-		redirect(303, `/users/${payload.sub}`);
-	}
-
-	redirect(303, "/");
 }
