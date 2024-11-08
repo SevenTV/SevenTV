@@ -101,13 +101,13 @@
 					{/snippet}
 				</Button>
 			</div>
-			<HideOn mobile>
+			<!-- <HideOn mobile>
 				<TextInput placeholder={$t("labels.search")} style="max-width: 12.5rem">
 					{#snippet icon()}
 						<MagnifyingGlass />
 					{/snippet}
 				</TextInput>
-			</HideOn>
+			</HideOn> -->
 		</div>
 	{/if}
 </div>

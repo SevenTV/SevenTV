@@ -12,9 +12,16 @@
 	interface Props {
 		load: (page: number, perPage: number) => Promise<EmoteSearchResult | EmoteSetEmoteSearchResult>;
 		scrollable?: boolean;
+		selectionMode?: boolean;
+		selectionMap?: { [key: string]: boolean };
 	}
 
-	let { load, scrollable = !isMobileLayout() }: Props = $props();
+	let {
+		load,
+		scrollable = !isMobileLayout(),
+		selectionMode = false,
+		selectionMap = $bindable({}),
+	}: Props = $props();
 
 	let page = $state(1);
 	let results: EmoteSearchResult | undefined = $state();
@@ -64,6 +71,10 @@
 				if (results.pageCount <= page) {
 					event.detail.complete();
 				}
+
+				for (let item of results.items) {
+					selectionMap[item.id] = selectionMap[item.id] || false;
+				}
 			})
 			.catch(() => {
 				event.detail.error();
@@ -74,7 +85,13 @@
 <EmoteContainer {scrollable} layout={$emotesLayout} style="flex-grow: 1">
 	{#if results}
 		{#each results.items as data, i}
-			<EmotePreview {data} index={i} emoteOnly={$emotesLayout === "small-grid"} />
+			<EmotePreview
+				{data}
+				index={i}
+				emoteOnly={$emotesLayout === "small-grid"}
+				{selectionMode}
+				selected={selectionMap[data.id]}
+			/>
 		{/each}
 	{/if}
 	<div class="loading">

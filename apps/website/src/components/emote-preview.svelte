@@ -30,10 +30,15 @@
 
 	let highlight = $derived(determineHighlightColor(flags, ignoredFlagsForHighlight));
 
-	$effect(() => {
-		if (selectionMode) {
-			selected = false;
+	let title = $derived.by(() => {
+		let title = data.defaultName;
+		const owner = data.owner?.mainConnection?.platformDisplayName;
+
+		if (owner) {
+			title += ` by ${owner}`;
 		}
+
+		return title;
 	});
 
 	function onClick(e: MouseEvent) {
@@ -49,13 +54,14 @@
 	data-sveltekit-preload-data="tap"
 	class="emote"
 	class:emote-only={emoteOnly}
-	class:selected
+	class:selected={selectionMode && selected}
+	draggable={!selected}
 	style={highlight
 		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
 		: "--highlight: transparent; --highlight-active: var(--border-active);"}
 	style:background-color="var(--bg-{bg})"
-	title={data.defaultName}
 	onclick={onClick}
+	{title}
 	{...restProps}
 >
 	<ResponsiveImage images={data.images} {index} />
@@ -98,16 +104,17 @@
 		border: 1px solid transparent;
 		border-radius: 0.25rem;
 		cursor: pointer;
+		user-select: none;
 
 		border-color: var(--highlight);
-
-		&.selected {
-			border-color: var(--primary);
-		}
 
 		&:hover,
 		&:focus-visible {
 			border-color: var(--highlight-active);
+		}
+
+		&.selected {
+			border-color: var(--primary);
 		}
 
 		& > :global(picture) {

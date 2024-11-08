@@ -113,10 +113,10 @@
 			<MenuButton showCaret onclick={(e) => setMenu(e, "theme")}>
 				{#if $theme === "system-theme"}
 					<Sliders />
-				{:else if $theme === "dark-theme"}
-					<Moon />
 				{:else if $theme === "light-theme"}
 					<Sun />
+				{:else}
+					<Moon />
 				{/if}
 				{$t("common.theme")}
 			</MenuButton>

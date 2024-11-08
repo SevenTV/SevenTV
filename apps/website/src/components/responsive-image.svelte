@@ -25,6 +25,7 @@
 		round?: boolean;
 		borderColor?: string;
 		index?: number;
+		draggable?: boolean;
 	} & HTMLAttributes<HTMLPictureElement>;
 
 	let {
@@ -34,6 +35,7 @@
 		round = false,
 		borderColor,
 		index = 0,
+		draggable = false,
 		...restProps
 	}: Props = $props();
 
@@ -127,6 +129,7 @@
 		style:animation-delay="{-index * 10}ms"
 		onload={() => (loading = false)}
 		class:loading-animation={loading}
+		{draggable}
 		{width}
 		{height}
 	/>

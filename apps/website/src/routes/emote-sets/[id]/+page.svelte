@@ -11,11 +11,15 @@
 	import { graphql } from "$/gql";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
 	import type { EmoteSetEmoteSearchResult } from "$/gql/graphql";
+	import Button from "$/components/input/button.svelte";
+	import Toggle from "$/components/input/toggle.svelte";
+	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 
 	let { data }: { data: PageData } = $props();
 
 	// let enabled = $state(false);
-	// let selectionMode = $state(false);
+	let selectionMode = $state(false);
+	let selectionMap = $state({});
 	let editDialogMode: DialogMode = $state("hidden");
 	let copyEmotesDialogMode: DialogMode = $state("hidden");
 	let removeEmotesDialogMode: DialogMode = $state("hidden");
@@ -89,6 +93,8 @@
 	}
 </script>
 
+{@debug selectionMap}
+
 <svelte:head>
 	<title>{data.emoteSet.name} - {$t("page_titles.suffix")}</title>
 </svelte:head>
@@ -111,7 +117,7 @@
 			</div>
 		{/if}
 	</div>
-	<!-- <div class="controls">
+	<div class="controls">
 		<div class="buttons">
 			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnDesktop>
 				{$t("labels.select")}
@@ -119,7 +125,7 @@
 					<Toggle bind:value={selectionMode} />
 				{/snippet}
 			</Button>
-			<HideOn mobile={selectionMode}>
+			<!-- <HideOn mobile={selectionMode}>
 				<Button primary onclick={() => (enabled = !enabled)}>
 					{#if enabled}
 						{$t("labels.disable")}
@@ -158,14 +164,14 @@
 						<Copy />
 					{/snippet}
 				</Button>
-			{/if}
+			{/if} -->
 			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
 				{$t("labels.selection_mode")}
 				{#snippet iconRight()}
 					<Toggle bind:value={selectionMode} />
 				{/snippet}
 			</Button>
-			{#if selectionMode}
+			<!-- {#if selectionMode}
 				<Button onclick={() => (copyEmotesDialogMode = "shown")}>
 					{#snippet icon()}
 						<Copy />
@@ -181,10 +187,10 @@
 						<Trash />
 					{/snippet}
 				</Button>
-			{/if}
+			{/if} -->
 		</div>
 		<div class="buttons">
-			<Select
+			<!-- <Select
 				options={[
 					{ value: "none", label: $t("labels.no_filters") },
 					{ value: "filters", label: $t("labels.filters") },
@@ -194,12 +200,12 @@
 				{#snippet icon()}
 					<MagnifyingGlass />
 				{/snippet}
-			</TextInput>
+			</TextInput> -->
 			<LayoutButtons />
 		</div>
-	</div> -->
+	</div>
 	<div class="content">
-		<EmoteLoader load={queryEmotes} scrollable={false} />
+		<EmoteLoader load={queryEmotes} scrollable={false} {selectionMode} bind:selectionMap />
 	</div>
 </div>
 
@@ -245,18 +251,18 @@
 		}
 	}
 
-	// .controls {
-	// 	display: flex;
-	// 	gap: 0.5rem;
-	// 	flex-wrap: wrap-reverse;
-	// 	justify-content: space-between;
-	// }
+	.controls {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap-reverse;
+		justify-content: space-between;
+	}
 
-	// .buttons {
-	// 	display: flex;
-	// 	gap: 0.5rem;
-	// 	align-items: center;
-	// }
+	.buttons {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
 
 	.content {
 		flex-grow: 1;

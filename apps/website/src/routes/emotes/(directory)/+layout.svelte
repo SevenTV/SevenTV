@@ -114,7 +114,7 @@
 					<Smiley weight="fill" />
 				{/snippet}
 			</TabLink>
-			<TabLink
+			<!-- <TabLink
 				href="/emotes/sets"
 				title={$t("common.emote_sets", { values: { count: 2 } })}
 				big
@@ -124,8 +124,8 @@
 				{#snippet active()}
 					<FolderSimple weight="fill" />
 				{/snippet}
-			</TabLink>
-			{#if $user}
+			</TabLink> -->
+			<!-- {#if $user}
 				<TabLink
 					href="/emotes/bookmarked"
 					title={$t("pages.directory.bookmarked")}
@@ -137,7 +137,7 @@
 						<BookmarkSimple weight="fill" />
 					{/snippet}
 				</TabLink>
-			{/if}
+			{/if} -->
 		</nav>
 		<hr />
 		<Expandable title={$t("labels.search")} expanded={true}>

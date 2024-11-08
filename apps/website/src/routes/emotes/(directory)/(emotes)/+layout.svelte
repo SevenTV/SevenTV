@@ -36,12 +36,12 @@
 		</TabLink>
 	</nav>
 	<div class="buttons">
-		<Button secondary hideOnMobile onclick={() => ($defaultEmoteSetDialogMode = "shown")}>
+		<!-- <Button secondary hideOnMobile onclick={() => ($defaultEmoteSetDialogMode = "shown")}>
 			{#snippet icon()}
 				<FolderSimple />
 			{/snippet}
 			Personal Emotes
-		</Button>
+		</Button> -->
 		<LayoutButtons />
 	</div>
 </div>
