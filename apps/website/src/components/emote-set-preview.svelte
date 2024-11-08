@@ -39,7 +39,9 @@
 <a
 	href="/emote-sets/{data.id}"
 	class="emote-set"
-	style:border-color="{highlight}80"
+	style={highlight
+		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
+		: "--highlight: transparent; --highlight-active: var(--border-active);"}
 	style:background-color="var(--bg-{bg})"
 >
 	<div class="emotes" style:grid-template-columns="repeat({Math.min(data.capacity ?? 6, 6)}, 1fr)">
@@ -77,9 +79,11 @@
 		border-radius: 0.25rem;
 		cursor: pointer;
 
+		border-color: var(--highlight);
+
 		&:hover,
 		&:focus-visible {
-			border-color: var(--border-active);
+			border-color: var(--highlight-active);
 		}
 	}
 
