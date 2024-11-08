@@ -133,10 +133,10 @@
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<MenuButton href={PUBLIC_DEVELOPER_PORTAL}>
+			<!-- <MenuButton href={PUBLIC_DEVELOPER_PORTAL}>
 				<Code />
 				{$t("common.developer_portal")}
-			</MenuButton>
+			</MenuButton> -->
 			<!-- <MenuButton href="/contact">
 				<ChatDots />
 				{$t("common.contact")}

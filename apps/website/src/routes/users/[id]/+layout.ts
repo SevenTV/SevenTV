@@ -1,13 +1,11 @@
 import { graphql } from "$/gql";
-import { error } from "@sveltejs/kit";
 import type { LayoutLoadEvent } from "./$types";
 import type { Role, User } from "$/gql/graphql";
 import { gqlClient } from "$/lib/gql";
 import { filterRoles } from "$/lib/utils";
 
 export async function load({ fetch, params }: LayoutLoadEvent) {
-	// TODO: Don't do this in load function because it takes too long
-	const res = await gqlClient()
+	const req = gqlClient()
 		.query(
 			graphql(`
 				query OneUser($id: Id!) {
@@ -82,20 +80,26 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 				fetch,
 			},
 		)
-		.toPromise();
+		.toPromise()
+		.then((res) => {
+			if (res.error || !res.data) {
+				console.error(res.error);
+				throw "Failed to load user";
+			}
 
-	if (res.error || !res.data) {
-		console.error(res.error);
-		error(500, "Failed to load user");
-	}
+			if (!res.data.users.user) {
+				throw "User not found";
+			}
 
-	if (!res.data.users.user) {
-		error(404, "User not found");
-	}
+			res.data.users.user.roles = filterRoles(res.data.users.user.roles as Role[]);
 
-	res.data.users.user.roles = filterRoles(res.data.users.user.roles as Role[]);
+			return res.data.users.user as User;
+		});
 
 	return {
-		user: res.data.users.user as User,
+		id: params.id,
+		streamed: {
+			userRequest: req,
+		},
 	};
 }

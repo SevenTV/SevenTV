@@ -53,7 +53,7 @@
 		&.big {
 			--icon-left-padding: 1rem;
 			--gap: 0.75rem;
-			--input-block-padding: 0.75rem;
+			--input-block-padding: 0.6rem;
 		}
 
 		input,

@@ -49,7 +49,7 @@
 					}
 				`),
 				{
-					id: data.user.id,
+					id: data.id,
 				},
 			)
 			.toPromise()

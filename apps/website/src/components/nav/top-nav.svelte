@@ -2,17 +2,18 @@
 	import Logo from "$/components/icons/logo.svelte";
 	import TopTabs from "./top-tabs.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { showMobileMenu, uploadDialogMode, signInDialogMode } from "$/lib/layout";
+	import { showMobileMenu, signInDialogMode } from "$/lib/layout";
 	import { user } from "$/lib/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
-	import { List, PlusSquare } from "phosphor-svelte";
+	import { List, MagnifyingGlass } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import { type DialogMode } from "../dialogs/dialog.svelte";
 	import { t } from "svelte-i18n";
 	import Spinner from "../spinner.svelte";
 	import UserProfilePicture from "../user-profile-picture.svelte";
+	import TextInput from "../input/text-input.svelte";
 
 	let cartDialogMode: DialogMode = $state("hidden");
 </script>
@@ -34,15 +35,17 @@
 			/>
 		</HideOn>
 	</div>
-	<!-- <HideOn mobile>
+	<HideOn mobile>
 		<TextInput placeholder={$t("labels.search")} big style="flex: 0 1 20rem">
-			<MagnifyingGlass />
+			{#snippet icon()}
+				<MagnifyingGlass />
+			{/snippet}
 		</TextInput>
-	</HideOn> -->
+	</HideOn>
 	<div class="user-actions">
-		<!-- <Button hideOnDesktop>
+		<Button hideOnDesktop>
 			<MagnifyingGlass />
-		</Button> -->
+		</Button>
 		{#if $user}
 			<!-- <DropDown hideOnMobile>
 				<Button>
@@ -78,17 +81,17 @@
 				</Badge>
 			</Button> -->
 
-			<Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
+			<!-- <Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
 				{#snippet icon()}
 					<PlusSquare />
 				{/snippet}
-			</Button>
-			<Button secondary hideOnMobile onclick={() => ($uploadDialogMode = "shown")}>
+			</Button> -->
+			<!-- <Button secondary hideOnMobile onclick={() => ($uploadDialogMode = "shown")}>
 				{#snippet icon()}
 					<PlusSquare />
 				{/snippet}
 				{$t("dialogs.upload.upload")}
-			</Button>
+			</Button> -->
 		{:else if $user === undefined}
 			<Spinner />
 		{/if}

@@ -50,7 +50,7 @@
 		return res.data?.users.user?.ownedEmoteSets as EmoteSet[];
 	}
 
-	let sets = $derived(loadSets(data.user.id));
+	let sets = $derived(loadSets(data.id));
 </script>
 
 {#await sets}

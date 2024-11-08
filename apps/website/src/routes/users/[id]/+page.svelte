@@ -64,7 +64,7 @@
 					}
 				`),
 				{
-					id: data.user.id,
+					id: data.id,
 					page,
 				},
 			)

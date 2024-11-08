@@ -22,177 +22,125 @@
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import { UserEditorState } from "$/gql/graphql";
 	import type { Snippet } from "svelte";
+	import Spinner from "$/components/spinner.svelte";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	let connectionsExpanded = $state(false);
 	let editorsExpanded = $state(false);
-
-	let hasConnections = $derived(data.user.connections.length > 0);
-	let hasEditors = $derived(
-		data.user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted),
-	);
 </script>
 
 <svelte:head>
-	<title>{data.user.mainConnection?.platformDisplayName} - {$t("page_titles.suffix")}</title>
+	{#await data.streamed.userRequest}
+		<title>Loading... - {$t("page_titles.suffix")}</title>
+	{:then user}
+		<title>{user.mainConnection?.platformDisplayName} - {$t("page_titles.suffix")}</title>
+	{:catch}
+		<title>Error - {$t("page_titles.suffix")}</title>
+	{/await}
 </svelte:head>
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
-		<UserProfilePicture
-			user={data.user}
-			size={4.75 * 16}
-			style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
-		/>
-		<span class="name" style:color={data.user.highestRoleColor?.hex}>
-			{data.user.mainConnection?.platformDisplayName}
-			<!-- <SealCheck size="0.8rem" /> -->
-		</span>
-		<div class="roles">
-			{#each data.user.roles as role}
-				<Role {role} />
-			{/each}
-		</div>
-		<!-- <div class="data">
-			<span>
-				{numberFormat().format(1400)}
-				<br class="hide-on-mobile" />
-				<span class="text">{$t("common.followers", { values: { count: 1400 } })}</span>
+		{#await data.streamed.userRequest}
+			<div class="spinner-container">
+				<Spinner />
+			</div>
+		{:then user}
+			<UserProfilePicture
+				user={user}
+				size={4.75 * 16}
+				style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
+			/>
+			<span class="name" style:color={user.highestRoleColor?.hex}>
+				{user.mainConnection?.platformDisplayName}
+				<!-- <SealCheck size="0.8rem" /> -->
 			</span>
-			<span>
-				{numberFormat().format(1200000)}
-				<br class="hide-on-mobile" />
-				<span class="text">{$t("common.channels", { values: { count: 1_200_000 } })}</span>
-			</span>
-		</div> -->
-		<!-- <div class="buttons">
-			<Button primary style="flex-grow: 1; justify-content: center;">
-				<Heart />
-				{$t("labels.follow")}
-			</Button>
-			<Button secondary hideOnMobile>
-				<CaretDown />
-			</Button>
-			<Button secondary hideOnDesktop>
-				<Gift />
-				{$t("labels.gift")}
-			</Button>
-		</div> -->
-		<nav class="link-list hide-on-mobile">
-			{#if hasConnections}
-				<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
-					{#snippet icon()}
-						<Link />
-					{/snippet}
-					{$t("common.connections")}
-					{#snippet iconRight()}
-						{#if connectionsExpanded}
-							<CaretDown style="margin-left: auto" />
-						{:else}
-							<CaretRight style="margin-left: auto" />
-						{/if}
-					{/snippet}
+			<div class="roles">
+				{#each user.roles as role}
+					<Role {role} />
+				{/each}
+			</div>
+			<!-- <div class="data">
+				<span>
+					{numberFormat().format(1400)}
+					<br class="hide-on-mobile" />
+					<span class="text">{$t("common.followers", { values: { count: 1400 } })}</span>
+				</span>
+				<span>
+					{numberFormat().format(1200000)}
+					<br class="hide-on-mobile" />
+					<span class="text">{$t("common.channels", { values: { count: 1_200_000 } })}</span>
+				</span>
+			</div> -->
+			<!-- <div class="buttons">
+				<Button primary style="flex-grow: 1; justify-content: center;">
+					<Heart />
+					{$t("labels.follow")}
 				</Button>
-				{#if connectionsExpanded}
-					<div class="expanded">
-						<Connections user={data.user} />
-					</div>
-				{/if}
-			{/if}
-			{#if hasEditors}
-				<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
-					{#snippet icon()}
-						<UserCircle />
-					{/snippet}
-					{$t("common.editors")}
-					{#snippet iconRight()}
-						{#if editorsExpanded}
-							<CaretDown style="margin-left: auto" />
-						{:else}
-							<CaretRight style="margin-left: auto" />
-						{/if}
-					{/snippet}
+				<Button secondary hideOnMobile>
+					<CaretDown />
 				</Button>
-				{#if editorsExpanded}
-					<div class="expanded">
-						{#each data.user.editors as editor}
-							{#if editor.editor && editor.state === UserEditorState.Accepted}
-								<ChannelPreview size={1.5} user={editor.editor} />
+				<Button secondary hideOnDesktop>
+					<Gift />
+					{$t("labels.gift")}
+				</Button>
+			</div> -->
+			<nav class="link-list hide-on-mobile">
+				{#if user.connections.length > 0}
+					<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
+						{#snippet icon()}
+							<Link />
+						{/snippet}
+						{$t("common.connections")}
+						{#snippet iconRight()}
+							{#if connectionsExpanded}
+								<CaretDown style="margin-left: auto" />
+							{:else}
+								<CaretRight style="margin-left: auto" />
 							{/if}
-						{/each}
-					</div>
+						{/snippet}
+					</Button>
+					{#if connectionsExpanded}
+						<div class="expanded">
+							<Connections user={user} />
+						</div>
+					{/if}
 				{/if}
-			{/if}
-			{#if hasConnections || hasEditors}
-				<hr />
-			{/if}
-			<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.user.id}" big>
-				<Lightning />
-				{#snippet active()}
-					<Lightning weight="fill" />
-				{/snippet}
-			</TabLink>
-			<TabLink title={$t("pages.user.uploaded_emotes")} href="/users/{data.user.id}/uploaded" big>
-				<Upload />
-				{#snippet active()}
-					<Upload weight="fill" />
-				{/snippet}
-			</TabLink>
-			<TabLink
-				title={$t("common.emote_sets", { values: { count: 2 } })}
-				href="/users/{data.user.id}/emote-sets"
-				big
-			>
-				<FolderSimple />
-				{#snippet active()}
-					<FolderSimple weight="fill" />
-				{/snippet}
-			</TabLink>
-			<hr />
-			<TabLink title={$t("common.cosmetics")} href="/users/{data.user.id}/cosmetics" big>
-				<PaintBrush />
-				{#snippet active()}
-					<PaintBrush weight="fill" />
-				{/snippet}
-			</TabLink>
-			<TabLink title={$t("common.activity")} href="/users/{data.user.id}/activity" big>
-				<Pulse />
-				{#snippet active()}
-					<Pulse weight="fill" />
-				{/snippet}
-			</TabLink>
-			<!-- <TabLink title={$t("common.analytics")} href="/users/{data.user.id}/analytics" big>
-				<ChartLineUp />
-				<ChartLineUp weight="fill" />
-			</TabLink>
-			<TabLink title={$t("common.mod_comments")} href="/users/{data.user.id}/mod-comments" big>
-				<ChatCircleText />
-				<ChatCircleText weight="fill" />
-			</TabLink> -->
-		</nav>
-		<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
-			{#snippet icon()}
-				<DotsThreeVertical />
-			{/snippet}
-		</Button>
-	</aside>
-	<div class="content">
-		<div class="header hide-on-desktop">
-			<nav class="tabs">
-				<TabLink title={$t("pages.user.about")} href="/users/{data.user.id}/about">
-					<IdentificationCard />
-					{#snippet active()}
-						<IdentificationCard weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink title={$t("common.active")} href="/users/{data.user.id}">
+				{#if user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted)}
+					<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
+						{#snippet icon()}
+							<UserCircle />
+						{/snippet}
+						{$t("common.editors")}
+						{#snippet iconRight()}
+							{#if editorsExpanded}
+								<CaretDown style="margin-left: auto" />
+							{:else}
+								<CaretRight style="margin-left: auto" />
+							{/if}
+						{/snippet}
+					</Button>
+					{#if editorsExpanded}
+						<div class="expanded">
+							{#each user.editors as editor}
+								{#if editor.editor && editor.state === UserEditorState.Accepted}
+									<ChannelPreview size={1.5} user={editor.editor} />
+								{/if}
+							{/each}
+						</div>
+					{/if}
+				{/if}
+				{#if user.connections.length > 0 || user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted)}
+					<hr />
+				{/if}
+				<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.id}" big>
 					<Lightning />
 					{#snippet active()}
 						<Lightning weight="fill" />
 					{/snippet}
 				</TabLink>
-				<TabLink title={$t("pages.user.uploaded")} href="/users/{data.user.id}/uploaded">
+				<TabLink title={$t("pages.user.uploaded_emotes")} href="/users/{data.id}/uploaded" big>
 					<Upload />
 					{#snippet active()}
 						<Upload weight="fill" />
@@ -200,30 +148,90 @@
 				</TabLink>
 				<TabLink
 					title={$t("common.emote_sets", { values: { count: 2 } })}
-					href="/users/{data.user.id}/emote-sets"
+					href="/users/{data.id}/emote-sets"
+					big
 				>
 					<FolderSimple />
 					{#snippet active()}
 						<FolderSimple weight="fill" />
 					{/snippet}
 				</TabLink>
-				<TabLink title={$t("common.cosmetics")} href="/users/{data.user.id}/cosmetics">
+				<hr />
+				<TabLink title={$t("common.cosmetics")} href="/users/{data.id}/cosmetics" big>
 					<PaintBrush />
 					{#snippet active()}
 						<PaintBrush weight="fill" />
 					{/snippet}
 				</TabLink>
-				<TabLink title={$t("common.activity")} href="/users/{data.user.id}/activity">
+				<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
 					<Pulse />
 					{#snippet active()}
 						<Pulse weight="fill" />
 					{/snippet}
 				</TabLink>
-				<!-- <TabLink title={$t("common.analytics")} href="/users/{data.user.id}/analytics">
+				<!-- <TabLink title={$t("common.analytics")} href="/users/{data.id}/analytics" big>
 					<ChartLineUp />
 					<ChartLineUp weight="fill" />
 				</TabLink>
-				<TabLink title={$t("common.mod_comments")} href="/users/{data.user.id}/mod-comments">
+				<TabLink title={$t("common.mod_comments")} href="/users/{data.id}/mod-comments" big>
+					<ChatCircleText />
+					<ChatCircleText weight="fill" />
+				</TabLink> -->
+			</nav>
+			<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
+				{#snippet icon()}
+					<DotsThreeVertical />
+				{/snippet}
+			</Button>
+		{/await}
+	</aside>
+	<div class="content">
+		<div class="header hide-on-desktop">
+			<nav class="tabs">
+				<TabLink title={$t("pages.user.about")} href="/users/{data.id}/about">
+					<IdentificationCard />
+					{#snippet active()}
+						<IdentificationCard weight="fill" />
+					{/snippet}
+				</TabLink>
+				<TabLink title={$t("common.active")} href="/users/{data.id}">
+					<Lightning />
+					{#snippet active()}
+						<Lightning weight="fill" />
+					{/snippet}
+				</TabLink>
+				<TabLink title={$t("pages.user.uploaded")} href="/users/{data.id}/uploaded">
+					<Upload />
+					{#snippet active()}
+						<Upload weight="fill" />
+					{/snippet}
+				</TabLink>
+				<TabLink
+					title={$t("common.emote_sets", { values: { count: 2 } })}
+					href="/users/{data.id}/emote-sets"
+				>
+					<FolderSimple />
+					{#snippet active()}
+						<FolderSimple weight="fill" />
+					{/snippet}
+				</TabLink>
+				<TabLink title={$t("common.cosmetics")} href="/users/{data.id}/cosmetics">
+					<PaintBrush />
+					{#snippet active()}
+						<PaintBrush weight="fill" />
+					{/snippet}
+				</TabLink>
+				<TabLink title={$t("common.activity")} href="/users/{data.id}/activity">
+					<Pulse />
+					{#snippet active()}
+						<Pulse weight="fill" />
+					{/snippet}
+				</TabLink>
+				<!-- <TabLink title={$t("common.analytics")} href="/users/{data.id}/analytics">
+					<ChartLineUp />
+					<ChartLineUp weight="fill" />
+				</TabLink>
+				<TabLink title={$t("common.mod_comments")} href="/users/{data.id}/mod-comments">
 					<ChatCircleText />
 					<ChatCircleText weight="fill" />
 				</TabLink> -->
@@ -235,6 +243,10 @@
 
 <style lang="scss">
 	.side-bar {
+		.spinner-container {
+			margin: auto;
+		}
+
 		.name {
 			align-self: center;
 

@@ -23,7 +23,7 @@
 			<EmoteInfo data={emote} />
 		{/await}
 	</div>
-	<div class="tabs">
+	<div>
 		{@render children()}
 	</div>
 </div>
@@ -47,10 +47,6 @@
 			border-radius: 0.5rem;
 			padding: 1rem;
 		}
-	}
-
-	.tabs {
-		flex-grow: 1;
 	}
 
 	@media screen and (max-width: 960px) {
