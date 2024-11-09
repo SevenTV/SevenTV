@@ -13,7 +13,7 @@
 	import { t } from "svelte-i18n";
 	import Spinner from "../spinner.svelte";
 	import UserProfilePicture from "../user-profile-picture.svelte";
-	import TextInput from "../input/text-input.svelte";
+	import GlobalSearch from "./global-search.svelte";
 
 	let cartDialogMode: DialogMode = $state("hidden");
 </script>
@@ -36,11 +36,7 @@
 		</HideOn>
 	</div>
 	<HideOn mobile>
-		<TextInput placeholder={$t("labels.search")} big style="flex: 0 1 20rem">
-			{#snippet icon()}
-				<MagnifyingGlass />
-			{/snippet}
-		</TextInput>
+		<GlobalSearch />
 	</HideOn>
 	<div class="user-actions">
 		<Button hideOnDesktop>

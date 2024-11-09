@@ -7,25 +7,27 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let login = $derived(data.streamed.loginRequest.then((token) => {
-		sessionToken.set(token);
+	let login = $derived(
+		data.streamed.loginRequest.then((token) => {
+			sessionToken.set(token);
 
-		let payload = null;
-		const splitToken = token.split(".");
-		if (splitToken[1]) {
-			try {
-				payload = JSON.parse(atob(splitToken[1]));
-			} catch (e) {
-				console.error(e);
+			let payload = null;
+			const splitToken = token.split(".");
+			if (splitToken[1]) {
+				try {
+					payload = JSON.parse(atob(splitToken[1]));
+				} catch (e) {
+					console.error(e);
+				}
 			}
-		}
 
-		if (payload?.sub) {
-			goto(`/users/${payload.sub}`);
-		} else {
-			goto("/");
-		}
-	}));
+			if (payload?.sub) {
+				goto(`/users/${payload.sub}`);
+			} else {
+				goto("/");
+			}
+		}),
+	);
 </script>
 
 <svelte:head>

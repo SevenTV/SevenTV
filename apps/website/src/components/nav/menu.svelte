@@ -155,7 +155,7 @@
 			</MenuButton> -->
 		</div>
 		{#if $user}
-			<hr class="hide-on-mobile" />
+			<!-- <hr class="hide-on-mobile" /> -->
 			<div class="link-list">
 				<MenuButton onclick={logoutClick}>
 					{#if logoutLoading}

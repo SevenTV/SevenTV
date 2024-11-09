@@ -2,7 +2,7 @@ import { graphql } from "$/gql";
 import type { EmoteSearchResult, Filters, SortBy } from "$/gql/graphql";
 import { gqlClient } from "./gql";
 
-let timeout: NodeJS.Timeout | number | null = null;
+let timeout: NodeJS.Timeout | number | undefined;
 
 export async function queryEmotes(
 	query: string | null,

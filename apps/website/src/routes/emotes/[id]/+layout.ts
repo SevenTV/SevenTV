@@ -74,6 +74,7 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 								scale
 								frameCount
 							}
+							ranking(ranking: TRENDING_WEEKLY)
 						}
 					}
 				}

@@ -26,18 +26,20 @@ export async function load({ url, fetch }: PageLoadEvent) {
 		},
 		body: JSON.stringify({ platform, code, state }),
 		credentials: "include",
-	}).then((res) => res.json()).then((res) => {
-		if (res.error || !res.token || typeof res.token !== "string") {
-			console.error(res);
-			throw res.error;
-		}
+	})
+		.then((res) => res.json())
+		.then((res) => {
+			if (res.error || !res.token || typeof res.token !== "string") {
+				console.error(res);
+				throw res.error;
+			}
 
-		return res.token as string;
-	});
+			return res.token as string;
+		});
 
 	return {
 		streamed: {
 			loginRequest: req,
-		}
-	}
+		},
+	};
 }

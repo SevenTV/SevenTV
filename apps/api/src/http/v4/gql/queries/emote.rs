@@ -10,7 +10,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::http::v4::gql::types::{Emote, SearchResult};
-use crate::search::{search, SearchOptions};
+use crate::search::{search, sorted_results, SearchOptions};
 
 #[derive(Default)]
 pub struct EmoteQuery;
@@ -215,10 +215,8 @@ impl EmoteQuery {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 		let result = SearchResult {
-			items: result
-				.hits
+			items: sorted_results(result.hits, emotes)
 				.into_iter()
-				.filter_map(|id| emotes.get(&id).cloned())
 				.map(|e| Emote::from_db(e, &global.config.api.cdn_origin))
 				.collect(),
 			total_count: result.found,

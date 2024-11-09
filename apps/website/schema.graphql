@@ -147,6 +147,7 @@ enum Platform {
 type Query {
 	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
+	search: SearchQuery!
 	users: UserQuery!
 }
 
@@ -170,6 +171,15 @@ type Role {
 	searchUpdatedAt: DateTime
 	tags: [String!]!
 	updatedAt: DateTime!
+}
+
+type SearchQuery {
+	all(page: Int, perPage: Int, query: String): SearchResultAll!
+}
+
+type SearchResultAll {
+	emotes: EmoteSearchResult!
+	users: UserSearchResult!
 }
 
 input Sort {

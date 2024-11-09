@@ -48,7 +48,7 @@
 			</div>
 		{:then user}
 			<UserProfilePicture
-				user={user}
+				{user}
 				size={4.75 * 16}
 				style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
 			/>
@@ -103,7 +103,7 @@
 					</Button>
 					{#if connectionsExpanded}
 						<div class="expanded">
-							<Connections user={user} />
+							<Connections {user} />
 						</div>
 					{/if}
 				{/if}

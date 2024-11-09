@@ -22,6 +22,13 @@
 		onkeypress,
 		...restProps
 	}: Props = $props();
+
+	// svelte-ignore non_reactive_update
+	let input: HTMLElement;
+
+	export function focus() {
+		input?.focus();
+	}
 </script>
 
 <label class="input" class:big class:has-label={children} class:has-icon={icon} {...restProps}>
@@ -32,13 +39,13 @@
 		</div>
 	{/if}
 	{#if type === "text"}
-		<input type="text" bind:value {placeholder} {onkeypress} />
+		<input type="text" bind:value {placeholder} {onkeypress} bind:this={input} />
 	{:else if type === "email"}
-		<input type="email" bind:value {placeholder} {onkeypress} />
+		<input type="email" bind:value {placeholder} {onkeypress} bind:this={input} />
 	{:else if type === "password"}
-		<input type="password" bind:value {placeholder} {onkeypress} />
+		<input type="password" bind:value {placeholder} {onkeypress} bind:this={input} />
 	{:else if type === "textarea"}
-		<textarea bind:value {placeholder} {onkeypress}></textarea>
+		<textarea bind:value {placeholder} {onkeypress} bind:this={input}></textarea>
 	{/if}
 </label>
 
