@@ -175,9 +175,7 @@
 				<Checkbox bind:value={animated}>{$t("pages.directory.filters.animated")}</Checkbox>
 				<Checkbox bind:value={staticFilter}>{$t("pages.directory.filters.static")}</Checkbox>
 				<Checkbox bind:value={overlaying}>{$t("flags.overlaying")}</Checkbox>
-				<Checkbox bind:value={exactMatch} disabled={!query}
-					>{$t("pages.directory.filters.exact_match")}</Checkbox
-				>
+				<Checkbox bind:value={exactMatch}>{$t("pages.directory.filters.exact_match")}</Checkbox>
 			</div>
 		</Expandable>
 		<!-- <Expandable title={$t("pages.directory.size.title")}>

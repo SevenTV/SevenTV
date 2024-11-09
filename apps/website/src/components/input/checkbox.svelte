@@ -50,6 +50,7 @@
 
 		&.disabled {
 			cursor: not-allowed;
+			color: var(--text-light);
 		}
 
 		&.option {
@@ -131,8 +132,6 @@
 		}
 
 		input:disabled {
-			color: var(--text-light);
-
 			& + .checkbox {
 				background-color: var(--secondary-disabled);
 			}
