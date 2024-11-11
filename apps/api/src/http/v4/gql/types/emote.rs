@@ -5,8 +5,9 @@ use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use fred::prelude::KeysInterface;
 use shared::database::emote::EmoteId;
 use shared::database::user::UserId;
+use shared::typesense::types::event::EventId;
 
-use super::{Image, SearchResult, User};
+use super::{EmoteEvent, Event, Image, SearchResult, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::search::{search, sorted_results, SearchOptions};
@@ -133,6 +134,46 @@ impl Emote {
 		};
 
 		Ok(result)
+	}
+
+	async fn events<'ctx>(
+		&self,
+		ctx: &Context<'ctx>,
+		#[graphql(validator(maximum = 10))] page: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
+	) -> Result<Vec<EmoteEvent>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let options = SearchOptions::builder()
+			.query("*".to_owned())
+			.filter_by(format!("target_id: {}", EventId::Emote(self.id)))
+			.sort_by(vec!["created_at:desc".to_owned()])
+			.page(page)
+			.per_page(per_page.unwrap_or(20))
+			.build();
+
+		let result = search::<shared::typesense::types::event::Event>(global, options)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to search");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
+			})?;
+
+		let events = global
+			.event_by_id_loader
+			.load_many(result.hits.iter().copied())
+			.await
+			.map_err(|()| {
+				tracing::error!("failed to load event");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load event")
+			})?;
+
+		Ok(sorted_results(result.hits, events)
+			.into_iter()
+			.filter_map(|e| Event::try_from(e).ok())
+			.collect())
 	}
 }
 
