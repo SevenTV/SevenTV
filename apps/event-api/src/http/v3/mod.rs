@@ -278,7 +278,7 @@ struct Connection {
 	metadata: Metadata,
 
 	presence_lru: lru::LruCache<UserId, PresenceCacheValue>,
-	no_entitlement_lru: lru::LruCache<UserId, ()>,
+	// no_entitlement_lru: lru::LruCache<UserId, ()>,
 	personal_emote_set_lru: lru::LruCache<EmoteSetId, chrono::DateTime<chrono::Utc>>,
 	badge_lru: lru::LruCache<BadgeId, chrono::DateTime<chrono::Utc>>,
 	paint_lru: lru::LruCache<PaintId, chrono::DateTime<chrono::Utc>>,
@@ -324,7 +324,7 @@ impl Connection {
 			_current_connection_drop_guard: v3::CurrentConnectionDropGuard::new(connection_kind, metadata.clone()),
 			metadata,
 			presence_lru: lru::LruCache::new(NonZeroUsize::new(512).unwrap()),
-			no_entitlement_lru: lru::LruCache::new(NonZeroUsize::new(20480).unwrap()),
+			// no_entitlement_lru: lru::LruCache::new(NonZeroUsize::new(20480).unwrap()),
 			badge_lru: lru::LruCache::new(NonZeroUsize::new(60).unwrap()),
 			paint_lru: lru::LruCache::new(NonZeroUsize::new(250).unwrap()),
 			personal_emote_set_lru: lru::LruCache::new(NonZeroUsize::new(1024).unwrap()),
@@ -803,16 +803,16 @@ impl Connection {
 
 		if payload.active_badge.is_some() || payload.active_paint.is_some() || !payload.personal_emote_sets.is_empty() {
 			let user_state = self.presence_lru.get_or_insert_mut_ref(&payload.user.id, || {
-				if self.no_entitlement_lru.pop(&payload.user.id).is_none() {
-					dispatches.push(payload::Dispatch {
-						ty: EventType::ResetEntitlement,
-						body: ChangeMap {
-							id: payload.user.id.cast(),
-							kind: ObjectKind::User,
-							..Default::default()
-						},
-					});
-				}
+				// if self.no_entitlement_lru.pop(&payload.user.id).is_none() {
+				// 	dispatches.push(payload::Dispatch {
+				// 		ty: EventType::ResetEntitlement,
+				// 		body: ChangeMap {
+				// 			id: payload.user.id.cast(),
+				// 			kind: ObjectKind::User,
+				// 			..Default::default()
+				// 		},
+				// 	});
+				// }
 
 				Default::default()
 			});
@@ -965,16 +965,16 @@ impl Connection {
 				}
 			}
 		} else {
-			if self.no_entitlement_lru.put(payload.user.id, ()).is_none() {
-				dispatches.push(payload::Dispatch {
-					ty: EventType::ResetEntitlement,
-					body: ChangeMap {
-						id: payload.user.id.cast(),
-						kind: ObjectKind::User,
-						..Default::default()
-					},
-				});
-			}
+			// if self.no_entitlement_lru.put(payload.user.id, ()).is_none() {
+			// 	dispatches.push(payload::Dispatch {
+			// 		ty: EventType::ResetEntitlement,
+			// 		body: ChangeMap {
+			// 			id: payload.user.id.cast(),
+			// 			kind: ObjectKind::User,
+			// 			..Default::default()
+			// 		},
+			// 	});
+			// }
 
 			if let Some(presence) = self.presence_lru.pop(&payload.user.id) {
 				// Delete old presence

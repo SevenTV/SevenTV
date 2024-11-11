@@ -1783,6 +1783,33 @@ impl UserOps {
 			Ok(status)
 		}
 	}
+
+	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageAny)")]
+	async fn refresh_subscriptions<'ctx>(&self, ctx: &Context<'ctx>) -> Result<bool, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let products = global
+			.subscription_products_loader
+			.load(())
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load product"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "product not found"))?;
+
+		for product in products {
+			sub_refresh_job::refresh(
+				global,
+				SubscriptionId {
+					product_id: product.id,
+					user_id: self.id.id(),
+				},
+			)
+			.await?;
+		}
+
+		Ok(true)
+	}
 }
 
 #[derive(InputObject)]

@@ -1,6 +1,6 @@
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use ::http::{HeaderName, HeaderValue};
 use anyhow::Context;
@@ -424,6 +424,7 @@ pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
 	let server_name = global.config.cdn.server_name.clone().into();
 
 	let mut server = builder
+		.with_keep_alive_timeout(Duration::from_secs(10))
 		.build(CustomMakeService {
 			routes: routes(&global, &server_name),
 			server_name,

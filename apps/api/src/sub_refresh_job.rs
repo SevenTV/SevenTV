@@ -191,7 +191,11 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 			}
 
 			let now = chrono::Utc::now();
-			let active_periods = periods.iter().filter(|p| p.start < now && p.end > now).collect::<Vec<_>>();
+			let grace_period = now + chrono::Duration::days(2);
+			let active_periods = periods
+				.iter()
+				.filter(|p| p.start < now && (p.end > now || (p.auto_renew && p.end > grace_period)))
+				.collect::<Vec<_>>();
 
 			let user_edge = EntitlementEdgeId {
 				from: EntitlementEdgeKind::User {

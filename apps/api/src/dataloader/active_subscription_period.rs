@@ -106,19 +106,35 @@ impl Loader for ActiveSubscriptionPeriodByUserIdLoader {
 		let _batch = BatchLoad::new(&self.config.name, keys.len());
 
 		let results: Vec<_> = SubscriptionPeriod::collection(&self.db)
-			.find(filter::filter! {
-				SubscriptionPeriod {
-					#[query(flatten)]
-					subscription_id: SubscriptionId {
-						#[query(selector = "in")]
-						user_id: keys,
-					},
-					#[query(selector = "lt")]
-					start: chrono::Utc::now(),
-					#[query(selector = "gt")]
-					end: chrono::Utc::now(),
+			.find(filter::Filter::and([
+				filter::filter! {
+					SubscriptionPeriod {
+						#[query(flatten)]
+						subscription_id: SubscriptionId {
+							#[query(selector = "in")]
+							user_id: keys,
+						},
+						#[query(selector = "lt")]
+						start: chrono::Utc::now(),
+					}
 				}
-			})
+				.into(),
+				filter::Filter::or([
+					filter::filter! {
+						SubscriptionPeriod {
+							#[query(selector = "gt")]
+							end: chrono::Utc::now(),
+						}
+					},
+					filter::filter! {
+						SubscriptionPeriod {
+							#[query(selector = "gt")]
+							end: chrono::Utc::now() + chrono::Duration::days(2),
+							auto_renew: true,
+						}
+					},
+				]),
+			]))
 			.batch_size(1000)
 			.selection_criteria(ReadPreference::SecondaryPreferred { options: None }.into())
 			.into_future()
