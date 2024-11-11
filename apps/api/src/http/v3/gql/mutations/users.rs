@@ -338,7 +338,7 @@ impl UserOps {
 		// They should be able to remove themselves from the editor list
 		if authed_user.id != self.id.id()
 			&& !authed_user.has(UserPermission::ManageAny)
-			&& (editor_id.id() != authed_user.id() || permissions.is_none())
+			&& !(editor_id.id() == authed_user.id() && permissions.is_none())
 		{
 			let editor = global
 				.user_editor_by_id_loader
