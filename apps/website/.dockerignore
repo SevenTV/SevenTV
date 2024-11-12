@@ -9,3 +9,6 @@ gql
 !.env
 !.env.*
 .env.local
+
+.dockerignore
+Dockerfile
