@@ -6,6 +6,7 @@
 	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";
 	import { isMobileLayout } from "$/lib/utils";
 	import Spinner from "../spinner.svelte";
+	import { untrack } from "svelte";
 
 	const PER_PAGE = 72;
 
@@ -33,6 +34,14 @@
 		results = undefined;
 		identifier++;
 	}
+
+	// Reset when the layout changes
+	$effect(() => {
+		$emotesLayout;
+		untrack(() => {
+			reset();
+		});
+	});
 
 	function handleInfinite(event: InfiniteEvent) {
 		load(page++, PER_PAGE)
