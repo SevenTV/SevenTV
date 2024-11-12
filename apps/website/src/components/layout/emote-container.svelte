@@ -9,10 +9,16 @@
 		children?: Snippet;
 	} & HTMLAttributes<HTMLDivElement>;
 
-	let { scrollable = false, layout, children, ...restProps }: Props = $props();
+	let { scrollable, layout, children, ...restProps }: Props = $props();
 </script>
 
-<div class="emotes" class:small-grid={layout === "small-grid"} class:scrollable {...restProps}>
+<div
+	class="emotes"
+	class:small-grid={layout === "small-grid"}
+	class:scrollable
+	class:scrollable-on-desktop={scrollable === undefined}
+	{...restProps}
+>
 	{@render children?.()}
 </div>
 
@@ -41,6 +47,14 @@
 		.emotes {
 			grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
 			gap: 0.5rem;
+		}
+	}
+
+	@media screen and (min-width: 961px) {
+		.emotes.scrollable-on-desktop {
+			overflow: auto;
+			overflow: overlay;
+			scrollbar-gutter: stable;
 		}
 	}
 </style>

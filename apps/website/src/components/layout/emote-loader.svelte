@@ -4,7 +4,6 @@
 	import EmotePreview from "../emote-preview.svelte";
 	import EmoteContainer from "./emote-container.svelte";
 	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";
-	import { isMobileLayout } from "$/lib/utils";
 	import Spinner from "../spinner.svelte";
 	import { untrack } from "svelte";
 
@@ -19,7 +18,7 @@
 
 	let {
 		load,
-		scrollable = !isMobileLayout(),
+		scrollable,
 		selectionMode = false,
 		selectionMap = $bindable({}),
 	}: Props = $props();
