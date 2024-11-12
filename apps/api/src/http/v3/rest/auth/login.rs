@@ -100,17 +100,19 @@ async fn fetch_user_on_callback(
 		// user logs in for the first time
 		(None, None) => {
 			// create new user
+			let connection = UserConnection {
+				platform,
+				platform_id: user_data.id.clone(),
+				platform_username: user_data.username.clone(),
+				platform_display_name: user_data.display_name.clone(),
+				platform_avatar_url: user_data.avatar.clone(),
+				allow_login: true,
+				updated_at: chrono::Utc::now(),
+				linked_at: chrono::Utc::now(),
+			};
+
 			let user = User {
-				connections: vec![UserConnection {
-					platform,
-					platform_id: user_data.id.clone(),
-					platform_username: user_data.username.clone(),
-					platform_display_name: user_data.display_name.clone(),
-					platform_avatar_url: user_data.avatar.clone(),
-					allow_login: true,
-					updated_at: chrono::Utc::now(),
-					linked_at: chrono::Utc::now(),
-				}],
+				connections: vec![connection.clone()],
 				..Default::default()
 			};
 
@@ -131,7 +133,7 @@ async fn fetch_user_on_callback(
 				session_id: None,
 				data: InternalEventData::User {
 					after: user.clone(),
-					data: InternalEventUserData::AddConnection { platform },
+					data: InternalEventUserData::AddConnection { connection },
 				},
 				timestamp: chrono::Utc::now(),
 			})?;
@@ -174,6 +176,17 @@ async fn fetch_user_on_callback(
 	match updated {
 		Some(user) => Ok(user),
 		None => {
+			let new_connection = UserConnection {
+				platform,
+				platform_id: user_data.id.clone(),
+				platform_username: user_data.username.clone(),
+				platform_display_name: user_data.display_name.clone(),
+				platform_avatar_url: user_data.avatar.clone(),
+				allow_login: true,
+				updated_at: chrono::Utc::now(),
+				linked_at: chrono::Utc::now(),
+			};
+
 			let user = tx
 				.find_one_and_update(
 					filter::filter! {
@@ -186,16 +199,7 @@ async fn fetch_user_on_callback(
 						#[query(push)]
 						User {
 							#[query(serde)]
-							connections: UserConnection {
-								platform,
-								platform_id: user_data.id.clone(),
-								platform_username: user_data.username.clone(),
-								platform_display_name: user_data.display_name.clone(),
-								platform_avatar_url: user_data.avatar.clone(),
-								allow_login: true,
-								updated_at: chrono::Utc::now(),
-								linked_at: chrono::Utc::now(),
-							},
+							connections: new_connection.clone(),
 						},
 						#[query(set)]
 						User {
@@ -218,7 +222,9 @@ async fn fetch_user_on_callback(
 				session_id: user_session.map(|s| s.id),
 				data: InternalEventData::User {
 					after: user.clone(),
-					data: InternalEventDataUser::AddConnection { platform },
+					data: InternalEventUserData::AddConnection {
+						connection: new_connection,
+					},
 				},
 				timestamp: chrono::Utc::now(),
 			})?;
