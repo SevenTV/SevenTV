@@ -275,8 +275,7 @@
 	@media screen and (max-width: 960px) {
 		.layout {
 			padding: 0.5rem;
-			// Scroll whole layout on mobile
-			height: auto;
+			padding-bottom: 0;
 		}
 
 		.content {

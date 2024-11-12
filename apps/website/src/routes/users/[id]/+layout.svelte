@@ -304,6 +304,7 @@
 	.content {
 		display: flex;
 		flex-direction: column;
+		gap: 0.75rem;
 
 		.header {
 			display: flex;
@@ -357,10 +358,6 @@
 
 			// 	margin-top: 0.5rem;
 			// }
-		}
-
-		.content .header {
-			margin-bottom: 0.75rem;
 		}
 	}
 </style>
