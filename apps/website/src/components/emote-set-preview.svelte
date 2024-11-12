@@ -45,7 +45,6 @@
 	style:background-color="var(--bg-{bg})"
 >
 	<div class="emotes" style:grid-template-columns="repeat({Math.min(data.capacity ?? 6, 6)}, 1fr)">
-		{@debug emotePreviews}
 		{#each emotePreviews as emote, i}
 			<ResponsiveImage images={emote.images} width={2 * 16} index={i} />
 		{/each}

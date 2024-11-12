@@ -8,11 +8,11 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// TODO: Find out correct type
-	let loader: any;
+	let loader: ReturnType<typeof EmoteLoader>;
 
 	$effect(() => {
-		data;
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		data; // trigger reactivity when data changes
 		untrack(() => {
 			loader?.reset();
 		});

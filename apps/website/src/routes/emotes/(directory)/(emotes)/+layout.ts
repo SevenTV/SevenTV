@@ -8,7 +8,7 @@ export function load({ url }: LayoutLoadEvent) {
 	const tags = url.searchParams.get("t");
 	const tagsArray = tags ? tags.split(TAGS_SEPERATOR) : [];
 
-	let filters: Filters = {};
+	const filters: Filters = {};
 
 	if (url.searchParams.get("a") === "1") {
 		filters.animated = true;

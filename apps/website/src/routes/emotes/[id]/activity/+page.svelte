@@ -1,15 +1,15 @@
 <script lang="ts">
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
 	import type { PageData } from "./$types";
-	import type { EmoteEvent } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import Spinner from "$/components/spinner.svelte";
 	import EmoteEventComponent from "$/components/emotes/emote-event.svelte";
+	import type { EmoteEvent } from "$/gql/graphql";
 
 	let { data }: { data: PageData } = $props();
 
-	async function loadEvents(id: string): Promise<EmoteEvent[]> {
+	async function loadEvents(id: string) {
 		const res = await gqlClient()
 			.query(
 				graphql(`
@@ -34,8 +34,8 @@
 											event
 										}
 										... on EventEmoteDataChangeName {
-											oldName: old
-											newName: new
+											oldName
+											newName
 										}
 										... on EventEmoteDataMerge {
 											newEmote {
@@ -44,7 +44,7 @@
 											}
 										}
 										... on EventEmoteDataChangeOwner {
-											oldOwner: old {
+											oldOwner {
 												id
 												mainConnection {
 													platformDisplayName
@@ -53,7 +53,7 @@
 													hex
 												}
 											}
-											newOwner: new {
+											newOwner {
 												id
 												mainConnection {
 													platformDisplayName
@@ -64,18 +64,18 @@
 											}
 										}
 										... on EventEmoteDataChangeTags {
-											oldTags: old
-											newTags: new
+											oldTags
+											newTags
 										}
 										... on EventEmoteDataChangeFlags {
-											oldFlags: old {
+											oldFlags {
 												publicListed
 												private
 												defaultZeroWidth
 												approvedPersonal
 												deniedPersonal
 											}
-											newFlags: new {
+											newFlags {
 												publicListed
 												private
 												defaultZeroWidth

@@ -4,32 +4,32 @@
 	import type { PageData } from "./$types";
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import { UserEditorState } from "$/gql/graphql";
+	import Spinner from "$/components/spinner.svelte";
 
 	let { data }: { data: PageData } = $props();
-
-	let hasConnections = $derived(data.user.connections.length > 0);
-	let hasEditors = $derived(
-		data.user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted),
-	);
 </script>
 
 <div class="layout">
-	{#if hasConnections}
-		<h2>{$t("common.connections")}</h2>
-		<div class="link-list">
-			<Connections user={data.user} big />
-		</div>
-	{/if}
-	{#if hasEditors}
-		<h2>{$t("common.editors")}</h2>
-		<div class="link-list">
-			{#each data.user.editors as editor}
-				{#if editor.editor && editor.state === UserEditorState.Accepted}
-					<ChannelPreview big size={1.5} user={editor.editor} />
-				{/if}
-			{/each}
-		</div>
-	{/if}
+	{#await data.streamed.userRequest}
+		<Spinner />
+	{:then user}
+		{#if user.connections.length > 0}
+			<h2>{$t("common.connections")}</h2>
+			<div class="link-list">
+				<Connections {user} big />
+			</div>
+		{/if}
+		{#if user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted)}
+			<h2>{$t("common.editors")}</h2>
+			<div class="link-list">
+				{#each user.editors as editor}
+					{#if editor.editor && editor.state === UserEditorState.Accepted}
+						<ChannelPreview big size={1.5} user={editor.editor} />
+					{/if}
+				{/each}
+			</div>
+		{/if}
+	{/await}
 </div>
 
 <style lang="scss">

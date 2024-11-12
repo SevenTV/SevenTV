@@ -118,7 +118,7 @@
 
 	let results = $derived(search(query));
 
-	let input: TextInput;
+	let input: ReturnType<typeof TextInput>;
 
 	function onkeydown(event: KeyboardEvent) {
 		// Handle Ctrl + K

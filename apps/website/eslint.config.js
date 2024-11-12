@@ -31,7 +31,7 @@ export default tseslint.config(
 			],
 		},
 	},
-	{ languageOptions: { globals: globals.browser } },
+	{ languageOptions: { globals: { NodeJS: true, ...globals.browser } } },
 	pluginJs.configs.recommended,
 	...tseslint.configs.recommended,
 	...sveltePlugin.configs["flat/recommended"],

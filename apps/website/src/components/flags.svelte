@@ -1,5 +1,6 @@
 <script lang="ts" module>
 	// TODO: Remove `any` as soon as phosphor-svelte fully supports Svelte 5
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	export const icons: { [key: string]: any } = {
 		// Emote flags
 		active: Lightning,

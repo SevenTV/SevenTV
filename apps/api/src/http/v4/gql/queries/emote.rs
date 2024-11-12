@@ -88,6 +88,7 @@ impl EmoteQuery {
 		Ok(emote.map(|e| Emote::from_db(e, &global.config.api.cdn_origin)))
 	}
 
+	#[allow(clippy::too_many_arguments)]
 	async fn search<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,

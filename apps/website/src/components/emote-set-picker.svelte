@@ -23,7 +23,7 @@
 	{/snippet}
 </TextInput>
 <Expandable title={$t("common.pinned")}>
-	{#each Array(3) as _, i}
+	{#each Array(3) as _}
 		{#if radioName}
 			<Radio name={radioName} option leftLabel={pickerLeftLabel} />
 		{:else}
@@ -32,7 +32,7 @@
 	{/each}
 </Expandable>
 <Expandable title="ayyybubu">
-	{#each Array(3) as _, i}
+	{#each Array(3) as _}
 		{#if radioName}
 			<Radio name={radioName} option leftLabel={pickerLeftLabel} />
 		{:else}

@@ -5,12 +5,11 @@
 <script lang="ts">
 	import Expandable from "$/components/expandable.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
-	import { Smiley, FolderSimple, BookmarkSimple, MagnifyingGlass } from "phosphor-svelte";
+	import { Smiley, MagnifyingGlass } from "phosphor-svelte";
 	import TagsInput from "$/components/input/tags-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
-	import { user } from "$/lib/auth";
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";

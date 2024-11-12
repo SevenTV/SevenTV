@@ -128,25 +128,25 @@ type EmoteSetQuery {
 union EventEmoteData = EventEmoteDataUpload | EventEmoteDataProcess | EventEmoteDataChangeName | EventEmoteDataMerge | EventEmoteDataChangeOwner | EventEmoteDataChangeTags | EventEmoteDataChangeFlags | EventEmoteDataDelete
 
 type EventEmoteDataChangeFlags {
-	new: EmoteFlags!
-	old: EmoteFlags!
+	newFlags: EmoteFlags!
+	oldFlags: EmoteFlags!
 }
 
 type EventEmoteDataChangeName {
-	new: String!
-	old: String!
+	newName: String!
+	oldName: String!
 }
 
 type EventEmoteDataChangeOwner {
-	new: User
-	newId: Id!
-	old: User
-	oldId: Id!
+	newOwner: User
+	newOwnerId: Id!
+	oldOwner: User
+	oldOwnerId: Id!
 }
 
 type EventEmoteDataChangeTags {
-	new: [String!]!
-	old: [String!]!
+	newTags: [String!]!
+	oldTags: [String!]!
 }
 
 type EventEmoteDataDelete {

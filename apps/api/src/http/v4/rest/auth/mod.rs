@@ -201,7 +201,7 @@ async fn login_finish(
 		let Some(user) = user else {
 			let user = User {
 				connections: vec![UserConnection {
-					platform: platform,
+					platform,
 					platform_id: user_data.id.clone(),
 					platform_username: user_data.username.clone(),
 					platform_display_name: user_data.display_name.clone(),
@@ -283,7 +283,7 @@ async fn login_finish(
 						User {
 							#[query(serde)]
 							connections: UserConnection {
-								platform: platform,
+								platform,
 								platform_id: user_data.id,
 								platform_username: user_data.username,
 								platform_display_name: user_data.display_name,
@@ -352,7 +352,7 @@ async fn login_finish(
 			session_id: None,
 			data: InternalEventData::UserSession {
 				after: user_session.clone(),
-				data: StoredEventUserSessionData::Create { platform: platform },
+				data: StoredEventUserSessionData::Create { platform },
 			},
 			timestamp: chrono::Utc::now(),
 		})?;

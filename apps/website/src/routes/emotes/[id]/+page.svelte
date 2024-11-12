@@ -20,6 +20,7 @@
 	let channels: Promise<UserSearchResult> | undefined = $state();
 
 	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		page; // trigger reactivity when page changes
 		data.streamed.emote.then((emote) => {
 			channels = queryChannels(emote.id, page);

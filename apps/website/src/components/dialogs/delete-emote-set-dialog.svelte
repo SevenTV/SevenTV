@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Button from "../input/button.svelte";
-	import EmoteSetPreview from "../emote-set-preview.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";

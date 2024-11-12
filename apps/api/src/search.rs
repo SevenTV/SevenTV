@@ -89,6 +89,7 @@ pub struct SearchResult<V> {
 
 /// This is rather ugly code but there is no way to allow an arbitrary number of
 /// generics without a macro
+#[allow(clippy::type_complexity)]
 #[tracing::instrument(skip_all, fields(collection1_name = C1::COLLECTION_NAME, collection2_name = C2::COLLECTION_NAME))]
 pub async fn multi_search_2<C1: TypesenseCollection, C2: TypesenseCollection>(
 	global: &Arc<Global>,

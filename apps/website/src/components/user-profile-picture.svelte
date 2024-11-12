@@ -1,15 +1,14 @@
 <script lang="ts">
 	import type { User } from "$/gql/graphql";
 	import ResponsiveImage from "./responsive-image.svelte";
-	import { type HTMLAttributes } from "svelte/elements";
 
 	type Props = {
 		user: User;
 		size?: number;
-	} & HTMLAttributes<HTMLImageElement> &
-		HTMLAttributes<HTMLPictureElement>;
+		style?: string;
+	};
 
-	let { user, size = 44, ...restProps }: Props = $props();
+	let { user, size = 44, style }: Props = $props();
 </script>
 
 {#if user.style.activeProfilePicture}
@@ -19,16 +18,17 @@
 		images={user.style.activeProfilePicture.images}
 		round
 		borderColor={user.highestRoleColor?.hex}
-		{...restProps}
+		{style}
 	/>
 {:else}
+	<!-- svelte-ignore a11y_missing_attribute -->
 	<img
 		src={user.mainConnection?.platformAvatarUrl}
 		style:border-color={user.highestRoleColor?.hex ?? "transparent"}
 		width={size}
 		height={size}
 		class="profile-picture"
-		{...restProps}
+		{style}
 	/>
 {/if}
 

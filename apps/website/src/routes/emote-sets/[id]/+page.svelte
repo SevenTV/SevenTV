@@ -93,8 +93,6 @@
 	}
 </script>
 
-{@debug selectionMap}
-
 <svelte:head>
 	<title>{data.emoteSet.name} - {$t("page_titles.suffix")}</title>
 </svelte:head>

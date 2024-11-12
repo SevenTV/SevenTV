@@ -7,7 +7,6 @@
 		Bell,
 		CaretLeft,
 		CaretRight,
-		Code,
 		CreditCard,
 		GlobeHemisphereWest,
 		House,
@@ -23,7 +22,6 @@
 	import MenuButton from "../input/menu-button.svelte";
 	import { locale, dictionary, t } from "svelte-i18n";
 	import { localeNames } from "$/lib/i18n";
-	import { PUBLIC_DEVELOPER_PORTAL } from "$env/static/public";
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import Spinner from "../spinner.svelte";
 	import { filterRoles } from "$/lib/utils";

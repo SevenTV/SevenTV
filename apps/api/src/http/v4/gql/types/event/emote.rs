@@ -74,7 +74,9 @@ impl From<shared::database::stored_event::ImageProcessorEvent> for ImageProcesso
 
 #[derive(async_graphql::SimpleObject)]
 pub struct EventEmoteDataChangeName {
+	#[graphql(name = "oldName")]
 	pub old: String,
+	#[graphql(name = "newName")]
 	pub new: String,
 }
 
@@ -105,13 +107,15 @@ impl EventEmoteDataMerge {
 #[derive(async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct EventEmoteDataChangeOwner {
+	#[graphql(name = "oldOwnerId")]
 	pub old_id: UserId,
+	#[graphql(name = "newOwnerId")]
 	pub new_id: UserId,
 }
 
 #[async_graphql::ComplexObject]
 impl EventEmoteDataChangeOwner {
-	async fn old(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+	async fn old_owner(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -125,7 +129,7 @@ impl EventEmoteDataChangeOwner {
 		Ok(user.map(Into::into))
 	}
 
-	async fn new(&self, ctx: &async_graphql::Context<'_>) -> Result<Option<User>, ApiError> {
+	async fn new_owner(&self, ctx: &async_graphql::Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -142,13 +146,17 @@ impl EventEmoteDataChangeOwner {
 
 #[derive(async_graphql::SimpleObject)]
 pub struct EventEmoteDataChangeTags {
+	#[graphql(name = "oldTags")]
 	pub old: Vec<String>,
+	#[graphql(name = "newTags")]
 	pub new: Vec<String>,
 }
 
 #[derive(async_graphql::SimpleObject)]
 pub struct EventEmoteDataChangeFlags {
+	#[graphql(name = "oldFlags")]
 	pub old: EmoteFlags,
+	#[graphql(name = "newFlags")]
 	pub new: EmoteFlags,
 }
 

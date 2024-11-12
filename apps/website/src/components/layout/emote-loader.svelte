@@ -39,9 +39,9 @@
 			.then((result) => {
 				// Convert EmoteSetEmoteSearchResult to EmoteSearchResult
 				if (result.__typename === "EmoteSetEmoteSearchResult") {
-					// @ts-ignore I know what I'm doing
+					// @ts-expect-error I know what I'm doing
 					result.__typename = "EmoteSearchResult";
-					// @ts-ignore
+					// @ts-expect-error I know what I'm doing
 					result.items = result.items
 						.filter((item) => item.emote)
 						.map((item) => {
