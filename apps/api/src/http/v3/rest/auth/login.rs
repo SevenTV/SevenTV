@@ -7,7 +7,7 @@ use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::User;
-use shared::event::{InternalEvent, InternalEventData};
+use shared::event::{InternalEvent, InternalEventData, InternalEventUserData};
 
 use super::LoginRequest;
 use crate::connections::{self, PlatformUserData};
@@ -116,6 +116,26 @@ async fn fetch_user_on_callback(
 
 			tx.insert_one::<User>(&user, None).await?;
 
+			tx.register_event(InternalEvent {
+				actor: None,
+				session_id: None,
+				data: InternalEventData::User {
+					after: user.clone(),
+					data: InternalEventUserData::Create,
+				},
+				timestamp: chrono::Utc::now(),
+			})?;
+
+			tx.register_event(InternalEvent {
+				actor: None,
+				session_id: None,
+				data: InternalEventData::User {
+					after: user.clone(),
+					data: InternalEventUserData::AddConnection { platform },
+				},
+				timestamp: chrono::Utc::now(),
+			})?;
+
 			return Ok(user);
 		}
 	};
@@ -153,44 +173,58 @@ async fn fetch_user_on_callback(
 
 	match updated {
 		Some(user) => Ok(user),
-		None => Ok(tx
-			.find_one_and_update(
-				filter::filter! {
-					User {
-						#[query(rename = "_id")]
-						id: user_id,
-					}
-				},
-				update::update! {
-					#[query(push)]
-					User {
-						#[query(serde)]
-						connections: UserConnection {
-							platform,
-							platform_id: user_data.id.clone(),
-							platform_username: user_data.username.clone(),
-							platform_display_name: user_data.display_name.clone(),
-							platform_avatar_url: user_data.avatar.clone(),
-							allow_login: true,
-							updated_at: chrono::Utc::now(),
-							linked_at: chrono::Utc::now(),
-						},
+		None => {
+			let user = tx
+				.find_one_and_update(
+					filter::filter! {
+						User {
+							#[query(rename = "_id")]
+							id: user_id,
+						}
 					},
-					#[query(set)]
-					User {
-						updated_at: chrono::Utc::now(),
-						search_updated_at: &None,
-					}
+					update::update! {
+						#[query(push)]
+						User {
+							#[query(serde)]
+							connections: UserConnection {
+								platform,
+								platform_id: user_data.id.clone(),
+								platform_username: user_data.username.clone(),
+								platform_display_name: user_data.display_name.clone(),
+								platform_avatar_url: user_data.avatar.clone(),
+								allow_login: true,
+								updated_at: chrono::Utc::now(),
+								linked_at: chrono::Utc::now(),
+							},
+						},
+						#[query(set)]
+						User {
+							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
+						}
+					},
+					None,
+				)
+				.await?
+				.ok_or_else(|| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::MutationError,
+						"failed to insert connection",
+					))
+				})?;
+
+			tx.register_event(InternalEvent {
+				actor: None,
+				session_id: user_session.map(|s| s.id),
+				data: InternalEventData::User {
+					after: user.clone(),
+					data: InternalEventDataUser::AddConnection { platform },
 				},
-				None,
-			)
-			.await?
-			.ok_or_else(|| {
-				TransactionError::Custom(ApiError::internal_server_error(
-					ApiErrorCode::MutationError,
-					"failed to insert connection",
-				))
-			})?),
+				timestamp: chrono::Utc::now(),
+			})?;
+
+			Ok(user)
+		}
 	}
 }
 
@@ -248,7 +282,6 @@ pub async fn handle_callback(
 	let response = transaction(global, |mut tx| async move {
 		let user = fetch_user_on_callback(&mut tx, platform, user_data, user_session).await?;
 
-		// upsert the connection
 		let full_user = global.user_loader.load_user(global, user).await.map_err(|_| {
 			TransactionError::Custom(ApiError::internal_server_error(
 				ApiErrorCode::LoadError,
