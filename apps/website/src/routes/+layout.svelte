@@ -76,12 +76,13 @@
 
 	.alert-bar {
 		background-color: var(--bg-light);
-		padding: 0.4rem 0;
+		padding: 0.4rem;
 
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
+		flex-wrap: wrap;
 
 		color: var(--text);
 		font-weight: 600;
