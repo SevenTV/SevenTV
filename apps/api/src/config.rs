@@ -24,6 +24,10 @@ pub struct Api {
 	#[settings(default = "https://7tv.app".parse().unwrap())]
 	pub website_origin: url::Url,
 
+	/// beta website origin
+	#[settings(default = "https://beta.7tv.app".parse().unwrap())]
+	pub beta_website_origin: url::Url,
+
 	/// cdn base url
 	#[settings(default = "https://cdn.7tv.app/".parse().unwrap())]
 	pub cdn_origin: url::Url,

@@ -10,6 +10,8 @@
 		PUBLIC_DEVELOPER_PORTAL,
 	} from "$env/static/public";
 
+	import buh from "$assets/buh.webp?url";
+
 	let buhing = $state(false);
 </script>
 
@@ -17,7 +19,7 @@
 	<div class="row">
 		<div class="logo-container" onclick={() => (buhing = !buhing)} role="none">
 			{#if buhing}
-				<img src="/buh.webp" alt="7TV" width="32" height="32" />
+				<img src={buh} alt="7TV" width="32" height="32" />
 			{:else}
 				<Logo size={2 * 16} />
 			{/if}

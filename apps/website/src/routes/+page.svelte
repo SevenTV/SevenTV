@@ -27,8 +27,8 @@
 		font-style: normal;
 		font-weight: 400;
 		src:
-			url("/fonts/akony.woff2") format("woff2"),
-			url("/fonts/akony.ttf") format("truetype");
+			url("$assets/fonts/akony.woff2") format("woff2"),
+			url("$assets/fonts/akony.ttf") format("truetype");
 	}
 
 	.layout {

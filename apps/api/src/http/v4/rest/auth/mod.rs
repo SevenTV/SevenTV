@@ -78,7 +78,7 @@ fn redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Ur
 	global
 		.config
 		.api
-		.website_origin
+		.beta_website_origin
 		.join(&format!("/login/callback?platform={}", platform))
 		.map_err(|e| {
 			tracing::error!(err = %e, "failed to generate redirect_uri");

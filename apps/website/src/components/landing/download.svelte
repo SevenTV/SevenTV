@@ -10,11 +10,12 @@
 		PUBLIC_FROSTY_LINK,
 		PUBLIC_DANK_CHAT_LINK,
 	} from "$env/static/public";
+	import weirdSmiley from "$assets/weird-smiley.webp?url";
 </script>
 
 <section class="download" id="download">
 	<div class="weird-smiley hide-on-mobile" aria-hidden="true">
-		<img src="/weird-smiley.png" alt="Weird Smiley" />
+		<img src={weirdSmiley} alt="Weird Smiley" />
 	</div>
 	<h2>
 		Download

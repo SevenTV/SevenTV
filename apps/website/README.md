@@ -6,4 +6,5 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
 
 ## Flags
 
-All country flags have been downloaded from [here](https://github.com/hampusborgos/country-flags).
+All country flags have been downloaded from
+[here](https://github.com/hampusborgos/country-flags).

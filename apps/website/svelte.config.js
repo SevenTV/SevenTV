@@ -4,22 +4,25 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	// Consult https://kit.svelte.dev/docs/integrations#preprocessors
-	// for more information about preprocessors
-	preprocess: [phosphorSvelteOptimize(), vitePreprocess()],
+  // Consult https://kit.svelte.dev/docs/integrations#preprocessors
+  // for more information about preprocessors
+  preprocess: [phosphorSvelteOptimize(), vitePreprocess()],
 
-	kit: {
-		// See https://kit.svelte.dev/docs/adapters for more information about adapters.
-		adapter: adapter({
-			pages: "build",
-			assets: "build",
-			// SPA index file
-			fallback: "index.html",
-		}),
-		alias: {
-			$: "./src",
-		},
-	},
+  kit: {
+    // See https://kit.svelte.dev/docs/adapters for more information about adapters.
+    adapter: adapter({
+      pages: "build",
+      assets: "build",
+      // SPA index file
+      fallback: "index.html",
+      strict: true,
+      precompress: true,
+    }),
+    alias: {
+      $: "./src",
+      $assets: "./assets",
+    },
+  },
 };
 
 export default config;

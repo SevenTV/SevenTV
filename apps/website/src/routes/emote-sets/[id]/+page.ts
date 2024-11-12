@@ -5,8 +5,8 @@ import { error } from "@sveltejs/kit";
 import type { PageLoadEvent } from "./$types";
 
 export async function load({ params }: PageLoadEvent) {
-	const res = await gqlClient().query(
-		graphql(`
+  const res = await gqlClient().query(
+    graphql(`
 			query OneSet($id: Id!) {
 				emoteSets {
 					emoteSet(id: $id) {
@@ -22,19 +22,19 @@ export async function load({ params }: PageLoadEvent) {
 				}
 			}
 		`),
-		{ id: params.id },
-	);
+    { id: params.id },
+  );
 
-	if (res.error || !res.data) {
-		console.error(res.error);
-		error(500, "Failed to load emote set");
-	}
+  if (res.error || !res.data) {
+    console.error(res.error);
+    error(500, "Failed to load emote set");
+  }
 
-	if (!res.data.emoteSets.emoteSet) {
-		error(404, "Emote Set not found");
-	}
+  if (!res.data.emoteSets.emoteSet) {
+    error(404, "Emote Set not found");
+  }
 
-	return {
-		emoteSet: res.data.emoteSets.emoteSet as EmoteSet,
-	};
+  return {
+    emoteSet: res.data.emoteSets.emoteSet as EmoteSet,
+  };
 }

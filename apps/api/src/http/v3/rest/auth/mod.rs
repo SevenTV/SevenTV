@@ -144,13 +144,18 @@ pub async fn logout(
 	request: axum::extract::Request,
 ) -> Result<impl IntoResponse, ApiError> {
 	if let Some(referer) = request.headers().get(hyper::header::REFERER) {
-		if referer.to_str().ok() != Some(global.config.api.website_origin.as_str()) {
+		if referer.to_str().ok() != Some(global.config.api.website_origin.as_str())
+			&& referer.to_str().ok() != Some(global.config.api.api_origin.as_str())
+			&& referer.to_str().ok() != Some(global.config.api.beta_website_origin.as_str())
+		{
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only logout from website"));
 		}
 	}
 
 	if let Some(origin) = request.headers().get(hyper::header::ORIGIN) {
-		if origin.to_str().ok() != Some(global.config.api.api_origin.as_str()) {
+		if origin.to_str().ok() != Some(global.config.api.api_origin.as_str())
+			&& origin.to_str().ok() != Some(global.config.api.beta_website_origin.as_str())
+		{
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
 	}

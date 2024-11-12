@@ -4,6 +4,7 @@
 	import { page } from "$app/stores";
 	import { CaretDown, CaretUp, Flag, PaintBrush, Smiley, Table, Ticket } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
+	import buh from "$assets/buh.webp?url";
 
 	let { children } = $props();
 
@@ -73,7 +74,7 @@
 				{/snippet}
 			</TabLink>
 		</nav>
-		<img src="/modge.webp" width="64" height="64" alt="Modge" class="modge hide-on-mobile" />
+		<img src={modge} width="64" height="64" alt="Modge" class="modge hide-on-mobile" />
 	</aside>
 	<div class="content">
 		{@render children()}

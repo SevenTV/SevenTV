@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Logo from "../icons/logo.svelte";
 	import Button from "../input/button.svelte";
+	import weirdSmiley from "$assets/weird-smiley.webp?url";
 </script>
 
 <section class="hero">
@@ -20,7 +21,7 @@
 			<Button style="font-size: 1em;" href="#learn-more">Learn More</Button>
 		</div>
 	</div>
-	<img class="hero-image hide-on-mobile" src="/landing-page-placeholder.png" alt="7TV" />
+	<img class="hero-image hide-on-mobile" src={weirdSmiley} alt="7TV" />
 </section>
 
 <style lang="scss">

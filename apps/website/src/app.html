@@ -1,27 +1,26 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<script>
-			// This is here to prevent showing the wrong theme on initial load
-			function loadTheme() {
-				const savedTheme = window.localStorage.getItem("theme");
-				if (savedTheme) {
-					return JSON.parse(savedTheme);
-				}
-				return null;
-			}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      // This is here to prevent showing the wrong theme on initial load
+      function loadTheme() {
+        const savedTheme = window.localStorage.getItem("theme");
+        if (savedTheme) {
+          return JSON.parse(savedTheme);
+        }
+        return null;
+      }
 
-			const theme = loadTheme();
-			if (theme) {
-				document.documentElement.classList.add(theme);
-			}
-		</script>
-		%sveltekit.head%
-	</head>
-	<body data-sveltekit-preload-data="hover">
-		<div style="display: contents">%sveltekit.body%</div>
-	</body>
+      const theme = loadTheme();
+      if (theme) {
+        document.documentElement.classList.add(theme);
+      }
+    </script>
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
 </html>
