@@ -45,6 +45,7 @@ impl From<StoredEventEmoteData> for EventEmoteData {
 #[derive(async_graphql::SimpleObject, Default)]
 pub struct EventEmoteDataUpload {
 	/// Always false
+	#[graphql(deprecation = true)]
 	pub noop: bool,
 }
 
@@ -163,5 +164,6 @@ pub struct EventEmoteDataChangeFlags {
 #[derive(async_graphql::SimpleObject, Default)]
 pub struct EventEmoteDataDelete {
 	/// Always false
+	#[graphql(deprecation = true)]
 	pub noop: bool,
 }
