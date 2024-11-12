@@ -23,6 +23,9 @@ importers:
       '@graphql-codegen/client-preset':
         specifier: ^4.5.0
         version: 4.5.0(graphql@16.9.0)
+      '@graphql-typed-document-node/core':
+        specifier: ^3.2.0
+        version: 3.2.0(graphql@16.9.0)
       '@sveltejs/adapter-static':
         specifier: ^3.0.6
         version: 3.0.6(@sveltejs/kit@2.8.0(@sveltejs/vite-plugin-svelte@4.0.0(svelte@5.1.15)(vite@5.4.11(@types/node@22.9.0)(sass@1.80.6)))(svelte@5.1.15)(vite@5.4.11(@types/node@22.9.0)(sass@1.80.6)))
