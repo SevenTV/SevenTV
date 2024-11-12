@@ -4,7 +4,7 @@
 	import { page } from "$app/stores";
 	import { CaretDown, CaretUp, Flag, PaintBrush, Smiley, Table, Ticket } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
-	import buh from "$assets/buh.webp?url";
+	import modge from "$assets/modge.webp?url";
 
 	let { children } = $props();
 
