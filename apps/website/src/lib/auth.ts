@@ -13,19 +13,16 @@ const LOCALSTORAGE_KEY = "7tv-token";
 export const sessionToken = writable<string | null | undefined>(
 	browser ? window.localStorage.getItem(LOCALSTORAGE_KEY) : undefined,
 );
-export const user: Readable<User | null | undefined> = derived(
-	sessionToken,
-	(value, set) => {
-		if (!value) {
-			if (value === null) {
-				set(null);
-			}
-			return;
+export const user: Readable<User | null | undefined> = derived(sessionToken, (value, set) => {
+	if (!value) {
+		if (value === null) {
+			set(null);
 		}
+		return;
+	}
 
-		fetchMe().then((user) => set(user));
-	},
-);
+	fetchMe().then((user) => set(user));
+});
 
 // Save session token to localstorage when changed
 sessionToken.subscribe(async (token) => {

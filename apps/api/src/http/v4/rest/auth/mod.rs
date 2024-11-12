@@ -19,7 +19,7 @@ use crate::connections;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::cookies::{new_cookie, Cookies};
-use crate::http::middleware::session::{Session, AUTH_COOKIE};
+use crate::http::middleware::session::Session;
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::RateLimitRequest;
 use crate::transactions::{transaction, TransactionError};
@@ -375,7 +375,6 @@ async fn login_finish(
 			})
 			.map_err(TransactionError::Custom)?;
 
-		cookies.add(new_cookie(&global, (AUTH_COOKIE, token.clone())).expires(expiration));
 		cookies.remove(&global, CSRF_COOKIE);
 
 		Ok(LoginFinishResponse { token })

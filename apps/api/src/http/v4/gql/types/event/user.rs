@@ -95,7 +95,7 @@ pub struct EventUserDataChangeActiveEmoteSet {
 }
 
 #[async_graphql::ComplexObject]
-impl EventUserDataChangeActivePaint {
+impl EventUserDataChangeActiveEmoteSet {
 	async fn old_emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
 		let Some(old_id) = self.old_id else {
 			return Ok(None);

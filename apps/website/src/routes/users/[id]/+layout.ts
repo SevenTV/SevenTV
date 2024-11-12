@@ -91,9 +91,7 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 				throw "User not found";
 			}
 
-			res.data.users.user.roles = filterRoles(
-				res.data.users.user.roles as Role[],
-			);
+			res.data.users.user.roles = filterRoles(res.data.users.user.roles as Role[]);
 
 			return res.data.users.user as User;
 		});

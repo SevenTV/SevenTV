@@ -4,6 +4,7 @@
 	import type { PageData } from "./$types";
 	import type { EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
+	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -86,4 +87,16 @@
 	}
 </script>
 
+<div class="buttons">
+	<LayoutButtons />
+</div>
 <EmoteLoader {load} />
+
+<style lang="scss">
+	.buttons {
+		align-self: flex-end;
+
+		display: flex;
+		gap: 0.5rem;
+	}
+</style>
