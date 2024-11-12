@@ -14,7 +14,7 @@
 	} from "$/lib/layout";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
-	import { IconContext } from "phosphor-svelte";
+	import { IconContext, Warning } from "phosphor-svelte";
 	import UploadDialog from "$/components/dialogs/upload-dialog.svelte";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
@@ -34,6 +34,11 @@
 <IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>
 	<header>
 		<a href="#main" class="skip-to-main">{$t("common.skip_to_content")}</a>
+		<div class="alert-bar">
+			<Warning />
+			<span>Under construction – Read-only</span>
+			<span class="small">Some features might be unavailable.</span>
+		</div>
 		<TopNav />
 	</header>
 
@@ -57,11 +62,29 @@
 		min-height: 100svh;
 
 		display: grid;
-		grid-template-rows: auto 1fr;
+		grid-template-rows: auto auto 1fr;
 	}
 
 	header {
 		display: contents;
+	}
+
+	.alert-bar {
+		background-color: var(--bg-light);
+		padding: 0.4rem 0;
+
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+
+		color: var(--text);
+		font-weight: 600;
+
+		.small {
+			font-weight: 400;
+			font-size: 0.9rem;
+		}
 	}
 
 	main {
