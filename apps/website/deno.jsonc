@@ -12,14 +12,7 @@
 	},
 	"type": "module",
 	"lint": {
-		"exclude": [
-			"node_modules",
-			"build",
-			".svelte-kit",
-			"src/gql",
-			"schema.graphql",
-			"assets",
-		],
+		"exclude": ["node_modules", "build", ".svelte-kit", "src/gql", "schema.graphql", "assets"],
 	},
 	// "unstable": ["fmt-component"],
 	"fmt": {
@@ -37,5 +30,9 @@
 		"useTabs": true,
 		"singleQuote": false,
 		"indentWidth": 4,
+	},
+	"compilerOptions": {
+		"checkJs": true,
+		"strict": true,
 	},
 }

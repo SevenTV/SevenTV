@@ -14,7 +14,7 @@ pnpm-lock.yaml
 wasm.d.ts
 
 # Ignore country flags
-/static/flags
+assets/flags
 
 # Ignore generated files
 schema.graphql

@@ -28,11 +28,7 @@ theme.subscribe((value) => {
 	}
 	if (!browser) return;
 
-	document.documentElement.classList.remove(
-		"system-theme",
-		"light-theme",
-		"dark-theme",
-	);
+	document.documentElement.classList.remove("system-theme", "light-theme", "dark-theme");
 
 	if (value) {
 		document.documentElement.classList.add(value);
@@ -62,18 +58,10 @@ export const emotesLayout = writable(loadLayout("emotesLayout"));
 emotesLayout.subscribe((value) => saveLayout("emotesLayout", value));
 
 // Discover / Following
-export const discoverFollowingLayout = writable(
-	loadLayout("discoverFollowingLayout"),
-);
-discoverFollowingLayout.subscribe((value) =>
-	saveLayout("discoverFollowingLayout", value),
-);
+export const discoverFollowingLayout = writable(loadLayout("discoverFollowingLayout"));
+discoverFollowingLayout.subscribe((value) => saveLayout("discoverFollowingLayout", value));
 
 // Admin tickets
 
-export const adminTicketsLayout = writable(
-	loadLayout("adminTicketsLayout", "list"),
-);
-adminTicketsLayout.subscribe((value) =>
-	saveLayout("adminTicketsLayout", value),
-);
+export const adminTicketsLayout = writable(loadLayout("adminTicketsLayout", "list"));
+adminTicketsLayout.subscribe((value) => saveLayout("adminTicketsLayout", value));
