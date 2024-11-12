@@ -121,7 +121,7 @@ async fn login(
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct LogoutRequest {
+pub struct LogoutRequest {
 	#[serde(default)]
 	pub token: Option<String>,
 }
