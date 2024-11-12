@@ -20,11 +20,11 @@ use shared::old_types::object_id::GqlObjectId;
 use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::v3::gql::queries::emote_set::{ActiveEmote, EmoteSet};
 use crate::http::v3::gql::types::ListItemAction;
-use crate::http::v3::validators::{EmoteNameValidator, NameValidator};
+use crate::http::validators::{EmoteNameValidator, NameValidator};
 use crate::transactions::{transaction, transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 mod emote_add;

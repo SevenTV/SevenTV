@@ -14,10 +14,10 @@ use shared::old_types::object_id::GqlObjectId;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::guards::PermissionGuard;
 use crate::http::middleware::session::Session;
-use crate::http::v3::gql::guards::PermissionGuard;
 use crate::http::v3::gql::queries::role::Role;
-use crate::http::v3::validators::NameValidator;
+use crate::http::validators::NameValidator;
 use crate::transactions::{transaction, transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 #[derive(Default)]

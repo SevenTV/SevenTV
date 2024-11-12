@@ -121,7 +121,7 @@ async fn login(
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct LogoutRequest {
+pub struct LogoutRequest {
 	#[serde(default)]
 	pub token: Option<String>,
 }
@@ -136,7 +136,7 @@ struct LogoutRequest {
 )]
 #[tracing::instrument(skip(global, cookies))]
 // https://github.com/SevenTV/API/blob/c47b8c8d4f5c941bb99ef4d1cfb18d0dafc65b97/internal/api/rest/v3/routes/auth/logout.auth.route.go#L29
-async fn logout(
+pub async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,
 	Extension(session): Extension<Session>,
@@ -144,13 +144,18 @@ async fn logout(
 	request: axum::extract::Request,
 ) -> Result<impl IntoResponse, ApiError> {
 	if let Some(referer) = request.headers().get(hyper::header::REFERER) {
-		if referer.to_str().ok() != Some(global.config.api.website_origin.as_str()) {
+		if referer.to_str().ok() != Some(global.config.api.website_origin.as_str())
+			&& referer.to_str().ok() != Some(global.config.api.api_origin.as_str())
+			&& referer.to_str().ok() != Some(global.config.api.beta_website_origin.as_str())
+		{
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only logout from website"));
 		}
 	}
 
 	if let Some(origin) = request.headers().get(hyper::header::ORIGIN) {
-		if origin.to_str().ok() != Some(global.config.api.api_origin.as_str()) {
+		if origin.to_str().ok() != Some(global.config.api.api_origin.as_str())
+			&& origin.to_str().ok() != Some(global.config.api.beta_website_origin.as_str())
+		{
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
 	}

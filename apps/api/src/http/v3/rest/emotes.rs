@@ -25,7 +25,7 @@ use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v3::validators;
+use crate::http::validators;
 use crate::ratelimit::RateLimitRequest;
 use crate::transactions::{transaction, TransactionError};
 
