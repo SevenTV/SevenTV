@@ -1,9 +1,9 @@
 import {
-    cacheExchange,
-    Client,
-    createClient,
-    type Exchange,
-    fetchExchange,
+	cacheExchange,
+	Client,
+	createClient,
+	type Exchange,
+	fetchExchange,
 } from "@urql/svelte";
 import { get } from "svelte/store";
 import { authExchange } from "@urql/exchange-auth";
@@ -14,36 +14,36 @@ import { PUBLIC_GQL_API_V4 } from "$env/static/public";
 let client: Client | undefined = undefined;
 
 export function gqlClient(): Client {
-    if (client) return client;
+	if (client) return client;
 
-    const exchanges: Exchange[] = [cacheExchange];
+	const exchanges: Exchange[] = [cacheExchange];
 
-    exchanges.push(
-        authExchange(async (utils) => {
-            return {
-                addAuthToOperation(operation) {
-                    const token = get(sessionToken);
-                    if (!token) return operation;
-                    return utils.appendHeaders(operation, {
-                        Authorization: `Bearer ${token}`,
-                    });
-                },
-                didAuthError(error) {
-                    return error.response?.status === 401;
-                },
-                async refreshAuth() {
-                    sessionToken.set(null);
-                },
-            };
-        }),
-    );
+	exchanges.push(
+		authExchange(async (utils) => {
+			return {
+				addAuthToOperation(operation) {
+					const token = get(sessionToken);
+					if (!token) return operation;
+					return utils.appendHeaders(operation, {
+						Authorization: `Bearer ${token}`,
+					});
+				},
+				didAuthError(error) {
+					return error.response?.status === 401;
+				},
+				async refreshAuth() {
+					sessionToken.set(null);
+				},
+			};
+		}),
+	);
 
-    exchanges.push(fetchExchange);
+	exchanges.push(fetchExchange);
 
-    client = createClient({
-        url: PUBLIC_GQL_API_V4,
-        exchanges,
-    });
+	client = createClient({
+		url: PUBLIC_GQL_API_V4,
+		exchanges,
+	});
 
-    return client;
+	return client;
 }

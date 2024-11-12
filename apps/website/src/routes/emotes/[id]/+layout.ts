@@ -4,10 +4,10 @@ import type { Emote } from "$/gql/graphql";
 import { gqlClient } from "$/lib/gql";
 
 export async function load({ fetch, params }: LayoutLoadEvent) {
-    // TODO: Don't do this in load function because it takes too long
-    const req = gqlClient()
-        .query(
-            graphql(`
+	// TODO: Don't do this in load function because it takes too long
+	const req = gqlClient()
+		.query(
+			graphql(`
 				query OneEmote($id: Id!) {
 					emotes {
 						emote(id: $id) {
@@ -79,26 +79,26 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 					}
 				}
 			`),
-            {
-                id: params.id,
-            },
-            {
-                fetch,
-            },
-        )
-        .toPromise()
-        .then((res) => {
-            if (res.error || !res.data) {
-                console.error(res.error);
-            }
+			{
+				id: params.id,
+			},
+			{
+				fetch,
+			},
+		)
+		.toPromise()
+		.then((res) => {
+			if (res.error || !res.data) {
+				console.error(res.error);
+			}
 
-            return res.data?.emotes.emote as Emote;
-        });
+			return res.data?.emotes.emote as Emote;
+		});
 
-    return {
-        id: params.id,
-        streamed: {
-            emote: req,
-        },
-    };
+	return {
+		id: params.id,
+		streamed: {
+			emote: req,
+		},
+	};
 }
