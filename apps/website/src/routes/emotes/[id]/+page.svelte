@@ -1,17 +1,14 @@
 <script lang="ts">
 	import Button from "$/components/input/button.svelte";
 	import ChannelPreview from "$/components/channel-preview.svelte";
-	import HideOn from "$/components/hide-on.svelte";
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
-	import { CaretLeft, CaretRight, MagnifyingGlass } from "phosphor-svelte";
+	import { CaretLeft, CaretRight } from "phosphor-svelte";
 	import type { PageData } from "./$types";
-	import TextInput from "$/components/input/text-input.svelte";
-	import { t } from "svelte-i18n";
 	import type { UserSearchResult } from "$/gql/graphql";
 	import { graphql } from "$/gql";
 	import { gqlClient } from "$/lib/gql";
 
-	const PAGE_SIZE = 24;
+	const PAGE_SIZE = 8 * 5;
 
 	let { data }: { data: PageData } = $props();
 

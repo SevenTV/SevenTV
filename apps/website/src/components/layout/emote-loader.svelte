@@ -7,7 +7,7 @@
 	import { isMobileLayout } from "$/lib/utils";
 	import Spinner from "../spinner.svelte";
 
-	const PER_PAGE = 36;
+	const PER_PAGE = 72;
 
 	interface Props {
 		load: (page: number, perPage: number) => Promise<EmoteSearchResult | EmoteSetEmoteSearchResult>;
