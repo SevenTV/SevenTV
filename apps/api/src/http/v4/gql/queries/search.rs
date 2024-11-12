@@ -5,6 +5,7 @@ use shared::database::role::permissions::{EmotePermission, PermissionsExt};
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::guards::RateLimitGuard;
 use crate::http::middleware::session::Session;
 use crate::http::v4::gql::types::{Emote, SearchResult, User};
 use crate::search::{multi_search_2, sorted_results, SearchOptions};
@@ -20,6 +21,7 @@ pub struct SearchResultAll {
 
 #[Object]
 impl SearchQuery {
+	#[graphql(guard = "RateLimitGuard::search(1)")]
 	async fn all<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,

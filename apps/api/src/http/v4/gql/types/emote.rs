@@ -10,6 +10,7 @@ use shared::typesense::types::event::EventId;
 use super::{EmoteEvent, Event, Image, SearchResult, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::guards::RateLimitGuard;
 use crate::search::{search, sorted_results, SearchOptions};
 
 #[derive(Debug, Clone, SimpleObject)]
@@ -91,6 +92,7 @@ impl Emote {
 		Ok(values.into_iter().position(|e| e == self.id).map(|p| p as u32 + 1))
 	}
 
+	#[graphql(guard = "RateLimitGuard::search(1)")]
 	async fn channels<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -136,6 +138,7 @@ impl Emote {
 		Ok(result)
 	}
 
+	#[graphql(guard = "RateLimitGuard::search(1)")]
 	async fn events<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
