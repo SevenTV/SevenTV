@@ -5,9 +5,9 @@ import { gqlClient } from "$/lib/gql";
 import { filterRoles } from "$/lib/utils";
 
 export function load({ fetch, params }: LayoutLoadEvent) {
-  const req = gqlClient()
-    .query(
-      graphql(`
+    const req = gqlClient()
+        .query(
+            graphql(`
 				query OneUser($id: Id!) {
 					users {
 						user(id: $id) {
@@ -73,35 +73,35 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 					}
 				}
 			`),
-      {
+            {
+                id: params.id,
+            },
+            {
+                fetch,
+            },
+        )
+        .toPromise()
+        .then((res) => {
+            if (res.error || !res.data) {
+                console.error(res.error);
+                throw "Failed to load user";
+            }
+
+            if (!res.data.users.user) {
+                throw "User not found";
+            }
+
+            res.data.users.user.roles = filterRoles(
+                res.data.users.user.roles as Role[],
+            );
+
+            return res.data.users.user as User;
+        });
+
+    return {
         id: params.id,
-      },
-      {
-        fetch,
-      },
-    )
-    .toPromise()
-    .then((res) => {
-      if (res.error || !res.data) {
-        console.error(res.error);
-        throw "Failed to load user";
-      }
-
-      if (!res.data.users.user) {
-        throw "User not found";
-      }
-
-      res.data.users.user.roles = filterRoles(
-        res.data.users.user.roles as Role[],
-      );
-
-      return res.data.users.user as User;
-    });
-
-  return {
-    id: params.id,
-    streamed: {
-      userRequest: req,
-    },
-  };
+        streamed: {
+            userRequest: req,
+        },
+    };
 }

@@ -5,24 +5,24 @@ import { gqlClient } from "./gql";
 let timeout: NodeJS.Timeout | number | undefined;
 
 export async function queryEmotes(
-  query: string | null,
-  tags: string[],
-  sort: SortBy,
-  filters: Filters | null,
-  page: number | null,
-  perPage: number,
+    query: string | null,
+    tags: string[],
+    sort: SortBy,
+    filters: Filters | null,
+    page: number | null,
+    perPage: number,
 ): Promise<EmoteSearchResult> {
-  if (timeout) {
-    clearTimeout(timeout);
-  }
+    if (timeout) {
+        clearTimeout(timeout);
+    }
 
-  // Small timeout to prevent spamming requests when user is typing
+    // Small timeout to prevent spamming requests when user is typing
 
-  return new Promise((resolve, reject) => {
-    timeout = setTimeout(async () => {
-      const res = await gqlClient()
-        .query(
-          graphql(`
+    return new Promise((resolve, reject) => {
+        timeout = setTimeout(async () => {
+            const res = await gqlClient()
+                .query(
+                    graphql(`
 						query EmoteSearch(
 							$query: String
 							$tags: [String!]!
@@ -76,23 +76,23 @@ export async function queryEmotes(
 							}
 						}
 					`),
-          {
-            query,
-            tags,
-            sortBy: sort,
-            filters,
-            page,
-            perPage,
-          },
-        )
-        .toPromise();
+                    {
+                        query,
+                        tags,
+                        sortBy: sort,
+                        filters,
+                        page,
+                        perPage,
+                    },
+                )
+                .toPromise();
 
-      if (res.error || !res.data) {
-        console.error("error fetching emotes", res.error);
-        reject(res.error);
-      } else {
-        resolve(res.data.emotes.search as EmoteSearchResult);
-      }
-    }, 200);
-  });
+            if (res.error || !res.data) {
+                console.error("error fetching emotes", res.error);
+                reject(res.error);
+            } else {
+                resolve(res.data.emotes.search as EmoteSearchResult);
+            }
+        }, 200);
+    });
 }

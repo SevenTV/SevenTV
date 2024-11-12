@@ -1,16 +1,43 @@
 {
-  "tasks": {
-    "dev": "deno task codegen && vite dev --port 4173",
-    "build": "deno task codegen && vite build",
-    "preview": "vite preview --port 4173",
-    "codegen": "graphql-codegen --config codegen.ts"
-  },
-  "imports": {
-    "$": "./src",
-    "$assets": "./assets"
-  },
-  "type": "module",
-  "lint": {
-    "exclude": ["node_modules", "build", ".svelte-kit", "src/gql"]
-  }
+    "tasks": {
+        "dev": "deno task codegen && vite dev --port 4173",
+        "build": "deno task codegen && vite build",
+        "preview": "vite preview --port 4173",
+        "codegen": "graphql-codegen --config codegen.ts"
+    },
+    "imports": {
+        "$": "./src",
+        "$assets": "./assets"
+    },
+    "type": "module",
+    "lint": {
+        "exclude": [
+            "node_modules",
+            "build",
+            ".svelte-kit",
+            "src/gql",
+            "schema.graphql",
+            "assets"
+        ]
+    },
+    "fmt": {
+        "exclude": [
+            "node_modules",
+            "build",
+            ".svelte-kit",
+            "src/gql",
+            "schema.graphql",
+            "assets"
+        ],
+        "include": [
+            "**/*.ts",
+            "**/*.js",
+            "**/*.json",
+            "**/*.md",
+            "**/*.svelte",
+            "**/*.svg"
+        ],
+        "useTabs": false,
+        "indentWidth": 4
+    }
 }
