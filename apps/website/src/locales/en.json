@@ -129,13 +129,6 @@
 		"system": "System",
 		"approved_for_public": "Your emote {emote} has been approved for public listing."
 	},
-	"activities": {
-		"added_to_set": "Added new emote to {emote_set}",
-		"create": "{user} created {emote}",
-		"modify": "{user} modified {emote}",
-		"approve": "{user} approved {emote}",
-		"reject": "{user} rejected {emote}"
-	},
 	"sub_info": {
 		"plan": "Plan",
 		"free": "Free",

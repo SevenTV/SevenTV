@@ -1,35 +1,107 @@
 <script lang="ts">
 	import EmoteTabs from "$/components/layout/emote-tabs.svelte";
-	import { Check, IconContext, NotePencil, Plus, X } from "phosphor-svelte";
-	import { t } from "svelte-i18n";
-	import moment from "moment/min/moment-with-locales";
-	import FromNow from "$/components/from-now.svelte";
 	import type { PageData } from "./$types";
+	import type { EmoteEvent } from "$/gql/graphql";
+	import { gqlClient } from "$/lib/gql";
+	import { graphql } from "$/gql";
+	import Spinner from "$/components/spinner.svelte";
+	import EmoteEventComponent from "$/components/emotes/emote-event.svelte";
 
 	let { data }: { data: PageData } = $props();
 
-	const activities = [
-		{
-			kind: "reject",
-			user: "ayyybubu",
-			emote: "AlienPls",
-		},
-		{
-			kind: "modify",
-			user: "ayyybubu",
-			emote: "AlienPls",
-		},
-		{
-			kind: "approve",
-			user: "ayyybubu",
-			emote: "AlienPls",
-		},
-		{
-			kind: "create",
-			user: "ayyybubu",
-			emote: "AlienPls",
-		},
-	];
+	async function loadEvents(id: string): Promise<EmoteEvent[]> {
+		const res = await gqlClient()
+			.query(
+				graphql(`
+					query EmoteEvents($id: Id!) {
+						emotes {
+							emote(id: $id) {
+								events {
+									id
+									createdAt
+									actor {
+										id
+										mainConnection {
+											platformDisplayName
+										}
+										highestRoleColor {
+											hex
+										}
+									}
+									data {
+										__typename
+										... on EventEmoteDataProcess {
+											event
+										}
+										... on EventEmoteDataChangeName {
+											oldName: old
+											newName: new
+										}
+										... on EventEmoteDataMerge {
+											newEmote {
+												id
+												defaultName
+											}
+										}
+										... on EventEmoteDataChangeOwner {
+											oldOwner: old {
+												id
+												mainConnection {
+													platformDisplayName
+												}
+												highestRoleColor {
+													hex
+												}
+											}
+											newOwner: new {
+												id
+												mainConnection {
+													platformDisplayName
+												}
+												highestRoleColor {
+													hex
+												}
+											}
+										}
+										... on EventEmoteDataChangeTags {
+											oldTags: old
+											newTags: new
+										}
+										... on EventEmoteDataChangeFlags {
+											oldFlags: old {
+												publicListed
+												private
+												defaultZeroWidth
+												approvedPersonal
+												deniedPersonal
+											}
+											newFlags: new {
+												publicListed
+												private
+												defaultZeroWidth
+												approvedPersonal
+												deniedPersonal
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				`),
+				{ id },
+			)
+			.toPromise();
+
+		if (res.error || !res.data) {
+			console.error(res.error);
+			throw res.error;
+		}
+
+		return res.data.emotes.emote?.events as EmoteEvent[];
+	}
+
+	let events = $derived(loadEvents(data.id));
 </script>
 
 <div class="navigation">
@@ -37,38 +109,19 @@
 		<EmoteTabs id={emote.id} />
 	{/await}
 </div>
-<div class="activities">
-	{#each activities as activity, index}
-		<div class="event">
-			<IconContext
-				values={{
-					style: "grid-area: icon; margin: 0 0.5rem;",
-					size: 1.2 * 16,
-					color: "var(--primary)",
-				}}
-			>
-				{#if activity.kind === "reject"}
-					<X />
-				{:else if activity.kind === "modify"}
-					<NotePencil />
-				{:else if activity.kind === "approve"}
-					<Check />
-				{:else}
-					<Plus />
-				{/if}
-			</IconContext>
-
-			<span class="text">
-				{$t(`activities.${activity.kind}`, {
-					values: { user: activity.user, emote: activity.emote },
-				})}
-			</span>
-			<span class="time"><FromNow date={moment()} /></span>
+<div class="events">
+	{#await events}
+		<div class="spinner-wrapper">
+			<Spinner />
 		</div>
-		{#if index !== activities.length - 1}
-			<hr />
-		{/if}
-	{/each}
+	{:then events}
+		{#each events as event, index}
+			<EmoteEventComponent {event} />
+			{#if index !== events.length - 1}
+				<hr />
+			{/if}
+		{/each}
+	{/await}
 </div>
 
 <style lang="scss">
@@ -79,32 +132,11 @@
 		gap: 0.5rem;
 	}
 
-	.activities {
+	.spinner-wrapper {
+		text-align: center;
+	}
+
+	.events {
 		margin-top: 1.5rem;
-	}
-
-	.event {
-		display: grid;
-		grid-template-areas: "icon text" ". time";
-		justify-content: start;
-		align-items: center;
-		row-gap: 0.5rem;
-		margin: 1rem 0;
-
-		font-size: 0.75rem;
-		font-weight: 500;
-
-		.text {
-			grid-area: text;
-		}
-
-		.time {
-			grid-area: time;
-			color: var(--text-light);
-		}
-	}
-
-	hr {
-		color: var(--border-active);
 	}
 </style>

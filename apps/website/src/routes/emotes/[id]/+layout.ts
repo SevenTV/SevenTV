@@ -96,6 +96,7 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 		});
 
 	return {
+		id: params.id,
 		streamed: {
 			emote: req,
 		},

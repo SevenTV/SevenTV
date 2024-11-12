@@ -1,8 +1,13 @@
+use std::sync::Arc;
+
+use async_graphql::Context;
 use shared::database::emote::EmoteId;
 use shared::database::stored_event::StoredEventEmoteData;
 use shared::database::user::UserId;
 
-use crate::http::v4::gql::types::EmoteFlags;
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::v4::gql::types::{Emote, EmoteFlags, User};
 
 #[derive(async_graphql::Union)]
 pub enum EventEmoteData {
@@ -23,7 +28,10 @@ impl From<StoredEventEmoteData> for EventEmoteData {
 			StoredEventEmoteData::Process { event } => Self::Process(EventEmoteDataProcess { event: event.into() }),
 			StoredEventEmoteData::ChangeName { old, new } => Self::ChangeName(EventEmoteDataChangeName { old, new }),
 			StoredEventEmoteData::Merge { new_emote_id } => Self::Merge(EventEmoteDataMerge { new_emote_id }),
-			StoredEventEmoteData::ChangeOwner { old, new } => Self::ChangeOwner(EventEmoteDataChangeOwner { old, new }),
+			StoredEventEmoteData::ChangeOwner { old, new } => Self::ChangeOwner(EventEmoteDataChangeOwner {
+				old_id: old,
+				new_id: new,
+			}),
 			StoredEventEmoteData::ChangeTags { old, new } => Self::ChangeTags(EventEmoteDataChangeTags { old, new }),
 			StoredEventEmoteData::ChangeFlags { old, new } => Self::ChangeFlags(EventEmoteDataChangeFlags {
 				old: old.into(),
@@ -36,6 +44,7 @@ impl From<StoredEventEmoteData> for EventEmoteData {
 
 #[derive(async_graphql::SimpleObject, Default)]
 pub struct EventEmoteDataUpload {
+	/// Always false
 	pub noop: bool,
 }
 
@@ -70,14 +79,65 @@ pub struct EventEmoteDataChangeName {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EventEmoteDataMerge {
 	pub new_emote_id: EmoteId,
 }
 
+#[async_graphql::ComplexObject]
+impl EventEmoteDataMerge {
+	async fn new_emote(&self, ctx: &Context<'_>) -> Result<Emote, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let emote = global
+			.emote_by_id_loader
+			.load(self.new_emote_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;
+
+		Ok(Emote::from_db(emote, &global.config.api.cdn_origin))
+	}
+}
+
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EventEmoteDataChangeOwner {
-	pub old: UserId,
-	pub new: UserId,
+	pub old_id: UserId,
+	pub new_id: UserId,
+}
+
+#[async_graphql::ComplexObject]
+impl EventEmoteDataChangeOwner {
+	async fn old(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let user = global
+			.user_loader
+			.load(global, self.old_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(user.map(Into::into))
+	}
+
+	async fn new(&self, ctx: &async_graphql::Context<'_>) -> Result<Option<User>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let user = global
+			.user_loader
+			.load(global, self.new_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(user.map(Into::into))
+	}
 }
 
 #[derive(async_graphql::SimpleObject)]
@@ -94,5 +154,6 @@ pub struct EventEmoteDataChangeFlags {
 
 #[derive(async_graphql::SimpleObject, Default)]
 pub struct EventEmoteDataDelete {
+	/// Always false
 	pub noop: bool,
 }

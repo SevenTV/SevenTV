@@ -38,10 +38,13 @@ type EmoteAttribution {
 }
 
 type EmoteEvent {
+	actor: User
 	actorId: Id
+	createdAt: DateTime!
 	data: EventEmoteData!
 	id: Id!
 	searchUpdatedAt: DateTime
+	target: Emote!
 	targetId: Id!
 	updatedAt: DateTime!
 }
@@ -135,8 +138,10 @@ type EventEmoteDataChangeName {
 }
 
 type EventEmoteDataChangeOwner {
-	new: Id!
-	old: Id!
+	new: User
+	newId: Id!
+	old: User
+	oldId: Id!
 }
 
 type EventEmoteDataChangeTags {
@@ -145,10 +150,14 @@ type EventEmoteDataChangeTags {
 }
 
 type EventEmoteDataDelete {
+	"""
+	Always false
+	"""
 	noop: Boolean!
 }
 
 type EventEmoteDataMerge {
+	newEmote: Emote!
 	newEmoteId: Id!
 }
 
@@ -157,6 +166,9 @@ type EventEmoteDataProcess {
 }
 
 type EventEmoteDataUpload {
+	"""
+	Always false
+	"""
 	noop: Boolean!
 }
 
