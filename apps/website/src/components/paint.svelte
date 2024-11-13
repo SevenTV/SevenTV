@@ -1,13 +1,18 @@
 <script lang="ts">
 	import {
 		PaintRadialGradientShape,
-		type PaintData,
+		type Paint,
 		type PaintLayer,
 		type PaintShadow,
 	} from "$/gql/graphql";
 	import type { Snippet } from "svelte";
 
-	let { paint, children }: { paint: PaintData; children: Snippet } = $props();
+	interface Props {
+		paint: Paint;
+		children: Snippet;
+	}
+
+	let { paint, children }: Props = $props();
 
 	function layerToBackgroundImage(layer: PaintLayer) {
 		switch (layer.ty.__typename) {
@@ -66,12 +71,12 @@
 	}
 
 	let backgroundImage = $derived(
-		paint.layers[0] ? layerToBackgroundImage(paint.layers[0]) : undefined,
+		paint.data.layers[0] ? layerToBackgroundImage(paint.data.layers[0]) : undefined,
 	);
 	let backgroundColor = $derived(
-		paint.layers[0] ? layerToBackgroundColor(paint.layers[0]) : undefined,
+		paint.data.layers[0] ? layerToBackgroundColor(paint.data.layers[0]) : undefined,
 	);
-	let filter = $derived(paint.shadows.map(shadowToFilter).join(" "));
+	let filter = $derived(paint.data.shadows.map(shadowToFilter).join(" "));
 </script>
 
 <span
@@ -79,6 +84,7 @@
 	style:background-image={backgroundImage}
 	style:background-color={backgroundColor}
 	style:filter
+	title="Paint: {paint.name}"
 >
 	{@render children()}
 </span>
@@ -90,7 +96,6 @@
 		-webkit-background-clip: text;
 		background-clip: text;
 
-		color: transparent;
-		font-weight: 700;
+		-webkit-text-fill-color: transparent;
 	}
 </style>

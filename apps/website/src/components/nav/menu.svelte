@@ -25,6 +25,7 @@
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import Spinner from "../spinner.svelte";
 	import { filterRoles } from "$/lib/utils";
+	import UserName from "../user-name.svelte";
 
 	let { onCloseRequest }: { onCloseRequest?: () => void } = $props();
 
@@ -60,7 +61,9 @@
 		{#if $user}
 			<a class="profile" href="/users/{$user.id}" onclick={onCloseRequest}>
 				<UserProfilePicture user={$user} size={3 * 16} style="grid-row: 1 / -1" />
-				<span class="name">{$user.mainConnection?.platformDisplayName}</span>
+				<span class="name">
+					<UserName user={$user} />
+				</span>
 				<div class="roles">
 					{#each reversedRoles as role}
 						<Role {role} />

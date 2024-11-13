@@ -5,8 +5,24 @@
 	let { user }: { user: User } = $props();
 </script>
 
+{#snippet name()}
+	<span class="name" style:color={user.highestRoleColor?.hex}
+		>{user.mainConnection?.platformDisplayName}</span
+	>
+{/snippet}
+
 {#if user.style.activePaint}
-	<Paint paint={user.style.activePaint.data}>{user.mainConnection?.platformDisplayName}</Paint>
+	<Paint paint={user.style.activePaint}>
+		{@render name()}
+	</Paint>
 {:else}
-	{user.mainConnection?.platformDisplayName}
+	{@render name()}
 {/if}
+
+<style lang="scss">
+	.name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+</style>

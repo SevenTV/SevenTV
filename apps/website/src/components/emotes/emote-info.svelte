@@ -29,6 +29,7 @@
 	import EmoteLoadingPlaceholder from "../emote-loading-placeholder.svelte";
 	import type { DialogMode } from "../dialogs/dialog.svelte";
 	import type { Snippet } from "svelte";
+	import UserName from "../user-name.svelte";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -92,12 +93,8 @@
 					<UserProfilePicture user={data.owner} />
 				</a>
 				<div class="name-container">
-					<a
-						href="/users/{data.owner.id}"
-						class="username"
-						style:color={data.owner.highestRoleColor?.hex}
-					>
-						{data.owner.mainConnection?.platformDisplayName}
+					<a href="/users/{data.owner.id}" class="username">
+						<UserName user={data.owner} />
 					</a>
 					{#if data.attribution.length > 0}
 						<div class="artists">
