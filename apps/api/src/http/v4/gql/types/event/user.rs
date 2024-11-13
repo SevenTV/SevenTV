@@ -70,7 +70,6 @@ pub struct EventUserDataCreate {
 }
 
 #[derive(async_graphql::SimpleObject)]
-#[graphql(complex)]
 pub struct EventUserDataChangeActivePaint {
 	#[graphql(name = "oldPaintId")]
 	pub old_id: Option<PaintId>,
@@ -87,6 +86,7 @@ pub struct EventUserDataChangeActiveBadge {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EventUserDataChangeActiveEmoteSet {
 	#[graphql(name = "oldEmoteSetId")]
 	pub old_id: Option<EmoteSetId>,

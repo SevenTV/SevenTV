@@ -367,14 +367,6 @@ async fn login_finish(
 			})
 			.map_err(TransactionError::Custom)?;
 
-		// create cookie
-		let expiration = cookie::time::OffsetDateTime::from_unix_timestamp(user_session.expires_at.timestamp())
-			.map_err(|err| {
-				tracing::error!(error = %err, "failed to convert expiration to cookie time");
-				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to convert expiration to cookie time")
-			})
-			.map_err(TransactionError::Custom)?;
-
 		cookies.remove(&global, CSRF_COOKIE);
 
 		Ok(LoginFinishResponse { token })
