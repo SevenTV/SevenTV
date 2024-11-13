@@ -275,7 +275,6 @@ impl CosmeticPaintInput {
 					.collect();
 
 				PaintLayerType::RadialGradient {
-					angle: self.angle.unwrap_or(0) as i32,
 					repeating: self.repeat,
 					shape: self.shape.unwrap_or(CosmeticPaintShape::Ellipse).into(),
 					stops,

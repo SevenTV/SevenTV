@@ -16,12 +16,7 @@
 		selectionMap?: { [key: string]: boolean };
 	}
 
-	let {
-		load,
-		scrollable,
-		selectionMode = false,
-		selectionMap = $bindable({}),
-	}: Props = $props();
+	let { load, scrollable, selectionMode = false, selectionMap = $bindable({}) }: Props = $props();
 
 	let page = $state(1);
 	let results: EmoteSearchResult | undefined = $state();

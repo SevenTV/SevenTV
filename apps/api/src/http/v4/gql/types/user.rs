@@ -8,7 +8,7 @@ use shared::database::role::RoleId;
 use shared::database::user::profile_picture::UserProfilePictureId;
 use shared::database::user::UserId;
 
-use super::{Color, Emote, EmoteSet, Role, UserEditor, UserProfilePicture};
+use super::{Color, Emote, EmoteSet, Paint, Role, UserEditor, UserProfilePicture};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -158,6 +158,24 @@ pub struct UserStyle {
 
 #[ComplexObject]
 impl UserStyle {
+	async fn active_paint<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Paint>, ApiError> {
+		let Some(active_paint_id) = self.active_paint_id else {
+			return Ok(None);
+		};
+
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let paint = global
+			.paint_by_id_loader
+			.load(active_paint_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load active paint"))?;
+
+		Ok(paint.map(|p| Paint::from_db(p, &global.config.api.cdn_origin)))
+	}
+
 	async fn active_emote_set<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<EmoteSet>, ApiError> {
 		let Some(active_emote_set_id) = self.active_emote_set_id else {
 			return Ok(None);

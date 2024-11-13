@@ -153,7 +153,7 @@ type EventEmoteDataDelete {
 	"""
 	Always false
 	"""
-	noop: Boolean!
+	noop: Boolean! @deprecated
 }
 
 type EventEmoteDataMerge {
@@ -169,7 +169,7 @@ type EventEmoteDataUpload {
 	"""
 	Always false
 	"""
-	noop: Boolean!
+	noop: Boolean! @deprecated
 }
 
 input Filters {
@@ -203,6 +203,68 @@ enum ImageProcessorEvent {
 	SUCCESS
 }
 
+
+type Paint {
+	createdById: Id!
+	data: PaintData!
+	description: String
+	id: Id!
+	name: String!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type PaintData {
+	layers: [PaintLayer!]!
+	shadows: [PaintShadow!]!
+}
+
+type PaintGradientStop {
+	at: Float!
+	color: Color!
+}
+
+type PaintLayer {
+	id: Id!
+	opacity: Float!
+	ty: PaintLayerType!
+}
+
+union PaintLayerType = PaintLayerTypeSingleColor | PaintLayerTypeLinearGradient | PaintLayerTypeRadialGradient | PaintLayerTypeImage
+
+type PaintLayerTypeImage {
+	images: [Image!]!
+}
+
+type PaintLayerTypeLinearGradient {
+	angle: Int!
+	repeating: Boolean!
+	stops: [PaintGradientStop!]!
+}
+
+type PaintLayerTypeRadialGradient {
+	angle: Int!
+	repeating: Boolean!
+	shape: PaintRadialGradientShape!
+	stops: [PaintGradientStop!]!
+}
+
+type PaintLayerTypeSingleColor {
+	color: Color!
+}
+
+enum PaintRadialGradientShape {
+	CIRCLE
+	ELLIPSE
+}
+
+type PaintShadow {
+	blur: Float!
+	color: Color!
+	offsetX: Float!
+	offsetY: Float!
+}
 
 enum Platform {
 	DISCORD
@@ -349,12 +411,14 @@ type UserStyle {
 	activeBadgeId: Id
 	activeEmoteSet: EmoteSet
 	activeEmoteSetId: Id
+	activePaint: Paint
 	activePaintId: Id
 	activeProfilePicture: UserProfilePicture
 	activeProfilePictureId: Id
 	pendingProfilePictureId: Id
 }
 
+directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
 directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @specifiedBy(url: String!) on SCALAR
