@@ -6,13 +6,14 @@
 		type PaintShadow,
 	} from "$/gql/graphql";
 	import type { Snippet } from "svelte";
+	import type { HTMLAttributes } from "svelte/elements";
 
-	interface Props {
+	type Props = {
 		paint: Paint;
 		children: Snippet;
-	}
+	} & HTMLAttributes<HTMLSpanElement>;
 
-	let { paint, children }: Props = $props();
+	let { paint, children, ...restProps }: Props = $props();
 
 	function layerToBackgroundImage(layer: PaintLayer) {
 		switch (layer.ty.__typename) {
@@ -85,17 +86,18 @@
 	style:background-color={backgroundColor}
 	style:filter
 	title="Paint: {paint.name}"
+	{...restProps}
 >
 	{@render children()}
 </span>
 
 <style lang="scss">
 	.paint {
-		background-size: cover;
 		background-color: currentColor;
-		-webkit-background-clip: text;
-		background-clip: text;
 
 		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		-webkit-background-clip: text;
+		background-size: cover;
 	}
 </style>
