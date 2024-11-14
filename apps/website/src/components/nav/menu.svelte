@@ -12,6 +12,7 @@
 		House,
 		Key,
 		Moon,
+		PaintBrush,
 		PencilSimple,
 		Prohibit,
 		SignOut,
@@ -93,19 +94,19 @@
 				{$t("pages.store.title")}
 			</MenuButton> -->
 		</div>
-		<!-- {#if $user}
+		{#if $user}
 			<div class="link-list">
-				<MenuButton href="/cosmetics">
+				<MenuButton href="/cosmetics" onclick={onCloseRequest}>
 					<PaintBrush />
 					{$t("common.cosmetics")}
 				</MenuButton>
-				<MenuButton href="/analytics">
+				<!-- <MenuButton href="/analytics">
 					<ChartLine />
 					{$t("common.analytics")}
-				</MenuButton>
+				</MenuButton> -->
 			</div>
 			<hr class="hide-on-mobile" />
-		{/if} -->
+		{/if}
 		<div class="link-list">
 			<!-- <MenuButton showCaret on:click={(e) => setMenu(e, Menu.Language)}>
 				<GlobeHemisphereWest />

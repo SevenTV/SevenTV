@@ -148,6 +148,8 @@ macro_rules! stripe_type {
 					crate::typesense::types::FieldType::String
 				}
 			}
+
+			async_graphql::scalar!($name);
 		};
 	};
 }
