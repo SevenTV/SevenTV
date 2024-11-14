@@ -71,28 +71,43 @@
 		return `drop-shadow(${shadow.color.hex} ${shadow.offsetX}px ${shadow.offsetY}px ${shadow.blur}px)`;
 	}
 
-	let backgroundImage = $derived(
-		paint.data.layers[0] ? layerToBackgroundImage(paint.data.layers[0]) : undefined,
-	);
-	let backgroundColor = $derived(
-		paint.data.layers[0] ? layerToBackgroundColor(paint.data.layers[0]) : undefined,
+	let layers = $derived(
+		paint.data.layers.map((l) => {
+			return {
+				opacity: l.opacity,
+				image: layerToBackgroundImage(l),
+				color: layerToBackgroundColor(l),
+			};
+		}),
 	);
 	let filter = $derived(paint.data.shadows.map(shadowToFilter).join(" "));
 </script>
 
-<span
-	class="paint"
-	style:background-image={backgroundImage}
-	style:background-color={backgroundColor}
-	style:filter
-	title="Paint: {paint.name}"
-	{...restProps}
->
-	{@render children()}
-</span>
+<div class="paint" title="Paint: {paint.name}" {...restProps}>
+	{#each layers as { opacity, image, color }, i}
+		<!-- Apply filters only to first layer -->
+		<span
+			class="layer"
+			style:opacity
+			style:background-image={image}
+			style:background-color={color}
+			style:filter={i === 0 ? filter : undefined}
+		>
+			{@render children()}
+		</span>
+	{/each}
+</div>
 
 <style lang="scss">
 	.paint {
+		display: grid;
+		justify-items: start;
+	}
+
+	.layer {
+		// Overlay all layers on top of each other
+		grid-area: 1 / 1 / -1 / -1;
+
 		background-color: currentColor;
 
 		-webkit-text-fill-color: transparent;

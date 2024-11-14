@@ -7,3 +7,14 @@
 </svelte:head>
 
 <h1>{$t("common.cosmetics")}</h1>
+
+<div class="paints">
+</div>
+
+<style lang="scss">
+	.paints {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+		gap: 1rem;
+	}
+</style>
