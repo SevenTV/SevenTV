@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use axum::body::Body;
@@ -143,19 +144,22 @@ pub async fn logout(
 	Query(query): Query<LogoutRequest>,
 	request: axum::extract::Request,
 ) -> Result<impl IntoResponse, ApiError> {
+	let allowed = [
+		&global.config.api.api_origin,
+		&global.config.api.website_origin,
+		&global.config.api.beta_website_origin,
+	];
+
 	if let Some(referer) = request.headers().get(hyper::header::REFERER) {
-		if referer.to_str().ok() != Some(global.config.api.website_origin.as_str())
-			&& referer.to_str().ok() != Some(global.config.api.api_origin.as_str())
-			&& referer.to_str().ok() != Some(global.config.api.beta_website_origin.as_str())
-		{
+		let referer = referer.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only logout from website"));
 		}
 	}
 
 	if let Some(origin) = request.headers().get(hyper::header::ORIGIN) {
-		if origin.to_str().ok() != Some(global.config.api.api_origin.as_str())
-			&& origin.to_str().ok() != Some(global.config.api.beta_website_origin.as_str())
-		{
+		let origin = origin.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
 	}
