@@ -6,6 +6,7 @@ use axum::extract::{Query, State};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
+use hyper::HeaderMap;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::stored_event::StoredEventUserSessionData;
@@ -19,7 +20,7 @@ use crate::connections;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::cookies::{new_cookie, Cookies};
-use crate::http::middleware::session::Session;
+use crate::http::middleware::session::{parse_session, Session, AUTH_COOKIE};
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::RateLimitRequest;
 use crate::transactions::{transaction, TransactionError};
@@ -40,7 +41,7 @@ pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.route("/login", get(login))
 		.route("/login/finish", post(login_finish))
-		.route("/logout", post(crate::http::v3::rest::auth::logout))
+		.route("/logout", post(logout))
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -375,6 +376,67 @@ async fn login_finish(
 
 	match res {
 		Ok(response) => Ok(Json(response)),
+		Err(TransactionError::Custom(e)) => Err(e),
+		Err(e) => {
+			tracing::error!(error = %e, "transaction failed");
+			Err(ApiError::internal_server_error(
+				ApiErrorCode::TransactionError,
+				"transaction failed",
+			))
+		}
+	}
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct LogoutRequest {
+	#[serde(default)]
+	pub token: Option<String>,
+}
+
+async fn logout(
+	State(global): State<Arc<Global>>,
+	Extension(cookies): Extension<Cookies>,
+	Extension(session): Extension<Session>,
+	Query(query): Query<LogoutRequest>,
+	headers: HeaderMap,
+) -> Result<(), ApiError> {
+	let allowed = [
+		&global.config.api.api_origin,
+		&global.config.api.website_origin,
+		&global.config.api.beta_website_origin,
+	];
+
+	if let Some(referer) = headers.get(hyper::header::REFERER) {
+		let referer = referer.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only logout from website"));
+		}
+	}
+
+	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
+		let origin = origin.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
+		}
+	}
+
+	let session = if session.user_session().is_none() {
+		if let Some(token) = &query.token {
+			parse_session(&global, session.ip(), token)
+				.await?
+				.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::BadRequest, "invalid token"))?
+		} else {
+			session
+		}
+	} else {
+		session
+	};
+
+	match session.logout(&global).await {
+		Ok(_) => {
+			cookies.remove(&global, AUTH_COOKIE);
+			Ok(())
+		}
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");
