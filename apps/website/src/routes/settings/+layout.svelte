@@ -95,11 +95,9 @@
 
 		.profile-picture {
 			border-radius: 50%;
-			border: 2px solid var(--staff);
 		}
 
 		.name {
-			color: var(--staff);
 			font-weight: 600;
 		}
 	}

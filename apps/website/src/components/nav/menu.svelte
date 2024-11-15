@@ -261,7 +261,6 @@
 			grid-row: 1;
 			font-size: 1rem;
 			font-weight: 600;
-			color: var(--staff);
 		}
 
 		.roles {
