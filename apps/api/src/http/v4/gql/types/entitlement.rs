@@ -190,6 +190,7 @@ impl EntitlementNodeSubscriptionBenefit {
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		// TODO: Use data loader
 		let product = SubscriptionProduct::collection(&global.db)
 			.find_one(filter::filter! {
 				SubscriptionProduct {

@@ -1,5 +1,6 @@
 
 type Color {
+	a: Int!
 	b: Int!
 	g: Int!
 	hex: String!
@@ -125,6 +126,63 @@ type EmoteSetQuery {
 	emoteSet(id: Id!): EmoteSet
 }
 
+type EntitlementEdgeAnyBadge {
+	from: EntitlementNodeAny!
+	to: EntitlementNodeBadge!
+}
+
+type EntitlementEdgeAnyPaint {
+	from: EntitlementNodeAny!
+	to: EntitlementNodePaint!
+}
+
+union EntitlementNodeAny = EntitlementNodeUser | EntitlementNodeRole | EntitlementNodeBadge | EntitlementNodePaint | EntitlementNodeEmoteSet | EntitlementNodeProduct | EntitlementNodeSubscriptionBenefit | EntitlementNodeSubscription | EntitlementNodeSpecialEvent | EntitlementNodeGlobalDefaultEntitlementGroup
+
+type EntitlementNodeBadge {
+	badgeId: Id!
+}
+
+type EntitlementNodeEmoteSet {
+	emoteSet: EmoteSet!
+	emoteSetId: Id!
+}
+
+type EntitlementNodeGlobalDefaultEntitlementGroup {
+	noop: Boolean! @deprecated
+}
+
+type EntitlementNodePaint {
+	paint: Paint!
+	paintId: Id!
+}
+
+type EntitlementNodeProduct {
+	productId: ProductId!
+}
+
+type EntitlementNodeRole {
+	role: Role!
+	roleId: Id!
+}
+
+type EntitlementNodeSpecialEvent {
+	specialEventId: Id!
+}
+
+type EntitlementNodeSubscription {
+	subscriptionId: SubscriptionId!
+}
+
+type EntitlementNodeSubscriptionBenefit {
+	subscriptionBenefit: SubscriptionBenefit!
+	subscriptionBenefitId: Id!
+}
+
+type EntitlementNodeUser {
+	user: User!
+	userId: Id!
+}
+
 union EventEmoteData = EventEmoteDataUpload | EventEmoteDataProcess | EventEmoteDataChangeName | EventEmoteDataMerge | EventEmoteDataChangeOwner | EventEmoteDataChangeTags | EventEmoteDataChangeFlags | EventEmoteDataDelete
 
 type EventEmoteDataChangeFlags {
@@ -244,7 +302,6 @@ type PaintLayerTypeLinearGradient {
 }
 
 type PaintLayerTypeRadialGradient {
-	angle: Int!
 	repeating: Boolean!
 	shape: PaintRadialGradientShape!
 	stops: [PaintGradientStop!]!
@@ -272,6 +329,8 @@ enum Platform {
 	KICK
 	TWITCH
 }
+
+scalar ProductId
 
 type Query {
 	emoteSets: EmoteSetQuery!
@@ -334,6 +393,13 @@ enum SortOrder {
 }
 
 
+type SubscriptionBenefit {
+	id: Id!
+	name: String!
+}
+
+scalar SubscriptionId
+
 input Tags {
 	match: TagsMatch!
 	tags: [String!]!
@@ -350,6 +416,7 @@ type User {
 	highestRoleColor: Color
 	highestRoleRank: Int!
 	id: Id!
+	inventory: UserInventory!
 	mainConnection: UserConnection
 	ownedEmoteSets: [EmoteSet!]!
 	ownedEmotes: [Emote!]!
@@ -387,6 +454,11 @@ enum UserEditorState {
 	ACCEPTED
 	PENDING
 	REJECTED
+}
+
+type UserInventory {
+	badges: [EntitlementEdgeAnyBadge!]!
+	paints: [EntitlementEdgeAnyPaint!]!
 }
 
 type UserProfilePicture {
