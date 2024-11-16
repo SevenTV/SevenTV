@@ -9,6 +9,7 @@ use crate::global::Global;
 use crate::http::guards::RateLimitResponseStore;
 use crate::http::middleware::session::Session;
 
+mod mutations;
 mod queries;
 mod types;
 
