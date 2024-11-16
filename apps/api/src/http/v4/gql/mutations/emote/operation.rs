@@ -13,7 +13,7 @@ impl EmoteOperation {
 		ctx: &Context<'ctx>,
 		#[graphql(validator(custom = "EmoteNameValidator"))] name: String,
 	) -> Result<Emote, ApiError> {
-
+		todo!()
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
@@ -22,7 +22,7 @@ impl EmoteOperation {
 		ctx: &Context<'ctx>,
 		flags: EmoteFlags,
 	) -> Result<Emote, ApiError> {
-
+		todo!()
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
@@ -31,7 +31,7 @@ impl EmoteOperation {
 		ctx: &Context<'ctx>,
 		owner_id: UserId,
 	) -> Result<Emote, ApiError> {
-
+		todo!()
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
@@ -40,17 +40,16 @@ impl EmoteOperation {
 		ctx: &Context<'ctx>,
 		tags: Vec<String>,
 	) -> Result<Emote, ApiError> {
-
+		todo!()
 	}
 
-	#[graphql(guard = "PermissionGuard::one(EmotePermission::Merge)")]
-	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
+	#[graphql(guard = "PermissionGuard::one(EmotePermission::Merge).and(RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1))")]
 	async fn merge(
 		&self,
 		ctx: &Context<'ctx>,
 		with: EmoteId,
 	) -> Result<Emote, ApiError> {
-
+		todo!()
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
@@ -59,6 +58,6 @@ impl EmoteOperation {
 		ctx: &Context<'ctx>,
 		reason: Option<String>,
 	) -> Result<Emote, ApiError> {
-
+		todo!()
 	}
 }
