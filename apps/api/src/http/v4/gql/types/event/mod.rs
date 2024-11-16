@@ -15,7 +15,11 @@ pub type EmoteEvent = Event<emote::EventEmoteData>;
 pub type UserEvent = Event<user::EventUserData>;
 
 #[derive(async_graphql::SimpleObject)]
-#[graphql(complex, concrete(name = "EmoteEvent", params(emote::EventEmoteData)))]
+#[graphql(
+	complex,
+	concrete(name = "EmoteEvent", params(emote::EventEmoteData)),
+	concrete(name = "UserEvent", params(user::EventUserData))
+)]
 pub struct Event<T: OutputType> {
 	pub id: stored_event::StoredEventId,
 	pub actor_id: Option<UserId>,
@@ -70,6 +74,24 @@ impl TryFrom<stored_event::StoredEvent> for UserEvent {
 	}
 }
 
+async fn actor<T: OutputType>(event: &Event<T>, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+	let Some(user_id) = event.actor_id else {
+		return Ok(None);
+	};
+
+	let global: &Arc<Global> = ctx
+		.data()
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+	let user = global
+		.user_loader
+		.load(global, user_id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+	Ok(user.map(Into::into))
+}
+
 #[async_graphql::ComplexObject]
 impl EmoteEvent {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
@@ -92,20 +114,32 @@ impl EmoteEvent {
 	}
 
 	async fn actor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
-		let Some(user_id) = self.actor_id else {
-			return Ok(None);
-		};
+		actor(self, ctx).await
+	}
+}
 
+#[async_graphql::ComplexObject]
+impl UserEvent {
+	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
+		self.id.timestamp()
+	}
+
+	async fn target(&self, ctx: &Context<'_>) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		let user = global
 			.user_loader
-			.load(global, user_id)
+			.load(global, self.target_id.cast())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
-		Ok(user.map(Into::into))
+		Ok(user.into())
+	}
+
+	async fn actor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+		actor(self, ctx).await
 	}
 }

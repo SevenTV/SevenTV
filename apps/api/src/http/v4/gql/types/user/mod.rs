@@ -6,11 +6,14 @@ use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::role::RoleId;
 use shared::database::user::editor::EditorEmoteSetPermission;
 use shared::database::user::UserId;
+use shared::typesense::types::event::EventId;
 
-use super::{Color, Emote, EmoteSet, Role, UserEditor, UserEvent};
+use super::{Color, Emote, EmoteSet, Event, Role, UserEditor, UserEvent};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
+use crate::http::guards::RateLimitGuard;
+use crate::search::{search, sorted_results, SearchOptions};
 
 pub mod connection;
 pub mod inventory;
