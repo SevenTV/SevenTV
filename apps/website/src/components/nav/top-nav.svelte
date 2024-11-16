@@ -14,6 +14,7 @@
 	import Spinner from "../spinner.svelte";
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import GlobalSearch from "./global-search.svelte";
+	import UserName from "../user-name.svelte";
 
 	let cartDialogMode: DialogMode = $state("hidden");
 </script>
@@ -97,7 +98,9 @@
 				<DropDown>
 					{#if $user}
 						<UserProfilePicture user={$user} size={32} />
-						<span class="profile-name">{$user.mainConnection?.platformDisplayName}</span>
+						<span class="profile-name">
+							<UserName user={$user} />
+						</span>
 					{:else}
 						<Button>
 							{#snippet icon()}
@@ -180,7 +183,6 @@
 
 		.profile-name {
 			font-weight: 600;
-			color: var(--staff);
 		}
 	}
 

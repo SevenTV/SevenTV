@@ -12,6 +12,7 @@
 		House,
 		Key,
 		Moon,
+		PaintBrush,
 		PencilSimple,
 		Prohibit,
 		SignOut,
@@ -25,6 +26,7 @@
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import Spinner from "../spinner.svelte";
 	import { filterRoles } from "$/lib/utils";
+	import UserName from "../user-name.svelte";
 
 	let { onCloseRequest }: { onCloseRequest?: () => void } = $props();
 
@@ -60,7 +62,9 @@
 		{#if $user}
 			<a class="profile" href="/users/{$user.id}" onclick={onCloseRequest}>
 				<UserProfilePicture user={$user} size={3 * 16} style="grid-row: 1 / -1" />
-				<span class="name">{$user.mainConnection?.platformDisplayName}</span>
+				<span class="name">
+					<UserName user={$user} />
+				</span>
 				<div class="roles">
 					{#each reversedRoles as role}
 						<Role {role} />
@@ -90,19 +94,19 @@
 				{$t("pages.store.title")}
 			</MenuButton> -->
 		</div>
-		<!-- {#if $user}
+		{#if $user}
 			<div class="link-list">
-				<MenuButton href="/cosmetics">
+				<MenuButton href="/cosmetics" onclick={onCloseRequest}>
 					<PaintBrush />
 					{$t("common.cosmetics")}
 				</MenuButton>
-				<MenuButton href="/analytics">
+				<!-- <MenuButton href="/analytics">
 					<ChartLine />
 					{$t("common.analytics")}
-				</MenuButton>
+				</MenuButton> -->
 			</div>
 			<hr class="hide-on-mobile" />
-		{/if} -->
+		{/if}
 		<div class="link-list">
 			<!-- <MenuButton showCaret on:click={(e) => setMenu(e, Menu.Language)}>
 				<GlobeHemisphereWest />
@@ -257,7 +261,6 @@
 			grid-row: 1;
 			font-size: 1rem;
 			font-weight: 600;
-			color: var(--staff);
 		}
 
 		.roles {

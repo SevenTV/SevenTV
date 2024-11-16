@@ -1,5 +1,4 @@
 <script lang="ts">
-	import CmsPagePreview from "$/components/cms-page-preview.svelte";
 	import { t } from "svelte-i18n";
 </script>
 
@@ -9,9 +8,6 @@
 
 <div class="scroll-container">
 	<div class="previews">
-		{#each Array(10) as _, i}
-			<CmsPagePreview slug="post{i}" />
-		{/each}
 	</div>
 </div>
 

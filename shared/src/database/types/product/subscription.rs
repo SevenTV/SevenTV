@@ -33,6 +33,8 @@ impl FromStr for SubscriptionId {
 	}
 }
 
+async_graphql::scalar!(SubscriptionId);
+
 // All subscriptions that ever existed, not only active ones
 // This is only used to save data about a subscription that could also be
 // retrieved from Stripe or PayPal It is used to avoid sending requests to

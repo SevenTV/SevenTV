@@ -1,5 +1,6 @@
 
 type Color {
+	a: Int!
 	b: Int!
 	g: Int!
 	hex: String!
@@ -125,6 +126,63 @@ type EmoteSetQuery {
 	emoteSet(id: Id!): EmoteSet
 }
 
+type EntitlementEdgeAnyBadge {
+	from: EntitlementNodeAny!
+	to: EntitlementNodeBadge!
+}
+
+type EntitlementEdgeAnyPaint {
+	from: EntitlementNodeAny!
+	to: EntitlementNodePaint!
+}
+
+union EntitlementNodeAny = EntitlementNodeUser | EntitlementNodeRole | EntitlementNodeBadge | EntitlementNodePaint | EntitlementNodeEmoteSet | EntitlementNodeProduct | EntitlementNodeSubscriptionBenefit | EntitlementNodeSubscription | EntitlementNodeSpecialEvent | EntitlementNodeGlobalDefaultEntitlementGroup
+
+type EntitlementNodeBadge {
+	badgeId: Id!
+}
+
+type EntitlementNodeEmoteSet {
+	emoteSet: EmoteSet!
+	emoteSetId: Id!
+}
+
+type EntitlementNodeGlobalDefaultEntitlementGroup {
+	noop: Boolean! @deprecated
+}
+
+type EntitlementNodePaint {
+	paint: Paint!
+	paintId: Id!
+}
+
+type EntitlementNodeProduct {
+	productId: ProductId!
+}
+
+type EntitlementNodeRole {
+	role: Role!
+	roleId: Id!
+}
+
+type EntitlementNodeSpecialEvent {
+	specialEventId: Id!
+}
+
+type EntitlementNodeSubscription {
+	subscriptionId: SubscriptionId!
+}
+
+type EntitlementNodeSubscriptionBenefit {
+	subscriptionBenefit: SubscriptionBenefit!
+	subscriptionBenefitId: Id!
+}
+
+type EntitlementNodeUser {
+	user: User!
+	userId: Id!
+}
+
 union EventEmoteData = EventEmoteDataUpload | EventEmoteDataProcess | EventEmoteDataChangeName | EventEmoteDataMerge | EventEmoteDataChangeOwner | EventEmoteDataChangeTags | EventEmoteDataChangeFlags | EventEmoteDataDelete
 
 type EventEmoteDataChangeFlags {
@@ -153,7 +211,7 @@ type EventEmoteDataDelete {
 	"""
 	Always false
 	"""
-	noop: Boolean!
+	noop: Boolean! @deprecated
 }
 
 type EventEmoteDataMerge {
@@ -169,7 +227,7 @@ type EventEmoteDataUpload {
 	"""
 	Always false
 	"""
-	noop: Boolean!
+	noop: Boolean! @deprecated
 }
 
 input Filters {
@@ -204,12 +262,75 @@ enum ImageProcessorEvent {
 }
 
 
+type Paint {
+	createdById: Id!
+	data: PaintData!
+	description: String
+	id: Id!
+	name: String!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type PaintData {
+	layers: [PaintLayer!]!
+	shadows: [PaintShadow!]!
+}
+
+type PaintGradientStop {
+	at: Float!
+	color: Color!
+}
+
+type PaintLayer {
+	id: Id!
+	opacity: Float!
+	ty: PaintLayerType!
+}
+
+union PaintLayerType = PaintLayerTypeSingleColor | PaintLayerTypeLinearGradient | PaintLayerTypeRadialGradient | PaintLayerTypeImage
+
+type PaintLayerTypeImage {
+	images: [Image!]!
+}
+
+type PaintLayerTypeLinearGradient {
+	angle: Int!
+	repeating: Boolean!
+	stops: [PaintGradientStop!]!
+}
+
+type PaintLayerTypeRadialGradient {
+	repeating: Boolean!
+	shape: PaintRadialGradientShape!
+	stops: [PaintGradientStop!]!
+}
+
+type PaintLayerTypeSingleColor {
+	color: Color!
+}
+
+enum PaintRadialGradientShape {
+	CIRCLE
+	ELLIPSE
+}
+
+type PaintShadow {
+	blur: Float!
+	color: Color!
+	offsetX: Float!
+	offsetY: Float!
+}
+
 enum Platform {
 	DISCORD
 	GOOGLE
 	KICK
 	TWITCH
 }
+
+scalar ProductId
 
 type Query {
 	emoteSets: EmoteSetQuery!
@@ -272,6 +393,13 @@ enum SortOrder {
 }
 
 
+type SubscriptionBenefit {
+	id: Id!
+	name: String!
+}
+
+scalar SubscriptionId
+
 input Tags {
 	match: TagsMatch!
 	tags: [String!]!
@@ -288,6 +416,7 @@ type User {
 	highestRoleColor: Color
 	highestRoleRank: Int!
 	id: Id!
+	inventory: UserInventory!
 	mainConnection: UserConnection
 	ownedEmoteSets: [EmoteSet!]!
 	ownedEmotes: [Emote!]!
@@ -327,6 +456,11 @@ enum UserEditorState {
 	REJECTED
 }
 
+type UserInventory {
+	badges: [EntitlementEdgeAnyBadge!]!
+	paints: [EntitlementEdgeAnyPaint!]!
+}
+
 type UserProfilePicture {
 	id: Id!
 	images: [Image!]!
@@ -349,12 +483,14 @@ type UserStyle {
 	activeBadgeId: Id
 	activeEmoteSet: EmoteSet
 	activeEmoteSetId: Id
+	activePaint: Paint
 	activePaintId: Id
 	activeProfilePicture: UserProfilePicture
 	activeProfilePictureId: Id
 	pendingProfilePictureId: Id
 }
 
+directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
 directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @specifiedBy(url: String!) on SCALAR

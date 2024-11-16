@@ -55,7 +55,6 @@ impl Default for PaintLayer {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
 pub enum PaintLayerType {
 	SingleColor(i32),
 	LinearGradient {
@@ -64,7 +63,7 @@ pub enum PaintLayerType {
 		stops: Vec<PaintGradientStop>,
 	},
 	RadialGradient {
-		angle: i32,
+		// angle: i32,
 		repeating: bool,
 		stops: Vec<PaintGradientStop>,
 		shape: PaintRadialGradientShape,

@@ -4,6 +4,7 @@
 	import Checkbox from "./input/checkbox.svelte";
 	import ResponsiveImage from "./responsive-image.svelte";
 	import type { HTMLAttributes } from "svelte/elements";
+	import UserName from "./user-name.svelte";
 
 	type Props = {
 		data: Emote;
@@ -68,9 +69,9 @@
 	{#if !emoteOnly}
 		<span class="name">{data.defaultName}</span>
 		{#if data.owner?.mainConnection?.platformDisplayName}
-			<span class="user" style:color={data.owner.highestRoleColor?.hex}
-				>{data.owner.mainConnection.platformDisplayName}</span
-			>
+			<span class="user">
+				<UserName user={data.owner} />
+			</span>
 		{/if}
 	{/if}
 	{#if selectionMode || flags.length > 0}
@@ -154,6 +155,7 @@
 		max-width: 90%;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.flags {

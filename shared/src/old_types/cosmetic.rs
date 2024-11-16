@@ -110,9 +110,7 @@ impl CosmeticPaintModel {
 				.unwrap_or_default(),
 			angle: first_layer
 				.and_then(|l| match l.ty {
-					PaintLayerType::LinearGradient { angle, .. } | PaintLayerType::RadialGradient { angle, .. } => {
-						Some(angle)
-					}
+					PaintLayerType::LinearGradient { angle, .. } => Some(angle),
 					_ => None,
 				})
 				.unwrap_or_default(),

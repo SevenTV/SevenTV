@@ -23,6 +23,7 @@
 	import { UserEditorState } from "$/gql/graphql";
 	import type { Snippet } from "svelte";
 	import Spinner from "$/components/spinner.svelte";
+	import UserName from "$/components/user-name.svelte";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -53,7 +54,7 @@
 				style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
 			/>
 			<span class="name" style:color={user.highestRoleColor?.hex}>
-				{user.mainConnection?.platformDisplayName}
+				<UserName {user} />
 				<!-- <SealCheck size="0.8rem" /> -->
 			</span>
 			<div class="roles">
