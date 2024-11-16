@@ -1,5 +1,14 @@
-mod operation;
+use std::sync::Arc;
+
+use async_graphql::Context;
+use shared::database::emote::EmoteId;
+
+use crate::dataloader::emote::EmoteByIdLoaderExt;
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
+
 mod batch_operation;
+mod operation;
 
 #[derive(Default)]
 pub struct EmoteMutation;
@@ -32,9 +41,11 @@ impl EmoteMutation {
 
 		let emotes = global
 			.emote_by_id_loader
-			.load_many_exclude_deleted(id)
+			.load_many_exclude_deleted(ids)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?
+			.into_values()
+			.collect();
 
 		Ok(batch_operation::EmoteBatchOperation { emotes })
 	}

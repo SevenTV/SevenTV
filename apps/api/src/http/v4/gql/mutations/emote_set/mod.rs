@@ -1,3 +1,11 @@
+use std::sync::Arc;
+
+use async_graphql::Context;
+use shared::database::emote_set::EmoteSetId;
+
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
+
 mod operation;
 
 #[derive(Default)]
@@ -5,7 +13,7 @@ pub struct EmoteSetMutation;
 
 #[async_graphql::Object]
 impl EmoteSetMutation {
-	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteSetId) -> Result<operation::EmoteSetOperation, ApiError> {
+	async fn emote_set(&self, ctx: &Context<'_>, id: EmoteSetId) -> Result<operation::EmoteSetOperation, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

@@ -1,11 +1,32 @@
+use std::sync::Arc;
+
+use async_graphql::Context;
+use itertools::Itertools;
+use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use shared::database::emote::{EmoteFlags, EmoteId};
+use shared::database::emote_moderation_request::{
+	EmoteModerationRequest, EmoteModerationRequestId, EmoteModerationRequestKind, EmoteModerationRequestStatus,
+};
+use shared::database::emote_set::{EmoteSetEmoteFlag, EmoteSetKind};
+use shared::database::queries::{filter, update};
+use shared::database::role::permissions::{EmoteSetPermission, PermissionsExt, RateLimitResource, UserPermission};
+use shared::database::stored_event::StoredEventEmoteModerationRequestData;
+use shared::database::user::editor::{
+	EditorEmoteSetPermission, EditorPermission, EditorUserPermission, UserEditorId, UserEditorState,
+};
 use shared::database::user::FullUserRef;
+use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
-use crate::http::{middleware::session::Session, v4::gql::types::EmoteSetEmoteFlags};
+use crate::dataloader::emote::EmoteByIdLoaderExt;
+use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::guards::{PermissionGuard, RateLimitGuard};
+use crate::http::middleware::session::Session;
+use crate::http::v4::gql::types::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlags};
+use crate::http::validators::{EmoteNameValidator, NameValidator};
+use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
-#[async_graphql::SimpleObject]
-#[graphql(complex)]
 pub struct EmoteSetOperation {
-	#[graphql(skip)]
 	pub emote_set: shared::database::emote_set::EmoteSet,
 }
 
@@ -105,27 +126,27 @@ impl EmoteSetOperation {
 	}
 }
 
-#[derive(async_graphql::InputObject)]
+#[derive(async_graphql::InputObject, Clone)]
 pub struct EmoteSetEmoteId {
 	pub emote_id: EmoteId,
 	pub alias: Option<String>,
 }
 
-#[derive(async_graphql::InputObject)]
+#[derive(async_graphql::InputObject, Clone)]
 pub struct AddEmote {
 	pub id: EmoteSetEmoteId,
 	pub zero_width: Option<bool>,
 	pub override_conflicts: Option<bool>,
 }
 
-#[async_graphql::ComplexObject]
+#[async_graphql::Object]
 impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetCreate, 1))"
 	)]
 	async fn create(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		#[graphql(validator(custom = "NameValidator"))] name: String,
 	) -> Result<EmoteSet, ApiError> {
 		todo!()
@@ -136,7 +157,7 @@ impl EmoteSetOperation {
 	)]
 	async fn name(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		#[graphql(validator(custom = "NameValidator"))] name: String,
 	) -> Result<EmoteSet, ApiError> {
 		todo!()
@@ -147,7 +168,7 @@ impl EmoteSetOperation {
 	)]
 	async fn capacity(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		#[graphql(validator(minimum = 1))] capacity: i32,
 	) -> Result<EmoteSet, ApiError> {
 		todo!()
@@ -156,11 +177,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
-	async fn add_emotes(
-		&self,
-		ctx: &Context<'ctx>,
-		#[graphql(validator(min_items = 1, max_items = 50))] emotes: Vec<AddEmote>,
-	) -> Result<EmoteSet, ApiError> {
+	async fn add_emote(&self, ctx: &Context<'_>, emote: AddEmote) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -173,14 +190,296 @@ impl EmoteSetOperation {
 		let res = transaction_with_mutex(
 			global,
 			Some(GeneralMutexKey::EmoteSet(self.emote_set.id).into()),
-			|tx| async move {
-				Ok(())
+			|mut tx| async move {
+				let authed_user = session.user().map_err(TransactionError::Custom)?;
+
+				if let Some(capacity) = self.emote_set.capacity {
+					if self.emote_set.emotes.len() as i32 >= capacity {
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
+							"emote set is at capacity",
+						)));
+					}
+				}
+
+				let db_emote = tx
+					.find_one(
+						filter::filter! { shared::database::emote::Emote { #[query(rename = "_id")] id: emote.id.emote_id } },
+						None,
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found"))
+					})?;
+
+				if db_emote.deleted || db_emote.merged.is_some() {
+					return Err(TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::BadRequest,
+						"emote not found",
+					)));
+				}
+
+				if db_emote.flags.contains(EmoteFlags::Private)
+					&& self.emote_set.owner_id.is_none_or(|id| db_emote.owner_id != id)
+				{
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
+						"emote is private",
+					)));
+				}
+
+				let alias = emote.id.alias.unwrap_or_else(|| db_emote.default_name.clone());
+
+				// This may be a problem if the emote has been deleted.
+				// We should likely load all the emotes here anyways.
+				// Note: we do not use the TX here because this does not really effect the
+				// transaction.
+				let emotes = global
+					.emote_by_id_loader
+					.load_many(self.emote_set.emotes.iter().map(|e| e.id))
+					.await
+					.map_err(|_| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load emotes",
+						))
+					})?;
+
+				let conflict_emote_idx = self.emote_set.emotes.iter().position(|e| e.alias == alias);
+
+				if let Some(conflict_emote_idx) = conflict_emote_idx {
+					if let Some(emote) = emotes.get(&self.emote_set.emotes[conflict_emote_idx].id) {
+						if !emote.deleted {
+							return Err(TransactionError::Custom(ApiError::conflict(
+								ApiErrorCode::BadRequest,
+								"this emote has a conflicting name",
+							)));
+						}
+					}
+				}
+
+				if matches!(self.emote_set.kind, EmoteSetKind::Personal) {
+					if db_emote.flags.contains(EmoteFlags::DeniedPersonal) {
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
+							"emote is not allowed in personal emote sets",
+						)));
+					} else if !db_emote.flags.contains(EmoteFlags::ApprovedPersonal) {
+						let id = EmoteModerationRequestId::new();
+						let country_code = global
+							.geoip()
+							.and_then(|g| g.lookup(session.ip()))
+							.and_then(|c| c.iso_code)
+							.map(|c| c.to_string());
+
+						let request = tx
+							.find_one_and_update(
+								filter::filter! {
+									EmoteModerationRequest {
+										#[query(serde)]
+										kind: EmoteModerationRequestKind::PersonalUse,
+										emote_id: db_emote.id,
+									}
+								},
+								update::update! {
+									#[query(set_on_insert)]
+									EmoteModerationRequest {
+										#[query(rename = "_id")]
+										id,
+										user_id: authed_user.id,
+										#[query(serde)]
+										kind: EmoteModerationRequestKind::PersonalUse,
+										reason: Some("User requested to add emote to a personal set".to_string()),
+										emote_id: db_emote.id,
+										#[query(serde)]
+										status: EmoteModerationRequestStatus::Pending,
+										country_code,
+										assigned_to: vec![],
+										priority: authed_user
+											.computed
+											.permissions
+											.emote_moderation_request_priority
+											.unwrap_or_default(),
+										search_updated_at: &None,
+										updated_at: chrono::Utc::now(),
+									},
+								},
+								FindOneAndUpdateOptions::builder()
+									.upsert(true)
+									.return_document(ReturnDocument::After)
+									.build(),
+							)
+							.await?
+							.ok_or_else(|| {
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::MutationError,
+									"emote moderation failed to insert",
+								))
+							})?;
+
+						if request.id == id {
+							tx.register_event(InternalEvent {
+								actor: Some(authed_user.clone()),
+								session_id: session.user_session_id(),
+								data: InternalEventData::EmoteModerationRequest {
+									after: request,
+									data: StoredEventEmoteModerationRequestData::Create,
+								},
+								timestamp: chrono::Utc::now(),
+							})?;
+						}
+
+						let count = tx
+							.count(
+								filter::filter! {
+									EmoteModerationRequest {
+										#[query(serde)]
+										kind: EmoteModerationRequestKind::PersonalUse,
+										user_id: authed_user.id,
+										#[query(serde)]
+										status: EmoteModerationRequestStatus::Pending,
+									}
+								},
+								None,
+							)
+							.await?;
+
+						if count as i32
+							> authed_user
+								.computed
+								.permissions
+								.emote_moderation_request_limit
+								.unwrap_or_default()
+						{
+							return Err(TransactionError::Custom(ApiError::bad_request(
+								ApiErrorCode::LackingPrivileges,
+								"too many pending moderation requests",
+							)));
+						}
+					}
+				}
+
+				let mut flags = EmoteSetEmoteFlag::default();
+
+				if emote
+					.zero_width
+					.unwrap_or(db_emote.flags.contains(EmoteFlags::DefaultZeroWidth))
+				{
+					flags |= EmoteSetEmoteFlag::ZeroWidth;
+				}
+
+				if emote.override_conflicts.unwrap_or_default() {
+					flags |= EmoteSetEmoteFlag::OverrideConflicts;
+				}
+
+				let emote_set_emote = shared::database::emote_set::EmoteSetEmote {
+					id: emote.id.emote_id,
+					added_by_id: Some(authed_user.id),
+					alias: alias.clone(),
+					flags,
+					added_at: chrono::Utc::now(),
+					origin_set_id: None,
+				};
+
+				let update = update::Update::from(update::update! {
+					#[query(set)]
+					shared::database::emote_set::EmoteSet {
+						emotes_changed_since_reindex: true,
+						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
+					},
+				});
+
+				let update = if let Some(conflict_idx) = conflict_emote_idx {
+					update.extend_one(update::update! {
+						#[query(set)]
+						shared::database::emote_set::EmoteSet {
+							#[query(flatten, index = "conflict_idx", serde)]
+							emotes: &emote_set_emote,
+						},
+					})
+				} else {
+					update.extend_one(update::update! {
+						#[query(push)]
+						shared::database::emote_set::EmoteSet {
+							#[query(serde)]
+							emotes: &emote_set_emote,
+						},
+					})
+				};
+
+				let emote_set = tx
+					.find_one_and_update(
+						filter::filter! {
+							shared::database::emote_set::EmoteSet {
+								#[query(rename = "_id")]
+								id: self.emote_set.id,
+							}
+						},
+						update,
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))
+					})?;
+
+				if let Some(capacity) = emote_set.capacity {
+					// Unfortunately we actually need to load all these emotes to check the deleted
+					// status to determine if they contribute towards the capacity limit
+					// Perhaps we could cache this in redis or something (the merge/deleted status
+					// of an emote at any given time to avoid doing a DB lookup)
+					let emotes = global
+						.emote_by_id_loader
+						.load_many_merged(emote_set.emotes.iter().map(|e| e.id))
+						.await
+						.map_err(|()| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load emotes",
+							))
+						})?;
+
+					let active_emotes = emote_set.emotes.iter().filter(|e| emotes.get(e.id).is_some()).count();
+
+					if active_emotes as i32 > capacity {
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::LoadError,
+							"emote set is at capacity",
+						)));
+					}
+				}
+
+				let emote_owner = global.user_loader.load_fast(global, db_emote.owner_id).await.map_err(|_| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::LoadError,
+						"failed to load emote owner",
+					))
+				})?;
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::EmoteSet {
+						after: emote_set.clone(),
+						data: InternalEventEmoteSetData::AddEmote {
+							emote: Box::new(db_emote),
+							emote_owner: emote_owner.map(Box::new),
+							emote_set_emote,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+
+				Ok(emote_set)
 			},
 		)
 		.await;
 
 		match res {
-			Ok(emote_set) => todo!(),
+			Ok(emote_set) => Ok(emote_set.into()),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
@@ -195,12 +494,118 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
-	async fn remove_emotes(
-		&self,
-		ctx: &Context<'ctx>,
-		#[graphql(validator(min_items = 1, max_items = 50))] emotes: Vec<EmoteSetEmoteId>,
-	) -> Result<EmoteSet, ApiError> {
-		todo!()
+	async fn remove_emote(&self, ctx: &Context<'_>, id: EmoteSetEmoteId) -> Result<EmoteSet, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
+		self.check_perms(global, session, EditorEmoteSetPermission::Manage).await?;
+
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::EmoteSet(self.emote_set.id).into()),
+			|mut tx| async move {
+				let authed_user = session.user().map_err(TransactionError::Custom)?;
+
+				let (index, old_emote_set_emote) = self
+					.emote_set
+					.emotes
+					.iter()
+					.find_position(|e| e.id == id.emote_id && id.alias.as_ref().is_none_or(|a| e.alias == *a))
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
+					})?;
+
+				let emote = tx
+					.find_one(
+						filter::filter! { shared::database::emote::Emote { #[query(rename = "_id")] id: id.emote_id } },
+						None,
+					)
+					.await?;
+
+				let emote_id = id.emote_id;
+
+				let emote_set = tx
+					.find_one_and_update(
+						filter::filter! {
+							shared::database::emote_set::EmoteSet {
+								#[query(rename = "_id")]
+								id: self.emote_set.id,
+								#[query(flatten)]
+								emotes: shared::database::emote_set::EmoteSetEmote {
+									id: emote_id,
+								},
+							}
+						},
+						update::update! {
+							#[query(pull)]
+							shared::database::emote_set::EmoteSet {
+								emotes: shared::database::emote_set::EmoteSetEmote {
+									id: emote_id,
+								},
+							},
+							#[query(set)]
+							shared::database::emote_set::EmoteSet {
+								emotes_changed_since_reindex: true,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
+						},
+						FindOneAndUpdateOptions::builder()
+							.return_document(mongodb::options::ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or(TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::BadRequest,
+						"emote not found in set",
+					)))?;
+
+				let emote_owner = if let Some(e) = &emote {
+					global.user_loader.load_fast(global, e.owner_id).await.map_err(|_| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load emote owner",
+						))
+					})?
+				} else {
+					None
+				};
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::EmoteSet {
+						after: emote_set.clone(),
+						data: InternalEventEmoteSetData::RemoveEmote {
+							emote: emote.map(Box::new),
+							emote_owner: emote_owner.map(Box::new),
+							emote_set_emote: old_emote_set_emote.clone(),
+							index,
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+
+				Ok(emote_set)
+			},
+		)
+		.await;
+
+		match res {
+			Ok(emote_set) => Ok(emote_set.into()),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
 	}
 
 	#[graphql(
@@ -208,11 +613,127 @@ impl EmoteSetOperation {
 	)]
 	async fn update_emote_alias(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		id: EmoteSetEmoteId,
 		#[graphql(validator(custom = "EmoteNameValidator"))] alias: String,
 	) -> Result<EmoteSetEmote, ApiError> {
-		todo!()
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
+		self.check_perms(global, session, EditorEmoteSetPermission::Manage).await?;
+
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::EmoteSet(self.emote_set.id).into()),
+			|mut tx| async move {
+				let authed_user = session.user().map_err(TransactionError::Custom)?;
+
+				let old_emote_set_emote = self
+					.emote_set
+					.emotes
+					.iter()
+					.find(|e| e.id == id.emote_id && id.alias.as_ref().is_none_or(|a| e.alias == *a))
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
+					})?;
+
+				let emote = tx
+					.find_one(
+						filter::filter! { shared::database::emote::Emote { #[query(rename = "_id")] id: id.emote_id } },
+						None,
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found"))
+					})?;
+
+				if emote.deleted || emote.merged.is_some() {
+					return Err(TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::BadRequest,
+						"emote not found",
+					)));
+				}
+
+				if self.emote_set.emotes.iter().any(|e| e.alias == alias) {
+					return Err(TransactionError::Custom(ApiError::conflict(
+						ApiErrorCode::BadRequest,
+						"emote name conflict",
+					)));
+				}
+
+				let emote_id = id.emote_id;
+
+				let emote_set = tx
+					.find_one_and_update(
+						filter::filter! {
+							shared::database::emote_set::EmoteSet {
+								#[query(rename = "_id")]
+								id: self.emote_set.id,
+								#[query(flatten)]
+								emotes: shared::database::emote_set::EmoteSetEmote {
+									id: emote_id,
+								}
+							}
+						},
+						update::update! {
+							#[query(set)]
+							shared::database::emote_set::EmoteSet {
+								#[query(flatten, index = "$")]
+								emotes: shared::database::emote_set::EmoteSetEmote {
+									alias,
+								},
+								emotes_changed_since_reindex: true,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
+						},
+						FindOneAndUpdateOptions::builder()
+							.return_document(mongodb::options::ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
+					})?;
+
+				let emote_set_emote = emote_set.emotes.iter().find(|e| e.id == id.emote_id).ok_or_else(|| {
+					TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
+				})?;
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::EmoteSet {
+						after: emote_set.clone(),
+						data: InternalEventEmoteSetData::RenameEmote {
+							emote: Box::new(emote),
+							emote_set_emote: emote_set_emote.clone(),
+							old_alias: old_emote_set_emote.alias.clone(),
+						},
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+
+				Ok(emote_set_emote.clone())
+			},
+		)
+		.await;
+
+		match res {
+			Ok(emote_set_emote) => Ok(emote_set_emote.into()),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
 	}
 
 	#[graphql(
@@ -220,7 +741,7 @@ impl EmoteSetOperation {
 	)]
 	async fn update_emote_flags(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		id: EmoteSetEmoteId,
 		flags: EmoteSetEmoteFlags,
 	) -> Result<EmoteSetEmote, ApiError> {
@@ -230,7 +751,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
-	async fn delete<'ctx>(&self, ctx: &Context<'ctx>) -> Result<bool, ApiError> {
+	async fn delete(&self, ctx: &Context<'_>) -> Result<bool, ApiError> {
 		todo!()
 	}
 }

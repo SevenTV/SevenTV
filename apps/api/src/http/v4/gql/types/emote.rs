@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
-use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
+use async_graphql::Context;
 use fred::prelude::KeysInterface;
 use shared::database::emote::EmoteId;
 use shared::database::user::UserId;
@@ -13,7 +13,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
 use crate::search::{search, sorted_results, SearchOptions};
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct Emote {
 	pub id: EmoteId,
@@ -29,7 +29,7 @@ pub struct Emote {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, async_graphql::Enum)]
 enum Ranking {
 	TrendingDaily,
 	TrendingWeekly,
@@ -54,7 +54,7 @@ impl Display for Ranking {
 	}
 }
 
-#[ComplexObject]
+#[async_graphql::ComplexObject]
 impl Emote {
 	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
@@ -203,7 +203,7 @@ impl Emote {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject, async_graphql::InputObject)]
 pub struct EmoteFlags {
 	pub public_listed: bool,
 	pub private: bool,
@@ -228,7 +228,7 @@ impl From<shared::database::emote::EmoteFlags> for EmoteFlags {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 pub struct EmoteScores {
 	pub trending_day: i32,
 	pub trending_week: i32,
@@ -253,7 +253,7 @@ impl From<shared::database::emote::EmoteScores> for EmoteScores {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct EmoteAttribution {
 	pub user_id: UserId,
@@ -269,7 +269,7 @@ impl From<shared::database::emote::EmoteAttribution> for EmoteAttribution {
 	}
 }
 
-#[ComplexObject]
+#[async_graphql::ComplexObject]
 impl EmoteAttribution {
 	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx

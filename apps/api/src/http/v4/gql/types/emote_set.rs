@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
+use async_graphql::Context;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
@@ -9,7 +9,7 @@ use super::{Emote, SearchResult};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct EmoteSet {
 	pub id: EmoteSetId,
@@ -26,7 +26,7 @@ pub struct EmoteSet {
 	pub emotes: Vec<EmoteSetEmote>,
 }
 
-#[ComplexObject]
+#[async_graphql::ComplexObject]
 impl EmoteSet {
 	pub async fn emotes(
 		&self,
@@ -63,7 +63,7 @@ impl From<shared::database::emote_set::EmoteSet> for EmoteSet {
 	}
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, async_graphql::Enum)]
 pub enum EmoteSetKind {
 	Normal,
 	Personal,
@@ -82,7 +82,7 @@ impl From<shared::database::emote_set::EmoteSetKind> for EmoteSetKind {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct EmoteSetEmote {
 	pub id: EmoteId,
@@ -93,7 +93,7 @@ pub struct EmoteSetEmote {
 	pub origin_set_id: Option<EmoteSetId>,
 }
 
-#[ComplexObject]
+#[async_graphql::ComplexObject]
 impl EmoteSetEmote {
 	async fn emote<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
@@ -123,7 +123,7 @@ impl From<shared::database::emote_set::EmoteSetEmote> for EmoteSetEmote {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject, async_graphql::InputObject)]
 pub struct EmoteSetEmoteFlags {
 	zero_width: bool,
 	override_conflicts: bool,
