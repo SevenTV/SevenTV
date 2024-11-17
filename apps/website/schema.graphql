@@ -122,6 +122,7 @@ type EmoteSet {
 	id: Id!
 	kind: EmoteSetKind!
 	name: String!
+	owner: User
 	ownerId: Id
 	searchUpdatedAt: DateTime
 	tags: [String!]!

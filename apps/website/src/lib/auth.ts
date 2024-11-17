@@ -125,6 +125,22 @@ export async function fetchMe(): Promise<User | null> {
 									hex
 								}
 							}
+							editableEmoteSets {
+								id
+								name
+								owner {
+									id
+									mainConnection {
+										platformDisplayName
+									}
+								}
+								capacity
+								kind
+								tags
+								emotes(page: 1, perPage: 1) {
+									totalCount
+								}
+							}
 						}
 					}
 				}

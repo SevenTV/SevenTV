@@ -30,6 +30,7 @@
 	import type { DialogMode } from "../dialogs/dialog.svelte";
 	import type { Snippet } from "svelte";
 	import UserName from "../user-name.svelte";
+	import { user } from "$/lib/auth";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -139,29 +140,31 @@
 	{#if data}
 		<div class="buttons">
 			{#snippet fallbackChildren()}
-				<!-- <Button primary>
-					{#snippet icon()}
-						<Plus />
-					{/snippet}
-					{$t("pages.emote.use_emote")}
-				</Button> -->
-				<Button primary onclick={() => (addEmoteDialogMode = "shown")}>
-					{#snippet icon()}
-						<FolderPlus />
-					{/snippet}
-					{$t("pages.emote.add_to")}
-				</Button>
-				<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
-					{#snippet icon()}
-						<NotePencil />
-					{/snippet}
-					{$t("labels.edit")}
-				</Button>
-				<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
-					{#snippet icon()}
-						<NotePencil />
-					{/snippet}
-				</Button>
+				{#if $user}
+					<!-- <Button primary>
+						{#snippet icon()}
+							<Plus />
+						{/snippet}
+						{$t("pages.emote.use_emote")}
+					</Button> -->
+					<Button primary onclick={() => (addEmoteDialogMode = "shown")}>
+						{#snippet icon()}
+							<FolderPlus />
+						{/snippet}
+						{$t("pages.emote.add_to")}
+					</Button>
+					<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
+						{#snippet icon()}
+							<NotePencil />
+						{/snippet}
+						{$t("labels.edit")}
+					</Button>
+					<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
+						{#snippet icon()}
+							<NotePencil />
+						{/snippet}
+					</Button>
+				{/if}
 				<DropDown>
 					<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
 						{$t("labels.more")}

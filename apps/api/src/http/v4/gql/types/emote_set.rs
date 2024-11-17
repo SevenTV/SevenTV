@@ -5,7 +5,7 @@ use shared::database::emote::EmoteId;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
 
-use super::{Emote, SearchResult};
+use super::{Emote, SearchResult, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -28,7 +28,7 @@ pub struct EmoteSet {
 
 #[async_graphql::ComplexObject]
 impl EmoteSet {
-	pub async fn emotes(
+	async fn emotes(
 		&self,
 		#[graphql(validator(maximum = 100))] page: Option<u32>,
 		#[graphql(validator(minimum = 1, maximum = 250))] per_page: Option<u32>,
@@ -43,6 +43,24 @@ impl EmoteSet {
 			total_count: self.emotes.len() as u64,
 			page_count: (self.emotes.len() as u64 / chunk_size as u64) + 1,
 		}
+	}
+
+	async fn owner(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+		let Some(user_id) = self.owner_id else {
+			return Ok(None);
+		};
+
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let user = global
+			.user_loader
+			.load(global, user_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(user.map(Into::into))
 	}
 }
 

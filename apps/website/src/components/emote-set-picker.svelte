@@ -1,45 +1,42 @@
 <script lang="ts">
-	import { MagnifyingGlass } from "phosphor-svelte";
-	import TextInput from "./input/text-input.svelte";
 	import Expandable from "./expandable.svelte";
 	import Checkbox from "./input/checkbox.svelte";
 	import Flags from "./flags.svelte";
 	import Radio from "./input/radio.svelte";
-	import { t } from "svelte-i18n";
+	import { type EmoteSet } from "$/gql/graphql";
+	import { user } from "$/lib/auth";
 
 	let { radioName }: { radioName?: string } = $props();
+
+	function groupByOwnerId(sets: EmoteSet[]) {
+		return sets.reduce((grouped, set) => {
+			if (set.owner) {
+				(grouped[set.owner.id] = grouped[set.owner.id] || []).push(set);
+			}
+			return grouped;
+		}, {} as { [key: string]: EmoteSet[] });
+	}
+
+	let editableSets = $derived($user?.editableEmoteSets ? groupByOwnerId($user.editableEmoteSets) : {});
 </script>
 
-{#snippet pickerLeftLabel()}
-	<div class="emote-set">
-		Emote Set
-		<Flags flags={["600/1000", "default"]} />
-	</div>
-{/snippet}
-
-<TextInput placeholder={$t("labels.search_emote_set")}>
-	{#snippet icon()}
-		<MagnifyingGlass />
-	{/snippet}
-</TextInput>
-<Expandable title={$t("common.pinned")}>
-	{#each Array(3) as _}
-		{#if radioName}
-			<Radio name={radioName} option leftLabel={pickerLeftLabel} />
-		{:else}
-			<Checkbox option leftLabel={pickerLeftLabel} />
-		{/if}
-	{/each}
-</Expandable>
-<Expandable title="ayyybubu">
-	{#each Array(3) as _}
-		{#if radioName}
-			<Radio name={radioName} option leftLabel={pickerLeftLabel} />
-		{:else}
-			<Checkbox option leftLabel={pickerLeftLabel} />
-		{/if}
-	{/each}
-</Expandable>
+{#each Object.keys(editableSets) as ownerId}
+	<Expandable title={editableSets[ownerId][0]?.owner?.mainConnection?.platformDisplayName ?? "Emote Sets"}>
+		{#each editableSets[ownerId] as set}
+			{#snippet pickerLeftLabel()}
+				<div class="emote-set">
+					{set.name}
+					<Flags flags={[`${set.emotes.totalCount}/${set.capacity}`, "default"]} />
+				</div>
+			{/snippet}
+			{#if radioName}
+				<Radio name={radioName} option leftLabel={pickerLeftLabel} />
+			{:else}
+				<Checkbox option leftLabel={pickerLeftLabel} />
+			{/if}
+		{/each}
+	</Expandable>
+{/each}
 
 <style lang="scss">
 	.emote-set {
