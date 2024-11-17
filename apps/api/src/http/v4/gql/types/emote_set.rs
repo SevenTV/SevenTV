@@ -123,11 +123,13 @@ impl From<shared::database::emote_set::EmoteSetEmote> for EmoteSetEmote {
 	}
 }
 
-#[derive(Debug, Clone, async_graphql::SimpleObject, async_graphql::InputObject)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct EmoteSetEmoteFlags {
-	zero_width: bool,
-	override_conflicts: bool,
+	pub zero_width: bool,
+	pub override_conflicts: bool,
 }
+
+async_graphql::scalar!(EmoteSetEmoteFlags);
 
 impl From<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlags {
 	fn from(value: shared::database::emote_set::EmoteSetEmoteFlag) -> Self {

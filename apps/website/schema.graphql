@@ -1,3 +1,9 @@
+input AddEmote {
+	id: EmoteSetEmoteId!
+	overrideConflicts: Boolean
+	zeroWidth: Boolean
+}
+
 
 type Color {
 	a: Int!
@@ -38,6 +44,15 @@ type EmoteAttribution {
 	userId: Id!
 }
 
+type EmoteBatchOperation {
+	delete(reason: String): [Emote!]!
+	flags(flags: EmoteFlags!): [Emote!]!
+	merge(with: Id!): [Emote!]!
+	name(name: String!): [Emote!]!
+	owner(ownerId: Id!): [Emote!]!
+	tags(tags: [String!]!): [Emote!]!
+}
+
 type EmoteEvent {
 	actor: User
 	actorId: Id
@@ -50,14 +65,15 @@ type EmoteEvent {
 	updatedAt: DateTime!
 }
 
-type EmoteFlags {
-	animated: Boolean!
-	approvedPersonal: Boolean!
-	defaultZeroWidth: Boolean!
-	deniedPersonal: Boolean!
-	nsfw: Boolean!
-	private: Boolean!
-	publicListed: Boolean!
+scalar EmoteFlags
+
+type EmoteOperation {
+	delete(reason: String): Emote!
+	flags(flags: EmoteFlags!): Emote!
+	merge(with: Id!): Emote!
+	name(name: String!): Emote!
+	owner(ownerId: Id!): Emote!
+	tags(tags: [String!]!): Emote!
 }
 
 type EmoteQuery {
@@ -104,9 +120,11 @@ type EmoteSetEmote {
 	originSetId: Id
 }
 
-type EmoteSetEmoteFlags {
-	overrideConflicts: Boolean!
-	zeroWidth: Boolean!
+scalar EmoteSetEmoteFlags
+
+input EmoteSetEmoteId {
+	alias: String
+	emoteId: Id!
 }
 
 type EmoteSetEmoteSearchResult {
@@ -120,6 +138,17 @@ enum EmoteSetKind {
 	NORMAL
 	PERSONAL
 	SPECIAL
+}
+
+type EmoteSetOperation {
+	addEmote(emote: AddEmote!): EmoteSet!
+	capacity(capacity: Int!): EmoteSet!
+	create(name: String!): EmoteSet!
+	delete: Boolean!
+	name(name: String!): EmoteSet!
+	removeEmote(id: EmoteSetEmoteId!): EmoteSet!
+	updateEmoteAlias(alias: String!, id: EmoteSetEmoteId!): EmoteSetEmote!
+	updateEmoteFlags(flags: EmoteSetEmoteFlags!, id: EmoteSetEmoteId!): EmoteSetEmote!
 }
 
 type EmoteSetQuery {
@@ -261,6 +290,12 @@ enum ImageProcessorEvent {
 	SUCCESS
 }
 
+
+type Mutation {
+	emote(id: Id!): EmoteOperation!
+	emoteSet(id: Id!): EmoteSetOperation!
+	emotes(ids: [Id!]!): EmoteBatchOperation!
+}
 
 type Paint {
 	createdById: Id!
