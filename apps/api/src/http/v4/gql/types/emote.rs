@@ -56,7 +56,7 @@ impl Display for Ranking {
 
 #[async_graphql::ComplexObject]
 impl Emote {
-	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+	async fn owner(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -70,7 +70,7 @@ impl Emote {
 		Ok(user.map(Into::into))
 	}
 
-	async fn ranking<'ctx>(&self, ctx: &Context<'ctx>, ranking: Ranking) -> Result<Option<u32>, ApiError> {
+	async fn ranking(&self, ctx: &Context<'_>, ranking: Ranking) -> Result<Option<u32>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -93,9 +93,9 @@ impl Emote {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
-	async fn channels<'ctx>(
+	async fn channels(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
 		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
 	) -> Result<SearchResult<User>, ApiError> {
@@ -139,9 +139,9 @@ impl Emote {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
-	async fn events<'ctx>(
+	async fn events(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
 		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
 	) -> Result<Vec<EmoteEvent>, ApiError> {
@@ -271,7 +271,7 @@ impl From<shared::database::emote::EmoteAttribution> for EmoteAttribution {
 
 #[async_graphql::ComplexObject]
 impl EmoteAttribution {
-	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+	async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

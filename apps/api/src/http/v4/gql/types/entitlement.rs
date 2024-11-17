@@ -79,7 +79,7 @@ pub struct EntitlementNodeUser {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeUser {
-	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<User, ApiError> {
+	async fn user(&self, ctx: &Context<'_>) -> Result<User, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -103,7 +103,7 @@ pub struct EntitlementNodeRole {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeRole {
-	async fn role<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Role, ApiError> {
+	async fn role(&self, ctx: &Context<'_>) -> Result<Role, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -132,7 +132,7 @@ pub struct EntitlementNodePaint {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodePaint {
-	async fn paint<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Paint, ApiError> {
+	async fn paint(&self, ctx: &Context<'_>) -> Result<Paint, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -156,7 +156,7 @@ pub struct EntitlementNodeEmoteSet {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeEmoteSet {
-	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>) -> Result<EmoteSet, ApiError> {
+	async fn emote_set(&self, ctx: &Context<'_>) -> Result<EmoteSet, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -185,7 +185,7 @@ pub struct EntitlementNodeSubscriptionBenefit {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeSubscriptionBenefit {
-	async fn subscription_benefit<'ctx>(&self, ctx: &Context<'ctx>) -> Result<SubscriptionBenefit, ApiError> {
+	async fn subscription_benefit(&self, ctx: &Context<'_>) -> Result<SubscriptionBenefit, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

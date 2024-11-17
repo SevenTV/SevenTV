@@ -95,7 +95,7 @@ pub struct EmoteSetEmote {
 
 #[async_graphql::ComplexObject]
 impl EmoteSetEmote {
-	async fn emote<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Emote>, ApiError> {
+	async fn emote(&self, ctx: &Context<'_>) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

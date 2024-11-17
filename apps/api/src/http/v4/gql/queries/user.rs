@@ -13,7 +13,7 @@ pub struct UserQuery;
 
 #[Object]
 impl UserQuery {
-	async fn me<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+	async fn me(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -34,7 +34,7 @@ impl UserQuery {
 		Ok(user.map(Into::into))
 	}
 
-	async fn user<'ctx>(&self, ctx: &Context<'ctx>, id: UserId) -> Result<Option<User>, ApiError> {
+	async fn user(&self, ctx: &Context<'_>, id: UserId) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

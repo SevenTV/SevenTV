@@ -40,7 +40,7 @@ impl User {
 	}
 
 	// TODO: Does it make sense to paginate this?
-	async fn owned_emotes<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Emote>, ApiError> {
+	async fn owned_emotes(&self, ctx: &Context<'_>) -> Result<Vec<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -60,7 +60,7 @@ impl User {
 			.collect())
 	}
 
-	async fn owned_emote_sets<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<EmoteSet>, ApiError> {
+	async fn owned_emote_sets(&self, ctx: &Context<'_>) -> Result<Vec<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -77,7 +77,7 @@ impl User {
 		Ok(emote_sets.into_iter().map(Into::into).collect())
 	}
 
-	async fn style<'ctx>(&self, ctx: &Context<'ctx>) -> Result<UserStyle, ApiError> {
+	async fn style(&self, ctx: &Context<'_>) -> Result<UserStyle, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -85,7 +85,7 @@ impl User {
 		Ok(UserStyle::from_user(global, &self.full_user))
 	}
 
-	async fn roles<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<Role>, ApiError> {
+	async fn roles(&self, ctx: &Context<'_>) -> Result<Vec<Role>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -107,7 +107,7 @@ impl User {
 		Ok(roles.into_iter().map(Into::into).collect())
 	}
 
-	async fn editors<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Vec<UserEditor>, ApiError> {
+	async fn editors(&self, ctx: &Context<'_>) -> Result<Vec<UserEditor>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

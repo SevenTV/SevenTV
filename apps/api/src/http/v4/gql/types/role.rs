@@ -38,7 +38,7 @@ impl From<shared::database::role::Role> for Role {
 
 #[ComplexObject]
 impl Role {
-	pub async fn created_by<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+	pub async fn created_by(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

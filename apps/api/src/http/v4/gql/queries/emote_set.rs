@@ -12,7 +12,7 @@ pub struct EmoteSetQuery;
 
 #[Object]
 impl EmoteSetQuery {
-	async fn emote_set<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteSetId) -> Result<Option<EmoteSet>, ApiError> {
+	async fn emote_set(&self, ctx: &Context<'_>, id: EmoteSetId) -> Result<Option<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
