@@ -528,32 +528,65 @@ impl EmoteSetOperation {
 
 				let emote_id = id.emote_id;
 
+				let filter = if let Some(alias) = &id.alias {
+					filter::filter! {
+						shared::database::emote_set::EmoteSet {
+							#[query(rename = "_id")]
+							id: self.emote_set.id,
+							#[query(flatten)]
+							emotes: shared::database::emote_set::EmoteSetEmote {
+								id: emote_id,
+								alias,
+							}
+						}
+					}
+				} else {
+					filter::filter! {
+						shared::database::emote_set::EmoteSet {
+							#[query(rename = "_id")]
+							id: self.emote_set.id,
+							#[query(flatten)]
+							emotes: shared::database::emote_set::EmoteSetEmote {
+								id: emote_id,
+							}
+						}
+					}
+				};
+
+				let update = if let Some(alias) = &id.alias {
+					update::update! {
+						#[query(pull)]
+						shared::database::emote_set::EmoteSet {
+							emotes: shared::database::emote_set::EmoteSetEmote {
+								id: emote_id,
+								alias: alias,
+							},
+						}
+					}
+				} else {
+					update::update! {
+						#[query(pull)]
+						shared::database::emote_set::EmoteSet {
+							emotes: shared::database::emote_set::EmoteSetEmote {
+								id: emote_id,
+							},
+						}
+					}
+				};
+
+				let update = update::Update::from(update).extend_one(update::update! {
+					#[query(set)]
+					shared::database::emote_set::EmoteSet {
+						emotes_changed_since_reindex: true,
+						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
+					}
+				});
+
 				let emote_set = tx
 					.find_one_and_update(
-						filter::filter! {
-							shared::database::emote_set::EmoteSet {
-								#[query(rename = "_id")]
-								id: self.emote_set.id,
-								#[query(flatten)]
-								emotes: shared::database::emote_set::EmoteSetEmote {
-									id: emote_id,
-								},
-							}
-						},
-						update::update! {
-							#[query(pull)]
-							shared::database::emote_set::EmoteSet {
-								emotes: shared::database::emote_set::EmoteSetEmote {
-									id: emote_id,
-								},
-							},
-							#[query(set)]
-							shared::database::emote_set::EmoteSet {
-								emotes_changed_since_reindex: true,
-								updated_at: chrono::Utc::now(),
-								search_updated_at: &None,
-							},
-						},
+						filter,
+						update,
 						FindOneAndUpdateOptions::builder()
 							.return_document(mongodb::options::ReturnDocument::After)
 							.build(),
@@ -667,18 +700,34 @@ impl EmoteSetOperation {
 
 				let emote_id = id.emote_id;
 
+				let filter = if let Some(alias) = id.alias {
+					filter::filter! {
+						shared::database::emote_set::EmoteSet {
+							#[query(rename = "_id")]
+							id: self.emote_set.id,
+							#[query(flatten)]
+							emotes: shared::database::emote_set::EmoteSetEmote {
+								id: emote_id,
+								alias,
+							}
+						}
+					}
+				} else {
+					filter::filter! {
+						shared::database::emote_set::EmoteSet {
+							#[query(rename = "_id")]
+							id: self.emote_set.id,
+							#[query(flatten)]
+							emotes: shared::database::emote_set::EmoteSetEmote {
+								id: emote_id,
+							}
+						}
+					}
+				};
+
 				let emote_set = tx
 					.find_one_and_update(
-						filter::filter! {
-							shared::database::emote_set::EmoteSet {
-								#[query(rename = "_id")]
-								id: self.emote_set.id,
-								#[query(flatten)]
-								emotes: shared::database::emote_set::EmoteSetEmote {
-									id: emote_id,
-								}
-							}
-						},
+						filter,
 						update::update! {
 							#[query(set)]
 							shared::database::emote_set::EmoteSet {
@@ -745,7 +794,121 @@ impl EmoteSetOperation {
 		id: EmoteSetEmoteId,
 		flags: EmoteSetEmoteFlags,
 	) -> Result<EmoteSetEmote, ApiError> {
-		todo!()
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
+		self.check_perms(global, session, EditorEmoteSetPermission::Manage).await?;
+
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::EmoteSet(self.emote_set.id).into()),
+			|mut tx| async move {
+				session.user().map_err(TransactionError::Custom)?;
+
+				let old_emote_set_emote = self
+					.emote_set
+					.emotes
+					.iter()
+					.find(|e| e.id == id.emote_id && id.alias.as_ref().is_none_or(|a| e.alias == *a))
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
+					})?;
+
+				let emote = tx
+					.find_one(
+						filter::filter! { shared::database::emote::Emote { #[query(rename = "_id")] id: id.emote_id } },
+						None,
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found"))
+					})?;
+
+				if emote.deleted || emote.merged.is_some() {
+					return Err(TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::BadRequest,
+						"emote not found",
+					)));
+				}
+
+				let emote_id = id.emote_id;
+
+				let new_flags: EmoteSetEmoteFlag = flags.into();
+
+				let filter = if let Some(alias) = id.alias {
+					filter::filter! {
+						shared::database::emote_set::EmoteSet {
+							#[query(rename = "_id")]
+							id: self.emote_set.id,
+							#[query(flatten)]
+							emotes: shared::database::emote_set::EmoteSetEmote {
+								id: emote_id,
+								alias,
+							}
+						}
+					}
+				} else {
+					filter::filter! {
+						shared::database::emote_set::EmoteSet {
+							#[query(rename = "_id")]
+							id: self.emote_set.id,
+							#[query(flatten)]
+							emotes: shared::database::emote_set::EmoteSetEmote {
+								id: emote_id,
+							}
+						}
+					}
+				};
+
+				let emote_set = tx
+					.find_one_and_update(
+						filter,
+						update::update! {
+							#[query(set)]
+							shared::database::emote_set::EmoteSet {
+								#[query(flatten, index = "$")]
+								emotes: shared::database::emote_set::EmoteSetEmote {
+									#[query(serde)]
+									flags: new_flags,
+								},
+								emotes_changed_since_reindex: true,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
+						},
+						FindOneAndUpdateOptions::builder()
+							.return_document(mongodb::options::ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
+					})?;
+
+				let emote_set_emote = emote_set.emotes.iter().find(|e| e.id == id.emote_id).ok_or_else(|| {
+					TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
+				})?;
+
+				Ok(emote_set_emote.clone())
+			},
+		)
+		.await;
+
+		match res {
+			Ok(emote_set_emote) => Ok(emote_set_emote.into()),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
 	}
 
 	#[graphql(

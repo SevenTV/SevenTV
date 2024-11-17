@@ -139,3 +139,19 @@ impl From<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlags
 		}
 	}
 }
+
+impl Into<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlags {
+	fn into(self) -> shared::database::emote_set::EmoteSetEmoteFlag {
+		let mut flags = shared::database::emote_set::EmoteSetEmoteFlag::default();
+
+		if self.zero_width {
+			flags |= shared::database::emote_set::EmoteSetEmoteFlag::ZeroWidth;
+		}
+
+		if self.override_conflicts {
+			flags |= shared::database::emote_set::EmoteSetEmoteFlag::OverrideConflicts;
+		}
+
+		flags
+	}
+}
