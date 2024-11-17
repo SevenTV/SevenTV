@@ -6,11 +6,15 @@
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
+	import type { Emote } from "$/gql/graphql";
 
-	let {
-		mode = $bindable("hidden"),
-		buttons = fallbackButtons,
-	}: { mode: DialogMode; buttons?: Snippet } = $props();
+	interface Props {
+		mode: DialogMode;
+		data: Emote;
+		buttons?: Snippet;
+	}
+
+	let { mode = $bindable("hidden"), data, buttons = fallbackButtons }: Props = $props();
 </script>
 
 {#snippet fallbackButtons()}
@@ -19,9 +23,10 @@
 {/snippet}
 
 <EmoteDialog
-	title={$t("dialogs.add_emote.title", { values: { emote: "AlienPls" } })}
+	title={$t("dialogs.add_emote.title", { values: { emote: data.defaultName } })}
 	bind:mode
 	{buttons}
+	{data}
 >
 	{#snippet preview()}
 		<TextInput placeholder={$t("labels.emote_name")} style="max-width: 12.5rem">

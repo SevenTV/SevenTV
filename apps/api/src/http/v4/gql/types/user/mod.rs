@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, SimpleObject};
+use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::role::RoleId;
 use shared::database::user::UserId;
 
 use super::{Color, Emote, EmoteSet, Role, UserEditor};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::middleware::session::Session;
 
 pub mod connection;
 pub mod inventory;
@@ -120,6 +122,47 @@ impl User {
 			.unwrap_or_default();
 
 		Ok(editors.into_iter().map(Into::into).collect())
+	}
+
+	async fn editable_emote_sets(&self, ctx: &Context<'_>) -> Result<Vec<EmoteSet>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id != self.id && !authed_user.has(UserPermission::ManageAny) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you are not allowed to see this user's emote sets",
+			));
+		}
+
+		let owners = global
+			.user_editor_by_editor_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
+			.unwrap_or_default()
+			.into_iter()
+			.map(|editor| editor.id.user_id)
+			.chain(std::iter::once(self.id));
+
+		let mut emote_sets: Vec<EmoteSet> = global
+			.emote_set_by_user_id_loader
+			.load_many(owners)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.into_values()
+			.flatten()
+			.map(Into::into)
+			.collect();
+
+		emote_sets.sort_by(|a, b| a.id.cmp(&b.id));
+
+		Ok(emote_sets)
 	}
 
 	async fn inventory(&self) -> UserInventory {

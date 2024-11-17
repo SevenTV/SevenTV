@@ -203,7 +203,7 @@ impl Emote {
 	}
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 pub struct EmoteFlags {
 	pub public_listed: bool,
 	pub private: bool,
@@ -213,8 +213,6 @@ pub struct EmoteFlags {
 	pub denied_personal: bool,
 	pub animated: bool,
 }
-
-async_graphql::scalar!(EmoteFlags);
 
 impl From<shared::database::emote::EmoteFlags> for EmoteFlags {
 	fn from(value: shared::database::emote::EmoteFlags) -> Self {

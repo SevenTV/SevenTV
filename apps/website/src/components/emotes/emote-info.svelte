@@ -77,12 +77,12 @@
 	}
 </script>
 
-{#if !children}
-	<AddEmoteDialog bind:mode={addEmoteDialogMode} />
+{#if !children && data}
+	<AddEmoteDialog bind:mode={addEmoteDialogMode} {data} />
 	<EditEmoteDialog bind:mode={editDialogMode} />
-	<TransferEmoteDialog bind:mode={transferDialogMode} />
+	<TransferEmoteDialog bind:mode={transferDialogMode} {data} />
 	<ReportEmoteDialog bind:mode={reportDialogMode} />
-	<DeleteEmoteDialog bind:mode={deleteDialogMode} />
+	<DeleteEmoteDialog bind:mode={deleteDialogMode} {data} />
 {/if}
 {#if data}
 	<div class="top-bar">
@@ -139,13 +139,13 @@
 	{#if data}
 		<div class="buttons">
 			{#snippet fallbackChildren()}
-				<Button primary>
+				<!-- <Button primary>
 					{#snippet icon()}
 						<Plus />
 					{/snippet}
 					{$t("pages.emote.use_emote")}
-				</Button>
-				<Button secondary onclick={() => (addEmoteDialogMode = "shown")}>
+				</Button> -->
+				<Button primary onclick={() => (addEmoteDialogMode = "shown")}>
 					{#snippet icon()}
 						<FolderPlus />
 					{/snippet}

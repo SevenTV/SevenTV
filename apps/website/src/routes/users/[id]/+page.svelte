@@ -138,7 +138,11 @@
 				const emotes = res.data.users.user?.style.activeEmoteSet?.emotes;
 
 				if (!emotes) {
-					throw new Error("No emotes found");
+					return {
+						items: [],
+						totalCount: 0,
+						pageCount: 0,
+					};
 				}
 
 				return emotes as EmoteSetEmoteSearchResult;

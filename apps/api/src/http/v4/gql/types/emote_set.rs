@@ -123,13 +123,11 @@ impl From<shared::database::emote_set::EmoteSetEmote> for EmoteSetEmote {
 	}
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 pub struct EmoteSetEmoteFlags {
 	pub zero_width: bool,
 	pub override_conflicts: bool,
 }
-
-async_graphql::scalar!(EmoteSetEmoteFlags);
 
 impl From<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlags {
 	fn from(value: shared::database::emote_set::EmoteSetEmoteFlag) -> Self {
@@ -137,21 +135,5 @@ impl From<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlags
 			zero_width: value.contains(shared::database::emote_set::EmoteSetEmoteFlag::ZeroWidth),
 			override_conflicts: value.contains(shared::database::emote_set::EmoteSetEmoteFlag::OverrideConflicts),
 		}
-	}
-}
-
-impl Into<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlags {
-	fn into(self) -> shared::database::emote_set::EmoteSetEmoteFlag {
-		let mut flags = shared::database::emote_set::EmoteSetEmoteFlag::default();
-
-		if self.zero_width {
-			flags |= shared::database::emote_set::EmoteSetEmoteFlag::ZeroWidth;
-		}
-
-		if self.override_conflicts {
-			flags |= shared::database::emote_set::EmoteSetEmoteFlag::OverrideConflicts;
-		}
-
-		flags
 	}
 }

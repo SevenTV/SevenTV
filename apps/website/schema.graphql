@@ -46,7 +46,7 @@ type EmoteAttribution {
 
 type EmoteBatchOperation {
 	delete(reason: String): [Emote!]!
-	flags(flags: EmoteFlags!): [Emote!]!
+	flags(flags: EmoteFlagsInput!): [Emote!]!
 	merge(with: Id!): [Emote!]!
 	name(name: String!): [Emote!]!
 	owner(ownerId: Id!): [Emote!]!
@@ -65,11 +65,29 @@ type EmoteEvent {
 	updatedAt: DateTime!
 }
 
-scalar EmoteFlags
+type EmoteFlags {
+	animated: Boolean!
+	approvedPersonal: Boolean!
+	defaultZeroWidth: Boolean!
+	deniedPersonal: Boolean!
+	nsfw: Boolean!
+	private: Boolean!
+	publicListed: Boolean!
+}
+
+input EmoteFlagsInput {
+	animated: Boolean!
+	approvedPersonal: Boolean!
+	defaultZeroWidth: Boolean!
+	deniedPersonal: Boolean!
+	nsfw: Boolean!
+	private: Boolean!
+	publicListed: Boolean!
+}
 
 type EmoteOperation {
 	delete(reason: String): Emote!
-	flags(flags: EmoteFlags!): Emote!
+	flags(flags: EmoteFlagsInput!): Emote!
 	merge(with: Id!): Emote!
 	name(name: String!): Emote!
 	owner(ownerId: Id!): Emote!
@@ -120,7 +138,15 @@ type EmoteSetEmote {
 	originSetId: Id
 }
 
-scalar EmoteSetEmoteFlags
+type EmoteSetEmoteFlags {
+	overrideConflicts: Boolean!
+	zeroWidth: Boolean!
+}
+
+input EmoteSetEmoteFlagsInput {
+	overrideConflicts: Boolean!
+	zeroWidth: Boolean!
+}
 
 input EmoteSetEmoteId {
 	alias: String
@@ -148,7 +174,7 @@ type EmoteSetOperation {
 	name(name: String!): EmoteSet!
 	removeEmote(id: EmoteSetEmoteId!): EmoteSet!
 	updateEmoteAlias(alias: String!, id: EmoteSetEmoteId!): EmoteSetEmote!
-	updateEmoteFlags(flags: EmoteSetEmoteFlags!, id: EmoteSetEmoteId!): EmoteSetEmote!
+	updateEmoteFlags(flags: EmoteSetEmoteFlagsInput!, id: EmoteSetEmoteId!): EmoteSetEmote!
 }
 
 type EmoteSetQuery {
@@ -447,6 +473,7 @@ enum TagsMatch {
 
 type User {
 	connections: [UserConnection!]!
+	editableEmoteSets: [EmoteSet!]!
 	editors: [UserEditor!]!
 	highestRoleColor: Color
 	highestRoleRank: Int!

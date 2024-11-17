@@ -22,7 +22,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::middleware::session::Session;
-use crate::http::v4::gql::types::{EmoteSet, EmoteSetEmote, EmoteSetEmoteFlags};
+use crate::http::v4::gql::types::{EmoteSet, EmoteSetEmote};
 use crate::http::validators::{EmoteNameValidator, NameValidator};
 use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
@@ -137,6 +137,28 @@ pub struct AddEmote {
 	pub id: EmoteSetEmoteId,
 	pub zero_width: Option<bool>,
 	pub override_conflicts: Option<bool>,
+}
+
+#[derive(async_graphql::InputObject, Clone)]
+pub struct EmoteSetEmoteFlagsInput {
+	pub zero_width: bool,
+	pub override_conflicts: bool,
+}
+
+impl Into<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlagsInput {
+	fn into(self) -> shared::database::emote_set::EmoteSetEmoteFlag {
+		let mut flags = shared::database::emote_set::EmoteSetEmoteFlag::default();
+
+		if self.zero_width {
+			flags |= shared::database::emote_set::EmoteSetEmoteFlag::ZeroWidth;
+		}
+
+		if self.override_conflicts {
+			flags |= shared::database::emote_set::EmoteSetEmoteFlag::OverrideConflicts;
+		}
+
+		flags
+	}
 }
 
 #[async_graphql::Object]
@@ -792,7 +814,7 @@ impl EmoteSetOperation {
 		&self,
 		ctx: &Context<'_>,
 		id: EmoteSetEmoteId,
-		flags: EmoteSetEmoteFlags,
+		flags: EmoteSetEmoteFlagsInput,
 	) -> Result<EmoteSetEmote, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -808,15 +830,6 @@ impl EmoteSetOperation {
 			Some(GeneralMutexKey::EmoteSet(self.emote_set.id).into()),
 			|mut tx| async move {
 				session.user().map_err(TransactionError::Custom)?;
-
-				let old_emote_set_emote = self
-					.emote_set
-					.emotes
-					.iter()
-					.find(|e| e.id == id.emote_id && id.alias.as_ref().is_none_or(|a| e.alias == *a))
-					.ok_or_else(|| {
-						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
-					})?;
 
 				let emote = tx
 					.find_one(

@@ -10,6 +10,53 @@ use crate::http::error::{ApiError, ApiErrorCode};
 mod batch_operation;
 mod operation;
 
+#[derive(async_graphql::InputObject)]
+pub struct EmoteFlagsInput {
+	pub public_listed: bool,
+	pub private: bool,
+	pub nsfw: bool,
+	pub default_zero_width: bool,
+	pub approved_personal: bool,
+	pub denied_personal: bool,
+	pub animated: bool,
+}
+
+impl Into<shared::database::emote::EmoteFlags> for EmoteFlagsInput {
+	fn into(self) -> shared::database::emote::EmoteFlags {
+		let mut flags = shared::database::emote::EmoteFlags::default();
+
+		if self.public_listed {
+			flags |= shared::database::emote::EmoteFlags::PublicListed;
+		}
+
+		if self.private {
+			flags |= shared::database::emote::EmoteFlags::Private;
+		}
+
+		if self.nsfw {
+			flags |= shared::database::emote::EmoteFlags::Nsfw;
+		}
+
+		if self.default_zero_width {
+			flags |= shared::database::emote::EmoteFlags::DefaultZeroWidth;
+		}
+
+		if self.approved_personal {
+			flags |= shared::database::emote::EmoteFlags::ApprovedPersonal;
+		}
+
+		if self.denied_personal {
+			flags |= shared::database::emote::EmoteFlags::DeniedPersonal;
+		}
+
+		if self.animated {
+			flags |= shared::database::emote::EmoteFlags::Animated;
+		}
+
+		flags
+	}
+}
+
 #[derive(Default)]
 pub struct EmoteMutation;
 

@@ -1,28 +1,34 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import EmotePreview from "../emote-preview.svelte";
+	import type { Emote } from "$/gql/graphql";
+
+	interface Props {
+		mode: DialogMode;
+		data: Emote;
+		title: string;
+		width?: number;
+		children?: Snippet;
+		preview?: Snippet;
+		buttons: Snippet;
+	}
 
 	let {
 		mode = $bindable("hidden"),
+		data,
 		title,
 		width = 45,
 		children,
 		preview,
 		buttons,
-	}: {
-		mode: DialogMode;
-		title?: string;
-		width?: number;
-		children?: Snippet;
-		preview?: Snippet;
-		buttons: Snippet;
-	} = $props();
+	}: Props = $props();
 </script>
 
 <Dialog {width} bind:mode>
 	<form class="layout">
 		<div class="preview">
-			<!-- <EmotePreview /> -->
+			<EmotePreview {data} emoteOnly />
 			{@render preview?.()}
 		</div>
 		<div class="content">
@@ -40,12 +46,16 @@
 		padding: 1.5rem 1rem;
 
 		display: flex;
+		flex-wrap: wrap;
 		gap: 2rem;
+
+		height: 100%;
 	}
 
 	.preview {
+		flex-grow: 1;
+		min-width: 8rem;
 		align-self: center;
-		min-width: 10rem;
 
 		display: flex;
 		flex-direction: column;
