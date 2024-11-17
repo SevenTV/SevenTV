@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, SimpleObject};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::role::RoleId;
+use shared::database::user::editor::EditorEmoteSetPermission;
 use shared::database::user::UserId;
 
 use super::{Color, Emote, EmoteSet, Role, UserEditor};
@@ -147,6 +148,7 @@ impl User {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
 			.unwrap_or_default()
 			.into_iter()
+			.filter(|editor| editor.permissions.has_emote_set(EditorEmoteSetPermission::Manage))
 			.map(|editor| editor.id.user_id)
 			.chain(std::iter::once(self.id));
 
