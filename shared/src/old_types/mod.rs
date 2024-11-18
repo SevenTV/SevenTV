@@ -141,7 +141,7 @@ impl UserPartialModel {
 					.outputs
 					.iter()
 					.max_by_key(|i| i.height)
-					.map(|i| i.get_url(cdn_base_url))
+					.map(|i| i.get_v3_url(cdn_base_url))
 			})
 		} else {
 			None

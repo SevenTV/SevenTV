@@ -44,10 +44,14 @@ pub struct Image {
 }
 
 impl Image {
-	pub fn get_url(&self, cdn_base_url: &url::Url) -> String {
+	pub fn get_v3_url(&self, cdn_base_url: &url::Url) -> String {
 		cdn_base_url
 			.join(&self.path)
 			.map(|u| u.to_string().trim_start_matches("https:").to_string())
 			.unwrap_or_default()
+	}
+
+	pub fn get_url(&self, cdn_base_url: &url::Url) -> String {
+		cdn_base_url.join(&self.path).map(|u| u.to_string()).unwrap_or_default()
 	}
 }
