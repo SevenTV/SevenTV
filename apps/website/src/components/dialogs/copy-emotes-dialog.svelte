@@ -15,7 +15,7 @@
 				<EmotePreview index={i} emoteOnly />
 			{/each}
 		</EmoteContainer> -->
-		<EmoteSetPicker />
+		<!-- <EmoteSetPicker emoteId={data.id} /> -->
 	</div>
 </Dialog>
 

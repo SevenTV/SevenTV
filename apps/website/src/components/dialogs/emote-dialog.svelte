@@ -33,7 +33,9 @@
 		</div>
 		<div class="content">
 			<h1>{title}</h1>
-			{@render children?.()}
+			<div class="children">
+				{@render children?.()}
+			</div>
 			<div class="buttons">
 				{@render buttons()}
 			</div>
@@ -48,8 +50,6 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 2rem;
-
-		height: 100%;
 	}
 
 	.preview {
@@ -71,6 +71,17 @@
 		gap: 1rem;
 	}
 
+	.children {
+		flex-grow: 1;
+
+		margin-right: -1rem;
+		padding-right: 1rem;
+
+		overflow-x: hidden;
+		overflow-y: auto;
+		scrollbar-gutter: stable;
+	}
+
 	h1 {
 		font-size: 1rem;
 		font-weight: 600;
@@ -82,5 +93,11 @@
 		display: flex;
 		gap: 0.5rem;
 		justify-content: flex-end;
+	}
+
+	@media (min-width: 961px) {
+		.content {
+			max-height: 80vh;
+		}
 	}
 </style>

@@ -171,7 +171,6 @@
 
 	.scroll {
 		overflow: auto;
-		overflow: overlay;
 		scrollbar-gutter: stable;
 	}
 

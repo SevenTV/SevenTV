@@ -4,10 +4,11 @@ use std::sync::Arc;
 use async_graphql::Context;
 use fred::prelude::KeysInterface;
 use shared::database::emote::EmoteId;
+use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
 use shared::typesense::types::event::EventId;
 
-use super::{EmoteEvent, Event, Image, SearchResult, User};
+use super::{EmoteEvent, EmoteSetEmote, Event, Image, SearchResult, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
@@ -178,6 +179,30 @@ impl Emote {
 			.filter_map(|e| Event::try_from(e).ok())
 			.collect())
 	}
+
+	async fn in_emote_sets(
+		&self,
+		ctx: &Context<'_>,
+		#[graphql(validator(min_items = 1, max_items = 50))] emote_set_ids: Vec<EmoteSetId>,
+	) -> Result<Vec<EmoteInEmoteSetResponse>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let result = global
+			.emote_set_by_id_loader
+			.load_many(emote_set_ids)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.into_iter()
+			.map(|(id, set)| EmoteInEmoteSetResponse {
+				emote_set_id: id,
+				emote: set.emotes.into_iter().find(|e| e.id == self.id).map(EmoteSetEmote::from),
+			})
+			.collect();
+
+		Ok(result)
+	}
 }
 
 impl Emote {
@@ -284,4 +309,10 @@ impl EmoteAttribution {
 
 		Ok(user.map(Into::into))
 	}
+}
+
+#[derive(async_graphql::SimpleObject)]
+pub struct EmoteInEmoteSetResponse {
+	pub emote_set_id: EmoteSetId,
+	pub emote: Option<EmoteSetEmote>,
 }

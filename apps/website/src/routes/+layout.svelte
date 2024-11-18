@@ -95,7 +95,6 @@
 
 	main {
 		overflow: auto;
-		overflow: overlay;
 	}
 
 	.skip-to-main {

@@ -325,7 +325,6 @@
 		flex-grow: 1;
 
 		overflow: auto;
-		overflow: overlay;
 		scrollbar-gutter: stable;
 		margin-right: -1.25rem;
 		padding-right: 1.25rem;

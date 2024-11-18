@@ -79,7 +79,10 @@
 </script>
 
 {#if !children && data}
-	<AddEmoteDialog bind:mode={addEmoteDialogMode} {data} />
+	<!-- Rerender when opened -->
+	{#if addEmoteDialogMode !== "hidden"}
+		<AddEmoteDialog bind:mode={addEmoteDialogMode} {data} />
+	{/if}
 	<EditEmoteDialog bind:mode={editDialogMode} />
 	<TransferEmoteDialog bind:mode={transferDialogMode} {data} />
 	<ReportEmoteDialog bind:mode={reportDialogMode} />

@@ -10,7 +10,7 @@
 	<div class="layout">
 		<h1>{$t("dialogs.default_set.title")}</h1>
 		<hr />
-		<EmoteSetPicker radioName="default-set" />
+		<!-- <EmoteSetPicker radioName="default-set" emoteId={data.id} /> -->
 	</div>
 </Dialog>
 

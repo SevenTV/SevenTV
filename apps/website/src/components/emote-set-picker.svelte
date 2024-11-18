@@ -5,23 +5,37 @@
 	import Radio from "./input/radio.svelte";
 	import { type EmoteSet } from "$/gql/graphql";
 	import { user } from "$/lib/auth";
+	import Spinner from "./spinner.svelte";
 
-	let { radioName }: { radioName?: string } = $props();
-
-	function groupByOwnerId(sets: EmoteSet[]) {
-		return sets.reduce((grouped, set) => {
-			if (set.owner) {
-				(grouped[set.owner.id] = grouped[set.owner.id] || []).push(set);
-			}
-			return grouped;
-		}, {} as { [key: string]: EmoteSet[] });
+	interface Props {
+		value: { [key: string]: boolean };
+		radioName?: string;
+		disabled?: boolean;
 	}
 
-	let editableSets = $derived($user?.editableEmoteSets ? groupByOwnerId($user.editableEmoteSets) : {});
+	let { value = $bindable(), radioName, disabled = false }: Props = $props();
+
+	function groupByOwnerId(sets: EmoteSet[]) {
+		return sets.reduce(
+			(grouped, set) => {
+				if (set.owner) {
+					(grouped[set.owner.id] = grouped[set.owner.id] || []).push(set);
+				}
+				return grouped;
+			},
+			{} as { [key: string]: EmoteSet[] },
+		);
+	}
+
+	let editableSets = $derived(
+		$user?.editableEmoteSets ? groupByOwnerId($user.editableEmoteSets) : {},
+	);
 </script>
 
 {#each Object.keys(editableSets) as ownerId}
-	<Expandable title={editableSets[ownerId][0]?.owner?.mainConnection?.platformDisplayName ?? "Emote Sets"}>
+	<Expandable
+		title={editableSets[ownerId][0]?.owner?.mainConnection?.platformDisplayName ?? "Emote Sets"}
+	>
 		{#each editableSets[ownerId] as set}
 			{#snippet pickerLeftLabel()}
 				<div class="emote-set">
@@ -29,10 +43,25 @@
 					<Flags flags={[`${set.emotes.totalCount}/${set.capacity}`, "default"]} />
 				</div>
 			{/snippet}
-			{#if radioName}
-				<Radio name={radioName} option leftLabel={pickerLeftLabel} />
+			{#if value[set.id] !== undefined}
+				{#if radioName}
+					<Radio
+						name={radioName}
+						option
+						leftLabel={pickerLeftLabel}
+						disabled={disabled || (set.capacity ? (set.emotes.totalCount >= set.capacity) : false)}
+						bind:value={value[set.id]}
+					/>
+				{:else}
+					<Checkbox
+						option
+						leftLabel={pickerLeftLabel}
+						disabled={disabled || (set.capacity ? (set.emotes.totalCount >= set.capacity) : false)}
+						bind:value={value[set.id]}
+					/>
+				{/if}
 			{:else}
-				<Checkbox option leftLabel={pickerLeftLabel} />
+				<Spinner />
 			{/if}
 		{/each}
 	</Expandable>

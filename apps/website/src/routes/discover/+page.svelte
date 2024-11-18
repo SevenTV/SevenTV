@@ -14,7 +14,6 @@
 <style lang="scss">
 	.scroll-container {
 		overflow: auto;
-		overflow: overlay;
 		scrollbar-gutter: stable;
 	}
 

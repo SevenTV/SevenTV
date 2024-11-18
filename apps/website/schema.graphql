@@ -29,6 +29,7 @@ type Emote {
 	flags: EmoteFlags!
 	id: Id!
 	images: [Image!]!
+	inEmoteSets(emoteSetIds: [Id!]!): [EmoteInEmoteSetResponse!]!
 	owner: User
 	ownerId: Id!
 	ranking(ranking: Ranking!): Int
@@ -83,6 +84,11 @@ input EmoteFlagsInput {
 	nsfw: Boolean!
 	private: Boolean!
 	publicListed: Boolean!
+}
+
+type EmoteInEmoteSetResponse {
+	emote: EmoteSetEmote
+	emoteSetId: Id!
 }
 
 type EmoteOperation {

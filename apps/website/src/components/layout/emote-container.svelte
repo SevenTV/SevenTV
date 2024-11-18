@@ -32,7 +32,6 @@
 
 		&.scrollable {
 			overflow: auto;
-			overflow: overlay;
 			scrollbar-gutter: stable;
 		}
 
@@ -53,7 +52,6 @@
 	@media screen and (min-width: 961px) {
 		.emotes.scrollable-on-desktop {
 			overflow: auto;
-			overflow: overlay;
 			scrollbar-gutter: stable;
 		}
 	}
