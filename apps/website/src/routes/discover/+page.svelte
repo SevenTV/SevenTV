@@ -7,8 +7,7 @@
 </svelte:head>
 
 <div class="scroll-container">
-	<div class="previews">
-	</div>
+	<div class="previews"></div>
 </div>
 
 <style lang="scss">

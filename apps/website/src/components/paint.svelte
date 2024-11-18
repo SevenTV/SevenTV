@@ -80,20 +80,22 @@
 	}
 
 	let layers = $derived(
-		paint.data.layers.map((l) => {
-			const image = layerToBackgroundImage(l);
-			const color = layerToBackgroundColor(l);
+		paint.data.layers
+			.map((l) => {
+				const image = layerToBackgroundImage(l);
+				const color = layerToBackgroundColor(l);
 
-			if (!image && !color) {
-				return undefined;
-			}
+				if (!image && !color) {
+					return undefined;
+				}
 
-			return {
-				opacity: l.opacity,
-				image,
-				color,
-			};
-		}).filter((l) => l !== undefined),
+				return {
+					opacity: l.opacity,
+					image,
+					color,
+				};
+			})
+			.filter((l) => l !== undefined),
 	);
 	let filter = $derived(
 		paint.data.shadows.length > 0 ? paint.data.shadows.map(shadowToFilter).join(" ") : undefined,

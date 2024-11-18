@@ -49,14 +49,14 @@
 						name={radioName}
 						option
 						leftLabel={pickerLeftLabel}
-						disabled={disabled || (set.capacity ? (set.emotes.totalCount >= set.capacity) : false)}
+						disabled={disabled || (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
 						bind:value={value[set.id]}
 					/>
 				{:else}
 					<Checkbox
 						option
 						leftLabel={pickerLeftLabel}
-						disabled={disabled || (set.capacity ? (set.emotes.totalCount >= set.capacity) : false)}
+						disabled={disabled || (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
 						bind:value={value[set.id]}
 					/>
 				{/if}

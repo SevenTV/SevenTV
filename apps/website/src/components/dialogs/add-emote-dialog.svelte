@@ -117,7 +117,12 @@
 	{data}
 >
 	{#snippet preview()}
-		<TextInput placeholder={$t("labels.emote_name")} style="max-width: 12.5rem" disabled={submitting} bind:value={alias}>
+		<TextInput
+			placeholder={$t("labels.emote_name")}
+			style="max-width: 12.5rem"
+			disabled={submitting}
+			bind:value={alias}
+		>
 			<span class="label">{$t("dialogs.add_emote.change_name")}</span>
 		</TextInput>
 	{/snippet}
