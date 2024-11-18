@@ -97,7 +97,9 @@
 						/>
 					{/if}
 				{:else}
-					<Spinner />
+					<div class="placeholder">
+						<Spinner />
+					</div>
 				{/if}
 			{/each}
 		</Expandable>
@@ -118,5 +120,16 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
+
+	.placeholder {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+
+		padding: 0.97rem 0.75rem;
+		border-radius: 0.5rem;
+		background-color: var(--bg-medium);
+		border: 1px solid transparent;
 	}
 </style>
