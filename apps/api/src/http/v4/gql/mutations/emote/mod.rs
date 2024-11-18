@@ -74,7 +74,7 @@ impl EmoteMutation {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;
 
-		Ok(operation::EmoteOperation { emote })
+		Ok(operation::EmoteOperation { _emote: emote })
 	}
 
 	async fn emotes<'ctx>(
@@ -94,6 +94,6 @@ impl EmoteMutation {
 			.into_values()
 			.collect();
 
-		Ok(batch_operation::EmoteBatchOperation { emotes })
+		Ok(batch_operation::EmoteBatchOperation { _emotes: emotes })
 	}
 }

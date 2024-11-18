@@ -168,8 +168,8 @@ impl EmoteSetOperation {
 	)]
 	async fn create(
 		&self,
-		ctx: &Context<'_>,
-		#[graphql(validator(custom = "NameValidator"))] name: String,
+		_ctx: &Context<'_>,
+		#[graphql(validator(custom = "NameValidator"))] _name: String,
 	) -> Result<EmoteSet, ApiError> {
 		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 	}
@@ -179,8 +179,8 @@ impl EmoteSetOperation {
 	)]
 	async fn name(
 		&self,
-		ctx: &Context<'_>,
-		#[graphql(validator(custom = "NameValidator"))] name: String,
+		_ctx: &Context<'_>,
+		#[graphql(validator(custom = "NameValidator"))] _name: String,
 	) -> Result<EmoteSet, ApiError> {
 		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 	}
@@ -190,8 +190,8 @@ impl EmoteSetOperation {
 	)]
 	async fn capacity(
 		&self,
-		ctx: &Context<'_>,
-		#[graphql(validator(minimum = 1))] capacity: i32,
+		_ctx: &Context<'_>,
+		#[graphql(validator(minimum = 1))] _capacity: i32,
 	) -> Result<EmoteSet, ApiError> {
 		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 	}
@@ -927,7 +927,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
-	async fn delete(&self, ctx: &Context<'_>) -> Result<bool, ApiError> {
+	async fn delete(&self, _ctx: &Context<'_>) -> Result<bool, ApiError> {
 		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 	}
 }
