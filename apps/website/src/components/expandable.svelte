@@ -8,9 +8,20 @@
 		title: string;
 		expanded?: boolean;
 		children: Snippet;
+		onexpand?: (expanded: boolean) => void;
 	} & HTMLAttributes<HTMLDivElement>;
 
-	let { title, expanded = !isMobileLayout(), children, ...restProps }: Props = $props();
+	let {
+		title,
+		expanded = $bindable(!isMobileLayout()),
+		children,
+		onexpand,
+		...restProps
+	}: Props = $props();
+
+	$effect(() => {
+		onexpand?.(expanded);
+	});
 </script>
 
 <div class="expandable" {...restProps}>
