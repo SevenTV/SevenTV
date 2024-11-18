@@ -17,3 +17,20 @@ export async function addEmoteToSet(setId: string, emoteId: string, alias?: stri
 		)
 		.toPromise();
 }
+
+export async function removeEmoteFromSet(setId: string, emoteId: string, alias?: string) {
+	await gqlClient()
+		.mutation(
+			graphql(`
+				mutation RemoveEmoteFromSet($setId: Id!, $emote: EmoteSetEmoteId!) {
+					emoteSet(id: $setId) {
+						removeEmote(id: $emote) {
+							id
+						}
+					}
+				}
+			`),
+			{ setId, emote: { emoteId, alias } },
+		)
+		.toPromise();
+}

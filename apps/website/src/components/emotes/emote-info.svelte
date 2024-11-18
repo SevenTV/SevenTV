@@ -10,6 +10,7 @@
 		Download,
 		Trash,
 		Flag,
+		Minus,
 	} from "phosphor-svelte";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags, { emoteToFlags } from "$/components/flags.svelte";
@@ -32,7 +33,7 @@
 	import UserName from "../user-name.svelte";
 	import { user } from "$/lib/auth";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { addEmoteToSet } from "$/lib/setMutations";
+	import { addEmoteToSet, removeEmoteFromSet } from "$/lib/setMutations";
 	import Spinner from "../spinner.svelte";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
@@ -90,6 +91,18 @@
 		useEmoteLoading = true;
 		await addEmoteToSet($defaultEmoteSet, data.id);
 		useEmoteLoading = false;
+	}
+
+	let removeEmoteLoading = $state(false);
+
+	async function removeEmote() {
+		if (!$defaultEmoteSet || !data) {
+			return;
+		}
+
+		removeEmoteLoading = true;
+		await removeEmoteFromSet($defaultEmoteSet, data.id);
+		removeEmoteLoading = false;
 	}
 </script>
 
@@ -160,16 +173,29 @@
 			{#snippet fallbackChildren()}
 				{#if $user}
 					{#if $defaultEmoteSet}
-						<Button primary onclick={useEmote} disabled={useEmoteLoading}>
-							{#snippet icon()}
-								{#if useEmoteLoading}
-									<Spinner />
-								{:else}
-									<Plus />
-								{/if}
-							{/snippet}
-							{$t("pages.emote.use_emote")}
-						</Button>
+						{#if data.inEmoteSets?.some((s) => s.emoteSetId === $defaultEmoteSet && s.emote?.id === data.id)}
+							<Button primary onclick={removeEmote} disabled={removeEmoteLoading}>
+								{#snippet icon()}
+									{#if removeEmoteLoading}
+										<Spinner />
+									{:else}
+										<Minus />
+									{/if}
+								{/snippet}
+								Remove
+							</Button>
+						{:else}
+							<Button primary onclick={useEmote} disabled={useEmoteLoading}>
+								{#snippet icon()}
+									{#if useEmoteLoading}
+										<Spinner />
+									{:else}
+										<Plus />
+									{/if}
+								{/snippet}
+								{$t("pages.emote.use_emote")}
+							</Button>
+						{/if}
 					{/if}
 					<Button
 						primary={!$defaultEmoteSet}
