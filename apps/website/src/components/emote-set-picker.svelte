@@ -7,14 +7,23 @@
 	import { user } from "$/lib/auth";
 	import Spinner from "./spinner.svelte";
 	import { browser } from "$app/environment";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 
 	interface Props {
 		value: { [key: string]: boolean };
 		radioName?: string;
+		radioValue?: string;
 		disabled?: boolean;
+		checkCapacity?: boolean;
 	}
 
-	let { value = $bindable(), radioName, disabled = false }: Props = $props();
+	let {
+		value = $bindable(),
+		radioName,
+		radioValue = $bindable(),
+		disabled = false,
+		checkCapacity = true,
+	}: Props = $props();
 
 	function groupByOwnerId(sets: EmoteSet[]) {
 		return sets.reduce(
@@ -61,23 +70,29 @@
 				{#snippet pickerLeftLabel()}
 					<div class="emote-set">
 						{set.name}
-						<Flags flags={[`${set.emotes.totalCount}/${set.capacity}`, "default"]} />
+						<Flags
+							flags={[
+								`${set.emotes.totalCount}/${set.capacity}`,
+								...($defaultEmoteSet === set.id ? ["default"] : []),
+							]}
+						/>
 					</div>
 				{/snippet}
-				{#if value[set.id] !== undefined}
+				{#if (value && value[set.id] !== undefined) || radioName !== undefined}
 					{#if radioName}
 						<Radio
 							name={radioName}
+							value={set.id}
+							bind:group={radioValue}
 							option
 							leftLabel={pickerLeftLabel}
-							disabled={disabled || (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
-							bind:value={value[set.id]}
+							disabled={disabled || checkCapacity && (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
 						/>
 					{:else}
 						<Checkbox
 							option
 							leftLabel={pickerLeftLabel}
-							disabled={disabled || (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
+							disabled={disabled || checkCapacity && (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
 							bind:value={value[set.id]}
 						/>
 					{/if}

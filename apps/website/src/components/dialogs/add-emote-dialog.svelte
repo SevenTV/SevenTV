@@ -5,12 +5,13 @@
 	import EmoteDialog from "./emote-dialog.svelte";
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import { t } from "svelte-i18n";
-	import { untrack, type Snippet } from "svelte";
+	import { untrack } from "svelte";
 	import type { Emote } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import { user } from "$/lib/auth";
 	import Spinner from "../spinner.svelte";
+	import { addEmoteToSet } from "$/lib/setMutations";
 
 	interface Props {
 		mode: DialogMode;
@@ -89,23 +90,10 @@
 		submitting = true;
 
 		for (const setId of toAdd) {
-			await gqlClient()
-				.mutation(
-					graphql(`
-						mutation AddEmoteToSet($setId: Id!, $emote: EmoteSetEmoteId!) {
-							emoteSet(id: $setId) {
-								addEmote(emote: { id: $emote }) {
-									id
-								}
-							}
-						}
-					`),
-					{ setId, emote: { emoteId: data.id, alias } },
-				)
-				.toPromise();
-
-			mode = "hidden";
+			await addEmoteToSet(setId, data.id, alias);
 		}
+
+		mode = "hidden";
 	}
 </script>
 

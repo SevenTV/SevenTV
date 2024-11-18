@@ -2,13 +2,16 @@ import { graphql } from "$/gql";
 import type { LayoutLoadEvent } from "./$types";
 import type { Emote } from "$/gql/graphql";
 import { gqlClient } from "$/lib/gql";
+import { get } from "svelte/store";
+import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 
 export async function load({ fetch, params }: LayoutLoadEvent) {
-	// TODO: Don't do this in load function because it takes too long
+	const defaultSet = get(defaultEmoteSet);
+
 	const req = gqlClient()
 		.query(
 			graphql(`
-				query OneEmote($id: Id!) {
+				query OneEmote($id: Id!, $isDefaultSetSet: Boolean!, $defaultSetId: Id!) {
 					emotes {
 						emote(id: $id) {
 							id
@@ -132,12 +135,21 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 								frameCount
 							}
 							ranking(ranking: TRENDING_WEEKLY)
+							inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+								emoteSetId
+								emote {
+									id
+									alias
+								}
+							}
 						}
 					}
 				}
 			`),
 			{
 				id: params.id,
+				isDefaultSetSet: !!defaultSet,
+				defaultSetId: defaultSet ?? "",
 			},
 			{
 				fetch,

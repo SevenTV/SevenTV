@@ -14,6 +14,7 @@
 	import Button from "$/components/input/button.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 
 	let { data }: { data: PageData } = $props();
 
@@ -27,7 +28,13 @@
 	async function queryEmotes(page: number, perPage: number) {
 		const res = await gqlClient().query(
 			graphql(`
-				query EmotesInSet($id: Id!, $page: Int!, $perPage: Int!) {
+				query EmotesInSet(
+					$id: Id!
+					$page: Int!
+					$perPage: Int!
+					$isDefaultSetSet: Boolean!
+					$defaultSetId: Id!
+				) {
 					emoteSets {
 						emoteSet(id: $id) {
 							emotes(page: $page, perPage: $perPage) {
@@ -125,6 +132,13 @@
 											frameCount
 										}
 										ranking(ranking: TRENDING_WEEKLY)
+										inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+											emoteSetId
+											emote {
+												id
+												alias
+											}
+										}
 									}
 								}
 								totalCount
@@ -134,7 +148,13 @@
 					}
 				}
 			`),
-			{ id: data.emoteSet.id, page, perPage },
+			{
+				id: data.emoteSet.id,
+				page,
+				perPage,
+				isDefaultSetSet: !!$defaultEmoteSet,
+				defaultSetId: $defaultEmoteSet ?? "",
+			},
 		);
 
 		if (res.error || !res.data) {

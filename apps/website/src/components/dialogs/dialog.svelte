@@ -10,7 +10,7 @@
 	import { browser } from "$app/environment";
 	import type { Snippet } from "svelte";
 
-	let dialog: HTMLDialogElement;
+	let dialog = $state<HTMLDialogElement>();
 
 	let {
 		mode = $bindable("hidden"),
@@ -25,15 +25,13 @@
 	}
 
 	$effect(() => {
-		if (mode !== "hidden") {
-			dialog?.showModal();
+		mode; // trigger effect on mode change
 
-			// Blur to prevent initial visible autofocus
-			if (browser && document.activeElement instanceof HTMLElement) {
-				document.activeElement.blur();
-			}
-		} else {
-			dialog?.close();
+		dialog?.showModal();
+
+		// Blur to prevent initial visible autofocus
+		if (browser && document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
 		}
 	});
 
@@ -49,24 +47,26 @@
 
 <svelte:window onkeydown={handleKeyDown} />
 
-<dialog
-	bind:this={dialog}
-	use:mouseTrap={close}
-	aria-modal="true"
-	transition:fade={{ duration: 100 }}
-	style="width: {width}rem"
->
-	{#if mode === "shown"}
-		<Button onclick={close} style="position: absolute; top: 0.5rem; right: 0.5rem;">
-			{#snippet icon()}
-				<X />
-			{/snippet}
-		</Button>
-	{/if}
-	<div use:mouseTrap={close} class="trap">
-		{@render children()}
-	</div>
-</dialog>
+{#if mode !== "hidden"}
+	<dialog
+		bind:this={dialog}
+		use:mouseTrap={close}
+		aria-modal="true"
+		transition:fade={{ duration: 100 }}
+		style="width: {width}rem"
+	>
+		{#if mode === "shown"}
+			<Button onclick={close} style="position: absolute; top: 0.5rem; right: 0.5rem;">
+				{#snippet icon()}
+					<X />
+				{/snippet}
+			</Button>
+		{/if}
+		<div use:mouseTrap={close} class="trap">
+			{@render children()}
+		</div>
+	</dialog>
+{/if}
 
 <style lang="scss">
 	dialog {

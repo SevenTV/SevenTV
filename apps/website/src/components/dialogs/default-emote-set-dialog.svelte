@@ -1,6 +1,7 @@
 <script lang="ts">
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { t } from "svelte-i18n";
 
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
@@ -10,7 +11,12 @@
 	<div class="layout">
 		<h1>{$t("dialogs.default_set.title")}</h1>
 		<hr />
-		<!-- <EmoteSetPicker radioName="default-set" emoteId={data.id} /> -->
+		<EmoteSetPicker
+			radioName="default-set"
+			bind:radioValue={$defaultEmoteSet}
+			value={{}}
+			checkCapacity={false}
+		/>
 	</div>
 </Dialog>
 

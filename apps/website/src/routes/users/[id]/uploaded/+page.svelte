@@ -5,6 +5,7 @@
 	import type { Emote, EmoteSearchResult } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 
 	let { data }: { data: PageData } = $props();
 
@@ -12,7 +13,7 @@
 		return gqlClient()
 			.query(
 				graphql(`
-					query UserUploadedEmotes($id: Id!) {
+					query UserUploadedEmotes($id: Id!, $isDefaultSetSet: Boolean!, $defaultSetId: Id!) {
 						users {
 							user(id: $id) {
 								ownedEmotes {
@@ -103,6 +104,13 @@
 										frameCount
 									}
 									ranking(ranking: TRENDING_WEEKLY)
+									inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+										emoteSetId
+										emote {
+											id
+											alias
+										}
+									}
 								}
 							}
 						}
@@ -110,6 +118,8 @@
 				`),
 				{
 					id: data.id,
+					isDefaultSetSet: !!$defaultEmoteSet,
+					defaultSetId: $defaultEmoteSet ?? "",
 				},
 			)
 			.toPromise()

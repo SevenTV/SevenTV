@@ -5,7 +5,8 @@
 	type Props = {
 		option?: boolean;
 		name: string;
-		value?: boolean;
+		value: string;
+		group?: string;
 		disabled?: boolean;
 		onclick?: (e: MouseEvent) => void;
 		leftLabel?: Snippet;
@@ -15,7 +16,8 @@
 	let {
 		option = false,
 		name,
-		value = $bindable(false),
+		value,
+		group = $bindable(),
 		disabled = false,
 		onclick,
 		leftLabel,
@@ -26,7 +28,7 @@
 
 <label class:option {...restProps}>
 	{@render leftLabel?.()}
-	<input type="radio" bind:group={value} {name} {disabled} {onclick} />
+	<input type="radio" bind:group {value} {name} {disabled} {onclick} />
 	<span class="checkbox"></span>
 	{@render children?.()}
 </label>
@@ -53,6 +55,11 @@
 
 			&:has(input:checked) {
 				border-color: var(--primary);
+			}
+
+			&:has(input:disabled) {
+				cursor: not-allowed;
+				color: var(--text-light);
 			}
 
 			&:focus-visible,
@@ -132,13 +139,10 @@
 			}
 		}
 
-		input:disabled {
+		input:disabled + .checkbox {
 			cursor: not-allowed;
 			color: var(--text-light);
-
-			& + .checkbox {
-				background-color: var(--secondary-disabled);
-			}
+			background-color: var(--secondary-disabled);
 		}
 	}
 </style>

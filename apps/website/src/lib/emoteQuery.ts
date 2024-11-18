@@ -1,6 +1,8 @@
 import { graphql } from "$/gql";
 import type { EmoteSearchResult, Filters, SortBy } from "$/gql/graphql";
 import { gqlClient } from "./gql";
+import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+import { get } from "svelte/store";
 
 let timeout: NodeJS.Timeout | number | undefined;
 
@@ -20,6 +22,8 @@ export async function queryEmotes(
 
 	return new Promise((resolve, reject) => {
 		timeout = setTimeout(async () => {
+			const defaultSet = get(defaultEmoteSet);
+
 			const res = await gqlClient()
 				.query(
 					graphql(`
@@ -30,6 +34,8 @@ export async function queryEmotes(
 							$filters: Filters
 							$page: Int
 							$perPage: Int!
+							$isDefaultSetSet: Boolean!
+							$defaultSetId: Id!
 						) {
 							emotes {
 								search(
@@ -128,6 +134,13 @@ export async function queryEmotes(
 											frameCount
 										}
 										ranking(ranking: TRENDING_WEEKLY)
+										inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+											emoteSetId
+											emote {
+												id
+												alias
+											}
+										}
 									}
 									totalCount
 									pageCount
@@ -142,6 +155,8 @@ export async function queryEmotes(
 						filters,
 						page,
 						perPage,
+						isDefaultSetSet: !!defaultSet,
+						defaultSetId: defaultSet ?? "",
 					},
 				)
 				.toPromise();

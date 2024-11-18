@@ -31,6 +31,9 @@
 	import type { Snippet } from "svelte";
 	import UserName from "../user-name.svelte";
 	import { user } from "$/lib/auth";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+	import { addEmoteToSet } from "$/lib/setMutations";
+	import Spinner from "../spinner.svelte";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -75,6 +78,18 @@
 		}
 
 		return result;
+	}
+
+	let useEmoteLoading = $state(false);
+
+	async function useEmote() {
+		if (!$defaultEmoteSet || !data) {
+			return;
+		}
+
+		useEmoteLoading = true;
+		await addEmoteToSet($defaultEmoteSet, data.id);
+		useEmoteLoading = false;
 	}
 </script>
 
@@ -144,13 +159,23 @@
 		<div class="buttons">
 			{#snippet fallbackChildren()}
 				{#if $user}
-					<!-- <Button primary>
-						{#snippet icon()}
-							<Plus />
-						{/snippet}
-						{$t("pages.emote.use_emote")}
-					</Button> -->
-					<Button primary onclick={() => (addEmoteDialogMode = "shown")}>
+					{#if $defaultEmoteSet}
+						<Button primary onclick={useEmote} disabled={useEmoteLoading}>
+							{#snippet icon()}
+								{#if useEmoteLoading}
+									<Spinner />
+								{:else}
+									<Plus />
+								{/if}
+							{/snippet}
+							{$t("pages.emote.use_emote")}
+						</Button>
+					{/if}
+					<Button
+						primary={!$defaultEmoteSet}
+						secondary={!!$defaultEmoteSet}
+						onclick={() => (addEmoteDialogMode = "shown")}
+					>
 						{#snippet icon()}
 							<FolderPlus />
 						{/snippet}

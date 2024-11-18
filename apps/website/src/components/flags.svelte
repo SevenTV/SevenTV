@@ -44,6 +44,11 @@
 	export function emoteToFlags(emote: Emote): string[] {
 		const flags: string[] = [];
 
+		const defaultSet = get(defaultEmoteSet);
+		console.log(defaultSet);
+
+		if (emote.inEmoteSets?.some((set) => set.emoteSetId === defaultSet && set.emote?.id === emote.id)) flags.push("active");
+
 		if (emote.flags.defaultZeroWidth) flags.push("overlaying");
 
 		if (!emote.flags.publicListed) flags.push("unlisted");
@@ -86,6 +91,8 @@
 	import { t } from "svelte-i18n";
 	import { EmoteSetKind, type Emote, type EmoteSet } from "$/gql/graphql";
 	import type { HTMLAttributes } from "svelte/elements";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+	import { get } from "svelte/store";
 
 	const names: { [key: string]: string } = {
 		// Emote flags
