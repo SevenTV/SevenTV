@@ -131,7 +131,6 @@
 			.toPromise()
 			.then((res) => {
 				if (res.error || !res.data) {
-					console.error(res.error);
 					throw res.error;
 				}
 

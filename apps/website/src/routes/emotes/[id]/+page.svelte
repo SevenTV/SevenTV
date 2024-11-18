@@ -127,7 +127,6 @@
 			.toPromise();
 
 		if (result.error || !result.data || !result.data.emotes.emote) {
-			console.error(result.error);
 			throw result.error;
 		}
 

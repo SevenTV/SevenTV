@@ -21,6 +21,8 @@
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 	import iconPath from "$assets/favicon.svg?url";
+	import ErrorDialog from "$/components/dialogs/error-dialog.svelte";
+	import { currentError, errorDialogMode } from "$/lib/error";
 
 	let { children }: { children: Snippet } = $props();
 
@@ -50,6 +52,7 @@
 	<UploadDialog bind:mode={$uploadDialogMode} />
 	<SignInDialog bind:mode={$signInDialogMode} />
 	<DefaultEmoteSetDialog bind:mode={$defaultEmoteSetDialogMode} />
+	<ErrorDialog bind:mode={$errorDialogMode} error={$currentError} />
 	<main id="main">
 		{#if $showMobileMenu}
 			<Menu onCloseRequest={() => ($showMobileMenu = false)} />

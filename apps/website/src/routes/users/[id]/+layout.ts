@@ -197,7 +197,6 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 		.toPromise()
 		.then((res) => {
 			if (res.error || !res.data) {
-				console.error(res.error);
 				throw "Failed to load user";
 			}
 

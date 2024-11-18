@@ -47,11 +47,7 @@
 			{ id: emoteId, setIds },
 		);
 
-		if (res.error || !res.data) {
-			throw res.error;
-		}
-
-		return res.data.emotes.emote?.inEmoteSets;
+		return res.data?.emotes.emote?.inEmoteSets;
 	}
 
 	let inSet = $derived(
@@ -89,8 +85,27 @@
 
 	let submitting = $state(false);
 
-	function submit() {
+	async function submit() {
 		submitting = true;
+
+		for (const setId of toAdd) {
+			await gqlClient()
+				.mutation(
+					graphql(`
+						mutation AddEmoteToSet($setId: Id!, $emote: EmoteSetEmoteId!) {
+							emoteSet(id: $setId) {
+								addEmote(emote: { id: $emote }) {
+									id
+								}
+							}
+						}
+					`),
+					{ setId, emote: { emoteId: data.id, alias } },
+				)
+				.toPromise();
+
+			mode = "hidden";
+		}
 	}
 </script>
 

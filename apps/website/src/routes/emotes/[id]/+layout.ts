@@ -144,13 +144,7 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 			},
 		)
 		.toPromise()
-		.then((res) => {
-			if (res.error || !res.data) {
-				console.error(res.error);
-			}
-
-			return res.data?.emotes.emote as Emote;
-		});
+		.then((res) => res.data?.emotes.emote as Emote);
 
 	return {
 		id: params.id,

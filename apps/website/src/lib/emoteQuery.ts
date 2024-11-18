@@ -147,7 +147,6 @@ export async function queryEmotes(
 				.toPromise();
 
 			if (res.error || !res.data) {
-				console.error("error fetching emotes", res.error);
 				reject(res.error);
 			} else {
 				resolve(res.data.emotes.search as EmoteSearchResult);

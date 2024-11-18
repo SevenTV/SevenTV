@@ -26,7 +26,6 @@ export async function load({ params }: PageLoadEvent) {
 	);
 
 	if (res.error || !res.data) {
-		console.error(res.error);
 		error(500, "Failed to load emote set");
 	}
 

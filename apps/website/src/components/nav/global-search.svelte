@@ -157,8 +157,7 @@
 					.toPromise();
 
 				if (res.error || !res.data) {
-					console.error(res.error);
-					reject(res.error);
+					reject();
 					return;
 				}
 

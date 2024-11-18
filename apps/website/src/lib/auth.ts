@@ -150,10 +150,6 @@ export async function fetchMe(): Promise<User | null> {
 		.toPromise();
 
 	if (res.error || !res.data || !res.data.users.me) {
-		if (res.error) {
-			console.error(res.error);
-		}
-
 		return null;
 	}
 
