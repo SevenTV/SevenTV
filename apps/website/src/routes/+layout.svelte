@@ -23,6 +23,7 @@
 	import iconPath from "$assets/favicon.svg?url";
 	import ErrorDialog from "$/components/dialogs/error-dialog.svelte";
 	import { currentError, errorDialogMode } from "$/lib/error";
+	import "$/lib/emoteSets";
 
 	let { children }: { children: Snippet } = $props();
 

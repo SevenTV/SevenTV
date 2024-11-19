@@ -4,14 +4,11 @@
 	import Button from "../input/button.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
 	import { t } from "svelte-i18n";
-	import { untrack } from "svelte";
-	import type { Emote, EmoteInEmoteSetResponse } from "$/gql/graphql";
-	import { gqlClient } from "$/lib/gql";
-	import { graphql } from "$/gql";
-	import { user } from "$/lib/auth";
+	import type { Emote } from "$/gql/graphql";
 	import Spinner from "../spinner.svelte";
 	import { addEmoteToSet, removeEmoteFromSet } from "$/lib/setMutations";
 	import EmoteSetPicker from "../emote-set-picker.svelte";
+	import { editableEmoteSets } from "$/lib/emoteSets";
 
 	interface Props {
 		mode: DialogMode;
@@ -20,79 +17,23 @@
 
 	let { mode = $bindable("hidden"), data }: Props = $props();
 
-	let originalState: { [key: string]: boolean }; // not reactive
-	let pickedEmoteSets: { [key: string]: boolean } = $state({});
-
 	let alias = $state(data.defaultName);
 
-	async function queryInSet(emoteId: string, setIds: string[]) {
-		const results: EmoteInEmoteSetResponse[] = [];
+	let originalState = $derived.by(() => {
+		const state: { [key: string]: boolean } = {};
+		const emoteAlias = alias;
 
-		for (let i = 0; i < setIds.length; i += 50) {
-			const chunk = setIds.slice(i, i + 50);
-			// do whatever
-			const res = await gqlClient().query(
-				graphql(`
-					query IsInSet($id: Id!, $setIds: [Id!]!) {
-						emotes {
-							emote(id: $id) {
-								inEmoteSets(emoteSetIds: $setIds) {
-									emoteSetId
-									emote {
-										id
-										alias
-										flags {
-											zeroWidth
-										}
-									}
-								}
-							}
-						}
-					}
-				`),
-				{ id: emoteId, setIds: chunk },
-			);
-
-			const result = res.data?.emotes.emote?.inEmoteSets as EmoteInEmoteSetResponse[];
-
-			if (!result) {
-				continue;
-			}
-
-			results.push(...result);
+		for (const set of $editableEmoteSets) {
+			state[set.id] = set.emotes.items.some((e) => e.id === data.id && e.alias === emoteAlias);
 		}
 
-		return results;
-	}
+		return state;
+	});
 
-	let inSet = $derived(
-		$user
-			? queryInSet(
-					data.id,
-					$user.editableEmoteSets.map((s) => s.id),
-				)
-			: undefined,
-	);
+	let pickedEmoteSets: { [key: string]: boolean } = $state({});
 
 	$effect(() => {
-		if ($user) {
-			untrack(() => (pickedEmoteSets = {}));
-
-			// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-			alias; // Make alias a dependency
-
-			inSet?.then((inSets) => {
-				if (!inSets) {
-					return;
-				}
-
-				for (const inSet of inSets) {
-					pickedEmoteSets[inSet.emoteSetId] = inSet.emote ? inSet.emote.alias === alias : false;
-				}
-
-				originalState = { ...pickedEmoteSets };
-			});
-		}
+		pickedEmoteSets = originalState;
 	});
 
 	let toAdd = $derived(
@@ -153,7 +94,7 @@
 		</TextInput>
 	{/snippet}
 	<EmoteSetPicker
-		value={pickedEmoteSets}
+		bind:value={pickedEmoteSets}
 		disabled={submitting}
 		highlightAdd={toAdd}
 		highlightRemove={toRemove}

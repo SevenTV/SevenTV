@@ -71,7 +71,7 @@ export function subscribe(type: DispatchType, id: string, handler: (pl: Dispatch
 				condition: {
 					object_id: id,
 				},
-			}
+			},
 		};
 
 		log("subscribing to", type, id);
@@ -81,7 +81,11 @@ export function subscribe(type: DispatchType, id: string, handler: (pl: Dispatch
 	return () => unsubscribe(type, id, handler);
 }
 
-export function unsubscribe(type: DispatchType, id: string, handler: (pl: DispatchPayload) => void) {
+export function unsubscribe(
+	type: DispatchType,
+	id: string,
+	handler: (pl: DispatchPayload) => void,
+) {
 	if (!browser) {
 		return;
 	}
@@ -113,7 +117,7 @@ export function unsubscribe(type: DispatchType, id: string, handler: (pl: Dispat
 				condition: {
 					object_id: id,
 				},
-			}
+			},
 		};
 
 		log("unsubscribing from", type, id);
@@ -180,8 +184,10 @@ export enum DispatchType {
 export interface ChangeField {
 	key: string;
 	index?: number;
-	old_value?: object;
-	value?: object | ChangeField[];
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	old_value?: any;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	value?: any;
 }
 
 interface SubscribeMessage {
@@ -278,6 +284,6 @@ function onDispatch(payload: DispatchPayload) {
 
 	const handlers = window.EVEMT_API?.subscriptions.get(mapKey(payload.type, payload.body.id));
 	if (handlers) {
-		handlers.forEach(handler => handler(payload));
+		handlers.forEach((handler) => handler(payload));
 	}
 }

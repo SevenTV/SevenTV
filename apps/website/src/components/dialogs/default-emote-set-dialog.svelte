@@ -8,11 +8,22 @@
 	import { browser } from "$app/environment";
 	import Flags from "../flags.svelte";
 	import Radio from "../input/radio.svelte";
+	import { editableEmoteSets } from "$/lib/emoteSets";
+	import TextInput from "../input/text-input.svelte";
+	import { MagnifyingGlass } from "phosphor-svelte";
 
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
+	let searchQuery = $state("");
+
 	function groupByOwnerId(sets: EmoteSet[]) {
 		const init: { [key: string]: EmoteSet[] } = {};
+
+		const defaultSet =
+			$defaultEmoteSet && $editableEmoteSets.find((set) => set.id === $defaultEmoteSet);
+		if (defaultSet && defaultSet.owner?.id) {
+			init[defaultSet.owner.id] = [];
+		}
 
 		if ($user) {
 			init[$user.id] = [];
@@ -26,12 +37,25 @@
 		}, init);
 	}
 
+	function searchFilter(sets: EmoteSet[], query: string) {
+		if (query.length === 0) {
+			return sets;
+		}
+
+		return sets.filter((set) => {
+			return (
+				set.name.toLowerCase().includes(query.toLowerCase()) ||
+				set.owner?.mainConnection?.platformDisplayName?.toLowerCase().includes(query.toLowerCase())
+			);
+		});
+	}
+
 	let editableSets = $derived(
-		$user?.editableEmoteSets ? groupByOwnerId($user.editableEmoteSets) : {},
+		$editableEmoteSets ? groupByOwnerId(searchFilter($editableEmoteSets, searchQuery)) : {},
 	);
 
 	function onExpand(ownerId: string, expanded: boolean) {
-		if (!browser) {
+		if (!browser || searchQuery.length !== 0) {
 			return;
 		}
 
@@ -53,6 +77,11 @@
 		<h1>{$t("dialogs.default_set.title")}</h1>
 		<hr />
 		<div class="picker">
+			<TextInput placeholder="Search Emote Set" bind:value={searchQuery}>
+				{#snippet icon()}
+					<MagnifyingGlass />
+				{/snippet}
+			</TextInput>
 			{#each Object.keys(editableSets) as ownerId}
 				<Expandable
 					title={editableSets[ownerId][0]?.owner?.mainConnection?.platformDisplayName ??

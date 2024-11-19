@@ -9,6 +9,7 @@
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { MagnifyingGlass, Minus, Plus } from "phosphor-svelte";
 	import TextInput from "./input/text-input.svelte";
+	import { editableEmoteSets } from "$/lib/emoteSets";
 
 	interface Props {
 		value: { [key: string]: boolean };
@@ -30,7 +31,7 @@
 		const init: { [key: string]: EmoteSet[] } = {};
 
 		const defaultSet =
-			$defaultEmoteSet && $user?.editableEmoteSets.find((set) => set.id === $defaultEmoteSet);
+			$defaultEmoteSet && $editableEmoteSets.find((set) => set.id === $defaultEmoteSet);
 		if (defaultSet && defaultSet.owner?.id) {
 			init[defaultSet.owner.id] = [];
 		}
@@ -61,9 +62,7 @@
 	}
 
 	let editableSets = $derived(
-		$user?.editableEmoteSets
-			? groupByOwnerId(searchFilter($user.editableEmoteSets, searchQuery))
-			: {},
+		$editableEmoteSets ? groupByOwnerId(searchFilter($editableEmoteSets, searchQuery)) : {},
 	);
 
 	function onExpand(ownerId: string, expanded: boolean) {

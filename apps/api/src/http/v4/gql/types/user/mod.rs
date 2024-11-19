@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, SimpleObject};
+use shared::database::emote_set::EmoteSetId;
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::role::RoleId;
 use shared::database::user::editor::EditorEmoteSetPermission;
@@ -125,7 +126,7 @@ impl User {
 		Ok(editors.into_iter().map(Into::into).collect())
 	}
 
-	async fn editable_emote_sets(&self, ctx: &Context<'_>) -> Result<Vec<EmoteSet>, ApiError> {
+	async fn editable_emote_set_ids(&self, ctx: &Context<'_>) -> Result<Vec<EmoteSetId>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -152,17 +153,17 @@ impl User {
 			.map(|editor| editor.id.user_id)
 			.chain(std::iter::once(self.id));
 
-		let mut emote_sets: Vec<EmoteSet> = global
+		let mut emote_sets: Vec<EmoteSetId> = global
 			.emote_set_by_user_id_loader
 			.load_many(owners)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 			.into_values()
 			.flatten()
-			.map(Into::into)
+			.map(|e| e.id)
 			.collect();
 
-		emote_sets.sort_by(|a, b| a.id.cmp(&b.id));
+		emote_sets.sort();
 
 		Ok(emote_sets)
 	}

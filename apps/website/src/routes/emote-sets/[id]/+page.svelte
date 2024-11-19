@@ -15,8 +15,6 @@
 	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { onMount } from "svelte";
-	import { DispatchType, subscribe } from "$/lib/eventApi";
 
 	let { data }: { data: PageData } = $props();
 
@@ -171,8 +169,6 @@
 
 		return emotes as EmoteSetEmoteSearchResult;
 	}
-
-	onMount(() => subscribe(DispatchType.EmoteSetUpdate, data.emoteSet.id, () => {}));
 </script>
 
 <svelte:head>

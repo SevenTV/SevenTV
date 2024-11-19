@@ -186,6 +186,7 @@ type EmoteSetOperation {
 
 type EmoteSetQuery {
 	emoteSet(id: Id!): EmoteSet
+	emoteSets(ids: [Id!]!): [EmoteSet!]!
 }
 
 type EntitlementEdgeAnyBadge {
@@ -480,7 +481,7 @@ enum TagsMatch {
 
 type User {
 	connections: [UserConnection!]!
-	editableEmoteSets: [EmoteSet!]!
+	editableEmoteSetIds: [Id!]!
 	editors: [UserEditor!]!
 	highestRoleColor: Color
 	highestRoleRank: Int!

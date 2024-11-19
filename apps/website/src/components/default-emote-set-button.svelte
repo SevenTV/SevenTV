@@ -4,11 +4,10 @@
 	import { defaultEmoteSetDialogMode } from "$/lib/layout";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { user } from "$/lib/auth";
+	import { editableEmoteSets } from "$/lib/emoteSets";
 
 	let emoteSetName = $derived(
-		$defaultEmoteSet
-			? $user?.editableEmoteSets.find((e) => e.id === $defaultEmoteSet)?.name
-			: undefined,
+		$defaultEmoteSet ? $editableEmoteSets.find((e) => e.id === $defaultEmoteSet)?.name : undefined,
 	);
 </script>
 

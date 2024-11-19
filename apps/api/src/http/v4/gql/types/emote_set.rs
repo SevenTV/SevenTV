@@ -30,18 +30,30 @@ pub struct EmoteSet {
 impl EmoteSet {
 	async fn emotes(
 		&self,
-		#[graphql(validator(maximum = 100))] page: Option<u32>,
-		#[graphql(validator(minimum = 1, maximum = 250))] per_page: Option<u32>,
+		page: Option<u32>,
+		#[graphql(validator(minimum = 1))] per_page: Option<u32>,
 	) -> SearchResult<EmoteSetEmote> {
-		let chunk_size = per_page.map(|p| p as usize).unwrap_or(self.emotes.len());
-		let page = page.map(|p| p.saturating_sub(1)).unwrap_or(0) as usize;
+		if let Some(page) = page {
+			let chunk_size = per_page.map(|p| p as usize).unwrap_or(20);
 
-		let items = self.emotes.chunks(chunk_size).nth(page).unwrap_or_default().to_vec();
+			let items = self
+				.emotes
+				.chunks(chunk_size)
+				.nth(page.saturating_sub(1) as usize)
+				.unwrap_or_default()
+				.to_vec();
 
-		SearchResult {
-			items,
-			total_count: self.emotes.len() as u64,
-			page_count: (self.emotes.len() as u64 / chunk_size as u64) + 1,
+			SearchResult {
+				items,
+				total_count: self.emotes.len() as u64,
+				page_count: (self.emotes.len() as u64 / chunk_size as u64) + 1,
+			}
+		} else {
+			SearchResult {
+				items: self.emotes.clone(),
+				total_count: self.emotes.len() as u64,
+				page_count: 1,
+			}
 		}
 	}
 
