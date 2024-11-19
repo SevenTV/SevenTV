@@ -6,7 +6,7 @@
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import { t } from "svelte-i18n";
 	import { untrack } from "svelte";
-	import type { Emote } from "$/gql/graphql";
+	import type { Emote, EmoteInEmoteSetResponse } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import { user } from "$/lib/auth";
@@ -26,29 +26,43 @@
 	let alias = $state(data.defaultName);
 
 	async function queryInSet(emoteId: string, setIds: string[]) {
-		const res = await gqlClient().query(
-			graphql(`
-				query IsInSet($id: Id!, $setIds: [Id!]!) {
-					emotes {
-						emote(id: $id) {
-							inEmoteSets(emoteSetIds: $setIds) {
-								emoteSetId
-								emote {
-									id
-									alias
-									flags {
-										zeroWidth
+		const results: EmoteInEmoteSetResponse[] = [];
+
+		for (let i = 0; i < setIds.length; i += 50) {
+			const chunk = setIds.slice(i, i + 50);
+			// do whatever
+			const res = await gqlClient().query(
+				graphql(`
+					query IsInSet($id: Id!, $setIds: [Id!]!) {
+						emotes {
+							emote(id: $id) {
+								inEmoteSets(emoteSetIds: $setIds) {
+									emoteSetId
+									emote {
+										id
+										alias
+										flags {
+											zeroWidth
+										}
 									}
 								}
 							}
 						}
 					}
-				}
-			`),
-			{ id: emoteId, setIds },
-		);
+				`),
+				{ id: emoteId, setIds: chunk },
+			);
 
-		return res.data?.emotes.emote?.inEmoteSets;
+			const result = res.data?.emotes.emote?.inEmoteSets as EmoteInEmoteSetResponse[];
+
+			if (!result) {
+				continue;
+			}
+
+			results.push(...result);
+		}
+
+		return results;
 	}
 
 	let inSet = $derived(
