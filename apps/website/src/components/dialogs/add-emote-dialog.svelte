@@ -3,15 +3,15 @@
 	import { type DialogMode } from "./dialog.svelte";
 	import Button from "../input/button.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
-	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import { t } from "svelte-i18n";
 	import { untrack } from "svelte";
-	import type { Emote, EmoteInEmoteSetResponse } from "$/gql/graphql";
+	import type { Emote, EmoteInEmoteSetResponse, EmoteSet } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import { user } from "$/lib/auth";
 	import Spinner from "../spinner.svelte";
-	import { addEmoteToSet } from "$/lib/setMutations";
+	import { addEmoteToSet, removeEmoteFromSet } from "$/lib/setMutations";
+	import EmoteSetPicker from "../emote-set-picker.svelte";
 
 	interface Props {
 		mode: DialogMode;
@@ -98,6 +98,10 @@
 		Object.keys(pickedEmoteSets).filter((k) => pickedEmoteSets[k] && !originalState[k]),
 	);
 
+	let toRemove = $derived(
+		Object.keys(pickedEmoteSets).filter((k) => !pickedEmoteSets[k] && originalState[k]),
+	);
+
 	let submitting = $state(false);
 
 	async function submit() {
@@ -105,6 +109,10 @@
 
 		for (const setId of toAdd) {
 			await addEmoteToSet(setId, data.id, alias);
+		}
+
+		for (const setId of toRemove) {
+			await removeEmoteFromSet(setId, data.id, alias);
 		}
 
 		mode = "hidden";
@@ -121,7 +129,7 @@
 			{$t("labels.confirm")}
 		</Button>
 	{:else}
-		<Button primary submit onclick={submit} disabled={toAdd.length === 0}>
+		<Button primary submit onclick={submit} disabled={toAdd.length === 0 && toRemove.length === 0}>
 			{$t("labels.confirm")}
 		</Button>
 	{/if}
@@ -143,7 +151,12 @@
 			<span class="label">{$t("dialogs.add_emote.change_name")}</span>
 		</TextInput>
 	{/snippet}
-	<EmoteSetPicker disabled={submitting} bind:value={pickedEmoteSets} />
+	<EmoteSetPicker
+		value={pickedEmoteSets}
+		disabled={submitting}
+		highlightAdd={toAdd}
+		highlightRemove={toRemove}
+	/>
 </EmoteDialog>
 
 <style lang="scss">

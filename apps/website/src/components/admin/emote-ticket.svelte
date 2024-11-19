@@ -35,7 +35,7 @@
 		{#if buttonOptions.approve}
 			<Button>
 				{#snippet icon()}
-					<Check color="var(--admin-approve)" />
+					<Check color="var(--approve)" />
 				{/snippet}
 			</Button>
 		{/if}
