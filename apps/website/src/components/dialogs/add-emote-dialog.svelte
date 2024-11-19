@@ -5,7 +5,7 @@
 	import EmoteDialog from "./emote-dialog.svelte";
 	import { t } from "svelte-i18n";
 	import { untrack } from "svelte";
-	import type { Emote, EmoteInEmoteSetResponse, EmoteSet } from "$/gql/graphql";
+	import type { Emote, EmoteInEmoteSetResponse } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import { user } from "$/lib/auth";
@@ -78,6 +78,7 @@
 		if ($user) {
 			untrack(() => (pickedEmoteSets = {}));
 
+			// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 			alias; // Make alias a dependency
 
 			inSet?.then((inSets) => {

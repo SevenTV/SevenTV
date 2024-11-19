@@ -14,5 +14,5 @@ export const defaultEmoteSet = writable<string | undefined>(getInitialValue());
 defaultEmoteSet.subscribe((value) => {
 	if (browser && value) {
 		window.localStorage.setItem("defaultEmoteSet", JSON.stringify(value));
-  	}
+	}
 });

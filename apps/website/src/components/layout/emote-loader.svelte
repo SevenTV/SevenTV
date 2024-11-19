@@ -32,7 +32,9 @@
 
 	// Reset when the layout or the default emote set changes
 	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		$emotesLayout;
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		$defaultEmoteSet;
 		untrack(() => {
 			reset();

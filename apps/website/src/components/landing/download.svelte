@@ -36,7 +36,7 @@
 	</h2>
 	<p>
 		Start your journey with hundreds of emotes and features that enhance your chatting experience.
-		Download the Official 7tv Extension or other 3rd party tools.
+		Download the Official 7TV Extension or other 3rd party tools.
 	</p>
 	<div class="buttons">
 		<DropDown>

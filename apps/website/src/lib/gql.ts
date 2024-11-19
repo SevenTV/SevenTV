@@ -1,4 +1,4 @@
-import { cacheExchange, Client, createClient, type Exchange, fetchExchange, mapExchange } from "@urql/svelte";
+import { cacheExchange, Client, createClient, fetchExchange, mapExchange } from "@urql/svelte";
 import { get } from "svelte/store";
 import { authExchange } from "@urql/exchange-auth";
 import { sessionToken } from "$/lib/auth";

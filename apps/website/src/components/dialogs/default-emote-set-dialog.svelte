@@ -55,7 +55,8 @@
 		<div class="picker">
 			{#each Object.keys(editableSets) as ownerId}
 				<Expandable
-					title={editableSets[ownerId][0]?.owner?.mainConnection?.platformDisplayName ?? "Emote Sets"}
+					title={editableSets[ownerId][0]?.owner?.mainConnection?.platformDisplayName ??
+						"Emote Sets"}
 					expanded={loadExpanded(ownerId) ?? ownerId === $user?.id}
 					onexpand={(expanded) => onExpand(ownerId, expanded)}
 				>

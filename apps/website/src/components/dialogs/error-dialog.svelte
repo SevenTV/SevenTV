@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Warning } from "phosphor-svelte";
-import Dialog, { type DialogMode } from "./dialog.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
 
 	interface Props {
 		mode: DialogMode;

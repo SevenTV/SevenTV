@@ -25,6 +25,7 @@
 	}
 
 	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		mode; // trigger effect on mode change
 
 		dialog?.showModal();

@@ -13,7 +13,12 @@
 		return gqlClient()
 			.query(
 				graphql(`
-					query UserActiveEmotes($id: Id!, $page: Int!, $isDefaultSetSet: Boolean!, $defaultSetId: Id!) {
+					query UserActiveEmotes(
+						$id: Id!
+						$page: Int!
+						$isDefaultSetSet: Boolean!
+						$defaultSetId: Id!
+					) {
 						users {
 							user(id: $id) {
 								style {

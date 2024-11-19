@@ -1,7 +1,7 @@
 <script lang="ts">
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { Fire, FolderSimple, Trophy, Upload } from "phosphor-svelte";
+	import { Fire, Trophy, Upload } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 	import DefaultEmoteSetButton from "$/components/default-emote-set-button.svelte";

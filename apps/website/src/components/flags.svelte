@@ -45,7 +45,10 @@
 		const flags: string[] = [];
 
 		const defaultSet = get(defaultEmoteSet);
-		if (emote.inEmoteSets?.some((set) => set.emoteSetId === defaultSet && set.emote?.id === emote.id)) flags.push("active");
+		if (
+			emote.inEmoteSets?.some((set) => set.emoteSetId === defaultSet && set.emote?.id === emote.id)
+		)
+			flags.push("active");
 
 		if (emote.flags.defaultZeroWidth) flags.push("overlaying");
 
