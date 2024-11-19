@@ -29,6 +29,12 @@
 	function groupByOwnerId(sets: EmoteSet[]) {
 		const init: { [key: string]: EmoteSet[] } = {};
 
+		const defaultSet =
+			$defaultEmoteSet && $user?.editableEmoteSets.find((set) => set.id === $defaultEmoteSet);
+		if (defaultSet && defaultSet.owner?.id) {
+			init[defaultSet.owner.id] = [];
+		}
+
 		if ($user) {
 			init[$user.id] = [];
 		}
