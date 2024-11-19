@@ -183,7 +183,7 @@ impl Emote {
 	async fn in_emote_sets(
 		&self,
 		ctx: &Context<'_>,
-		#[graphql(validator(min_items = 1, max_items = 50))] emote_set_ids: Vec<EmoteSetId>,
+		#[graphql(validator(min_items = 1, max_items = 200))] emote_set_ids: Vec<EmoteSetId>,
 	) -> Result<Vec<EmoteInEmoteSetResponse>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
