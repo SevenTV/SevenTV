@@ -26,15 +26,18 @@
 	}: Props = $props();
 
 	function groupByOwnerId(sets: EmoteSet[]) {
-		return sets.reduce(
-			(grouped, set) => {
-				if (set.owner) {
-					(grouped[set.owner.id] = grouped[set.owner.id] || []).push(set);
-				}
-				return grouped;
-			},
-			{} as { [key: string]: EmoteSet[] },
-		);
+		const init: { [key: string]: EmoteSet[] } = {};
+
+		if ($user) {
+			init[$user.id] = [];
+		}
+
+		return sets.reduce((grouped, set) => {
+			if (set.owner) {
+				(grouped[set.owner.id] = grouped[set.owner.id] || []).push(set);
+			}
+			return grouped;
+		}, init);
 	}
 
 	let editableSets = $derived(
@@ -63,7 +66,7 @@
 	{#each Object.keys(editableSets) as ownerId}
 		<Expandable
 			title={editableSets[ownerId][0]?.owner?.mainConnection?.platformDisplayName ?? "Emote Sets"}
-			expanded={loadExpanded(ownerId) ?? true}
+			expanded={loadExpanded(ownerId) ?? ownerId === $user?.id}
 			onexpand={(expanded) => onExpand(ownerId, expanded)}
 		>
 			{#each editableSets[ownerId] as set}
@@ -86,13 +89,15 @@
 							bind:group={radioValue}
 							option
 							leftLabel={pickerLeftLabel}
-							disabled={disabled || checkCapacity && (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
+							disabled={disabled ||
+								(checkCapacity && (set.capacity ? set.emotes.totalCount >= set.capacity : false))}
 						/>
 					{:else}
 						<Checkbox
 							option
 							leftLabel={pickerLeftLabel}
-							disabled={disabled || checkCapacity && (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
+							disabled={disabled ||
+								(checkCapacity && (set.capacity ? set.emotes.totalCount >= set.capacity : false))}
 							bind:value={value[set.id]}
 						/>
 					{/if}

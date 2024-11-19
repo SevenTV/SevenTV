@@ -12,9 +12,11 @@
 	);
 </script>
 
-<Button secondary hideOnMobile onclick={() => ($defaultEmoteSetDialogMode = "shown")}>
-	{#snippet icon()}
-		<FolderSimple />
-	{/snippet}
-	{emoteSetName ?? "Default Set"}
-</Button>
+{#if $user}
+	<Button secondary hideOnMobile onclick={() => ($defaultEmoteSetDialogMode = "shown")}>
+		{#snippet icon()}
+			<FolderSimple />
+		{/snippet}
+		{emoteSetName ?? "Default Set"}
+	</Button>
+{/if}
