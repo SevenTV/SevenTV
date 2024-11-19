@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Expandable from "./expandable.svelte";
 	import Checkbox from "./input/checkbox.svelte";
-	import Flags, { icons } from "./flags.svelte";
+	import Flags from "./flags.svelte";
 	import { type EmoteSet } from "$/gql/graphql";
 	import { user } from "$/lib/auth";
 	import Spinner from "./spinner.svelte";
