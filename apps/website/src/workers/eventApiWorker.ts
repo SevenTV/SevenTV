@@ -1,27 +1,30 @@
-// import { PUBLIC_EVENT_API_V3 } from "$env/static/public";
 import { type DispatchPayload, DispatchType, type DispatchWorkerMessage, type SubscribeWorkerMessage, type UnsubscribeWorkerMessage, WorkerMessageType } from "./eventApiWorkerTypes";
-
-const PUBLIC_EVENT_API_V3 = "wss://events.7tv.io/v3";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function log(...args: any[]) {
-	console.log("[EventAPI Worker]", ...args);
+	console.log(`[${self.name}]`, ...args);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function debug(...args: any[]) {
+	console.debug(`[${self.name}]`, ...args);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function warn(...args: any[]) {
-	console.warn("[EventAPI Worker]", ...args);
+	console.warn(`[${self.name}]`, ...args);
 }
 
 let eventApi: {
 	open_socket?: WebSocket;
 	queue: string[];
-	subscriptions: Map<string, string[]>;
+	subscriptions: Map<string, Set<string>>;
 } | undefined = undefined;
 
 let ports: MessagePort[] = [];
 
 onconnect = (event) => {
+	debug("new worker port connected");
 	const port = event.ports[0];
 	ports.push(port);
 
@@ -53,8 +56,8 @@ function reset() {
 function init() {
 	reset();
 
-	log(`connecting to ${PUBLIC_EVENT_API_V3}`);
-	const socket = new WebSocket(PUBLIC_EVENT_API_V3);
+	log(`connecting to ${import.meta.env.PUBLIC_EVENT_API_V3}`);
+	const socket = new WebSocket(import.meta.env.PUBLIC_EVENT_API_V3);
 	socket.onmessage = onMessage;
 	socket.onclose = onClose;
 	socket.onopen = onOpen;
@@ -83,9 +86,12 @@ function subscribe(type: DispatchType, id: string, handlerId: string) {
 	const handlers = eventApi.subscriptions.get(mapKey(type, id));
 
 	if (handlers) {
-		handlers.push(handlerId);
+		handlers.add(handlerId);
 	} else {
-		eventApi.subscriptions.set(mapKey(type, id), [handlerId]);
+		const set = new Set<string>();
+		set.add(handlerId);
+
+		eventApi.subscriptions.set(mapKey(type, id), set);
 
 		const payload: SubscribeMessage = {
 			op: 35,
@@ -116,15 +122,13 @@ function unsubscribe(
 		return;
 	}
 
-	const index = handlers.indexOf(handlerId);
+	log(handlerId);
 
-	if (index === -1) {
+	if (!handlers.delete(handlerId)) {
 		return;
 	}
 
-	handlers.splice(index, 1);
-
-	if (handlers.length === 0) {
+	if (handlers.size === 0) {
 		eventApi.subscriptions.delete(mapKey(type, id));
 
 		const payload: UnsubscribeMessage = {
@@ -174,7 +178,7 @@ interface UnsubscribeMessage {
 }
 
 function onOpen(this: WebSocket) {
-	log("connected");
+	debug("ws connected");
 }
 
 function onMessage(this: WebSocket, event: MessageEvent) {
@@ -190,12 +194,12 @@ function onMessage(this: WebSocket, event: MessageEvent) {
 	// Hello
 	if (data.op === 1) {
 		const hello = data as HelloMessage;
-		log(`got hello from ${hello.d.instance.name}, session: ${hello.d.session_id}`);
+		debug(`got hello from ${hello.d.instance.name}, session: ${hello.d.session_id}`);
 
 		if (eventApi) {
 			eventApi.open_socket = this;
 
-			log(`sending ${eventApi.queue.length} queued messages`);
+			debug(`sending ${eventApi.queue.length} queued messages`);
 			for (const message of eventApi.queue) {
 				this.send(message);
 			}
@@ -206,13 +210,13 @@ function onMessage(this: WebSocket, event: MessageEvent) {
 
 	// Heartbeat
 	if (data.op === 2) {
-		log("heartbeat");
+		debug("heartbeat");
 		return;
 	}
 
 	// Reconnect
 	if (data.op === 4) {
-		log("reconnect requested");
+		debug("reconnect requested");
 		this.close();
 
 		// Retry after 1 second
@@ -232,9 +236,9 @@ function onMessage(this: WebSocket, event: MessageEvent) {
 
 function onClose(this: WebSocket, event: CloseEvent) {
 	if (event.wasClean) {
-		log(`connection closed cleanly`, event.code, event.reason);
+		log(`ws connection closed cleanly`, event.code, event.reason);
 	} else {
-		warn(`connection closed`, event.code, event.reason);
+		warn(`ws connection closed`, event.code, event.reason);
 
 		// Retry after 1 second
 		setTimeout(() => {
@@ -247,10 +251,11 @@ function onClose(this: WebSocket, event: CloseEvent) {
 }
 
 function onDispatch(payload: DispatchPayload) {
-	log("dispatch", payload);
+	debug("received dispatch", payload);
 
 	const handlers = eventApi?.subscriptions.get(mapKey(payload.type, payload.body.id));
 	if (handlers) {
+		debug(`emitting on ${ports.length} worker ports for ${handlers.size} handlers`);
 		for (const port of ports) {
 			handlers.forEach((handler) => {
 				port.postMessage({

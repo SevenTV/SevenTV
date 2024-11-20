@@ -15,6 +15,7 @@ declare global {
 		// interface Platform {}
 	}
 	interface Window {
+		EVENT_API_WORKER: SharedWorker;
 		EVENT_API_CALLBACKS: Map<string, (pl: DispatchPayload) => void>;
 	}
 }

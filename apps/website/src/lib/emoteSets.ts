@@ -63,12 +63,20 @@ user.subscribe((user) => {
 });
 
 editableEmoteSets.subscribe((editableEmoteSets) => {
+	const unsubscribers: (() => void)[] = [];
+
 	if (editableEmoteSets) {
 		// Subscribe to event api topics
 		for (const emoteSet of editableEmoteSets) {
-			subscribe(DispatchType.EmoteSetUpdate, emoteSet.id, onEmoteSetUpdate);
+			unsubscribers.push(subscribe(DispatchType.EmoteSetUpdate, emoteSet.id, onEmoteSetUpdate, `editableSets:${emoteSet.id}`));
 		}
 	}
+
+	return () => {
+		for (const unsubscribe of unsubscribers) {
+			unsubscribe();
+		}
+	};
 });
 
 function onEmoteSetUpdate(payload: DispatchPayload) {

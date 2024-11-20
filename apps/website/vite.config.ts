@@ -15,6 +15,7 @@ export default defineConfig({
 			},
 		},
 	},
+	envPrefix: "PUBLIC_",
 	server: {
 		fs: {
 			allow: ["assets", "static"],

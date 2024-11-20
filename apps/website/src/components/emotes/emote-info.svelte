@@ -35,6 +35,8 @@
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { addEmoteToSet, removeEmoteFromSet } from "$/lib/setMutations";
 	import Spinner from "../spinner.svelte";
+	import { subscribe } from "$/lib/eventApi";
+	import { DispatchType, type DispatchPayload } from "$/workers/eventApiWorkerTypes";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -98,28 +100,56 @@
 		return result;
 	}
 
-	let useEmoteLoading = $state(false);
+	let active = $state($defaultEmoteSet ? data?.inEmoteSets?.some((s) => s.emoteSetId === $defaultEmoteSet && s.emote?.id === data.id) : undefined);
+
+	$effect(() => {
+		if (!$defaultEmoteSet) {
+			return;
+		}
+
+		const unsub = subscribe(DispatchType.EmoteSetUpdate, $defaultEmoteSet, (payload: DispatchPayload) => {
+			if (data && payload.body.id === $defaultEmoteSet) {
+				// Added emotes
+				for (const change of payload.body.pushed ?? []) {
+					if (change.key === "emotes" && change.value.id === data.id) {
+						active = true;
+						loading = false;
+					}
+				}
+
+				// Removed emotes
+				for (const change of payload.body.pulled ?? []) {
+					if (change.key === "emotes" && change.old_value.id === data.id) {
+						active = false;
+						loading = false;
+					}
+				}
+			}
+		}, "emote-info-active");
+
+		return () => {
+			unsub();
+		};
+	});
+
+	let loading = $state(false);
 
 	async function useEmote() {
 		if (!$defaultEmoteSet || !data) {
 			return;
 		}
 
-		useEmoteLoading = true;
+		loading = true;
 		await addEmoteToSet($defaultEmoteSet, data.id);
-		useEmoteLoading = false;
 	}
-
-	let removeEmoteLoading = $state(false);
 
 	async function removeEmote() {
 		if (!$defaultEmoteSet || !data) {
 			return;
 		}
 
-		removeEmoteLoading = true;
+		loading = true;
 		await removeEmoteFromSet($defaultEmoteSet, data.id);
-		removeEmoteLoading = false;
 	}
 </script>
 
@@ -190,10 +220,10 @@
 			{#snippet fallbackChildren()}
 				{#if $user}
 					{#if $defaultEmoteSet}
-						{#if data.inEmoteSets?.some((s) => s.emoteSetId === $defaultEmoteSet && s.emote?.id === data.id)}
-							<Button primary onclick={removeEmote} disabled={removeEmoteLoading}>
+						{#if active}
+							<Button primary onclick={removeEmote} disabled={loading}>
 								{#snippet icon()}
-									{#if removeEmoteLoading}
+									{#if loading}
 										<Spinner />
 									{:else}
 										<Minus />
@@ -202,9 +232,9 @@
 								Remove
 							</Button>
 						{:else}
-							<Button primary onclick={useEmote} disabled={useEmoteLoading}>
+							<Button primary onclick={useEmote} disabled={loading}>
 								{#snippet icon()}
-									{#if useEmoteLoading}
+									{#if loading}
 										<Spinner />
 									{:else}
 										<Plus />
