@@ -17,7 +17,7 @@ export default defineConfig({
 	},
 	server: {
 		fs: {
-			allow: ["assets"],
+			allow: ["assets", "static"],
 		},
 	},
 });

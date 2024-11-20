@@ -20,7 +20,6 @@
 	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
-	import iconPath from "$assets/favicon.svg?url";
 	import ErrorDialog from "$/components/dialogs/error-dialog.svelte";
 	import { currentError, errorDialogMode } from "$/lib/error";
 	import "$/lib/emoteSets";
@@ -34,10 +33,6 @@
 		});
 	});
 </script>
-
-<svelte:head>
-	<link rel="icon" type="image/svg" href={iconPath} />
-</svelte:head>
 
 <IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>
 	<header>

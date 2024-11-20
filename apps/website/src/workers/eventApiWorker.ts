@@ -71,7 +71,6 @@ function socketSend(payload: string) {
 	if (eventApi.open_socket) {
 		eventApi.open_socket.send(payload);
 	} else {
-		log("socket not open, queueing");
 		eventApi.queue.push(payload);
 	}
 }
