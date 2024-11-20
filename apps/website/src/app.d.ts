@@ -15,12 +15,8 @@ declare global {
 		// interface Platform {}
 	}
 	interface Window {
-		EVEMT_API?: {
-			open_socket?: WebSocket;
-			queue: string[];
-			subscriptions: Map<string, ((pl: DispatchPayload) => void)[]>;
-		};
+		EVENT_API_CALLBACKS: Map<string, (pl: DispatchPayload) => void>;
 	}
 }
 
-export {};
+export { };

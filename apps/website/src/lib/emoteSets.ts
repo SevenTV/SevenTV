@@ -1,9 +1,10 @@
 import { writable } from "svelte/store";
 import { user } from "./auth";
-import { DispatchType, subscribe, type DispatchPayload } from "./eventApi";
+import { subscribe } from "./eventApi";
 import type { EmoteSet, EmoteSetEmote } from "$/gql/graphql";
 import { gqlClient } from "./gql";
 import { graphql } from "$/gql";
+import { DispatchType, type DispatchPayload } from "$/workers/eventApiWorkerTypes";
 
 export const editableEmoteSets = writable<EmoteSet[]>([]);
 
