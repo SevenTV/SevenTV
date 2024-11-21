@@ -117,7 +117,7 @@
 					<Checkbox
 						option
 						leftLabel={pickerLeftLabel}
-						disabled={disabled || (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
+						disabled={disabled || !value[set.id] && (set.capacity ? set.emotes.totalCount >= set.capacity : false)}
 						bind:value={value[set.id]}
 						style={highlightAdd.includes(set.id) || highlightRemove.includes(set.id)
 							? `border-color: ${highlightAdd.includes(set.id) ? "var(--approve)" : "var(--danger)"}`
