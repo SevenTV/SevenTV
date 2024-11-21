@@ -293,6 +293,47 @@ type EventEmoteDataUpload {
 	noop: Boolean! @deprecated
 }
 
+union EventUserData = EventUserDataCreate | EventUserDataChangeActivePaint | EventUserDataChangeActiveBadge | EventUserDataChangeActiveEmoteSet | EventUserDataAddConnection | EventUserDataRemoveConnection | EventUserDataDelete
+
+type EventUserDataAddConnection {
+	addedPlatform: Platform!
+}
+
+type EventUserDataChangeActiveBadge {
+	newBadgeId: Id
+	oldBadgeId: Id
+}
+
+type EventUserDataChangeActiveEmoteSet {
+	newEmoteSet: EmoteSet
+	newEmoteSetId: Id
+	oldEmoteSet: EmoteSet
+	oldEmoteSetId: Id
+}
+
+type EventUserDataChangeActivePaint {
+	newPaintId: Id
+	oldPaintId: Id
+}
+
+type EventUserDataCreate {
+	"""
+	Always false
+	"""
+	noop: Boolean! @deprecated
+}
+
+type EventUserDataDelete {
+	"""
+	Always false
+	"""
+	noop: Boolean! @deprecated
+}
+
+type EventUserDataRemoveConnection {
+	removedPlatform: Platform!
+}
+
 input Filters {
 	animated: Boolean
 	defaultZeroWidth: Boolean
@@ -483,6 +524,7 @@ type User {
 	connections: [UserConnection!]!
 	editableEmoteSetIds: [Id!]!
 	editors: [UserEditor!]!
+	events(page: Int, perPage: Int): [UserEvent!]!
 	highestRoleColor: Color
 	highestRoleRank: Int!
 	id: Id!
@@ -524,6 +566,18 @@ enum UserEditorState {
 	ACCEPTED
 	PENDING
 	REJECTED
+}
+
+type UserEvent {
+	actor: User
+	actorId: Id
+	createdAt: DateTime!
+	data: EventUserData!
+	id: Id!
+	searchUpdatedAt: DateTime
+	target: User!
+	targetId: Id!
+	updatedAt: DateTime!
 }
 
 type UserInventory {
