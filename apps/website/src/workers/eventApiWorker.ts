@@ -45,6 +45,11 @@ function mapKey(type: DispatchType, id: string) {
 	return `${type}:${id}`;
 }
 
+function fromMapKey(key: string): { type: DispatchType; id: string } {
+	const [type, id] = key.split(":");
+	return { type: type as DispatchType, id };
+}
+
 function reset() {
 	if (eventApi?.open_socket) {
 		log("closing existing connection");
@@ -75,6 +80,33 @@ function socketSend(payload: string) {
 		eventApi.open_socket.send(payload);
 	} else {
 		eventApi.queue.push(payload);
+	}
+}
+
+function cleanUpSubscriptions() {
+	if (!eventApi) {
+		return;
+	}
+
+	for (const [topic, handlers] of eventApi.subscriptions) {
+		if (handlers.size === 0) {
+			const { type, id } = fromMapKey(topic);
+
+			eventApi.subscriptions.delete(topic);
+
+			const payload: UnsubscribeMessage = {
+				op: 36,
+				d: {
+					type,
+					condition: {
+						object_id: id,
+					},
+				},
+			};
+
+			log("unsubscribing from", type, id);
+			socketSend(JSON.stringify(payload));
+		}
 	}
 }
 
@@ -128,22 +160,7 @@ function unsubscribe(
 		return;
 	}
 
-	if (handlers.size === 0) {
-		eventApi.subscriptions.delete(mapKey(type, id));
-
-		const payload: UnsubscribeMessage = {
-			op: 36,
-			d: {
-				type,
-				condition: {
-					object_id: id,
-				},
-			},
-		};
-
-		log("unsubscribing from", type, id);
-		socketSend(JSON.stringify(payload));
-	}
+	setTimeout(cleanUpSubscriptions, 500);
 }
 
 interface HelloMessage {
