@@ -17,7 +17,7 @@
 	let { data, big = false, primary = false, oncomplete }: Props = $props();
 
 	let active = $derived(
-		($defaultEmoteSet && data)
+		$defaultEmoteSet && data
 			? $editableEmoteSets
 					.find((s) => s.id === $defaultEmoteSet)
 					?.emotes.items.some((e) => e.id === data?.id)
@@ -26,12 +26,13 @@
 
 	let loading = $state(false);
 
-	let conflictingName = $derived(($defaultEmoteSet && data)
+	let conflictingName = $derived(
+		$defaultEmoteSet && data
 			? $editableEmoteSets
 					.find((s) => s.id === $defaultEmoteSet)
 					?.emotes.items.some((e) => e.alias === data?.defaultName)
 			: undefined,
-		);
+	);
 
 	$effect(() => {
 		if (active === undefined) {
@@ -78,7 +79,13 @@
 			Remove Emote
 		</Button>
 	{:else}
-		<Button onclick={useEmote} title={conflictingName ? "Conflicting Name" : undefined} disabled={loading || conflictingName} {big} {primary}>
+		<Button
+			onclick={useEmote}
+			title={conflictingName ? "Conflicting Name" : undefined}
+			disabled={loading || conflictingName}
+			{big}
+			{primary}
+		>
 			{#snippet icon()}
 				{#if loading}
 					<Spinner />

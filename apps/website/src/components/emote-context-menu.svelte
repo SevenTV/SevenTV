@@ -27,7 +27,7 @@
 		if (addEmoteDialogMode === "hidden") {
 			hide();
 		}
-	})
+	});
 
 	function showAddEmoteDialog() {
 		addEmoteDialogMode = "shown";
