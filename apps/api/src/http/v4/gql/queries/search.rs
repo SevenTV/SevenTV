@@ -22,9 +22,9 @@ pub struct SearchResultAll {
 #[Object]
 impl SearchQuery {
 	#[graphql(guard = "RateLimitGuard::search(1)")]
-	async fn all<'ctx>(
+	async fn all(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		query: Option<String>,
 		#[graphql(validator(maximum = 100))] page: Option<u32>,
 		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,

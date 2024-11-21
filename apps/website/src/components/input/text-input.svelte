@@ -7,6 +7,7 @@
 		type?: "text" | "email" | "password" | "textarea";
 		placeholder?: string | null;
 		big?: boolean;
+		disabled?: boolean;
 		children?: Snippet;
 		icon?: Snippet;
 		onkeypress?: (e: KeyboardEvent) => void;
@@ -17,6 +18,7 @@
 		type = "text",
 		placeholder = null,
 		big = false,
+		disabled = false,
 		children,
 		icon,
 		onkeypress,
@@ -39,13 +41,13 @@
 		</div>
 	{/if}
 	{#if type === "text"}
-		<input type="text" bind:value {placeholder} {onkeypress} bind:this={input} />
+		<input type="text" bind:value {placeholder} {onkeypress} {disabled} bind:this={input} />
 	{:else if type === "email"}
-		<input type="email" bind:value {placeholder} {onkeypress} bind:this={input} />
+		<input type="email" bind:value {placeholder} {onkeypress} {disabled} bind:this={input} />
 	{:else if type === "password"}
-		<input type="password" bind:value {placeholder} {onkeypress} bind:this={input} />
+		<input type="password" bind:value {placeholder} {onkeypress} {disabled} bind:this={input} />
 	{:else if type === "textarea"}
-		<textarea bind:value {placeholder} {onkeypress} bind:this={input}></textarea>
+		<textarea bind:value {placeholder} {onkeypress} {disabled} bind:this={input}></textarea>
 	{/if}
 </label>
 

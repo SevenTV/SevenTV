@@ -5,17 +5,24 @@
 	import { type DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
 	import { t } from "svelte-i18n";
+	import type { Emote } from "$/gql/graphql";
 
-	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
+	interface Props {
+		mode: DialogMode;
+		data: Emote;
+	}
+
+	let { mode = $bindable("hidden"), data }: Props = $props();
 </script>
 
 <EmoteDialog
 	width={35}
-	title={$t("dialogs.transfer_emote.title", { values: { emote: "AlienPls" } })}
+	title={$t("dialogs.transfer_emote.title", { values: { emote: data.defaultName } })}
 	bind:mode
+	{data}
 >
 	<span class="details">
-		{$t("dialogs.transfer_emote.details", { values: { emote: "AlienPls" } })}
+		{$t("dialogs.transfer_emote.details", { values: { emote: data.defaultName } })}
 	</span>
 	<TextInput placeholder={$t("labels.search_users", { values: { count: 1 } })}>
 		<span class="label">{$t("dialogs.transfer_emote.receipient")}</span>

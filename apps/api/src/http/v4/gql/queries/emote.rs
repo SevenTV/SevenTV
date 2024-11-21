@@ -75,7 +75,7 @@ struct Filters {
 
 #[Object]
 impl EmoteQuery {
-	async fn emote<'ctx>(&self, ctx: &Context<'ctx>, id: EmoteId) -> Result<Option<Emote>, ApiError> {
+	async fn emote(&self, ctx: &Context<'_>, id: EmoteId) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -91,9 +91,9 @@ impl EmoteQuery {
 
 	#[allow(clippy::too_many_arguments)]
 	#[graphql(guard = "RateLimitGuard::search(1)")]
-	async fn search<'ctx>(
+	async fn search(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		query: Option<String>,
 		tags: Option<Tags>,
 		sort: Sort,

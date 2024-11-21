@@ -27,7 +27,11 @@ locale.subscribe((l) => {
 	}
 });
 
-init({
-	initialLocale: getInitialLocale(),
-	fallbackLocale: defaultLocale,
-});
+export function initI18n() {
+	init({
+		initialLocale: getInitialLocale(),
+		fallbackLocale: defaultLocale,
+	});
+}
+
+initI18n();

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 
@@ -15,7 +14,7 @@
 				<EmotePreview index={i} emoteOnly />
 			{/each}
 		</EmoteContainer> -->
-		<EmoteSetPicker />
+		<!-- <EmoteSetPicker emoteId={data.id} /> -->
 	</div>
 </Dialog>
 

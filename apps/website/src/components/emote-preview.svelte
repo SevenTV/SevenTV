@@ -5,6 +5,9 @@
 	import ResponsiveImage from "./responsive-image.svelte";
 	import type { HTMLAttributes } from "svelte/elements";
 	import UserName from "./user-name.svelte";
+	import EmoteContextMenu from "./emote-context-menu.svelte";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+	import { editableEmoteSets } from "$/lib/emoteSets";
 
 	type Props = {
 		data: Emote;
@@ -27,7 +30,7 @@
 		...restProps
 	}: Props = $props();
 
-	let flags = $derived(emoteToFlags(data));
+	let flags = $derived(emoteToFlags(data, $defaultEmoteSet, $editableEmoteSets));
 
 	let highlight = $derived(determineHighlightColor(flags, ignoredFlagsForHighlight));
 
@@ -48,8 +51,16 @@
 			e.preventDefault();
 		}
 	}
+
+	let menuPosition: { x: number; y: number } | undefined = $state();
+
+	function onContextMenu(e: MouseEvent) {
+		e.preventDefault();
+		menuPosition = { x: e.clientX, y: e.clientY };
+	}
 </script>
 
+<EmoteContextMenu {data} bind:position={menuPosition} />
 <a
 	href="/emotes/{data.id}"
 	data-sveltekit-preload-data="tap"
@@ -62,6 +73,7 @@
 		: "--highlight: transparent; --highlight-active: var(--border-active);"}
 	style:background-color="var(--bg-{bg})"
 	onclick={onClick}
+	oncontextmenu={onContextMenu}
 	{title}
 	{...restProps}
 >

@@ -361,7 +361,7 @@ impl UserPartial {
 					.outputs
 					.iter()
 					.max_by_key(|i| i.size)
-					.map(|i| i.get_url(&global.config.api.cdn_origin))
+					.map(|i| i.get_v3_url(&global.config.api.cdn_origin))
 			})
 			.or(main_connection.and_then(|c| c.platform_avatar_url.clone()));
 

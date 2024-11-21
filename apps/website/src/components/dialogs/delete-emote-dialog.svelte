@@ -1,17 +1,24 @@
 <script lang="ts">
+	import type { Emote } from "$/gql/graphql";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import { type DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
+	interface Props {
+		mode: DialogMode;
+		data: Emote;
+	}
+
+	let { mode = $bindable("hidden"), data }: Props = $props();
 </script>
 
 <EmoteDialog
 	width={35}
-	title={$t("dialogs.delete_emote_or_set.title", { values: { name: "AlienPls" } })}
+	title={$t("dialogs.delete_emote_or_set.title", { values: { name: data.defaultName } })}
 	bind:mode
+	{data}
 >
 	<span class="details">{$t("dialogs.delete_emote_or_set.warning_message_emote")}</span>
 	<TextInput placeholder={$t("dialogs.delete_emote_or_set.reason")}>

@@ -41,8 +41,22 @@
 		return null;
 	}
 
-	export function emoteToFlags(emote: Emote): string[] {
+	export function emoteToFlags(
+		emote: Emote,
+		defaultSet?: string,
+		editableEmoteSets?: EmoteSet[],
+	): string[] {
 		const flags: string[] = [];
+
+		if (
+			defaultSet &&
+			editableEmoteSets &&
+			editableEmoteSets
+				.find((set) => set.id === defaultSet)
+				?.emotes.items.some((e) => e.id === emote.id)
+		) {
+			flags.push("active");
+		}
 
 		if (emote.flags.defaultZeroWidth) flags.push("overlaying");
 
@@ -139,7 +153,7 @@
 <div class="flags" {...restProps}>
 	{#each sortedFlags as flag}
 		{#if iconOnly && icons[flag]}
-			<span class="flag icon-only" style="color: {colors[flag]}">
+			<span class="flag icon-only" style="color: {colors[flag]}" title={names[flag]}>
 				<!-- svelte-ignore svelte_component_deprecated -->
 				<!-- Disable warning until phosphor-svelte has full Svelte 5 support -->
 				<svelte:component this={icons[flag]} size={1 * 16} />
@@ -149,6 +163,7 @@
 				class="flag"
 				class:has-icon={icons[flag]}
 				style="color: {colors[flag]}; background-color: {colors[flag]}1a"
+				title={names[flag]}
 			>
 				<!-- svelte-ignore svelte_component_deprecated -->
 				<!-- Disable warning until phosphor-svelte has full Svelte 5 support -->

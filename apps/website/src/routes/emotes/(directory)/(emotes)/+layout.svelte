@@ -4,6 +4,7 @@
 	import { Fire, Trophy, Upload } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
+	import DefaultEmoteSetButton from "$/components/default-emote-set-button.svelte";
 
 	let { children }: { children: Snippet } = $props();
 </script>
@@ -34,12 +35,7 @@
 		</TabLink>
 	</nav>
 	<div class="buttons">
-		<!-- <Button secondary hideOnMobile onclick={() => ($defaultEmoteSetDialogMode = "shown")}>
-			{#snippet icon()}
-				<FolderSimple />
-			{/snippet}
-			Personal Emotes
-		</Button> -->
+		<DefaultEmoteSetButton />
 		<LayoutButtons />
 	</div>
 </div>

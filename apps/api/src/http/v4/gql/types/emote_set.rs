@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
+use async_graphql::Context;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
 
-use super::{Emote, SearchResult};
+use super::{Emote, SearchResult, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct EmoteSet {
 	pub id: EmoteSetId,
@@ -26,23 +26,53 @@ pub struct EmoteSet {
 	pub emotes: Vec<EmoteSetEmote>,
 }
 
-#[ComplexObject]
+#[async_graphql::ComplexObject]
 impl EmoteSet {
-	pub async fn emotes(
+	async fn emotes(
 		&self,
-		#[graphql(validator(maximum = 100))] page: Option<u32>,
-		#[graphql(validator(minimum = 1, maximum = 250))] per_page: Option<u32>,
+		page: Option<u32>,
+		#[graphql(validator(minimum = 1))] per_page: Option<u32>,
 	) -> SearchResult<EmoteSetEmote> {
-		let chunk_size = per_page.map(|p| p as usize).unwrap_or(self.emotes.len());
-		let page = page.map(|p| p.saturating_sub(1)).unwrap_or(0) as usize;
+		if let Some(page) = page {
+			let chunk_size = per_page.map(|p| p as usize).unwrap_or(20);
 
-		let items = self.emotes.chunks(chunk_size).nth(page).unwrap_or_default().to_vec();
+			let items = self
+				.emotes
+				.chunks(chunk_size)
+				.nth(page.saturating_sub(1) as usize)
+				.unwrap_or_default()
+				.to_vec();
 
-		SearchResult {
-			items,
-			total_count: self.emotes.len() as u64,
-			page_count: (self.emotes.len() as u64 / chunk_size as u64) + 1,
+			SearchResult {
+				items,
+				total_count: self.emotes.len() as u64,
+				page_count: (self.emotes.len() as u64 / chunk_size as u64) + 1,
+			}
+		} else {
+			SearchResult {
+				items: self.emotes.clone(),
+				total_count: self.emotes.len() as u64,
+				page_count: 1,
+			}
 		}
+	}
+
+	async fn owner(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+		let Some(user_id) = self.owner_id else {
+			return Ok(None);
+		};
+
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let user = global
+			.user_loader
+			.load(global, user_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(user.map(Into::into))
 	}
 }
 
@@ -63,7 +93,7 @@ impl From<shared::database::emote_set::EmoteSet> for EmoteSet {
 	}
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, async_graphql::Enum)]
 pub enum EmoteSetKind {
 	Normal,
 	Personal,
@@ -82,7 +112,7 @@ impl From<shared::database::emote_set::EmoteSetKind> for EmoteSetKind {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct EmoteSetEmote {
 	pub id: EmoteId,
@@ -93,9 +123,9 @@ pub struct EmoteSetEmote {
 	pub origin_set_id: Option<EmoteSetId>,
 }
 
-#[ComplexObject]
+#[async_graphql::ComplexObject]
 impl EmoteSetEmote {
-	pub async fn emote<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Emote>, ApiError> {
+	async fn emote(&self, ctx: &Context<'_>) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -123,10 +153,10 @@ impl From<shared::database::emote_set::EmoteSetEmote> for EmoteSetEmote {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 pub struct EmoteSetEmoteFlags {
-	zero_width: bool,
-	override_conflicts: bool,
+	pub zero_width: bool,
+	pub override_conflicts: bool,
 }
 
 impl From<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlags {

@@ -7,7 +7,6 @@
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import type { Paint } from "$/gql/graphql";
-	import Expandable from "$/components/expandable.svelte";
 
 	async function queryInventory(id: string) {
 		const res = await gqlClient()

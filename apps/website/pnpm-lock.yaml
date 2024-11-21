@@ -35,6 +35,9 @@ importers:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^4.0.0
         version: 4.0.0(svelte@5.1.16)(vite@5.4.11(@types/node@22.9.0)(sass@1.80.7))
+      '@types/sharedworker':
+        specifier: ^0.0.132
+        version: 0.0.132
       '@urql/exchange-auth':
         specifier: ^2.2.0
         version: 2.2.0(@urql/core@5.0.8(graphql@16.9.0))
@@ -1219,6 +1222,9 @@ packages:
 
   '@types/node@22.9.0':
     resolution: {integrity: sha512-vuyHg81vvWA1Z1ELfvLko2c8f34gyA0zaic0+Rllc5lbCnbSyuvb2Oxpm6TAUAC/2xZN3QGqxBNggD1nNR2AfQ==}
+
+  '@types/sharedworker@0.0.132':
+    resolution: {integrity: sha512-fT4hljAIzbgGAiT1MENJpZdAEuJp0LK3uc/2jmZH6gABMzf0KIMrhHA/+Wn+m/JVZZqG99gB2ZDy5FS8zV1bXg==}
 
   '@types/ws@8.5.13':
     resolution: {integrity: sha512-osM/gWBTPKgHV8XkTunnegTRIsvF6owmf5w+JtAfOw472dptdm0dlGv4xCt6GwQRcC2XVOvvRE/0bAoQcL2QkA==}
@@ -4092,6 +4098,8 @@ snapshots:
   '@types/node@22.9.0':
     dependencies:
       undici-types: 6.19.8
+
+  '@types/sharedworker@0.0.132': {}
 
   '@types/ws@8.5.13':
     dependencies:

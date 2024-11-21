@@ -91,13 +91,20 @@ textarea {
 		font-weight: 500;
 	}
 
-	&:focus-visible {
-		background-color: var(--secondary-hover);
-		border: 1px solid var(--primary);
+	&:disabled {
+		color: var(--text-light);
+		cursor: not-allowed;
 	}
 
-	&:active {
-		background-color: var(--secondary-active);
+	&:not(:disabled) {
+		&:focus-visible {
+			background-color: var(--secondary-hover);
+			border: 1px solid var(--primary);
+		}
+
+		&:active {
+			background-color: var(--secondary-active);
+		}
 	}
 }
 
@@ -254,7 +261,6 @@ td {
 			width: 100%;
 			max-width: 16rem;
 			overflow: auto;
-			overflow: overlay;
 			scrollbar-gutter: stable;
 		}
 
@@ -279,7 +285,6 @@ td {
 
 		flex-direction: column;
 		overflow: auto;
-		overflow: overlay;
 		scrollbar-gutter: stable;
 
 		& > .side-bar {

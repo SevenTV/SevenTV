@@ -37,7 +37,7 @@
 	</div>
 	<hr />
 	<div class="links small">
-		<span>7TV is not affiliated with Twitch, Kick or YouTube</span>
+		<span>7TV is not affiliated with Twitch, Kick, YouTube or Discord</span>
 		<a href="/privacy">Privacy Policy</a>
 		<a href="/tos">Terms of Service</a>
 	</div>

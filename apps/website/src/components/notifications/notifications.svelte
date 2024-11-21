@@ -80,7 +80,6 @@
 
 	.scrollable {
 		overflow: auto;
-		overflow: overlay;
 		scrollbar-gutter: stable;
 	}
 </style>

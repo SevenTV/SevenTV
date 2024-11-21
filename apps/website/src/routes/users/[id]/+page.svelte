@@ -5,6 +5,7 @@
 	import type { EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 
 	let { data }: { data: PageData } = $props();
 
@@ -12,7 +13,12 @@
 		return gqlClient()
 			.query(
 				graphql(`
-					query UserActiveEmotes($id: Id!, $page: Int!) {
+					query UserActiveEmotes(
+						$id: Id!
+						$page: Int!
+						$isDefaultSetSet: Boolean!
+						$defaultSetId: Id!
+					) {
 						users {
 							user(id: $id) {
 								style {
@@ -112,6 +118,13 @@
 														frameCount
 													}
 													ranking(ranking: TRENDING_WEEKLY)
+													inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+														emoteSetId
+														emote {
+															id
+															alias
+														}
+													}
 												}
 											}
 											totalCount
@@ -126,19 +139,24 @@
 				{
 					id: data.id,
 					page,
+					isDefaultSetSet: !!$defaultEmoteSet,
+					defaultSetId: $defaultEmoteSet ?? "",
 				},
 			)
 			.toPromise()
 			.then((res) => {
 				if (res.error || !res.data) {
-					console.error(res.error);
 					throw res.error;
 				}
 
 				const emotes = res.data.users.user?.style.activeEmoteSet?.emotes;
 
 				if (!emotes) {
-					throw new Error("No emotes found");
+					return {
+						items: [],
+						totalCount: 0,
+						pageCount: 0,
+					};
 				}
 
 				return emotes as EmoteSetEmoteSearchResult;

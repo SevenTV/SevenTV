@@ -1,19 +1,20 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
-use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
+use async_graphql::Context;
 use fred::prelude::KeysInterface;
 use shared::database::emote::EmoteId;
+use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
 use shared::typesense::types::event::EventId;
 
-use super::{EmoteEvent, Event, Image, SearchResult, User};
+use super::{EmoteEvent, EmoteSetEmote, Event, Image, SearchResult, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
 use crate::search::{search, sorted_results, SearchOptions};
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct Emote {
 	pub id: EmoteId,
@@ -29,7 +30,7 @@ pub struct Emote {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Enum)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, async_graphql::Enum)]
 enum Ranking {
 	TrendingDaily,
 	TrendingWeekly,
@@ -54,9 +55,9 @@ impl Display for Ranking {
 	}
 }
 
-#[ComplexObject]
+#[async_graphql::ComplexObject]
 impl Emote {
-	async fn owner<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+	async fn owner(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -70,7 +71,7 @@ impl Emote {
 		Ok(user.map(Into::into))
 	}
 
-	async fn ranking<'ctx>(&self, ctx: &Context<'ctx>, ranking: Ranking) -> Result<Option<u32>, ApiError> {
+	async fn ranking(&self, ctx: &Context<'_>, ranking: Ranking) -> Result<Option<u32>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -93,9 +94,9 @@ impl Emote {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
-	async fn channels<'ctx>(
+	async fn channels(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
 		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
 	) -> Result<SearchResult<User>, ApiError> {
@@ -139,9 +140,9 @@ impl Emote {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
-	async fn events<'ctx>(
+	async fn events(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		#[graphql(validator(maximum = 10))] page: Option<u32>,
 		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
 	) -> Result<Vec<EmoteEvent>, ApiError> {
@@ -178,6 +179,30 @@ impl Emote {
 			.filter_map(|e| Event::try_from(e).ok())
 			.collect())
 	}
+
+	async fn in_emote_sets(
+		&self,
+		ctx: &Context<'_>,
+		#[graphql(validator(min_items = 1, max_items = 50))] emote_set_ids: Vec<EmoteSetId>,
+	) -> Result<Vec<EmoteInEmoteSetResponse>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let result = global
+			.emote_set_by_id_loader
+			.load_many(emote_set_ids)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.into_iter()
+			.map(|(id, set)| EmoteInEmoteSetResponse {
+				emote_set_id: id,
+				emote: set.emotes.into_iter().find(|e| e.id == self.id).map(EmoteSetEmote::from),
+			})
+			.collect();
+
+		Ok(result)
+	}
 }
 
 impl Emote {
@@ -203,7 +228,7 @@ impl Emote {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 pub struct EmoteFlags {
 	pub public_listed: bool,
 	pub private: bool,
@@ -228,7 +253,7 @@ impl From<shared::database::emote::EmoteFlags> for EmoteFlags {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 pub struct EmoteScores {
 	pub trending_day: i32,
 	pub trending_week: i32,
@@ -253,7 +278,7 @@ impl From<shared::database::emote::EmoteScores> for EmoteScores {
 	}
 }
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct EmoteAttribution {
 	pub user_id: UserId,
@@ -269,9 +294,9 @@ impl From<shared::database::emote::EmoteAttribution> for EmoteAttribution {
 	}
 }
 
-#[ComplexObject]
+#[async_graphql::ComplexObject]
 impl EmoteAttribution {
-	async fn user<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+	async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -284,4 +309,10 @@ impl EmoteAttribution {
 
 		Ok(user.map(Into::into))
 	}
+}
+
+#[derive(async_graphql::SimpleObject)]
+pub struct EmoteInEmoteSetResponse {
+	pub emote_set_id: EmoteSetId,
+	pub emote: Option<EmoteSetEmote>,
 }

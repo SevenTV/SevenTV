@@ -1,3 +1,9 @@
+input AddEmote {
+	id: EmoteSetEmoteId!
+	overrideConflicts: Boolean
+	zeroWidth: Boolean
+}
+
 
 type Color {
 	a: Int!
@@ -23,6 +29,7 @@ type Emote {
 	flags: EmoteFlags!
 	id: Id!
 	images: [Image!]!
+	inEmoteSets(emoteSetIds: [Id!]!): [EmoteInEmoteSetResponse!]!
 	owner: User
 	ownerId: Id!
 	ranking(ranking: Ranking!): Int
@@ -36,6 +43,15 @@ type EmoteAttribution {
 	addedAt: DateTime!
 	user: User
 	userId: Id!
+}
+
+type EmoteBatchOperation {
+	delete(reason: String): [Emote!]!
+	flags(flags: EmoteFlagsInput!): [Emote!]!
+	merge(with: Id!): [Emote!]!
+	name(name: String!): [Emote!]!
+	owner(ownerId: Id!): [Emote!]!
+	tags(tags: [String!]!): [Emote!]!
 }
 
 type EmoteEvent {
@@ -58,6 +74,30 @@ type EmoteFlags {
 	nsfw: Boolean!
 	private: Boolean!
 	publicListed: Boolean!
+}
+
+input EmoteFlagsInput {
+	animated: Boolean!
+	approvedPersonal: Boolean!
+	defaultZeroWidth: Boolean!
+	deniedPersonal: Boolean!
+	nsfw: Boolean!
+	private: Boolean!
+	publicListed: Boolean!
+}
+
+type EmoteInEmoteSetResponse {
+	emote: EmoteSetEmote
+	emoteSetId: Id!
+}
+
+type EmoteOperation {
+	delete(reason: String): Emote!
+	flags(flags: EmoteFlagsInput!): Emote!
+	merge(with: Id!): Emote!
+	name(name: String!): Emote!
+	owner(ownerId: Id!): Emote!
+	tags(tags: [String!]!): Emote!
 }
 
 type EmoteQuery {
@@ -88,6 +128,7 @@ type EmoteSet {
 	id: Id!
 	kind: EmoteSetKind!
 	name: String!
+	owner: User
 	ownerId: Id
 	searchUpdatedAt: DateTime
 	tags: [String!]!
@@ -109,6 +150,16 @@ type EmoteSetEmoteFlags {
 	zeroWidth: Boolean!
 }
 
+input EmoteSetEmoteFlagsInput {
+	overrideConflicts: Boolean!
+	zeroWidth: Boolean!
+}
+
+input EmoteSetEmoteId {
+	alias: String
+	emoteId: Id!
+}
+
 type EmoteSetEmoteSearchResult {
 	items: [EmoteSetEmote!]!
 	pageCount: Int!
@@ -122,8 +173,20 @@ enum EmoteSetKind {
 	SPECIAL
 }
 
+type EmoteSetOperation {
+	addEmote(emote: AddEmote!): EmoteSet!
+	capacity(capacity: Int!): EmoteSet!
+	create(name: String!): EmoteSet!
+	delete: Boolean!
+	name(name: String!): EmoteSet!
+	removeEmote(id: EmoteSetEmoteId!): EmoteSet!
+	updateEmoteAlias(alias: String!, id: EmoteSetEmoteId!): EmoteSetEmote!
+	updateEmoteFlags(flags: EmoteSetEmoteFlagsInput!, id: EmoteSetEmoteId!): EmoteSetEmote!
+}
+
 type EmoteSetQuery {
 	emoteSet(id: Id!): EmoteSet
+	emoteSets(ids: [Id!]!): [EmoteSet!]!
 }
 
 type EntitlementEdgeAnyBadge {
@@ -261,6 +324,12 @@ enum ImageProcessorEvent {
 	SUCCESS
 }
 
+
+type Mutation {
+	emote(id: Id!): EmoteOperation!
+	emoteSet(id: Id!): EmoteSetOperation!
+	emotes(ids: [Id!]!): EmoteBatchOperation!
+}
 
 type Paint {
 	createdById: Id!
@@ -412,6 +481,7 @@ enum TagsMatch {
 
 type User {
 	connections: [UserConnection!]!
+	editableEmoteSetIds: [Id!]!
 	editors: [UserEditor!]!
 	highestRoleColor: Color
 	highestRoleRank: Int!

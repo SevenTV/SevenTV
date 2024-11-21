@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql::{extensions, EmptyMutation, EmptySubscription, Schema};
+use async_graphql::{extensions, EmptySubscription, Schema};
 use axum::response::{self, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Extension, Router};
@@ -9,13 +9,14 @@ use crate::global::Global;
 use crate::http::guards::RateLimitResponseStore;
 use crate::http::middleware::session::Session;
 
+mod mutations;
 mod queries;
 mod types;
 
-pub type V3Schema = Schema<queries::Query, EmptyMutation, EmptySubscription>;
+pub type V4Schema = Schema<queries::Query, mutations::Mutation, EmptySubscription>;
 
-pub fn schema(global: Option<Arc<Global>>) -> V3Schema {
-	let mut schema = Schema::build(queries::Query::default(), EmptyMutation, EmptySubscription)
+pub fn schema(global: Option<Arc<Global>>) -> V4Schema {
+	let mut schema = Schema::build(queries::Query::default(), mutations::Mutation::default(), EmptySubscription)
 		.enable_federation()
 		.enable_subscription_in_federation()
 		.extension(extensions::Analyzer)
@@ -37,7 +38,7 @@ pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
 }
 
 pub async fn graphql_handler(
-	Extension(schema): Extension<V3Schema>,
+	Extension(schema): Extension<V4Schema>,
 	Extension(session): Extension<Session>,
 	req: async_graphql_axum::GraphQLRequest,
 ) -> async_graphql_axum::GraphQLResponse {

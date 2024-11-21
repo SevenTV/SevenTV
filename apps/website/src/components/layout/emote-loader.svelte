@@ -6,6 +6,7 @@
 	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";
 	import Spinner from "../spinner.svelte";
 	import { untrack } from "svelte";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 
 	const PER_PAGE = 72;
 
@@ -29,9 +30,12 @@
 		identifier++;
 	}
 
-	// Reset when the layout changes
+	// Reset when the layout or the default emote set changes
 	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		$emotesLayout;
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		$defaultEmoteSet;
 		untrack(() => {
 			reset();
 		});

@@ -106,7 +106,6 @@
 	@media screen and (min-width: 961px) {
 		.content {
 			overflow: auto;
-			overflow: overlay;
 			scrollbar-gutter: stable;
 		}
 	}

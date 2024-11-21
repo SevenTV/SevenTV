@@ -40,7 +40,7 @@ impl UserStyle {
 
 #[async_graphql::ComplexObject]
 impl UserStyle {
-	async fn active_paint<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<Paint>, ApiError> {
+	async fn active_paint(&self, ctx: &Context<'_>) -> Result<Option<Paint>, ApiError> {
 		let Some(active_paint_id) = self.active_paint_id else {
 			return Ok(None);
 		};
@@ -58,7 +58,7 @@ impl UserStyle {
 		Ok(paint.map(|p| Paint::from_db(p, &global.config.api.cdn_origin)))
 	}
 
-	async fn active_emote_set<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<EmoteSet>, ApiError> {
+	async fn active_emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
 		let Some(active_emote_set_id) = self.active_emote_set_id else {
 			return Ok(None);
 		};

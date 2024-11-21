@@ -37,7 +37,7 @@ impl From<shared::database::user::editor::UserEditor> for UserEditor {
 
 #[ComplexObject]
 impl UserEditor {
-	async fn editor<'ctx>(&self, ctx: &Context<'ctx>) -> Result<Option<User>, ApiError> {
+	async fn editor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

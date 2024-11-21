@@ -10,6 +10,8 @@
 	import ChannelPreview from "../channel-preview.svelte";
 	import Button from "../input/button.svelte";
 	import Flags, { emoteToFlags } from "../flags.svelte";
+	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+	import { editableEmoteSets } from "$/lib/emoteSets";
 
 	let query = $state("");
 
@@ -34,7 +36,7 @@
 				const res = await gqlClient()
 					.query(
 						graphql(`
-							query GlobalSearch($query: String!) {
+							query GlobalSearch($query: String!, $isDefaultSetSet: Boolean!, $defaultSetId: Id!) {
 								search {
 									all(query: $query, page: 1, perPage: 5) {
 										users {
@@ -144,6 +146,13 @@
 													frameCount
 												}
 												ranking(ranking: TRENDING_WEEKLY)
+												inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+													emoteSetId
+													emote {
+														id
+														alias
+													}
+												}
 											}
 											totalCount
 											pageCount
@@ -152,13 +161,12 @@
 								}
 							}
 						`),
-						{ query },
+						{ query, isDefaultSetSet: !!$defaultEmoteSet, defaultSetId: $defaultEmoteSet ?? "" },
 					)
 					.toPromise();
 
 				if (res.error || !res.data) {
-					console.error(res.error);
-					reject(res.error);
+					reject();
 					return;
 				}
 
@@ -219,7 +227,7 @@
 						{/snippet}
 						{result.defaultName}
 						{#snippet iconRight()}
-							<Flags flags={emoteToFlags(result)} iconOnly />
+							<Flags flags={emoteToFlags(result, $defaultEmoteSet, $editableEmoteSets)} iconOnly />
 						{/snippet}
 					</Button>
 				{/each}
