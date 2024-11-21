@@ -100,8 +100,6 @@
 	import { t } from "svelte-i18n";
 	import { EmoteSetKind, type Emote, type EmoteSet } from "$/gql/graphql";
 	import type { HTMLAttributes } from "svelte/elements";
-	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { get } from "svelte/store";
 
 	const names: { [key: string]: string } = {
 		// Emote flags

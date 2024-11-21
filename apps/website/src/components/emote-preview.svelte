@@ -5,11 +5,6 @@
 	import ResponsiveImage from "./responsive-image.svelte";
 	import type { HTMLAttributes } from "svelte/elements";
 	import UserName from "./user-name.svelte";
-	import mouseTrap from "$/lib/mouseTrap";
-	import Button from "./input/button.svelte";
-	import { FolderSimple, Plus } from "phosphor-svelte";
-	import AddEmoteDialog from "./dialogs/add-emote-dialog.svelte";
-	import type { DialogMode } from "./dialogs/dialog.svelte";
 	import EmoteContextMenu from "./emote-context-menu.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { editableEmoteSets } from "$/lib/emoteSets";

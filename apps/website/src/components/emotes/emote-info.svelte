@@ -1,7 +1,6 @@
 <script lang="ts">
 	import {
 		ArrowBendDownRight,
-		Plus,
 		FolderPlus,
 		NotePencil,
 		CaretDown,
@@ -10,7 +9,6 @@
 		Download,
 		Trash,
 		Flag,
-		Minus,
 	} from "phosphor-svelte";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags, { emoteToFlags } from "$/components/flags.svelte";

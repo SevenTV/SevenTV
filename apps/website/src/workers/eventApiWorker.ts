@@ -30,7 +30,7 @@ let eventApi:
 	  }
 	| undefined = undefined;
 
-let ports: MessagePort[] = [];
+const ports: MessagePort[] = [];
 
 onconnect = (event) => {
 	debug("new worker port connected");
