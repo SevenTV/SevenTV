@@ -9,3 +9,4 @@ gql
 !.env
 !.env.*
 .env.local
+.env.*.local
