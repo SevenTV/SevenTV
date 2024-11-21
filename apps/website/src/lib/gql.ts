@@ -17,8 +17,11 @@ export function gqlClient(): Client {
 			mapExchange({
 				onError(error) {
 					console.error(error);
-					currentError.set(error.message);
-					errorDialogMode.set("shown");
+					// Error is already handled by authExchange
+					if (error.response?.status !== 401) {
+						currentError.set(error.message);
+						errorDialogMode.set("shown");
+					}
 				},
 			}),
 			cacheExchange,
