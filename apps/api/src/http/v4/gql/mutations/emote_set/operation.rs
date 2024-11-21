@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::Context;
-use itertools::Itertools;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::emote::{EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
@@ -532,14 +531,20 @@ impl EmoteSetOperation {
 			|mut tx| async move {
 				let authed_user = session.user().map_err(TransactionError::Custom)?;
 
-				let (index, old_emote_set_emote) = self
+				let old_emotes: Vec<_> = self
 					.emote_set
 					.emotes
 					.iter()
-					.find_position(|e| e.id == id.emote_id && id.alias.as_ref().is_none_or(|a| e.alias == *a))
-					.ok_or_else(|| {
-						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
-					})?;
+					.enumerate()
+					.filter(|(_, e)| e.id == id.emote_id && id.alias.as_ref().is_none_or(|a| e.alias == *a))
+					.collect();
+
+				if old_emotes.is_empty() {
+					return Err(TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::BadRequest,
+						"emote not found in set",
+					)));
+				}
 
 				let emote = tx
 					.find_one(
@@ -630,20 +635,22 @@ impl EmoteSetOperation {
 					None
 				};
 
-				tx.register_event(InternalEvent {
-					actor: Some(authed_user.clone()),
-					session_id: session.user_session_id(),
-					data: InternalEventData::EmoteSet {
-						after: emote_set.clone(),
-						data: InternalEventEmoteSetData::RemoveEmote {
-							emote: emote.map(Box::new),
-							emote_owner: emote_owner.map(Box::new),
-							emote_set_emote: old_emote_set_emote.clone(),
-							index,
+				for (index, old_emote_set_emote) in old_emotes {
+					tx.register_event(InternalEvent {
+						actor: Some(authed_user.clone()),
+						session_id: session.user_session_id(),
+						data: InternalEventData::EmoteSet {
+							after: emote_set.clone(),
+							data: InternalEventEmoteSetData::RemoveEmote {
+								emote: emote.clone().map(Box::new),
+								emote_owner: emote_owner.clone().map(Box::new),
+								emote_set_emote: old_emote_set_emote.clone(),
+								index,
+							},
 						},
-					},
-					timestamp: chrono::Utc::now(),
-				})?;
+						timestamp: chrono::Utc::now(),
+					})?;
+				}
 
 				Ok(emote_set)
 			},
