@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use itertools::Itertools;
 use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::emote::{Emote, EmoteId};
 use shared::database::emote_set::{EmoteSet, EmoteSetEmote};
@@ -21,10 +20,19 @@ pub async fn emote_remove(
 ) -> TransactionResult<EmoteSet, ApiError> {
 	let authed_user = session.user().map_err(TransactionError::Custom)?;
 
-	let (index, old_emote_set_emote) =
-		emote_set.emotes.iter().find_position(|e| e.id == emote_id).ok_or_else(|| {
-			TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
-		})?;
+	let old_emotes: Vec<_> = emote_set
+		.emotes
+		.iter()
+		.enumerate()
+		.filter(|(_, e)| e.id == emote_id)
+		.collect();
+
+	if old_emotes.is_empty() {
+		return Err(TransactionError::Custom(ApiError::not_found(
+			ApiErrorCode::BadRequest,
+			"emote not found in set",
+		)));
+	}
 
 	let emote = tx
 		.find_one(filter::filter! { Emote { #[query(rename = "_id")] id: emote_id } }, None)
@@ -77,20 +85,22 @@ pub async fn emote_remove(
 		None
 	};
 
-	tx.register_event(InternalEvent {
-		actor: Some(authed_user.clone()),
-		session_id: session.user_session_id(),
-		data: InternalEventData::EmoteSet {
-			after: emote_set.clone(),
-			data: InternalEventEmoteSetData::RemoveEmote {
-				emote: emote.map(Box::new),
-				emote_owner: emote_owner.map(Box::new),
-				emote_set_emote: old_emote_set_emote.clone(),
-				index,
+	for (index, old_emote_set_emote) in old_emotes {
+		tx.register_event(InternalEvent {
+			actor: Some(authed_user.clone()),
+			session_id: session.user_session_id(),
+			data: InternalEventData::EmoteSet {
+				after: emote_set.clone(),
+				data: InternalEventEmoteSetData::RemoveEmote {
+					emote: emote.clone().map(Box::new),
+					emote_owner: emote_owner.clone().map(Box::new),
+					emote_set_emote: old_emote_set_emote.clone(),
+					index,
+				},
 			},
-		},
-		timestamp: chrono::Utc::now(),
-	})?;
+			timestamp: chrono::Utc::now(),
+		})?;
+	}
 
 	Ok(emote_set)
 }
