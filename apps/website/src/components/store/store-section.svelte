@@ -22,7 +22,6 @@
 
 <style lang="scss">
 	section {
-		flex-basis: 0;
 		flex-grow: 1;
 
 		background-color: var(--bg-medium);

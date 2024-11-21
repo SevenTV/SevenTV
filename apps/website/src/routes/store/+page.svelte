@@ -31,7 +31,7 @@
 		<PaintBrush size="1.8rem" />
 		<UserCircle size="1.8rem" />
 		<Seal size="1.8rem" />
-		<Ticket size="1.8rem" />
+		<!-- <Ticket size="1.8rem" /> -->
 		<Smiley size="1.8rem" />
 	</div>
 </Banner>
@@ -46,15 +46,16 @@
 		</div>
 		<MonthlyPaints />
 	</div>
-	<div class="three-grid">
+	<PersonalEmotes />
+	<!-- <div class="three-grid">
 		<EmoteRaffle />
 		<PersonalEmotes />
 		<TopGifters />
-	</div>
+	</div> -->
 	{#if subbed}
 		<Benefits />
 	{/if}
-	<Faq />
+	<!-- <Faq /> -->
 </div>
 
 <style lang="scss">
@@ -74,7 +75,7 @@
 		gap: 1rem;
 		flex-wrap: wrap;
 
-		max-width: 80rem;
+		max-width: 70rem;
 		margin-top: 1rem;
 		margin-inline: auto;
 	}
@@ -94,9 +95,9 @@
 		}
 	}
 
-	.three-grid {
-		display: flex;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
+	// .three-grid {
+	// 	display: flex;
+	// 	gap: 1rem;
+	// 	flex-wrap: wrap;
+	// }
 </style>

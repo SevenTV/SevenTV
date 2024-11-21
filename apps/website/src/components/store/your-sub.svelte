@@ -2,10 +2,11 @@
 	import Button from "../input/button.svelte";
 	import SubInfo from "../sub-info.svelte";
 	import StoreSection from "./store-section.svelte";
-	import { CaretDown, DotsThreeVertical, Gift, Star } from "phosphor-svelte";
+	import { CaretDown, DotsThreeVertical, Gift, PaintBrush, Star, Warning } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
 	let { subbed = $bindable(false) }: { subbed?: boolean } = $props();
+	import DropDown from "../drop-down.svelte";
 </script>
 
 <StoreSection title={$t("common.your_subscription")}>
@@ -55,11 +56,27 @@
 				{/snippet}
 			</Button>
 
-			<Button secondary>
-				{#snippet icon()}
-					<DotsThreeVertical />
+			<DropDown>
+				{#snippet dropdown()}
+					<Button big href="/cosmetics">
+						{#snippet icon()}
+							<PaintBrush />
+						{/snippet}
+						Your Cosmetics
+					</Button>
+					<Button big style="color: var(--danger)">
+						{#snippet icon()}
+							<Warning />
+						{/snippet}
+						Cancel Subscription
+					</Button>
 				{/snippet}
-			</Button>
+				<Button secondary>
+					{#snippet icon()}
+						<DotsThreeVertical />
+					{/snippet}
+				</Button>
+			</DropDown>
 		</div>
 	{/snippet}
 	<SubInfo />

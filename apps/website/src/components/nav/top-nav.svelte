@@ -6,7 +6,7 @@
 	import { user } from "$/lib/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
-	import { List, MagnifyingGlass } from "phosphor-svelte";
+	import { List, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import { type DialogMode } from "../dialogs/dialog.svelte";
@@ -15,6 +15,8 @@
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import GlobalSearch from "./global-search.svelte";
 	import UserName from "../user-name.svelte";
+	import Badge from "../badge.svelte";
+	import { page } from "$app/stores";
 
 	let cartDialogMode: DialogMode = $state("hidden");
 </script>
@@ -30,7 +32,7 @@
 				tabs={[
 					{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes" },
 					// { name: $t("pages.discover.title"), pathname: "/discover" },
-					// { name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
+					{ name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
 					// { name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" },
 				]}
 			/>
@@ -72,11 +74,15 @@
 				</Badge>
 			</Button> -->
 
-			<!-- <Button on:click={() => (cartDialogMode = "shown")}>
-				<Badge count={3} slot="icon">
-					<ShoppingCartSimple />
-				</Badge>
-			</Button> -->
+			{#if $page.url.pathname.startsWith("/store")}
+				<Button onclick={() => (cartDialogMode = "shown")}>
+					{#snippet icon()}
+						<Badge count={3}>
+							<ShoppingCartSimple />
+						</Badge>
+					{/snippet}
+				</Button>
+			{/if}
 
 			<!-- <Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
 				{#snippet icon()}

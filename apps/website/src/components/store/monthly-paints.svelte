@@ -1,10 +1,11 @@
 <script lang="ts">
 	import StoreSection from "./store-section.svelte";
 	import PaintPreview from "../paint-preview.svelte";
-	import { DotsThreeVertical, Repeat } from "phosphor-svelte";
-	import Button from "../input/button.svelte";
+	import { DotsThreeVertical, PaintBrush, Repeat } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";
+	import Button from "../input/button.svelte";
+	import DropDown from "../drop-down.svelte";
 </script>
 
 <StoreSection title={$t("pages.store.subscription.monthly_paints")}>
@@ -12,13 +13,23 @@
 		<div class="buttons">
 			<div class="renew-countdown">
 				<Repeat />
-				<span>{moment.duration(12, "days").humanize()}</span>
+				<span>{moment().endOf("month").fromNow(true)}</span>
 			</div>
-			<Button secondary>
-				{#snippet icon()}
-					<DotsThreeVertical />
+			<DropDown>
+				{#snippet dropdown()}
+					<Button big href="/cosmetics">
+						{#snippet icon()}
+							<PaintBrush />
+						{/snippet}
+						Your Paints
+					</Button>
 				{/snippet}
-			</Button>
+				<Button secondary>
+					{#snippet icon()}
+						<DotsThreeVertical />
+					{/snippet}
+				</Button>
+			</DropDown>
 		</div>
 	{/snippet}
 	{#each Array(2) as _}

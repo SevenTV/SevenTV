@@ -18,6 +18,7 @@
 		SignOut,
 		Sliders,
 		Smiley,
+		Star,
 		Sun,
 	} from "phosphor-svelte";
 	import MenuButton from "../input/menu-button.svelte";
@@ -89,10 +90,10 @@
 				<Compass />
 				{$t("pages.discover.title")}
 			</MenuButton> -->
-			<!-- <MenuButton href="/store" style="color: var(--store)">
+			<MenuButton href="/store" style="color: var(--store)">
 				<Star />
 				{$t("pages.store.title")}
-			</MenuButton> -->
+			</MenuButton>
 		</div>
 		{#if $user}
 			<div class="link-list">

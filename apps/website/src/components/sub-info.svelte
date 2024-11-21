@@ -31,11 +31,11 @@
 			<span>{moment.duration(317, "days").humanize({ d: Infinity })}</span>
 		</span>
 
-		<span class="key">{$t("sub_info.credits")}</span>
+		<!-- <span class="key">{$t("sub_info.credits")}</span>
 		<span class="value">
 			<Coin />
 			<span>3</span>
-		</span>
+		</span> -->
 	</IconContext>
 </div>
 

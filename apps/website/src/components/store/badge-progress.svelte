@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { DotsThreeVertical } from "phosphor-svelte";
+	import { DotsThreeVertical, PaintBrush } from "phosphor-svelte";
 	import StoreSection from "./store-section.svelte";
 	import Button from "../input/button.svelte";
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";
+	import DropDown from "../drop-down.svelte";
 
 	let { percentage = 40 }: { percentage?: number } = $props();
 </script>
@@ -37,11 +38,21 @@
 		<div class="info">
 			<div class="header">
 				<h2>{$t("pages.store.subscription.badge_progress.title")}</h2>
-				<Button secondary>
-					{#snippet icon()}
-						<DotsThreeVertical />
+				<DropDown>
+					{#snippet dropdown()}
+						<Button big href="/cosmetics">
+							{#snippet icon()}
+								<PaintBrush />
+							{/snippet}
+							Your Badges
+						</Button>
 					{/snippet}
-				</Button>
+					<Button secondary>
+						{#snippet icon()}
+							<DotsThreeVertical />
+						{/snippet}
+					</Button>
+				</DropDown>
 			</div>
 			<div class="badges">
 				<div class="badge">

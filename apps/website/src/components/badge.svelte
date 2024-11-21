@@ -6,10 +6,11 @@
 	let text = $derived(count > 99 ? "99+" : count.toString());
 </script>
 
-<div class="badge-container" {children}>
+<div class="badge-container">
 	{#if count > 0}
 		<span class="badge">{text}</span>
 	{/if}
+	{@render children()}
 </div>
 
 <style lang="scss">
