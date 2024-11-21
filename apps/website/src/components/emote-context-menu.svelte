@@ -17,15 +17,20 @@
 
 	let { data, position = $bindable() }: Props = $props();
 
-	let addEmoteDialogMode = $state<DialogMode>("hidden");
-
 	function hide() {
 		position = undefined;
 	}
 
+	let addEmoteDialogMode = $state<DialogMode>("hidden");
+
+	$effect(() => {
+		if (addEmoteDialogMode === "hidden") {
+			hide();
+		}
+	})
+
 	function showAddEmoteDialog() {
 		addEmoteDialogMode = "shown";
-		hide();
 	}
 
 	function copyLink() {

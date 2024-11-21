@@ -98,6 +98,7 @@
 		disabled={submitting}
 		highlightAdd={toAdd}
 		highlightRemove={toRemove}
+		checkName={alias}
 	/>
 </EmoteDialog>
 

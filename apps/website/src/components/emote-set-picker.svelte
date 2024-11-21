@@ -7,7 +7,7 @@
 	import Spinner from "./spinner.svelte";
 	import { browser } from "$app/environment";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { MagnifyingGlass, Minus, Plus } from "phosphor-svelte";
+	import { MagnifyingGlass, Minus, Plus, Warning } from "phosphor-svelte";
 	import TextInput from "./input/text-input.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
 
@@ -15,6 +15,7 @@
 		value: { [key: string]: boolean };
 		highlightAdd?: string[];
 		highlightRemove?: string[];
+		checkName?: string;
 		disabled?: boolean;
 	}
 
@@ -22,6 +23,7 @@
 		value = $bindable(),
 		highlightAdd = [],
 		highlightRemove = [],
+		checkName,
 		disabled = false,
 	}: Props = $props();
 
@@ -104,6 +106,9 @@
 						{#if highlightRemove.includes(set.id)}
 							<Minus />
 						{/if}
+						{#if checkName && set.emotes.items.some((e) => e.alias === checkName)}
+							<Warning />
+						{/if}
 						{set.name}
 						<Flags
 							flags={[
@@ -118,11 +123,17 @@
 						option
 						leftLabel={pickerLeftLabel}
 						disabled={disabled ||
-							(!value[set.id] && (set.capacity ? set.emotes.totalCount >= set.capacity : false))}
+							(!value[set.id] && (set.capacity ? set.emotes.totalCount >= set.capacity : false)) ||
+							set.emotes.items.some((e) => checkName && e.alias === checkName)}
 						bind:value={value[set.id]}
 						style={highlightAdd.includes(set.id) || highlightRemove.includes(set.id)
 							? `border-color: ${highlightAdd.includes(set.id) ? "var(--approve)" : "var(--danger)"}`
 							: undefined}
+						title={checkName && set.emotes.items.some((e) => e.alias === checkName)
+							? "Conflicting Name"
+							: !value[set.id] && (set.capacity ? set.emotes.totalCount >= set.capacity : false)
+								? "Capacity Reached"
+								: undefined}
 					/>
 				{:else}
 					<div class="placeholder">
