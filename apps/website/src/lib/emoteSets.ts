@@ -68,7 +68,14 @@ editableEmoteSets.subscribe((editableEmoteSets) => {
 	if (editableEmoteSets) {
 		// Subscribe to event api topics
 		for (const emoteSet of editableEmoteSets) {
-			unsubscribers.push(subscribe(DispatchType.EmoteSetUpdate, emoteSet.id, onEmoteSetUpdate, `editableSets:${emoteSet.id}`));
+			unsubscribers.push(
+				subscribe(
+					DispatchType.EmoteSetUpdate,
+					emoteSet.id,
+					onEmoteSetUpdate,
+					`editableSets:${emoteSet.id}`,
+				),
+			);
 		}
 	}
 

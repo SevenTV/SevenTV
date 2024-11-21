@@ -16,9 +16,13 @@
 
 	let { data, big = false, primary = false, oncomplete }: Props = $props();
 
-	let active = $derived($defaultEmoteSet
-			? $editableEmoteSets.find((s) => s.id === $defaultEmoteSet)?.emotes.items.some((e) => e.id === data?.id)
-			: undefined);
+	let active = $derived(
+		$defaultEmoteSet
+			? $editableEmoteSets
+					.find((s) => s.id === $defaultEmoteSet)
+					?.emotes.items.some((e) => e.id === data?.id)
+			: undefined,
+	);
 
 	let loading = $state(false);
 
@@ -33,7 +37,7 @@
 		return () => {
 			oncomplete?.();
 		};
-	})
+	});
 
 	async function useEmote() {
 		if (!$defaultEmoteSet || !data) {

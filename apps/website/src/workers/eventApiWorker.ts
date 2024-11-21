@@ -1,4 +1,11 @@
-import { type DispatchPayload, DispatchType, type DispatchWorkerMessage, type SubscribeWorkerMessage, type UnsubscribeWorkerMessage, WorkerMessageType } from "./eventApiWorkerTypes";
+import {
+	type DispatchPayload,
+	DispatchType,
+	type DispatchWorkerMessage,
+	type SubscribeWorkerMessage,
+	type UnsubscribeWorkerMessage,
+	WorkerMessageType,
+} from "./eventApiWorkerTypes";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function log(...args: any[]) {
@@ -15,11 +22,13 @@ function warn(...args: any[]) {
 	console.warn(`[${self.name}]`, ...args);
 }
 
-let eventApi: {
-	open_socket?: WebSocket;
-	queue: string[];
-	subscriptions: Map<string, Set<string>>;
-} | undefined = undefined;
+let eventApi:
+	| {
+			open_socket?: WebSocket;
+			queue: string[];
+			subscriptions: Map<string, Set<string>>;
+	  }
+	| undefined = undefined;
 
 let ports: MessagePort[] = [];
 
@@ -140,11 +149,7 @@ function subscribe(type: DispatchType, id: string, handlerId: string) {
 	}
 }
 
-function unsubscribe(
-	type: DispatchType,
-	id: string,
-	handlerId: string,
-) {
+function unsubscribe(type: DispatchType, id: string, handlerId: string) {
 	if (!eventApi) {
 		eventApi = init();
 	}

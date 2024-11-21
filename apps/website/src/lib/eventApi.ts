@@ -1,5 +1,12 @@
 import EventApiWorker from "$/workers/eventApiWorker?sharedworker";
-import { DispatchType, WorkerMessageType, type DispatchPayload, type DispatchWorkerMessage, type SubscribeWorkerMessage, type UnsubscribeWorkerMessage } from "$/workers/eventApiWorkerTypes";
+import {
+	DispatchType,
+	WorkerMessageType,
+	type DispatchPayload,
+	type DispatchWorkerMessage,
+	type SubscribeWorkerMessage,
+	type UnsubscribeWorkerMessage,
+} from "$/workers/eventApiWorkerTypes";
 
 function worker() {
 	if (!window.EVENT_API_CALLBACKS) {
@@ -28,7 +35,12 @@ function workerOnMessage(event: MessageEvent) {
 	}
 }
 
-export function subscribe(type: DispatchType, id: string, handler: (pl: DispatchPayload) => void, handlerId?: string) {
+export function subscribe(
+	type: DispatchType,
+	id: string,
+	handler: (pl: DispatchPayload) => void,
+	handlerId?: string,
+) {
 	const w = worker();
 
 	// Generate a random handler ID to identify this specific handler
@@ -38,7 +50,12 @@ export function subscribe(type: DispatchType, id: string, handler: (pl: Dispatch
 
 	window.EVENT_API_CALLBACKS.set(handlerId, handler);
 
-	const msg: SubscribeWorkerMessage = { type: WorkerMessageType.Subscribe, dispatchType: type, id, handlerId };
+	const msg: SubscribeWorkerMessage = {
+		type: WorkerMessageType.Subscribe,
+		dispatchType: type,
+		id,
+		handlerId,
+	};
 	w.port.postMessage(msg);
 
 	return () => unsubscribe(type, id, handlerId);
@@ -46,6 +63,11 @@ export function subscribe(type: DispatchType, id: string, handler: (pl: Dispatch
 
 export function unsubscribe(type: DispatchType, id: string, handlerId: string) {
 	const w = worker();
-	const msg: UnsubscribeWorkerMessage = { type: WorkerMessageType.Unsubscribe, dispatchType: type, id, handlerId };
+	const msg: UnsubscribeWorkerMessage = {
+		type: WorkerMessageType.Unsubscribe,
+		dispatchType: type,
+		id,
+		handlerId,
+	};
 	w.port.postMessage(msg);
 }

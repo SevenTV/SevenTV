@@ -40,8 +40,17 @@
 
 {#if position}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="contextmenu-container" transition:fade={{ duration: 100 }} oncontextmenu={onContextMenu}>
-		<nav class="contextmenu" use:mouseTrap={hide} style:left="{position.x}px" style:top="{position.y}px">
+	<div
+		class="contextmenu-container"
+		transition:fade={{ duration: 100 }}
+		oncontextmenu={onContextMenu}
+	>
+		<nav
+			class="contextmenu"
+			use:mouseTrap={hide}
+			style:left="{position.x}px"
+			style:top="{position.y}px"
+		>
 			{#if $user}
 				<EmoteUseButton {data} big oncomplete={hide} />
 				<AddEmoteDialog bind:mode={addEmoteDialogMode} {data} />

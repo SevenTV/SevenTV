@@ -165,7 +165,7 @@
 		<div class="buttons">
 			{#snippet fallbackChildren()}
 				{#if $user}
-					<EmoteUseButton	{data} primary />
+					<EmoteUseButton {data} primary />
 					<Button
 						primary={!$defaultEmoteSet}
 						secondary={!!$defaultEmoteSet}
