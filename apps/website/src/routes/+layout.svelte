@@ -5,6 +5,7 @@
 	import "$/styles/variables.scss";
 	import "$/styles/global.scss";
 	import "$/lib/i18n";
+	import "$/lib/emoteSets";
 	import TopNav from "$/components/nav/top-nav.svelte";
 	import {
 		showMobileMenu,
@@ -22,7 +23,6 @@
 	import type { Snippet } from "svelte";
 	import ErrorDialog from "$/components/dialogs/error-dialog.svelte";
 	import { currentError, errorDialogMode } from "$/lib/error";
-	import "$/lib/emoteSets";
 
 	let { children }: { children: Snippet } = $props();
 

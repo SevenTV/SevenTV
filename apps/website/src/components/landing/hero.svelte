@@ -18,7 +18,7 @@
 		</div>
 		<div class="buttons">
 			<Button primary style="font-size: 1em;" href="#download">Download</Button>
-			<Button style="font-size: 1em;" href="#learn-more">Learn More</Button>
+			<Button style="font-size: 1em;">Learn More</Button>
 		</div>
 	</div>
 	<img class="hero-image hide-on-mobile" src={weirdSmiley} alt="7TV" />

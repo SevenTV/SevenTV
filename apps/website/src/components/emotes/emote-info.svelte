@@ -33,10 +33,8 @@
 	import UserName from "../user-name.svelte";
 	import { user } from "$/lib/auth";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { addEmoteToSet, removeEmoteFromSet } from "$/lib/setMutations";
-	import Spinner from "../spinner.svelte";
-	import { subscribe } from "$/lib/eventApi";
-	import { DispatchType, type DispatchPayload } from "$/workers/eventApiWorkerTypes";
+	import EmoteUseButton from "../emote-use-button.svelte";
+	import { editableEmoteSets } from "$/lib/emoteSets";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -99,58 +97,6 @@
 
 		return result;
 	}
-
-	let active = $state($defaultEmoteSet ? data?.inEmoteSets?.some((s) => s.emoteSetId === $defaultEmoteSet && s.emote?.id === data.id) : undefined);
-
-	$effect(() => {
-		if (!$defaultEmoteSet) {
-			return;
-		}
-
-		const unsub = subscribe(DispatchType.EmoteSetUpdate, $defaultEmoteSet, (payload: DispatchPayload) => {
-			if (data && payload.body.id === $defaultEmoteSet) {
-				// Added emotes
-				for (const change of payload.body.pushed ?? []) {
-					if (change.key === "emotes" && change.value.id === data.id) {
-						active = true;
-						loading = false;
-					}
-				}
-
-				// Removed emotes
-				for (const change of payload.body.pulled ?? []) {
-					if (change.key === "emotes" && change.old_value.id === data.id) {
-						active = false;
-						loading = false;
-					}
-				}
-			}
-		}, "emote-info-active");
-
-		return () => {
-			unsub();
-		};
-	});
-
-	let loading = $state(false);
-
-	async function useEmote() {
-		if (!$defaultEmoteSet || !data) {
-			return;
-		}
-
-		loading = true;
-		await addEmoteToSet($defaultEmoteSet, data.id);
-	}
-
-	async function removeEmote() {
-		if (!$defaultEmoteSet || !data) {
-			return;
-		}
-
-		loading = true;
-		await removeEmoteFromSet($defaultEmoteSet, data.id);
-	}
 </script>
 
 {#if !children && data}
@@ -165,7 +111,7 @@
 {/if}
 {#if data}
 	<div class="top-bar">
-		<Flags flags={emoteToFlags(data)} />
+		<Flags flags={emoteToFlags(data, $defaultEmoteSet, $editableEmoteSets)} />
 		{#if data.owner}
 			<div class="user-info">
 				<a href="/users/{data.owner.id}">
@@ -219,31 +165,7 @@
 		<div class="buttons">
 			{#snippet fallbackChildren()}
 				{#if $user}
-					{#if $defaultEmoteSet}
-						{#if active}
-							<Button primary onclick={removeEmote} disabled={loading}>
-								{#snippet icon()}
-									{#if loading}
-										<Spinner />
-									{:else}
-										<Minus />
-									{/if}
-								{/snippet}
-								Remove
-							</Button>
-						{:else}
-							<Button primary onclick={useEmote} disabled={loading}>
-								{#snippet icon()}
-									{#if loading}
-										<Spinner />
-									{:else}
-										<Plus />
-									{/if}
-								{/snippet}
-								{$t("pages.emote.use_emote")}
-							</Button>
-						{/if}
-					{/if}
+					<EmoteUseButton	{data} primary />
 					<Button
 						primary={!$defaultEmoteSet}
 						secondary={!!$defaultEmoteSet}

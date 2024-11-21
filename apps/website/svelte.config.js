@@ -14,7 +14,7 @@ const config = {
 			pages: "build",
 			assets: "build",
 			// SPA index file
-			fallback: "index.html",
+			fallback: "spa.html",
 			strict: true,
 			precompress: true,
 		}),

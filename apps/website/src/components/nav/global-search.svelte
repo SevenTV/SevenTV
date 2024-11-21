@@ -11,6 +11,7 @@
 	import Button from "../input/button.svelte";
 	import Flags, { emoteToFlags } from "../flags.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+	import { editableEmoteSets } from "$/lib/emoteSets";
 
 	let query = $state("");
 
@@ -226,7 +227,7 @@
 						{/snippet}
 						{result.defaultName}
 						{#snippet iconRight()}
-							<Flags flags={emoteToFlags(result)} iconOnly />
+							<Flags flags={emoteToFlags(result, $defaultEmoteSet, $editableEmoteSets)} iconOnly />
 						{/snippet}
 					</Button>
 				{/each}

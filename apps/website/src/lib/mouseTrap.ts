@@ -10,13 +10,13 @@ export default function mouseTrap(el: HTMLElement, callback: (e: MouseEvent) => 
 	}, 10);
 
 	const onMouseDown = (e: MouseEvent) => {
-		state.willTrigger = state.ready && e.button === 0 && !state.el.contains(e.target as Node);
+		state.willTrigger = state.ready && !state.el.contains(e.target as Node);
 	};
 
 	window.addEventListener("mousedown", onMouseDown);
 
 	const onMouseUp = (e: MouseEvent) => {
-		state.willTrigger = state.willTrigger && e.button === 0 && !state.el.contains(e.target as Node);
+		state.willTrigger = state.willTrigger && !state.el.contains(e.target as Node);
 		if (state.willTrigger) {
 			callback(e);
 		}

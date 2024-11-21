@@ -41,14 +41,22 @@
 		return null;
 	}
 
-	export function emoteToFlags(emote: Emote): string[] {
+	export function emoteToFlags(
+		emote: Emote,
+		defaultSet?: string,
+		editableEmoteSets?: EmoteSet[],
+	): string[] {
 		const flags: string[] = [];
 
-		const defaultSet = get(defaultEmoteSet);
 		if (
-			emote.inEmoteSets?.some((set) => set.emoteSetId === defaultSet && set.emote?.id === emote.id)
-		)
+			defaultSet &&
+			editableEmoteSets &&
+			editableEmoteSets
+				.find((set) => set.id === defaultSet)
+				?.emotes.items.some((e) => e.id === emote.id)
+		) {
 			flags.push("active");
+		}
 
 		if (emote.flags.defaultZeroWidth) flags.push("overlaying");
 
