@@ -2,28 +2,32 @@
 	import Expandable from "./expandable.svelte";
 	import Checkbox from "./input/checkbox.svelte";
 	import Flags from "./flags.svelte";
-	import { type EmoteSet } from "$/gql/graphql";
+	import { type Emote, type EmoteSet } from "$/gql/graphql";
 	import { user } from "$/lib/auth";
 	import Spinner from "./spinner.svelte";
 	import { browser } from "$app/environment";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { MagnifyingGlass, Minus, Plus, Warning } from "phosphor-svelte";
+	import { MagnifyingGlass, Minus, PencilSimple, Plus, Warning } from "phosphor-svelte";
 	import TextInput from "./input/text-input.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
 
 	interface Props {
 		value: { [key: string]: boolean };
-		highlightAdd?: string[];
-		highlightRemove?: string[];
-		checkName?: string;
+		toAdd?: string[];
+		toRemove?: string[];
+		toRename?: string[];
+		emote: Emote;
+		alias: string;
 		disabled?: boolean;
 	}
 
 	let {
 		value = $bindable(),
-		highlightAdd = [],
-		highlightRemove = [],
-		checkName,
+		toAdd = [],
+		toRemove = [],
+		toRename = [],
+		emote,
+		alias,
 		disabled = false,
 	}: Props = $props();
 
@@ -83,6 +87,30 @@
 		const value = window.localStorage.getItem(`emote-set-picker-${ownerId}`);
 		return value ? (JSON.parse(value) ?? undefined) : undefined;
 	}
+
+	function isDisabled(set: EmoteSet) {
+		if (disabled) {
+			return true;
+		}
+
+		return title(set) !== undefined;
+	}
+
+	function isConflictingName(set: EmoteSet) {
+		return set.emotes.items.some((e) => e.alias === alias && e.id !== emote.id);
+	}
+
+	function title(set: EmoteSet) {
+		if (!value[set.id] && set.capacity && set.emotes.totalCount >= set.capacity) {
+			return "Capacity Reached";
+		}
+
+		if (isConflictingName(set)) {
+			return "Conflicting Name";
+		}
+
+		return undefined;
+	}
 </script>
 
 <div class="picker">
@@ -100,13 +128,16 @@
 			{#each editableSets[ownerId] as set}
 				{#snippet pickerLeftLabel()}
 					<div class="emote-set">
-						{#if highlightAdd.includes(set.id)}
+						{#if toAdd.includes(set.id)}
 							<Plus />
 						{/if}
-						{#if highlightRemove.includes(set.id)}
+						{#if toRemove.includes(set.id)}
 							<Minus />
 						{/if}
-						{#if checkName && set.emotes.items.some((e) => e.alias === checkName)}
+						{#if toRename.includes(set.id)}
+							<PencilSimple />
+						{/if}
+						{#if isConflictingName(set)}
 							<Warning />
 						{/if}
 						{set.name}
@@ -122,18 +153,10 @@
 					<Checkbox
 						option
 						leftLabel={pickerLeftLabel}
-						disabled={disabled ||
-							(!value[set.id] && (set.capacity ? set.emotes.totalCount >= set.capacity : false)) ||
-							set.emotes.items.some((e) => checkName && e.alias === checkName)}
+						disabled={isDisabled(set)}
 						bind:value={value[set.id]}
-						style={highlightAdd.includes(set.id) || highlightRemove.includes(set.id)
-							? `border-color: ${highlightAdd.includes(set.id) ? "var(--approve)" : "var(--danger)"}`
-							: undefined}
-						title={checkName && set.emotes.items.some((e) => e.alias === checkName)
-							? "Conflicting Name"
-							: !value[set.id] && (set.capacity ? set.emotes.totalCount >= set.capacity : false)
-								? "Capacity Reached"
-								: undefined}
+						style={`border-color: ${toAdd.includes(set.id) ? "var(--approve)" : toRemove.includes(set.id) ? "var(--danger)" : toRename.includes(set.id) ? "var(--rename)" : undefined}`}
+						title={title(set)}
 					/>
 				{:else}
 					<div class="placeholder">

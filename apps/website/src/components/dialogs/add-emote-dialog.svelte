@@ -6,7 +6,7 @@
 	import { t } from "svelte-i18n";
 	import type { Emote } from "$/gql/graphql";
 	import Spinner from "../spinner.svelte";
-	import { addEmoteToSet, removeEmoteFromSet } from "$/lib/setMutations";
+	import { addEmoteToSet, removeEmoteFromSet, renameEmoteInSet } from "$/lib/setMutations";
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
 
@@ -20,11 +20,10 @@
 	let alias = $state(data.defaultName);
 
 	let originalState = $derived.by(() => {
-		const state: { [key: string]: boolean } = {};
-		const emoteAlias = alias;
+		const state: { [key: string]: string | undefined } = {};
 
 		for (const set of $editableEmoteSets) {
-			state[set.id] = set.emotes.items.some((e) => e.id === data.id && e.alias === emoteAlias);
+			state[set.id] = set.emotes.items.find((e) => e.id === data.id)?.alias;
 		}
 
 		return state;
@@ -33,7 +32,7 @@
 	let pickedEmoteSets: { [key: string]: boolean } = $state({});
 
 	$effect(() => {
-		pickedEmoteSets = originalState;
+		pickedEmoteSets = Object.fromEntries(Object.entries(originalState).map(([k, v]) => [k, v === alias]));
 	});
 
 	let toAdd = $derived(
@@ -41,8 +40,14 @@
 	);
 
 	let toRemove = $derived(
-		Object.keys(pickedEmoteSets).filter((k) => !pickedEmoteSets[k] && originalState[k]),
+		Object.keys(pickedEmoteSets).filter((k) => !pickedEmoteSets[k] && originalState[k] === alias),
 	);
+
+	let toRename = $derived(
+		Object.keys(pickedEmoteSets).filter((k) => pickedEmoteSets[k] && originalState[k] && originalState[k] !== alias),
+	);
+
+	let sumChanges = $derived(toAdd.length + toRemove.length + toRename.length);
 
 	let submitting = $state(false);
 
@@ -54,7 +59,11 @@
 		}
 
 		for (const setId of toRemove) {
-			await removeEmoteFromSet(setId, data.id, alias);
+			await removeEmoteFromSet(setId, data.id);
+		}
+
+		for (const setId of toRename) {
+			await renameEmoteInSet(setId, data.id, alias);
 		}
 
 		mode = "hidden";
@@ -68,11 +77,19 @@
 			{#snippet iconRight()}
 				<Spinner />
 			{/snippet}
-			{$t("labels.confirm")}
+			{#if sumChanges}
+				{$t("dialogs.add_emote.confirm_changes", { values: { count: sumChanges }})}
+			{:else}
+				{$t("dialogs.add_emote.confirm")}
+			{/if}
 		</Button>
 	{:else}
-		<Button primary submit onclick={submit} disabled={toAdd.length === 0 && toRemove.length === 0}>
-			{$t("labels.confirm")}
+		<Button primary submit onclick={submit} disabled={toAdd.length === 0 && toRemove.length === 0 && toRename.length === 0}>
+			{#if sumChanges}
+				{$t("dialogs.add_emote.confirm_changes", { values: { count: sumChanges }})}
+			{:else}
+				{$t("dialogs.add_emote.confirm")}
+			{/if}
 		</Button>
 	{/if}
 {/snippet}
@@ -96,9 +113,11 @@
 	<EmoteSetPicker
 		bind:value={pickedEmoteSets}
 		disabled={submitting}
-		highlightAdd={toAdd}
-		highlightRemove={toRemove}
-		checkName={alias}
+		toAdd={toAdd}
+		toRemove={toRemove}
+		toRename={toRename}
+		emote={data}
+		alias={alias}
 	/>
 </EmoteDialog>
 

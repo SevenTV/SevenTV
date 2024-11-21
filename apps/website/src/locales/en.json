@@ -163,7 +163,9 @@
 		},
 		"add_emote": {
 			"title": "Add {emote} to",
-			"change_name": "Change emote name"
+			"change_name": "Change emote name",
+			"confirm": "Confirm",
+			"confirm_changes": "{count, plural, one {Confirm 1 change} other {Confirm {count} changes}}"
 		},
 		"cart": {
 			"title": "Your Cart",
