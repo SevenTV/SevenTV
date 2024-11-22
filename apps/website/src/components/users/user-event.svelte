@@ -17,17 +17,6 @@
 	let { event }: { event: UserEvent } = $props();
 </script>
 
-{#snippet userLink(actor?: User | null, by: boolean = true)}
-	{#if actor && actor.mainConnection}
-		{#if by}
-			by
-		{/if}
-		<a href="/users/{actor.id}" class="link" style:color={actor.highestRoleColor?.hex}
-			>{actor.mainConnection.platformDisplayName}</a
-		>
-	{/if}
-{/snippet}
-
 {#snippet paint(paint?: Paint | null)}
 	{#if paint}
 		<PaintComponent {paint} style="font-weight: 700; display: inline;">

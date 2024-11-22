@@ -200,5 +200,8 @@
 	.events {
 		display: flex;
 		flex-direction: column;
+
+		overflow: auto;
+		scrollbar-gutter: stable;
 	}
 </style>
