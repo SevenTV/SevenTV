@@ -1,0 +1,110 @@
+<script lang="ts">
+	import type { UserEvent, User, Paint } from "$/gql/graphql";
+	import {
+		ArrowsMerge,
+		IconContext,
+		PaintBrush,
+		Plugs,
+		PlugsConnected,
+		Plus,
+		Trash,
+	} from "phosphor-svelte";
+	import moment from "moment/min/moment-with-locales";
+	import FromNow from "$/components/from-now.svelte";
+	import PaintComponent from "../paint.svelte";
+
+	let { event }: { event: UserEvent } = $props();
+</script>
+
+{#snippet userLink(actor?: User | null, by: boolean = true)}
+	{#if actor && actor.mainConnection}
+		{#if by}
+			by
+		{/if}
+		<a href="/users/{actor.id}" class="link" style:color={actor.highestRoleColor?.hex}
+			>{actor.mainConnection.platformDisplayName}</a
+		>
+	{/if}
+{/snippet}
+
+{#snippet paint(paint?: Paint | null)}
+	{#if paint}
+		<PaintComponent {paint} style="font-weight: 700; display: inline;">
+			{paint.name.length > 0 ? paint.name : paint.id}
+		</PaintComponent>
+	{/if}
+{/snippet}
+
+<IconContext
+	values={{
+		style: "grid-area: icon; margin: 0 0.5rem;",
+		size: 1.2 * 16,
+		color: "var(--primary)",
+	}}
+>
+	<div class="event">
+		{#if event.data.__typename === "EventUserDataCreate"}
+			<Plus />
+			<span class="text">User created</span>
+		{:else if event.data.__typename === "EventUserDataChangeActivePaint"}
+			<PaintBrush />
+			<span class="text"
+				>Changed active paint from {@render paint(event.data.oldPaint)} to {@render paint(
+					event.data.newPaint,
+				)}</span
+			>
+		{:else if event.data.__typename === "EventUserDataChangeActiveBadge"}
+			<PaintBrush />
+			<span class="text"
+				>Changed active badge from {event.data.newBadgeId} to {event.data.newBadgeId}</span
+			>
+		{:else if event.data.__typename === "EventUserDataChangeActiveEmoteSet"}
+			<ArrowsMerge />
+			<span class="text"
+				>Changed active emote set from <a href="/emote-sets/{event.data.oldEmoteSet?.id}"
+					>{event.data.oldEmoteSet?.name}</a
+				>
+				to <a href="/emote-sets/{event.data.newEmoteSet?.id}">{event.data.newEmoteSet?.name}</a>
+			</span>
+		{:else if event.data.__typename === "EventUserDataAddConnection"}
+			<PlugsConnected />
+			<span class="text">Added {event.data.addedPlatform} connection</span>
+		{:else if event.data.__typename === "EventUserDataRemoveConnection"}
+			<Plugs />
+			<span class="text">Removed {event.data.removedPlatform} connection</span>
+		{:else if event.data.__typename === "EventUserDataDelete"}
+			<Trash />
+			<span class="text">Deleted</span>
+		{/if}
+		<span class="time">
+			<FromNow date={moment(event.createdAt)} />
+		</span>
+	</div>
+</IconContext>
+
+<style lang="scss">
+	.event {
+		display: grid;
+		grid-template-areas: "icon text" ". time";
+		justify-content: start;
+		align-items: center;
+		row-gap: 0.5rem;
+		margin: 1rem 0;
+
+		font-size: 0.75rem;
+		font-weight: 500;
+
+		.text {
+			grid-area: text;
+		}
+
+		a {
+			color: var(--text);
+		}
+
+		.time {
+			grid-area: time;
+			color: var(--text-light);
+		}
+	}
+</style>

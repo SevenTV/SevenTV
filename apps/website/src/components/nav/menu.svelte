@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { theme, type Theme } from "$/lib/layout";
 	import { logout, user } from "$/lib/auth";
-	import Role from "../profile/role.svelte";
+	import Role from "../users/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
 		Bell,

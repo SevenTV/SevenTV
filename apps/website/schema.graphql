@@ -349,7 +349,9 @@ type EventUserDataChangeActiveEmoteSet {
 }
 
 type EventUserDataChangeActivePaint {
+	newPaint: Paint
 	newPaintId: Id
+	oldPaint: Paint
 	oldPaintId: Id
 }
 
