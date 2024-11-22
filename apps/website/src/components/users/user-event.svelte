@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { UserEvent, User, Paint, EmoteSet } from "$/gql/graphql";
+	import type { UserEvent, Paint, EmoteSet } from "$/gql/graphql";
 	import {
-		ArrowsMerge,
 		FolderSimple,
 		IconContext,
 		PaintBrush,
