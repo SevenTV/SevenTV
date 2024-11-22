@@ -4,6 +4,18 @@ input AddEmote {
 	zeroWidth: Boolean
 }
 
+type AdminPermission {
+	admin: Boolean!
+	bypassRateLimit: Boolean!
+	superAdmin: Boolean!
+}
+
+type BadgePermission {
+	admin: Boolean!
+	assign: Boolean!
+	manage: Boolean!
+}
+
 
 type Color {
 	a: Int!
@@ -91,6 +103,11 @@ type EmoteInEmoteSetResponse {
 	emoteSetId: Id!
 }
 
+type EmoteModerationRequestPermission {
+	admin: Boolean!
+	manage: Boolean!
+}
+
 type EmoteOperation {
 	delete(reason: String): Emote!
 	flags(flags: EmoteFlagsInput!): Emote!
@@ -98,6 +115,16 @@ type EmoteOperation {
 	name(name: String!): Emote!
 	owner(ownerId: Id!): Emote!
 	tags(tags: [String!]!): Emote!
+}
+
+type EmotePermission {
+	admin: Boolean!
+	delete: Boolean!
+	edit: Boolean!
+	manageAny: Boolean!
+	merge: Boolean!
+	upload: Boolean!
+	viewUnlisted: Boolean!
 }
 
 type EmoteQuery {
@@ -182,6 +209,16 @@ type EmoteSetOperation {
 	removeEmote(id: EmoteSetEmoteId!): EmoteSet!
 	updateEmoteAlias(alias: String!, id: EmoteSetEmoteId!): EmoteSetEmote!
 	updateEmoteFlags(flags: EmoteSetEmoteFlagsInput!, id: EmoteSetEmoteId!): EmoteSetEmote!
+}
+
+type EmoteSetPermission {
+	admin: Boolean!
+	assign: Boolean!
+	manage: Boolean!
+	manageAny: Boolean!
+	manageGlobal: Boolean!
+	manageSpecial: Boolean!
+	resize: Boolean!
 }
 
 type EmoteSetQuery {
@@ -293,6 +330,49 @@ type EventEmoteDataUpload {
 	noop: Boolean! @deprecated
 }
 
+union EventUserData = EventUserDataCreate | EventUserDataChangeActivePaint | EventUserDataChangeActiveBadge | EventUserDataChangeActiveEmoteSet | EventUserDataAddConnection | EventUserDataRemoveConnection | EventUserDataDelete
+
+type EventUserDataAddConnection {
+	addedPlatform: Platform!
+}
+
+type EventUserDataChangeActiveBadge {
+	newBadgeId: Id
+	oldBadgeId: Id
+}
+
+type EventUserDataChangeActiveEmoteSet {
+	newEmoteSet: EmoteSet
+	newEmoteSetId: Id
+	oldEmoteSet: EmoteSet
+	oldEmoteSetId: Id
+}
+
+type EventUserDataChangeActivePaint {
+	newPaint: Paint
+	newPaintId: Id
+	oldPaint: Paint
+	oldPaintId: Id
+}
+
+type EventUserDataCreate {
+	"""
+	Always false
+	"""
+	noop: Boolean! @deprecated
+}
+
+type EventUserDataDelete {
+	"""
+	Always false
+	"""
+	noop: Boolean! @deprecated
+}
+
+type EventUserDataRemoveConnection {
+	removedPlatform: Platform!
+}
+
 input Filters {
 	animated: Boolean
 	defaultZeroWidth: Boolean
@@ -301,6 +381,10 @@ input Filters {
 	"""
 	exactMatch: Boolean
 	nsfw: Boolean
+}
+
+type FlagPermission {
+	hidden: Boolean!
 }
 
 
@@ -324,6 +408,11 @@ enum ImageProcessorEvent {
 	SUCCESS
 }
 
+
+"""
+A scalar that can represent any JSON Object value.
+"""
+scalar JSONObject
 
 type Mutation {
 	emote(id: Id!): EmoteOperation!
@@ -380,6 +469,12 @@ type PaintLayerTypeSingleColor {
 	color: Color!
 }
 
+type PaintPermission {
+	admin: Boolean!
+	assign: Boolean!
+	manage: Boolean!
+}
+
 enum PaintRadialGradientShape {
 	CIRCLE
 	ELLIPSE
@@ -390,6 +485,25 @@ type PaintShadow {
 	color: Color!
 	offsetX: Float!
 	offsetY: Float!
+}
+
+type Permissions {
+	admin: AdminPermission!
+	badge: BadgePermission!
+	emote: EmotePermission!
+	emoteModerationRequest: EmoteModerationRequestPermission!
+	emoteModerationRequestLimit: Int
+	emoteModerationRequestPriority: Int
+	emoteSet: EmoteSetPermission!
+	emoteSetCapacity: Int
+	emoteSetLimit: Int
+	flags: FlagPermission!
+	paint: PaintPermission!
+	personalEmoteSetCapacity: Int
+	ratelimits: JSONObject!
+	role: RolePermission!
+	ticket: TicketPermission!
+	user: UserPermission!
 }
 
 enum Platform {
@@ -428,6 +542,12 @@ type Role {
 	searchUpdatedAt: DateTime
 	tags: [String!]!
 	updatedAt: DateTime!
+}
+
+type RolePermission {
+	admin: Boolean!
+	assign: Boolean!
+	manage: Boolean!
 }
 
 type SearchQuery {
@@ -479,10 +599,20 @@ enum TagsMatch {
 	ANY
 }
 
+type TicketPermission {
+	admin: Boolean!
+	create: Boolean!
+	manageAbuse: Boolean!
+	manageBilling: Boolean!
+	manageGeneric: Boolean!
+	message: Boolean!
+}
+
 type User {
 	connections: [UserConnection!]!
 	editableEmoteSetIds: [Id!]!
 	editors: [UserEditor!]!
+	events(page: Int, perPage: Int): [UserEvent!]!
 	highestRoleColor: Color
 	highestRoleRank: Int!
 	id: Id!
@@ -490,6 +620,7 @@ type User {
 	mainConnection: UserConnection
 	ownedEmoteSets: [EmoteSet!]!
 	ownedEmotes: [Emote!]!
+	permissions: Permissions!
 	roleIds: [Id!]!
 	roles: [Role!]!
 	searchUpdatedAt: DateTime
@@ -526,9 +657,36 @@ enum UserEditorState {
 	REJECTED
 }
 
+type UserEvent {
+	actor: User
+	actorId: Id
+	createdAt: DateTime!
+	data: EventUserData!
+	id: Id!
+	searchUpdatedAt: DateTime
+	target: User!
+	targetId: Id!
+	updatedAt: DateTime!
+}
+
 type UserInventory {
 	badges: [EntitlementEdgeAnyBadge!]!
 	paints: [EntitlementEdgeAnyPaint!]!
+}
+
+type UserPermission {
+	admin: Boolean!
+	billing: Boolean!
+	inviteEditors: Boolean!
+	login: Boolean!
+	manageAny: Boolean!
+	manageBilling: Boolean!
+	moderate: Boolean!
+	useBadge: Boolean!
+	useCustomProfilePicture: Boolean!
+	usePaint: Boolean!
+	usePersonalEmoteSet: Boolean!
+	viewHidden: Boolean!
 }
 
 type UserProfilePicture {

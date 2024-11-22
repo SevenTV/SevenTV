@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Role from "$/components/profile/role.svelte";
+	import Role from "$/components/users/role.svelte";
 	import type { LayoutData } from "./$types";
 	import TabLink from "$/components/tab-link.svelte";
 	import {
@@ -18,17 +18,20 @@
 	import Button from "$/components/input/button.svelte";
 	import { t } from "svelte-i18n";
 	import UserProfilePicture from "$/components/user-profile-picture.svelte";
-	import Connections from "$/components/profile/connections.svelte";
+	import Connections from "$/components/users/connections.svelte";
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import { UserEditorState } from "$/gql/graphql";
 	import type { Snippet } from "svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
+	import { user } from "$/lib/auth";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	let connectionsExpanded = $state(false);
 	let editorsExpanded = $state(false);
+
+	let showActivity = $derived($user?.id === data.id || $user?.permissions.user.manageAny);
 </script>
 
 <svelte:head>
@@ -164,12 +167,14 @@
 						<PaintBrush weight="fill" />
 					{/snippet}
 				</TabLink>
-				<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
-					<Pulse />
-					{#snippet active()}
-						<Pulse weight="fill" />
-					{/snippet}
-				</TabLink>
+				{#if showActivity}
+					<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
+						<Pulse />
+						{#snippet active()}
+							<Pulse weight="fill" />
+						{/snippet}
+					</TabLink>
+				{/if}
 				<!-- <TabLink title={$t("common.analytics")} href="/users/{data.id}/analytics" big>
 					<ChartLineUp />
 					<ChartLineUp weight="fill" />

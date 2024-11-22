@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{Context, Object};
+use shared::database::role::permissions::{FlagPermission, PermissionsExt, UserPermission};
 use shared::database::user::UserId;
 
 use crate::global::Global;
@@ -38,13 +39,24 @@ impl UserQuery {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 
-		let emote = global
+		let Some(user) = global
 			.user_loader
 			.load(global, id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+		else {
+			return Ok(None);
+		};
 
-		Ok(emote.map(Into::into))
+		if user.has(FlagPermission::Hidden) && Some(user.id) != session.user_id() && !session.has(UserPermission::ViewHidden)
+		{
+			return Ok(None);
+		}
+
+		Ok(Some(user.into()))
 	}
 }

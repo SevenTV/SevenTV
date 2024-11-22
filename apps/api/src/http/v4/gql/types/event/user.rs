@@ -8,7 +8,7 @@ use shared::database::stored_event::StoredEventUserData;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::v4::gql::types::{EmoteSet, Platform};
+use crate::http::v4::gql::types::{EmoteSet, Paint, Platform};
 
 #[derive(async_graphql::Union)]
 pub enum EventUserData {
@@ -70,11 +70,53 @@ pub struct EventUserDataCreate {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EventUserDataChangeActivePaint {
 	#[graphql(name = "oldPaintId")]
 	pub old_id: Option<PaintId>,
 	#[graphql(name = "newPaintId")]
 	pub new_id: Option<PaintId>,
+}
+
+#[async_graphql::ComplexObject]
+impl EventUserDataChangeActivePaint {
+	async fn old_paint(&self, ctx: &Context<'_>) -> Result<Option<Paint>, ApiError> {
+		let Some(old_id) = self.old_id else {
+			return Ok(None);
+		};
+
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let paint = global
+			.paint_by_id_loader
+			.load(old_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))?;
+
+		Ok(Some(Paint::from_db(paint, &global.config.api.cdn_origin)))
+	}
+
+	async fn new_paint(&self, ctx: &Context<'_>) -> Result<Option<Paint>, ApiError> {
+		let Some(old_id) = self.new_id else {
+			return Ok(None);
+		};
+
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let paint = global
+			.paint_by_id_loader
+			.load(old_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))?;
+
+		Ok(Some(Paint::from_db(paint, &global.config.api.cdn_origin)))
+	}
 }
 
 #[derive(async_graphql::SimpleObject)]

@@ -126,6 +126,11 @@ export async function fetchMe(): Promise<User | null> {
 								}
 							}
 							editableEmoteSetIds
+							permissions {
+								user {
+									manageAny
+								}
+							}
 						}
 					}
 				}

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from "svelte-i18n";
-	import Connections from "$/components/profile/connections.svelte";
+	import Connections from "$/components/users/connections.svelte";
 	import type { PageData } from "./$types";
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import { UserEditorState } from "$/gql/graphql";
