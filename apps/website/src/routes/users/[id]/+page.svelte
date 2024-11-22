@@ -167,7 +167,9 @@
 <div class="buttons">
 	<LayoutButtons />
 </div>
-<EmoteLoader {load} />
+{#key data.id}
+	<EmoteLoader {load} />
+{/key}
 
 <style lang="scss">
 	.buttons {

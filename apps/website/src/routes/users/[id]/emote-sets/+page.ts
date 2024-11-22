@@ -49,6 +49,6 @@ export function load({ params }: PageLoadEvent) {
 	return {
 		streamed: {
 			sets: loadSets(params.id),
-		}
+		},
 	};
 }
