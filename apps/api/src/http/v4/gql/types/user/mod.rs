@@ -8,7 +8,7 @@ use shared::database::user::editor::EditorEmoteSetPermission;
 use shared::database::user::UserId;
 use shared::typesense::types::event::EventId;
 
-use super::{Color, Emote, EmoteSet, Event, Role, UserEditor, UserEvent};
+use super::{Color, Emote, EmoteSet, Event, Permissions, Role, UserEditor, UserEvent};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
@@ -112,6 +112,22 @@ impl User {
 		}
 
 		Ok(roles.into_iter().map(Into::into).collect())
+	}
+
+	async fn permissions(&self, ctx: &Context<'_>) -> Result<Permissions, ApiError> {
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id != self.id && !authed_user.has(UserPermission::ManageAny) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you are not allowed to see this user's permissions",
+			));
+		}
+
+		Ok(Permissions::from(self.full_user.computed.permissions.clone()))
 	}
 
 	async fn editors(&self, ctx: &Context<'_>) -> Result<Vec<UserEditor>, ApiError> {
