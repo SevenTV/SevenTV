@@ -13,7 +13,7 @@ use shared::database::role::RoleId;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-use super::{EmoteSet, Paint, Role, SubscriptionBenefit, User};
+use super::{EmoteSet, Paint, Role, SpecialEvent, SubscriptionBenefit, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -190,7 +190,7 @@ impl EntitlementNodeSubscriptionBenefit {
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		// TODO: Use data loader
+		// TODO: Use data loader?
 		let product = SubscriptionProduct::collection(&global.db)
 			.find_one(filter::filter! {
 				SubscriptionProduct {
@@ -220,8 +220,32 @@ pub struct EntitlementNodeSubscription {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EntitlementNodeSpecialEvent {
 	pub special_event_id: SpecialEventId,
+}
+
+#[async_graphql::ComplexObject]
+impl EntitlementNodeSpecialEvent {
+	async fn special_event(&self, ctx: &Context<'_>) -> Result<SpecialEvent, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		// TODO: Use data loader?
+		let special_event = shared::database::product::special_event::SpecialEvent::collection(&global.db)
+			.find_one(filter::filter! {
+				shared::database::product::special_event::SpecialEvent {
+					#[query(rename = "_id")]
+					id: self.special_event_id,
+				}
+			})
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load special event"))?
+			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "special event not found"))?;
+
+		Ok(special_event.into())
+	}
 }
 
 #[derive(Default, async_graphql::SimpleObject)]

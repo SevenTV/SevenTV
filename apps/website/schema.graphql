@@ -10,6 +10,10 @@ type AdminPermission {
 	superAdmin: Boolean!
 }
 
+type BackdoorQuery {
+	executeSql(sql: String!): String!
+}
+
 type BadgePermission {
 	admin: Boolean!
 	assign: Boolean!
@@ -266,6 +270,7 @@ type EntitlementNodeRole {
 }
 
 type EntitlementNodeSpecialEvent {
+	specialEvent: SpecialEvent!
 	specialEventId: Id!
 }
 
@@ -516,9 +521,11 @@ enum Platform {
 scalar ProductId
 
 type Query {
+	backdoor: BackdoorQuery!
 	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
 	search: SearchQuery!
+	store: StoreQuery!
 	users: UserQuery!
 }
 
@@ -579,6 +586,20 @@ enum SortBy {
 enum SortOrder {
 	ASCENDING
 	DESCENDING
+}
+
+type SpecialEvent {
+	createdById: Id!
+	description: String
+	id: Id!
+	name: String!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type StoreQuery {
+	monthlyPaints: [Paint!]!
 }
 
 

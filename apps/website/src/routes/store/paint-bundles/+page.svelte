@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Button from "$/components/input/button.svelte";
 	import HideOn from "$/components/hide-on.svelte";
-	import PaintPreview from "$/components/paint-preview.svelte";
 	import Select from "$/components/input/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
 	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
@@ -84,9 +83,9 @@
 						<span class="new">{$t("common.new")}</span>
 					{/if}
 				</div>
-				{#each Array(3) as _}
+				<!-- {#each Array(3) as _}
 					<PaintPreview />
-				{/each}
+				{/each} -->
 				<div class="buttons">
 					<Button secondary>
 						{#snippet icon()}

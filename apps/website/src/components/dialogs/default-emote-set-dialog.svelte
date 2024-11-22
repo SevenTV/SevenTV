@@ -19,12 +19,6 @@
 	function groupByOwnerId(sets: EmoteSet[]) {
 		const init: { [key: string]: EmoteSet[] } = {};
 
-		const defaultSet =
-			$defaultEmoteSet && $editableEmoteSets.find((set) => set.id === $defaultEmoteSet);
-		if (defaultSet && defaultSet.owner?.id) {
-			init[defaultSet.owner.id] = [];
-		}
-
 		if ($user) {
 			init[$user.id] = [];
 		}
@@ -65,6 +59,13 @@
 	function loadExpanded(ownerId: string): boolean | undefined {
 		if (!browser) {
 			return undefined;
+		}
+
+		const defaultSet =
+			$defaultEmoteSet && $editableEmoteSets.find((set) => set.id === $defaultEmoteSet);
+
+		if (defaultSet && defaultSet.owner?.id === ownerId) {
+			return true;
 		}
 
 		const value = window.localStorage.getItem(`emote-set-picker-${ownerId}`);

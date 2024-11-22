@@ -1,11 +1,14 @@
 <script lang="ts">
 	import StoreSection from "./store-section.svelte";
-	import PaintPreview from "../paint-preview.svelte";
 	import { DotsThreeVertical, PaintBrush, Repeat } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";
 	import Button from "../input/button.svelte";
 	import DropDown from "../drop-down.svelte";
+	import type { Paint } from "$/gql/graphql";
+	import PaintComponent from "../paint.svelte";
+
+	let { paints }: { paints: Paint[] } = $props();
 </script>
 
 <StoreSection title={$t("pages.store.subscription.monthly_paints")}>
@@ -32,8 +35,11 @@
 			</DropDown>
 		</div>
 	{/snippet}
-	{#each Array(2) as _}
-		<PaintPreview />
+	{@debug paints}
+	{#each paints as paint}
+		<PaintComponent {paint} style="font-weight: 700">
+			{paint.name}
+		</PaintComponent>
 	{/each}
 </StoreSection>
 

@@ -1,17 +1,91 @@
 <script lang="ts">
+	import Spinner from "$/components/spinner.svelte";
 	import BadgeProgress from "$/components/store/badge-progress.svelte";
 	import Banner from "$/components/store/banner.svelte";
 	import Benefits from "$/components/store/benefits.svelte";
-	import EmoteRaffle from "$/components/store/emote-raffle.svelte";
-	import Faq from "$/components/store/faq.svelte";
 	import MonthlyPaints from "$/components/store/monthly-paints.svelte";
 	import PersonalEmotes from "$/components/store/personal-emotes.svelte";
-	import TopGifters from "$/components/store/top-gifters.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
-	import { PaintBrush, Seal, Smiley, Ticket, UserCircle } from "phosphor-svelte";
+	import { graphql } from "$/gql";
+	import type { Paint } from "$/gql/graphql";
+	import { gqlClient } from "$/lib/gql";
+	import { PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
 	let subbed = $state(false);
+
+	async function queryStore() {
+		const res = await gqlClient().query(
+			graphql(`
+				query StoreData {
+					store {
+						monthlyPaints {
+							id
+							name
+							data {
+								layers {
+									id
+									ty {
+										__typename
+										... on PaintLayerTypeSingleColor {
+											color {
+												hex
+											}
+										}
+										... on PaintLayerTypeLinearGradient {
+											angle
+											repeating
+											stops {
+												at
+												color {
+													hex
+												}
+											}
+										}
+										... on PaintLayerTypeRadialGradient {
+											repeating
+											stops {
+												at
+												color {
+													hex
+												}
+											}
+											shape
+										}
+										... on PaintLayerTypeImage {
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												height
+												frameCount
+											}
+										}
+									}
+									opacity
+								}
+								shadows {
+									color {
+										hex
+									}
+									offsetX
+									offsetY
+									blur
+								}
+							}
+						}
+					}
+				}
+			`),
+			{},
+		);
+
+		return res.data?.store as { monthlyPaints: Paint[] } | undefined;
+	}
+
+	let storeData = $derived(queryStore());
 </script>
 
 <svelte:head>
@@ -44,7 +118,13 @@
 			<YourSub bind:subbed />
 			<BadgeProgress />
 		</div>
-		<MonthlyPaints />
+		{#await storeData}
+			<Spinner />
+		{:then storeData}
+			{#if storeData}
+				<MonthlyPaints paints={storeData.monthlyPaints} />
+			{/if}
+		{/await}
 	</div>
 	<PersonalEmotes />
 	<!-- <div class="three-grid">

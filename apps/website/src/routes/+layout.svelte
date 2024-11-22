@@ -39,7 +39,7 @@
 		<a href="#main" class="skip-to-main">{$t("common.skip_to_content")}</a>
 		<div class="alert-bar">
 			<Warning />
-			<span>Under construction – Read-only</span>
+			<span>Under construction</span>
 			<span class="small">Some features might be unavailable.</span>
 		</div>
 		<TopNav />
