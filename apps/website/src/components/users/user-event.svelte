@@ -1,7 +1,8 @@
 <script lang="ts">
-	import type { UserEvent, User, Paint } from "$/gql/graphql";
+	import type { UserEvent, User, Paint, EmoteSet } from "$/gql/graphql";
 	import {
 		ArrowsMerge,
+		FolderSimple,
 		IconContext,
 		PaintBrush,
 		Plugs,
@@ -32,6 +33,16 @@
 		<PaintComponent {paint} style="font-weight: 700; display: inline;">
 			{paint.name.length > 0 ? paint.name : paint.id}
 		</PaintComponent>
+	{:else}
+		No Paint
+	{/if}
+{/snippet}
+
+{#snippet emoteSetLink(emoteSet?: EmoteSet | null)}
+	{#if emoteSet}
+		<a href="/emote-sets/{emoteSet.id}">{emoteSet.name}</a>
+	{:else}
+		<s>Deleted Set</s>
 	{/if}
 {/snippet}
 
@@ -48,23 +59,20 @@
 			<span class="text">User created</span>
 		{:else if event.data.__typename === "EventUserDataChangeActivePaint"}
 			<PaintBrush />
-			<span class="text"
-				>Changed active paint from {@render paint(event.data.oldPaint)} to {@render paint(
-					event.data.newPaint,
-				)}</span
-			>
+			<span class="text">
+				Changed active paint from {@render paint(event.data.oldPaint)}
+				to {@render paint(event.data.newPaint)}
+			</span>
 		{:else if event.data.__typename === "EventUserDataChangeActiveBadge"}
 			<PaintBrush />
-			<span class="text"
-				>Changed active badge from {event.data.newBadgeId} to {event.data.newBadgeId}</span
-			>
+			<span class="text">
+				Changed active badge from {event.data.newBadgeId} to {event.data.newBadgeId}
+			</span>
 		{:else if event.data.__typename === "EventUserDataChangeActiveEmoteSet"}
-			<ArrowsMerge />
-			<span class="text"
-				>Changed active emote set from <a href="/emote-sets/{event.data.oldEmoteSet?.id}"
-					>{event.data.oldEmoteSet?.name}</a
-				>
-				to <a href="/emote-sets/{event.data.newEmoteSet?.id}">{event.data.newEmoteSet?.name}</a>
+			<FolderSimple />
+			<span class="text">
+				Changed active emote set from {@render emoteSetLink(event.data.oldEmoteSet)}
+				to {@render emoteSetLink(event.data.newEmoteSet)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataAddConnection"}
 			<PlugsConnected />

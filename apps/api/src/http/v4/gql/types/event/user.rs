@@ -93,10 +93,9 @@ impl EventUserDataChangeActivePaint {
 			.paint_by_id_loader
 			.load(old_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?;
 
-		Ok(Some(Paint::from_db(paint, &global.config.api.cdn_origin)))
+		Ok(paint.map(|p| Paint::from_db(p, &global.config.api.cdn_origin)))
 	}
 
 	async fn new_paint(&self, ctx: &Context<'_>) -> Result<Option<Paint>, ApiError> {
@@ -112,10 +111,9 @@ impl EventUserDataChangeActivePaint {
 			.paint_by_id_loader
 			.load(old_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?;
 
-		Ok(Some(Paint::from_db(paint, &global.config.api.cdn_origin)))
+		Ok(paint.map(|p| Paint::from_db(p, &global.config.api.cdn_origin)))
 	}
 }
 
@@ -151,10 +149,9 @@ impl EventUserDataChangeActiveEmoteSet {
 			.emote_set_by_id_loader
 			.load(old_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?;
 
-		Ok(Some(emote_set.into()))
+		Ok(emote_set.map(Into::into))
 	}
 
 	async fn new_emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
@@ -170,10 +167,9 @@ impl EventUserDataChangeActiveEmoteSet {
 			.emote_set_by_id_loader
 			.load(new_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?;
 
-		Ok(Some(emote_set.into()))
+		Ok(emote_set.map(Into::into))
 	}
 }
 
