@@ -35,7 +35,12 @@ export async function removeEmoteFromSet(setId: string, emoteId: string, alias?:
 		.toPromise();
 }
 
-export async function renameEmoteInSet(setId: string, emoteId: string, newAlias: string, oldAlias?: string) {
+export async function renameEmoteInSet(
+	setId: string,
+	emoteId: string,
+	newAlias: string,
+	oldAlias?: string,
+) {
 	await gqlClient()
 		.mutation(
 			graphql(`

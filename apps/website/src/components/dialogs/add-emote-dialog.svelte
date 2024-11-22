@@ -32,7 +32,9 @@
 	let pickedEmoteSets: { [key: string]: boolean } = $state({});
 
 	$effect(() => {
-		pickedEmoteSets = Object.fromEntries(Object.entries(originalState).map(([k, v]) => [k, v === alias]));
+		pickedEmoteSets = Object.fromEntries(
+			Object.entries(originalState).map(([k, v]) => [k, v === alias]),
+		);
 	});
 
 	let toAdd = $derived(
@@ -44,7 +46,9 @@
 	);
 
 	let toRename = $derived(
-		Object.keys(pickedEmoteSets).filter((k) => pickedEmoteSets[k] && originalState[k] && originalState[k] !== alias),
+		Object.keys(pickedEmoteSets).filter(
+			(k) => pickedEmoteSets[k] && originalState[k] && originalState[k] !== alias,
+		),
 	);
 
 	let sumChanges = $derived(toAdd.length + toRemove.length + toRename.length);
@@ -78,15 +82,20 @@
 				<Spinner />
 			{/snippet}
 			{#if sumChanges}
-				{$t("dialogs.add_emote.confirm_changes", { values: { count: sumChanges }})}
+				{$t("dialogs.add_emote.confirm_changes", { values: { count: sumChanges } })}
 			{:else}
 				{$t("dialogs.add_emote.confirm")}
 			{/if}
 		</Button>
 	{:else}
-		<Button primary submit onclick={submit} disabled={toAdd.length === 0 && toRemove.length === 0 && toRename.length === 0}>
+		<Button
+			primary
+			submit
+			onclick={submit}
+			disabled={toAdd.length === 0 && toRemove.length === 0 && toRename.length === 0}
+		>
 			{#if sumChanges}
-				{$t("dialogs.add_emote.confirm_changes", { values: { count: sumChanges }})}
+				{$t("dialogs.add_emote.confirm_changes", { values: { count: sumChanges } })}
 			{:else}
 				{$t("dialogs.add_emote.confirm")}
 			{/if}
@@ -113,11 +122,11 @@
 	<EmoteSetPicker
 		bind:value={pickedEmoteSets}
 		disabled={submitting}
-		toAdd={toAdd}
-		toRemove={toRemove}
-		toRename={toRename}
+		{toAdd}
+		{toRemove}
+		{toRename}
 		emote={data}
-		alias={alias}
+		{alias}
 	/>
 </EmoteDialog>
 
