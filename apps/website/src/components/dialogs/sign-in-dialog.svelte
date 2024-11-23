@@ -6,8 +6,17 @@
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 	import { PUBLIC_REST_API_V4 } from "$env/static/public";
+	import { page } from "$app/stores";
 
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
+
+	function loginUrl(platform: string) {
+		if ($page.url.pathname === "/login") {
+			return `${PUBLIC_REST_API_V4}/auth/login?platform=${platform}`;
+		} else {
+			return `${PUBLIC_REST_API_V4}/auth/login?platform=${platform}&return_to=${encodeURIComponent($page.url.pathname)}`;
+		}
+	}
 </script>
 
 <Dialog bind:mode>
@@ -18,13 +27,13 @@
 			<span class="details">{$t("dialogs.sign_in.subtitle")}</span>
 		</div>
 		<div class="buttons">
-			<Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=twitch">
+			<Button secondary big href={loginUrl("twitch")}>
 				{#snippet icon()}
 					<TwitchLogo />
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Twitch" } })}
 			</Button>
-			<Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=discord">
+			<Button secondary big href={loginUrl("discord")}>
 				{#snippet icon()}
 					<DiscordLogo />
 				{/snippet}

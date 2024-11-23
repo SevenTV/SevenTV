@@ -12,10 +12,18 @@ export async function load({ url, fetch }: PageLoadEvent) {
 
 	const platform = url.searchParams.get("platform");
 	const code = url.searchParams.get("code");
-	const state = url.searchParams.get("state");
+	const returnTo = url.searchParams.get("state");
 
-	if (!code || !state || !platform) {
+	if (!code || !platform) {
 		error(400, { message: "Invalid URL" });
+	}
+
+	if (returnTo) {
+		const returnToUrl = new URL(returnTo, url);
+
+		if (returnToUrl.origin !== url.origin) {
+			error(400, { message: "Invalid return_to URL" });
+		}
 	}
 
 	const req = fetch(`${PUBLIC_REST_API_V4}/auth/login/finish`, {
@@ -23,7 +31,7 @@ export async function load({ url, fetch }: PageLoadEvent) {
 		headers: {
 			"Content-Type": "application/json",
 		},
-		body: JSON.stringify({ platform, code, state }),
+		body: JSON.stringify({ platform, code }),
 		credentials: "include",
 	})
 		.then((res) => res.json())
@@ -40,5 +48,6 @@ export async function load({ url, fetch }: PageLoadEvent) {
 		streamed: {
 			loginRequest: req,
 		},
+		returnTo,
 	};
 }

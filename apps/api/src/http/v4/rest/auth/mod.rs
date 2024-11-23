@@ -13,13 +13,12 @@ use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
 use shared::database::user::User;
-use shared::database::Id;
 use shared::event::{InternalEvent, InternalEventData};
 
 use crate::connections;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::middleware::cookies::{new_cookie, Cookies};
+use crate::http::middleware::cookies::Cookies;
 use crate::http::middleware::session::{parse_session, Session, AUTH_COOKIE};
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::RateLimitRequest;
@@ -34,8 +33,6 @@ const DISCORD_AUTH_SCOPE: &str = "identify";
 const GOOGLE_AUTH_URL: &str =
 	"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&include_granted_scopes=true&";
 const GOOGLE_AUTH_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonly";
-
-const CSRF_COOKIE: &str = "seventv-v4-login-csrf";
 
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
@@ -90,14 +87,41 @@ fn redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Ur
 #[derive(Debug, serde::Deserialize)]
 struct LoginRequest {
 	pub platform: LoginPlatform,
+	pub return_to: Option<String>,
 }
 
 async fn login(
 	State(global): State<Arc<Global>>,
-	Extension(cookies): Extension<Cookies>,
 	Extension(session): Extension<Session>,
 	Query(query): Query<LoginRequest>,
+	headers: HeaderMap,
 ) -> Result<Response, ApiError> {
+	let allowed = [
+		&global.config.api.api_origin,
+		&global.config.api.website_origin,
+		&global.config.api.beta_website_origin,
+	];
+
+	if let Some(referer) = headers.get(hyper::header::REFERER) {
+		let referer = referer.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only login from website"));
+		}
+	}
+
+	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
+		let origin = origin.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
+		}
+	}
+
+	if let Some(return_to) = query.return_to.as_ref().and_then(|u| url::Url::from_str(u).ok()) {
+		if !allowed.iter().any(|a| return_to.origin() == a.origin()) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "return_to origin mismatch"));
+		}
+	}
+
 	let platform = query.platform.into();
 
 	let req = RateLimitRequest::new(RateLimitResource::Login, &session);
@@ -119,18 +143,19 @@ async fn login(
 			}
 		};
 
-		let csrf = Id::<()>::new().to_string();
-		cookies.add(new_cookie(&global, (CSRF_COOKIE, csrf.clone())));
-
 		let redirect_uri = redirect_uri(&global, query.platform)?;
 
 		let redirect_url = format!(
-			"{}client_id={}&redirect_uri={}&response_type=code&scope={}&state={}",
+			"{}client_id={}&redirect_uri={}&response_type=code&scope={}{}",
 			url,
 			config.client_id,
 			urlencoding::encode(redirect_uri.as_str()),
 			urlencoding::encode(scope),
-			csrf
+			query
+				.return_to
+				.as_ref()
+				.map(|r| format!("&state={}", urlencoding::encode(r.as_str())))
+				.unwrap_or_default()
 		);
 
 		Ok(Redirect::to(&redirect_url))
@@ -142,7 +167,6 @@ async fn login(
 struct LoginFinishPayload {
 	pub platform: LoginPlatform,
 	pub code: String,
-	pub state: Id<()>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -152,24 +176,30 @@ struct LoginFinishResponse {
 
 async fn login_finish(
 	State(global): State<Arc<Global>>,
-	Extension(cookies): Extension<Cookies>,
+	headers: HeaderMap,
 	Json(payload): Json<LoginFinishPayload>,
 ) -> Result<impl IntoResponse, ApiError> {
-	let platform = payload.platform.into();
+	let allowed = [
+		&global.config.api.api_origin,
+		&global.config.api.website_origin,
+		&global.config.api.beta_website_origin,
+	];
 
-	// validate csrf
-	let csrf_cookie = cookies
-		.get(CSRF_COOKIE)
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "missing csrf cookie"))?;
-
-	let csrf_payload = Id::<()>::from_str(csrf_cookie.value())
-		.ok()
-		.filter(|id| id.timestamp().signed_duration_since(chrono::Utc::now()).num_seconds() < 300)
-		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid csrf"))?;
-
-	if csrf_payload != payload.state {
-		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid csrf"));
+	if let Some(referer) = headers.get(hyper::header::REFERER) {
+		let referer = referer.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only login from website"));
+		}
 	}
+
+	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
+		let origin = origin.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
+		}
+	}
+
+	let platform = payload.platform.into();
 
 	// exchange code for access token
 	let token = connections::exchange_code(
@@ -367,8 +397,6 @@ async fn login_finish(
 				ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to serialize jwt")
 			})
 			.map_err(TransactionError::Custom)?;
-
-		cookies.remove(&global, CSRF_COOKIE);
 
 		Ok(LoginFinishResponse { token })
 	})

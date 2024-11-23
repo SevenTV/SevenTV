@@ -21,7 +21,9 @@
 				}
 			}
 
-			if (payload?.sub) {
+			if (data.returnTo) {
+				goto(data.returnTo);
+			} else if (payload?.sub) {
 				goto(`/users/${payload.sub}`);
 			} else {
 				goto("/");
