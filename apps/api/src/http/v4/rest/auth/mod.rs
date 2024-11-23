@@ -87,6 +87,7 @@ fn redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Ur
 #[derive(Debug, serde::Deserialize)]
 struct LoginRequest {
 	pub platform: LoginPlatform,
+	pub return_to: Option<String>,
 }
 
 async fn login(
@@ -115,6 +116,12 @@ async fn login(
 		}
 	}
 
+	if let Some(return_to) = query.return_to.as_ref().and_then(|u| url::Url::from_str(u).ok()) {
+		if !allowed.iter().any(|a| return_to.origin() == a.origin()) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "return_to origin mismatch"));
+		}
+	}
+
 	let platform = query.platform.into();
 
 	let req = RateLimitRequest::new(RateLimitResource::Login, &session);
@@ -139,11 +146,16 @@ async fn login(
 		let redirect_uri = redirect_uri(&global, query.platform)?;
 
 		let redirect_url = format!(
-			"{}client_id={}&redirect_uri={}&response_type=code&scope={}",
+			"{}client_id={}&redirect_uri={}&response_type=code&scope={}{}",
 			url,
 			config.client_id,
 			urlencoding::encode(redirect_uri.as_str()),
 			urlencoding::encode(scope),
+			query
+				.return_to
+				.as_ref()
+				.map(|r| format!("&state={}", urlencoding::encode(r.as_str())))
+				.unwrap_or_default()
 		);
 
 		Ok(Redirect::to(&redirect_url))
