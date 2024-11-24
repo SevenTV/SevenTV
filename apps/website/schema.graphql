@@ -14,6 +14,17 @@ type BackdoorQuery {
 	executeSql(sql: String!): String!
 }
 
+type Badge {
+	createdById: Id!
+	description: String
+	id: Id!
+	images: [Image!]!
+	name: String!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
 type BadgePermission {
 	admin: Boolean!
 	assign: Boolean!
@@ -21,11 +32,13 @@ type BadgePermission {
 }
 
 type BadgeProgress {
+	currentBadge: Badge
 	currentBadgeId: Id
 	nextBadge: BadgeProgressNextBadge
 }
 
 type BadgeProgressNextBadge {
+	badge: Badge!
 	badgeId: Id!
 	daysLeft: Float!
 	percentage: Float!
@@ -254,6 +267,7 @@ type EntitlementEdgeAnyPaint {
 union EntitlementNodeAny = EntitlementNodeUser | EntitlementNodeRole | EntitlementNodeBadge | EntitlementNodePaint | EntitlementNodeEmoteSet | EntitlementNodeProduct | EntitlementNodeSubscriptionBenefit | EntitlementNodeSubscription | EntitlementNodeSpecialEvent | EntitlementNodeGlobalDefaultEntitlementGroup
 
 type EntitlementNodeBadge {
+	badge: Badge!
 	badgeId: Id!
 }
 
@@ -353,7 +367,9 @@ type EventUserDataAddConnection {
 }
 
 type EventUserDataChangeActiveBadge {
+	new: Badge
 	newBadgeId: Id
+	old: Badge
 	oldBadgeId: Id
 }
 

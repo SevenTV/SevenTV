@@ -11,23 +11,65 @@ use shared::database::product::{SubscriptionBenefitCondition, SubscriptionProduc
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
-use crate::http::v4::gql::types::Paint;
+use crate::http::v4::gql::types::{Badge, Paint};
 use crate::sub_refresh_job;
 
 #[derive(Default)]
 pub struct StoreQuery;
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct BadgeProgress {
 	pub current_badge_id: Option<BadgeId>,
 	pub next_badge: Option<BadgeProgressNextBadge>,
 }
 
+#[async_graphql::ComplexObject]
+impl BadgeProgress {
+	async fn current_badge(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
+		let Some(current_badge_id) = self.current_badge_id else {
+			return Ok(None);
+		};
+
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let badge = global
+			.badge_by_id_loader
+			.load(current_badge_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
+			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+
+		Ok(Some(Badge::from_db(badge, &global.config.api.cdn_origin)))
+	}
+}
+
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct BadgeProgressNextBadge {
 	pub badge_id: BadgeId,
 	pub percentage: f64,
 	pub days_left: f64,
+}
+
+#[async_graphql::ComplexObject]
+impl BadgeProgressNextBadge {
+	async fn badge(&self, ctx: &Context<'_>) -> Result<Badge, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let badge = global
+			.badge_by_id_loader
+			.load(self.badge_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
+			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+
+		Ok(Badge::from_db(badge, &global.config.api.cdn_origin))
+	}
 }
 
 #[async_graphql::Object]

@@ -6,6 +6,8 @@
 	import moment from "moment/min/moment-with-locales";
 	import DropDown from "../drop-down.svelte";
 	import type { BadgeProgress } from "$/gql/graphql";
+	import ResponsiveImage from "../responsive-image.svelte";
+	import Badge from "../badge.svelte";
 
 	let { progress }: { progress: BadgeProgress } = $props();
 
@@ -63,8 +65,12 @@
 			</div>
 			<div class="badges">
 				<div class="badge">
-					<div class="placeholder"></div>
-					<span>{progress.currentBadgeId}</span>
+					{#if progress.currentBadge}
+						<ResponsiveImage images={progress.currentBadge.images} width={2.25 * 16} />
+						<span>{progress.currentBadge.name}</span>
+					{:else}
+						<div class="placeholder"></div>
+					{/if}
 				</div>
 				<div class="bar-container">
 					{#if progress.nextBadge}
@@ -80,8 +86,8 @@
 				</div>
 				<div class="badge">
 					{#if progress.nextBadge}
-						<div class="placeholder"></div>
-						<span>{progress.nextBadge.badgeId}</span>
+						<ResponsiveImage images={progress.nextBadge.badge.images} width={2.25 * 16} />
+						<span>{progress.nextBadge.badge.name}</span>
 					{:else}
 						<div class="placeholder"></div>
 					{/if}

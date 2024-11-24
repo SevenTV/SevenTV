@@ -1,3 +1,4 @@
+mod badge;
 mod color;
 mod editor;
 mod emote;
@@ -13,6 +14,7 @@ mod role;
 mod search;
 mod user;
 
+pub use badge::*;
 pub use color::*;
 pub use editor::*;
 pub use emote::*;

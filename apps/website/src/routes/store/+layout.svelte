@@ -17,12 +17,12 @@
 					<Star weight="fill" />
 				{/snippet}
 			</TabLink>
-			<TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>
+			<!-- <TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>
 				<PaintBrush />
 				{#snippet active()}
 					<PaintBrush weight="fill" />
 				{/snippet}
-			</TabLink>
+			</TabLink> -->
 		</nav>
 		<hr />
 		<label class="redeem">

@@ -13,7 +13,7 @@ use shared::database::role::RoleId;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-use super::{EmoteSet, Paint, Role, SpecialEvent, SubscriptionBenefit, User};
+use super::{Badge, EmoteSet, Paint, Role, SpecialEvent, SubscriptionBenefit, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -120,8 +120,27 @@ impl EntitlementNodeRole {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EntitlementNodeBadge {
 	pub badge_id: BadgeId,
+}
+
+#[async_graphql::ComplexObject]
+impl EntitlementNodeBadge {
+	async fn badge(&self, ctx: &Context<'_>) -> Result<Badge, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let badge = global
+			.badge_by_id_loader
+			.load(self.badge_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
+			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+
+		Ok(Badge::from_db(badge, &global.config.api.cdn_origin))
+	}
 }
 
 #[derive(async_graphql::SimpleObject)]

@@ -20,9 +20,33 @@
 				query StoreData {
 					store {
 						badgeProgress {
-							currentBadgeId
+							currentBadge {
+								id
+								name
+								images {
+									url
+									mime
+									size
+									scale
+									width
+									height
+									frameCount
+								}
+							}
 							nextBadge {
-								badgeId
+								badge {
+									id
+									name
+									images {
+										url
+										mime
+										size
+										scale
+										width
+										height
+										frameCount
+									}
+								}
 								percentage
 								daysLeft
 							}
