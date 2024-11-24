@@ -5,36 +5,43 @@
 	import { t } from "svelte-i18n";
 	import moment from "moment/min/moment-with-locales";
 	import DropDown from "../drop-down.svelte";
+	import type { BadgeProgress } from "$/gql/graphql";
 
-	let { percentage = 40 }: { percentage?: number } = $props();
+	let { progress }: { progress: BadgeProgress } = $props();
+
+	let percentage = $derived(
+		progress.nextBadge ? Math.round(progress.nextBadge.percentage * 100) : undefined,
+	);
 </script>
 
 <StoreSection>
 	<div class="container">
-		<div class="progress-circle">
-			<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-				<!-- 64 - 8 = 56 -->
-				<circle id="track" cx="64" cy="64" r="56" fill="none"></circle>
-				<!-- 2pi * 56 = 356 -->
-				<circle
-					id="progress"
-					cx="64"
-					cy="64"
-					r="56"
-					fill="none"
-					stroke-dasharray="356"
-					style="--offset: {(1 - percentage / 100) * 356}"
-				></circle>
+		{#if progress.nextBadge}
+			<div class="progress-circle">
+				<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+					<!-- 64 - 8 = 56 -->
+					<circle id="track" cx="64" cy="64" r="56" fill="none"></circle>
+					<!-- 2pi * 56 = 356 -->
+					<circle
+						id="progress"
+						cx="64"
+						cy="64"
+						r="56"
+						fill="none"
+						stroke-dasharray="356"
+						style="--offset: {(1 - progress.nextBadge.percentage) * 356.25}"
+					></circle>
 
-				<defs>
-					<linearGradient id="gradient">
-						<stop offset="0%" stop-color="#5d25fe"></stop>
-						<stop offset="100%" stop-color="#ff36f7"></stop>
-					</linearGradient>
-				</defs>
-			</svg>
-			<span>{percentage}%</span>
-		</div>
+					<defs>
+						<linearGradient id="gradient">
+							<stop offset="0%" stop-color="#5d25fe"></stop>
+							<stop offset="100%" stop-color="#ff36f7"></stop>
+						</linearGradient>
+					</defs>
+				</svg>
+				<span>{percentage}%</span>
+			</div>
+		{/if}
 		<div class="info">
 			<div class="header">
 				<h2>{$t("pages.store.subscription.badge_progress.title")}</h2>
@@ -57,19 +64,27 @@
 			<div class="badges">
 				<div class="badge">
 					<div class="placeholder"></div>
-					<span>1 Year</span>
+					<span>{progress.currentBadgeId}</span>
 				</div>
 				<div class="bar-container">
-					<span class="countdown">
-						{$t("pages.store.subscription.badge_progress.left", {
-							values: { duration: moment.duration(23, "days").humanize() },
-						})}
-					</span>
-					<div class="bar"></div>
+					{#if progress.nextBadge}
+						<span class="countdown">
+							{$t("pages.store.subscription.badge_progress.left", {
+								values: {
+									duration: moment.duration(progress.nextBadge.daysLeft, "days").humanize(),
+								},
+							})}
+						</span>
+					{/if}
+					<progress class="bar" value={percentage} max="100"> </progress>
 				</div>
 				<div class="badge">
-					<div class="placeholder"></div>
-					<span>1.5 Years</span>
+					{#if progress.nextBadge}
+						<div class="placeholder"></div>
+						<span>{progress.nextBadge.badgeId}</span>
+					{:else}
+						<div class="placeholder"></div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -184,10 +199,12 @@
 
 			.bar {
 				align-self: stretch;
-
 				height: 0.25rem;
-				background-color: var(--secondary);
-				border-radius: 0.125rem;
+
+				&::-webkit-progress-value,
+				&::-moz-progress-bar {
+					background: linear-gradient(90deg, #5d25fe, #ff36f7);
+				}
 			}
 		}
 	}

@@ -20,6 +20,17 @@ type BadgePermission {
 	manage: Boolean!
 }
 
+type BadgeProgress {
+	currentBadgeId: Id
+	nextBadge: BadgeProgressNextBadge
+}
+
+type BadgeProgressNextBadge {
+	badgeId: Id!
+	daysLeft: Float!
+	percentage: Float!
+}
+
 
 type Color {
 	a: Int!
@@ -599,6 +610,7 @@ type SpecialEvent {
 }
 
 type StoreQuery {
+	badgeProgress: BadgeProgress
 	monthlyPaints: [Paint!]!
 }
 
@@ -642,6 +654,7 @@ type User {
 	ownedEmoteSets: [EmoteSet!]!
 	ownedEmotes: [Emote!]!
 	permissions: Permissions!
+	personalEmoteSet: EmoteSet
 	roleIds: [Id!]!
 	roles: [Role!]!
 	searchUpdatedAt: DateTime

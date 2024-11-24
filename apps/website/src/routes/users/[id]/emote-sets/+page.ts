@@ -3,7 +3,7 @@ import type { EmoteSet } from "$/gql/graphql";
 import { gqlClient } from "$/lib/gql";
 import type { PageLoadEvent } from "./$types";
 
-async function loadSets(id: string) {
+async function loadSets(fetchF: typeof fetch, id: string) {
 	const res = await gqlClient().query(
 		graphql(`
 			query UserEmoteSets($id: Id!) {
@@ -16,12 +16,7 @@ async function loadSets(id: string) {
 							kind
 							emotes(page: 1, perPage: 12) {
 								items {
-									alias
-									flags {
-										zeroWidth
-									}
 									emote {
-										defaultName
 										images {
 											url
 											mime
@@ -40,15 +35,16 @@ async function loadSets(id: string) {
 			}
 		`),
 		{ id },
+		{ fetch: fetchF },
 	);
 
 	return res.data?.users.user?.ownedEmoteSets as EmoteSet[];
 }
 
-export function load({ params }: PageLoadEvent) {
+export function load({ params, fetch }: PageLoadEvent) {
 	return {
 		streamed: {
-			sets: loadSets(params.id),
+			sets: loadSets(fetch, params.id),
 		},
 	};
 }

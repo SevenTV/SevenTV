@@ -1,13 +1,13 @@
 <script lang="ts">
 	import Spinner from "$/components/spinner.svelte";
-	import BadgeProgress from "$/components/store/badge-progress.svelte";
+	import BadgeProgressComponent from "$/components/store/badge-progress.svelte";
 	import Banner from "$/components/store/banner.svelte";
 	import Benefits from "$/components/store/benefits.svelte";
 	import MonthlyPaints from "$/components/store/monthly-paints.svelte";
 	import PersonalEmotes from "$/components/store/personal-emotes.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
 	import { graphql } from "$/gql";
-	import type { Paint } from "$/gql/graphql";
+	import { EmoteSetKind, type BadgeProgress, type Paint } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
@@ -15,10 +15,18 @@
 	let subbed = $state(false);
 
 	async function queryStore() {
-		const res = await gqlClient().query(
+		let res = await gqlClient().query(
 			graphql(`
 				query StoreData {
 					store {
+						badgeProgress {
+							currentBadgeId
+							nextBadge {
+								badgeId
+								percentage
+								daysLeft
+							}
+						}
 						monthlyPaints {
 							id
 							name
@@ -82,7 +90,7 @@
 			{},
 		);
 
-		return res.data?.store as { monthlyPaints: Paint[] } | undefined;
+		return res.data?.store;
 	}
 
 	let storeData = $derived(queryStore());
@@ -114,15 +122,15 @@
 		<Benefits />
 	{/if}
 	<div class="top-grid">
-		<div class="subgrid">
-			<YourSub bind:subbed />
-			<BadgeProgress />
-		</div>
 		{#await storeData}
 			<Spinner />
 		{:then storeData}
 			{#if storeData}
-				<MonthlyPaints paints={storeData.monthlyPaints} />
+				<div class="subgrid">
+					<YourSub bind:subbed />
+					<BadgeProgressComponent progress={storeData.badgeProgress as BadgeProgress} />
+				</div>
+				<MonthlyPaints paints={storeData.monthlyPaints as Paint[]} />
 			{/if}
 		{/await}
 	</div>

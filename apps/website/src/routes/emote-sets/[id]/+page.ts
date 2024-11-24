@@ -4,7 +4,7 @@ import { gqlClient } from "$/lib/gql";
 import { error } from "@sveltejs/kit";
 import type { PageLoadEvent } from "./$types";
 
-export async function load({ params }: PageLoadEvent) {
+export async function load({ params, fetch }: PageLoadEvent) {
 	const res = await gqlClient().query(
 		graphql(`
 			query OneSet($id: Id!) {
@@ -23,6 +23,7 @@ export async function load({ params }: PageLoadEvent) {
 			}
 		`),
 		{ id: params.id },
+		{ fetch },
 	);
 
 	if (res.error || !res.data) {

@@ -2,7 +2,7 @@
 	import type { User } from "$/gql/graphql";
 	import Paint from "./paint.svelte";
 
-	let { user }: { user: User } = $props();
+	let { user, enablePaintDialog }: { user: User; enablePaintDialog?: boolean } = $props();
 </script>
 
 {#snippet name()}
@@ -12,7 +12,7 @@
 {/snippet}
 
 {#if user.style.activePaint}
-	<Paint paint={user.style.activePaint}>
+	<Paint paint={user.style.activePaint} enableDialog={enablePaintDialog}>
 		{@render name()}
 	</Paint>
 {:else}

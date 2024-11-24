@@ -18,7 +18,7 @@
 
 {#snippet paint(paint?: Paint | null)}
 	{#if paint}
-		<PaintComponent {paint} style="font-weight: 700; display: inline;">
+		<PaintComponent {paint} style="font-weight: 700; display: inline;" enableDialog>
 			{paint.name.length > 0 ? paint.name : paint.id}
 		</PaintComponent>
 	{:else}

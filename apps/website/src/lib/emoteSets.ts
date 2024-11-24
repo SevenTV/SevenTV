@@ -57,6 +57,7 @@ async function queryEmoteSets(setIds: string[]) {
 user.subscribe((user) => {
 	if (user) {
 		queryEmoteSets(user.editableEmoteSetIds).then((sets) => {
+			console.log("updating editableEmoteSets", sets);
 			editableEmoteSets.set(sets);
 		});
 	}

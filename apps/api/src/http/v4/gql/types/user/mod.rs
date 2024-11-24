@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, SimpleObject};
-use shared::database::emote_set::EmoteSetId;
+use shared::database::emote_set::{EmoteSetId, EmoteSetKind};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::role::RoleId;
 use shared::database::user::editor::EditorEmoteSetPermission;
@@ -82,6 +82,24 @@ impl User {
 		emote_sets.sort_by(|a, b| a.id.cmp(&b.id));
 
 		Ok(emote_sets.into_iter().map(Into::into).collect())
+	}
+
+	async fn personal_emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let emote_sets = global
+			.emote_set_by_user_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.unwrap_or_default();
+
+		Ok(emote_sets
+			.into_iter()
+			.find(|e| e.kind == EmoteSetKind::Personal)
+			.map(Into::into))
 	}
 
 	async fn style(&self, ctx: &Context<'_>) -> Result<UserStyle, ApiError> {

@@ -9,6 +9,8 @@
 	import PaintComponent from "../paint.svelte";
 
 	let { paints }: { paints: Paint[] } = $props();
+
+	let renewMoment = moment().add(1, "month").startOf("month");
 </script>
 
 <StoreSection title={$t("pages.store.subscription.monthly_paints")}>
@@ -16,7 +18,7 @@
 		<div class="buttons">
 			<div class="renew-countdown">
 				<Repeat />
-				<span>{moment().endOf("month").fromNow(true)}</span>
+				<span title={renewMoment.format("lll")}>{renewMoment.fromNow(true)}</span>
 			</div>
 			<DropDown>
 				{#snippet dropdown()}
@@ -37,9 +39,11 @@
 	{/snippet}
 	{@debug paints}
 	{#each paints as paint}
-		<PaintComponent {paint} style="font-weight: 700">
-			{paint.name}
-		</PaintComponent>
+		<div class="paint">
+			<PaintComponent {paint} style="font-weight: 700" enableDialog>
+				{paint.name}
+			</PaintComponent>
+		</div>
 	{/each}
 </StoreSection>
 
@@ -58,5 +62,11 @@
 
 		color: var(--text-light);
 		font-size: 0.75rem;
+	}
+
+	.paint {
+		padding: 0.5rem 1rem;
+		border-radius: 0.5rem;
+		background-color: var(--bg-light);
 	}
 </style>

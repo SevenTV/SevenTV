@@ -57,7 +57,7 @@
 				style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
 			/>
 			<span class="name" style:color={user.highestRoleColor?.hex}>
-				<UserName {user} />
+				<UserName {user} enablePaintDialog />
 				<!-- <SealCheck size="0.8rem" /> -->
 			</span>
 			<div class="roles">

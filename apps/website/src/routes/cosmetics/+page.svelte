@@ -165,7 +165,7 @@
 				<h3>{benefitName}</h3>
 				<div class="paints">
 					{#each inventory.paints.sub[benefitName] as paint}
-						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700">
+						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
 							{paint.name.length > 0 ? paint.name : paint.id}
 						</PaintComponent>
 					{/each}
@@ -179,7 +179,7 @@
 				<h3>{eventName}</h3>
 				<div class="paints">
 					{#each inventory.paints.specialEvent[eventName] as paint}
-						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700">
+						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
 							{paint.name.length > 0 ? paint.name : paint.id}
 						</PaintComponent>
 					{/each}
@@ -191,7 +191,7 @@
 			<h2>Other Paints</h2>
 			<div class="paints">
 				{#each inventory.paints.other as paint}
-					<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700">
+					<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
 						{paint.name.length > 0 ? paint.name : paint.id}
 					</PaintComponent>
 				{/each}
