@@ -74,7 +74,7 @@ impl BadgeProgressNextBadge {
 
 #[async_graphql::Object]
 impl StoreQuery {
-	async fn badge_progress(&self, ctx: &Context<'_>) -> Result<Option<BadgeProgress>, ApiError> {
+	async fn badge_progress(&self, ctx: &Context<'_>) -> Result<BadgeProgress, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -86,41 +86,55 @@ impl StoreQuery {
 			.user_id()
 			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "login required"))?;
 
+		// let periods: Vec<_> = global
+		// 	.subscription_periods_by_user_id_loader
+		// 	.load(user_id)
+		// 	.await
+		// 	.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError,
+		// "failed to load subscription periods"))? 	.unwrap_or_default();
+
+		// let Some(active_period) = periods
+		// 	.iter()
+		// 	.find(|p| p.start < chrono::Utc::now() && p.end > chrono::Utc::now())
+		// 	.cloned()
+		// else {
+		// 	return Ok(None);
+		// };
+
+		// let subscription = global
+		// 	.subscription_by_id_loader
+		// 	.load(active_period.subscription_id)
+		// 	.await
+		// 	.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError,
+		// "failed to load subscription"))? 	.ok_or_else(||
+		// ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load
+		// subscription"))?;
+
+		// let periods: Vec<_> = periods
+		// 	.into_iter()
+		// 	.filter(|p| p.subscription_id == active_period.subscription_id)
+		// 	.collect();
+
+		let product: SubscriptionProduct = global
+			.subscription_products_loader
+			.load(())
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription product"))?
+			.map(|p| p.into_iter().next())
+			.flatten()
+			.ok_or_else(|| {
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "could not find subscription product")
+			})?;
+
 		let periods: Vec<_> = global
 			.subscription_periods_by_user_id_loader
 			.load(user_id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods"))?
-			.unwrap_or_default();
-
-		let Some(active_period) = periods
-			.iter()
-			.find(|p| p.start < chrono::Utc::now() && p.end > chrono::Utc::now())
-			.cloned()
-		else {
-			return Ok(None);
-		};
-
-		let subscription = global
-			.subscription_by_id_loader
-			.load(active_period.subscription_id)
-			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?
-			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?;
-
-		let periods: Vec<_> = periods
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods"))?
+			.unwrap_or_default()
 			.into_iter()
-			.filter(|p| p.subscription_id == active_period.subscription_id)
+			.filter(|p| p.subscription_id.product_id == product.id)
 			.collect();
-
-		let product: SubscriptionProduct = global
-			.subscription_product_by_id_loader
-			.load(subscription.id.product_id)
-			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription product"))?
-			.ok_or_else(|| {
-				ApiError::internal_server_error(ApiErrorCode::LoadError, "could not find subscription product")
-			})?;
 
 		let age = sub_refresh_job::SubAge::new(&periods);
 
@@ -199,10 +213,10 @@ impl StoreQuery {
 			}
 		}
 
-		Ok(Some(BadgeProgress {
+		Ok(BadgeProgress {
 			current_badge_id: current_badge,
 			next_badge,
-		}))
+		})
 	}
 
 	async fn monthly_paints(&self, ctx: &Context<'_>) -> Result<Vec<Paint>, ApiError> {

@@ -37,7 +37,6 @@
 			</DropDown>
 		</div>
 	{/snippet}
-	{@debug paints}
 	{#each paints as paint}
 		<div class="paint">
 			<PaintComponent {paint} style="font-weight: 700" enableDialog>

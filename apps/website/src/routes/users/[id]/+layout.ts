@@ -90,6 +90,20 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 										}
 									}
 								}
+								activeBadge {
+									id
+									name
+									description
+									images {
+										url
+										mime
+										size
+										scale
+										width
+										height
+										frameCount
+									}
+								}
 							}
 							highestRoleColor {
 								hex

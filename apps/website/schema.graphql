@@ -626,7 +626,7 @@ type SpecialEvent {
 }
 
 type StoreQuery {
-	badgeProgress: BadgeProgress
+	badgeProgress: BadgeProgress!
 	monthlyPaints: [Paint!]!
 }
 
@@ -758,6 +758,7 @@ type UserSearchResult {
 }
 
 type UserStyle {
+	activeBadge: Badge
 	activeBadgeId: Id
 	activeEmoteSet: EmoteSet
 	activeEmoteSetId: Id

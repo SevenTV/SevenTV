@@ -1,39 +1,19 @@
 <script lang="ts">
-	import type { Snippet } from "svelte";
+	import type { Badge } from "$/gql/graphql";
+	import BadgeDialog from "./dialogs/badge-dialog.svelte";
+	import type { DialogMode } from "./dialogs/dialog.svelte";
+	import ResponsiveImage from "./responsive-image.svelte";
 
-	let { count, children }: { count: number; children: Snippet } = $props();
+	let { badge, size = 1.25 * 16 }: { badge: Badge; size?: number } = $props();
 
-	let text = $derived(count > 99 ? "99+" : count.toString());
+	let dialogMode: DialogMode = $state("hidden");
+
+	function showDialog() {
+		dialogMode = "shown";
+	}
 </script>
 
-<div class="badge-container">
-	{#if count > 0}
-		<span class="badge">{text}</span>
-	{/if}
-	{@render children()}
-</div>
-
-<style lang="scss">
-	.badge-container {
-		position: relative;
-		display: inline-block;
-	}
-
-	.badge {
-		position: absolute;
-		top: -0.75rem;
-		right: -0.8rem;
-
-		display: flex;
-		align-items: center;
-		justify-content: center;
-
-		width: 1.4rem;
-		height: 1.4rem;
-		border-radius: 50%;
-		background-color: var(--danger);
-		border: 3px solid var(--bg-dark);
-		font-size: 0.7rem;
-		font-weight: 500;
-	}
-</style>
+<BadgeDialog bind:mode={dialogMode} {badge} />
+<button onclick={showDialog} style="display: flex;">
+	<ResponsiveImage images={badge.images} height={size} title={badge.description} />
+</button>

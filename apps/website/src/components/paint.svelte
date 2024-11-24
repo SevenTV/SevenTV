@@ -137,14 +137,17 @@
 {/snippet}
 
 {#if enableDialog}
-	<button
+	<!-- Making this a real button sadly breaks the paint rendering -->
+	<div
+		role="button"
+		tabindex="-1"
 		class="paint"
 		title="Paint: {paint.name.length > 0 ? paint.name : paint.id}"
 		onclick={showDialog}
 		{...restProps}
 	>
 		{@render content()}
-	</button>
+	</div>
 {:else}
 	<div class="paint" title="Paint: {paint.name.length > 0 ? paint.name : paint.id}" {...restProps}>
 		{@render content()}
@@ -169,5 +172,9 @@
 			-webkit-background-clip: text;
 			background-size: cover;
 		}
+	}
+
+	div[role="button"] {
+		cursor: pointer;
 	}
 </style>

@@ -15,7 +15,7 @@
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import GlobalSearch from "./global-search.svelte";
 	import UserName from "../user-name.svelte";
-	import Badge from "../badge.svelte";
+	import Badge from "../number-badge.svelte";
 	import { page } from "$app/stores";
 
 	let cartDialogMode: DialogMode = $state("hidden");

@@ -23,6 +23,7 @@
 							currentBadge {
 								id
 								name
+								description
 								images {
 									url
 									mime
@@ -152,7 +153,9 @@
 			{#if storeData}
 				<div class="subgrid">
 					<YourSub bind:subbed />
-					<BadgeProgressComponent progress={storeData.badgeProgress as BadgeProgress} />
+					{#if storeData.badgeProgress}
+						<BadgeProgressComponent progress={storeData.badgeProgress as BadgeProgress} />
+					{/if}
 				</div>
 				<MonthlyPaints paints={storeData.monthlyPaints as Paint[]} />
 			{/if}
