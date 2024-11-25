@@ -21,7 +21,7 @@
 		"@graphql-codegen/client-preset": "^4.5.0",
 		"@graphql-typed-document-node/core": "^3.2.0",
 		"@sveltejs/adapter-static": "^3.0.6",
-		"@sveltejs/kit": "^2.8.0",
+		"@sveltejs/kit": "^2.8.3",
 		"@sveltejs/vite-plugin-svelte": "^4.0.0",
 		"@types/sharedworker": "^0.0.132",
 		"@urql/exchange-auth": "^2.2.0",
