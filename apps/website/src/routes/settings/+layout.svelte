@@ -8,12 +8,6 @@
 	import type { Snippet } from "svelte";
 
 	let { children }: { children: Snippet } = $props();
-
-	$effect(() => {
-		if (!$user && !$signInDialogMode) {
-			$signInDialogMode = "shown-without-close";
-		}
-	});
 </script>
 
 <svelte:head>
@@ -39,7 +33,7 @@
 				<TabLink
 					title={$t("common.editors")}
 					href="/settings/editors"
-					matcher={(_id, url, href) => !!href && url.pathname.startsWith(href)}
+					matcher={(page, href) => !!href && page.url.pathname.startsWith(href)}
 					big
 				>
 					<PencilSimple />

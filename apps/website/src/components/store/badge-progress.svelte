@@ -73,7 +73,12 @@
 				</div>
 				<div class="bar-container">
 					{#if progress.nextBadge}
-						<span class="countdown">
+						<span
+							class="countdown"
+							title="{moment
+								.duration(progress.nextBadge.daysLeft, 'days')
+								.humanize(false, { d: Infinity })} left"
+						>
 							{$t("pages.store.subscription.badge_progress.left", {
 								values: {
 									duration: moment.duration(progress.nextBadge.daysLeft, "days").humanize(),
@@ -85,7 +90,7 @@
 				</div>
 				<div class="badge">
 					{#if progress.nextBadge}
-					<Badge badge={progress.nextBadge.badge} size={2.25 * 16} />
+						<Badge badge={progress.nextBadge.badge} size={2.25 * 16} />
 						<span>{progress.nextBadge.badge.name}</span>
 					{:else}
 						<div class="placeholder"></div>

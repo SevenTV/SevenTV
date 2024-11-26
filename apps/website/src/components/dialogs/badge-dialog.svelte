@@ -37,6 +37,7 @@
 	.badge-container {
 		margin: auto;
 		padding: 2rem;
+		text-align: center;
 
 		display: flex;
 		flex-direction: column;

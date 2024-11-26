@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, SimpleObject};
 use shared::database::emote_set::{EmoteSetId, EmoteSetKind};
+use shared::database::product::SubscriptionProductId;
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::role::RoleId;
 use shared::database::user::editor::EditorEmoteSetPermission;
@@ -15,6 +16,7 @@ use crate::http::guards::RateLimitGuard;
 use crate::http::middleware::session::Session;
 use crate::search::{search, sorted_results, SearchOptions};
 
+pub mod billing;
 pub mod connection;
 pub mod inventory;
 pub mod style;
@@ -259,6 +261,25 @@ impl User {
 
 	async fn inventory(&self) -> UserInventory {
 		UserInventory::from_user(&self.full_user)
+	}
+
+	async fn billing(&self, ctx: &Context<'_>, product_id: SubscriptionProductId) -> Result<billing::Billing, ApiError> {
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id != self.id && !authed_user.has(UserPermission::ManageBilling) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you are not allowed to see this user's billing information",
+			));
+		}
+
+		Ok(billing::Billing {
+			user_id: self.id,
+			product_id,
+		})
 	}
 }
 

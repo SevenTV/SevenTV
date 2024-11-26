@@ -4,7 +4,11 @@
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 
-	let { children }: { children: Snippet } = $props();
+	interface Props {
+		children: Snippet;
+	}
+
+	let { children }: Props = $props();
 </script>
 
 <div class="side-bar-layout">
@@ -17,12 +21,12 @@
 					<Star weight="fill" />
 				{/snippet}
 			</TabLink>
-			<!-- <TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>
+			<TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>
 				<PaintBrush />
 				{#snippet active()}
 					<PaintBrush weight="fill" />
 				{/snippet}
-			</TabLink> -->
+			</TabLink>
 		</nav>
 		<hr />
 		<label class="redeem">

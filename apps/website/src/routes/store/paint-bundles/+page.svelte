@@ -53,7 +53,8 @@
 	gradientColor="#27cfb1"
 />
 <section>
-	<div class="header">
+	Coming soon...
+	<!-- <div class="header">
 		<h2>{$t("common.paint_bundles")}</h2>
 		<div class="buttons">
 			<HideOn mobile>
@@ -83,9 +84,9 @@
 						<span class="new">{$t("common.new")}</span>
 					{/if}
 				</div>
-				<!-- {#each Array(3) as _}
+				{#each Array(3) as _}
 					<PaintPreview />
-				{/each} -->
+				{/each}
 				<div class="buttons">
 					<Button secondary>
 						{#snippet icon()}
@@ -107,77 +108,76 @@
 				</div>
 			</div>
 		{/each}
-	</div>
+	</div> -->
 </section>
 
 <style lang="scss">
 	section {
 		margin-top: 1rem;
-		margin-inline: auto;
-		max-width: 80rem;
+		// max-width: 80rem;
 	}
 
-	h2 {
-		font-size: 1.25rem;
-		font-weight: 700;
-	}
+	// h2 {
+	// 	font-size: 1.25rem;
+	// 	font-weight: 700;
+	// }
 
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 0.5rem;
+	// .header {
+	// 	display: flex;
+	// 	justify-content: space-between;
+	// 	align-items: center;
+	// 	gap: 0.5rem;
 
-		.buttons {
-			display: flex;
-			gap: 0.5rem;
-			align-items: center;
-		}
-	}
+	// 	.buttons {
+	// 		display: flex;
+	// 		gap: 0.5rem;
+	// 		align-items: center;
+	// 	}
+	// }
 
-	.grid {
-		margin-top: 1rem;
+	// .grid {
+	// 	margin-top: 1rem;
 
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
-		gap: 1rem;
-	}
+	// 	display: grid;
+	// 	grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+	// 	gap: 1rem;
+	// }
 
-	.bundle {
-		padding: 1rem 1.25rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		background-color: var(--bg-medium);
-		border-radius: 0.5rem;
+	// .bundle {
+	// 	padding: 1rem 1.25rem;
+	// 	display: flex;
+	// 	flex-direction: column;
+	// 	gap: 1rem;
+	// 	background-color: var(--bg-medium);
+	// 	border-radius: 0.5rem;
 
-		.header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
+	// 	.header {
+	// 		display: flex;
+	// 		justify-content: space-between;
+	// 		align-items: center;
 
-			.name {
-				font-weight: 500;
-			}
+	// 		.name {
+	// 			font-weight: 500;
+	// 		}
 
-			.new {
-				color: var(--store);
-				border: 1px solid var(--store);
-				padding: 0.2rem 0.5rem;
-				border-radius: 0.25rem;
-				font-size: 0.625rem;
-				text-transform: uppercase;
-			}
-		}
+	// 		.new {
+	// 			color: var(--store);
+	// 			border: 1px solid var(--store);
+	// 			padding: 0.2rem 0.5rem;
+	// 			border-radius: 0.25rem;
+	// 			font-size: 0.625rem;
+	// 			text-transform: uppercase;
+	// 		}
+	// 	}
 
-		.buttons {
-			display: flex;
-			gap: 0.5rem;
-			justify-content: flex-end;
-		}
+	// 	.buttons {
+	// 		display: flex;
+	// 		gap: 0.5rem;
+	// 		justify-content: flex-end;
+	// 	}
 
-		del {
-			font-size: 0.75rem;
-		}
-	}
+	// 	del {
+	// 		font-size: 0.75rem;
+	// 	}
+	// }
 </style>

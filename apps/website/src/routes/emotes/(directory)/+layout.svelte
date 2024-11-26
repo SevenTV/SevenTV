@@ -11,6 +11,7 @@
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
 	import { page } from "$app/stores";
+	import { type Page } from "@sveltejs/kit";
 	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";
 
@@ -85,14 +86,14 @@
 		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
 	});
 
-	function menuMatcher(id: string | null, _url: URL, href: string | undefined) {
+	function menuMatcher(page: Page, href: string | undefined) {
 		switch (href) {
 			case "/emotes":
-				return id?.startsWith("/emotes/(directory)/(emotes)") ?? false;
+				return page.route.id?.startsWith("/emotes/(directory)/(emotes)") ?? false;
 			case "/emotes/sets":
-				return id?.startsWith("/emotes/(directory)/sets") ?? false;
+				return page.route.id?.startsWith("/emotes/(directory)/sets") ?? false;
 			case "/emotes/bookmarked":
-				return id?.startsWith("/emotes/(directory)/bookmarked") ?? false;
+				return page.route.id?.startsWith("/emotes/(directory)/bookmarked") ?? false;
 		}
 		return false;
 	}

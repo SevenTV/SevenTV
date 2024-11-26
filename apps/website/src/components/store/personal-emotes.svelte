@@ -52,13 +52,15 @@
 	let personalEmoteSet = $derived($user ? loadPersonalEmoteSet($user.id) : undefined);
 </script>
 
-<StoreSection title={$t("common.personal_emotes")}>
-	{#await personalEmoteSet}
+{#await personalEmoteSet}
+	<StoreSection title={$t("common.personal_emotes")}>
 		<div class="container">
 			<Spinner />
 		</div>
-	{:then emoteSet}
-		{#if emoteSet}
+	</StoreSection>
+{:then emoteSet}
+	{#if emoteSet}
+		<StoreSection title={$t("common.personal_emotes")}>
 			<div class="container">
 				<EmoteSetPreview data={emoteSet} bg="light" />
 			</div>
@@ -68,11 +70,9 @@
 				{/snippet}
 				{$t("labels.edit")}
 			</Button>
-		{:else}
-			<div class="container">No Personal Set</div>
-		{/if}
-	{/await}
-</StoreSection>
+		</StoreSection>
+	{/if}
+{/await}
 
 <style lang="scss">
 	.container {

@@ -74,7 +74,7 @@
 				</Badge>
 			</Button> -->
 
-			{#if $page.url.pathname.startsWith("/store")}
+			<!-- {#if $page.url.pathname.startsWith("/store")}
 				<Button onclick={() => (cartDialogMode = "shown")}>
 					{#snippet icon()}
 						<Badge count={3}>
@@ -82,7 +82,7 @@
 						</Badge>
 					{/snippet}
 				</Button>
-			{/if}
+			{/if} -->
 
 			<!-- <Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
 				{#snippet icon()}
@@ -131,7 +131,7 @@
 			</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
-		{#if !$user}
+		{#if $user === null}
 			<Button hideOnDesktop onclick={() => ($showMobileMenu = !$showMobileMenu)}>
 				{#snippet icon()}
 					<List />

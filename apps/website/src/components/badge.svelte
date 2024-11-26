@@ -14,6 +14,6 @@
 </script>
 
 <BadgeDialog bind:mode={dialogMode} {badge} />
-<button onclick={showDialog} style="display: flex;">
-	<ResponsiveImage images={badge.images} height={size} title={badge.description} />
+<button onclick={showDialog} style="display: flex;" title={badge.description}>
+	<ResponsiveImage images={badge.images} height={size} />
 </button>

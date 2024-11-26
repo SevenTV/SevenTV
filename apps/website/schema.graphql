@@ -44,6 +44,11 @@ type BadgeProgressNextBadge {
 	percentage: Float!
 }
 
+type Billing {
+	badgeProgress: BadgeProgress!
+	subscriptionInfo: SubscriptionInfo!
+}
+
 
 type Color {
 	a: Int!
@@ -441,6 +446,8 @@ enum ImageProcessorEvent {
 }
 
 
+scalar InvoiceId
+
 """
 A scalar that can represent any JSON Object value.
 """
@@ -545,12 +552,28 @@ enum Platform {
 	TWITCH
 }
 
+type Price {
+	amount: Int!
+	currency: String!
+}
+
 scalar ProductId
+
+type ProductQuery {
+	subscriptionProduct(id: Id!): SubscriptionProduct
+	subscriptionProducts: [SubscriptionProduct!]!
+}
+
+type ProviderSubscriptionId {
+	id: String!
+	provider: SubscriptionProvider!
+}
 
 type Query {
 	backdoor: BackdoorQuery!
 	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
+	products: ProductQuery!
 	search: SearchQuery!
 	store: StoreQuery!
 	users: UserQuery!
@@ -626,17 +649,101 @@ type SpecialEvent {
 }
 
 type StoreQuery {
-	badgeProgress: BadgeProgress!
 	monthlyPaints: [Paint!]!
 }
 
+
+type Subscription {
+	createdAt: DateTime!
+	endedAt: DateTime
+	id: SubscriptionId!
+	searchUpdatedAt: DateTime
+	state: SubscriptionState!
+	updatedAt: DateTime!
+}
 
 type SubscriptionBenefit {
 	id: Id!
 	name: String!
 }
 
-scalar SubscriptionId
+type SubscriptionId {
+	productId: Id!
+	userId: Id!
+}
+
+type SubscriptionInfo {
+	activePeriod: SubscriptionPeriod
+	totalDays: Int!
+}
+
+type SubscriptionPeriod {
+	autoRenew: Boolean!
+	createdBy: SubscriptionPeriodCreatedBy!
+	end: DateTime!
+	giftedBy: User
+	giftedById: Id
+	id: Id!
+	isTrial: Boolean!
+	productId: ProductId!
+	providerId: ProviderSubscriptionId
+	searchUpdatedAt: DateTime
+	start: DateTime!
+	subscription: Subscription!
+	subscriptionId: SubscriptionId!
+	subscriptionProduct: SubscriptionProduct!
+	subscriptionProductVariant: SubscriptionProductVariant!
+	updatedAt: DateTime!
+}
+
+union SubscriptionPeriodCreatedBy = SubscriptionPeriodCreatedByRedeemCode | SubscriptionPeriodCreatedByInvoice | SubscriptionPeriodCreatedBySystem
+
+type SubscriptionPeriodCreatedByInvoice {
+	invoiceId: InvoiceId!
+}
+
+type SubscriptionPeriodCreatedByRedeemCode {
+	redeemCodeId: Id!
+}
+
+type SubscriptionPeriodCreatedBySystem {
+	reason: String
+}
+
+type SubscriptionProduct {
+	benefits: [SubscriptionBenefit!]!
+	defaultVariant: SubscriptionProductVariant!
+	description: String
+	id: Id!
+	name: String!
+	providerId: String!
+	searchUpdatedAt: DateTime
+	updatedAt: DateTime!
+	variants: [SubscriptionProductVariant!]!
+}
+
+enum SubscriptionProductKind {
+	MONTHLY
+	YEARLY
+}
+
+type SubscriptionProductVariant {
+	id: ProductId!
+	kind: SubscriptionProductKind!
+	paypalId: String
+	price(preferredCurrency: String): Price!
+}
+
+enum SubscriptionProvider {
+	PAY_PAL
+	STRIPE
+}
+
+enum SubscriptionState {
+	ACTIVE
+	CANCEL_AT_END
+	ENDED
+}
 
 input Tags {
 	match: TagsMatch!
@@ -658,6 +765,7 @@ type TicketPermission {
 }
 
 type User {
+	billing(productId: Id!): Billing!
 	connections: [UserConnection!]!
 	editableEmoteSetIds: [Id!]!
 	editors: [UserEditor!]!

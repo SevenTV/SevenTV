@@ -4,45 +4,71 @@
 	import StoreSection from "./store-section.svelte";
 	import { CaretDown, DotsThreeVertical, Gift, PaintBrush, Star, Warning } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
-
-	let { subbed = $bindable(false) }: { subbed?: boolean } = $props();
 	import DropDown from "../drop-down.svelte";
+	import {
+		SubscriptionState,
+		type SubscriptionInfo,
+		type SubscriptionProduct,
+	} from "$/gql/graphql";
+
+	let { subInfo, product }: { subInfo: SubscriptionInfo; product: SubscriptionProduct } = $props();
+
+	function renewSubscription() {
+		console.log("Cancel subscription");
+	}
 </script>
 
-<StoreSection title={$t("common.your_subscription")}>
+<StoreSection title={subInfo.activePeriod ? $t("common.your_subscription") : "Become a subscriber"}>
 	{#snippet header()}
 		<div class="buttons">
-			<Button
-				secondary
-				hideOnMobile
-				onclick={() => (subbed = true)}
-				style={subbed ? "color: var(--store)" : undefined}
-			>
-				{#snippet icon()}
-					<Star weight={subbed ? "fill" : "bold"} />
-				{/snippet}
-				<span>
-					{subbed
-						? $t("pages.store.subscription.subscribed")
-						: $t("pages.store.subscription.subscribe")}
-				</span>
-				{#snippet iconRight()}
-					<CaretDown />
-				{/snippet}
-			</Button>
-			<Button
-				secondary
-				hideOnDesktop
-				onclick={() => (subbed = true)}
-				style={subbed ? "color: var(--store)" : undefined}
-			>
-				{#snippet icon()}
-					<Star weight={subbed ? "fill" : "bold"} />
-				{/snippet}
-				{#snippet iconRight()}
-					<CaretDown />
-				{/snippet}
-			</Button>
+			{#if subInfo.activePeriod}
+				<Button secondary hideOnMobile style="color: var(--store)">
+					{#snippet icon()}
+						<Star weight="fill" />
+					{/snippet}
+					<span>
+						{$t("pages.store.subscription.subscribed")}
+					</span>
+				</Button>
+				<Button secondary hideOnDesktop style="color: var(--store)">
+					{#snippet icon()}
+						<Star weight="fill" />
+					{/snippet}
+				</Button>
+			{:else}
+				<DropDown>
+					{#snippet dropdown()}
+						{#each product.variants as variant}
+							<Button big>
+								{#snippet icon()}
+									<Star />
+								{/snippet}
+								{variant.kind} ({variant.price.amount}
+								{variant.price.currency})
+							</Button>
+						{/each}
+					{/snippet}
+					<Button secondary hideOnMobile>
+						{#snippet icon()}
+							<Star weight="bold" />
+						{/snippet}
+						<span>
+							{$t("pages.store.subscription.subscribe")}
+						</span>
+						{#snippet iconRight()}
+							<CaretDown />
+						{/snippet}
+					</Button>
+					<Button secondary hideOnDesktop>
+						{#snippet icon()}
+							<Star weight="bold" />
+						{/snippet}
+						{#snippet iconRight()}
+							<CaretDown />
+						{/snippet}
+					</Button>
+				</DropDown>
+			{/if}
 
 			<Button secondary hideOnMobile>
 				{#snippet icon()}
@@ -64,12 +90,23 @@
 						{/snippet}
 						Your Cosmetics
 					</Button>
-					<Button big style="color: var(--danger)">
-						{#snippet icon()}
-							<Warning />
-						{/snippet}
-						Cancel Subscription
-					</Button>
+					{#if subInfo.activePeriod && !subInfo.activePeriod.giftedBy}
+						{#if subInfo.activePeriod.subscription.state === SubscriptionState.Active}
+							<Button big style="color: var(--danger)">
+								{#snippet icon()}
+									<Warning />
+								{/snippet}
+								Cancel Subscription
+							</Button>
+						{:else if subInfo.activePeriod.subscription.state === SubscriptionState.CancelAtEnd}
+							<Button big style="color: var(--store)">
+								{#snippet icon()}
+									<Star />
+								{/snippet}
+								Reactivate Subscription
+							</Button>
+						{/if}
+					{/if}
 				{/snippet}
 				<Button secondary>
 					{#snippet icon()}
@@ -79,7 +116,7 @@
 			</DropDown>
 		</div>
 	{/snippet}
-	<SubInfo />
+	<SubInfo data={subInfo} />
 </StoreSection>
 
 <style lang="scss">

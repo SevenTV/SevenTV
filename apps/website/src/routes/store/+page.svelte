@@ -7,51 +7,157 @@
 	import PersonalEmotes from "$/components/store/personal-emotes.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
 	import { graphql } from "$/gql";
-	import { EmoteSetKind, type BadgeProgress, type Paint } from "$/gql/graphql";
+	import {
+		type BadgeProgress,
+		type Paint,
+		type SubscriptionInfo,
+		type SubscriptionProduct,
+	} from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
+	import { user } from "$/lib/auth";
+	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
+	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 
-	let subbed = $state(false);
-
-	async function queryStore() {
+	async function queryStore(userId: string) {
 		let res = await gqlClient().query(
 			graphql(`
-				query StoreData {
-					store {
-						badgeProgress {
-							currentBadge {
+				query StoreData($userId: Id!, $productId: Id!) {
+					products {
+						subscriptionProduct(id: $productId) {
+							id
+							name
+							variants {
 								id
-								name
-								description
-								images {
-									url
-									mime
-									size
-									scale
-									width
-									height
-									frameCount
+								price {
+									amount
+									currency
 								}
-							}
-							nextBadge {
-								badge {
-									id
-									name
-									images {
-										url
-										mime
-										size
-										scale
-										width
-										height
-										frameCount
-									}
-								}
-								percentage
-								daysLeft
+								kind
 							}
 						}
+					}
+					users {
+						user(id: $userId) {
+							billing(productId: $productId) {
+								badgeProgress {
+									currentBadge {
+										id
+										name
+										description
+										images {
+											url
+											mime
+											size
+											scale
+											width
+											height
+											frameCount
+										}
+									}
+									nextBadge {
+										badge {
+											id
+											name
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												height
+												frameCount
+											}
+										}
+										percentage
+										daysLeft
+									}
+								}
+								subscriptionInfo {
+									totalDays
+									activePeriod {
+										subscriptionProductVariant {
+											kind
+										}
+										subscription {
+											state
+										}
+										end
+										giftedBy {
+											id
+											mainConnection {
+												platformDisplayName
+											}
+											style {
+												activePaint {
+													id
+													name
+													data {
+														layers {
+															id
+															ty {
+																__typename
+																... on PaintLayerTypeSingleColor {
+																	color {
+																		hex
+																	}
+																}
+																... on PaintLayerTypeLinearGradient {
+																	angle
+																	repeating
+																	stops {
+																		at
+																		color {
+																			hex
+																		}
+																	}
+																}
+																... on PaintLayerTypeRadialGradient {
+																	repeating
+																	stops {
+																		at
+																		color {
+																			hex
+																		}
+																	}
+																	shape
+																}
+																... on PaintLayerTypeImage {
+																	images {
+																		url
+																		mime
+																		size
+																		scale
+																		width
+																		height
+																		frameCount
+																	}
+																}
+															}
+															opacity
+														}
+														shadows {
+															color {
+																hex
+															}
+															offsetX
+															offsetY
+															blur
+														}
+													}
+												}
+											}
+											highestRoleColor {
+												hex
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					store {
 						monthlyPaints {
 							id
 							name
@@ -112,52 +218,72 @@
 					}
 				}
 			`),
-			{},
+			{
+				userId,
+				productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
+			},
 		);
 
-		return res.data?.store;
+		return res.data;
 	}
 
-	let storeData = $derived(queryStore());
+	let data = $derived($user ? queryStore($user.id) : undefined);
 </script>
 
 <svelte:head>
 	<title>{$t("common.subscriptions", { values: { count: 1 } })} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
+{#snippet banner(subbed: boolean)}
+	<Banner
+		title={subbed
+			? $t("pages.store.subscription.banner_title_subbed")
+			: $t("pages.store.subscription.banner_title_unsubbed")}
+		subtitle={subbed
+			? $t("pages.store.subscription.banner_subtitle_subbed")
+			: $t("pages.store.subscription.banner_subtitle_unsubbed")}
+	>
+		<div class="banner-icons hide-on-mobile">
+			<PaintBrush size="1.8rem" />
+			<UserCircle size="1.8rem" />
+			<Seal size="1.8rem" />
+			<!-- <Ticket size="1.8rem" /> -->
+			<Smiley size="1.8rem" />
+		</div>
+	</Banner>
+{/snippet}
+
+{#await data}
+	{@render banner(false)}
+{:then data}
+	{@render banner(!!data?.users.user?.billing.subscriptionInfo.activePeriod)}
+{/await}
 <!-- All things called grid here aren't actually css grids -->
-<Banner
-	title={subbed
-		? $t("pages.store.subscription.banner_title_subbed")
-		: $t("pages.store.subscription.banner_title_unsubbed")}
-	subtitle={subbed
-		? $t("pages.store.subscription.banner_subtitle_subbed")
-		: $t("pages.store.subscription.banner_subtitle_unsubbed")}
->
-	<div class="banner-icons hide-on-mobile">
-		<PaintBrush size="1.8rem" />
-		<UserCircle size="1.8rem" />
-		<Seal size="1.8rem" />
-		<!-- <Ticket size="1.8rem" /> -->
-		<Smiley size="1.8rem" />
-	</div>
-</Banner>
 <div class="grid">
-	{#if !subbed}
+	{#await data}
 		<Benefits />
-	{/if}
+	{:then data}
+		{#if !data?.users.user?.billing.subscriptionInfo.activePeriod}
+			<Benefits />
+		{/if}
+	{/await}
 	<div class="top-grid">
-		{#await storeData}
+		{#await data}
 			<Spinner />
-		{:then storeData}
-			{#if storeData}
+		{:then data}
+			{#if data}
 				<div class="subgrid">
-					<YourSub bind:subbed />
-					{#if storeData.badgeProgress}
-						<BadgeProgressComponent progress={storeData.badgeProgress as BadgeProgress} />
+					{#if data.users.user && data.products.subscriptionProduct}
+						<YourSub
+							subInfo={data.users.user.billing.subscriptionInfo as SubscriptionInfo}
+							product={data.products.subscriptionProduct as SubscriptionProduct}
+						/>
+						<BadgeProgressComponent
+							progress={data.users.user.billing.badgeProgress as BadgeProgress}
+						/>
 					{/if}
 				</div>
-				<MonthlyPaints paints={storeData.monthlyPaints as Paint[]} />
+				<MonthlyPaints paints={data.store.monthlyPaints as Paint[]} />
 			{/if}
 		{/await}
 	</div>
@@ -167,8 +293,13 @@
 		<PersonalEmotes />
 		<TopGifters />
 	</div> -->
-	{#if subbed}
-		<Benefits />
+	{#await data then data}
+		{#if data?.users.user?.billing.subscriptionInfo.activePeriod}
+			<Benefits />
+		{/if}
+	{/await}
+	{#if $user === null}
+		<SignInDialog mode="shown-without-close" />
 	{/if}
 	<!-- <Faq /> -->
 </div>

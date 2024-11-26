@@ -8,7 +8,19 @@ use crate::database::user::UserId;
 use crate::database::{Id, IdFromStrError, MongoCollection};
 use crate::typesense::types::TypesenseType;
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+	Debug,
+	Clone,
+	Copy,
+	serde::Serialize,
+	serde::Deserialize,
+	Hash,
+	PartialEq,
+	Eq,
+	PartialOrd,
+	Ord,
+	async_graphql::SimpleObject,
+)]
 pub struct SubscriptionId {
 	pub user_id: UserId,
 	pub product_id: SubscriptionProductId,
@@ -32,8 +44,6 @@ impl FromStr for SubscriptionId {
 		})
 	}
 }
-
-async_graphql::scalar!(SubscriptionId);
 
 // All subscriptions that ever existed, not only active ones
 // This is only used to save data about a subscription that could also be

@@ -177,6 +177,12 @@
 
 	let results = $derived(search(query));
 
+	$effect(() => {
+		results.then(() => {
+			input.focus();
+		});
+	});
+
 	let input: ReturnType<typeof TextInput>;
 
 	function onkeydown(event: KeyboardEvent) {

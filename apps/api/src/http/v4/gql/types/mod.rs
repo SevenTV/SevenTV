@@ -12,6 +12,7 @@ mod product;
 mod profile_picture;
 mod role;
 mod search;
+mod subscription;
 mod user;
 
 pub use badge::*;
@@ -28,4 +29,5 @@ pub use product::*;
 pub use profile_picture::*;
 pub use role::*;
 pub use search::*;
+pub use subscription::*;
 pub use user::*;
