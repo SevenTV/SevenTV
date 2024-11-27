@@ -269,7 +269,9 @@
 	{/await}
 	<div class="top-grid">
 		{#await data}
-			<Spinner />
+			<div class="spinner-container">
+				<Spinner />
+			</div>
 		{:then data}
 			{#if data}
 				<div class="subgrid">
@@ -339,6 +341,10 @@
 			gap: 1rem;
 			flex-wrap: wrap;
 		}
+	}
+
+	.spinner-container {
+		margin: 0 auto;
 	}
 
 	// .three-grid {

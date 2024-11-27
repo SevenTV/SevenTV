@@ -14,11 +14,11 @@ use shared::database::user::UserId;
 use shared::database::{Id, MongoCollection};
 
 use super::metadata::{CheckoutSessionMetadata, StripeMetadata, SubscriptionMetadata};
-use super::{create_checkout_session_params, find_or_create_customer, CheckoutProduct};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
 use crate::ratelimit::RateLimitRequest;
+use crate::stripe_common::{create_checkout_session_params, find_or_create_customer, CheckoutProduct};
 
 pub async fn grant_entitlements(
 	global: &Arc<Global>,
@@ -254,6 +254,21 @@ pub async fn redeem(
 				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription product")
 			})?;
 
+			let success_url = global
+				.config
+				.api
+				.website_origin
+				.join("/subscribe/complete?with_provider=stripe")
+				.unwrap()
+				.to_string();
+			let cancel_url = global
+				.config
+				.api
+				.website_origin
+				.join("/subscribe/cancel?with_provider=stripe")
+				.unwrap()
+				.to_string();
+
 			let mut params = create_checkout_session_params(
 				global,
 				session.ip(),
@@ -261,6 +276,8 @@ pub async fn redeem(
 				CheckoutProduct::Price(variant.id.0.clone()),
 				product.default_currency,
 				&variant.currency_prices,
+				&success_url,
+				&cancel_url,
 			)
 			.await;
 

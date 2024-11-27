@@ -10,11 +10,68 @@
 		type SubscriptionInfo,
 		type SubscriptionProduct,
 	} from "$/gql/graphql";
+	import { gqlClient } from "$/lib/gql";
+	import { graphql } from "$/gql";
+	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
+	import { user } from "$/lib/auth";
+	import Spinner from "../spinner.svelte";
 
 	let { subInfo, product }: { subInfo: SubscriptionInfo; product: SubscriptionProduct } = $props();
 
-	function renewSubscription() {
-		console.log("Cancel subscription");
+	let renewSubLoading = $state(false);
+
+	async function renewSubscription() {
+		if (!$user) {
+			return;
+		}
+
+		renewSubLoading = true;
+
+		await gqlClient()
+			.mutation(
+				graphql(`
+					mutation RenewSubscription($userId: Id!, $productId: Id!) {
+						billing(userId: $userId) {
+							renewSubscription(productId: $productId)
+						}
+					}
+				`),
+				{
+					userId: $user.id,
+					productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
+				},
+			)
+			.toPromise();
+
+		renewSubLoading = false;
+	}
+
+	let cancelSubLoading = $state(false);
+
+	async function cancelSubscription() {
+		if (!$user) {
+			return;
+		}
+
+		cancelSubLoading = true;
+
+		await gqlClient()
+			.mutation(
+				graphql(`
+					mutation CancelSubscription($userId: Id!, $productId: Id!) {
+						billing(userId: $userId) {
+							cancelSubscription(productId: $productId)
+						}
+					}
+				`),
+				{
+					userId: $user.id,
+					productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
+				},
+			)
+			.toPromise();
+
+		cancelSubLoading = false;
 	}
 </script>
 
@@ -92,16 +149,24 @@
 					</Button>
 					{#if subInfo.activePeriod && !subInfo.activePeriod.giftedBy}
 						{#if subInfo.activePeriod.subscription.state === SubscriptionState.Active}
-							<Button big style="color: var(--danger)">
+							<Button big style="color: var(--danger)" onclick={cancelSubscription}>
 								{#snippet icon()}
-									<Warning />
+									{#if cancelSubLoading}
+										<Spinner />
+									{:else}
+										<Warning />
+									{/if}
 								{/snippet}
 								Cancel Subscription
 							</Button>
 						{:else if subInfo.activePeriod.subscription.state === SubscriptionState.CancelAtEnd}
-							<Button big style="color: var(--store)">
+							<Button big style="color: var(--store)" onclick={renewSubscription}>
 								{#snippet icon()}
-									<Star />
+									{#if renewSubLoading}
+										<Spinner />
+									{:else}
+										<Star />
+									{/if}
 								{/snippet}
 								Reactivate Subscription
 							</Button>

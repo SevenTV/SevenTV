@@ -1,11 +1,15 @@
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
 
+use async_graphql::Context;
 use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::{ProductId, SubscriptionBenefitId, SubscriptionProductId};
 use shared::database::user::UserId;
 
+use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::middleware::session::Session;
 
 #[derive(async_graphql::SimpleObject)]
 #[graphql(complex)]
@@ -89,12 +93,28 @@ pub struct Price {
 
 #[async_graphql::ComplexObject]
 impl SubscriptionProductVariant {
-	async fn price(&self, preferred_currency: Option<String>) -> Result<Price, ApiError> {
-		let currency = match preferred_currency {
-			Some(c) => stripe::Currency::from_str(&c)
-				.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid currency"))?,
-			None => self.default_currency,
-		};
+	async fn price(&self, ctx: &Context<'_>, preferred_currency: Option<String>) -> Result<Price, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+
+		let mut currency = self.default_currency;
+
+		if let Some(country_code) = global.geoip().and_then(|g| g.lookup(session.ip())).and_then(|c| c.iso_code) {
+			if let Ok(Some(global)) = global.global_config_loader.load(()).await {
+				if let Some(country_currency) = global.country_currency_overrides.get(country_code) {
+					currency = *country_currency;
+				}
+			}
+		}
+
+		if let Some(c) = preferred_currency {
+			currency = stripe::Currency::from_str(&c)
+				.map_err(|_| ApiError::bad_request(ApiErrorCode::BadRequest, "invalid currency"))?;
+		}
 
 		match self.currency_prices.get(&currency) {
 			Some(c) => Ok(Price {

@@ -49,6 +49,12 @@ type Billing {
 	subscriptionInfo: SubscriptionInfo!
 }
 
+type BillingMutation {
+	cancelSubscription(productId: Id!): Boolean!
+	renewSubscription(productId: Id!): Boolean!
+	subscribe(variantId: ProductId!): SubscribeResponse!
+}
+
 
 type Color {
 	a: Int!
@@ -141,6 +147,11 @@ type EmoteModerationRequestPermission {
 	manage: Boolean!
 }
 
+type EmoteMutation {
+	emote(id: Id!): EmoteOperation!
+	emotes(ids: [Id!]!): EmoteBatchOperation!
+}
+
 type EmoteOperation {
 	delete(reason: String): Emote!
 	flags(flags: EmoteFlagsInput!): Emote!
@@ -231,6 +242,10 @@ enum EmoteSetKind {
 	NORMAL
 	PERSONAL
 	SPECIAL
+}
+
+type EmoteSetMutation {
+	emoteSet(id: Id!): EmoteSetOperation!
 }
 
 type EmoteSetOperation {
@@ -454,9 +469,9 @@ A scalar that can represent any JSON Object value.
 scalar JSONObject
 
 type Mutation {
-	emote(id: Id!): EmoteOperation!
-	emoteSet(id: Id!): EmoteSetOperation!
-	emotes(ids: [Id!]!): EmoteBatchOperation!
+	billing(userId: Id!): BillingMutation!
+	emoteSets: EmoteSetMutation!
+	emotes: EmoteMutation!
 }
 
 type Paint {
@@ -652,6 +667,10 @@ type StoreQuery {
 	monthlyPaints: [Paint!]!
 }
 
+
+type SubscribeResponse {
+	checkoutUrl: String!
+}
 
 type Subscription {
 	createdAt: DateTime!

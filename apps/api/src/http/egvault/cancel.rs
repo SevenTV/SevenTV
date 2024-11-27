@@ -12,7 +12,6 @@ use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::Id;
 
-use super::EgVaultMutexKey;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Path;
@@ -20,6 +19,7 @@ use crate::http::middleware::session::Session;
 use crate::http::v3::rest::users::TargetUser;
 use crate::paypal_api;
 use crate::ratelimit::RateLimitRequest;
+use crate::stripe_common::EgVaultMutexKey;
 use crate::transactions::{transaction_with_mutex, TransactionError};
 
 pub async fn cancel_subscription(

@@ -11,12 +11,12 @@ use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
 use super::metadata::{CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
-use super::{create_checkout_session_params, find_or_create_customer, CheckoutProduct};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Query;
 use crate::http::middleware::session::Session;
 use crate::ratelimit::RateLimitRequest;
+use crate::stripe_common::{create_checkout_session_params, find_or_create_customer, CheckoutProduct, Prefill};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct SubscribeQuery {
@@ -32,13 +32,6 @@ pub struct SubscribeQuery {
 #[derive(Debug, serde::Deserialize)]
 pub struct SubscribeBody {
 	prefill: Prefill,
-}
-
-#[derive(Debug, serde::Deserialize)]
-pub struct Prefill {
-	pub first_name: String,
-	pub last_name: String,
-	pub email: String,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -125,6 +118,21 @@ pub async fn subscribe(
 			}
 		};
 
+		let success_url = global
+			.config
+			.api
+			.website_origin
+			.join("/subscribe/complete?with_provider=stripe")
+			.unwrap()
+			.to_string();
+		let cancel_url = global
+			.config
+			.api
+			.website_origin
+			.join("/subscribe/cancel?with_provider=stripe")
+			.unwrap()
+			.to_string();
+
 		let mut params = create_checkout_session_params(
 			&global,
 			session.ip(),
@@ -135,6 +143,8 @@ pub async fn subscribe(
 			},
 			product.default_currency,
 			&variant.currency_prices,
+			&success_url,
+			&cancel_url,
 		)
 		.await;
 

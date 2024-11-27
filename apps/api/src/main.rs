@@ -15,6 +15,7 @@ mod paypal_api;
 mod ratelimit;
 mod search;
 mod stripe_client;
+mod stripe_common;
 mod sub_refresh_job;
 mod transactions;
 
