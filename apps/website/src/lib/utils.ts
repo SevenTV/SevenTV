@@ -1,10 +1,10 @@
 import type { Role } from "$/gql/graphql";
 import { getNumberFormatter } from "svelte-i18n";
 
-export function priceFormat() {
+export function priceFormat(currency: string) {
 	return getNumberFormatter({
 		style: "currency",
-		currency: "USD",
+		currency,
 	});
 }
 

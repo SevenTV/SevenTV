@@ -6,7 +6,7 @@
 	import { user } from "$/lib/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
-	import { List, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
+	import { List, MagnifyingGlass } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import { type DialogMode } from "../dialogs/dialog.svelte";
@@ -15,8 +15,6 @@
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import GlobalSearch from "./global-search.svelte";
 	import UserName from "../user-name.svelte";
-	import Badge from "../number-badge.svelte";
-	import { page } from "$app/stores";
 
 	let cartDialogMode: DialogMode = $state("hidden");
 </script>

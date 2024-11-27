@@ -15,5 +15,5 @@
 
 <BadgeDialog bind:mode={dialogMode} {badge} />
 <button onclick={showDialog} style="display: flex;" title={badge.description}>
-	<ResponsiveImage images={badge.images} height={size} />
+	<ResponsiveImage images={badge.images} width={size} height={size} />
 </button>

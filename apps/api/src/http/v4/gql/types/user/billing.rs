@@ -165,21 +165,19 @@ impl Billing {
 
 				current_badge = Some((badge, current_benefit_days));
 			} else {
-				let next_period = if age.expected_end > chrono::Utc::now() { 1.0 } else { 0.0 };
-
 				let (next_benefit_days, total_days) = match &b.condition {
 					SubscriptionBenefitCondition::Duration(shared::database::duration::DurationUnit::Days(d)) => {
-						(*d as f64, age.days as f64 + next_period)
+						(*d as f64, age.days as f64 + 1.0)
 					}
 					SubscriptionBenefitCondition::Duration(shared::database::duration::DurationUnit::Months(m)) => {
 						let nb_days = *m as f64 * (365.25 / 12.0);
-						let total_days = (age.months as f64 + next_period) * (365.25 / 12.0) + age.extra.num_days() as f64;
+						let total_days = (age.months as f64 + 1.0) * (365.25 / 12.0) + age.extra.num_days() as f64;
 						(nb_days, total_days)
 					}
 					_ => unreachable!(),
 				};
 
-				let current_benefit_days = current_badge.map(|(_, d)| d).unwrap_or(0.0);
+				let current_benefit_days = current_badge.map(|(_, d)| d).unwrap_or(365.25 / 12.0);
 
 				next_badge = Some(BadgeProgressNextBadge {
 					badge_id: badge,

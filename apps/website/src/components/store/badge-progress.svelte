@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { DotsThreeVertical, PaintBrush } from "phosphor-svelte";
+	import { DotsThreeVertical, PaintBrush, Sparkle } from "phosphor-svelte";
 	import StoreSection from "./store-section.svelte";
 	import Button from "../input/button.svelte";
 	import { t } from "svelte-i18n";
@@ -68,11 +68,14 @@
 						<Badge badge={progress.currentBadge} size={2.25 * 16} />
 						<span>{progress.currentBadge.name}</span>
 					{:else}
-						<div class="placeholder"></div>
+						<div class="placeholder">
+							<Sparkle size={1.2 * 16} color="var(--store)" />
+						</div>
+						<span>Free</span>
 					{/if}
 				</div>
 				<div class="bar-container">
-					{#if progress.nextBadge}
+					{#if progress.nextBadge?.daysLeft}
 						<span
 							class="countdown"
 							title="{moment
@@ -188,6 +191,10 @@
 				height: 2.25rem;
 				background-color: var(--secondary);
 				border-radius: 0.5rem;
+
+				display: flex;
+				justify-content: center;
+				align-items: center;
 			}
 		}
 
@@ -211,10 +218,13 @@
 				align-self: stretch;
 				height: 0.25rem;
 
-				&::-webkit-progress-value,
 				&::-moz-progress-bar {
 					background: linear-gradient(90deg, #5d25fe, #ff36f7);
 				}
+			}
+
+			::-webkit-progress-value {
+				background: linear-gradient(90deg, #5d25fe, #ff36f7);
 			}
 		}
 	}

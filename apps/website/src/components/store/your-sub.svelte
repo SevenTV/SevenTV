@@ -6,61 +6,151 @@
 	import { t } from "svelte-i18n";
 	import DropDown from "../drop-down.svelte";
 	import {
+		SubscriptionProductKind,
 		SubscriptionState,
 		type SubscriptionInfo,
 		type SubscriptionProduct,
+		type SubscriptionProductVariant,
 	} from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import { user } from "$/lib/auth";
 	import Spinner from "../spinner.svelte";
+	import type { DialogMode } from "../dialogs/dialog.svelte";
+	import CancelSubscriptionDialog from "../dialogs/cancel-subscription-dialog.svelte";
+	import { priceFormat } from "$/lib/utils";
 
-	let { subInfo, product }: { subInfo: SubscriptionInfo; product: SubscriptionProduct } = $props();
-
-	let renewSubLoading = $state(false);
-
-	async function renewSubscription() {
-		if (!$user) {
-			return;
-		}
-
-		renewSubLoading = true;
-
-		await gqlClient()
-			.mutation(
-				graphql(`
-					mutation RenewSubscription($userId: Id!, $productId: Id!) {
-						billing(userId: $userId) {
-							renewSubscription(productId: $productId)
-						}
-					}
-				`),
-				{
-					userId: $user.id,
-					productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
-				},
-			)
-			.toPromise();
-
-		renewSubLoading = false;
+	interface Props {
+		subInfo: SubscriptionInfo;
+		product: SubscriptionProduct;
 	}
 
-	let cancelSubLoading = $state(false);
+	let { subInfo = $bindable(), product }: Props = $props();
 
-	async function cancelSubscription() {
+	let subscribeLoading = $state<string>();
+
+	async function subscribe(variantId: string) {
 		if (!$user) {
 			return;
 		}
 
-		cancelSubLoading = true;
+		subscribeLoading = variantId;
 
-		await gqlClient()
+		const res = await gqlClient().mutation(
+			graphql(`
+				mutation Subscribe($userId: Id!, $variantId: ProductId!) {
+					billing(userId: $userId) {
+						subscribe(variantId: $variantId) {
+							checkoutUrl
+						}
+					}
+				}
+			`),
+			{ userId: $user.id, variantId },
+		);
+
+		if (res.data) {
+			window.location.href = res.data.billing.subscribe.checkoutUrl;
+		}
+
+		subscribeLoading = undefined;
+	}
+
+	let reactivateSubLoading = $state(false);
+
+	async function reactivateSubscription() {
+		if (!$user) {
+			return;
+		}
+
+		reactivateSubLoading = true;
+
+		const res = await gqlClient()
 			.mutation(
 				graphql(`
-					mutation CancelSubscription($userId: Id!, $productId: Id!) {
+					mutation ReactivateSubscription($userId: Id!, $productId: Id!) {
 						billing(userId: $userId) {
-							cancelSubscription(productId: $productId)
+							reactivateSubscription(productId: $productId) {
+								totalDays
+								activePeriod {
+									subscriptionProductVariant {
+										kind
+									}
+									subscription {
+										state
+									}
+									end
+									giftedBy {
+										id
+										mainConnection {
+											platformDisplayName
+										}
+										style {
+											activePaint {
+												id
+												name
+												data {
+													layers {
+														id
+														ty {
+															__typename
+															... on PaintLayerTypeSingleColor {
+																color {
+																	hex
+																}
+															}
+															... on PaintLayerTypeLinearGradient {
+																angle
+																repeating
+																stops {
+																	at
+																	color {
+																		hex
+																	}
+																}
+															}
+															... on PaintLayerTypeRadialGradient {
+																repeating
+																stops {
+																	at
+																	color {
+																		hex
+																	}
+																}
+																shape
+															}
+															... on PaintLayerTypeImage {
+																images {
+																	url
+																	mime
+																	size
+																	scale
+																	width
+																	height
+																	frameCount
+																}
+															}
+														}
+														opacity
+													}
+													shadows {
+														color {
+															hex
+														}
+														offsetX
+														offsetY
+														blur
+													}
+												}
+											}
+										}
+										highestRoleColor {
+											hex
+										}
+									}
+								}
+							}
 						}
 					}
 				`),
@@ -71,10 +161,36 @@
 			)
 			.toPromise();
 
-		cancelSubLoading = false;
+		if (res.data) {
+			subInfo = res.data.billing.reactivateSubscription as SubscriptionInfo;
+		}
+
+		reactivateSubLoading = false;
+	}
+
+	let cancelSubDialog: DialogMode = $state("hidden");
+
+	function variantName(variant: SubscriptionProductVariant) {
+		let name;
+
+		switch (variant.kind) {
+			case SubscriptionProductKind.Monthly:
+				name = "Monthly";
+				break;
+			case SubscriptionProductKind.Yearly:
+				name = "Yearly";
+				break;
+			default:
+				name = variant.kind;
+		}
+
+		const price = priceFormat(variant.price.currency).format(variant.price.amount / 100);
+
+		return `${name} – ${price}`;
 	}
 </script>
 
+<CancelSubscriptionDialog bind:mode={cancelSubDialog} bind:subInfo />
 <StoreSection title={subInfo.activePeriod ? $t("common.your_subscription") : "Become a subscriber"}>
 	{#snippet header()}
 		<div class="buttons">
@@ -96,12 +212,20 @@
 				<DropDown>
 					{#snippet dropdown()}
 						{#each product.variants as variant}
-							<Button big>
+							<Button
+								big
+								onclick={() => subscribe(variant.id)}
+								disabled={subscribeLoading !== undefined}
+								style="width: 100%"
+							>
 								{#snippet icon()}
-									<Star />
+									{#if subscribeLoading === variant.id}
+										<Spinner />
+									{:else}
+										<Star />
+									{/if}
 								{/snippet}
-								{variant.kind} ({variant.price.amount}
-								{variant.price.currency})
+								{variantName(variant)}
 							</Button>
 						{/each}
 					{/snippet}
@@ -147,22 +271,23 @@
 						{/snippet}
 						Your Cosmetics
 					</Button>
-					{#if subInfo.activePeriod && !subInfo.activePeriod.giftedBy}
+					{#if subInfo.activePeriod}
 						{#if subInfo.activePeriod.subscription.state === SubscriptionState.Active}
-							<Button big style="color: var(--danger)" onclick={cancelSubscription}>
+							<Button big style="color: var(--danger)" onclick={() => (cancelSubDialog = "shown")}>
 								{#snippet icon()}
-									{#if cancelSubLoading}
-										<Spinner />
-									{:else}
-										<Warning />
-									{/if}
+									<Warning />
 								{/snippet}
 								Cancel Subscription
 							</Button>
-						{:else if subInfo.activePeriod.subscription.state === SubscriptionState.CancelAtEnd}
-							<Button big style="color: var(--store)" onclick={renewSubscription}>
+						{:else if subInfo.activePeriod.subscription.state === SubscriptionState.CancelAtEnd && !subInfo.activePeriod.giftedBy}
+							<Button
+								big
+								style="color: var(--store)"
+								onclick={reactivateSubscription}
+								disabled={reactivateSubLoading}
+							>
 								{#snippet icon()}
-									{#if renewSubLoading}
+									{#if reactivateSubLoading}
 										<Spinner />
 									{:else}
 										<Star />

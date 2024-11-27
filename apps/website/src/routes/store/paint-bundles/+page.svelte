@@ -1,46 +1,40 @@
 <script lang="ts">
-	import Button from "$/components/input/button.svelte";
-	import HideOn from "$/components/hide-on.svelte";
-	import Select from "$/components/input/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
-	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
-	import { priceFormat } from "$/lib/utils";
-	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
 
-	const bundles = [
-		{
-			name: "Summer Bundle",
-			price: 199,
-			new: true,
-		},
-		{
-			name: "Winter Bundle",
-			price: 500,
-			new: false,
-		},
-		{
-			name: "Halloween Bundle",
-			price: 299,
-			new: false,
-		},
-		{
-			name: "Loser Bundle",
-			price: 1,
-			new: false,
-		},
-		{
-			name: "Random Bundle",
-			price: 199,
-			new: false,
-		},
-		{
-			name: "Forsen Bundle",
-			price: 1099,
-			new: false,
-			oldPrice: 10099,
-		},
-	];
+	// const bundles = [
+	// 	{
+	// 		name: "Summer Bundle",
+	// 		price: 199,
+	// 		new: true,
+	// 	},
+	// 	{
+	// 		name: "Winter Bundle",
+	// 		price: 500,
+	// 		new: false,
+	// 	},
+	// 	{
+	// 		name: "Halloween Bundle",
+	// 		price: 299,
+	// 		new: false,
+	// 	},
+	// 	{
+	// 		name: "Loser Bundle",
+	// 		price: 1,
+	// 		new: false,
+	// 	},
+	// 	{
+	// 		name: "Random Bundle",
+	// 		price: 199,
+	// 		new: false,
+	// 	},
+	// 	{
+	// 		name: "Forsen Bundle",
+	// 		price: 1099,
+	// 		new: false,
+	// 		oldPrice: 10099,
+	// 	},
+	// ];
 </script>
 
 <svelte:head>

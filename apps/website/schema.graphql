@@ -50,8 +50,8 @@ type Billing {
 }
 
 type BillingMutation {
-	cancelSubscription(productId: Id!): Boolean!
-	renewSubscription(productId: Id!): Boolean!
+	cancelSubscription(productId: Id!): SubscriptionInfo!
+	reactivateSubscription(productId: Id!): SubscriptionInfo!
 	subscribe(variantId: ProductId!): SubscribeResponse!
 }
 

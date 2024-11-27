@@ -1,7 +1,6 @@
 <script lang="ts">
 	import TextInput from "$/components/input/text-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { signInDialogMode } from "$/lib/layout";
 	import { user } from "$/lib/auth";
 	import { Key, PencilSimple, Bell, CreditCard, Prohibit, MagnifyingGlass } from "phosphor-svelte";
 	import { t } from "svelte-i18n";

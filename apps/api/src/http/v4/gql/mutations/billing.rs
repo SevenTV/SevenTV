@@ -16,8 +16,10 @@ use crate::http::egvault::metadata::{CheckoutSessionMetadata, InvoiceMetadata, S
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
 use crate::http::middleware::session::Session;
+use crate::http::v4::gql::types::billing::SubscriptionInfo;
 use crate::paypal_api;
 use crate::stripe_common::{create_checkout_session_params, find_or_create_customer, CheckoutProduct, EgVaultMutexKey};
+use crate::sub_refresh_job::SubAge;
 use crate::transactions::{transaction_with_mutex, TransactionError};
 
 pub struct BillingMutation {
@@ -203,7 +205,11 @@ impl BillingMutation {
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultPaymentMethod, 1)")]
-	async fn cancel_subscription(&self, ctx: &Context<'_>, product_id: SubscriptionProductId) -> Result<bool, ApiError> {
+	async fn cancel_subscription(
+		&self,
+		ctx: &Context<'_>,
+		product_id: SubscriptionProductId,
+	) -> Result<SubscriptionInfo, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -242,8 +248,8 @@ impl BillingMutation {
 			let global = Arc::clone(&global);
 
 			async move {
-				let period = tx
-					.find_one(
+				let periods = tx
+					.find(
 						filter::filter! {
 							SubscriptionPeriod {
 								#[query(flatten)]
@@ -251,25 +257,25 @@ impl BillingMutation {
 									user_id: target_id,
 									product_id: product_id,
 								},
-								#[query(selector = "lt")]
-								start: chrono::Utc::now(),
-								#[query(selector = "gt")]
-								end: chrono::Utc::now(),
 							}
 						},
 						None,
 					)
-					.await?
+					.await?;
+
+				let active_period = periods
+					.iter()
+					.find(|p| p.start < chrono::Utc::now() && p.end > chrono::Utc::now())
 					.ok_or(TransactionError::Custom(ApiError::not_found(
 						ApiErrorCode::BadRequest,
 						"subscription not found",
 					)))?;
 
-				match period.provider_id {
+				match &active_period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
 						stripe::Subscription::update(
 							stripe_client.client("update").await.deref(),
-							&id,
+							id,
 							stripe::UpdateSubscription {
 								cancel_at_period_end: Some(true),
 								..Default::default()
@@ -321,7 +327,7 @@ impl BillingMutation {
 							filter::filter! {
 								SubscriptionPeriod {
 									#[query(rename = "_id")]
-									id: period.id,
+									id: active_period.id,
 								}
 							},
 							update::update! {
@@ -344,7 +350,7 @@ impl BillingMutation {
 					filter::filter! {
 						Subscription {
 							#[query(rename = "_id", serde)]
-							id: period.subscription_id,
+							id: active_period.subscription_id,
 						}
 					},
 					update::update! {
@@ -367,13 +373,18 @@ impl BillingMutation {
 					))
 				})?;
 
-				Ok(())
+				let age = SubAge::new(&periods);
+
+				Ok(SubscriptionInfo {
+					active_period: Some(active_period.clone().into()),
+					total_days: age.days,
+				})
 			}
 		})
 		.await;
 
 		match res {
-			Ok(_) => Ok(true),
+			Ok(info) => Ok(info),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
@@ -386,7 +397,11 @@ impl BillingMutation {
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultSubscribe, 1)")]
-	async fn renew_subscription(&self, ctx: &Context<'_>, product_id: SubscriptionProductId) -> Result<bool, ApiError> {
+	async fn reactivate_subscription(
+		&self,
+		ctx: &Context<'_>,
+		product_id: SubscriptionProductId,
+	) -> Result<SubscriptionInfo, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -422,8 +437,8 @@ impl BillingMutation {
 		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
 		let res = transaction_with_mutex(&global, Some(EgVaultMutexKey::User(target_id).into()), |mut tx| async move {
-			let period = tx
-				.find_one(
+			let periods = tx
+				.find(
 					filter::filter! {
 						SubscriptionPeriod {
 							#[query(flatten)]
@@ -431,24 +446,24 @@ impl BillingMutation {
 								user_id: target_id,
 								product_id: product_id,
 							},
-							#[query(selector = "lt")]
-							start: chrono::Utc::now(),
-							#[query(selector = "gt")]
-							end: chrono::Utc::now(),
 						}
 					},
 					None,
 				)
-				.await?
+				.await?;
+
+			let active_period = periods
+				.iter()
+				.find(|p| p.start < chrono::Utc::now() && p.end > chrono::Utc::now())
 				.ok_or_else(|| {
 					TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "subscription not found"))
 				})?;
 
-			match period.provider_id {
+			match &active_period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
 					stripe::Subscription::update(
 						stripe_client.client("update").await.deref(),
-						&id,
+						id,
 						stripe::UpdateSubscription {
 							cancel_at_period_end: Some(false),
 							..Default::default()
@@ -469,7 +484,7 @@ impl BillingMutation {
 						filter::filter! {
 							Subscription {
 								#[query(rename = "_id", serde)]
-								id: period.subscription_id,
+								id: active_period.subscription_id,
 							}
 						},
 						update::update! {
@@ -492,7 +507,12 @@ impl BillingMutation {
 						))
 					})?;
 
-					Ok(())
+					let age = SubAge::new(&periods);
+
+					Ok(SubscriptionInfo {
+						active_period: Some(active_period.clone().into()),
+						total_days: age.days,
+					})
 				}
 				_ => Err(TransactionError::Custom(ApiError::not_implemented(
 					ApiErrorCode::BadRequest,
@@ -503,7 +523,7 @@ impl BillingMutation {
 		.await;
 
 		match res {
-			Ok(_) => Ok(true),
+			Ok(info) => Ok(info),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");

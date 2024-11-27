@@ -1,6 +1,5 @@
 <script lang="ts">
-	import type { Badge, Paint } from "$/gql/graphql";
-	import BadgeComponent from "../badge.svelte";
+	import type { Badge } from "$/gql/graphql";
 	import ResponsiveImage from "../responsive-image.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 

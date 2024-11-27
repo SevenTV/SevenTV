@@ -1,6 +1,6 @@
 <script lang="ts">
 	import moment from "moment/min/moment-with-locales";
-	import { Clock, Coin, CreditCard, Gift, Hourglass, IconContext, Sparkle } from "phosphor-svelte";
+	import { Clock, CreditCard, Gift, Hourglass, IconContext, Sparkle } from "phosphor-svelte";
 	import Date from "./date.svelte";
 	import { t } from "svelte-i18n";
 	import { SubscriptionProductKind, SubscriptionState, type SubscriptionInfo } from "$/gql/graphql";
@@ -63,9 +63,13 @@
 		<span class="key">{data.activePeriod ? $t("sub_info.total") : "Previously Subscribed"}</span>
 		<span class="value">
 			<Clock />
-			<span title={moment.duration(data.totalDays, "days").humanize()}>
-				{moment.duration(data.totalDays, "days").humanize({ d: Infinity })}
-			</span>
+			{#if data.totalDays > 0}
+				<span title={moment.duration(data.totalDays, "days").humanize()}>
+					{moment.duration(data.totalDays, "days").humanize({ d: Infinity })}
+				</span>
+			{:else}
+				<span>&#60; {moment.duration(1, "days").humanize()}</span>
+			{/if}
 		</span>
 
 		<!-- <span class="key">{$t("sub_info.credits")}</span>

@@ -10,6 +10,7 @@
 	import {
 		type BadgeProgress,
 		type Paint,
+		type StoreDataQuery,
 		type SubscriptionInfo,
 		type SubscriptionProduct,
 	} from "$/gql/graphql";
@@ -227,7 +228,15 @@
 		return res.data;
 	}
 
-	let data = $derived($user ? queryStore($user.id) : undefined);
+	let data = $state<StoreDataQuery>();
+
+	$effect(() => {
+		if ($user) {
+			queryStore($user.id).then((res) => {
+				data = res;
+			});
+		}
+	});
 </script>
 
 <svelte:head>
@@ -277,7 +286,7 @@
 				<div class="subgrid">
 					{#if data.users.user && data.products.subscriptionProduct}
 						<YourSub
-							subInfo={data.users.user.billing.subscriptionInfo as SubscriptionInfo}
+							bind:subInfo={data.users.user.billing.subscriptionInfo as SubscriptionInfo}
 							product={data.products.subscriptionProduct as SubscriptionProduct}
 						/>
 						<BadgeProgressComponent
