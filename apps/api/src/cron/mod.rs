@@ -12,7 +12,7 @@ use crate::global::Global;
 mod emote_stats;
 mod sub_refresh;
 
-pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) {
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::Result<()> {
 	tracing::info!("started cron job runner");
 
 	loop {
@@ -72,6 +72,8 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) {
 		.instrument(span)
 		.await;
 	}
+
+	Ok(())
 }
 
 async fn fetch_job(global: &Arc<Global>, id: Id) -> Result<Option<CronJob>, mongodb::error::Error> {

@@ -22,6 +22,7 @@ impl SubscriptionPeriodsByUserIdLoader {
 			db,
 			"SubscriptionPeriodsByUserIdLoader".to_string(),
 			500,
+			50,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -30,9 +31,10 @@ impl SubscriptionPeriodsByUserIdLoader {
 		db: mongodb::Database,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		sleep_duration: std::time::Duration,
 	) -> DataLoader<Self> {
-		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
+		DataLoader::new(Self { db, name }, batch_size, concurrency, sleep_duration)
 	}
 }
 
@@ -81,6 +83,7 @@ impl ActiveSubscriptionPeriodByUserIdLoader {
 			db,
 			"ActiveSubscriptionPeriodByUserIdLoader".to_string(),
 			500,
+			50,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -89,9 +92,10 @@ impl ActiveSubscriptionPeriodByUserIdLoader {
 		db: mongodb::Database,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		sleep_duration: std::time::Duration,
 	) -> DataLoader<Self> {
-		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
+		DataLoader::new(Self { db, name }, batch_size, concurrency, sleep_duration)
 	}
 }
 

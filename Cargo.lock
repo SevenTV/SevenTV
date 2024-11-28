@@ -50,6 +50,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aligned-vec"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e0966165eaf052580bd70eb1b32cb3d6245774c0104d1b2793e9650bf83b52a"
+dependencies = [
+ "equator",
+]
+
+[[package]]
 name = "alloc-no-stdlib"
 version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -181,6 +190,7 @@ dependencies = [
  "rustls 0.23.19",
  "scuffle-batching",
  "scuffle-bootstrap",
+ "scuffle-bootstrap-telemetry",
  "scuffle-context",
  "scuffle-http",
  "scuffle-image-processor-proto",
@@ -200,6 +210,7 @@ dependencies = [
  "tower 0.5.1",
  "tower-http",
  "tracing",
+ "tracing-subscriber",
  "typed-builder 0.20.0",
  "typesense-rs",
  "url",
@@ -1973,6 +1984,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1e6a265c649f3f5979b601d26f1d05ada116434c87741c9493cb56218f76cbc"
 dependencies = [
  "heck",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.89",
+]
+
+[[package]]
+name = "equator"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c35da53b5a021d2484a7cc49b2ac7f2d840f8236a286f84202369bd338d761ea"
+dependencies = [
+ "equator-macro",
+]
+
+[[package]]
+name = "equator-macro"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bf679796c0322556351f287a51b49e48f7c4986e727b5dd78c972d30e2e16cc"
+dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.89",
@@ -3836,6 +3867,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry-appender-tracing"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab5feffc321035ad94088a7e5333abb4d84a8726e54a802e736ce9dd7237e85b"
+dependencies = [
+ "opentelemetry 0.27.1",
+ "tracing",
+ "tracing-core",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "opentelemetry-http"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3909,7 +3952,11 @@ dependencies = [
  "futures-util",
  "glob",
  "opentelemetry 0.27.1",
+ "percent-encoding",
+ "rand 0.8.5",
+ "serde_json",
  "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]
@@ -4274,6 +4321,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "pprof"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebbe2f8898beba44815fdc9e5a4ae9c929e21c5dc29b0c774a15555f7f58d6d0"
+dependencies = [
+ "aligned-vec",
+ "backtrace",
+ "cfg-if",
+ "findshlibs",
+ "libc",
+ "log",
+ "nix",
+ "once_cell",
+ "parking_lot",
+ "prost 0.12.6",
+ "prost-build 0.12.6",
+ "prost-derive 0.12.6",
+ "sha2",
+ "smallvec",
+ "symbolic-demangle",
+ "tempfile",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4507,6 +4579,12 @@ dependencies = [
  "web-sys",
  "winapi",
 ]
+
+[[package]]
+name = "querystring"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9318ead08c799aad12a55a3e78b82e0b6167271ffd1f627b758891282f739187"
 
 [[package]]
 name = "quick-error"
@@ -5158,8 +5236,7 @@ dependencies = [
 [[package]]
 name = "scuffle-batching"
 version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ab0a52df69541ed0f1ef1a6f273cf947ed320ea109c28b692f7153371e7b95"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#c9c1c05cc95155604a9b5be5af3292bb0c50f34f"
 dependencies = [
  "tokio",
  "tokio-util",
@@ -5191,6 +5268,33 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.89",
+]
+
+[[package]]
+name = "scuffle-bootstrap-telemetry"
+version = "0.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "891f15b567b7ec4ceefa1dd74a861e2ebd22ea830970d60828f3627439035351"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "opentelemetry 0.27.1",
+ "opentelemetry-appender-tracing",
+ "opentelemetry_sdk 0.27.1",
+ "prometheus",
+ "querystring",
+ "scuffle-bootstrap",
+ "scuffle-context",
+ "scuffle-http",
+ "scuffle-metrics",
+ "scuffle-pprof",
+ "thiserror 2.0.3",
+ "tokio",
+ "tracing",
+ "tracing-opentelemetry",
 ]
 
 [[package]]
@@ -5236,7 +5340,7 @@ dependencies = [
  "opentelemetry_sdk 0.26.0",
  "parking_lot",
  "pin-project",
- "pprof",
+ "pprof 0.13.0",
  "prometheus-client",
  "prost 0.13.3",
  "quinn",
@@ -5340,6 +5444,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.89",
+]
+
+[[package]]
+name = "scuffle-pprof"
+version = "0.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c58b872c3bfd23f1f9019e9d36a13ac3321fa4b752051071e702bf6d8ef0566f"
+dependencies = [
+ "flate2",
+ "pprof 0.14.0",
+ "thiserror 2.0.3",
 ]
 
 [[package]]
@@ -6531,6 +6646,24 @@ dependencies = [
  "log",
  "once_cell",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-opentelemetry"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97a971f6058498b5c0f1affa23e7ea202057a7301dbff68e968b2d578bcbd053"
+dependencies = [
+ "js-sys",
+ "once_cell",
+ "opentelemetry 0.27.1",
+ "opentelemetry_sdk 0.27.1",
+ "smallvec",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
+ "tracing-subscriber",
+ "web-time",
 ]
 
 [[package]]

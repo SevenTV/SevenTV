@@ -8,6 +8,7 @@ license = "Apache-2.0 with Commons Clause"
 tokio = { version = "1.38", features = ["full"] }
 
 scuffle-bootstrap = "0.0.0"
+scuffle-bootstrap-telemetry = "0.0.0"
 scuffle-context = "0.0.0"
 scuffle-image-processor-proto = { version = "0.0.0", features = ["client"] }
 scuffle-metrics = "0.0.0"
@@ -25,6 +26,7 @@ serde = { version = "1.0", features = ["derive"] }
 bitmask-enum = "2"
 serde_repr = "0.1"
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 hyper = { version = "1", features = ["full"] }
 async-graphql = { version = "7.0.6", features = ["apollo_tracing", "tracing", "chrono", "time"] }
 async-graphql-axum = "7.0.6"

@@ -4,6 +4,10 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use scuffle_batching::DataLoader;
+use scuffle_bootstrap_telemetry::opentelemetry;
+use scuffle_bootstrap_telemetry::opentelemetry_sdk::metrics::SdkMeterProvider;
+use scuffle_bootstrap_telemetry::opentelemetry_sdk::Resource;
+use scuffle_metrics::opentelemetry::KeyValue;
 use shared::clickhouse::init_clickhouse;
 use shared::database::badge::Badge;
 use shared::database::emote_moderation_request::EmoteModerationRequest;
@@ -27,6 +31,8 @@ use shared::database::user::User;
 use shared::image_processor::ImageProcessor;
 use shared::ip::GeoIpResolver;
 use shared::redis::setup_redis;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 use crate::config::Config;
 use crate::dataloader::active_subscription_period::{
@@ -41,6 +47,7 @@ use crate::dataloader::user::{UserByPlatformIdLoader, UserByPlatformUsernameLoad
 use crate::dataloader::user_ban::UserBanByUserIdLoader;
 use crate::dataloader::user_editor::{UserEditorByEditorIdLoader, UserEditorByUserIdLoader};
 use crate::dataloader::user_session::UserSessionUpdaterBatcher;
+use crate::http::v4;
 use crate::mutex::DistributedMutex;
 use crate::ratelimit::RateLimiter;
 use crate::stripe_client;
@@ -94,12 +101,35 @@ pub struct Global {
 	pub typesense: typesense_rs::apis::ApiClient,
 	pub updater: MongoUpdater,
 	pub mutex: DistributedMutex,
+	metrics_registry: scuffle_bootstrap_telemetry::prometheus::Registry,
 }
 
 impl scuffle_bootstrap::global::Global for Global {
 	type Config = Config;
 
 	async fn init(config: Config) -> anyhow::Result<Arc<Self>> {
+		let metrics_registry = scuffle_bootstrap_telemetry::prometheus::Registry::new();
+
+		opentelemetry::global::set_meter_provider(SdkMeterProvider::builder()
+			.with_resource(Resource::new(vec![KeyValue::new("service.name", env!("CARGO_BIN_NAME"))]))
+			.with_reader(scuffle_metrics::prometheus::exporter()
+			.with_registry(metrics_registry.clone())
+			.build()
+			.context("prometheus metrics exporter")?)
+			.build());
+
+		tracing_subscriber::registry()
+			.with(tracing_subscriber::fmt::layer().with_file(true).with_line_number(true))
+			.init();
+
+		tracing::info!("starting api");
+
+		if let Some(path) = config.export_schema_path {
+			tracing::info!("exporting graphql schema to {}", path.display());
+			std::fs::write(path, v4::export_gql_schema()).context("exporting graphql schema")?;
+			std::process::exit(0);
+		}
+
 		let (nats, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
 
 		tracing::info!("connected to nats");
@@ -196,10 +226,11 @@ impl scuffle_bootstrap::global::Global for Global {
 			stripe_client,
 			typesense: typesense_rs::apis::ApiClient::new(Arc::new(typesense)),
 			mongo,
-			updater: MongoUpdater::new(db.clone(), 500, std::time::Duration::from_millis(300)),
+			updater: MongoUpdater::new(db.clone(), 500, 50, std::time::Duration::from_millis(300)),
 			db,
 			clickhouse,
 			config,
+			metrics_registry,
 			user_loader: FullUserLoader::new(weak.clone()),
 		}))
 	}
@@ -211,22 +242,33 @@ impl Global {
 	}
 }
 
-// impl HealthCheck for Global {
-// 	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output =
-// bool> + Send + '_>> { 		Box::pin(async {
-// 			tracing::debug!("running health check");
+impl scuffle_bootstrap::signals::SignalSvcConfig for Global {
+	async fn on_shutdown(self: &std::sync::Arc<Self>) -> anyhow::Result<()> {
+		tracing::info!("shutting down");
+		Ok(())
+	}
+}
 
-// 			if let Err(err) = self.db.run_command(doc! { "ping": 1 }).await {
-// 				tracing::error!(%err, "failed to ping database");
-// 				return false;
-// 			}
+impl scuffle_bootstrap_telemetry::TelemetryConfig for Global {
+	async fn health_check(&self) -> Result<(), anyhow::Error> {
+		tracing::debug!("running health check");
 
-// 			if !matches!(self.nats.connection_state(),
-// async_nats::connection::State::Connected) { 				tracing::error!("nats not
-// connected"); 				return false;
-// 			}
+		if let Err(err) = self.db.run_command(bson::doc! { "ping": 1 }).await {
+			anyhow::bail!("failed to ping database: {err}");
+		}
 
-// 			true
-// 		})
-// 	}
-// }
+		if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
+			anyhow::bail!("nats not connected");
+		}
+
+		Ok(())
+	}
+
+	fn bind_address(&self) -> Option<std::net::SocketAddr> {
+		self.config.telemetry.bind
+	}
+
+	fn prometheus_metrics_registry(&self) -> Option<&scuffle_bootstrap_telemetry::prometheus::Registry> {
+		Some(&self.metrics_registry)
+	}
+}

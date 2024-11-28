@@ -36,7 +36,7 @@ impl FullUserLoader {
 	pub async fn load_many(
 		&self,
 		global: &Arc<Global>,
-		user_ids: impl IntoIterator<Item = UserId>,
+		user_ids: impl IntoIterator<Item = UserId> + Send,
 	) -> Result<HashMap<UserId, FullUser>, ()> {
 		let users = global.user_by_id_loader.load_many(user_ids).await?;
 		self.load_user_many(global, users.into_values()).await
@@ -136,7 +136,7 @@ impl FullUserLoader {
 	pub async fn load_fast_many(
 		&self,
 		global: &Arc<Global>,
-		user_ids: impl IntoIterator<Item = UserId>,
+		user_ids: impl IntoIterator<Item = UserId> + Send,
 	) -> Result<HashMap<UserId, FullUser>, ()> {
 		let users = global.user_by_id_loader.load_many(user_ids).await?;
 		self.load_fast_user_many(global, users.into_values()).await
@@ -269,6 +269,7 @@ impl UserComputedLoader {
 			global,
 			"UserComputedLoader".to_string(),
 			500,
+			50,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -277,9 +278,10 @@ impl UserComputedLoader {
 		global: Weak<Global>,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		sleep_duration: std::time::Duration,
 	) -> DataLoader<Self> {
-		DataLoader::new(Self { global, name }, batch_size, sleep_duration)
+		DataLoader::new(Self { global, name }, batch_size, concurrency, sleep_duration)
 	}
 }
 

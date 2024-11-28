@@ -24,6 +24,7 @@ impl EntitlementEdgeInboundLoader {
 			db,
 			"EntitlementEdgeInboundLoader".to_string(),
 			1000,
+			50,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -32,9 +33,10 @@ impl EntitlementEdgeInboundLoader {
 		db: mongodb::Database,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		delay: std::time::Duration,
 	) -> DataLoader<Self> {
-		DataLoader::new(Self { db, name }, batch_size, delay)
+		DataLoader::new(Self { db, name }, batch_size, concurrency, delay)
 	}
 }
 
@@ -78,6 +80,7 @@ impl EntitlementEdgeOutboundLoader {
 			db,
 			"EntitlementEdgeOutboundLoader".to_string(),
 			1000,
+			50,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -86,9 +89,10 @@ impl EntitlementEdgeOutboundLoader {
 		db: mongodb::Database,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		delay: std::time::Duration,
 	) -> DataLoader<Self> {
-		DataLoader::new(Self { db, name }, batch_size, delay)
+		DataLoader::new(Self { db, name }, batch_size, concurrency, delay)
 	}
 }
 

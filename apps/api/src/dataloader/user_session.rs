@@ -15,6 +15,7 @@ impl UserSessionUpdaterBatcher {
 			db,
 			"UserSessionUpdaterBatcher".to_string(),
 			500,
+			50,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -23,9 +24,10 @@ impl UserSessionUpdaterBatcher {
 		db: mongodb::Database,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		sleep_duration: std::time::Duration,
 	) -> DataLoader<Self> {
-		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
+		DataLoader::new(Self { db, name }, batch_size, concurrency, sleep_duration)
 	}
 }
 

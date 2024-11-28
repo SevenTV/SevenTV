@@ -32,9 +32,9 @@ impl MergedResult {
 
 pub trait EmoteByIdLoaderExt {
 	async fn load_exclude_deleted(&self, id: EmoteId) -> Result<Option<Emote>, ()>;
-	async fn load_many_exclude_deleted(&self, ids: impl IntoIterator<Item = EmoteId>)
+	async fn load_many_exclude_deleted(&self, ids: impl IntoIterator<Item = EmoteId> + Send)
 		-> Result<HashMap<EmoteId, Emote>, ()>;
-	async fn load_many_merged(&self, ids: impl IntoIterator<Item = EmoteId>) -> Result<MergedResult, ()>;
+	async fn load_many_merged(&self, ids: impl IntoIterator<Item = EmoteId> + Send) -> Result<MergedResult, ()>;
 }
 
 impl EmoteByIdLoaderExt for DataLoader<EmoteByIdLoader> {
@@ -52,7 +52,7 @@ impl EmoteByIdLoaderExt for DataLoader<EmoteByIdLoader> {
 
 	async fn load_many_exclude_deleted(
 		&self,
-		ids: impl IntoIterator<Item = EmoteId>,
+		ids: impl IntoIterator<Item = EmoteId> + Send,
 	) -> Result<HashMap<EmoteId, Emote>, ()> {
 		let results = self.load_many(ids).await?;
 
@@ -62,7 +62,7 @@ impl EmoteByIdLoaderExt for DataLoader<EmoteByIdLoader> {
 			.collect())
 	}
 
-	async fn load_many_merged(&self, ids: impl IntoIterator<Item = EmoteId>) -> Result<MergedResult, ()> {
+	async fn load_many_merged(&self, ids: impl IntoIterator<Item = EmoteId> + Send) -> Result<MergedResult, ()> {
 		let mut emotes = self.load_many(ids).await?;
 
 		let mut merged_ids = HashMap::new();
@@ -125,6 +125,7 @@ impl EmoteByUserIdLoader {
 			db,
 			"EmoteByUserIdLoader".to_string(),
 			500,
+			50,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -133,9 +134,10 @@ impl EmoteByUserIdLoader {
 		db: mongodb::Database,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		sleep_duration: std::time::Duration,
 	) -> DataLoader<Self> {
-		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
+		DataLoader::new(Self { db, name }, batch_size, concurrency, sleep_duration)
 	}
 }
 
@@ -178,16 +180,17 @@ pub struct EmoteByIdLoader {
 
 impl EmoteByIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		Self::new_with_config(db, "EmoteByIdLoader".to_string(), 500, std::time::Duration::from_millis(5))
+		Self::new_with_config(db, "EmoteByIdLoader".to_string(), 500, 50, std::time::Duration::from_millis(5))
 	}
 
 	pub fn new_with_config(
 		db: mongodb::Database,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		sleep_duration: std::time::Duration,
 	) -> DataLoader<Self> {
-		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
+		DataLoader::new(Self { db, name }, batch_size, concurrency, sleep_duration)
 	}
 }
 

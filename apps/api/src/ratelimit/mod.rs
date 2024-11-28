@@ -88,7 +88,7 @@ impl RateLimitRequest {
 	pub async fn http<R, F>(self, global: &Arc<Global>, svc: F) -> Result<Response, ApiError>
 	where
 		R: IntoResponse,
-		F: std::future::Future<Output = R>,
+		F: std::future::Future<Output = R> + Send,
 	{
 		match global.rate_limiter.acquire(self).await {
 			Ok(Some(response)) => {

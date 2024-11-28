@@ -13,8 +13,8 @@ struct Inner {
 }
 
 impl MongoUpdater {
-	pub fn new(db: mongodb::Database, batch_size: usize, delay: std::time::Duration) -> Self {
-		Self(Batcher::new(Inner { db }, batch_size, delay))
+	pub fn new(db: mongodb::Database, batch_size: usize, concurrency: usize, delay: std::time::Duration) -> Self {
+		Self(Batcher::new(Inner { db }, batch_size, concurrency, delay))
 	}
 
 	pub async fn update<M: MongoCollection>(

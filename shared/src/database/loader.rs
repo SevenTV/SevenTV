@@ -54,6 +54,7 @@ impl<T: MongoCollection + DeserializeOwned + Clone + 'static> LoaderById<T> {
 			db,
 			format!("LoaderById<{}>", T::COLLECTION_NAME),
 			500,
+			50,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -62,6 +63,7 @@ impl<T: MongoCollection + DeserializeOwned + Clone + 'static> LoaderById<T> {
 		db: mongodb::Database,
 		name: String,
 		batch_size: usize,
+		concurrency: usize,
 		delay: std::time::Duration,
 	) -> DataLoader<Self> {
 		DataLoader::new(
@@ -71,6 +73,7 @@ impl<T: MongoCollection + DeserializeOwned + Clone + 'static> LoaderById<T> {
 				_phantom: std::marker::PhantomData,
 			},
 			batch_size,
+			concurrency,
 			delay,
 		)
 	}

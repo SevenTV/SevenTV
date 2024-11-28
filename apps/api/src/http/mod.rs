@@ -16,7 +16,6 @@ use shared::http::ip::IpMiddleware;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
-use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
 use tower_http::trace::{DefaultOnFailure, TraceLayer};
 use tracing::Span;
 
@@ -82,18 +81,6 @@ fn cors_layer(global: &Arc<Global>) -> CorsLayer {
 		.max_age(MaxAge::exact(Duration::from_secs(7200)))
 }
 
-#[derive(Clone)]
-struct TraceRequestId;
-
-impl MakeRequestId for TraceRequestId {
-	fn make_request_id<B>(&mut self, _: &hyper::Request<B>) -> Option<RequestId> {
-		tracing::Span::current()
-			.trace_id()
-			.and_then(|id| id.to_string().parse().ok())
-			.map(RequestId::new)
-	}
-}
-
 fn routes(global: Arc<Global>) -> Router {
 	Router::new()
 		.route("/", get(root))
@@ -126,8 +113,6 @@ fn routes(global: Arc<Global>) -> Router {
 							span.record("response.status_code", res.status().as_u16());
 						}),
 				)
-				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
-				.layer(PropagateRequestIdLayer::x_request_id())
 				.layer(cors_layer(&global))
 				.layer(IpMiddleware::new(global.config.api.incoming_request.clone()))
 				.layer(CookieMiddleware)
@@ -182,7 +167,7 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 		.await
 		.context("Failed to start HTTP server")?;
 
-	server.wait().with_context(&ctx).await.context("HTTP server failed")?;
+	server.wait().with_context(&ctx).await.transpose().context("HTTP server failed")?;
 
 	server.shutdown().await.context("Failed to shutdown HTTP server")?;
 

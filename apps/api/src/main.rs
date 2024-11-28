@@ -1,6 +1,6 @@
 use global::Global;
 use scuffle_bootstrap::signals::SignalSvc;
-
+use scuffle_bootstrap_telemetry::TelemetrySvc;
 mod cdn_purge;
 mod config;
 mod connections;
@@ -25,5 +25,6 @@ scuffle_bootstrap::main! {
 		cron::run,
 		cdn_purge::run,
 		SignalSvc,
+		TelemetrySvc,
 	}
 }

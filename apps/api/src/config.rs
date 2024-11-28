@@ -171,6 +171,9 @@ pub struct Config {
 
 	/// CDN purge topic
 	pub cdn: CdnConfig,
+
+	/// Telemetry config
+	pub telemetry: TelemetryConfig,
 }
 
 #[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
@@ -191,6 +194,14 @@ pub struct CdnConfig {
 	/// Cloudflare API token
 	#[default("".into())]
 	pub cloudflare_api_token: String,
+}
+
+#[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct TelemetryConfig {
+	/// Telemetry bind address
+	#[default(None)]
+	pub bind: Option<SocketAddr>,
 }
 
 scuffle_bootstrap::cli_config!(Config);

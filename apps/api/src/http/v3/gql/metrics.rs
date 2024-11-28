@@ -62,7 +62,7 @@ fn handle_error(error: &async_graphql::ServerError) {
 		code.unwrap_or_default(),
 		status_code.unwrap_or_default(),
 	)
-	.inc();
+	.incr();
 }
 
 #[async_trait::async_trait]
