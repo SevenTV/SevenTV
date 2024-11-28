@@ -1,10 +1,10 @@
+use std::collections::{HashMap, HashSet};
 use std::future::IntoFuture;
 
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_batching::{DataLoader, DataLoaderFetcher};
 
 use super::entitlement::EntitlementEdgeId;
 use super::loader::dataloader::BatchLoad;
@@ -15,34 +15,25 @@ use crate::database::MongoCollection;
 
 pub struct EntitlementEdgeInboundLoader {
 	db: mongodb::Database,
-	config: BatcherConfig,
+	name: String,
 }
 
 impl EntitlementEdgeInboundLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		Self::new_with_config(
-			db,
-			BatcherConfig {
-				name: "EntitlementEdgeInboundLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(1),
-			},
-		)
+		Self::new_with_config(db, "EntitlementEdgeInboundLoader".to_string(), 1000, std::time::Duration::from_millis(5))
 	}
 
-	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { db, config })
+	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, delay: std::time::Duration) -> DataLoader<Self> {
+		DataLoader::new(Self { db, name }, batch_size, delay)
 	}
 }
 
-impl Loader for EntitlementEdgeInboundLoader {
+impl DataLoaderFetcher for EntitlementEdgeInboundLoader {
 	type Key = EntitlementEdgeKind;
 	type Value = Vec<EntitlementEdge>;
 
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
+	async fn load(&self, keys: HashSet<Self::Key>) -> Option<HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
 			.find(filter::filter! {
@@ -59,46 +50,34 @@ impl Loader for EntitlementEdgeInboundLoader {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})
+			.ok()?;
 
-		Ok(results.into_iter().into_group_map_by(|edge| edge.id.to.clone()))
+		Some(results.into_iter().into_group_map_by(|edge| edge.id.to.clone()))
 	}
 }
 
 pub struct EntitlementEdgeOutboundLoader {
 	db: mongodb::Database,
-	config: BatcherConfig,
+	name: String,
 }
 
 impl EntitlementEdgeOutboundLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		Self::new_with_config(
-			db,
-			BatcherConfig {
-				name: "EntitlementEdgeOutboundLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(1),
-			},
-		)
+		Self::new_with_config(db, "EntitlementEdgeOutboundLoader".to_string(), 1000, std::time::Duration::from_millis(5))
 	}
 
-	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { db, config })
+	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, delay: std::time::Duration) -> DataLoader<Self> {
+		DataLoader::new(Self { db, name }, batch_size, delay)
 	}
 }
 
-impl Loader for EntitlementEdgeOutboundLoader {
+impl DataLoaderFetcher for EntitlementEdgeOutboundLoader {
 	type Key = EntitlementEdgeKind;
 	type Value = Vec<EntitlementEdge>;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
-
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
+	async fn load(&self, keys: HashSet<Self::Key>) -> Option<HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let results: Vec<EntitlementEdge> = EntitlementEdge::collection(&self.db)
 			.find(filter::filter! {
@@ -115,9 +94,10 @@ impl Loader for EntitlementEdgeOutboundLoader {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})
+			.ok()?;
 
-		Ok(results.into_iter().into_group_map_by(|edge| edge.id.from.clone()))
+		Some(results.into_iter().into_group_map_by(|edge| edge.id.from.clone()))
 	}
 }
 

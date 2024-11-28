@@ -4,8 +4,7 @@ use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use mongodb::options::ReadPreference;
-use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_batching::{DataLoader, DataLoaderFetcher};
 use shared::database::loader::dataloader::BatchLoad;
 use shared::database::queries::filter;
 use shared::database::user::editor::{UserEditor, UserEditorId};
@@ -14,45 +13,37 @@ use shared::database::MongoCollection;
 
 pub struct UserEditorByUserIdLoader {
 	db: mongodb::Database,
-	config: BatcherConfig,
+	name: String,
 }
 
 impl UserEditorByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		Self::new_with_config(
 			db,
-			BatcherConfig {
-				name: "UserEditorByUserIdLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(5),
-			},
+			"UserEditorByUserIdLoader".to_string(),
+			500,
+			std::time::Duration::from_millis(5),
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { db, config })
+	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
 
-impl Loader for UserEditorByUserIdLoader {
+impl DataLoaderFetcher for UserEditorByUserIdLoader {
 	type Key = UserId;
 	type Value = Vec<UserEditor>;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
-
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
+	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let results: Self::Value = UserEditor::collection(&self.db)
 			.find(filter::filter! {
 				UserEditor {
 					#[query(rename = "_id", flatten)]
 					id: UserEditorId {
-						#[query(selector = "in")]
+						#[query(selector = "in", serde)]
 						user_id: keys,
 					},
 				}
@@ -64,53 +55,46 @@ impl Loader for UserEditorByUserIdLoader {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})
+			.ok()?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.id.user_id))
+		Some(results.into_iter().into_group_map_by(|r| r.id.user_id))
 	}
 }
 
 pub struct UserEditorByEditorIdLoader {
 	db: mongodb::Database,
-	config: BatcherConfig,
+	name: String,
 }
 
 impl UserEditorByEditorIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		Self::new_with_config(
 			db,
-			BatcherConfig {
-				name: "UserEditorByEditorIdLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(5),
-			},
+			"UserEditorByEditorIdLoader".to_string(),
+			500,
+			std::time::Duration::from_millis(5),
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { db, config })
+	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
 
-impl Loader for UserEditorByEditorIdLoader {
+impl DataLoaderFetcher for UserEditorByEditorIdLoader {
 	type Key = UserId;
 	type Value = Vec<UserEditor>;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
-
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
+	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let results: Self::Value = UserEditor::collection(&self.db)
 			.find(filter::filter! {
 				UserEditor {
 					#[query(rename = "_id", flatten)]
 					id: UserEditorId {
-						#[query(selector = "in")]
+						#[query(selector = "in", serde)]
 						editor_id: keys,
 					},
 				}
@@ -122,8 +106,9 @@ impl Loader for UserEditorByEditorIdLoader {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})
+			.ok()?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.id.editor_id))
+		Some(results.into_iter().into_group_map_by(|r| r.id.editor_id))
 	}
 }

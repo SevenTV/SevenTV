@@ -10,7 +10,8 @@ use axum::{Extension, Router};
 use error::ApiErrorCode;
 use hyper::Method;
 use middleware::session::{Session, SessionMiddleware};
-use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use scuffle_context::ContextFutExt;
+use scuffle_http::backend::HttpServer;
 use shared::http::ip::IpMiddleware;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
@@ -116,14 +117,7 @@ fn routes(global: Arc<Global>) -> Router {
 								"request.uri" = %req.uri(),
 								"request.matched_path" = %matched_path.unwrap_or("<not found>"),
 								"response.status_code" = tracing::field::Empty,
-								"trace_id" = tracing::field::Empty,
 							);
-
-							if let Some(trace_id) = tracing::Span::current().trace_id() {
-								span.record("trace_id", trace_id.to_string());
-							}
-
-							span.make_root();
 
 							span
 						})
@@ -173,17 +167,18 @@ pub async fn not_found() -> ApiError {
 	ApiError::not_found(ApiErrorCode::BadRequest, "route not found")
 }
 
-#[tracing::instrument(name = "API", skip(global))]
-pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
-	let mut server = scuffle_foundations::http::server::Server::builder()
-		.bind(global.config.api.bind)
-		.with_workers(global.config.api.workers)
-		.build(routes(global))
-		.context("Failed to build HTTP server")?;
+#[tracing::instrument(name = "API", skip_all)]
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::Result<()> {
+	let server = scuffle_http::backend::tcp::TcpServerConfig::builder()
+		.with_bind(global.config.api.bind)
+		.build()
+		.into_server();
 
-	server.start().await.context("Failed to start HTTP server")?;
+	server.start(scuffle_http::svc::axum_service(routes(global.clone())), global.config.api.workers).await.context("Failed to start HTTP server")?;
 
-	server.wait().await.context("HTTP server failed")?;
+	server.wait().with_context(&ctx).await.context("HTTP server failed")?;
+
+	server.shutdown().await.context("Failed to shutdown HTTP server")?;
 
 	Ok(())
 }

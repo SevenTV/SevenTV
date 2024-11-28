@@ -2,27 +2,27 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use anyhow::Context;
-use scuffle_foundations::settings::auto_settings;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct GeoIpConfig {
-	#[settings(default = "./GeoLite2-Country.mmdb".parse().unwrap())]
+	#[default("./GeoLite2-Country.mmdb".parse().unwrap())]
 	pub path: PathBuf,
 	/// If the file is not found, download it from the maxmind website
 	pub download: Option<GeoIpConfigDownload>,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct GeoIpConfigDownload {
 	pub account_id: String,
 	pub api_token: String,
-	#[settings(default = "https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz".parse().unwrap())]
+	#[default("https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz".parse().unwrap())]
 	pub url: Url,
 	/// Cache the file to the path specified in `path`
-	#[settings(default = true)]
+	#[default(true)]
 	pub cache_download: bool,
 }
 

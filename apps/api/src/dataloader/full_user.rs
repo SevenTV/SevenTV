@@ -1,8 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 
-use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_batching::{DataLoader, DataLoaderFetcher};
 use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
@@ -261,40 +260,27 @@ impl FullUserLoader {
 
 pub struct UserComputedLoader {
 	global: Weak<Global>,
-	config: BatcherConfig,
+	name: String,
 }
 
 impl UserComputedLoader {
 	pub fn new(global: Weak<Global>) -> DataLoader<Self> {
-		Self::new_with_config(
-			global,
-			BatcherConfig {
-				name: "UserComputedLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(5),
-			},
-		)
+		Self::new_with_config(global, "UserComputedLoader".to_string(), 500, std::time::Duration::from_millis(5))
 	}
 
-	pub fn new_with_config(global: Weak<Global>, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { global, config })
+	pub fn new_with_config(global: Weak<Global>, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+		DataLoader::new(Self { global, name }, batch_size, sleep_duration)
 	}
 }
 
-impl Loader for UserComputedLoader {
+impl DataLoaderFetcher for UserComputedLoader {
 	type Key = UserId;
 	type Value = UserComputed;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
+	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
-
-		let global = &self.global.upgrade().ok_or(())?;
+		let global = &self.global.upgrade()?;
 
 		let traverse = &EntitlementEdgeGraphTraverse {
 			inbound_loader: &global.entitlement_edge_inbound_loader,
@@ -314,7 +300,8 @@ impl Loader for UserComputedLoader {
 
 			Result::<_, ()>::Ok((user_id, raw_entitlements))
 		}))
-		.await?;
+		.await
+		.ok()?;
 
 		let mut role_ids = HashSet::new();
 
@@ -342,7 +329,8 @@ impl Loader for UserComputedLoader {
 		let mut roles: Vec<_> = global
 			.role_by_id_loader
 			.load_many(role_ids.into_iter())
-			.await?
+			.await
+			.ok()?
 			.into_values()
 			.collect();
 		roles.sort_by_key(|r| r.rank);
@@ -358,7 +346,7 @@ impl Loader for UserComputedLoader {
 				.collect();
 		}
 
-		Ok(result)
+		Some(result)
 	}
 }
 

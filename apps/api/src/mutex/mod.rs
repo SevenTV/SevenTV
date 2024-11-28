@@ -1,5 +1,4 @@
 use anyhow::Context;
-use scuffle_foundations::telemetry::opentelemetry::{OpenTelemetrySpanExt, Status};
 use shared::database::Id;
 use tracing::Instrument;
 
@@ -88,9 +87,6 @@ impl DistributedMutex {
 
 			if !aquired {
 				tracing::Span::current().record("attempts", req.attempts);
-				tracing::Span::current().set_status(Status::Error {
-					description: "failed to acquire mutex".into(),
-				});
 				return Err(MutexError::Acquire(req.attempts));
 			}
 
@@ -126,7 +122,6 @@ impl DistributedMutex {
 							true => Ok(()),
 							false => {
 								tracing::warn!("lost mutex lock while waiting for operation to complete");
-								tracing::Span::current().set_status(Status::Error { description: "lost mutex lock".into() });
 								Err(MutexError::Lost)
 							}
 						}

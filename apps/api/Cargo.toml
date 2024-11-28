@@ -6,13 +6,20 @@ license = "Apache-2.0 with Commons Clause"
 
 [dependencies]
 tokio = { version = "1.38", features = ["full"] }
-scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
-scuffle-image-processor-proto = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["client"] }
+
+scuffle-bootstrap = "0.0.0"
+scuffle-context = "0.0.0"
+scuffle-image-processor-proto = { version = "0.0.0", features = ["client"] }
+scuffle-metrics = "0.0.0"
+scuffle-batching = "0.0.0"
+scuffle-http = { version = "0.0.0", features = ["axum"] }
+
 prost = "0.13"
 tonic = { version = "0.12" }
 regex = "1.10.6"
 url = "2.3.1"
 rustls = { version = "0.23.12", features = ["aws-lc-rs"] }
+smart-default = "0.7.1"
 
 serde = { version = "1.0", features = ["derive"] }
 bitmask-enum = "2"
@@ -24,11 +31,11 @@ async-graphql-axum = "7.0.6"
 
 async-stripe = { version = "0.39.1", features = ["runtime-tokio-hyper-rustls", "async"] }
 crc = "3.2.1"
-x509-certificate = "0.23.1"
+x509-certificate = "0.24.0"
 rsa = "0.9.6"
 
 async-trait = "0.1.80"
-async-nats = "0.37.0"
+async-nats = "0.38.0"
 anyhow = "1"
 jwt-next = "0.17.0"
 hmac = "0.12.1"
@@ -50,7 +57,7 @@ futures = "0.3"
 reqwest = { version = "0.12.8", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
 rand = "0.8"
 pin-project = "1"
-thiserror = "1"
+thiserror = "2.0.3"
 utoipa = { version = "4.2", features = ["repr"] }
 itertools = "0.13"
 mongodb = { version = "3.0", features = ["snappy-compression", "zlib-compression", "zstd-compression"] }

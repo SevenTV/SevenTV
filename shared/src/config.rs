@@ -1,10 +1,11 @@
-use scuffle_foundations::settings::auto_settings;
+use serde::{Deserialize, Serialize};
 
-#[auto_settings]
+
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct NatsConfig {
 	/// The URI to use for connecting to Nats
-	#[settings(default = vec!["nats://localhost:4222".to_string()])]
+	#[default(vec!["nats://localhost:4222".to_string()])]
 	pub servers: Vec<String>,
 
 	/// The username to use for authentication (user-pass auth)
@@ -20,35 +21,36 @@ pub struct NatsConfig {
 	pub tls: Option<TlsConfig>,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
+#[serde(default)]
 pub struct RedisConfig {
 	/// Redis URI
-	#[settings(default = vec!["127.0.0.1:6379".to_string()])]
+	#[default(vec!["127.0.0.1:6379".to_string()])]
 	pub servers: Vec<String>,
 	/// Redis username
-	#[settings(default = None)]
+	#[default(None)]
 	pub username: Option<String>,
 	/// Redis password
-	#[settings(default = None)]
+	#[default(None)]
 	pub password: Option<String>,
 	/// Redis database
-	#[settings(default = 0)]
+	#[default(0)]
 	pub database: u8,
 	/// Redis max connections
-	#[settings(default = 10)]
+	#[default(10)]
 	pub max_connections: usize,
 	/// Redis TLS configuration
-	#[settings(default = None)]
+	#[default(None)]
 	pub tls: Option<TlsConfig>,
 	/// Redis Sentinel configuration
-	#[settings(default = None)]
+	#[default(None)]
 	pub sentinel_service_name: Option<String>,
-	#[settings(default = 10)]
 	/// The number of redis connections to pool
+	#[default(10)]
 	pub pool_size: usize,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct TlsConfig {
 	/// The path to the TLS certificate
@@ -64,95 +66,95 @@ pub struct TlsConfig {
 	pub alpn_protocols: Vec<String>,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct PodConfig {
 	/// Pod name
-	#[settings(default = std::env::var("POD_NAME").unwrap_or_else(|_| "".into()))]
+	#[default(std::env::var("POD_NAME").unwrap_or_else(|_| "".into()))]
 	pub name: String,
 	/// Node name
-	#[settings(default = std::env::var("NODE_NAME").unwrap_or_else(|_| "".into()))]
+	#[default(std::env::var("NODE_NAME").unwrap_or_else(|_| "".into()))]
 	pub node_name: String,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct DatabaseConfig {
 	/// The URI to use for connecting to the database
-	#[settings(default = "mongodb://localhost:27017".into())]
+	#[default("mongodb://localhost:27017".to_string())]
 	pub uri: String,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct ImageProcessorConfig {
 	/// Image Processor address
 	pub address: Vec<String>,
 	/// Resolve Interval
-	#[settings(default = std::time::Duration::from_secs(10))]
+	#[default(std::time::Duration::from_secs(10))]
 	#[serde(with = "humantime_serde")]
 	pub resolve_interval: std::time::Duration,
 	/// Event Queue Name
-	#[settings(default = "nats".into())]
+	#[default("nats".to_string())]
 	pub event_queue_name: String,
 	/// Event Queue Topic Prefix
-	#[settings(default = "image_processor".into())]
+	#[default("image_processor".to_string())]
 	pub event_queue_topic_prefix: String,
 	/// Input Drive Name
-	#[settings(default = "s3".into())]
+	#[default("s3".to_string())]
 	pub input_drive_name: String,
 	/// Output Drive Name
-	#[settings(default = "s3".into())]
+	#[default("s3".to_string())]
 	pub output_drive_name: String,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct TypesenseConfig {
 	/// The URI to use for connecting to Typesense
-	#[settings(default = "http://localhost:8108".into())]
+	#[default("http://localhost:8108".to_string())]
 	pub uri: String,
 
 	/// The API key to use for authentication
 	pub api_key: Option<String>,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct EventStreamConfig {
 	/// Replica count for the stream (in nats terms)
-	#[settings(default = 1)]
+	#[default(1)]
 	pub replica_count: i32,
 
 	/// The number of pending acks to buffer
-	#[settings(default = 1000)]
+	#[default(1000)]
 	pub ack_capacity: usize,
 
 	/// The prefix to use for the streams created by this application, will be
 	/// prepended with a hyphen (if not already present and the stream name is
 	/// not empty)
-	#[settings(default = "seventv".into())]
+	#[default("seventv".to_string())]
 	pub stream_prefix: String,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct S3BucketConfig {
 	/// The name of the S3 bucket
-	#[settings(default = String::from("7tv-public"))]
+	#[default(String::from("7tv-public"))]
 	pub name: String,
 	/// The region the S3 bucket is in
-	#[settings(default = String::from("us-east-1"))]
+	#[default(String::from("us-east-1"))]
 	pub region: String,
 	/// The custom endpoint for the S3 bucket
-	#[settings(default = Some("http://localhost:9000".to_string()))]
+	#[default(Some("http://localhost:9000".to_string()))]
 	pub endpoint: Option<String>,
 	/// The credentials for the S3 bucket
-	#[settings(default = S3CredentialsConfig::default())]
+	#[default(S3CredentialsConfig::default())]
 	pub credentials: S3CredentialsConfig,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct S3CredentialsConfig {
 	/// The access key for the S3 bucket
@@ -173,36 +175,36 @@ impl S3CredentialsConfig {
 	}
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct ClickhouseConfig {
 	/// Clickhouse URI
-	#[settings(default = "http://localhost:8123".into())]
+	#[default("http://localhost:8123".to_string())]
 	pub uri: String,
 
 	/// Clickhouse username
-	#[settings(default = "default".into())]
+	#[default("default".to_string())]
 	pub username: String,
 
 	/// Clickhouse password
-	#[settings(default = "default".into())]
+	#[default("default".to_string())]
 	pub password: String,
 
 	/// Clickhouse database
-	#[settings(default = "7tv".into())]
+	#[default("7tv".to_string())]
 	pub database: String,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct RateLimit {
-	#[settings(default = false)]
+	#[default(false)]
 	pub enabled: bool,
-	#[settings(default = default_ipv6_buckets())]
+	#[default(default_ipv6_buckets())]
 	pub ipv6_buckets: Vec<RateLimitPrefixBucket>,
-	#[settings(default = default_ipv4_buckets())]
+	#[default(default_ipv4_buckets())]
 	pub ipv4_buckets: Vec<RateLimitPrefixBucket>,
-	#[settings(default = default_range_buckets())]
+	#[default(default_range_buckets())]
 	pub range_buckets: Vec<RateLimitRangeBucket>,
 }
 
@@ -284,21 +286,19 @@ pub fn default_range_buckets() -> Vec<RateLimitRangeBucket> {
 	]
 }
 
-#[auto_settings]
-#[derive(Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 pub struct RateLimitRangeBucket {
 	pub range: ipnet::IpNet,
 	pub concurrent_connections: Option<u64>,
 }
 
-#[auto_settings]
-#[derive(Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, smart_default::SmartDefault)]
 pub struct RateLimitPrefixBucket {
 	pub prefix_length: u8,
 	pub concurrent_connections: u64,
 }
 
-#[auto_settings]
+#[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct IncomingRequestConfig {
 	/// The IP header to use for incoming requests

@@ -3,10 +3,7 @@
 use std::sync::Arc;
 
 use anyhow::Context as _;
-use bson::doc;
-use scuffle_foundations::batcher::dataloader::DataLoader;
-use scuffle_foundations::batcher::BatcherConfig;
-use scuffle_foundations::telemetry::server::HealthCheck;
+use scuffle_batching::DataLoader;
 use shared::clickhouse::init_clickhouse;
 use shared::database::badge::Badge;
 use shared::database::emote_moderation_request::EmoteModerationRequest;
@@ -99,8 +96,10 @@ pub struct Global {
 	pub mutex: DistributedMutex,
 }
 
-impl Global {
-	pub async fn new(config: Config) -> anyhow::Result<Arc<Self>> {
+impl scuffle_bootstrap::global::Global for Global {
+	type Config = Config;
+
+	async fn init(config: Config) -> anyhow::Result<Arc<Self>> {
 		let (nats, jetstream) = shared::nats::setup_nats("api", &config.nats).await.context("nats connect")?;
 
 		tracing::info!("connected to nats");
@@ -197,43 +196,37 @@ impl Global {
 			stripe_client,
 			typesense: typesense_rs::apis::ApiClient::new(Arc::new(typesense)),
 			mongo,
-			updater: MongoUpdater::new(
-				db.clone(),
-				BatcherConfig {
-					name: "MongoUpdater".to_string(),
-					concurrency: 500,
-					max_batch_size: 5_000,
-					sleep_duration: std::time::Duration::from_millis(300),
-				},
-			),
+			updater: MongoUpdater::new(db.clone(), 500, std::time::Duration::from_millis(300)),
 			db,
 			clickhouse,
 			config,
 			user_loader: FullUserLoader::new(weak.clone()),
 		}))
 	}
+}
 
+impl Global {
 	pub fn geoip(&self) -> Option<&GeoIpResolver> {
 		self.geoip.as_ref()
 	}
 }
 
-impl HealthCheck for Global {
-	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output = bool> + Send + '_>> {
-		Box::pin(async {
-			tracing::debug!("running health check");
+// impl HealthCheck for Global {
+// 	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output = bool> + Send + '_>> {
+// 		Box::pin(async {
+// 			tracing::debug!("running health check");
 
-			if let Err(err) = self.db.run_command(doc! { "ping": 1 }).await {
-				tracing::error!(%err, "failed to ping database");
-				return false;
-			}
+// 			if let Err(err) = self.db.run_command(doc! { "ping": 1 }).await {
+// 				tracing::error!(%err, "failed to ping database");
+// 				return false;
+// 			}
 
-			if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
-				tracing::error!("nats not connected");
-				return false;
-			}
+// 			if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
+// 				tracing::error!("nats not connected");
+// 				return false;
+// 			}
 
-			true
-		})
-	}
-}
+// 			true
+// 		})
+// 	}
+// }

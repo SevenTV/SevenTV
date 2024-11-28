@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use scuffle_foundations::context::ContextFutExt;
+use scuffle_context::ContextFutExt;
 use shared::database::cron_job::{CronJob, CronJobId, CronJobInterval};
 use shared::database::queries::{filter, update};
 use shared::database::{Id, MongoCollection};
@@ -12,22 +12,24 @@ use crate::global::Global;
 mod emote_stats;
 mod sub_refresh;
 
-pub async fn run(global: Arc<Global>) {
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) {
 	tracing::info!("started cron job runner");
 
-	let ctx = scuffle_foundations::context::Context::global();
+	loop {
+		if tokio::time::sleep(std::time::Duration::from_secs(5)).with_context(&ctx).await.is_none() {
+			break;
+		}
 
-	while !ctx.is_done() {
-		tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 		let leased_id = Id::new();
 
-		let job = match fetch_job(&global, leased_id).await {
-			Ok(Some(job)) => job,
-			Ok(None) => continue,
-			Err(e) => {
+		let job = match fetch_job(&global, leased_id).with_context(&ctx).await {
+			Some(Ok(Some(job))) => job,
+			Some(Ok(None)) => continue,
+			Some(Err(e)) => {
 				tracing::error!(error = %e, "failed to fetch job");
 				continue;
 			}
+			None => break,
 		};
 
 		let span = tracing::info_span!("cron_job", job = %job.name, id = ?job.id);

@@ -4,8 +4,7 @@ use std::future::IntoFuture;
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_batching::{DataLoader, DataLoaderFetcher};
 use shared::database::loader::dataloader::BatchLoad;
 use shared::database::queries::filter;
 use shared::database::user::connection::{Platform, UserConnection};
@@ -14,38 +13,30 @@ use shared::database::MongoCollection;
 
 pub struct UserByPlatformIdLoader {
 	db: mongodb::Database,
-	config: BatcherConfig,
+	name: String,
 }
 
 impl UserByPlatformIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		Self::new_with_config(
 			db,
-			BatcherConfig {
-				name: "UserByPlatformIdLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(5),
-			},
+			"UserByPlatformIdLoader".to_string(),
+			500,
+			std::time::Duration::from_millis(5),
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { db, config })
+	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
 
-impl Loader for UserByPlatformIdLoader {
+impl DataLoaderFetcher for UserByPlatformIdLoader {
 	type Key = (Platform, String);
 	type Value = User;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
-
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
+	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let grouped = keys.iter().map(|(k, v)| (k, v)).into_group_map();
 
@@ -67,7 +58,8 @@ impl Loader for UserByPlatformIdLoader {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})
+			.ok()?;
 
 		let mut results = HashMap::new();
 
@@ -84,44 +76,36 @@ impl Loader for UserByPlatformIdLoader {
 			}
 		}
 
-		Ok(results)
+		Some(results)
 	}
 }
 
 pub struct UserByPlatformUsernameLoader {
 	db: mongodb::Database,
-	config: BatcherConfig,
+	name: String,
 }
 
 impl UserByPlatformUsernameLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		Self::new_with_config(
 			db,
-			BatcherConfig {
-				name: "UserByPlatformUserameLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(5),
-			},
+			"UserByPlatformUserameLoader".to_string(),
+			500,
+			std::time::Duration::from_millis(5),
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { db, config })
+	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
 
-impl Loader for UserByPlatformUsernameLoader {
+impl DataLoaderFetcher for UserByPlatformUsernameLoader {
 	type Key = (Platform, String);
 	type Value = User;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
-
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
+	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let grouped = keys.iter().map(|(k, v)| (k, v)).into_group_map();
 
@@ -145,7 +129,8 @@ impl Loader for UserByPlatformUsernameLoader {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})
+			.ok()?;
 
 		let mut results = HashMap::new();
 		let keys = keys.into_iter().collect::<HashSet<_>>();
@@ -161,6 +146,6 @@ impl Loader for UserByPlatformUsernameLoader {
 			}
 		}
 
-		Ok(results)
+		Some(results)
 	}
 }

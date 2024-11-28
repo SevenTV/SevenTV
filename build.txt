@@ -1,0 +1,1662 @@
+   Compiling api v0.1.0 (/home/troy/github/7tv/SevenTV/apps/api)
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/bans.rs:294:1
+    |
+294 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/bans.rs:294:1
+    |
+294 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/bans.rs:294:1
+    |
+294 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/bans.rs:294:1
+    |
+294 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/bans.rs:294:1
+    |
+294 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:331:1
+    |
+331 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::emote_set::EmoteSetEmote) -> shared::database::Id<shared::database::emote::Emote>` must implement `FnOnce<(&'1 shared::database::emote_set::EmoteSetEmote,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::emote_set::EmoteSetEmote,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:331:1
+    |
+331 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:331:1
+    |
+331 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:331:1
+    |
+331 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:331:1
+    |
+331 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:331:1
+    |
+331 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/users.rs:91:1
+   |
+91 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/users.rs:91:1
+   |
+91 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/users.rs:91:1
+   |
+91 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/users.rs:91:1
+   |
+91 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/users.rs:91:1
+   |
+91 | #[ComplexObject(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/audit_log.rs:33:1
+   |
+33 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/audit_log.rs:33:1
+   |
+33 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/emote.rs:90:1
+   |
+90 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/emote.rs:90:1
+   |
+90 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/emote.rs:265:1
+    |
+265 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/emote.rs:265:1
+    |
+265 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/emote_set.rs:115:1
+    |
+115 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `for<'a> fn(&'a &'0 shared::database::emote_set::EmoteSetEmote) -> bool` must implement `FnOnce<(&&'1 shared::database::emote_set::EmoteSetEmote,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&&shared::database::emote_set::EmoteSetEmote,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/emote_set.rs:115:1
+    |
+115 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::emote_set::EmoteSetEmote) -> shared::database::Id<shared::database::emote::Emote>` must implement `FnOnce<(&'1 shared::database::emote_set::EmoteSetEmote,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::emote_set::EmoteSetEmote,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/emote_set.rs:115:1
+    |
+115 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/emote_set.rs:115:1
+    |
+115 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/emote_set.rs:85:1
+   |
+85 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/emote_set.rs:85:1
+   |
+85 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/report.rs:88:1
+   |
+88 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 GqlObjectId) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 GqlObjectId,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&GqlObjectId,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/report.rs:88:1
+   |
+88 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/queries/report.rs:88:1
+   |
+88 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/user/mod.rs:295:1
+    |
+295 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/user/mod.rs:295:1
+    |
+295 | #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/editor.rs:38:1
+   |
+38 | #[ComplexObject]
+   | ^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/editor.rs:38:1
+   |
+38 | #[ComplexObject]
+   | ^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/editor.rs:38:1
+   |
+38 | #[ComplexObject]
+   | ^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/emote.rs:58:1
+   |
+58 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/emote.rs:58:1
+   |
+58 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/emote.rs:58:1
+   |
+58 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/emote.rs:58:1
+   |
+58 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/emote.rs:58:1
+   |
+58 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/emote.rs:297:1
+    |
+297 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/emote.rs:297:1
+    |
+297 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/emote.rs:297:1
+    |
+297 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/emote_set.rs:29:1
+   |
+29 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/emote_set.rs:29:1
+   |
+29 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/emote_set.rs:29:1
+   |
+29 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/entitlement.rs:80:1
+   |
+80 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/entitlement.rs:80:1
+   |
+80 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/entitlement.rs:80:1
+   |
+80 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/event/emote.rs:117:1
+    |
+117 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/event/emote.rs:117:1
+    |
+117 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/event/emote.rs:117:1
+    |
+117 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/event/mod.rs:95:1
+   |
+95 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/event/mod.rs:95:1
+   |
+95 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/event/mod.rs:95:1
+   |
+95 | #[async_graphql::ComplexObject]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/event/mod.rs:121:1
+    |
+121 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/event/mod.rs:121:1
+    |
+121 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/types/event/mod.rs:121:1
+    |
+121 | #[async_graphql::ComplexObject]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/role.rs:39:1
+   |
+39 | #[ComplexObject]
+   | ^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/role.rs:39:1
+   |
+39 | #[ComplexObject]
+   | ^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/types/role.rs:39:1
+   |
+39 | #[ComplexObject]
+   | ^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/reports.rs:29:1
+   |
+29 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/reports.rs:29:1
+   |
+29 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:37:1
+   |
+37 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:37:1
+   |
+37 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/emote_sets/mod.rs:37:1
+   |
+37 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/bans.rs:49:1
+   |
+49 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/bans.rs:49:1
+   |
+49 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/gql/mutations/bans.rs:49:1
+   |
+49 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/user/mod.rs:517:1
+    |
+517 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/user/mod.rs:517:1
+    |
+517 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/user/mod.rs:517:1
+    |
+517 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/user/mod.rs:517:1
+    |
+517 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v3/gql/queries/user/mod.rs:517:1
+    |
+517 | #[Object(rename_fields = "camelCase", rename_args = "snake_case")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/mutations/emote_set/operation.rs:163:1
+    |
+163 | #[async_graphql::Object]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::emote_set::EmoteSetEmote) -> shared::database::Id<shared::database::emote::Emote>` must implement `FnOnce<(&'1 shared::database::emote_set::EmoteSetEmote,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::emote_set::EmoteSetEmote,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/mutations/emote_set/operation.rs:163:1
+    |
+163 | #[async_graphql::Object]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/mutations/emote_set/operation.rs:163:1
+    |
+163 | #[async_graphql::Object]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/mutations/emote_set/operation.rs:163:1
+    |
+163 | #[async_graphql::Object]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/mutations/emote_set/operation.rs:163:1
+    |
+163 | #[async_graphql::Object]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/v4/gql/mutations/emote_set/operation.rs:163:1
+    |
+163 | #[async_graphql::Object]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+    = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/queries/search.rs:22:1
+   |
+22 | #[Object]
+   | ^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/queries/search.rs:22:1
+   |
+22 | #[Object]
+   | ^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 FullUser,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/queries/user.rs:15:1
+   |
+15 | #[Object]
+   | ^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/queries/user.rs:15:1
+   |
+15 | #[Object]
+   | ^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::User>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v4/gql/queries/user.rs:15:1
+   |
+15 | #[Object]
+   | ^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&'1 shared::database::user::User,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error[E0599]: no method named `inc` found for struct `Collector` in the current scope
+  --> apps/api/src/http/v3/gql/metrics.rs:65:3
+   |
+60 | /     gql_v3::error(
+61 | |         path_segment_display(&error.path),
+62 | |         code.unwrap_or_default(),
+63 | |         status_code.unwrap_or_default(),
+64 | |     )
+65 | |     .inc();
+   | |_____-^^^
+   |
+help: there is a method `incr` with a similar name
+   |
+65 |     .incr();
+   |      ~~~~
+
+error[E0599]: no method named `trace_id` found for struct `tracing::Span` in the current scope
+  --> apps/api/src/http/mod.rs:91:5
+   |
+90 | /         tracing::Span::current()
+91 | |             .trace_id()
+   | |             -^^^^^^^^ method not found in `Span`
+   | |_____________|
+   |
+
+error[E0271]: expected `impl Future<Output = ()>` to be a future that resolves to `Result<(), Error>`, but it resolves to `()`
+  --> apps/api/src/main.rs:25:3
+   |
+25 |         cron::run,
+   |         ----^^^^^
+   |         |
+   |         expected `Result<(), Error>`, found `()`
+   |         required by a bound introduced by this call
+   |
+   = note:   expected enum `Result<(), anyhow::Error>`
+           found unit type `()`
+   = note: required for `fn(Arc<global::Global>, scuffle_context::Context) -> impl futures::Future<Output = ()> {cron::run}` to implement `scuffle_bootstrap::service::Service<global::Global>`
+note: required by a bound in `main::{closure#0}::spawn_service`
+  --> apps/api/src/main.rs:21:1
+   |
+21 | / scuffle_bootstrap::main! {
+22 | |     Global {
+23 | |         http::run,
+24 | |         image_processor::run,
+...  |
+28 | |     }
+29 | | }
+   | |_^ required by this bound in `spawn_service`
+   = note: this error originates in the macro `scuffle_bootstrap::main` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: expected `impl Future<Output = ()>` to be a future that resolves to `Result<(), Error>`, but it resolves to `()`
+  --> apps/api/src/main.rs:25:3
+   |
+25 |         cron::run,
+   |         ^^^^ expected `Result<(), Error>`, found `()`
+   |
+   = note:   expected enum `Result<(), anyhow::Error>`
+           found unit type `()`
+   = note: required for `fn(Arc<global::Global>, scuffle_context::Context) -> impl futures::Future<Output = ()> {cron::run}` to implement `scuffle_bootstrap::service::Service<global::Global>`
+note: required by a bound in `main::{closure#0}::spawn_service`
+  --> apps/api/src/main.rs:21:1
+   |
+21 | / scuffle_bootstrap::main! {
+22 | |     Global {
+23 | |         http::run,
+24 | |         image_processor::run,
+...  |
+28 | |     }
+29 | | }
+   | |_^ required by this bound in `spawn_service`
+   = note: this error originates in the macro `scuffle_bootstrap::main` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `SignalSvc: scuffle_bootstrap::service::Service<global::Global>` is not satisfied
+  --> apps/api/src/main.rs:27:3
+   |
+27 |         SignalSvc,
+   |         ^^^^^^^^^ the trait `scuffle_bootstrap::service::Service<global::Global>` is not implemented for `SignalSvc`
+   |
+   = help: the trait `scuffle_bootstrap::service::Service<Global>` is implemented for `SignalSvc`
+note: required by a bound in `main::{closure#0}::spawn_service`
+  --> apps/api/src/main.rs:21:1
+   |
+21 | / scuffle_bootstrap::main! {
+22 | |     Global {
+23 | |         http::run,
+24 | |         image_processor::run,
+...  |
+28 | |     }
+29 | | }
+   | |_^ required by this bound in `spawn_service`
+   = note: this error originates in the macro `scuffle_bootstrap::main` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:28:28
+   |
+28 |         .route("/subscriptions", post(subscribe::subscribe))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&std::option::Option<shared::database::Id<shared::database::user::User>>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 std::option::Option<shared::database::Id<shared::database::user::User>>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:28:28
+   |
+28 |         .route("/subscriptions", post(subscribe::subscribe))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&http::middleware::session::Session`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 http::middleware::session::Session`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:28:28
+   |
+28 |         .route("/subscriptions", post(subscribe::subscribe))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:28:28
+   |
+28 |         .route("/subscriptions", post(subscribe::subscribe))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&HashMap<Currency, i64>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 HashMap<Currency, i64>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:31:4
+   |
+31 |             get(subscription::subscription).delete(cancel::cancel_subscription),
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:31:4
+   |
+31 |             get(subscription::subscription).delete(cancel::cancel_subscription),
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:31:4
+   |
+31 |             get(subscription::subscription).delete(cancel::cancel_subscription),
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&shared::database::Id<shared::database::user::User>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 shared::database::Id<shared::database::user::User>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:33:47
+   |
+33 |         .route("/subscriptions/:target/reactivate", post(cancel::reactivate_subscription))
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:33:47
+   |
+33 |         .route("/subscriptions/:target/reactivate", post(cancel::reactivate_subscription))
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:33:47
+   |
+33 |         .route("/subscriptions/:target/reactivate", post(cancel::reactivate_subscription))
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&shared::database::Id<shared::database::user::User>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 shared::database::Id<shared::database::user::User>`, for some specific lifetime `'0`
+
+error: implementation of `Iterator` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:33:47
+   |
+33 |         .route("/subscriptions/:target/reactivate", post(cancel::reactivate_subscription))
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `Iterator` is not general enough
+   |
+   = note: `Iterator` would have to be implemented for the type `std::slice::Iter<'_, shared::database::user::User>`
+   = note: ...but `Iterator` is actually implemented for the type `std::slice::Iter<'0, shared::database::user::User>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:34:51
+   |
+34 |         .route("/subscriptions/:target/payment-method", patch(payment_method::payment_method))
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:34:51
+   |
+34 |         .route("/subscriptions/:target/payment-method", patch(payment_method::payment_method))
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:34:51
+   |
+34 |         .route("/subscriptions/:target/payment-method", patch(payment_method::payment_method))
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUser`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUser`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/egvault/mod.rs:34:51
+   |
+34 |         .route("/subscriptions/:target/payment-method", patch(payment_method::payment_method))
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&http::middleware::session::Session`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 http::middleware::session::Session`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+   --> apps/api/src/http/middleware/session.rs:291:3
+    |
+291 | /         Box::pin(async move {
+292 | |             let (rate_limit_resp, auth_failed) = match this.modify_request(&mut req).await {
+293 | |                 Ok(rate_limit_resp) => rate_limit_resp,
+294 | |                 Err(err) => return Ok(err.into_response()),
+...   |
+307 | |             Ok(resp)
+308 | |         })
+    | |__________^ implementation of `std::marker::Send` is not general enough
+    |
+    = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+    = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+   --> apps/api/src/http/middleware/session.rs:291:3
+    |
+291 | /         Box::pin(async move {
+292 | |             let (rate_limit_resp, auth_failed) = match this.modify_request(&mut req).await {
+293 | |                 Ok(rate_limit_resp) => rate_limit_resp,
+294 | |                 Err(err) => return Ok(err.into_response()),
+...   |
+307 | |             Ok(resp)
+308 | |         })
+    | |__________^ implementation of `std::marker::Send` is not general enough
+    |
+    = note: `std::marker::Send` would have to be implemented for the type `&SessionMiddlewareService<S>`
+    = note: ...but `std::marker::Send` is actually implemented for the type `&'0 SessionMiddlewareService<S>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+   --> apps/api/src/http/middleware/session.rs:291:3
+    |
+291 | /         Box::pin(async move {
+292 | |             let (rate_limit_resp, auth_failed) = match this.modify_request(&mut req).await {
+293 | |                 Ok(rate_limit_resp) => rate_limit_resp,
+294 | |                 Err(err) => return Ok(err.into_response()),
+...   |
+307 | |             Ok(resp)
+308 | |         })
+    | |__________^ implementation of `std::marker::Send` is not general enough
+    |
+    = note: `std::marker::Send` would have to be implemented for the type `&ratelimit::RateLimiter`
+    = note: ...but `std::marker::Send` is actually implemented for the type `&'0 ratelimit::RateLimiter`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+   --> apps/api/src/http/middleware/session.rs:291:3
+    |
+291 | /         Box::pin(async move {
+292 | |             let (rate_limit_resp, auth_failed) = match this.modify_request(&mut req).await {
+293 | |                 Ok(rate_limit_resp) => rate_limit_resp,
+294 | |                 Err(err) => return Ok(err.into_response()),
+...   |
+307 | |             Ok(resp)
+308 | |         })
+    | |__________^ implementation of `std::marker::Send` is not general enough
+    |
+    = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<UserComputedLoader>`
+    = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<UserComputedLoader>`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+   --> apps/api/src/http/middleware/session.rs:291:3
+    |
+291 | /         Box::pin(async move {
+292 | |             let (rate_limit_resp, auth_failed) = match this.modify_request(&mut req).await {
+293 | |                 Ok(rate_limit_resp) => rate_limit_resp,
+294 | |                 Err(err) => return Ok(err.into_response()),
+...   |
+307 | |             Ok(resp)
+308 | |         })
+    | |__________^ implementation of `FnOnce` is not general enough
+    |
+    = note: closure with signature `fn(&shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&shared::database::user::User,)>`
+    = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `Iterator` is not general enough
+   --> apps/api/src/http/middleware/session.rs:291:3
+    |
+291 | /         Box::pin(async move {
+292 | |             let (rate_limit_resp, auth_failed) = match this.modify_request(&mut req).await {
+293 | |                 Ok(rate_limit_resp) => rate_limit_resp,
+294 | |                 Err(err) => return Ok(err.into_response()),
+...   |
+307 | |             Ok(resp)
+308 | |         })
+    | |__________^ implementation of `Iterator` is not general enough
+    |
+    = note: `Iterator` would have to be implemented for the type `std::slice::Iter<'_, shared::database::user::User>`
+    = note: ...but `Iterator` is actually implemented for the type `std::slice::Iter<'0, shared::database::user::User>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/auth/mod.rs:32:15
+   |
+32 |         .route("/", get(login))
+   |                     ^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/auth/mod.rs:32:15
+   |
+32 |         .route("/", get(login))
+   |                     ^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&str`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 str`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/auth/mod.rs:32:15
+   |
+32 |         .route("/", get(login))
+   |                     ^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Cookies`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Cookies`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/auth/mod.rs:33:21
+   |
+33 |         .route("/logout", get(logout))
+   |                           ^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&str`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 str`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/auth/mod.rs:33:21
+   |
+33 |         .route("/logout", get(logout))
+   |                           ^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/auth/mod.rs:33:21
+   |
+33 |         .route("/logout", get(logout))
+   |                           ^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&&http::middleware::session::Session`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 &http::middleware::session::Session`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/auth/mod.rs:33:21
+   |
+33 |         .route("/logout", get(logout))
+   |                           ^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&http::middleware::session::Session`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 http::middleware::session::Session`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/bridge.rs:17:36
+   |
+17 |     Router::new().route("/event-api", post(event_api))
+   |                                       ^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 BridgeBodyIdentifier) -> (shared::database::user::connection::Platform, std::string::String)` must implement `FnOnce<(&'1 BridgeBodyIdentifier,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&BridgeBodyIdentifier,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/bridge.rs:17:36
+   |
+17 |     Router::new().route("/event-api", post(event_api))
+   |                                       ^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/bridge.rs:17:36
+   |
+17 |     Router::new().route("/event-api", post(event_api))
+   |                                       ^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/bridge.rs:17:36
+   |
+17 |     Router::new().route("/event-api", post(event_api))
+   |                                       ^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&FullUser,)>`
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `Iterator` is not general enough
+  --> apps/api/src/http/v3/rest/bridge.rs:17:36
+   |
+17 |     Router::new().route("/event-api", post(event_api))
+   |                                       ^^^^^^^^^^^^^^^ implementation of `Iterator` is not general enough
+   |
+   = note: `Iterator` would have to be implemented for the type `std::collections::hash_map::Values<'_, shared::database::Id<shared::database::user::User>, FullUser>`
+   = note: ...but `Iterator` is actually implemented for the type `std::collections::hash_map::Values<'0, shared::database::Id<shared::database::user::User>, FullUser>`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:23:21
+   |
+23 |         .route("/global", get(get_global_emote_set))
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote_set::EmoteSetEmote) -> shared::database::Id<shared::database::emote::Emote>` must implement `FnOnce<(&'1 shared::database::emote_set::EmoteSetEmote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote_set::EmoteSetEmote,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:23:21
+   |
+23 |         .route("/global", get(get_global_emote_set))
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote::Emote) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::emote::Emote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote::Emote,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:23:21
+   |
+23 |         .route("/global", get(get_global_emote_set))
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:23:21
+   |
+23 |         .route("/global", get(get_global_emote_set))
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:23:21
+   |
+23 |         .route("/global", get(get_global_emote_set))
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&shared::database::emote::Emote) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&shared::database::emote::Emote,)>`
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote::Emote,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:24:18
+   |
+24 |         .route("/:id", get(get_emote_set_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote_set::EmoteSetEmote) -> shared::database::Id<shared::database::emote::Emote>` must implement `FnOnce<(&'1 shared::database::emote_set::EmoteSetEmote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote_set::EmoteSetEmote,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:24:18
+   |
+24 |         .route("/:id", get(get_emote_set_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote::Emote) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::emote::Emote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote::Emote,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:24:18
+   |
+24 |         .route("/:id", get(get_emote_set_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<EmoteByIdLoader>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<EmoteByIdLoader>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:24:18
+   |
+24 |         .route("/:id", get(get_emote_set_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:24:18
+   |
+24 |         .route("/:id", get(get_emote_set_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/emote_sets.rs:24:18
+   |
+24 |         .route("/:id", get(get_emote_set_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&shared::database::emote::Emote) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&shared::database::emote::Emote,)>`
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote::Emote,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/emotes.rs:39:18
+   |
+39 |         .route("/:id", get(get_emote_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/emotes.rs:39:18
+   |
+39 |         .route("/:id", get(get_emote_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/emotes.rs:39:18
+   |
+39 |         .route("/:id", get(get_emote_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&FullUser) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&FullUser,)>`
+   = note: ...but it actually implements `FnOnce<(&FullUser,)>`
+
+error: implementation of `Iterator` is not general enough
+  --> apps/api/src/http/v3/rest/emotes.rs:39:18
+   |
+39 |         .route("/:id", get(get_emote_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^^ implementation of `Iterator` is not general enough
+   |
+   = note: `Iterator` would have to be implemented for the type `std::collections::hash_map::Values<'_, shared::database::Id<shared::database::user::User>, FullUser>`
+   = note: ...but `Iterator` is actually implemented for the type `std::collections::hash_map::Values<'0, shared::database::Id<shared::database::user::User>, FullUser>`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:57:18
+   |
+57 |         .route("/:id", get(get_user_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote_set::EmoteSetEmote) -> shared::database::Id<shared::database::emote::Emote>` must implement `FnOnce<(&'1 shared::database::emote_set::EmoteSetEmote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote_set::EmoteSetEmote,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:57:18
+   |
+57 |         .route("/:id", get(get_user_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote::Emote) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::emote::Emote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote::Emote,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:57:18
+   |
+57 |         .route("/:id", get(get_user_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<EmoteSetByUserIdLoader>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<EmoteSetByUserIdLoader>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:57:18
+   |
+57 |         .route("/:id", get(get_user_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:57:18
+   |
+57 |         .route("/:id", get(get_user_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<LoaderById<shared::database::emote_set::EmoteSet>>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<LoaderById<shared::database::emote_set::EmoteSet>>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:57:18
+   |
+57 |         .route("/:id", get(get_user_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:57:18
+   |
+57 |         .route("/:id", get(get_user_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<UserEditorByUserIdLoader>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<UserEditorByUserIdLoader>`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:57:18
+   |
+57 |         .route("/:id", get(get_user_by_id))
+   |                        ^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&shared::database::emote::Emote) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&shared::database::emote::Emote,)>`
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote::Emote,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:58:34
+   |
+58 |         .route("/:id/profile-picture", put(upload_user_profile_picture))
+   |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:58:34
+   |
+58 |         .route("/:id/profile-picture", put(upload_user_profile_picture))
+   |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:58:34
+   |
+58 |         .route("/:id/profile-picture", put(upload_user_profile_picture))
+   |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUser`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUser`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:58:34
+   |
+58 |         .route("/:id/profile-picture", put(upload_user_profile_picture))
+   |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&shared::database::user::User) -> std::option::Option<shared::database::Id<shared::database::user::profile_picture::UserProfilePicture>>` must implement `FnOnce<(&shared::database::user::User,)>`
+   = note: ...but it actually implements `FnOnce<(&shared::database::user::User,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `for<'a> fn(&'a &'0 shared::database::emote::Emote) -> bool` must implement `FnOnce<(&&'1 shared::database::emote::Emote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&&shared::database::emote::Emote,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote::Emote) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&shared::database::emote::Emote,)>`, for any lifetime `'0`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote::Emote,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&shared::database::Id<shared::database::user::User>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 shared::database::Id<shared::database::user::User>`, for some specific lifetime `'0`
+
+error: implementation of `Iterator` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `Iterator` is not general enough
+   |
+   = note: `Iterator` would have to be implemented for the type `std::collections::hash_map::Values<'_, shared::database::Id<shared::database::emote::Emote>, shared::database::emote::Emote>`
+   = note: ...but `Iterator` is actually implemented for the type `std::collections::hash_map::Values<'0, shared::database::Id<shared::database::emote::Emote>, shared::database::emote::Emote>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<EmoteByIdLoader>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<EmoteByIdLoader>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&user_presence::UserPresencePlatform`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 user_presence::UserPresencePlatform`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<LoaderById<shared::database::emote_set::EmoteSet>>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<LoaderById<shared::database::emote_set::EmoteSet>>`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:59:28
+   |
+59 |         .route("/:id/presences", post(create_user_presence))
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `for<'a> fn(&'a &shared::database::emote::Emote) -> bool` must implement `FnOnce<(&&shared::database::emote::Emote,)>`
+   = note: ...but it actually implements `FnOnce<(&&shared::database::emote::Emote,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:60:37
+   |
+60 |         .route("/:platform/:platform_id", get(get_user_by_platform_id))
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<UserByPlatformIdLoader>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<UserByPlatformIdLoader>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:60:37
+   |
+60 |         .route("/:platform/:platform_id", get(get_user_by_platform_id))
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:60:37
+   |
+60 |         .route("/:platform/:platform_id", get(get_user_by_platform_id))
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<UserEditorByUserIdLoader>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<UserEditorByUserIdLoader>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:60:37
+   |
+60 |         .route("/:platform/:platform_id", get(get_user_by_platform_id))
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<LoaderById<shared::database::emote_set::EmoteSet>>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<LoaderById<shared::database::emote_set::EmoteSet>>`, for some specific lifetime `'0`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:60:37
+   |
+60 |         .route("/:platform/:platform_id", get(get_user_by_platform_id))
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote_set::EmoteSetEmote) -> shared::database::Id<shared::database::emote::Emote>` must implement `FnOnce<(&'1 shared::database::emote_set::EmoteSetEmote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote_set::EmoteSetEmote,)>`
+
+error: implementation of `FnOnce` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:60:37
+   |
+60 |         .route("/:platform/:platform_id", get(get_user_by_platform_id))
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+   |
+   = note: closure with signature `fn(&'0 shared::database::emote::Emote) -> shared::database::Id<shared::database::user::User>` must implement `FnOnce<(&'1 shared::database::emote::Emote,)>`, for any two lifetimes `'0` and `'1`...
+   = note: ...but it actually implements `FnOnce<(&shared::database::emote::Emote,)>`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:60:37
+   |
+60 |         .route("/:platform/:platform_id", get(get_user_by_platform_id))
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&FullUserLoader`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 FullUserLoader`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v3/rest/users.rs:60:37
+   |
+60 |         .route("/:platform/:platform_id", get(get_user_by_platform_id))
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&DataLoader<EmoteSetByUserIdLoader>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 DataLoader<EmoteSetByUserIdLoader>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v4/rest/auth/mod.rs:40:27
+   |
+40 |         .route("/login/finish", post(login_finish))
+   |                                 ^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&str`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 str`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v4/rest/auth/mod.rs:40:27
+   |
+40 |         .route("/login/finish", post(login_finish))
+   |                                 ^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v4/rest/auth/mod.rs:40:27
+   |
+40 |         .route("/login/finish", post(login_finish))
+   |                                 ^^^^^^^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&shared::database::user::connection::Platform`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 shared::database::user::connection::Platform`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v4/rest/auth/mod.rs:41:21
+   |
+41 |         .route("/logout", post(logout))
+   |                           ^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&str`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 str`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v4/rest/auth/mod.rs:41:21
+   |
+41 |         .route("/logout", post(logout))
+   |                           ^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&Arc<global::Global>`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 Arc<global::Global>`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v4/rest/auth/mod.rs:41:21
+   |
+41 |         .route("/logout", post(logout))
+   |                           ^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&&http::middleware::session::Session`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 &http::middleware::session::Session`, for some specific lifetime `'0`
+
+error: implementation of `std::marker::Send` is not general enough
+  --> apps/api/src/http/v4/rest/auth/mod.rs:41:21
+   |
+41 |         .route("/logout", post(logout))
+   |                           ^^^^^^^^^^^^ implementation of `std::marker::Send` is not general enough
+   |
+   = note: `std::marker::Send` would have to be implemented for the type `&http::middleware::session::Session`
+   = note: ...but `std::marker::Send` is actually implemented for the type `&'0 http::middleware::session::Session`, for some specific lifetime `'0`
+
+Some errors have detailed explanations: E0271, E0277, E0599.
+For more information about an error, try `rustc --explain E0271`.
+error: could not compile `api` (bin "api") due to 177 previous errors
