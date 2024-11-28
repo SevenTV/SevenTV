@@ -149,6 +149,8 @@ impl DataLoaderFetcher for EmoteByUserIdLoader {
 		&self,
 		keys: std::collections::HashSet<Self::Key>,
 	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
+
 		let results: Vec<_> = Emote::collection(&self.db)
 			.find(filter::filter! {
 				Emote {
