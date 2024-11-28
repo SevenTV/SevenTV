@@ -435,14 +435,14 @@ async fn logout(
 	];
 
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
-		let referer = referer.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		let referer = referer.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
 		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only logout from website"));
 		}
 	}
 
 	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
-		let origin = origin.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		let origin = origin.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
 		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}

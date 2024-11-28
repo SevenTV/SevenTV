@@ -21,35 +21,35 @@ pub struct EmoteFlagsInput {
 	pub animated: bool,
 }
 
-impl Into<shared::database::emote::EmoteFlags> for EmoteFlagsInput {
-	fn into(self) -> shared::database::emote::EmoteFlags {
+impl From<EmoteFlagsInput> for shared::database::emote::EmoteFlags {
+	fn from(val: EmoteFlagsInput) -> Self {
 		let mut flags = shared::database::emote::EmoteFlags::default();
 
-		if self.public_listed {
+		if val.public_listed {
 			flags |= shared::database::emote::EmoteFlags::PublicListed;
 		}
 
-		if self.private {
+		if val.private {
 			flags |= shared::database::emote::EmoteFlags::Private;
 		}
 
-		if self.nsfw {
+		if val.nsfw {
 			flags |= shared::database::emote::EmoteFlags::Nsfw;
 		}
 
-		if self.default_zero_width {
+		if val.default_zero_width {
 			flags |= shared::database::emote::EmoteFlags::DefaultZeroWidth;
 		}
 
-		if self.approved_personal {
+		if val.approved_personal {
 			flags |= shared::database::emote::EmoteFlags::ApprovedPersonal;
 		}
 
-		if self.denied_personal {
+		if val.denied_personal {
 			flags |= shared::database::emote::EmoteFlags::DeniedPersonal;
 		}
 
-		if self.animated {
+		if val.animated {
 			flags |= shared::database::emote::EmoteFlags::Animated;
 		}
 

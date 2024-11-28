@@ -1,3 +1,5 @@
+#![deny(clippy::large_stack_frames)]
+
 use scuffle_foundations::bootstrap::bootstrap;
 use scuffle_foundations::settings::cli::Matches;
 use tokio::fs;

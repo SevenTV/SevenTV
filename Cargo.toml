@@ -8,9 +8,13 @@ members = [
     "apps/mongo-typesense",
     "macros",
     "shared",
+    "tools/*",
 ]
 
 resolver = "2"
+
+[profile.dev]
+opt-level = 1
 
 [profile.release-debug]
 inherits = "release"

@@ -429,7 +429,7 @@ impl IntoResponse for CachedResponse {
 				format!(
 					"public, max-age={}, s-maxage={}, immutable",
 					self.max_age.as_secs(),
-					60 * 60 * 24
+					self.max_age.as_secs().min(60 * 60 * 24)
 				)
 				.try_into()
 				.unwrap(),
