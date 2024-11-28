@@ -9,7 +9,7 @@ use scuffle_metrics::metrics;
 
 #[metrics]
 mod error {
-    use scuffle_metrics::CounterU64;
+	use scuffle_metrics::CounterU64;
 
 	pub fn constructed(status: &'static str, status_code: String) -> CounterU64;
 }

@@ -19,7 +19,12 @@ impl UserSessionUpdaterBatcher {
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
@@ -28,7 +33,10 @@ impl DataLoaderFetcher for UserSessionUpdaterBatcher {
 	type Key = UserSessionId;
 	type Value = bool;
 
-	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
 		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		UserSession::collection(&self.db)

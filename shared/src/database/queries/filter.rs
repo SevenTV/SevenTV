@@ -1,4 +1,5 @@
-use std::{collections::HashSet, marker::PhantomData};
+use std::collections::HashSet;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub struct And<T>(Vec<Filter<T>>);

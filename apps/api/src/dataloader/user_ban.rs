@@ -25,7 +25,12 @@ impl UserBanByUserIdLoader {
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
@@ -34,7 +39,10 @@ impl DataLoaderFetcher for UserBanByUserIdLoader {
 	type Key = UserId;
 	type Value = Vec<UserBan>;
 
-	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
 		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let results: Vec<_> = UserBan::collection(&self.db)

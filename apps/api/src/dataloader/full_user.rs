@@ -265,10 +265,20 @@ pub struct UserComputedLoader {
 
 impl UserComputedLoader {
 	pub fn new(global: Weak<Global>) -> DataLoader<Self> {
-		Self::new_with_config(global, "UserComputedLoader".to_string(), 500, std::time::Duration::from_millis(5))
+		Self::new_with_config(
+			global,
+			"UserComputedLoader".to_string(),
+			500,
+			std::time::Duration::from_millis(5),
+		)
 	}
 
-	pub fn new_with_config(global: Weak<Global>, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		global: Weak<Global>,
+		name: String,
+		batch_size: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { global, name }, batch_size, sleep_duration)
 	}
 }
@@ -277,7 +287,10 @@ impl DataLoaderFetcher for UserComputedLoader {
 	type Key = UserId;
 	type Value = UserComputed;
 
-	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
 		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let global = &self.global.upgrade()?;

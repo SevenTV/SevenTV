@@ -26,7 +26,12 @@ impl UserByPlatformIdLoader {
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
@@ -35,7 +40,10 @@ impl DataLoaderFetcher for UserByPlatformIdLoader {
 	type Key = (Platform, String);
 	type Value = User;
 
-	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
 		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let grouped = keys.iter().map(|(k, v)| (k, v)).into_group_map();
@@ -95,7 +103,12 @@ impl UserByPlatformUsernameLoader {
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
@@ -104,7 +117,10 @@ impl DataLoaderFetcher for UserByPlatformUsernameLoader {
 	type Key = (Platform, String);
 	type Value = User;
 
-	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
 		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let grouped = keys.iter().map(|(k, v)| (k, v)).into_group_map();

@@ -129,7 +129,12 @@ impl EmoteByUserIdLoader {
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
@@ -138,7 +143,10 @@ impl DataLoaderFetcher for EmoteByUserIdLoader {
 	type Key = UserId;
 	type Value = Vec<Emote>;
 
-	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
 		let results: Vec<_> = Emote::collection(&self.db)
 			.find(filter::filter! {
 				Emote {
@@ -170,15 +178,15 @@ pub struct EmoteByIdLoader {
 
 impl EmoteByIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		Self::new_with_config(
-			db,
-			"EmoteByIdLoader".to_string(),
-			500,
-			std::time::Duration::from_millis(5),
-		)
+		Self::new_with_config(db, "EmoteByIdLoader".to_string(), 500, std::time::Duration::from_millis(5))
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, sleep_duration: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { db, name }, batch_size, sleep_duration)
 	}
 }
@@ -187,7 +195,10 @@ impl DataLoaderFetcher for EmoteByIdLoader {
 	type Key = EmoteId;
 	type Value = Emote;
 
-	async fn load(&self, keys: std::collections::HashSet<Self::Key>) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
 		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let results: Vec<Emote> = Emote::collection(&self.db)

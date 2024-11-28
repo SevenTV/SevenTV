@@ -34,7 +34,7 @@ async fn main() {
 		.collect::<HashSet<UserId>>();
 
 	let entitlements = EntitlementEdge::collection(&db)
-		.find(filter::filter!{
+		.find(filter::filter! {
 			EntitlementEdge {
 				#[query(flatten, rename = "_id")]
 				id: EntitlementEdgeId {
@@ -73,7 +73,9 @@ async fn main() {
 				to: EntitlementEdgeKind::SpecialEvent {
 					special_event_id: minion_special_event,
 				},
-				managed_by: Some(EntitlementEdgeManagedBy::SpecialEvent { special_event_id: minion_special_event })
+				managed_by: Some(EntitlementEdgeManagedBy::SpecialEvent {
+					special_event_id: minion_special_event,
+				}),
 			},
 		}))
 		.await

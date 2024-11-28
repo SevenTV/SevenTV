@@ -212,8 +212,8 @@ impl Global {
 }
 
 // impl HealthCheck for Global {
-// 	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output = bool> + Send + '_>> {
-// 		Box::pin(async {
+// 	fn check(&self) -> std::pin::Pin<Box<dyn futures::prelude::Future<Output =
+// bool> + Send + '_>> { 		Box::pin(async {
 // 			tracing::debug!("running health check");
 
 // 			if let Err(err) = self.db.run_command(doc! { "ping": 1 }).await {
@@ -221,9 +221,9 @@ impl Global {
 // 				return false;
 // 			}
 
-// 			if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
-// 				tracing::error!("nats not connected");
-// 				return false;
+// 			if !matches!(self.nats.connection_state(),
+// async_nats::connection::State::Connected) { 				tracing::error!("nats not
+// connected"); 				return false;
 // 			}
 
 // 			true

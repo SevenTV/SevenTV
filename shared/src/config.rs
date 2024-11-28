@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct NatsConfig {

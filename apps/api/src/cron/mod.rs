@@ -16,7 +16,11 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) {
 	tracing::info!("started cron job runner");
 
 	loop {
-		if tokio::time::sleep(std::time::Duration::from_secs(5)).with_context(&ctx).await.is_none() {
+		if tokio::time::sleep(std::time::Duration::from_secs(5))
+			.with_context(&ctx)
+			.await
+			.is_none()
+		{
 			break;
 		}
 

@@ -174,7 +174,13 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 		.build()
 		.into_server();
 
-	server.start(scuffle_http::svc::axum_service(routes(global.clone())), global.config.api.workers).await.context("Failed to start HTTP server")?;
+	server
+		.start(
+			scuffle_http::svc::axum_service(routes(global.clone())),
+			global.config.api.workers,
+		)
+		.await
+		.context("Failed to start HTTP server")?;
 
 	server.wait().with_context(&ctx).await.context("HTTP server failed")?;
 

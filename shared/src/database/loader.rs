@@ -4,7 +4,8 @@ use std::future::IntoFuture;
 use dataloader::BatchLoad;
 use futures::{TryFutureExt, TryStreamExt};
 use mongodb::options::ReadPreference;
-use scuffle_batching::{dataloader::DataLoader, DataLoaderFetcher};
+use scuffle_batching::dataloader::DataLoader;
+use scuffle_batching::DataLoaderFetcher;
 use scuffle_metrics::metrics;
 use serde::de::DeserializeOwned;
 
@@ -49,15 +50,29 @@ pub mod dataloader {
 
 impl<T: MongoCollection + DeserializeOwned + Clone + 'static> LoaderById<T> {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		Self::new_with_config(db, format!("LoaderById<{}>", T::COLLECTION_NAME), 500, std::time::Duration::from_millis(5))
+		Self::new_with_config(
+			db,
+			format!("LoaderById<{}>", T::COLLECTION_NAME),
+			500,
+			std::time::Duration::from_millis(5),
+		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, delay: std::time::Duration) -> DataLoader<Self> {
-		DataLoader::new(Self {
-			db,
-			name,
-			_phantom: std::marker::PhantomData,
-		}, batch_size, delay)
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		delay: std::time::Duration,
+	) -> DataLoader<Self> {
+		DataLoader::new(
+			Self {
+				db,
+				name,
+				_phantom: std::marker::PhantomData,
+			},
+			batch_size,
+			delay,
+		)
 	}
 }
 

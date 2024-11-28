@@ -20,10 +20,20 @@ pub struct EntitlementEdgeInboundLoader {
 
 impl EntitlementEdgeInboundLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		Self::new_with_config(db, "EntitlementEdgeInboundLoader".to_string(), 1000, std::time::Duration::from_millis(5))
+		Self::new_with_config(
+			db,
+			"EntitlementEdgeInboundLoader".to_string(),
+			1000,
+			std::time::Duration::from_millis(5),
+		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, delay: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		delay: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { db, name }, batch_size, delay)
 	}
 }
@@ -64,10 +74,20 @@ pub struct EntitlementEdgeOutboundLoader {
 
 impl EntitlementEdgeOutboundLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		Self::new_with_config(db, "EntitlementEdgeOutboundLoader".to_string(), 1000, std::time::Duration::from_millis(5))
+		Self::new_with_config(
+			db,
+			"EntitlementEdgeOutboundLoader".to_string(),
+			1000,
+			std::time::Duration::from_millis(5),
+		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, name: String, batch_size: usize, delay: std::time::Duration) -> DataLoader<Self> {
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		delay: std::time::Duration,
+	) -> DataLoader<Self> {
 		DataLoader::new(Self { db, name }, batch_size, delay)
 	}
 }

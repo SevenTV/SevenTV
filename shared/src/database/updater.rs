@@ -29,10 +29,7 @@ impl MongoUpdater {
 			.ok_or(MongoOpError::NoResponse)?
 	}
 
-	pub async fn bulk(
-		&self,
-		requests: impl IntoIterator<Item = MongoReq> + Send,
-	) -> Vec<Result<bool, MongoOpError>> {
+	pub async fn bulk(&self, requests: impl IntoIterator<Item = MongoReq> + Send) -> Vec<Result<bool, MongoOpError>> {
 		self.0
 			.execute_many(requests)
 			.await
@@ -92,10 +89,7 @@ impl BatchExecutor for Inner {
 	type Request = MongoReq;
 	type Response = Result<bool, MongoOpError>;
 
-	async fn execute(
-		&self,
-		documents: Vec<(Self::Request, BatchResponse<Self::Response>)>,
-	) {
+	async fn execute(&self, documents: Vec<(Self::Request, BatchResponse<Self::Response>)>) {
 		let mut collections = HashMap::new();
 
 		let (docs, callbacks) = documents
@@ -146,20 +140,25 @@ impl BatchExecutor for Inner {
 				"ops": docs,
 				"nsInfo": ns_info,
 			})
-			.await {
-				Ok(r) => r,
-				Err(e) => {
-					tracing::error!("failed to bulk write: {e}");
-					callbacks.into_iter().for_each(|c| c.send_err(MongoOpError::Import(e.clone())));
-					return;
-				}
-			};
+			.await
+		{
+			Ok(r) => r,
+			Err(e) => {
+				tracing::error!("failed to bulk write: {e}");
+				callbacks
+					.into_iter()
+					.for_each(|c| c.send_err(MongoOpError::Import(e.clone())));
+				return;
+			}
+		};
 
 		let resp: BulkWriteResp = match bson::from_document(r) {
 			Ok(r) => r,
 			Err(e) => {
 				tracing::error!("failed to deserialize bulk write response: {e}");
-				callbacks.into_iter().for_each(|c| c.send_err(MongoOpError::Deserialize(e.clone())));
+				callbacks
+					.into_iter()
+					.for_each(|c| c.send_err(MongoOpError::Deserialize(e.clone())));
 				return;
 			}
 		};
