@@ -33,6 +33,7 @@ use shared::ip::GeoIpResolver;
 use shared::redis::setup_redis;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, Layer};
 
 use crate::config::Config;
 use crate::dataloader::active_subscription_period::{
@@ -110,16 +111,25 @@ impl scuffle_bootstrap::global::Global for Global {
 	async fn init(config: Config) -> anyhow::Result<Arc<Self>> {
 		let metrics_registry = scuffle_bootstrap_telemetry::prometheus::Registry::new();
 
-		opentelemetry::global::set_meter_provider(SdkMeterProvider::builder()
-			.with_resource(Resource::new(vec![KeyValue::new("service.name", env!("CARGO_BIN_NAME"))]))
-			.with_reader(scuffle_metrics::prometheus::exporter()
-			.with_registry(metrics_registry.clone())
-			.build()
-			.context("prometheus metrics exporter")?)
-			.build());
+		opentelemetry::global::set_meter_provider(
+			SdkMeterProvider::builder()
+				.with_resource(Resource::new(vec![KeyValue::new("service.name", env!("CARGO_BIN_NAME"))]))
+				.with_reader(
+					scuffle_metrics::prometheus::exporter()
+						.with_registry(metrics_registry.clone())
+						.build()
+						.context("prometheus metrics exporter")?,
+				)
+				.build(),
+		);
 
 		tracing_subscriber::registry()
-			.with(tracing_subscriber::fmt::layer().with_file(true).with_line_number(true))
+			.with(
+				tracing_subscriber::fmt::layer()
+					.with_filter(EnvFilter::from_str(&config.level).context("invalid log level")?)
+					.with_file(true)
+					.with_line_number(true),
+			)
 			.init();
 
 		tracing::info!("starting api");

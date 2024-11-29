@@ -13,7 +13,6 @@ mod system {
 
 	use scuffle_metrics::{GaugeF64, GaugeU64, MetricEnum};
 
-
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum MemoryKind {
 		Total,
@@ -128,7 +127,7 @@ pub async fn run(_: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::Resul
 		// Memory is in MB so we multiply by 1024 * 1024 to get bytes
 		match sys_metrics::memory::get_memory() {
 			Ok(memory) => {
-				system::memory(system::MemoryKind::Total).record(memory.total  * 1024 * 1024);
+				system::memory(system::MemoryKind::Total).record(memory.total * 1024 * 1024);
 				system::memory(system::MemoryKind::Free).record(memory.free * 1024 * 1024);
 				system::memory(system::MemoryKind::Used).record(memory.used * 1024 * 1024);
 				system::memory(system::MemoryKind::Shared).record(memory.shared * 1024 * 1024);

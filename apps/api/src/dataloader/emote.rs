@@ -32,8 +32,10 @@ impl MergedResult {
 
 pub trait EmoteByIdLoaderExt {
 	async fn load_exclude_deleted(&self, id: EmoteId) -> Result<Option<Emote>, ()>;
-	async fn load_many_exclude_deleted(&self, ids: impl IntoIterator<Item = EmoteId> + Send)
-		-> Result<HashMap<EmoteId, Emote>, ()>;
+	async fn load_many_exclude_deleted(
+		&self,
+		ids: impl IntoIterator<Item = EmoteId> + Send,
+	) -> Result<HashMap<EmoteId, Emote>, ()>;
 	async fn load_many_merged(&self, ids: impl IntoIterator<Item = EmoteId> + Send) -> Result<MergedResult, ()>;
 }
 
@@ -182,7 +184,13 @@ pub struct EmoteByIdLoader {
 
 impl EmoteByIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
-		Self::new_with_config(db, "EmoteByIdLoader".to_string(), 500, 50, std::time::Duration::from_millis(5))
+		Self::new_with_config(
+			db,
+			"EmoteByIdLoader".to_string(),
+			500,
+			50,
+			std::time::Duration::from_millis(5),
+		)
 	}
 
 	pub fn new_with_config(

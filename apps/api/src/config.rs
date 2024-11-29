@@ -172,6 +172,10 @@ pub struct Config {
 	/// CDN purge topic
 	pub cdn: CdnConfig,
 
+	/// Log level
+	#[default(std::env::var("RUST_LOG").unwrap_or("info".into()))]
+	pub level: String,
+
 	/// Metrics bind address
 	#[default(None)]
 	pub metrics_bind_address: Option<SocketAddr>,

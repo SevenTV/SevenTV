@@ -167,7 +167,12 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 		.await
 		.context("Failed to start HTTP server")?;
 
-	server.wait().with_context(&ctx).await.transpose().context("HTTP server failed")?;
+	server
+		.wait()
+		.with_context(&ctx)
+		.await
+		.transpose()
+		.context("HTTP server failed")?;
 
 	server.shutdown().await.context("Failed to shutdown HTTP server")?;
 

@@ -1,15 +1,16 @@
 use std::convert::Infallible;
 use std::sync::Arc;
 
+use ::http::{HeaderName, HeaderValue};
+use anyhow::Context;
 use axum::body::Body;
 use axum::extract::{MatchedPath, Request};
 use axum::response::{IntoResponse, Response};
 use axum::Router;
-use ::http::{HeaderName, HeaderValue};
-use anyhow::Context;
 use scuffle_http::backend::HttpServer;
 use scuffle_http::body::IncomingBody;
 use scuffle_http::svc::AxumService;
+use scuffle_metrics::metrics;
 use shared::http::ip::IpMiddleware;
 use shared::http::ratelimit::{RateLimitDropGuard, RateLimiter};
 use tower::ServiceBuilder;
@@ -17,7 +18,6 @@ use tower_http::cors::CorsLayer;
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultOnFailure, TraceLayer};
 use tracing::Span;
-use scuffle_metrics::metrics;
 
 use self::http::{ActionKind, ConnectionDropGuard, SocketKind};
 use crate::global::Global;
@@ -72,14 +72,14 @@ fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 							span.record("response.status_code", res.status().as_u16());
 						}),
 				)
-				.layer(IpMiddleware::new(global.config.cdn.incoming_request.clone()))
+				.layer(IpMiddleware::new(global.config.cdn.incoming_request.clone())),
 		)
 		.layer(CorsLayer::permissive())
 }
 
 #[metrics]
 mod http {
-    use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum, UpDownCounterI64};
+	use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum, UpDownCounterI64};
 
 	pub struct ConnectionDropGuard(SocketKind);
 
@@ -197,7 +197,11 @@ struct MonitorAcceptor<A> {
 
 impl<A> MonitorAcceptor<A> {
 	pub fn new(inner: A, socket_kind: SocketKind, limiter: Arc<RateLimiter>) -> Self {
-		Self { inner, socket_kind, _limiter: limiter }
+		Self {
+			inner,
+			socket_kind,
+			_limiter: limiter,
+		}
 	}
 }
 
@@ -206,7 +210,11 @@ impl<A: scuffle_http::svc::ConnectionAcceptor> scuffle_http::svc::ConnectionAcce
 	type Handle = MonitorHandler<A::Handle>;
 
 	fn accept(&self) -> Option<Self::Handle> {
-		self.inner.accept().map(|handle| MonitorHandler { handle, socket_kind: self.socket_kind, _guard: Arc::new((ConnectionDropGuard::new(self.socket_kind), None)) })
+		self.inner.accept().map(|handle| MonitorHandler {
+			handle,
+			socket_kind: self.socket_kind,
+			_guard: Arc::new((ConnectionDropGuard::new(self.socket_kind), None)),
+		})
 	}
 }
 
@@ -244,10 +252,7 @@ fn handle_http_request<B>(req: &Request<B>, server_name: &str, port: u16) -> axu
 	let Ok(response) = ::http::Response::builder()
 		.status(::http::StatusCode::PERMANENT_REDIRECT)
 		.header(::http::header::LOCATION, uri.to_string())
-		.header(
-			::http::header::SERVER,
-			server_name.parse::<HeaderValue>().unwrap(),
-		)
+		.header(::http::header::SERVER, server_name.parse::<HeaderValue>().unwrap())
 		.body(Body::empty())
 	else {
 		return ::http::StatusCode::BAD_REQUEST.into_response();
@@ -266,7 +271,12 @@ pub enum Either<A, B> {
 impl<A, B> scuffle_http::svc::ConnectionHandle for Either<A, B>
 where
 	A: scuffle_http::svc::ConnectionHandle,
-	B: scuffle_http::svc::ConnectionHandle<Body = A::Body, BodyData = A::BodyData, BodyError = A::BodyError, Error = A::Error>,
+	B: scuffle_http::svc::ConnectionHandle<
+		Body = A::Body,
+		BodyData = A::BodyData,
+		BodyError = A::BodyError,
+		Error = A::Error,
+	>,
 {
 	type Body = A::Body;
 	type BodyData = A::BodyData;
@@ -315,7 +325,6 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 		.build()
 		.into_server();
 
-
 	let (tls_server, quic_server) = if let Some(tls) = &global.config.cdn.tls {
 		let cert = tokio::fs::read(&tls.cert).await.context("read cert")?;
 		let key = tokio::fs::read(&tls.key).await.context("read key")?;
@@ -328,11 +337,13 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 			.into_server();
 
 		let quic_server = if global.config.cdn.http3 {
-			Some(scuffle_http::backend::quic::quinn::QuinnServer::new(scuffle_http::backend::quic::quinn::QuinnServerConfig::builder()
-				.with_bind(global.config.cdn.secure_bind)
-				.with_tls_from_pem(&cert, &key)
-				.context("build quic server")?
-				.build()))
+			Some(scuffle_http::backend::quic::quinn::QuinnServer::new(
+				scuffle_http::backend::quic::quinn::QuinnServerConfig::builder()
+					.with_bind(global.config.cdn.secure_bind)
+					.with_tls_from_pem(&cert, &key)
+					.context("build quic server")?
+					.build(),
+			))
 		} else {
 			None
 		};
@@ -363,12 +374,27 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 
 	let limiter = RateLimiter::new(&global.config.cdn.rate_limit);
 
-	tcp_server.start(MonitorAcceptor::new(insecure_handler, SocketKind::Tcp, limiter.clone()), workers).await.context("start tcp server")?;
+	tcp_server
+		.start(
+			MonitorAcceptor::new(insecure_handler, SocketKind::Tcp, limiter.clone()),
+			workers,
+		)
+		.await
+		.context("start tcp server")?;
 	if let Some(tls_server) = &tls_server {
-		tls_server.start(MonitorAcceptor::new(handler.clone(), SocketKind::TlsTcp, limiter.clone()), workers).await.context("start tls server")?;
+		tls_server
+			.start(
+				MonitorAcceptor::new(handler.clone(), SocketKind::TlsTcp, limiter.clone()),
+				workers,
+			)
+			.await
+			.context("start tls server")?;
 	}
 	if let Some(quic_server) = &quic_server {
-		quic_server.start(MonitorAcceptor::new(handler.clone(), SocketKind::Quic, limiter), workers).await.context("start quic server")?;
+		quic_server
+			.start(MonitorAcceptor::new(handler.clone(), SocketKind::Quic, limiter), workers)
+			.await
+			.context("start quic server")?;
 	}
 
 	tokio::select! {
@@ -380,9 +406,22 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 
 	tokio::try_join!(
 		async { tcp_server.shutdown().await.context("tcp server") },
-		async { if let Some(tls_server) = &tls_server { tls_server.shutdown().await.context("tls server") } else { Ok(()) } },
-		async { if let Some(quic_server) = &quic_server { quic_server.shutdown().await.context("quic server") } else { Ok(()) } },
-	).context("shutdown")?;
+		async {
+			if let Some(tls_server) = &tls_server {
+				tls_server.shutdown().await.context("tls server")
+			} else {
+				Ok(())
+			}
+		},
+		async {
+			if let Some(quic_server) = &quic_server {
+				quic_server.shutdown().await.context("quic server")
+			} else {
+				Ok(())
+			}
+		},
+	)
+	.context("shutdown")?;
 
 	Ok(())
 }

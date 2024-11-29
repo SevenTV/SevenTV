@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
-use axum::Json;
-use axum::{Router, routing::get};
+use axum::routing::get;
+use axum::{Json, Router};
 use http::Uri;
 use shared::cdn::key::{CacheKey, ImageFile};
 use shared::database::badge::BadgeId;

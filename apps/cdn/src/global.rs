@@ -24,13 +24,17 @@ impl scuffle_bootstrap::global::Global for Global {
 	async fn init(config: Self::Config) -> anyhow::Result<Arc<Self>> {
 		let metrics = scuffle_bootstrap_telemetry::prometheus::Registry::new();
 
-		opentelemetry::global::set_meter_provider(SdkMeterProvider::builder()
-			.with_resource(Resource::new(vec![KeyValue::new("service.name", env!("CARGO_BIN_NAME"))]))
-			.with_reader(scuffle_metrics::prometheus::exporter()
-			.with_registry(metrics.clone())
-			.build()
-			.context("prometheus metrics exporter")?)
-			.build());
+		opentelemetry::global::set_meter_provider(
+			SdkMeterProvider::builder()
+				.with_resource(Resource::new(vec![KeyValue::new("service.name", env!("CARGO_BIN_NAME"))]))
+				.with_reader(
+					scuffle_metrics::prometheus::exporter()
+						.with_registry(metrics.clone())
+						.build()
+						.context("prometheus metrics exporter")?,
+				)
+				.build(),
+		);
 
 		tracing_subscriber::registry()
 			.with(tracing_subscriber::fmt::layer().with_file(true).with_line_number(true))
@@ -56,14 +60,14 @@ impl scuffle_bootstrap_telemetry::TelemetryConfig for Global {
 		tracing::debug!("running health check");
 		Ok(())
 	}
-	
+
 	fn bind_address(&self) -> Option<std::net::SocketAddr> {
 		self.config.metrics_bind_address
 	}
 
 	fn prometheus_metrics_registry(&self) -> Option<&scuffle_bootstrap_telemetry::prometheus::Registry> {
 		Some(&self.metrics)
-	}	
+	}
 }
 
 impl scuffle_bootstrap::signals::SignalSvcConfig for Global {
