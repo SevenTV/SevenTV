@@ -1,42 +1,28 @@
-use std::sync::atomic::AtomicUsize;
+use std::convert::Infallible;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
+use axum::body::Body;
+use axum::extract::{MatchedPath, Request};
+use axum::response::{IntoResponse, Response};
+use axum::Router;
 use ::http::{HeaderName, HeaderValue};
 use anyhow::Context;
-use quinn::crypto::rustls::QuicServerConfig;
-use scuffle_foundations::http::server::axum::body::HttpBody;
-use scuffle_foundations::http::server::axum::extract::{MatchedPath, Request};
-use scuffle_foundations::http::server::axum::response::Response;
-use scuffle_foundations::http::server::axum::Router;
-use scuffle_foundations::http::server::stream::{Body, IncomingConnection, IntoResponse, MakeService, ServiceHandler};
-use scuffle_foundations::telemetry::metrics::metrics;
-use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use scuffle_http::backend::HttpServer;
+use scuffle_http::body::IncomingBody;
+use scuffle_http::svc::AxumService;
 use shared::http::ip::IpMiddleware;
 use shared::http::ratelimit::{RateLimitDropGuard, RateLimiter};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
-use tower_http::request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer};
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultOnFailure, TraceLayer};
 use tracing::Span;
+use scuffle_metrics::metrics;
 
 use self::http::{ActionKind, ConnectionDropGuard, SocketKind};
 use crate::global::Global;
 
 mod cdn;
-
-#[derive(Clone)]
-struct TraceRequestId;
-
-impl MakeRequestId for TraceRequestId {
-	fn make_request_id<B>(&mut self, _: &Request<B>) -> Option<RequestId> {
-		tracing::Span::current()
-			.trace_id()
-			.and_then(|id| id.to_string().parse().ok())
-			.map(RequestId::new)
-	}
-}
 
 fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 	Router::new()
@@ -79,8 +65,6 @@ fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 								"response.status_code" = tracing::field::Empty,
 							);
 
-							span.make_root();
-
 							span
 						})
 						.on_failure(DefaultOnFailure::new().level(tracing::Level::DEBUG))
@@ -88,75 +72,33 @@ fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 							span.record("response.status_code", res.status().as_u16());
 						}),
 				)
-				.layer(SetRequestIdLayer::x_request_id(TraceRequestId))
 				.layer(IpMiddleware::new(global.config.cdn.incoming_request.clone()))
-				.layer(PropagateRequestIdLayer::x_request_id()),
 		)
 		.layer(CorsLayer::permissive())
 }
 
-#[derive(Clone)]
-struct AnyService<A: ServiceHandler, B: ServiceHandler> {
-	kind: SocketKind,
-	started_at: Instant,
-	request_count: Arc<AtomicUsize>,
-	_guard: Arc<(ConnectionDropGuard, RateLimitDropGuard)>,
-	inner: AnyServiceInner<A, B>,
-}
-
-impl<A: ServiceHandler, B: ServiceHandler> AnyService<A, B> {
-	fn new_a(kind: SocketKind, svc: A, limiter: RateLimitDropGuard) -> Self {
-		Self::new(kind, AnyServiceInner::Left(svc), limiter)
-	}
-
-	fn new_b(kind: SocketKind, svc: B, limiter: RateLimitDropGuard) -> Self {
-		Self::new(kind, AnyServiceInner::Right(svc), limiter)
-	}
-
-	fn new(kind: SocketKind, svc: AnyServiceInner<A, B>, limiter: RateLimitDropGuard) -> Self {
-		Self {
-			kind,
-			request_count: Arc::new(AtomicUsize::new(0)),
-			started_at: Instant::now(),
-			_guard: Arc::new((ConnectionDropGuard::new(kind), limiter)),
-			inner: svc,
-		}
-	}
-}
-
-#[derive(Clone, Copy, Debug)]
-enum AnyServiceInner<A: ServiceHandler, B: ServiceHandler> {
-	Left(A),
-	Right(B),
-}
-
 #[metrics]
 mod http {
-	use scuffle_foundations::http::server::stream;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
-	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
-	use serde::{Deserialize, Serialize};
+    use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum, UpDownCounterI64};
 
 	pub struct ConnectionDropGuard(SocketKind);
 
 	impl Drop for ConnectionDropGuard {
 		fn drop(&mut self) {
-			connections(self.0).dec();
+			connections(self.0).decr();
 		}
 	}
 
 	impl ConnectionDropGuard {
 		pub fn new(socket: SocketKind) -> Self {
-			connections(socket).inc();
+			connections(socket).incr();
 			Self(socket)
 		}
 	}
 
-	pub fn connections(socket: SocketKind) -> Gauge;
+	pub fn connections(socket: SocketKind) -> UpDownCounterI64;
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum ActionKind {
 		Error,
 		Hijack,
@@ -165,281 +107,282 @@ mod http {
 		Close,
 	}
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum SocketKind {
 		Tcp,
 		TlsTcp,
 		Quic,
 	}
 
-	impl From<stream::SocketKind> for SocketKind {
-		fn from(value: stream::SocketKind) -> Self {
-			match value {
-				stream::SocketKind::Tcp => Self::Tcp,
-				stream::SocketKind::TlsTcp => Self::TlsTcp,
-				stream::SocketKind::Quic => Self::Quic,
-			}
-		}
-	}
+	pub fn actions(socket: SocketKind, action: ActionKind) -> CounterU64;
 
-	pub fn actions(socket: SocketKind, action: ActionKind) -> Counter;
-
-	pub fn status_code(socket: SocketKind, status: String) -> Counter;
+	pub fn status_code(socket: SocketKind, status: String) -> CounterU64;
 
 	#[builder = HistogramBuilder::default()]
-	pub fn socket_request_count(socket: SocketKind) -> Histogram;
+	pub fn socket_request_count(socket: SocketKind) -> HistogramF64;
 
 	#[builder = HistogramBuilder::default()]
-	pub fn socket_duration(socket: SocketKind) -> Histogram;
+	pub fn socket_duration(socket: SocketKind) -> HistogramF64;
 
 	#[builder = HistogramBuilder::default()]
-	pub fn request_duration(socket: SocketKind) -> Histogram;
+	pub fn request_duration(socket: SocketKind) -> HistogramF64;
 
-	pub fn bytes_sent(socket: SocketKind) -> Counter;
+	pub fn bytes_sent(socket: SocketKind) -> CounterU64;
 }
 
-impl<A: ServiceHandler, B: ServiceHandler> ServiceHandler for AnyService<A, B> {
-	fn on_error(&self, err: scuffle_foundations::http::server::Error) -> impl std::future::Future<Output = ()> + Send {
-		http::actions(self.kind, ActionKind::Error).inc();
+#[derive(Clone)]
+struct InsecureHandler {
+	server_name: Arc<str>,
+	port: u16,
+}
 
-		tracing::debug!("error while handling request: {:#}", err);
+#[async_trait::async_trait]
+impl scuffle_http::svc::ConnectionHandle for InsecureHandler {
+	type Body = axum::body::Body;
+	type BodyData = axum::body::Bytes;
+	type BodyError = axum::Error;
+	type Error = Infallible;
 
-		async move {
-			match &self.inner {
-				AnyServiceInner::Left(a) => a.on_error(err).await,
-				AnyServiceInner::Right(b) => b.on_error(err).await,
-			}
-		}
-	}
-
-	fn on_hijack(&self) -> impl std::future::Future<Output = ()> + Send {
-		http::actions(self.kind, ActionKind::Hijack).inc();
-
-		async move {
-			match &self.inner {
-				AnyServiceInner::Left(a) => a.on_hijack().await,
-				AnyServiceInner::Right(b) => b.on_hijack().await,
-			}
-		}
-	}
-
-	fn on_ready(&self) -> impl std::future::Future<Output = ()> + Send {
-		http::actions(self.kind, ActionKind::Ready).inc();
-
-		async move {
-			match &self.inner {
-				AnyServiceInner::Left(a) => a.on_ready().await,
-				AnyServiceInner::Right(b) => b.on_ready().await,
-			}
-		}
-	}
-
-	fn on_request(
-		&self,
-		req: Request,
-	) -> impl std::future::Future<Output = impl scuffle_foundations::http::server::stream::IntoResponse> + Send {
-		http::actions(self.kind, ActionKind::Request).inc();
-
-		self.request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
-		let start = Instant::now();
-
-		async move {
-			let request = match &self.inner {
-				AnyServiceInner::Left(a) => a.on_request(req).await.into_response(),
-				AnyServiceInner::Right(b) => b.on_request(req).await.into_response(),
-			};
-
-			let size = request.body().size_hint();
-
-			http::bytes_sent(self.kind).inc_by(size.exact().unwrap_or(size.lower()));
-			http::status_code(self.kind, request.status().as_u16().to_string()).inc();
-			http::request_duration(self.kind).observe(start.elapsed().as_secs_f64());
-
-			request
-		}
-	}
-
-	fn on_close(&self) -> impl std::future::Future<Output = ()> + Send {
-		http::actions(self.kind, ActionKind::Close).inc();
-
-		http::socket_duration(self.kind).observe(self.started_at.elapsed().as_secs_f64());
-		http::socket_request_count(self.kind).observe(self.request_count.load(std::sync::atomic::Ordering::Relaxed) as f64);
-
-		async move {
-			match &self.inner {
-				AnyServiceInner::Left(a) => a.on_close().await,
-				AnyServiceInner::Right(b) => b.on_close().await,
-			}
-		}
+	async fn on_request(&self, req: ::http::Request<IncomingBody>) -> Result<::http::Response<Self::Body>, Self::Error> {
+		Ok(handle_http_request(&req, &self.server_name, self.port))
 	}
 }
 
 #[derive(Clone)]
-struct CustomMakeService {
-	redirect_uncrypted: Option<u16>,
-	server_name: Arc<str>,
-	routes: Router,
-	limiter: Arc<RateLimiter>,
+struct MonitorHandler<H> {
+	socket_kind: SocketKind,
+	handle: H,
+	_guard: Arc<(ConnectionDropGuard, Option<RateLimitDropGuard>)>,
 }
 
-#[derive(Clone, Debug)]
-struct RedirectUncrypted {
-	port: u16,
-	server_name: Arc<str>,
-}
+#[async_trait::async_trait]
+impl<H: scuffle_http::svc::ConnectionHandle> scuffle_http::svc::ConnectionHandle for MonitorHandler<H> {
+	type Body = H::Body;
+	type BodyData = H::BodyData;
+	type BodyError = H::BodyError;
+	type Error = H::Error;
 
-impl ServiceHandler for RedirectUncrypted {
-	fn on_request(
-		&self,
-		req: Request,
-	) -> impl std::future::Future<Output = impl scuffle_foundations::http::server::stream::IntoResponse> + Send {
-		let Some(host) = req.headers().get(::http::header::HOST).and_then(|h| h.to_str().ok()) else {
-			return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
-		};
+	async fn on_request(&self, req: ::http::Request<IncomingBody>) -> Result<::http::Response<Self::Body>, Self::Error> {
+		http::actions(self.socket_kind, ActionKind::Request).incr();
+		self.handle.on_request(req).await
+	}
 
-		let mut builder = ::http::Uri::builder().scheme("https");
+	fn on_close(&self) {
+		http::actions(self.socket_kind, ActionKind::Close).incr();
+		self.handle.on_close();
+	}
 
-		{
-			let Some(uri) = format!("https://{host}").parse::<::http::Uri>().ok() else {
-				return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
-			};
+	fn on_error(&self, err: scuffle_http::Error) {
+		http::actions(self.socket_kind, ActionKind::Error).incr();
+		self.handle.on_error(err);
+	}
 
-			let Some(host) = uri.host() else {
-				return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
-			};
+	fn on_hijack(&self) {
+		http::actions(self.socket_kind, ActionKind::Hijack).incr();
+		self.handle.on_hijack();
+	}
 
-			if self.port != 443 {
-				builder = builder.authority(format!("{host}:{}", self.port));
-			} else {
-				builder = builder.authority(host);
-			}
-		}
-
-		if let Some(path_and_query) = req.uri().path_and_query() {
-			builder = builder.path_and_query(path_and_query.clone());
-		}
-
-		let Ok(uri) = builder.build() else {
-			return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
-		};
-
-		let Ok(response) = ::http::Response::builder()
-			.status(::http::StatusCode::PERMANENT_REDIRECT)
-			.header(::http::header::LOCATION, uri.to_string())
-			.header(
-				::http::header::SERVER,
-				self.server_name.as_ref().parse::<HeaderValue>().unwrap(),
-			)
-			.body(Body::empty())
-		else {
-			return std::future::ready(::http::StatusCode::BAD_REQUEST.into_response());
-		};
-
-		std::future::ready(response)
+	fn on_ready(&self) {
+		http::actions(self.socket_kind, ActionKind::Ready).incr();
+		self.handle.on_ready();
 	}
 }
 
-impl MakeService for CustomMakeService {
-	fn make_service(
-		&self,
-		incoming: &impl IncomingConnection,
-	) -> impl std::future::Future<Output = Option<impl ServiceHandler>> + Send {
-		let Some(ticket) = self.limiter.acquire(incoming.remote_addr().ip()) else {
-			return std::future::ready(None);
-		};
+#[derive(Clone)]
+struct MonitorAcceptor<A> {
+	inner: A,
+	socket_kind: SocketKind,
+	_limiter: Arc<RateLimiter>,
+}
 
-		let service = if let (Some(port), false) = (self.redirect_uncrypted, incoming.is_encrypted()) {
-			AnyService::new_b(
-				incoming.socket_kind().into(),
-				RedirectUncrypted {
-					port,
-					server_name: self.server_name.clone(),
-				},
-				ticket,
-			)
-		} else {
-			AnyService::new_a(incoming.socket_kind().into(), self.routes.clone(), ticket)
-		};
-
-		std::future::ready(Some(service))
+impl<A> MonitorAcceptor<A> {
+	pub fn new(inner: A, socket_kind: SocketKind, limiter: Arc<RateLimiter>) -> Self {
+		Self { inner, socket_kind, _limiter: limiter }
 	}
 }
 
-#[tracing::instrument(name = "cdn", level = "info", skip(global))]
-pub async fn run(global: Arc<Global>) -> anyhow::Result<()> {
-	let mut builder = scuffle_foundations::http::server::Server::builder()
-		.with_workers(if global.config.cdn.workers == 0 {
-			num_cpus::get()
+#[async_trait::async_trait]
+impl<A: scuffle_http::svc::ConnectionAcceptor> scuffle_http::svc::ConnectionAcceptor for MonitorAcceptor<A> {
+	type Handle = MonitorHandler<A::Handle>;
+
+	fn accept(&self) -> Option<Self::Handle> {
+		self.inner.accept().map(|handle| MonitorHandler { handle, socket_kind: self.socket_kind, _guard: Arc::new((ConnectionDropGuard::new(self.socket_kind), None)) })
+	}
+}
+
+fn handle_http_request<B>(req: &Request<B>, server_name: &str, port: u16) -> axum::response::Response {
+	let Some(host) = req.headers().get(::http::header::HOST).and_then(|h| h.to_str().ok()) else {
+		return ::http::StatusCode::BAD_REQUEST.into_response();
+	};
+
+	let mut builder = ::http::Uri::builder().scheme("https");
+
+	{
+		let Some(uri) = format!("https://{host}").parse::<::http::Uri>().ok() else {
+			return ::http::StatusCode::BAD_REQUEST.into_response();
+		};
+
+		let Some(host) = uri.host() else {
+			return ::http::StatusCode::BAD_REQUEST.into_response();
+		};
+
+		if port != 443 {
+			builder = builder.authority(format!("{host}:{}", port));
 		} else {
-			global.config.cdn.workers
-		})
-		.with_http({
-			let mut http = hyper_util::server::conn::auto::Builder::new(Default::default());
-
-			http.http1().max_buf_size(8_192);
-
-			http.http2().max_send_buf_size(8_192);
-
-			http
-		});
-
-	if let Some(tls) = global.config.cdn.tls.as_ref() {
-		let cert = tokio::fs::read(&tls.cert).await.context("failed to read cert")?;
-		let key = tokio::fs::read(&tls.key).await.context("failed to read key")?;
-
-		let certs = rustls_pemfile::certs(&mut std::io::Cursor::new(cert))
-			.collect::<std::result::Result<Vec<_>, _>>()
-			.context("invalid cert")?;
-		let key = rustls_pemfile::pkcs8_private_keys(&mut std::io::Cursor::new(key))
-			.next()
-			.context("missing key")?
-			.context("invalid key")?;
-
-		let tls_config = rustls::ServerConfig::builder()
-			.with_no_client_auth()
-			.with_single_cert(certs, key.into())
-			.context("failed to build tls config")?;
-
-		if global.config.cdn.http3 {
-			let mut tls_config = tls_config.clone();
-			tls_config.max_early_data_size = u32::MAX;
-			tls_config.alpn_protocols = vec![b"h3".to_vec()];
-
-			let server_config = quinn::ServerConfig::with_crypto(Arc::new(
-				QuicServerConfig::try_from(tls_config.clone()).context("failed to build quic config")?,
-			));
-
-			builder = builder.with_http3(h3::server::builder(), server_config);
+			builder = builder.authority(host);
 		}
+	}
 
-		builder = builder
-			.bind(global.config.cdn.secure_bind)
-			.with_tls(tls_config)
-			.with_insecure(global.config.cdn.bind);
+	if let Some(path_and_query) = req.uri().path_and_query() {
+		builder = builder.path_and_query(path_and_query.clone());
+	}
+
+	let Ok(uri) = builder.build() else {
+		return ::http::StatusCode::BAD_REQUEST.into_response();
+	};
+
+	let Ok(response) = ::http::Response::builder()
+		.status(::http::StatusCode::PERMANENT_REDIRECT)
+		.header(::http::header::LOCATION, uri.to_string())
+		.header(
+			::http::header::SERVER,
+			server_name.parse::<HeaderValue>().unwrap(),
+		)
+		.body(Body::empty())
+	else {
+		return ::http::StatusCode::BAD_REQUEST.into_response();
+	};
+
+	response
+}
+
+#[derive(Clone)]
+pub enum Either<A, B> {
+	A(A),
+	B(B),
+}
+
+#[async_trait::async_trait]
+impl<A, B> scuffle_http::svc::ConnectionHandle for Either<A, B>
+where
+	A: scuffle_http::svc::ConnectionHandle,
+	B: scuffle_http::svc::ConnectionHandle<Body = A::Body, BodyData = A::BodyData, BodyError = A::BodyError, Error = A::Error>,
+{
+	type Body = A::Body;
+	type BodyData = A::BodyData;
+	type BodyError = A::BodyError;
+	type Error = A::Error;
+
+	async fn on_request(&self, req: ::http::Request<IncomingBody>) -> Result<::http::Response<Self::Body>, Self::Error> {
+		match self {
+			Either::A(a) => a.on_request(req).await,
+			Either::B(b) => b.on_request(req).await,
+		}
+	}
+
+	fn on_close(&self) {
+		match self {
+			Either::A(a) => a.on_close(),
+			Either::B(b) => b.on_close(),
+		}
+	}
+
+	fn on_hijack(&self) {
+		match self {
+			Either::A(a) => a.on_hijack(),
+			Either::B(b) => b.on_hijack(),
+		}
+	}
+
+	fn on_error(&self, err: scuffle_http::Error) {
+		match self {
+			Either::A(a) => a.on_error(err),
+			Either::B(b) => b.on_error(err),
+		}
+	}
+
+	fn on_ready(&self) {
+		match self {
+			Either::A(a) => a.on_ready(),
+			Either::B(b) => b.on_ready(),
+		}
+	}
+}
+
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::Result<()> {
+	let tcp_server = scuffle_http::backend::tcp::TcpServerConfig::builder()
+		.with_bind(global.config.cdn.bind)
+		.build()
+		.into_server();
+
+
+	let (tls_server, quic_server) = if let Some(tls) = &global.config.cdn.tls {
+		let cert = tokio::fs::read(&tls.cert).await.context("read cert")?;
+		let key = tokio::fs::read(&tls.key).await.context("read key")?;
+
+		let tls_server = scuffle_http::backend::tcp::TcpServerConfig::builder()
+			.with_bind(global.config.cdn.secure_bind)
+			.with_tls_from_pem(&cert, &key)
+			.context("build tls server")?
+			.build()
+			.into_server();
+
+		let quic_server = if global.config.cdn.http3 {
+			Some(scuffle_http::backend::quic::quinn::QuinnServer::new(scuffle_http::backend::quic::quinn::QuinnServerConfig::builder()
+				.with_bind(global.config.cdn.secure_bind)
+				.with_tls_from_pem(&cert, &key)
+				.context("build quic server")?
+				.build()))
+		} else {
+			None
+		};
+
+		(Some(tls_server), quic_server)
 	} else {
-		builder = builder.bind(global.config.cdn.bind);
-	}
+		(None, None)
+	};
+
+	let workers = if global.config.cdn.workers == 0 {
+		num_cpus::get()
+	} else {
+		global.config.cdn.workers
+	};
 
 	let server_name = global.config.cdn.server_name.clone().into();
 
-	let mut server = builder
-		.with_keep_alive_timeout(Duration::from_secs(10))
-		.build(CustomMakeService {
-			routes: routes(&global, &server_name),
-			server_name,
-			limiter: RateLimiter::new(&global.config.cdn.rate_limit),
-			redirect_uncrypted: if !global.config.cdn.allow_insecure && global.config.cdn.tls.is_some() {
-				Some(global.config.cdn.secure_bind.port())
-			} else {
-				None
-			},
+	let handler = scuffle_http::svc::axum_service(routes(&global, &server_name));
+
+	let insecure_handler: Either<InsecureHandler, AxumService<Router>> = if tls_server.is_some() {
+		Either::A(InsecureHandler {
+			port: global.config.cdn.secure_bind.port(),
+			server_name: server_name.clone(),
 		})
-		.context("failed to build HTTP server")?;
+	} else {
+		Either::B(handler.clone())
+	};
 
-	server.start().await.context("failed to start HTTP server")?;
+	let limiter = RateLimiter::new(&global.config.cdn.rate_limit);
 
-	server.wait().await.context("HTTP server failed")?;
+	tcp_server.start(MonitorAcceptor::new(insecure_handler, SocketKind::Tcp, limiter.clone()), workers).await.context("start tcp server")?;
+	if let Some(tls_server) = &tls_server {
+		tls_server.start(MonitorAcceptor::new(handler.clone(), SocketKind::TlsTcp, limiter.clone()), workers).await.context("start tls server")?;
+	}
+	if let Some(quic_server) = &quic_server {
+		quic_server.start(MonitorAcceptor::new(handler.clone(), SocketKind::Quic, limiter), workers).await.context("start quic server")?;
+	}
+
+	tokio::select! {
+		r = tcp_server.wait() => r.context("tcp server")?,
+		Some(r) = async { Some(tls_server.as_ref()?.wait().await) } => r.context("tls server")?,
+		Some(r) = async { Some(quic_server.as_ref()?.wait().await) } => r.context("quic server")?,
+		_ = ctx.done() => {}
+	}
+
+	tokio::try_join!(
+		async { tcp_server.shutdown().await.context("tcp server") },
+		async { if let Some(tls_server) = &tls_server { tls_server.shutdown().await.context("tls server") } else { Ok(()) } },
+		async { if let Some(quic_server) = &quic_server { quic_server.shutdown().await.context("quic server") } else { Ok(()) } },
+	).context("shutdown")?;
 
 	Ok(())
 }

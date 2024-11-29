@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
+use axum::extract::{Path, State};
+use axum::Json;
+use axum::{Router, routing::get};
 use http::Uri;
-use scuffle_foundations::http::server::axum::extract::{Path, State};
-use scuffle_foundations::http::server::axum::routing::get;
-use scuffle_foundations::http::server::axum::{Json, Router};
 use shared::cdn::key::{CacheKey, ImageFile};
 use shared::database::badge::BadgeId;
 use shared::database::emote::EmoteId;

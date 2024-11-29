@@ -265,7 +265,7 @@ impl scuffle_bootstrap_telemetry::TelemetryConfig for Global {
 	}
 
 	fn bind_address(&self) -> Option<std::net::SocketAddr> {
-		self.config.telemetry.bind
+		self.config.metrics_bind_address
 	}
 
 	fn prometheus_metrics_registry(&self) -> Option<&scuffle_bootstrap_telemetry::prometheus::Registry> {

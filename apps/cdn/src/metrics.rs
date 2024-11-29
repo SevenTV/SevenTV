@@ -2,16 +2,19 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use anyhow::Context;
-use scuffle_foundations::telemetry::metrics::metrics;
+use scuffle_context::ContextFutExt;
+use scuffle_metrics::metrics;
+
+use crate::global::Global;
 
 #[metrics]
 mod system {
-	use std::sync::atomic::AtomicU64;
 	use std::sync::Arc;
 
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+	use scuffle_metrics::{GaugeF64, GaugeU64, MetricEnum};
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum MemoryKind {
 		Total,
 		Free,
@@ -21,9 +24,9 @@ mod system {
 		Cached,
 	}
 
-	pub fn memory(kind: MemoryKind) -> Gauge;
+	pub fn memory(kind: MemoryKind) -> GaugeU64;
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum CpuTimesKind {
 		Core,
 		User,
@@ -38,26 +41,26 @@ mod system {
 		GuestNice,
 	}
 
-	pub fn cpu_times(core: String, kind: CpuTimesKind) -> Gauge;
+	pub fn cpu_times(core: String, kind: CpuTimesKind) -> GaugeU64;
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum CpuLoadAvgKind {
 		One,
 		Five,
 		Fifteen,
 	}
 
-	pub fn cpu_load_avg(kind: CpuLoadAvgKind) -> Gauge<f64, AtomicU64>;
+	pub fn cpu_load_avg(kind: CpuLoadAvgKind) -> GaugeF64;
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum CpuCountKind {
 		Physical,
 		Logical,
 	}
 
-	pub fn cpu_count(kind: CpuCountKind) -> Gauge;
+	pub fn cpu_count(kind: CpuCountKind) -> GaugeU64;
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum CpuStatKind {
 		Interrupts,
 		CtxSwitches,
@@ -67,9 +70,9 @@ mod system {
 		ProcsBlocked,
 	}
 
-	pub fn cpu_stats(kind: CpuStatKind) -> Gauge;
+	pub fn cpu_stats(kind: CpuStatKind) -> GaugeU64;
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum NetworkStatsKind {
 		RxBytes,
 		RxPackets,
@@ -81,15 +84,15 @@ mod system {
 		TxDropped,
 	}
 
-	pub fn network_stats(interface: Arc<str>, kind: NetworkStatsKind, physical: bool) -> Gauge;
+	pub fn network_stats(interface: Arc<str>, kind: NetworkStatsKind, physical: bool) -> GaugeU64;
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum UptimeKind {
 		Host,
 		Application,
 	}
 
-	pub fn uptime(kind: UptimeKind) -> Gauge;
+	pub fn uptime(kind: UptimeKind) -> GaugeU64;
 }
 
 struct RecordState {
@@ -103,7 +106,7 @@ struct RecordState {
 	uptime: bool,
 }
 
-pub async fn recorder() {
+pub async fn run(_: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::Result<()> {
 	let start = std::time::Instant::now();
 
 	let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
@@ -119,20 +122,18 @@ pub async fn recorder() {
 		uptime: true,
 	};
 
-	loop {
-		interval.tick().await;
-
-		system::uptime(system::UptimeKind::Application).set(start.elapsed().as_secs() as i64);
+	while interval.tick().with_context(&ctx).await.is_some() {
+		system::uptime(system::UptimeKind::Application).record(start.elapsed().as_secs());
 
 		// Memory is in MB so we multiply by 1024 * 1024 to get bytes
 		match sys_metrics::memory::get_memory() {
 			Ok(memory) => {
-				system::memory(system::MemoryKind::Total).set(memory.total as i64 * 1024 * 1024);
-				system::memory(system::MemoryKind::Free).set(memory.free as i64 * 1024 * 1024);
-				system::memory(system::MemoryKind::Used).set(memory.used as i64 * 1024 * 1024);
-				system::memory(system::MemoryKind::Shared).set(memory.shared as i64 * 1024 * 1024);
-				system::memory(system::MemoryKind::Buffers).set(memory.buffers as i64 * 1024 * 1024);
-				system::memory(system::MemoryKind::Cached).set(memory.cached as i64 * 1024 * 1024);
+				system::memory(system::MemoryKind::Total).record(memory.total  * 1024 * 1024);
+				system::memory(system::MemoryKind::Free).record(memory.free * 1024 * 1024);
+				system::memory(system::MemoryKind::Used).record(memory.used * 1024 * 1024);
+				system::memory(system::MemoryKind::Shared).record(memory.shared * 1024 * 1024);
+				system::memory(system::MemoryKind::Buffers).record(memory.buffers * 1024 * 1024);
+				system::memory(system::MemoryKind::Cached).record(memory.cached * 1024 * 1024);
 				state.memory = true;
 			}
 			Err(e) if state.memory => {
@@ -145,17 +146,17 @@ pub async fn recorder() {
 		match sys_metrics::cpu::get_each_cputimes() {
 			Ok(cpu_times) => {
 				for (core, cpu_times) in cpu_times.iter().enumerate() {
-					system::cpu_times(core.to_string(), system::CpuTimesKind::Core).set(cpu_times.core as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::User).set(cpu_times.user as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::Nice).set(cpu_times.nice as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::System).set(cpu_times.system as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::Idle).set(cpu_times.idle as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::IoWait).set(cpu_times.iowait as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::Irq).set(cpu_times.irq as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::SoftIrq).set(cpu_times.softirq as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::Steal).set(cpu_times.steal as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::Guest).set(cpu_times.guest as i64);
-					system::cpu_times(core.to_string(), system::CpuTimesKind::GuestNice).set(cpu_times.guest_nice as i64);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::Core).record(cpu_times.core as u64);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::User).record(cpu_times.user);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::Nice).record(cpu_times.nice);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::System).record(cpu_times.system);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::Idle).record(cpu_times.idle);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::IoWait).record(cpu_times.iowait);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::Irq).record(cpu_times.irq);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::SoftIrq).record(cpu_times.softirq);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::Steal).record(cpu_times.steal);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::Guest).record(cpu_times.guest);
+					system::cpu_times(core.to_string(), system::CpuTimesKind::GuestNice).record(cpu_times.guest_nice);
 				}
 				state.cputimes = true;
 			}
@@ -168,9 +169,9 @@ pub async fn recorder() {
 
 		match sys_metrics::cpu::get_loadavg() {
 			Ok(cpu_load_avg) => {
-				system::cpu_load_avg(system::CpuLoadAvgKind::One).set(cpu_load_avg.one);
-				system::cpu_load_avg(system::CpuLoadAvgKind::Five).set(cpu_load_avg.five);
-				system::cpu_load_avg(system::CpuLoadAvgKind::Fifteen).set(cpu_load_avg.fifteen);
+				system::cpu_load_avg(system::CpuLoadAvgKind::One).record(cpu_load_avg.one);
+				system::cpu_load_avg(system::CpuLoadAvgKind::Five).record(cpu_load_avg.five);
+				system::cpu_load_avg(system::CpuLoadAvgKind::Fifteen).record(cpu_load_avg.fifteen);
 				state.cpuloadavg = true;
 			}
 			Err(e) if state.cpuloadavg => {
@@ -182,7 +183,7 @@ pub async fn recorder() {
 
 		match sys_metrics::cpu::get_physical_count() {
 			Ok(cpu_physical_count) => {
-				system::cpu_count(system::CpuCountKind::Physical).set(cpu_physical_count as i64);
+				system::cpu_count(system::CpuCountKind::Physical).record(cpu_physical_count as u64);
 				state.cpucount_physical = true;
 			}
 			Err(e) if state.cpucount_physical => {
@@ -194,7 +195,7 @@ pub async fn recorder() {
 
 		match sys_metrics::cpu::get_logical_count() {
 			Ok(cpu_logical_count) => {
-				system::cpu_count(system::CpuCountKind::Logical).set(cpu_logical_count as i64);
+				system::cpu_count(system::CpuCountKind::Logical).record(cpu_logical_count as u64);
 				state.cpucount_logical = true;
 			}
 			Err(e) if state.cpucount_logical => {
@@ -206,12 +207,12 @@ pub async fn recorder() {
 
 		match sys_metrics::cpu::get_cpustats() {
 			Ok(cpu_stat) => {
-				system::cpu_stats(system::CpuStatKind::Interrupts).set(cpu_stat.interrupts as i64);
-				system::cpu_stats(system::CpuStatKind::CtxSwitches).set(cpu_stat.ctx_switches as i64);
-				system::cpu_stats(system::CpuStatKind::SoftInterrupts).set(cpu_stat.soft_interrupts as i64);
-				system::cpu_stats(system::CpuStatKind::Processes).set(cpu_stat.processes as i64);
-				system::cpu_stats(system::CpuStatKind::ProcsRunning).set(cpu_stat.procs_running as i64);
-				system::cpu_stats(system::CpuStatKind::ProcsBlocked).set(cpu_stat.procs_blocked as i64);
+				system::cpu_stats(system::CpuStatKind::Interrupts).record(cpu_stat.interrupts);
+				system::cpu_stats(system::CpuStatKind::CtxSwitches).record(cpu_stat.ctx_switches);
+				system::cpu_stats(system::CpuStatKind::SoftInterrupts).record(cpu_stat.soft_interrupts);
+				system::cpu_stats(system::CpuStatKind::Processes).record(cpu_stat.processes);
+				system::cpu_stats(system::CpuStatKind::ProcsRunning).record(cpu_stat.procs_running);
+				system::cpu_stats(system::CpuStatKind::ProcsBlocked).record(cpu_stat.procs_blocked);
 				state.cpustats = true;
 			}
 			Err(e) if state.cpustats => {
@@ -230,21 +231,21 @@ pub async fn recorder() {
 					.for_each(|(d, physical)| {
 						let interface: Arc<str> = d.interface.into();
 						system::network_stats(interface.clone(), system::NetworkStatsKind::RxBytes, physical)
-							.set(d.rx_bytes as i64);
+							.record(d.rx_bytes);
 						system::network_stats(interface.clone(), system::NetworkStatsKind::RxPackets, physical)
-							.set(d.rx_packets as i64);
+							.record(d.rx_packets);
 						system::network_stats(interface.clone(), system::NetworkStatsKind::RxErrors, physical)
-							.set(d.rx_errs as i64);
+							.record(d.rx_errs);
 						system::network_stats(interface.clone(), system::NetworkStatsKind::RxDropped, physical)
-							.set(d.rx_drop as i64);
+							.record(d.rx_drop);
 						system::network_stats(interface.clone(), system::NetworkStatsKind::TxBytes, physical)
-							.set(d.tx_bytes as i64);
+							.record(d.tx_bytes);
 						system::network_stats(interface.clone(), system::NetworkStatsKind::TxPackets, physical)
-							.set(d.tx_packets as i64);
+							.record(d.tx_packets);
 						system::network_stats(interface.clone(), system::NetworkStatsKind::TxErrors, physical)
-							.set(d.tx_errs as i64);
+							.record(d.tx_errs);
 						system::network_stats(interface.clone(), system::NetworkStatsKind::TxDropped, physical)
-							.set(d.tx_drop as i64);
+							.record(d.tx_drop);
 					});
 				state.network = true;
 			}
@@ -257,7 +258,7 @@ pub async fn recorder() {
 
 		match sys_metrics::host::get_host_info() {
 			Ok(host_info) => {
-				system::uptime(system::UptimeKind::Host).set(host_info.uptime as i64);
+				system::uptime(system::UptimeKind::Host).record(host_info.uptime);
 				state.uptime = true;
 			}
 			Err(e) if state.uptime => {
@@ -267,6 +268,8 @@ pub async fn recorder() {
 			_ => {}
 		}
 	}
+
+	Ok(())
 }
 
 async fn get_network_devices() -> anyhow::Result<(Vec<sys_metrics::network::IoNet>, Vec<sys_metrics::network::IoNet>)> {
