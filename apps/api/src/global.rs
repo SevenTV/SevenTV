@@ -109,6 +109,11 @@ pub struct Global {
 impl scuffle_bootstrap::global::Global for Global {
 	type Config = Config;
 
+	fn pre_init() -> anyhow::Result<()> {
+		rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
+		Ok(())
+	}
+
 	async fn init(config: Config) -> anyhow::Result<Arc<Self>> {
 		let metrics_registry = scuffle_bootstrap_telemetry::prometheus::Registry::new();
 
