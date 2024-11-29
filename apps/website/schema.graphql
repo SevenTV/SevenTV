@@ -875,6 +875,7 @@ type UserProfilePicture {
 
 type UserQuery {
 	me: User
+	search(page: Int, perPage: Int, query: String!): UserSearchResult!
 	user(id: Id!): User
 }
 

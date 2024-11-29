@@ -6,13 +6,13 @@
 </script>
 
 {#snippet name()}
-	<span class="name" style:color={user.highestRoleColor?.hex}
-		>{user.mainConnection?.platformDisplayName}</span
-	>
+	<span class="name" style:color={user.highestRoleColor?.hex}>
+		{user.mainConnection?.platformDisplayName}
+	</span>
 {/snippet}
 
 {#if user.style.activePaint}
-	<Paint paint={user.style.activePaint} enableDialog={enablePaintDialog}>
+	<Paint paint={user.style.activePaint} enableDialog={enablePaintDialog} style="display: inline">
 		{@render name()}
 	</Paint>
 {:else}

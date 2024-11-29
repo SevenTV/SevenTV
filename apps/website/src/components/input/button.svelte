@@ -14,6 +14,7 @@
 	type Props = {
 		// href decides if this is a link looking like button or if it's a real button
 		href?: string | null;
+		disabled?: boolean;
 		primary?: boolean;
 		secondary?: boolean;
 		big?: boolean;

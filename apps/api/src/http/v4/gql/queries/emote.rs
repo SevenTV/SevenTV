@@ -94,7 +94,7 @@ impl EmoteQuery {
 	async fn search(
 		&self,
 		ctx: &Context<'_>,
-		query: Option<String>,
+		#[graphql(validator(max_length = 100))] query: Option<String>,
 		tags: Option<Tags>,
 		sort: Sort,
 		filters: Option<Filters>,

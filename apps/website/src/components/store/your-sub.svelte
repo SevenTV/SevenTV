@@ -19,7 +19,8 @@
 	import Spinner from "../spinner.svelte";
 	import type { DialogMode } from "../dialogs/dialog.svelte";
 	import CancelSubscriptionDialog from "../dialogs/cancel-subscription-dialog.svelte";
-	import { priceFormat } from "$/lib/utils";
+	import { priceFormat, variantName } from "$/lib/utils";
+	import GiftSubscriptionDialog from "../dialogs/gift-subscription-dialog.svelte";
 
 	interface Props {
 		subInfo: SubscriptionInfo;
@@ -169,28 +170,19 @@
 	}
 
 	let cancelSubDialog: DialogMode = $state("hidden");
+	let giftSubDialog: DialogMode = $state("hidden");
+	let giftSubVariant = $state<SubscriptionProductVariant>();
 
-	function variantName(variant: SubscriptionProductVariant) {
-		let name;
-
-		switch (variant.kind) {
-			case SubscriptionProductKind.Monthly:
-				name = "Monthly";
-				break;
-			case SubscriptionProductKind.Yearly:
-				name = "Yearly";
-				break;
-			default:
-				name = variant.kind;
-		}
-
-		const price = priceFormat(variant.price.currency).format(variant.price.amount / 100);
-
-		return `${name} – ${price}`;
+	function showGiftDialog(variant: SubscriptionProductVariant) {
+		giftSubVariant = variant;
+		giftSubDialog = "shown";
 	}
 </script>
 
 <CancelSubscriptionDialog bind:mode={cancelSubDialog} bind:subInfo />
+{#if giftSubVariant}
+	<GiftSubscriptionDialog bind:mode={giftSubDialog} variant={giftSubVariant} />
+{/if}
 <StoreSection title={subInfo.activePeriod ? $t("common.your_subscription") : "Become a subscriber"}>
 	{#snippet header()}
 		<div class="buttons">
@@ -251,17 +243,36 @@
 				</DropDown>
 			{/if}
 
-			<Button secondary hideOnMobile>
-				{#snippet icon()}
-					<Gift />
+			<DropDown>
+				{#snippet dropdown()}
+					{#each product.variants as variant}
+						<Button
+							big
+							onclick={() => showGiftDialog(variant)}
+							style="width: 100%"
+						>
+							{#snippet icon()}
+								<Star />
+							{/snippet}
+							{variantName(variant)}
+						</Button>
+					{/each}
 				{/snippet}
-				{$t("labels.gift")}
-			</Button>
-			<Button hideOnDesktop>
-				{#snippet icon()}
-					<Gift />
-				{/snippet}
-			</Button>
+				<Button secondary hideOnMobile>
+					{#snippet icon()}
+						<Gift />
+					{/snippet}
+					{$t("labels.gift")}
+					{#snippet iconRight()}
+						<CaretDown />
+					{/snippet}
+				</Button>
+				<Button hideOnDesktop>
+					{#snippet icon()}
+						<Gift />
+					{/snippet}
+				</Button>
+			</DropDown>
 
 			<DropDown>
 				{#snippet dropdown()}

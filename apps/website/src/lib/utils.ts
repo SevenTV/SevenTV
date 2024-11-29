@@ -1,4 +1,4 @@
-import type { Role } from "$/gql/graphql";
+import { SubscriptionProductKind, type Role, type SubscriptionProductVariant } from "$/gql/graphql";
 import { getNumberFormatter } from "svelte-i18n";
 
 export function priceFormat(currency: string) {
@@ -21,4 +21,23 @@ export function isMobileLayout(): boolean {
 
 export function filterRoles(roles: Role[]) {
 	return roles.filter((r) => r.name !== "Default").reverse();
+}
+
+export function variantName(variant: SubscriptionProductVariant) {
+	let name;
+
+	switch (variant.kind) {
+		case SubscriptionProductKind.Monthly:
+			name = "Monthly";
+			break;
+		case SubscriptionProductKind.Yearly:
+			name = "Yearly";
+			break;
+		default:
+			name = variant.kind;
+	}
+
+	const price = priceFormat(variant.price.currency).format(variant.price.amount / 100);
+
+	return `${name} – ${price}`;
 }
