@@ -69,9 +69,15 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 			}
 		}
 
-		tracing::info!("message stream closed, waiting 10 seconds before reconnecting");
-		tokio::time::sleep(Duration::from_secs(10)).await;
+		if ctx.is_done() {
+			break;
+		} else {
+			tracing::info!("message stream closed, waiting 10 seconds before reconnecting");
+			tokio::time::sleep(Duration::from_secs(10)).await;
+		}
 	}
+
+	Ok(())
 }
 
 #[tracing::instrument(skip_all, fields(keys = ?req.files.iter().map(|k| k.to_string()).collect::<Vec<_>>()))]

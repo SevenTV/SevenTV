@@ -31,6 +31,7 @@ use shared::database::user::User;
 use shared::image_processor::ImageProcessor;
 use shared::ip::GeoIpResolver;
 use shared::redis::setup_redis;
+use tracing::level_filters::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
@@ -126,9 +127,13 @@ impl scuffle_bootstrap::global::Global for Global {
 		tracing_subscriber::registry()
 			.with(
 				tracing_subscriber::fmt::layer()
-					.with_filter(EnvFilter::from_str(&config.level).context("invalid log level")?)
 					.with_file(true)
-					.with_line_number(true),
+					.with_line_number(true)
+					.with_filter(
+						EnvFilter::builder()
+							.with_default_directive(LevelFilter::INFO.into())
+							.parse_lossy(&config.level),
+					),
 			)
 			.init();
 

@@ -101,7 +101,6 @@ mod http {
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum ActionKind {
 		Error,
-		Hijack,
 		Ready,
 		Request,
 		Close,
@@ -175,11 +174,6 @@ impl<H: scuffle_http::svc::ConnectionHandle> scuffle_http::svc::ConnectionHandle
 	fn on_error(&self, err: scuffle_http::Error) {
 		http::actions(self.socket_kind, ActionKind::Error).incr();
 		self.handle.on_error(err);
-	}
-
-	fn on_hijack(&self) {
-		http::actions(self.socket_kind, ActionKind::Hijack).incr();
-		self.handle.on_hijack();
 	}
 
 	fn on_ready(&self) {
@@ -294,13 +288,6 @@ where
 		match self {
 			Either::A(a) => a.on_close(),
 			Either::B(b) => b.on_close(),
-		}
-	}
-
-	fn on_hijack(&self) {
-		match self {
-			Either::A(a) => a.on_hijack(),
-			Either::B(b) => b.on_hijack(),
 		}
 	}
 
