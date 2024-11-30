@@ -15,11 +15,15 @@
 		type SubscriptionProduct,
 	} from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
-	import { PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
+	import { Info, PaintBrush, Seal, Smiley, UserCircle, X } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import { user } from "$/lib/auth";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
+	import type { PageData } from "./$types";
+	import Button from "$/components/input/button.svelte";
+
+	let { data }: { data: PageData } = $props();
 
 	async function queryStore(userId: string) {
 		let res = await gqlClient().query(
@@ -228,12 +232,12 @@
 		return res.data;
 	}
 
-	let data = $state<StoreDataQuery>();
+	let storeData = $state<StoreDataQuery>();
 
 	$effect(() => {
 		if ($user) {
 			queryStore($user.id).then((res) => {
-				data = res;
+				storeData = res;
 			});
 		}
 	});
@@ -262,41 +266,45 @@
 	</Banner>
 {/snippet}
 
-{#await data}
+{#if storeData}
+	{@render banner(!!storeData?.users.user?.billing.subscriptionInfo.activePeriod)}
+{:else}
 	{@render banner(false)}
-{:then data}
-	{@render banner(!!data?.users.user?.billing.subscriptionInfo.activePeriod)}
-{/await}
+{/if}
 <!-- All things called grid here aren't actually css grids -->
 <div class="grid">
-	{#await data}
-		<Benefits />
-	{:then data}
-		{#if !data?.users.user?.billing.subscriptionInfo.activePeriod}
+	{#if data.success}
+		<div class="success">
+			<Info />
+			Your purchase was successfully completed
+		</div>
+	{/if}
+	{#if storeData}
+		{#if !storeData.users.user?.billing.subscriptionInfo.activePeriod}
 			<Benefits />
 		{/if}
-	{/await}
+	{:else}
+		<Benefits />
+	{/if}
 	<div class="top-grid">
-		{#await data}
+		{#if storeData}
+			<div class="subgrid">
+				{#if storeData.users.user && storeData.products.subscriptionProduct}
+					<YourSub
+						bind:subInfo={storeData.users.user.billing.subscriptionInfo as SubscriptionInfo}
+						product={storeData.products.subscriptionProduct as SubscriptionProduct}
+					/>
+					<BadgeProgressComponent
+						progress={storeData.users.user.billing.badgeProgress as BadgeProgress}
+					/>
+				{/if}
+			</div>
+			<MonthlyPaints paints={storeData.store.monthlyPaints as Paint[]} />
+		{:else}
 			<div class="spinner-container">
 				<Spinner />
 			</div>
-		{:then data}
-			{#if data}
-				<div class="subgrid">
-					{#if data.users.user && data.products.subscriptionProduct}
-						<YourSub
-							bind:subInfo={data.users.user.billing.subscriptionInfo as SubscriptionInfo}
-							product={data.products.subscriptionProduct as SubscriptionProduct}
-						/>
-						<BadgeProgressComponent
-							progress={data.users.user.billing.badgeProgress as BadgeProgress}
-						/>
-					{/if}
-				</div>
-				<MonthlyPaints paints={data.store.monthlyPaints as Paint[]} />
-			{/if}
-		{/await}
+		{/if}
 	</div>
 	<PersonalEmotes />
 	<!-- <div class="three-grid">
@@ -304,11 +312,9 @@
 		<PersonalEmotes />
 		<TopGifters />
 	</div> -->
-	{#await data then data}
-		{#if data?.users.user?.billing.subscriptionInfo.activePeriod}
-			<Benefits />
-		{/if}
-	{/await}
+	{#if storeData?.users.user?.billing.subscriptionInfo.activePeriod}
+		<Benefits />
+	{/if}
 	{#if $user === null}
 		<SignInDialog mode="shown-without-close" />
 	{/if}
@@ -335,6 +341,19 @@
 		max-width: 70rem;
 		margin-top: 1rem;
 		margin-inline: auto;
+	}
+
+	.success {
+		background-color: var(--bg-light);
+		color: var(--text);
+		padding: 0.5rem;
+		border-radius: 0.25rem;
+		border: 1px solid var(--store);
+
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.top-grid {
