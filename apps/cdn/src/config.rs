@@ -12,6 +12,9 @@ pub struct Config {
 	pub nats: NatsConfig,
 	/// Pod configuration
 	pub pod: PodConfig,
+	/// Log level
+	#[default(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))]
+	pub level: String,
 	/// Metrics bind address
 	#[default(None)]
 	pub metrics_bind_address: Option<SocketAddr>,

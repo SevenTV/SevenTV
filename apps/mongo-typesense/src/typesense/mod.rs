@@ -7,9 +7,7 @@ use bson::Document;
 use futures::TryStreamExt;
 use handlers::SupportedMongoCollection;
 use mongodb::change_stream::event::ChangeStreamEvent;
-use scuffle_foundations::context::ContextFutExt;
-use scuffle_foundations::telemetry::metrics::metrics;
-use scuffle_foundations::telemetry::opentelemetry::OpenTelemetrySpanExt;
+use scuffle_context::ContextFutExt;
 use shared::database::MongoCollection;
 use typesense::{EventStatus, OperationType};
 
@@ -17,29 +15,27 @@ use crate::global::Global;
 
 mod handlers;
 
-#[metrics]
+#[scuffle_metrics::metrics]
 mod typesense {
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
-	use serde::Serialize;
+	use scuffle_metrics::{CounterU64, MetricEnum, UpDownCounterI64};
 	use shared::database::MongoCollection;
 
 	pub struct Processing(&'static str);
 
 	impl Processing {
 		pub fn new<T: MongoCollection>() -> Self {
-			processing(T::COLLECTION_NAME).inc();
+			processing(T::COLLECTION_NAME).incr();
 			Self(T::COLLECTION_NAME)
 		}
 	}
 
 	impl Drop for Processing {
 		fn drop(&mut self) {
-			processing(self.0).dec();
+			processing(self.0).decr();
 		}
 	}
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+	#[derive(Debug, Clone, Copy, MetricEnum)]
 	pub enum EventStatus {
 		Success,
 		Skipped,
@@ -47,7 +43,7 @@ mod typesense {
 	}
 
 	/// The operation type represented in a given change notification.
-	#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+	#[derive(Debug, Clone)]
 	pub enum OperationType {
 		Insert,
 		Update,
@@ -71,7 +67,23 @@ mod typesense {
 				Self::Rename => "Rename",
 				Self::DropDatabase => "DropDatabase",
 				Self::Invalidate => "Invalidate",
-				Self::Other(value) => value.as_str(),
+				Self::Other(value) => value,
+			}
+		}
+	}
+
+	impl From<OperationType> for scuffle_metrics::opentelemetry::Value {
+		fn from(value: OperationType) -> Self {
+			match value {
+				OperationType::Insert => scuffle_metrics::opentelemetry::Value::from("Insert"),
+				OperationType::Update => scuffle_metrics::opentelemetry::Value::from("Update"),
+				OperationType::Replace => scuffle_metrics::opentelemetry::Value::from("Replace"),
+				OperationType::Delete => scuffle_metrics::opentelemetry::Value::from("Delete"),
+				OperationType::Drop => scuffle_metrics::opentelemetry::Value::from("Drop"),
+				OperationType::Rename => scuffle_metrics::opentelemetry::Value::from("Rename"),
+				OperationType::DropDatabase => scuffle_metrics::opentelemetry::Value::from("DropDatabase"),
+				OperationType::Invalidate => scuffle_metrics::opentelemetry::Value::from("Invalidate"),
+				OperationType::Other(value) => scuffle_metrics::opentelemetry::Value::from(value.clone()),
 			}
 		}
 	}
@@ -93,11 +105,11 @@ mod typesense {
 		}
 	}
 
-	pub fn event(db: &str, coll: &str, op: OperationType, status: EventStatus) -> Counter;
-	pub fn processing(coll: &'static str) -> Gauge;
+	pub fn event(db: &str, coll: &str, op: OperationType, status: EventStatus) -> CounterU64;
+	fn processing(coll: &'static str) -> UpDownCounterI64;
 }
 
-pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::Result<()> {
 	shared::typesense::types::init_typesense(&global.typesense)
 		.await
 		.context("failed to initialize typesense")?;
@@ -125,14 +137,18 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 		.context("update stream timeout")?
 		.context("update stream")?;
 
-	setup(&global, stream).await?;
+	setup(&global, stream, &ctx).await?;
 
 	tracing::info!("typesense handler exited");
 
 	Ok(())
 }
 
-async fn setup(global: &Arc<Global>, stream: async_nats::jetstream::stream::Stream) -> anyhow::Result<()> {
+async fn setup(
+	global: &Arc<Global>,
+	stream: async_nats::jetstream::stream::Stream,
+	ctx: &scuffle_context::Context,
+) -> anyhow::Result<()> {
 	let config = async_nats::jetstream::consumer::pull::Config {
 		name: Some("change-stream".to_string()),
 		durable_name: None,
@@ -157,17 +173,15 @@ async fn setup(global: &Arc<Global>, stream: async_nats::jetstream::stream::Stre
 		.context("update consumer timeout")?
 		.context("update consumer")?;
 
-	let ctx = scuffle_foundations::context::Context::global();
-
 	let mut messages = tokio::time::timeout(Duration::from_secs(5), consumer.messages())
 		.await
 		.context("get messages timeout")?
 		.context("get messages")?;
 
-	while let Some(Some(ticket)) = global.aquire_ticket().with_context(&ctx).await {
+	while let Some(Some(ticket)) = global.aquire_ticket().with_context(ctx).await {
 		let Some(Some(message)) = messages
 			.try_next()
-			.with_context(&ctx)
+			.with_context(ctx)
 			.await
 			.transpose()
 			.context("get message")?
@@ -185,20 +199,20 @@ async fn setup(global: &Arc<Global>, stream: async_nats::jetstream::stream::Stre
 		};
 
 		macro_rules! match_collection {
-			($str:ident => { $($collection:ty),*$(,)? }) => {
+			($str:ident, $ctx:ident => { $($collection:ty),*$(,)? }) => {
 				match $str {
 					$(
 						<$collection>::COLLECTION_NAME => {
 							let metrics = typesense::Processing::new::<$collection>();
 							let global = global.clone();
+							let ctx = ctx.clone();
 
 							tokio::spawn(
 								async move {
-									handle_message::<$collection>(&global, message).await;
+									handle_message::<$collection>(&global, message, &ctx).await;
 									global.incr_request_count();
 									drop((ticket, metrics));
-								}
-								.with_context(scuffle_foundations::context::Context::global()),
+								},
 							);
 						}
 					),*
@@ -217,7 +231,7 @@ async fn setup(global: &Arc<Global>, stream: async_nats::jetstream::stream::Stre
 		}
 
 		match_collection! {
-			collection => {
+			collection, ctx => {
 				crate::types::mongo::RedeemCode,
 				crate::types::mongo::SpecialEvent,
 				crate::types::mongo::Invoice,
@@ -271,15 +285,17 @@ async fn handle<M: SupportedMongoCollection>(
 	};
 
 	tracing::debug!(status = ?status, "handled typesense event");
-	typesense::event(&db, &coll, operation, status).inc();
+	typesense::event(&db, &coll, operation, status).incr();
 
 	result.map(|_| ())
 }
 
 #[tracing::instrument(skip_all, fields(collection = M::COLLECTION_NAME))]
-async fn handle_message<M: SupportedMongoCollection>(global: &Arc<Global>, message: async_nats::jetstream::Message) {
-	tracing::Span::current().make_root();
-
+async fn handle_message<M: SupportedMongoCollection>(
+	global: &Arc<Global>,
+	message: async_nats::jetstream::Message,
+	ctx: &scuffle_context::Context,
+) {
 	let event: ChangeStreamEvent<Document> = match serde_json::from_slice(&message.payload) {
 		Ok(event) => event,
 		Err(err) => {
@@ -294,7 +310,7 @@ async fn handle_message<M: SupportedMongoCollection>(global: &Arc<Global>, messa
 		}
 	};
 
-	let mut handle_fut = handle::<M>(global, event);
+	let mut handle_fut = handle::<M>(global, event).with_context(ctx);
 	let mut handle_fut = std::pin::pin!(handle_fut);
 
 	let r = loop {
@@ -310,6 +326,10 @@ async fn handle_message<M: SupportedMongoCollection>(global: &Arc<Global>, messa
 				}
 			},
 		}
+	};
+
+	let Some(r) = r else {
+		return;
 	};
 
 	if let Err(err) = r {

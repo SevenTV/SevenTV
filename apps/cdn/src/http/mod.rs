@@ -10,16 +10,16 @@ use axum::Router;
 use scuffle_http::backend::HttpServer;
 use scuffle_http::body::IncomingBody;
 use scuffle_http::svc::AxumService;
-use scuffle_metrics::metrics;
 use shared::http::ip::IpMiddleware;
-use shared::http::ratelimit::{RateLimitDropGuard, RateLimiter};
+use shared::http::metrics::SocketKind;
+use shared::http::ratelimit::RateLimiter;
+use shared::http::MonitorAcceptor;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultOnFailure, TraceLayer};
 use tracing::Span;
 
-use self::http::{ActionKind, ConnectionDropGuard, SocketKind};
 use crate::global::Global;
 
 mod cdn;
@@ -77,58 +77,6 @@ fn routes(global: &Arc<Global>, server_name: &Arc<str>) -> Router {
 		.layer(CorsLayer::permissive())
 }
 
-#[metrics]
-mod http {
-	use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum, UpDownCounterI64};
-
-	pub struct ConnectionDropGuard(SocketKind);
-
-	impl Drop for ConnectionDropGuard {
-		fn drop(&mut self) {
-			connections(self.0).decr();
-		}
-	}
-
-	impl ConnectionDropGuard {
-		pub fn new(socket: SocketKind) -> Self {
-			connections(socket).incr();
-			Self(socket)
-		}
-	}
-
-	pub fn connections(socket: SocketKind) -> UpDownCounterI64;
-
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
-	pub enum ActionKind {
-		Error,
-		Ready,
-		Request,
-		Close,
-	}
-
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
-	pub enum SocketKind {
-		Tcp,
-		TlsTcp,
-		Quic,
-	}
-
-	pub fn actions(socket: SocketKind, action: ActionKind) -> CounterU64;
-
-	pub fn status_code(socket: SocketKind, status: String) -> CounterU64;
-
-	#[builder = HistogramBuilder::default()]
-	pub fn socket_request_count(socket: SocketKind) -> HistogramF64;
-
-	#[builder = HistogramBuilder::default()]
-	pub fn socket_duration(socket: SocketKind) -> HistogramF64;
-
-	#[builder = HistogramBuilder::default()]
-	pub fn request_duration(socket: SocketKind) -> HistogramF64;
-
-	pub fn bytes_sent(socket: SocketKind) -> CounterU64;
-}
-
 #[derive(Clone)]
 struct InsecureHandler {
 	server_name: Arc<str>,
@@ -144,71 +92,6 @@ impl scuffle_http::svc::ConnectionHandle for InsecureHandler {
 
 	async fn on_request(&self, req: ::http::Request<IncomingBody>) -> Result<::http::Response<Self::Body>, Self::Error> {
 		Ok(handle_http_request(&req, &self.server_name, self.port))
-	}
-}
-
-#[derive(Clone)]
-struct MonitorHandler<H> {
-	socket_kind: SocketKind,
-	handle: H,
-	_guard: Arc<(ConnectionDropGuard, Option<RateLimitDropGuard>)>,
-}
-
-#[async_trait::async_trait]
-impl<H: scuffle_http::svc::ConnectionHandle> scuffle_http::svc::ConnectionHandle for MonitorHandler<H> {
-	type Body = H::Body;
-	type BodyData = H::BodyData;
-	type BodyError = H::BodyError;
-	type Error = H::Error;
-
-	async fn on_request(&self, req: ::http::Request<IncomingBody>) -> Result<::http::Response<Self::Body>, Self::Error> {
-		http::actions(self.socket_kind, ActionKind::Request).incr();
-		self.handle.on_request(req).await
-	}
-
-	fn on_close(&self) {
-		http::actions(self.socket_kind, ActionKind::Close).incr();
-		self.handle.on_close();
-	}
-
-	fn on_error(&self, err: scuffle_http::Error) {
-		http::actions(self.socket_kind, ActionKind::Error).incr();
-		self.handle.on_error(err);
-	}
-
-	fn on_ready(&self) {
-		http::actions(self.socket_kind, ActionKind::Ready).incr();
-		self.handle.on_ready();
-	}
-}
-
-#[derive(Clone)]
-struct MonitorAcceptor<A> {
-	inner: A,
-	socket_kind: SocketKind,
-	_limiter: Arc<RateLimiter>,
-}
-
-impl<A> MonitorAcceptor<A> {
-	pub fn new(inner: A, socket_kind: SocketKind, limiter: Arc<RateLimiter>) -> Self {
-		Self {
-			inner,
-			socket_kind,
-			_limiter: limiter,
-		}
-	}
-}
-
-#[async_trait::async_trait]
-impl<A: scuffle_http::svc::ConnectionAcceptor> scuffle_http::svc::ConnectionAcceptor for MonitorAcceptor<A> {
-	type Handle = MonitorHandler<A::Handle>;
-
-	fn accept(&self) -> Option<Self::Handle> {
-		self.inner.accept().map(|handle| MonitorHandler {
-			handle,
-			socket_kind: self.socket_kind,
-			_guard: Arc::new((ConnectionDropGuard::new(self.socket_kind), None)),
-		})
 	}
 }
 

@@ -5,8 +5,10 @@ use scuffle_bootstrap_telemetry::opentelemetry;
 use scuffle_bootstrap_telemetry::opentelemetry_sdk::metrics::SdkMeterProvider;
 use scuffle_bootstrap_telemetry::opentelemetry_sdk::Resource;
 use scuffle_metrics::opentelemetry::KeyValue;
+use tracing::level_filters::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, Layer};
 
 use crate::cache;
 use crate::config::Config;
@@ -20,6 +22,11 @@ pub struct Global {
 
 impl scuffle_bootstrap::global::Global for Global {
 	type Config = Config;
+
+	fn pre_init() -> anyhow::Result<()> {
+		rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
+		Ok(())
+	}
 
 	async fn init(config: Self::Config) -> anyhow::Result<Arc<Self>> {
 		let metrics = scuffle_bootstrap_telemetry::prometheus::Registry::new();
@@ -37,7 +44,16 @@ impl scuffle_bootstrap::global::Global for Global {
 		);
 
 		tracing_subscriber::registry()
-			.with(tracing_subscriber::fmt::layer().with_file(true).with_line_number(true))
+			.with(
+				tracing_subscriber::fmt::layer()
+					.with_file(true)
+					.with_line_number(true)
+					.with_filter(
+						EnvFilter::builder()
+							.with_default_directive(LevelFilter::INFO.into())
+							.parse_lossy(&config.level),
+					),
+			)
 			.init();
 
 		tracing::info!("starting cdn");

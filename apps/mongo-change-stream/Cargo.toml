@@ -8,14 +8,20 @@ mongodb = "3"
 bson = "2"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["full"] }
-async-nats = "0.37.0"
-scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
+async-nats = "0.38.0"
+scuffle-bootstrap = "0.0.0"
+scuffle-context = "0.0.0"
+scuffle-metrics = "0.0.0"
+scuffle-bootstrap-telemetry = "0.0.0"
 shared = { workspace = true }
 fnv = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-thiserror = "1.0"
+thiserror = "2.0.3"
 tracing = "0.1"
 anyhow = "1.0"
 futures = "0.3"
 bytes = "1.0"
+smart-default = "0.7.1"
+tracing-subscriber = "0.3"
+rustls = { version = "0.23", features = ["aws-lc-rs"] }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use event_topic::EventScope;
 use futures_util::StreamExt;
-use scuffle_foundations::telemetry::metrics::metrics;
+use scuffle_metrics::metrics;
 use shared::event::{InternalEventPayload, InternalEventUserPresenceData};
 use shared::event_api::types::EventType;
 use shared::event_api::{payload, Message};
@@ -26,37 +26,33 @@ mod recv;
 
 #[metrics]
 mod subscription {
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
+	use scuffle_metrics::{CounterU64, GaugeU64, MetricEnum, UpDownCounterI64};
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-	#[serde(rename_all = "snake_case")]
+	#[derive(MetricEnum)]
 	pub enum SubscriptionKind {
 		Cap,
 		Len,
 	}
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-	#[serde(rename_all = "snake_case")]
+	#[derive(MetricEnum)]
 	pub enum Endpoint {
 		V3,
 	}
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-	#[serde(rename_all = "snake_case")]
+	#[derive(MetricEnum)]
 	pub enum NatsEventKind {
 		Hit,
 		Miss,
 	}
 
 	/// The number of unique subscriptions
-	pub fn unique_subscriptions(kind: SubscriptionKind) -> Gauge;
+	pub fn unique_subscriptions(kind: SubscriptionKind) -> GaugeU64;
 
 	/// The number of total subscriptions
-	pub fn total_subscriptions(endpoint: Endpoint) -> Gauge;
+	pub fn total_subscriptions(endpoint: Endpoint) -> UpDownCounterI64;
 
 	/// The number of NATs events
-	pub fn nats_events(kind: NatsEventKind) -> Counter;
+	pub fn nats_events(kind: NatsEventKind) -> CounterU64;
 }
 
 pub use error::SubscriptionError;
@@ -119,7 +115,7 @@ impl SubscriptionManager {
 /// The subscription manager run loop.
 /// This function will block until the global context is done or when the NATS
 /// connection is closed. Calling this function multiple times will deadlock.
-pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> Result<(), anyhow::Error> {
 	let mut events_rx = global.subscription_manager.events_tx().lock().await;
 
 	// We subscribe to all events.
@@ -129,8 +125,6 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 	// fnv::FnvHashMap is used because it is faster than the default HashMap for our
 	// use case.
 	let mut subscriptions = fnv::FnvHashMap::default();
-
-	let ctx = scuffle_foundations::context::Context::global();
 
 	let mut seq = 0;
 
@@ -144,22 +138,23 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 								let (btx, brx) = broadcast::channel(16);
 
 								if tx.send(brx).is_ok() {
-									subscription::total_subscriptions(subscription::Endpoint::V3).inc();
+									subscription::total_subscriptions(subscription::Endpoint::V3).incr();
 									entry.insert(btx);
 								}
 							}
 							std::collections::hash_map::Entry::Occupied(entry) => {
 								if tx.send(entry.get().subscribe()).is_ok() {
-									subscription::total_subscriptions(subscription::Endpoint::V3).inc();
+									subscription::total_subscriptions(subscription::Endpoint::V3).incr();
 								}
 							},
 						}
 
-						subscription::unique_subscriptions(subscription::SubscriptionKind::Len).set(subscriptions.len() as i64);
-						subscription::unique_subscriptions(subscription::SubscriptionKind::Cap).set(subscriptions.capacity() as i64);
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Len).record(subscriptions.len() as u64);
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Cap).record(subscriptions.capacity() as u64);
 					}
 					Event::Unsubscribe { topic } => {
-						subscription::total_subscriptions(subscription::Endpoint::V3).dec();
+						subscription::total_subscriptions(subscription::Endpoint::V3).decr();
+
 						match subscriptions.entry(topic) {
 							std::collections::hash_map::Entry::Occupied(entry) => {
 								if entry.get().receiver_count() == 0 {
@@ -169,8 +164,8 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 							std::collections::hash_map::Entry::Vacant(_) => {}
 						}
 
-						subscription::unique_subscriptions(subscription::SubscriptionKind::Len).set(subscriptions.len() as i64);
-						subscription::unique_subscriptions(subscription::SubscriptionKind::Cap).set(subscriptions.capacity() as i64);
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Len).record(subscriptions.len() as u64);
+						subscription::unique_subscriptions(subscription::SubscriptionKind::Cap).record(subscriptions.capacity() as u64);
 					}
 				}
 			}
@@ -230,9 +225,9 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 									}
 
 									if missed {
-										subscription::nats_events(subscription::NatsEventKind::Miss).inc();
+										subscription::nats_events(subscription::NatsEventKind::Miss).incr();
 									} else {
-										subscription::nats_events(subscription::NatsEventKind::Hit).inc();
+										subscription::nats_events(subscription::NatsEventKind::Hit).incr();
 									}
 								}
 
@@ -251,9 +246,9 @@ pub async fn run(global: Arc<Global>) -> Result<(), SubscriptionError> {
 									}
 
 									if missed {
-										subscription::nats_events(subscription::NatsEventKind::Miss).inc();
+										subscription::nats_events(subscription::NatsEventKind::Miss).incr();
 									} else {
-										subscription::nats_events(subscription::NatsEventKind::Hit).inc();
+										subscription::nats_events(subscription::NatsEventKind::Hit).incr();
 									}
 								}
 							},

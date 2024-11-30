@@ -1,11 +1,8 @@
-use std::future::Future;
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::Arc;
 
 use anyhow::Context as _;
-use scuffle_foundations::batcher::dataloader::DataLoader;
-use scuffle_foundations::batcher::{Batcher, BatcherConfig};
-use scuffle_foundations::telemetry::server::HealthCheck;
+use scuffle_batching::{Batcher, DataLoader};
 use shared::clickhouse::emote_stat::EmoteStat;
 use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
 use shared::database::updater::MongoUpdater;
@@ -63,8 +60,15 @@ struct HealthCheckState {
 	last_check: Option<tokio::time::Instant>,
 }
 
-impl Global {
-	pub async fn new(config: Config) -> anyhow::Result<Self> {
+impl scuffle_bootstrap::global::Global for Global {
+	type Config = Config;
+
+	fn pre_init() -> anyhow::Result<()> {
+		rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
+		Ok(())
+	}
+
+	async fn init(config: Config) -> anyhow::Result<Arc<Self>> {
 		let (nats, jetstream) = shared::nats::setup_nats("event-api", &config.nats)
 			.await
 			.context("nats connect")?;
@@ -89,7 +93,7 @@ impl Global {
 
 		let clickhouse = shared::clickhouse::init_clickhouse(&config.clickhouse).await?;
 
-		Ok(Self {
+		Ok(Arc::new(Self {
 			nats,
 			jetstream,
 			event_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
@@ -117,15 +121,7 @@ impl Global {
 			entitlement_outbound_loader: EntitlementEdgeOutboundLoader::new(database.clone()),
 			subscription_product_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
 			subscription_batcher: CollectionBatcher::new(database.clone(), typesense.clone()),
-			updater: MongoUpdater::new(
-				database.clone(),
-				BatcherConfig {
-					name: "MongoUpdater".to_string(),
-					concurrency: 500,
-					max_batch_size: 5_000,
-					sleep_duration: std::time::Duration::from_millis(300),
-				},
-			),
+			updater: MongoUpdater::new(database.clone(), 500, 5_000, std::time::Duration::from_millis(300)),
 			typesense,
 			database,
 			is_healthy: AtomicBool::new(false),
@@ -134,9 +130,11 @@ impl Global {
 			semaphore: Arc::new(tokio::sync::Semaphore::new(config.triggers.typesense_concurrency.max(1))),
 			emote_stats_batcher: ClickhouseInsert::new(clickhouse),
 			config,
-		})
+		}))
 	}
+}
 
+impl Global {
 	pub fn report_error(&self) {
 		self.is_healthy.store(false, std::sync::atomic::Ordering::Relaxed);
 	}
@@ -279,8 +277,19 @@ impl Global {
 	}
 }
 
-impl HealthCheck for Global {
-	fn check(&self) -> std::pin::Pin<Box<dyn Future<Output = bool> + Send + '_>> {
-		Box::pin(async { self.do_health_check().await })
+impl scuffle_bootstrap_telemetry::TelemetryConfig for Global {
+	async fn health_check(&self) -> Result<(), anyhow::Error> {
+		if !self.do_health_check().await {
+			anyhow::bail!("health check failed");
+		}
+
+		Ok(())
+	}
+}
+
+impl scuffle_bootstrap::signals::SignalSvcConfig for Global {
+	async fn on_shutdown(self: &Arc<Self>) -> anyhow::Result<()> {
+		tracing::info!("shutting down");
+		Ok(())
 	}
 }

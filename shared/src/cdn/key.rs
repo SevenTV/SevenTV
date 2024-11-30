@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
+use scuffle_metrics::MetricEnum;
+
 use crate::database::badge::BadgeId;
 use crate::database::emote::EmoteId;
 use crate::database::paint::{PaintId, PaintLayerId};
@@ -27,6 +29,17 @@ pub enum CacheKey {
 		layer_id: PaintLayerId,
 		file: ImageFile,
 	},
+}
+
+impl CacheKey {
+	pub fn extension(&self) -> ImageFileExtension {
+		match self {
+			Self::Badge { file, .. } => file.extension,
+			Self::Emote { file, .. } => file.extension,
+			Self::Paint { file, .. } => file.extension,
+			Self::UserProfilePicture { file, .. } => file.extension,
+		}
+	}
 }
 
 impl serde::Serialize for CacheKey {
@@ -184,7 +197,7 @@ impl FromStr for ImageFileName {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 pub enum ImageFileExtension {
 	Avif,
 	Gif,

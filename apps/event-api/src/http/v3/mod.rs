@@ -8,8 +8,7 @@ use axum::http::header::HeaderMap;
 use axum::http::HeaderValue;
 use axum::response::{IntoResponse, Response, Sse};
 use parser::{parse_json_subscriptions, parse_query_uri};
-use scuffle_foundations::context::ContextFutExt;
-use scuffle_foundations::telemetry::metrics::metrics;
+use scuffle_context::ContextFutExt;
 use shared::database::badge::BadgeId;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::paint::PaintId;
@@ -39,34 +38,28 @@ pub mod error;
 mod parser;
 mod topic_map;
 
-#[metrics]
-mod v3 {
+#[scuffle_metrics::metrics(rename = "event_api_v3")]
+mod metrics {
 	use std::sync::Arc;
 
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
-	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
+	use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum, UpDownCounterI64};
 	use tokio::time::Instant;
 
 	use super::Metadata;
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-	#[serde(rename_all = "snake_case")]
+	#[derive(Debug, Clone, Copy, MetricEnum)]
 	pub enum ConnectionKind {
 		Websocket,
 		EventStream,
 	}
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-	#[serde(rename_all = "snake_case")]
+	#[derive(Debug, Clone, Copy, MetricEnum)]
 	pub enum CommandKind {
 		Client,
 		Server,
 	}
 
-	/// The current number of connections
-	pub fn current_connections(kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> Gauge;
+	fn current_connections(kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> UpDownCounterI64;
 
 	pub struct CurrentConnectionDropGuard {
 		metadata: Metadata,
@@ -75,27 +68,27 @@ mod v3 {
 
 	impl Drop for CurrentConnectionDropGuard {
 		fn drop(&mut self) {
-			current_connections(self.kind, &self.metadata.app, &self.metadata.version).dec();
+			current_connections(self.kind, &self.metadata.app, &self.metadata.version).decr();
 		}
 	}
 
 	impl CurrentConnectionDropGuard {
+		/// The current number of connections
 		pub fn new(kind: ConnectionKind, metadata: Metadata) -> Self {
-			current_connections(kind, &metadata.app, &metadata.version).inc();
+			current_connections(kind, &metadata.app, &metadata.version).incr();
 
 			Self { kind, metadata }
 		}
 	}
 
 	/// The number of client closes
-	pub fn client_closes(code: &'static str, kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> Counter;
+	pub fn client_closes(code: &'static str, kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> CounterU64;
 
 	/// The number of commands issued
-	pub fn commands(kind: CommandKind, command: &'static str, app: &Arc<str>, version: &Arc<str>) -> Counter;
+	pub fn commands(kind: CommandKind, command: &'static str, app: &Arc<str>, version: &Arc<str>) -> CounterU64;
 
 	/// The number of seconds used on connections
-	#[builder = HistogramBuilder::default()]
-	pub fn connection_duration_seconds(kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> Histogram;
+	fn connection_duration_seconds(kind: ConnectionKind, app: &Arc<str>, version: &Arc<str>) -> HistogramF64;
 
 	pub struct ConnectionDurationDropGuard {
 		kind: ConnectionKind,
@@ -197,10 +190,12 @@ pub async fn handle(
 			.map_err(|_| (hyper::StatusCode::BAD_REQUEST, "failed to parse query"))?
 	};
 
+	let ctx = scuffle_context::Context::global();
+
 	if let Some(upgrade) = upgrade {
-		Ok(handle_ws(global, initial_subs, ticket, upgrade, metadata).await)
+		Ok(handle_ws(global, initial_subs, ticket, upgrade, metadata, ctx).await)
 	} else if req.method() == hyper::Method::GET {
-		handle_sse(global, initial_subs, ticket, metadata).await
+		handle_sse(global, initial_subs, ticket, metadata, ctx).await
 	} else {
 		Err((hyper::StatusCode::METHOD_NOT_ALLOWED, "method not allowed"))
 	}
@@ -212,6 +207,7 @@ async fn handle_ws(
 	ticket: AtomicTicket,
 	upgrade: WebSocketUpgrade,
 	metadata: Metadata,
+	ctx: scuffle_context::Context,
 ) -> Response<axum::body::Body> {
 	upgrade
 		.max_frame_size(1024 * 16)
@@ -220,7 +216,7 @@ async fn handle_ws(
 		.on_upgrade(move |ws| async move {
 			let socket = Connection::new(Socket::websocket(ws), global, initial_subs, ticket, metadata);
 
-			tokio::spawn(socket.serve());
+			tokio::spawn(socket.serve(ctx));
 		})
 }
 
@@ -229,6 +225,7 @@ async fn handle_sse(
 	initial_subs: Option<Vec<Subscribe>>,
 	ticket: AtomicTicket,
 	metadata: Metadata,
+	ctx: scuffle_context::Context,
 ) -> Result<Response<axum::body::Body>, (hyper::StatusCode, &'static str)> {
 	// Handle the SSE request.
 	let (sender, response) = tokio::sync::mpsc::channel(1);
@@ -237,7 +234,7 @@ async fn handle_sse(
 
 	let socket = Connection::new(Socket::sse(sender), global, initial_subs, ticket, metadata);
 
-	tokio::spawn(socket.serve());
+	tokio::spawn(socket.serve(ctx));
 
 	let mut res = response.into_response();
 
@@ -271,9 +268,9 @@ struct Connection {
 	/// The initial subscriptions that this connection should subscribe to.
 	initial_subs: Option<Vec<payload::Subscribe>>,
 	/// Drop guard for the metrics
-	_connection_duration_drop_guard: v3::ConnectionDurationDropGuard,
+	_connection_duration_drop_guard: metrics::ConnectionDurationDropGuard,
 	/// Drop guard for the metrics
-	_current_connection_drop_guard: v3::CurrentConnectionDropGuard,
+	_current_connection_drop_guard: metrics::CurrentConnectionDropGuard,
 
 	metadata: Metadata,
 
@@ -301,8 +298,8 @@ impl Connection {
 		metadata: Metadata,
 	) -> Self {
 		let connection_kind = match socket {
-			Socket::WebSocket(_) => v3::ConnectionKind::Websocket,
-			Socket::Sse(_) => v3::ConnectionKind::EventStream,
+			Socket::WebSocket(_) => metrics::ConnectionKind::Websocket,
+			Socket::Sse(_) => metrics::ConnectionKind::EventStream,
 		};
 
 		Self {
@@ -320,8 +317,8 @@ impl Connection {
 			initial_subs,
 			_ticket: ticket,
 			global,
-			_connection_duration_drop_guard: v3::ConnectionDurationDropGuard::new(connection_kind, metadata.clone()),
-			_current_connection_drop_guard: v3::CurrentConnectionDropGuard::new(connection_kind, metadata.clone()),
+			_connection_duration_drop_guard: metrics::ConnectionDurationDropGuard::new(connection_kind, metadata.clone()),
+			_current_connection_drop_guard: metrics::CurrentConnectionDropGuard::new(connection_kind, metadata.clone()),
 			metadata,
 			presence_lru: lru::LruCache::new(NonZeroUsize::new(512).unwrap()),
 			// no_entitlement_lru: lru::LruCache::new(NonZeroUsize::new(20480).unwrap()),
@@ -332,10 +329,7 @@ impl Connection {
 	}
 
 	/// The entry point for the socket.
-	async fn serve(mut self) {
-		let ctx = scuffle_foundations::context::Context::global();
-
-		// Send the hello message.
+	async fn serve(mut self, ctx: scuffle_context::Context) {
 		match self
 			.send_message(payload::Hello {
 				heartbeat_interval: self.heartbeat_interval.period().as_millis() as u32,
@@ -406,22 +400,22 @@ impl Connection {
 
 				match self.socket {
 					Socket::Sse(_) => {
-						v3::client_closes(
+						metrics::client_closes(
 							err.as_code(),
-							v3::ConnectionKind::EventStream,
+							metrics::ConnectionKind::EventStream,
 							&self.metadata.app,
 							&self.metadata.version,
 						)
-						.inc();
+						.incr();
 					}
 					Socket::WebSocket(_) => {
-						v3::client_closes(
+						metrics::client_closes(
 							err.as_code(),
-							v3::ConnectionKind::Websocket,
+							metrics::ConnectionKind::Websocket,
 							&self.metadata.app,
 							&self.metadata.version,
 						)
-						.inc();
+						.incr();
 					}
 				}
 				false
@@ -476,13 +470,13 @@ impl Connection {
 	/// Send a message to the client.
 	async fn send_message(&mut self, data: impl MessagePayload + serde::Serialize) -> Result<(), ConnectionError> {
 		self.seq += 1;
-		v3::commands(
-			v3::CommandKind::Server,
+		metrics::commands(
+			metrics::CommandKind::Server,
 			data.opcode().as_str(),
 			&self.metadata.app,
 			&self.metadata.version,
 		)
-		.inc();
+		.incr();
 		self.socket.send(Message::new(data, self.seq - 1)).await?;
 		Ok(())
 	}
@@ -591,13 +585,13 @@ impl Connection {
 
 	/// Handle a message from the client.
 	async fn handle_message(&mut self, msg: Message) -> Result<(), ConnectionError> {
-		v3::commands(
-			v3::CommandKind::Client,
+		metrics::commands(
+			metrics::CommandKind::Client,
 			msg.opcode.as_str(),
 			&self.metadata.app,
 			&self.metadata.version,
 		)
-		.inc();
+		.incr();
 
 		// We match on the opcode so that we can deserialize the data into the correct
 		// type.
