@@ -254,6 +254,30 @@ impl scuffle_bootstrap::global::Global for Global {
 			user_loader: FullUserLoader::new(weak.clone()),
 		}))
 	}
+
+	async fn on_services_start(self: &Arc<Self>) -> anyhow::Result<()> {
+		tracing::info!("api running");
+		Ok(())
+	}
+
+	async fn on_service_exit(
+		self: &Arc<Self>,
+		name: &'static str,
+		result: anyhow::Result<()>,
+	) -> anyhow::Result<()> {
+		if let Err(err) = &result {
+			tracing::error!("service {name} exited with error: {:#}", err);
+		} else {
+			tracing::info!("service {name} exited");
+		}
+
+		result
+	}
+
+	async fn on_exit(self: &Arc<Self>, result: anyhow::Result<()>) -> anyhow::Result<()> {
+		tracing::info!("api exiting");
+		result
+	}
 }
 
 impl Global {
