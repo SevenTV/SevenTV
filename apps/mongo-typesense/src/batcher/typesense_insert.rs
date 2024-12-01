@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherNormalMode};
+use scuffle_batching::batch::BatchResponse;
+use scuffle_batching::{BatchExecutor, Batcher};
 use shared::typesense::types::TypesenseCollection;
 use typesense_rs::apis::documents_api::{ImportDocumentsError, ImportDocumentsParams, IndexDocumentError};
 use typesense_rs::apis::Api;
@@ -8,81 +9,82 @@ use typesense_rs::models;
 
 pub struct TypesenseInsert<T> {
 	client: Arc<typesense_rs::apis::ApiClient>,
-	config: BatcherConfig,
 	_phantom: std::marker::PhantomData<T>,
 }
 
 impl<T: TypesenseCollection + serde::Serialize + 'static> TypesenseInsert<T> {
 	pub fn new(client: Arc<typesense_rs::apis::ApiClient>) -> Batcher<Self> {
-		Self::new_with_config(
-			client,
-			BatcherConfig {
-				name: format!("TypesenseInsert<{}>", T::COLLECTION_NAME),
-				concurrency: 500,
-				max_batch_size: 10_000,
-				sleep_duration: std::time::Duration::from_millis(100),
-			},
-		)
+		Self::new_with_config(client, 500, 10_000, std::time::Duration::from_millis(100))
 	}
 
-	pub fn new_with_config(client: Arc<typesense_rs::apis::ApiClient>, config: BatcherConfig) -> Batcher<Self> {
-		Batcher::new(Self {
-			client,
-			config,
-			_phantom: std::marker::PhantomData,
-		})
+	pub fn new_with_config(
+		client: Arc<typesense_rs::apis::ApiClient>,
+		concurrency: usize,
+		max_batch_size: usize,
+		sleep_duration: std::time::Duration,
+	) -> Batcher<Self> {
+		Batcher::new(
+			Self {
+				client,
+				_phantom: std::marker::PhantomData,
+			},
+			max_batch_size,
+			concurrency,
+			sleep_duration,
+		)
 	}
 }
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug)]
 pub enum TypesenseInsertError {
 	#[error("failed to import documents: {0}")]
 	Import(#[from] Arc<typesense_rs::apis::Error<ImportDocumentsError>>),
 	#[error("insert document error")]
 	Insert(IndexDocumentError),
 	#[error("failed to serialize document: {0}")]
-	Serialize(Arc<serde_json::Error>),
+	Serialize(serde_json::Error),
 	#[error("failed to deserialize result: {0}")]
-	Deserialize(Arc<serde_json::Error>),
+	Deserialize(serde_json::Error),
 }
 
-impl<T: TypesenseCollection + serde::Serialize + 'static> BatchOperation for TypesenseInsert<T> {
-	type Error = TypesenseInsertError;
-	type Item = T;
-	type Mode = BatcherNormalMode;
-	type Response = bool;
+impl<T: TypesenseCollection + serde::Serialize + 'static> BatchExecutor for TypesenseInsert<T> {
+	type Request = T;
+	type Response = Result<bool, TypesenseInsertError>;
 
-	fn config(&self) -> BatcherConfig {
-		let mut config = self.config.clone();
-		config.name = format!("{}<{}>", config.name, T::COLLECTION_NAME);
-		config
-	}
+	async fn execute(&self, documents: Vec<(Self::Request, BatchResponse<Self::Response>)>) {
+		let (body, responses) = documents
+			.into_iter()
+			.filter_map(|(d, send)| {
+				let result = serde_json::to_string(&d);
+				match result {
+					Ok(result) => Some((result, send)),
+					Err(e) => {
+						send.send_err(TypesenseInsertError::Serialize(e));
+						None
+					}
+				}
+			})
+			.unzip::<_, _, Vec<_>, Vec<_>>();
 
-	#[tracing::instrument(skip_all, fields(document_count = documents.len(), collection= T::COLLECTION_NAME))]
-	async fn process(
-		&self,
-		documents: Vec<Self::Item>,
-	) -> Result<<Self::Mode as BatchMode<Self>>::OperationOutput, Self::Error> {
-		let body = documents
-			.iter()
-			.map(|d| serde_json::to_string(&d))
-			.collect::<Result<Vec<_>, _>>()
-			.map_err(Arc::new)
-			.map_err(TypesenseInsertError::Serialize)?
-			.join("\n");
-
-		let r = self
+		let r = match self
 			.client
 			.documents_api()
 			.import_documents(
 				ImportDocumentsParams::builder()
 					.collection_name(T::COLLECTION_NAME.to_owned())
 					.action(models::IndexAction::Upsert)
-					.body(body)
+					.body(body.join("\n"))
 					.build(),
 			)
 			.await
-			.map_err(Arc::new)?;
+		{
+			Ok(r) => r,
+			Err(e) => {
+				let err = Arc::new(e);
+				responses.into_iter().for_each(|r| r.send_err(err.clone().into()));
+				return;
+			}
+		};
 
 		#[derive(serde::Deserialize)]
 		#[serde(untagged)]
@@ -100,11 +102,11 @@ impl<T: TypesenseCollection + serde::Serialize + 'static> BatchOperation for Typ
 			}
 		}
 
-		Ok(r.lines()
-			.map(|l| {
-				let r = serde_json::from_str::<BatchInsertResultJson>(l);
-				r.map_err(Arc::new).map_err(TypesenseInsertError::Deserialize)?.into_result()
-			})
-			.collect::<Vec<_>>())
+		for (send, response) in responses.into_iter().zip(r.lines()) {
+			match serde_json::from_str::<BatchInsertResultJson>(response) {
+				Ok(result) => send.send(result.into_result()),
+				Err(e) => send.send_err(TypesenseInsertError::Deserialize(e)),
+			}
+		}
 	}
 }

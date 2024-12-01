@@ -1,7 +1,14 @@
-use std::future::Future;
+use std::sync::Arc;
 
 use anyhow::Context as _;
-use scuffle_foundations::telemetry::server::HealthCheck;
+use scuffle_bootstrap_telemetry::opentelemetry;
+use scuffle_bootstrap_telemetry::opentelemetry_sdk::metrics::SdkMeterProvider;
+use scuffle_bootstrap_telemetry::opentelemetry_sdk::Resource;
+use scuffle_metrics::opentelemetry::KeyValue;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, Layer};
 
 use crate::config::Config;
 
@@ -10,10 +17,45 @@ pub struct Global {
 	pub jetstream: async_nats::jetstream::Context,
 	pub database: mongodb::Database,
 	pub config: Config,
+	metrics: scuffle_bootstrap_telemetry::prometheus::Registry,
 }
 
-impl Global {
-	pub async fn new(config: Config) -> anyhow::Result<Self> {
+impl scuffle_bootstrap::global::Global for Global {
+	type Config = Config;
+
+	fn pre_init() -> anyhow::Result<()> {
+		rustls::crypto::aws_lc_rs::default_provider().install_default().ok();
+		Ok(())
+	}
+
+	async fn init(config: Config) -> anyhow::Result<Arc<Self>> {
+		let metrics = scuffle_bootstrap_telemetry::prometheus::Registry::new();
+
+		opentelemetry::global::set_meter_provider(
+			SdkMeterProvider::builder()
+				.with_resource(Resource::new(vec![KeyValue::new("service.name", env!("CARGO_BIN_NAME"))]))
+				.with_reader(
+					scuffle_metrics::prometheus::exporter()
+						.with_registry(metrics.clone())
+						.build()
+						.context("prometheus metrics exporter")?,
+				)
+				.build(),
+		);
+
+		tracing_subscriber::registry()
+			.with(
+				tracing_subscriber::fmt::layer()
+					.with_file(true)
+					.with_line_number(true)
+					.with_filter(
+						EnvFilter::builder()
+							.with_default_directive(LevelFilter::INFO.into())
+							.parse_lossy(&config.level),
+					),
+			)
+			.init();
+
 		let (nats, jetstream) = shared::nats::setup_nats("event-api", &config.nats)
 			.await
 			.context("nats connect")?;
@@ -24,31 +66,44 @@ impl Global {
 			.default_database()
 			.ok_or_else(|| anyhow::anyhow!("no default database"))?;
 
-		Ok(Self {
+		Ok(Arc::new(Self {
 			nats,
 			config,
 			jetstream,
 			database,
-		})
+			metrics,
+		}))
 	}
 }
 
-impl HealthCheck for Global {
-	fn check(&self) -> std::pin::Pin<Box<dyn Future<Output = bool> + Send + '_>> {
-		Box::pin(async {
-			tracing::debug!("running health check");
+impl scuffle_signal::SignalConfig for Global {
+	async fn on_shutdown(self: &Arc<Self>) -> anyhow::Result<()> {
+		tracing::info!("shutting down");
 
-			if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
-				tracing::error!("nats not connected");
-				return false;
-			}
+		Ok(())
+	}
+}
 
-			if self.database.run_command(bson::doc! { "ping": 1 }).await.is_err() {
-				tracing::error!("mongo not connected");
-				return false;
-			}
+impl scuffle_bootstrap_telemetry::TelemetryConfig for Global {
+	async fn health_check(&self) -> Result<(), anyhow::Error> {
+		tracing::debug!("running health check");
 
-			true
-		})
+		if !matches!(self.nats.connection_state(), async_nats::connection::State::Connected) {
+			anyhow::bail!("nats not connected");
+		}
+
+		if self.database.run_command(bson::doc! { "ping": 1 }).await.is_err() {
+			anyhow::bail!("mongo not connected");
+		}
+
+		Ok(())
+	}
+
+	fn bind_address(&self) -> Option<std::net::SocketAddr> {
+		self.config.metrics_bind
+	}
+
+	fn prometheus_metrics_registry(&self) -> Option<&scuffle_bootstrap_telemetry::prometheus::Registry> {
+		Some(&self.metrics)
 	}
 }

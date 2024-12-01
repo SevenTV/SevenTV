@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
+use axum::extract::{Path, State};
+use axum::routing::get;
+use axum::{Json, Router};
 use http::Uri;
-use scuffle_foundations::http::server::axum::extract::{Path, State};
-use scuffle_foundations::http::server::axum::routing::get;
-use scuffle_foundations::http::server::axum::{Json, Router};
+use metrics::FileKind;
 use shared::cdn::key::{CacheKey, ImageFile};
 use shared::database::badge::BadgeId;
 use shared::database::emote::EmoteId;
@@ -21,6 +22,22 @@ pub fn routes(_: &Arc<Global>) -> Router<Arc<Global>> {
 		.route("/emote/:id/:file", get(emote))
 		.route("/user/:user/profile-picture/:avatar_id/:file", get(user_profile_picture))
 		.route("/paint/:id/layer/:layer/:file", get(paint_layer))
+}
+
+#[scuffle_metrics::metrics(rename = "cdn")]
+mod metrics {
+	use scuffle_metrics::{CounterU64, MetricEnum};
+	use shared::cdn::key::ImageFileExtension;
+
+	#[derive(Debug, Clone, Copy, MetricEnum)]
+	pub enum FileKind {
+		Badge,
+		Emote,
+		Paint,
+		UserProfilePicture,
+	}
+
+	pub fn request(kind: FileKind, image_type: ImageFileExtension) -> CounterU64;
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -62,6 +79,8 @@ async fn badge(
 		return redirect_to_new_url(key);
 	}
 
+	metrics::request(FileKind::Badge, key.extension()).incr();
+
 	global.cache.handle_request(&global, key).await
 }
 
@@ -74,6 +93,8 @@ async fn emote(
 	if uri.path().trim_start_matches('/') != key.to_string() {
 		return redirect_to_new_url(key);
 	}
+
+	metrics::request(FileKind::Emote, key.extension()).incr();
 
 	global.cache.handle_request(&global, key).await
 }
@@ -92,6 +113,8 @@ async fn user_profile_picture(
 		return redirect_to_new_url(key);
 	}
 
+	metrics::request(FileKind::UserProfilePicture, key.extension()).incr();
+
 	global.cache.handle_request(&global, key).await
 }
 
@@ -108,6 +131,8 @@ async fn paint_layer(
 	if uri.path().trim_start_matches('/') != key.to_string() {
 		return redirect_to_new_url(key);
 	}
+
+	metrics::request(FileKind::Paint, key.extension()).incr();
 
 	global.cache.handle_request(&global, key).await
 }

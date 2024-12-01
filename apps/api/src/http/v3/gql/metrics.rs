@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::extensions::{Extension, ExtensionFactory};
 use async_graphql::PathSegment;
-use scuffle_foundations::telemetry::metrics::metrics;
+use scuffle_metrics::metrics;
 
 pub struct ErrorMetrics;
 
@@ -16,10 +16,10 @@ struct ErrorMetricsExtension;
 
 #[metrics]
 mod gql_v3 {
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_metrics::CounterU64;
 
-	pub fn request(path: String) -> Counter;
-	pub fn error(path: String, code: String, status_code: String) -> Counter;
+	pub fn request(path: String) -> CounterU64;
+	pub fn error(path: String, code: String, status_code: String) -> CounterU64;
 }
 
 fn path_segment_display(segments: &[PathSegment]) -> String {
@@ -62,7 +62,7 @@ fn handle_error(error: &async_graphql::ServerError) {
 		code.unwrap_or_default(),
 		status_code.unwrap_or_default(),
 	)
-	.inc();
+	.incr();
 }
 
 #[async_trait::async_trait]

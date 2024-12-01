@@ -1,9 +1,6 @@
-use scuffle_foundations::bootstrap::{Bootstrap, RuntimeSettings};
-use scuffle_foundations::settings::auto_settings;
-use scuffle_foundations::telemetry::settings::TelemetrySettings;
 use shared::config::{DatabaseConfig, NatsConfig};
 
-#[auto_settings]
+#[derive(Debug, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct Config {
 	/// Database configuration
@@ -12,29 +9,21 @@ pub struct Config {
 	/// NATs configuration
 	pub nats: NatsConfig,
 
-	/// Telemetry configuration
-	pub telemetry: TelemetrySettings,
-
 	/// Publish topic
-	#[settings(default = "seventv".into())]
+	#[default("seventv".into())]
 	pub nats_prefix: String,
 
 	/// Nats back pressure
-	#[settings(default = 1000)]
+	#[default(1000)]
 	pub back_pressure: usize,
+
+	/// Log level
+	#[default(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))]
+	pub level: String,
+
+	/// Metrics bind
+	#[default(None)]
+	pub metrics_bind: Option<std::net::SocketAddr>,
 }
 
-impl Bootstrap for Config {
-	type Settings = Self;
-
-	fn telemetry_config(&self) -> Option<TelemetrySettings> {
-		Some(self.telemetry.clone())
-	}
-
-	fn runtime_mode(&self) -> RuntimeSettings {
-		RuntimeSettings::NoSteal {
-			threads: 1,
-			name: "mongo-change-stream".into(),
-		}
-	}
-}
+scuffle_settings::bootstrap!(Config);

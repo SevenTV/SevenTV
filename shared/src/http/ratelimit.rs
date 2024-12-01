@@ -3,36 +3,32 @@ use std::sync::Arc;
 
 use ipnet::IpNet;
 use rate_limit::{IpType, RuleType};
-use scuffle_foundations::telemetry::metrics::metrics;
+use scuffle_metrics::metrics;
 
 use crate::config;
 
 #[metrics]
 mod rate_limit {
 	use ipnet::IpNet;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
-	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
+	use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum};
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize)]
+	#[derive(Debug, Clone, Copy, MetricEnum)]
 	pub enum RuleType {
 		Subnet,
 		Bucket,
 	}
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize)]
+	#[derive(Debug, Clone, Copy, MetricEnum)]
 	pub enum IpType {
 		V4,
 		V6,
 	}
 
-	pub fn deny(range: IpNet, rule: RuleType, limit: String) -> Counter;
+	pub fn deny(range: IpNet, rule: RuleType, limit: String) -> CounterU64;
 
-	#[builder = HistogramBuilder::default()]
-	pub fn accept_bucket(ip: IpType, prefix: String) -> Histogram;
+	pub fn accept_bucket(ip: IpType, prefix: String) -> HistogramF64;
 
-	#[builder = HistogramBuilder::default()]
-	pub fn accept_subnet(subnet: String) -> Histogram;
+	pub fn accept_subnet(subnet: String) -> HistogramF64;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -50,10 +46,10 @@ impl Limit {
 	fn report(&self) {
 		match self.range {
 			LimitType::Subnet(ip) => {
-				rate_limit::deny(ip, RuleType::Subnet, self.connections.to_string()).inc();
+				rate_limit::deny(ip, RuleType::Subnet, self.connections.to_string()).incr();
 			}
 			LimitType::Bucket(ip) => {
-				rate_limit::deny(ip.trunc(), RuleType::Bucket, self.connections.to_string()).inc();
+				rate_limit::deny(ip.trunc(), RuleType::Bucket, self.connections.to_string()).incr();
 			}
 		}
 	}

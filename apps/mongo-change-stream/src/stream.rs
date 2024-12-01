@@ -9,13 +9,13 @@ use async_nats::jetstream::context::PublishAckFuture;
 use async_nats::{HeaderMap, HeaderName, HeaderValue};
 use bytes::Bytes;
 use mongodb::change_stream::event::OperationType;
-use scuffle_foundations::context::ContextFutExt;
-use scuffle_foundations::telemetry::metrics::metrics;
+use scuffle_context::ContextFutExt;
+use scuffle_metrics::MetricEnum;
 use tokio_stream::StreamExt;
 
 use crate::global::Global;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
+#[derive(Debug, Clone)]
 enum Operation {
 	Insert,
 	Update,
@@ -46,29 +46,45 @@ impl From<OperationType> for Operation {
 	}
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
+impl From<Operation> for scuffle_bootstrap_telemetry::opentelemetry::Value {
+	fn from(value: Operation) -> Self {
+		match value {
+			Operation::Other(value) => scuffle_bootstrap_telemetry::opentelemetry::Value::from(value),
+			Operation::Insert => scuffle_bootstrap_telemetry::opentelemetry::Value::from("insert"),
+			Operation::Update => scuffle_bootstrap_telemetry::opentelemetry::Value::from("update"),
+			Operation::Replace => scuffle_bootstrap_telemetry::opentelemetry::Value::from("replace"),
+			Operation::Delete => scuffle_bootstrap_telemetry::opentelemetry::Value::from("delete"),
+			Operation::Drop => scuffle_bootstrap_telemetry::opentelemetry::Value::from("drop"),
+			Operation::Rename => scuffle_bootstrap_telemetry::opentelemetry::Value::from("rename"),
+			Operation::DropDatabase => scuffle_bootstrap_telemetry::opentelemetry::Value::from("drop_database"),
+			Operation::Invalidate => scuffle_bootstrap_telemetry::opentelemetry::Value::from("invalidate"),
+			Operation::SearchUpdate => scuffle_bootstrap_telemetry::opentelemetry::Value::from("search_update"),
+		}
+	}
+}
+
+#[derive(Debug, Clone, MetricEnum)]
 enum PublishStatus {
 	Success,
 	Error,
 	Timeout,
 }
 
-#[metrics]
+#[scuffle_metrics::metrics]
 mod mongo_change_stream {
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_metrics::CounterU64;
 
 	use super::{Operation, PublishStatus};
 
 	/// The number of change stream events for a given database, collection, and
 	/// operation.
-	pub fn event(database: &str, collection: &str, operation: Operation) -> Counter;
+	pub fn event(database: &str, collection: &str, operation: Operation) -> CounterU64;
 
-	pub fn publish(status: PublishStatus) -> Counter;
+	/// The number of times a change stream event was published to NATS.
+	pub fn publish(status: PublishStatus) -> CounterU64;
 }
 
-pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
-	let ctx = scuffle_foundations::context::Context::global();
-
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::Result<()> {
 	let (tx, mut rx) = tokio::sync::mpsc::channel::<PublishAckFuture>(global.config.back_pressure);
 
 	struct DropHandle<T>(tokio::task::JoinHandle<T>);
@@ -79,27 +95,24 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 		}
 	}
 
-	let _handle = DropHandle(tokio::spawn(
-		async move {
-			let mut errors = 0;
-			while let Some(ack) = rx.recv().await {
-				if let Err(err) = ack.await {
-					tracing::warn!("failed to ack message: {:#}", err);
-					errors += 1;
-					if errors > 5 {
-						tracing::error!("too many errors, stopping");
-						// We need to sleep here so we dont overwhelm the sender
-						tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-					}
-				}
-
-				if rx.is_closed() {
-					break;
+	let _handle = DropHandle(tokio::spawn(async move {
+		let mut errors = 0;
+		while let Some(ack) = rx.recv().await {
+			if let Err(err) = ack.await {
+				tracing::warn!("failed to ack message: {:#}", err);
+				errors += 1;
+				if errors > 5 {
+					tracing::error!("too many errors, stopping");
+					// We need to sleep here so we dont overwhelm the sender
+					tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 				}
 			}
+
+			if rx.is_closed() {
+				break;
+			}
 		}
-		.with_context(ctx.clone()),
-	));
+	}));
 
 	let Some(mut watch_stream) = tokio::time::timeout(Duration::from_secs(5), global.database.watch().into_future())
 		.with_context(&ctx)
@@ -149,11 +162,11 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 			.as_ref()
 			.is_some_and(|ud| ud.updated_fields.iter().all(|(f, _)| f == "search_updated_at"))
 		{
-			mongo_change_stream::event(&ns.db, collection, Operation::SearchUpdate).inc();
+			mongo_change_stream::event(&ns.db, collection, Operation::SearchUpdate).incr();
 			continue;
 		}
 
-		mongo_change_stream::event(&ns.db, collection, event.operation_type.clone().into()).inc();
+		mongo_change_stream::event(&ns.db, collection, event.operation_type.clone().into()).incr();
 
 		let id = {
 			let id = serde_json::to_value(&event.id).context("serialize event id")?;
@@ -169,7 +182,7 @@ pub async fn start(global: Arc<Global>) -> anyhow::Result<()> {
 			(HeaderName::from_static("collection"), HeaderValue::from(collection)),
 		]);
 
-		if !publish_nats(&global, &tx, subject.name(), headers, Bytes::from(event)).await {
+		if !publish_nats(&global, &tx, subject.name(), headers, Bytes::from(event), &ctx).await {
 			anyhow::bail!("failed to publish event");
 		}
 	}
@@ -183,9 +196,8 @@ async fn publish_nats(
 	topic: String,
 	headers: HeaderMap,
 	payload: Bytes,
+	ctx: &scuffle_context::Context,
 ) -> bool {
-	let ctx = scuffle_foundations::context::Context::global();
-
 	let make = || {
 		tokio::time::timeout(Duration::from_secs(5), async {
 			global
@@ -197,13 +209,13 @@ async fn publish_nats(
 	};
 
 	for _ in 0..10 {
-		let Some(result) = make().with_context(&ctx).await else {
+		let Some(result) = make().with_context(ctx).await else {
 			return true;
 		};
 
 		match result {
 			Ok(Ok(ack)) => {
-				mongo_change_stream::publish(PublishStatus::Success).inc();
+				mongo_change_stream::publish(PublishStatus::Success).incr();
 				if tx.send(ack).await.is_err() {
 					tracing::error!("failed to ack message");
 					return false;
@@ -213,11 +225,11 @@ async fn publish_nats(
 			}
 			Ok(Err(err)) => {
 				tracing::warn!("failed to publish event: {:#}", err);
-				mongo_change_stream::publish(PublishStatus::Error).inc();
+				mongo_change_stream::publish(PublishStatus::Error).incr();
 			}
 			Err(_) => {
 				tracing::warn!("failed to publish event: timedout");
-				mongo_change_stream::publish(PublishStatus::Timeout).inc();
+				mongo_change_stream::publish(PublishStatus::Timeout).incr();
 			}
 		}
 

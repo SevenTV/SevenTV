@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use scuffle_foundations::batcher::dataloader::DataLoader;
-use scuffle_foundations::batcher::Batcher;
+use scuffle_batching::{Batcher, DataLoader};
 use serde::de::DeserializeOwned;
 use shared::database::loader::LoaderById;
 use shared::database::SearchableMongoCollection;

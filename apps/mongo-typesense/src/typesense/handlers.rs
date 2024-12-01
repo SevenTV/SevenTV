@@ -148,7 +148,13 @@ macro_rules! default_impl {
 					return Ok(());
 				};
 
-				global.$batcher.inserter.execute(data).await?;
+				global
+					.$batcher
+					.inserter
+					.execute(data)
+					.await
+					.context("insert missing")?
+					.context("insert")?;
 
 				// Perhaps this could be a batcher?
 				global
@@ -228,7 +234,13 @@ impl SupportedMongoCollection for mongo::UserEditor {
 
 		let updated_at = data.updated_at;
 
-		global.user_editor_batcher.inserter.execute(data.into()).await?;
+		global
+			.user_editor_batcher
+			.inserter
+			.execute(data.into())
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		global
 			.updater
@@ -283,7 +295,14 @@ impl SupportedMongoCollection for mongo::UserRelation {
 		}
 
 		let updated_at = data.updated_at;
-		global.user_relation_batcher.inserter.execute(data.into()).await?;
+
+		global
+			.user_relation_batcher
+			.inserter
+			.execute(data.into())
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		global
 			.updater
@@ -463,7 +482,7 @@ impl SupportedMongoCollection for mongo::User {
 					)
 					.await
 				{
-					output?;
+					output.context("missing emote stat")?.context("insert emote stat")?;
 				}
 			}
 		}
@@ -482,7 +501,9 @@ impl SupportedMongoCollection for mongo::User {
 					.filter(|edge| edge.id.from == EntitlementEdgeKind::User { user_id: id })
 					.map(|edge| edge.id.to),
 			))
-			.await?;
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		global
 			.updater
@@ -736,7 +757,9 @@ impl SupportedMongoCollection for mongo::Product {
 				data,
 				granted_entitlements.into_iter().map(|edge| edge.id.to),
 			))
-			.await?;
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		global
 			.updater
@@ -816,7 +839,9 @@ impl SupportedMongoCollection for mongo::SubscriptionProduct {
 			.subscription_product_batcher
 			.inserter
 			.execute(typesense::SubscriptionProduct::from_db(data, granted_entitlements))
-			.await?;
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		global
 			.updater
@@ -886,7 +911,9 @@ impl SupportedMongoCollection for mongo::Subscription {
 				data,
 				granted_entitlements.iter().map(|e| e.id.to.clone()),
 			))
-			.await?;
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		global
 			.updater
@@ -961,7 +988,9 @@ impl SupportedMongoCollection for mongo::Role {
 				data,
 				granted_entitlements.into_iter().map(|edge| edge.id.to),
 			))
-			.await?;
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		let now = chrono::Utc::now();
 
@@ -1061,7 +1090,9 @@ impl SupportedMongoCollection for mongo::SpecialEvent {
 				data,
 				granted_entitlements.into_iter().map(|edge| edge.id.to),
 			))
-			.await?;
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		global
 			.updater
@@ -1118,7 +1149,13 @@ impl SupportedMongoCollection for mongo::EmoteSet {
 		let emotes_changed = data.emotes_changed_since_reindex;
 		let updated_at = data.updated_at;
 
-		global.emote_set_batcher.inserter.execute(data.into()).await?;
+		global
+			.emote_set_batcher
+			.inserter
+			.execute(data.into())
+			.await
+			.context("insert missing")?
+			.context("insert")?;
 
 		let now = chrono::Utc::now();
 

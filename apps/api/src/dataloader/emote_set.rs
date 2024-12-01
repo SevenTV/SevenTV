@@ -4,8 +4,7 @@ use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use mongodb::options::ReadPreference;
-use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_batching::{DataLoader, DataLoaderFetcher};
 use shared::database::emote_set::EmoteSet;
 use shared::database::loader::dataloader::BatchLoad;
 use shared::database::queries::filter;
@@ -13,7 +12,7 @@ use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
 pub struct EmoteSetByUserIdLoader {
-	config: BatcherConfig,
+	name: String,
 	db: mongodb::Database,
 }
 
@@ -21,36 +20,38 @@ impl EmoteSetByUserIdLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		Self::new_with_config(
 			db,
-			BatcherConfig {
-				name: "EmoteSetByUserIdLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(5),
-			},
+			"EmoteSetByUserIdLoader".to_string(),
+			500,
+			50,
+			std::time::Duration::from_millis(5),
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { db, config })
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		concurrency: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
+		DataLoader::new(Self { db, name }, batch_size, concurrency, sleep_duration)
 	}
 }
 
-impl Loader for EmoteSetByUserIdLoader {
+impl DataLoaderFetcher for EmoteSetByUserIdLoader {
 	type Key = UserId;
 	type Value = Vec<EmoteSet>;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
-
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let results: Vec<EmoteSet> = EmoteSet::collection(&self.db)
 			.find(filter::filter! {
 				EmoteSet {
-					#[query(selector = "in")]
+					#[query(selector = "in", serde)]
 					owner_id: keys,
 				}
 			})
@@ -61,8 +62,9 @@ impl Loader for EmoteSetByUserIdLoader {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})
+			.ok()?;
 
-		Ok(results.into_iter().into_group_map_by(|r| r.owner_id.unwrap()))
+		Some(results.into_iter().into_group_map_by(|r| r.owner_id.unwrap()))
 	}
 }

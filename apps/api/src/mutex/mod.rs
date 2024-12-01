@@ -1,12 +1,11 @@
 use anyhow::Context;
-use scuffle_foundations::telemetry::opentelemetry::{OpenTelemetrySpanExt, Status};
 use shared::database::Id;
 use tracing::Instrument;
 
 pub struct DistributedMutex {
-	redis: fred::clients::RedisPool,
-	mutex_lock: fred::types::Function,
-	mutex_free: fred::types::Function,
+	redis: fred::clients::Pool,
+	mutex_lock: fred::types::scripts::Function,
+	mutex_free: fred::types::scripts::Function,
 }
 
 const LUA_SCRIPT: &str = include_str!("mutex.lua");
@@ -18,7 +17,7 @@ pub enum MutexError {
 	#[error("lost mutex lock while waiting for operation to complete")]
 	Lost,
 	#[error("redis error: {0}")]
-	Redis(#[from] fred::error::RedisError),
+	Redis(#[from] fred::error::Error),
 }
 
 #[derive(Debug, Default)]
@@ -39,8 +38,8 @@ impl<T: std::fmt::Display> From<T> for MutexAquireRequest<T> {
 }
 
 impl DistributedMutex {
-	pub async fn new(redis: fred::clients::RedisPool) -> anyhow::Result<Self> {
-		let lib = fred::types::Library::from_code(redis.next(), LUA_SCRIPT).await?;
+	pub async fn new(redis: fred::clients::Pool) -> anyhow::Result<Self> {
+		let lib = fred::types::scripts::Library::from_code(redis.next(), LUA_SCRIPT).await?;
 
 		Ok(Self {
 			mutex_lock: lib
@@ -88,9 +87,6 @@ impl DistributedMutex {
 
 			if !aquired {
 				tracing::Span::current().record("attempts", req.attempts);
-				tracing::Span::current().set_status(Status::Error {
-					description: "failed to acquire mutex".into(),
-				});
 				return Err(MutexError::Acquire(req.attempts));
 			}
 
@@ -126,7 +122,6 @@ impl DistributedMutex {
 							true => Ok(()),
 							false => {
 								tracing::warn!("lost mutex lock while waiting for operation to complete");
-								tracing::Span::current().set_status(Status::Error { description: "lost mutex lock".into() });
 								Err(MutexError::Lost)
 							}
 						}

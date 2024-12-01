@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use scuffle_foundations::batcher::{BatchMode, BatchOperation, Batcher, BatcherConfig, BatcherError, BatcherNormalMode};
+use scuffle_batching::batch::BatchResponse;
+use scuffle_batching::{BatchExecutor, Batcher};
 
 use crate::database::queries::{filter, update};
 use crate::database::MongoCollection;
@@ -9,12 +10,11 @@ pub struct MongoUpdater(Batcher<Inner>);
 
 struct Inner {
 	db: mongodb::Database,
-	config: BatcherConfig,
 }
 
 impl MongoUpdater {
-	pub fn new(db: mongodb::Database, config: BatcherConfig) -> Self {
-		Self(Batcher::new(Inner { db, config }))
+	pub fn new(db: mongodb::Database, batch_size: usize, concurrency: usize, delay: std::time::Duration) -> Self {
+		Self(Batcher::new(Inner { db }, batch_size, concurrency, delay))
 	}
 
 	pub async fn update<M: MongoCollection>(
@@ -22,18 +22,20 @@ impl MongoUpdater {
 		filter: impl Into<filter::Filter<M>>,
 		update: impl Into<update::Update<M>>,
 		many: bool,
-	) -> Result<bool, BatcherError<MongoOpError>> {
+	) -> Result<bool, MongoOpError> {
 		self.bulk(Some(MongoReq::update::<M>(filter, update, many)))
 			.await
 			.pop()
-			.ok_or(BatcherError::MissingResult)?
+			.ok_or(MongoOpError::NoResponse)?
 	}
 
-	pub async fn bulk(
-		&self,
-		requests: impl IntoIterator<Item = MongoReq> + Send,
-	) -> Vec<Result<bool, BatcherError<MongoOpError>>> {
-		self.0.execute_many(requests).await
+	pub async fn bulk(&self, requests: impl IntoIterator<Item = MongoReq> + Send) -> Vec<Result<bool, MongoOpError>> {
+		self.0
+			.execute_many(requests)
+			.await
+			.into_iter()
+			.map(|r| r.unwrap_or(Err(MongoOpError::NoResponse)))
+			.collect()
 	}
 }
 
@@ -83,49 +85,32 @@ enum MongoOp {
 	},
 }
 
-impl BatchOperation for Inner {
-	type Error = MongoOpError;
-	type Item = MongoReq;
-	type Mode = BatcherNormalMode;
-	type Response = bool;
+impl BatchExecutor for Inner {
+	type Request = MongoReq;
+	type Response = Result<bool, MongoOpError>;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
-
-	#[tracing::instrument(skip_all, fields(document_count = documents.len(), name = %self.config.name))]
-	async fn process(
-		&self,
-		documents: Vec<Self::Item>,
-	) -> Result<<Self::Mode as BatchMode<Self>>::OperationOutput, Self::Error> {
+	async fn execute(&self, documents: Vec<(Self::Request, BatchResponse<Self::Response>)>) {
 		let mut collections = HashMap::new();
 
-		let ops = documents
+		let (docs, callbacks) = documents
 			.into_iter()
-			.map(|req| {
+			.map(|(req, resp)| {
 				if !collections.contains_key(&req.collection) {
 					collections.insert(req.collection, collections.len());
 				}
 
 				let idx = collections[&req.collection] as u32;
 
-				Ok::<_, MongoOpError>(match req.op {
+				let op = match req.op {
 					MongoOp::Update { filter, update, many } => bson::doc! {
 						"update": idx,
 						"filter": filter,
 						"updateMods": update,
 						"multi": many,
 					},
-				})
-			})
-			.collect::<Vec<_>>();
+				};
 
-		let (true_idx_map, docs) = ops
-			.iter()
-			.enumerate()
-			.filter_map(|(idx, r)| match r {
-				Ok(r) => Some((idx, r)),
-				Err(_) => None,
+				(op, resp)
 			})
 			.unzip::<_, _, Vec<_>, Vec<_>>();
 
@@ -145,7 +130,7 @@ impl BatchOperation for Inner {
 
 		let ns_info = collections.into_iter().map(|(v, _)| v).collect::<Vec<_>>();
 
-		let r = self
+		let r = match self
 			.db
 			.client()
 			.database("admin")
@@ -156,9 +141,27 @@ impl BatchOperation for Inner {
 				"nsInfo": ns_info,
 			})
 			.await
-			.map_err(MongoOpError::Import)?;
+		{
+			Ok(r) => r,
+			Err(e) => {
+				tracing::error!("failed to bulk write: {e}");
+				callbacks
+					.into_iter()
+					.for_each(|c| c.send_err(MongoOpError::Import(e.clone())));
+				return;
+			}
+		};
 
-		let resp: BulkWriteResp = bson::from_document(r)?;
+		let resp: BulkWriteResp = match bson::from_document(r) {
+			Ok(r) => r,
+			Err(e) => {
+				tracing::error!("failed to deserialize bulk write response: {e}");
+				callbacks
+					.into_iter()
+					.for_each(|c| c.send_err(MongoOpError::Deserialize(e.clone())));
+				return;
+			}
+		};
 
 		#[derive(Debug, serde::Deserialize)]
 		struct BulkWriteResp {
@@ -191,29 +194,23 @@ impl BatchOperation for Inner {
 			.map(|r| (r.idx, r))
 			.collect::<HashMap<_, _>>();
 
-		let mut results = Vec::with_capacity(ops.len());
-
-		for (idx, r) in ops.into_iter().enumerate() {
-			if let Err(e) = r {
-				results.push(Err(e));
-				continue;
-			}
-
-			let updated_idx = true_idx_map.binary_search(&idx).unwrap() as u32;
-			if let Some(r) = resp_batch.get(&updated_idx) {
-				if r.ok >= 1.0 {
-					results.push(Ok(r.n_modified.unwrap_or(r.n) > 0));
-				} else {
-					results.push(Err(MongoOpError::Response(
-						r.code.unwrap_or(1),
-						r.errmsg.clone().unwrap_or_default(),
-					)));
+		for (idx, callback) in callbacks.into_iter().enumerate() {
+			let update = match resp_batch.get(&(idx as u32)) {
+				Some(r) => r,
+				None => {
+					callback.send_err(MongoOpError::NoResponse);
+					continue;
 				}
+			};
+
+			if update.ok >= 1.0 {
+				callback.send_ok(update.n_modified.unwrap_or(update.n) > 0);
 			} else {
-				results.push(Err(MongoOpError::NoResponse));
+				callback.send_err(MongoOpError::Response(
+					update.code.unwrap_or(1),
+					update.errmsg.clone().unwrap_or_default(),
+				));
 			}
 		}
-
-		Ok(results)
 	}
 }

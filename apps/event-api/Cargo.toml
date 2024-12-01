@@ -6,12 +6,10 @@ license = "Apache-2.0 with Commons Clause"
 
 [dependencies]
 tokio = { version = "1.38", features = ["full"] }
-scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations", features = ["http3"]}
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive", "rc"] }
 tracing = "0.1"
-once_cell = "1.19"
-thiserror = "1.0"
-async-nats = "0.37.0"
+thiserror = "2.0.3"
+async-nats = "0.38.0"
 anyhow = "1"
 tokio-stream = { version = "0.1", features = ["sync"] }
 futures-util = "0.3"
@@ -35,15 +33,25 @@ hyper = { version = "1", features = ["full"] }
 tower-http = { version = "0.6.1", features = ["trace", "cors", "request-id", "set-header"]}
 axum = { version = "0.7", features = ["ws"] }
 tower = "0.5.0"
-tinystr = "0.7"
 http = "1"
 quinn = "0.11.5"
-num_cpus = "1.13"
 rustls = "0.23"
 rustls-pemfile = "2.1"
 hyper-util = { version = "0.1", features = ["tokio", "server", "http1", "http2"] }
 h3 = "0.0.6"
 regex = "1.10.6"
+smart-default = "0.7.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+scuffle-http = { version = "0.0.1", features = ["tls-rustls"] }
+scuffle-bootstrap = "0.0.1"
+scuffle-context = "0.0.1"
+scuffle-metrics = "0.0.1"
+scuffle-batching = "0.0.1"
+scuffle-bootstrap-telemetry = "0.0.1"
+scuffle-signal = { version = "0.0.1", features = ["bootstrap"] }
+scuffle-settings = { version = "0.0.1", features = ["toml", "templates", "cli", "bootstrap"] }
+
 
 [features]
 default = []

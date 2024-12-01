@@ -1,0 +1,12 @@
+[package]
+name = "special-event"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+mongodb = "3"
+bson = "2"
+futures = "0.3"
+shared = { workspace = true }
+chrono = "0.4"

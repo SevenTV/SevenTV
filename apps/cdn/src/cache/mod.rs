@@ -1,11 +1,10 @@
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
+use axum::body::Body;
+use axum::response::IntoResponse;
 use bytes::{Bytes, BytesMut};
-use scuffle_foundations::http::server::axum::http::header::{self, HeaderMap};
-use scuffle_foundations::http::server::axum::http::{HeaderValue, Response, StatusCode};
-use scuffle_foundations::http::server::stream::{Body, IntoResponse};
-use scuffle_foundations::telemetry::metrics::metrics;
+use http::{header, HeaderMap, HeaderValue, StatusCode};
 use shared::cdn::key::CacheKey;
 use tokio::sync::OnceCell;
 
@@ -22,14 +21,11 @@ pub struct Cache {
 	capacity: size::Size,
 }
 
-#[metrics]
+#[scuffle_metrics::metrics]
 mod cache {
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::gauge::Gauge;
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::histogram::Histogram;
-	use scuffle_foundations::telemetry::metrics::HistogramBuilder;
+	use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum, UpDownCounterI64};
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum State {
 		Hit,
 		ReboundHit,
@@ -37,7 +33,7 @@ mod cache {
 		Miss,
 	}
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum ResponseStatus {
 		Success,
 		NotFound,
@@ -45,27 +41,26 @@ mod cache {
 		InternalServerError,
 	}
 
-	pub fn action(state: State) -> Counter;
+	pub fn action(state: State) -> CounterU64;
 
-	pub fn upstream_response(status: ResponseStatus) -> Counter;
+	pub fn upstream_response(status: ResponseStatus) -> CounterU64;
 
-	pub fn inflight() -> Gauge;
+	pub fn inflight() -> UpDownCounterI64;
 
-	#[builder = HistogramBuilder::default()]
-	pub fn duration() -> Histogram;
+	pub fn duration() -> HistogramF64;
 
 	pub struct InflightDropGuard(std::time::Instant);
 
 	impl Drop for InflightDropGuard {
 		fn drop(&mut self) {
-			inflight().dec();
+			inflight().decr();
 			duration().observe(self.0.elapsed().as_secs_f64());
 		}
 	}
 
 	impl InflightDropGuard {
 		pub fn new() -> Self {
-			inflight().inc();
+			inflight().incr();
 			Self(std::time::Instant::now())
 		}
 	}
@@ -140,7 +135,7 @@ impl Cache {
 
 	pub async fn handle_request(&self, global: &Arc<Global>, key: CacheKey) -> CachedResponse {
 		if let Some(hit) = self.inner.get(&key).await {
-			cache::action(cache::State::Hit).inc();
+			cache::action(cache::State::Hit).incr();
 
 			// return cached response
 			return hit;
@@ -159,7 +154,7 @@ impl Cache {
 
 		if !insert {
 			tracing::debug!(key = %key, "pending");
-			cache::action(cache::State::Coalesced).inc();
+			cache::action(cache::State::Coalesced).incr();
 			// pending
 			entry.token.cancelled().await;
 			return entry.response.get().cloned().unwrap_or_else(CachedResponse::general_error);
@@ -209,13 +204,13 @@ impl Cache {
 
 		if let Some(cached) = self.inner.get(guard.key()).await {
 			tracing::debug!(key = %guard.key(), "rebounded hit");
-			cache::action(cache::State::ReboundHit).inc();
+			cache::action(cache::State::ReboundHit).incr();
 			guard.entry().response.set(cached.clone()).expect("unreachable");
 			guard.disarm().await;
 			return cached.clone();
 		}
 
-		cache::action(cache::State::Miss).inc();
+		cache::action(cache::State::Miss).incr();
 
 		let cached = tokio::spawn(async move {
 			// request file
@@ -265,21 +260,21 @@ impl Cache {
 	async fn request_key(&self, global: &Arc<Global>, key: &CacheKey) -> CachedResponse {
 		match self.do_req(global, key).await {
 			Ok(response) => {
-				cache::upstream_response(cache::ResponseStatus::Success).inc();
+				cache::upstream_response(cache::ResponseStatus::Success).incr();
 				response
 			}
 			Err(S3ErrorWrapper::Sdk(aws_sdk_s3::error::SdkError::ServiceError(e))) if e.err().is_no_such_key() => {
-				cache::upstream_response(cache::ResponseStatus::NotFound).inc();
+				cache::upstream_response(cache::ResponseStatus::NotFound).incr();
 				CachedResponse::not_found()
 			}
 			Err(S3ErrorWrapper::Timeout(_)) => {
 				tracing::error!(key = %key, "timeout while requesting cdn file");
-				cache::upstream_response(cache::ResponseStatus::Timeout).inc();
+				cache::upstream_response(cache::ResponseStatus::Timeout).incr();
 				CachedResponse::timeout()
 			}
 			Err(e) => {
 				tracing::error!(key = %key, error = %e, "failed to request cdn file");
-				cache::upstream_response(cache::ResponseStatus::InternalServerError).inc();
+				cache::upstream_response(cache::ResponseStatus::InternalServerError).incr();
 				CachedResponse::general_error()
 			}
 		}
@@ -374,7 +369,7 @@ impl CachedData {
 }
 
 impl IntoResponse for CachedData {
-	fn into_response(self) -> scuffle_foundations::http::server::stream::Response {
+	fn into_response(self) -> axum::response::Response {
 		match self {
 			Self::Bytes { data, content_type } => {
 				let mut headers = HeaderMap::new();
@@ -399,7 +394,7 @@ impl IntoResponse for CachedData {
 }
 
 impl IntoResponse for CachedResponse {
-	fn into_response(self) -> Response<Body> {
+	fn into_response(self) -> axum::response::Response {
 		let mut data = self.data.into_response();
 
 		if self.max_age.as_secs() == 0 {
@@ -429,7 +424,7 @@ impl IntoResponse for CachedResponse {
 				format!(
 					"public, max-age={}, s-maxage={}, immutable",
 					self.max_age.as_secs(),
-					60 * 60 * 24
+					self.max_age.as_secs().min(60 * 60 * 24)
 				)
 				.try_into()
 				.unwrap(),

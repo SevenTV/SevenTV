@@ -8,13 +8,12 @@ mongodb = "3"
 bson = "2"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["full"] }
-async-nats = "0.37.0"
-scuffle-foundations = { git = "https://github.com/ScuffleTV/scuffle.git", branch = "foundations" }
+async-nats = "0.38.0"
 shared = { workspace = true }
 fnv = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-thiserror = "1.0"
+thiserror = "2.0.3"
 tracing = "0.1"
 anyhow = "1.0"
 futures = "0.3"
@@ -22,8 +21,16 @@ bytes = "1.0"
 typesense-rs = { version = "27.0.1", features = ["bon"] }
 tokio-util = "0.7"
 chrono = "0.4"
-const_format = "0.2"
 clickhouse = { version = "0.13.0", features = ["time", "uuid", "rustls-tls"] }
 rustls = { version = "0.23", features = ["aws-lc-rs"] }
 time = { version = "0.3", features = ["serde"] }
 rand = "0.8"
+smart-default = "0.7.1"
+
+scuffle-bootstrap = "0.0.1"
+scuffle-context = "0.0.1"
+scuffle-metrics = "0.0.1"
+scuffle-batching = "0.0.1"
+scuffle-bootstrap-telemetry = "0.0.1"
+scuffle-signal = { version = "0.0.1", features = ["bootstrap"] }
+scuffle-settings = { version = "0.0.1", features = ["toml", "templates", "cli", "bootstrap"] }

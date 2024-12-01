@@ -5,14 +5,13 @@ use async_graphql::ErrorExtensionValues;
 use axum::response::IntoResponse;
 use axum::Json;
 use hyper::{HeaderMap, StatusCode};
-use scuffle_foundations::telemetry::metrics::metrics;
-use scuffle_foundations::telemetry::opentelemetry::{OpenTelemetrySpanExt, Status};
+use scuffle_metrics::metrics;
 
 #[metrics]
 mod error {
-	use scuffle_foundations::telemetry::metrics::prometheus_client::metrics::counter::Counter;
+	use scuffle_metrics::CounterU64;
 
-	pub fn constructed(status: &'static str, status_code: String) -> Counter;
+	pub fn constructed(status: &'static str, status_code: String) -> CounterU64;
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize)]
@@ -77,7 +76,7 @@ impl ApiErrorCode {
 
 impl ApiError {
 	pub fn new(status_code: StatusCode, error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		error::constructed(error_code.as_str(), status_code.to_string()).inc();
+		error::constructed(error_code.as_str(), status_code.to_string()).incr();
 
 		Self {
 			status_code,
@@ -128,12 +127,6 @@ impl ApiError {
 
 impl IntoResponse for ApiError {
 	fn into_response(mut self) -> axum::http::Response<axum::body::Body> {
-		if self.status_code.is_server_error() {
-			tracing::Span::current().set_status(Status::Error {
-				description: self.error.clone(),
-			});
-		}
-
 		let extra_headers = self.extra_headers.take();
 
 		let mut resp = (self.status_code, Json(self)).into_response();
@@ -148,12 +141,6 @@ impl IntoResponse for ApiError {
 
 impl From<ApiError> for async_graphql::Error {
 	fn from(value: ApiError) -> Self {
-		if value.status_code.is_server_error() {
-			tracing::Span::current().set_status(Status::Error {
-				description: value.error.clone(),
-			});
-		}
-
 		let mut extensions = ErrorExtensionValues::default();
 
 		extensions.set("code", value.error_code.as_str());

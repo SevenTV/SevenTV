@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::marker::PhantomData;
 
 #[derive(Debug)]
@@ -224,13 +225,20 @@ impl<T> __AssertFilterBounds<Option<T>> for T {}
 impl<T> __AssertFilterBounds<Option<T>> for &T {}
 impl<T> __AssertFilterBounds<Option<T>> for Option<&T> {}
 
-impl<T> __AssertFilterBounds<Vec<T>> for T {}
-impl<T> __AssertFilterBounds<Vec<T>> for &T {}
-impl<T> __AssertFilterBounds<Vec<T>> for &[T] {}
-impl<T> __AssertFilterBoundsFlatten<Vec<T>> for T {}
-impl<T> __AssertFilterBoundsFlatten<Vec<T>> for &T {}
-impl<T> __AssertFilterBoundsFlatten<Vec<T>> for &[T] {}
-impl<T> __AssertFilterBoundsFlatten<Vec<T>> for Value<T> {}
-impl<T> __AssertFilterBoundsFlatten<Vec<T>> for &Value<T> {}
+macro_rules! impl_array_like {
+	($ty:ty) => {
+		impl<T> __AssertFilterBounds<$ty> for T {}
+		impl<T> __AssertFilterBounds<$ty> for &T {}
+		impl<T> __AssertFilterBounds<$ty> for &[T] {}
+		impl<T> __AssertFilterBoundsFlatten<$ty> for T {}
+		impl<T> __AssertFilterBoundsFlatten<$ty> for &T {}
+		impl<T> __AssertFilterBoundsFlatten<$ty> for &[T] {}
+		impl<T> __AssertFilterBoundsFlatten<$ty> for Value<T> {}
+		impl<T> __AssertFilterBoundsFlatten<$ty> for &Value<T> {}
+	};
+}
+
+impl_array_like!(Vec<T>);
+impl_array_like!(HashSet<T>);
 
 pub use macros::mongo_filter_query as filter;

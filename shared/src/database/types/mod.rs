@@ -101,7 +101,8 @@ fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 }
 
 pub(super) async fn init_mongo(db: &mongodb::Database) -> anyhow::Result<()> {
-	for collection in mongo_collections() {
+	let collections = mongo_collections().into_iter().collect::<Vec<_>>();
+	for collection in collections {
 		collection.init(db).await?;
 	}
 

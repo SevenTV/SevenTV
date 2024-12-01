@@ -144,15 +144,15 @@ pub struct EmoteSetEmoteFlagsInput {
 	pub override_conflicts: bool,
 }
 
-impl Into<shared::database::emote_set::EmoteSetEmoteFlag> for EmoteSetEmoteFlagsInput {
-	fn into(self) -> shared::database::emote_set::EmoteSetEmoteFlag {
+impl From<EmoteSetEmoteFlagsInput> for shared::database::emote_set::EmoteSetEmoteFlag {
+	fn from(val: EmoteSetEmoteFlagsInput) -> Self {
 		let mut flags = shared::database::emote_set::EmoteSetEmoteFlag::default();
 
-		if self.zero_width {
+		if val.zero_width {
 			flags |= shared::database::emote_set::EmoteSetEmoteFlag::ZeroWidth;
 		}
 
-		if self.override_conflicts {
+		if val.override_conflicts {
 			flags |= shared::database::emote_set::EmoteSetEmoteFlag::OverrideConflicts;
 		}
 

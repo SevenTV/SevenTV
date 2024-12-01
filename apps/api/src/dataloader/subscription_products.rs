@@ -3,8 +3,7 @@ use std::future::IntoFuture;
 use bson::doc;
 use futures::{TryFutureExt, TryStreamExt};
 use mongodb::options::ReadPreference;
-use scuffle_foundations::batcher::dataloader::{DataLoader, Loader, LoaderOutput};
-use scuffle_foundations::batcher::BatcherConfig;
+use scuffle_batching::{DataLoader, DataLoaderFetcher};
 use shared::database::loader::dataloader::BatchLoad;
 use shared::database::product::SubscriptionProduct;
 use shared::database::queries::filter;
@@ -12,38 +11,40 @@ use shared::database::MongoCollection;
 
 pub struct SubscriptionProductsLoader {
 	db: mongodb::Database,
-	config: BatcherConfig,
+	name: String,
 }
 
 impl SubscriptionProductsLoader {
 	pub fn new(db: mongodb::Database) -> DataLoader<Self> {
 		Self::new_with_config(
 			db,
-			BatcherConfig {
-				name: "SubscriptionProductsLoader".to_string(),
-				concurrency: 500,
-				max_batch_size: 1000,
-				sleep_duration: std::time::Duration::from_millis(5),
-			},
+			"SubscriptionProductsLoader".to_string(),
+			500,
+			50,
+			std::time::Duration::from_millis(5),
 		)
 	}
 
-	pub fn new_with_config(db: mongodb::Database, config: BatcherConfig) -> DataLoader<Self> {
-		DataLoader::new(Self { db, config })
+	pub fn new_with_config(
+		db: mongodb::Database,
+		name: String,
+		batch_size: usize,
+		concurrency: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
+		DataLoader::new(Self { db, name }, batch_size, concurrency, sleep_duration)
 	}
 }
 
-impl Loader for SubscriptionProductsLoader {
+impl DataLoaderFetcher for SubscriptionProductsLoader {
 	type Key = ();
 	type Value = Vec<SubscriptionProduct>;
 
-	fn config(&self) -> BatcherConfig {
-		self.config.clone()
-	}
-
-	#[tracing::instrument(skip_all, fields(key_count = keys.len(), name = %self.config.name))]
-	async fn fetch(&self, keys: Vec<Self::Key>) -> LoaderOutput<Self> {
-		let _batch = BatchLoad::new(&self.config.name, keys.len());
+	async fn load(
+		&self,
+		keys: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		let _batch = BatchLoad::new(&self.name, keys.len());
 
 		let results: Self::Value = SubscriptionProduct::collection(&self.db)
 			.find(filter::filter! {
@@ -56,8 +57,9 @@ impl Loader for SubscriptionProductsLoader {
 			.await
 			.map_err(|err| {
 				tracing::error!("failed to load: {err}");
-			})?;
+			})
+			.ok()?;
 
-		Ok(std::iter::once(((), results)).collect())
+		Some(std::iter::once(((), results)).collect())
 	}
 }

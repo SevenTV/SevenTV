@@ -272,7 +272,7 @@ pub enum TransactionError<E: Debug> {
 	#[error("too many failures")]
 	TooManyFailures,
 	#[error("redis error: {0}")]
-	Redis(#[from] fred::error::RedisError),
+	Redis(#[from] fred::error::Error),
 	#[error("mutex error: {0}")]
 	Mutex(#[from] MutexError),
 }

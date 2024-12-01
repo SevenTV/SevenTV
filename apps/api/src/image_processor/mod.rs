@@ -6,7 +6,7 @@ use anyhow::Context;
 use async_nats::jetstream::{consumer, stream};
 use futures::StreamExt;
 use prost::Message;
-use scuffle_foundations::context::{self, ContextFutExt};
+use scuffle_context::ContextFutExt;
 use scuffle_image_processor_proto::{event_callback, EventCallback};
 use shared::database::image_set::{Image, ImageSet, ImageSetInput};
 use shared::image_processor::Subject;
@@ -22,7 +22,7 @@ mod profile_picture;
 const JETSTREAM_NAME: &str = "image-processor-callback";
 const JETSTREAM_CONSUMER_NAME: &str = "image-processor-callback-consumer";
 
-pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> Result<(), anyhow::Error> {
 	let config = &global.config.image_processor;
 
 	let subject = Subject::wildcard(&config.event_queue_topic_prefix);
@@ -57,7 +57,7 @@ pub async fn run(global: Arc<Global>) -> Result<(), anyhow::Error> {
 		.await
 		.context("failed to get image processor callback consumer messages")?;
 
-	while let Some(message) = consumer.next().with_context(context::Context::global()).await {
+	while let Some(message) = consumer.next().with_context(&ctx).await {
 		let message = message.context("consumer closed")?.context("failed to get message")?;
 
 		// decode

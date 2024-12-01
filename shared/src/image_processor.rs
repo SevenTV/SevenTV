@@ -159,7 +159,7 @@ impl ImageProcessor {
 				},
 				OutputFormatOptions {
 					format: OutputFormat::WebpStatic as i32,
-					quality: OutputQuality::Auto as i32,
+					quality: OutputQuality::Lossless as i32,
 					name: None,
 				},
 				OutputFormatOptions {
