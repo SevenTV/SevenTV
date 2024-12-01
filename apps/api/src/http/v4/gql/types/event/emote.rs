@@ -89,6 +89,7 @@ pub struct EventEmoteDataMerge {
 
 #[async_graphql::ComplexObject]
 impl EventEmoteDataMerge {
+	#[tracing::instrument(skip_all, name = "EventEmoteDataMerge::new_emote")]
 	async fn new_emote(&self, ctx: &Context<'_>) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -116,6 +117,7 @@ pub struct EventEmoteDataChangeOwner {
 
 #[async_graphql::ComplexObject]
 impl EventEmoteDataChangeOwner {
+	#[tracing::instrument(skip_all, name = "EventEmoteDataChangeOwner::old_owner")]
 	async fn old_owner(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -130,6 +132,7 @@ impl EventEmoteDataChangeOwner {
 		Ok(user.map(Into::into))
 	}
 
+	#[tracing::instrument(skip_all, name = "EventEmoteDataChangeOwner::new_owner")]
 	async fn new_owner(&self, ctx: &async_graphql::Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

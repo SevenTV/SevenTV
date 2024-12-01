@@ -57,6 +57,7 @@ impl Display for Ranking {
 
 #[async_graphql::ComplexObject]
 impl Emote {
+	#[tracing::instrument(skip_all, name = "Emote::owner")]
 	async fn owner(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -71,6 +72,7 @@ impl Emote {
 		Ok(user.map(Into::into))
 	}
 
+	#[tracing::instrument(skip_all, name = "Emote::ranking")]
 	async fn ranking(&self, ctx: &Context<'_>, ranking: Ranking) -> Result<Option<u32>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -94,6 +96,7 @@ impl Emote {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "Emote::channels")]
 	async fn channels(
 		&self,
 		ctx: &Context<'_>,
@@ -140,6 +143,7 @@ impl Emote {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "Emote::events")]
 	async fn events(
 		&self,
 		ctx: &Context<'_>,
@@ -180,6 +184,7 @@ impl Emote {
 			.collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "Emote::in_emote_sets")]
 	async fn in_emote_sets(
 		&self,
 		ctx: &Context<'_>,
@@ -296,6 +301,7 @@ impl From<shared::database::emote::EmoteAttribution> for EmoteAttribution {
 
 #[async_graphql::ComplexObject]
 impl EmoteAttribution {
+	#[tracing::instrument(skip_all, name = "EmoteAttribution::user")]
 	async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

@@ -79,6 +79,7 @@ pub struct EntitlementNodeUser {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeUser {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeUser::user")]
 	async fn user(&self, ctx: &Context<'_>) -> Result<User, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -103,6 +104,7 @@ pub struct EntitlementNodeRole {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeRole {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeRole::role")]
 	async fn role(&self, ctx: &Context<'_>) -> Result<Role, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -127,6 +129,7 @@ pub struct EntitlementNodeBadge {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeBadge {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeBadge::badge")]
 	async fn badge(&self, ctx: &Context<'_>) -> Result<Badge, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -151,6 +154,7 @@ pub struct EntitlementNodePaint {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodePaint {
+	#[tracing::instrument(skip_all, name = "EntitlementNodePaint::paint")]
 	async fn paint(&self, ctx: &Context<'_>) -> Result<Paint, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -175,6 +179,7 @@ pub struct EntitlementNodeEmoteSet {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeEmoteSet {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeEmoteSet::emote_set")]
 	async fn emote_set(&self, ctx: &Context<'_>) -> Result<EmoteSet, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -204,6 +209,7 @@ pub struct EntitlementNodeSubscriptionBenefit {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeSubscriptionBenefit {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeSubscriptionBenefit::subscription_benefit")]
 	async fn subscription_benefit(&self, ctx: &Context<'_>) -> Result<SubscriptionBenefit, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -246,6 +252,7 @@ pub struct EntitlementNodeSpecialEvent {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeSpecialEvent {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeSpecialEvent::special_event")]
 	async fn special_event(&self, ctx: &Context<'_>) -> Result<SpecialEvent, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()

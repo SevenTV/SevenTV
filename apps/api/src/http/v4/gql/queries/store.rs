@@ -16,6 +16,7 @@ pub struct StoreQuery;
 
 #[async_graphql::Object]
 impl StoreQuery {
+	#[tracing::instrument(skip_all, name = "StoreQuery::monthly_paints")]
 	async fn monthly_paints(&self, ctx: &Context<'_>) -> Result<Vec<Paint>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

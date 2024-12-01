@@ -28,6 +28,7 @@ pub struct BadgeProgress {
 
 #[async_graphql::ComplexObject]
 impl BadgeProgress {
+	#[tracing::instrument(skip_all, name = "BadgeProgress::current_badge")]
 	async fn current_badge(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
 		let Some(current_badge_id) = self.current_badge_id else {
 			return Ok(None);
@@ -58,6 +59,7 @@ pub struct BadgeProgressNextBadge {
 
 #[async_graphql::ComplexObject]
 impl BadgeProgressNextBadge {
+	#[tracing::instrument(skip_all, name = "BadgeProgressNextBadge::badge")]
 	async fn badge(&self, ctx: &Context<'_>) -> Result<Badge, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -82,6 +84,7 @@ pub struct SubscriptionInfo {
 
 #[async_graphql::Object]
 impl Billing {
+	#[tracing::instrument(skip_all, name = "Billing::badge_progress")]
 	async fn badge_progress(&self, ctx: &Context<'_>) -> Result<BadgeProgress, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -195,6 +198,7 @@ impl Billing {
 		})
 	}
 
+	#[tracing::instrument(skip_all, name = "Billing::subscription_info")]
 	async fn subscription_info(&self, ctx: &Context<'_>) -> Result<SubscriptionInfo, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

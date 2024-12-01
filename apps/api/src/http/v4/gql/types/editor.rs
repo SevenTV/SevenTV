@@ -37,6 +37,7 @@ impl From<shared::database::user::editor::UserEditor> for UserEditor {
 
 #[ComplexObject]
 impl UserEditor {
+	#[tracing::instrument(skip_all, name = "UserEditor::user")]
 	async fn editor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

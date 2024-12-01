@@ -12,6 +12,7 @@ pub struct ProductQuery;
 
 #[async_graphql::Object]
 impl ProductQuery {
+	#[tracing::instrument(skip_all, name = "ProductQuery::subscription_products")]
 	async fn subscription_products(&self, ctx: &Context<'_>) -> Result<Vec<SubscriptionProduct>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -27,6 +28,7 @@ impl ProductQuery {
 		Ok(products.into_iter().map(Into::into).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "ProductQuery::subscription_product")]
 	async fn subscription_product(
 		&self,
 		ctx: &Context<'_>,

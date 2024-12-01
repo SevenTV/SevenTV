@@ -38,6 +38,7 @@ impl From<shared::database::role::Role> for Role {
 
 #[ComplexObject]
 impl Role {
+	#[tracing::instrument(skip_all, name = "Role::created_by")]
 	pub async fn created_by(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

@@ -34,6 +34,7 @@ pub struct SubscribeResponse {
 #[async_graphql::Object]
 impl BillingMutation {
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultSubscribe, 1)")]
+	#[tracing::instrument(skip_all, name = "BillingMutation::subscribe")]
 	async fn subscribe(&self, ctx: &Context<'_>, variant_id: ProductId) -> Result<SubscribeResponse, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -205,6 +206,7 @@ impl BillingMutation {
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultPaymentMethod, 1)")]
+	#[tracing::instrument(skip_all, name = "BillingMutation::cancel_subscription")]
 	async fn cancel_subscription(
 		&self,
 		ctx: &Context<'_>,
@@ -397,6 +399,7 @@ impl BillingMutation {
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultSubscribe, 1)")]
+	#[tracing::instrument(skip_all, name = "BillingMutation::reactivate_subscription")]
 	async fn reactivate_subscription(
 		&self,
 		ctx: &Context<'_>,

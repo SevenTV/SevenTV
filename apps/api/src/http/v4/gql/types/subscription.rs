@@ -135,6 +135,7 @@ pub struct SubscriptionPeriod {
 
 #[async_graphql::ComplexObject]
 impl SubscriptionPeriod {
+	#[tracing::instrument(skip_all, name = "SubscriptionPeriod::gifted_by")]
 	async fn gifted_by(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let Some(gifted_by_id) = self.gifted_by_id else {
 			return Ok(None);
@@ -153,6 +154,7 @@ impl SubscriptionPeriod {
 		Ok(user.map(Into::into))
 	}
 
+	#[tracing::instrument(skip_all, name = "SubscriptionPeriod::subscription")]
 	async fn subscription(&self, ctx: &Context<'_>) -> Result<Subscription, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -168,6 +170,7 @@ impl SubscriptionPeriod {
 		Ok(subscription.into())
 	}
 
+	#[tracing::instrument(skip_all, name = "SubscriptionPeriod::subscription_product")]
 	async fn subscription_product(&self, ctx: &Context<'_>) -> Result<SubscriptionProduct, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -183,6 +186,7 @@ impl SubscriptionPeriod {
 		Ok(product.into())
 	}
 
+	#[tracing::instrument(skip_all, name = "SubscriptionPeriod::subscription_product_variant")]
 	async fn subscription_product_variant(&self, ctx: &Context<'_>) -> Result<SubscriptionProductVariant, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()

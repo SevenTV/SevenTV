@@ -90,6 +90,7 @@ struct LoginRequest {
 	pub return_to: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 async fn login(
 	State(global): State<Arc<Global>>,
 	Extension(session): Extension<Session>,
@@ -174,6 +175,7 @@ struct LoginFinishResponse {
 	pub token: String,
 }
 
+#[tracing::instrument(skip_all)]
 async fn login_finish(
 	State(global): State<Arc<Global>>,
 	headers: HeaderMap,
@@ -421,6 +423,7 @@ struct LogoutRequest {
 	pub token: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,

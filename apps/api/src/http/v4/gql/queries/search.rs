@@ -22,6 +22,7 @@ pub struct SearchResultAll {
 #[Object]
 impl SearchQuery {
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "SearchQuery::all")]
 	async fn all(
 		&self,
 		ctx: &Context<'_>,

@@ -16,6 +16,7 @@ pub struct UserQuery;
 
 #[Object]
 impl UserQuery {
+	#[tracing::instrument(skip_all, name = "UserQuery::me")]
 	async fn me(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -37,6 +38,7 @@ impl UserQuery {
 		Ok(user.map(Into::into))
 	}
 
+	#[tracing::instrument(skip_all, name = "UserQuery::user")]
 	async fn user(&self, ctx: &Context<'_>, id: UserId) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -63,6 +65,7 @@ impl UserQuery {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "UserQuery::search")]
 	async fn search(
 		&self,
 		ctx: &Context<'_>,

@@ -165,6 +165,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetCreate, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOperation::create")]
 	async fn create(
 		&self,
 		_ctx: &Context<'_>,
@@ -176,6 +177,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOperation::name")]
 	async fn name(
 		&self,
 		_ctx: &Context<'_>,
@@ -187,6 +189,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOperation::capacity")]
 	async fn capacity(
 		&self,
 		_ctx: &Context<'_>,
@@ -198,6 +201,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOperation::add_emote")]
 	async fn add_emote(&self, ctx: &Context<'_>, emote: AddEmote) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -515,6 +519,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOperation::remove_emote")]
 	async fn remove_emote(&self, ctx: &Context<'_>, id: EmoteSetEmoteId) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -673,6 +678,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOperation::update_emote_alias")]
 	async fn update_emote_alias(
 		&self,
 		ctx: &Context<'_>,
@@ -817,6 +823,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOperation::update_emote_flags")]
 	async fn update_emote_flags(
 		&self,
 		ctx: &Context<'_>,
@@ -934,6 +941,7 @@ impl EmoteSetOperation {
 	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
+	#[tracing::instrument(skip_all, name = "EmoteSetOperation::delete")]
 	async fn delete(&self, _ctx: &Context<'_>) -> Result<bool, ApiError> {
 		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
 	}

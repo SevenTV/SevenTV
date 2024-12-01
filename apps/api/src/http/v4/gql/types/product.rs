@@ -32,6 +32,7 @@ pub struct SubscriptionProduct {
 
 #[async_graphql::ComplexObject]
 impl SubscriptionProduct {
+	#[tracing::instrument(skip_all, name = "SubscriptionProduct::default_variant")]
 	async fn default_variant(&self) -> Result<SubscriptionProductVariant, ApiError> {
 		let mut variant = self.variants.get(self.default_variant_idx as usize).cloned();
 
@@ -44,6 +45,7 @@ impl SubscriptionProduct {
 			))
 	}
 
+	#[tracing::instrument(skip_all, name = "SubscriptionProduct::variants")]
 	async fn variants(&self) -> Vec<SubscriptionProductVariant> {
 		self.variants
 			.iter()
@@ -93,6 +95,7 @@ pub struct Price {
 
 #[async_graphql::ComplexObject]
 impl SubscriptionProductVariant {
+	#[tracing::instrument(skip_all, name = "SubscriptionProductVariant::price")]
 	async fn price(&self, ctx: &Context<'_>, preferred_currency: Option<String>) -> Result<Price, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
