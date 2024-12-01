@@ -39,7 +39,7 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 
 	tracing::info!("cdn purge worker started");
 
-	loop {
+	while !ctx.is_done() {
 		let messages = consumer.messages().await.context("consumer")?.with_context(&ctx);
 		let mut messages = std::pin::pin!(messages);
 
@@ -77,10 +77,12 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 			}
 		}
 
-		tracing::info!("message stream closed, waiting 10 seconds before reconnecting");
-		if tokio::time::sleep(Duration::from_secs(10)).with_context(&ctx).await.is_none() {
+		if ctx.is_done() {
 			break;
 		}
+
+		tracing::info!("message stream closed, waiting 10 seconds before reconnecting");
+		tokio::time::sleep(Duration::from_secs(10)).with_context(&ctx).await;
 	}
 
 	Ok(())

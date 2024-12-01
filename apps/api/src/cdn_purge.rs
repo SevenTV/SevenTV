@@ -5,7 +5,7 @@ use anyhow::Context;
 use async_nats::jetstream;
 use async_nats::jetstream::stream::RetentionPolicy;
 use futures::StreamExt;
-use scuffle_context::ContextStreamExt;
+use scuffle_context::{ContextFutExt, ContextStreamExt};
 
 use crate::global::Global;
 
@@ -39,7 +39,7 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 
 	tracing::info!("cdn purge worker started");
 
-	loop {
+	while !ctx.is_done() {
 		let messages = consumer.messages().await.context("consumer")?.with_context(&ctx);
 		let mut messages = std::pin::pin!(messages);
 
@@ -71,10 +71,10 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 
 		if ctx.is_done() {
 			break;
-		} else {
-			tracing::info!("message stream closed, waiting 10 seconds before reconnecting");
-			tokio::time::sleep(Duration::from_secs(10)).await;
-		}
+		} 
+		
+		tracing::info!("message stream closed, waiting 10 seconds before reconnecting");
+		tokio::time::sleep(Duration::from_secs(10)).with_context(&ctx).await;
 	}
 
 	Ok(())
