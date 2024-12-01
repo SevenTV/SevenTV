@@ -86,7 +86,7 @@ impl scuffle_bootstrap_telemetry::TelemetryConfig for Global {
 	}
 }
 
-impl scuffle_bootstrap::signals::SignalSvcConfig for Global {
+impl scuffle_signal::SignalConfig for Global {
 	async fn on_shutdown(self: &Arc<Self>) -> anyhow::Result<()> {
 		tracing::info!("shutting down cdn");
 		Ok(())

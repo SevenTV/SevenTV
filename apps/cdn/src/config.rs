@@ -67,4 +67,4 @@ pub struct Cdn {
 	pub purge_stream_name: String,
 }
 
-scuffle_bootstrap::cli_config!(Config);
+scuffle_settings::bootstrap!(Config);

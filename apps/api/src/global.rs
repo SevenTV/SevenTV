@@ -56,7 +56,7 @@ use crate::stripe_client;
 
 pub struct Global {
 	pub nats: async_nats::Client,
-	pub redis: fred::clients::RedisPool,
+	pub redis: fred::clients::Pool,
 	pub rate_limiter: RateLimiter,
 	geoip: Option<GeoIpResolver>,
 	pub jetstream: async_nats::jetstream::Context,
@@ -262,7 +262,7 @@ impl Global {
 	}
 }
 
-impl scuffle_bootstrap::signals::SignalSvcConfig for Global {
+impl scuffle_signal::SignalConfig for Global {
 	async fn on_shutdown(self: &std::sync::Arc<Self>) -> anyhow::Result<()> {
 		tracing::info!("shutting down");
 		Ok(())

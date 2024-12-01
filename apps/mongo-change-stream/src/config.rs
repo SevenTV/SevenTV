@@ -26,4 +26,4 @@ pub struct Config {
 	pub metrics_bind: Option<std::net::SocketAddr>,
 }
 
-scuffle_bootstrap::cli_config!(Config);
+scuffle_settings::bootstrap!(Config);

@@ -35,4 +35,4 @@ pub struct TriggersConfig {
 	pub typesense_concurrency: usize,
 }
 
-scuffle_bootstrap::cli_config!(Config);
+scuffle_settings::bootstrap!(Config);

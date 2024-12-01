@@ -201,4 +201,4 @@ pub struct CdnConfig {
 	pub cloudflare_api_token: String,
 }
 
-scuffle_bootstrap::cli_config!(Config);
+scuffle_settings::bootstrap!(Config);

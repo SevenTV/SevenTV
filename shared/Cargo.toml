@@ -15,9 +15,6 @@ anyhow = "1.0"
 hyper = { version = "1", features = ["server", "http1", "http2"] }
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["tokio", "server", "http1", "http2"] }
-scuffle-batching = "0.0.0"
-scuffle-metrics = "0.0.0"
-scuffle-http = "0.0.0"
 smart-default = "0.7.1"
 thiserror = "2.0.3"
 tokio-stream = "0.1"
@@ -44,7 +41,6 @@ trust-dns-resolver = "0.23"
 futures = "0.3"
 async-stripe = { version = "0.39.1", features = ["runtime-tokio-hyper-rustls"] }
 async-graphql = { version = "7.0.6", default-features = false }
-scuffle-image-processor-proto = { version = "0.0.0", features = ["client", "serde"] }
 humantime-serde = "1"
 bytes = "1.6.0"
 typesense-rs = { version = "27.0.1", features = ["bon"] }
@@ -56,11 +52,16 @@ maxminddb = "0.24.0"
 reqwest = { version = "0.12.8", features = ["json", "rustls-tls", "http2", "charset"], default-features = false }
 flate2 = "1.0.33"
 tar = "0.4.41"
-fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "i-scripts"]}
+fred = { version = "10.0.0", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "i-scripts"]}
 ipnet = { version = "2.9.0", features = ["serde"] }
 spin = "0.9.8"
 axum = "0.7"
 regex = "1.10.6"
 async-trait = "0.1.83"
+
+scuffle-image-processor-proto = { version = "0.0.1", features = ["client", "serde"] }
+scuffle-metrics = "0.0.1"
+scuffle-batching = "0.0.1"
+scuffle-http = "0.0.1"
 
 macros = { workspace = true }

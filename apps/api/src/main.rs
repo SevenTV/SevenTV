@@ -1,5 +1,5 @@
 use global::Global;
-use scuffle_bootstrap::signals::SignalSvc;
+use scuffle_signal::SignalSvc;
 use scuffle_bootstrap_telemetry::TelemetrySvc;
 mod cdn_purge;
 mod config;

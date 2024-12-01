@@ -35,3 +35,10 @@ macros = { path = "macros" }
 [patch.crates-io]
 scuffle-batching = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }
 scuffle-http = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }
+scuffle-bootstrap = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }
+scuffle-settings = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }
+scuffle-bootstrap-telemetry = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }
+scuffle-metrics = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }
+scuffle-context = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }
+scuffle-image-processor-proto = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }
+scuffle-signal = { git = "https://github.com/scufflecloud/scuffle", branch = "foundations-v2" }

@@ -190,10 +190,12 @@ dependencies = [
  "scuffle-batching",
  "scuffle-bootstrap",
  "scuffle-bootstrap-telemetry",
- "scuffle-context 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scuffle-context",
  "scuffle-http",
  "scuffle-image-processor-proto",
  "scuffle-metrics",
+ "scuffle-settings",
+ "scuffle-signal",
  "serde",
  "serde_json",
  "serde_repr",
@@ -224,12 +226,6 @@ name = "arc-swap"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69f7f8c3906b62b754cd5326047894316021dcfe5a194c8ea52bdd94934a3457"
-
-[[package]]
-name = "arraydeque"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d902e3d592a523def97af8f317b08ce16b7ab854c1985a0c671e6f15cebc236"
 
 [[package]]
 name = "ascii_utils"
@@ -284,7 +280,7 @@ dependencies = [
  "futures-util",
  "handlebars",
  "http 1.1.0",
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "mime",
  "multer",
  "num-traits",
@@ -356,7 +352,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef5ec94176a12a8cbe985cd73f2e54dc9c702c88c766bdef12f1f3a67cedbee1"
 dependencies = [
  "bytes",
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "serde",
  "serde_json",
 ]
@@ -946,9 +942,6 @@ name = "bitflags"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "bitmask-enum"
@@ -987,17 +980,7 @@ version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97493a391b4b18ee918675fb8663e53646fd09321c58b46afa04e8ce2499c869"
 dependencies = [
- "bon-macros 2.3.0",
- "rustversion",
-]
-
-[[package]]
-name = "bon"
-version = "3.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e47d5c63335658326076cf7c81795af665c534ea552da69526d6cef51b12ed9"
-dependencies = [
- "bon-macros 3.1.1",
+ "bon-macros",
  "rustversion",
 ]
 
@@ -1011,21 +994,6 @@ dependencies = [
  "ident_case",
  "proc-macro2",
  "quote",
- "syn 2.0.90",
-]
-
-[[package]]
-name = "bon-macros"
-version = "3.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b162272b6d55562ea30cc937d74ef4d07399e507bfd6eb3860f6a845c7264eef"
-dependencies = [
- "darling",
- "ident_case",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rustversion",
  "syn 2.0.90",
 ]
 
@@ -1061,7 +1029,7 @@ dependencies = [
  "bitvec",
  "chrono",
  "hex",
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "js-sys",
  "once_cell",
  "rand 0.8.5",
@@ -1145,11 +1113,14 @@ dependencies = [
  "rustls 0.23.19",
  "rustls-pemfile 2.2.0",
  "scc",
+ "scuffle-batching",
  "scuffle-bootstrap",
  "scuffle-bootstrap-telemetry",
- "scuffle-context 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scuffle-context",
  "scuffle-http",
  "scuffle-metrics",
+ "scuffle-settings",
+ "scuffle-signal",
  "serde",
  "serde_json",
  "shared",
@@ -1333,15 +1304,10 @@ version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68578f196d2a33ff61b27fae256c3164f65e36382648e30666dde05b8cc9dfdf"
 dependencies = [
- "json5",
  "nom",
  "pathdiff",
- "ron",
- "rust-ini",
  "serde",
- "serde_json",
  "toml",
- "yaml-rust2",
 ]
 
 [[package]]
@@ -1349,26 +1315,6 @@ name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
-
-[[package]]
-name = "const-random"
-version = "0.1.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87e00182fe74b066627d63b85fd550ac2998d4b0bd86bfed477a0ae4c7c71359"
-dependencies = [
- "const-random-macro",
-]
-
-[[package]]
-name = "const-random-macro"
-version = "0.1.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9d839f2a20b0aee515dc581a6172f2321f96cab76c1a38a4c584a194955390e"
-dependencies = [
- "getrandom 0.2.15",
- "once_cell",
- "tiny-keccak",
-]
 
 [[package]]
 name = "convert_case"
@@ -1495,25 +1441,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossbeam-queue"
-version = "0.3.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df0346b5d5e76ac2fe4e327c5fd1118d6be7c51dfb18f9b7922923f287471e35"
-dependencies = [
- "crossbeam-utils",
-]
-
-[[package]]
 name = "crossbeam-utils"
 version = "0.8.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22ec99545bb0ed0ea7bb9b8e1e9122ea386ff8a48c0922e43f36d45ab09e0e80"
-
-[[package]]
-name = "crunchy"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 
 [[package]]
 name = "crypto-bigint"
@@ -1725,15 +1656,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dlv-list"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "442039f5147480ba31067cb00ada1adae6892028e40e45fc5de7b7df6dcc1b5f"
-dependencies = [
- "const-random",
-]
-
-[[package]]
 name = "dunce"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1918,11 +1840,14 @@ dependencies = [
  "rmp-serde",
  "rustls 0.23.19",
  "rustls-pemfile 2.2.0",
+ "scuffle-batching",
  "scuffle-bootstrap",
  "scuffle-bootstrap-telemetry",
- "scuffle-context 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scuffle-context",
  "scuffle-http",
  "scuffle-metrics",
+ "scuffle-settings",
+ "scuffle-signal",
  "serde",
  "serde_json",
  "sha2",
@@ -2058,9 +1983,9 @@ dependencies = [
 
 [[package]]
 name = "float-cmp"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
+checksum = "b09cf3155332e944990140d967ff5eceb70df778b34f77d8075db46e4704e6d8"
 dependencies = [
  "num-traits",
 ]
@@ -2088,15 +2013,14 @@ dependencies = [
 
 [[package]]
 name = "fred"
-version = "9.4.0"
+version = "10.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cdd5378252ea124b712e0ac55147d26ae3af575883b34b8423091a4c719606b"
+checksum = "9dfdd0e46d87d0e8fc1e6636a5dd3b9a5c708722e9662df289ba62a8c198a721"
 dependencies = [
  "arc-swap",
  "async-trait",
  "bytes",
  "bytes-utils",
- "crossbeam-queue",
  "float-cmp",
  "fred-macros",
  "futures",
@@ -2106,7 +2030,7 @@ dependencies = [
  "rand 0.8.5",
  "redis-protocol",
  "rustls 0.23.19",
- "rustls-native-certs 0.7.3",
+ "rustls-native-certs 0.8.1",
  "semver",
  "socket2",
  "tokio",
@@ -2344,7 +2268,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 0.2.12",
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "slab",
  "tokio",
  "tokio-util",
@@ -2363,7 +2287,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "http 1.1.0",
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "slab",
  "tokio",
  "tokio-util",
@@ -2420,16 +2344,6 @@ checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
 name = "hashbrown"
-version = "0.14.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
-dependencies = [
- "ahash",
- "allocator-api2",
-]
-
-[[package]]
-name = "hashbrown"
 version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
@@ -2437,15 +2351,6 @@ dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash",
-]
-
-[[package]]
-name = "hashlink"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8094feaf31ff591f651a2664fb9cfd92bba7a60ce3197265e9482ebe753c8f7"
-dependencies = [
- "hashbrown 0.14.5",
 ]
 
 [[package]]
@@ -2956,9 +2861,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.6.0"
+version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "707907fe3c25f5424cce2cb7e1cbcafee6bdbe735ca90ef77c29e84591e5b9da"
+checksum = "62f822373a4fe84d4bb149bf54e584a7f4abec90e072ed49cda0edea5b95471f"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.2",
@@ -3087,17 +2992,6 @@ checksum = "a865e038f7f6ed956f788f0d7d60c541fff74c7bd74272c5d4cf15c63743e705"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "json5"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96b0db21af676c1ce64250b5f40f3ce2cf27e4e47cb91ed91eb6fe9350b430c1"
-dependencies = [
- "pest",
- "pest_derive",
- "serde",
 ]
 
 [[package]]
@@ -3404,10 +3298,13 @@ dependencies = [
  "futures",
  "mongodb",
  "rustls 0.23.19",
+ "scuffle-batching",
  "scuffle-bootstrap",
  "scuffle-bootstrap-telemetry",
- "scuffle-context 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scuffle-context",
  "scuffle-metrics",
+ "scuffle-settings",
+ "scuffle-signal",
  "serde",
  "serde_json",
  "shared",
@@ -3437,8 +3334,10 @@ dependencies = [
  "scuffle-batching",
  "scuffle-bootstrap",
  "scuffle-bootstrap-telemetry",
- "scuffle-context 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scuffle-context",
  "scuffle-metrics",
+ "scuffle-settings",
+ "scuffle-signal",
  "serde",
  "serde_json",
  "shared",
@@ -3744,16 +3643,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ordered-multimap"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49203cdcae0030493bad186b28da2fa25645fa276a51b6fec8010d281e02ef79"
-dependencies = [
- "dlv-list",
- "hashbrown 0.14.5",
-]
-
-[[package]]
 name = "outref"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3949,7 +3838,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset",
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
 ]
 
 [[package]]
@@ -4444,9 +4333,9 @@ dependencies = [
 
 [[package]]
 name = "redis-protocol"
-version = "5.0.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65deb7c9501fbb2b6f812a30d59c0253779480853545153a51d8e9e444ddc99f"
+checksum = "9cdba59219406899220fc4cdfd17a95191ba9c9afb719b5fa5a083d63109a9f1"
 dependencies = [
  "bytes",
  "bytes-utils",
@@ -4635,18 +4524,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ron"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b91f7eff05f748767f183df4320a63d6936e9c6107d97c9e6bdd9784f4289c94"
-dependencies = [
- "base64 0.21.7",
- "bitflags 2.6.0",
- "serde",
- "serde_derive",
-]
-
-[[package]]
 name = "rsa"
 version = "0.9.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4665,16 +4542,6 @@ dependencies = [
  "spki 0.7.3",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "rust-ini"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e0698206bcb8882bf2a9ecb4c1e7785db57ff052297085a6efd4fe42302068a"
-dependencies = [
- "cfg-if",
- "ordered-multimap",
 ]
 
 [[package]]
@@ -4925,8 +4792,8 @@ dependencies = [
 
 [[package]]
 name = "scuffle-batching"
-version = "0.0.0"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8d75655a1908c55dc4d101e1984c6c089aca75f6"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "tokio",
  "tokio-util",
@@ -4934,25 +4801,21 @@ dependencies = [
 
 [[package]]
 name = "scuffle-bootstrap"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7617af4c0733005e66b93ea6e4eb9b6ba04da780ce4e6f88144f084c29c5f76"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "anyhow",
  "futures",
  "pin-project-lite",
  "scuffle-bootstrap-derive",
- "scuffle-context 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "scuffle-settings",
- "scuffle-signal",
+ "scuffle-context",
  "tokio",
 ]
 
 [[package]]
 name = "scuffle-bootstrap-derive"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76566cd92d61eab896e7f66eece3dd98cb3e17dad79b58ad532092b5875018a7"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -4962,9 +4825,8 @@ dependencies = [
 
 [[package]]
 name = "scuffle-bootstrap-telemetry"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "891f15b567b7ec4ceefa1dd74a861e2ebd22ea830970d60828f3627439035351"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "anyhow",
  "bytes",
@@ -4977,9 +4839,8 @@ dependencies = [
  "prometheus",
  "querystring",
  "scuffle-bootstrap",
- "scuffle-context 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scuffle-context",
  "scuffle-http",
- "scuffle-metrics",
  "scuffle-pprof",
  "thiserror 2.0.3",
  "tokio",
@@ -4989,20 +4850,8 @@ dependencies = [
 
 [[package]]
 name = "scuffle-context"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d739f1d100ab396366d79ff3ce0654c5ada92cbb6a91a8100ee79fd150a3fe9"
-dependencies = [
- "futures-lite 2.5.0",
- "pin-project-lite",
- "tokio",
- "tokio-util",
-]
-
-[[package]]
-name = "scuffle-context"
-version = "0.0.0"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8d75655a1908c55dc4d101e1984c6c089aca75f6"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "futures-lite 2.5.0",
  "pin-project-lite",
@@ -5012,8 +4861,8 @@ dependencies = [
 
 [[package]]
 name = "scuffle-http"
-version = "0.0.0"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8d75655a1908c55dc4d101e1984c6c089aca75f6"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "async-trait",
  "axum-core",
@@ -5033,7 +4882,7 @@ dependencies = [
  "quinn",
  "rustls 0.23.19",
  "rustls-pemfile 2.2.0",
- "scuffle-context 0.0.0 (git+https://github.com/scufflecloud/scuffle?branch=foundations-v2)",
+ "scuffle-context",
  "smallvec",
  "spin",
  "thiserror 2.0.3",
@@ -5045,9 +4894,8 @@ dependencies = [
 
 [[package]]
 name = "scuffle-image-processor-proto"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa4697193bae919338d270e06b5c3a2e6bdd1bf5d37e0a3286326c4aa4ab2289"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "pbjson",
  "pbjson-build",
@@ -5060,25 +4908,21 @@ dependencies = [
 
 [[package]]
 name = "scuffle-metrics"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "947558f6260ca6f2ce137b879e79f51ef235701e49f422674d370aa87de37276"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
- "itoa",
  "opentelemetry",
  "opentelemetry_sdk",
+ "parking_lot",
  "prometheus",
  "protobuf",
- "ryu",
  "scuffle-metrics-derive",
- "thiserror 2.0.3",
 ]
 
 [[package]]
 name = "scuffle-metrics-derive"
 version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b6bac4bbd0357382d4f0e28c389e2da073f942eebc4bc40ebda9fdbdc3e1aee"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -5088,9 +4932,8 @@ dependencies = [
 
 [[package]]
 name = "scuffle-pprof"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c58b872c3bfd23f1f9019e9d36a13ac3321fa4b752051071e702bf6d8ef0566f"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
  "flate2",
  "pprof",
@@ -5099,24 +4942,26 @@ dependencies = [
 
 [[package]]
 name = "scuffle-settings"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f8dcfe5ce3f3e33f5105fa62050bd89be4d1b82e0560fc01f546f711a33b60d"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
- "bon 3.1.1",
+ "anyhow",
  "clap",
  "config",
  "minijinja",
+ "scuffle-bootstrap",
  "serde",
  "thiserror 2.0.3",
 ]
 
 [[package]]
 name = "scuffle-signal"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09960d3cd13b853dd1ee3c329bf574cf759e9ebb22c2a5658a80b9c08bc07b0d"
+version = "0.0.1"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
 dependencies = [
+ "anyhow",
+ "scuffle-bootstrap",
+ "scuffle-context",
  "tokio",
 ]
 
@@ -5254,7 +5099,7 @@ version = "1.0.133"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7fceb2473b9166b2294ef05efcb65a3db80803f0b03ef86a5fc88a2b85ee377"
 dependencies = [
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "itoa",
  "memchr",
  "ryu",
@@ -5344,7 +5189,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "serde",
  "serde_derive",
  "serde_json",
@@ -5902,15 +5747,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tiny-keccak"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
-dependencies = [
- "crunchy",
-]
-
-[[package]]
 name = "tinystr"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6071,7 +5907,7 @@ version = "0.22.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ae48d6208a266e853d946088ed816055e556cc6028c5e8e2b84d9fa5dd7c7f5"
 dependencies = [
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "serde",
  "serde_spanned",
  "toml_datetime",
@@ -6416,7 +6252,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e93f7878b7f80d4d0c90ed515e82f418c9ed6366b29c143ebd057801637ecda"
 dependencies = [
  "async-trait",
- "bon 2.3.0",
+ "bon",
  "reqwest",
  "serde",
  "serde_json",
@@ -6537,7 +6373,7 @@ version = "4.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5afb1a60e207dca502682537fefcfd9921e71d0b83e9576060f09abc6efab23"
 dependencies = [
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "serde",
  "serde_json",
  "utoipa-gen",
@@ -7052,17 +6888,6 @@ name = "xmlparser"
 version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
-
-[[package]]
-name = "yaml-rust2"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8902160c4e6f2fb145dbe9d6760a75e3c9522d8bf796ed7047c85919ac7115f8"
-dependencies = [
- "arraydeque",
- "encoding_rs",
- "hashlink",
-]
 
 [[package]]
 name = "yoke"

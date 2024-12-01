@@ -7,13 +7,15 @@ license = "Apache-2.0 with Commons Clause"
 [dependencies]
 tokio = { version = "1.38", features = ["full"] }
 
-scuffle-bootstrap = "0.0.0"
-scuffle-bootstrap-telemetry = "0.0.0"
-scuffle-context = "0.0.0"
-scuffle-image-processor-proto = { version = "0.0.0", features = ["client"] }
-scuffle-metrics = "0.0.0"
-scuffle-batching = "0.0.0"
-scuffle-http = { version = "0.0.0", features = ["axum"] }
+scuffle-bootstrap = "0.0.1"
+scuffle-context = "0.0.1"
+scuffle-metrics = "0.0.1"
+scuffle-batching = "0.0.1"
+scuffle-bootstrap-telemetry = "0.0.1"
+scuffle-signal = { version = "0.0.1", features = ["bootstrap"] }
+scuffle-settings = { version = "0.0.1", features = ["toml", "templates", "cli", "bootstrap"] }
+scuffle-http = { version = "0.0.1", features = ["axum"] }
+scuffle-image-processor-proto = { version = "0.0.1", features = ["client"] }
 
 prost = "0.13"
 tonic = { version = "0.12" }
@@ -78,7 +80,7 @@ ipnet = { version = "2.9.0", features = ["serde"] }
 
 shared = { workspace = true }
 
-fred = { version = "9.2.1", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "i-scripts"]}
+fred = { version = "10.0.0", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "i-scripts"]}
 
 [dev-dependencies]
 axum = { version = "0.7", features = ["macros"] }

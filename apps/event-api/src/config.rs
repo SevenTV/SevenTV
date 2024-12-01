@@ -63,4 +63,4 @@ pub struct EventApi {
 	pub incoming_request: IncomingRequestConfig,
 }
 
-scuffle_bootstrap::cli_config!(Config);
+scuffle_settings::bootstrap!(Config);

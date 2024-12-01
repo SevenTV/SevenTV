@@ -1,5 +1,5 @@
 use global::Global;
-use scuffle_bootstrap::signals::SignalSvc;
+use scuffle_signal::SignalSvc;
 
 mod config;
 mod global;

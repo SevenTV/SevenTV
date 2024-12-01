@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use global::Global;
 use rand::Rng;
-use scuffle_bootstrap::signals::SignalSvc;
+use scuffle_signal::SignalSvc;
 use scuffle_context::ContextFutExt;
 
 mod batcher;
