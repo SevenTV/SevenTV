@@ -4793,7 +4793,7 @@ dependencies = [
 [[package]]
 name = "scuffle-batching"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "tokio",
  "tokio-util",
@@ -4802,7 +4802,7 @@ dependencies = [
 [[package]]
 name = "scuffle-bootstrap"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "anyhow",
  "futures",
@@ -4815,7 +4815,7 @@ dependencies = [
 [[package]]
 name = "scuffle-bootstrap-derive"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -4826,7 +4826,7 @@ dependencies = [
 [[package]]
 name = "scuffle-bootstrap-telemetry"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "anyhow",
  "bytes",
@@ -4851,7 +4851,7 @@ dependencies = [
 [[package]]
 name = "scuffle-context"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "futures-lite 2.5.0",
  "pin-project-lite",
@@ -4862,7 +4862,7 @@ dependencies = [
 [[package]]
 name = "scuffle-http"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "async-trait",
  "axum-core",
@@ -4895,7 +4895,7 @@ dependencies = [
 [[package]]
 name = "scuffle-image-processor-proto"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "pbjson",
  "pbjson-build",
@@ -4909,7 +4909,7 @@ dependencies = [
 [[package]]
 name = "scuffle-metrics"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "opentelemetry",
  "opentelemetry_sdk",
@@ -4922,7 +4922,7 @@ dependencies = [
 [[package]]
 name = "scuffle-metrics-derive"
 version = "0.0.0"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -4933,7 +4933,7 @@ dependencies = [
 [[package]]
 name = "scuffle-pprof"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "flate2",
  "pprof",
@@ -4943,7 +4943,7 @@ dependencies = [
 [[package]]
 name = "scuffle-settings"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "anyhow",
  "clap",
@@ -4957,7 +4957,7 @@ dependencies = [
 [[package]]
 name = "scuffle-signal"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#61d7b425c329917770f596803df6519a506f929c"
+source = "git+https://github.com/scufflecloud/scuffle?branch=foundations-v2#8ac6a1c68205d7db5f41f9fc1147216c7b79dbf2"
 dependencies = [
  "anyhow",
  "scuffle-bootstrap",
