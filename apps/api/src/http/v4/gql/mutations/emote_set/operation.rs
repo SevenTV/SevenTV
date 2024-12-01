@@ -132,13 +132,6 @@ pub struct EmoteSetEmoteId {
 }
 
 #[derive(async_graphql::InputObject, Clone)]
-pub struct AddEmote {
-	pub id: EmoteSetEmoteId,
-	pub zero_width: Option<bool>,
-	pub override_conflicts: Option<bool>,
-}
-
-#[derive(async_graphql::InputObject, Clone)]
 pub struct EmoteSetEmoteFlagsInput {
 	pub zero_width: bool,
 	pub override_conflicts: bool,
@@ -202,7 +195,13 @@ impl EmoteSetOperation {
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
 	#[tracing::instrument(skip_all, name = "EmoteSetOperation::add_emote")]
-	async fn add_emote(&self, ctx: &Context<'_>, emote: AddEmote) -> Result<EmoteSet, ApiError> {
+	async fn add_emote(
+		&self,
+		ctx: &Context<'_>,
+		id: EmoteSetEmoteId,
+		zero_width: Option<bool>,
+		override_conflicts: Option<bool>,
+	) -> Result<EmoteSet, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -229,7 +228,7 @@ impl EmoteSetOperation {
 
 				let db_emote = tx
 					.find_one(
-						filter::filter! { shared::database::emote::Emote { #[query(rename = "_id")] id: emote.id.emote_id } },
+						filter::filter! { shared::database::emote::Emote { #[query(rename = "_id")] id: id.emote_id } },
 						None,
 					)
 					.await?
@@ -253,7 +252,7 @@ impl EmoteSetOperation {
 					)));
 				}
 
-				let alias = emote.id.alias.unwrap_or_else(|| db_emote.default_name.clone());
+				let alias = id.alias.unwrap_or_else(|| db_emote.default_name.clone());
 
 				// This may be a problem if the emote has been deleted.
 				// We should likely load all the emotes here anyways.
@@ -386,19 +385,16 @@ impl EmoteSetOperation {
 
 				let mut flags = EmoteSetEmoteFlag::default();
 
-				if emote
-					.zero_width
-					.unwrap_or(db_emote.flags.contains(EmoteFlags::DefaultZeroWidth))
-				{
+				if zero_width.unwrap_or(db_emote.flags.contains(EmoteFlags::DefaultZeroWidth)) {
 					flags |= EmoteSetEmoteFlag::ZeroWidth;
 				}
 
-				if emote.override_conflicts.unwrap_or_default() {
+				if override_conflicts.unwrap_or_default() {
 					flags |= EmoteSetEmoteFlag::OverrideConflicts;
 				}
 
 				let emote_set_emote = shared::database::emote_set::EmoteSetEmote {
-					id: emote.id.emote_id,
+					id: id.emote_id,
 					added_by_id: Some(authed_user.id),
 					alias: alias.clone(),
 					flags,

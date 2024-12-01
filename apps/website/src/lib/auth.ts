@@ -130,6 +130,9 @@ export async function fetchMe(): Promise<User | null> {
 								user {
 									manageAny
 								}
+								emote {
+									manageAny
+								}
 							}
 						}
 					}

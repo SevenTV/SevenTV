@@ -1,9 +1,3 @@
-input AddEmote {
-	id: EmoteSetEmoteId!
-	overrideConflicts: Boolean
-	zeroWidth: Boolean
-}
-
 type AdminPermission {
 	admin: Boolean!
 	bypassRateLimit: Boolean!
@@ -70,6 +64,27 @@ Implement the DateTime<Utc> scalar
 The input/output is a string in RFC3339 format.
 """
 scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339")
+
+type EditorEmotePermission {
+	admin: Boolean!
+	create: Boolean!
+	manage: Boolean!
+	transfer: Boolean!
+}
+
+type EditorEmoteSetPermission {
+	admin: Boolean!
+	create: Boolean!
+	manage: Boolean!
+}
+
+type EditorUserPermission {
+	admin: Boolean!
+	manageBilling: Boolean!
+	manageEditors: Boolean!
+	managePersonalEmoteSet: Boolean!
+	manageProfile: Boolean!
+}
 
 type Emote {
 	aspectRatio: Float!
@@ -153,7 +168,7 @@ type EmoteMutation {
 }
 
 type EmoteOperation {
-	delete(reason: String): Emote!
+	delete: Boolean!
 	flags(flags: EmoteFlagsInput!): Emote!
 	merge(with: Id!): Emote!
 	name(name: String!): Emote!
@@ -249,7 +264,7 @@ type EmoteSetMutation {
 }
 
 type EmoteSetOperation {
-	addEmote(emote: AddEmote!): EmoteSet!
+	addEmote(id: EmoteSetEmoteId!, overrideConflicts: Boolean, zeroWidth: Boolean): EmoteSet!
 	capacity(capacity: Int!): EmoteSet!
 	create(name: String!): EmoteSet!
 	delete: Boolean!
@@ -822,10 +837,18 @@ type UserEditor {
 	editor: User
 	editorId: Id!
 	notes: String
+	permissions: UserEditorPermissions!
 	searchUpdatedAt: DateTime
 	state: UserEditorState!
 	updatedAt: DateTime!
 	userId: Id!
+}
+
+type UserEditorPermissions {
+	emote: EditorEmotePermission!
+	emoteSet: EditorEmoteSetPermission!
+	superAdmin: Boolean!
+	user: EditorUserPermission!
 }
 
 enum UserEditorState {

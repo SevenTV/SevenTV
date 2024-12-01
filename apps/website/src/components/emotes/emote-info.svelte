@@ -95,6 +95,14 @@
 
 		return result;
 	}
+
+	let editPermission = $derived(
+		data && $user
+			? data.owner?.id === $user.id ||
+					$user.permissions.emote.manageAny ||
+					data.owner?.editors.find((e) => e.editorId === $user.id)?.permissions.emote.manage
+			: undefined,
+	);
 </script>
 
 {#if !children && data}
@@ -154,8 +162,8 @@
 			{/each}
 		{:else}
 			<EmoteLoadingPlaceholder index={0} size={32} />
-			<EmoteLoadingPlaceholder index={2} size={64} />
-			<EmoteLoadingPlaceholder index={3} size={96} />
+			<EmoteLoadingPlaceholder index={1} size={64} />
+			<EmoteLoadingPlaceholder index={2} size={96} />
 			<EmoteLoadingPlaceholder index={3} size={128} />
 		{/if}
 	</div>
@@ -174,12 +182,14 @@
 						{/snippet}
 						{$t("pages.emote.add_to")}
 					</Button>
-					<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
-						{#snippet icon()}
-							<NotePencil />
-						{/snippet}
-						{$t("labels.edit")}
-					</Button>
+					{#if editPermission}
+						<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
+							{#snippet icon()}
+								<NotePencil />
+							{/snippet}
+							{$t("labels.edit")}
+						</Button>
+					{/if}
 					<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
 						{#snippet icon()}
 							<NotePencil />

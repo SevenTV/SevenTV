@@ -8,7 +8,7 @@ export async function addEmoteToSet(setId: string, emoteId: string, alias?: stri
 				mutation AddEmoteToSet($setId: Id!, $emote: EmoteSetEmoteId!) {
 					emoteSets {
 						emoteSet(id: $setId) {
-							addEmote(emote: { id: $emote }) {
+							addEmote(id: $emote) {
 								id
 							}
 						}

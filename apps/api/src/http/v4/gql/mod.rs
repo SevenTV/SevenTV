@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
-use async_graphql::{extensions, EmptySubscription, Schema};
+use async_graphql::{extensions, BatchRequest, BatchResponse, EmptySubscription, Schema};
+use async_graphql_axum::rejection::GraphQLRejection;
+use axum::extract::FromRequest;
 use axum::response::{self, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Extension, Router};
 
 use crate::global::Global;
+use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitResponseStore;
 use crate::http::middleware::session::Session;
 
@@ -40,11 +43,54 @@ pub fn routes(global: &Arc<Global>) -> Router<Arc<Global>> {
 pub async fn graphql_handler(
 	Extension(schema): Extension<V4Schema>,
 	Extension(session): Extension<Session>,
-	req: async_graphql_axum::GraphQLRequest,
-) -> async_graphql_axum::GraphQLResponse {
+	request: axum::extract::Request,
+) -> Result<axum::response::Response, ApiError> {
+	if request.method() == hyper::Method::GET {
+		// There is no reason to use GET requests in a web-browser, and it's likely a
+		// CSRF attempt. We do not allow this because someone can redirect a user to
+		// this endpoint, and they won't know or could embed it as an iframe or image
+		// tag or something. The user would not know and it would execute graphql
+		// queries on their behalf. Therefore we deny any GET request with a cookie,
+		// origin, or referrer header.
+		if request.headers().get(hyper::header::COOKIE).is_some()
+			|| request.headers().get(hyper::header::ORIGIN).is_some()
+			|| request.headers().get(hyper::header::REFERER).is_some()
+		{
+			return Err(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
+				"You cannot use GET requests in a web-browser, use POST instead.",
+			));
+		}
+	}
+
+	let req = match async_graphql_axum::GraphQLBatchRequest::<GraphQLRejection>::from_request(request, &()).await {
+		Ok(req) => req,
+		Err(err) => return Ok(err.into_response()),
+	};
+
+	let batch_size = req.0.iter().count();
+	tracing::Span::current().record("batch_size", batch_size);
+
+	if let BatchRequest::Single(req) = &req.0 {
+		if req.query == "forsen" {
+			return Ok(
+				async_graphql_axum::GraphQLResponse(BatchResponse::Single(async_graphql::Response::new(
+					async_graphql::Value::String("forsen1".to_string()),
+				)))
+				.into_response(),
+			);
+		}
+	}
+
+	if batch_size > 30 {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "batch size too large"));
+	}
+
 	let req = req.into_inner().data(session).data(RateLimitResponseStore::new());
 
-	schema.execute(req).await.into()
+	let response = schema.execute_batch(req).await;
+
+	Ok(async_graphql_axum::GraphQLResponse::from(response).into_response())
 }
 
 pub async fn playground() -> impl IntoResponse {

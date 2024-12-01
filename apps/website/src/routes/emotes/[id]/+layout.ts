@@ -95,6 +95,14 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 								highestRoleColor {
 									hex
 								}
+								editors {
+									editorId
+									permissions {
+										emote {
+											manage
+										}
+									}
+								}
 							}
 							tags
 							flags {
