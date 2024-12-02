@@ -7,8 +7,12 @@
 
 	const LIMIT = 10;
 
-	let { tags = $bindable(["lorem", "ipsum"]), children }: { tags?: string[]; children?: Snippet } =
-		$props();
+	interface Props {
+		tags?: string[];
+		children?: Snippet;
+	}
+
+	let { tags = $bindable(["lorem", "ipsum"]), children }: Props = $props();
 
 	function removeTag(i: number) {
 		tags.splice(i, 1);

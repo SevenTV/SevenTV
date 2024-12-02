@@ -26,6 +26,7 @@ pub struct Emote {
 	pub aspect_ratio: f64,
 	pub attribution: Vec<EmoteAttribution>,
 	pub scores: EmoteScores,
+	pub deleted: bool,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
@@ -227,6 +228,7 @@ impl Emote {
 			aspect_ratio: value.aspect_ratio,
 			attribution: value.attribution.into_iter().map(Into::into).collect(),
 			scores: value.scores.into(),
+			deleted: value.deleted,
 			updated_at: value.updated_at,
 			search_updated_at: value.search_updated_at,
 		}

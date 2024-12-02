@@ -183,7 +183,7 @@ impl EmoteOperation {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = session.user()?;
 
-		let flags: EmoteFlags = flags.into();
+		let flags = flags.apply_to(self.emote.flags);
 
 		let admin_flags = [
 			EmoteFlags::PublicListed,
@@ -504,7 +504,7 @@ impl EmoteOperation {
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
 	#[tracing::instrument(skip_all, name = "EmoteOperation::delete")]
-	async fn delete(&self, ctx: &Context<'_>) -> Result<bool, ApiError> {
+	async fn delete(&self, ctx: &Context<'_>) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -516,7 +516,7 @@ impl EmoteOperation {
 		self.check_permission(global, session, false, EmotePermission::Delete).await?;
 
 		if self.emote.deleted {
-			return Ok(true);
+			return Ok(Emote::from_db(self.emote.clone(), &global.config.api.cdn_origin));
 		}
 
 		let res = transaction_with_mutex(
@@ -539,7 +539,9 @@ impl EmoteOperation {
 								search_updated_at: &None,
 							}
 						},
-						None,
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
 					)
 					.await?
 					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
@@ -576,13 +578,13 @@ impl EmoteOperation {
 					timestamp: chrono::Utc::now(),
 				})?;
 
-				Ok(())
+				Ok(emote)
 			},
 		)
 		.await;
 
 		return match res {
-			Ok(()) => Ok(true),
+			Ok(emote) => Ok(Emote::from_db(emote, &global.config.api.cdn_origin)),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");

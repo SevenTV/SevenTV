@@ -91,6 +91,7 @@ type Emote {
 	attribution: [EmoteAttribution!]!
 	channels(page: Int, perPage: Int): UserSearchResult!
 	defaultName: String!
+	deleted: Boolean!
 	events(page: Int, perPage: Int): [EmoteEvent!]!
 	flags: EmoteFlags!
 	id: Id!
@@ -143,13 +144,13 @@ type EmoteFlags {
 }
 
 input EmoteFlagsInput {
-	animated: Boolean!
-	approvedPersonal: Boolean!
-	defaultZeroWidth: Boolean!
-	deniedPersonal: Boolean!
-	nsfw: Boolean!
-	private: Boolean!
-	publicListed: Boolean!
+	animated: Boolean
+	approvedPersonal: Boolean
+	defaultZeroWidth: Boolean
+	deniedPersonal: Boolean
+	nsfw: Boolean
+	private: Boolean
+	publicListed: Boolean
 }
 
 type EmoteInEmoteSetResponse {
@@ -168,7 +169,7 @@ type EmoteMutation {
 }
 
 type EmoteOperation {
-	delete: Boolean!
+	delete: Emote!
 	flags(flags: EmoteFlagsInput!): Emote!
 	merge(with: Id!): Emote!
 	name(name: String!): Emote!

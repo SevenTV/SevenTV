@@ -9,6 +9,7 @@
 		overlaying: StackSimple,
 		unlisted: EyeSlash,
 		personal_use_denied: EyeSlash,
+		deleted: Trash,
 
 		// Emote set flags
 		default: House,
@@ -30,6 +31,7 @@
 		overlaying: "#fc8dc7",
 		unlisted: "#eb3d26",
 		personal_use_denied: "#eb3d26",
+		deleted: "#eb3d26",
 	};
 
 	export function determineHighlightColor(flags: string[], ignoredFlags: string[] = []) {
@@ -66,6 +68,8 @@
 
 		if (emote.ranking && emote.ranking < 50) flags.push("trending");
 
+		if (emote.deleted) flags.push("deleted");
+
 		return flags;
 	}
 
@@ -94,6 +98,7 @@
 		Smiley,
 		StackSimple,
 		Star,
+		Trash,
 		User,
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";

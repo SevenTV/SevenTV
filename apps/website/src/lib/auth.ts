@@ -133,6 +133,9 @@ export async function fetchMe(): Promise<User | null> {
 								emote {
 									manageAny
 								}
+								ticket {
+									create
+								}
 							}
 						}
 					}

@@ -106,7 +106,12 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 							}
 							tags
 							flags {
+								animated
+								approvedPersonal
 								defaultZeroWidth
+								deniedPersonal
+								nsfw
+								private
 								publicListed
 							}
 							attribution {
@@ -150,6 +155,7 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 									alias
 								}
 							}
+							deleted
 						}
 					}
 				}
