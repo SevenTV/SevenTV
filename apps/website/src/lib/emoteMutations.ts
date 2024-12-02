@@ -3,6 +3,48 @@ import { get } from "svelte/store";
 import { defaultEmoteSet } from "./defaultEmoteSet";
 import { graphql } from "$/gql";
 import { gqlClient } from "./gql";
+import { PUBLIC_REST_API_V4 } from "$env/static/public";
+import { currentError, errorDialogMode } from "./error";
+import { sessionToken } from "./auth";
+
+export async function upload(data: Blob, name: string, tags: string[], zeroWidth: boolean, privateFlag: boolean) {
+	const token = get(sessionToken);
+
+	if (!token) {
+		return undefined;
+	}
+
+	const metadata = {
+		name,
+		tags,
+		default_zero_width: zeroWidth,
+		private: privateFlag,
+	};
+
+	const formData = new FormData();
+
+	formData.append("metadata", JSON.stringify(metadata));
+
+	formData.append("file", data);
+
+	const response = await fetch(`${PUBLIC_REST_API_V4}/emotes`, {
+		method: "POST",
+		body: formData,
+		credentials: "include",
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	});
+
+	const json = await response.json();
+
+	if (response.ok) {
+		return json;
+	} else {
+		currentError.set(`Failed to upload emote: ${json.error}`);
+		errorDialogMode.set("shown");
+	}
+}
 
 export async function updateName(id: string, name: string) {
 	const defaultSet = get(defaultEmoteSet);

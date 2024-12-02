@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::Context;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use shared::database::emote::{EmoteFlags, EmoteId};
+use shared::database::emote::{EmoteFlags, EmoteId, EmoteMerged};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,
 };
@@ -498,8 +498,92 @@ impl EmoteOperation {
 		guard = "PermissionGuard::one(EmotePermission::Merge).and(RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1))"
 	)]
 	#[tracing::instrument(skip_all, name = "EmoteOperation::merge")]
-	async fn merge(&self, _ctx: &Context<'_>, _with: EmoteId) -> Result<Emote, ApiError> {
-		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
+	async fn merge(&self, ctx: &Context<'_>, target_id: EmoteId) -> Result<Emote, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
+
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::Emote(self.emote.id).into()),
+			|mut tx| async move {
+				let emote = tx
+					.find_one_and_update(
+						filter::filter! {
+							shared::database::emote::Emote {
+								#[query(rename = "_id")]
+								id: self.emote.id,
+							}
+						},
+						update::update! {
+							#[query(set)]
+							shared::database::emote::Emote {
+								#[query(serde)]
+								merged: EmoteMerged {
+									target_id: target_id,
+									at: chrono::Utc::now(),
+								},
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							}
+						},
+						None,
+					)
+					.await?
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))
+					.map_err(TransactionError::Custom)?;
+
+				tx.update(
+					filter::filter! {
+						EmoteModerationRequest {
+							emote_id: self.emote.id,
+							#[query(serde)]
+							status: EmoteModerationRequestStatus::Pending,
+						}
+					},
+					update::update! {
+						#[query(set)]
+						EmoteModerationRequest {
+							#[query(serde)]
+							status: EmoteModerationRequestStatus::EmoteDeleted,
+						}
+					},
+					None,
+				)
+				.await?;
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::Emote {
+						after: emote.clone(),
+						data: StoredEventEmoteData::Merge { new_emote_id: target_id },
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+
+				// TODO: schedule emote merge job
+
+				Ok(emote)
+			},
+		)
+		.await;
+
+		match res {
+			Ok(emote) => Ok(Emote::from_db(emote, &global.config.api.cdn_origin)),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]

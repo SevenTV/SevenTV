@@ -33,7 +33,7 @@ pub fn routes() -> Router<Arc<Global>> {
 }
 
 struct CreateEmoteData {
-	data: Bytes,
+	file: Bytes,
 	metadata: CreateEmoteMetadata,
 }
 
@@ -46,7 +46,7 @@ struct CreateEmoteMetadata {
 }
 
 async fn parse_multipart(mut multipart: Multipart) -> Result<CreateEmoteData, ApiError> {
-	let mut data = None;
+	let mut file = None;
 	let mut metadata = None;
 
 	while let Some(field) = multipart
@@ -59,8 +59,8 @@ async fn parse_multipart(mut multipart: Multipart) -> Result<CreateEmoteData, Ap
 			.ok_or(ApiError::bad_request(ApiErrorCode::BadRequest, "missing field name"))?;
 
 		match field_name {
-			"data" => {
-				data = Some(
+			"file" => {
+				file = Some(
 					field
 						.bytes()
 						.await
@@ -85,9 +85,14 @@ async fn parse_multipart(mut multipart: Multipart) -> Result<CreateEmoteData, Ap
 	}
 
 	Ok(CreateEmoteData {
-		data: data.ok_or(ApiError::bad_request(ApiErrorCode::BadRequest, "missing data"))?,
+		file: file.ok_or(ApiError::bad_request(ApiErrorCode::BadRequest, "missing data"))?,
 		metadata: metadata.ok_or(ApiError::bad_request(ApiErrorCode::BadRequest, "missing metadata"))?,
 	})
+}
+
+#[derive(serde::Serialize)]
+struct CreateEmoteResponse {
+	emote_id: EmoteId,
 }
 
 #[tracing::instrument(skip_all)]
@@ -153,7 +158,7 @@ pub async fn create_emote(
 
 		let input = match global
 			.image_processor
-			.upload_emote(emote_id, data.data, Some(session.ip()))
+			.upload_emote(emote_id, data.file, Some(session.ip()))
 			.instrument(tracing::info_span!("image_processor_upload"))
 			.await
 		{
@@ -245,7 +250,7 @@ pub async fn create_emote(
 		.await;
 
 		match res {
-			Ok(emote) => Ok((StatusCode::CREATED, Json(emote.id))),
+			Ok(emote) => Ok((StatusCode::CREATED, Json(CreateEmoteResponse { emote_id: emote.id }))),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");

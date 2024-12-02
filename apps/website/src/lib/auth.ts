@@ -1,7 +1,7 @@
 import { graphql } from "$/gql";
 import type { User } from "$/gql/graphql";
 import { PUBLIC_REST_API_V4 } from "$env/static/public";
-import { derived, type Readable, writable } from "svelte/store";
+import { derived, get, type Readable, writable } from "svelte/store";
 import { gqlClient } from "./gql";
 import { browser } from "$app/environment";
 
@@ -153,9 +153,18 @@ export async function fetchMe(): Promise<User | null> {
 }
 
 export async function logout() {
+	const token = get(sessionToken);
+
+	if (!token) {
+		return;
+	}
+
 	const res = await fetch(`${PUBLIC_REST_API_V4}/auth/logout`, {
 		method: "POST",
 		credentials: "include",
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
 	});
 
 	if (!res.ok) {
