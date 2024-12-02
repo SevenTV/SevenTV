@@ -23,7 +23,10 @@ impl<H: scuffle_http::svc::ConnectionHandle> scuffle_http::svc::ConnectionHandle
 
 	async fn on_request(&self, req: ::http::Request<IncomingBody>) -> Result<::http::Response<Self::Body>, Self::Error> {
 		metrics::actions(self.socket_kind, ActionKind::Request).incr();
-		self.handle.on_request(req).await
+		let _guard = metrics::RequestDropGuard::new(self.socket_kind);
+		let resp = self.handle.on_request(req).await;
+		metrics::status_code(self.socket_kind, resp.as_ref().map(|r| r.status().as_u16()).unwrap_or(500)).incr();
+		resp
 	}
 
 	fn on_close(&self) {
@@ -73,24 +76,40 @@ impl<A: scuffle_http::svc::ConnectionAcceptor> scuffle_http::svc::ConnectionAcce
 
 #[scuffle_metrics::metrics(rename = "http")]
 pub mod metrics {
+	use std::time::Instant;
 	use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum, UpDownCounterI64};
 
-	pub struct ConnectionDropGuard(SocketKind);
+	pub struct ConnectionDropGuard(SocketKind, Instant);
 
 	impl Drop for ConnectionDropGuard {
 		fn drop(&mut self) {
 			connections(self.0).decr();
+			socket_duration(self.0).observe(self.1.elapsed().as_secs_f64());
 		}
 	}
 
 	impl ConnectionDropGuard {
 		pub fn new(socket: SocketKind) -> Self {
 			connections(socket).incr();
-			Self(socket)
+			Self(socket, Instant::now())
 		}
 	}
 
-	pub fn connections(socket: SocketKind) -> UpDownCounterI64;
+	pub struct RequestDropGuard(SocketKind, Instant);
+
+	impl Drop for RequestDropGuard {
+		fn drop(&mut self) {
+			request_duration(self.0).observe(self.1.elapsed().as_secs_f64());
+		}
+	}
+
+	impl RequestDropGuard {
+		pub fn new(socket: SocketKind) -> Self {
+			Self(socket, Instant::now())
+		}
+	}
+
+	fn connections(socket: SocketKind) -> UpDownCounterI64;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, MetricEnum)]
 	pub enum ActionKind {
@@ -109,16 +128,9 @@ pub mod metrics {
 
 	pub fn actions(socket: SocketKind, action: ActionKind) -> CounterU64;
 
-	pub fn status_code(socket: SocketKind, status: String) -> CounterU64;
+	pub fn status_code(socket: SocketKind, status: u16) -> CounterU64;
 
-	#[builder = HistogramBuilder::default()]
-	pub fn socket_request_count(socket: SocketKind) -> HistogramF64;
+	fn socket_duration(socket: SocketKind) -> HistogramF64;
 
-	#[builder = HistogramBuilder::default()]
-	pub fn socket_duration(socket: SocketKind) -> HistogramF64;
-
-	#[builder = HistogramBuilder::default()]
-	pub fn request_duration(socket: SocketKind) -> HistogramF64;
-
-	pub fn bytes_sent(socket: SocketKind) -> CounterU64;
+	fn request_duration(socket: SocketKind) -> HistogramF64;
 }

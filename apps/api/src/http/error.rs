@@ -76,7 +76,7 @@ impl ApiErrorCode {
 
 impl ApiError {
 	pub fn new(status_code: StatusCode, error_code: ApiErrorCode, error: impl Into<Cow<'static, str>>) -> Self {
-		error::constructed(error_code.as_str(), status_code.to_string()).incr();
+		error::constructed(error_code.as_str(), status_code.as_u16().to_string()).incr();
 
 		Self {
 			status_code,

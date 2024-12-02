@@ -18,7 +18,7 @@ pub struct Global {
 	pub config: Config,
 	pub subscription_manager: subscription::SubscriptionManager,
 	active_connections: Arc<std::sync::atomic::AtomicUsize>,
-	prometheus_registry: scuffle_bootstrap_telemetry::prometheus::Registry,
+	prometheus_registry: scuffle_bootstrap_telemetry::prometheus_client::registry::Registry,
 }
 
 /// An atomic ticket.
@@ -54,17 +54,16 @@ impl scuffle_bootstrap::global::Global for Global {
 	}
 
 	async fn init(config: Self::Config) -> anyhow::Result<Arc<Self>> {
-		let prometheus_registry = scuffle_bootstrap_telemetry::prometheus::Registry::new();
+		let mut prometheus_registry = scuffle_bootstrap_telemetry::prometheus_client::registry::Registry::default();
+
+		let exporter = scuffle_metrics::prometheus::exporter().build();
+
+		prometheus_registry.register_collector(exporter.collector());
 
 		opentelemetry::global::set_meter_provider(
 			SdkMeterProvider::builder()
 				.with_resource(Resource::new(vec![KeyValue::new("service.name", env!("CARGO_BIN_NAME"))]))
-				.with_reader(
-					scuffle_metrics::prometheus::exporter()
-						.with_registry(prometheus_registry.clone())
-						.build()
-						.context("prometheus metrics exporter")?,
-				)
+				.with_reader(exporter)
 				.build(),
 		);
 
@@ -109,10 +108,10 @@ impl Global {
 
 impl scuffle_bootstrap_telemetry::TelemetryConfig for Global {
 	fn bind_address(&self) -> Option<std::net::SocketAddr> {
-		self.config.metrics_bind
+		self.config.metrics_bind_address
 	}
 
-	fn prometheus_metrics_registry(&self) -> Option<&scuffle_bootstrap_telemetry::prometheus::Registry> {
+	fn prometheus_metrics_registry(&self) -> Option<&scuffle_bootstrap_telemetry::prometheus_client::registry::Registry> {
 		Some(&self.prometheus_registry)
 	}
 

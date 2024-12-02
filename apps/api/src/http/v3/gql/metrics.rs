@@ -45,17 +45,27 @@ fn path_segment_display(segments: &[PathSegment]) -> String {
 	path
 }
 
+fn val_to_string(val: &async_graphql::Value) -> String {
+	match val {
+		async_graphql::Value::String(s) => s.to_string(),
+		async_graphql::Value::Boolean(b) => b.to_string(),
+		async_graphql::Value::Number(n) => n.to_string(),
+		async_graphql::Value::Null => "null".to_string(),
+		_ => "unknown".to_string(),
+	}
+}
+
 fn handle_error(error: &async_graphql::ServerError) {
 	let code = error
 		.extensions
 		.as_ref()
 		.and_then(|ext| ext.get("code"))
-		.map(|c| c.to_string());
+		.map(|c| val_to_string(c));
 	let status_code = error
 		.extensions
 		.as_ref()
 		.and_then(|ext| ext.get("status"))
-		.map(|c| c.to_string());
+		.map(|c| val_to_string(c));
 
 	gql_v3::error(
 		path_segment_display(&error.path),

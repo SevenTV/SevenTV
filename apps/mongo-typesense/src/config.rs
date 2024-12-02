@@ -17,6 +17,14 @@ pub struct Config {
 
 	/// Clickhouse configuration
 	pub clickhouse: ClickhouseConfig,
+
+	/// Metrics bind address
+	#[default(None)]
+	pub metrics_bind_address: Option<std::net::SocketAddr>,
+
+	/// Log level
+	#[default(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))]
+	pub level: String,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, smart_default::SmartDefault)]

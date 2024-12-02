@@ -43,12 +43,12 @@ regex = "1.10.6"
 smart-default = "0.7.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-scuffle-http = { version = "0.0.1", features = ["tls-rustls"] }
+scuffle-http = { version = "0.0.2", features = ["tls-rustls", "axum", "http1", "http2"], default-features = false }
 scuffle-bootstrap = "0.0.1"
 scuffle-context = "0.0.1"
-scuffle-metrics = "0.0.1"
+scuffle-metrics = "0.0.2"
 scuffle-batching = "0.0.1"
-scuffle-bootstrap-telemetry = "0.0.1"
+scuffle-bootstrap-telemetry = "0.0.2"
 scuffle-signal = { version = "0.0.1", features = ["bootstrap"] }
 scuffle-settings = { version = "0.0.1", features = ["toml", "templates", "cli", "bootstrap"] }
 

@@ -23,7 +23,7 @@ pub struct Config {
 
 	/// Metrics bind
 	#[default(None)]
-	pub metrics_bind: Option<std::net::SocketAddr>,
+	pub metrics_bind_address: Option<std::net::SocketAddr>,
 }
 
 scuffle_settings::bootstrap!(Config);

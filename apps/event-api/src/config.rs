@@ -14,7 +14,7 @@ pub struct Config {
 	pub event_api: EventApi,
 	/// Metrics bind address
 	#[default(None)]
-	pub metrics_bind: Option<SocketAddr>,
+	pub metrics_bind_address: Option<SocketAddr>,
 	/// Log level
 	#[default(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()))]
 	pub level: String,

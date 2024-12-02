@@ -75,9 +75,9 @@ dependencies = [
 
 [[package]]
 name = "allocator-api2"
-version = "0.2.20"
+version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45862d1c77f2228b9e10bc609d5bc203d86ebc9b87ad8d5d5167a6c9abf739d9"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "android-tzdata"
@@ -540,9 +540,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-s3"
-version = "1.63.0"
+version = "1.64.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f43850204a109a5eea1ea93951cf0440268cef98b0d27dfef4534949e23735f7"
+checksum = "35fe5e7f71b1cc6274e905d3bcc7daf94099ac2d4cba83447ffb959b5b27b3c1"
 dependencies = [
  "aws-credential-types",
  "aws-runtime",
@@ -1654,6 +1654,12 @@ dependencies = [
  "quote",
  "syn 2.0.90",
 ]
+
+[[package]]
+name = "dtoa"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcbb2bf8e87535c23f7a8a321e364ce21462d0ff10cb6407820e8e96dfff6653"
 
 [[package]]
 name = "dunce"
@@ -3348,6 +3354,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
+ "tracing-subscriber",
  "typesense-rs",
 ]
 
@@ -4018,18 +4025,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "prometheus"
-version = "0.13.4"
+name = "prometheus-client"
+version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d33c28a30771f7f96db69893f78b857f7450d7e0237e9c8fc6427a81bae7ed1"
+checksum = "504ee9ff529add891127c4827eb481bd69dc0ebc72e9a682e187db4caa60c3ca"
 dependencies = [
- "cfg-if",
- "fnv",
- "lazy_static",
- "memchr",
+ "dtoa",
+ "itoa",
  "parking_lot",
- "protobuf",
- "thiserror 1.0.69",
+ "prometheus-client-derive-encode",
+]
+
+[[package]]
+name = "prometheus-client-derive-encode"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "440f724eba9f6996b75d63681b0a92b06947f1457076d503a4d2e2c8f56442b8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
 ]
 
 [[package]]
@@ -4137,12 +4152,6 @@ checksum = "4759aa0d3a6232fb8dbdb97b61de2c20047c68aca932c7ed76da9d788508d670"
 dependencies = [
  "prost 0.13.3",
 ]
-
-[[package]]
-name = "protobuf"
-version = "2.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
 name = "quanta"
@@ -4828,9 +4837,9 @@ dependencies = [
 
 [[package]]
 name = "scuffle-bootstrap-telemetry"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "441d862a1f500073a17494593289f22e0734eb03d9a82bb218683fe96395107b"
+checksum = "f984dcb663316a31625dc308e949cd95f6edb25b23ff7a6a0b92cb3d543464d8"
 dependencies = [
  "anyhow",
  "bytes",
@@ -4840,7 +4849,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-appender-tracing",
  "opentelemetry_sdk",
- "prometheus",
+ "prometheus-client",
  "querystring",
  "scuffle-bootstrap",
  "scuffle-context",
@@ -4866,9 +4875,9 @@ dependencies = [
 
 [[package]]
 name = "scuffle-http"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfeea804138d477eaa37eb688bdc82889b834ada28021a6399c43239a46726a7"
+checksum = "6960ac1a7be031a3f1bc6ba8e832fe3b45c8ab9ebe83ce1727879716667a759a"
 dependencies = [
  "async-trait",
  "axum-core",
@@ -4915,15 +4924,14 @@ dependencies = [
 
 [[package]]
 name = "scuffle-metrics"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7ae438957ef533e7f23e723d6e514940346ae2722e05bf44c2ed8a65373b3f2"
+checksum = "6e0b53762ee7c2e462d39e995b273e5651a737d35115a83920080c17b8c45747"
 dependencies = [
  "opentelemetry",
  "opentelemetry_sdk",
  "parking_lot",
- "prometheus",
- "protobuf",
+ "prometheus-client",
  "scuffle-metrics-derive",
 ]
 

@@ -3,9 +3,17 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use scuffle_batching::{Batcher, DataLoader};
+use scuffle_bootstrap_telemetry::opentelemetry;
+use scuffle_bootstrap_telemetry::opentelemetry_sdk::metrics::SdkMeterProvider;
+use scuffle_bootstrap_telemetry::opentelemetry_sdk::Resource;
+use scuffle_metrics::opentelemetry::KeyValue;
 use shared::clickhouse::emote_stat::EmoteStat;
 use shared::database::entitlement_edge::{EntitlementEdgeInboundLoader, EntitlementEdgeOutboundLoader};
 use shared::database::updater::MongoUpdater;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, Layer};
 use typesense_rs::apis::Api;
 
 use crate::batcher::clickhouse::ClickhouseInsert;
@@ -50,6 +58,7 @@ pub struct Global {
 	request_count: AtomicUsize,
 	health_state: tokio::sync::Mutex<HealthCheckState>,
 	semaphore: Arc<tokio::sync::Semaphore>,
+	metrics: scuffle_bootstrap_telemetry::prometheus_client::registry::Registry,
 }
 
 #[derive(Debug, Default)]
@@ -69,6 +78,31 @@ impl scuffle_bootstrap::global::Global for Global {
 	}
 
 	async fn init(config: Config) -> anyhow::Result<Arc<Self>> {
+		let mut prometheus_registry = scuffle_bootstrap_telemetry::prometheus_client::registry::Registry::default();
+
+		let exporter = scuffle_metrics::prometheus::exporter().build();
+		prometheus_registry.register_collector(exporter.collector());
+
+		opentelemetry::global::set_meter_provider(
+			SdkMeterProvider::builder()
+				.with_resource(Resource::new(vec![KeyValue::new("service.name", env!("CARGO_BIN_NAME"))]))
+				.with_reader(exporter)
+				.build(),
+		);
+
+		tracing_subscriber::registry()
+			.with(
+				tracing_subscriber::fmt::layer()
+					.with_file(true)
+					.with_line_number(true)
+					.with_filter(
+						EnvFilter::builder()
+							.with_default_directive(LevelFilter::INFO.into())
+							.parse_lossy(&config.level),
+					),
+			)
+			.init();
+
 		let (nats, jetstream) = shared::nats::setup_nats("event-api", &config.nats)
 			.await
 			.context("nats connect")?;
@@ -130,6 +164,7 @@ impl scuffle_bootstrap::global::Global for Global {
 			semaphore: Arc::new(tokio::sync::Semaphore::new(config.triggers.typesense_concurrency.max(1))),
 			emote_stats_batcher: ClickhouseInsert::new(clickhouse),
 			config,
+			metrics: prometheus_registry,
 		}))
 	}
 }
@@ -278,6 +313,14 @@ impl Global {
 }
 
 impl scuffle_bootstrap_telemetry::TelemetryConfig for Global {
+	fn bind_address(&self) -> Option<std::net::SocketAddr> {
+		self.config.metrics_bind_address
+	}
+
+	fn prometheus_metrics_registry(&self) -> Option<&scuffle_bootstrap_telemetry::prometheus_client::registry::Registry> {
+		Some(&self.metrics)
+	}
+
 	async fn health_check(&self) -> Result<(), anyhow::Error> {
 		if !self.do_health_check().await {
 			anyhow::bail!("health check failed");

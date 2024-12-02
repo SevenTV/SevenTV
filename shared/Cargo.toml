@@ -60,8 +60,8 @@ regex = "1.10.6"
 async-trait = "0.1.83"
 
 scuffle-image-processor-proto = { version = "0.0.1", features = ["client", "serde"] }
-scuffle-metrics = "0.0.1"
+scuffle-metrics = "0.0.2"
 scuffle-batching = "0.0.1"
-scuffle-http = "0.0.1"
+scuffle-http = { version = "0.0.2", features = [], default-features = false }
 
 macros = { workspace = true }
