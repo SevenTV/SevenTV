@@ -31,3 +31,6 @@ strip = true
 [workspace.dependencies]
 shared = { path = "shared" }
 macros = { path = "macros" }
+
+[patch.crates-io]
+scuffle-batching = { git = "https://github.com/scufflecloud/scuffle.git", branch = "foundations-v2" }

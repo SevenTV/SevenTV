@@ -4802,8 +4802,7 @@ dependencies = [
 [[package]]
 name = "scuffle-batching"
 version = "0.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0977bf0fc3c27cb57f46fe47319805c79e012baaf0b257cab99bc4933cbca95"
+source = "git+https://github.com/scufflecloud/scuffle.git?branch=foundations-v2#2bcf062e18fdb8c7653aa12383c175d752fb12fc"
 dependencies = [
  "tokio",
  "tokio-util",
