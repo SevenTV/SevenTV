@@ -101,7 +101,7 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 				} else {
 					SocketKind::Tcp
 				},
-				limiter.clone(),
+				Some(limiter),
 			),
 			global.config.event_api.workers,
 		)

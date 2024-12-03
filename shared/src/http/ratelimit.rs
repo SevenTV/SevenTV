@@ -170,10 +170,14 @@ impl RateLimiter {
 	}
 
 	pub fn acquire(self: &Arc<Self>, ip: std::net::IpAddr) -> Option<RateLimitDropGuard> {
+		if !self.enabled {
+			return Some(RateLimitDropGuard { ip, limiter: None });
+		}
+
 		let ip = ip.to_canonical();
 
 		let limits = self.get_limits(ip);
-		if limits.is_empty() || !self.enabled {
+		if limits.is_empty() {
 			return Some(RateLimitDropGuard { ip, limiter: None });
 		}
 

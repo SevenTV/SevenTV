@@ -49,15 +49,15 @@ impl<H: scuffle_http::svc::ConnectionHandle> scuffle_http::svc::ConnectionHandle
 pub struct MonitorAcceptor<A> {
 	inner: A,
 	socket_kind: SocketKind,
-	_limiter: Arc<RateLimiter>,
+	limiter: Option<Arc<RateLimiter>>,
 }
 
 impl<A> MonitorAcceptor<A> {
-	pub fn new(inner: A, socket_kind: SocketKind, limiter: Arc<RateLimiter>) -> Self {
+	pub fn new(inner: A, socket_kind: SocketKind, limiter: Option<Arc<RateLimiter>>) -> Self {
 		Self {
 			inner,
 			socket_kind,
-			_limiter: limiter,
+			limiter,
 		}
 	}
 }
@@ -66,10 +66,14 @@ impl<A: scuffle_http::svc::ConnectionAcceptor> scuffle_http::svc::ConnectionAcce
 	type Handle = MonitorHandler<A::Handle>;
 
 	fn accept(&self, conn: scuffle_http::svc::IncomingConnection) -> Option<Self::Handle> {
+		let Ok(limiter) = self.limiter.as_ref().map(|limiter| limiter.acquire(conn.addr.ip()).ok_or(())).transpose() else {
+			return None;
+		};
+
 		self.inner.accept(conn).map(|handle| MonitorHandler {
 			handle,
 			socket_kind: self.socket_kind,
-			_guard: Arc::new((ConnectionDropGuard::new(self.socket_kind), None)),
+			_guard: Arc::new((ConnectionDropGuard::new(self.socket_kind), limiter)),
 		})
 	}
 }

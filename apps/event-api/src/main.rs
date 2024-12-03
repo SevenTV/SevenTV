@@ -1,4 +1,5 @@
 use global::Global;
+use scuffle_bootstrap_telemetry::TelemetrySvc;
 use scuffle_signal::SignalSvc;
 
 mod config;
@@ -12,5 +13,6 @@ scuffle_bootstrap::main! {
 		http::run,
 		subscription::run,
 		SignalSvc,
+		TelemetrySvc,
 	}
 }

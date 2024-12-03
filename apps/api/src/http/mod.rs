@@ -13,6 +13,7 @@ use middleware::session::{Session, SessionMiddleware};
 use scuffle_context::ContextFutExt;
 use scuffle_http::backend::HttpServer;
 use shared::http::ip::IpMiddleware;
+use shared::http::metrics::SocketKind;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, CorsLayer, ExposeHeaders, MaxAge};
@@ -161,7 +162,11 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 
 	server
 		.start(
-			scuffle_http::svc::axum_service(routes(global.clone())),
+			shared::http::MonitorAcceptor::new(
+				scuffle_http::svc::axum_service(routes(global.clone())),
+				SocketKind::Tcp,
+				None,
+			),
 			global.config.api.workers,
 		)
 		.await

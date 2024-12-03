@@ -29,15 +29,10 @@ pub struct EventApi {
 	/// The number of workers handling requests
 	#[default(1)]
 	pub workers: usize,
-	/// With Http3
-	pub http3: bool,
-	/// The server name to use for the CDN
+	/// The server name to use for the EventApi
 	#[default("SevenTV".into())]
 	pub server_name: String,
-	/// Allow insecure connections to the CDN (only used if tls is provided)
-	#[default(false)]
-	pub allow_insecure: bool,
-	/// A TLS configuration for the CDN
+	/// A TLS configuration for the EventApi
 	pub tls: Option<TlsConfig>,
 	/// API heartbeat interval
 	#[default(Duration::from_secs(45))]

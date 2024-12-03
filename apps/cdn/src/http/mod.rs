@@ -246,7 +246,7 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 
 	tcp_server
 		.start(
-			MonitorAcceptor::new(insecure_handler, SocketKind::Tcp, limiter.clone()),
+			MonitorAcceptor::new(insecure_handler, SocketKind::Tcp, Some(limiter.clone())),
 			workers,
 		)
 		.await
@@ -254,7 +254,7 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 	if let Some(tls_server) = &tls_server {
 		tls_server
 			.start(
-				MonitorAcceptor::new(handler.clone(), SocketKind::TlsTcp, limiter.clone()),
+				MonitorAcceptor::new(handler.clone(), SocketKind::TlsTcp, Some(limiter.clone())),
 				workers,
 			)
 			.await
@@ -262,7 +262,7 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 	}
 	if let Some(quic_server) = &quic_server {
 		quic_server
-			.start(MonitorAcceptor::new(handler.clone(), SocketKind::Quic, limiter), workers)
+			.start(MonitorAcceptor::new(handler.clone(), SocketKind::Quic, Some(limiter)), workers)
 			.await
 			.context("start quic server")?;
 	}
