@@ -20,8 +20,8 @@ impl UserBanByUserIdLoader {
 		Self::new_with_config(
 			db,
 			"UserBanByUserIdLoader".to_string(),
+			1000,
 			500,
-			50,
 			std::time::Duration::from_millis(5),
 		)
 	}

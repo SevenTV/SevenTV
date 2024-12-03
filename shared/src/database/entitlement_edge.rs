@@ -24,7 +24,7 @@ impl EntitlementEdgeInboundLoader {
 			db,
 			"EntitlementEdgeInboundLoader".to_string(),
 			1000,
-			50,
+			500,
 			std::time::Duration::from_millis(5),
 		)
 	}
@@ -80,7 +80,7 @@ impl EntitlementEdgeOutboundLoader {
 			db,
 			"EntitlementEdgeOutboundLoader".to_string(),
 			1000,
-			50,
+			500,
 			std::time::Duration::from_millis(5),
 		)
 	}

@@ -245,7 +245,7 @@ impl scuffle_bootstrap::global::Global for Global {
 			stripe_client,
 			typesense: typesense_rs::apis::ApiClient::new(Arc::new(typesense)),
 			mongo,
-			updater: MongoUpdater::new(db.clone(), 500, 50, std::time::Duration::from_millis(300)),
+			updater: MongoUpdater::new(db.clone(), 1000, 500, std::time::Duration::from_millis(5)),
 			db,
 			clickhouse,
 			config,
