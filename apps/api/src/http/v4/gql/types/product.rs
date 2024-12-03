@@ -49,10 +49,8 @@ impl SubscriptionProduct {
 	async fn variants(&self) -> Vec<SubscriptionProductVariant> {
 		self.variants
 			.iter()
-			.filter_map(|v| {
-				v.active
-					.then(|| SubscriptionProductVariant::from_db(v.clone(), self.default_currency))
-			})
+			.filter(|v| v.active)
+			.map(|v| SubscriptionProductVariant::from_db(v.clone(), self.default_currency))
 			.collect()
 	}
 }

@@ -262,7 +262,10 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 	}
 	if let Some(quic_server) = &quic_server {
 		quic_server
-			.start(MonitorAcceptor::new(handler.clone(), SocketKind::Quic, Some(limiter)), workers)
+			.start(
+				MonitorAcceptor::new(handler.clone(), SocketKind::Quic, Some(limiter)),
+				workers,
+			)
 			.await
 			.context("start quic server")?;
 	}

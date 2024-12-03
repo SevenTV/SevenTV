@@ -3,8 +3,8 @@ use std::sync::Arc;
 use global::Global;
 use rand::Rng;
 use scuffle_bootstrap_telemetry::TelemetrySvc;
-use scuffle_signal::SignalSvc;
 use scuffle_context::ContextFutExt;
+use scuffle_signal::SignalSvc;
 
 mod batcher;
 mod config;

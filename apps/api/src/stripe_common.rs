@@ -34,6 +34,7 @@ pub enum CheckoutProduct {
 	Gift(stripe::ProductId),
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_checkout_session_params<'a>(
 	global: &Arc<Global>,
 	ip: std::net::IpAddr,

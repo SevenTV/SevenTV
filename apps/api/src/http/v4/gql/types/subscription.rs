@@ -24,7 +24,7 @@ pub struct Subscription {
 impl From<shared::database::product::subscription::Subscription> for Subscription {
 	fn from(value: shared::database::product::subscription::Subscription) -> Self {
 		Self {
-			id: value.id.into(),
+			id: value.id,
 			state: value.state.into(),
 			updated_at: value.updated_at,
 			created_at: value.created_at,
@@ -147,7 +147,7 @@ impl SubscriptionPeriod {
 
 		let user = global
 			.user_loader
-			.load_fast(&global, gifted_by_id)
+			.load_fast(global, gifted_by_id)
 			.await
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
@@ -162,7 +162,7 @@ impl SubscriptionPeriod {
 
 		let subscription = global
 			.subscription_by_id_loader
-			.load(self.subscription_id.into())
+			.load(self.subscription_id)
 			.await
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?
 			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "subscription not found"))?;
@@ -215,7 +215,7 @@ impl From<shared::database::product::subscription::SubscriptionPeriod> for Subsc
 	fn from(value: shared::database::product::subscription::SubscriptionPeriod) -> Self {
 		Self {
 			id: value.id,
-			subscription_id: value.subscription_id.into(),
+			subscription_id: value.subscription_id,
 			provider_id: value.provider_id.map(Into::into),
 			product_id: value.product_id,
 			start: value.start,

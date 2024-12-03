@@ -52,7 +52,7 @@ impl BillingMutation {
 			));
 		}
 
-		let gift_for = (self.user_id != authed_user.id).then(|| self.user_id);
+		let gift_for = (self.user_id != authed_user.id).then_some(self.user_id);
 
 		let product: SubscriptionProduct = SubscriptionProduct::collection(&global.db)
 			.find_one(filter::filter! {
@@ -78,7 +78,7 @@ impl BillingMutation {
 			Some(id) => id,
 			None => {
 				// We don't need the safe client here because this won't be retried
-				find_or_create_customer(&global, global.stripe_client.client().await, authed_user.id, None).await?
+				find_or_create_customer(global, global.stripe_client.client().await, authed_user.id, None).await?
 			}
 		};
 
@@ -93,7 +93,7 @@ impl BillingMutation {
 		let cancel_url = global.config.api.beta_website_origin.join("/store").unwrap().to_string();
 
 		let mut params = create_checkout_session_params(
-			&global,
+			global,
 			session.ip(),
 			customer_id,
 			match &gift_for {
@@ -110,7 +110,7 @@ impl BillingMutation {
 		if let Some(gift_for) = gift_for {
 			let receiving_user = global
 				.user_loader
-				.load_fast(&global, gift_for)
+				.load_fast(global, gift_for)
 				.await
 				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
@@ -225,7 +225,7 @@ impl BillingMutation {
 
 		let target = global
 			.user_loader
-			.load(&global, target_id)
+			.load(global, target_id)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load target user"))?
 			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "target user not found"))?;
@@ -246,8 +246,8 @@ impl BillingMutation {
 
 		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
-		let res = transaction_with_mutex(&global, Some(EgVaultMutexKey::User(target_id).into()), |mut tx| {
-			let global = Arc::clone(&global);
+		let res = transaction_with_mutex(global, Some(EgVaultMutexKey::User(target_id).into()), |mut tx| {
+			let global = Arc::clone(global);
 
 			async move {
 				let periods = tx
@@ -418,7 +418,7 @@ impl BillingMutation {
 
 		let target = global
 			.user_loader
-			.load(&global, target_id)
+			.load(global, target_id)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load target user"))?
 			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "target user not found"))?;
@@ -439,7 +439,7 @@ impl BillingMutation {
 
 		let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
-		let res = transaction_with_mutex(&global, Some(EgVaultMutexKey::User(target_id).into()), |mut tx| async move {
+		let res = transaction_with_mutex(global, Some(EgVaultMutexKey::User(target_id).into()), |mut tx| async move {
 			let periods = tx
 				.find(
 					filter::filter! {

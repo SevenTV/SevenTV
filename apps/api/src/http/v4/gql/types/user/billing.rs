@@ -151,12 +151,12 @@ impl Billing {
 
 		badge_benefits.sort_by_key(|(_, d, _)| *d);
 
-		let mut badge_benefits = badge_benefits.into_iter().map(|(b, _, badge)| (b, badge));
+		let badge_benefits = badge_benefits.into_iter().map(|(b, _, badge)| (b, badge));
 
 		let mut current_badge = None;
 		let mut next_badge = None;
 
-		while let Some((b, badge)) = badge_benefits.next() {
+		for (b, badge) in badge_benefits {
 			if age.meets_condition(&b.condition) {
 				let current_benefit_days = match b.condition {
 					SubscriptionBenefitCondition::Duration(shared::database::duration::DurationUnit::Days(d)) => d as f64,

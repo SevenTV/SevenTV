@@ -1,6 +1,6 @@
 use global::Global;
-use scuffle_signal::SignalSvc;
 use scuffle_bootstrap_telemetry::TelemetrySvc;
+use scuffle_signal::SignalSvc;
 mod cdn_purge;
 mod config;
 mod connections;

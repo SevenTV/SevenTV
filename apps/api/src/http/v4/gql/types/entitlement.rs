@@ -17,6 +17,7 @@ use super::{Badge, EmoteSet, Paint, Role, SpecialEvent, SubscriptionBenefit, Use
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
+#[allow(clippy::duplicated_attributes)]
 #[derive(async_graphql::SimpleObject)]
 #[graphql(concrete(name = "EntitlementEdgeAnyAny", params(EntitlementNodeAny, EntitlementNodeAny)))]
 #[graphql(concrete(name = "EntitlementEdgeAnyPaint", params(EntitlementNodeAny, EntitlementNodePaint)))]

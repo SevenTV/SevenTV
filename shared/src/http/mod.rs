@@ -66,7 +66,12 @@ impl<A: scuffle_http::svc::ConnectionAcceptor> scuffle_http::svc::ConnectionAcce
 	type Handle = MonitorHandler<A::Handle>;
 
 	fn accept(&self, conn: scuffle_http::svc::IncomingConnection) -> Option<Self::Handle> {
-		let Ok(limiter) = self.limiter.as_ref().map(|limiter| limiter.acquire(conn.addr.ip()).ok_or(())).transpose() else {
+		let Ok(limiter) = self
+			.limiter
+			.as_ref()
+			.map(|limiter| limiter.acquire(conn.addr.ip()).ok_or(()))
+			.transpose()
+		else {
 			return None;
 		};
 
@@ -81,6 +86,7 @@ impl<A: scuffle_http::svc::ConnectionAcceptor> scuffle_http::svc::ConnectionAcce
 #[scuffle_metrics::metrics(rename = "http")]
 pub mod metrics {
 	use std::time::Instant;
+
 	use scuffle_metrics::{CounterU64, HistogramF64, MetricEnum, UpDownCounterI64};
 
 	pub struct ConnectionDropGuard(SocketKind, Instant);
