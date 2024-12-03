@@ -4802,7 +4802,7 @@ dependencies = [
 [[package]]
 name = "scuffle-batching"
 version = "0.0.1"
-source = "git+https://github.com/scufflecloud/scuffle.git?branch=foundations-v2#2bcf062e18fdb8c7653aa12383c175d752fb12fc"
+source = "git+https://github.com/scufflecloud/scuffle.git?branch=foundations-v2#01331ad0a7e680d453c0c8b95d944c94ba60fa27"
 dependencies = [
  "tokio",
  "tokio-util",
