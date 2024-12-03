@@ -6,7 +6,6 @@
 	import { t } from "svelte-i18n";
 	import DropDown from "../drop-down.svelte";
 	import {
-		SubscriptionProductKind,
 		SubscriptionState,
 		type SubscriptionInfo,
 		type SubscriptionProduct,
@@ -19,7 +18,7 @@
 	import Spinner from "../spinner.svelte";
 	import type { DialogMode } from "../dialogs/dialog.svelte";
 	import CancelSubscriptionDialog from "../dialogs/cancel-subscription-dialog.svelte";
-	import { priceFormat, variantName } from "$/lib/utils";
+	import { variantName } from "$/lib/utils";
 	import GiftSubscriptionDialog from "../dialogs/gift-subscription-dialog.svelte";
 
 	interface Props {
@@ -246,11 +245,7 @@
 			<DropDown>
 				{#snippet dropdown()}
 					{#each product.variants as variant}
-						<Button
-							big
-							onclick={() => showGiftDialog(variant)}
-							style="width: 100%"
-						>
+						<Button big onclick={() => showGiftDialog(variant)} style="width: 100%">
 							{#snippet icon()}
 								<Star />
 							{/snippet}

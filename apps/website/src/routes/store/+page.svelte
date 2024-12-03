@@ -15,13 +15,12 @@
 		type SubscriptionProduct,
 	} from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
-	import { Info, PaintBrush, Seal, Smiley, UserCircle, X } from "phosphor-svelte";
+	import { Info, PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import { user } from "$/lib/auth";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import type { PageData } from "./$types";
-	import Button from "$/components/input/button.svelte";
 
 	let { data }: { data: PageData } = $props();
 
