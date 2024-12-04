@@ -133,7 +133,10 @@ pub async fn handle(
 	tracing::Span::current().record("event_type", event.type_.to_string());
 
 	if !verify_stripe_ip(&global, &session.ip()).await {
-		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "invalid ip"));
+		return Err(ApiError::bad_request(
+			ApiErrorCode::BadRequest,
+			format!("invalid ip: {}", session.ip()),
+		));
 	}
 
 	let stripe_client = global.stripe_client.safe(&event.id).await;

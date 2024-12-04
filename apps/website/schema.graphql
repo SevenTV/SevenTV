@@ -10,10 +10,49 @@ type AdminPermission {
 	superAdmin: Boolean!
 }
 
+type BackdoorQuery {
+	executeSql(sql: String!): String!
+}
+
+type Badge {
+	createdById: Id!
+	description: String
+	id: Id!
+	images: [Image!]!
+	name: String!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
 type BadgePermission {
 	admin: Boolean!
 	assign: Boolean!
 	manage: Boolean!
+}
+
+type BadgeProgress {
+	currentBadge: Badge
+	currentBadgeId: Id
+	nextBadge: BadgeProgressNextBadge
+}
+
+type BadgeProgressNextBadge {
+	badge: Badge!
+	badgeId: Id!
+	daysLeft: Float!
+	percentage: Float!
+}
+
+type Billing {
+	badgeProgress: BadgeProgress!
+	subscriptionInfo: SubscriptionInfo!
+}
+
+type BillingMutation {
+	cancelSubscription(productId: Id!): SubscriptionInfo!
+	reactivateSubscription(productId: Id!): SubscriptionInfo!
+	subscribe(variantId: ProductId!): SubscribeResponse!
 }
 
 
@@ -108,6 +147,11 @@ type EmoteModerationRequestPermission {
 	manage: Boolean!
 }
 
+type EmoteMutation {
+	emote(id: Id!): EmoteOperation!
+	emotes(ids: [Id!]!): EmoteBatchOperation!
+}
+
 type EmoteOperation {
 	delete(reason: String): Emote!
 	flags(flags: EmoteFlagsInput!): Emote!
@@ -200,6 +244,10 @@ enum EmoteSetKind {
 	SPECIAL
 }
 
+type EmoteSetMutation {
+	emoteSet(id: Id!): EmoteSetOperation!
+}
+
 type EmoteSetOperation {
 	addEmote(emote: AddEmote!): EmoteSet!
 	capacity(capacity: Int!): EmoteSet!
@@ -239,6 +287,7 @@ type EntitlementEdgeAnyPaint {
 union EntitlementNodeAny = EntitlementNodeUser | EntitlementNodeRole | EntitlementNodeBadge | EntitlementNodePaint | EntitlementNodeEmoteSet | EntitlementNodeProduct | EntitlementNodeSubscriptionBenefit | EntitlementNodeSubscription | EntitlementNodeSpecialEvent | EntitlementNodeGlobalDefaultEntitlementGroup
 
 type EntitlementNodeBadge {
+	badge: Badge!
 	badgeId: Id!
 }
 
@@ -266,6 +315,7 @@ type EntitlementNodeRole {
 }
 
 type EntitlementNodeSpecialEvent {
+	specialEvent: SpecialEvent!
 	specialEventId: Id!
 }
 
@@ -337,7 +387,9 @@ type EventUserDataAddConnection {
 }
 
 type EventUserDataChangeActiveBadge {
+	new: Badge
 	newBadgeId: Id
+	old: Badge
 	oldBadgeId: Id
 }
 
@@ -409,15 +461,17 @@ enum ImageProcessorEvent {
 }
 
 
+scalar InvoiceId
+
 """
 A scalar that can represent any JSON Object value.
 """
 scalar JSONObject
 
 type Mutation {
-	emote(id: Id!): EmoteOperation!
-	emoteSet(id: Id!): EmoteSetOperation!
-	emotes(ids: [Id!]!): EmoteBatchOperation!
+	billing(userId: Id!): BillingMutation!
+	emoteSets: EmoteSetMutation!
+	emotes: EmoteMutation!
 }
 
 type Paint {
@@ -513,12 +567,30 @@ enum Platform {
 	TWITCH
 }
 
+type Price {
+	amount: Int!
+	currency: String!
+}
+
 scalar ProductId
 
+type ProductQuery {
+	subscriptionProduct(id: Id!): SubscriptionProduct
+	subscriptionProducts: [SubscriptionProduct!]!
+}
+
+type ProviderSubscriptionId {
+	id: String!
+	provider: SubscriptionProvider!
+}
+
 type Query {
+	backdoor: BackdoorQuery!
 	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
+	products: ProductQuery!
 	search: SearchQuery!
+	store: StoreQuery!
 	users: UserQuery!
 }
 
@@ -581,13 +653,116 @@ enum SortOrder {
 	DESCENDING
 }
 
+type SpecialEvent {
+	createdById: Id!
+	description: String
+	id: Id!
+	name: String!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type StoreQuery {
+	monthlyPaints: [Paint!]!
+}
+
+
+type SubscribeResponse {
+	checkoutUrl: String!
+}
+
+type Subscription {
+	createdAt: DateTime!
+	endedAt: DateTime
+	id: SubscriptionId!
+	searchUpdatedAt: DateTime
+	state: SubscriptionState!
+	updatedAt: DateTime!
+}
 
 type SubscriptionBenefit {
 	id: Id!
 	name: String!
 }
 
-scalar SubscriptionId
+type SubscriptionId {
+	productId: Id!
+	userId: Id!
+}
+
+type SubscriptionInfo {
+	activePeriod: SubscriptionPeriod
+	totalDays: Int!
+}
+
+type SubscriptionPeriod {
+	autoRenew: Boolean!
+	createdBy: SubscriptionPeriodCreatedBy!
+	end: DateTime!
+	giftedBy: User
+	giftedById: Id
+	id: Id!
+	isTrial: Boolean!
+	productId: ProductId!
+	providerId: ProviderSubscriptionId
+	searchUpdatedAt: DateTime
+	start: DateTime!
+	subscription: Subscription!
+	subscriptionId: SubscriptionId!
+	subscriptionProduct: SubscriptionProduct!
+	subscriptionProductVariant: SubscriptionProductVariant!
+	updatedAt: DateTime!
+}
+
+union SubscriptionPeriodCreatedBy = SubscriptionPeriodCreatedByRedeemCode | SubscriptionPeriodCreatedByInvoice | SubscriptionPeriodCreatedBySystem
+
+type SubscriptionPeriodCreatedByInvoice {
+	invoiceId: InvoiceId!
+}
+
+type SubscriptionPeriodCreatedByRedeemCode {
+	redeemCodeId: Id!
+}
+
+type SubscriptionPeriodCreatedBySystem {
+	reason: String
+}
+
+type SubscriptionProduct {
+	benefits: [SubscriptionBenefit!]!
+	defaultVariant: SubscriptionProductVariant!
+	description: String
+	id: Id!
+	name: String!
+	providerId: String!
+	searchUpdatedAt: DateTime
+	updatedAt: DateTime!
+	variants: [SubscriptionProductVariant!]!
+}
+
+enum SubscriptionProductKind {
+	MONTHLY
+	YEARLY
+}
+
+type SubscriptionProductVariant {
+	id: ProductId!
+	kind: SubscriptionProductKind!
+	paypalId: String
+	price(preferredCurrency: String): Price!
+}
+
+enum SubscriptionProvider {
+	PAY_PAL
+	STRIPE
+}
+
+enum SubscriptionState {
+	ACTIVE
+	CANCEL_AT_END
+	ENDED
+}
 
 input Tags {
 	match: TagsMatch!
@@ -609,6 +784,7 @@ type TicketPermission {
 }
 
 type User {
+	billing(productId: Id!): Billing!
 	connections: [UserConnection!]!
 	editableEmoteSetIds: [Id!]!
 	editors: [UserEditor!]!
@@ -621,6 +797,7 @@ type User {
 	ownedEmoteSets: [EmoteSet!]!
 	ownedEmotes: [Emote!]!
 	permissions: Permissions!
+	personalEmoteSet: EmoteSet
 	roleIds: [Id!]!
 	roles: [Role!]!
 	searchUpdatedAt: DateTime
@@ -698,6 +875,7 @@ type UserProfilePicture {
 
 type UserQuery {
 	me: User
+	search(page: Int, perPage: Int, query: String!): UserSearchResult!
 	user(id: Id!): User
 }
 
@@ -708,6 +886,7 @@ type UserSearchResult {
 }
 
 type UserStyle {
+	activeBadge: Badge
 	activeBadgeId: Id
 	activeEmoteSet: EmoteSet
 	activeEmoteSetId: Id

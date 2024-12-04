@@ -13,6 +13,7 @@ pub struct EmoteSetMutation;
 
 #[async_graphql::Object]
 impl EmoteSetMutation {
+	#[tracing::instrument(skip_all, name = "EmoteSetMutation::emote_set")]
 	async fn emote_set(&self, ctx: &Context<'_>, id: EmoteSetId) -> Result<operation::EmoteSetOperation, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

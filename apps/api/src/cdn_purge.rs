@@ -71,8 +71,8 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 
 		if ctx.is_done() {
 			break;
-		} 
-		
+		}
+
 		tracing::info!("message stream closed, waiting 10 seconds before reconnecting");
 		tokio::time::sleep(Duration::from_secs(10)).with_context(&ctx).await;
 	}

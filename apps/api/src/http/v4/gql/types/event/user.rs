@@ -8,7 +8,7 @@ use shared::database::stored_event::StoredEventUserData;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::v4::gql::types::{EmoteSet, Paint, Platform};
+use crate::http::v4::gql::types::{Badge, EmoteSet, Paint, Platform};
 
 #[derive(async_graphql::Union)]
 pub enum EventUserData {
@@ -80,6 +80,7 @@ pub struct EventUserDataChangeActivePaint {
 
 #[async_graphql::ComplexObject]
 impl EventUserDataChangeActivePaint {
+	#[tracing::instrument(skip_all, name = "EventUserDataChangeActivePaint::old_paint")]
 	async fn old_paint(&self, ctx: &Context<'_>) -> Result<Option<Paint>, ApiError> {
 		let Some(old_id) = self.old_id else {
 			return Ok(None);
@@ -98,6 +99,7 @@ impl EventUserDataChangeActivePaint {
 		Ok(paint.map(|p| Paint::from_db(p, &global.config.api.cdn_origin)))
 	}
 
+	#[tracing::instrument(skip_all, name = "EventUserDataChangeActivePaint::new_paint")]
 	async fn new_paint(&self, ctx: &Context<'_>) -> Result<Option<Paint>, ApiError> {
 		let Some(old_id) = self.new_id else {
 			return Ok(None);
@@ -118,11 +120,55 @@ impl EventUserDataChangeActivePaint {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EventUserDataChangeActiveBadge {
 	#[graphql(name = "oldBadgeId")]
 	pub old_id: Option<BadgeId>,
 	#[graphql(name = "newBadgeId")]
 	pub new_id: Option<BadgeId>,
+}
+
+#[async_graphql::ComplexObject]
+impl EventUserDataChangeActiveBadge {
+	#[tracing::instrument(skip_all, name = "EventUserDataChangeActiveBadge::old")]
+	async fn old(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
+		let Some(old_id) = self.old_id else {
+			return Ok(None);
+		};
+
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let badge = global
+			.badge_by_id_loader
+			.load(old_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
+			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+
+		Ok(Some(Badge::from_db(badge, &global.config.api.cdn_origin)))
+	}
+
+	#[tracing::instrument(skip_all, name = "EventUserDataChangeActiveBadge::new")]
+	async fn new(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
+		let Some(new_id) = self.new_id else {
+			return Ok(None);
+		};
+
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let badge = global
+			.badge_by_id_loader
+			.load(new_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
+			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+
+		Ok(Some(Badge::from_db(badge, &global.config.api.cdn_origin)))
+	}
 }
 
 #[derive(async_graphql::SimpleObject)]
@@ -136,6 +182,7 @@ pub struct EventUserDataChangeActiveEmoteSet {
 
 #[async_graphql::ComplexObject]
 impl EventUserDataChangeActiveEmoteSet {
+	#[tracing::instrument(skip_all, name = "EventUserDataChangeActiveEmoteSet::old_emote_set")]
 	async fn old_emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
 		let Some(old_id) = self.old_id else {
 			return Ok(None);
@@ -154,6 +201,7 @@ impl EventUserDataChangeActiveEmoteSet {
 		Ok(emote_set.map(Into::into))
 	}
 
+	#[tracing::instrument(skip_all, name = "EventUserDataChangeActiveEmoteSet::new_emote_set")]
 	async fn new_emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
 		let Some(new_id) = self.new_id else {
 			return Ok(None);

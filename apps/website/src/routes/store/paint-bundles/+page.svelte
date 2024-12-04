@@ -1,47 +1,40 @@
 <script lang="ts">
-	import Button from "$/components/input/button.svelte";
-	import HideOn from "$/components/hide-on.svelte";
-	import PaintPreview from "$/components/paint-preview.svelte";
-	import Select from "$/components/input/select.svelte";
 	import Banner from "$/components/store/banner.svelte";
-	import { Gift, MagnifyingGlass, ShoppingCartSimple } from "phosphor-svelte";
-	import { priceFormat } from "$/lib/utils";
-	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
 
-	const bundles = [
-		{
-			name: "Summer Bundle",
-			price: 199,
-			new: true,
-		},
-		{
-			name: "Winter Bundle",
-			price: 500,
-			new: false,
-		},
-		{
-			name: "Halloween Bundle",
-			price: 299,
-			new: false,
-		},
-		{
-			name: "Loser Bundle",
-			price: 1,
-			new: false,
-		},
-		{
-			name: "Random Bundle",
-			price: 199,
-			new: false,
-		},
-		{
-			name: "Forsen Bundle",
-			price: 1099,
-			new: false,
-			oldPrice: 10099,
-		},
-	];
+	// const bundles = [
+	// 	{
+	// 		name: "Summer Bundle",
+	// 		price: 199,
+	// 		new: true,
+	// 	},
+	// 	{
+	// 		name: "Winter Bundle",
+	// 		price: 500,
+	// 		new: false,
+	// 	},
+	// 	{
+	// 		name: "Halloween Bundle",
+	// 		price: 299,
+	// 		new: false,
+	// 	},
+	// 	{
+	// 		name: "Loser Bundle",
+	// 		price: 1,
+	// 		new: false,
+	// 	},
+	// 	{
+	// 		name: "Random Bundle",
+	// 		price: 199,
+	// 		new: false,
+	// 	},
+	// 	{
+	// 		name: "Forsen Bundle",
+	// 		price: 1099,
+	// 		new: false,
+	// 		oldPrice: 10099,
+	// 	},
+	// ];
 </script>
 
 <svelte:head>
@@ -54,7 +47,8 @@
 	gradientColor="#27cfb1"
 />
 <section>
-	<div class="header">
+	Coming soon...
+	<!-- <div class="header">
 		<h2>{$t("common.paint_bundles")}</h2>
 		<div class="buttons">
 			<HideOn mobile>
@@ -108,77 +102,76 @@
 				</div>
 			</div>
 		{/each}
-	</div>
+	</div> -->
 </section>
 
 <style lang="scss">
 	section {
 		margin-top: 1rem;
-		margin-inline: auto;
-		max-width: 80rem;
+		// max-width: 80rem;
 	}
 
-	h2 {
-		font-size: 1.25rem;
-		font-weight: 700;
-	}
+	// h2 {
+	// 	font-size: 1.25rem;
+	// 	font-weight: 700;
+	// }
 
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 0.5rem;
+	// .header {
+	// 	display: flex;
+	// 	justify-content: space-between;
+	// 	align-items: center;
+	// 	gap: 0.5rem;
 
-		.buttons {
-			display: flex;
-			gap: 0.5rem;
-			align-items: center;
-		}
-	}
+	// 	.buttons {
+	// 		display: flex;
+	// 		gap: 0.5rem;
+	// 		align-items: center;
+	// 	}
+	// }
 
-	.grid {
-		margin-top: 1rem;
+	// .grid {
+	// 	margin-top: 1rem;
 
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
-		gap: 1rem;
-	}
+	// 	display: grid;
+	// 	grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+	// 	gap: 1rem;
+	// }
 
-	.bundle {
-		padding: 1rem 1.25rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		background-color: var(--bg-medium);
-		border-radius: 0.5rem;
+	// .bundle {
+	// 	padding: 1rem 1.25rem;
+	// 	display: flex;
+	// 	flex-direction: column;
+	// 	gap: 1rem;
+	// 	background-color: var(--bg-medium);
+	// 	border-radius: 0.5rem;
 
-		.header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
+	// 	.header {
+	// 		display: flex;
+	// 		justify-content: space-between;
+	// 		align-items: center;
 
-			.name {
-				font-weight: 500;
-			}
+	// 		.name {
+	// 			font-weight: 500;
+	// 		}
 
-			.new {
-				color: var(--store);
-				border: 1px solid var(--store);
-				padding: 0.2rem 0.5rem;
-				border-radius: 0.25rem;
-				font-size: 0.625rem;
-				text-transform: uppercase;
-			}
-		}
+	// 		.new {
+	// 			color: var(--store);
+	// 			border: 1px solid var(--store);
+	// 			padding: 0.2rem 0.5rem;
+	// 			border-radius: 0.25rem;
+	// 			font-size: 0.625rem;
+	// 			text-transform: uppercase;
+	// 		}
+	// 	}
 
-		.buttons {
-			display: flex;
-			gap: 0.5rem;
-			justify-content: flex-end;
-		}
+	// 	.buttons {
+	// 		display: flex;
+	// 		gap: 0.5rem;
+	// 		justify-content: flex-end;
+	// 	}
 
-		del {
-			font-size: 0.75rem;
-		}
-	}
+	// 	del {
+	// 		font-size: 0.75rem;
+	// 	}
+	// }
 </style>

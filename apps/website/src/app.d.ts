@@ -11,7 +11,11 @@ declare global {
 		}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			store?: {
+				selectedProduct: string;
+			};
+		}
 		// interface Platform {}
 	}
 	interface Window {

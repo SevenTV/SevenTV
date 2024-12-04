@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PaintBrush, Seal, Smiley, Ticket, UserCircle } from "phosphor-svelte";
+	import { PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 </script>
 
@@ -30,12 +30,12 @@
 			</div>
 			<h3>{$t("pages.store.subscription.benefits.sub_badge")}</h3>
 		</div>
-		<div class="benefit">
+		<!-- <div class="benefit">
 			<div class="gradient g6">
 				<Ticket size="4rem" weight="regular" />
 			</div>
 			<h3>{$t("pages.store.subscription.benefits.raffle_tickets")}</h3>
-		</div>
+		</div> -->
 	</div>
 </section>
 
@@ -141,16 +141,16 @@
 					var(--secondary);
 			}
 
-			&.g6 {
-				background: radial-gradient(
-						150% 180% at 50% 180%,
-						#ff922f 0%,
-						#11ff54 33%,
-						#43006d 64%,
-						#0f0f0f 80%
-					),
-					var(--secondary);
-			}
+			// &.g6 {
+			// 	background: radial-gradient(
+			// 			150% 180% at 50% 180%,
+			// 			#ff922f 0%,
+			// 			#11ff54 33%,
+			// 			#43006d 64%,
+			// 			#0f0f0f 80%
+			// 		),
+			// 		var(--secondary);
+			// }
 		}
 	}
 </style>

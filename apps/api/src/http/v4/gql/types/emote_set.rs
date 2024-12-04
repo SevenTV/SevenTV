@@ -28,6 +28,7 @@ pub struct EmoteSet {
 
 #[async_graphql::ComplexObject]
 impl EmoteSet {
+	#[tracing::instrument(skip_all, name = "EmoteSet::emotes")]
 	async fn emotes(
 		&self,
 		page: Option<u32>,
@@ -57,6 +58,7 @@ impl EmoteSet {
 		}
 	}
 
+	#[tracing::instrument(skip_all, name = "EmoteSet::owner")]
 	async fn owner(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let Some(user_id) = self.owner_id else {
 			return Ok(None);
@@ -125,6 +127,7 @@ pub struct EmoteSetEmote {
 
 #[async_graphql::ComplexObject]
 impl EmoteSetEmote {
+	#[tracing::instrument(skip_all, name = "EmoteSetEmote::emote")]
 	async fn emote(&self, ctx: &Context<'_>) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

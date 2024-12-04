@@ -127,11 +127,11 @@ progress[value] {
 		border-radius: 0.25rem;
 		background-color: var(--primary);
 	}
+}
 
-	&::-webkit-progress-value {
-		border-radius: 0.25rem;
-		background-color: var(--primary);
-	}
+::-webkit-progress-value {
+	border-radius: 0.25rem;
+	background-color: var(--primary);
 }
 
 @media screen and (max-width: 960px) {

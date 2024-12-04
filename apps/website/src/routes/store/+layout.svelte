@@ -4,7 +4,11 @@
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 
-	let { children }: { children: Snippet } = $props();
+	interface Props {
+		children: Snippet;
+	}
+
+	let { children }: Props = $props();
 </script>
 
 <div class="side-bar-layout">

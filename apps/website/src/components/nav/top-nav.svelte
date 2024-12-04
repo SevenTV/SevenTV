@@ -30,7 +30,7 @@
 				tabs={[
 					{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes" },
 					// { name: $t("pages.discover.title"), pathname: "/discover" },
-					// { name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
+					{ name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
 					// { name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" },
 				]}
 			/>
@@ -72,11 +72,15 @@
 				</Badge>
 			</Button> -->
 
-			<!-- <Button on:click={() => (cartDialogMode = "shown")}>
-				<Badge count={3} slot="icon">
-					<ShoppingCartSimple />
-				</Badge>
-			</Button> -->
+			<!-- {#if $page.url.pathname.startsWith("/store")}
+				<Button onclick={() => (cartDialogMode = "shown")}>
+					{#snippet icon()}
+						<Badge count={3}>
+							<ShoppingCartSimple />
+						</Badge>
+					{/snippet}
+				</Button>
+			{/if} -->
 
 			<!-- <Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
 				{#snippet icon()}
@@ -125,7 +129,7 @@
 			</Button>
 		{/if}
 		<!-- Only show when logged out on mobile -->
-		{#if !$user}
+		{#if $user === null}
 			<Button hideOnDesktop onclick={() => ($showMobileMenu = !$showMobileMenu)}>
 				{#snippet icon()}
 					<List />

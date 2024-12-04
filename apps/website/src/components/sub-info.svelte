@@ -1,41 +1,82 @@
 <script lang="ts">
 	import moment from "moment/min/moment-with-locales";
-	import { Clock, Coin, Gift, Hourglass, IconContext, Sparkle } from "phosphor-svelte";
+	import { Clock, CreditCard, Gift, Hourglass, IconContext, Sparkle } from "phosphor-svelte";
 	import Date from "./date.svelte";
 	import { t } from "svelte-i18n";
+	import { SubscriptionProductKind, SubscriptionState, type SubscriptionInfo } from "$/gql/graphql";
+	import type { HTMLAttributes } from "svelte/elements";
+	import UserName from "./user-name.svelte";
+
+	type Props = { data: SubscriptionInfo } & HTMLAttributes<HTMLDivElement>;
+
+	let { data, ...restProps }: Props = $props();
+
+	function getPlanName(info: SubscriptionInfo) {
+		if (!info.activePeriod) {
+			return $t("sub_info.free");
+		}
+
+		switch (info.activePeriod.subscriptionProductVariant.kind) {
+			case SubscriptionProductKind.Monthly:
+				return "Monthly";
+			case SubscriptionProductKind.Yearly:
+				return "Yearly";
+		}
+	}
 </script>
 
-<div class="sub-grid" {...$$restProps}>
+<div class="sub-grid" {...restProps}>
 	<IconContext values={{ weight: "bold", size: 1.2 * 16, color: "var(--store)" }}>
 		<span class="key">{$t("sub_info.plan")}</span>
 		<span class="value">
 			<Sparkle />
-			<span>{$t("sub_info.free")}</span>
+			<span>{getPlanName(data)}</span>
 		</span>
 
-		<span class="key">{$t("sub_info.gifted_by")}</span>
-		<span class="value">
-			<Gift />
-			<span>Forsen</span>
-		</span>
+		{#if data.activePeriod?.giftedBy}
+			<span class="key">{$t("sub_info.gifted_by")}</span>
+			<span class="value">
+				<Gift />
+				<a href="/users/{data.activePeriod.giftedBy.id}">
+					<UserName user={data.activePeriod.giftedBy} />
+				</a>
+			</span>
+		{/if}
 
-		<span class="key">{$t("sub_info.ends")}</span>
-		<span class="value">
-			<Hourglass />
-			<Date date={moment()} />
-		</span>
+		{#if data.activePeriod}
+			<span class="key"
+				>{data.activePeriod.subscription.state === SubscriptionState.Active &&
+				!data.activePeriod.giftedBy
+					? "Next Billing"
+					: $t("sub_info.ends")}</span
+			>
+			<span class="value">
+				{#if data.activePeriod.subscription.state === SubscriptionState.Active && !data.activePeriod.giftedBy}
+					<CreditCard />
+				{:else}
+					<Hourglass />
+				{/if}
+				<Date date={moment(data.activePeriod.end)} />
+			</span>
+		{/if}
 
-		<span class="key">{$t("sub_info.total")}</span>
+		<span class="key">{data.activePeriod ? $t("sub_info.total") : "Previously Subscribed"}</span>
 		<span class="value">
 			<Clock />
-			<span>{moment.duration(317, "days").humanize({ d: Infinity })}</span>
+			{#if data.totalDays > 0}
+				<span title={moment.duration(data.totalDays, "days").humanize()}>
+					{moment.duration(data.totalDays, "days").humanize({ d: Infinity })}
+				</span>
+			{:else}
+				<span>&#60; {moment.duration(1, "days").humanize()}</span>
+			{/if}
 		</span>
 
-		<span class="key">{$t("sub_info.credits")}</span>
+		<!-- <span class="key">{$t("sub_info.credits")}</span>
 		<span class="value">
 			<Coin />
 			<span>3</span>
-		</span>
+		</span> -->
 	</IconContext>
 </div>
 
@@ -62,6 +103,10 @@
 
 			font-size: 0.875rem;
 			font-weight: 600;
+
+			a {
+				text-decoration: none;
+			}
 		}
 	}
 

@@ -6,7 +6,6 @@ use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 
-use super::find_or_create_customer;
 use super::metadata::{CheckoutSessionMetadata, StripeMetadata};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -14,6 +13,7 @@ use crate::http::extract::Path;
 use crate::http::middleware::session::Session;
 use crate::http::v3::rest::users::TargetUser;
 use crate::ratelimit::RateLimitRequest;
+use crate::stripe_common::find_or_create_customer;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct PaymentMethodQuery {

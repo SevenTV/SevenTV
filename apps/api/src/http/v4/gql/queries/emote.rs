@@ -75,6 +75,7 @@ struct Filters {
 
 #[Object]
 impl EmoteQuery {
+	#[tracing::instrument(skip_all, name = "EmoteQuery::emote")]
 	async fn emote(&self, ctx: &Context<'_>, id: EmoteId) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -91,10 +92,11 @@ impl EmoteQuery {
 
 	#[allow(clippy::too_many_arguments)]
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "EmoteQuery::search")]
 	async fn search(
 		&self,
 		ctx: &Context<'_>,
-		query: Option<String>,
+		#[graphql(validator(max_length = 100))] query: Option<String>,
 		tags: Option<Tags>,
 		sort: Sort,
 		filters: Option<Filters>,

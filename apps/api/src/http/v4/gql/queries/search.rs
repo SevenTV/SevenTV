@@ -22,10 +22,11 @@ pub struct SearchResultAll {
 #[Object]
 impl SearchQuery {
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "SearchQuery::all")]
 	async fn all(
 		&self,
 		ctx: &Context<'_>,
-		query: Option<String>,
+		#[graphql(validator(max_length = 100))] query: Option<String>,
 		#[graphql(validator(maximum = 100))] page: Option<u32>,
 		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
 	) -> Result<SearchResultAll, ApiError> {

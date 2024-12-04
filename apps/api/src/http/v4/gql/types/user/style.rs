@@ -9,7 +9,7 @@ use shared::database::user::FullUser;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::v4::gql::types::{EmoteSet, Paint, UserProfilePicture};
+use crate::http::v4::gql::types::{Badge, EmoteSet, Paint, UserProfilePicture};
 
 #[derive(Debug, Clone, async_graphql::SimpleObject)]
 #[graphql(complex)]
@@ -40,6 +40,7 @@ impl UserStyle {
 
 #[async_graphql::ComplexObject]
 impl UserStyle {
+	#[tracing::instrument(skip_all, name = "UserStyle::active_paint")]
 	async fn active_paint(&self, ctx: &Context<'_>) -> Result<Option<Paint>, ApiError> {
 		let Some(active_paint_id) = self.active_paint_id else {
 			return Ok(None);
@@ -58,6 +59,26 @@ impl UserStyle {
 		Ok(paint.map(|p| Paint::from_db(p, &global.config.api.cdn_origin)))
 	}
 
+	#[tracing::instrument(skip_all, name = "UserStyle::active_badge")]
+	async fn active_badge(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
+		let Some(active_badge_id) = self.active_badge_id else {
+			return Ok(None);
+		};
+
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let badge = global
+			.badge_by_id_loader
+			.load(active_badge_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load active badge"))?;
+
+		Ok(badge.map(|b| Badge::from_db(b, &global.config.api.cdn_origin)))
+	}
+
+	#[tracing::instrument(skip_all, name = "UserStyle::active_emote_set")]
 	async fn active_emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
 		let Some(active_emote_set_id) = self.active_emote_set_id else {
 			return Ok(None);

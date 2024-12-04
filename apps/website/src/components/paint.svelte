@@ -7,13 +7,17 @@
 	} from "$/gql/graphql";
 	import type { Snippet } from "svelte";
 	import type { HTMLAttributes } from "svelte/elements";
+	import PaintDialog from "./dialogs/paint-dialog.svelte";
+	import type { DialogMode } from "./dialogs/dialog.svelte";
 
 	type Props = {
 		paint: Paint;
 		children: Snippet;
-	} & HTMLAttributes<HTMLSpanElement>;
+		enableDialog?: boolean;
+	} & HTMLAttributes<HTMLSpanElement> &
+		HTMLAttributes<HTMLButtonElement>;
 
-	let { paint, children, ...restProps }: Props = $props();
+	let { paint, children, enableDialog, ...restProps }: Props = $props();
 
 	function layerToBackgroundImage(layer: PaintLayer) {
 		switch (layer.ty.__typename) {
@@ -100,9 +104,17 @@
 	let filter = $derived(
 		paint.data.shadows.length > 0 ? paint.data.shadows.map(shadowToFilter).join(" ") : undefined,
 	);
+
+	let dialogMode: DialogMode = $state("hidden");
+
+	function showDialog() {
+		dialogMode = "shown";
+	}
 </script>
 
-<div class="paint" title="Paint: {paint.name.length > 0 ? paint.name : paint.id}" {...restProps}>
+<PaintDialog {paint} bind:mode={dialogMode} />
+
+{#snippet content()}
 	{#if layers.length === 0}
 		<!-- When the paint doesn't have any layers just render the content with filters -->
 		<span class="layer" style:filter>
@@ -122,7 +134,25 @@
 			</span>
 		{/each}
 	{/if}
-</div>
+{/snippet}
+
+{#if enableDialog}
+	<!-- Making this a real button sadly breaks the paint rendering -->
+	<div
+		role="button"
+		tabindex="-1"
+		class="paint"
+		title="Paint: {paint.name.length > 0 ? paint.name : paint.id}"
+		onclick={showDialog}
+		{...restProps}
+	>
+		{@render content()}
+	</div>
+{:else}
+	<div class="paint" title="Paint: {paint.name.length > 0 ? paint.name : paint.id}" {...restProps}>
+		{@render content()}
+	</div>
+{/if}
 
 <style lang="scss">
 	.paint {
@@ -142,5 +172,9 @@
 			-webkit-background-clip: text;
 			background-size: cover;
 		}
+	}
+
+	div[role="button"] {
+		cursor: pointer;
 	}
 </style>

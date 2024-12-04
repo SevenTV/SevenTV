@@ -56,16 +56,8 @@ fn val_to_string(val: &async_graphql::Value) -> String {
 }
 
 fn handle_error(error: &async_graphql::ServerError) {
-	let code = error
-		.extensions
-		.as_ref()
-		.and_then(|ext| ext.get("code"))
-		.map(|c| val_to_string(c));
-	let status_code = error
-		.extensions
-		.as_ref()
-		.and_then(|ext| ext.get("status"))
-		.map(|c| val_to_string(c));
+	let code = error.extensions.as_ref().and_then(|ext| ext.get("code")).map(val_to_string);
+	let status_code = error.extensions.as_ref().and_then(|ext| ext.get("status")).map(val_to_string);
 
 	gql_v3::error(
 		path_segment_display(&error.path),

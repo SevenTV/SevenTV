@@ -4,14 +4,15 @@
 	import { page } from "$app/stores";
 	import { CaretDown, CaretUp, Flag, PaintBrush, Smiley, Table, Ticket } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
+	import { type Page } from "@sveltejs/kit";
 	import modge from "$assets/modge.webp?url";
 
 	let { children } = $props();
 
 	let ticketsSelected = $derived($page.url.pathname.startsWith("/admin/tickets"));
 
-	function customMatcher(_id: string | null, url: URL, href: string | undefined) {
-		return !!href && url.pathname.startsWith(href);
+	function customMatcher(page: Page, href: string | undefined) {
+		return !!href && page.url.pathname.startsWith(href);
 	}
 </script>
 

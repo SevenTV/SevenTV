@@ -12,6 +12,7 @@ pub struct EmoteSetQuery;
 
 #[Object]
 impl EmoteSetQuery {
+	#[tracing::instrument(skip_all, name = "EmoteSetQuery::emote_set")]
 	async fn emote_set(&self, ctx: &Context<'_>, id: EmoteSetId) -> Result<Option<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -26,6 +27,7 @@ impl EmoteSetQuery {
 		Ok(emote_set.map(Into::into))
 	}
 
+	#[tracing::instrument(skip_all, name = "EmoteSetQuery::emote_sets")]
 	async fn emote_sets(
 		&self,
 		ctx: &Context<'_>,

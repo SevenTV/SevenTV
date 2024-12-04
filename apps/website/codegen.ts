@@ -14,7 +14,7 @@ const config: CodegenConfig = {
 					DateTime: "Date",
 					Id: "string",
 					ProductId: "string",
-					SubscriptionId: "object",
+					InvoiceId: "string",
 					JSONObject: "object",
 				},
 			},

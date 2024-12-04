@@ -106,7 +106,12 @@
 	let preparedVariants = $derived(prepareVariants(images));
 </script>
 
-<picture bind:clientWidth={pictureWidth} {...restProps}>
+<picture
+	bind:clientWidth={pictureWidth}
+	style:width="{width}px"
+	style:height="{height}px"
+	{...restProps}
+>
 	{#each preparedVariants.variants as variant}
 		<source
 			type={variant.type}

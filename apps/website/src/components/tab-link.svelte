@@ -2,21 +2,22 @@
 	import { page } from "$app/stores";
 	import { type Snippet } from "svelte";
 	import Button from "./input/button.svelte";
+	import { type Page } from "@sveltejs/kit";
 
 	interface Props {
 		title?: string;
 		href?: string;
 		big?: boolean;
 		responsive?: boolean;
-		matcher?: (id: string | null, url: URL, href?: string) => boolean;
+		matcher?: (currentPage: Page, href?: string) => boolean;
 		children?: Snippet;
 		active?: Snippet;
 		iconRight?: Snippet;
 		onclick?: () => void;
 	}
 
-	function defaultMatcher(_id: string | null, url: URL, href?: string): boolean {
-		return url.pathname === href;
+	function defaultMatcher(currentPage: Page, href?: string): boolean {
+		return currentPage.url.pathname === href;
 	}
 
 	let {
@@ -38,7 +39,7 @@
 		onclick?.();
 	}
 
-	let isActive = $derived(matcher($page.route.id, $page.url, href));
+	let isActive = $derived(matcher($page, href));
 </script>
 
 {#if responsive}

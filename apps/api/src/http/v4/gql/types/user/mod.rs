@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, SimpleObject};
-use shared::database::emote_set::EmoteSetId;
+use shared::database::emote_set::{EmoteSetId, EmoteSetKind};
+use shared::database::product::SubscriptionProductId;
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::role::RoleId;
 use shared::database::user::editor::EditorEmoteSetPermission;
@@ -15,6 +16,7 @@ use crate::http::guards::RateLimitGuard;
 use crate::http::middleware::session::Session;
 use crate::search::{search, sorted_results, SearchOptions};
 
+pub mod billing;
 pub mod connection;
 pub mod inventory;
 pub mod style;
@@ -42,11 +44,13 @@ pub struct User {
 
 #[ComplexObject]
 impl User {
+	#[tracing::instrument(skip_all, name = "User::main_connection")]
 	async fn main_connection(&self) -> Option<&UserConnection> {
 		self.connections.first()
 	}
 
 	// TODO: Does it make sense to paginate this?
+	#[tracing::instrument(skip_all, name = "User::owned_emotes")]
 	async fn owned_emotes(&self, ctx: &Context<'_>) -> Result<Vec<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -67,6 +71,7 @@ impl User {
 			.collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::owned_emote_sets")]
 	async fn owned_emote_sets(&self, ctx: &Context<'_>) -> Result<Vec<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -84,6 +89,26 @@ impl User {
 		Ok(emote_sets.into_iter().map(Into::into).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::personal_emote_set")]
+	async fn personal_emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let emote_sets = global
+			.emote_set_by_user_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.unwrap_or_default();
+
+		Ok(emote_sets
+			.into_iter()
+			.find(|e| e.kind == EmoteSetKind::Personal)
+			.map(Into::into))
+	}
+
+	#[tracing::instrument(skip_all, name = "User::style")]
 	async fn style(&self, ctx: &Context<'_>) -> Result<UserStyle, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -92,6 +117,7 @@ impl User {
 		Ok(UserStyle::from_user(global, &self.full_user))
 	}
 
+	#[tracing::instrument(skip_all, name = "User::roles")]
 	async fn roles(&self, ctx: &Context<'_>) -> Result<Vec<Role>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -114,6 +140,7 @@ impl User {
 		Ok(roles.into_iter().map(Into::into).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::permissions")]
 	async fn permissions(&self, ctx: &Context<'_>) -> Result<Permissions, ApiError> {
 		let session = ctx
 			.data::<Session>()
@@ -130,6 +157,7 @@ impl User {
 		Ok(Permissions::from(self.full_user.computed.permissions.clone()))
 	}
 
+	#[tracing::instrument(skip_all, name = "User::editors")]
 	async fn editors(&self, ctx: &Context<'_>) -> Result<Vec<UserEditor>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -145,6 +173,7 @@ impl User {
 		Ok(editors.into_iter().map(Into::into).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::editable_emote_set_ids")]
 	async fn editable_emote_set_ids(&self, ctx: &Context<'_>) -> Result<Vec<EmoteSetId>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -188,6 +217,7 @@ impl User {
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "User::events")]
 	async fn events<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
@@ -239,8 +269,29 @@ impl User {
 			.collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::inventory")]
 	async fn inventory(&self) -> UserInventory {
 		UserInventory::from_user(&self.full_user)
+	}
+
+	#[tracing::instrument(skip_all, name = "User::billing")]
+	async fn billing(&self, ctx: &Context<'_>, product_id: SubscriptionProductId) -> Result<billing::Billing, ApiError> {
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id != self.id && !authed_user.has(UserPermission::ManageBilling) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you are not allowed to see this user's billing information",
+			));
+		}
+
+		Ok(billing::Billing {
+			user_id: self.id,
+			product_id,
+		})
 	}
 }
 

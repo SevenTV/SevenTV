@@ -6,9 +6,11 @@ export async function addEmoteToSet(setId: string, emoteId: string, alias?: stri
 		.mutation(
 			graphql(`
 				mutation AddEmoteToSet($setId: Id!, $emote: EmoteSetEmoteId!) {
-					emoteSet(id: $setId) {
-						addEmote(emote: { id: $emote }) {
-							id
+					emoteSets {
+						emoteSet(id: $setId) {
+							addEmote(emote: { id: $emote }) {
+								id
+							}
 						}
 					}
 				}
@@ -23,9 +25,11 @@ export async function removeEmoteFromSet(setId: string, emoteId: string, alias?:
 		.mutation(
 			graphql(`
 				mutation RemoveEmoteFromSet($setId: Id!, $emote: EmoteSetEmoteId!) {
-					emoteSet(id: $setId) {
-						removeEmote(id: $emote) {
-							id
+					emoteSets {
+						emoteSet(id: $setId) {
+							removeEmote(id: $emote) {
+								id
+							}
 						}
 					}
 				}
@@ -45,9 +49,11 @@ export async function renameEmoteInSet(
 		.mutation(
 			graphql(`
 				mutation RenameEmoteInSet($setId: Id!, $emote: EmoteSetEmoteId!, $alias: String!) {
-					emoteSet(id: $setId) {
-						updateEmoteAlias(id: $emote, alias: $alias) {
-							id
+					emoteSets {
+						emoteSet(id: $setId) {
+							updateEmoteAlias(id: $emote, alias: $alias) {
+								id
+							}
 						}
 					}
 				}

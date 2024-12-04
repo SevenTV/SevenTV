@@ -1,19 +1,12 @@
 <script lang="ts">
 	import TextInput from "$/components/input/text-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { signInDialogMode } from "$/lib/layout";
 	import { user } from "$/lib/auth";
 	import { Key, PencilSimple, Bell, CreditCard, Prohibit, MagnifyingGlass } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 
 	let { children }: { children: Snippet } = $props();
-
-	$effect(() => {
-		if (!$user && !$signInDialogMode) {
-			$signInDialogMode = "shown-without-close";
-		}
-	});
 </script>
 
 <svelte:head>
@@ -39,7 +32,7 @@
 				<TabLink
 					title={$t("common.editors")}
 					href="/settings/editors"
-					matcher={(_id, url, href) => !!href && url.pathname.startsWith(href)}
+					matcher={(page, href) => !!href && page.url.pathname.startsWith(href)}
 					big
 				>
 					<PencilSimple />

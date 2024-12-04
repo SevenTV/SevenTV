@@ -4,12 +4,13 @@
 	import { Heart, MagnifyingGlass, Newspaper } from "phosphor-svelte";
 	import type { Snippet } from "svelte";
 	import { t } from "svelte-i18n";
+	import { type Page } from "@sveltejs/kit";
 
 	let { children }: { children: Snippet } = $props();
 
-	function matcher(_id: string | null, url: URL, href: string | undefined) {
-		if (href === "/discover") return url.pathname === href;
-		return !!href && url.pathname.startsWith(href);
+	function matcher(page: Page, href: string | undefined) {
+		if (href === "/discover") return page.url.pathname === href;
+		return !!href && page.url.pathname.startsWith(href);
 	}
 </script>
 

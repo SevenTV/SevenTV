@@ -13,10 +13,11 @@ use shared::database::role::RoleId;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-use super::{EmoteSet, Paint, Role, SubscriptionBenefit, User};
+use super::{Badge, EmoteSet, Paint, Role, SpecialEvent, SubscriptionBenefit, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
+#[allow(clippy::duplicated_attributes)]
 #[derive(async_graphql::SimpleObject)]
 #[graphql(concrete(name = "EntitlementEdgeAnyAny", params(EntitlementNodeAny, EntitlementNodeAny)))]
 #[graphql(concrete(name = "EntitlementEdgeAnyPaint", params(EntitlementNodeAny, EntitlementNodePaint)))]
@@ -79,6 +80,7 @@ pub struct EntitlementNodeUser {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeUser {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeUser::user")]
 	async fn user(&self, ctx: &Context<'_>) -> Result<User, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -103,6 +105,7 @@ pub struct EntitlementNodeRole {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeRole {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeRole::role")]
 	async fn role(&self, ctx: &Context<'_>) -> Result<Role, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -120,8 +123,28 @@ impl EntitlementNodeRole {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EntitlementNodeBadge {
 	pub badge_id: BadgeId,
+}
+
+#[async_graphql::ComplexObject]
+impl EntitlementNodeBadge {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeBadge::badge")]
+	async fn badge(&self, ctx: &Context<'_>) -> Result<Badge, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let badge = global
+			.badge_by_id_loader
+			.load(self.badge_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
+			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+
+		Ok(Badge::from_db(badge, &global.config.api.cdn_origin))
+	}
 }
 
 #[derive(async_graphql::SimpleObject)]
@@ -132,6 +155,7 @@ pub struct EntitlementNodePaint {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodePaint {
+	#[tracing::instrument(skip_all, name = "EntitlementNodePaint::paint")]
 	async fn paint(&self, ctx: &Context<'_>) -> Result<Paint, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -156,6 +180,7 @@ pub struct EntitlementNodeEmoteSet {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeEmoteSet {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeEmoteSet::emote_set")]
 	async fn emote_set(&self, ctx: &Context<'_>) -> Result<EmoteSet, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -185,12 +210,13 @@ pub struct EntitlementNodeSubscriptionBenefit {
 
 #[async_graphql::ComplexObject]
 impl EntitlementNodeSubscriptionBenefit {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeSubscriptionBenefit::subscription_benefit")]
 	async fn subscription_benefit(&self, ctx: &Context<'_>) -> Result<SubscriptionBenefit, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		// TODO: Use data loader
+		// TODO: Use data loader?
 		let product = SubscriptionProduct::collection(&global.db)
 			.find_one(filter::filter! {
 				SubscriptionProduct {
@@ -220,8 +246,33 @@ pub struct EntitlementNodeSubscription {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct EntitlementNodeSpecialEvent {
 	pub special_event_id: SpecialEventId,
+}
+
+#[async_graphql::ComplexObject]
+impl EntitlementNodeSpecialEvent {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeSpecialEvent::special_event")]
+	async fn special_event(&self, ctx: &Context<'_>) -> Result<SpecialEvent, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		// TODO: Use data loader?
+		let special_event = shared::database::product::special_event::SpecialEvent::collection(&global.db)
+			.find_one(filter::filter! {
+				shared::database::product::special_event::SpecialEvent {
+					#[query(rename = "_id")]
+					id: self.special_event_id,
+				}
+			})
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load special event"))?
+			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "special event not found"))?;
+
+		Ok(special_event.into())
+	}
 }
 
 #[derive(Default, async_graphql::SimpleObject)]

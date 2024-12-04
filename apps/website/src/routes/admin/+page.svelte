@@ -8,7 +8,7 @@
 </svelte:head>
 
 <div class="grid">
-	<MonthlyPaints />
+	<MonthlyPaints paints={[]} />
 </div>
 
 <style lang="scss">

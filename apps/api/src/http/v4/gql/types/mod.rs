@@ -1,3 +1,4 @@
+mod badge;
 mod color;
 mod editor;
 mod emote;
@@ -11,8 +12,10 @@ mod product;
 mod profile_picture;
 mod role;
 mod search;
+mod subscription;
 mod user;
 
+pub use badge::*;
 pub use color::*;
 pub use editor::*;
 pub use emote::*;
@@ -26,4 +29,5 @@ pub use product::*;
 pub use profile_picture::*;
 pub use role::*;
 pub use search::*;
+pub use subscription::*;
 pub use user::*;

@@ -1,6 +1,6 @@
 use global::Global;
-use scuffle_signal::SignalSvc;
 use scuffle_bootstrap_telemetry::TelemetrySvc;
+use scuffle_signal::SignalSvc;
 mod cdn_purge;
 mod config;
 mod connections;
@@ -15,6 +15,7 @@ mod paypal_api;
 mod ratelimit;
 mod search;
 mod stripe_client;
+mod stripe_common;
 mod sub_refresh_job;
 mod transactions;
 

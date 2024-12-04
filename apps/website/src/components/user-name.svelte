@@ -2,17 +2,17 @@
 	import type { User } from "$/gql/graphql";
 	import Paint from "./paint.svelte";
 
-	let { user }: { user: User } = $props();
+	let { user, enablePaintDialog }: { user: User; enablePaintDialog?: boolean } = $props();
 </script>
 
 {#snippet name()}
-	<span class="name" style:color={user.highestRoleColor?.hex}
-		>{user.mainConnection?.platformDisplayName}</span
-	>
+	<span class="name" style:color={user.highestRoleColor?.hex}>
+		{user.mainConnection?.platformDisplayName}
+	</span>
 {/snippet}
 
 {#if user.style.activePaint}
-	<Paint paint={user.style.activePaint}>
+	<Paint paint={user.style.activePaint} enableDialog={enablePaintDialog} style="display: inline">
 		{@render name()}
 	</Paint>
 {:else}

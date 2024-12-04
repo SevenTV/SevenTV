@@ -25,6 +25,7 @@
 	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
 	import { user } from "$/lib/auth";
+	import Badge from "$/components/badge.svelte";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -57,7 +58,10 @@
 				style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
 			/>
 			<span class="name" style:color={user.highestRoleColor?.hex}>
-				<UserName {user} />
+				{#if user.style.activeBadge}
+					<Badge badge={user.style.activeBadge} />
+				{/if}
+				<UserName {user} enablePaintDialog />
 				<!-- <SealCheck size="0.8rem" /> -->
 			</span>
 			<div class="roles">
@@ -255,6 +259,10 @@
 
 		.name {
 			align-self: center;
+
+			display: flex;
+			gap: 0.25rem;
+			align-items: center;
 
 			font-size: 1.125rem;
 			font-weight: 600;

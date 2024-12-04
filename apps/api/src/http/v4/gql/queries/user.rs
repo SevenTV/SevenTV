@@ -6,14 +6,17 @@ use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::guards::RateLimitGuard;
 use crate::http::middleware::session::Session;
-use crate::http::v4::gql::types::User;
+use crate::http::v4::gql::types::{SearchResult, User};
+use crate::search::{search, sorted_results, SearchOptions};
 
 #[derive(Default)]
 pub struct UserQuery;
 
 #[Object]
 impl UserQuery {
+	#[tracing::instrument(skip_all, name = "UserQuery::me")]
 	async fn me(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -35,6 +38,7 @@ impl UserQuery {
 		Ok(user.map(Into::into))
 	}
 
+	#[tracing::instrument(skip_all, name = "UserQuery::user")]
 	async fn user(&self, ctx: &Context<'_>, id: UserId) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -58,5 +62,59 @@ impl UserQuery {
 		}
 
 		Ok(Some(user.into()))
+	}
+
+	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "UserQuery::search")]
+	async fn search(
+		&self,
+		ctx: &Context<'_>,
+		#[graphql(validator(max_length = 100))] query: String,
+		#[graphql(validator(maximum = 100))] page: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
+	) -> Result<SearchResult<User>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let per_page = per_page.unwrap_or(30);
+
+		let options = SearchOptions::builder()
+			.query(query)
+			.query_by(vec![
+				"twitch_names".to_owned(),
+				"kick_names".to_owned(),
+				"google_names".to_owned(),
+				"discord_names".to_owned(),
+			])
+			.query_by_weights(vec![4, 1, 1, 1])
+			.sort_by(vec!["_text_match(buckets: 10):desc".to_owned(), "role_rank:desc".to_owned()])
+			.page(page)
+			.per_page(per_page)
+			.prioritize_exact_match(true)
+			.exaustive(true)
+			.build();
+
+		let result = search::<shared::typesense::types::user::User>(global, options)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to search");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
+			})?;
+
+		let users = global
+			.user_loader
+			.load_fast_many(global, result.hits.iter().copied())
+			.await
+			.map_err(|()| {
+				tracing::error!("failed to load users");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users")
+			})?;
+
+		Ok(SearchResult {
+			items: sorted_results(result.hits, users).into_iter().map(Into::into).collect(),
+			total_count: result.found,
+			page_count: result.found.div_ceil(per_page as u64).min(100),
+		})
 	}
 }

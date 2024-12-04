@@ -90,6 +90,7 @@ struct LoginRequest {
 	pub return_to: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 async fn login(
 	State(global): State<Arc<Global>>,
 	Extension(session): Extension<Session>,
@@ -103,14 +104,14 @@ async fn login(
 	];
 
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
-		let referer = referer.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		let referer = referer.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
 		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only login from website"));
 		}
 	}
 
 	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
-		let origin = origin.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		let origin = origin.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
 		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
@@ -174,6 +175,7 @@ struct LoginFinishResponse {
 	pub token: String,
 }
 
+#[tracing::instrument(skip_all)]
 async fn login_finish(
 	State(global): State<Arc<Global>>,
 	headers: HeaderMap,
@@ -186,14 +188,14 @@ async fn login_finish(
 	];
 
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
-		let referer = referer.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		let referer = referer.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
 		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only login from website"));
 		}
 	}
 
 	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
-		let origin = origin.to_str().ok().map(|s| url::Url::from_str(s).ok()).flatten();
+		let origin = origin.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
 		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
@@ -421,6 +423,7 @@ struct LogoutRequest {
 	pub token: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 async fn logout(
 	State(global): State<Arc<Global>>,
 	Extension(cookies): Extension<Cookies>,

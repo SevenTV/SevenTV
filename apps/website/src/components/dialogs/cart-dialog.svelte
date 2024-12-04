@@ -44,7 +44,7 @@
 								]}
 							/>
 						</td>
-						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat("usd").format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								{#snippet icon()}
@@ -76,7 +76,7 @@
 							</div>
 						</td>
 						<td class="name">Christmas Bundle</td>
-						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat("usd").format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								{#snippet icon()}
@@ -87,7 +87,7 @@
 					</tr>
 					<tr class="hide-on-desktop">
 						<td class="name">Christmas Bundle</td>
-						<td class="price">{priceFormat().format((i + 1) * 7.96)}</td>
+						<td class="price">{priceFormat("usd").format((i + 1) * 7.96)}</td>
 						<td class="actions">
 							<Button secondary>
 								{#snippet icon()}
@@ -110,7 +110,7 @@
 		<div class="footer">
 			<div class="total">
 				<span>{$t("dialogs.cart.total")}</span>
-				<span>{priceFormat().format(7.96)}</span>
+				<span>{priceFormat("usd").format(7.96)}</span>
 			</div>
 			<div class="buttons">
 				<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>

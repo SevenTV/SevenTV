@@ -24,6 +24,11 @@
 													name
 												}
 											}
+											... on EntitlementNodeSpecialEvent {
+												specialEvent {
+													name
+												}
+											}
 										}
 										to {
 											paint {
@@ -105,6 +110,7 @@
 		}
 
 		const subPaints: { [key: string]: Paint[] } = {};
+		const specialEventPaints: { [key: string]: Paint[] } = {};
 		const otherPaints = [];
 
 		for (const entitlement of inventory.paints) {
@@ -116,6 +122,14 @@
 				}
 
 				subPaints[benefitName].push(entitlement.to.paint as Paint);
+			} else if (entitlement.from.__typename === "EntitlementNodeSpecialEvent") {
+				const eventName = entitlement.from.specialEvent.name;
+
+				if (!specialEventPaints[eventName]) {
+					specialEventPaints[eventName] = [];
+				}
+
+				specialEventPaints[eventName].push(entitlement.to.paint as Paint);
 			} else {
 				otherPaints.push(entitlement.to.paint as Paint);
 			}
@@ -124,6 +138,7 @@
 		return {
 			paints: {
 				sub: subPaints,
+				specialEvent: specialEventPaints,
 				other: otherPaints,
 			},
 		};
@@ -145,11 +160,26 @@
 			<br />
 			<hr />
 
+			<h2>Sub Paints</h2>
 			{#each Object.keys(inventory.paints.sub) as benefitName}
-				<h2>{benefitName}</h2>
+				<h3>{benefitName}</h3>
 				<div class="paints">
 					{#each inventory.paints.sub[benefitName] as paint}
-						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700">
+						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
+							{paint.name.length > 0 ? paint.name : paint.id}
+						</PaintComponent>
+					{/each}
+				</div>
+				<br />
+				<hr />
+			{/each}
+
+			<h2>Special Event Paints</h2>
+			{#each Object.keys(inventory.paints.specialEvent) as eventName}
+				<h3>{eventName}</h3>
+				<div class="paints">
+					{#each inventory.paints.specialEvent[eventName] as paint}
+						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
 							{paint.name.length > 0 ? paint.name : paint.id}
 						</PaintComponent>
 					{/each}
@@ -161,7 +191,7 @@
 			<h2>Other Paints</h2>
 			<div class="paints">
 				{#each inventory.paints.other as paint}
-					<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700">
+					<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
 						{paint.name.length > 0 ? paint.name : paint.id}
 					</PaintComponent>
 				{/each}

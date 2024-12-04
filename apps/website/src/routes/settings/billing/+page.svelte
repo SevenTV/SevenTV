@@ -9,6 +9,7 @@
 	import moment from "moment/min/moment-with-locales";
 	import { MagnifyingGlass, Plus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
+	import { type SubscriptionInfo } from "$/gql/graphql";
 
 	let historyTab: "all" | "subscriptions" | "other" = $state("all");
 </script>
@@ -23,7 +24,7 @@
 		<span class="details">{$t("pages.settings.billing.subscription.details")}</span>
 	</div>
 	<div class="content">
-		<SubInfo style="padding-block: 0" />
+		<SubInfo data={{} as SubscriptionInfo} style="padding-block: 0" />
 		<hr />
 		<Toggle>
 			<div>

@@ -259,11 +259,7 @@ impl scuffle_bootstrap::global::Global for Global {
 		Ok(())
 	}
 
-	async fn on_service_exit(
-		self: &Arc<Self>,
-		name: &'static str,
-		result: anyhow::Result<()>,
-	) -> anyhow::Result<()> {
+	async fn on_service_exit(self: &Arc<Self>, name: &'static str, result: anyhow::Result<()>) -> anyhow::Result<()> {
 		if let Err(err) = &result {
 			tracing::error!("service {name} exited with error: {:#}", err);
 		} else {

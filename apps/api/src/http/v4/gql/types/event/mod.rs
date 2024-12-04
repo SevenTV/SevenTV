@@ -94,10 +94,12 @@ async fn actor<T: OutputType>(event: &Event<T>, ctx: &Context<'_>) -> Result<Opt
 
 #[async_graphql::ComplexObject]
 impl EmoteEvent {
+	#[tracing::instrument(skip_all, name = "EmoteEvent::created_at")]
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
 		self.id.timestamp()
 	}
 
+	#[tracing::instrument(skip_all, name = "EmoteEvent::target")]
 	async fn target(&self, ctx: &Context<'_>) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -113,6 +115,7 @@ impl EmoteEvent {
 		Ok(Emote::from_db(emote, &global.config.api.cdn_origin))
 	}
 
+	#[tracing::instrument(skip_all, name = "EmoteEvent::actor")]
 	async fn actor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		actor(self, ctx).await
 	}
@@ -120,10 +123,12 @@ impl EmoteEvent {
 
 #[async_graphql::ComplexObject]
 impl UserEvent {
+	#[tracing::instrument(skip_all, name = "UserEvent::created_at")]
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
 		self.id.timestamp()
 	}
 
+	#[tracing::instrument(skip_all, name = "UserEvent::target")]
 	async fn target(&self, ctx: &Context<'_>) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -139,6 +144,7 @@ impl UserEvent {
 		Ok(user.into())
 	}
 
+	#[tracing::instrument(skip_all, name = "UserEvent::actor")]
 	async fn actor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		actor(self, ctx).await
 	}
