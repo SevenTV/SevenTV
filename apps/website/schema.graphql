@@ -171,7 +171,7 @@ type EmoteMutation {
 type EmoteOperation {
 	delete: Emote!
 	flags(flags: EmoteFlagsInput!): Emote!
-	merge(with: Id!): Emote!
+	merge(targetId: Id!): Emote!
 	name(name: String!): Emote!
 	owner(ownerId: Id!): Emote!
 	tags(tags: [String!]!): Emote!
