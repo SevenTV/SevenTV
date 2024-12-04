@@ -1,6 +1,5 @@
 use serde::Deserialize;
 
-use super::ban_template::UserBanTemplateId;
 use super::UserId;
 use crate::database::role::permissions::{Permission, Permissions, PermissionsExt};
 use crate::database::{Id, MongoCollection};
@@ -12,7 +11,6 @@ pub type UserBanId = Id<UserBan>;
 #[mongo(index(fields(user_id = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
 #[mongo(search = "crate::typesense::types::user::ban::UserBan")]
-#[serde(deny_unknown_fields)]
 pub struct UserBan {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
@@ -25,7 +23,6 @@ pub struct UserBan {
 	pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 	pub removed: Option<UserBanRemoved>,
 	pub permissions: Permissions,
-	pub template_id: Option<UserBanTemplateId>,
 	#[serde(with = "crate::database::serde")]
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]

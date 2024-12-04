@@ -1,11 +1,9 @@
-pub mod automod;
 pub mod badge;
 pub mod duration_unit;
 pub mod emote;
 pub mod emote_moderation_request;
 pub mod emote_set;
 pub mod event;
-pub mod page;
 pub mod paint;
 pub mod product;
 pub mod role;
@@ -254,8 +252,6 @@ impl<T> TypesenseString<T> {
 fn typesense_collections() -> impl IntoIterator<Item = TypesenseGenericCollection> {
 	std::iter::empty()
 		.chain(event::typesense_collections())
-		.chain(automod::typesense_collections())
-		.chain(page::typesense_collections())
 		.chain(ticket::typesense_collections())
 		.chain(user::typesense_collections())
 		.chain(product::typesense_collections())

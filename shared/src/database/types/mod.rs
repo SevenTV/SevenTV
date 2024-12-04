@@ -1,4 +1,3 @@
-pub mod automod;
 pub mod badge;
 pub mod cron_job;
 pub mod duration;
@@ -8,8 +7,6 @@ pub mod emote_set;
 pub mod entitlement;
 pub mod global;
 pub mod image_set;
-// pub mod oauth;
-pub mod page;
 pub mod paint;
 pub mod product;
 pub mod role;
@@ -83,13 +80,11 @@ impl MongoGenericCollection {
 fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	std::iter::empty()
 		.chain(stored_event::mongo_collections())
-		.chain(automod::mongo_collections())
 		.chain(badge::mongo_collections())
 		.chain(emote::mongo_collections())
 		.chain(emote_set::mongo_collections())
 		.chain(entitlement::mongo_collections())
 		.chain(global::mongo_collections())
-		.chain(page::mongo_collections())
 		.chain(paint::mongo_collections())
 		.chain(product::mongo_collections())
 		.chain(role::mongo_collections())

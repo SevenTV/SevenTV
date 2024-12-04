@@ -1,9 +1,7 @@
 pub mod ban;
-pub mod ban_template;
 pub mod connection;
 pub mod editor;
 pub mod profile_picture;
-pub mod relation;
 pub mod session;
 pub mod settings;
 
@@ -95,9 +93,7 @@ pub struct UserStyle {
 
 pub(super) fn mongo_collections() -> impl IntoIterator<Item = MongoGenericCollection> {
 	std::iter::once(MongoGenericCollection::new::<User>())
-		.chain(ban_template::collections())
 		.chain(editor::collections())
-		.chain(relation::collections())
 		.chain(session::collections())
 		.chain(profile_picture::collections())
 }

@@ -1,7 +1,5 @@
 pub mod ban;
-pub mod ban_template;
 pub mod editor;
-pub mod relation;
 
 use std::collections::HashSet;
 
@@ -119,7 +117,5 @@ impl User {
 pub(super) fn typesense_collections() -> impl IntoIterator<Item = TypesenseGenericCollection> {
 	std::iter::once(TypesenseGenericCollection::new::<User>())
 		.chain(ban::typesense_collections())
-		.chain(ban_template::typesense_collections())
 		.chain(editor::typesense_collections())
-		.chain(relation::typesense_collections())
 }
