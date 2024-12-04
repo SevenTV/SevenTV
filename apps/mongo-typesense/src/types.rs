@@ -1,12 +1,10 @@
 pub mod mongo {
-	pub use shared::database::automod::*;
 	pub use shared::database::badge::*;
 	pub use shared::database::cron_job::*;
 	pub use shared::database::emote::*;
 	pub use shared::database::emote_moderation_request::*;
 	pub use shared::database::emote_set::*;
 	pub use shared::database::entitlement::*;
-	pub use shared::database::page::*;
 	pub use shared::database::paint::*;
 	pub use shared::database::product::codes::*;
 	pub use shared::database::product::invoice::*;
@@ -17,10 +15,8 @@ pub mod mongo {
 	pub use shared::database::stored_event::*;
 	pub use shared::database::ticket::*;
 	pub use shared::database::user::ban::*;
-	pub use shared::database::user::ban_template::*;
 	pub use shared::database::user::editor::*;
 	pub use shared::database::user::profile_picture::*;
-	pub use shared::database::user::relation::*;
 	pub use shared::database::user::session::*;
 	pub use shared::database::user::*;
 	pub use shared::database::webhook_event::*;
