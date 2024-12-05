@@ -15,6 +15,9 @@
 	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+	import { Copy, MagnifyingGlass, NotePencil, Trash } from "phosphor-svelte";
+	import TextInput from "$/components/input/text-input.svelte";
+	import { untrack } from "svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -25,152 +28,184 @@
 	let copyEmotesDialogMode: DialogMode = $state("hidden");
 	let removeEmotesDialogMode: DialogMode = $state("hidden");
 
-	async function queryEmotes(page: number, perPage: number) {
-		const res = await gqlClient()
-			.query(
-				graphql(`
-					query EmotesInSet(
-						$id: Id!
-						$page: Int!
-						$perPage: Int!
-						$isDefaultSetSet: Boolean!
-						$defaultSetId: Id!
-					) {
-						emoteSets {
-							emoteSet(id: $id) {
-								emotes(page: $page, perPage: $perPage) {
-									__typename
-									items {
-										alias
-										flags {
-											zeroWidth
-										}
-										emote {
-											id
-											defaultName
-											owner {
-												mainConnection {
-													platformDisplayName
+	let query = $state("");
+
+	let timeout: NodeJS.Timeout | number | undefined; // not reactive
+
+	async function queryEmotes(
+		query: string | undefined,
+		page: number,
+		perPage: number,
+	): Promise<EmoteSetEmoteSearchResult> {
+		if (timeout) {
+			clearTimeout(timeout);
+		}
+
+		// Small timeout to prevent spamming requests when user is typing
+
+		return new Promise((resolve, reject) => {
+			timeout = setTimeout(async () => {
+				const res = await gqlClient()
+					.query(
+						graphql(`
+							query EmotesInSet(
+								$id: Id!
+								$query: String
+								$page: Int!
+								$perPage: Int!
+								$isDefaultSetSet: Boolean!
+								$defaultSetId: Id!
+							) {
+								emoteSets {
+									emoteSet(id: $id) {
+										emotes(query: $query, page: $page, perPage: $perPage) {
+											__typename
+											items {
+												alias
+												flags {
+													zeroWidth
 												}
-												style {
-													activePaint {
-														id
-														name
-														data {
-															layers {
+												emote {
+													id
+													defaultName
+													owner {
+														mainConnection {
+															platformDisplayName
+														}
+														style {
+															activePaint {
 																id
-																ty {
-																	__typename
-																	... on PaintLayerTypeSingleColor {
+																name
+																data {
+																	layers {
+																		id
+																		ty {
+																			__typename
+																			... on PaintLayerTypeSingleColor {
+																				color {
+																					hex
+																				}
+																			}
+																			... on PaintLayerTypeLinearGradient {
+																				angle
+																				repeating
+																				stops {
+																					at
+																					color {
+																						hex
+																					}
+																				}
+																			}
+																			... on PaintLayerTypeRadialGradient {
+																				repeating
+																				stops {
+																					at
+																					color {
+																						hex
+																					}
+																				}
+																				shape
+																			}
+																			... on PaintLayerTypeImage {
+																				images {
+																					url
+																					mime
+																					size
+																					scale
+																					width
+																					height
+																					frameCount
+																				}
+																			}
+																		}
+																		opacity
+																	}
+																	shadows {
 																		color {
 																			hex
 																		}
-																	}
-																	... on PaintLayerTypeLinearGradient {
-																		angle
-																		repeating
-																		stops {
-																			at
-																			color {
-																				hex
-																			}
-																		}
-																	}
-																	... on PaintLayerTypeRadialGradient {
-																		repeating
-																		stops {
-																			at
-																			color {
-																				hex
-																			}
-																		}
-																		shape
-																	}
-																	... on PaintLayerTypeImage {
-																		images {
-																			url
-																			mime
-																			size
-																			scale
-																			width
-																			height
-																			frameCount
-																		}
+																		offsetX
+																		offsetY
+																		blur
 																	}
 																}
-																opacity
 															}
-															shadows {
-																color {
-																	hex
-																}
-																offsetX
-																offsetY
-																blur
-															}
+														}
+														highestRoleColor {
+															hex
+														}
+													}
+													flags {
+														# animated
+														# approvedPersonal
+														defaultZeroWidth
+														# deniedPersonal
+														# nsfw
+														# private
+														publicListed
+													}
+													images {
+														url
+														mime
+														size
+														scale
+														width
+														frameCount
+													}
+													ranking(ranking: TRENDING_WEEKLY)
+													inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+														emoteSetId
+														emote {
+															id
+															alias
 														}
 													}
 												}
-												highestRoleColor {
-													hex
-												}
 											}
-											flags {
-												# animated
-												# approvedPersonal
-												defaultZeroWidth
-												# deniedPersonal
-												# nsfw
-												# private
-												publicListed
-											}
-											images {
-												url
-												mime
-												size
-												scale
-												width
-												frameCount
-											}
-											ranking(ranking: TRENDING_WEEKLY)
-											inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
-												emoteSetId
-												emote {
-													id
-													alias
-												}
-											}
+											totalCount
+											pageCount
 										}
 									}
-									totalCount
-									pageCount
 								}
 							}
-						}
-					}
-				`),
-				{
-					id: data.emoteSet.id,
-					page,
-					perPage,
-					isDefaultSetSet: !!$defaultEmoteSet,
-					defaultSetId: $defaultEmoteSet ?? "",
-				},
-			)
-			.toPromise();
+						`),
+						{
+							id: data.emoteSet.id,
+							query: query,
+							page,
+							perPage,
+							isDefaultSetSet: !!$defaultEmoteSet,
+							defaultSetId: $defaultEmoteSet ?? "",
+						},
+					)
+					.toPromise();
 
-		if (res.error || !res.data) {
-			throw res.error;
-		}
+				if (res.error || !res.data) {
+					reject(res.error);
+					return;
+				}
 
-		const emotes = res.data.emoteSets.emoteSet?.emotes;
+				const emotes = res.data.emoteSets.emoteSet?.emotes;
 
-		if (!emotes) {
-			throw new Error("No emotes found");
-		}
+				if (!emotes) {
+					reject(new Error("No emotes found"));
+					return;
+				}
 
-		return emotes as EmoteSetEmoteSearchResult;
+				resolve(emotes as EmoteSetEmoteSearchResult);
+			}, 200);
+		});
 	}
+
+	let loader: ReturnType<typeof EmoteLoader>;
+
+	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		query; // trigger reactivity when query changes
+		untrack(() => {
+			loader?.reset();
+		});
+	});
 </script>
 
 <svelte:head>
@@ -218,19 +253,19 @@
 						{/if}
 					{/snippet}
 				</Button>
-			</HideOn>
+			</HideOn> -->
 			<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
 				{$t("labels.edit")}
 				{#snippet iconRight()}
 					<NotePencil />
 				{/snippet}
 			</Button>
-			<Button secondary hideOnMobile>
+			<!-- <Button secondary hideOnMobile>
 				{$t("pages.emote_set.copy_set")}
 				{#snippet iconRight()}
 					<Copy />
 				{/snippet}
-			</Button>
+			</Button> -->
 			{#if !selectionMode}
 				<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
 					{#snippet iconRight()}
@@ -242,14 +277,14 @@
 						<Copy />
 					{/snippet}
 				</Button>
-			{/if} -->
+			{/if}
 			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
 				{$t("labels.selection_mode")}
 				{#snippet iconRight()}
 					<Toggle bind:value={selectionMode} />
 				{/snippet}
 			</Button>
-			<!-- {#if selectionMode}
+			{#if selectionMode}
 				<Button onclick={() => (copyEmotesDialogMode = "shown")}>
 					{#snippet icon()}
 						<Copy />
@@ -265,7 +300,7 @@
 						<Trash />
 					{/snippet}
 				</Button>
-			{/if} -->
+			{/if}
 		</div>
 		<div class="buttons">
 			<!-- <Select
@@ -273,17 +308,24 @@
 					{ value: "none", label: $t("labels.no_filters") },
 					{ value: "filters", label: $t("labels.filters") },
 				]}
-			/>
-			<TextInput placeholder={$t("labels.search")}>
+			/> -->
+			{@debug query}
+			<TextInput placeholder={$t("labels.search")} bind:value={query}>
 				{#snippet icon()}
 					<MagnifyingGlass />
 				{/snippet}
-			</TextInput> -->
+			</TextInput>
 			<LayoutButtons />
 		</div>
 	</div>
 	<div class="content">
-		<EmoteLoader load={queryEmotes} scrollable={false} {selectionMode} bind:selectionMap />
+		<EmoteLoader
+			bind:this={loader}
+			load={(page, perPage) => queryEmotes(query || undefined, page, perPage)}
+			scrollable={false}
+			{selectionMode}
+			bind:selectionMap
+		/>
 	</div>
 </div>
 

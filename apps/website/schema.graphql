@@ -211,7 +211,7 @@ type EmoteSearchResult {
 type EmoteSet {
 	capacity: Int
 	description: String
-	emotes(page: Int, perPage: Int): EmoteSetEmoteSearchResult!
+	emotes(page: Int, perPage: Int, query: String): EmoteSetEmoteSearchResult!
 	id: Id!
 	kind: EmoteSetKind!
 	name: String!
