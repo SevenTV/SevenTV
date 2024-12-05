@@ -1,7 +1,6 @@
 <script lang="ts">
 	import TagsInput from "../input/tags-input.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
-	import Checkbox from "../input/checkbox.svelte";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import DeleteEmoteSetDialog from "./delete-emote-set-dialog.svelte";

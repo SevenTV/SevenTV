@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Tags from "$/components/emotes/tags.svelte";
-	import type { PageData } from "./$types";
 	import Flags, { emoteSetToFlags } from "$/components/flags.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 	import { type DialogMode } from "$/components/dialogs/dialog.svelte";

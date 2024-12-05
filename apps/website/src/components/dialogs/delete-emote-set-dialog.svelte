@@ -4,7 +4,6 @@
 	import { goto } from "$app/navigation";
 	import EmoteSetPreview from "../emote-set-preview.svelte";
 	import Button from "../input/button.svelte";
-	import TextInput from "../input/text-input.svelte";
 	import Spinner from "../spinner.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";

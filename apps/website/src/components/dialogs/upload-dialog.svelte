@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
-	import { Moon, Sun, Trash, UploadSimple, User } from "phosphor-svelte";
+	import { Moon, Sun, Trash, UploadSimple } from "phosphor-svelte";
 	import { theme, type Theme } from "$/lib/layout";
 	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../input/button.svelte";
