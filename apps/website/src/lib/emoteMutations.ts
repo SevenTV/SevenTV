@@ -7,7 +7,13 @@ import { PUBLIC_REST_API_V4 } from "$env/static/public";
 import { currentError, errorDialogMode } from "./error";
 import { sessionToken } from "./auth";
 
-export async function upload(data: Blob, name: string, tags: string[], zeroWidth: boolean, privateFlag: boolean) {
+export async function upload(
+	data: Blob,
+	name: string,
+	tags: string[],
+	zeroWidth: boolean,
+	privateFlag: boolean,
+) {
 	const token = get(sessionToken);
 
 	if (!token) {
@@ -580,11 +586,7 @@ export async function deleteEmote(id: string) {
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-				mutation DeleteEmote(
-					$id: Id!
-					$isDefaultSetSet: Boolean!
-					$defaultSetId: Id!
-				) {
+				mutation DeleteEmote($id: Id!, $isDefaultSetSet: Boolean!, $defaultSetId: Id!) {
 					emotes {
 						emote(id: $id) {
 							delete {

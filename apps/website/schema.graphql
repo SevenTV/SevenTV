@@ -488,6 +488,7 @@ type Mutation {
 	billing(userId: Id!): BillingMutation!
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
+	tickets: TicketMutation!
 }
 
 type Paint {
@@ -790,6 +791,45 @@ enum TagsMatch {
 	ANY
 }
 
+type Ticket {
+	authorId: Id!
+	countryCode: String
+	id: Id!
+	kind: TicketKind!
+	locked: Boolean!
+	members: [TicketMember!]!
+	open: Boolean!
+	priority: TicketPriority!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	targets: [TicketTarget!]!
+	title: String!
+	updatedAt: DateTime!
+}
+
+enum TicketKind {
+	ABUSE
+	BILLING
+	GENERIC
+}
+
+type TicketMember {
+	kind: TicketMemberKind!
+	lastRead: Id
+	notifications: Boolean!
+	userId: Id!
+}
+
+enum TicketMemberKind {
+	ASSIGNED
+	MEMBER
+	WATCHER
+}
+
+type TicketMutation {
+	createAbuseTicket(content: String, target: TicketTargetInput!, title: String!): Ticket!
+}
+
 type TicketPermission {
 	admin: Boolean!
 	create: Boolean!
@@ -797,6 +837,29 @@ type TicketPermission {
 	manageBilling: Boolean!
 	manageGeneric: Boolean!
 	message: Boolean!
+}
+
+enum TicketPriority {
+	HIGH
+	LOW
+	MEDIUM
+	URGENT
+}
+
+type TicketTarget {
+	id: Id!
+	kind: TicketTargetType!
+}
+
+input TicketTargetInput {
+	id: Id!
+	kind: TicketTargetType!
+}
+
+enum TicketTargetType {
+	EMOTE
+	EMOTE_SET
+	USER
 }
 
 type User {

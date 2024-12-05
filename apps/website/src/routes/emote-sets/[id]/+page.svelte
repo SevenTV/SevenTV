@@ -26,136 +26,138 @@
 	let removeEmotesDialogMode: DialogMode = $state("hidden");
 
 	async function queryEmotes(page: number, perPage: number) {
-		const res = await gqlClient().query(
-			graphql(`
-				query EmotesInSet(
-					$id: Id!
-					$page: Int!
-					$perPage: Int!
-					$isDefaultSetSet: Boolean!
-					$defaultSetId: Id!
-				) {
-					emoteSets {
-						emoteSet(id: $id) {
-							emotes(page: $page, perPage: $perPage) {
-								__typename
-								items {
-									alias
-									flags {
-										zeroWidth
-									}
-									emote {
-										id
-										defaultName
-										owner {
-											mainConnection {
-												platformDisplayName
-											}
-											style {
-												activePaint {
-													id
-													name
-													data {
-														layers {
-															id
-															ty {
-																__typename
-																... on PaintLayerTypeSingleColor {
-																	color {
-																		hex
-																	}
-																}
-																... on PaintLayerTypeLinearGradient {
-																	angle
-																	repeating
-																	stops {
-																		at
+		const res = await gqlClient()
+			.query(
+				graphql(`
+					query EmotesInSet(
+						$id: Id!
+						$page: Int!
+						$perPage: Int!
+						$isDefaultSetSet: Boolean!
+						$defaultSetId: Id!
+					) {
+						emoteSets {
+							emoteSet(id: $id) {
+								emotes(page: $page, perPage: $perPage) {
+									__typename
+									items {
+										alias
+										flags {
+											zeroWidth
+										}
+										emote {
+											id
+											defaultName
+											owner {
+												mainConnection {
+													platformDisplayName
+												}
+												style {
+													activePaint {
+														id
+														name
+														data {
+															layers {
+																id
+																ty {
+																	__typename
+																	... on PaintLayerTypeSingleColor {
 																		color {
 																			hex
 																		}
 																	}
-																}
-																... on PaintLayerTypeRadialGradient {
-																	repeating
-																	stops {
-																		at
-																		color {
-																			hex
+																	... on PaintLayerTypeLinearGradient {
+																		angle
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
 																		}
 																	}
-																	shape
-																}
-																... on PaintLayerTypeImage {
-																	images {
-																		url
-																		mime
-																		size
-																		scale
-																		width
-																		height
-																		frameCount
+																	... on PaintLayerTypeRadialGradient {
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
+																		}
+																		shape
+																	}
+																	... on PaintLayerTypeImage {
+																		images {
+																			url
+																			mime
+																			size
+																			scale
+																			width
+																			height
+																			frameCount
+																		}
 																	}
 																}
+																opacity
 															}
-															opacity
-														}
-														shadows {
-															color {
-																hex
+															shadows {
+																color {
+																	hex
+																}
+																offsetX
+																offsetY
+																blur
 															}
-															offsetX
-															offsetY
-															blur
 														}
 													}
 												}
+												highestRoleColor {
+													hex
+												}
 											}
-											highestRoleColor {
-												hex
+											flags {
+												# animated
+												# approvedPersonal
+												defaultZeroWidth
+												# deniedPersonal
+												# nsfw
+												# private
+												publicListed
 											}
-										}
-										flags {
-											# animated
-											# approvedPersonal
-											defaultZeroWidth
-											# deniedPersonal
-											# nsfw
-											# private
-											publicListed
-										}
-										images {
-											url
-											mime
-											size
-											scale
-											width
-											frameCount
-										}
-										ranking(ranking: TRENDING_WEEKLY)
-										inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
-											emoteSetId
-											emote {
-												id
-												alias
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												frameCount
+											}
+											ranking(ranking: TRENDING_WEEKLY)
+											inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+												emoteSetId
+												emote {
+													id
+													alias
+												}
 											}
 										}
 									}
+									totalCount
+									pageCount
 								}
-								totalCount
-								pageCount
 							}
 						}
 					}
-				}
-			`),
-			{
-				id: data.emoteSet.id,
-				page,
-				perPage,
-				isDefaultSetSet: !!$defaultEmoteSet,
-				defaultSetId: $defaultEmoteSet ?? "",
-			},
-		);
+				`),
+				{
+					id: data.emoteSet.id,
+					page,
+					perPage,
+					isDefaultSetSet: !!$defaultEmoteSet,
+					defaultSetId: $defaultEmoteSet ?? "",
+				},
+			)
+			.toPromise();
 
 		if (res.error || !res.data) {
 			throw res.error;

@@ -43,7 +43,7 @@
 
 	let formats = $derived(
 		data?.images
-			.filter((image) => (image.frameCount > 1) === data?.flags.animated)
+			.filter((image) => image.frameCount > 1 === data?.flags.animated)
 			.reduce((acc, image) => {
 				if (!acc.includes(image.mime)) {
 					acc.push(image.mime);
@@ -55,7 +55,7 @@
 	let sizes = $derived(
 		data?.images
 			.filter((image) => image.mime === downloadFormat)
-			.filter((image) => (image.frameCount > 1) === data?.flags.animated)
+			.filter((image) => image.frameCount > 1 === data?.flags.animated)
 			.reduce((acc, image) => {
 				if (!acc[image.scale]) {
 					acc[image.scale] = image;
@@ -114,7 +114,7 @@
 	{/if}
 	<EditEmoteDialog bind:mode={editDialogMode} bind:data />
 	<TransferEmoteDialog bind:mode={transferDialogMode} {data} />
-	<ReportEmoteDialog bind:mode={reportDialogMode} />
+	<ReportEmoteDialog bind:mode={reportDialogMode} targetId={data.id} />
 	<DeleteEmoteDialog bind:mode={deleteDialogMode} {data} />
 {/if}
 {#if data}

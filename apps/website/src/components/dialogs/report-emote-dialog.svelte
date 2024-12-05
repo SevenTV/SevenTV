@@ -2,20 +2,62 @@
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
-	import Checkbox from "../input/checkbox.svelte";
 	import { t } from "svelte-i18n";
+	import { gqlClient } from "$/lib/gql";
+	import Radio from "../input/radio.svelte";
+	import { graphql } from "$/gql";
+	import Spinner from "../spinner.svelte";
 
 	const reasons = [
-		$t("dialogs.report_emote.reasons.my_work"),
-		$t("dialogs.report_emote.reasons.duplicate"),
-		$t("dialogs.report_emote.reasons.sexual"),
-		$t("dialogs.report_emote.reasons.violance"),
-		$t("dialogs.report_emote.reasons.its_me"),
-		$t("dialogs.report_emote.reasons.offensive"),
-		$t("dialogs.report_emote.reasons.other"),
+		"dialogs.report_emote.reasons.my_work",
+		"dialogs.report_emote.reasons.duplicate",
+		"dialogs.report_emote.reasons.sexual",
+		"dialogs.report_emote.reasons.violance",
+		"dialogs.report_emote.reasons.its_me",
+		"dialogs.report_emote.reasons.offensive",
+		"dialogs.report_emote.reasons.other",
 	];
 
-	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
+	let { mode = $bindable("hidden"), targetId }: { mode: DialogMode; targetId: string } = $props();
+
+	let reason = $state<string>();
+	let additionalInfo = $state("");
+
+	let loading = $state(false);
+
+	async function submit() {
+		if (!reason) return;
+
+		loading = true;
+
+		const res = await gqlClient()
+			.mutation(
+				graphql(`
+					mutation ReportEmote($targetId: Id!, $title: String!, $content: String) {
+						tickets {
+							createAbuseTicket(
+								target: { kind: EMOTE, id: $targetId }
+								title: $title
+								content: $content
+							) {
+								id
+							}
+						}
+					}
+				`),
+				{
+					targetId,
+					title: $t(reason, { locale: "en" }),
+					content: additionalInfo.length ? additionalInfo : undefined,
+				},
+			)
+			.toPromise();
+
+		if (res.data?.tickets.createAbuseTicket.id) {
+			loading = false;
+			mode = "hidden";
+		}
+	}
 </script>
 
 <Dialog width={40} bind:mode>
@@ -24,21 +66,30 @@
 		<hr />
 		<div class="reasons">
 			<span class="label">{$t("dialogs.report_emote.choose_reasons")}</span>
-			{#each reasons as reason}
-				<Checkbox option>
+			{#each reasons as reasonId}
+				<Radio option name="reason" value={reasonId} bind:group={reason}>
 					{#snippet leftLabel()}
-						<span class="label">{reason}</span>
+						<span class="label">{$t(reasonId)}</span>
 					{/snippet}
-				</Checkbox>
+				</Radio>
 			{/each}
 		</div>
-		<TextInput type="textarea" placeholder={$t("labels.enter_text")}>
+		<TextInput type="textarea" placeholder={$t("labels.enter_text")} bind:value={additionalInfo}>
 			<span class="label">{$t("dialogs.report_emote.additional_info")}</span>
 		</TextInput>
 		<span class="details">{$t("dialogs.report_emote.disclaimer")}</span>
 		<div class="buttons">
 			<Button onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
-			<Button primary submit>{$t("labels.report")}</Button>
+			{#snippet loadingSpinner()}
+				<Spinner />
+			{/snippet}
+			<Button
+				primary
+				submit
+				disabled={!reason || loading}
+				onclick={submit}
+				icon={loading ? loadingSpinner : undefined}>{$t("labels.report")}</Button
+			>
 		</div>
 	</form>
 </Dialog>
