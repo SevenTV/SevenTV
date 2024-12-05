@@ -21,7 +21,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::middleware::session::Session;
 use crate::http::v4::gql::types::Emote;
-use crate::http::validators::EmoteNameValidator;
+use crate::http::validators::{EmoteNameValidator, TagsValidator};
 use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 pub struct EmoteOperation {
@@ -420,7 +420,11 @@ impl EmoteOperation {
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EmoteUpdate, 1)")]
 	#[tracing::instrument(skip_all, name = "EmoteOperation::tags")]
-	async fn tags(&self, ctx: &Context<'_>, tags: Vec<String>) -> Result<Emote, ApiError> {
+	async fn tags(
+		&self,
+		ctx: &Context<'_>,
+		#[graphql(validator(custom = "TagsValidator"))] tags: Vec<String>,
+	) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

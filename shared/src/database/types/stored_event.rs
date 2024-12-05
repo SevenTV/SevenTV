@@ -145,8 +145,8 @@ pub enum StoredEventEmoteSetData {
 		new: String,
 	},
 	ChangeTags {
-		added: Vec<String>,
-		removed: Vec<String>,
+		old: Vec<String>,
+		new: Vec<String>,
 	},
 	ChangeCapacity {
 		old: Option<i32>,

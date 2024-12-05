@@ -271,6 +271,7 @@ type EmoteSetOperation {
 	delete: Boolean!
 	name(name: String!): EmoteSet!
 	removeEmote(id: EmoteSetEmoteId!): EmoteSet!
+	tags(tags: [String!]!): EmoteSet!
 	updateEmoteAlias(alias: String!, id: EmoteSetEmoteId!): EmoteSetEmote!
 	updateEmoteFlags(flags: EmoteSetEmoteFlagsInput!, id: EmoteSetEmoteId!): EmoteSetEmote!
 }

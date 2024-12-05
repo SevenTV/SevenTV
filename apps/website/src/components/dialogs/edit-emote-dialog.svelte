@@ -10,6 +10,7 @@
 	import Spinner from "../spinner.svelte";
 	import { updateFlags, updateName, updateTags } from "$/lib/emoteMutations";
 	import DeleteEmoteDialog from "./delete-emote-dialog.svelte";
+	import { compareTags } from "$/lib/utils";
 
 	interface Props {
 		mode: DialogMode;
@@ -39,16 +40,6 @@
 			approvedPersonal = false;
 		}
 	});
-
-	function compareTags(a: string[], b: string[]) {
-		if (a.length !== b.length) return false;
-
-		for (let i = 0; i < a.length; i++) {
-			if (a[i] !== b[i]) return false;
-		}
-
-		return true;
-	}
 
 	let nameChanged = $derived(name !== data.defaultName);
 	let tagsChanged = $derived(!compareTags(tags, data.tags));

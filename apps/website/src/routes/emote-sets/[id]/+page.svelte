@@ -10,18 +10,25 @@
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
-	import type { EmoteSetEmoteSearchResult } from "$/gql/graphql";
+	import type { EmoteSet, EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import Button from "$/components/input/button.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { Copy, Lightning, LightningSlash, MagnifyingGlass, NotePencil, Trash } from "phosphor-svelte";
+	import {
+		Copy,
+		Lightning,
+		LightningSlash,
+		MagnifyingGlass,
+		NotePencil,
+		Trash,
+	} from "phosphor-svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { untrack } from "svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import { user } from "$/lib/auth";
 
-	let { data }: { data: PageData } = $props();
+	let { data }: { data: EmoteSet } = $props();
 
 	let selectionMode = $state(false);
 	let selectionMap = $state({});
@@ -171,7 +178,7 @@
 							}
 						`),
 						{
-							id: data.emoteSet.id,
+							id: data.id,
 							query: query,
 							page,
 							perPage,
@@ -210,24 +217,24 @@
 </script>
 
 <svelte:head>
-	<title>{data.emoteSet.name} - {$t("page_titles.suffix")}</title>
+	<title>{data.name} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
-<EditEmoteSetDialog bind:mode={editDialogMode} />
+<EditEmoteSetDialog bind:mode={editDialogMode} bind:data />
 <CopyEmotesDialog bind:mode={copyEmotesDialogMode} />
 <RemoveEmotesDialog bind:mode={removeEmotesDialogMode} />
 <div class="layout">
 	<div class="set-info">
-		<h1>{data.emoteSet.name}</h1>
+		<h1>{data.name}</h1>
 		<Flags
-			flags={emoteSetToFlags(data.emoteSet, $user)}
+			flags={emoteSetToFlags(data, $user)}
 			style="position: absolute; top: 1rem; right: 1rem;"
 		/>
-		<Tags tags={data.emoteSet.tags} />
-		{#if data.emoteSet.capacity}
+		<Tags tags={data.tags} />
+		{#if data.capacity}
 			<div class="progress">
-				<progress value={data.emoteSet.emotes.totalCount} max={data.emoteSet.capacity}></progress>
-				{data.emoteSet.emotes.totalCount}/{data.emoteSet.capacity}
+				<progress value={data.emotes.totalCount} max={data.capacity}></progress>
+				{data.emotes.totalCount}/{data.capacity}
 			</div>
 		{/if}
 	</div>
@@ -242,13 +249,13 @@
 			{#if $user}
 				<HideOn mobile={selectionMode}>
 					<Button primary>
-						{#if $user.style.activeEmoteSetId === data.emoteSet.id}
+						{#if $user.style.activeEmoteSetId === data.id}
 							{$t("labels.disable")}
 						{:else}
 							{$t("labels.enable")}
 						{/if}
 						{#snippet iconRight()}
-							{#if $user.style.activeEmoteSetId === data.emoteSet.id}
+							{#if $user.style.activeEmoteSetId === data.id}
 								<LightningSlash />
 							{:else}
 								<Lightning />
@@ -312,7 +319,6 @@
 					{ value: "filters", label: $t("labels.filters") },
 				]}
 			/> -->
-			{@debug query}
 			<TextInput placeholder={$t("labels.search")} bind:value={query}>
 				{#snippet icon()}
 					<MagnifyingGlass />

@@ -1,25 +1,59 @@
 <script lang="ts">
+	import type { EmoteSet } from "$/gql/graphql";
+	import { deleteSet } from "$/lib/setMutations";
+	import { goto } from "$app/navigation";
+	import EmoteSetPreview from "../emote-set-preview.svelte";
 	import Button from "../input/button.svelte";
 	import TextInput from "../input/text-input.svelte";
+	import Spinner from "../spinner.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 
-	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
+	interface Props {
+		mode: DialogMode;
+		data: EmoteSet;
+	}
+
+	let { mode = $bindable("hidden"), data = $bindable() }: Props = $props();
+
+	let loading = $state(false);
+
+	async function submit() {
+		loading = true;
+
+		await deleteSet(data.id);
+
+		loading = false;
+		mode = "hidden";
+
+		goto("/");
+	}
 </script>
 
 <Dialog width={40} bind:mode>
 	<form class="layout">
 		<div class="preview">
-			<!-- <EmoteSetPreview /> -->
+			<EmoteSetPreview {data} />
 		</div>
 		<div class="content">
-			<h1>{$t("dialogs.delete_emote_or_set.title", { values: { name: "Cat Emotes" } })}</h1>
+			<h1>{$t("dialogs.delete_emote_or_set.title", { values: { name: data.name } })}</h1>
 			<span class="details">{$t("dialogs.delete_emote_or_set.warning_message_set")}</span>
-			<TextInput placeholder={$t("dialogs.delete_emote_or_set.reason")}>
+			<!-- <TextInput placeholder={$t("dialogs.delete_emote_or_set.reason")}>
 				<span class="label">{$t("dialogs.delete_emote_or_set.reason_for_deletion")}</span>
-			</TextInput>
+			</TextInput> -->
 			<div class="buttons">
-				<Button style="color: var(--danger)" submit>{$t("labels.delete")}</Button>
+				{#snippet loadingSpinner()}
+					<Spinner />
+				{/snippet}
+				<Button
+					style="color: var(--danger)"
+					submit
+					disabled={loading}
+					onclick={submit}
+					icon={loading ? loadingSpinner : undefined}
+				>
+					{$t("labels.delete")}
+				</Button>
 				<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 			</div>
 		</div>
@@ -57,14 +91,16 @@
 	}
 
 	.details {
+		flex-grow: 1;
+
 		color: var(--text-light);
 		font-size: 0.875rem;
 	}
 
-	.label {
-		font-size: 0.875rem;
-		font-weight: 500;
-	}
+	// .label {
+	// 	font-size: 0.875rem;
+	// 	font-weight: 500;
+	// }
 
 	.buttons {
 		grid-column: span 2;

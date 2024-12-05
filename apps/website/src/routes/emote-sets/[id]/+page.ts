@@ -16,7 +16,19 @@ export async function load({ params, fetch }: PageLoadEvent) {
 							capacity
 							kind
 							tags
-							emotes(page: 1, perPage: 1) {
+							emotes(page: 1, perPage: 12) {
+								items {
+									emote {
+										images {
+											url
+											mime
+											size
+											scale
+											width
+											frameCount
+										}
+									}
+								}
 								totalCount
 							}
 						}
@@ -36,7 +48,5 @@ export async function load({ params, fetch }: PageLoadEvent) {
 		error(404, "Emote Set not found");
 	}
 
-	return {
-		emoteSet: res.data.emoteSets.emoteSet as EmoteSet,
-	};
+	return res.data.emoteSets.emoteSet as EmoteSet;
 }

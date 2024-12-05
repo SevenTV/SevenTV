@@ -488,8 +488,8 @@ pub enum InternalEventEmoteSetData {
 		new: String,
 	},
 	ChangeTags {
-		added: Vec<String>,
-		removed: Vec<String>,
+		old: Vec<String>,
+		new: Vec<String>,
 	},
 	ChangeCapacity {
 		old: Option<i32>,
@@ -520,9 +520,7 @@ impl From<InternalEventEmoteSetData> for StoredEventEmoteSetData {
 			InternalEventEmoteSetData::Create => StoredEventEmoteSetData::Create,
 			InternalEventEmoteSetData::ChangeName { old, new } => StoredEventEmoteSetData::ChangeName { old, new },
 			InternalEventEmoteSetData::ChangeCapacity { old, new } => StoredEventEmoteSetData::ChangeCapacity { old, new },
-			InternalEventEmoteSetData::ChangeTags { added, removed } => {
-				StoredEventEmoteSetData::ChangeTags { added, removed }
-			}
+			InternalEventEmoteSetData::ChangeTags { old, new } => StoredEventEmoteSetData::ChangeTags { old, new },
 			InternalEventEmoteSetData::AddEmote {
 				emote, emote_set_emote, ..
 			} => StoredEventEmoteSetData::AddEmote {
