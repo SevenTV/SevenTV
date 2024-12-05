@@ -80,6 +80,10 @@
 		overflow-x: hidden;
 		overflow-y: auto;
 		scrollbar-gutter: stable;
+
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 
 	h1 {

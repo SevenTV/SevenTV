@@ -12,14 +12,18 @@
 		data: Emote;
 	}
 
-	let { mode = $bindable("hidden"), data }: Props = $props();
+	let { mode = $bindable("hidden"), data = $bindable() }: Props = $props();
 
 	let loading = $state(false);
 
 	async function click() {
 		loading = true;
 
-		await deleteEmote(data.id);
+		const newData = await deleteEmote(data.id);
+
+		if (newData) {
+			data = newData;
+		}
 
 		loading = false;
 		mode = "hidden";

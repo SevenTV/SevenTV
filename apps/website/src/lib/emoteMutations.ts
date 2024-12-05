@@ -580,6 +580,182 @@ export async function updateFlags(id: string, flags: EmoteFlagsInput) {
 	return undefined;
 }
 
+export async function updateOwner(id: string, ownerId: string) {
+	const defaultSet = get(defaultEmoteSet);
+
+	const res = await gqlClient()
+		.mutation(
+			graphql(`
+				mutation UpdateEmoteOwner(
+					$id: Id!
+					$ownerId: Id!
+					$isDefaultSetSet: Boolean!
+					$defaultSetId: Id!
+				) {
+					emotes {
+						emote(id: $id) {
+							owner(ownerId: $ownerId) {
+								id
+								defaultName
+								owner {
+									id
+									mainConnection {
+										platformDisplayName
+										platformAvatarUrl
+									}
+									style {
+										activeProfilePicture {
+											images {
+												url
+												mime
+												size
+												width
+												height
+												scale
+												frameCount
+											}
+										}
+										activePaint {
+											id
+											name
+											data {
+												layers {
+													id
+													ty {
+														__typename
+														... on PaintLayerTypeSingleColor {
+															color {
+																hex
+															}
+														}
+														... on PaintLayerTypeLinearGradient {
+															angle
+															repeating
+															stops {
+																at
+																color {
+																	hex
+																}
+															}
+														}
+														... on PaintLayerTypeRadialGradient {
+															repeating
+															stops {
+																at
+																color {
+																	hex
+																}
+															}
+															shape
+														}
+														... on PaintLayerTypeImage {
+															images {
+																url
+																mime
+																size
+																scale
+																width
+																height
+																frameCount
+															}
+														}
+													}
+													opacity
+												}
+												shadows {
+													color {
+														hex
+													}
+													offsetX
+													offsetY
+													blur
+												}
+											}
+										}
+									}
+									highestRoleColor {
+										hex
+									}
+									editors {
+										editorId
+										permissions {
+											emote {
+												manage
+											}
+										}
+									}
+								}
+								tags
+								flags {
+									animated
+									defaultZeroWidth
+									publicListed
+									approvedPersonal
+									deniedPersonal
+								}
+								attribution {
+									user {
+										mainConnection {
+											platformDisplayName
+											platformAvatarUrl
+										}
+										style {
+											activeProfilePicture {
+												images {
+													url
+													mime
+													size
+													width
+													height
+													scale
+													frameCount
+												}
+											}
+										}
+										highestRoleColor {
+											hex
+										}
+									}
+								}
+								images {
+									url
+									mime
+									size
+									width
+									height
+									scale
+									frameCount
+								}
+								ranking(ranking: TRENDING_WEEKLY)
+								inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+									emoteSetId
+									emote {
+										id
+										alias
+									}
+								}
+								deleted
+							}
+						}
+					}
+				}
+			`),
+			{
+				id,
+				ownerId,
+				isDefaultSetSet: !!defaultSet,
+				defaultSetId: defaultSet ?? "",
+			},
+		)
+		.toPromise();
+
+	if (res.data?.emotes.emote) {
+		return res.data.emotes.emote.owner as Emote;
+	}
+
+	return undefined;
+}
+
 export async function deleteEmote(id: string) {
 	const defaultSet = get(defaultEmoteSet);
 

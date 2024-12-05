@@ -113,9 +113,9 @@
 		<AddEmoteDialog bind:mode={addEmoteDialogMode} {data} />
 	{/if}
 	<EditEmoteDialog bind:mode={editDialogMode} bind:data />
-	<TransferEmoteDialog bind:mode={transferDialogMode} {data} />
+	<TransferEmoteDialog bind:mode={transferDialogMode} bind:data />
 	<ReportEmoteDialog bind:mode={reportDialogMode} targetId={data.id} />
-	<DeleteEmoteDialog bind:mode={deleteDialogMode} {data} />
+	<DeleteEmoteDialog bind:mode={deleteDialogMode} bind:data />
 {/if}
 {#if data}
 	<div class="top-bar">
