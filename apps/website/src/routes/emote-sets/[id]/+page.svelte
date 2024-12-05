@@ -15,13 +15,14 @@
 	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { Copy, MagnifyingGlass, NotePencil, Trash } from "phosphor-svelte";
+	import { Copy, Lightning, LightningSlash, MagnifyingGlass, NotePencil, Trash } from "phosphor-svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { untrack } from "svelte";
+	import HideOn from "$/components/hide-on.svelte";
+	import { user } from "$/lib/auth";
 
 	let { data }: { data: PageData } = $props();
 
-	// let enabled = $state(false);
 	let selectionMode = $state(false);
 	let selectionMap = $state({});
 	let editDialogMode: DialogMode = $state("hidden");
@@ -219,7 +220,7 @@
 	<div class="set-info">
 		<h1>{data.emoteSet.name}</h1>
 		<Flags
-			flags={emoteSetToFlags(data.emoteSet)}
+			flags={emoteSetToFlags(data.emoteSet, $user)}
 			style="position: absolute; top: 1rem; right: 1rem;"
 		/>
 		<Tags tags={data.emoteSet.tags} />
@@ -238,22 +239,24 @@
 					<Toggle bind:value={selectionMode} />
 				{/snippet}
 			</Button>
-			<!-- <HideOn mobile={selectionMode}>
-				<Button primary onclick={() => (enabled = !enabled)}>
-					{#if enabled}
-						{$t("labels.disable")}
-					{:else}
-						{$t("labels.enable")}
-					{/if}
-					{#snippet iconRight()}
-						{#if enabled}
-							<LightningSlash />
+			{#if $user}
+				<HideOn mobile={selectionMode}>
+					<Button primary>
+						{#if $user.style.activeEmoteSetId === data.emoteSet.id}
+							{$t("labels.disable")}
 						{:else}
-							<Lightning />
+							{$t("labels.enable")}
 						{/if}
-					{/snippet}
-				</Button>
-			</HideOn> -->
+						{#snippet iconRight()}
+							{#if $user.style.activeEmoteSetId === data.emoteSet.id}
+								<LightningSlash />
+							{:else}
+								<Lightning />
+							{/if}
+						{/snippet}
+					</Button>
+				</HideOn>
+			{/if}
 			<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
 				{$t("labels.edit")}
 				{#snippet iconRight()}

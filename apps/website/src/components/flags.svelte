@@ -16,7 +16,7 @@
 		personal: Star,
 
 		// Permissions
-		profile: User,
+		profile: UserIcon,
 		editors: PencilSimple,
 		emote_sets: FolderSimple,
 		emotes: Smiley,
@@ -73,15 +73,23 @@
 		return flags;
 	}
 
-	export function emoteSetToFlags(set: EmoteSet): string[] {
+	export function emoteSetToFlags(set: EmoteSet, user?: User | null): string[] {
+		const flags = [];
+
+		if (user?.style.activeEmoteSetId === set.id) {
+			flags.push("active");
+		}
+
 		switch (set.kind) {
 			case EmoteSetKind.Global:
-				return ["global"];
+				flags.push("global");
+				break;
 			case EmoteSetKind.Personal:
-				return ["personal"];
-			default:
-				return [];
+				flags.push("personal");
+				break;
 		}
+
+		return flags;
 	}
 </script>
 
@@ -99,11 +107,11 @@
 		StackSimple,
 		Star,
 		Trash,
-		User,
+		User as UserIcon,
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
-	import { EmoteSetKind, type Emote, type EmoteSet } from "$/gql/graphql";
+	import { EmoteSetKind, type Emote, type EmoteSet, type User } from "$/gql/graphql";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	const names: { [key: string]: string } = {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { type EmoteSet } from "$/gql/graphql";
+	import { user } from "$/lib/auth";
 	import Flags, { determineHighlightColor, emoteSetToFlags } from "./flags.svelte";
 	import ResponsiveImage from "./responsive-image.svelte";
 
@@ -10,7 +11,7 @@
 
 	let { data, bg = "medium" }: Props = $props();
 
-	let flags = $derived(emoteSetToFlags(data));
+	let flags = $derived(emoteSetToFlags(data, $user));
 
 	let highlight = $derived(determineHighlightColor(flags));
 

@@ -115,6 +115,7 @@ export async function fetchMe(): Promise<User | null> {
 										}
 									}
 								}
+								activeEmoteSetId
 							}
 							highestRoleColor {
 								hex
