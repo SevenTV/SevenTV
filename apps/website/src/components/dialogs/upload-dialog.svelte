@@ -31,10 +31,15 @@
 		if (theme === "system-theme" && browser) {
 			return window.matchMedia("prefers-color-scheme: dark").matches ? "dark-theme" : "light-theme";
 		}
+
 		return theme;
 	}
 
 	let previewTheme = $state(initialTheme($theme));
+
+	$effect(() => {
+		previewTheme = initialTheme($theme);
+	});
 
 	function toggleTheme() {
 		previewTheme = previewTheme === "dark-theme" ? "light-theme" : "dark-theme";
