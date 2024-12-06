@@ -1,16 +1,25 @@
 <script lang="ts">
-	import { CaretDown, DeviceMobile } from "phosphor-svelte";
+	import { ArrowSquareOut, CaretDown, DeviceMobile, DownloadSimple } from "phosphor-svelte";
 	import Logo from "../icons/logo.svelte";
 	import Button from "../input/button.svelte";
 	import ChatterinoLogo from "../icons/chatterino-logo.svelte";
 	import DropDown from "../drop-down.svelte";
-	import MenuButton from "../input/menu-button.svelte";
 	import {
 		PUBLIC_CHATSEN_LINK,
 		PUBLIC_FROSTY_LINK,
 		PUBLIC_DANK_CHAT_LINK,
+		PUBLIC_EXTENSION_CWS_NIGHTLY,
+		PUBLIC_EXTENSION_CWS_STABLE,
+		PUBLIC_EXTENSION_FF_NIGHTLY,
+		PUBLIC_EXTENSION_FF_STABLE,
 	} from "$env/static/public";
 	import weirdSmiley from "$assets/weird-smiley.webp?url";
+	import FrostyLogo from "../icons/frosty-logo.svelte";
+	import DankchatLogo from "../icons/dankchat-logo.svelte";
+	import ChatsenLogo from "../icons/chatsen-logo.svelte";
+	import { browser } from "$app/environment";
+
+	const isFirefox = browser ? navigator.userAgent.includes("Firefox") : false;
 </script>
 
 <section class="download" id="download">
@@ -39,7 +48,7 @@
 		Download the Official 7TV Extension or other 3rd party tools.
 	</p>
 	<div class="buttons">
-		<DropDown>
+		<DropDown align="left">
 			<Button primary style="font-size: 1em;">
 				{#snippet icon()}
 					<Logo size={1.25 * 16} />
@@ -50,38 +59,96 @@
 				{/snippet}
 			</Button>
 			{#snippet dropdown()}
-				<div>Idk why this is a dropdown</div>
+				<div class="button-list">
+					<Button
+						big
+						secondary
+						href={isFirefox ? PUBLIC_EXTENSION_FF_STABLE : PUBLIC_EXTENSION_CWS_STABLE}
+					>
+						{#snippet icon()}
+							<Logo size={1.25 * 16} />
+						{/snippet}
+						<span>Stable Release</span>
+						{#snippet iconRight()}
+							{#if isFirefox}
+								<DownloadSimple />
+							{:else}
+								<ArrowSquareOut />
+							{/if}
+						{/snippet}
+					</Button>
+					<Button
+						big
+						secondary
+						href={isFirefox ? PUBLIC_EXTENSION_FF_NIGHTLY : PUBLIC_EXTENSION_CWS_NIGHTLY}
+					>
+						{#snippet icon()}
+							<Logo size={1.25 * 16} style="color: var(--store)" />
+						{/snippet}
+						<span>Nightly Release</span>
+						{#snippet iconRight()}
+							{#if isFirefox}
+								<DownloadSimple />
+							{:else}
+								<ArrowSquareOut />
+							{/if}
+						{/snippet}
+					</Button>
+				</div>
 			{/snippet}
 		</DropDown>
-		<DropDown>
-			<Button secondary style="font-size: 1em;">
-				{#snippet icon()}
-					<ChatterinoLogo />
-				{/snippet}
-				Chatterino
-				{#snippet iconRight()}
-					<CaretDown />
-				{/snippet}
-			</Button>
-			{#snippet dropdown()}
-				<div>Idk why this is a dropdown</div>
+		<Button
+			href="https://github.com/SevenTV/chatterino7/releases"
+			secondary
+			style="font-size: 1em;"
+		>
+			{#snippet icon()}
+				<ChatterinoLogo />
 			{/snippet}
-		</DropDown>
+			Chatterino
+			{#snippet iconRight()}
+				<ArrowSquareOut />
+			{/snippet}
+		</Button>
 		<DropDown align="left">
 			<Button secondary style="font-size: 1em;">
 				{#snippet icon()}
 					<DeviceMobile />
 				{/snippet}
-				Mobile Apps
+				<span>Mobile Apps</span>
 				{#snippet iconRight()}
 					<CaretDown />
 				{/snippet}
 			</Button>
 			{#snippet dropdown()}
-				<div class="apps-dropdown">
-					<MenuButton href={PUBLIC_CHATSEN_LINK}>Chatsen</MenuButton>
-					<MenuButton href={PUBLIC_FROSTY_LINK}>Frosty</MenuButton>
-					<MenuButton href={PUBLIC_DANK_CHAT_LINK}>DankChat</MenuButton>
+				<div class="button-list">
+					<Button big secondary href={PUBLIC_CHATSEN_LINK}>
+						{#snippet icon()}
+							<ChatsenLogo />
+						{/snippet}
+						<span>Chatsen</span>
+						{#snippet iconRight()}
+							<ArrowSquareOut />
+						{/snippet}
+					</Button>
+					<Button big secondary href={PUBLIC_FROSTY_LINK}>
+						{#snippet icon()}
+							<FrostyLogo />
+						{/snippet}
+						<span>Frosty</span>
+						{#snippet iconRight()}
+							<ArrowSquareOut />
+						{/snippet}
+					</Button>
+					<Button big secondary href={PUBLIC_DANK_CHAT_LINK}>
+						{#snippet icon()}
+							<DankchatLogo />
+						{/snippet}
+						<span>DankChat</span>
+						{#snippet iconRight()}
+							<ArrowSquareOut />
+						{/snippet}
+					</Button>
 				</div>
 			{/snippet}
 		</DropDown>
@@ -122,11 +189,21 @@
 			line-height: 1.8rem;
 		}
 
-		.apps-dropdown {
-			min-width: 10rem;
-
+		.button-list {
 			display: flex;
 			flex-direction: column;
+
+			& > :global(.button) {
+				border: none;
+
+				&:not(:hover, :focus-visible) {
+					background-color: transparent;
+				}
+			}
+
+			& > :global(.button > span) {
+				flex-grow: 1;
+			}
 		}
 
 		.weird-smiley {

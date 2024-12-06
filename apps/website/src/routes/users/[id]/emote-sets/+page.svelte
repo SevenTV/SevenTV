@@ -20,7 +20,7 @@
 		{#snippet icon()}
 			<Plus />
 		{/snippet}
-		Create new set
+		Create New Set
 	</Button>
 </div>
 {#await data.streamed.sets}
