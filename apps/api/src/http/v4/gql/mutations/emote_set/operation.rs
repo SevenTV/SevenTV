@@ -156,18 +156,6 @@ impl From<EmoteSetEmoteFlagsInput> for shared::database::emote_set::EmoteSetEmot
 #[async_graphql::Object]
 impl EmoteSetOperation {
 	#[graphql(
-		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetCreate, 1))"
-	)]
-	#[tracing::instrument(skip_all, name = "EmoteSetOperation::create")]
-	async fn create(
-		&self,
-		_ctx: &Context<'_>,
-		#[graphql(validator(custom = "NameValidator"))] _name: String,
-	) -> Result<EmoteSet, ApiError> {
-		Err(ApiError::not_implemented(ApiErrorCode::BadRequest, "not implemented"))
-	}
-
-	#[graphql(
 		guard = "PermissionGuard::one(EmoteSetPermission::Manage).and(RateLimitGuard::new(RateLimitResource::EmoteSetChange, 1))"
 	)]
 	#[tracing::instrument(skip_all, name = "EmoteSetOperation::name")]

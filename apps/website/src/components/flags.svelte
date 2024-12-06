@@ -73,11 +73,19 @@
 		return flags;
 	}
 
-	export function emoteSetToFlags(set: EmoteSet, user?: User | null): string[] {
+	export function emoteSetToFlags(
+		set: EmoteSet,
+		user?: User | null,
+		defaultSet?: string,
+	): string[] {
 		const flags = [];
 
 		if (user?.style.activeEmoteSetId === set.id) {
 			flags.push("active");
+		}
+
+		if (set.id === defaultSet) {
+			flags.push("default");
 		}
 
 		switch (set.kind) {

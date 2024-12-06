@@ -261,13 +261,13 @@ enum EmoteSetKind {
 }
 
 type EmoteSetMutation {
+	create(name: String!, ownerId: Id, tags: [String!]!): EmoteSet!
 	emoteSet(id: Id!): EmoteSetOperation!
 }
 
 type EmoteSetOperation {
 	addEmote(id: EmoteSetEmoteId!, overrideConflicts: Boolean, zeroWidth: Boolean): EmoteSet!
 	capacity(capacity: Int!): EmoteSet!
-	create(name: String!): EmoteSet!
 	delete: Boolean!
 	name(name: String!): EmoteSet!
 	removeEmote(id: EmoteSetEmoteId!): EmoteSet!

@@ -226,7 +226,7 @@
 	<div class="set-info">
 		<h1>{data.name}</h1>
 		<Flags
-			flags={emoteSetToFlags(data, $user)}
+			flags={emoteSetToFlags(data, $user, $defaultEmoteSet)}
 			style="position: absolute; top: 1rem; right: 1rem;"
 		/>
 		<Tags tags={data.tags} />

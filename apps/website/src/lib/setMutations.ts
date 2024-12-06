@@ -2,6 +2,29 @@ import { graphql } from "$/gql";
 import type { EmoteSet } from "$/gql/graphql";
 import { gqlClient } from "./gql";
 
+export async function createSet(name: string, tags: string[]) {
+	const res = await gqlClient()
+		.mutation(
+			graphql(`
+				mutation CreateEmoteSet($name: String!, $tags: [String!]!) {
+					emoteSets {
+						create(name: $name, tags: $tags) {
+							id
+						}
+					}
+				}
+			`),
+			{ name, tags },
+		)
+		.toPromise();
+
+	if (!res.data) {
+		return undefined;
+	}
+
+	return res.data.emoteSets.create as EmoteSet;
+}
+
 export async function addEmoteToSet(setId: string, emoteId: string, alias?: string) {
 	await gqlClient()
 		.mutation(
