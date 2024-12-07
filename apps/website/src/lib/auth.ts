@@ -1,7 +1,7 @@
 import { graphql } from "$/gql";
 import type { User } from "$/gql/graphql";
 import { PUBLIC_REST_API_V4 } from "$env/static/public";
-import { derived, get, type Readable, writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { gqlClient } from "./gql";
 import { browser } from "$app/environment";
 
