@@ -21,7 +21,7 @@
 
 	function layerToBackgroundImage(layer: PaintLayer) {
 		switch (layer.ty.__typename) {
-			case "PaintLayerTypeLinearGradient":
+			case "PaintLayerTypeLinearGradient": {
 				if (layer.ty.stops.length === 0) {
 					return undefined;
 				}
@@ -32,7 +32,8 @@
 					.join(", ");
 
 				return `${linearRepeating}linear-gradient(${layer.ty.angle}deg, ${linearStops})`;
-			case "PaintLayerTypeRadialGradient":
+			}
+			case "PaintLayerTypeRadialGradient": {
 				if (layer.ty.stops.length === 0) {
 					return undefined;
 				}
@@ -54,7 +55,8 @@
 					.join(", ");
 
 				return `${radialRepeating}radial-gradient(${shape}, ${radialStops})`;
-			case "PaintLayerTypeImage":
+			}
+			case "PaintLayerTypeImage": {
 				// TODO: Always uses 1x image for now
 				const isAnimated = layer.ty.images.some((img) => img.frameCount > 1);
 				const oneX = layer.ty.images.find(
@@ -66,6 +68,7 @@
 				}
 
 				return `url(${oneX.url})`;
+			}
 			default:
 				return undefined;
 		}
