@@ -491,7 +491,7 @@ impl EmotesQuery {
 			}
 		}
 
-		if filter.as_ref().map_or(false, |f| !f.ignore_tags.unwrap_or_default()) {
+		if filter.as_ref().is_some_and(|f| !f.ignore_tags.unwrap_or_default()) {
 			query_by.push("tags".to_owned());
 			prefix.push("false".to_owned());
 			query_by_weights.push(1);

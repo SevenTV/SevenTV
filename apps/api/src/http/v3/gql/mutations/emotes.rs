@@ -436,12 +436,7 @@ impl EmoteOps {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(EmotePermission::Merge)")]
-	async fn merge<'ctx>(
-		&self,
-		ctx: &Context<'ctx>,
-		target_id: GqlObjectId,
-		_reason: Option<String>,
-	) -> Result<Emote, ApiError> {
+	async fn merge(&self, ctx: &Context<'_>, target_id: GqlObjectId, _reason: Option<String>) -> Result<Emote, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;

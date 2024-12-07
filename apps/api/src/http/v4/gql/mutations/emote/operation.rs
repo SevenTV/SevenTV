@@ -528,7 +528,7 @@ impl EmoteOperation {
 							shared::database::emote::Emote {
 								#[query(serde)]
 								merged: EmoteMerged {
-									target_id: target_id,
+									target_id,
 									at: chrono::Utc::now(),
 								},
 								updated_at: chrono::Utc::now(),

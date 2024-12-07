@@ -101,7 +101,7 @@ impl EmoteMutation {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;
 
-		Ok(operation::EmoteOperation { emote: emote })
+		Ok(operation::EmoteOperation { emote })
 	}
 
 	#[tracing::instrument(skip_all, name = "EmoteMutation::emotes")]

@@ -1447,7 +1447,7 @@ impl UserOps {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageAny)")]
-	async fn delete<'ctx>(&self, ctx: &Context<'ctx>) -> Result<bool, ApiError> {
+	async fn delete(&self, ctx: &Context<'_>) -> Result<bool, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -1493,9 +1493,9 @@ impl UserOps {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageAny)")]
-	async fn create_subscription_period<'ctx>(
+	async fn create_subscription_period(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		create: SubscriptionPeriodCreate,
 	) -> Result<CreateSubscriptionPeriodResponse, ApiError> {
 		let global: &Arc<Global> = ctx
@@ -1785,7 +1785,7 @@ impl UserOps {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageAny)")]
-	async fn refresh_subscriptions<'ctx>(&self, ctx: &Context<'ctx>) -> Result<bool, ApiError> {
+	async fn refresh_subscriptions(&self, ctx: &Context<'_>) -> Result<bool, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
