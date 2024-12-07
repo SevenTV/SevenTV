@@ -146,7 +146,7 @@
 
 	$effect(() => {
 		results.then(() => {
-			input.focus();
+			input?.focus();
 		});
 	});
 

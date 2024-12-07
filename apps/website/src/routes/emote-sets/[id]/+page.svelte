@@ -26,6 +26,8 @@
 	import { untrack } from "svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import { user } from "$/lib/auth";
+	import { setActiveSet } from "$/lib/userMutations";
+	import Spinner from "$/components/spinner.svelte";
 
 	let { data }: { data: EmoteSet } = $props();
 
@@ -213,6 +215,26 @@
 			loader?.reset();
 		});
 	});
+
+	let setActiveLoading = $state(false);
+
+	async function setAsActiveSet(id?: string) {
+		if (!$user) {
+			return;
+		}
+
+		setActiveLoading = true;
+
+		const newUser = await setActiveSet($user.id, id);
+
+		if (newUser) {
+			$user = newUser;
+		}
+
+		setActiveLoading = false;
+	}
+
+	let isActive = $derived($user?.style.activeEmoteSetId === data.id);
 </script>
 
 <svelte:head>
@@ -246,15 +268,23 @@
 				{/snippet}
 			</Button>
 			{#if $user}
+				{#snippet loadingSpinner()}
+					<Spinner />
+				{/snippet}
 				<HideOn mobile={selectionMode}>
-					<Button primary>
-						{#if $user.style.activeEmoteSetId === data.id}
+					<Button
+						primary
+						onclick={() => setAsActiveSet(isActive ? undefined : data.id)}
+						icon={setActiveLoading ? loadingSpinner : undefined}
+						disabled={setActiveLoading}
+					>
+						{#if isActive}
 							{$t("labels.disable")}
 						{:else}
 							{$t("labels.enable")}
 						{/if}
 						{#snippet iconRight()}
-							{#if $user.style.activeEmoteSetId === data.id}
+							{#if isActive}
 								<LightningSlash />
 							{:else}
 								<Lightning />

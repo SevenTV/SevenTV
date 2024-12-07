@@ -490,6 +490,7 @@ type Mutation {
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
 	tickets: TicketMutation!
+	users: UserMutation!
 }
 
 type Paint {
@@ -937,6 +938,14 @@ type UserEvent {
 type UserInventory {
 	badges: [EntitlementEdgeAnyBadge!]!
 	paints: [EntitlementEdgeAnyPaint!]!
+}
+
+type UserMutation {
+	user(id: Id!): UserOperation!
+}
+
+type UserOperation {
+	activeEmoteSet(emoteSetId: Id): User!
 }
 
 type UserPermission {
