@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, InputObject, Object, SimpleObject};
-use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::{FindOneAndUpdateOptions, FindOneOptions, ReturnDocument};
 use shared::database::badge::BadgeId;
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::paint::{
@@ -446,6 +446,31 @@ impl CosmeticOps {
 			Some(GeneralMutexKey::Paint(self.id.id()).into()),
 			|mut tx| async move {
 				let before_paint = tx
+					.find_one(
+						filter::filter! {
+							Paint {
+								#[query(rename = "_id")]
+								id: self.id.id(),
+							}
+						},
+						FindOneOptions::default(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))
+					})?;
+
+				if before_paint.data.layers.iter().any(|l| match &l.ty {
+					PaintLayerType::Image(ImageSet { input, .. }) => input.is_pending(),
+					_ => false,
+				}) {
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
+						"cannot update paint with pending image layers",
+					)));
+				}
+
+				let after_paint = tx
 					.find_one_and_update(
 						filter::filter! {
 							Paint {
@@ -464,19 +489,13 @@ impl CosmeticOps {
 							}
 						},
 						FindOneAndUpdateOptions::builder()
-							.return_document(ReturnDocument::Before)
+							.return_document(ReturnDocument::After)
 							.build(),
 					)
 					.await?
 					.ok_or_else(|| {
 						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))
 					})?;
-
-				let after_paint = Paint {
-					name,
-					data,
-					..before_paint
-				};
 
 				if before_paint.name != after_paint.name {
 					tx.register_event(InternalEvent {
