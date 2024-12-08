@@ -26,15 +26,6 @@ pub async fn emote_add(
 ) -> TransactionResult<EmoteSet, ApiError> {
 	let authed_user = session.user().map_err(TransactionError::Custom)?;
 
-	if let Some(capacity) = emote_set.capacity {
-		if emote_set.emotes.len() as i32 >= capacity {
-			return Err(TransactionError::Custom(ApiError::bad_request(
-				ApiErrorCode::BadRequest,
-				"emote set is at capacity",
-			)));
-		}
-	}
-
 	let emote = tx
 		.find_one(filter::filter! { Emote { #[query(rename = "_id")] id: emote_id } }, None)
 		.await?

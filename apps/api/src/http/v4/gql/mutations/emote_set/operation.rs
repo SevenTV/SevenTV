@@ -457,16 +457,17 @@ impl EmoteSetOperation {
 			global,
 			Some(GeneralMutexKey::EmoteSet(self.emote_set.id).into()),
 			|mut tx| async move {
-				let authed_user = session.user().map_err(TransactionError::Custom)?;
+				let emote_set = tx
+					.find_one(
+						filter::filter! { shared::database::emote_set::EmoteSet { #[query(rename = "_id")] id: self.emote_set.id } },
+						None,
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote set not found"))
+					})?;
 
-				if let Some(capacity) = self.emote_set.capacity {
-					if self.emote_set.emotes.len() as i32 >= capacity {
-						return Err(TransactionError::Custom(ApiError::bad_request(
-							ApiErrorCode::BadRequest,
-							"emote set is at capacity",
-						)));
-					}
-				}
+				let authed_user = session.user().map_err(TransactionError::Custom)?;
 
 				let db_emote = tx
 					.find_one(
@@ -486,7 +487,7 @@ impl EmoteSetOperation {
 				}
 
 				if db_emote.flags.contains(EmoteFlags::Private)
-					&& self.emote_set.owner_id.is_none_or(|id| db_emote.owner_id != id)
+					&& emote_set.owner_id.is_none_or(|id| db_emote.owner_id != id)
 				{
 					return Err(TransactionError::Custom(ApiError::bad_request(
 						ApiErrorCode::BadRequest,
@@ -502,7 +503,7 @@ impl EmoteSetOperation {
 				// transaction.
 				let emotes = global
 					.emote_by_id_loader
-					.load_many(self.emote_set.emotes.iter().map(|e| e.id))
+					.load_many(emote_set.emotes.iter().map(|e| e.id))
 					.await
 					.map_err(|_| {
 						TransactionError::Custom(ApiError::internal_server_error(
@@ -511,10 +512,10 @@ impl EmoteSetOperation {
 						))
 					})?;
 
-				let conflict_emote_idx = self.emote_set.emotes.iter().position(|e| e.alias == alias);
+				let conflict_emote_idx = emote_set.emotes.iter().position(|e| e.alias == alias);
 
 				if let Some(conflict_emote_idx) = conflict_emote_idx {
-					if let Some(emote) = emotes.get(&self.emote_set.emotes[conflict_emote_idx].id) {
+					if let Some(emote) = emotes.get(&emote_set.emotes[conflict_emote_idx].id) {
 						if !emote.deleted {
 							return Err(TransactionError::Custom(ApiError::conflict(
 								ApiErrorCode::BadRequest,
@@ -524,7 +525,7 @@ impl EmoteSetOperation {
 					}
 				}
 
-				if matches!(self.emote_set.kind, EmoteSetKind::Personal) {
+				if matches!(emote_set.kind, EmoteSetKind::Personal) {
 					if db_emote.flags.contains(EmoteFlags::DeniedPersonal) {
 						return Err(TransactionError::Custom(ApiError::bad_request(
 							ApiErrorCode::BadRequest,
@@ -676,7 +677,7 @@ impl EmoteSetOperation {
 						filter::filter! {
 							shared::database::emote_set::EmoteSet {
 								#[query(rename = "_id")]
-								id: self.emote_set.id,
+								id: emote_set.id,
 							}
 						},
 						update,

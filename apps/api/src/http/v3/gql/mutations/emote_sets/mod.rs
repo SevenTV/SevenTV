@@ -353,11 +353,26 @@ impl EmoteSetOps {
 		let res = transaction_with_mutex(
 			global,
 			Some(GeneralMutexKey::EmoteSet(self.id.id()).into()),
-			|tx| async move {
+			|mut tx| async move {
+				let emote_set = tx
+					.find_one(
+						filter::filter! {
+							DbEmoteSet {
+								#[query(rename = "_id")]
+								id: self.emote_set.id,
+							}
+						},
+						None,
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))
+					})?;
+
 				match action {
-					ListItemAction::Add => emote_add(global, tx, session, &self.emote_set, id.id(), name).await,
-					ListItemAction::Remove => emote_remove(global, tx, session, &self.emote_set, id.id()).await,
-					ListItemAction::Update => emote_update(global, tx, session, &self.emote_set, id.id(), name).await,
+					ListItemAction::Add => emote_add(global, tx, session, &emote_set, id.id(), name).await,
+					ListItemAction::Remove => emote_remove(global, tx, session, &emote_set, id.id()).await,
+					ListItemAction::Update => emote_update(global, tx, session, &emote_set, id.id(), name).await,
 				}
 			},
 		)
