@@ -13,8 +13,9 @@ use shared::database::{Id, MongoCollection};
 
 use crate::global::Global;
 use crate::http::egvault::metadata::{CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
+use crate::http::egvault::redeem::redeem_code_inner;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::guards::RateLimitGuard;
+use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::middleware::session::Session;
 use crate::http::v4::gql::types::billing::SubscriptionInfo;
 use crate::paypal_api;
@@ -29,6 +30,11 @@ pub struct BillingMutation {
 #[derive(async_graphql::SimpleObject)]
 pub struct SubscribeResponse {
 	pub checkout_url: String,
+}
+
+#[derive(async_graphql::SimpleObject)]
+pub struct RedeemResponse {
+	pub checkout_url: Option<String>,
 }
 
 #[async_graphql::Object]
@@ -536,5 +542,36 @@ impl BillingMutation {
 				))
 			}
 		}
+	}
+
+	#[graphql(
+		guard = "PermissionGuard::one(UserPermission::Billing).and(RateLimitGuard::new(RateLimitResource::EgVaultRedeem, 1))"
+	)]
+	async fn redeem_code(
+		&self,
+		ctx: &Context<'_>,
+		#[graphql(validator(min_length = 1, max_length = 24))] code: String,
+	) -> Result<RedeemResponse, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+
+		let user_id = session
+			.user_id()
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
+
+		if self.user_id != user_id {
+			return Err(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
+				"you can only redeem codes for yourself",
+			));
+		}
+
+		let checkout_url = redeem_code_inner(global, session, code).await?;
+
+		Ok(RedeemResponse { checkout_url })
 	}
 }
