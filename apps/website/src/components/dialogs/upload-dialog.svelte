@@ -104,6 +104,11 @@
 			goto(`/emotes/${res.emote_id}`);
 		}
 	}
+
+	function reset() {
+		files = undefined;
+		loading = false;
+	}
 </script>
 
 <Dialog width={60} bind:mode>
@@ -131,7 +136,7 @@
 							{/if}
 						{/snippet}
 					</Button>
-					<Button secondary onclick={() => (files = undefined)}>
+					<Button secondary onclick={reset}>
 						{#snippet icon()}
 							<Trash />
 						{/snippet}
