@@ -27,6 +27,9 @@ pub struct RedeemCodeSubscriptionEffect {
 	/// have a sub. However the entitlements will still require a sub to be
 	/// active.
 	pub trial_days: Option<i32>,
+	/// Redirect to stripe checkout (only if trial_days is set, force the user to subscribe if not then the paint will be added to their future sub whenever they subscribe)
+	#[serde(default)]
+	pub no_redirect_to_stripe: bool,
 }
 
 pub type RedeemCodeId = Id<RedeemCode>;

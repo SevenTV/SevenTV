@@ -44,6 +44,8 @@ pub async fn grant_entitlements(
 				#[query(flatten, rename = "_id")]
 				id: EntitlementEdgeId {
 					#[query(serde)]
+					from: &from,
+					#[query(serde)]
 					managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
 						redeem_code_id: redeem_code.id,
 					}),
@@ -215,6 +217,7 @@ pub async fn redeem(
 		if let Some(RedeemCodeSubscriptionEffect {
 			id: product_id,
 			trial_days: Some(trial_days),
+			no_redirect_to_stripe: false,
 		}) = not_subscribed.then_some(code.subscription_effect.as_ref()).flatten()
 		{
 			// the user is not subscribed and the effects contain a subscription product
