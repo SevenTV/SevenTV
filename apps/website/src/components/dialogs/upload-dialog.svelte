@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
-	import { Moon, Sun, Trash, UploadSimple, User } from "phosphor-svelte";
+	import { Moon, Sun, Trash, UploadSimple } from "phosphor-svelte";
 	import { theme, type Theme } from "$/lib/layout";
 	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../input/button.svelte";
@@ -9,25 +9,37 @@
 	import Tags from "../emotes/tags.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
+	import { upload } from "$/lib/emoteMutations";
+	import { goto } from "$app/navigation";
+	import Spinner from "../spinner.svelte";
 
-	let fileInput: HTMLInputElement | undefined = $state();
+	let fileInput = $state<HTMLInputElement>();
 	let dragOver = $state(false);
 
-	let name: string | undefined = $state();
+	let name = $state("");
 	let tags: string[] = $state([]);
-	let files: FileList | null = $state(null);
-	let imageSrc: string | undefined = $state();
+	let files = $state<FileList>();
+	let imageSrc = $state<string>();
+	let zeroWidth = $state(false);
+	let privateFlag = $state(false);
+
+	let loading = $state(false);
 
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
 	function initialTheme(theme: Theme | null) {
 		if (theme === "system-theme" && browser) {
-			return window.matchMedia("prefers-color-scheme: dark") ? "dark-theme" : "light-theme";
+			return window.matchMedia("prefers-color-scheme: dark").matches ? "dark-theme" : "light-theme";
 		}
+
 		return theme;
 	}
 
 	let previewTheme = $state(initialTheme($theme));
+
+	$effect(() => {
+		previewTheme = initialTheme($theme);
+	});
 
 	function toggleTheme() {
 		previewTheme = previewTheme === "dark-theme" ? "light-theme" : "dark-theme";
@@ -62,18 +74,40 @@
 		dragOver = false;
 	}
 
-	let messages: string[] = $state([]);
+	// let messages: string[] = $state([]);
 
-	let messageInput = $state("");
+	// let messageInput = $state("");
 
-	function sendMessage(e: KeyboardEvent) {
-		e.stopPropagation();
+	// function sendMessage(e: KeyboardEvent) {
+	// 	e.stopPropagation();
 
-		if (e.key === "Enter" && !e.shiftKey && messageInput.trim().length > 0) {
-			e.preventDefault();
-			messages = [...messages, messageInput];
-			messageInput = "";
+	// 	if (e.key === "Enter" && !e.shiftKey && messageInput.trim().length > 0) {
+	// 		e.preventDefault();
+	// 		messages = [...messages, messageInput];
+	// 		messageInput = "";
+	// 	}
+	// }
+
+	let acceptTerms = $state(false);
+
+	async function submit() {
+		if (!files || !files[0]) return;
+
+		loading = true;
+
+		const res = await upload(files[0], name, tags, zeroWidth, privateFlag);
+
+		loading = false;
+		mode = "hidden";
+
+		if (res && res.emote_id) {
+			goto(`/emotes/${res.emote_id}`);
 		}
+	}
+
+	function reset() {
+		files = undefined;
+		loading = false;
 	}
 </script>
 
@@ -82,12 +116,12 @@
 		<h1 class="heading">{$t("dialogs.upload.title")}</h1>
 		<section class="upload {previewTheme}" class:preview={files && files[0]}>
 			{#if files && files[0] && imageSrc}
-				<span class="name">{name || $t("dialogs.upload.untitled")}</span>
+				<span class="name">{name}</span>
 				<Tags {tags} />
 				<div class="previews">
 					{#each [32, 64, 96, 128] as resolution}
 						<div class="preview">
-							<img src={imageSrc} alt="Upload Preview" />
+							<img src={imageSrc} width={resolution} alt="Upload Preview" />
 							<span class="size-text">{resolution}x{resolution}</span>
 						</div>
 					{/each}
@@ -102,7 +136,7 @@
 							{/if}
 						{/snippet}
 					</Button>
-					<Button secondary onclick={() => (files = null)}>
+					<Button secondary onclick={reset}>
 						{#snippet icon()}
 							<Trash />
 						{/snippet}
@@ -146,25 +180,37 @@
 				<TagsInput bind:tags>
 					<span class="label">{$t("labels.tags")}</span>
 				</TagsInput>
-				<TextInput placeholder={$t("labels.search_users", { values: { count: 2 } })}>
+				<!-- <TextInput placeholder={$t("labels.search_users", { values: { count: 2 } })}>
 					<span class="label">{$t("labels.emote_attribution")}</span>
 					{#snippet icon()}
 						<User />
 					{/snippet}
-				</TextInput>
-				<Checkbox>{$t("flags.overlaying")}</Checkbox>
+				</TextInput> -->
+				<Checkbox bind:value={zeroWidth}>{$t("flags.overlaying")}</Checkbox>
+				<Checkbox bind:value={privateFlag}>Private</Checkbox>
 			</div>
 			<div class="footer">
-				<Checkbox>{$t("dialogs.upload.accept_rules")}</Checkbox>
+				<Checkbox bind:value={acceptTerms}>{$t("dialogs.upload.accept_rules")}</Checkbox>
 				<div class="buttons">
 					<Button secondary onclick={() => (mode = "hidden")}>
 						{$t("dialogs.upload.discard")}
 					</Button>
-					<Button primary submit>{$t("dialogs.upload.upload")}</Button>
+					{#snippet loadingSpinner()}
+						<Spinner />
+					{/snippet}
+					<Button
+						primary
+						submit
+						disabled={!acceptTerms || !name}
+						onclick={submit}
+						icon={loading ? loadingSpinner : undefined}
+					>
+						{$t("dialogs.upload.upload")}
+					</Button>
 				</div>
 			</div>
 		</section>
-		<section class="chat">
+		<!-- <section class="chat">
 			<div class="messages">
 				{#each messages as message}
 					<span class="message">
@@ -178,7 +224,7 @@
 				bind:value={messageInput}
 				onkeydown={sendMessage}
 			/>
-		</section>
+		</section> -->
 	</form>
 </Dialog>
 
@@ -187,7 +233,7 @@
 		padding: 1rem;
 
 		display: grid;
-		grid-template-areas: "heading heading" "left upload" "left chat";
+		grid-template-areas: "heading heading" "left upload" "left upload";
 		grid-template-columns: 18.5rem 1fr;
 		grid-template-rows: auto auto 1fr;
 		gap: 1rem;
@@ -324,55 +370,55 @@
 		}
 	}
 
-	.chat {
-		grid-area: chat;
-		padding: 1rem;
-		min-height: 15rem;
+	// .chat {
+	// 	grid-area: chat;
+	// 	padding: 1rem;
+	// 	min-height: 15rem;
 
-		display: flex;
-		flex-direction: column;
-		gap: 0.7rem;
+	// 	display: flex;
+	// 	flex-direction: column;
+	// 	gap: 0.7rem;
 
-		input {
-			font-size: 0.8125rem;
-			font-weight: 400;
+	// 	input {
+	// 		font-size: 0.8125rem;
+	// 		font-weight: 400;
 
-			border-color: var(--border-active);
-			padding-block: 0.6rem;
-			background-color: var(--bg-medium);
+	// 		border-color: var(--border-active);
+	// 		padding-block: 0.6rem;
+	// 		background-color: var(--bg-medium);
 
-			&::placeholder {
-				opacity: 1;
-				font-weight: 400;
-			}
-		}
-	}
+	// 		&::placeholder {
+	// 			opacity: 1;
+	// 			font-weight: 400;
+	// 		}
+	// 	}
+	// }
 
-	.messages {
-		flex-grow: 1;
-		flex-basis: 0;
-		overflow: hidden;
+	// .messages {
+	// 	flex-grow: 1;
+	// 	flex-basis: 0;
+	// 	overflow: hidden;
 
-		padding-left: 0.6rem;
+	// 	padding-left: 0.6rem;
 
-		display: flex;
-		flex-direction: column;
-		justify-content: flex-end;
-		gap: 0.6rem;
-	}
+	// 	display: flex;
+	// 	flex-direction: column;
+	// 	justify-content: flex-end;
+	// 	gap: 0.6rem;
+	// }
 
-	.message {
-		font-size: 0.8125rem;
+	// .message {
+	// 	font-size: 0.8125rem;
 
-		.username {
-			color: var(--primary);
-			font-weight: 700;
-		}
-	}
+	// 	.username {
+	// 		color: var(--primary);
+	// 		font-weight: 700;
+	// 	}
+	// }
 
 	@media screen and (max-width: 960px) {
 		.grid {
-			grid-template-areas: "heading" "upload" "left" "chat";
+			grid-template-areas: "heading" "upload" "left";
 			grid-template-columns: 1fr;
 		}
 	}

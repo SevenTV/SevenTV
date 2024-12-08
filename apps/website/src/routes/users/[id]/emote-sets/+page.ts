@@ -4,39 +4,41 @@ import { gqlClient } from "$/lib/gql";
 import type { PageLoadEvent } from "./$types";
 
 async function loadSets(fetchF: typeof fetch, id: string) {
-	const res = await gqlClient().query(
-		graphql(`
-			query UserEmoteSets($id: Id!) {
-				users {
-					user(id: $id) {
-						ownedEmoteSets {
-							id
-							name
-							capacity
-							kind
-							emotes(page: 1, perPage: 12) {
-								items {
-									emote {
-										images {
-											url
-											mime
-											size
-											scale
-											width
-											frameCount
+	const res = await gqlClient()
+		.query(
+			graphql(`
+				query UserEmoteSets($id: Id!) {
+					users {
+						user(id: $id) {
+							ownedEmoteSets {
+								id
+								name
+								capacity
+								kind
+								emotes(page: 1, perPage: 12) {
+									items {
+										emote {
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												frameCount
+											}
 										}
 									}
+									totalCount
 								}
-								totalCount
 							}
 						}
 					}
 				}
-			}
-		`),
-		{ id },
-		{ fetch: fetchF },
-	);
+			`),
+			{ id },
+			{ fetch: fetchF },
+		)
+		.toPromise();
 
 	return res.data?.users.user?.ownedEmoteSets as EmoteSet[];
 }

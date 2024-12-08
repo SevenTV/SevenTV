@@ -1,48 +1,14 @@
 import { graphql } from "$/gql";
 import type { User } from "$/gql/graphql";
-import { PUBLIC_REST_API_V4 } from "$env/static/public";
-import { get, writable } from "svelte/store";
 import { gqlClient } from "./gql";
-import { browser } from "$app/environment";
 
-const LOCALSTORAGE_KEY = "7tv-token";
-
-// Stores should be considered loading when their value is `undefined`
-// Null means the value is known to be empty
-
-export const sessionToken = writable<string | null | undefined>(
-	browser ? window.localStorage.getItem(LOCALSTORAGE_KEY) : undefined,
-);
-export const user = writable<User | null | undefined>(undefined);
-
-sessionToken.subscribe(async (value) => {
-	if (!value) {
-		if (value === null) {
-			user.set(null);
-		}
-		return;
-	}
-
-	fetchMe().then((data) => user.set(data));
-});
-
-// Save session token to localstorage when changed
-sessionToken.subscribe(async (token) => {
-	if (token) {
-		localStorage.setItem(LOCALSTORAGE_KEY, token);
-	} else if (token === null) {
-		// Only reset session token when set to null (not undefined)
-		localStorage.removeItem(LOCALSTORAGE_KEY);
-	}
-});
-
-export async function fetchMe(): Promise<User | null> {
-	const res = await gqlClient()
-		.query(
-			graphql(`
-				query Me {
-					users {
-						me {
+export async function setActiveSet(userId: string, setId?: string) {
+	const res = await gqlClient().mutation(
+		graphql(`
+			mutation SetActiveSet($userId: Id!, $setId: Id) {
+				users {
+					user(id: $userId) {
+						activeEmoteSet(emoteSetId: $setId) {
 							id
 							mainConnection {
 								platformDisplayName
@@ -143,37 +109,14 @@ export async function fetchMe(): Promise<User | null> {
 						}
 					}
 				}
-			`),
-			{},
-		)
-		.toPromise();
+			}
+		`),
+		{ userId, setId },
+	);
 
-	if (res.error || !res.data || !res.data.users.me) {
-		return null;
+	if (!res.data) {
+		return undefined;
 	}
 
-	return res.data.users.me as User;
-}
-
-export async function logout() {
-	const token = get(sessionToken);
-
-	if (!token) {
-		return;
-	}
-
-	const res = await fetch(`${PUBLIC_REST_API_V4}/auth/logout`, {
-		method: "POST",
-		credentials: "include",
-		headers: {
-			Authorization: `Bearer ${token}`,
-		},
-	});
-
-	if (!res.ok) {
-		console.error(await res.json());
-		return;
-	}
-
-	sessionToken.set(null);
+	return res.data.users.user.activeEmoteSet as User;
 }

@@ -37,18 +37,20 @@
 
 		subscribeLoading = variantId;
 
-		const res = await gqlClient().mutation(
-			graphql(`
-				mutation Subscribe($userId: Id!, $variantId: ProductId!) {
-					billing(userId: $userId) {
-						subscribe(variantId: $variantId) {
-							checkoutUrl
+		const res = await gqlClient()
+			.mutation(
+				graphql(`
+					mutation Subscribe($userId: Id!, $variantId: ProductId!) {
+						billing(userId: $userId) {
+							subscribe(variantId: $variantId) {
+								checkoutUrl
+							}
 						}
 					}
-				}
-			`),
-			{ userId: $user.id, variantId },
-		);
+				`),
+				{ userId: $user.id, variantId },
+			)
+			.toPromise();
 
 		if (res.data) {
 			window.location.href = res.data.billing.subscribe.checkoutUrl;

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::Context;
-use shared::database::emote::EmoteId;
+use shared::database::emote::{EmoteFlags, EmoteId};
 
 use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
@@ -12,45 +12,71 @@ mod operation;
 
 #[derive(async_graphql::InputObject)]
 pub struct EmoteFlagsInput {
-	pub public_listed: bool,
-	pub private: bool,
-	pub nsfw: bool,
-	pub default_zero_width: bool,
-	pub approved_personal: bool,
-	pub denied_personal: bool,
-	pub animated: bool,
+	pub public_listed: Option<bool>,
+	pub private: Option<bool>,
+	pub nsfw: Option<bool>,
+	pub default_zero_width: Option<bool>,
+	pub approved_personal: Option<bool>,
+	pub denied_personal: Option<bool>,
+	pub animated: Option<bool>,
 }
 
-impl From<EmoteFlagsInput> for shared::database::emote::EmoteFlags {
-	fn from(val: EmoteFlagsInput) -> Self {
-		let mut flags = shared::database::emote::EmoteFlags::default();
-
-		if val.public_listed {
-			flags |= shared::database::emote::EmoteFlags::PublicListed;
+impl EmoteFlagsInput {
+	fn apply_to(&self, mut flags: EmoteFlags) -> EmoteFlags {
+		if let Some(public_listed) = self.public_listed {
+			if public_listed {
+				flags |= EmoteFlags::PublicListed;
+			} else {
+				flags &= !EmoteFlags::PublicListed;
+			}
 		}
 
-		if val.private {
-			flags |= shared::database::emote::EmoteFlags::Private;
+		if let Some(private) = self.private {
+			if private {
+				flags |= EmoteFlags::Private;
+			} else {
+				flags &= !EmoteFlags::Private;
+			}
 		}
 
-		if val.nsfw {
-			flags |= shared::database::emote::EmoteFlags::Nsfw;
+		if let Some(nsfw) = self.nsfw {
+			if nsfw {
+				flags |= EmoteFlags::Nsfw;
+			} else {
+				flags &= !EmoteFlags::Nsfw;
+			}
 		}
 
-		if val.default_zero_width {
-			flags |= shared::database::emote::EmoteFlags::DefaultZeroWidth;
+		if let Some(default_zero_width) = self.default_zero_width {
+			if default_zero_width {
+				flags |= EmoteFlags::DefaultZeroWidth;
+			} else {
+				flags &= !EmoteFlags::DefaultZeroWidth;
+			}
 		}
 
-		if val.approved_personal {
-			flags |= shared::database::emote::EmoteFlags::ApprovedPersonal;
+		if let Some(approved_personal) = self.approved_personal {
+			if approved_personal {
+				flags |= EmoteFlags::ApprovedPersonal;
+			} else {
+				flags &= !EmoteFlags::ApprovedPersonal;
+			}
 		}
 
-		if val.denied_personal {
-			flags |= shared::database::emote::EmoteFlags::DeniedPersonal;
+		if let Some(denied_personal) = self.denied_personal {
+			if denied_personal {
+				flags |= EmoteFlags::DeniedPersonal;
+			} else {
+				flags &= !EmoteFlags::DeniedPersonal;
+			}
 		}
 
-		if val.animated {
-			flags |= shared::database::emote::EmoteFlags::Animated;
+		if let Some(animated) = self.animated {
+			if animated {
+				flags |= EmoteFlags::Animated;
+			} else {
+				flags &= !EmoteFlags::Animated;
+			}
 		}
 
 		flags
@@ -75,7 +101,7 @@ impl EmoteMutation {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
 			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;
 
-		Ok(operation::EmoteOperation { _emote: emote })
+		Ok(operation::EmoteOperation { emote })
 	}
 
 	#[tracing::instrument(skip_all, name = "EmoteMutation::emotes")]

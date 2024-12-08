@@ -150,7 +150,7 @@
 
 	$effect(() => {
 		results.then(() => {
-			input.focus();
+			input?.focus();
 		});
 	});
 
@@ -166,18 +166,20 @@
 
 		giftLoading = true;
 
-		const res = await gqlClient().mutation(
-			graphql(`
-				mutation Subscribe($userId: Id!, $variantId: ProductId!) {
-					billing(userId: $userId) {
-						subscribe(variantId: $variantId) {
-							checkoutUrl
+		const res = await gqlClient()
+			.mutation(
+				graphql(`
+					mutation Subscribe($userId: Id!, $variantId: ProductId!) {
+						billing(userId: $userId) {
+							subscribe(variantId: $variantId) {
+								checkoutUrl
+							}
 						}
 					}
-				}
-			`),
-			{ userId: recipient.id, variantId: variant.id },
-		);
+				`),
+				{ userId: recipient.id, variantId: variant.id },
+			)
+			.toPromise();
 
 		if (res.data) {
 			window.location.href = res.data.billing.subscribe.checkoutUrl;

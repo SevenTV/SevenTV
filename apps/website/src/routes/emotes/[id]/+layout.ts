@@ -95,10 +95,23 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 								highestRoleColor {
 									hex
 								}
+								editors {
+									editorId
+									permissions {
+										emote {
+											manage
+										}
+									}
+								}
 							}
 							tags
 							flags {
+								animated
+								approvedPersonal
 								defaultZeroWidth
+								deniedPersonal
+								nsfw
+								private
 								publicListed
 							}
 							attribution {
@@ -142,6 +155,7 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 									alias
 								}
 							}
+							deleted
 						}
 					}
 				}

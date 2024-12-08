@@ -43,6 +43,7 @@
 
 	let formats = $derived(
 		data?.images
+			.filter((image) => image.frameCount > 1 === data?.flags.animated)
 			.reduce((acc, image) => {
 				if (!acc.includes(image.mime)) {
 					acc.push(image.mime);
@@ -54,6 +55,7 @@
 	let sizes = $derived(
 		data?.images
 			.filter((image) => image.mime === downloadFormat)
+			.filter((image) => image.frameCount > 1 === data?.flags.animated)
 			.reduce((acc, image) => {
 				if (!acc[image.scale]) {
 					acc[image.scale] = image;
@@ -95,6 +97,14 @@
 
 		return result;
 	}
+
+	let editPermission = $derived(
+		data && $user
+			? data.owner?.id === $user.id ||
+					$user.permissions.emote.manageAny ||
+					data.owner?.editors.find((e) => e.editorId === $user.id)?.permissions.emote.manage
+			: undefined,
+	);
 </script>
 
 {#if !children && data}
@@ -102,10 +112,10 @@
 	{#if addEmoteDialogMode !== "hidden"}
 		<AddEmoteDialog bind:mode={addEmoteDialogMode} {data} />
 	{/if}
-	<EditEmoteDialog bind:mode={editDialogMode} />
-	<TransferEmoteDialog bind:mode={transferDialogMode} {data} />
-	<ReportEmoteDialog bind:mode={reportDialogMode} />
-	<DeleteEmoteDialog bind:mode={deleteDialogMode} {data} />
+	<EditEmoteDialog bind:mode={editDialogMode} bind:data />
+	<TransferEmoteDialog bind:mode={transferDialogMode} bind:data />
+	<ReportEmoteDialog bind:mode={reportDialogMode} targetId={data.id} />
+	<DeleteEmoteDialog bind:mode={deleteDialogMode} bind:data />
 {/if}
 {#if data}
 	<div class="top-bar">
@@ -154,15 +164,15 @@
 			{/each}
 		{:else}
 			<EmoteLoadingPlaceholder index={0} size={32} />
-			<EmoteLoadingPlaceholder index={2} size={64} />
-			<EmoteLoadingPlaceholder index={3} size={96} />
+			<EmoteLoadingPlaceholder index={1} size={64} />
+			<EmoteLoadingPlaceholder index={2} size={96} />
 			<EmoteLoadingPlaceholder index={3} size={128} />
 		{/if}
 	</div>
 	{#if data}
 		<div class="buttons">
 			{#snippet fallbackChildren()}
-				{#if $user}
+				{#if $user && data !== null && !data.deleted}
 					<EmoteUseButton {data} primary />
 					<Button
 						primary={!$defaultEmoteSet}
@@ -174,59 +184,77 @@
 						{/snippet}
 						{$t("pages.emote.add_to")}
 					</Button>
-					<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
-						{#snippet icon()}
-							<NotePencil />
-						{/snippet}
-						{$t("labels.edit")}
-					</Button>
-					<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
-						{#snippet icon()}
-							<NotePencil />
-						{/snippet}
-					</Button>
+					{#if editPermission}
+						<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
+							{#snippet icon()}
+								<NotePencil />
+							{/snippet}
+							{$t("labels.edit")}
+						</Button>
+						<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
+							{#snippet icon()}
+								<NotePencil />
+							{/snippet}
+						</Button>
+					{/if}
 				{/if}
 				<DropDown>
-					<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
-						{$t("labels.more")}
-						{#snippet iconRight()}
-							<CaretDown />
-						{/snippet}
-					</Button>
-					<Button secondary hideOnDesktop>
-						{#snippet icon()}
-							<CaretDown />
-						{/snippet}
-					</Button>
+					{#if (!$user || data?.deleted) && formats && formats.length > 1}
+						<Button secondary onclick={() => (moreMenuMode = "download-format")}>
+							<Download />
+							{$t("labels.download")}
+						</Button>
+					{/if}
+					{#if $user && !data?.deleted}
+						<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
+							{$t("labels.more")}
+							{#snippet iconRight()}
+								<CaretDown />
+							{/snippet}
+						</Button>
+						<Button secondary hideOnDesktop>
+							{#snippet icon()}
+								<CaretDown />
+							{/snippet}
+						</Button>
+					{/if}
 					{#snippet dropdown()}
 						<div class="dropdown">
 							{#if moreMenuMode === "root"}
-								<MenuButton onclick={() => (transferDialogMode = "shown")}>
-									<PaperPlaneRight />
-									{$t("pages.emote.transfer")}
-								</MenuButton>
-								<MenuButton>
-									<ArrowsMerge style="transform: rotate(-90deg)" />
-									{$t("pages.emote.merge")}
-								</MenuButton>
+								{#if $user?.permissions.emote.manageAny}
+									<MenuButton onclick={() => (transferDialogMode = "shown")}>
+										<PaperPlaneRight />
+										{$t("pages.emote.transfer")}
+									</MenuButton>
+								{/if}
+								{#if editPermission}
+									<MenuButton>
+										<ArrowsMerge style="transform: rotate(-90deg)" />
+										{$t("pages.emote.merge")}
+									</MenuButton>
+								{/if}
 								{#if formats && formats.length > 1}
 									<MenuButton showCaret onclick={() => (moreMenuMode = "download-format")}>
 										<Download />
 										{$t("labels.download")}
 									</MenuButton>
 								{/if}
-								<MenuButton onclick={() => (reportDialogMode = "shown")}>
-									<Flag />
-									{$t("labels.report")}
-								</MenuButton>
+								{#if $user?.permissions.ticket.create}
+									<MenuButton onclick={() => (reportDialogMode = "shown")}>
+										<Flag />
+										{$t("labels.report")}
+									</MenuButton>
+								{/if}
 								<hr />
-								<MenuButton
-									style="color: var(--danger)"
-									onclick={() => (deleteDialogMode = "shown")}
-								>
-									<Trash />
-									{$t("labels.delete")}
-								</MenuButton>
+								{#if editPermission}
+									<MenuButton
+										style="color: var(--danger)"
+										onclick={() => (deleteDialogMode = "shown")}
+									>
+										<Trash />
+										{$t("labels.delete")}
+									</MenuButton>
+								{/if}
 							{:else if moreMenuMode === "download-format"}
 								{#each formats ?? [] as format}
 									<MenuButton showCaret onclick={() => clickFormat(format)}>

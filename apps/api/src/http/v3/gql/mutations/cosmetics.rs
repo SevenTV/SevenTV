@@ -105,9 +105,9 @@ impl CosmeticsMutation {
 	}
 
 	#[graphql(guard = "PermissionGuard::one(PaintPermission::Manage)")]
-	async fn reprocess_cosmetic_image<'ctx>(
+	async fn reprocess_cosmetic_image(
 		&self,
-		ctx: &Context<'ctx>,
+		ctx: &Context<'_>,
 		paint_ids: Option<Vec<GqlObjectId>>,
 		badge_ids: Option<Vec<GqlObjectId>>,
 	) -> Result<CosmeticReprocessResults, ApiError> {

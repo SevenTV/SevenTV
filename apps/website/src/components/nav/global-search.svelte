@@ -179,7 +179,7 @@
 
 	$effect(() => {
 		results.then(() => {
-			input.focus();
+			input?.focus();
 		});
 	});
 
@@ -188,7 +188,7 @@
 	function onkeydown(event: KeyboardEvent) {
 		// Handle Ctrl + K
 		if (event.ctrlKey && event.key === "k") {
-			input.focus();
+			input?.focus();
 			event.preventDefault();
 			event.stopPropagation();
 		}

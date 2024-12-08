@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::Context;
+use itertools::Itertools;
 use shared::database::emote::EmoteId;
 use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
@@ -31,29 +32,42 @@ impl EmoteSet {
 	#[tracing::instrument(skip_all, name = "EmoteSet::emotes")]
 	async fn emotes(
 		&self,
+		#[graphql(validator(min_length = 1, max_length = 100))] query: Option<String>,
 		page: Option<u32>,
 		#[graphql(validator(minimum = 1))] per_page: Option<u32>,
 	) -> SearchResult<EmoteSetEmote> {
+		let filtered = self
+			.emotes
+			.iter()
+			.filter(|e| {
+				if let Some(query) = &query {
+					e.alias.to_lowercase().contains(query.to_lowercase().trim())
+				} else {
+					true
+				}
+			})
+			.cloned()
+			.collect_vec();
+
 		if let Some(page) = page {
 			let chunk_size = per_page.map(|p| p as usize).unwrap_or(20);
 
-			let items = self
-				.emotes
+			let items = filtered
 				.chunks(chunk_size)
 				.nth(page.saturating_sub(1) as usize)
 				.unwrap_or_default()
 				.to_vec();
 
 			SearchResult {
+				total_count: filtered.len() as u64,
+				page_count: (filtered.len() as u64 / chunk_size as u64) + 1,
 				items,
-				total_count: self.emotes.len() as u64,
-				page_count: (self.emotes.len() as u64 / chunk_size as u64) + 1,
 			}
 		} else {
 			SearchResult {
-				items: self.emotes.clone(),
-				total_count: self.emotes.len() as u64,
+				total_count: filtered.len() as u64,
 				page_count: 1,
+				items: filtered,
 			}
 		}
 	}

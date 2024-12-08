@@ -13,6 +13,7 @@ mod profile_picture;
 mod role;
 mod search;
 mod subscription;
+mod ticket;
 mod user;
 
 pub use badge::*;
@@ -30,4 +31,5 @@ pub use profile_picture::*;
 pub use role::*;
 pub use search::*;
 pub use subscription::*;
+pub use ticket::*;
 pub use user::*;

@@ -2,11 +2,11 @@
 	import Logo from "$/components/icons/logo.svelte";
 	import TopTabs from "./top-tabs.svelte";
 	import HideOn from "../hide-on.svelte";
-	import { showMobileMenu, signInDialogMode } from "$/lib/layout";
+	import { showMobileMenu, signInDialogMode, uploadDialogMode } from "$/lib/layout";
 	import { user } from "$/lib/auth";
 	import DropDown from "../drop-down.svelte";
 	import Menu from "./menu.svelte";
-	import { List, MagnifyingGlass } from "phosphor-svelte";
+	import { List, MagnifyingGlass, PlusSquare } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import CartDialog from "../dialogs/cart-dialog.svelte";
 	import { type DialogMode } from "../dialogs/dialog.svelte";
@@ -82,17 +82,17 @@
 				</Button>
 			{/if} -->
 
-			<!-- <Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
+			<Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
 				{#snippet icon()}
 					<PlusSquare />
 				{/snippet}
-			</Button> -->
-			<!-- <Button secondary hideOnMobile onclick={() => ($uploadDialogMode = "shown")}>
+			</Button>
+			<Button secondary hideOnMobile onclick={() => ($uploadDialogMode = "shown")}>
 				{#snippet icon()}
 					<PlusSquare />
 				{/snippet}
 				{$t("dialogs.upload.upload")}
-			</Button> -->
+			</Button>
 		{:else if $user === undefined}
 			<Spinner />
 		{/if}

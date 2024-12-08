@@ -9,13 +9,14 @@
 		overlaying: StackSimple,
 		unlisted: EyeSlash,
 		personal_use_denied: EyeSlash,
+		deleted: Trash,
 
 		// Emote set flags
 		default: House,
 		personal: Star,
 
 		// Permissions
-		profile: User,
+		profile: UserIcon,
 		editors: PencilSimple,
 		emote_sets: FolderSimple,
 		emotes: Smiley,
@@ -30,6 +31,7 @@
 		overlaying: "#fc8dc7",
 		unlisted: "#eb3d26",
 		personal_use_denied: "#eb3d26",
+		deleted: "#eb3d26",
 	};
 
 	export function determineHighlightColor(flags: string[], ignoredFlags: string[] = []) {
@@ -66,18 +68,36 @@
 
 		if (emote.ranking && emote.ranking < 50) flags.push("trending");
 
+		if (emote.deleted) flags.push("deleted");
+
 		return flags;
 	}
 
-	export function emoteSetToFlags(set: EmoteSet): string[] {
+	export function emoteSetToFlags(
+		set: EmoteSet,
+		user?: User | null,
+		defaultSet?: string,
+	): string[] {
+		const flags = [];
+
+		if (user?.style.activeEmoteSetId === set.id) {
+			flags.push("active");
+		}
+
+		if (set.id === defaultSet) {
+			flags.push("default");
+		}
+
 		switch (set.kind) {
 			case EmoteSetKind.Global:
-				return ["global"];
+				flags.push("global");
+				break;
 			case EmoteSetKind.Personal:
-				return ["personal"];
-			default:
-				return [];
+				flags.push("personal");
+				break;
 		}
+
+		return flags;
 	}
 </script>
 
@@ -94,11 +114,12 @@
 		Smiley,
 		StackSimple,
 		Star,
-		User,
+		Trash,
+		User as UserIcon,
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
-	import { EmoteSetKind, type Emote, type EmoteSet } from "$/gql/graphql";
+	import { EmoteSetKind, type Emote, type EmoteSet, type User } from "$/gql/graphql";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	const names: { [key: string]: string } = {

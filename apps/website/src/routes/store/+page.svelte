@@ -25,45 +25,32 @@
 	let { data }: { data: PageData } = $props();
 
 	async function queryStore(userId: string) {
-		let res = await gqlClient().query(
-			graphql(`
-				query StoreData($userId: Id!, $productId: Id!) {
-					products {
-						subscriptionProduct(id: $productId) {
-							id
-							name
-							variants {
+		let res = await gqlClient()
+			.query(
+				graphql(`
+					query StoreData($userId: Id!, $productId: Id!) {
+						products {
+							subscriptionProduct(id: $productId) {
 								id
-								price {
-									amount
-									currency
+								name
+								variants {
+									id
+									price {
+										amount
+										currency
+									}
+									kind
 								}
-								kind
 							}
 						}
-					}
-					users {
-						user(id: $userId) {
-							billing(productId: $productId) {
-								badgeProgress {
-									currentBadge {
-										id
-										name
-										description
-										images {
-											url
-											mime
-											size
-											scale
-											width
-											height
-											frameCount
-										}
-									}
-									nextBadge {
-										badge {
+						users {
+							user(id: $userId) {
+								billing(productId: $productId) {
+									badgeProgress {
+										currentBadge {
 											id
 											name
+											description
 											images {
 												url
 												mime
@@ -74,159 +61,174 @@
 												frameCount
 											}
 										}
-										percentage
-										daysLeft
-									}
-								}
-								subscriptionInfo {
-									totalDays
-									activePeriod {
-										subscriptionProductVariant {
-											kind
-										}
-										subscription {
-											state
-										}
-										end
-										giftedBy {
-											id
-											mainConnection {
-												platformDisplayName
+										nextBadge {
+											badge {
+												id
+												name
+												images {
+													url
+													mime
+													size
+													scale
+													width
+													height
+													frameCount
+												}
 											}
-											style {
-												activePaint {
-													id
-													name
-													data {
-														layers {
-															id
-															ty {
-																__typename
-																... on PaintLayerTypeSingleColor {
-																	color {
-																		hex
-																	}
-																}
-																... on PaintLayerTypeLinearGradient {
-																	angle
-																	repeating
-																	stops {
-																		at
+											percentage
+											daysLeft
+										}
+									}
+									subscriptionInfo {
+										totalDays
+										activePeriod {
+											subscriptionProductVariant {
+												kind
+											}
+											subscription {
+												state
+											}
+											end
+											giftedBy {
+												id
+												mainConnection {
+													platformDisplayName
+												}
+												style {
+													activePaint {
+														id
+														name
+														data {
+															layers {
+																id
+																ty {
+																	__typename
+																	... on PaintLayerTypeSingleColor {
 																		color {
 																			hex
 																		}
 																	}
-																}
-																... on PaintLayerTypeRadialGradient {
-																	repeating
-																	stops {
-																		at
-																		color {
-																			hex
+																	... on PaintLayerTypeLinearGradient {
+																		angle
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
 																		}
 																	}
-																	shape
-																}
-																... on PaintLayerTypeImage {
-																	images {
-																		url
-																		mime
-																		size
-																		scale
-																		width
-																		height
-																		frameCount
+																	... on PaintLayerTypeRadialGradient {
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
+																		}
+																		shape
+																	}
+																	... on PaintLayerTypeImage {
+																		images {
+																			url
+																			mime
+																			size
+																			scale
+																			width
+																			height
+																			frameCount
+																		}
 																	}
 																}
+																opacity
 															}
-															opacity
-														}
-														shadows {
-															color {
-																hex
+															shadows {
+																color {
+																	hex
+																}
+																offsetX
+																offsetY
+																blur
 															}
-															offsetX
-															offsetY
-															blur
 														}
 													}
 												}
-											}
-											highestRoleColor {
-												hex
+												highestRoleColor {
+													hex
+												}
 											}
 										}
 									}
 								}
 							}
 						}
-					}
-					store {
-						monthlyPaints {
-							id
-							name
-							data {
-								layers {
-									id
-									ty {
-										__typename
-										... on PaintLayerTypeSingleColor {
-											color {
-												hex
-											}
-										}
-										... on PaintLayerTypeLinearGradient {
-											angle
-											repeating
-											stops {
-												at
+						store {
+							monthlyPaints {
+								id
+								name
+								data {
+									layers {
+										id
+										ty {
+											__typename
+											... on PaintLayerTypeSingleColor {
 												color {
 													hex
 												}
 											}
-										}
-										... on PaintLayerTypeRadialGradient {
-											repeating
-											stops {
-												at
-												color {
-													hex
+											... on PaintLayerTypeLinearGradient {
+												angle
+												repeating
+												stops {
+													at
+													color {
+														hex
+													}
 												}
 											}
-											shape
-										}
-										... on PaintLayerTypeImage {
-											images {
-												url
-												mime
-												size
-												scale
-												width
-												height
-												frameCount
+											... on PaintLayerTypeRadialGradient {
+												repeating
+												stops {
+													at
+													color {
+														hex
+													}
+												}
+												shape
+											}
+											... on PaintLayerTypeImage {
+												images {
+													url
+													mime
+													size
+													scale
+													width
+													height
+													frameCount
+												}
 											}
 										}
+										opacity
 									}
-									opacity
-								}
-								shadows {
-									color {
-										hex
+									shadows {
+										color {
+											hex
+										}
+										offsetX
+										offsetY
+										blur
 									}
-									offsetX
-									offsetY
-									blur
 								}
 							}
 						}
 					}
-				}
-			`),
-			{
-				userId,
-				productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
-			},
-		);
+				`),
+				{
+					userId,
+					productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
+				},
+			)
+			.toPromise();
 
 		return res.data;
 	}

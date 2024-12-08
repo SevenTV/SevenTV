@@ -1,5 +1,29 @@
 import { graphql } from "$/gql";
+import type { EmoteSet } from "$/gql/graphql";
 import { gqlClient } from "./gql";
+
+export async function createSet(name: string, tags: string[]) {
+	const res = await gqlClient()
+		.mutation(
+			graphql(`
+				mutation CreateEmoteSet($name: String!, $tags: [String!]!) {
+					emoteSets {
+						create(name: $name, tags: $tags) {
+							id
+						}
+					}
+				}
+			`),
+			{ name, tags },
+		)
+		.toPromise();
+
+	if (!res.data) {
+		return undefined;
+	}
+
+	return res.data.emoteSets.create as EmoteSet;
+}
 
 export async function addEmoteToSet(setId: string, emoteId: string, alias?: string) {
 	await gqlClient()
@@ -8,7 +32,7 @@ export async function addEmoteToSet(setId: string, emoteId: string, alias?: stri
 				mutation AddEmoteToSet($setId: Id!, $emote: EmoteSetEmoteId!) {
 					emoteSets {
 						emoteSet(id: $setId) {
-							addEmote(emote: { id: $emote }) {
+							addEmote(id: $emote) {
 								id
 							}
 						}
@@ -61,4 +85,111 @@ export async function renameEmoteInSet(
 			{ setId, emote: { emoteId, alias: oldAlias }, alias: newAlias },
 		)
 		.toPromise();
+}
+
+export async function updateName(id: string, name: string) {
+	const res = await gqlClient()
+		.mutation(
+			graphql(`
+				mutation UpdateEmoteSetName($id: Id!, $name: String!) {
+					emoteSets {
+						emoteSet(id: $id) {
+							name(name: $name) {
+								id
+								name
+								capacity
+								kind
+								tags
+								emotes(page: 1, perPage: 12) {
+									items {
+										emote {
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												frameCount
+											}
+										}
+									}
+									totalCount
+								}
+							}
+						}
+					}
+				}
+			`),
+			{ id, name },
+		)
+		.toPromise();
+
+	if (!res.data) {
+		return undefined;
+	}
+
+	return res.data.emoteSets.emoteSet.name as EmoteSet;
+}
+
+export async function updateTags(id: string, tags: string[]) {
+	const res = await gqlClient()
+		.mutation(
+			graphql(`
+				mutation UpdateEmoteSetTags($id: Id!, $tags: [String!]!) {
+					emoteSets {
+						emoteSet(id: $id) {
+							tags(tags: $tags) {
+								id
+								name
+								capacity
+								kind
+								tags
+								emotes(page: 1, perPage: 12) {
+									items {
+										emote {
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												frameCount
+											}
+										}
+									}
+									totalCount
+								}
+							}
+						}
+					}
+				}
+			`),
+			{ id, tags },
+		)
+		.toPromise();
+
+	if (!res.data) {
+		return undefined;
+	}
+
+	return res.data.emoteSets.emoteSet.tags as EmoteSet;
+}
+
+export async function deleteSet(id: string) {
+	const res = await gqlClient()
+		.mutation(
+			graphql(`
+				mutation DeleteSet($id: Id!) {
+					emoteSets {
+						emoteSet(id: $id) {
+							delete
+						}
+					}
+				}
+			`),
+			{ id },
+		)
+		.toPromise();
+
+	return res.data?.emoteSets.emoteSet.delete;
 }

@@ -1,9 +1,3 @@
-input AddEmote {
-	id: EmoteSetEmoteId!
-	overrideConflicts: Boolean
-	zeroWidth: Boolean
-}
-
 type AdminPermission {
 	admin: Boolean!
 	bypassRateLimit: Boolean!
@@ -71,11 +65,33 @@ The input/output is a string in RFC3339 format.
 """
 scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339")
 
+type EditorEmotePermission {
+	admin: Boolean!
+	create: Boolean!
+	manage: Boolean!
+	transfer: Boolean!
+}
+
+type EditorEmoteSetPermission {
+	admin: Boolean!
+	create: Boolean!
+	manage: Boolean!
+}
+
+type EditorUserPermission {
+	admin: Boolean!
+	manageBilling: Boolean!
+	manageEditors: Boolean!
+	managePersonalEmoteSet: Boolean!
+	manageProfile: Boolean!
+}
+
 type Emote {
 	aspectRatio: Float!
 	attribution: [EmoteAttribution!]!
 	channels(page: Int, perPage: Int): UserSearchResult!
 	defaultName: String!
+	deleted: Boolean!
 	events(page: Int, perPage: Int): [EmoteEvent!]!
 	flags: EmoteFlags!
 	id: Id!
@@ -128,13 +144,13 @@ type EmoteFlags {
 }
 
 input EmoteFlagsInput {
-	animated: Boolean!
-	approvedPersonal: Boolean!
-	defaultZeroWidth: Boolean!
-	deniedPersonal: Boolean!
-	nsfw: Boolean!
-	private: Boolean!
-	publicListed: Boolean!
+	animated: Boolean
+	approvedPersonal: Boolean
+	defaultZeroWidth: Boolean
+	deniedPersonal: Boolean
+	nsfw: Boolean
+	private: Boolean
+	publicListed: Boolean
 }
 
 type EmoteInEmoteSetResponse {
@@ -153,9 +169,9 @@ type EmoteMutation {
 }
 
 type EmoteOperation {
-	delete(reason: String): Emote!
+	delete: Emote!
 	flags(flags: EmoteFlagsInput!): Emote!
-	merge(with: Id!): Emote!
+	merge(targetId: Id!): Emote!
 	name(name: String!): Emote!
 	owner(ownerId: Id!): Emote!
 	tags(tags: [String!]!): Emote!
@@ -195,7 +211,7 @@ type EmoteSearchResult {
 type EmoteSet {
 	capacity: Int
 	description: String
-	emotes(page: Int, perPage: Int): EmoteSetEmoteSearchResult!
+	emotes(page: Int, perPage: Int, query: String): EmoteSetEmoteSearchResult!
 	id: Id!
 	kind: EmoteSetKind!
 	name: String!
@@ -245,16 +261,17 @@ enum EmoteSetKind {
 }
 
 type EmoteSetMutation {
+	create(name: String!, ownerId: Id, tags: [String!]!): EmoteSet!
 	emoteSet(id: Id!): EmoteSetOperation!
 }
 
 type EmoteSetOperation {
-	addEmote(emote: AddEmote!): EmoteSet!
+	addEmote(id: EmoteSetEmoteId!, overrideConflicts: Boolean, zeroWidth: Boolean): EmoteSet!
 	capacity(capacity: Int!): EmoteSet!
-	create(name: String!): EmoteSet!
 	delete: Boolean!
 	name(name: String!): EmoteSet!
 	removeEmote(id: EmoteSetEmoteId!): EmoteSet!
+	tags(tags: [String!]!): EmoteSet!
 	updateEmoteAlias(alias: String!, id: EmoteSetEmoteId!): EmoteSetEmote!
 	updateEmoteFlags(flags: EmoteSetEmoteFlagsInput!, id: EmoteSetEmoteId!): EmoteSetEmote!
 }
@@ -472,6 +489,8 @@ type Mutation {
 	billing(userId: Id!): BillingMutation!
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
+	tickets: TicketMutation!
+	users: UserMutation!
 }
 
 type Paint {
@@ -774,6 +793,45 @@ enum TagsMatch {
 	ANY
 }
 
+type Ticket {
+	authorId: Id!
+	countryCode: String
+	id: Id!
+	kind: TicketKind!
+	locked: Boolean!
+	members: [TicketMember!]!
+	open: Boolean!
+	priority: TicketPriority!
+	searchUpdatedAt: DateTime
+	tags: [String!]!
+	targets: [TicketTarget!]!
+	title: String!
+	updatedAt: DateTime!
+}
+
+enum TicketKind {
+	ABUSE
+	BILLING
+	GENERIC
+}
+
+type TicketMember {
+	kind: TicketMemberKind!
+	lastRead: Id
+	notifications: Boolean!
+	userId: Id!
+}
+
+enum TicketMemberKind {
+	ASSIGNED
+	MEMBER
+	WATCHER
+}
+
+type TicketMutation {
+	createAbuseTicket(content: String, target: TicketTargetInput!, title: String!): Ticket!
+}
+
 type TicketPermission {
 	admin: Boolean!
 	create: Boolean!
@@ -781,6 +839,29 @@ type TicketPermission {
 	manageBilling: Boolean!
 	manageGeneric: Boolean!
 	message: Boolean!
+}
+
+enum TicketPriority {
+	HIGH
+	LOW
+	MEDIUM
+	URGENT
+}
+
+type TicketTarget {
+	id: Id!
+	kind: TicketTargetType!
+}
+
+input TicketTargetInput {
+	id: Id!
+	kind: TicketTargetType!
+}
+
+enum TicketTargetType {
+	EMOTE
+	EMOTE_SET
+	USER
 }
 
 type User {
@@ -822,10 +903,18 @@ type UserEditor {
 	editor: User
 	editorId: Id!
 	notes: String
+	permissions: UserEditorPermissions!
 	searchUpdatedAt: DateTime
 	state: UserEditorState!
 	updatedAt: DateTime!
 	userId: Id!
+}
+
+type UserEditorPermissions {
+	emote: EditorEmotePermission!
+	emoteSet: EditorEmoteSetPermission!
+	superAdmin: Boolean!
+	user: EditorUserPermission!
 }
 
 enum UserEditorState {
@@ -849,6 +938,14 @@ type UserEvent {
 type UserInventory {
 	badges: [EntitlementEdgeAnyBadge!]!
 	paints: [EntitlementEdgeAnyPaint!]!
+}
+
+type UserMutation {
+	user(id: Id!): UserOperation!
+}
+
+type UserOperation {
+	activeEmoteSet(emoteSetId: Id): User!
 }
 
 type UserPermission {

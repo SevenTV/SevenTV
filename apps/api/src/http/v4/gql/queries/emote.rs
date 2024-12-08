@@ -80,14 +80,24 @@ impl EmoteQuery {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 
-		let emote = global
+		let Some(emote) = global
 			.emote_by_id_loader
 			.load(id)
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
+		else {
+			return Ok(None);
+		};
 
-		Ok(emote.map(|e| Emote::from_db(e, &global.config.api.cdn_origin)))
+		if !session.has(EmotePermission::ViewUnlisted) && (emote.deleted || emote.merged.is_some()) {
+			return Ok(None);
+		}
+
+		Ok(Some(Emote::from_db(emote, &global.config.api.cdn_origin)))
 	}
 
 	#[allow(clippy::too_many_arguments)]
