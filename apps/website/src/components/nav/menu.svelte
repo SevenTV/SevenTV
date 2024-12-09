@@ -97,7 +97,7 @@
 		</div>
 		{#if $user}
 			<div class="link-list">
-				<MenuButton href="/cosmetics" onclick={onCloseRequest}>
+				<MenuButton href="/users/{$user.id}/cosmetics" onclick={onCloseRequest}>
 					<PaintBrush />
 					{$t("common.cosmetics")}
 				</MenuButton>

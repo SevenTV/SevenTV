@@ -26,5 +26,5 @@
 <EmoteLoader
 	bind:this={loader}
 	load={(page, perPage) =>
-		queryEmotes(data.query, data.tags, SortBy.TrendingWeekly, data.filters, page, perPage)}
+		queryEmotes(data.query, data.tags, SortBy.TrendingMonthly, data.filters, page, perPage)}
 />
