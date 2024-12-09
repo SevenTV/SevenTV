@@ -6,7 +6,7 @@ import { PUBLIC_GQL_API_V4 } from "$env/static/public";
 import { currentError, errorDialogMode } from "./error";
 
 // non-reactive on purpose
-let client: Client | undefined = undefined;
+var client: Client | undefined;
 
 export function gqlClient(): Client {
 	if (client) return client;
