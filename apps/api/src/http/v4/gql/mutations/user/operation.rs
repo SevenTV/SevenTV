@@ -14,7 +14,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
 use crate::http::middleware::session::Session;
-use crate::http::v4::gql::types::User;
+use crate::http::v4::gql::types::{Platform, User};
 use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 pub struct UserOperation {
@@ -25,7 +25,7 @@ pub struct UserOperation {
 impl UserOperation {
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1)")]
 	#[tracing::instrument(skip_all, name = "UserOperation::main_connection")]
-	async fn main_connection(&self, ctx: &Context<'_>, platform_id: String) -> Result<User, ApiError> {
+	async fn main_connection(&self, ctx: &Context<'_>, platform: Platform, platform_id: String) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| {
 			crate::http::error::ApiError::internal_server_error(
 				crate::http::error::ApiErrorCode::MissingContext,
@@ -80,16 +80,38 @@ impl UserOperation {
 						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
 					})?;
 
+				let platform = shared::database::user::connection::Platform::from(platform);
+
 				let connection = user
 					.connections
 					.iter()
-					.find(|c| c.platform_id == platform_id)
+					.find(|c| c.platform == platform && c.platform_id == platform_id)
 					.ok_or_else(|| {
 						TransactionError::Custom(ApiError::not_found(
 							ApiErrorCode::LoadError,
 							"connection not found for platform",
 						))
 					})?;
+
+				tx.update_one(
+					filter::filter! {
+						shared::database::user::User {
+							#[query(rename = "_id")]
+							id: self.user.id,
+						}
+					},
+					update::update! {
+						#[query(pull)]
+						shared::database::user::User {
+							connections: shared::database::user::connection::UserConnection {
+								platform: connection.platform,
+								platform_id: &connection.platform_id,
+							},
+						},
+					},
+					None,
+				)
+				.await?;
 
 				let user = tx
 					.find_one_and_update(
@@ -100,13 +122,6 @@ impl UserOperation {
 							}
 						},
 						update::update! {
-							#[query(pull)]
-							shared::database::user::User {
-								connections: shared::database::user::connection::UserConnection {
-									platform: connection.platform,
-									platform_id: &connection.platform_id,
-								},
-							},
 							#[query(push)]
 							shared::database::user::User {
 								#[query(serde, each, position = "0")]
