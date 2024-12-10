@@ -35,7 +35,6 @@
 
 <style lang="scss">
 	label {
-		cursor: pointer;
 		user-select: none;
 
 		display: flex;
@@ -43,6 +42,27 @@
 
 		color: var(--text);
 		font-size: 0.875rem;
+
+		&:has(input:enabled) {
+			cursor: pointer;
+
+			&.option {
+				&:focus-visible,
+				&:hover {
+					border-color: var(--border-active);
+				}
+			}
+		}
+
+		&:has(input:checked) {
+			// I hate CSS
+			&:has(input:enabled),
+			&:has(input:disabled) {
+				&.option {
+					border-color: var(--primary);
+				}
+			}
+		}
 
 		&.option {
 			padding: 0.97rem 0.75rem;
@@ -52,20 +72,6 @@
 
 			justify-content: space-between;
 			align-items: center;
-
-			&:has(input:checked) {
-				border-color: var(--primary);
-			}
-
-			&:has(input:disabled) {
-				cursor: not-allowed;
-				color: var(--text-light);
-			}
-
-			&:focus-visible,
-			&:hover {
-				border-color: var(--border-active);
-			}
 		}
 
 		.checkbox {
@@ -115,34 +121,39 @@
 			outline: none;
 		}
 
-		input:focus-visible + .checkbox {
-			border-color: var(--primary);
-		}
-
-		input:focus-visible,
-		input:hover {
-			& + .checkbox {
-				background-color: var(--secondary-hover);
-			}
-		}
-
-		input:active + .checkbox {
-			background-color: var(--secondary-active);
-		}
-
-		input:checked + .checkbox {
-			background-color: var(--primary);
-			border-color: transparent;
-
-			&::after {
-				transform: scale(1);
-			}
-		}
-
 		input:disabled + .checkbox {
 			cursor: not-allowed;
 			color: var(--text-light);
 			background-color: var(--secondary-disabled);
+		}
+
+		input:enabled {
+			&:focus-visible + .checkbox {
+				border-color: var(--primary);
+			}
+
+			&:focus-visible,
+			&:hover {
+				& + .checkbox {
+					background-color: var(--secondary-hover);
+				}
+			}
+
+			&:active + .checkbox {
+				background-color: var(--secondary-active);
+			}
+		}
+
+		input:enabled,
+		input:disabled {
+			&:checked + .checkbox {
+				background-color: var(--primary);
+				border-color: transparent;
+
+				&::after {
+					transform: scale(1);
+				}
+			}
 		}
 	}
 </style>

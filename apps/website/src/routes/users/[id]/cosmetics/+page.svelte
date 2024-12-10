@@ -4,31 +4,74 @@
 	import { t } from "svelte-i18n";
 	import { user } from "$/lib/auth";
 	import PaintComponent from "$/components/paint.svelte";
+	import BadgeComponent from "$/components/badge.svelte";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import Spinner from "$/components/spinner.svelte";
-	import type { Paint } from "$/gql/graphql";
+	import type { Badge, Paint } from "$/gql/graphql";
 	import type { PageData } from "./$types";
+	import Select, { type Option } from "$/components/input/select.svelte";
+	import TextInput from "$/components/input/text-input.svelte";
+	import { Empty, MagnifyingGlass } from "phosphor-svelte";
+	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
+	import HideOn from "$/components/hide-on.svelte";
+	import type { Layout } from "$/lib/layout";
+	import Radio from "$/components/input/radio.svelte";
+	import { setActiveBadge, setActivePaint } from "$/lib/userMutations";
+	import { invalidate, invalidateAll } from "$app/navigation";
+	import { page } from "$app/stores";
 
 	let { data }: { data: PageData } = $props();
 
 	async function queryInventory(id: string) {
+		console.log("Querying inventory for user", id);
+
 		const res = await gqlClient()
 			.query(
 				graphql(`
 					query UserInventory($id: Id!) {
 						users {
 							user(id: $id) {
+								style {
+									activeBadgeId
+									activePaintId
+								}
 								inventory {
+									badges {
+										to {
+											badge {
+												id
+												name
+												description
+												images {
+													url
+													mime
+													size
+													scale
+													width
+													height
+													frameCount
+												}
+											}
+										}
+									}
 									paints {
 										from {
 											__typename
+											... on EntitlementNodeRole {
+												role {
+													id
+													name
+												}
+											}
 											... on EntitlementNodeSubscriptionBenefit {
 												subscriptionBenefit {
+													id
 													name
 												}
 											}
 											... on EntitlementNodeSpecialEvent {
 												specialEvent {
+													id
 													name
 												}
 											}
@@ -108,112 +151,375 @@
 
 		const inventory = res.data.users.user?.inventory;
 
-		if (!inventory) {
+		if (!res.data.users.user || !inventory) {
 			return undefined;
 		}
 
-		const subPaints: { [key: string]: Paint[] } = {};
-		const specialEventPaints: { [key: string]: Paint[] } = {};
-		const otherPaints = [];
+		const badges = inventory.badges.filter((b) => b.to.badge).map((b) => b.to.badge as Badge);
 
-		for (const entitlement of inventory.paints) {
-			if (entitlement.from.__typename === "EntitlementNodeSubscriptionBenefit") {
+		const paints: { paint: Paint; sourceKey?: string; sourceName?: string }[] = [];
+		const paintFilters: Option[] = [];
+
+		for (const entitlement of inventory.paints.filter((p) => p.to.paint)) {
+			if (entitlement.from.__typename === "EntitlementNodeRole" && entitlement.from.role) {
+				const roleId = entitlement.from.role.id;
+				const roleName = entitlement.from.role.name;
+
+				paints.push({
+					paint: entitlement.to.paint as Paint,
+					sourceKey: roleId,
+					sourceName: roleName,
+				});
+
+				if (!paintFilters.some((f) => f.value === roleId)) {
+					paintFilters.push({
+						label: roleName,
+						value: roleId,
+					});
+				}
+			} else if (
+				entitlement.from.__typename === "EntitlementNodeSubscriptionBenefit" &&
+				entitlement.from.subscriptionBenefit
+			) {
+				const benefitId = entitlement.from.subscriptionBenefit.id;
 				const benefitName = entitlement.from.subscriptionBenefit.name;
 
-				if (!subPaints[benefitName]) {
-					subPaints[benefitName] = [];
-				}
+				paints.push({
+					paint: entitlement.to.paint as Paint,
+					sourceKey: benefitId,
+					sourceName: benefitName,
+				});
 
-				subPaints[benefitName].push(entitlement.to.paint as Paint);
-			} else if (entitlement.from.__typename === "EntitlementNodeSpecialEvent") {
+				if (!paintFilters.some((f) => f.value === benefitId)) {
+					paintFilters.push({
+						label: benefitName,
+						value: benefitId,
+					});
+				}
+			} else if (
+				entitlement.from.__typename === "EntitlementNodeSpecialEvent" &&
+				entitlement.from.specialEvent
+			) {
+				const eventId = entitlement.from.specialEvent.id;
 				const eventName = entitlement.from.specialEvent.name;
 
-				if (!specialEventPaints[eventName]) {
-					specialEventPaints[eventName] = [];
-				}
+				paints.push({
+					paint: entitlement.to.paint as Paint,
+					sourceKey: eventId,
+					sourceName: eventName,
+				});
 
-				specialEventPaints[eventName].push(entitlement.to.paint as Paint);
+				if (!paintFilters.some((f) => f.value === eventId)) {
+					paintFilters.push({
+						label: eventName,
+						value: eventId,
+					});
+				}
 			} else {
-				otherPaints.push(entitlement.to.paint as Paint);
+				paints.push({
+					paint: entitlement.to.paint as Paint,
+				});
 			}
 		}
 
+		paintFilters.sort((a, b) => a.value.localeCompare(b.value));
+
 		return {
-			paints: {
-				sub: subPaints,
-				specialEvent: specialEventPaints,
-				other: otherPaints,
-			},
+			activeBadgeId: res.data.users.user.style.activeBadgeId,
+			activePaintId: res.data.users.user.style.activePaintId,
+			badges,
+			paints,
+			paintFilters,
 		};
 	}
 
-	let inventory = $derived($user ? queryInventory(data.id) : undefined);
+	let inventory = $derived(queryInventory(data.id));
+
+	let editingEnabled = $derived($user?.id === data.id || $user?.permissions.user.manageAny);
+
+	let paintQuery = $state("");
+	let paintFilter = $state<string>("");
+	let paintsLayout = $state<Layout>("big-grid");
+
+	let badgeQuery = $state("");
+	let badgesLayout = $state<Layout>("big-grid");
+
+	let activeBadge = $state<string>();
+	let activePaint = $state<string>();
+
+	$effect(() => {
+		inventory?.then((data) => {
+			if (!data) {
+				return;
+			}
+
+			activeBadge = data.activeBadgeId === null ? "none" : data.activeBadgeId;
+			activePaint = data.activePaintId === null ? "none" : data.activePaintId;
+		});
+	});
+
+	function selectValueToRealValue(value: string) {
+		return value === "none" ? null : value;
+	}
+
+	let badgeLoading = $state(false);
+
+	$effect(() => {
+		if (activeBadge === undefined) {
+			return;
+		}
+
+		const activeBadgeValue = selectValueToRealValue(activeBadge);
+
+		inventory?.then((invData) => {
+			if (invData?.activeBadgeId !== activeBadgeValue) {
+				badgeLoading = true;
+				return setActiveBadge(data.id, activeBadgeValue);
+			}
+		}).then((newUser) => {
+			if (newUser) {
+				if ($user?.id === newUser.id) {
+					$user = newUser;
+				}
+
+				invalidateAll();
+			}
+
+			badgeLoading = false;
+		});
+	});
+
+	let paintLoading = $state(false);
+
+	$effect(() => {
+		if (activePaint === undefined) {
+			return;
+		}
+
+		const activePaintValue = selectValueToRealValue(activePaint);
+
+		inventory?.then((invData) => {
+			if (invData?.activePaintId !== activePaintValue) {
+				paintLoading = true;
+
+				return setActivePaint(data.id, activePaintValue);
+			}
+		}).then((newUser) => {
+			if (newUser) {
+				if ($user?.id === newUser.id) {
+					$user = newUser;
+				}
+
+				invalidateAll();
+			}
+
+			paintLoading = false;
+		});
+	});
 </script>
 
 <svelte:head>
-	<title>Your Cosmetics - {$t("page_titles.suffix")}</title>
+	<title>Cosmetics - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 {#await inventory}
-	<Spinner />
+	<div class="spinner-container">
+		<Spinner />
+	</div>
 {:then inventory}
 	{#if inventory}
 		<div class="layout">
-			<h1>Your Cosmetics</h1>
-			<br />
-			<hr />
-
-			<h2>Sub Paints</h2>
-			{#each Object.keys(inventory.paints.sub) as benefitName}
-				<h3>{benefitName}</h3>
-				<div class="paints">
-					{#each inventory.paints.sub[benefitName] as paint}
-						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
-							{paint.name.length > 0 ? paint.name : paint.id}
-						</PaintComponent>
+			<section>
+				<div class="header">
+					<h1>
+						Badges
+						{#if badgeLoading}
+							<Spinner />
+						{/if}
+					</h1>
+					<div class="buttons">
+						<HideOn mobile>
+							<TextInput placeholder="Search" bind:value={badgeQuery}>
+								{#snippet icon()}
+									<MagnifyingGlass />
+								{/snippet}
+							</TextInput>
+						</HideOn>
+						<LayoutButtons bind:value={badgesLayout} allowedLayouts={["big-grid", "list"]} />
+					</div>
+				</div>
+				<div
+					class="cosmetics"
+					class:grid={badgesLayout === "big-grid"}
+					class:list={badgesLayout === "list"}
+				>
+					<Radio
+						option
+						name="badge"
+						value="none"
+						bind:group={activeBadge}
+						disabled={!editingEnabled || badgeLoading}
+						style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
+					>
+						<Empty />
+						None
+					</Radio>
+					{#each inventory.badges.filter((b) => !badgeQuery || b.name
+								.toLowerCase()
+								.includes(badgeQuery)) as badge}
+						<Radio
+							option
+							name="badge"
+							value={badge.id}
+							bind:group={activeBadge}
+							disabled={!editingEnabled || badgeLoading}
+							style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
+						>
+							<BadgeComponent {badge} size={2 * 16} />
+							<span class="name">{badge.name}</span>
+							{#if badgesLayout === "list"}
+								<span class="description">{badge.description}</span>
+							{/if}
+						</Radio>
 					{/each}
 				</div>
-				<br />
-				<hr />
-			{/each}
-
-			<h2>Special Event Paints</h2>
-			{#each Object.keys(inventory.paints.specialEvent) as eventName}
-				<h3>{eventName}</h3>
-				<div class="paints">
-					{#each inventory.paints.specialEvent[eventName] as paint}
-						<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
-							{paint.name.length > 0 ? paint.name : paint.id}
-						</PaintComponent>
+			</section>
+			<section>
+				<div class="header">
+					<h1>
+						Paints
+						{#if paintLoading}
+							<Spinner />
+						{/if}
+					</h1>
+					<div class="buttons">
+						<Select
+							bind:selected={paintFilter}
+							options={[{ label: "None", value: "" }, ...inventory.paintFilters]}
+						/>
+						<HideOn mobile>
+							<TextInput placeholder="Search" bind:value={paintQuery}>
+								{#snippet icon()}
+									<MagnifyingGlass />
+								{/snippet}
+							</TextInput>
+						</HideOn>
+						<LayoutButtons bind:value={paintsLayout} allowedLayouts={["big-grid", "list"]} />
+					</div>
+				</div>
+				<div
+					class="cosmetics"
+					class:grid={paintsLayout === "big-grid"}
+					class:list={paintsLayout === "list"}
+				>
+					<Radio
+						option
+						name="paint"
+						value="none"
+						bind:group={activePaint}
+						disabled={!editingEnabled || paintLoading}
+						style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
+					>
+						<Empty />
+						None
+					</Radio>
+					{#each inventory.paints.filter((p) => (!paintFilter || p.sourceKey === paintFilter) && (!paintQuery || p.paint.name
+									.toLowerCase()
+									.includes(paintQuery.trim().toLowerCase()))) as paint}
+						<Radio
+							option
+							name="paint"
+							value={paint.paint.id}
+							bind:group={activePaint}
+							disabled={!editingEnabled || paintLoading}
+							style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
+						>
+							<PaintComponent
+								paint={paint.paint}
+								style="font-size: 0.875rem; font-weight: 500;"
+								enableDialog={!editingEnabled || paint.paint.id === activePaint}
+							>
+								{paint.paint.name.length > 0 ? paint.paint.name : paint.paint.id}
+							</PaintComponent>
+							{#if paintsLayout === "list" && paint.sourceName}
+								<span class="description">{paint.sourceName}</span>
+							{/if}
+						</Radio>
 					{/each}
 				</div>
-				<br />
-				<hr />
-			{/each}
-
-			<h2>Other Paints</h2>
-			<div class="paints">
-				{#each inventory.paints.other as paint}
-					<PaintComponent {paint} style="font-size: 1.2rem; font-weight: 700" enableDialog>
-						{paint.name.length > 0 ? paint.name : paint.id}
-					</PaintComponent>
-				{/each}
-			</div>
+			</section>
 		</div>
-	{:else}
-		<SignInDialog mode="shown-without-close" />
 	{/if}
 {/await}
 
 <style lang="scss">
+	.spinner-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 100%;
+	}
+
 	.layout {
 		overflow: auto;
 		scrollbar-gutter: stable;
+		min-height: 100%;
+
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 
-	.paints {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+	section {
+		display: flex;
+		flex-direction: column;
 		gap: 1rem;
+
+		padding: 1rem;
+		background-color: var(--bg-medium);
+		border-radius: 0.5rem;
+	}
+
+	h1 {
+		font-size: 1rem;
+		font-weight: 500;
+	}
+
+	.header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.buttons {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
+	.cosmetics {
+		gap: 0.5rem;
+
+		&.grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+		}
+
+		&.list {
+			display: flex;
+			flex-direction: column;
+		}
+	}
+
+	.name {
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	.description {
+		margin-left: auto;
+
+		color: var(--text-light);
+		font-size: 0.75rem;
 	}
 </style>

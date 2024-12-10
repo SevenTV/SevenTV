@@ -13,6 +13,7 @@
 	import Button from "$/components/input/button.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
+	import { emotesLayout } from "$/lib/layout";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import {
 		Copy,
@@ -353,7 +354,7 @@
 					<MagnifyingGlass />
 				{/snippet}
 			</TextInput>
-			<LayoutButtons />
+			<LayoutButtons bind:value={$emotesLayout} />
 		</div>
 	</div>
 	<div class="content">
