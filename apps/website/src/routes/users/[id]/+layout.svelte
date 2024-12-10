@@ -222,11 +222,6 @@
 				<ChatCircleText weight="fill" />
 			</TabLink> -->
 		</nav>
-		<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
-			{#snippet icon()}
-				<DotsThreeVertical />
-			{/snippet}
-		</Button>
 	</aside>
 	<div class="content">
 		<div class="header hide-on-desktop">

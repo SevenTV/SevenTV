@@ -341,7 +341,7 @@
 				},
 				"security": {
 					"title": "Security",
-					"details": "Manage and customize your account security with options like password updates and two-factor authentication",
+					"details": "Manage and customize your account security",
 					"2fa": "Two Factor Authentication",
 					"2fa_details": "Enhance the security of your account with Two-Factor Authentication (2FA)",
 					"email_details": "Receive a verification code via email",

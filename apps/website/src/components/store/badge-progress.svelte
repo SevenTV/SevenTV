@@ -110,6 +110,8 @@
 <style lang="scss">
 	.container {
 		display: flex;
+		flex-wrap: wrap-reverse;
+		justify-content: center;
 		gap: 1.25rem;
 	}
 

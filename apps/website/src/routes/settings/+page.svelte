@@ -13,9 +13,6 @@
 	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 	import DeleteAccountDialog from "$/components/dialogs/delete-account-dialog.svelte";
 	import { t } from "svelte-i18n";
-
-	let twoFaActive = $state(false);
-	let deleteAccountDialogMode: DialogMode = $state("hidden");
 </script>
 
 <svelte:head>
@@ -32,7 +29,6 @@
 	<KickLogo />
 {/snippet}
 
-<DeleteAccountDialog bind:mode={deleteAccountDialogMode} />
 <section>
 	<div>
 		<h2>{$t("common.profile")}</h2>
@@ -114,13 +110,6 @@
 			</div>
 			<Button primary>{$t("labels.connect")}</Button>
 		</li>
-		<li>
-			<div class="platform">
-				<XTwitterLogo />
-				<span>X / Twitter</span>
-			</div>
-			<Button primary>{$t("labels.connect")}</Button>
-		</li>
 	</ul>
 </section>
 
@@ -130,7 +119,7 @@
 		<span class="details">{$t("pages.settings.account.security.details")}</span>
 	</div>
 	<div class="content">
-		<TextInput type="email" style="max-width: 30rem">
+		<!-- <TextInput type="email" style="max-width: 30rem">
 			{#snippet icon()}
 				<At />
 			{/snippet}
@@ -165,7 +154,7 @@
 				</div>
 			</Checkbox>
 		{/if}
-		<hr />
+		<hr /> -->
 		<span>
 			<h3>{$t("pages.settings.account.security.sign_out_everywhere")}</h3>
 			<span class="details">
@@ -175,7 +164,7 @@
 		<Button secondary style="align-self: flex-start">
 			{$t("pages.settings.account.security.sign_out_everywhere")}
 		</Button>
-		<hr />
+		<!-- <hr />
 		<span>
 			<h3>{$t("common.delete_account")}</h3>
 			<span class="details">{$t("pages.settings.account.security.delete_account_details")}</span>
@@ -186,7 +175,7 @@
 			onclick={() => (deleteAccountDialogMode = "shown")}
 		>
 			{$t("common.delete_account")}
-		</Button>
+		</Button> -->
 	</div>
 </section>
 
