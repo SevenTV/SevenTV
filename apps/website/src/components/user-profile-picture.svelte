@@ -12,28 +12,31 @@
 </script>
 
 {#if !user}
-	<div class="placeholder loading-animation" style:width="{size}px" style:height="{size}px" {style}></div>
+	<div
+		class="placeholder loading-animation"
+		style:width="{size}px"
+		style:height="{size}px"
+		{style}
+	></div>
+{:else if user.style.activeProfilePicture}
+	<ResponsiveImage
+		width={size}
+		height={size}
+		images={user.style.activeProfilePicture.images}
+		round
+		borderColor={user.highestRoleColor?.hex}
+		{style}
+	/>
 {:else}
-	{#if user.style.activeProfilePicture}
-		<ResponsiveImage
-			width={size}
-			height={size}
-			images={user.style.activeProfilePicture.images}
-			round
-			borderColor={user.highestRoleColor?.hex}
-			{style}
-		/>
-	{:else}
-		<!-- svelte-ignore a11y_missing_attribute -->
-		<img
-			src={user.mainConnection?.platformAvatarUrl}
-			style:border-color={user.highestRoleColor?.hex ?? "transparent"}
-			width={size}
-			height={size}
-			class="profile-picture"
-			{style}
-		/>
-	{/if}
+	<!-- svelte-ignore a11y_missing_attribute -->
+	<img
+		src={user.mainConnection?.platformAvatarUrl}
+		style:border-color={user.highestRoleColor?.hex ?? "transparent"}
+		width={size}
+		height={size}
+		class="profile-picture"
+		{style}
+	/>
 {/if}
 
 <style lang="scss">

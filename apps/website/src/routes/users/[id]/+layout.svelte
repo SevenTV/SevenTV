@@ -22,7 +22,6 @@
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import { UserEditorState } from "$/gql/graphql";
 	import type { Snippet } from "svelte";
-	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
 	import { user } from "$/lib/auth";
 	import Badge from "$/components/badge.svelte";

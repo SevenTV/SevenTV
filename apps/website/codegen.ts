@@ -3,7 +3,7 @@ import { CodegenConfig } from "@graphql-codegen/cli";
 const config: CodegenConfig = {
 	schema: "./schema.graphql",
 	overwrite: true,
-	documents: ["./src/**/*.svelte", "./src/**/*.graphql", "./src/**/*.ts", "./src/lib/userMutations.ts"],
+	documents: ["./src/**/*.svelte", "./src/**/*.graphql", "./src/**/*.ts"],
 	generates: {
 		"./src/gql/": {
 			preset: "client",

@@ -4,7 +4,6 @@ import type { Role, User } from "$/gql/graphql";
 import { gqlClient } from "$/lib/gql";
 import { filterRoles } from "$/lib/utils";
 import { ProxyState } from "$/lib/proxy.svelte";
-import { writable } from "svelte/store";
 
 export function load({ fetch, params }: LayoutLoadEvent) {
 	const req = gqlClient()

@@ -122,8 +122,6 @@ export async function setActiveSet(userId: string, setId?: string) {
 }
 
 export async function setActiveBadge(userId: string, badgeId?: string | null) {
-	console.log('setActiveBadge', userId, badgeId);
-
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
@@ -352,8 +350,6 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 }
 
 export async function setActivePaint(userId: string, paintId?: string | null) {
-	console.log('setActivePaint', userId, paintId);
-
 	const res = await gqlClient()
 		.mutation(
 			graphql(`

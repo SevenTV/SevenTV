@@ -5,7 +5,6 @@
 	import { user } from "$/lib/auth";
 	import PaintComponent from "$/components/paint.svelte";
 	import BadgeComponent from "$/components/badge.svelte";
-	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import type { Badge, Paint } from "$/gql/graphql";
 	import type { PageData } from "./$types";
@@ -21,8 +20,6 @@
 	let { data }: { data: PageData } = $props();
 
 	async function queryInventory(id: string) {
-		console.log("Querying inventory for user", id);
-
 		const res = await gqlClient()
 			.query(
 				graphql(`
