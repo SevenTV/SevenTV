@@ -33,6 +33,17 @@ pub enum Platform {
 	Kick,
 }
 
+impl From<Platform> for shared::database::user::connection::Platform {
+	fn from(value: Platform) -> Self {
+		match value {
+			Platform::Twitch => Self::Twitch,
+			Platform::Discord => Self::Discord,
+			Platform::Google => Self::Google,
+			Platform::Kick => Self::Kick,
+		}
+	}
+}
+
 impl From<shared::database::user::connection::Platform> for Platform {
 	fn from(value: shared::database::user::connection::Platform) -> Self {
 		match value {
