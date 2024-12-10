@@ -7,6 +7,7 @@
 	import DropDown from "../drop-down.svelte";
 	import type { Paint } from "$/gql/graphql";
 	import PaintComponent from "../paint.svelte";
+	import { user } from "$/lib/auth";
 
 	let { paints }: { paints: Paint[] } = $props();
 
@@ -20,21 +21,23 @@
 				<Repeat />
 				<span title={renewMoment.format("lll")}>{renewMoment.fromNow(true)}</span>
 			</div>
-			<DropDown>
-				{#snippet dropdown()}
-					<Button big href="/cosmetics">
-						{#snippet icon()}
-							<PaintBrush />
-						{/snippet}
-						Your Paints
-					</Button>
-				{/snippet}
-				<Button secondary>
-					{#snippet icon()}
-						<DotsThreeVertical />
+			{#if $user}
+				<DropDown>
+					{#snippet dropdown()}
+						<Button big href="/users/{$user.id}/cosmetics">
+							{#snippet icon()}
+								<PaintBrush />
+							{/snippet}
+							Your Paints
+						</Button>
 					{/snippet}
-				</Button>
-			</DropDown>
+					<Button secondary>
+						{#snippet icon()}
+							<DotsThreeVertical />
+						{/snippet}
+					</Button>
+				</DropDown>
+			{/if}
 		</div>
 	{/snippet}
 	{#each paints as paint}

@@ -1,12 +1,30 @@
 <script lang="ts">
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import { Fire, Trophy, Upload } from "phosphor-svelte";
+	import { Fire, Plant, Trophy } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 	import DefaultEmoteSetButton from "$/components/default-emote-set-button.svelte";
+	import Select from "$/components/input/select.svelte";
+	import { page } from "$app/stores";
+	import { goto } from "$app/navigation";
+	import { emotesLayout } from "$/lib/layout";
 
 	let { children }: { children: Snippet } = $props();
+
+	let trendingMetric = $state<string>("");
+
+	$effect(() => {
+		if ($page.url.pathname.startsWith("/emotes/trending")) {
+			let newPath = "/emotes/trending";
+
+			if (trendingMetric) {
+				newPath += `/${trendingMetric}`;
+			}
+
+			goto(newPath);
+		}
+	});
 </script>
 
 <div class="nav-bar">
@@ -17,7 +35,12 @@
 				<Trophy weight="fill" />
 			{/snippet}
 		</TabLink>
-		<TabLink href="/emotes/trending" title={$t("common.trending")} responsive>
+		<TabLink
+			href="/emotes/trending"
+			title={$t("common.trending")}
+			matcher={(page, href) => (href ? page.url.pathname.startsWith(href) : false)}
+			responsive
+		>
 			<Fire />
 			{#snippet active()}
 				<Fire weight="fill" />
@@ -28,15 +51,25 @@
 			<GlobeHemisphereWest weight="fill" />
 		</TabLink> -->
 		<TabLink href="/emotes/new" title={$t("common.new")} responsive>
-			<Upload />
+			<Plant />
 			{#snippet active()}
-				<Upload weight="fill" />
+				<Plant weight="fill" />
 			{/snippet}
 		</TabLink>
+		{#if $page.url.pathname.startsWith("/emotes/trending")}
+			<Select
+				bind:selected={trendingMetric}
+				options={[
+					{ label: "Today", value: "daily" },
+					{ label: "Weekly", value: "" },
+					{ label: "Monthly", value: "monthly" },
+				]}
+			/>
+		{/if}
 	</nav>
 	<div class="buttons">
 		<DefaultEmoteSetButton />
-		<LayoutButtons />
+		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
 </div>
 {@render children()}

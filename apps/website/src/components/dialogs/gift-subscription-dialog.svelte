@@ -148,15 +148,6 @@
 
 	let results = $derived(search(query));
 
-	$effect(() => {
-		results.then(() => {
-			input?.focus();
-		});
-	});
-
-	// svelte-ignore non_reactive_update
-	let input: ReturnType<typeof TextInput>;
-
 	let giftLoading = $state(false);
 
 	async function gift() {
@@ -207,7 +198,7 @@
 				Gift 1 {variantUnit(variant)} subscription to <UserName user={recipient} />.
 			</p>
 		{:else}
-			<TextInput type="text" placeholder="Search User" bind:this={input} bind:value={query}>
+			<TextInput type="text" placeholder="Search User" bind:value={query}>
 				{#snippet icon()}
 					{#await results}
 						<Spinner />

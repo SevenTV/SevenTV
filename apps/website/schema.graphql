@@ -305,12 +305,12 @@ type EntitlementEdgeAnyPaint {
 union EntitlementNodeAny = EntitlementNodeUser | EntitlementNodeRole | EntitlementNodeBadge | EntitlementNodePaint | EntitlementNodeEmoteSet | EntitlementNodeProduct | EntitlementNodeSubscriptionBenefit | EntitlementNodeSubscription | EntitlementNodeSpecialEvent | EntitlementNodeGlobalDefaultEntitlementGroup
 
 type EntitlementNodeBadge {
-	badge: Badge!
+	badge: Badge
 	badgeId: Id!
 }
 
 type EntitlementNodeEmoteSet {
-	emoteSet: EmoteSet!
+	emoteSet: EmoteSet
 	emoteSetId: Id!
 }
 
@@ -319,7 +319,7 @@ type EntitlementNodeGlobalDefaultEntitlementGroup {
 }
 
 type EntitlementNodePaint {
-	paint: Paint!
+	paint: Paint
 	paintId: Id!
 }
 
@@ -328,12 +328,12 @@ type EntitlementNodeProduct {
 }
 
 type EntitlementNodeRole {
-	role: Role!
+	role: Role
 	roleId: Id!
 }
 
 type EntitlementNodeSpecialEvent {
-	specialEvent: SpecialEvent!
+	specialEvent: SpecialEvent
 	specialEventId: Id!
 }
 
@@ -342,12 +342,12 @@ type EntitlementNodeSubscription {
 }
 
 type EntitlementNodeSubscriptionBenefit {
-	subscriptionBenefit: SubscriptionBenefit!
+	subscriptionBenefit: SubscriptionBenefit
 	subscriptionBenefitId: Id!
 }
 
 type EntitlementNodeUser {
-	user: User!
+	user: User
 	userId: Id!
 }
 
@@ -950,7 +950,9 @@ type UserMutation {
 }
 
 type UserOperation {
+	activeBadge(badgeId: Id): User!
 	activeEmoteSet(emoteSetId: Id): User!
+	activePaint(paintId: Id): User!
 }
 
 type UserPermission {

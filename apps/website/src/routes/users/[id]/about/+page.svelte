@@ -10,7 +10,7 @@
 </script>
 
 <div class="layout">
-	{#await data.streamed.userRequest}
+	{#await data.streamed.userRequest.value}
 		<Spinner />
 	{:then user}
 		{#if user.connections.length > 0}

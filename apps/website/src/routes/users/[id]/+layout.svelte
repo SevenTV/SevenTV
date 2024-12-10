@@ -22,7 +22,6 @@
 	import ChannelPreview from "$/components/channel-preview.svelte";
 	import { UserEditorState } from "$/gql/graphql";
 	import type { Snippet } from "svelte";
-	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
 	import { user } from "$/lib/auth";
 	import Badge from "$/components/badge.svelte";
@@ -36,10 +35,10 @@
 </script>
 
 <svelte:head>
-	{#await data.streamed.userRequest}
+	{#await data.streamed.userRequest.value}
 		<title>Loading... - {$t("page_titles.suffix")}</title>
-	{:then user}
-		<title>{user.mainConnection?.platformDisplayName} - {$t("page_titles.suffix")}</title>
+	{:then userData}
+		<title>{userData?.mainConnection?.platformDisplayName} - {$t("page_titles.suffix")}</title>
 	{:catch}
 		<title>Error - {$t("page_titles.suffix")}</title>
 	{/await}
@@ -47,10 +46,14 @@
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
-		{#await data.streamed.userRequest}
-			<div class="spinner-container">
-				<Spinner />
-			</div>
+		{#await data.streamed.userRequest.value}
+			<UserProfilePicture
+				user={undefined}
+				size={4.75 * 16}
+				style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
+			/>
+			<div class="name placeholder loading-animation"></div>
+			<div class="roles placeholder loading-animation"></div>
 		{:then user}
 			<UserProfilePicture
 				{user}
@@ -59,7 +62,7 @@
 			/>
 			<span class="name" style:color={user.highestRoleColor?.hex}>
 				{#if user.style.activeBadge}
-					<Badge badge={user.style.activeBadge} />
+					<Badge badge={user.style.activeBadge} enableDialog />
 				{/if}
 				<UserName {user} enablePaintDialog />
 				<!-- <SealCheck size="0.8rem" /> -->
@@ -69,32 +72,62 @@
 					<Role {role} />
 				{/each}
 			</div>
-			<!-- <div class="data">
-				<span>
-					{numberFormat().format(1400)}
-					<br class="hide-on-mobile" />
-					<span class="text">{$t("common.followers", { values: { count: 1400 } })}</span>
-				</span>
-				<span>
-					{numberFormat().format(1200000)}
-					<br class="hide-on-mobile" />
-					<span class="text">{$t("common.channels", { values: { count: 1_200_000 } })}</span>
-				</span>
-			</div> -->
-			<!-- <div class="buttons">
-				<Button primary style="flex-grow: 1; justify-content: center;">
-					<Heart />
-					{$t("labels.follow")}
+		{/await}
+		<!-- <div class="data">
+			<span>
+				{numberFormat().format(1400)}
+				<br class="hide-on-mobile" />
+				<span class="text">{$t("common.followers", { values: { count: 1400 } })}</span>
+			</span>
+			<span>
+				{numberFormat().format(1200000)}
+				<br class="hide-on-mobile" />
+				<span class="text">{$t("common.channels", { values: { count: 1_200_000 } })}</span>
+			</span>
+		</div> -->
+		<!-- <div class="buttons">
+			<Button primary style="flex-grow: 1; justify-content: center;">
+				<Heart />
+				{$t("labels.follow")}
+			</Button>
+			<Button secondary hideOnMobile>
+				<CaretDown />
+			</Button>
+			<Button secondary hideOnDesktop>
+				<Gift />
+				{$t("labels.gift")}
+			</Button>
+		</div> -->
+		<nav class="link-list hide-on-mobile">
+			{#await data.streamed.userRequest.value}
+				<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
+					{#snippet icon()}
+						<Link />
+					{/snippet}
+					{$t("common.connections")}
+					{#snippet iconRight()}
+						{#if connectionsExpanded}
+							<CaretDown style="margin-left: auto" />
+						{:else}
+							<CaretRight style="margin-left: auto" />
+						{/if}
+					{/snippet}
 				</Button>
-				<Button secondary hideOnMobile>
-					<CaretDown />
+				<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
+					{#snippet icon()}
+						<UserCircle />
+					{/snippet}
+					{$t("common.editors")}
+					{#snippet iconRight()}
+						{#if editorsExpanded}
+							<CaretDown style="margin-left: auto" />
+						{:else}
+							<CaretRight style="margin-left: auto" />
+						{/if}
+					{/snippet}
 				</Button>
-				<Button secondary hideOnDesktop>
-					<Gift />
-					{$t("labels.gift")}
-				</Button>
-			</div> -->
-			<nav class="link-list hide-on-mobile">
+				<hr />
+			{:then user}
 				{#if user.connections.length > 0}
 					<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
 						{#snippet icon()}
@@ -142,58 +175,58 @@
 				{#if user.connections.length > 0 || user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted)}
 					<hr />
 				{/if}
-				<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.id}" big>
-					<Lightning />
-					{#snippet active()}
-						<Lightning weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink title={$t("pages.user.uploaded_emotes")} href="/users/{data.id}/uploaded" big>
-					<Upload />
-					{#snippet active()}
-						<Upload weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink
-					title={$t("common.emote_sets", { values: { count: 2 } })}
-					href="/users/{data.id}/emote-sets"
-					big
-				>
-					<FolderSimple />
-					{#snippet active()}
-						<FolderSimple weight="fill" />
-					{/snippet}
-				</TabLink>
-				<hr />
-				<TabLink title={$t("common.cosmetics")} href="/users/{data.id}/cosmetics" big>
-					<PaintBrush />
-					{#snippet active()}
-						<PaintBrush weight="fill" />
-					{/snippet}
-				</TabLink>
-				{#if showActivity}
-					<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
-						<Pulse />
-						{#snippet active()}
-							<Pulse weight="fill" />
-						{/snippet}
-					</TabLink>
-				{/if}
-				<!-- <TabLink title={$t("common.analytics")} href="/users/{data.id}/analytics" big>
-					<ChartLineUp />
-					<ChartLineUp weight="fill" />
-				</TabLink>
-				<TabLink title={$t("common.mod_comments")} href="/users/{data.id}/mod-comments" big>
-					<ChatCircleText />
-					<ChatCircleText weight="fill" />
-				</TabLink> -->
-			</nav>
-			<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
-				{#snippet icon()}
-					<DotsThreeVertical />
+			{/await}
+			<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.id}" big>
+				<Lightning />
+				{#snippet active()}
+					<Lightning weight="fill" />
 				{/snippet}
-			</Button>
-		{/await}
+			</TabLink>
+			<TabLink title={$t("pages.user.uploaded_emotes")} href="/users/{data.id}/uploaded" big>
+				<Upload />
+				{#snippet active()}
+					<Upload weight="fill" />
+				{/snippet}
+			</TabLink>
+			<TabLink
+				title={$t("common.emote_sets", { values: { count: 2 } })}
+				href="/users/{data.id}/emote-sets"
+				big
+			>
+				<FolderSimple />
+				{#snippet active()}
+					<FolderSimple weight="fill" />
+				{/snippet}
+			</TabLink>
+			<hr />
+			<TabLink title={$t("common.cosmetics")} href="/users/{data.id}/cosmetics" big>
+				<PaintBrush />
+				{#snippet active()}
+					<PaintBrush weight="fill" />
+				{/snippet}
+			</TabLink>
+			{#if showActivity}
+				<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
+					<Pulse />
+					{#snippet active()}
+						<Pulse weight="fill" />
+					{/snippet}
+				</TabLink>
+			{/if}
+			<!-- <TabLink title={$t("common.analytics")} href="/users/{data.id}/analytics" big>
+				<ChartLineUp />
+				<ChartLineUp weight="fill" />
+			</TabLink>
+			<TabLink title={$t("common.mod_comments")} href="/users/{data.id}/mod-comments" big>
+				<ChatCircleText />
+				<ChatCircleText weight="fill" />
+			</TabLink> -->
+		</nav>
+		<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
+			{#snippet icon()}
+				<DotsThreeVertical />
+			{/snippet}
+		</Button>
 	</aside>
 	<div class="content">
 		<div class="header hide-on-desktop">
@@ -253,8 +286,18 @@
 
 <style lang="scss">
 	.side-bar {
-		.spinner-container {
-			margin: auto;
+		.placeholder {
+			width: 100%;
+			background-color: var(--preview);
+			height: 22px;
+
+			&.name {
+				animation-delay: 0.1s;
+			}
+
+			&.roles {
+				animation-delay: 0.2s;
+			}
 		}
 
 		.name {

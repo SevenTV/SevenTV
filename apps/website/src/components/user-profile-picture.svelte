@@ -3,7 +3,7 @@
 	import ResponsiveImage from "./responsive-image.svelte";
 
 	type Props = {
-		user: User;
+		user?: User;
 		size?: number;
 		style?: string;
 	};
@@ -11,7 +11,14 @@
 	let { user, size = 44, style }: Props = $props();
 </script>
 
-{#if user.style.activeProfilePicture}
+{#if !user}
+	<div
+		class="placeholder loading-animation"
+		style:width="{size}px"
+		style:height="{size}px"
+		{style}
+	></div>
+{:else if user.style.activeProfilePicture}
 	<ResponsiveImage
 		width={size}
 		height={size}
@@ -36,5 +43,10 @@
 	.profile-picture {
 		border-radius: 50%;
 		border: 2px solid;
+	}
+
+	.placeholder {
+		border-radius: 50%;
+		background-color: var(--preview);
 	}
 </style>

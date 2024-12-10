@@ -273,12 +273,14 @@
 
 			<DropDown>
 				{#snippet dropdown()}
-					<Button big href="/cosmetics">
-						{#snippet icon()}
-							<PaintBrush />
-						{/snippet}
-						Your Cosmetics
-					</Button>
+					{#if $user}
+						<Button big href="/users/{$user.id}/cosmetics">
+							{#snippet icon()}
+								<PaintBrush />
+							{/snippet}
+							Your Cosmetics
+						</Button>
+					{/if}
 					{#if subInfo.activePeriod}
 						{#if subInfo.activePeriod.subscription.state === SubscriptionState.Active}
 							<Button big style="color: var(--danger)" onclick={() => (cancelSubDialog = "shown")}>

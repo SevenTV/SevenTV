@@ -144,15 +144,6 @@
 
 	let results = $derived(search(query));
 
-	$effect(() => {
-		results.then(() => {
-			input?.focus();
-		});
-	});
-
-	// svelte-ignore non_reactive_update
-	let input: ReturnType<typeof TextInput>;
-
 	let loading = $state(false);
 
 	async function submit() {
@@ -196,7 +187,6 @@
 		<TextInput
 			type="text"
 			placeholder={$t("labels.search_users", { values: { count: 1 } })}
-			bind:this={input}
 			bind:value={query}
 		>
 			{#snippet icon()}
