@@ -6,6 +6,7 @@
 	import { gqlClient } from "$/lib/gql";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+	import { emotesLayout } from "$/lib/layout";
 
 	let { data }: { data: PageData } = $props();
 
@@ -144,7 +145,7 @@
 </script>
 
 <div class="buttons">
-	<LayoutButtons />
+	<LayoutButtons bind:value={$emotesLayout} />
 </div>
 {#key data.id}
 	<EmoteLoader {load} />

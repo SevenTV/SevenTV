@@ -122,6 +122,8 @@ export async function setActiveSet(userId: string, setId?: string) {
 }
 
 export async function setActiveBadge(userId: string, badgeId?: string | null) {
+	console.log('setActiveBadge', userId, badgeId);
+
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
@@ -151,6 +153,22 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 											frameCount
 										}
 									}
+									activeBadgeId
+									activeBadge {
+										id
+										name
+										description
+										images {
+											url
+											mime
+											size
+											scale
+											width
+											height
+											frameCount
+										}
+									}
+									activePaintId
 									activePaint {
 										id
 										name
@@ -206,20 +224,6 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 												offsetY
 												blur
 											}
-										}
-									}
-									activeBadge {
-										id
-										name
-										description
-										images {
-											url
-											mime
-											size
-											scale
-											width
-											height
-											frameCount
 										}
 									}
 									activeEmoteSetId
@@ -348,6 +352,8 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 }
 
 export async function setActivePaint(userId: string, paintId?: string | null) {
+	console.log('setActivePaint', userId, paintId);
+
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
@@ -377,6 +383,22 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 											frameCount
 										}
 									}
+									activeBadgeId
+									activeBadge {
+										id
+										name
+										description
+										images {
+											url
+											mime
+											size
+											scale
+											width
+											height
+											frameCount
+										}
+									}
+									activePaintId
 									activePaint {
 										id
 										name
@@ -432,20 +454,6 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 												offsetY
 												blur
 											}
-										}
-									}
-									activeBadge {
-										id
-										name
-										description
-										images {
-											url
-											mime
-											size
-											scale
-											width
-											height
-											frameCount
 										}
 									}
 									activeEmoteSetId

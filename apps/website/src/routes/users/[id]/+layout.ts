@@ -3,6 +3,8 @@ import type { LayoutLoadEvent } from "./$types";
 import type { Role, User } from "$/gql/graphql";
 import { gqlClient } from "$/lib/gql";
 import { filterRoles } from "$/lib/utils";
+import { ProxyState } from "$/lib/proxy.svelte";
+import { writable } from "svelte/store";
 
 export function load({ fetch, params }: LayoutLoadEvent) {
 	const req = gqlClient()
@@ -33,6 +35,7 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 										frameCount
 									}
 								}
+								activePaintId
 								activePaint {
 									id
 									name
@@ -90,6 +93,7 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 										}
 									}
 								}
+								activeBadgeId
 								activeBadge {
 									id
 									name
@@ -223,10 +227,12 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 			return res.data.users.user as User;
 		});
 
+	const state = new ProxyState(req);
+
 	return {
 		id: params.id,
 		streamed: {
-			userRequest: req,
+			userRequest: state,
 		},
 	};
 }

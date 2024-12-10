@@ -17,8 +17,6 @@
 	import type { Layout } from "$/lib/layout";
 	import Radio from "$/components/input/radio.svelte";
 	import { setActiveBadge, setActivePaint } from "$/lib/userMutations";
-	import { invalidate, invalidateAll } from "$app/navigation";
-	import { page } from "$app/stores";
 
 	let { data }: { data: PageData } = $props();
 
@@ -31,10 +29,6 @@
 					query UserInventory($id: Id!) {
 						users {
 							user(id: $id) {
-								style {
-									activeBadgeId
-									activePaintId
-								}
 								inventory {
 									badges {
 										to {
@@ -225,8 +219,6 @@
 		paintFilters.sort((a, b) => a.value.localeCompare(b.value));
 
 		return {
-			activeBadgeId: res.data.users.user.style.activeBadgeId,
-			activePaintId: res.data.users.user.style.activePaintId,
 			badges,
 			paints,
 			paintFilters,
@@ -244,17 +236,22 @@
 	let badgeQuery = $state("");
 	let badgesLayout = $state<Layout>("big-grid");
 
+	let originalBadgeId: string | null | undefined;
+	let originalPaintId: string | null | undefined;
 	let activeBadge = $state<string>();
 	let activePaint = $state<string>();
 
 	$effect(() => {
-		inventory?.then((data) => {
+		data.streamed.userRequest.value.then((data) => {
 			if (!data) {
 				return;
 			}
 
-			activeBadge = data.activeBadgeId === null ? "none" : data.activeBadgeId;
-			activePaint = data.activePaintId === null ? "none" : data.activePaintId;
+			originalBadgeId = data.style.activeBadgeId;
+			originalPaintId = data.style.activePaintId;
+
+			activeBadge = data.style.activeBadgeId === null ? "none" : data.style.activeBadgeId;
+			activePaint = data.style.activePaintId === null ? "none" : data.style.activePaintId;
 		});
 	});
 
@@ -271,22 +268,21 @@
 
 		const activeBadgeValue = selectValueToRealValue(activeBadge);
 
-		inventory?.then((invData) => {
-			if (invData?.activeBadgeId !== activeBadgeValue) {
-				badgeLoading = true;
-				return setActiveBadge(data.id, activeBadgeValue);
-			}
-		}).then((newUser) => {
-			if (newUser) {
-				if ($user?.id === newUser.id) {
-					$user = newUser;
+		if (originalBadgeId !== activeBadgeValue) {
+			badgeLoading = true;
+
+			const promise = setActiveBadge(data.id, activeBadgeValue);
+			data.streamed.userRequest.value = promise;
+			promise.then((newUser) => {
+				if (newUser) {
+					if ($user?.id === newUser.id) {
+						$user = newUser;
+					}
 				}
 
-				invalidateAll();
-			}
-
-			badgeLoading = false;
-		});
+				badgeLoading = false;
+			});
+		}
 	});
 
 	let paintLoading = $state(false);
@@ -298,23 +294,21 @@
 
 		const activePaintValue = selectValueToRealValue(activePaint);
 
-		inventory?.then((invData) => {
-			if (invData?.activePaintId !== activePaintValue) {
-				paintLoading = true;
+		if (originalPaintId !== activePaintValue) {
+			paintLoading = true;
 
-				return setActivePaint(data.id, activePaintValue);
-			}
-		}).then((newUser) => {
-			if (newUser) {
-				if ($user?.id === newUser.id) {
-					$user = newUser;
+			const promise = setActivePaint(data.id, activePaintValue);
+			data.streamed.userRequest.value = promise;
+			promise.then((newUser) => {
+				if (newUser) {
+					if ($user?.id === newUser.id) {
+						$user = newUser;
+					}
 				}
 
-				invalidateAll();
-			}
-
-			paintLoading = false;
-		});
+				paintLoading = false;
+			});
+		}
 	});
 </script>
 
@@ -375,7 +369,7 @@
 							disabled={!editingEnabled || badgeLoading}
 							style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
 						>
-							<BadgeComponent {badge} size={2 * 16} />
+							<BadgeComponent {badge} size={2 * 16} enableDialog={activeBadge === badge.id} />
 							<span class="name">{badge.name}</span>
 							{#if badgesLayout === "list"}
 								<span class="description">{badge.description}</span>
