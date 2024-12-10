@@ -9,7 +9,7 @@
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
-	import type { EmoteSet, EmoteSetEmoteSearchResult } from "$/gql/graphql";
+	import { EmoteSetKind, type EmoteSet, type EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import Button from "$/components/input/button.svelte";
 	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
@@ -268,7 +268,7 @@
 					<Toggle bind:value={selectionMode} />
 				{/snippet}
 			</Button>
-			{#if $user}
+			{#if $user && data.kind === EmoteSetKind.Normal}
 				{#snippet loadingSpinner()}
 					<Spinner />
 				{/snippet}

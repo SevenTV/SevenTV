@@ -8,9 +8,11 @@
 	type Props = {
 		badge: Badge;
 		size?: number;
-	} & HTMLAttributes<HTMLButtonElement>;
+		enableDialog?: boolean;
+	} & HTMLAttributes<HTMLButtonElement> &
+		HTMLAttributes<HTMLDivElement>;
 
-	let { badge, size = 1.25 * 16, ...restProps }: Props = $props();
+	let { badge, size = 1.25 * 16, enableDialog = false, ...restProps }: Props = $props();
 
 	let dialogMode: DialogMode = $state("hidden");
 
@@ -19,7 +21,13 @@
 	}
 </script>
 
-<BadgeDialog bind:mode={dialogMode} {badge} />
-<button onclick={showDialog} style="display: flex;" title={badge.description} {...restProps}>
-	<ResponsiveImage images={badge.images} width={size} height={size} />
-</button>
+{#if enableDialog}
+	<BadgeDialog bind:mode={dialogMode} {badge} />
+	<button onclick={showDialog} style="display: flex;" title={badge.description} {...restProps}>
+		<ResponsiveImage images={badge.images} width={size} height={size} />
+	</button>
+{:else}
+	<div style="display: flex;" title={badge.description} {...restProps}>
+		<ResponsiveImage images={badge.images} width={size} height={size} />
+	</div>
+{/if}
