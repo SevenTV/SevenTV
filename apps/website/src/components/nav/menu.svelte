@@ -8,10 +8,13 @@
 		CaretLeft,
 		CaretRight,
 		CreditCard,
+		Gear,
 		GlobeHemisphereWest,
 		House,
 		Key,
+		LockSimple,
 		Moon,
+		Note,
 		PaintBrush,
 		PencilSimple,
 		Prohibit,
@@ -123,16 +126,16 @@
 				{/if}
 				{$t("common.theme")}
 			</MenuButton>
-			<!-- {#if $user}
-				<MenuButton href="/settings" hideOnMobile>
+			{#if $user}
+				<MenuButton href="/settings" hideOnMobile onclick={onCloseRequest}>
 					<Gear />
 					{$t("common.settings")}
 				</MenuButton>
-				<MenuButton showCaret hideOnDesktop on:click={(e) => setMenu(e, Menu.Settings)}>
+				<MenuButton showCaret hideOnDesktop onclick={(e) => setMenu(e, "settings")}>
 					<Gear />
 					{$t("common.settings")}
 				</MenuButton>
-			{/if} -->
+			{/if}
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
@@ -143,11 +146,11 @@
 			<!-- <MenuButton href="/contact">
 				<ChatDots />
 				{$t("common.contact")}
-			</MenuButton>
-			<MenuButton href="/faq">
+			</MenuButton> -->
+			<!-- <MenuButton href="/faq">
 				<Question />
 				{$t("common.faq_short")}
-			</MenuButton>
+			</MenuButton> -->
 			<MenuButton href="/privacy">
 				<LockSimple />
 				{$t("common.privacy")}
@@ -155,7 +158,7 @@
 			<MenuButton href="/tos">
 				<Note />
 				{$t("common.tos")}
-			</MenuButton> -->
+			</MenuButton>
 		</div>
 		{#if $user}
 			<!-- <hr class="hide-on-mobile" /> -->
@@ -215,16 +218,6 @@
 			<MenuButton href="/settings/editors">
 				<PencilSimple />
 				{$t("common.editors")}
-			</MenuButton>
-		</div>
-		<div class="link-list">
-			<MenuButton href="/settings/notifications">
-				<Bell />
-				{$t("common.notifications")}
-			</MenuButton>
-			<MenuButton href="/settings/blocked">
-				<Prohibit />
-				{$t("pages.settings.blocked.title")}
 			</MenuButton>
 			<MenuButton href="/settings/billing">
 				<CreditCard />

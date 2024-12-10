@@ -24,6 +24,136 @@ pub struct UserOperation {
 #[async_graphql::Object]
 impl UserOperation {
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1)")]
+	#[tracing::instrument(skip_all, name = "UserOperation::main_connection")]
+	async fn main_connection(&self, ctx: &Context<'_>, platform_id: String) -> Result<User, ApiError> {
+		let global: &Arc<Global> = ctx.data().map_err(|_| {
+			crate::http::error::ApiError::internal_server_error(
+				crate::http::error::ApiErrorCode::MissingContext,
+				"missing global data",
+			)
+		})?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id != self.user.id && !authed_user.has(UserPermission::ManageAny) {
+			let editor = global
+				.user_editor_by_id_loader
+				.load(UserEditorId {
+					editor_id: authed_user.id,
+					user_id: self.user.id,
+				})
+				.await
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
+						"you do not have permission to modify connections",
+					)
+				})?;
+
+			if editor.state != UserEditorState::Accepted || !editor.permissions.has(EditorUserPermission::ManageProfile) {
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"you do not have permission to modify connections, you need the ManageProfile permission",
+				));
+			}
+		}
+
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::User(self.user.id).into()),
+			|mut tx| async move {
+				let user = tx
+					.find_one(
+						filter::filter! {
+							shared::database::user::User {
+								#[query(rename = "_id")]
+								id: self.user.id,
+							}
+						},
+						None,
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
+					})?;
+
+				let connection = user
+					.connections
+					.iter()
+					.find(|c| c.platform_id == platform_id)
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(
+							ApiErrorCode::LoadError,
+							"connection not found for platform",
+						))
+					})?;
+
+				let user = tx
+					.find_one_and_update(
+						filter::filter! {
+							shared::database::user::User {
+								#[query(rename = "_id")]
+								id: self.user.id,
+							}
+						},
+						update::update! {
+							#[query(pull)]
+							shared::database::user::User {
+								connections: shared::database::user::connection::UserConnection {
+									platform: connection.platform,
+									platform_id: &connection.platform_id,
+								},
+							},
+							#[query(push)]
+							shared::database::user::User {
+								#[query(serde, each, position = "0")]
+								connections: [connection],
+							},
+							#[query(set)]
+							shared::database::user::User {
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
+						},
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
+					})?;
+
+				Ok(user)
+			},
+		)
+		.await;
+
+		match res {
+			Ok(user) => {
+				let full_user = global
+					.user_loader
+					.load_fast_user(global, user)
+					.await
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+				Ok(full_user.into())
+			}
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
+	}
+
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1)")]
 	#[tracing::instrument(skip_all, name = "UserOperation::active_emote_set")]
 	async fn active_emote_set(&self, ctx: &Context<'_>, emote_set_id: Option<EmoteSetId>) -> Result<User, ApiError> {
 		let global: &Arc<Global> = ctx.data().map_err(|_| {
