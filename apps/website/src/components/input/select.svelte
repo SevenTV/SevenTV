@@ -1,3 +1,11 @@
+<script lang="ts" module>
+	export type Option = {
+		value: string;
+		label: string;
+		icon?: Snippet;
+	};
+</script>
+
 <script lang="ts">
 	import mouseTrap from "$/lib/mouseTrap";
 	import { CaretDown } from "phosphor-svelte";
@@ -6,12 +14,6 @@
 	import type { Snippet } from "svelte";
 	import { t } from "svelte-i18n";
 	import type { HTMLAttributes } from "svelte/elements";
-
-	type Option = {
-		value: string;
-		label: string;
-		icon?: Snippet;
-	};
 
 	type Props = {
 		options: Option[];
@@ -42,9 +44,18 @@
 		selected = option;
 		expanded = false;
 	}
+
+	let width = $state<number>();
 </script>
 
-<div use:mouseTrap={close} class="select" class:grow class:expanded {...restProps}>
+<div
+	use:mouseTrap={close}
+	class="select"
+	class:grow
+	class:expanded
+	{...restProps}
+	style={expanded ? `min-width: ${width}px` : undefined}
+>
 	<select bind:value={selected} onclick={toggle} onkeypress={toggle}>
 		{#each options as option}
 			<option value={option.value}>
@@ -64,7 +75,7 @@
 		{/snippet}
 	</Button>
 	{#if expanded}
-		<div class="dropped" transition:fade={{ duration: 100 }}>
+		<div class="dropped" transition:fade={{ duration: 100 }} bind:offsetWidth={width}>
 			{#each options as option}
 				<Button onclick={() => select(option.value)}>
 					{@render option.icon?.()}
@@ -132,13 +143,17 @@
 
 		position: absolute;
 		top: 100%;
-		left: 0;
 		right: 0;
 		margin: 0;
 		padding: 0;
 		border: var(--border-active) 1px solid;
 		border-top: none;
 		border-radius: 0.5rem;
+
+		min-width: 100%;
+		max-height: 15rem;
+		overflow: auto;
+		scrollbar-gutter: stable;
 
 		background-color: var(--bg-medium);
 		box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1);

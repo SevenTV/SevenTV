@@ -8,6 +8,7 @@
 	import Select from "$/components/input/select.svelte";
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
+	import { emotesLayout } from "$/lib/layout";
 
 	let { children }: { children: Snippet } = $props();
 
@@ -68,7 +69,7 @@
 	</nav>
 	<div class="buttons">
 		<DefaultEmoteSetButton />
-		<LayoutButtons />
+		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
 </div>
 {@render children()}

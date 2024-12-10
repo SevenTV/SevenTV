@@ -25,14 +25,13 @@
 	}
 
 	$effect(() => {
-		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		mode; // trigger effect on mode change
+		if (mode !== "hidden") {
+			dialog?.showModal();
 
-		dialog?.showModal();
-
-		// Blur to prevent initial visible autofocus
-		if (browser && document.activeElement instanceof HTMLElement) {
-			document.activeElement.blur();
+			// Blur to prevent initial visible autofocus
+			if (browser && document.activeElement instanceof HTMLElement) {
+				document.activeElement.blur();
+			}
 		}
 	});
 

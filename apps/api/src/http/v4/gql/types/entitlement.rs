@@ -81,7 +81,7 @@ pub struct EntitlementNodeUser {
 #[async_graphql::ComplexObject]
 impl EntitlementNodeUser {
 	#[tracing::instrument(skip_all, name = "EntitlementNodeUser::user")]
-	async fn user(&self, ctx: &Context<'_>) -> Result<User, ApiError> {
+	async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -90,10 +90,9 @@ impl EntitlementNodeUser {
 			.user_loader
 			.load(global, self.user_id)
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
-		Ok(user.into())
+		Ok(user.map(Into::into))
 	}
 }
 
@@ -106,7 +105,7 @@ pub struct EntitlementNodeRole {
 #[async_graphql::ComplexObject]
 impl EntitlementNodeRole {
 	#[tracing::instrument(skip_all, name = "EntitlementNodeRole::role")]
-	async fn role(&self, ctx: &Context<'_>) -> Result<Role, ApiError> {
+	async fn role(&self, ctx: &Context<'_>) -> Result<Option<Role>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -115,10 +114,9 @@ impl EntitlementNodeRole {
 			.role_by_id_loader
 			.load(self.role_id)
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load role"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "role not found"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load role"))?;
 
-		Ok(role.into())
+		Ok(role.map(Into::into))
 	}
 }
 
@@ -131,7 +129,7 @@ pub struct EntitlementNodeBadge {
 #[async_graphql::ComplexObject]
 impl EntitlementNodeBadge {
 	#[tracing::instrument(skip_all, name = "EntitlementNodeBadge::badge")]
-	async fn badge(&self, ctx: &Context<'_>) -> Result<Badge, ApiError> {
+	async fn badge(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -140,10 +138,9 @@ impl EntitlementNodeBadge {
 			.badge_by_id_loader
 			.load(self.badge_id)
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?;
 
-		Ok(Badge::from_db(badge, &global.config.api.cdn_origin))
+		Ok(badge.map(|b| Badge::from_db(b, &global.config.api.cdn_origin)))
 	}
 }
 
@@ -156,7 +153,7 @@ pub struct EntitlementNodePaint {
 #[async_graphql::ComplexObject]
 impl EntitlementNodePaint {
 	#[tracing::instrument(skip_all, name = "EntitlementNodePaint::paint")]
-	async fn paint(&self, ctx: &Context<'_>) -> Result<Paint, ApiError> {
+	async fn paint(&self, ctx: &Context<'_>) -> Result<Option<Paint>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -165,10 +162,9 @@ impl EntitlementNodePaint {
 			.paint_by_id_loader
 			.load(self.paint_id)
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "paint not found"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?;
 
-		Ok(Paint::from_db(paint, &global.config.api.cdn_origin))
+		Ok(paint.map(|p| Paint::from_db(p, &global.config.api.cdn_origin)))
 	}
 }
 
@@ -181,7 +177,7 @@ pub struct EntitlementNodeEmoteSet {
 #[async_graphql::ComplexObject]
 impl EntitlementNodeEmoteSet {
 	#[tracing::instrument(skip_all, name = "EntitlementNodeEmoteSet::emote_set")]
-	async fn emote_set(&self, ctx: &Context<'_>) -> Result<EmoteSet, ApiError> {
+	async fn emote_set(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -190,10 +186,9 @@ impl EntitlementNodeEmoteSet {
 			.emote_set_by_id_loader
 			.load(self.emote_set_id)
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "emote set not found"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?;
 
-		Ok(emote_set.into())
+		Ok(emote_set.map(Into::into))
 	}
 }
 
@@ -211,13 +206,13 @@ pub struct EntitlementNodeSubscriptionBenefit {
 #[async_graphql::ComplexObject]
 impl EntitlementNodeSubscriptionBenefit {
 	#[tracing::instrument(skip_all, name = "EntitlementNodeSubscriptionBenefit::subscription_benefit")]
-	async fn subscription_benefit(&self, ctx: &Context<'_>) -> Result<SubscriptionBenefit, ApiError> {
+	async fn subscription_benefit(&self, ctx: &Context<'_>) -> Result<Option<SubscriptionBenefit>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
 		// TODO: Use data loader?
-		let product = SubscriptionProduct::collection(&global.db)
+		let Some(product) = SubscriptionProduct::collection(&global.db)
 			.find_one(filter::filter! {
 				SubscriptionProduct {
 					#[query(flatten)]
@@ -228,15 +223,13 @@ impl EntitlementNodeSubscriptionBenefit {
 			})
 			.await
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription benefit"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "subscription benefit not found"))?;
+		else {
+			return Ok(None);
+		};
 
-		let subscription_benefit = product
-			.benefits
-			.into_iter()
-			.find(|b| b.id == self.subscription_benefit_id)
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "subscription benefit not found"))?;
+		let subscription_benefit = product.benefits.into_iter().find(|b| b.id == self.subscription_benefit_id);
 
-		Ok(subscription_benefit.into())
+		Ok(subscription_benefit.map(Into::into))
 	}
 }
 
@@ -254,7 +247,7 @@ pub struct EntitlementNodeSpecialEvent {
 #[async_graphql::ComplexObject]
 impl EntitlementNodeSpecialEvent {
 	#[tracing::instrument(skip_all, name = "EntitlementNodeSpecialEvent::special_event")]
-	async fn special_event(&self, ctx: &Context<'_>) -> Result<SpecialEvent, ApiError> {
+	async fn special_event(&self, ctx: &Context<'_>) -> Result<Option<SpecialEvent>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -268,10 +261,9 @@ impl EntitlementNodeSpecialEvent {
 				}
 			})
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load special event"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "special event not found"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load special event"))?;
 
-		Ok(special_event.into())
+		Ok(special_event.map(Into::into))
 	}
 }
 

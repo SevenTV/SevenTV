@@ -32,6 +32,9 @@ impl UserInventory {
 			}
 		}
 
+		badges.sort_by_key(|b| b.to.badge_id);
+		paints.sort_by_key(|p| p.to.paint_id);
+
 		UserInventory { paints, badges }
 	}
 }

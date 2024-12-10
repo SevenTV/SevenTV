@@ -7,6 +7,7 @@
 	import DropDown from "../drop-down.svelte";
 	import type { BadgeProgress } from "$/gql/graphql";
 	import Badge from "../badge.svelte";
+	import { user } from "$/lib/auth";
 
 	let { progress }: { progress: BadgeProgress } = $props();
 
@@ -46,21 +47,23 @@
 		<div class="info">
 			<div class="header">
 				<h2>{$t("pages.store.subscription.badge_progress.title")}</h2>
-				<DropDown>
-					{#snippet dropdown()}
-						<Button big href="/cosmetics">
-							{#snippet icon()}
-								<PaintBrush />
-							{/snippet}
-							Your Badges
-						</Button>
-					{/snippet}
-					<Button secondary>
-						{#snippet icon()}
-							<DotsThreeVertical />
+				{#if $user}
+					<DropDown>
+						{#snippet dropdown()}
+							<Button big href="/users/{$user.id}/cosmetics">
+								{#snippet icon()}
+									<PaintBrush />
+								{/snippet}
+								Your Badges
+							</Button>
 						{/snippet}
-					</Button>
-				</DropDown>
+						<Button secondary>
+							{#snippet icon()}
+								<DotsThreeVertical />
+							{/snippet}
+						</Button>
+					</DropDown>
+				{/if}
 			</div>
 			<div class="badges">
 				<div class="badge">

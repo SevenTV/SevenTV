@@ -5,6 +5,7 @@
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 	import DefaultEmoteSetButton from "$/components/default-emote-set-button.svelte";
+	import { emotesLayout } from "$/lib/layout";
 
 	let { children }: { children: Snippet } = $props();
 </script>
@@ -35,7 +36,7 @@
 	</nav>
 	<div class="buttons">
 		<DefaultEmoteSetButton />
-		<LayoutButtons />
+		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
 </div>
 {@render children()}

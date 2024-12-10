@@ -57,8 +57,9 @@
 				return `${radialRepeating}radial-gradient(${shape}, ${radialStops})`;
 			}
 			case "PaintLayerTypeImage": {
-				// TODO: Always uses 1x image for now
 				const isAnimated = layer.ty.images.some((img) => img.frameCount > 1);
+
+				// TODO: Always uses 1x image for now
 				const oneX = layer.ty.images.find(
 					(img) => img.scale === 1 && img.frameCount > 1 === isAnimated,
 				);
