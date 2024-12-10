@@ -59,7 +59,7 @@
 			/>
 			<span class="name" style:color={user.highestRoleColor?.hex}>
 				{#if user.style.activeBadge}
-					<Badge badge={user.style.activeBadge} />
+					<Badge badge={user.style.activeBadge} enableDialog />
 				{/if}
 				<UserName {user} enablePaintDialog />
 				<!-- <SealCheck size="0.8rem" /> -->

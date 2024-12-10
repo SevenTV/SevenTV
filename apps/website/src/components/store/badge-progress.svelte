@@ -68,7 +68,7 @@
 			<div class="badges">
 				<div class="badge">
 					{#if progress.currentBadge}
-						<Badge badge={progress.currentBadge} size={2.25 * 16} />
+						<Badge badge={progress.currentBadge} size={2.25 * 16} enableDialog />
 						<span>{progress.currentBadge.name}</span>
 					{:else}
 						<div class="placeholder">
@@ -96,7 +96,7 @@
 				</div>
 				<div class="badge">
 					{#if progress.nextBadge}
-						<Badge badge={progress.nextBadge.badge} size={2.25 * 16} />
+						<Badge badge={progress.nextBadge.badge} size={2.25 * 16} enableDialog />
 						<span>{progress.nextBadge.badge.name}</span>
 					{:else}
 						<div class="placeholder"></div>
