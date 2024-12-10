@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PaintBrush, Star } from "phosphor-svelte";
+	import { Gift, PaintBrush, Star } from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
@@ -27,12 +27,13 @@
 					<PaintBrush weight="fill" />
 				{/snippet}
 			</TabLink>
+			<TabLink href="/store/redeem" title="Redeem" big>
+				<Gift />
+				{#snippet active()}
+					<Gift weight="fill" />
+				{/snippet}
+			</TabLink>
 		</nav>
-		<hr />
-		<label class="redeem">
-			{$t("pages.store.redeem")}
-			<input type="text" placeholder={$t("labels.redeem")} />
-		</label>
 	</aside>
 	<div class="content">
 		{@render children()}
@@ -40,16 +41,6 @@
 </div>
 
 <style lang="scss">
-	.redeem {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-
-		color: var(--text-light);
-		font-size: 0.75rem;
-		font-weight: 500;
-	}
-
 	// Only desktop
 	@media screen and (min-width: 961px) {
 		.content {

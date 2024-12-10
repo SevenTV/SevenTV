@@ -46,6 +46,7 @@ type Billing {
 type BillingMutation {
 	cancelSubscription(productId: Id!): SubscriptionInfo!
 	reactivateSubscription(productId: Id!): SubscriptionInfo!
+	redeemCode(code: String!): RedeemResponse!
 	subscribe(variantId: ProductId!): SubscribeResponse!
 }
 
@@ -621,6 +622,10 @@ enum Ranking {
 	TRENDING_DAILY
 	TRENDING_MONTHLY
 	TRENDING_WEEKLY
+}
+
+type RedeemResponse {
+	checkoutUrl: String
 }
 
 type Role {
