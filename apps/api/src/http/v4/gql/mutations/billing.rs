@@ -121,19 +121,6 @@ impl BillingMutation {
 				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
-			let is_subscribed = global
-				.active_subscription_period_by_user_id_loader
-				.load(receiving_user.id)
-				.await
-				.map_err(|()| {
-					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription periods")
-				})?
-				.is_some();
-
-			if is_subscribed {
-				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "user is already subscribed"));
-			}
-
 			params.mode = Some(stripe::CheckoutSessionMode::Payment);
 			params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
 				description: Some(format!(
