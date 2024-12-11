@@ -9,7 +9,7 @@ use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
 use shared::database::product::{
-	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant
+	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant,
 };
 use shared::database::queries::{filter, update};
 use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
@@ -551,7 +551,7 @@ pub async fn paid(
 						})?;
 					}
 					Some(ProviderSubscriptionId::Paypal(id)) => {
-						let api_key = paypal_api::api_key(&global).await.map_err(TransactionError::Custom)?;
+						let api_key = paypal_api::api_key(global).await.map_err(TransactionError::Custom)?;
 
 						// https://developer.paypal.com/docs/api/subscriptions/v1/#subscriptions_cancel
 						let response = global
@@ -725,19 +725,19 @@ async fn handle_xmas_2024_gift(
 
 	let Some(special_event_id) = tx
 		.find_one(
-				filter::filter! {
-					SpecialEvent {
-						name: "2024 X-MAS Gifter".to_owned(),
-					}
-				},
-				None,
-			)
+			filter::filter! {
+				SpecialEvent {
+					name: "2024 X-MAS Gifter".to_owned(),
+				}
+			},
+			None,
+		)
 		.await?
 	else {
+		tracing::warn!("could not find special event for xmas 2024 gift: {}", customer_id);
 		return Ok(());
 	};
 
-	// We gift them a special event because they gifted a sub during the christmas
 	// We gift them a special event because they gifted a sub during the christmas
 	// event
 	let from = EntitlementEdgeKind::Subscription {
