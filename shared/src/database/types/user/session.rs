@@ -4,7 +4,7 @@ use crate::database::{Id, MongoCollection};
 
 pub type UserSessionId = Id<UserSession>;
 
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, MongoCollection)]
 #[mongo(collection_name = "user_sessions")]
 #[mongo(index(fields(user_id = 1)))]
 #[mongo(index(fields(expires_at = 1), expire_after = 0))]
@@ -18,6 +18,8 @@ pub struct UserSession {
 	pub expires_at: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
 	pub last_used_at: chrono::DateTime<chrono::Utc>,
+	#[serde(default, skip_serializing_if = "bson::Document::is_empty")]
+	pub extensions: bson::Document,
 }
 
 pub(super) fn collections() -> impl IntoIterator<Item = MongoGenericCollection> {

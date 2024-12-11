@@ -286,6 +286,7 @@ pub async fn handle_callback(
 			// TODO: maybe allow for this to be configurable
 			expires_at: chrono::Utc::now() + chrono::Duration::days(30),
 			last_used_at: chrono::Utc::now(),
+			extensions: Default::default(),
 		};
 
 		tx.insert_one::<UserSession>(&user_session, None).await?;

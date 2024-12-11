@@ -90,7 +90,6 @@ impl BansMutation {
 			let ban = UserBan {
 				id: Default::default(),
 				user_id: victim.id,
-				template_id: None,
 				expires_at: expire_at,
 				created_by_id: authed_user.id,
 				reason,

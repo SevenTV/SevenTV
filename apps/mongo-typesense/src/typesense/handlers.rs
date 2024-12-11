@@ -263,68 +263,6 @@ impl SupportedMongoCollection for mongo::UserEditor {
 	}
 }
 
-impl SupportedMongoCollection for mongo::UserRelation {
-	async fn handle_delete(global: &Arc<Global>, id: UserRelationId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		global
-			.typesense
-			.documents_api()
-			.delete_document(
-				DeleteDocumentParams::builder()
-					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
-					.document_id(id.to_string())
-					.build(),
-			)
-			.await
-			.context("failed to delete document")?;
-
-		Ok(())
-	}
-
-	#[tracing::instrument(skip_all, fields(user_id = %id.user_id, other_user_id = %id.other_user_id))]
-	async fn handle_any(global: &Arc<Global>, id: UserRelationId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.user_relation_batcher.loader.load(id).await else {
-			anyhow::bail!("failed to load data");
-		};
-
-		if data.search_updated_at.is_some_and(|u| u > data.updated_at) {
-			return Ok(());
-		}
-
-		let updated_at = data.updated_at;
-
-		global
-			.user_relation_batcher
-			.inserter
-			.execute(data.into())
-			.await
-			.context("insert missing")?
-			.context("insert")?;
-
-		global
-			.updater
-			.update(
-				filter::filter! {
-					mongo::UserRelation {
-						#[query(rename = "_id", serde)]
-						id: id,
-						updated_at,
-					}
-				},
-				update::update! {
-					#[query(set)]
-					mongo::UserRelation {
-						search_updated_at: chrono::Utc::now(),
-					}
-				},
-				false,
-			)
-			.await
-			.context("failed to update user relation")?;
-
-		Ok(())
-	}
-}
-
 impl SupportedMongoCollection for mongo::User {
 	async fn handle_delete(global: &Arc<Global>, id: UserId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
 		global

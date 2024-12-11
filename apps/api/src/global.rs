@@ -17,6 +17,7 @@ use shared::database::global::GlobalConfig;
 use shared::database::loader::LoaderById;
 use shared::database::paint::Paint;
 use shared::database::product::codes::RedeemCode;
+use shared::database::product::special_event::SpecialEvent;
 use shared::database::product::subscription::Subscription;
 use shared::database::product::{Product, SubscriptionProduct};
 use shared::database::role::Role;
@@ -99,6 +100,7 @@ pub struct Global {
 	pub emote_moderation_request_by_id_loader: DataLoader<LoaderById<EmoteModerationRequest>>,
 	pub user_session_by_id_loader: DataLoader<LoaderById<UserSession>>,
 	pub user_session_updater_batcher: DataLoader<UserSessionUpdaterBatcher>,
+	pub special_event_by_id_loader: DataLoader<LoaderById<SpecialEvent>>,
 	pub user_loader: FullUserLoader,
 	pub typesense: typesense_rs::apis::ApiClient,
 	pub updater: MongoUpdater,
@@ -241,6 +243,7 @@ impl scuffle_bootstrap::global::Global for Global {
 			emote_moderation_request_by_id_loader: LoaderById::new(db.clone()),
 			user_session_by_id_loader: LoaderById::new(db.clone()),
 			user_session_updater_batcher: UserSessionUpdaterBatcher::new(db.clone()),
+			special_event_by_id_loader: LoaderById::new(db.clone()),
 			http_client: reqwest::Client::new(),
 			stripe_client,
 			typesense: typesense_rs::apis::ApiClient::new(Arc::new(typesense)),
