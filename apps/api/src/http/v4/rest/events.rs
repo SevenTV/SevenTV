@@ -41,7 +41,7 @@ async fn create_event(
 
 	let has_permission = user_session
 		.extensions
-		.get_array("special_events")
+		.get_array("events_create")
 		.map(|arr| arr.contains(&create_event.special_event_id.into()))
 		.unwrap_or(false);
 
