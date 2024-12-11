@@ -627,4 +627,102 @@ impl UserOperation {
 			}
 		}
 	}
+
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeCosmetics, 1)")]
+	#[tracing::instrument(skip_all, name = "UserOperation::remove_profile_picture")]
+	async fn remove_profile_picture(&self, ctx: &Context<'_>) -> Result<User, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id != self.user.id && !authed_user.has(UserPermission::ManageAny) {
+			let editor = global
+				.user_editor_by_id_loader
+				.load(UserEditorId {
+					editor_id: authed_user.id,
+					user_id: self.user.id,
+				})
+				.await
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
+						"you do not have permission to change this user's cosmetics",
+					)
+				})?;
+
+			if editor.state != UserEditorState::Accepted || !editor.permissions.has(EditorUserPermission::ManageProfile) {
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"you do not have permission to modify this user's profile picture, you need the ManageProfile permission",
+				));
+			}
+		}
+
+		let user = global
+			.user_loader
+			.load(global, self.user.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+
+		if user.style.active_profile_picture.is_none() {
+			return Ok(user.into());
+		}
+
+		let res = transaction_with_mutex(global, Some(GeneralMutexKey::User(user.id).into()), |mut tx| async move {
+			let user = tx
+				.find_one_and_update(
+					filter::filter! {
+						shared::database::user::User {
+							#[query(rename = "_id")]
+							id: user.id,
+						}
+					},
+					update::update! {
+						#[query(set)]
+						shared::database::user::User {
+							#[query(flatten)]
+							style: shared::database::user::UserStyle {
+								active_profile_picture: &None,
+							},
+							updated_at: chrono::Utc::now(),
+							search_updated_at: &None,
+						},
+					},
+					FindOneAndUpdateOptions::builder()
+						.return_document(ReturnDocument::After)
+						.build(),
+				)
+				.await?
+				.ok_or_else(|| TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found")))?;
+
+			Ok(user)
+		})
+		.await;
+
+		match res {
+			Ok(user) => {
+				let full_user = global
+					.user_loader
+					.load_fast_user(global, user)
+					.await
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+				Ok(full_user.into())
+			}
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
+	}
 }

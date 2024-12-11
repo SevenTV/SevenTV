@@ -954,6 +954,7 @@ type UserOperation {
 	activeEmoteSet(emoteSetId: Id): User!
 	activePaint(paintId: Id): User!
 	mainConnection(platform: Platform!, platformId: String!): User!
+	removeProfilePicture: User!
 }
 
 type UserPermission {

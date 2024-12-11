@@ -132,6 +132,7 @@ export async function fetchMe(): Promise<User | null> {
 							permissions {
 								user {
 									manageAny
+									useCustomProfilePicture
 								}
 								emote {
 									manageAny

@@ -146,9 +146,17 @@
 			return undefined;
 		}
 
-		const badges = inventory.badges.filter((b) => b.to.badge).map((b) => b.to.badge as Badge);
+		const badges = inventory.badges
+			.filter((b) => b.to.badge)
+			.reduce(
+				(map, b) => {
+					map[b.to.badge!.id] = b.to.badge as Badge;
+					return map;
+				},
+				{} as { [key: string]: Badge },
+			);
 
-		const paints: { paint: Paint; sourceKey?: string; sourceName?: string }[] = [];
+		const paints: { [key: string]: { paint: Paint; sourceKey?: string; sourceName?: string } } = {};
 		const paintFilters: Option[] = [];
 
 		for (const entitlement of inventory.paints.filter((p) => p.to.paint)) {
@@ -156,11 +164,11 @@
 				const roleId = entitlement.from.role.id;
 				const roleName = entitlement.from.role.name;
 
-				paints.push({
+				paints[entitlement.to.paint!.id] = {
 					paint: entitlement.to.paint as Paint,
 					sourceKey: roleId,
 					sourceName: roleName,
-				});
+				};
 
 				if (!paintFilters.some((f) => f.value === roleId)) {
 					paintFilters.push({
@@ -175,11 +183,11 @@
 				const benefitId = entitlement.from.subscriptionBenefit.id;
 				const benefitName = entitlement.from.subscriptionBenefit.name;
 
-				paints.push({
+				paints[entitlement.to.paint!.id] = {
 					paint: entitlement.to.paint as Paint,
 					sourceKey: benefitId,
 					sourceName: benefitName,
-				});
+				};
 
 				if (!paintFilters.some((f) => f.value === benefitId)) {
 					paintFilters.push({
@@ -194,11 +202,11 @@
 				const eventId = entitlement.from.specialEvent.id;
 				const eventName = entitlement.from.specialEvent.name;
 
-				paints.push({
+				paints[entitlement.to.paint!.id] = {
 					paint: entitlement.to.paint as Paint,
 					sourceKey: eventId,
 					sourceName: eventName,
-				});
+				};
 
 				if (!paintFilters.some((f) => f.value === eventId)) {
 					paintFilters.push({
@@ -207,9 +215,9 @@
 					});
 				}
 			} else {
-				paints.push({
+				paints[entitlement.to.paint!.id] = {
 					paint: entitlement.to.paint as Paint,
-				});
+				};
 			}
 		}
 
@@ -276,7 +284,7 @@
 						$user = newUser;
 					}
 				}
-
+			}).finally(() => {
 				badgeLoading = false;
 			});
 		}
@@ -302,7 +310,7 @@
 						$user = newUser;
 					}
 				}
-
+			}).finally(() => {
 				paintLoading = false;
 			});
 		}
@@ -319,6 +327,20 @@
 	</div>
 {:then inventory}
 	{#if inventory}
+		{@const badgeIds = new Set(
+			Object.values(inventory.badges)
+				.filter((b) => !badgeQuery || b.name.toLowerCase().includes(badgeQuery))
+				.map((b) => b.id),
+		)}
+		{@const paintIds = new Set(
+			Object.values(inventory.paints)
+				.filter(
+					(p) =>
+						(!paintFilter || p.sourceKey === paintFilter) &&
+						(!paintQuery || p.paint.name.toLowerCase().includes(paintQuery.trim().toLowerCase())),
+				)
+				.map((p) => p.paint.id),
+		)}
 		<div class="layout">
 			<section>
 				<div class="header">
@@ -355,9 +377,8 @@
 						<Empty />
 						None
 					</Radio>
-					{#each inventory.badges.filter((b) => !badgeQuery || b.name
-								.toLowerCase()
-								.includes(badgeQuery)) as badge}
+					{#each badgeIds as badgeId}
+						{@const badge = inventory.badges[badgeId]}
 						<Radio
 							option
 							name="badge"
@@ -414,9 +435,8 @@
 						<Empty />
 						None
 					</Radio>
-					{#each inventory.paints.filter((p) => (!paintFilter || p.sourceKey === paintFilter) && (!paintQuery || p.paint.name
-									.toLowerCase()
-									.includes(paintQuery.trim().toLowerCase()))) as paint}
+					{#each paintIds as paintId}
+						{@const paint = inventory.paints[paintId]}
 						<Radio
 							option
 							name="paint"

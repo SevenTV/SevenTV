@@ -275,19 +275,7 @@ impl User {
 	}
 
 	#[tracing::instrument(skip_all, name = "User::billing")]
-	async fn billing(&self, ctx: &Context<'_>, product_id: SubscriptionProductId) -> Result<billing::Billing, ApiError> {
-		let session = ctx
-			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
-		let authed_user = session.user()?;
-
-		if authed_user.id != self.id && !authed_user.has(UserPermission::ManageBilling) {
-			return Err(ApiError::forbidden(
-				ApiErrorCode::LackingPrivileges,
-				"you are not allowed to see this user's billing information",
-			));
-		}
-
+	async fn billing(&self, product_id: SubscriptionProductId) -> Result<billing::Billing, ApiError> {
 		Ok(billing::Billing {
 			user_id: self.id,
 			product_id,

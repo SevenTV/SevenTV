@@ -5,14 +5,16 @@ use axum::Router;
 use crate::global::Global;
 
 mod auth;
+mod badges;
 mod emotes;
 mod events;
-mod badges;
+mod users;
 
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.nest("/auth", auth::routes())
+		.nest("/badges", badges::routes())
 		.nest("/emotes", emotes::routes())
 		.nest("/events", events::routes())
-		.nest("/badges", badges::routes())
+		.nest("/users", users::routes())
 }

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use axum::body::Bytes;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, patch, post, put};
@@ -173,8 +172,13 @@ pub async fn upload_user_profile_picture(
 	State(global): State<Arc<Global>>,
 	Path(id): Path<TargetUser>,
 	Extension(session): Extension<Session>,
-	body: Bytes,
+	body: axum::body::Body,
 ) -> Result<impl IntoResponse, ApiError> {
+	let body = axum::body::to_bytes(body, 7 * 1024 * 1024).await.map_err(|e| {
+		tracing::warn!(error = %e, "body too large");
+		ApiError::bad_request(ApiErrorCode::BadRequest, "body too large")
+	})?;
+
 	let authed_user = session.user()?;
 
 	let other_user = match id {
@@ -309,7 +313,7 @@ pub async fn upload_user_profile_picture(
 					User {
 						#[query(flatten)]
 						style: UserStyle {
-							active_profile_picture: Some(profile_picture_id),
+							pending_profile_picture: Some(profile_picture_id),
 						},
 						updated_at: chrono::Utc::now(),
 						search_updated_at: &None,

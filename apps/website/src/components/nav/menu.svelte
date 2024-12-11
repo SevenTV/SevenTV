@@ -53,8 +53,9 @@
 	function logoutClick() {
 		logoutLoading = true;
 		logout().then(() => {
-			logoutLoading = false;
 			onCloseRequest?.();
+		}).finally(() => {
+			logoutLoading = false;
 		});
 	}
 

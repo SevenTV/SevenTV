@@ -13,7 +13,8 @@
 	import { goto } from "$app/navigation";
 	import Spinner from "../spinner.svelte";
 
-	let fileInput = $state<HTMLInputElement>();
+	// svelte-ignore non_reactive_update
+	let fileInput: HTMLInputElement;
 	let dragOver = $state(false);
 
 	let name = $state("");
