@@ -45,7 +45,7 @@ async fn create_event(
 		.map(|arr| arr.contains(&create_event.special_event_id.into()))
 		.unwrap_or(false);
 
-	if !session.has(AdminPermission::Admin) || !has_permission {
+	if !session.has(AdminPermission::Admin) && !has_permission {
 		return Err(ApiError::forbidden(
 			ApiErrorCode::LackingPrivileges,
 			format!(
