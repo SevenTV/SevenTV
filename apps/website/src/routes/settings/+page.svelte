@@ -1,24 +1,111 @@
 <script lang="ts">
 	import Button from "$/components/input/button.svelte";
-	import XTwitterLogo from "$/components/icons/x-twitter-logo.svelte";
 	import TwitchLogo from "$/components/icons/twitch-logo.svelte";
 	import YoutubeLogo from "$/components/icons/youtube-logo.svelte";
 	import DiscordLogo from "$/components/icons/discord-logo.svelte";
-	import Select from "$/components/input/select.svelte";
+	import Select, { type Option } from "$/components/input/select.svelte";
 	import KickLogo from "$/components/icons/kick-logo.svelte";
-	import { At, Trash, Password } from "phosphor-svelte";
-	import Toggle from "$/components/input/toggle.svelte";
-	import Checkbox from "$/components/input/checkbox.svelte";
-	import TextInput from "$/components/input/text-input.svelte";
-	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
-	import DeleteAccountDialog from "$/components/dialogs/delete-account-dialog.svelte";
+	import { Trash } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
+	import { user } from "$/lib/auth";
+	import type { Platform, UserConnection } from "$/gql/graphql";
+	import type { Snippet } from "svelte";
+	import { graphql } from "$/gql";
+	import { gqlClient } from "$/lib/gql";
+	import Spinner from "$/components/spinner.svelte";
+	import { setMainConnection } from "$/lib/userMutations";
+
+	async function queryConnections(userId: string) {
+		const res = await gqlClient().query(
+			graphql(`
+				query UserConnections($userId: Id!) {
+					users {
+						user(id: $userId) {
+							mainConnection {
+								platform
+								platformId
+							}
+							connections {
+								platform
+								platformId
+								platformDisplayName
+							}
+						}
+					}
+				}
+			`),
+			{ userId },
+		);
+
+		return res.data?.users.user;
+	}
+
+	let connections = $state(queryConnections($user!.id));
+
+	const CONNECTION_ICONS: { [key in Platform]: Snippet } = {
+		DISCORD: discordLogo,
+		TWITCH: twitchLogo,
+		GOOGLE: youtubeLogo,
+		KICK: kickLogo,
+	};
+
+	function platformToValue(platform: Platform, platformId: string) {
+		return `${platform}:${platformId}`;
+	}
+
+	function valueToPlatform(value: string) {
+		const idx = value.indexOf(":");
+		return { platform: value.slice(0, idx) as Platform, platformId: value.slice(idx + 1) };
+	}
+
+	let connectionOptions = $derived(
+		connections.then((data) =>
+			data?.connections.map((c) => {
+				return {
+					value: platformToValue(c.platform, c.platformId),
+					label: c.platformDisplayName,
+					icon: CONNECTION_ICONS[c.platform],
+				} as Option;
+			}),
+		),
+	);
+
+	$effect(() => {
+		connections.then((data) => {
+			if (data?.mainConnection) {
+				originalMainConnection = platformToValue(
+					data.mainConnection.platform,
+					data.mainConnection.platformId,
+				);
+				mainConnection = originalMainConnection;
+			}
+		});
+	});
+
+	let originalMainConnection: string;
+	let mainConnection = $state<string>();
+
+	$effect(() => {
+		if (mainConnection && mainConnection !== originalMainConnection) {
+			const { platform, platformId } = valueToPlatform(mainConnection);
+
+			const promise = setMainConnection($user!.id, platform, platformId);
+			promise.then((userData) => {
+				$user = userData;
+			});
+
+			connections = promise;
+		}
+	});
 </script>
 
 <svelte:head>
 	<title>{$t("page_titles.account_settings")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
+{#snippet discordLogo()}
+	<DiscordLogo />
+{/snippet}
 {#snippet twitchLogo()}
 	<TwitchLogo />
 {/snippet}
@@ -41,14 +128,25 @@
 			<h3>{$t("pages.settings.account.profile.display_name")}</h3>
 			<span class="details">{$t("pages.settings.account.profile.display_name_description")}</span>
 		</span>
-		<Select
-			options={[
-				{ value: "twitch", label: "ayyybubu", icon: twitchLogo },
-				{ value: "youtube", label: "ayyybubu", icon: youtubeLogo },
-				{ value: "kick", label: "gambabubu", icon: kickLogo },
-			]}
-			style="align-self: flex-start"
-		/>
+		{#snippet loadingSpinner()}
+			<Spinner />
+		{/snippet}
+		{#await connectionOptions}
+			<Select
+				options={[{ value: "", label: "", icon: loadingSpinner }]}
+				selected=""
+				style="align-self: flex-start"
+				disabled
+			/>
+		{:then connectionOptions}
+			{#if connectionOptions}
+				<Select
+					options={connectionOptions}
+					bind:selected={mainConnection}
+					style="align-self: flex-start"
+				/>
+			{/if}
+		{/await}
 		<hr />
 		<span>
 			<h3>{$t("common.profile_picture")}</h3>
@@ -56,7 +154,7 @@
 			>
 		</span>
 		<div class="profile-picture">
-			<div class="placeholder"></div>
+			<div class="placeholder loading-animation"></div>
 			<div class="buttons">
 				<Button secondary>{$t("pages.settings.account.profile.update_profile_picture")}</Button>
 				<Button>

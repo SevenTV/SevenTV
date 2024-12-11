@@ -953,6 +953,7 @@ type UserOperation {
 	activeBadge(badgeId: Id): User!
 	activeEmoteSet(emoteSetId: Id): User!
 	activePaint(paintId: Id): User!
+	mainConnection(platform: Platform!, platformId: String!): User!
 }
 
 type UserPermission {
