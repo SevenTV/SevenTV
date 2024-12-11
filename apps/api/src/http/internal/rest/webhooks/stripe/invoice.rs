@@ -16,6 +16,7 @@ use tracing::Instrument;
 use crate::global::Global;
 use crate::http::egvault::metadata::{CustomerMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::paypal_api;
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
@@ -40,6 +41,7 @@ pub enum StripeRequest {
 	CreatedRetrieveSubscription,
 	CreatedRetrieveCustomer,
 	PaidRetrieveSubscription,
+	CancelSubscription,
 }
 
 impl std::fmt::Display for StripeRequest {
@@ -48,6 +50,7 @@ impl std::fmt::Display for StripeRequest {
 			Self::CreatedRetrieveSubscription => write!(f, "created_retrieve_subscription"),
 			Self::CreatedRetrieveCustomer => write!(f, "created_retrieve_customer"),
 			Self::PaidRetrieveSubscription => write!(f, "paid_retrieve_subscription"),
+			Self::CancelSubscription => write!(f, "cancel_subscription"),
 		}
 	}
 }
@@ -473,6 +476,29 @@ pub async fn paid(
 				))
 			})?;
 
+			let subscription_id = SubscriptionId {
+				user_id,
+				product_id: subscription_product_id,
+			};
+
+			// Get their current subscription periods
+			let current_periods = tx.find(filter::filter! {
+				SubscriptionPeriod {
+					#[query(serde)]
+					subscription_id,
+				}
+			}, None).await?;
+
+			// Find all periods that are either in the future or currently active
+			let mut current_periods = current_periods.into_iter().filter(|period|
+				period.end > chrono::Utc::now() && period.start <= chrono::Utc::now()
+			).collect::<Vec<_>>();
+
+			// Sort them by the end date
+			current_periods.sort_by(|a, b| a.end.cmp(&b.end));
+
+			let start = current_periods.last().map(|period| period.end).unwrap_or(start);
+
 			let end = start
 				.checked_add_months(period_duration) // It's fine to use this function here since UTC doens't have daylight saving time transitions
 				.ok_or_else(|| {
@@ -482,15 +508,68 @@ pub async fn paid(
 					))
 				})?;
 
-			let sub_id = SubscriptionId {
-				user_id,
-				product_id: subscription_product_id,
-			};
+			for period in current_periods {
+				if period.start > chrono::Utc::now() {					
+					break;
+				}
+
+				// Cancel the period on the provider
+				match period.provider_id {
+					Some(ProviderSubscriptionId::Stripe(id)) => {
+						stripe::Subscription::update(
+							stripe_client.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription)).await.deref(),
+							&id,
+							stripe::UpdateSubscription {
+								cancel_at_period_end: Some(true),
+								..Default::default()
+							},
+						)
+						.await
+						.map_err(|e| {
+							tracing::error!(error = %e, "failed to update stripe subscription");
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::StripeError,
+								"failed to update stripe subscription",
+							))
+						})?;
+					}
+					Some(ProviderSubscriptionId::Paypal(id)) => {
+						let api_key = paypal_api::api_key(&global).await.map_err(TransactionError::Custom)?;
+
+						// https://developer.paypal.com/docs/api/subscriptions/v1/#subscriptions_cancel
+						let response = global
+							.http_client
+							.post(format!("https://api.paypal.com/v1/billing/subscriptions/{id}/cancel"))
+							.bearer_auth(&api_key)
+							.json(&serde_json::json!({
+								"reason": "Subscription canceled by gift"
+							}))
+							.send()
+							.await
+							.map_err(|e| {
+								tracing::error!(error = %e, "failed to cancel paypal subscription");
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::PaypalError,
+									"failed to cancel paypal subscription",
+								))
+							})?;
+
+						if !response.status().is_success() {
+							tracing::error!(status = %response.status(), "failed to cancel paypal subscription");
+							return Err(TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::PaypalError,
+								"failed to cancel paypal subscription",
+							)));
+						}
+					}
+					None => {}
+				}
+			}
 
 			tx.insert_one(
 				SubscriptionPeriod {
 					id: SubscriptionPeriodId::new(),
-					subscription_id: sub_id,
+					subscription_id,
 					provider_id: None,
 					start,
 					end,
@@ -508,7 +587,7 @@ pub async fn paid(
 			)
 			.await?;
 
-			return Ok(Some(sub_id));
+			return Ok(Some(subscription_id));
 		}
 		(
 			None,
