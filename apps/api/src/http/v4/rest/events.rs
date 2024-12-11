@@ -90,19 +90,22 @@ async fn create_event(
 	};
 
 	transaction_with_mutex(&global, Some(GeneralMutexKey::User(user.id).into()), |mut tx| async move {
-		tx.delete(filter::filter! {
-			EntitlementEdge {
-				#[query(flatten)]
-				id: EntitlementEdgeId {
-					#[query(serde)]
-					from: &from,
-					#[query(serde)]
-					managed_by: Some(EntitlementEdgeManagedBy::SpecialEvent {
-						special_event_id: event.id,
-					}),
-				},
-			}
-		}, None)
+		tx.delete(
+			filter::filter! {
+				EntitlementEdge {
+					#[query(flatten)]
+					id: EntitlementEdgeId {
+						#[query(serde)]
+						from: &from,
+						#[query(serde)]
+						managed_by: Some(EntitlementEdgeManagedBy::SpecialEvent {
+							special_event_id: event.id,
+						}),
+					},
+				}
+			},
+			None,
+		)
 		.await?;
 
 		tx.insert_one(

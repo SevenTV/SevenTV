@@ -1,15 +1,19 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
+use chrono::TimeZone;
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::invoice::{Invoice, InvoiceStatus};
+use shared::database::product::special_event::SpecialEvent;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
 use shared::database::product::{
-	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant,
+	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant
 };
 use shared::database::queries::{filter, update};
 use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
+use shared::database::user::UserId;
 use stripe::Object;
 use tracing::Instrument;
 
@@ -376,6 +380,7 @@ pub async fn paid(
 					"subscription current period start is missing",
 				))
 			})?;
+
 			// when the subscription is in trial, the current period end is the trial end
 			let end = chrono::DateTime::from_timestamp(stripe_sub.current_period_end, 0).ok_or_else(|| {
 				TransactionError::Custom(ApiError::bad_request(
@@ -476,23 +481,32 @@ pub async fn paid(
 				))
 			})?;
 
+			// TODO: Delete after christmas gifter event
+			handle_xmas_2024_gift(&mut tx, start, customer_id, subscription_product_id).await?;
+
 			let subscription_id = SubscriptionId {
 				user_id,
 				product_id: subscription_product_id,
 			};
 
 			// Get their current subscription periods
-			let current_periods = tx.find(filter::filter! {
-				SubscriptionPeriod {
-					#[query(serde)]
-					subscription_id,
-				}
-			}, None).await?;
+			let current_periods = tx
+				.find(
+					filter::filter! {
+						SubscriptionPeriod {
+							#[query(serde)]
+							subscription_id,
+						}
+					},
+					None,
+				)
+				.await?;
 
 			// Find all periods that are either in the future or currently active
-			let mut current_periods = current_periods.into_iter().filter(|period|
-				period.end > chrono::Utc::now() && period.start <= chrono::Utc::now()
-			).collect::<Vec<_>>();
+			let mut current_periods = current_periods
+				.into_iter()
+				.filter(|period| period.end > chrono::Utc::now() && period.start <= chrono::Utc::now())
+				.collect::<Vec<_>>();
 
 			// Sort them by the end date
 			current_periods.sort_by(|a, b| a.end.cmp(&b.end));
@@ -509,7 +523,7 @@ pub async fn paid(
 				})?;
 
 			for period in current_periods {
-				if period.start > chrono::Utc::now() {					
+				if period.start > chrono::Utc::now() {
 					break;
 				}
 
@@ -517,7 +531,10 @@ pub async fn paid(
 				match period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
 						stripe::Subscription::update(
-							stripe_client.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription)).await.deref(),
+							stripe_client
+								.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription))
+								.await
+								.deref(),
 							&id,
 							stripe::UpdateSubscription {
 								cancel_at_period_end: Some(true),
@@ -684,6 +701,80 @@ pub async fn payment_failed(
 				updated_at: chrono::Utc::now(),
 				search_updated_at: &None,
 			}
+		},
+		None,
+	)
+	.await?;
+
+	Ok(())
+}
+
+/// TODO: Delete after christmas gifter event
+async fn handle_xmas_2024_gift(
+	tx: &mut TransactionSession<'_, ApiError>,
+	start: chrono::DateTime<chrono::Utc>,
+	customer_id: UserId,
+	subscription_product_id: SubscriptionProductId,
+) -> TransactionResult<(), ApiError> {
+	let xmas_event_start = chrono::Utc.with_ymd_and_hms(2024, 12, 14, 0, 0, 0).unwrap();
+	let xmas_event_end = chrono::Utc.with_ymd_and_hms(2024, 12, 27, 0, 0, 0).unwrap();
+
+	if start < xmas_event_start || start > xmas_event_end {
+		return Ok(());
+	}
+
+	let Some(special_event_id) = tx
+		.find_one(
+				filter::filter! {
+					SpecialEvent {
+						name: "2024 X-MAS Gifter".to_owned(),
+					}
+				},
+				None,
+			)
+		.await?
+	else {
+		return Ok(());
+	};
+
+	// We gift them a special event because they gifted a sub during the christmas
+	// We gift them a special event because they gifted a sub during the christmas
+	// event
+	let from = EntitlementEdgeKind::Subscription {
+		subscription_id: SubscriptionId {
+			user_id: customer_id,
+			product_id: subscription_product_id,
+		},
+	};
+	let managed_by = EntitlementEdgeManagedBy::SpecialEvent {
+		special_event_id: special_event_id.id,
+	};
+
+	tx.delete(
+		filter::filter! {
+			EntitlementEdge {
+				#[query(flatten, rename = "_id")]
+				id: EntitlementEdgeId {
+					#[query(serde)]
+					from: &from,
+					#[query(serde)]
+					managed_by: Some(&managed_by),
+				}
+			}
+		},
+		None,
+	)
+	.await?;
+
+	tx.insert_one(
+		EntitlementEdge {
+			id: EntitlementEdgeId {
+				from,
+				to: EntitlementEdgeKind::SpecialEvent {
+					special_event_id: special_event_id.id,
+				},
+				managed_by: Some(managed_by),
+			},
 		},
 		None,
 	)
