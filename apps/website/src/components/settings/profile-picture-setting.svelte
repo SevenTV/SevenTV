@@ -7,8 +7,6 @@
 	import { removeProfilePicture, uploadProfilePicture } from "$/lib/userMutations";
 	import { t } from "svelte-i18n";
 	import { untrack } from "svelte";
-	import { gqlClient } from "$/lib/gql";
-	import { graphql } from "$/gql";
 
 	let fileInput: HTMLInputElement;
 	let files = $state<FileList>();

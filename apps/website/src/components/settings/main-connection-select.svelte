@@ -9,6 +9,7 @@
 	import Spinner from "$/components/spinner.svelte";
 	import { setMainConnection } from "$/lib/userMutations";
 	import { user } from "$/lib/auth";
+	import { platformToValue, valueToPlatform } from "$/lib/utils";
 
 	let { userData = $bindable() }: { userData: Promise<User> } = $props();
 
@@ -18,15 +19,6 @@
 		GOOGLE: youtubeLogo,
 		KICK: kickLogo,
 	};
-
-	function platformToValue(platform: Platform, platformId: string) {
-		return `${platform}:${platformId}`;
-	}
-
-	function valueToPlatform(value: string) {
-		const idx = value.indexOf(":");
-		return { platform: value.slice(0, idx) as Platform, platformId: value.slice(idx + 1) };
-	}
 
 	let connectionOptions = $derived(
 		userData.then((data) =>
@@ -81,7 +73,6 @@
 {#snippet kickLogo()}
 	<KickLogo />
 {/snippet}
-
 
 {#snippet loadingSpinner()}
 	<Spinner />

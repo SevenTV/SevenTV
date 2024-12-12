@@ -1,4 +1,4 @@
-import { SubscriptionProductKind, type Role, type SubscriptionProductVariant } from "$/gql/graphql";
+import { Platform, SubscriptionProductKind, type Role, type SubscriptionProductVariant } from "$/gql/graphql";
 import { getNumberFormatter } from "svelte-i18n";
 
 export function priceFormat(currency: string) {
@@ -50,4 +50,13 @@ export function compareTags(a: string[], b: string[]) {
 	}
 
 	return true;
+}
+
+export function platformToValue(platform: Platform, platformId: string) {
+	return `${platform}:${platformId}`;
+}
+
+export function valueToPlatform(value: string) {
+	const idx = value.indexOf(":");
+	return { platform: value.slice(0, idx) as Platform, platformId: value.slice(idx + 1) };
 }

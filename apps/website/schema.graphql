@@ -953,7 +953,9 @@ type UserOperation {
 	activeBadge(badgeId: Id): User!
 	activeEmoteSet(emoteSetId: Id): User!
 	activePaint(paintId: Id): User!
+	deleteAllSessions: Int!
 	mainConnection(platform: Platform!, platformId: String!): User!
+	removeConnection(platform: Platform!, platformId: String!): User!
 	removeProfilePicture: User!
 }
 

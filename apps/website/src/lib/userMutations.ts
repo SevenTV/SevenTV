@@ -856,3 +856,145 @@ export async function removeProfilePicture(userId: string) {
 
 	return res.data.users.user.removeProfilePicture as User;
 }
+
+export async function removeConnection(userId: string, platform: Platform, platformId: string) {
+	const res = await gqlClient().mutation(graphql(`
+		mutation RemoveConnection($userId: Id!, $platform: Platform!, $platformId: String!) {
+			users {
+				user(id: $userId) {
+					removeConnection(platform: $platform, platformId: $platformId) {
+						id
+						mainConnection {
+							platform
+							platformId
+							platformDisplayName
+							platformAvatarUrl
+						}
+						connections {
+							platform
+							platformId
+							platformDisplayName
+						}
+						style {
+							activeProfilePicture {
+								images {
+									url
+									mime
+									size
+									width
+									height
+									scale
+									frameCount
+								}
+							}
+							activePaint {
+								id
+								name
+								data {
+									layers {
+										id
+										ty {
+											__typename
+											... on PaintLayerTypeSingleColor {
+												color {
+													hex
+												}
+											}
+											... on PaintLayerTypeLinearGradient {
+												angle
+												repeating
+												stops {
+													at
+													color {
+														hex
+													}
+												}
+											}
+											... on PaintLayerTypeRadialGradient {
+												repeating
+												stops {
+													at
+													color {
+														hex
+													}
+												}
+												shape
+											}
+											... on PaintLayerTypeImage {
+												images {
+													url
+													mime
+													size
+													scale
+													width
+													height
+													frameCount
+												}
+											}
+										}
+										opacity
+									}
+									shadows {
+										color {
+											hex
+										}
+										offsetX
+										offsetY
+										blur
+									}
+								}
+							}
+							activeEmoteSetId
+						}
+						highestRoleColor {
+							hex
+						}
+						roles {
+							name
+							color {
+								hex
+							}
+						}
+						editableEmoteSetIds
+						permissions {
+							user {
+								manageAny
+								useCustomProfilePicture
+							}
+							emote {
+								manageAny
+							}
+							ticket {
+								create
+							}
+						}
+					}
+				}
+			}
+		}
+	`), { userId, platform, platformId });
+
+	if (!res.data) {
+		return undefined;
+	}
+
+	return res.data.users.user.removeConnection as User;
+}
+
+export async function deleteAllSessions(userId: string) {
+	const res = await gqlClient().mutation(graphql(`
+		mutation DeleteAllSessions($userId: Id!) {
+			users {
+				user(id: $userId) {
+					deleteAllSessions
+				}
+			}
+		}
+	`), { userId });
+
+	if (!res.data) {
+		return undefined;
+	}
+
+	return res.data.users.user.deleteAllSessions;
+}

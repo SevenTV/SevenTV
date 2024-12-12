@@ -7,6 +7,7 @@ use shared::database::emote_set::{EmoteSetId, EmoteSetKind};
 use shared::database::paint::PaintId;
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
+use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::editor::{EditorUserPermission, UserEditorId, UserEditorState};
 use shared::event::{InternalEvent, InternalEventData, InternalEventUserData};
 
@@ -15,7 +16,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
 use crate::http::middleware::session::Session;
 use crate::http::v4::gql::types::{Platform, User};
-use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
+use crate::transactions::{transaction, transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 pub struct UserOperation {
 	pub user: shared::database::user::User,
@@ -715,6 +716,225 @@ impl UserOperation {
 
 				Ok(full_user.into())
 			}
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
+	}
+
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::UserChangeConnections, 1)")]
+	#[tracing::instrument(skip_all, name = "UserOps::connections")]
+	async fn remove_connection(&self, ctx: &Context<'_>, platform: Platform, platform_id: String) -> Result<User, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id != self.user.id && !authed_user.has(UserPermission::ManageAny) {
+			let editor = global
+				.user_editor_by_id_loader
+				.load(UserEditorId {
+					editor_id: authed_user.id,
+					user_id: self.user.id,
+				})
+				.await
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
+						"you do not have permission to modify connections",
+					)
+				})?;
+
+			if editor.state != UserEditorState::Accepted || !editor.permissions.has(EditorUserPermission::ManageProfile) {
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"you do not have permission to modify connections, you need the ManageProfile permission",
+				));
+			}
+		}
+
+		let platform: shared::database::user::connection::Platform = platform.into();
+
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::User(self.user.id).into()),
+			|mut tx| async move {
+				let old_user = global
+					.user_loader
+					.load(global, self.user.id)
+					.await
+					.map_err(|_| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to load user",
+						))
+					})?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
+					})?;
+
+				let user = tx
+					.find_one_and_update(
+						filter::filter! {
+							shared::database::user::User {
+								#[query(rename = "_id")]
+								id: self.user.id,
+							}
+						},
+						update::update! {
+							#[query(pull)]
+							shared::database::user::User {
+								connections: shared::database::user::connection::UserConnection {
+									platform,
+									platform_id: &platform_id,
+								}
+							},
+							#[query(set)]
+							shared::database::user::User {
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
+						},
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "user not found"))
+					})?;
+
+				if user.connections.is_empty() {
+					return Err(TransactionError::Custom(ApiError::bad_request(
+						ApiErrorCode::BadRequest,
+						"cannot remove last connection",
+					)));
+				}
+
+				let connection = old_user
+					.user
+					.connections
+					.into_iter()
+					.find(|c| c.platform == platform && c.platform_id == platform_id)
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::not_found(ApiErrorCode::LoadError, "connection not found"))
+					})?;
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: session.user_session_id(),
+					data: InternalEventData::User {
+						after: user.clone(),
+						data: InternalEventUserData::RemoveConnection { connection },
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+
+				Ok(user)
+			},
+		)
+		.await;
+
+		match res {
+			Ok(user) => {
+				let full_user = global
+					.user_loader
+					.load_fast_user(global, user)
+					.await
+					.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+				Ok(full_user.into())
+			}
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
+	}
+
+	#[tracing::instrument(skip_all, name = "UserOps::delete_all_sessions")]
+	async fn delete_all_sessions(&self, ctx: &Context<'_>) -> Result<u64, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let authed_session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = authed_session.user()?;
+
+		if authed_user.id != self.user.id && !authed_user.has(UserPermission::ManageAny) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you do not have permission to modify connections, you need the ManageProfile permission",
+			));
+		}
+
+		let session_id = authed_session
+			.user_session_id()
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
+
+		let res = transaction(global, |mut tx| async move {
+			let sessions: Vec<_> = tx
+				.find(
+					filter::filter! {
+						shared::database::user::session::UserSession {
+							user_id: self.user.id,
+						}
+					},
+					None,
+				)
+				.await?
+				.into_iter()
+				.filter(|s| s.id != session_id)
+				.collect();
+
+			let mut ids = Vec::with_capacity(sessions.len());
+
+			for session in sessions {
+				ids.push(session.id);
+
+				tx.register_event(InternalEvent {
+					actor: Some(authed_user.clone()),
+					session_id: authed_session.user_session_id(),
+					data: InternalEventData::UserSession {
+						after: session,
+						data: StoredEventUserSessionData::Delete,
+					},
+					timestamp: chrono::Utc::now(),
+				})?;
+			}
+
+			let res = tx
+				.delete(
+					filter::filter! {
+						shared::database::user::session::UserSession {
+							#[query(rename = "_id", selector = "in")]
+							id: &ids,
+						}
+					},
+					None,
+				)
+				.await?;
+
+			Ok(res.deleted_count)
+		})
+		.await;
+
+		match res {
+			Ok(count) => Ok(count),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
