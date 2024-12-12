@@ -1,7 +1,7 @@
 <script lang="ts">
 	import TabLink from "$/components/tab-link.svelte";
 	import { user } from "$/lib/auth";
-	import { Key, PencilSimple, Bell, CreditCard, Prohibit, MagnifyingGlass } from "phosphor-svelte";
+	import { Key, PencilSimple, CreditCard } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";

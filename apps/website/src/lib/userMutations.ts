@@ -711,10 +711,7 @@ export async function setMainConnection(userId: string, platform: Platform, plat
 	return res.data.users.user.mainConnection as User;
 }
 
-export async function uploadProfilePicture(
-	userId: string,
-	data: Blob,
-) {
+export async function uploadProfilePicture(userId: string, data: Blob) {
 	const token = get(sessionToken);
 
 	if (!token) {
@@ -741,114 +738,117 @@ export async function uploadProfilePicture(
 }
 
 export async function removeProfilePicture(userId: string) {
-	const res = await gqlClient().mutation(graphql(`
-		mutation RemoveProfilePicture($userId: Id!) {
-			users {
-				user(id: $userId) {
-					removeProfilePicture {
-						id
-						mainConnection {
-							platformDisplayName
-							platformAvatarUrl
-						}
-						style {
-							activeProfilePicture {
-								images {
-									url
-									mime
-									size
-									width
-									height
-									scale
-									frameCount
-								}
+	const res = await gqlClient().mutation(
+		graphql(`
+			mutation RemoveProfilePicture($userId: Id!) {
+				users {
+					user(id: $userId) {
+						removeProfilePicture {
+							id
+							mainConnection {
+								platformDisplayName
+								platformAvatarUrl
 							}
-							activePaint {
-								id
-								name
-								data {
-									layers {
-										id
-										ty {
-											__typename
-											... on PaintLayerTypeSingleColor {
-												color {
-													hex
-												}
-											}
-											... on PaintLayerTypeLinearGradient {
-												angle
-												repeating
-												stops {
-													at
+							style {
+								activeProfilePicture {
+									images {
+										url
+										mime
+										size
+										width
+										height
+										scale
+										frameCount
+									}
+								}
+								activePaint {
+									id
+									name
+									data {
+										layers {
+											id
+											ty {
+												__typename
+												... on PaintLayerTypeSingleColor {
 													color {
 														hex
 													}
 												}
-											}
-											... on PaintLayerTypeRadialGradient {
-												repeating
-												stops {
-													at
-													color {
-														hex
+												... on PaintLayerTypeLinearGradient {
+													angle
+													repeating
+													stops {
+														at
+														color {
+															hex
+														}
 													}
 												}
-												shape
-											}
-											... on PaintLayerTypeImage {
-												images {
-													url
-													mime
-													size
-													scale
-													width
-													height
-													frameCount
+												... on PaintLayerTypeRadialGradient {
+													repeating
+													stops {
+														at
+														color {
+															hex
+														}
+													}
+													shape
+												}
+												... on PaintLayerTypeImage {
+													images {
+														url
+														mime
+														size
+														scale
+														width
+														height
+														frameCount
+													}
 												}
 											}
+											opacity
 										}
-										opacity
-									}
-									shadows {
-										color {
-											hex
+										shadows {
+											color {
+												hex
+											}
+											offsetX
+											offsetY
+											blur
 										}
-										offsetX
-										offsetY
-										blur
 									}
 								}
+								activeEmoteSetId
 							}
-							activeEmoteSetId
-						}
-						highestRoleColor {
-							hex
-						}
-						roles {
-							name
-							color {
+							highestRoleColor {
 								hex
 							}
-						}
-						editableEmoteSetIds
-						permissions {
-							user {
-								manageAny
-								useCustomProfilePicture
+							roles {
+								name
+								color {
+									hex
+								}
 							}
-							emote {
-								manageAny
-							}
-							ticket {
-								create
+							editableEmoteSetIds
+							permissions {
+								user {
+									manageAny
+									useCustomProfilePicture
+								}
+								emote {
+									manageAny
+								}
+								ticket {
+									create
+								}
 							}
 						}
 					}
 				}
 			}
-		}
-	`), { userId });
+		`),
+		{ userId },
+	);
 
 	if (!res.data) {
 		return undefined;
@@ -858,121 +858,124 @@ export async function removeProfilePicture(userId: string) {
 }
 
 export async function removeConnection(userId: string, platform: Platform, platformId: string) {
-	const res = await gqlClient().mutation(graphql(`
-		mutation RemoveConnection($userId: Id!, $platform: Platform!, $platformId: String!) {
-			users {
-				user(id: $userId) {
-					removeConnection(platform: $platform, platformId: $platformId) {
-						id
-						mainConnection {
-							platform
-							platformId
-							platformDisplayName
-							platformAvatarUrl
-						}
-						connections {
-							platform
-							platformId
-							platformDisplayName
-						}
-						style {
-							activeProfilePicture {
-								images {
-									url
-									mime
-									size
-									width
-									height
-									scale
-									frameCount
-								}
+	const res = await gqlClient().mutation(
+		graphql(`
+			mutation RemoveConnection($userId: Id!, $platform: Platform!, $platformId: String!) {
+				users {
+					user(id: $userId) {
+						removeConnection(platform: $platform, platformId: $platformId) {
+							id
+							mainConnection {
+								platform
+								platformId
+								platformDisplayName
+								platformAvatarUrl
 							}
-							activePaint {
-								id
-								name
-								data {
-									layers {
-										id
-										ty {
-											__typename
-											... on PaintLayerTypeSingleColor {
-												color {
-													hex
-												}
-											}
-											... on PaintLayerTypeLinearGradient {
-												angle
-												repeating
-												stops {
-													at
+							connections {
+								platform
+								platformId
+								platformDisplayName
+							}
+							style {
+								activeProfilePicture {
+									images {
+										url
+										mime
+										size
+										width
+										height
+										scale
+										frameCount
+									}
+								}
+								activePaint {
+									id
+									name
+									data {
+										layers {
+											id
+											ty {
+												__typename
+												... on PaintLayerTypeSingleColor {
 													color {
 														hex
 													}
 												}
-											}
-											... on PaintLayerTypeRadialGradient {
-												repeating
-												stops {
-													at
-													color {
-														hex
+												... on PaintLayerTypeLinearGradient {
+													angle
+													repeating
+													stops {
+														at
+														color {
+															hex
+														}
 													}
 												}
-												shape
-											}
-											... on PaintLayerTypeImage {
-												images {
-													url
-													mime
-													size
-													scale
-													width
-													height
-													frameCount
+												... on PaintLayerTypeRadialGradient {
+													repeating
+													stops {
+														at
+														color {
+															hex
+														}
+													}
+													shape
+												}
+												... on PaintLayerTypeImage {
+													images {
+														url
+														mime
+														size
+														scale
+														width
+														height
+														frameCount
+													}
 												}
 											}
+											opacity
 										}
-										opacity
-									}
-									shadows {
-										color {
-											hex
+										shadows {
+											color {
+												hex
+											}
+											offsetX
+											offsetY
+											blur
 										}
-										offsetX
-										offsetY
-										blur
 									}
 								}
+								activeEmoteSetId
 							}
-							activeEmoteSetId
-						}
-						highestRoleColor {
-							hex
-						}
-						roles {
-							name
-							color {
+							highestRoleColor {
 								hex
 							}
-						}
-						editableEmoteSetIds
-						permissions {
-							user {
-								manageAny
-								useCustomProfilePicture
+							roles {
+								name
+								color {
+									hex
+								}
 							}
-							emote {
-								manageAny
-							}
-							ticket {
-								create
+							editableEmoteSetIds
+							permissions {
+								user {
+									manageAny
+									useCustomProfilePicture
+								}
+								emote {
+									manageAny
+								}
+								ticket {
+									create
+								}
 							}
 						}
 					}
 				}
 			}
-		}
-	`), { userId, platform, platformId });
+		`),
+		{ userId, platform, platformId },
+	);
 
 	if (!res.data) {
 		return undefined;
@@ -982,15 +985,18 @@ export async function removeConnection(userId: string, platform: Platform, platf
 }
 
 export async function deleteAllSessions(userId: string) {
-	const res = await gqlClient().mutation(graphql(`
-		mutation DeleteAllSessions($userId: Id!) {
-			users {
-				user(id: $userId) {
-					deleteAllSessions
+	const res = await gqlClient().mutation(
+		graphql(`
+			mutation DeleteAllSessions($userId: Id!) {
+				users {
+					user(id: $userId) {
+						deleteAllSessions
+					}
 				}
 			}
-		}
-	`), { userId });
+		`),
+		{ userId },
+	);
 
 	if (!res.data) {
 		return undefined;

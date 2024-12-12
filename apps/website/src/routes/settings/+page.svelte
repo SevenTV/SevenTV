@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Button from "$/components/input/button.svelte";
 	import { t } from "svelte-i18n";
 	import { user } from "$/lib/auth";
 	import { graphql } from "$/gql";

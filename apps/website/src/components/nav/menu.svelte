@@ -4,7 +4,6 @@
 	import Role from "../users/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
-		Bell,
 		CaretLeft,
 		CaretRight,
 		CreditCard,
@@ -17,7 +16,6 @@
 		Note,
 		PaintBrush,
 		PencilSimple,
-		Prohibit,
 		SignOut,
 		Sliders,
 		Smiley,
@@ -52,11 +50,13 @@
 
 	function logoutClick() {
 		logoutLoading = true;
-		logout().then(() => {
-			onCloseRequest?.();
-		}).finally(() => {
-			logoutLoading = false;
-		});
+		logout()
+			.then(() => {
+				onCloseRequest?.();
+			})
+			.finally(() => {
+				logoutLoading = false;
+			});
 	}
 
 	let reversedRoles = $derived(filterRoles($user?.roles || []));

@@ -1,4 +1,9 @@
-import { Platform, SubscriptionProductKind, type Role, type SubscriptionProductVariant } from "$/gql/graphql";
+import {
+	Platform,
+	SubscriptionProductKind,
+	type Role,
+	type SubscriptionProductVariant,
+} from "$/gql/graphql";
 import { getNumberFormatter } from "svelte-i18n";
 
 export function priceFormat(currency: string) {

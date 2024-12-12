@@ -56,7 +56,7 @@
 
 		const promise = removeConnection($user!.id, platform, platformId);
 
-		userData = promise.then((data) => data ? data : userData);
+		userData = promise.then((data) => (data ? data : userData));
 
 		const res = await promise;
 
@@ -100,7 +100,9 @@
 		const bConnected = !!connectionMap[b.id];
 		return +bConnected - +aConnected;
 	})}
-	{@const numLinkableConnections = PLATFORMS.filter((p) => p.linkingEnabled && connectionMap[p.id]).length}
+	{@const numLinkableConnections = PLATFORMS.filter(
+		(p) => p.linkingEnabled && connectionMap[p.id],
+	).length}
 
 	{#each platforms as platform}
 		<li>
@@ -113,10 +115,15 @@
 				{/if}
 			</div>
 			{#if connectionMap[platform.id]}
-				{@const loading = removeLoading === platformToValue(platform.id, connectionMap[platform.id].platformId)}
+				{@const loading =
+					removeLoading === platformToValue(platform.id, connectionMap[platform.id].platformId)}
 				<Button
 					secondary
-					disabled={!!(numLinkableConnections <= 1 && platform.linkingEnabled && connectionMap[platform.id]) || loading}
+					disabled={!!(
+						numLinkableConnections <= 1 &&
+						platform.linkingEnabled &&
+						connectionMap[platform.id]
+					) || loading}
 					icon={loading ? loadingSpinner : undefined}
 					onclick={() =>
 						removeUserConnection(

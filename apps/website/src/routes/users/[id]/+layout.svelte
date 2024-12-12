@@ -5,7 +5,6 @@
 	import {
 		CaretDown,
 		CaretRight,
-		DotsThreeVertical,
 		FolderSimple,
 		IdentificationCard,
 		Lightning,

@@ -4,7 +4,7 @@
 	import DiscordLogo from "$/components/icons/discord-logo.svelte";
 	import Select, { type Option } from "$/components/input/select.svelte";
 	import KickLogo from "$/components/icons/kick-logo.svelte";
-	import type { Platform, User, UserConnection } from "$/gql/graphql";
+	import type { Platform, User } from "$/gql/graphql";
 	import type { Snippet } from "svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import { setMainConnection } from "$/lib/userMutations";

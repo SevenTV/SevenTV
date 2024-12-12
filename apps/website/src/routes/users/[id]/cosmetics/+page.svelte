@@ -278,15 +278,17 @@
 
 			const promise = setActiveBadge(data.id, activeBadgeValue);
 			data.streamed.userRequest.value = promise;
-			promise.then((newUser) => {
-				if (newUser) {
-					if ($user?.id === newUser.id) {
-						$user = newUser;
+			promise
+				.then((newUser) => {
+					if (newUser) {
+						if ($user?.id === newUser.id) {
+							$user = newUser;
+						}
 					}
-				}
-			}).finally(() => {
-				badgeLoading = false;
-			});
+				})
+				.finally(() => {
+					badgeLoading = false;
+				});
 		}
 	});
 
@@ -304,15 +306,17 @@
 
 			const promise = setActivePaint(data.id, activePaintValue);
 			data.streamed.userRequest.value = promise;
-			promise.then((newUser) => {
-				if (newUser) {
-					if ($user?.id === newUser.id) {
-						$user = newUser;
+			promise
+				.then((newUser) => {
+					if (newUser) {
+						if ($user?.id === newUser.id) {
+							$user = newUser;
+						}
 					}
-				}
-			}).finally(() => {
-				paintLoading = false;
-			});
+				})
+				.finally(() => {
+					paintLoading = false;
+				});
 		}
 	});
 </script>
