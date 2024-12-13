@@ -17,7 +17,6 @@ use shared::database::queries::{filter, update};
 use shared::database::role::RoleId;
 use shared::database::updater::MongoReq;
 use shared::database::user::editor::UserEditorId;
-use shared::database::user::relation::UserRelationId;
 use shared::database::user::UserId;
 use shared::database::{MongoCollection, SearchableMongoCollection};
 use shared::typesense::types::TypesenseCollection;
@@ -192,14 +191,11 @@ macro_rules! default_impl {
 default_impl!(redeem_code_batcher, mongo::RedeemCode);
 default_impl!(invoice_batcher, mongo::Invoice);
 default_impl!(subscription_period_batcher, mongo::SubscriptionPeriod);
-default_impl!(user_ban_template_batcher, mongo::UserBanTemplate);
 default_impl!(user_ban_batcher, mongo::UserBan);
 default_impl!(event_batcher, mongo::StoredEvent);
-default_impl!(automod_rule_batcher, mongo::AutomodRule);
 default_impl!(badge_batcher, mongo::Badge);
 default_impl!(emote_moderation_request_batcher, mongo::EmoteModerationRequest);
 default_impl!(emote_batcher, mongo::Emote);
-default_impl!(page_batcher, mongo::Page);
 default_impl!(paint_batcher, mongo::Paint);
 default_impl!(ticket_batcher, mongo::Ticket);
 default_impl!(ticket_message_batcher, mongo::TicketMessage);
@@ -262,68 +258,6 @@ impl SupportedMongoCollection for mongo::UserEditor {
 			)
 			.await
 			.context("failed to update user editor")?;
-
-		Ok(())
-	}
-}
-
-impl SupportedMongoCollection for mongo::UserRelation {
-	async fn handle_delete(global: &Arc<Global>, id: UserRelationId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		global
-			.typesense
-			.documents_api()
-			.delete_document(
-				DeleteDocumentParams::builder()
-					.collection_name(<Self as SearchableMongoCollection>::Typesense::COLLECTION_NAME.into())
-					.document_id(id.to_string())
-					.build(),
-			)
-			.await
-			.context("failed to delete document")?;
-
-		Ok(())
-	}
-
-	#[tracing::instrument(skip_all, fields(user_id = %id.user_id, other_user_id = %id.other_user_id))]
-	async fn handle_any(global: &Arc<Global>, id: UserRelationId, _: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
-		let Ok(Some(data)) = global.user_relation_batcher.loader.load(id).await else {
-			anyhow::bail!("failed to load data");
-		};
-
-		if data.search_updated_at.is_some_and(|u| u > data.updated_at) {
-			return Ok(());
-		}
-
-		let updated_at = data.updated_at;
-
-		global
-			.user_relation_batcher
-			.inserter
-			.execute(data.into())
-			.await
-			.context("insert missing")?
-			.context("insert")?;
-
-		global
-			.updater
-			.update(
-				filter::filter! {
-					mongo::UserRelation {
-						#[query(rename = "_id", serde)]
-						id: id,
-						updated_at,
-					}
-				},
-				update::update! {
-					#[query(set)]
-					mongo::UserRelation {
-						search_updated_at: chrono::Utc::now(),
-					}
-				},
-				false,
-			)
-			.await
-			.context("failed to update user relation")?;
 
 		Ok(())
 	}
