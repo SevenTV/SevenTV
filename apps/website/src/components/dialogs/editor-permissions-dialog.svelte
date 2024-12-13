@@ -1,0 +1,157 @@
+<script lang="ts">
+	import type { UserEditorPermissionsInput } from "$/gql/graphql";
+	import Button from "../input/button.svelte";
+	import Checkbox from "../input/checkbox.svelte";
+	import Spinner from "../spinner.svelte";
+	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
+
+	interface Props {
+		mode: DialogMode;
+		permissions?: UserEditorPermissionsInput;
+		submit: (perms: UserEditorPermissionsInput) => Promise<void>;
+	}
+
+	const DEFAULT_PERMS = {
+		superAdmin: false,
+		emote: { admin: false, manage: true, create: false, transfer: false },
+		emoteSet: { admin: false, manage: true, create: false },
+		user: {
+			admin: false,
+			manageProfile: true,
+			manageEditors: false,
+			manageBilling: false,
+			managePersonalEmoteSet: false,
+		},
+	};
+
+	let { mode = $bindable(), permissions = $bindable(DEFAULT_PERMS), submit }: Props = $props();
+
+	let loading = $state(false);
+
+	async function clickSubmit() {
+		loading = true;
+		await submit(permissions);
+		loading = false;
+		mode = "hidden";
+	}
+</script>
+
+<Dialog bind:mode>
+	<form class="layout">
+		<h1>Set Editor Permissions</h1>
+		<hr />
+		<Checkbox bind:value={permissions.superAdmin}>Super Admin</Checkbox>
+		<div>
+			<span class="label">Emote Sets</span>
+			<div class="settings">
+				{#if permissions.superAdmin}
+					<Checkbox value={true} disabled>Admin</Checkbox>
+				{:else}
+					<Checkbox bind:value={permissions.emoteSet.admin}>Admin</Checkbox>
+				{/if}
+				{#if permissions.superAdmin || permissions.emoteSet.admin}
+					<Checkbox value={true} disabled>Manage</Checkbox>
+					<Checkbox value={true} disabled>Create</Checkbox>
+				{:else}
+					<Checkbox bind:value={permissions.emoteSet.manage}>Manage</Checkbox>
+					<Checkbox bind:value={permissions.emoteSet.create}>Create</Checkbox>
+				{/if}
+			</div>
+		</div>
+		<div>
+			<span class="label">Emotes</span>
+			<div class="settings">
+				{#if permissions.superAdmin}
+					<Checkbox value={true} disabled>Admin</Checkbox>
+				{:else}
+					<Checkbox bind:value={permissions.emote.admin}>Admin</Checkbox>
+				{/if}
+				{#if permissions.superAdmin || permissions.emote.admin}
+					<Checkbox value={true} disabled>Manage</Checkbox>
+					<Checkbox value={true} disabled>Create</Checkbox>
+					<Checkbox value={true} disabled>Transfer</Checkbox>
+				{:else}
+					<Checkbox bind:value={permissions.emote.manage}>Manage</Checkbox>
+					<Checkbox bind:value={permissions.emote.create}>Create</Checkbox>
+					<Checkbox bind:value={permissions.emote.transfer}>Transfer</Checkbox>
+				{/if}
+			</div>
+		</div>
+		<div>
+			<span class="label">User</span>
+			<div class="settings">
+				{#if permissions.superAdmin}
+					<Checkbox value={true} disabled>Admin</Checkbox>
+				{:else}
+					<Checkbox bind:value={permissions.user.admin}>Admin</Checkbox>
+				{/if}
+				{#if permissions.superAdmin || permissions.user.admin}
+					<Checkbox value={true} disabled>Manage Billing</Checkbox>
+					<Checkbox value={true} disabled>Manage Profile</Checkbox>
+					<Checkbox value={true} disabled>Manage Editors</Checkbox>
+					<Checkbox value={true} disabled>Manage Personal Emote Set</Checkbox>
+				{:else}
+					<Checkbox bind:value={permissions.user.manageBilling}>Manage Billing</Checkbox>
+					<Checkbox bind:value={permissions.user.manageProfile}>Manage Profile</Checkbox>
+					<Checkbox bind:value={permissions.user.manageEditors}>Manage Editors</Checkbox>
+					<Checkbox bind:value={permissions.user.managePersonalEmoteSet}>
+						Manage Personal Emote Set
+					</Checkbox>
+				{/if}
+			</div>
+		</div>
+		<div class="buttons">
+			<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
+			{#snippet loadingSpinner()}
+				<Spinner />
+			{/snippet}
+			<Button
+				primary
+				submit
+				icon={loading ? loadingSpinner : undefined}
+				disabled={loading}
+				onclick={clickSubmit}
+			>
+				Confirm
+			</Button>
+		</div>
+	</form>
+</Dialog>
+
+<style lang="scss">
+	.layout {
+		padding: 1rem;
+
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	h1 {
+		font-size: 1rem;
+		font-weight: 600;
+	}
+
+	.label {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.settings {
+		margin-top: 0.4rem;
+
+		display: grid;
+		grid-template-columns: auto auto;
+		gap: 0.5rem;
+	}
+
+	.buttons {
+		margin-top: auto;
+
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+</style>

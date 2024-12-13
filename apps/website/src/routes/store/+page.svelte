@@ -15,12 +15,13 @@
 		type SubscriptionProduct,
 	} from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
-	import { Info, PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
+	import { Gift, Info, PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import { user } from "$/lib/auth";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import type { PageData } from "./$types";
+	import moment from "moment";
 
 	let { data }: { data: PageData } = $props();
 
@@ -275,9 +276,15 @@
 <!-- All things called grid here aren't actually css grids -->
 <div class="grid">
 	{#if data.success}
-		<div class="success">
+		<div class="bar">
 			<Info />
 			Your purchase was successfully completed
+		</div>
+	{/if}
+	{#if moment().isAfter(moment("2024-12-14T00:00:00Z")) && moment().isBefore(moment("2024-12-27T00:00:00Z"))}
+		<div class="bar">
+			<Gift />
+			X-MAS 2024 EVENT: GIFT 1 SUB TO GET A SPECIAL BADGE
 		</div>
 	{/if}
 	{#if storeData}
@@ -344,7 +351,7 @@
 		margin-inline: auto;
 	}
 
-	.success {
+	.bar {
 		background-color: var(--bg-light);
 		color: var(--text);
 		padding: 0.5rem;

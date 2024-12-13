@@ -31,6 +31,7 @@
 	import Spinner from "../spinner.svelte";
 	import ChannelPreview from "../channel-preview.svelte";
 	import { user } from "$/lib/auth";
+	import EditorPermissionsDialog from "../dialogs/editor-permissions-dialog.svelte";
 
 	interface Props {
 		editors: UserEditor[];
@@ -164,15 +165,11 @@
 
 	let results = $derived(search(query));
 
-	let addLoading = $state(false);
-
 	async function addEditor(
 		userId: string,
 		editorId: string,
 		permissions: UserEditorPermissionsInput,
 	) {
-		addLoading = true;
-
 		const res = await gqlClient().mutation(
 			graphql(`
 				mutation AddEditor(
@@ -289,26 +286,24 @@
 			editors = editors.concat(res.data.userEditors.create as UserEditor);
 		}
 
-		addLoading = false;
-
 		return res;
 	}
+
+	let adding = $state<{ userId: string; editorId: string }>();
 
 	async function channelClick(e: MouseEvent, editorId: string) {
 		e.preventDefault();
 
-		await addEditor($user!.id, editorId, {
-			superAdmin: false,
-			emote: { admin: false, manage: true, create: false, transfer: false },
-			emoteSet: { admin: false, manage: true, create: false },
-			user: {
-				admin: false,
-				manageProfile: true,
-				manageEditors: false,
-				manageBilling: false,
-				managePersonalEmoteSet: false,
-			},
-		});
+		adding = {
+			userId: $user!.id,
+			editorId,
+		};
+	}
+
+	async function submitAdd(perms: UserEditorPermissionsInput) {
+		if (adding) {
+			await addEditor(adding.userId, adding.editorId, perms);
+		}
 	}
 
 	let deleteLoading = $state<{ userId: string; editorId: string }>();
@@ -398,6 +393,17 @@
 	}
 </script>
 
+{#if adding}
+	<EditorPermissionsDialog
+		bind:mode={() => (adding ? "shown" : "hidden"),
+		(mode) => {
+			if (mode === "hidden") {
+				adding = undefined;
+			}
+		}}
+		submit={submitAdd}
+	/>
+{/if}
 <nav class="nav-bar">
 	<div class="buttons">
 		<div class="link-list">
@@ -413,18 +419,14 @@
 			<TextInput
 				placeholder={$t("pages.settings.editors.add_editor")}
 				bind:value={query}
-				disabled={addLoading}
+				disabled={!!adding}
 			>
 				{#snippet icon()}
-					{#if addLoading}
+					{#await results}
 						<Spinner />
-					{:else}
-						{#await results}
-							<Spinner />
-						{:then _}
-							<UserCirclePlus />
-						{/await}
-					{/if}
+					{:then _}
+						<UserCirclePlus />
+					{/await}
 				{/snippet}
 				{#await results then results}
 					{#if results && results.items.length > 0}
@@ -476,21 +478,22 @@
 							<Date date={moment(editor.updatedAt)} />
 						</td>
 						<td>
-							<Flags
+							<!-- <Flags
 								flags={editorPermissionsToFlags(editor.permissions)}
 								edit={(e) => e.stopPropagation()}
-							/>
+							/> -->
+							<Flags flags={editorPermissionsToFlags(editor.permissions)} />
 						</td>
 						<td class="shrink">
 							<div class="buttons">
 								<Flags flags={editorStateToFlags(editor.state, tab === "editing-for")} />
-								{#if tab === "editors" && editor.state === UserEditorState.Accepted}
+								<!-- {#if tab === "editors" && editor.state === UserEditorState.Accepted}
 									<Button>
 										{#snippet icon()}
 											<PencilSimple />
 										{/snippet}
 									</Button>
-								{/if}
+								{/if} -->
 								{#if tab === "editing-for" && editor.state === UserEditorState.Pending}
 									{@const aLoading =
 										acceptLoading &&
