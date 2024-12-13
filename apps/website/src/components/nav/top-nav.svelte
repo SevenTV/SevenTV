@@ -101,10 +101,12 @@
 			<HideOn mobile>
 				<DropDown>
 					{#if $user}
-						<UserProfilePicture user={$user} size={32} />
-						<span class="profile-name">
-							<UserName user={$user} />
-						</span>
+						<button class="profile">
+							<UserProfilePicture user={$user} size={32} />
+							<span class="profile-name">
+								<UserName user={$user} />
+							</span>
+						</button>
 					{:else}
 						<Button>
 							{#snippet icon()}

@@ -304,3 +304,17 @@ td {
 		display: none !important;
 	}
 }
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+		animation: none !important;
+	}
+}
+
+.reduced-motion-enabled {
+	* {
+		transition: none !important;
+		animation: none !important;
+	}
+}

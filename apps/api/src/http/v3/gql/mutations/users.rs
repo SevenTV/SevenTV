@@ -16,7 +16,9 @@ use shared::database::product::subscription::{
 };
 use shared::database::product::{InvoiceId, SubscriptionProductKind};
 use shared::database::queries::{filter, update};
-use shared::database::role::permissions::{PermissionsExt, RateLimitResource, RolePermission, UserPermission};
+use shared::database::role::permissions::{
+	FlagPermission, PermissionsExt, RateLimitResource, RolePermission, UserPermission,
+};
 use shared::database::user::ban::UserBan;
 use shared::database::user::connection::UserConnection as DbUserConnection;
 use shared::database::user::editor::{EditorUserPermission, UserEditor as DbUserEditor, UserEditorId, UserEditorState};
@@ -441,6 +443,29 @@ impl UserOps {
 						)));
 					}
 
+					let editor_user = global
+						.user_loader
+						.load_fast(global, editor_id.editor_id)
+						.await
+						.map_err(|_| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load user",
+							))
+						})?
+						.ok_or_else(|| {
+							TransactionError::Custom(ApiError::internal_server_error(
+								ApiErrorCode::LoadError,
+								"failed to load user",
+							))
+						})?;
+
+					let new_state = if editor_user.has(FlagPermission::InstantInvite) {
+						UserEditorState::Accepted
+					} else {
+						UserEditorState::Pending
+					};
+
 					let now = chrono::Utc::now();
 
 					let editor = tx
@@ -461,9 +486,8 @@ impl UserOps {
 								},
 								#[query(set_on_insert)]
 								DbUserEditor {
-									// TODO: Once the new website allows for pending editors, this should be changed to Pending
 									#[query(serde)]
-									state: UserEditorState::Accepted,
+									state: new_state,
 									notes: None,
 									added_at: now,
 									added_by_id: authed_user.id,
@@ -479,24 +503,6 @@ impl UserOps {
 							TransactionError::Custom(ApiError::internal_server_error(
 								ApiErrorCode::LoadError,
 								"failed to load editor",
-							))
-						})?;
-
-					// updated
-					let editor_user = global
-						.user_loader
-						.load_fast(global, editor.id.editor_id)
-						.await
-						.map_err(|_| {
-							TransactionError::Custom(ApiError::internal_server_error(
-								ApiErrorCode::LoadError,
-								"failed to load user",
-							))
-						})?
-						.ok_or_else(|| {
-							TransactionError::Custom(ApiError::internal_server_error(
-								ApiErrorCode::LoadError,
-								"failed to load user",
 							))
 						})?;
 

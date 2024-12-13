@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { type Layout } from "$/lib/layout";
 	import type { Snippet } from "svelte";
-	import { type HTMLAttributes } from "svelte/elements";
+	import type { HTMLAttributes } from "svelte/elements";
 
 	type Props = {
 		scrollable?: boolean;

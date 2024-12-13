@@ -228,6 +228,8 @@ impl Default for PaintPermission {
 pub enum FlagPermission {
 	/// Hidden from search results
 	Hidden = 1,
+	/// This user won't have to manually accept editor invites
+	InstantInvite = 2,
 }
 
 impl BitMask for FlagPermission {

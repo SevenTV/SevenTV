@@ -5,6 +5,7 @@ mod emote;
 mod emote_set;
 mod ticket;
 mod user;
+mod user_editor;
 
 #[derive(async_graphql::SimpleObject, Default)]
 #[graphql(complex)]
@@ -13,6 +14,7 @@ pub struct Mutation {
 	emote_sets: emote_set::EmoteSetMutation,
 	tickets: ticket::TicketMutation,
 	users: user::UserMutation,
+	user_editors: user_editor::UserEditorMutation,
 }
 
 #[async_graphql::ComplexObject]

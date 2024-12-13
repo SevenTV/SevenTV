@@ -6,7 +6,7 @@ use axum::extract::{Query, State};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-use hyper::HeaderMap;
+use hyper::{HeaderMap, StatusCode};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::stored_event::StoredEventUserSessionData;
@@ -37,7 +37,9 @@ const GOOGLE_AUTH_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonl
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.route("/login", get(login))
+		.route("/link", get(link))
 		.route("/login/finish", post(login_finish))
+		.route("/link/finish", post(link_finish))
 		.route("/logout", post(logout))
 }
 
@@ -72,12 +74,24 @@ impl Display for LoginPlatform {
 	}
 }
 
-fn redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Url, ApiError> {
+fn login_redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Url, ApiError> {
 	global
 		.config
 		.api
 		.beta_website_origin
 		.join(&format!("/login/callback?platform={}", platform))
+		.map_err(|e| {
+			tracing::error!(err = %e, "failed to generate redirect_uri");
+			ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect_uri")
+		})
+}
+
+fn link_redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Url, ApiError> {
+	global
+		.config
+		.api
+		.beta_website_origin
+		.join(&format!("/link/callback?platform={}", platform))
 		.map_err(|e| {
 			tracing::error!(err = %e, "failed to generate redirect_uri");
 			ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect_uri")
@@ -91,11 +105,12 @@ struct LoginRequest {
 }
 
 #[tracing::instrument(skip_all)]
-async fn login(
-	State(global): State<Arc<Global>>,
-	Extension(session): Extension<Session>,
-	Query(query): Query<LoginRequest>,
+async fn login_inner(
+	global: &Arc<Global>,
+	session: &Session,
+	query: LoginRequest,
 	headers: HeaderMap,
+	redirect_uri: url::Url,
 ) -> Result<Response, ApiError> {
 	let allowed = [
 		&global.config.api.api_origin,
@@ -125,9 +140,9 @@ async fn login(
 
 	let platform = query.platform.into();
 
-	let req = RateLimitRequest::new(RateLimitResource::Login, &session);
+	let req = RateLimitRequest::new(RateLimitResource::Login, session);
 
-	req.http(&global, async {
+	req.http(global, async {
 		// redirect to platform auth url
 		let (url, scope, config) = match platform {
 			Platform::Twitch if global.config.connections.twitch.enabled => {
@@ -143,8 +158,6 @@ async fn login(
 				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "unsupported platform"));
 			}
 		};
-
-		let redirect_uri = redirect_uri(&global, query.platform)?;
 
 		let redirect_url = format!(
 			"{}client_id={}&redirect_uri={}&response_type=code&scope={}{}",
@@ -162,6 +175,28 @@ async fn login(
 		Ok(Redirect::to(&redirect_url))
 	})
 	.await
+}
+
+#[tracing::instrument(skip_all)]
+async fn login(
+	State(global): State<Arc<Global>>,
+	Extension(session): Extension<Session>,
+	Query(query): Query<LoginRequest>,
+	headers: HeaderMap,
+) -> Result<Response, ApiError> {
+	let redirect_uri = login_redirect_uri(&global, query.platform)?;
+	login_inner(&global, &session, query, headers, redirect_uri).await
+}
+
+#[tracing::instrument(skip_all)]
+async fn link(
+	State(global): State<Arc<Global>>,
+	Extension(session): Extension<Session>,
+	Query(query): Query<LoginRequest>,
+	headers: HeaderMap,
+) -> Result<Response, ApiError> {
+	let redirect_uri = link_redirect_uri(&global, query.platform)?;
+	login_inner(&global, &session, query, headers, redirect_uri).await
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -208,7 +243,7 @@ async fn login_finish(
 		&global,
 		platform,
 		&payload.code,
-		redirect_uri(&global, payload.platform)?.to_string(),
+		login_redirect_uri(&global, payload.platform)?.to_string(),
 	)
 	.await?;
 
@@ -303,44 +338,62 @@ async fn login_finish(
 
 		let updated = match updated {
 			Some(user) => user,
-			None => tx
-				.find_one_and_update(
-					filter::filter! {
-						User {
-							#[query(rename = "_id")]
-							id: user.id,
-						}
-					},
-					update::update! {
-						#[query(push)]
-						User {
-							#[query(serde)]
-							connections: UserConnection {
-								platform,
-								platform_id: user_data.id,
-								platform_username: user_data.username,
-								platform_display_name: user_data.display_name,
-								platform_avatar_url: user_data.avatar,
-								allow_login: true,
-								updated_at: chrono::Utc::now(),
-								linked_at: chrono::Utc::now(),
-							},
+			None => {
+				let new_connection = UserConnection {
+					platform,
+					platform_id: user_data.id,
+					platform_username: user_data.username,
+					platform_display_name: user_data.display_name,
+					platform_avatar_url: user_data.avatar,
+					allow_login: true,
+					updated_at: chrono::Utc::now(),
+					linked_at: chrono::Utc::now(),
+				};
+
+				let updated = tx
+					.find_one_and_update(
+						filter::filter! {
+							User {
+								#[query(rename = "_id")]
+								id: user.id,
+							}
 						},
-						#[query(set)]
-						User {
-							updated_at: chrono::Utc::now(),
-							search_updated_at: &None,
-						}
+						update::update! {
+							#[query(push)]
+							User {
+								#[query(serde)]
+								connections: &new_connection,
+							},
+							#[query(set)]
+							User {
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							}
+						},
+						None,
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::MutationError,
+							"failed to insert connection",
+						))
+					})?;
+
+				tx.register_event(InternalEvent {
+					actor: None,
+					session_id: None,
+					data: InternalEventData::User {
+						after: user,
+						data: shared::event::InternalEventUserData::AddConnection {
+							connection: new_connection,
+						},
 					},
-					None,
-				)
-				.await?
-				.ok_or_else(|| {
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::MutationError,
-						"failed to insert connection",
-					))
-				})?,
+					timestamp: chrono::Utc::now(),
+				})?;
+
+				updated
+			}
 		};
 
 		Ok(updated)
@@ -407,6 +460,142 @@ async fn login_finish(
 
 	match res {
 		Ok(response) => Ok(Json(response)),
+		Err(TransactionError::Custom(e)) => Err(e),
+		Err(e) => {
+			tracing::error!(error = %e, "transaction failed");
+			Err(ApiError::internal_server_error(
+				ApiErrorCode::TransactionError,
+				"transaction failed",
+			))
+		}
+	}
+}
+
+#[tracing::instrument(skip_all)]
+async fn link_finish(
+	State(global): State<Arc<Global>>,
+	Extension(session): Extension<Session>,
+	headers: HeaderMap,
+	Json(payload): Json<LoginFinishPayload>,
+) -> Result<impl IntoResponse, ApiError> {
+	let allowed = [
+		&global.config.api.api_origin,
+		&global.config.api.website_origin,
+		&global.config.api.beta_website_origin,
+	];
+
+	if let Some(referer) = headers.get(hyper::header::REFERER) {
+		let referer = referer.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
+		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only login from website"));
+		}
+	}
+
+	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
+		let origin = origin.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
+		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
+		}
+	}
+
+	let authed_user = session.user()?;
+	let user_id = authed_user.id;
+	let session_id = session.user_session_id();
+
+	let platform = payload.platform.into();
+
+	// exchange code for access token
+	let token = connections::exchange_code(
+		&global,
+		platform,
+		&payload.code,
+		link_redirect_uri(&global, payload.platform)?.to_string(),
+	)
+	.await?;
+
+	// query user data from platform
+	let user_data = connections::get_user_data(&global, platform, &token.access_token).await?;
+
+	let user = transaction(&global, |mut tx| async move {
+		if tx
+			.find_one(
+				filter::filter! {
+					User {
+						#[query(elem_match)]
+						connections: UserConnection {
+							platform: platform,
+							platform_id: &user_data.id,
+						}
+					}
+				},
+				None,
+			)
+			.await?
+			.is_some()
+		{
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
+				"connection already linked",
+			)));
+		}
+
+		let connection = UserConnection {
+			platform,
+			platform_id: user_data.id,
+			platform_username: user_data.username,
+			platform_display_name: user_data.display_name,
+			platform_avatar_url: user_data.avatar,
+			allow_login: true,
+			updated_at: chrono::Utc::now(),
+			linked_at: chrono::Utc::now(),
+		};
+
+		let user = tx
+			.find_one_and_update(
+				filter::filter! {
+					User {
+						#[query(rename = "_id")]
+						id: user_id,
+					}
+				},
+				update::update! {
+					#[query(push)]
+					User {
+						#[query(serde)]
+						connections: &connection,
+					},
+					#[query(set)]
+					User {
+						updated_at: chrono::Utc::now(),
+						search_updated_at: &None,
+					}
+				},
+				None,
+			)
+			.await?
+			.ok_or_else(|| {
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::MutationError,
+					"failed to insert connection",
+				))
+			})?;
+
+		tx.register_event(InternalEvent {
+			actor: Some(authed_user.clone()),
+			session_id,
+			data: InternalEventData::User {
+				after: user,
+				data: shared::event::InternalEventUserData::AddConnection { connection },
+			},
+			timestamp: chrono::Utc::now(),
+		})?;
+
+		Ok(())
+	})
+	.await;
+
+	match user {
+		Ok(()) => Ok(StatusCode::OK),
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");

@@ -1,20 +1,18 @@
 <script lang="ts">
 	import { theme, type Theme } from "$/lib/layout";
-	import { logout, user } from "$/lib/auth";
+	import { logout, user, pendingEditorFor } from "$/lib/auth";
 	import Role from "../users/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
-		Bell,
 		CaretLeft,
 		CaretRight,
-		CreditCard,
+		Gear,
 		GlobeHemisphereWest,
 		House,
-		Key,
+		LockSimple,
 		Moon,
+		Note,
 		PaintBrush,
-		PencilSimple,
-		Prohibit,
 		SignOut,
 		Sliders,
 		Smiley,
@@ -28,10 +26,11 @@
 	import Spinner from "../spinner.svelte";
 	import { filterRoles } from "$/lib/utils";
 	import UserName from "../user-name.svelte";
+	import NumberBadge from "../number-badge.svelte";
 
 	let { onCloseRequest }: { onCloseRequest?: () => void } = $props();
 
-	type Menu = "root" | "language" | "theme" | "settings";
+	type Menu = "root" | "language" | "theme";
 
 	let menu: Menu = $state("root");
 
@@ -49,10 +48,13 @@
 
 	function logoutClick() {
 		logoutLoading = true;
-		logout().then(() => {
-			logoutLoading = false;
-			onCloseRequest?.();
-		});
+		logout()
+			.then(() => {
+				onCloseRequest?.();
+			})
+			.finally(() => {
+				logoutLoading = false;
+			});
 	}
 
 	let reversedRoles = $derived(filterRoles($user?.roles || []));
@@ -123,16 +125,13 @@
 				{/if}
 				{$t("common.theme")}
 			</MenuButton>
-			<!-- {#if $user}
-				<MenuButton href="/settings" hideOnMobile>
+			{#if $user}
+				<MenuButton href="/settings" onclick={onCloseRequest}>
 					<Gear />
 					{$t("common.settings")}
+					<NumberBadge count={$pendingEditorFor} />
 				</MenuButton>
-				<MenuButton showCaret hideOnDesktop on:click={(e) => setMenu(e, Menu.Settings)}>
-					<Gear />
-					{$t("common.settings")}
-				</MenuButton>
-			{/if} -->
+			{/if}
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
@@ -143,11 +142,11 @@
 			<!-- <MenuButton href="/contact">
 				<ChatDots />
 				{$t("common.contact")}
-			</MenuButton>
-			<MenuButton href="/faq">
+			</MenuButton> -->
+			<!-- <MenuButton href="/faq">
 				<Question />
 				{$t("common.faq_short")}
-			</MenuButton>
+			</MenuButton> -->
 			<MenuButton href="/privacy">
 				<LockSimple />
 				{$t("common.privacy")}
@@ -155,7 +154,7 @@
 			<MenuButton href="/tos">
 				<Note />
 				{$t("common.tos")}
-			</MenuButton> -->
+			</MenuButton>
 		</div>
 		{#if $user}
 			<!-- <hr class="hide-on-mobile" /> -->
@@ -200,35 +199,6 @@
 			<MenuButton onclick={() => setTheme("light-theme")}>
 				<Sun />
 				{$t("themes.light")}
-			</MenuButton>
-		</div>
-	{:else if menu === "settings"}
-		<MenuButton onclick={() => (menu = "root")}>
-			<CaretLeft />
-			{$t("common.settings")}
-		</MenuButton>
-		<div class="link-list">
-			<MenuButton href="/settings/account">
-				<Key />
-				{$t("pages.settings.account.title")}
-			</MenuButton>
-			<MenuButton href="/settings/editors">
-				<PencilSimple />
-				{$t("common.editors")}
-			</MenuButton>
-		</div>
-		<div class="link-list">
-			<MenuButton href="/settings/notifications">
-				<Bell />
-				{$t("common.notifications")}
-			</MenuButton>
-			<MenuButton href="/settings/blocked">
-				<Prohibit />
-				{$t("pages.settings.blocked.title")}
-			</MenuButton>
-			<MenuButton href="/settings/billing">
-				<CreditCard />
-				{$t("pages.settings.billing.title")}
 			</MenuButton>
 		</div>
 	{/if}

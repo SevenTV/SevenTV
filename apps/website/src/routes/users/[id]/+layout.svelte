@@ -5,8 +5,8 @@
 	import {
 		CaretDown,
 		CaretRight,
-		DotsThreeVertical,
 		FolderSimple,
+		Gear,
 		IdentificationCard,
 		Lightning,
 		Link,
@@ -32,6 +32,8 @@
 	let editorsExpanded = $state(false);
 
 	let showActivity = $derived($user?.id === data.id || $user?.permissions.user.manageAny);
+
+	let isMe = $derived(data.id === $user?.id);
 </script>
 
 <svelte:head>
@@ -145,6 +147,14 @@
 					{#if connectionsExpanded}
 						<div class="expanded">
 							<Connections {user} />
+							{#if isMe}
+								<Button href="/settings/account">
+									{#snippet icon()}
+										<Gear />
+									{/snippet}
+									Manage connections
+								</Button>
+							{/if}
 						</div>
 					{/if}
 				{/if}
@@ -169,6 +179,14 @@
 									<ChannelPreview size={1.5} user={editor.editor} />
 								{/if}
 							{/each}
+							{#if isMe}
+								<Button href="/settings/editors">
+									{#snippet icon()}
+										<Gear />
+									{/snippet}
+									Manage editors
+								</Button>
+							{/if}
 						</div>
 					{/if}
 				{/if}
@@ -222,11 +240,6 @@
 				<ChatCircleText weight="fill" />
 			</TabLink> -->
 		</nav>
-		<Button hideOnDesktop style="position: absolute; top: 0.5rem; right: 1rem;">
-			{#snippet icon()}
-				<DotsThreeVertical />
-			{/snippet}
-		</Button>
 	</aside>
 	<div class="content">
 		<div class="header hide-on-desktop">

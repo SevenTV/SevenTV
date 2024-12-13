@@ -19,12 +19,14 @@
 		options: Option[];
 		selected?: string;
 		grow?: boolean;
+		disabled?: boolean;
 	} & HTMLAttributes<HTMLDivElement>;
 
 	let {
 		options,
 		selected = $bindable(options[0]?.value ?? undefined),
 		grow = false,
+		disabled = false,
 		...restProps
 	}: Props = $props();
 
@@ -54,16 +56,16 @@
 	class:grow
 	class:expanded
 	{...restProps}
-	style={expanded ? `min-width: ${width}px` : undefined}
+	style={expanded ? `min-width: ${width}px; ${restProps.style}` : restProps.style}
 >
-	<select bind:value={selected} onclick={toggle} onkeypress={toggle}>
+	<select bind:value={selected} onclick={toggle} onkeypress={toggle} {disabled}>
 		{#each options as option}
 			<option value={option.value}>
 				{option.value}
 			</option>
 		{/each}
 	</select>
-	<Button secondary tabindex={-1} onclick={toggle}>
+	<Button secondary tabindex={-1} onclick={toggle} {disabled}>
 		{#if selectedLabel}
 			{@render selectedLabel.icon?.()}
 			{selectedLabel.label}

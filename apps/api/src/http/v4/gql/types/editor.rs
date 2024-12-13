@@ -39,7 +39,7 @@ impl From<shared::database::user::editor::UserEditor> for UserEditor {
 
 #[ComplexObject]
 impl UserEditor {
-	#[tracing::instrument(skip_all, name = "UserEditor::user")]
+	#[tracing::instrument(skip_all, name = "UserEditor::editor")]
 	async fn editor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -48,6 +48,21 @@ impl UserEditor {
 		let user = global
 			.user_loader
 			.load(global, self.editor_id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(user.map(Into::into))
+	}
+
+	#[tracing::instrument(skip_all, name = "UserEditor::user")]
+	async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let user = global
+			.user_loader
+			.load(global, self.user_id)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 

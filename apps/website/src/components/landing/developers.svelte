@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { Code } from "phosphor-svelte";
 	import GithubLogo from "../icons/github-logo.svelte";
 	import Button from "../input/button.svelte";
-	import { PUBLIC_GITHUB_LINK, PUBLIC_DEVELOPER_PORTAL } from "$env/static/public";
+	import { PUBLIC_GITHUB_LINK } from "$env/static/public";
 </script>
 
 <section class="developers">
@@ -15,12 +14,12 @@
 		</p>
 		<Button primary big href={PUBLIC_GITHUB_LINK}>Contribute</Button>
 	</div>
-	<div class="column">
+	<!-- <div class="column">
 		<Code size={2.5 * 16} />
 		<h2>Developer Portal</h2>
 		<p>This area exists to provide documentation for developers to integrate with our API.</p>
 		<Button primary big href={PUBLIC_DEVELOPER_PORTAL}>Get Started</Button>
-	</div>
+	</div> -->
 </section>
 
 <style lang="scss">

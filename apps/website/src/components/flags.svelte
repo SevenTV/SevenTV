@@ -20,6 +20,13 @@
 		editors: PencilSimple,
 		emote_sets: FolderSimple,
 		emotes: Smiley,
+
+		// Editor states
+		pending: Hourglass,
+		accepted: Check,
+		you_accepted: Check,
+		rejected: Prohibit,
+		you_rejected: Prohibit,
 	};
 
 	export const colors: { [key: string]: string } = {
@@ -32,6 +39,12 @@
 		unlisted: "#eb3d26",
 		personal_use_denied: "#eb3d26",
 		deleted: "#eb3d26",
+
+		you_rejected: "#eb3d26",
+		rejected: "#eb3d26",
+		pending: "#529bf5",
+		accepted: "#57ab5a",
+		you_accepted: "#57ab5a",
 	};
 
 	export function determineHighlightColor(flags: string[], ignoredFlags: string[] = []) {
@@ -99,18 +112,47 @@
 
 		return flags;
 	}
+
+	export function editorPermissionsToFlags(permissions: UserEditorPermissions) {
+		const flags = [];
+
+		if (permissions.emoteSet.manage) flags.push("emote_sets");
+
+		if (permissions.emote.manage) flags.push("emotes");
+
+		if (permissions.user.manageProfile) flags.push("profile");
+
+		if (permissions.user.manageEditors) flags.push("editors");
+
+		return flags;
+	}
+
+	export function editorStateToFlags(state: UserEditorState, you: boolean) {
+		switch (state) {
+			case UserEditorState.Pending:
+				return ["pending"];
+			case UserEditorState.Accepted:
+				return [you ? "you_accepted" : "accepted"];
+			case UserEditorState.Rejected:
+				return [you ? "you_rejected" : "rejected"];
+			default:
+				return [];
+		}
+	}
 </script>
 
 <script lang="ts">
 	import {
+		Check,
 		EyeSlash,
 		Fire,
 		FolderSimple,
 		GlobeSimple,
+		Hourglass,
 		House,
 		Lightning,
 		PencilSimple,
-		Plus,
+		Prohibit,
 		Smiley,
 		StackSimple,
 		Star,
@@ -119,7 +161,14 @@
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
-	import { EmoteSetKind, type Emote, type EmoteSet, type User } from "$/gql/graphql";
+	import {
+		EmoteSetKind,
+		UserEditorState,
+		type Emote,
+		type EmoteSet,
+		type User,
+		type UserEditorPermissions,
+	} from "$/gql/graphql";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	const names: { [key: string]: string } = {
@@ -147,10 +196,10 @@
 	type Props = {
 		iconOnly?: boolean;
 		flags: string[];
-		add?: (e: MouseEvent) => void;
+		edit?: (e: MouseEvent) => void;
 	} & HTMLAttributes<HTMLDivElement>;
 
-	let { iconOnly = false, flags = [], add, ...restProps }: Props = $props();
+	let { iconOnly = false, flags = [], edit, ...restProps }: Props = $props();
 
 	let sortedFlags = $derived(
 		flags.toSorted((a, b) => {
@@ -193,10 +242,10 @@
 			</span>
 		{/if}
 	{/each}
-	{#if add}
-		<Button secondary onclick={add} title="Add" style="padding: 0.3rem 0.5rem; border: none;">
+	{#if edit}
+		<Button secondary onclick={edit} title="Edit" style="padding: 0.3rem 0.5rem; border: none;">
 			{#snippet icon()}
-				<Plus size={1 * 16} />
+				<PencilSimple size={1 * 16} />
 			{/snippet}
 		</Button>
 	{/if}
