@@ -1,13 +1,17 @@
 <script lang="ts">
 	import TabLink from "$/components/tab-link.svelte";
 	import { user } from "$/lib/auth";
-	import { Key, PencilSimple, CreditCard } from "phosphor-svelte";
+	import { Key, PencilSimple, CreditCard, ArrowSquareOut, PaintBrushBroad } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
 	import UserProfilePicture from "$/components/user-profile-picture.svelte";
+	import { PUBLIC_STRIPE_CUSTOMER_PORTAL } from "$env/static/public";
+	import NumberBadge from "$/components/number-badge.svelte";
+	import { SubscriptionProvider } from "$/gql/graphql";
+	import { pendingEditorFor } from "$/lib/auth";
 
 	let { children }: { children: Snippet } = $props();
 </script>
@@ -32,22 +36,45 @@
 					{/snippet}
 				</TabLink>
 				<TabLink
-					title={$t("common.editors")}
-					href="/settings/editors"
+					title="Appearance"
+					href="/settings/appearance"
 					matcher={(page, href) => !!href && page.url.pathname.startsWith(href)}
+					big
+				>
+					<PaintBrushBroad />
+					{#snippet active()}
+						<PaintBrushBroad weight="fill" />
+					{/snippet}
+				</TabLink>
+				<TabLink
+					title={$t("common.editors")}
+					href={$pendingEditorFor ? "/settings/editors/editing-for" : "/settings/editors"}
+					matcher={(page, _) => page.url.pathname.startsWith("/settings/editors")}
 					big
 				>
 					<PencilSimple />
 					{#snippet active()}
 						<PencilSimple weight="fill" />
 					{/snippet}
-				</TabLink>
-				<TabLink title={$t("pages.settings.billing.title")} href="/settings/billing" big>
-					<CreditCard />
-					{#snippet active()}
-						<CreditCard weight="fill" />
+					{#snippet iconRight()}
+						<NumberBadge count={$pendingEditorFor} />
 					{/snippet}
 				</TabLink>
+				{#if $user.billing.subscriptionInfo.activePeriod?.providerId?.provider !== SubscriptionProvider.PayPal}
+					<TabLink
+						title={$t("pages.settings.billing.title")}
+						href={PUBLIC_STRIPE_CUSTOMER_PORTAL}
+						big
+					>
+						<CreditCard />
+						{#snippet active()}
+							<CreditCard weight="fill" />
+						{/snippet}
+						{#snippet iconRight()}
+							<ArrowSquareOut />
+						{/snippet}
+					</TabLink>
+				{/if}
 			</nav>
 			<div class="account hide-on-mobile">
 				<UserProfilePicture user={$user} size={2.5 * 16} />

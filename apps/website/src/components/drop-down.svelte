@@ -5,7 +5,7 @@
 <script lang="ts">
 	import mouseTrap from "$/lib/mouseTrap";
 	import { fade } from "svelte/transition";
-	import { type HTMLAttributes } from "svelte/elements";
+	import type { HTMLAttributes } from "svelte/elements";
 	import type { Snippet } from "svelte";
 
 	type Props = {

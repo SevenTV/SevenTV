@@ -140,9 +140,9 @@ async fn login_inner(
 
 	let platform = query.platform.into();
 
-	let req = RateLimitRequest::new(RateLimitResource::Login, &session);
+	let req = RateLimitRequest::new(RateLimitResource::Login, session);
 
-	req.http(&global, async {
+	req.http(global, async {
 		// redirect to platform auth url
 		let (url, scope, config) = match platform {
 			Platform::Twitch if global.config.connections.twitch.enabled => {

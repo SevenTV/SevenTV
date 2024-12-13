@@ -173,6 +173,22 @@ impl User {
 		Ok(editors.into_iter().map(Into::into).collect())
 	}
 
+	#[tracing::instrument(skip_all, name = "User::editor_for")]
+	async fn editor_for(&self, ctx: &Context<'_>) -> Result<Vec<UserEditor>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let editors = global
+			.user_editor_by_editor_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
+			.unwrap_or_default();
+
+		Ok(editors.into_iter().map(Into::into).collect())
+	}
+
 	#[tracing::instrument(skip_all, name = "User::editable_emote_set_ids")]
 	async fn editable_emote_set_ids(&self, ctx: &Context<'_>) -> Result<Vec<EmoteSetId>, ApiError> {
 		let global: &Arc<Global> = ctx

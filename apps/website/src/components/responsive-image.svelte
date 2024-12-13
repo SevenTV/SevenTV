@@ -16,7 +16,8 @@
 
 <script lang="ts">
 	import type { Image } from "$/gql/graphql";
-	import { type HTMLAttributes } from "svelte/elements";
+	import { reducedMotion, type ReducedMotion } from "$/lib/layout";
+	import type { HTMLAttributes } from "svelte/elements";
 
 	type Props = {
 		images: Image[];
@@ -45,7 +46,10 @@
 
 	// This function prepares the variants for the <picture> element by grouping them by format, sorting them by scale and generating the required media and srcSet tags.
 	// It also returns the best supported variant for use in the fallback <img> element which is the smallest GIF or PNG.
-	function prepareVariants(images: Image[]): {
+	function prepareVariants(
+		images: Image[],
+		reducedMotion: ReducedMotion,
+	): {
 		bestSupported: Image | null;
 		variants: { type: string; srcSet: string; media: string }[];
 	} {
@@ -61,29 +65,31 @@
 			media: string;
 			images: Image[];
 		}[] = Object.values(
-			images.reduce(
-				(res, i) => {
-					const index = formatSortIndex(i);
-					if (!res[index]) {
-						// Always true
-						let media = "(min-width: 0px)";
-						if (i.frameCount === 1 && animated) {
-							media += " and (prefers-reduced-motion: reduce)";
+			images
+				.filter((i) => !(reducedMotion === "reduced-motion-enabled" && i.frameCount > 1))
+				.reduce(
+					(res, i) => {
+						const index = formatSortIndex(i);
+						if (!res[index]) {
+							// Always true
+							let media = "(min-width: 0px)";
+							if (i.frameCount === 1 && animated) {
+								media += " and (prefers-reduced-motion: reduce)";
+							}
+							res[index] = { type: i.mime, srcSet: "", media, images: [] };
 						}
-						res[index] = { type: i.mime, srcSet: "", media, images: [] };
-					}
-					res[index].images.push(i);
-					return res;
-				},
-				{} as {
-					[key: number]: {
-						type: string;
-						srcSet: string;
-						media: string;
-						images: Image[];
-					};
-				},
-			),
+						res[index].images.push(i);
+						return res;
+					},
+					{} as {
+						[key: number]: {
+							type: string;
+							srcSet: string;
+							media: string;
+							images: Image[];
+						};
+					},
+				),
 		);
 
 		const bestSupported =
@@ -103,7 +109,7 @@
 		};
 	}
 
-	let preparedVariants = $derived(prepareVariants(images));
+	let preparedVariants = $derived(prepareVariants(images, $reducedMotion));
 </script>
 
 <picture

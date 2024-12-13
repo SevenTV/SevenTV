@@ -1,7 +1,7 @@
 import { graphql } from "$/gql";
-import type { User } from "$/gql/graphql";
-import { PUBLIC_REST_API_V4 } from "$env/static/public";
-import { get, writable } from "svelte/store";
+import { UserEditorState, type User } from "$/gql/graphql";
+import { PUBLIC_REST_API_V4, PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
+import { derived, get, writable } from "svelte/store";
 import { gqlClient } from "./gql";
 import { browser } from "$app/environment";
 
@@ -36,11 +36,19 @@ sessionToken.subscribe(async (token) => {
 	}
 });
 
+export const pendingEditorFor = derived(user, (value) => {
+	if (!value) {
+		return 0;
+	}
+
+	return value.editorFor.filter((e) => e.state === UserEditorState.Pending).length;
+});
+
 export async function fetchMe(): Promise<User | null> {
 	const res = await gqlClient()
 		.query(
 			graphql(`
-				query Me {
+				query Me($productId: Id!) {
 					users {
 						me {
 							id
@@ -141,11 +149,25 @@ export async function fetchMe(): Promise<User | null> {
 									create
 								}
 							}
+							billing(productId: $productId) {
+								subscriptionInfo {
+									activePeriod {
+										providerId {
+											provider
+										}
+									}
+								}
+							}
+							editorFor {
+								state
+							}
 						}
 					}
 				}
 			`),
-			{},
+			{
+				productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
+			},
 		)
 		.toPromise();
 

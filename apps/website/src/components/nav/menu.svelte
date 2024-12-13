@@ -1,21 +1,18 @@
 <script lang="ts">
 	import { theme, type Theme } from "$/lib/layout";
-	import { logout, user } from "$/lib/auth";
+	import { logout, user, pendingEditorFor } from "$/lib/auth";
 	import Role from "../users/role.svelte";
 	import { fade } from "svelte/transition";
 	import {
 		CaretLeft,
 		CaretRight,
-		CreditCard,
 		Gear,
 		GlobeHemisphereWest,
 		House,
-		Key,
 		LockSimple,
 		Moon,
 		Note,
 		PaintBrush,
-		PencilSimple,
 		SignOut,
 		Sliders,
 		Smiley,
@@ -29,10 +26,11 @@
 	import Spinner from "../spinner.svelte";
 	import { filterRoles } from "$/lib/utils";
 	import UserName from "../user-name.svelte";
+	import NumberBadge from "../number-badge.svelte";
 
 	let { onCloseRequest }: { onCloseRequest?: () => void } = $props();
 
-	type Menu = "root" | "language" | "theme" | "settings";
+	type Menu = "root" | "language" | "theme";
 
 	let menu: Menu = $state("root");
 
@@ -128,13 +126,10 @@
 				{$t("common.theme")}
 			</MenuButton>
 			{#if $user}
-				<MenuButton href="/settings" hideOnMobile onclick={onCloseRequest}>
+				<MenuButton href="/settings" onclick={onCloseRequest}>
 					<Gear />
 					{$t("common.settings")}
-				</MenuButton>
-				<MenuButton showCaret hideOnDesktop onclick={(e) => setMenu(e, "settings")}>
-					<Gear />
-					{$t("common.settings")}
+					<NumberBadge count={$pendingEditorFor} />
 				</MenuButton>
 			{/if}
 		</div>
@@ -204,25 +199,6 @@
 			<MenuButton onclick={() => setTheme("light-theme")}>
 				<Sun />
 				{$t("themes.light")}
-			</MenuButton>
-		</div>
-	{:else if menu === "settings"}
-		<MenuButton onclick={() => (menu = "root")}>
-			<CaretLeft />
-			{$t("common.settings")}
-		</MenuButton>
-		<div class="link-list">
-			<MenuButton href="/settings/account">
-				<Key />
-				{$t("pages.settings.account.title")}
-			</MenuButton>
-			<MenuButton href="/settings/editors">
-				<PencilSimple />
-				{$t("common.editors")}
-			</MenuButton>
-			<MenuButton href="/settings/billing">
-				<CreditCard />
-				{$t("pages.settings.billing.title")}
 			</MenuButton>
 		</div>
 	{/if}

@@ -73,13 +73,34 @@ type EditorEmotePermission {
 	transfer: Boolean!
 }
 
+input EditorEmotePermissionInput {
+	admin: Boolean!
+	create: Boolean!
+	manage: Boolean!
+	transfer: Boolean!
+}
+
 type EditorEmoteSetPermission {
 	admin: Boolean!
 	create: Boolean!
 	manage: Boolean!
 }
 
+input EditorEmoteSetPermissionInput {
+	admin: Boolean!
+	create: Boolean!
+	manage: Boolean!
+}
+
 type EditorUserPermission {
+	admin: Boolean!
+	manageBilling: Boolean!
+	manageEditors: Boolean!
+	managePersonalEmoteSet: Boolean!
+	manageProfile: Boolean!
+}
+
+input EditorUserPermissionInput {
 	admin: Boolean!
 	manageBilling: Boolean!
 	manageEditors: Boolean!
@@ -491,6 +512,7 @@ type Mutation {
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
 	tickets: TicketMutation!
+	userEditors: UserEditorMutation!
 	users: UserMutation!
 }
 
@@ -873,6 +895,7 @@ type User {
 	billing(productId: Id!): Billing!
 	connections: [UserConnection!]!
 	editableEmoteSetIds: [Id!]!
+	editorFor: [UserEditor!]!
 	editors: [UserEditor!]!
 	events(page: Int, perPage: Int): [UserEvent!]!
 	highestRoleColor: Color
@@ -912,7 +935,19 @@ type UserEditor {
 	searchUpdatedAt: DateTime
 	state: UserEditorState!
 	updatedAt: DateTime!
+	user: User
 	userId: Id!
+}
+
+type UserEditorMutation {
+	create(editorId: Id!, permissions: UserEditorPermissionsInput!, userId: Id!): UserEditor!
+	editor(editorId: Id!, userId: Id!): UserEditorOperation!
+}
+
+type UserEditorOperation {
+	delete: Boolean!
+	updatePermissions: UserEditor!
+	updateState(state: UserEditorUpdateState!): UserEditor!
 }
 
 type UserEditorPermissions {
@@ -922,10 +957,22 @@ type UserEditorPermissions {
 	user: EditorUserPermission!
 }
 
+input UserEditorPermissionsInput {
+	emote: EditorEmotePermissionInput!
+	emoteSet: EditorEmoteSetPermissionInput!
+	superAdmin: Boolean!
+	user: EditorUserPermissionInput!
+}
+
 enum UserEditorState {
 	ACCEPTED
 	PENDING
 	REJECTED
+}
+
+enum UserEditorUpdateState {
+	ACCEPT
+	REJECT
 }
 
 type UserEvent {

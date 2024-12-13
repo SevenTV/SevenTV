@@ -139,7 +139,7 @@
 					disabled={!platform.linkingEnabled}
 					href={platform.linkingEnabled ? platform.linkUrl : undefined}
 				>
-					{$t("labels.connect")}
+					{platform.linkingEnabled ? $t("labels.connect") : "Disabled"}
 				</Button>
 			{/if}
 		</li>

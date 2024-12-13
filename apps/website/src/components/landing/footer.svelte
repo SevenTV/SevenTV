@@ -3,12 +3,7 @@
 	import GithubLogo from "../icons/github-logo.svelte";
 	import Logo from "../icons/logo.svelte";
 	import XTwitterLogo from "../icons/x-twitter-logo.svelte";
-	import {
-		PUBLIC_TWITTER_LINK,
-		PUBLIC_GITHUB_LINK,
-		PUBLIC_DISCORD_LINK,
-		PUBLIC_DEVELOPER_PORTAL,
-	} from "$env/static/public";
+	import { PUBLIC_TWITTER_LINK, PUBLIC_GITHUB_LINK, PUBLIC_DISCORD_LINK } from "$env/static/public";
 
 	import buh from "$assets/buh.webp?url";
 
@@ -26,7 +21,6 @@
 		</div>
 		<div class="links">
 			<a href="/faq">FAQ</a>
-			<a href={PUBLIC_DEVELOPER_PORTAL}>Developer Portal</a>
 			<a href="/contact">Contact</a>
 		</div>
 		<div class="socials">

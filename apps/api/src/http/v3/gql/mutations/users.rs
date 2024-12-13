@@ -461,9 +461,8 @@ impl UserOps {
 								},
 								#[query(set_on_insert)]
 								DbUserEditor {
-									// TODO: Once the new website allows for pending editors, this should be changed to Pending
 									#[query(serde)]
-									state: UserEditorState::Accepted,
+									state: UserEditorState::Pending,
 									notes: None,
 									added_at: now,
 									added_by_id: authed_user.id,

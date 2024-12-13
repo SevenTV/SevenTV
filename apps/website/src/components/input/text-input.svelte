@@ -31,6 +31,10 @@
 	export function focus() {
 		input?.focus();
 	}
+
+	export function blur() {
+		input?.blur();
+	}
 </script>
 
 <label class="input" class:big class:has-label={children} class:has-icon={icon} {...restProps}>
