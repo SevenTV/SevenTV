@@ -1,14 +1,7 @@
 <script lang="ts">
 	import TextInput from "$/components/input/text-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
-	import {
-		Check,
-		MagnifyingGlass,
-		PencilSimple,
-		Prohibit,
-		Trash,
-		UserCirclePlus,
-	} from "phosphor-svelte";
+	import { Check, MagnifyingGlass, Prohibit, Trash, UserCirclePlus } from "phosphor-svelte";
 	import HideOn from "../hide-on.svelte";
 	import { t } from "svelte-i18n";
 	import NumberBadge from "../number-badge.svelte";
