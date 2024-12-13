@@ -257,21 +257,23 @@ pub async fn grant_entitlements(
 
 	match &redeem_code.effect {
 		CodeEffect::DirectEntitlement { entitlements } => {
-			EntitlementEdge::collection(&global.db)
-				.insert_many(entitlements.iter().map(|e| EntitlementEdge {
-					id: EntitlementEdgeId {
-						from: from.clone(),
-						to: e.clone(),
-						managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
-							redeem_code_id: redeem_code.id,
-						}),
-					},
-				}))
-				.await
-				.map_err(|err| {
-					tracing::error!(error = %err, "failed to insert entitlements");
-					ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert entitlements")
-				})?;
+			if !entitlements.is_empty() {
+				EntitlementEdge::collection(&global.db)
+					.insert_many(entitlements.iter().map(|e| EntitlementEdge {
+						id: EntitlementEdgeId {
+							from: from.clone(),
+							to: e.clone(),
+							managed_by: Some(EntitlementEdgeManagedBy::RedeemCode {
+								redeem_code_id: redeem_code.id,
+							}),
+						},
+					}))
+					.await
+					.map_err(|err| {
+						tracing::error!(error = %err, "failed to insert entitlements");
+						ApiError::internal_server_error(ApiErrorCode::MutationError, "failed to insert entitlements")
+					})?;
+			}
 		}
 		CodeEffect::SpecialEvent { special_event_id } => {
 			EntitlementEdge::collection(&global.db)

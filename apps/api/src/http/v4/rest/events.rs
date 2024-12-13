@@ -93,7 +93,7 @@ async fn create_event(
 		tx.delete(
 			filter::filter! {
 				EntitlementEdge {
-					#[query(flatten)]
+					#[query(rename = "_id", flatten)]
 					id: EntitlementEdgeId {
 						#[query(serde)]
 						from: &from,
@@ -113,7 +113,7 @@ async fn create_event(
 				id: EntitlementEdgeId {
 					from,
 					to: EntitlementEdgeKind::SpecialEvent {
-						special_event_id: create_event.special_event_id,
+						special_event_id: event.id,
 					},
 					managed_by: Some(EntitlementEdgeManagedBy::SpecialEvent {
 						special_event_id: event.id,
