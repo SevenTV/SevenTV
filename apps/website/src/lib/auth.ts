@@ -36,12 +36,14 @@ sessionToken.subscribe(async (token) => {
 	}
 });
 
-export const pendingEditorFor = derived(user, (value) => {
+export const pendingEditorFor = writable(0);
+
+user.subscribe((value) => {
 	if (!value) {
 		return 0;
 	}
 
-	return value.editorFor.filter((e) => e.state === UserEditorState.Pending).length;
+	pendingEditorFor.set(value.editorFor.filter((e) => e.state === UserEditorState.Pending).length);
 });
 
 export async function fetchMe(): Promise<User | null> {

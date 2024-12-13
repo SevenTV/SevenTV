@@ -385,15 +385,7 @@
 				return editor;
 			});
 
-			if ($user) {
-				$user.editorFor = $user.editorFor.map((editor) => {
-					if (editor.userId === userId && editor.editorId === editorId) {
-						editor.state = res.data!.userEditors.editor.updateState.state;
-					}
-
-					return editor;
-				});
-			}
+			pendingEditorFor.update((c) => c - 1);
 		}
 
 		if (state === UserEditorUpdateState.Accept) {

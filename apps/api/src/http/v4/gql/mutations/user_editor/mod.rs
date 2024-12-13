@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::Context;
-use shared::database::role::permissions::{PermissionsExt, UserPermission};
+use shared::database::role::permissions::{FlagPermission, PermissionsExt, UserPermission};
 use shared::database::user::editor::{
 	EditorEmotePermission, EditorEmoteSetPermission, EditorUserPermission, UserEditorId, UserEditorPermissions,
 	UserEditorState,
@@ -112,23 +112,9 @@ impl UserEditorMutation {
 		}
 
 		let res = transaction_with_mutex(global, Some(GeneralMutexKey::User(user_id).into()), |mut tx| async move {
-			let editor = shared::database::user::editor::UserEditor {
-				id: UserEditorId { user_id, editor_id },
-				permissions,
-				updated_at: chrono::Utc::now(),
-				search_updated_at: None,
-				state: UserEditorState::Pending,
-				notes: None,
-				added_at: chrono::Utc::now(),
-				added_by_id: authed_user.id,
-			};
-
-			tx.insert_one::<shared::database::user::editor::UserEditor>(&editor, None)
-				.await?;
-
 			let editor_user = global
 				.user_loader
-				.load_fast(global, editor.id.editor_id)
+				.load_fast(global, editor_id)
 				.await
 				.map_err(|_| {
 					TransactionError::Custom(ApiError::internal_server_error(
@@ -142,6 +128,26 @@ impl UserEditorMutation {
 						"failed to load user",
 					))
 				})?;
+
+			let state = if editor_user.has(FlagPermission::InstantInvite) {
+				UserEditorState::Accepted
+			} else {
+				UserEditorState::Pending
+			};
+
+			let editor = shared::database::user::editor::UserEditor {
+				id: UserEditorId { user_id, editor_id },
+				permissions,
+				updated_at: chrono::Utc::now(),
+				search_updated_at: None,
+				state,
+				notes: None,
+				added_at: chrono::Utc::now(),
+				added_by_id: authed_user.id,
+			};
+
+			tx.insert_one::<shared::database::user::editor::UserEditor>(&editor, None)
+				.await?;
 
 			tx.register_event(InternalEvent {
 				actor: Some(authed_user.clone()),
