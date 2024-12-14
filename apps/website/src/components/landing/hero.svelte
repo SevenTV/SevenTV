@@ -46,7 +46,7 @@
 				<div class="buttons">
 					<Button primary style="font-size: 1em;" href="https://www.nnys.live/">Vote now!</Button>
 					<Button primary style="font-size: 1em;" href="#download">Download</Button>
-					<Button style="font-size: 1em;">Learn More</Button>
+					<!-- <Button style="font-size: 1em;">Learn More</Button> -->
 				</div>
 			</div>
 			<img class="hero-image hide-on-mobile" src={nnysPlaceholder} alt="7TV" />
