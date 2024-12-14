@@ -23,6 +23,12 @@ pub fn routes() -> Router<Arc<Global>> {
 struct CreateEventRequest {
 	twitch_id: String,
 	special_event_id: SpecialEventId,
+	#[serde(default = "default_true")]
+	requires_subscription: bool,
+}
+
+fn default_true() -> bool {
+	true
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -69,24 +75,30 @@ async fn create_event(
 		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
-	let products = global
-		.subscription_products_loader
-		.load(())
-		.await
-		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?
-		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?;
+	let from = if create_event.requires_subscription {
+		let products = global
+			.subscription_products_loader
+			.load(())
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?;
+	
+		// We only have 1 for now.
+		let product = products
+			.into_iter()
+			.next()
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?;
 
-	// We only have 1 for now.
-	let product = products
-		.into_iter()
-		.next()
-		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?;
-
-	let from = EntitlementEdgeKind::Subscription {
-		subscription_id: SubscriptionId {
-			product_id: product.id,
-			user_id: user.id,
-		},
+		EntitlementEdgeKind::Subscription {
+			subscription_id: SubscriptionId {
+				product_id: product.id,
+				user_id: user.id,
+			},
+		}
+	} else {
+		EntitlementEdgeKind::User {
+			user_id: user.id
+		}
 	};
 
 	transaction_with_mutex(&global, Some(GeneralMutexKey::User(user.id).into()), |mut tx| async move {
