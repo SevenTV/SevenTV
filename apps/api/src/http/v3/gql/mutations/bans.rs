@@ -298,11 +298,16 @@ impl Ban {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
 		Ok(global
 			.user_loader
 			.load_fast(global, self.victim_id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())
@@ -314,11 +319,16 @@ impl Ban {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
 		Ok(global
 			.user_loader
 			.load(global, self.actor_id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user)
 			.into())

@@ -87,7 +87,7 @@ pub async fn get_user_by_id(
 		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
 		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
-	if user.has(FlagPermission::Hidden) && Some(user.id) != session.user_id() && !session.has(UserPermission::ViewHidden) {
+	if !session.can_view(&user) {
 		return Err(ApiError::not_found(ApiErrorCode::LoadError, "user not found"));
 	}
 

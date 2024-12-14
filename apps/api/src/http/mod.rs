@@ -48,8 +48,8 @@ const ALLOWED_CORS_HEADERS: &[&str] = &[
 
 fn cors_layer(global: &Arc<Global>) -> CorsLayer {
 	let mut allowed_orings = global.config.api.cors_allowed_credential_origins.clone();
+	allowed_orings.push(global.config.api.old_website_origin.clone());
 	allowed_orings.push(global.config.api.website_origin.clone());
-	allowed_orings.push(global.config.api.beta_website_origin.clone());
 	allowed_orings.push(global.config.api.api_origin.clone());
 
 	let allow_credentials = AllowCredentials::predicate(move |origin, _| {

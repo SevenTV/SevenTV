@@ -269,7 +269,7 @@ pub async fn handle_callback(
 			return global
 				.config
 				.api
-				.website_origin
+				.old_website_origin
 				.join(&format!("/auth/callback#platform={}&linked=true", platform))
 				.map_err(|e| {
 					tracing::error!(err = %e, "failed to generate redirect url");
@@ -326,7 +326,7 @@ pub async fn handle_callback(
 		global
 			.config
 			.api
-			.website_origin
+			.old_website_origin
 			.join(&format!("/auth/callback#platform={}&token={}", query.platform, token))
 			.map_err(|e| {
 				tracing::error!(err = %e, "failed to generate redirect url");

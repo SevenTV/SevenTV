@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::{Context, Object};
-use shared::database::role::permissions::{FlagPermission, PermissionsExt, UserPermission};
 use shared::database::user::UserId;
 
 use crate::global::Global;
@@ -56,12 +55,7 @@ impl UserQuery {
 			return Ok(None);
 		};
 
-		if user.has(FlagPermission::Hidden) && Some(user.id) != session.user_id() && !session.has(UserPermission::ViewHidden)
-		{
-			return Ok(None);
-		}
-
-		Ok(Some(user.into()))
+		Ok(session.can_view(&user).then(|| user.into()))
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]

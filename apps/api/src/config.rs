@@ -18,12 +18,12 @@ pub struct Api {
 	pub workers: usize,
 
 	/// website origin
-	#[default("https://7tv.app".parse().unwrap())]
-	pub website_origin: url::Url,
+	#[default("https://old.7tv.app".parse().unwrap())]
+	pub old_website_origin: url::Url,
 
 	/// beta website origin
-	#[default("https://beta.7tv.app".parse().unwrap())]
-	pub beta_website_origin: url::Url,
+	#[default("https://7tv.app".parse().unwrap())]
+	pub website_origin: url::Url,
 
 	/// cdn base url
 	#[default("https://cdn.7tv.app/".parse().unwrap())]

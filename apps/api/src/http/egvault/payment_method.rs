@@ -78,7 +78,7 @@ pub async fn payment_method(
 			None => find_or_create_customer(&global, global.stripe_client.client().await, target_user.id, None).await?,
 		};
 
-		let callback = global.config.api.website_origin.join("subscribe").unwrap();
+		let callback = global.config.api.old_website_origin.join("subscribe").unwrap();
 
 		let mut currency = stripe::Currency::EUR;
 

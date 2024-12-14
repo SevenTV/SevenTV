@@ -91,12 +91,12 @@ impl BillingMutation {
 		let success_url = global
 			.config
 			.api
-			.beta_website_origin
+			.website_origin
 			.join("/store?success=1")
 			.unwrap()
 			.to_string();
 
-		let cancel_url = global.config.api.beta_website_origin.join("/store").unwrap().to_string();
+		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
 
 		let mut params = create_checkout_session_params(
 			global,

@@ -13,6 +13,7 @@ use super::user::UserPartial;
 use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::middleware::session::Session;
 
 // https://github.com/SevenTV/API/blob/main/internal/api/gql/v3/schema/emoteset.gql
 
@@ -103,11 +104,16 @@ impl ActiveEmote {
 			return Ok(None);
 		};
 
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
 		Ok(global
 			.user_loader
 			.load_fast(global, actor_id)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u)))
 	}
 }
@@ -180,11 +186,16 @@ impl EmoteSet {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
 		Ok(global
 			.user_loader
 			.load_fast(global, id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u)))
 	}
 }

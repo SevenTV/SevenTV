@@ -144,14 +144,14 @@ pub async fn redeem_code_inner(global: &Arc<Global>, session: &Session, code: St
 		let success_url = global
 			.config
 			.api
-			.website_origin
+			.old_website_origin
 			.join("/subscribe/complete?with_provider=stripe")
 			.unwrap()
 			.to_string();
 		let cancel_url = global
 			.config
 			.api
-			.website_origin
+			.old_website_origin
 			.join("/subscribe/cancel?with_provider=stripe")
 			.unwrap()
 			.to_string();

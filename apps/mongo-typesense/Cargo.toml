@@ -28,10 +28,10 @@ rand = "0.8"
 smart-default = "0.7.1"
 tracing-subscriber = "0.3"
 
-scuffle-bootstrap = "0.0.1"
-scuffle-context = "0.0.1"
-scuffle-metrics = "0.0.3"
-scuffle-batching = "0.0.2"
-scuffle-bootstrap-telemetry = "0.0.2"
-scuffle-signal = { version = "0.0.1", features = ["bootstrap"] }
-scuffle-settings = { version = "0.0.1", features = ["toml", "templates", "cli", "bootstrap"] }
+scuffle-bootstrap = "0.0.2"
+scuffle-context = "0.0.2"
+scuffle-metrics = "0.0.4"
+scuffle-batching = "0.0.4"
+scuffle-bootstrap-telemetry = "0.0.3"
+scuffle-signal = { version = "0.0.2", features = ["bootstrap"] }
+scuffle-settings = { version = "0.0.2", features = ["toml", "templates", "cli", "bootstrap"] }

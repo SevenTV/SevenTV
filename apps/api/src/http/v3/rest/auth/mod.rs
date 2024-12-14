@@ -146,8 +146,8 @@ async fn logout(
 ) -> Result<impl IntoResponse, ApiError> {
 	let allowed = [
 		&global.config.api.api_origin,
+		&global.config.api.old_website_origin,
 		&global.config.api.website_origin,
-		&global.config.api.beta_website_origin,
 	];
 
 	if let Some(referer) = request.headers().get(hyper::header::REFERER) {
@@ -183,7 +183,7 @@ async fn logout(
 			let website_url = global
 				.config
 				.api
-				.website_origin
+				.old_website_origin
 				.join("/auth/callback#logout=true")
 				.map_err(|err| {
 					tracing::error!(error = %err, "failed to join website origin");

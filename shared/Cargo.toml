@@ -59,9 +59,9 @@ axum = "0.7"
 regex = "1.10.6"
 async-trait = "0.1.83"
 
-scuffle-image-processor-proto = { version = "0.0.1", features = ["client", "serde"] }
-scuffle-metrics = "0.0.3"
-scuffle-batching = "0.0.2"
-scuffle-http = { version = "0.0.2", features = [], default-features = false }
+scuffle-image-processor-proto = { version = "0.0.2", features = ["client", "serde"] }
+scuffle-metrics = "0.0.4"
+scuffle-batching = "0.0.4"
+scuffle-http = { version = "0.0.4", features = [], default-features = false }
 
 macros = { workspace = true }

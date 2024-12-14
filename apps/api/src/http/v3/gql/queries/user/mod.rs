@@ -300,11 +300,16 @@ impl UserEditor {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
 		Ok(global
 			.user_loader
 			.load_fast(global, self.id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
@@ -525,7 +530,7 @@ impl UsersQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		Ok(session.user().ok().map(|u| UserPartial::from_db(global, u.clone()).into()))
+		Ok(session.user().ok().filter(|u| session.can_view(u)).map(|u| UserPartial::from_db(global, u.clone()).into()))
 	}
 
 	#[tracing::instrument(skip_all, name = "UsersQuery::user")]
@@ -538,11 +543,16 @@ impl UsersQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
 		let user = global
 			.user_loader
 			.load(global, id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user);
 
@@ -578,7 +588,15 @@ impl UsersQuery {
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
-		Ok(UserPartial::from_db(global, full_user).into())
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
+		if !session.can_view(&full_user) {
+			Ok(UserPartial::deleted_user().into())
+		} else {
+			Ok(UserPartial::from_db(global, full_user).into())
+		}
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]
@@ -593,6 +611,10 @@ impl UsersQuery {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 
 		let options = SearchOptions::builder()
 			.query(query)
@@ -628,6 +650,7 @@ impl UsersQuery {
 
 		Ok(sorted_results(result.hits, users)
 			.into_iter()
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u))
 			.collect())
 	}
@@ -643,12 +666,17 @@ impl UsersQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
 		let users = global
 			.user_loader
 			.load_many(global, list.into_iter().map(|id| id.id()).filter(|id| !id.is_nil()))
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load users"))?
 			.into_values()
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u))
 			.collect();
 

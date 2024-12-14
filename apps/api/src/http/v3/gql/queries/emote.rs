@@ -99,11 +99,16 @@ impl Emote {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
 		Ok(global
 			.user_loader
 			.load_fast(global, self.owner_id.id())
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.filter(|u| session.can_view(u))
 			.map(|u| UserPartial::from_db(global, u))
 			.unwrap_or_else(UserPartial::deleted_user))
 	}
@@ -119,6 +124,10 @@ impl Emote {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
@@ -148,6 +157,7 @@ impl Emote {
 			total: result.found as u32,
 			items: sorted_results(result.hits, users)
 				.into_iter()
+				.filter(|u| session.can_view(u))
 				.map(|u| UserPartial::from_db(global, u))
 				.collect(),
 		})

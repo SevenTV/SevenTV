@@ -78,7 +78,7 @@ fn login_redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<u
 	global
 		.config
 		.api
-		.beta_website_origin
+		.website_origin
 		.join(&format!("/login/callback?platform={}", platform))
 		.map_err(|e| {
 			tracing::error!(err = %e, "failed to generate redirect_uri");
@@ -90,7 +90,7 @@ fn link_redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<ur
 	global
 		.config
 		.api
-		.beta_website_origin
+		.website_origin
 		.join(&format!("/link/callback?platform={}", platform))
 		.map_err(|e| {
 			tracing::error!(err = %e, "failed to generate redirect_uri");
@@ -114,8 +114,8 @@ async fn login_inner(
 ) -> Result<Response, ApiError> {
 	let allowed = [
 		&global.config.api.api_origin,
+		&global.config.api.old_website_origin,
 		&global.config.api.website_origin,
-		&global.config.api.beta_website_origin,
 	];
 
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
@@ -218,8 +218,8 @@ async fn login_finish(
 ) -> Result<impl IntoResponse, ApiError> {
 	let allowed = [
 		&global.config.api.api_origin,
+		&global.config.api.old_website_origin,
 		&global.config.api.website_origin,
-		&global.config.api.beta_website_origin,
 	];
 
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
@@ -480,8 +480,8 @@ async fn link_finish(
 ) -> Result<impl IntoResponse, ApiError> {
 	let allowed = [
 		&global.config.api.api_origin,
+		&global.config.api.old_website_origin,
 		&global.config.api.website_origin,
-		&global.config.api.beta_website_origin,
 	];
 
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
@@ -623,8 +623,8 @@ async fn logout(
 ) -> Result<(), ApiError> {
 	let allowed = [
 		&global.config.api.api_origin,
+		&global.config.api.old_website_origin,
 		&global.config.api.website_origin,
-		&global.config.api.beta_website_origin,
 	];
 
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
