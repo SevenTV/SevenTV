@@ -2,27 +2,77 @@
 	import Logo from "../icons/logo.svelte";
 	import Button from "../input/button.svelte";
 	import landingPagePlaceholder from "$assets/landing-page-placeholder.webp?url";
+	import nnysPlaceholder from "$assets/nnys.webp?url";
+
+	const isVotingPeriod = new Date() < new Date("2024-12-20");
+	const giftingPeriod = new Date() < new Date("2024-12-27");
+
 </script>
 
-<section class="hero">
-	<div class="hero-content">
-		<Logo size={8.5 * 16} />
-		<div class="content">
-			<h1>
-				The Emote Platform <span class="for-all">for All</span>
-			</h1>
-			<p>
-				Manage hundreds of emotes for your Twitch, Kick or YouTube channels with ease. Enhance your
-				chatting experience.
-			</p>
-		</div>
-		<div class="buttons">
-			<Button primary style="font-size: 1em;" href="#download">Download</Button>
-			<Button style="font-size: 1em;">Learn More</Button>
-		</div>
-	</div>
-	<img class="hero-image hide-on-mobile" src={landingPagePlaceholder} alt="7TV" />
-</section>
+<div>
+	{#if giftingPeriod}
+		<section class="hero gifting">
+			<div class="hero-content">
+				<div class="content">
+					<h1 style="white-space: nowrap;">X-MAS SUB EVENT</h1>
+					<p>
+						Gift 1 sub to anyone this christmas and get a special badge!
+
+						<br />
+
+						<a href="/store">Gift a sub</a>
+					</p>
+				</div>
+			</div>
+		</section>
+	{/if}
+
+	{#if isVotingPeriod}
+		<section class="hero nnys">
+			<div class="hero-content">
+				<Logo size={8.5 * 16} />
+				<div class="content">
+					<h1>
+						The Emote Platform <span class="for-all">for All</span>
+					</h1>
+					<p>
+						Manage hundreds of emotes for your Twitch, Kick or YouTube channels with ease. Enhance your
+						chatting experience.
+					</p>
+					<p>
+						Vote on NNYS 2024 to get an exclusive paint, badge & emote set.
+					</p>
+				</div>
+				<div class="buttons">
+					<Button primary style="font-size: 1em;" href="https://www.nnys.live/">Vote now!</Button>
+					<Button primary style="font-size: 1em;" href="#download">Download</Button>
+					<Button style="font-size: 1em;">Learn More</Button>
+				</div>
+			</div>
+			<img class="hero-image hide-on-mobile" src={nnysPlaceholder} alt="7TV" />
+		</section>
+	{:else}
+		<section class="hero">
+			<div class="hero-content">
+				<Logo size={8.5 * 16} />
+				<div class="content">
+					<h1>
+						The Emote Platform <span class="for-all">for All</span>
+					</h1>
+					<p>
+						Manage hundreds of emotes for your Twitch, Kick or YouTube channels with ease. Enhance your
+						chatting experience.
+					</p>
+				</div>
+				<div class="buttons">
+					<Button primary style="font-size: 1em;" href="#download">Download</Button>
+					<Button style="font-size: 1em;">Learn More</Button>
+				</div>
+			</div>
+			<img class="hero-image hide-on-mobile" src={landingPagePlaceholder} alt="7TV" />
+		</section>
+	{/if}
+</div>
 
 <style lang="scss">
 	.hero {
@@ -39,6 +89,41 @@
 		z-index: 1;
 
 		perspective: 1000px;
+
+		&.nnys {
+			--text: white;
+			--secondary-hover: var(--primary);
+			--secondary-active: var(--primary-active);
+			color: white;
+
+			&::before {
+				background: url("$assets/nnys-background.webp?url");
+				background-size: cover;
+			}
+
+			.hero-content {
+				background: #00000027;
+				backdrop-filter: blur(1rem);
+				border-radius: 1rem;
+			}
+		}
+
+		&.gifting {
+			&::before {
+				background: unset;
+			}
+			min-height: unset;
+			backdrop-filter: blur(1rem);
+			border-radius: 1rem;
+			padding: 1rem;
+
+			.content {
+				text-align: center;
+				h1 {
+					max-width: unset;
+				}
+			}
+		}
 
 		&::before {
 			content: "";
@@ -90,6 +175,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
+		padding: 2rem;
 
 		.content {
 			h1 {

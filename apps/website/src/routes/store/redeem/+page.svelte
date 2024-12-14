@@ -10,7 +10,8 @@
 	import Banner from "$/components/store/banner.svelte";
 	import StoreSection from "$/components/store/store-section.svelte";
 
-	let code = $state("");
+	// Get the code from the URL ?code=<code>
+	let code = $state(new URL(window.location.href).searchParams.get("code") ?? "");
 	let redeemState = $state<"idle" | "loading" | "success">("idle");
 
 	async function submit(e: SubmitEvent) {
@@ -58,6 +59,7 @@
 	subtitle="Redeem a gift code to unlock exclusive cosmetics and benefits."
 	gradientColor="#ff11bc"
 />
+
 <div class="grid">
 	<StoreSection title="Redeem a Gift Code">
 		<form class="redeem" onsubmit={submit}>
