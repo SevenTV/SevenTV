@@ -152,7 +152,7 @@ impl User {
 	}
 
 	#[tracing::instrument(skip_all, name = "User::emote_sets")]
-	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, _entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
+	async fn emote_sets<'ctx>(&self, ctx: &Context<'ctx>, entitled: Option<bool>) -> Result<Vec<EmoteSet>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -164,7 +164,18 @@ impl User {
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
 			.unwrap_or_default();
 
+		if entitled.is_none_or(|b| b) {
+			let entitled_emote_sets = global
+				.emote_set_by_id_loader
+				.load_many(self.full_user.computed.entitlements.emote_sets.iter().copied())
+				.await
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?;
+
+			emote_sets.extend(entitled_emote_sets.into_values());
+		}
+
 		emote_sets.sort_by(|a, b| a.id.cmp(&b.id));
+		emote_sets.dedup_by_key(|e| e.id);
 
 		Ok(emote_sets.into_iter().map(EmoteSet::from_db).collect())
 	}
@@ -530,7 +541,11 @@ impl UsersQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		Ok(session.user().ok().filter(|u| session.can_view(u)).map(|u| UserPartial::from_db(global, u.clone()).into()))
+		Ok(session
+			.user()
+			.ok()
+			.filter(|u| session.can_view(u))
+			.map(|u| UserPartial::from_db(global, u.clone()).into()))
 	}
 
 	#[tracing::instrument(skip_all, name = "UsersQuery::user")]

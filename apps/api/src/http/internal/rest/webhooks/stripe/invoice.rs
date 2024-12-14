@@ -532,7 +532,9 @@ pub async fn paid(
 					Some(ProviderSubscriptionId::Stripe(id)) => {
 						stripe::Subscription::update(
 							stripe_client
-								.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription(id.to_string())))
+								.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription(
+									id.to_string(),
+								)))
 								.await
 								.deref(),
 							&id,

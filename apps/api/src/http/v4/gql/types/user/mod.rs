@@ -108,6 +108,24 @@ impl User {
 			.map(Into::into))
 	}
 
+	#[tracing::instrument(skip_all, name = "User::special_emote_sets")]
+	async fn special_emote_sets(&self, ctx: &Context<'_>) -> Result<Vec<EmoteSet>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let emote_sets = global
+			.emote_set_by_id_loader
+			.load_many(self.full_user.computed.entitlements.emote_sets.iter().copied())
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?;
+
+		let mut emote_sets = emote_sets.into_values().collect::<Vec<_>>();
+		emote_sets.sort_by(|a, b| a.id.cmp(&b.id));
+
+		Ok(emote_sets.into_iter().map(Into::into).collect())
+	}
+
 	#[tracing::instrument(skip_all, name = "User::style")]
 	async fn style(&self, ctx: &Context<'_>) -> Result<UserStyle, ApiError> {
 		let global: &Arc<Global> = ctx

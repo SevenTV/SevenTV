@@ -82,7 +82,7 @@ async fn create_event(
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?
 			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription"))?;
-	
+
 		// We only have 1 for now.
 		let product = products
 			.into_iter()
@@ -96,9 +96,7 @@ async fn create_event(
 			},
 		}
 	} else {
-		EntitlementEdgeKind::User {
-			user_id: user.id
-		}
+		EntitlementEdgeKind::User { user_id: user.id }
 	};
 
 	transaction_with_mutex(&global, Some(GeneralMutexKey::User(user.id).into()), |mut tx| async move {

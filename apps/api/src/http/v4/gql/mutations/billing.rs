@@ -88,13 +88,7 @@ impl BillingMutation {
 			}
 		};
 
-		let success_url = global
-			.config
-			.api
-			.website_origin
-			.join("/store?success=1")
-			.unwrap()
-			.to_string();
+		let success_url = global.config.api.website_origin.join("/store?success=1").unwrap().to_string();
 
 		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
 
