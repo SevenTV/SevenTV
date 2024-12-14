@@ -40,12 +40,12 @@ fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Resul
 		.collect()
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StripeRequest {
 	CreatedRetrieveSubscription,
 	CreatedRetrieveCustomer,
 	PaidRetrieveSubscription,
-	CancelSubscription,
+	CancelSubscription(String),
 }
 
 impl std::fmt::Display for StripeRequest {
@@ -54,7 +54,7 @@ impl std::fmt::Display for StripeRequest {
 			Self::CreatedRetrieveSubscription => write!(f, "created_retrieve_subscription"),
 			Self::CreatedRetrieveCustomer => write!(f, "created_retrieve_customer"),
 			Self::PaidRetrieveSubscription => write!(f, "paid_retrieve_subscription"),
-			Self::CancelSubscription => write!(f, "cancel_subscription"),
+			Self::CancelSubscription(id) => write!(f, "cancel_subscription:{}", id),
 		}
 	}
 }
@@ -532,7 +532,7 @@ pub async fn paid(
 					Some(ProviderSubscriptionId::Stripe(id)) => {
 						stripe::Subscription::update(
 							stripe_client
-								.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription))
+								.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription(id.to_string())))
 								.await
 								.deref(),
 							&id,

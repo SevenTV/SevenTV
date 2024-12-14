@@ -93,7 +93,7 @@ async fn verify_stripe_ip(global: &Arc<Global>, ip: &IpAddr) -> bool {
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum StripeRequest {
 	Price,
 	CheckoutSession(checkout_session::StripeRequest),
