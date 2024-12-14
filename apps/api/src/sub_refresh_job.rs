@@ -38,6 +38,7 @@ impl SubAge {
 
 		let mut combined_periods = periods
 			.iter()
+			.filter(|p| p.start < now)
 			.map(|p| StartEnd {
 				start: p.start,
 				end: p.end.min(now),
