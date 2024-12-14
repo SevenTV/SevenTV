@@ -40,7 +40,7 @@
 		<div class="alert-bar">
 			<Warning />
 			<span>Under construction</span>
-			<span class="small">Give us feedback on the new site in the Discord.</span>
+			<span class="small">Give us feedback on the new site in the <a href="https://discord.gg/7tv">Discord</a>.</span>
 			<span class="small">Click <a href="https://old.7tv.app">here</a> to go back.</span>
 		</div>
 		<TopNav />
