@@ -186,15 +186,24 @@
 			{$t("common.theme")}
 		</MenuButton>
 		<div class="link-list">
-			<MenuButton onclick={() => setTheme("system-theme")} iconRight={$theme === "system-theme" ? check : undefined}>
+			<MenuButton
+				onclick={() => setTheme("system-theme")}
+				iconRight={$theme === "system-theme" ? check : undefined}
+			>
 				<Sliders />
 				{$t("themes.system")}
 			</MenuButton>
-			<MenuButton onclick={() => setTheme("dark-theme")} iconRight={$theme === "system-theme" ? check : undefined}>
+			<MenuButton
+				onclick={() => setTheme("dark-theme")}
+				iconRight={$theme === "system-theme" ? check : undefined}
+			>
 				<Moon />
 				{$t("themes.dark")}
 			</MenuButton>
-			<MenuButton onclick={() => setTheme("light-theme")} iconRight={$theme === "system-theme" ? check : undefined}>
+			<MenuButton
+				onclick={() => setTheme("light-theme")}
+				iconRight={$theme === "system-theme" ? check : undefined}
+			>
 				<Sun />
 				{$t("themes.light")}
 			</MenuButton>

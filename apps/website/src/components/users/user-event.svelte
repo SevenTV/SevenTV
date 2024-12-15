@@ -63,7 +63,9 @@
 		{:else if event.data.__typename === "EventUserDataChangeActiveBadge"}
 			<PaintBrush />
 			<span class="text">
-				Changed active badge from {@render badge(event.data.oldBadge)} to {@render badge(event.data.newBadge)}
+				Changed active badge from {@render badge(event.data.oldBadge)} to {@render badge(
+					event.data.newBadge,
+				)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataChangeActiveEmoteSet"}
 			<FolderSimple />
