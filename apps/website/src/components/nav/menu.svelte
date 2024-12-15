@@ -6,6 +6,7 @@
 	import {
 		CaretLeft,
 		CaretRight,
+		Check,
 		Gear,
 		GlobeHemisphereWest,
 		House,
@@ -59,6 +60,13 @@
 
 	let reversedRoles = $derived(filterRoles($user?.roles || []));
 </script>
+
+{#snippet caret()}
+	<CaretRight />
+{/snippet}
+{#snippet check()}
+	<Check />
+{/snippet}
 
 <nav class="menu" transition:fade={{ duration: 100 }}>
 	{#if menu === "root"}
@@ -115,7 +123,7 @@
 				<GlobeHemisphereWest />
 				{$t("common.language")}
 			</MenuButton> -->
-			<MenuButton showCaret onclick={(e) => setMenu(e, "theme")}>
+			<MenuButton iconRight={caret} onclick={(e) => setMenu(e, "theme")}>
 				{#if $theme === "system-theme"}
 					<Sliders />
 				{:else if $theme === "light-theme"}
@@ -180,15 +188,15 @@
 			{$t("common.theme")}
 		</MenuButton>
 		<div class="link-list">
-			<MenuButton onclick={() => setTheme("system-theme")}>
+			<MenuButton onclick={() => setTheme("system-theme")} iconRight={$theme === "system-theme" ? check : undefined}>
 				<Sliders />
 				{$t("themes.system")}
 			</MenuButton>
-			<MenuButton onclick={() => setTheme("dark-theme")}>
+			<MenuButton onclick={() => setTheme("dark-theme")} iconRight={$theme === "system-theme" ? check : undefined}>
 				<Moon />
 				{$t("themes.dark")}
 			</MenuButton>
-			<MenuButton onclick={() => setTheme("light-theme")}>
+			<MenuButton onclick={() => setTheme("light-theme")} iconRight={$theme === "system-theme" ? check : undefined}>
 				<Sun />
 				{$t("themes.light")}
 			</MenuButton>

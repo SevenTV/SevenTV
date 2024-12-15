@@ -1,11 +1,10 @@
 <script lang="ts">
-	import { CaretRight } from "phosphor-svelte";
 	import type { Snippet } from "svelte";
 	import type { HTMLButtonAttributes, HTMLAnchorAttributes } from "svelte/elements";
 
 	type Props = {
 		href?: string;
-		showCaret?: boolean;
+		iconRight?: Snippet;
 		hideOnMobile?: boolean;
 		hideOnDesktop?: boolean;
 		children?: Snippet;
@@ -14,7 +13,7 @@
 
 	let {
 		href,
-		showCaret = false,
+		iconRight = undefined,
 		hideOnMobile = false,
 		hideOnDesktop = false,
 		children,
@@ -30,9 +29,9 @@
 		{...restProps}
 	>
 		{@render children?.()}
-		{#if showCaret}
-			<div class="caret">
-				<CaretRight />
+		{#if iconRight}
+			<div class="icon-right">
+				{@render iconRight()}
 			</div>
 		{/if}
 	</a>
@@ -44,9 +43,9 @@
 		{...restProps}
 	>
 		{@render children?.()}
-		{#if showCaret}
-			<div class="caret">
-				<CaretRight />
+		{#if iconRight}
+			<div class="icon-right">
+				{@render iconRight()}
 			</div>
 		{/if}
 	</button>
@@ -73,7 +72,7 @@
 		}
 	}
 
-	.caret {
+	.icon-right {
 		flex-grow: 1;
 		justify-self: end;
 		text-align: right;
