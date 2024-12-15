@@ -139,14 +139,6 @@
 				<Code />
 				{$t("common.developer_portal")}
 			</MenuButton> -->
-			<!-- <MenuButton href="/contact">
-				<ChatDots />
-				{$t("common.contact")}
-			</MenuButton> -->
-			<!-- <MenuButton href="/faq">
-				<Question />
-				{$t("common.faq_short")}
-			</MenuButton> -->
 			<MenuButton href="/privacy">
 				<LockSimple />
 				{$t("common.privacy")}

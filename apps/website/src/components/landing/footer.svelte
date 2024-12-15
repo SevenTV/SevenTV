@@ -19,10 +19,6 @@
 				<Logo size={2 * 16} />
 			{/if}
 		</div>
-		<div class="links">
-			<a href="/faq">FAQ</a>
-			<a href="/contact">Contact</a>
-		</div>
 		<div class="socials">
 			<a href={PUBLIC_TWITTER_LINK}><XTwitterLogo size={1.6 * 16} /></a>
 			<a href={PUBLIC_GITHUB_LINK}><GithubLogo size={1.6 * 16} /></a>
