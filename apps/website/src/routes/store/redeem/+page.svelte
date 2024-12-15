@@ -58,6 +58,7 @@
 	subtitle="Redeem a gift code to unlock exclusive cosmetics and benefits."
 	gradientColor="#ff11bc"
 />
+
 <div class="grid">
 	<StoreSection title="Redeem a Gift Code">
 		<form class="redeem" onsubmit={submit}>

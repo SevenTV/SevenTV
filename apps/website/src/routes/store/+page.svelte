@@ -9,6 +9,7 @@
 	import { graphql } from "$/gql";
 	import {
 		type BadgeProgress,
+		type MyStoreDataQuery,
 		type Paint,
 		type StoreDataQuery,
 		type SubscriptionInfo,
@@ -18,32 +19,17 @@
 	import { Gift, Info, PaintBrush, Seal, Smiley, UserCircle } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import { user } from "$/lib/auth";
-	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import type { PageData } from "./$types";
-	import moment from "moment";
+	import { isXmasEvent } from "$/lib/xmas";
 
 	let { data }: { data: PageData } = $props();
 
-	async function queryStore(userId: string) {
+	async function queryMyStore(userId: string) {
 		let res = await gqlClient()
 			.query(
 				graphql(`
-					query StoreData($userId: Id!, $productId: Id!) {
-						products {
-							subscriptionProduct(id: $productId) {
-								id
-								name
-								variants {
-									id
-									price {
-										amount
-										currency
-									}
-									kind
-								}
-							}
-						}
+					query MyStoreData($userId: Id!, $productId: Id!) {
 						users {
 							user(id: $userId) {
 								billing(productId: $productId) {
@@ -163,6 +149,37 @@
 								}
 							}
 						}
+					}
+				`),
+				{
+					userId,
+					productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
+				},
+			)
+			.toPromise();
+
+		return res.data;
+	}
+
+	async function queryStore() {
+		let res = await gqlClient()
+			.query(
+				graphql(`
+					query StoreData($productId: Id!) {
+						products {
+							subscriptionProduct(id: $productId) {
+								id
+								name
+								variants {
+									id
+									price {
+										amount
+										currency
+									}
+									kind
+								}
+							}
+						}
 						store {
 							monthlyPaints {
 								id
@@ -225,7 +242,6 @@
 					}
 				`),
 				{
-					userId,
 					productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
 				},
 			)
@@ -235,13 +251,18 @@
 	}
 
 	let storeData = $state<StoreDataQuery>();
+	let myStoreData = $state<MyStoreDataQuery>();
 
 	$effect(() => {
 		if ($user) {
-			queryStore($user.id).then((res) => {
-				storeData = res;
+			queryMyStore($user.id).then((res) => {
+				myStoreData = res;
 			});
 		}
+
+		queryStore().then((res) => {
+			storeData = res;
+		});
 	});
 </script>
 
@@ -268,8 +289,8 @@
 	</Banner>
 {/snippet}
 
-{#if storeData}
-	{@render banner(!!storeData?.users.user?.billing.subscriptionInfo.activePeriod)}
+{#if myStoreData}
+	{@render banner(!!myStoreData?.users.user?.billing.subscriptionInfo.activePeriod)}
 {:else}
 	{@render banner(false)}
 {/if}
@@ -281,14 +302,14 @@
 			Your purchase was successfully completed
 		</div>
 	{/if}
-	{#if moment().isAfter(moment("2024-12-14T00:00:00Z")) && moment().isBefore(moment("2024-12-27T00:00:00Z"))}
+	{#if isXmasEvent()}
 		<div class="bar">
 			<Gift />
 			X-MAS 2024 EVENT: GIFT 1 SUB TO GET A SPECIAL BADGE
 		</div>
 	{/if}
-	{#if storeData}
-		{#if !storeData.users.user?.billing.subscriptionInfo.activePeriod}
+	{#if myStoreData}
+		{#if !myStoreData.users.user?.billing.subscriptionInfo.activePeriod}
 			<Benefits />
 		{/if}
 	{:else}
@@ -296,17 +317,19 @@
 	{/if}
 	<div class="top-grid">
 		{#if storeData}
-			<div class="subgrid">
-				{#if storeData.users.user && storeData.products.subscriptionProduct}
-					<YourSub
-						bind:subInfo={storeData.users.user.billing.subscriptionInfo as SubscriptionInfo}
-						product={storeData.products.subscriptionProduct as SubscriptionProduct}
-					/>
-					<BadgeProgressComponent
-						progress={storeData.users.user.billing.badgeProgress as BadgeProgress}
-					/>
-				{/if}
-			</div>
+			{#if myStoreData}
+				<div class="subgrid">
+					{#if myStoreData.users.user && storeData.products.subscriptionProduct}
+						<YourSub
+							bind:subInfo={myStoreData.users.user.billing.subscriptionInfo as SubscriptionInfo}
+							product={storeData.products.subscriptionProduct as SubscriptionProduct}
+						/>
+						<BadgeProgressComponent
+							progress={myStoreData.users.user.billing.badgeProgress as BadgeProgress}
+						/>
+					{/if}
+				</div>
+			{/if}
 			<MonthlyPaints paints={storeData.store.monthlyPaints as Paint[]} />
 		{:else}
 			<div class="spinner-container">
@@ -315,18 +338,9 @@
 		{/if}
 	</div>
 	<PersonalEmotes />
-	<!-- <div class="three-grid">
-		<EmoteRaffle />
-		<PersonalEmotes />
-		<TopGifters />
-	</div> -->
-	{#if storeData?.users.user?.billing.subscriptionInfo.activePeriod}
+	{#if myStoreData?.users.user?.billing.subscriptionInfo.activePeriod}
 		<Benefits />
 	{/if}
-	{#if $user === null}
-		<SignInDialog mode="shown-without-close" />
-	{/if}
-	<!-- <Faq /> -->
 </div>
 
 <style lang="scss">
