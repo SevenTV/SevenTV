@@ -32,11 +32,11 @@
 
 	let { data }: { data: EmoteSet } = $props();
 
-	let selectionMode = $state(false);
-	let selectionMap = $state({});
+	// let selectionMode = $state(false);
+	// let selectionMap = $state({});
 	let editDialogMode: DialogMode = $state("hidden");
-	let copyEmotesDialogMode: DialogMode = $state("hidden");
-	let removeEmotesDialogMode: DialogMode = $state("hidden");
+	// let copyEmotesDialogMode: DialogMode = $state("hidden");
+	// let removeEmotesDialogMode: DialogMode = $state("hidden");
 
 	let query = $state("");
 
@@ -242,9 +242,9 @@
 	<title>{data.name} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
-<EditEmoteSetDialog bind:mode={editDialogMode} bind:data />
+<!-- <EditEmoteSetDialog bind:mode={editDialogMode} bind:data />
 <CopyEmotesDialog bind:mode={copyEmotesDialogMode} />
-<RemoveEmotesDialog bind:mode={removeEmotesDialogMode} />
+<RemoveEmotesDialog bind:mode={removeEmotesDialogMode} /> -->
 <div class="layout">
 	<div class="set-info">
 		<h1>{data.name}</h1>
@@ -262,37 +262,37 @@
 	</div>
 	<div class="controls">
 		<div class="buttons">
-			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnDesktop>
+			<!-- <Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnDesktop>
 				{$t("labels.select")}
 				{#snippet iconRight()}
 					<Toggle bind:value={selectionMode} />
 				{/snippet}
-			</Button>
+			</Button> -->
 			{#if $user && data.kind === EmoteSetKind.Normal}
 				{#snippet loadingSpinner()}
 					<Spinner />
 				{/snippet}
-				<HideOn mobile={selectionMode}>
-					<Button
-						primary
-						onclick={() => setAsActiveSet(isActive ? undefined : data.id)}
-						icon={setActiveLoading ? loadingSpinner : undefined}
-						disabled={setActiveLoading}
-					>
+				<!-- <HideOn mobile={selectionMode}> -->
+				<Button
+					primary
+					onclick={() => setAsActiveSet(isActive ? undefined : data.id)}
+					icon={setActiveLoading ? loadingSpinner : undefined}
+					disabled={setActiveLoading}
+				>
+					{#if isActive}
+						{$t("labels.disable")}
+					{:else}
+						{$t("labels.enable")}
+					{/if}
+					{#snippet iconRight()}
 						{#if isActive}
-							{$t("labels.disable")}
+							<LightningSlash />
 						{:else}
-							{$t("labels.enable")}
+							<Lightning />
 						{/if}
-						{#snippet iconRight()}
-							{#if isActive}
-								<LightningSlash />
-							{:else}
-								<Lightning />
-							{/if}
-						{/snippet}
-					</Button>
-				</HideOn>
+					{/snippet}
+				</Button>
+				<!-- </HideOn> -->
 			{/if}
 			<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
 				{$t("labels.edit")}
@@ -306,19 +306,19 @@
 					<Copy />
 				{/snippet}
 			</Button> -->
-			{#if !selectionMode}
-				<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
-					{#snippet iconRight()}
-						<NotePencil />
-					{/snippet}
-				</Button>
-				<Button secondary hideOnDesktop>
-					{#snippet iconRight()}
-						<Copy />
-					{/snippet}
-				</Button>
-			{/if}
-			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
+			<!-- {#if !selectionMode} -->
+			<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
+				{#snippet iconRight()}
+					<NotePencil />
+				{/snippet}
+			</Button>
+			<Button secondary hideOnDesktop>
+				{#snippet iconRight()}
+					<Copy />
+				{/snippet}
+			</Button>
+			<!-- {/if} -->
+			<!-- <Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
 				{$t("labels.selection_mode")}
 				{#snippet iconRight()}
 					<Toggle bind:value={selectionMode} />
@@ -340,7 +340,7 @@
 						<Trash />
 					{/snippet}
 				</Button>
-			{/if}
+			{/if} -->
 		</div>
 		<div class="buttons">
 			<!-- <Select
@@ -358,12 +358,17 @@
 		</div>
 	</div>
 	<div class="content">
-		<EmoteLoader
+		<!-- <EmoteLoader
 			bind:this={loader}
 			load={(page, perPage) => queryEmotes(query || undefined, page, perPage)}
 			scrollable={false}
 			{selectionMode}
 			bind:selectionMap
+		/> -->
+		<EmoteLoader
+			bind:this={loader}
+			load={(page, perPage) => queryEmotes(query || undefined, page, perPage)}
+			scrollable={false}
 		/>
 	</div>
 </div>
