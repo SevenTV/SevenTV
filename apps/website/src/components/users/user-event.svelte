@@ -19,7 +19,8 @@
 
 {#snippet badge(badge?: Badge | null)}
 	{#if badge}
-		<BadgeComponent {badge} enableDialog />
+		<BadgeComponent inline {badge} enableDialog />
+		{badge.name}
 	{:else}
 		No Badge
 	{/if}
