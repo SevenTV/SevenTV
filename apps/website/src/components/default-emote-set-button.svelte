@@ -12,7 +12,7 @@
 </script>
 
 {#if $user}
-	<Button secondary hideOnMobile onclick={() => ($defaultEmoteSetDialogMode = "shown")}>
+	<Button secondary onclick={() => ($defaultEmoteSetDialogMode = "shown")}>
 		{#snippet icon()}
 			<FolderSimple />
 		{/snippet}
