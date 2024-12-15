@@ -9,8 +9,11 @@
 	import { user } from "$lib/auth";
 	import Banner from "$/components/store/banner.svelte";
 	import StoreSection from "$/components/store/store-section.svelte";
+	import type { PageData } from "./$types";
 
-	let code = $state("");
+	let { data }: { data: PageData } = $props();
+
+	let code = $state(data.code ?? "");
 	let redeemState = $state<"idle" | "loading" | "success">("idle");
 
 	async function submit(e: SubmitEvent) {
