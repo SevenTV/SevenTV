@@ -14,7 +14,7 @@
 	} from "$/gql/graphql";
 	import UserName from "../user-name.svelte";
 	import ChannelPreview from "../channel-preview.svelte";
-	import { variantName } from "$/lib/utils";
+	import { variantUnit } from "$/lib/utils";
 
 	interface Props {
 		mode: DialogMode;
@@ -178,24 +178,15 @@
 
 		giftLoading = false;
 	}
-
-	function variantUnit(variant: SubscriptionProductVariant) {
-		switch (variant.kind) {
-			case SubscriptionProductKind.Monthly:
-				return "month";
-			case SubscriptionProductKind.Yearly:
-				return "year";
-		}
-	}
 </script>
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>Gift {variantName(variant)}</h1>
+		<h1>Gift 1 {variantUnit(variant)}</h1>
 		<hr />
 		{#if recipient}
 			<p>
-				Gift 1 {variantUnit(variant)} subscription to <UserName user={recipient} />.
+				Gift 1 {variantUnit(variant)} to <UserName user={recipient} />.
 			</p>
 		{:else}
 			<TextInput type="text" placeholder="Search User" bind:value={query}>
