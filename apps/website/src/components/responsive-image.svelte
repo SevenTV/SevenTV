@@ -2,11 +2,11 @@
 	// From least supported to best supported
 	const FORMAT_SORT_ORDER = ["image/avif", "image/webp", "image/gif", "image/png"];
 
-	export function formatSortIndex(image: Image): number {
+	export function formatSortIndex(image: Image, splitStatic: boolean): number {
 		let index = FORMAT_SORT_ORDER.indexOf(image.mime);
 
 		// Static images first
-		if (image.frameCount > 1) {
+		if (splitStatic && image.frameCount > 1) {
 			index += FORMAT_SORT_ORDER.length;
 		}
 
@@ -69,7 +69,7 @@
 				.filter((i) => !(reducedMotion === "reduced-motion-enabled" && i.frameCount > 1))
 				.reduce(
 					(res, i) => {
-						const index = formatSortIndex(i);
+						const index = formatSortIndex(i, reducedMotion === "reduced-motion-system");
 						if (!res[index]) {
 							// Always true
 							let media = "(min-width: 0px)";

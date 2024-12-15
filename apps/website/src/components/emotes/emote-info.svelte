@@ -93,7 +93,7 @@
 				result[image.scale] = [];
 			}
 
-			result[image.scale][formatSortIndex(image)] = image;
+			result[image.scale][formatSortIndex(image, true)] = image;
 		}
 
 		return result;

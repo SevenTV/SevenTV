@@ -305,10 +305,12 @@ td {
 	}
 }
 
-@media (prefers-reduced-motion: reduce) {
-	* {
-		transition: none !important;
-		animation: none !important;
+html:not(.reduced-motion-disabled) {
+	@media (prefers-reduced-motion: reduce) {
+		* {
+			transition: none !important;
+			animation: none !important;
+		}
 	}
 }
 
