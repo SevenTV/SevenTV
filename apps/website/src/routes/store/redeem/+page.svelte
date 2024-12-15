@@ -10,6 +10,8 @@
 	import Banner from "$/components/store/banner.svelte";
 	import StoreSection from "$/components/store/store-section.svelte";
 	import type { PageData } from "./$types";
+	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
+	import { signInDialogMode } from "$/lib/layout";
 
 	let { data }: { data: PageData } = $props();
 
@@ -50,6 +52,12 @@
 			redeemState = "idle";
 		}
 	}
+
+	$effect(() => {
+		if ($user === null) {
+			$signInDialogMode = "shown-without-close";
+		}
+	});
 </script>
 
 <svelte:head>
