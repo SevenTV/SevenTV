@@ -1,9 +1,22 @@
+<script>
+	import Button from "$/components/input/button.svelte";
+	import { ArrowRight } from "phosphor-svelte";
+
+</script>
 <svelte:head>
 	<title>7TV Winter Games & Gift Sub Event</title>
 </svelte:head>
 
 <div class="layout">
-	<h1>7TV Winter Games & Gift Sub Event</h1>
+	<div class="heading">
+		<h1>7TV Winter Games & Gift Sub Event</h1>
+		<Button href="https://event.7tv.app/signup" primary>
+			Sign Up
+			{#snippet iconRight()}
+				<ArrowRight />
+			{/snippet}
+		</Button>
+	</div>
 
 	<p>
 		Celebrate the season with 7TV's Minecraft Hunger Games Tournament and special sub-gifting event!
@@ -166,6 +179,12 @@
 
 	hr {
 		margin: 1rem 0;
+	}
+
+	.heading {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 	}
 
 	h1 {

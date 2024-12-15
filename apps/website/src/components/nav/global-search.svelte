@@ -179,6 +179,10 @@
 
 	let input: ReturnType<typeof TextInput>;
 
+	export function focus() {
+		input?.focus();
+	}
+
 	function onkeydown(event: KeyboardEvent) {
 		// Handle Ctrl + K
 		if (event.ctrlKey && event.key === "k") {
