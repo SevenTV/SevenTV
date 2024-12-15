@@ -23,6 +23,7 @@
 	import type { Snippet } from "svelte";
 	import ErrorDialog from "$/components/dialogs/error-dialog.svelte";
 	import { currentError, errorDialogMode } from "$/lib/error";
+	import { PUBLIC_DISCORD_LINK, PUBLIC_OLD_WEBSITE_LINK } from "$env/static/public";
 
 	let { children }: { children: Snippet } = $props();
 
@@ -40,8 +41,10 @@
 		<div class="alert-bar">
 			<Warning />
 			<span>Under construction</span>
-			<span class="small">Give us feedback on the new site in the <a href="https://discord.gg/7tv">Discord</a>.</span>
-			<span class="small">Click <a href="https://old.7tv.app">here</a> to go back.</span>
+			<span class="small">
+				Give us feedback on the new site in the <a href={PUBLIC_DISCORD_LINK}>Discord</a>.
+				Click <a href={PUBLIC_OLD_WEBSITE_LINK}>here</a> to go back.
+			</span>
 		</div>
 		<TopNav />
 	</header>

@@ -21,7 +21,7 @@
 	import { user } from "$/lib/auth";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import type { PageData } from "./$types";
-	import moment from "moment";
+	import { isXmasEvent } from "$/lib/xmas";
 
 	let { data }: { data: PageData } = $props();
 
@@ -302,7 +302,7 @@
 			Your purchase was successfully completed
 		</div>
 	{/if}
-	{#if moment().isAfter(moment("2024-12-14T00:00:00Z")) && moment().isBefore(moment("2024-12-27T00:00:00Z"))}
+	{#if isXmasEvent()}
 		<div class="bar">
 			<Gift />
 			X-MAS 2024 EVENT: GIFT 1 SUB TO GET A SPECIAL BADGE
