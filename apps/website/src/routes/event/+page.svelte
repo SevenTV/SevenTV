@@ -120,7 +120,7 @@
 
 	<hr />
 
-	<h3>FAQs</h3>
+	<h2>FAQs</h2>
 
 	<h4>When will the tournament take place?</h4>
 
@@ -159,33 +159,32 @@
 
 <style lang="scss">
 	.layout {
-		margin-inline: auto;
-		max-width: 70rem;
-
-		margin-bottom: 2rem;
+		max-width: 60rem;
+		margin: 2rem auto;
+		padding: 0 1rem;
 	}
 
 	hr {
-		margin-block: 1rem;
+		margin: 1rem 0;
 	}
 
 	h1 {
-		margin-top: 1.5rem;
-		margin-bottom: 1.25rem;
+		margin: 1.4rem 0;
+		margin-bottom: 1rem;
 	}
 
 	h2 {
-		margin-top: 1rem;
-		margin-bottom: 0.75rem;
+		margin: 1.2rem 0;
+		margin-bottom: 0.8rem;
 	}
 
 	h3 {
-		margin-top: 0.75rem;
-		margin-bottom: 0.5rem;
+		margin: 1rem 0;
+		margin-bottom: 0.6rem;
 	}
 
 	h4 {
-		margin-top: 0.5rem;
-		margin-bottom: 0.25rem;
+		margin: 0.8rem 0;
+		margin-bottom: 0.4rem;
 	}
 </style>

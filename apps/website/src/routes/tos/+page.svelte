@@ -298,6 +298,7 @@
 	.page {
 		max-width: 60rem;
 		margin: 2rem auto;
+		padding: 0 1rem;
 	}
 
 	h1 {
