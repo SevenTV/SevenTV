@@ -66,7 +66,15 @@
 			images: Image[];
 		}[] = Object.values(
 			images
-				.filter((i) => !(reducedMotion === "reduced-motion-enabled" && i.frameCount > 1))
+				.filter((i) => {
+					if (reducedMotion === "reduced-motion-enabled" && animated) {
+						return i.frameCount === 1;
+					} else if (reducedMotion === "reduced-motion-disabled" && animated) {
+						return i.frameCount > 1;
+					} else {
+						return true;
+					}
+				})
 				.reduce(
 					(res, i) => {
 						const index = formatSortIndex(i, reducedMotion === "reduced-motion-system");
