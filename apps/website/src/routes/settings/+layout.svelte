@@ -4,8 +4,6 @@
 	import { Key, PencilSimple, CreditCard, ArrowSquareOut, PaintBrushBroad } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
-	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
-	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
 	import UserProfilePicture from "$/components/user-profile-picture.svelte";
 	import { PUBLIC_STRIPE_CUSTOMER_PORTAL } from "$env/static/public";

@@ -5,8 +5,6 @@
 	import nnysPlaceholder from "$assets/nnys.webp?url";
 	import { isXmasEvent } from "$/lib/xmas";
 	import moment from "moment";
-
-	const isVotingPeriod = new Date() < new Date("2024-12-20");
 </script>
 
 <div>

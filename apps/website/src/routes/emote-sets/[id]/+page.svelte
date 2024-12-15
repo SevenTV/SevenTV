@@ -1,34 +1,23 @@
 <script lang="ts">
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags, { emoteSetToFlags } from "$/components/flags.svelte";
-	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
-	import CopyEmotesDialog from "$/components/dialogs/copy-emotes-dialog.svelte";
-	import RemoveEmotesDialog from "$/components/dialogs/remove-emotes-dialog.svelte";
 	import { t } from "svelte-i18n";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
 	import { EmoteSetKind, type EmoteSet, type EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import Button from "$/components/input/button.svelte";
-	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { emotesLayout } from "$/lib/layout";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import {
-		Copy,
-		Lightning,
-		LightningSlash,
-		MagnifyingGlass,
-		NotePencil,
-		Trash,
-	} from "phosphor-svelte";
+	import { Copy, Lightning, LightningSlash, MagnifyingGlass, NotePencil } from "phosphor-svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { untrack } from "svelte";
-	import HideOn from "$/components/hide-on.svelte";
 	import { user } from "$/lib/auth";
 	import { setActiveSet } from "$/lib/userMutations";
 	import Spinner from "$/components/spinner.svelte";
+	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 
 	let { data }: { data: EmoteSet } = $props();
 
@@ -242,8 +231,8 @@
 	<title>{data.name} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
-<!-- <EditEmoteSetDialog bind:mode={editDialogMode} bind:data />
-<CopyEmotesDialog bind:mode={copyEmotesDialogMode} />
+<EditEmoteSetDialog bind:mode={editDialogMode} bind:data />
+<!-- <CopyEmotesDialog bind:mode={copyEmotesDialogMode} />
 <RemoveEmotesDialog bind:mode={removeEmotesDialogMode} /> -->
 <div class="layout">
 	<div class="set-info">
