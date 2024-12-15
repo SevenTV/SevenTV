@@ -73,7 +73,7 @@
 						if (!res[index]) {
 							// Always true
 							let media = "(min-width: 0px)";
-							if (i.frameCount === 1 && animated) {
+							if (reducedMotion === "reduced-motion-system" && i.frameCount === 1 && animated) {
 								media += " and (prefers-reduced-motion: reduce)";
 							}
 							res[index] = { type: i.mime, srcSet: "", media, images: [] };
