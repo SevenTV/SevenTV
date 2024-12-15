@@ -10,18 +10,32 @@
 	import Banner from "$/components/store/banner.svelte";
 	import StoreSection from "$/components/store/store-section.svelte";
 	import type { PageData } from "./$types";
-	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import { signInDialogMode } from "$/lib/layout";
+	import { page } from "$app/stores";
+	import { goto } from "$app/navigation";
 
 	let { data }: { data: PageData } = $props();
 
 	let code = $state(data.code ?? "");
 	let redeemState = $state<"idle" | "loading" | "success">("idle");
 
+	$effect(() => {
+		let url = new URL($page.url);
+
+		if (code) {
+			url.searchParams.set("code", code);
+		} else {
+			url.searchParams.delete("code");
+		}
+
+		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+	});
+
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 
 		if (!$user) {
+			$signInDialogMode = "shown";
 			return;
 		}
 
@@ -52,12 +66,6 @@
 			redeemState = "idle";
 		}
 	}
-
-	$effect(() => {
-		if ($user === null) {
-			$signInDialogMode = "shown-without-close";
-		}
-	});
 </script>
 
 <svelte:head>
