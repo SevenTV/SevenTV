@@ -18,7 +18,7 @@
 	import Spinner from "../spinner.svelte";
 	import type { DialogMode } from "../dialogs/dialog.svelte";
 	import CancelSubscriptionDialog from "../dialogs/cancel-subscription-dialog.svelte";
-	import { variantName } from "$/lib/utils";
+	import { variantName, variantPrice, variantUnit } from "$/lib/utils";
 	import GiftSubscriptionDialog from "../dialogs/gift-subscription-dialog.svelte";
 
 	interface Props {
@@ -218,7 +218,7 @@
 										<Star />
 									{/if}
 								{/snippet}
-								{variantName(variant)}
+								{variantName(variant)} – {variantPrice(variant)}
 							</Button>
 						{/each}
 					{/snippet}
@@ -251,7 +251,7 @@
 							{#snippet icon()}
 								<Star />
 							{/snippet}
-							{variantName(variant)}
+							1 {variantUnit(variant)} – {variantPrice(variant)}
 						</Button>
 					{/each}
 				{/snippet}

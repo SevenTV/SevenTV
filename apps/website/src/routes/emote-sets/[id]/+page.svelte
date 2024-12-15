@@ -1,42 +1,31 @@
 <script lang="ts">
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags, { emoteSetToFlags } from "$/components/flags.svelte";
-	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
-	import CopyEmotesDialog from "$/components/dialogs/copy-emotes-dialog.svelte";
-	import RemoveEmotesDialog from "$/components/dialogs/remove-emotes-dialog.svelte";
 	import { t } from "svelte-i18n";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
 	import { EmoteSetKind, type EmoteSet, type EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import Button from "$/components/input/button.svelte";
-	import Toggle from "$/components/input/toggle.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { emotesLayout } from "$/lib/layout";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import {
-		Copy,
-		Lightning,
-		LightningSlash,
-		MagnifyingGlass,
-		NotePencil,
-		Trash,
-	} from "phosphor-svelte";
+	import { Copy, Lightning, LightningSlash, MagnifyingGlass, NotePencil } from "phosphor-svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { untrack } from "svelte";
-	import HideOn from "$/components/hide-on.svelte";
 	import { user } from "$/lib/auth";
 	import { setActiveSet } from "$/lib/userMutations";
 	import Spinner from "$/components/spinner.svelte";
+	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
 
 	let { data }: { data: EmoteSet } = $props();
 
-	let selectionMode = $state(false);
-	let selectionMap = $state({});
+	// let selectionMode = $state(false);
+	// let selectionMap = $state({});
 	let editDialogMode: DialogMode = $state("hidden");
-	let copyEmotesDialogMode: DialogMode = $state("hidden");
-	let removeEmotesDialogMode: DialogMode = $state("hidden");
+	// let copyEmotesDialogMode: DialogMode = $state("hidden");
+	// let removeEmotesDialogMode: DialogMode = $state("hidden");
 
 	let query = $state("");
 
@@ -243,8 +232,8 @@
 </svelte:head>
 
 <EditEmoteSetDialog bind:mode={editDialogMode} bind:data />
-<CopyEmotesDialog bind:mode={copyEmotesDialogMode} />
-<RemoveEmotesDialog bind:mode={removeEmotesDialogMode} />
+<!-- <CopyEmotesDialog bind:mode={copyEmotesDialogMode} />
+<RemoveEmotesDialog bind:mode={removeEmotesDialogMode} /> -->
 <div class="layout">
 	<div class="set-info">
 		<h1>{data.name}</h1>
@@ -262,37 +251,37 @@
 	</div>
 	<div class="controls">
 		<div class="buttons">
-			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnDesktop>
+			<!-- <Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnDesktop>
 				{$t("labels.select")}
 				{#snippet iconRight()}
 					<Toggle bind:value={selectionMode} />
 				{/snippet}
-			</Button>
+			</Button> -->
 			{#if $user && data.kind === EmoteSetKind.Normal}
 				{#snippet loadingSpinner()}
 					<Spinner />
 				{/snippet}
-				<HideOn mobile={selectionMode}>
-					<Button
-						primary
-						onclick={() => setAsActiveSet(isActive ? undefined : data.id)}
-						icon={setActiveLoading ? loadingSpinner : undefined}
-						disabled={setActiveLoading}
-					>
+				<!-- <HideOn mobile={selectionMode}> -->
+				<Button
+					primary
+					onclick={() => setAsActiveSet(isActive ? undefined : data.id)}
+					icon={setActiveLoading ? loadingSpinner : undefined}
+					disabled={setActiveLoading}
+				>
+					{#if isActive}
+						{$t("labels.disable")}
+					{:else}
+						{$t("labels.enable")}
+					{/if}
+					{#snippet iconRight()}
 						{#if isActive}
-							{$t("labels.disable")}
+							<LightningSlash />
 						{:else}
-							{$t("labels.enable")}
+							<Lightning />
 						{/if}
-						{#snippet iconRight()}
-							{#if isActive}
-								<LightningSlash />
-							{:else}
-								<Lightning />
-							{/if}
-						{/snippet}
-					</Button>
-				</HideOn>
+					{/snippet}
+				</Button>
+				<!-- </HideOn> -->
 			{/if}
 			<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
 				{$t("labels.edit")}
@@ -306,19 +295,19 @@
 					<Copy />
 				{/snippet}
 			</Button> -->
-			{#if !selectionMode}
-				<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
-					{#snippet iconRight()}
-						<NotePencil />
-					{/snippet}
-				</Button>
-				<Button secondary hideOnDesktop>
-					{#snippet iconRight()}
-						<Copy />
-					{/snippet}
-				</Button>
-			{/if}
-			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
+			<!-- {#if !selectionMode} -->
+			<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
+				{#snippet iconRight()}
+					<NotePencil />
+				{/snippet}
+			</Button>
+			<Button secondary hideOnDesktop>
+				{#snippet iconRight()}
+					<Copy />
+				{/snippet}
+			</Button>
+			<!-- {/if} -->
+			<!-- <Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
 				{$t("labels.selection_mode")}
 				{#snippet iconRight()}
 					<Toggle bind:value={selectionMode} />
@@ -340,7 +329,7 @@
 						<Trash />
 					{/snippet}
 				</Button>
-			{/if}
+			{/if} -->
 		</div>
 		<div class="buttons">
 			<!-- <Select
@@ -358,12 +347,17 @@
 		</div>
 	</div>
 	<div class="content">
-		<EmoteLoader
+		<!-- <EmoteLoader
 			bind:this={loader}
 			load={(page, perPage) => queryEmotes(query || undefined, page, perPage)}
 			scrollable={false}
 			{selectionMode}
 			bind:selectionMap
+		/> -->
+		<EmoteLoader
+			bind:this={loader}
+			load={(page, perPage) => queryEmotes(query || undefined, page, perPage)}
+			scrollable={false}
 		/>
 	</div>
 </div>

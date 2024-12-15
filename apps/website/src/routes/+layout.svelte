@@ -42,8 +42,8 @@
 			<Warning />
 			<span>Under construction</span>
 			<span class="small">
-				Give us feedback on the new site in the <a href={PUBLIC_DISCORD_LINK}>Discord</a>.
-				Click <a href={PUBLIC_OLD_WEBSITE_LINK}>here</a> to go back.
+				Give us feedback on the new site in the <a href={PUBLIC_DISCORD_LINK}>Discord</a>. Click
+				<a href={PUBLIC_OLD_WEBSITE_LINK}>here</a> to go back.
 			</span>
 		</div>
 		<TopNav />

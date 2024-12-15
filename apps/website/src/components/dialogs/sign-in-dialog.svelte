@@ -5,7 +5,7 @@
 	import TwitchLogo from "../icons/twitch-logo.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
-	import { PUBLIC_REST_API_V4 } from "$env/static/public";
+	import { PUBLIC_DISCORD_LINK, PUBLIC_REST_API_V4 } from "$env/static/public";
 	import { page } from "$app/stores";
 
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
@@ -43,7 +43,7 @@
 				<GoogleLogo />
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
 			</Button> -->
-			<a class="trouble" href="/trouble" onclick={() => (mode = "hidden")}>
+			<a class="trouble" href={PUBLIC_DISCORD_LINK}>
 				{$t("dialogs.sign_in.trouble")}
 			</a>
 		</div>

@@ -95,7 +95,7 @@
 					<progress class="bar" value={percentage} max="100"> </progress>
 				</div>
 				<div class="badge">
-					{#if progress.nextBadge}
+					{#if progress.nextBadge && progress.nextBadge.badge}
 						<Badge badge={progress.nextBadge.badge} size={2.25 * 16} enableDialog />
 						<span>{progress.nextBadge.badge.name}</span>
 					{:else}

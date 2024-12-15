@@ -4,8 +4,6 @@
 	import { Key, PencilSimple, CreditCard, ArrowSquareOut, PaintBrushBroad } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
-	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
-	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
 	import UserProfilePicture from "$/components/user-profile-picture.svelte";
 	import { PUBLIC_STRIPE_CUSTOMER_PORTAL } from "$env/static/public";
@@ -20,32 +18,30 @@
 	<title>{$t("common.settings")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
-{#if $user === undefined}
-	<Spinner />
-{:else if $user === null}
-	<SignInDialog mode="shown-without-close" />
-{:else}
-	<div class="side-bar-layout">
-		<aside class="side-bar">
-			<h1>{$t("common.settings")}</h1>
-			<nav class="link-list">
+<div class="side-bar-layout">
+	<aside class="side-bar">
+		<h1>{$t("common.settings")}</h1>
+		<nav class="link-list">
+			{#if $user}
 				<TabLink title={$t("pages.settings.account.title")} href="/settings" big>
 					<Key />
 					{#snippet active()}
 						<Key weight="fill" />
 					{/snippet}
 				</TabLink>
-				<TabLink
-					title="Appearance"
-					href="/settings/appearance"
-					matcher={(page, href) => !!href && page.url.pathname.startsWith(href)}
-					big
-				>
-					<PaintBrushBroad />
-					{#snippet active()}
-						<PaintBrushBroad weight="fill" />
-					{/snippet}
-				</TabLink>
+			{/if}
+			<TabLink
+				title="Appearance"
+				href="/settings/appearance"
+				matcher={(page, href) => !!href && page.url.pathname.startsWith(href)}
+				big
+			>
+				<PaintBrushBroad />
+				{#snippet active()}
+					<PaintBrushBroad weight="fill" />
+				{/snippet}
+			</TabLink>
+			{#if $user}
 				<TabLink
 					title={$t("common.editors")}
 					href={$pendingEditorFor ? "/settings/editors/editing-for" : "/settings/editors"}
@@ -75,21 +71,23 @@
 						{/snippet}
 					</TabLink>
 				{/if}
-			</nav>
+			{/if}
+		</nav>
+		{#if $user}
 			<div class="account hide-on-mobile">
 				<UserProfilePicture user={$user} size={2.5 * 16} />
 				<span class="name">
 					<UserName user={$user} enablePaintDialog />
 				</span>
 			</div>
-		</aside>
-		<div class="content">
-			<div class="width-wrapper">
-				{@render children()}
-			</div>
+		{/if}
+	</aside>
+	<div class="content">
+		<div class="width-wrapper">
+			{@render children()}
 		</div>
 	</div>
-{/if}
+</div>
 
 <style lang="scss">
 	.account {

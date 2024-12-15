@@ -29,22 +29,27 @@ export function filterRoles(roles: Role[]) {
 }
 
 export function variantName(variant: SubscriptionProductVariant) {
-	let name;
-
 	switch (variant.kind) {
 		case SubscriptionProductKind.Monthly:
-			name = "Monthly";
-			break;
+			return "Monthly";
 		case SubscriptionProductKind.Yearly:
-			name = "Yearly";
-			break;
+			return "Yearly";
 		default:
-			name = variant.kind;
+			return variant.kind;
 	}
+}
 
-	const price = priceFormat(variant.price.currency).format(variant.price.amount / 100);
+export function variantPrice(variant: SubscriptionProductVariant) {
+	return priceFormat(variant.price.currency).format(variant.price.amount / 100);
+}
 
-	return `${name} – ${price}`;
+export function variantUnit(variant: SubscriptionProductVariant) {
+	switch (variant.kind) {
+		case SubscriptionProductKind.Monthly:
+			return "month";
+		case SubscriptionProductKind.Yearly:
+			return "year";
+	}
 }
 
 export function compareTags(a: string[], b: string[]) {

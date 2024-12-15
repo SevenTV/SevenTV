@@ -9,6 +9,7 @@
 		Download,
 		Trash,
 		Flag,
+		CaretRight,
 	} from "phosphor-svelte";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags, { emoteToFlags } from "$/components/flags.svelte";
@@ -92,7 +93,7 @@
 				result[image.scale] = [];
 			}
 
-			result[image.scale][formatSortIndex(image)] = image;
+			result[image.scale][formatSortIndex(image, true)] = image;
 		}
 
 		return result;
@@ -146,6 +147,11 @@
 		{/if}
 	</div>
 {/if}
+
+{#snippet caret()}
+	<CaretRight />
+{/snippet}
+
 <div class="emote-info">
 	<div class="heading">
 		{#if data}
@@ -234,7 +240,7 @@
 									</MenuButton>
 								{/if}
 								{#if formats && formats.length > 1}
-									<MenuButton showCaret onclick={() => (moreMenuMode = "download-format")}>
+									<MenuButton iconRight={caret} onclick={() => (moreMenuMode = "download-format")}>
 										<Download />
 										{$t("labels.download")}
 									</MenuButton>
@@ -257,7 +263,7 @@
 								{/if}
 							{:else if moreMenuMode === "download-format"}
 								{#each formats ?? [] as format}
-									<MenuButton showCaret onclick={() => clickFormat(format)}>
+									<MenuButton iconRight={caret} onclick={() => clickFormat(format)}>
 										{#if format === "image/avif"}
 											AVIF
 										{:else if format === "image/webp"}

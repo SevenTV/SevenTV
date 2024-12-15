@@ -15,14 +15,30 @@
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import GlobalSearch from "./global-search.svelte";
 	import UserName from "../user-name.svelte";
+	import mouseTrap from "$/lib/mouseTrap";
+	import { afterNavigate } from "$app/navigation";
 
 	let cartDialogMode: DialogMode = $state("hidden");
+
+	let mobileSearchShown = $state(false);
+
+	let globalSearch: ReturnType<typeof GlobalSearch>;
+
+	$effect(() => {
+		if (mobileSearchShown) {
+			globalSearch?.focus();
+		}
+	});
+
+	afterNavigate(() => {
+		mobileSearchShown = false;
+	});
 </script>
 
 <CartDialog bind:mode={cartDialogMode} />
 <nav>
 	<div class="links">
-		<a class="home" href="/">
+		<a class="home" href="/" class:hide-on-mobile={mobileSearchShown}>
 			<Logo />
 		</a>
 		<HideOn mobile>
@@ -36,13 +52,17 @@
 			/>
 		</HideOn>
 	</div>
-	<HideOn mobile>
-		<GlobalSearch />
+	<HideOn mobile={!mobileSearchShown}>
+		<div use:mouseTrap={() => (mobileSearchShown = false)} style="display:contents">
+			<GlobalSearch bind:this={globalSearch} />
+		</div>
 	</HideOn>
 	<div class="user-actions">
-		<Button hideOnDesktop>
-			<MagnifyingGlass />
-		</Button>
+		{#if !mobileSearchShown}
+			<Button hideOnDesktop onclick={() => (mobileSearchShown = true)}>
+				<MagnifyingGlass />
+			</Button>
+		{/if}
 		{#if $user}
 			<!-- <DropDown hideOnMobile>
 				<Button>
@@ -82,7 +102,11 @@
 				</Button>
 			{/if} -->
 
-			<Button hideOnDesktop onclick={() => ($uploadDialogMode = "shown")}>
+			<Button
+				hideOnDesktop
+				hideOnMobile={mobileSearchShown}
+				onclick={() => ($uploadDialogMode = "shown")}
+			>
 				{#snippet icon()}
 					<PlusSquare />
 				{/snippet}
@@ -121,22 +145,27 @@
 			</HideOn>
 		{/if}
 
-		{#if $user}
-			<button class="profile hide-on-desktop" onclick={() => ($showMobileMenu = !$showMobileMenu)}>
-				<UserProfilePicture user={$user} size={32} />
-			</button>
-		{:else if $user === null}
-			<Button primary onclick={() => ($signInDialogMode = "shown")}>
-				{$t("common.sign_in")}
-			</Button>
-		{/if}
-		<!-- Only show when logged out on mobile -->
-		{#if $user === null}
-			<Button hideOnDesktop onclick={() => ($showMobileMenu = !$showMobileMenu)}>
-				{#snippet icon()}
-					<List />
-				{/snippet}
-			</Button>
+		{#if !mobileSearchShown}
+			{#if $user}
+				<button
+					class="profile hide-on-desktop"
+					onclick={() => ($showMobileMenu = !$showMobileMenu)}
+				>
+					<UserProfilePicture user={$user} size={32} />
+				</button>
+			{:else if $user === null}
+				<Button primary onclick={() => ($signInDialogMode = "shown")}>
+					{$t("common.sign_in")}
+				</Button>
+			{/if}
+			<!-- Only show when logged out on mobile -->
+			{#if $user === null}
+				<Button hideOnDesktop onclick={() => ($showMobileMenu = !$showMobileMenu)}>
+					{#snippet icon()}
+						<List />
+					{/snippet}
+				</Button>
+			{/if}
 		{/if}
 	</div>
 </nav>

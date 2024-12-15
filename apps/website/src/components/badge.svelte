@@ -9,10 +9,11 @@
 		badge: Badge;
 		size?: number;
 		enableDialog?: boolean;
+		inline?: boolean;
 	} & HTMLAttributes<HTMLButtonElement> &
 		HTMLAttributes<HTMLDivElement>;
 
-	let { badge, size = 1.25 * 16, enableDialog = false, ...restProps }: Props = $props();
+	let { badge, size = 1.25 * 16, enableDialog = false, inline = false, ...restProps }: Props = $props();
 
 	let dialogMode: DialogMode = $state("hidden");
 
@@ -23,11 +24,22 @@
 
 {#if enableDialog}
 	<BadgeDialog bind:mode={dialogMode} {badge} />
-	<button onclick={showDialog} style="display: flex;" title={badge.description} {...restProps}>
+	<button onclick={showDialog} class="badge" class:inline title={badge.description} {...restProps}>
 		<ResponsiveImage images={badge.images} width={size} height={size} />
 	</button>
 {:else}
-	<div style="display: flex;" title={badge.description} {...restProps}>
+	<div class="badge" class:inline title={badge.description} {...restProps}>
 		<ResponsiveImage images={badge.images} width={size} height={size} />
 	</div>
 {/if}
+
+<style lang="scss">
+	.badge {
+		display: flex;
+
+		&.inline {
+			display: inline-flex;
+			vertical-align: middle;
+		}
+	}
+</style>

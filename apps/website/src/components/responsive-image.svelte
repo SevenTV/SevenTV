@@ -2,11 +2,11 @@
 	// From least supported to best supported
 	const FORMAT_SORT_ORDER = ["image/avif", "image/webp", "image/gif", "image/png"];
 
-	export function formatSortIndex(image: Image): number {
+	export function formatSortIndex(image: Image, splitStatic: boolean): number {
 		let index = FORMAT_SORT_ORDER.indexOf(image.mime);
 
 		// Static images first
-		if (image.frameCount > 1) {
+		if (splitStatic && image.frameCount > 1) {
 			index += FORMAT_SORT_ORDER.length;
 		}
 
@@ -66,14 +66,24 @@
 			images: Image[];
 		}[] = Object.values(
 			images
-				.filter((i) => !(reducedMotion === "reduced-motion-enabled" && i.frameCount > 1))
+				.filter((i) => {
+					if (reducedMotion === "reduced-motion-enabled" && animated) {
+						// Return only static images
+						return i.frameCount === 1;
+					} else if (reducedMotion === "reduced-motion-disabled" && animated) {
+						// Return only animated images
+						return i.frameCount > 1;
+					} else {
+						return true;
+					}
+				})
 				.reduce(
 					(res, i) => {
-						const index = formatSortIndex(i);
+						const index = formatSortIndex(i, reducedMotion === "reduced-motion-system");
 						if (!res[index]) {
 							// Always true
 							let media = "(min-width: 0px)";
-							if (i.frameCount === 1 && animated) {
+							if (reducedMotion === "reduced-motion-system" && i.frameCount === 1 && animated) {
 								media += " and (prefers-reduced-motion: reduce)";
 							}
 							res[index] = { type: i.mime, srcSet: "", media, images: [] };

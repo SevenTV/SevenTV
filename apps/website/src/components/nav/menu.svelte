@@ -6,6 +6,7 @@
 	import {
 		CaretLeft,
 		CaretRight,
+		Check,
 		Gear,
 		GlobeHemisphereWest,
 		House,
@@ -57,8 +58,15 @@
 			});
 	}
 
-	let reversedRoles = $derived(filterRoles($user?.roles || []));
+	let highestRole = $derived(filterRoles($user?.roles || [])[0]);
 </script>
+
+{#snippet caret()}
+	<CaretRight />
+{/snippet}
+{#snippet check()}
+	<Check />
+{/snippet}
 
 <nav class="menu" transition:fade={{ duration: 100 }}>
 	{#if menu === "root"}
@@ -68,13 +76,10 @@
 				<span class="name">
 					<UserName user={$user} />
 				</span>
-				<div class="roles">
-					{#each reversedRoles as role}
-						<Role {role} />
-					{/each}
-				</div>
-				<div class="caret">
-					<CaretRight size={1.2 * 16} />
+				<div class="role">
+					{#if highestRole}
+						<Role roleData={highestRole} />
+					{/if}
 				</div>
 			</a>
 			<hr class="hide-on-mobile" />
@@ -115,7 +120,7 @@
 				<GlobeHemisphereWest />
 				{$t("common.language")}
 			</MenuButton> -->
-			<MenuButton showCaret onclick={(e) => setMenu(e, "theme")}>
+			<MenuButton iconRight={caret} onclick={(e) => setMenu(e, "theme")}>
 				{#if $theme === "system-theme"}
 					<Sliders />
 				{:else if $theme === "light-theme"}
@@ -125,27 +130,17 @@
 				{/if}
 				{$t("common.theme")}
 			</MenuButton>
-			{#if $user}
-				<MenuButton href="/settings" onclick={onCloseRequest}>
-					<Gear />
-					{$t("common.settings")}
-					<NumberBadge count={$pendingEditorFor} />
-				</MenuButton>
-			{/if}
+			<MenuButton href="/settings" onclick={onCloseRequest}>
+				<Gear />
+				{$t("common.settings")}
+				<NumberBadge count={$pendingEditorFor} />
+			</MenuButton>
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
 			<!-- <MenuButton href={PUBLIC_DEVELOPER_PORTAL}>
 				<Code />
 				{$t("common.developer_portal")}
-			</MenuButton> -->
-			<!-- <MenuButton href="/contact">
-				<ChatDots />
-				{$t("common.contact")}
-			</MenuButton> -->
-			<!-- <MenuButton href="/faq">
-				<Question />
-				{$t("common.faq_short")}
 			</MenuButton> -->
 			<MenuButton href="/privacy">
 				<LockSimple />
@@ -188,15 +183,24 @@
 			{$t("common.theme")}
 		</MenuButton>
 		<div class="link-list">
-			<MenuButton onclick={() => setTheme("system-theme")}>
+			<MenuButton
+				onclick={() => setTheme("system-theme")}
+				iconRight={$theme === "system-theme" ? check : undefined}
+			>
 				<Sliders />
 				{$t("themes.system")}
 			</MenuButton>
-			<MenuButton onclick={() => setTheme("dark-theme")}>
+			<MenuButton
+				onclick={() => setTheme("dark-theme")}
+				iconRight={$theme === "dark-theme" ? check : undefined}
+			>
 				<Moon />
 				{$t("themes.dark")}
 			</MenuButton>
-			<MenuButton onclick={() => setTheme("light-theme")}>
+			<MenuButton
+				onclick={() => setTheme("light-theme")}
+				iconRight={$theme === "light-theme" ? check : undefined}
+			>
 				<Sun />
 				{$t("themes.light")}
 			</MenuButton>
@@ -222,7 +226,7 @@
 		border-radius: 0.5rem;
 
 		display: grid;
-		grid-template-columns: auto 1fr auto;
+		grid-template-columns: auto 1fr;
 		grid-template-rows: auto auto;
 		align-items: center;
 		row-gap: 0.5rem;
@@ -234,19 +238,8 @@
 			font-weight: 600;
 		}
 
-		.roles {
+		.role {
 			grid-row: 2;
-
-			display: flex;
-			flex-wrap: wrap;
-			gap: 0.25rem;
-		}
-
-		.caret {
-			grid-row: 1 / -1;
-			justify-self: end;
-
-			color: var(--text);
 		}
 
 		&:hover,

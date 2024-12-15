@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { UserEvent, Paint, EmoteSet } from "$/gql/graphql";
+	import type { UserEvent, Paint, EmoteSet, Badge } from "$/gql/graphql";
 	import {
 		FolderSimple,
 		IconContext,
@@ -12,9 +12,19 @@
 	import moment from "moment/min/moment-with-locales";
 	import FromNow from "$/components/from-now.svelte";
 	import PaintComponent from "../paint.svelte";
+	import BadgeComponent from "../badge.svelte";
 
 	let { event }: { event: UserEvent } = $props();
 </script>
+
+{#snippet badge(badge?: Badge | null)}
+	{#if badge}
+		<BadgeComponent inline {badge} enableDialog />
+		{badge.name}
+	{:else}
+		No Badge
+	{/if}
+{/snippet}
 
 {#snippet paint(paint?: Paint | null)}
 	{#if paint}
@@ -54,7 +64,9 @@
 		{:else if event.data.__typename === "EventUserDataChangeActiveBadge"}
 			<PaintBrush />
 			<span class="text">
-				Changed active badge from {event.data.newBadgeId} to {event.data.newBadgeId}
+				Changed active badge from {@render badge(event.data.oldBadge)} to {@render badge(
+					event.data.newBadge,
+				)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataChangeActiveEmoteSet"}
 			<FolderSimple />
