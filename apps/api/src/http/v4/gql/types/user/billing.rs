@@ -60,7 +60,7 @@ pub struct BadgeProgressNextBadge {
 #[async_graphql::ComplexObject]
 impl BadgeProgressNextBadge {
 	#[tracing::instrument(skip_all, name = "BadgeProgressNextBadge::badge")]
-	async fn badge(&self, ctx: &Context<'_>) -> Result<Badge, ApiError> {
+	async fn badge(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -69,10 +69,9 @@ impl BadgeProgressNextBadge {
 			.badge_by_id_loader
 			.load(self.badge_id)
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?;
 
-		Ok(Badge::from_db(badge, &global.config.api.cdn_origin))
+		Ok(badge.map(|b| Badge::from_db(b, &global.config.api.cdn_origin)))
 	}
 }
 
