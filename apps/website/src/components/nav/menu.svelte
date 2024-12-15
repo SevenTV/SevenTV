@@ -195,14 +195,14 @@
 			</MenuButton>
 			<MenuButton
 				onclick={() => setTheme("dark-theme")}
-				iconRight={$theme === "system-theme" ? check : undefined}
+				iconRight={$theme === "dark-theme" ? check : undefined}
 			>
 				<Moon />
 				{$t("themes.dark")}
 			</MenuButton>
 			<MenuButton
 				onclick={() => setTheme("light-theme")}
-				iconRight={$theme === "system-theme" ? check : undefined}
+				iconRight={$theme === "light-theme" ? check : undefined}
 			>
 				<Sun />
 				{$t("themes.light")}
