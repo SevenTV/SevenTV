@@ -58,7 +58,7 @@
 			});
 	}
 
-	let reversedRoles = $derived(filterRoles($user?.roles || []));
+	let highestRole = $derived(filterRoles($user?.roles || [])[0]);
 </script>
 
 {#snippet caret()}
@@ -76,13 +76,10 @@
 				<span class="name">
 					<UserName user={$user} />
 				</span>
-				<div class="roles">
-					{#each reversedRoles as role}
-						<Role {role} />
-					{/each}
-				</div>
-				<div class="caret">
-					<CaretRight size={1.2 * 16} />
+				<div class="role">
+					{#if highestRole}
+						<Role roleData={highestRole} />
+					{/if}
 				</div>
 			</a>
 			<hr class="hide-on-mobile" />
@@ -229,7 +226,7 @@
 		border-radius: 0.5rem;
 
 		display: grid;
-		grid-template-columns: auto 1fr auto;
+		grid-template-columns: auto 1fr;
 		grid-template-rows: auto auto;
 		align-items: center;
 		row-gap: 0.5rem;
@@ -241,19 +238,8 @@
 			font-weight: 600;
 		}
 
-		.roles {
+		.role {
 			grid-row: 2;
-
-			display: flex;
-			flex-wrap: wrap;
-			gap: 0.25rem;
-		}
-
-		.caret {
-			grid-row: 1 / -1;
-			justify-self: end;
-
-			color: var(--text);
 		}
 
 		&:hover,

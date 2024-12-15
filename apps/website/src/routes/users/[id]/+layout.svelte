@@ -71,7 +71,7 @@
 			</span>
 			<div class="roles">
 				{#each user.roles as role}
-					<Role {role} />
+					<Role roleData={role} />
 				{/each}
 			</div>
 		{/await}

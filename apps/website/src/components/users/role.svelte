@@ -1,10 +1,15 @@
 <script lang="ts">
 	import type { Role } from "$/gql/graphql";
+	import type { HTMLAttributes } from "svelte/elements";
 
-	let { role }: { role: Role } = $props();
+	type Props = {
+		roleData: Role;
+	} & HTMLAttributes<HTMLSpanElement>;
+
+	let { roleData, ...otherProps }: Props = $props();
 </script>
 
-<span style:color={role.color?.hex}>{role.name}</span>
+<span {...otherProps} style:color={roleData.color?.hex}>{roleData.name}</span>
 
 <style lang="scss">
 	span {
