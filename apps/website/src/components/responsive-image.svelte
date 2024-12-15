@@ -68,8 +68,10 @@
 			images
 				.filter((i) => {
 					if (reducedMotion === "reduced-motion-enabled" && animated) {
+						// Return only static images
 						return i.frameCount === 1;
 					} else if (reducedMotion === "reduced-motion-disabled" && animated) {
+						// Return only animated images
 						return i.frameCount > 1;
 					} else {
 						return true;
