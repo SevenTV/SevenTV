@@ -22,7 +22,7 @@
 	let tagInput: string | undefined = $state();
 
 	function onTagInput(e: KeyboardEvent) {
-		if (e.key === "Enter" && tagInput && tags.length < LIMIT) {
+		if (e.key === "Enter" && tagInput && tags.length < LIMIT && !tags.includes(tagInput)) {
 			tags = [...tags, tagInput];
 			tagInput = "";
 			e.preventDefault();
