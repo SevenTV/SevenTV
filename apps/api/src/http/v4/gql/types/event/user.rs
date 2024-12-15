@@ -131,7 +131,7 @@ pub struct EventUserDataChangeActiveBadge {
 #[async_graphql::ComplexObject]
 impl EventUserDataChangeActiveBadge {
 	#[tracing::instrument(skip_all, name = "EventUserDataChangeActiveBadge::old")]
-	async fn old(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
+	async fn old_badge(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
 		let Some(old_id) = self.old_id else {
 			return Ok(None);
 		};
@@ -151,7 +151,7 @@ impl EventUserDataChangeActiveBadge {
 	}
 
 	#[tracing::instrument(skip_all, name = "EventUserDataChangeActiveBadge::new")]
-	async fn new(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
+	async fn new_badge(&self, ctx: &Context<'_>) -> Result<Option<Badge>, ApiError> {
 		let Some(new_id) = self.new_id else {
 			return Ok(None);
 		};

@@ -426,9 +426,9 @@ type EventUserDataAddConnection {
 }
 
 type EventUserDataChangeActiveBadge {
-	new: Badge
+	newBadge: Badge
 	newBadgeId: Id
-	old: Badge
+	oldBadge: Badge
 	oldBadgeId: Id
 }
 
@@ -910,6 +910,7 @@ type User {
 	roleIds: [Id!]!
 	roles: [Role!]!
 	searchUpdatedAt: DateTime
+	specialEmoteSets: [EmoteSet!]!
 	style: UserStyle!
 	updatedAt: DateTime!
 }

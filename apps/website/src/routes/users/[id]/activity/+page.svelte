@@ -146,8 +146,34 @@
 											}
 										}
 										... on EventUserDataChangeActiveBadge {
-											newBadgeId
-											oldBadgeId
+											newBadge {
+												id
+												name
+												description
+												images {
+													url
+													mime
+													size
+													scale
+													width
+													height
+													frameCount
+												}
+											}
+											oldBadge {
+												id
+												name
+												description
+												images {
+													url
+													mime
+													size
+													scale
+													width
+													height
+													frameCount
+												}
+											}
 										}
 										... on EventUserDataChangeActiveEmoteSet {
 											newEmoteSet {
