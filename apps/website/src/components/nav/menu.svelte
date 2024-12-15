@@ -133,13 +133,11 @@
 				{/if}
 				{$t("common.theme")}
 			</MenuButton>
-			{#if $user}
-				<MenuButton href="/settings" onclick={onCloseRequest}>
-					<Gear />
-					{$t("common.settings")}
-					<NumberBadge count={$pendingEditorFor} />
-				</MenuButton>
-			{/if}
+			<MenuButton href="/settings" onclick={onCloseRequest}>
+				<Gear />
+				{$t("common.settings")}
+				<NumberBadge count={$pendingEditorFor} />
+			</MenuButton>
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
