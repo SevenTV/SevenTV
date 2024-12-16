@@ -59,22 +59,22 @@
 </script>
 
 <div class="profile-picture">
-	{#if $user!.style.pendingProfilePictureId}
+	{#if $user?.style.pendingProfilePictureId}
 		<div class="placeholder">
 			<Spinner />
 		</div>
-	{:else if $user!.style.activeProfilePicture}
+	{:else if $user?.style.activeProfilePicture}
 		<ResponsiveImage
 			width={4 * 16}
 			height={4 * 16}
-			images={$user!.style.activeProfilePicture.images}
+			images={$user.style.activeProfilePicture.images}
 			round
 			style="grid-row: 1 / span 2;"
 		/>
 	{:else}
 		<!-- svelte-ignore a11y_missing_attribute -->
 		<img
-			src={$user!.mainConnection?.platformAvatarUrl}
+			src={$user?.mainConnection?.platformAvatarUrl}
 			width={4 * 16}
 			height={4 * 16}
 			style="grid-row: 1 / span 2; border-radius: 50%;"
@@ -90,14 +90,14 @@
 		/>
 		<Button
 			secondary
-			disabled={!!$user!.style.pendingProfilePictureId ||
-				!$user!.permissions.user.useCustomProfilePicture ||
+			disabled={!!$user?.style.pendingProfilePictureId ||
+				!$user?.permissions.user.useCustomProfilePicture ||
 				loading}
 			onclick={browse}
 		>
 			{$t("pages.settings.account.profile.update_profile_picture")}
 		</Button>
-		{#if $user!.style.activeProfilePicture}
+		{#if $user?.style.activeProfilePicture}
 			<Button disabled={loading || removeProfilePictureLoading} onclick={removeUserProfilePicture}>
 				{#snippet icon()}
 					{#if removeProfilePictureLoading}
