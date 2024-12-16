@@ -74,7 +74,11 @@ impl SearchQuery {
 			.query_by_weights(vec![4, 1, 1, 1])
 			.per_page(per_page)
 			.page(page)
-			.sort_by(vec!["_text_match(buckets: 10):desc".to_owned(), "role_rank:desc".to_owned()])
+			.sort_by(vec![
+				"_text_match(buckets: 3):desc".to_owned(),
+				"role_rank:desc".to_owned(),
+				"_text_match(buckets: 10):desc".to_owned(),
+			])
 			.prioritize_exact_match(true)
 			.exaustive(true)
 			.build();
