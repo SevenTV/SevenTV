@@ -69,6 +69,7 @@ struct Filters {
 	animated: Option<bool>,
 	default_zero_width: Option<bool>,
 	nsfw: Option<bool>,
+	approved_personal: Option<bool>,
 	/// defaults to false when unset
 	exact_match: Option<bool>,
 }
@@ -155,6 +156,10 @@ impl EmoteQuery {
 
 			if let Some(nsfw) = filters.nsfw {
 				filter_by.push(format!("flag_nsfw: {}", nsfw));
+			}
+
+			if let Some(approved_personal) = filters.approved_personal {
+				filter_by.push(format!("flag_approved_personal: {}", approved_personal));
 			}
 
 			if let (Some(true), Some(query)) = (filters.exact_match, &query) {

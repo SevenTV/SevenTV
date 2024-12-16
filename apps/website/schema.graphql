@@ -467,6 +467,7 @@ type EventUserDataRemoveConnection {
 
 input Filters {
 	animated: Boolean
+	approvedPersonal: Boolean
 	defaultZeroWidth: Boolean
 	"""
 	defaults to false when unset

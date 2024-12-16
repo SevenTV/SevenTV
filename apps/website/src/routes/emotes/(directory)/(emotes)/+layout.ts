@@ -22,6 +22,10 @@ export function load({ url }: LayoutLoadEvent) {
 		filters.defaultZeroWidth = true;
 	}
 
+	if (url.searchParams.get("p") === "1") {
+		filters.approvedPersonal = true;
+	}
+
 	if (url.searchParams.get("e") === "1") {
 		filters.exactMatch = true;
 	}
