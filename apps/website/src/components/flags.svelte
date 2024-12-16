@@ -14,6 +14,7 @@
 		// Emote set flags
 		default: House,
 		personal: Star,
+		special: Sparkle,
 
 		// Permissions
 		profile: UserIcon,
@@ -31,6 +32,7 @@
 
 	export const colors: { [key: string]: string } = {
 		personal: "#b083f0",
+		special: "#fcc200",
 
 		active: "#529bf5",
 		global: "#57ab5a",
@@ -108,6 +110,9 @@
 			case EmoteSetKind.Personal:
 				flags.push("personal");
 				break;
+			case EmoteSetKind.Special:
+				flags.push("special");
+				break;
 		}
 
 		return flags;
@@ -154,6 +159,7 @@
 		PencilSimple,
 		Prohibit,
 		Smiley,
+		Sparkle,
 		StackSimple,
 		Star,
 		Trash,
@@ -183,6 +189,7 @@
 		// Emote set flags
 		default: $t("flags.default"),
 		personal: $t("flags.personal"),
+		special: "Sepcial",
 
 		// Permissions
 		profile: $t("common.profile"),

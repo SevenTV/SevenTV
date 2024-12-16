@@ -897,6 +897,7 @@ type User {
 	editableEmoteSetIds: [Id!]!
 	editorFor: [UserEditor!]!
 	editors: [UserEditor!]!
+	emoteSets: [EmoteSet!]!
 	events(page: Int, perPage: Int): [UserEvent!]!
 	highestRoleColor: Color
 	highestRoleRank: Int!
