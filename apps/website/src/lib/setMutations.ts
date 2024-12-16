@@ -2,19 +2,19 @@ import { graphql } from "$/gql";
 import type { EmoteSet } from "$/gql/graphql";
 import { gqlClient } from "./gql";
 
-export async function createSet(name: string, tags: string[]) {
+export async function createSet(ownerId: string, name: string, tags: string[]) {
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-				mutation CreateEmoteSet($name: String!, $tags: [String!]!) {
+				mutation CreateEmoteSet($name: String!, $tags: [String!]!, $ownerId: Id!) {
 					emoteSets {
-						create(name: $name, tags: $tags) {
+						create(name: $name, tags: $tags, ownerId: $ownerId) {
 							id
 						}
 					}
 				}
 			`),
-			{ name, tags },
+			{ name, tags, ownerId },
 		)
 		.toPromise();
 

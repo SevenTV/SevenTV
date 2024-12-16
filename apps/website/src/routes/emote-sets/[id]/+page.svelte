@@ -6,12 +6,17 @@
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
-	import { EmoteSetKind, type EmoteSet, type EmoteSetEmoteSearchResult } from "$/gql/graphql";
+	import {
+		EmoteSetKind,
+		UserEditorState,
+		type EmoteSet,
+		type EmoteSetEmoteSearchResult,
+	} from "$/gql/graphql";
 	import Button from "$/components/input/button.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { emotesLayout } from "$/lib/layout";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { Copy, Lightning, LightningSlash, MagnifyingGlass, NotePencil } from "phosphor-svelte";
+	import { Lightning, LightningSlash, MagnifyingGlass, NotePencil } from "phosphor-svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { untrack } from "svelte";
 	import { user } from "$/lib/auth";
@@ -257,57 +262,61 @@
 					<Toggle bind:value={selectionMode} />
 				{/snippet}
 			</Button> -->
-			{#if $user && data.kind === EmoteSetKind.Normal}
+			{#if $user}
 				{#snippet loadingSpinner()}
 					<Spinner />
 				{/snippet}
 				<!-- <HideOn mobile={selectionMode}> -->
-				<Button
-					primary
-					onclick={() => setAsActiveSet(isActive ? undefined : data.id)}
-					icon={setActiveLoading ? loadingSpinner : undefined}
-					disabled={setActiveLoading}
-				>
-					{#if isActive}
-						{$t("labels.disable")}
-					{:else}
-						{$t("labels.enable")}
-					{/if}
-					{#snippet iconRight()}
+				{#if data.kind === EmoteSetKind.Normal && ($user.id === data.owner?.id || $user.permissions.user.manageAny || data.owner?.editors.some((editor) => editor?.editorId === $user?.id && editor.permissions.user.manageProfile))}
+					<Button
+						primary
+						onclick={() => setAsActiveSet(isActive ? undefined : data.id)}
+						icon={setActiveLoading ? loadingSpinner : undefined}
+						disabled={setActiveLoading}
+					>
 						{#if isActive}
-							<LightningSlash />
+							{$t("labels.disable")}
 						{:else}
-							<Lightning />
+							{$t("labels.enable")}
 						{/if}
-					{/snippet}
-				</Button>
+						{#snippet iconRight()}
+							{#if isActive}
+								<LightningSlash />
+							{:else}
+								<Lightning />
+							{/if}
+						{/snippet}
+					</Button>
+				{/if}
+				{#if $user?.permissions.emoteSet.manage && ($user.id === data.owner?.id || $user.permissions.emoteSet.manageAny || data.owner?.editors.some((editor) => editor?.editorId === $user?.id && editor.state === UserEditorState.Accepted && editor.permissions.emoteSet.manage))}
+					<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
+						{$t("labels.edit")}
+						{#snippet iconRight()}
+							<NotePencil />
+						{/snippet}
+					</Button>
+					<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
+						{#snippet iconRight()}
+							<NotePencil />
+						{/snippet}
+					</Button>
+				{/if}
 				<!-- </HideOn> -->
 			{/if}
-			<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
-				{$t("labels.edit")}
-				{#snippet iconRight()}
-					<NotePencil />
-				{/snippet}
-			</Button>
 			<!-- <Button secondary hideOnMobile>
 				{$t("pages.emote_set.copy_set")}
 				{#snippet iconRight()}
 					<Copy />
 				{/snippet}
-			</Button> -->
-			<!-- {#if !selectionMode} -->
-			<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
-				{#snippet iconRight()}
-					<NotePencil />
-				{/snippet}
 			</Button>
-			<Button secondary hideOnDesktop>
-				{#snippet iconRight()}
-					<Copy />
-				{/snippet}
-			</Button>
-			<!-- {/if} -->
-			<!-- <Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
+			{#if !selectionMode}
+				<Button secondary hideOnDesktop>
+					{#snippet iconRight()}
+						<Copy />
+					{/snippet}
+				</Button>
+			{/if}
+			<Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnMobile>
 				{$t("labels.selection_mode")}
 				{#snippet iconRight()}
 					<Toggle bind:value={selectionMode} />

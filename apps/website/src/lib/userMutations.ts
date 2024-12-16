@@ -99,12 +99,19 @@ export async function setActiveSet(userId: string, setId?: string) {
 								}
 							}
 							editableEmoteSetIds
+							editorFor {
+								state
+							}
 							permissions {
 								user {
 									manageAny
 									useCustomProfilePicture
 								}
 								emote {
+									manageAny
+								}
+								emoteSet {
+									manage
 									manageAny
 								}
 								ticket {
@@ -323,6 +330,9 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 									}
 									state
 								}
+								editorFor {
+									state
+								}
 								editableEmoteSetIds
 								permissions {
 									user {
@@ -330,6 +340,10 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 										useCustomProfilePicture
 									}
 									emote {
+										manageAny
+									}
+									emoteSet {
+										manage
 										manageAny
 									}
 									ticket {
@@ -552,6 +566,9 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 									}
 									state
 								}
+								editorFor {
+									state
+								}
 								editableEmoteSetIds
 								permissions {
 									user {
@@ -559,6 +576,10 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 										useCustomProfilePicture
 									}
 									emote {
+										manageAny
+									}
+									emoteSet {
+										manage
 										manageAny
 									}
 									ticket {
@@ -683,6 +704,9 @@ export async function setMainConnection(userId: string, platform: Platform, plat
 									hex
 								}
 							}
+							editorFor {
+								state
+							}
 							editableEmoteSetIds
 							permissions {
 								user {
@@ -690,6 +714,10 @@ export async function setMainConnection(userId: string, platform: Platform, plat
 									useCustomProfilePicture
 								}
 								emote {
+									manageAny
+								}
+								emoteSet {
+									manage
 									manageAny
 								}
 								ticket {
@@ -838,6 +866,10 @@ export async function removeProfilePicture(userId: string) {
 								emote {
 									manageAny
 								}
+								emoteSet {
+									manage
+									manageAny
+								}
 								ticket {
 									create
 								}
@@ -963,6 +995,10 @@ export async function removeConnection(userId: string, platform: Platform, platf
 									useCustomProfilePicture
 								}
 								emote {
+									manageAny
+								}
+								emoteSet {
+									manage
 									manageAny
 								}
 								ticket {

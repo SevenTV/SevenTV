@@ -35,7 +35,13 @@ impl std::fmt::Display for StripeRequest {
 	}
 }
 
-pub async fn redeem_code_inner(global: &Arc<Global>, session: &Session, code: String) -> Result<Option<String>, ApiError> {
+pub async fn redeem_code_inner(
+	global: &Arc<Global>,
+	session: &Session,
+	code: String,
+	success_url: String,
+	cancel_url: String,
+) -> Result<Option<String>, ApiError> {
 	let authed_user = session.user()?;
 
 	let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
@@ -140,21 +146,6 @@ pub async fn redeem_code_inner(global: &Arc<Global>, session: &Session, code: St
 			);
 			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription product")
 		})?;
-
-		let success_url = global
-			.config
-			.api
-			.old_website_origin
-			.join("/subscribe/complete?with_provider=stripe")
-			.unwrap()
-			.to_string();
-		let cancel_url = global
-			.config
-			.api
-			.old_website_origin
-			.join("/subscribe/cancel?with_provider=stripe")
-			.unwrap()
-			.to_string();
 
 		let mut params = create_checkout_session_params(
 			global,
@@ -329,8 +320,23 @@ pub async fn redeem(
 		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "redeem code is too long"));
 	}
 
+	let success_url = global
+		.config
+		.api
+		.old_website_origin
+		.join("/subscribe/complete?with_provider=stripe")
+		.unwrap()
+		.to_string();
+	let cancel_url = global
+		.config
+		.api
+		.old_website_origin
+		.join("/subscribe/cancel?with_provider=stripe")
+		.unwrap()
+		.to_string();
+
 	req.http(&global, async {
-		let authorize_url = redeem_code_inner(&global, &session, body.code).await?;
+		let authorize_url = redeem_code_inner(&global, &session, body.code, success_url, cancel_url).await?;
 		Ok::<_, ApiError>(Json(RedeemResponse { authorize_url }))
 	})
 	.await

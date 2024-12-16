@@ -16,6 +16,21 @@ export async function load({ params, fetch }: PageLoadEvent) {
 							capacity
 							kind
 							tags
+							owner {
+								id
+								editors {
+									editorId
+									state
+									permissions {
+										emoteSet {
+											manage
+										}
+										user {
+											manageProfile
+										}
+									}
+								}
+							}
 							emotes(page: 1, perPage: 12) {
 								items {
 									emote {

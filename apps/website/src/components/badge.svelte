@@ -13,7 +13,13 @@
 	} & HTMLAttributes<HTMLButtonElement> &
 		HTMLAttributes<HTMLDivElement>;
 
-	let { badge, size = 1.25 * 16, enableDialog = false, inline = false, ...restProps }: Props = $props();
+	let {
+		badge,
+		size = 1.25 * 16,
+		enableDialog = false,
+		inline = false,
+		...restProps
+	}: Props = $props();
 
 	let dialogMode: DialogMode = $state("hidden");
 

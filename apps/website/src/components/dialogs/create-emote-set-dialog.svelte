@@ -10,9 +10,10 @@
 
 	interface Props {
 		mode: DialogMode;
+		ownerId: string;
 	}
 
-	let { mode = $bindable("hidden") }: Props = $props();
+	let { mode = $bindable("hidden"), ownerId }: Props = $props();
 
 	let name = $state("");
 	let tags = $state([]);
@@ -21,7 +22,7 @@
 	async function submit() {
 		loading = true;
 
-		const set = await createSet(name, tags);
+		const set = await createSet(ownerId, name, tags);
 
 		loading = false;
 		mode = "hidden";

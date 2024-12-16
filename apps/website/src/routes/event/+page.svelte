@@ -1,8 +1,8 @@
 <script>
 	import Button from "$/components/input/button.svelte";
 	import { ArrowRight } from "phosphor-svelte";
-
 </script>
+
 <svelte:head>
 	<title>7TV Winter Games & Gift Sub Event</title>
 </svelte:head>
@@ -46,9 +46,9 @@
 	<h3>Finals</h3>
 
 	<p>
-		Unlike the community stage, the game will be played in teams of two - the streamer and the winner
-		of the community stage. Those teams will compete against other winner/streamer duos. The last team
-		standing will be declared the winner.
+		Unlike the community stage, the game will be played in teams of two - the streamer and the
+		winner of the community stage. Those teams will compete against other winner/streamer duos. The
+		last team standing will be declared the winner.
 	</p>
 
 	<h3>Rewards</h3>
@@ -115,8 +115,9 @@
 
 	<h4>Streamers</h4>
 
-	Streamers interested in participating should message <a href="https://x.com/celladoor_">@celladoor_ on X</a>.
-	Note: depending on the interest, we won't be able to accept everyone this time.
+	Streamers interested in participating should message<a href="https://x.com/celladoor_"
+		>@celladoor_ on X</a
+	>. Note: depending on the interest, we won't be able to accept everyone this time.
 
 	<h4>Viewers</h4>
 
@@ -129,7 +130,8 @@
 
 	<h3>How It Works</h3>
 
-	Gift 7TV subs through our redemption link <a href="/store/redeem">7tv.app/store/redeem</a> to unlock <b>a unique animated badge</b>.
+	Gift 7TV subs through our redemption link<a href="/store/redeem">7tv.app/store/redeem</a> to
+	unlock <b>a unique animated badge</b>.
 
 	<hr />
 
@@ -146,13 +148,16 @@
 	<h4>Do I need Minecraft to participate?</h4>
 
 	<p>
-		Yes, the tournament takes place on a 7TV Minecraft server. A guide on how to join will be provided
-		before the event.
+		Yes, the tournament takes place on a 7TV Minecraft server. A guide on how to join will be
+		provided before the event.
 	</p>
 
 	<h4>What Minecraft version will be used?</h4>
 
-	<p>The games will be played on Minecraft 1.21.3; however, we will use plugins that emulate PvP version from Minecraft 1.8</p>
+	<p>
+		The games will be played on Minecraft 1.21.3; however, we will use plugins that emulate PvP
+		version from Minecraft 1.8
+	</p>
 
 	<h4>How can I receive the event badge?</h4>
 
@@ -165,8 +170,8 @@
 
 	<p>
 		The event will be streamed on 7TV channel, and we might ask participants to be on voice channel
-		during the tournament. Any malicious behavior (such as cheating during the tournament) will result
-		in a permanent ban from 7TV. Rewards will be distributed via Discord or X.
+		during the tournament. Any malicious behavior (such as cheating during the tournament) will
+		result in a permanent ban from 7TV. Rewards will be distributed via Discord or X.
 	</p>
 </div>
 
