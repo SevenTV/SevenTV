@@ -5,13 +5,13 @@
 	import { theme, type Theme } from "$/lib/layout";
 	import TagsInput from "../input/tags-input.svelte";
 	import Button from "../input/button.svelte";
-	import { browser } from "$app/environment";
 	import Tags from "../emotes/tags.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { t } from "svelte-i18n";
 	import { upload } from "$/lib/emoteMutations";
 	import { goto } from "$app/navigation";
 	import Spinner from "../spinner.svelte";
+	import { MediaQuery } from "svelte/reactivity";
 
 	// svelte-ignore non_reactive_update
 	let fileInput: HTMLInputElement;
@@ -28,18 +28,21 @@
 
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
-	function initialTheme(theme: Theme | null) {
-		if (theme === "system-theme" && browser) {
-			return window.matchMedia("prefers-color-scheme: dark").matches ? "dark-theme" : "light-theme";
+	let systemTheme: Theme = $derived(new MediaQuery("(prefers-color-scheme: dark)").current ? "dark-theme" : "light-theme");
+
+	function initialTheme(systemTheme: Theme, theme: Theme | null) {
+		if (theme === "system-theme") {
+			return systemTheme;
 		}
 
 		return theme;
 	}
 
-	let previewTheme = $state(initialTheme($theme));
+	// svelte-ignore state_referenced_locally
+	let previewTheme = $state(initialTheme(systemTheme, $theme));
 
 	$effect(() => {
-		previewTheme = initialTheme($theme);
+		previewTheme = initialTheme(systemTheme, $theme);
 	});
 
 	function toggleTheme() {

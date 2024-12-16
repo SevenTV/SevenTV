@@ -6,7 +6,7 @@
 		"dev": "pnpm run codegen && vite dev --port 4173",
 		"build": "pnpm run codegen && pnpm run svelte:check && vite build",
 		"preview": "vite preview --port 4173",
-		"lint": "pnpm run codegen && prettier --check \"**/*\" -u && eslint . && pnpm run svelte:check",
+		"lint": "pnpm run codegen && eslint . && pnpm run svelte:check && prettier --check \"**/*\" -u",
 		"svelte:check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"svelte:check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write \"**/*\" -u",
