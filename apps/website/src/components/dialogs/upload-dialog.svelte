@@ -28,7 +28,9 @@
 
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
-	let systemTheme: Theme = $derived(new MediaQuery("(prefers-color-scheme: dark)").current ? "dark-theme" : "light-theme");
+	let systemTheme: Theme = $derived(
+		new MediaQuery("(prefers-color-scheme: dark)").current ? "dark-theme" : "light-theme",
+	);
 
 	function initialTheme(systemTheme: Theme, theme: Theme | null) {
 		if (theme === "system-theme") {
@@ -55,6 +57,61 @@
 			reader.onload = () => (imageSrc = reader.result as string);
 			reader.readAsDataURL(files[0]);
 		}
+	});
+
+	let fileError: Promise<string | undefined> | undefined = $derived.by(() => {
+		if (!files || !files[0]) return undefined;
+
+		const file = files[0];
+
+		if (file.size > 7 * 1024 * 1024) {
+			return Promise.resolve("Your file exceeds the maximum file size of 7MiB.");
+		}
+
+		if (file.type.startsWith("image")) {
+			const image = new Image();
+			image.src = URL.createObjectURL(file);
+
+			return new Promise((resolve) => {
+				image.onload = () => {
+					if (image.width > 1000 || image.height > 1000) {
+						resolve("Your file exceeds the maximum resolution of 1000x1000.");
+					}
+
+					const aspectRatio = image.width / image.height;
+					if (aspectRatio > 3.0) {
+						resolve("Image aspect ratio is too large (must be less than 3:1)");
+					} else if (aspectRatio < 1 / 32) {
+						resolve("Image aspect ratio is too small (must be more than 1:32)");
+					}
+
+					resolve(undefined);
+				};
+			});
+		}
+
+		if (file.type.startsWith("video")) {
+			return new Promise((resolve) => {
+				const video = document.createElement("video");
+				video.src = URL.createObjectURL(file);
+
+				video.onloadedmetadata = () => {
+					if (video.videoWidth > 1000 || video.videoHeight > 1000) {
+						resolve(
+							$t("file_limits.resolution_error", { values: { width: "1000", height: "1000" } }),
+						);
+					}
+
+					if (video.duration > 60) {
+						resolve($t("file_limits.duration_error", { values: { duration: "60s" } }));
+					}
+
+					resolve(undefined);
+				};
+			});
+		}
+
+		return undefined;
 	});
 
 	function browse() {
@@ -193,8 +250,7 @@
 				<Checkbox bind:value={zeroWidth}>{$t("flags.overlaying")}</Checkbox>
 				<Checkbox bind:value={privateFlag}>Private</Checkbox>
 			</div>
-			<div class="footer">
-				<Checkbox bind:value={acceptTerms}>{$t("dialogs.upload.accept_rules")}</Checkbox>
+			{#snippet footerButtons()}
 				<div class="buttons">
 					<Button secondary onclick={() => (mode = "hidden")}>
 						{$t("dialogs.upload.discard")}
@@ -212,6 +268,20 @@
 						{$t("dialogs.upload.upload")}
 					</Button>
 				</div>
+			{/snippet}
+			<div class="footer">
+				<Checkbox bind:value={acceptTerms}>{$t("dialogs.upload.accept_rules")}</Checkbox>
+				{#if fileError}
+					{#await fileError then error}
+						{#if error}
+							<p class="error">{error}</p>
+						{:else}
+							{@render footerButtons()}
+						{/if}
+					{/await}
+				{:else}
+					{@render footerButtons()}
+				{/if}
 			</div>
 		</section>
 		<!-- <section class="chat">
@@ -364,6 +434,11 @@
 			display: flex;
 			flex-direction: column;
 			gap: 1rem;
+		}
+
+		.error {
+			font-weight: 500;
+			color: var(--danger);
 		}
 
 		.buttons {
