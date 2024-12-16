@@ -125,6 +125,7 @@ fn routes(global: Arc<Global>) -> Router {
 struct RootResp {
 	message: &'static str,
 	version: &'static str,
+	commit_hash: Option<&'static str>,
 	ip: std::net::IpAddr,
 	country: Option<String>,
 }
@@ -137,6 +138,7 @@ async fn root(
 	let resp = RootResp {
 		message: "Welcome to the 7TV API!",
 		version: env!("CARGO_PKG_VERSION"),
+		commit_hash: option_env!("GIT_HASH"),
 		ip: session.ip(),
 		country: global
 			.geoip()
