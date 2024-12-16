@@ -319,6 +319,8 @@
 				});
 		}
 	});
+
+	let paintMouseOver = $state();
 </script>
 
 <svelte:head>
@@ -441,6 +443,7 @@
 					</Radio>
 					{#each paintIds as paintId}
 						{@const paint = inventory.paints[paintId]}
+						{@const paintName = paint.paint.name.length > 0 ? paint.paint.name : paint.paint.id}
 						<Radio
 							option
 							name="paint"
@@ -448,13 +451,23 @@
 							bind:group={activePaint}
 							disabled={!editingEnabled || paintLoading}
 							style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
+							onmouseover={() => (paintMouseOver = paint.paint.id)}
+							onmouseleave={() => (paintMouseOver = undefined)}
 						>
 							<PaintComponent
 								paint={paint.paint}
 								style="font-size: 0.875rem; font-weight: 500;"
 								enableDialog={!editingEnabled || paint.paint.id === activePaint}
 							>
-								{paint.paint.name.length > 0 ? paint.paint.name : paint.paint.id}
+								{#if paintMouseOver === paint.paint.id}
+									{#await data.streamed.userRequest.value}
+										{paintName}
+									{:then data}
+										{data.mainConnection?.platformDisplayName ?? paintName}
+									{/await}
+								{:else}
+									{paintName}
+								{/if}
 							</PaintComponent>
 							{#if paintsLayout === "list" && paint.sourceName}
 								<span class="description">{paint.sourceName}</span>

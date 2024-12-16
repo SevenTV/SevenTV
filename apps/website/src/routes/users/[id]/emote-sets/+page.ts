@@ -10,7 +10,7 @@ async function loadSets(fetchF: typeof fetch, id: string) {
 				query UserEmoteSets($id: Id!) {
 					users {
 						user(id: $id) {
-							ownedEmoteSets {
+							emoteSets {
 								id
 								name
 								capacity
@@ -40,7 +40,7 @@ async function loadSets(fetchF: typeof fetch, id: string) {
 		)
 		.toPromise();
 
-	return res.data?.users.user?.ownedEmoteSets as EmoteSet[];
+	return res.data?.users.user?.emoteSets as EmoteSet[];
 }
 
 export function load({ params, fetch }: PageLoadEvent) {
