@@ -56,12 +56,14 @@
 		load(page++, PER_PAGE)
 			.then((result) => {
 				if (result.__typename === "EmoteSetEmoteSearchResult") {
-					const items = result.items.filter((e) => e.emote).map((item) => {
-						return {
-							emote: item.emote!,
-							emoteSetEmote: item,
-						};
-					});
+					const items = result.items
+						.filter((e) => e.emote)
+						.map((item) => {
+							return {
+								emote: item.emote!,
+								emoteSetEmote: item,
+							};
+						});
 
 					if (results) {
 						results.pageCount = result.pageCount;
