@@ -302,6 +302,12 @@
 			Your purchase was successfully completed
 		</div>
 	{/if}
+	{#if data.redeemSuccess}
+		<div class="bar">
+			<Info />
+			Your successfully redeemed your trial subscription
+		</div>
+	{/if}
 	{#if isXmasEvent()}
 		<div class="bar">
 			<Gift />

@@ -107,6 +107,9 @@ export async function setActiveSet(userId: string, setId?: string) {
 								emote {
 									manageAny
 								}
+								emoteSet {
+									manageAny
+								}
 								ticket {
 									create
 								}
@@ -330,6 +333,9 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 										useCustomProfilePicture
 									}
 									emote {
+										manageAny
+									}
+									emoteSet {
 										manageAny
 									}
 									ticket {
@@ -561,6 +567,9 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 									emote {
 										manageAny
 									}
+									emoteSet {
+										manageAny
+									}
 									ticket {
 										create
 									}
@@ -690,6 +699,9 @@ export async function setMainConnection(userId: string, platform: Platform, plat
 									useCustomProfilePicture
 								}
 								emote {
+									manageAny
+								}
+								emoteSet {
 									manageAny
 								}
 								ticket {
@@ -838,6 +850,9 @@ export async function removeProfilePicture(userId: string) {
 								emote {
 									manageAny
 								}
+								emoteSet {
+									manageAny
+								}
 								ticket {
 									create
 								}
@@ -963,6 +978,9 @@ export async function removeConnection(userId: string, platform: Platform, platf
 									useCustomProfilePicture
 								}
 								emote {
+									manageAny
+								}
+								emoteSet {
 									manageAny
 								}
 								ticket {
