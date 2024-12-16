@@ -170,6 +170,7 @@ export async function load({ depends, fetch, params }: LayoutLoadEvent) {
 			},
 			{
 				fetch,
+				requestPolicy: "network-only",
 			},
 		)
 		.toPromise()
