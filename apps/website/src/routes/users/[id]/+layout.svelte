@@ -25,6 +25,7 @@
 	import UserName from "$/components/user-name.svelte";
 	import { user } from "$/lib/auth";
 	import Badge from "$/components/badge.svelte";
+	import { filterRoles } from "$/lib/utils";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -70,7 +71,7 @@
 				<!-- <SealCheck size="0.8rem" /> -->
 			</span>
 			<div class="roles">
-				{#each user.roles as role}
+				{#each filterRoles(user.roles) as role}
 					<Role roleData={role} />
 				{/each}
 			</div>
