@@ -5,7 +5,9 @@ import { gqlClient } from "$/lib/gql";
 import { get } from "svelte/store";
 import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 
-export async function load({ fetch, params }: LayoutLoadEvent) {
+export async function load({ depends, fetch, params }: LayoutLoadEvent) {
+	depends(`emotes:${params.id}`);
+
 	const defaultSet = get(defaultEmoteSet);
 
 	const req = gqlClient()
@@ -138,6 +140,7 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 									}
 								}
 							}
+							imagesPending
 							images {
 								url
 								mime
@@ -167,6 +170,7 @@ export async function load({ fetch, params }: LayoutLoadEvent) {
 			},
 			{
 				fetch,
+				requestPolicy: "network-only",
 			},
 		)
 		.toPromise()

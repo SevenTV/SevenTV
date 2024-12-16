@@ -21,6 +21,7 @@ pub struct Emote {
 	pub owner_id: UserId,
 	pub default_name: String,
 	pub tags: Vec<String>,
+	pub images_pending: bool,
 	pub images: Vec<Image>,
 	pub flags: EmoteFlags,
 	pub aspect_ratio: f64,
@@ -218,6 +219,7 @@ impl Emote {
 			owner_id: value.owner_id,
 			default_name: value.default_name,
 			tags: value.tags,
+			images_pending: value.image_set.input.is_pending(),
 			images: value
 				.image_set
 				.outputs
