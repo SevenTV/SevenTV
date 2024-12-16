@@ -43,9 +43,13 @@ async function loadSets(fetchF: typeof fetch, id: string) {
 	return res.data?.users.user?.emoteSets as EmoteSet[];
 }
 
-export function load({ params, fetch }: PageLoadEvent) {
+export async function load({ params, fetch, parent }: PageLoadEvent) {
+	const userData = await parent();
+
 	return {
+		id: params.id,
 		streamed: {
+			userRequest: userData.streamed.userRequest,
 			sets: loadSets(fetch, params.id),
 		},
 	};

@@ -1,8 +1,7 @@
 import { graphql } from "$/gql";
 import type { LayoutLoadEvent } from "./$types";
-import type { Role, User } from "$/gql/graphql";
+import type { User } from "$/gql/graphql";
 import { gqlClient } from "$/lib/gql";
-import { filterRoles } from "$/lib/utils";
 import { ProxyState } from "$/lib/proxy.svelte";
 
 export function load({ fetch, params }: LayoutLoadEvent) {
@@ -196,6 +195,12 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 									}
 									highestRoleColor {
 										hex
+									}
+								}
+								editorId
+								permissions {
+									emoteSet {
+										create
 									}
 								}
 								state

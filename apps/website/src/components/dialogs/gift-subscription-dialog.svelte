@@ -7,11 +7,7 @@
 	import Spinner from "../spinner.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import { CaretLeft, User as UserIcon } from "phosphor-svelte";
-	import {
-		SubscriptionProductKind,
-		type SubscriptionProductVariant,
-		type User,
-	} from "$/gql/graphql";
+	import { type SubscriptionProductVariant, type User } from "$/gql/graphql";
 	import UserName from "../user-name.svelte";
 	import ChannelPreview from "../channel-preview.svelte";
 	import { variantUnit } from "$/lib/utils";

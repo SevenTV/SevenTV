@@ -7,6 +7,8 @@
 	import { Plus } from "phosphor-svelte";
 	import CreateEmoteSetDialog from "$/components/dialogs/create-emote-set-dialog.svelte";
 	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import { user } from "$/lib/auth";
+	import { UserEditorState } from "$/gql/graphql";
 
 	let { data }: { data: PageData } = $props();
 
@@ -14,14 +16,18 @@
 </script>
 
 <div class="buttons">
-	<CreateEmoteSetDialog bind:mode={createEmoteSetDialog} />
+	<CreateEmoteSetDialog ownerId={data.id} bind:mode={createEmoteSetDialog} />
 	<DefaultEmoteSetButton />
-	<Button primary onclick={() => (createEmoteSetDialog = "shown")}>
-		{#snippet icon()}
-			<Plus />
-		{/snippet}
-		Create New Set
-	</Button>
+	{#await data.streamed.userRequest.value then userData}
+		{#if $user?.permissions.emoteSet.manage && ($user.permissions.emoteSet.manageAny || $user?.id === data.id || userData.editors.some((editor) => editor.editorId === $user?.id && editor.state === UserEditorState.Accepted && editor.permissions.emoteSet.create))}
+			<Button primary onclick={() => (createEmoteSetDialog = "shown")}>
+				{#snippet icon()}
+					<Plus />
+				{/snippet}
+				Create New Set
+			</Button>
+		{/if}
+	{/await}
 </div>
 {#await data.streamed.sets}
 	<div class="spinner-wrapper">

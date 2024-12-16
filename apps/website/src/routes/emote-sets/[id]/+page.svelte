@@ -6,12 +6,17 @@
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
-	import { EmoteSetKind, type EmoteSet, type EmoteSetEmoteSearchResult } from "$/gql/graphql";
+	import {
+		EmoteSetKind,
+		UserEditorState,
+		type EmoteSet,
+		type EmoteSetEmoteSearchResult,
+	} from "$/gql/graphql";
 	import Button from "$/components/input/button.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { emotesLayout } from "$/lib/layout";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { Copy, Lightning, LightningSlash, MagnifyingGlass, NotePencil } from "phosphor-svelte";
+	import { Lightning, LightningSlash, MagnifyingGlass, NotePencil } from "phosphor-svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { untrack } from "svelte";
 	import { user } from "$/lib/auth";
@@ -283,7 +288,7 @@
 						{/snippet}
 					</Button>
 				{/if}
-				{#if $user.id === data.owner?.id || $user.permissions.emoteSet.manageAny || data.owner?.editors.some((editor) => editor?.editorId === $user?.id && editor.permissions.emoteSet.manage)}
+				{#if $user?.permissions.emoteSet.manage && ($user.id === data.owner?.id || $user.permissions.emoteSet.manageAny || data.owner?.editors.some((editor) => editor?.editorId === $user?.id && editor.state === UserEditorState.Accepted && editor.permissions.emoteSet.manage))}
 					<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
 						{$t("labels.edit")}
 						{#snippet iconRight()}

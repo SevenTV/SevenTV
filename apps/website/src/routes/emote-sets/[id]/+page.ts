@@ -20,6 +20,7 @@ export async function load({ params, fetch }: PageLoadEvent) {
 								id
 								editors {
 									editorId
+									state
 									permissions {
 										emoteSet {
 											manage
