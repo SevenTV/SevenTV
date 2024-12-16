@@ -10,6 +10,7 @@
 		Trash,
 		Flag,
 		CaretRight,
+		Cpu,
 	} from "phosphor-svelte";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags, { emoteToFlags } from "$/components/flags.svelte";
@@ -34,6 +35,9 @@
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import EmoteUseButton from "../emote-use-button.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
+	import Spinner from "../spinner.svelte";
+	import { invalidate } from "$app/navigation";
+	import { page } from "$app/stores";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -158,16 +162,26 @@
 			<h1>{data.defaultName}</h1>
 			<Tags tags={data.tags} />
 		{:else}
-			<h1>Loading</h1>
+			<Spinner />
 		{/if}
 	</div>
 	<div class="previews">
 		{#if data}
-			{#each prepareImages(data.images) as group}
-				{#if group}
-					<EmoteInfoImage images={group} />
-				{/if}
-			{/each}
+			{#if data.imagesPending}
+				<div class="processing">
+					<Cpu />
+					This emote is still processing
+					{#if data}
+						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}>Refresh</button>
+					{/if}
+				</div>
+			{:else}
+				{#each prepareImages(data.images) as group}
+					{#if group}
+						<EmoteInfoImage images={group} />
+					{/if}
+				{/each}
+			{/if}
 		{:else}
 			<EmoteLoadingPlaceholder index={0} size={32} />
 			<EmoteLoadingPlaceholder index={1} size={64} />
@@ -205,7 +219,7 @@
 					{/if}
 				{/if}
 				<DropDown>
-					{#if (!$user || data?.deleted) && formats && formats.length > 1}
+					{#if (!$user || data?.deleted) && !data?.imagesPending && formats && formats.length > 1}
 						<Button secondary onclick={() => (moreMenuMode = "download-format")}>
 							<Download />
 							{$t("labels.download")}
@@ -239,7 +253,7 @@
 										{$t("pages.emote.merge")}
 									</MenuButton>
 								{/if}
-								{#if formats && formats.length > 1}
+								{#if !data?.imagesPending && formats && formats.length > 1}
 									<MenuButton iconRight={caret} onclick={() => (moreMenuMode = "download-format")}>
 										<Download />
 										{$t("labels.download")}
@@ -345,6 +359,15 @@
 			h1 {
 				font-size: 1.25rem;
 				font-weight: 600;
+			}
+		}
+
+		.processing {
+			display: flex;
+			gap: 0.5rem;
+
+			.refresh:hover, .refresh:focus-visible {
+				text-decoration: underline;
 			}
 		}
 

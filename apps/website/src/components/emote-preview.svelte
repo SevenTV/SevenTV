@@ -8,6 +8,7 @@
 	import EmoteContextMenu from "./emote-context-menu.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { editableEmoteSets } from "$/lib/emoteSets";
+	import Spinner from "./spinner.svelte";
 
 	type Props = {
 		data: Emote;
@@ -77,7 +78,11 @@
 	{title}
 	{...restProps}
 >
-	<ResponsiveImage images={data.images} {index} />
+	{#if data.imagesPending}
+		<Spinner />
+	{:else}
+		<ResponsiveImage images={data.images} {index} />
+	{/if}
 	{#if !emoteOnly}
 		<span class="name">{data.defaultName}</span>
 		{#if data.owner?.mainConnection?.platformDisplayName}

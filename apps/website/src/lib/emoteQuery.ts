@@ -116,6 +116,7 @@ export async function queryEmotes(
 												hex
 											}
 										}
+										deleted
 										flags {
 											# animated
 											# approvedPersonal
@@ -125,6 +126,7 @@ export async function queryEmotes(
 											# private
 											publicListed
 										}
+										imagesPending
 										images {
 											url
 											mime

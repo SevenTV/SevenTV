@@ -118,6 +118,7 @@ type Emote {
 	flags: EmoteFlags!
 	id: Id!
 	images: [Image!]!
+	imagesPending: Boolean!
 	inEmoteSets(emoteSetIds: [Id!]!): [EmoteInEmoteSetResponse!]!
 	owner: User
 	ownerId: Id!
