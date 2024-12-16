@@ -37,7 +37,6 @@
 	import { editableEmoteSets } from "$/lib/emoteSets";
 	import Spinner from "../spinner.svelte";
 	import { invalidate } from "$app/navigation";
-	import { page } from "$app/stores";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -172,7 +171,9 @@
 					<Cpu />
 					This emote is still processing
 					{#if data}
-						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}>Refresh</button>
+						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}
+							>Refresh</button
+						>
 					{/if}
 				</div>
 			{:else}
@@ -366,7 +367,8 @@
 			display: flex;
 			gap: 0.5rem;
 
-			.refresh:hover, .refresh:focus-visible {
+			.refresh:hover,
+			.refresh:focus-visible {
 				text-decoration: underline;
 			}
 		}

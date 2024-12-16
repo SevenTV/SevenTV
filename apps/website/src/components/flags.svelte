@@ -69,7 +69,7 @@
 		if (emote.alias !== emote.emote?.defaultName) flags.push("renamed");
 
 		if (emote.emote) {
-			flags = flags.concat(emoteToFlags(emote.emote));
+			flags = flags.concat(emoteToFlags(emote.emote, defaultSet, editableEmoteSets));
 		}
 
 		return flags;
