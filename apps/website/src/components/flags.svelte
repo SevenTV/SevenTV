@@ -10,6 +10,7 @@
 		unlisted: EyeSlash,
 		personal_use_denied: EyeSlash,
 		deleted: Trash,
+		renamed: PencilSimple,
 
 		// Emote set flags
 		default: House,
@@ -56,6 +57,22 @@
 			}
 		}
 		return null;
+	}
+
+	export function emoteSetEmoteToFlags(
+		emote: EmoteSetEmote,
+		defaultSet?: string,
+		editableEmoteSets?: EmoteSet[],
+	): string[] {
+		let flags: string[] = [];
+
+		if (emote.alias !== emote.emote?.defaultName) flags.push("renamed");
+
+		if (emote.emote) {
+			flags = flags.concat(emoteToFlags(emote.emote));
+		}
+
+		return flags;
 	}
 
 	export function emoteToFlags(
@@ -172,6 +189,7 @@
 		UserEditorState,
 		type Emote,
 		type EmoteSet,
+		type EmoteSetEmote,
 		type User,
 		type UserEditorPermissions,
 	} from "$/gql/graphql";
@@ -185,6 +203,7 @@
 		overlaying: $t("flags.overlaying"),
 		unlisted: $t("flags.unlisted"),
 		personal_use_denied: $t("flags.personal_use_denied"),
+		renamed: "Renamed",
 
 		// Emote set flags
 		default: $t("flags.default"),

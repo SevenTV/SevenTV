@@ -1,6 +1,10 @@
 <script lang="ts">
-	import type { Emote } from "$/gql/graphql";
-	import Flags, { emoteToFlags, determineHighlightColor } from "./flags.svelte";
+	import type { Emote, EmoteSetEmote } from "$/gql/graphql";
+	import Flags, {
+		emoteToFlags,
+		determineHighlightColor,
+		emoteSetEmoteToFlags,
+	} from "./flags.svelte";
 	import Checkbox from "./input/checkbox.svelte";
 	import ResponsiveImage from "./responsive-image.svelte";
 	import type { HTMLAttributes } from "svelte/elements";
@@ -12,6 +16,7 @@
 
 	type Props = {
 		data: Emote;
+		emoteSetEmote?: EmoteSetEmote;
 		index?: number;
 		bg?: "medium" | "light";
 		emoteOnly?: boolean;
@@ -22,6 +27,7 @@
 
 	let {
 		data,
+		emoteSetEmote,
 		index = 0,
 		bg = "medium",
 		emoteOnly = false,
@@ -31,12 +37,16 @@
 		...restProps
 	}: Props = $props();
 
-	let flags = $derived(emoteToFlags(data, $defaultEmoteSet, $editableEmoteSets));
+	let flags = $derived(
+		emoteSetEmote
+			? emoteSetEmoteToFlags(emoteSetEmote, $defaultEmoteSet, $editableEmoteSets)
+			: emoteToFlags(data, $defaultEmoteSet, $editableEmoteSets),
+	);
 
 	let highlight = $derived(determineHighlightColor(flags, ignoredFlagsForHighlight));
 
 	let title = $derived.by(() => {
-		let title = data.defaultName;
+		let title = emoteSetEmote?.alias ?? data.defaultName;
 		const owner = data.owner?.mainConnection?.platformDisplayName;
 
 		if (owner) {
@@ -84,7 +94,7 @@
 		<ResponsiveImage images={data.images} {index} />
 	{/if}
 	{#if !emoteOnly}
-		<span class="name">{data.defaultName}</span>
+		<span class="name">{emoteSetEmote?.alias ?? data.defaultName}</span>
 		{#if data.owner?.mainConnection?.platformDisplayName}
 			<span class="user">
 				<UserName user={data.owner} />
