@@ -189,7 +189,7 @@
 		// Emote set flags
 		default: $t("flags.default"),
 		personal: $t("flags.personal"),
-		special: "Sepcial",
+		special: "Special",
 
 		// Permissions
 		profile: $t("common.profile"),
