@@ -99,6 +99,9 @@ export async function setActiveSet(userId: string, setId?: string) {
 								}
 							}
 							editableEmoteSetIds
+							editorFor {
+								state
+							}
 							permissions {
 								user {
 									manageAny
@@ -325,6 +328,9 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 											hex
 										}
 									}
+									state
+								}
+								editorFor {
 									state
 								}
 								editableEmoteSetIds
@@ -560,6 +566,9 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 									}
 									state
 								}
+								editorFor {
+									state
+								}
 								editableEmoteSetIds
 								permissions {
 									user {
@@ -694,6 +703,9 @@ export async function setMainConnection(userId: string, platform: Platform, plat
 								color {
 									hex
 								}
+							}
+							editorFor {
+								state
 							}
 							editableEmoteSetIds
 							permissions {
