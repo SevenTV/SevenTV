@@ -1,0 +1,35 @@
+resources: {}
+
+tolerations:
+  - key: node-role.kubernetes.io/master
+    operator: "Exists"
+    effect: "NoSchedule"
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: "7tv.io/node-type"
+              operator: "In"
+              values:
+                - control-plane
+
+admissionWebhooks:
+  certManager:
+    enabled: true
+
+serviceMonitor:
+  enabled: true
+  attachMetadata:
+    node: true
+  relabelings:
+    - action: replace
+      sourceLabels:
+        - __meta_kubernetes_node_name
+      targetLabel: instance
+
+operator:
+  useCustomConfigReloader: true
+  enable_converter_ownership: true
+  psp_auto_creation_enabled: true

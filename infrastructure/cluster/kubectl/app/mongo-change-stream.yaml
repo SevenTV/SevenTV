@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-change-stream
+  namespace: app
+  labels:
+    app: mongo-change-stream
+spec:
+  selector:
+    matchLabels:
+      app: mongo-change-stream
+  template:
+    metadata:
+      labels:
+        app: mongo-change-stream
+    spec:
+      containers:
+      - name: mongo-change-stream
+        image: ghcr.io/seventv/mongo-change-stream-new:latest
+        imagePullPolicy: Always
+        args:
+          - "--config=/app/config.toml"
+        resources:
+          limits:
+            memory: "8Gi"
+            cpu: 2000m
+          requests:
+            memory: "8Gi"
+            cpu: 2000m
+        livenessProbe:
+          httpGet:
+            port: metrics
+            path: /health
+        readinessProbe:
+          httpGet:
+            port: metrics
+            path: /health
+        envFrom:
+          - secretRef:
+              name: mongo-change-stream
+        ports:
+        - containerPort: 9000
+          name: metrics
+        volumeMounts:
+        - name: config
+          mountPath: /app/config.toml
+          subPath: config.toml
+      volumes:
+      - name: config
+        configMap:
+          name: mongo-change-stream
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-change-stream
+  namespace: app
+  labels:
+    app: mongo-change-stream
+spec:
+  selector:
+    app: mongo-change-stream
+  ports:
+  - name: metrics
+    port: 9000
+    targetPort: 9000

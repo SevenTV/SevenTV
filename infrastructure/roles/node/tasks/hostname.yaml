@@ -1,0 +1,23 @@
+- name: Set hostname to match inventory name
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Ensure the hostname persists after reboot (Linux-specific)
+  lineinfile:
+    path: /etc/hostname
+    line: "{{ inventory_hostname }}"
+    state: present
+
+- name: Update /etc/hosts to include the new hostname
+  lineinfile:
+    path: /etc/hosts
+    regexp: "^127\\.0\\.1\\.1\\s+"
+    line: "127.0.1.1 {{ inventory_hostname }}"
+    state: present
+    backup: yes
+
+- name: Reboot the machine to apply the hostname change (if required)
+  reboot:
+    msg: "Rebooting to apply hostname change"
+    reboot_timeout: 300
+  when: ansible_facts['hostname'] != inventory_hostname

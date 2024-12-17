@@ -1,0 +1,37 @@
+provider: cloudflare
+
+image:
+  registry: ghcr.io
+  repository: seventv/external-dns
+  tag: patched
+  digest: ""
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+cloudflare:
+  secretName: "cloudflare-external"
+  proxied: false
+
+nodeAffinityPreset:
+  type: "hard"
+  key: "7tv.io/node-type"
+  values:
+    - "control-plane"
+
+tolerations:
+  - key: "node-role.kubernetes.io/master"
+    operator: "Exists"
+    effect: "NoSchedule"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "512Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

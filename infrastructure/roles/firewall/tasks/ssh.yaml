@@ -1,0 +1,6 @@
+- name: Allow SSH Traffic
+  ufw:
+    rule: allow
+    port: 22
+    proto: tcp
+    comment: "SSH"

@@ -1,0 +1,17 @@
+- name: Install HAProxy
+  package:
+    name: haproxy
+    state: present
+
+- name: Configure HAProxy
+  register: haproxy_conf
+  template:
+    dest: /etc/haproxy/haproxy.cfg
+    src: haproxy.cfg.j2
+    mode: "0600"
+
+- name: Enable and start HAProxy
+  systemd:
+    name: haproxy
+    enabled: true
+    state: "{{ 'restarted' if haproxy_conf.changed else 'started' }}"

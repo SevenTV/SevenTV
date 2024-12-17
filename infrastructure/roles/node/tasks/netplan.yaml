@@ -1,0 +1,13 @@
+---
+- name: Write NetPlan configuration
+  register: netplan_conf
+  template:
+    src: 01-netcfg.yaml.j2
+    dest: /etc/netplan/01-netcfg.yaml
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Apply NetPlan configuration
+  command: netplan apply
+  when: netplan_conf.changed

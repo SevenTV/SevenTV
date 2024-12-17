@@ -1,0 +1,21 @@
+- name: Check if node has already joined
+  shell: |
+    systemctl is-active k3s{{ "-agent" if ansible_hostname in groups["worker"] else "" }}
+  register: node_joined
+  failed_when: false
+  changed_when: node_joined.stdout != "active"
+
+- name: Set K3s command based on node role
+  set_fact:
+    k3s_command: >-
+      {% if inventory_hostname in groups['control_plane'] %}
+      server --server https://{{ hostvars[control_plane_master]['private_ip4'] }}:6443
+      {% else %}
+      agent --server https://127.0.0.1:6443
+      {% endif %}
+  when: node_joined.changed
+
+- name: Node Join
+  shell: |
+    curl -sfL https://get.k3s.io | sh -s - {{ k3s_command }}
+  when: node_joined.changed

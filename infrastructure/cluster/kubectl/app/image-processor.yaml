@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-processor
+  namespace: app
+  labels:
+    app: image-processor
+spec:
+  selector:
+    matchLabels:
+      app: image-processor
+  template:
+    metadata:
+      labels:
+        app: image-processor
+    spec:
+      containers:
+      - name: image-processor
+        image: ghcr.io/seventv/image-processor:latest
+        imagePullPolicy: Always
+        args:
+          - "--config=/app/config.toml"
+        resources:
+          limits:
+            memory: "16Gi"
+            cpu: 12000m
+          requests:
+            memory: "16Gi"
+            cpu: 12000m
+        livenessProbe:
+          httpGet:
+            port: metrics
+            path: /health
+        readinessProbe:
+          httpGet:
+            port: metrics
+            path: /health
+        envFrom:
+          - secretRef:
+              name: image-processor
+        ports:
+        - containerPort: 50051
+          name: grpc
+        - containerPort: 9000
+          name: metrics
+        volumeMounts:
+        - name: config
+          mountPath: /app/config.toml
+          subPath: config.toml
+      volumes:
+      - name: config
+        configMap:
+          name: image-processor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-processor
+  namespace: app
+  labels:
+    app: image-processor
+spec:
+  selector:
+    app: image-processor
+  ports:
+  - name: grpc
+    port: 50051
+    targetPort: grpc
+  - name: metrics
+    port: 9000
+    targetPort: 9000

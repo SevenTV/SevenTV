@@ -1,0 +1,10 @@
+---
+- include_tasks: zsh.yaml
+
+- include_tasks: ssh.yaml
+
+- include_tasks: netplan.yaml
+
+- include_tasks: hostname.yaml
+
+- include_tasks: tailscale.yaml

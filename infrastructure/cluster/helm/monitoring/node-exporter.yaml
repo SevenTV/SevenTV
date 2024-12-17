@@ -1,0 +1,17 @@
+tolerations:
+  - operator: "Exists"
+    effect: "NoSchedule"
+
+serviceMonitor:
+  enabled: true
+  relabelings:
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_node_name
+      targetLabel: node
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_node_name
+      targetLabel: instance
+  attachMetadata:
+    node: true

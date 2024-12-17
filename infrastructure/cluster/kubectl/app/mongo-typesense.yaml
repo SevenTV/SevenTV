@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-typesense
+  namespace: app
+  labels:
+    app: mongo-typesense
+spec:
+  selector:
+    matchLabels:
+      app: mongo-typesense
+  template:
+    metadata:
+      labels:
+        app: mongo-typesense
+    spec:
+      containers:
+      - name: mongo-typesense
+        image: ghcr.io/seventv/mongo-typesense-new:latest
+        imagePullPolicy: Always
+        args:
+          - "--config=/app/config.toml"
+        resources:
+          limits:
+            memory: "16Gi"
+            cpu: 4000m
+          requests:
+            memory: "16Gi"
+            cpu: 4000m
+        livenessProbe:
+          httpGet:
+            port: metrics
+            path: /health
+        readinessProbe:
+          httpGet:
+            port: metrics
+            path: /health
+        envFrom:
+          - secretRef:
+              name: mongo-typesense
+        ports:
+        - containerPort: 9000
+          name: metrics
+        volumeMounts:
+        - name: config
+          mountPath: /app/config.toml
+          subPath: config.toml
+      volumes:
+      - name: config
+        configMap:
+          name: mongo-typesense
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-typesense
+  namespace: app
+  labels:
+    app: mongo-typesense
+spec:
+  selector:
+    app: mongo-typesense
+  ports:
+  - name: metrics
+    port: 9000
+    targetPort: 9000

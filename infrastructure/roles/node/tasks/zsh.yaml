@@ -1,0 +1,32 @@
+- name: Install zsh
+  apt:
+    name: zsh
+    state: present
+    update_cache: yes
+
+- name: Install oh-my-zsh
+  shell: RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" --unattended
+  args:
+    creates: /root/.oh-my-zsh
+
+- name: Set zsh as the default shell
+  user:
+    name: "{{ ansible_user }}"
+    shell: /bin/zsh
+    update_password: on_create
+
+- name: Remove the login message
+  lineinfile:
+    path: /root/.hushlogin
+    create: yes
+    state: present
+    line: ""
+
+- name: Update the ZSH prompt
+  lineinfile:
+    path: /root/.zshrc
+    regexp: "^export PROMPT="
+    line: |
+      export PROMPT="%{$fg[cyan]%}$USER@%{$fg[blue]%}%m ${PROMPT}"
+    state: present
+    backup: yes

@@ -1,0 +1,57 @@
+shards: 1
+replicaCount: 3
+distributeReplicasByZone: false
+
+containerPorts:
+  http: 8123
+  tcp: 9000
+  keeper: 2181
+  keeperInter: 9444
+  metrics: 8001
+
+resources:
+  requests:
+    cpu: 8000m
+    memory: 32Gi
+  limits:
+    cpu: 8000m
+    memory: 32Gi
+
+keeper:
+  enabled: true
+
+podAntiAffinity: hard
+
+nodeAffinityPreset:
+  type: "hard"
+  key: "7tv.io/node-type"
+  values:
+    - database
+
+tolerations: 
+  - key: "7tv.io/node-type"
+    operator: "Equal"
+    value: "database"
+    effect: "NoSchedule"
+
+extraOverrides: |
+  <backups>
+      <allowed_disk>backups</allowed_disk>
+      <allowed_path>/backups/</allowed_path>
+  </backups>
+
+persistence:
+  storageClass: "database"
+  size: 150Gi
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+zookeeper:
+  enabled: false
+
+extraVolumes: []
+
+extraVolumeMounts: []

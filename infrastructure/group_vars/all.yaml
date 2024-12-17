@@ -1,0 +1,20 @@
+node_ipv4_cidr: 10.0.0.0/16
+node_ipv6_cidr: fc00:cafe:0000::/48
+
+cluster_ipv4_cidr: 10.42.0.0/16
+cluster_ipv6_cidr: 2001:cafe:42::/56
+
+service_ipv4_cidr: 10.43.0.0/16
+service_ipv6_cidr: 2001:cafe:43::/112
+
+k3s_token: '{{ lookup("env", "K3S_JOIN_TOKEN") }}'
+cilium_version: 1.16.2
+control_plane_master: control-plane-1
+
+tailscale_token: '{{ lookup("env", "TAILSCALE_TOKEN") }}'
+
+# We add these additional SANs for our k8s loadbalancer 
+additional_tls_sans:
+  - k3s-control-plane-loadbalancer # tailscale node name
+  - 95.217.241.88 # public ipv4 address (firewalled)
+  - 2a01:4f9:c01f:43::1 # public ipv6 address (firewalled)

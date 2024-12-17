@@ -1,0 +1,6 @@
+- name: Add Lennart's SSH key
+  authorized_key:
+    user: root
+    key: |
+      ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPddlhL6JRR9Jl0K0ed3wEMyGR/YDU7v3DeRkra1N5fB lennart.kloock@protonmail.com
+    state: present

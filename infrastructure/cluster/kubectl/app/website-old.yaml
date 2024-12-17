@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: website-old
+  namespace: app
+  labels:
+    app: website-old
+spec:
+  selector:
+    matchLabels:
+      app: website-old
+  template:
+    metadata:
+      labels:
+        app: website-old
+    spec:
+      containers:
+      - name: image-processor
+        image: ghcr.io/seventv/website:old-but-new
+        imagePullPolicy: Always
+        env:
+        - name: GQL_API_URL
+          value: http://api.app.svc.local:8080/v3/graphql
+        - name: WEBSITE_URL
+          value: https://7tv.dev
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: 1000m
+          requests:
+            memory: "512Mi"
+            cpu: 500m
+        livenessProbe:
+          httpGet:
+            port: http
+            path: /
+        readinessProbe:
+          httpGet:
+            port: http
+            path: /
+        ports:
+        - containerPort: 3000
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: website-old
+  namespace: app
+  labels:
+    app: website-old
+spec:
+  selector:
+    app: website-old
+  ports:
+  - name: http
+    port: 3000
+    targetPort: http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: website-old
+  namespace: app
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: cloudflare-gateway
+  hostnames:
+  - old.7tv.app
+  rules:
+  - backendRefs:
+    - name: website-old
+      port: 3000

@@ -1,0 +1,229 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: typesense-headless
+  namespace: database
+  labels:
+    app: typesense
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: typesense
+  ports:
+  - name: http
+    port: 8108
+    targetPort: 8108
+  - name: peering
+    port: 8107
+    targetPort: 8107
+  - name: metrics
+    port: 8888
+    targetPort: 8888
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: typesense
+  namespace: database
+  labels:
+    app: typesense
+    instance: typesense
+spec:
+  selector:
+    app: typesense
+  ports:
+  - name: http
+    port: 8108
+    targetPort: 8108
+  - name: peering
+    port: 8107
+    targetPort: 8107
+  - name: metrics
+    port: 8888
+    targetPort: 8888
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: typesense
+  namespace: database
+spec:
+  endpoints:
+  - interval: 30s
+    targetPort: metrics
+    path: /metrics
+  namespaceSelector:
+    matchNames:
+      - database
+  selector:
+    matchLabels:
+      app: typesense
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: typesense
+  namespace: database
+data:
+  nodes: |
+    typesense-0.typesense-headless.database.svc.cluster.local:8107:8108,typesense-1.typesense-headless.database.svc.cluster.local:8107:8108,typesense-2.typesense-headless.database.svc.cluster.local:8107:8108
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: typesense
+  namespace: database
+  labels:
+    app: typesense
+    service: typesense
+    instance: typesense
+spec:
+  serviceName: typesense-headless
+  podManagementPolicy: Parallel
+  replicas: 3
+  selector:
+    matchLabels:
+      service: typesense
+      app: typesense
+  template:
+    metadata:
+      labels:
+        service: typesense
+        app: typesense
+    spec:
+      tolerations:
+        - key: "7tv.io/node-type"
+          operator: "Equal"
+          value: "database"
+          effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: "7tv.io/node-type"
+                    operator: "In"
+                    values:
+                      - database
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - typesense
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        fsGroup: 2000
+        runAsUser: 10000
+        runAsGroup: 3000
+        runAsNonRoot: true
+      terminationGracePeriodSeconds: 300
+      containers:
+      - name: typesense
+        image: typesense/typesense:27.1
+        command:
+          - "/bin/bash"
+          - "-c"
+          - >
+            sleep 5
+
+            exec /opt/typesense-server \
+              -d /usr/share/typesense/data \
+              --api-port 8108 \
+              --peering-port 8107 \
+              --nodes /usr/share/typesense/nodes \
+              --reset-peers-on-error=true
+              --peering-address=$(POD_IP)
+        ports:
+        - containerPort: 8108
+          name: http
+        - containerPort: 8107
+          name: peering
+        env:
+          - name: TYPESENSE_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: typesense
+                key: api-key
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        resources:
+          requests:
+            memory: 64Gi
+            cpu: 16000m
+          limits:
+            memory: 64Gi
+            cpu: 16000m
+        volumeMounts:
+        - name: nodeslist
+          mountPath: /usr/share/typesense/nodes
+          subPath: nodes
+        - name: typesense-data
+          mountPath: /usr/share/typesense/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          periodSeconds: 10
+          initialDelaySeconds: 300
+          failureThreshold: 300
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          failureThreshold: 300
+          periodSeconds: 10
+      - name: exporter
+        image: imatefx/typesense-prometheus-exporter
+        ports:
+        - containerPort: 8888
+          name: metrics
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 100m
+          limits:
+            memory: 64Mi
+            cpu: 100m
+        env:
+          - name: TYPESENSE_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: typesense
+                key: api-key
+          - name: TYPESENSE_HOST
+            value: "localhost"
+          - name: TYPESENSE_PORT
+            value: "8108"
+          - name: TYPESENSE_PROTOCOL
+            value: "http"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: metrics
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: metrics
+          initialDelaySeconds: 10
+      volumes:
+      - name: nodeslist
+        configMap:
+          name: typesense
+  volumeClaimTemplates:
+  - metadata:
+      name: typesense-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: database
+      resources:
+        requests:
+          storage: 100Gi

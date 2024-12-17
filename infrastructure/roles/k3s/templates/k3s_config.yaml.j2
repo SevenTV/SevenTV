@@ -1,0 +1,15 @@
+token: "{{ k3s_token }}"
+node-ip: "{{ private_ip4 }},{{ private_ip6 }}"
+node-external-ip: "{{ public_ip4 }},{{ public_ip6 }}"
+{% if labels is defined and labels|length > 0 %}
+node-label:
+{% for label in labels %}
+- "{{ label }}"
+{% endfor %}
+{% endif %}
+{% if taints is defined and taints|length > 0 %}
+node-taint:
+{% for taint in taints %}
+- "{{ taint }}"
+{% endfor %}
+{% endif %}

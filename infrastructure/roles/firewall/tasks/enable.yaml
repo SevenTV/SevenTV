@@ -1,0 +1,3 @@
+- name: Enable UFW
+  ufw:
+    state: enabled

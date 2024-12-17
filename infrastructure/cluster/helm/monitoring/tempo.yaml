@@ -1,0 +1,273 @@
+tempo:
+  traces:
+    otlp:
+      http: true
+      grpc: true
+
+  configuration: |
+    multitenancy_enabled: false
+    compactor:
+      compaction:
+        block_retention: 48h
+      ring:
+        kvstore:
+          store: memberlist
+    distributor:
+      ring:
+        kvstore:
+          store: memberlist
+      receivers:
+        {{- if  or (.Values.tempo.traces.jaeger.thriftCompact) (.Values.tempo.traces.jaeger.thriftBinary) (.Values.tempo.traces.jaeger.thriftHttp) (.Values.tempo.traces.jaeger.grpc) }}
+        jaeger:
+          protocols:
+            {{- if .Values.tempo.traces.jaeger.thriftCompact }}
+            thrift_compact:
+              endpoint: 0.0.0.0:6831
+            {{- end }}
+            {{- if .Values.tempo.traces.jaeger.thriftBinary }}
+            thrift_binary:
+              endpoint: 0.0.0.0:6832
+            {{- end }}
+            {{- if .Values.tempo.traces.jaeger.thriftHttp }}
+            thrift_http:
+              endpoint: 0.0.0.0:14268
+            {{- end }}
+            {{- if .Values.tempo.traces.jaeger.grpc }}
+            grpc:
+              endpoint: 0.0.0.0:14250
+            {{- end }}
+        {{- end }}
+        {{- if .Values.tempo.traces.zipkin }}
+        zipkin:
+          endpoint: 0.0.0.0:9411
+        {{- end }}
+        {{- if or (.Values.tempo.traces.otlp.http) (.Values.tempo.traces.otlp.grpc) }}
+        otlp:
+          protocols:
+            {{- if .Values.tempo.traces.otlp.http }}
+            http:
+              endpoint: 0.0.0.0:4318
+            {{- end }}
+            {{- if .Values.tempo.traces.otlp.grpc }}
+            grpc:
+              endpoint: 0.0.0.0:4317
+            {{- end }}
+        {{- end }}
+        {{- if .Values.tempo.traces.opencensus }}
+        opencensus:
+          endpoint: 0.0.0.0:55678
+        {{- end }}
+    querier:
+      frontend_worker:
+        frontend_address: {{ include "grafana-tempo.query-frontend.fullname" . }}-headless:{{ .Values.queryFrontend.service.ports.grpc }}
+    ingester:
+      lifecycler:
+        ring:
+          replication_factor: 3
+          kvstore:
+            store: memberlist
+        tokens_file_path: {{ .Values.tempo.dataDir }}/tokens.json
+    metrics_generator:
+      ring:
+        kvstore:
+          store: memberlist
+      storage:
+        path: {{ .Values.tempo.dataDir }}/wal
+        remote_write: {{ include "common.tplvalues.render" (dict "value" .Values.metricsGenerator.remoteWrite "context" $) | nindent 6 }}
+    memberlist:
+      bind_port: {{ .Values.tempo.containerPorts.gossipRing }}
+      abort_if_cluster_join_fails: false
+      join_members:
+        - {{ include "grafana-tempo.gossip-ring.fullname" . }}:{{ .Values.tempo.gossipRing.service.ports.http }}
+    overrides:
+      per_tenant_override_config: /bitnami/grafana-tempo/conf/overrides.yaml
+    server:
+      http_listen_port: {{ .Values.tempo.containerPorts.web }}
+      grpc_listen_port: {{ .Values.tempo.containerPorts.grpc }}
+    storage:
+      trace:
+        backend: s3
+        blocklist_poll: 5m
+        s3:
+          bucket: tempo
+          endpoint: minio.monitoring.svc.cluster.local:9000
+          insecure: true
+          forcepathstyle: true
+          access_key: ${TEMPO_S3_ACCESS_KEY}
+          secret_key: ${TEMPO_S3_SECRET_KEY}
+        wal:
+          path: {{ .Values.tempo.dataDir }}/wal
+
+  overridesConfiguration: |
+    overrides: {}
+
+common: &common
+  nodeAffinityPreset:
+    type: hard
+    key: 7tv.io/node-type
+    values: 
+      - monitoring
+  tolerations:
+    - key: 7tv.io/node-type
+      operator: Equal
+      value: monitoring
+      effect: NoSchedule
+  extraEnvVars:
+    - name: TEMPO_S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-user
+    - name: TEMPO_S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-password
+
+compactor:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "2000m"
+      memory: "8Gi"
+    limits:
+      cpu: "2000m"
+      memory: "8Gi"
+  args: 
+    - '-target=compactor'
+    - '-config.file=/bitnami/grafana-tempo/conf/tempo.yaml'
+    - '-mem-ballast-size-mbs=1024'
+    - '-config.expand-env=true'
+  <<: *common
+
+distributor:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: "2000m"
+      memory: "4Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+  args:
+    - '-target=distributor'
+    - '-config.file=/bitnami/grafana-tempo/conf/tempo.yaml'
+    - '-mem-ballast-size-mbs=1024'
+    - '-config.expand-env=true'
+  <<: *common
+
+metricsGenerator:
+  remoteWrite:
+    - url: http://vminsert-vmcluster.monitoring.svc:8480/insert/0/prometheus/api/v1/write
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  args:
+    - '-target=metrics-generator'
+    - '-config.file=/bitnami/grafana-tempo/conf/tempo.yaml'
+    - '-mem-ballast-size-mbs=1024'
+    - '-config.expand-env=true'
+  <<: *common
+
+ingester:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: "2000m"
+      memory: "8Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+  persistence:
+    enabled: false
+  args:
+    - '-target=ingester'
+    - '-config.file=/bitnami/grafana-tempo/conf/tempo.yaml'
+    - '-mem-ballast-size-mbs=1024'
+    - '-config.expand-env=true'
+  <<: *common
+
+querier:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: "2000m"
+      memory: "8Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+  args:
+    - '-target=querier'
+    - '-config.file=/bitnami/grafana-tempo/conf/tempo.yaml'
+    - '-mem-ballast-size-mbs=1024'
+    - '-config.expand-env=true'
+  <<: *common
+
+queryFrontend:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  args:
+    - '-target=query-frontend'
+    - '-config.file=/bitnami/grafana-tempo/conf/tempo.yaml'
+    - '-mem-ballast-size-mbs=1024'
+    - '-config.expand-env=true'
+  <<: *common
+
+vulture:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "2Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  nodeAffinityPreset:
+    type: hard
+    key: 7tv.io/node-type
+    values: 
+      - monitoring
+  tolerations:
+    - key: 7tv.io/node-type
+      operator: Equal
+      value: monitoring
+      effect: NoSchedule
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+memcached:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "6Gi"
+    limits:
+      cpu: "4000m"
+      memory: "6Gi"
+  nodeAffinityPreset:
+    type: hard
+    key: 7tv.io/node-type
+    values: 
+      - monitoring
+  tolerations:
+    - key: 7tv.io/node-type
+      operator: Equal
+      value: monitoring
+      effect: NoSchedule

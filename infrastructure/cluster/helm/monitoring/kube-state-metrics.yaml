@@ -1,0 +1,35 @@
+nodeAffinityPreset:
+  type: "hard"
+  key: "7tv.io/node-type"
+  values:
+    - monitoring
+
+tolerations:
+  - key: "7tv.io/node-type"
+    value: "monitoring"
+    operator: "Equal"
+    effect: "NoSchedule"
+
+serviceMonitor:
+  enabled: true
+  relabelings:
+    - action: replace
+      sourceLabels:
+      - exported_pod
+      targetLabel: pod
+    - action: replace
+      sourceLabels:
+      - exported_namespace
+      targetLabel: namespace
+    - action: drop
+      regex: "exported_.*"
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_node_name
+      targetLabel: instance
+  attachMetadata:
+    node: true
+
+selfMonitor:
+  enabled: true
+
