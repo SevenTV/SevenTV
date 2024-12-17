@@ -42,10 +42,9 @@ impl BadgeProgress {
 			.badge_by_id_loader
 			.load(current_badge_id)
 			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?
-			.ok_or(ApiError::not_found(ApiErrorCode::LoadError, "badge not found"))?;
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?;
 
-		Ok(Some(Badge::from_db(badge, &global.config.api.cdn_origin)))
+		Ok(badge.map(|b| Badge::from_db(b, &global.config.api.cdn_origin)))
 	}
 }
 

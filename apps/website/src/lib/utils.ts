@@ -4,6 +4,7 @@ import {
 	type Role,
 	type SubscriptionProductVariant,
 } from "$/gql/graphql";
+import { browser } from "$app/environment";
 import { getNumberFormatter } from "svelte-i18n";
 
 export function priceFormat(currency: string) {
@@ -22,6 +23,10 @@ export function numberFormat() {
 
 export function isMobileLayout(): boolean {
 	return window.matchMedia("screen and (max-width: 960px)").matches;
+}
+
+export function isSafari() {
+	return browser ? /^((?!chrome|android).)*safari/i.test(navigator.userAgent) : false;
 }
 
 export function filterRoles(roles: Role[]) {

@@ -3,13 +3,13 @@ import type { Platform, User } from "$/gql/graphql";
 import { get } from "svelte/store";
 import { gqlClient } from "./gql";
 import { sessionToken } from "./auth";
-import { PUBLIC_REST_API_V4 } from "$env/static/public";
+import { PUBLIC_REST_API_V4, PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 import { currentError, errorDialogMode } from "./error";
 
 export async function setActiveSet(userId: string, setId?: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation SetActiveSet($userId: Id!, $setId: Id) {
+			mutation SetActiveSet($userId: Id!, $setId: Id, $productId: Id!) {
 				users {
 					user(id: $userId) {
 						activeEmoteSet(emoteSetId: $setId) {
@@ -118,12 +118,21 @@ export async function setActiveSet(userId: string, setId?: string) {
 									create
 								}
 							}
+							billing(productId: $productId) {
+								subscriptionInfo {
+									activePeriod {
+										providerId {
+											provider
+										}
+									}
+								}
+							}
 						}
 					}
 				}
 			}
 		`),
-		{ userId, setId },
+		{ userId, setId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
 	);
 
 	if (!res.data) {
@@ -137,7 +146,7 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-				mutation SetActiveBadge($id: Id!, $badgeId: Id) {
+				mutation SetActiveBadge($id: Id!, $badgeId: Id, $productId: Id!) {
 					users {
 						user(id: $id) {
 							activeBadge(badgeId: $badgeId) {
@@ -350,6 +359,15 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 										create
 									}
 								}
+								billing(productId: $productId) {
+									subscriptionInfo {
+										activePeriod {
+											providerId {
+												provider
+											}
+										}
+									}
+								}
 							}
 						}
 					}
@@ -358,6 +376,7 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 			{
 				id: userId,
 				badgeId,
+				productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
 			},
 		)
 		.toPromise();
@@ -373,7 +392,7 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-				mutation SetActivePaint($id: Id!, $paintId: Id) {
+				mutation SetActivePaint($id: Id!, $paintId: Id, $productId: Id!) {
 					users {
 						user(id: $id) {
 							activePaint(paintId: $paintId) {
@@ -586,6 +605,15 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 										create
 									}
 								}
+								billing(productId: $productId) {
+									subscriptionInfo {
+										activePeriod {
+											providerId {
+												provider
+											}
+										}
+									}
+								}
 							}
 						}
 					}
@@ -594,6 +622,7 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 			{
 				id: userId,
 				paintId,
+				productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
 			},
 		)
 		.toPromise();
@@ -608,7 +637,12 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 export async function setMainConnection(userId: string, platform: Platform, platformId: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation SetMainConnection($userId: Id!, $platform: Platform!, $platformId: String!) {
+			mutation SetMainConnection(
+				$userId: Id!
+				$platform: Platform!
+				$platformId: String!
+				$productId: Id!
+			) {
 				users {
 					user(id: $userId) {
 						mainConnection(platform: $platform, platformId: $platformId) {
@@ -724,12 +758,21 @@ export async function setMainConnection(userId: string, platform: Platform, plat
 									create
 								}
 							}
+							billing(productId: $productId) {
+								subscriptionInfo {
+									activePeriod {
+										providerId {
+											provider
+										}
+									}
+								}
+							}
 						}
 					}
 				}
 			}
 		`),
-		{ userId, platform, platformId },
+		{ userId, platform, platformId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
 	);
 
 	if (!res.data) {
@@ -768,7 +811,7 @@ export async function uploadProfilePicture(userId: string, data: Blob) {
 export async function removeProfilePicture(userId: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation RemoveProfilePicture($userId: Id!) {
+			mutation RemoveProfilePicture($userId: Id!, $productId: Id!) {
 				users {
 					user(id: $userId) {
 						removeProfilePicture {
@@ -874,12 +917,21 @@ export async function removeProfilePicture(userId: string) {
 									create
 								}
 							}
+							billing(productId: $productId) {
+								subscriptionInfo {
+									activePeriod {
+										providerId {
+											provider
+										}
+									}
+								}
+							}
 						}
 					}
 				}
 			}
 		`),
-		{ userId },
+		{ userId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
 	);
 
 	if (!res.data) {
@@ -892,7 +944,12 @@ export async function removeProfilePicture(userId: string) {
 export async function removeConnection(userId: string, platform: Platform, platformId: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation RemoveConnection($userId: Id!, $platform: Platform!, $platformId: String!) {
+			mutation RemoveConnection(
+				$userId: Id!
+				$platform: Platform!
+				$platformId: String!
+				$productId: Id!
+			) {
 				users {
 					user(id: $userId) {
 						removeConnection(platform: $platform, platformId: $platformId) {
@@ -1005,12 +1062,21 @@ export async function removeConnection(userId: string, platform: Platform, platf
 									create
 								}
 							}
+							billing(productId: $productId) {
+								subscriptionInfo {
+									activePeriod {
+										providerId {
+											provider
+										}
+									}
+								}
+							}
 						}
 					}
 				}
 			}
 		`),
-		{ userId, platform, platformId },
+		{ userId, platform, platformId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
 	);
 
 	if (!res.data) {

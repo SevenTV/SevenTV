@@ -17,6 +17,8 @@
 <script lang="ts">
 	import type { Image } from "$/gql/graphql";
 	import { reducedMotion, type ReducedMotion } from "$/lib/layout";
+	import { isSafari } from "$/lib/utils";
+	import { browser } from "$app/environment";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	type Props = {
@@ -39,6 +41,9 @@
 		draggable = false,
 		...restProps
 	}: Props = $props();
+
+	// https://stackoverflow.com/a/23522755/10772729
+	const safari = isSafari();
 
 	let loading: boolean = $state(true);
 
@@ -66,6 +71,10 @@
 			images: Image[];
 		}[] = Object.values(
 			images
+				// Safari fails to implement the picture element correctly
+				// It doesn't fall back to a supported format if the format isn't supported (the whole point of the picture element)
+				// Safari doesn't fully support animated AVIF images, so we have to manually filter them out here
+				.filter((i) => !(safari && i.mime === "image/avif" && i.frameCount > 1))
 				.filter((i) => {
 					if (reducedMotion === "reduced-motion-enabled" && animated) {
 						// Return only static images
