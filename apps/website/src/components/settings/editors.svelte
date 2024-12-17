@@ -471,22 +471,11 @@
 							<Date date={moment(editor.updatedAt)} />
 						</td>
 						<td>
-							<!-- <Flags
-								flags={editorPermissionsToFlags(editor.permissions)}
-								edit={(e) => e.stopPropagation()}
-							/> -->
 							<Flags flags={editorPermissionsToFlags(editor.permissions)} />
 						</td>
 						<td class="shrink">
 							<div class="buttons">
 								<Flags flags={editorStateToFlags(editor.state, tab === "editing-for")} />
-								<!-- {#if tab === "editors" && editor.state === UserEditorState.Accepted}
-									<Button>
-										{#snippet icon()}
-											<PencilSimple />
-										{/snippet}
-									</Button>
-								{/if} -->
 								{#if tab === "editing-for" && editor.state === UserEditorState.Pending}
 									{@const aLoading =
 										acceptLoading &&

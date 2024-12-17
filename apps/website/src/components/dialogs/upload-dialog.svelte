@@ -284,21 +284,6 @@
 				{/if}
 			</div>
 		</section>
-		<!-- <section class="chat">
-			<div class="messages">
-				{#each messages as message}
-					<span class="message">
-						<span class="username">ayyybubu</span>: {message}
-					</span>
-				{/each}
-			</div>
-			<input
-				type="text"
-				placeholder={$t("dialogs.upload.chat")}
-				bind:value={messageInput}
-				onkeydown={sendMessage}
-			/>
-		</section> -->
 	</form>
 </Dialog>
 
@@ -448,52 +433,6 @@
 			flex-wrap: wrap;
 		}
 	}
-
-	// .chat {
-	// 	grid-area: chat;
-	// 	padding: 1rem;
-	// 	min-height: 15rem;
-
-	// 	display: flex;
-	// 	flex-direction: column;
-	// 	gap: 0.7rem;
-
-	// 	input {
-	// 		font-size: 0.8125rem;
-	// 		font-weight: 400;
-
-	// 		border-color: var(--border-active);
-	// 		padding-block: 0.6rem;
-	// 		background-color: var(--bg-medium);
-
-	// 		&::placeholder {
-	// 			opacity: 1;
-	// 			font-weight: 400;
-	// 		}
-	// 	}
-	// }
-
-	// .messages {
-	// 	flex-grow: 1;
-	// 	flex-basis: 0;
-	// 	overflow: hidden;
-
-	// 	padding-left: 0.6rem;
-
-	// 	display: flex;
-	// 	flex-direction: column;
-	// 	justify-content: flex-end;
-	// 	gap: 0.6rem;
-	// }
-
-	// .message {
-	// 	font-size: 0.8125rem;
-
-	// 	.username {
-	// 		color: var(--primary);
-	// 		font-weight: 700;
-	// 	}
-	// }
 
 	@media screen and (max-width: 960px) {
 		.grid {

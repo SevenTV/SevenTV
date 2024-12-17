@@ -8,8 +8,6 @@
 	import Menu from "./menu.svelte";
 	import { List, MagnifyingGlass, PlusSquare } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
-	import CartDialog from "../dialogs/cart-dialog.svelte";
-	import { type DialogMode } from "../dialogs/dialog.svelte";
 	import { t } from "svelte-i18n";
 	import Spinner from "../spinner.svelte";
 	import UserProfilePicture from "../user-profile-picture.svelte";
@@ -17,8 +15,6 @@
 	import UserName from "../user-name.svelte";
 	import mouseTrap from "$/lib/mouseTrap";
 	import { afterNavigate } from "$app/navigation";
-
-	let cartDialogMode: DialogMode = $state("hidden");
 
 	let mobileSearchShown = $state(false);
 
@@ -35,7 +31,6 @@
 	});
 </script>
 
-<CartDialog bind:mode={cartDialogMode} />
 <nav>
 	<div class="links">
 		<a class="home" href="/" class:hide-on-mobile={mobileSearchShown}>
@@ -45,7 +40,6 @@
 			<TopTabs
 				tabs={[
 					{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes" },
-					// { name: $t("pages.discover.title"), pathname: "/discover" },
 					{ name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
 					// { name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" },
 				]}
@@ -64,44 +58,6 @@
 			</Button>
 		{/if}
 		{#if $user}
-			<!-- <DropDown hideOnMobile>
-				<Button>
-					<Badge count={0} slot="icon">
-						<Bell />
-					</Badge>
-				</Button>
-				<Notifications popup />
-			</DropDown>
-			<Button href="/notifications" hideOnDesktop>
-				<Badge count={0} slot="icon">
-					<Bell />
-				</Badge>
-			</Button> -->
-
-			<!-- <DropDown hideOnMobile>
-				<Button>
-					<Badge count={1} slot="icon">
-						<Chat />
-					</Badge>
-				</Button>
-				<DirectMessages popup />
-			</DropDown>
-			<Button href="/direct-messages" hideOnDesktop>
-				<Badge count={1} slot="icon">
-					<Chat />
-				</Badge>
-			</Button> -->
-
-			<!-- {#if $page.url.pathname.startsWith("/store")}
-				<Button onclick={() => (cartDialogMode = "shown")}>
-					{#snippet icon()}
-						<Badge count={3}>
-							<ShoppingCartSimple />
-						</Badge>
-					{/snippet}
-				</Button>
-			{/if} -->
-
 			<Button
 				hideOnDesktop
 				hideOnMobile={mobileSearchShown}

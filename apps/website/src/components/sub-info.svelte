@@ -71,12 +71,6 @@
 				<span>&#60; {moment.duration(1, "days").humanize()}</span>
 			{/if}
 		</span>
-
-		<!-- <span class="key">{$t("sub_info.credits")}</span>
-		<span class="value">
-			<Coin />
-			<span>3</span>
-		</span> -->
 	</IconContext>
 </div>
 
