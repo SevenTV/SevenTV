@@ -10,6 +10,16 @@ We use a few different databases:
 - `typesense` - used for search
 - `nats` - used for inter-service communication as a message broker.
 
+## Backups
+
+We have a cronjob (kubernetes cronjob) that runs daily and creates a backup of the following databases:
+
+- `mongo`
+- `clickhouse`
+- `redis`
+
+These backups are stored indefinately in the a `backups` bucket on the Hetzner cloud account. (not wasabi)
+
 ## Mongo
 
 Most of the collections have a `updated_at` and a `search_updated_at` column. These columns are used to automatically reindex the search index when a row (document) is updated.
