@@ -7,7 +7,6 @@
 	import Spinner from "../spinner.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
-	import { user } from "$/lib/auth";
 
 	interface Props {
 		mode: DialogMode;
@@ -26,8 +25,8 @@
 		loading = false;
 		mode = "hidden";
 
-		if ($user) {
-			goto(`/users/${$user.id}/emote-sets`);
+		if (data?.owner?.id) {
+			goto(`/users/${data.owner.id}/emote-sets`);
 		} else {
 			goto("/");
 		}
