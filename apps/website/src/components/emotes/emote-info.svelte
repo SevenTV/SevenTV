@@ -357,12 +357,12 @@
 			align-items: center;
 			gap: 1rem;
 
-			max-width: 100%;
+			max-width: 90%;
 
 			h1 {
 				font-size: 1.25rem;
 				font-weight: 600;
-				max-width: 90%;
+				max-width: 100%;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				white-space: nowrap;
