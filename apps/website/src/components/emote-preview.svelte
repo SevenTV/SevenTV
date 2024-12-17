@@ -46,7 +46,7 @@
 	let highlight = $derived(determineHighlightColor(flags, ignoredFlagsForHighlight));
 
 	let title = $derived.by(() => {
-		let title = emoteSetEmote?.alias ?? data.defaultName;
+		let title = data.defaultName;
 		const owner = data.owner?.mainConnection?.platformDisplayName;
 
 		if (owner) {
@@ -174,6 +174,7 @@
 		max-width: 90%;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.user {

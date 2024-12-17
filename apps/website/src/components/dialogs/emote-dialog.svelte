@@ -66,6 +66,8 @@
 	.content {
 		flex-grow: 1;
 
+		max-width: 100%;
+
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
@@ -89,6 +91,11 @@
 	h1 {
 		font-size: 1rem;
 		font-weight: 600;
+
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.buttons {

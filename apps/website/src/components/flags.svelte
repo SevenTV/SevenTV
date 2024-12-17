@@ -98,7 +98,7 @@
 
 		if (emote.flags.deniedPersonal) flags.push("personal_use_denied");
 
-		if (emote.ranking && emote.ranking < 50) flags.push("trending");
+		if (emote.ranking && emote.ranking < 200) flags.push("trending");
 
 		if (emote.deleted) flags.push("deleted");
 

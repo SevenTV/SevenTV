@@ -39,7 +39,15 @@
 					<Link />
 				{/if}
 			{/snippet}
-			<span>{connection.platformDisplayName}</span>
+			<span class="name">{connection.platformDisplayName}</span>
 		</Button>
 	{/if}
 {/each}
+
+<style lang="scss">
+	.name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+</style>

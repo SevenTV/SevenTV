@@ -158,7 +158,7 @@
 <div class="emote-info">
 	<div class="heading">
 		{#if data}
-			<h1>{data.defaultName}</h1>
+			<h1 title={data.defaultName}>{data.defaultName}</h1>
 			<Tags tags={data.tags} />
 		{:else}
 			<Spinner />
@@ -171,9 +171,9 @@
 					<Cpu />
 					This emote is still processing
 					{#if data}
-						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}
-							>Refresh</button
-						>
+						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}>
+							Refresh
+						</button>
 					{/if}
 				</div>
 			{:else}
@@ -357,9 +357,15 @@
 			align-items: center;
 			gap: 1rem;
 
+			max-width: 100%;
+
 			h1 {
 				font-size: 1.25rem;
 				font-weight: 600;
+				max-width: 90%;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
 			}
 		}
 
