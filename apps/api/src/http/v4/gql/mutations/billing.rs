@@ -558,13 +558,7 @@ impl BillingMutation {
 			.join("/store?redeem_success=1")
 			.unwrap()
 			.to_string();
-		let cancel_url = global
-			.config
-			.api
-			.website_origin
-			.join("/store?redeem_success=1")
-			.unwrap()
-			.to_string();
+		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
 
 		let checkout_url = redeem_code_inner(global, session, code, success_url, cancel_url).await?;
 

@@ -1,12 +1,23 @@
 <script lang="ts">
 	import type { User } from "$/gql/graphql";
+	import type { HTMLAttributes } from "svelte/elements";
 	import Paint from "./paint.svelte";
 
-	let { user, enablePaintDialog }: { user: User; enablePaintDialog?: boolean } = $props();
+	type Props = {
+		user: User;
+		enablePaintDialog?: boolean;
+	} & HTMLAttributes<HTMLSpanElement>;
+
+	let { user, enablePaintDialog, ...restProps }: Props = $props();
 </script>
 
 {#snippet name()}
-	<span class="name" style:color={user.highestRoleColor?.hex}>
+	<span
+		class="name"
+		title={user.mainConnection?.platformDisplayName}
+		style:color={user.highestRoleColor?.hex}
+		{...restProps}
+	>
 		{user.mainConnection?.platformDisplayName}
 	</span>
 {/snippet}

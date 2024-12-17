@@ -22,6 +22,7 @@
 	let animated: boolean = $state($page.url.searchParams.get("a") == "1");
 	let staticFilter: boolean = $state($page.url.searchParams.get("s") == "1");
 	let overlaying: boolean = $state($page.url.searchParams.get("o") == "1");
+	let personalUse: boolean = $state($page.url.searchParams.get("p") == "1");
 	let exactMatch: boolean = $state($page.url.searchParams.get("e") == "1");
 
 	function unsetStaticFilter() {
@@ -75,6 +76,12 @@
 			url.searchParams.set("o", "1");
 		} else {
 			url.searchParams.delete("o");
+		}
+
+		if (personalUse) {
+			url.searchParams.set("p", "1");
+		} else {
+			url.searchParams.delete("p");
 		}
 
 		if (exactMatch) {
@@ -175,6 +182,7 @@
 				<Checkbox bind:value={animated}>{$t("pages.directory.filters.animated")}</Checkbox>
 				<Checkbox bind:value={staticFilter}>{$t("pages.directory.filters.static")}</Checkbox>
 				<Checkbox bind:value={overlaying}>{$t("flags.overlaying")}</Checkbox>
+				<Checkbox bind:value={personalUse}>Personal Use</Checkbox>
 				<Checkbox bind:value={exactMatch}>{$t("pages.directory.filters.exact_match")}</Checkbox>
 			</div>
 		</Expandable>

@@ -1,5 +1,10 @@
 <script lang="ts">
-	import type { Emote, EmoteSearchResult, EmoteSetEmoteSearchResult } from "$/gql/graphql";
+	import type {
+		Emote,
+		EmoteSearchResult,
+		EmoteSetEmote,
+		EmoteSetEmoteSearchResult,
+	} from "$/gql/graphql";
 	import { emotesLayout } from "$/lib/layout";
 	import EmotePreview from "../emote-preview.svelte";
 	import EmoteContainer from "./emote-container.svelte";
@@ -19,8 +24,14 @@
 
 	let { load, scrollable, selectionMode = false, selectionMap = $bindable({}) }: Props = $props();
 
+	interface Results {
+		items: { emote: Emote; emoteSetEmote?: EmoteSetEmote }[];
+		pageCount: number;
+		totalCount: number;
+	}
+
 	let page = $state(1);
-	let results: EmoteSearchResult | undefined = $state();
+	let results: Results | undefined = $state();
 
 	let identifier = $state(0);
 
@@ -44,31 +55,48 @@
 	function handleInfinite(event: InfiniteEvent) {
 		load(page++, PER_PAGE)
 			.then((result) => {
-				// Convert EmoteSetEmoteSearchResult to EmoteSearchResult
 				if (result.__typename === "EmoteSetEmoteSearchResult") {
-					// @ts-expect-error I know what I'm doing
-					result.__typename = "EmoteSearchResult";
-					// @ts-expect-error I know what I'm doing
-					result.items = result.items
-						.filter((item) => item.emote)
+					const items = result.items
+						.filter((e) => e.emote)
 						.map((item) => {
-							const emote = item.emote!;
+							return {
+								emote: item.emote!,
+								emoteSetEmote: item,
+							};
+						});
 
-							emote.defaultName = item.alias || emote!.defaultName;
-							emote.flags.defaultZeroWidth = item.flags.zeroWidth || emote.flags.defaultZeroWidth;
-
-							return emote as Emote;
-						}) as Emote[];
-				}
-
-				result = result as EmoteSearchResult;
-
-				if (results) {
-					results.pageCount = result.pageCount;
-					results.totalCount = result.totalCount;
-					results.items.push(...result.items);
+					if (results) {
+						results.pageCount = result.pageCount;
+						results.totalCount = result.totalCount;
+						results.items.push(...items);
+					} else {
+						results = {
+							items,
+							pageCount: result.pageCount,
+							totalCount: result.totalCount,
+						};
+					}
 				} else {
-					results = result as EmoteSearchResult;
+					result = result as EmoteSearchResult;
+
+					const items = result.items.map((item) => {
+						return {
+							emote: item,
+							emoteSetEmote: undefined,
+						};
+					});
+
+					if (results) {
+						results.pageCount = result.pageCount;
+						results.totalCount = result.totalCount;
+						results.items.push(...items);
+					} else {
+						results = {
+							items,
+							pageCount: result.pageCount,
+							totalCount: result.totalCount,
+						};
+					}
 				}
 
 				if (results.items.length > 0) {
@@ -79,8 +107,8 @@
 					event.detail.complete();
 				}
 
-				for (let item of results.items) {
-					selectionMap[item.id] = selectionMap[item.id] || false;
+				for (const item of results.items) {
+					selectionMap[item.emote.id] = selectionMap[item.emote.id] || false;
 				}
 			})
 			.catch(() => {
@@ -93,11 +121,12 @@
 	{#if results}
 		{#each results.items as data, i}
 			<EmotePreview
-				{data}
+				data={data.emote}
+				emoteSetEmote={data.emoteSetEmote}
 				index={i}
 				emoteOnly={$emotesLayout === "small-grid"}
 				{selectionMode}
-				selected={selectionMap[data.id]}
+				selected={selectionMap[data.emote.id]}
 			/>
 		{/each}
 	{/if}

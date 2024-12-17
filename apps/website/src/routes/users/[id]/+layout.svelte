@@ -35,6 +35,14 @@
 	let showActivity = $derived($user?.id === data.id || $user?.permissions.user.manageAny);
 
 	let isMe = $derived(data.id === $user?.id);
+
+	$effect(() => {
+		data.streamed.userRequest.value.then((user) => {
+			if (user) {
+				editorsExpanded = isMe && user.editors.length === 0;
+			}
+		});
+	});
 </script>
 
 <svelte:head>
@@ -316,6 +324,7 @@
 
 		.name {
 			align-self: center;
+			max-width: 100%;
 
 			display: flex;
 			gap: 0.25rem;

@@ -8,6 +8,7 @@
 	import ProfilePictureSetting from "$/components/settings/profile-picture-setting.svelte";
 	import ConnectionsSetting from "$/components/settings/connections-setting.svelte";
 	import DeleteSessions from "$/components/settings/delete-sessions.svelte";
+	import Spinner from "$/components/spinner.svelte";
 
 	async function queryConnections(userId: string) {
 		const res = await gqlClient().query(
@@ -34,7 +35,13 @@
 		return res.data?.users.user as User;
 	}
 
-	let connections = $state(queryConnections($user!.id));
+	let connections = $state<Promise<User>>();
+
+	$effect(() => {
+		if ($user) {
+			connections = queryConnections($user.id);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -53,7 +60,11 @@
 			<h3>{$t("pages.settings.account.profile.display_name")}</h3>
 			<span class="details">{$t("pages.settings.account.profile.display_name_description")}</span>
 		</span>
-		<MainConnectionSelect bind:userData={connections} />
+		{#if connections}
+			<MainConnectionSelect bind:userData={connections} />
+		{:else}
+			<Spinner />
+		{/if}
 		<hr />
 		<span>
 			<h3>{$t("common.profile_picture")}</h3>
@@ -73,7 +84,11 @@
 		</span>
 	</div>
 	<ul class="content connections">
-		<ConnectionsSetting bind:userData={connections} />
+		{#if connections}
+			<ConnectionsSetting bind:userData={connections} />
+		{:else}
+			<Spinner />
+		{/if}
 	</ul>
 </section>
 

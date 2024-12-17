@@ -37,7 +37,6 @@
 	import { editableEmoteSets } from "$/lib/emoteSets";
 	import Spinner from "../spinner.svelte";
 	import { invalidate } from "$app/navigation";
-	import { page } from "$app/stores";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -159,7 +158,7 @@
 <div class="emote-info">
 	<div class="heading">
 		{#if data}
-			<h1>{data.defaultName}</h1>
+			<h1 title={data.defaultName}>{data.defaultName}</h1>
 			<Tags tags={data.tags} />
 		{:else}
 			<Spinner />
@@ -172,7 +171,9 @@
 					<Cpu />
 					This emote is still processing
 					{#if data}
-						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}>Refresh</button>
+						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}>
+							Refresh
+						</button>
 					{/if}
 				</div>
 			{:else}
@@ -356,9 +357,15 @@
 			align-items: center;
 			gap: 1rem;
 
+			max-width: 90%;
+
 			h1 {
 				font-size: 1.25rem;
 				font-weight: 600;
+				max-width: 100%;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
 			}
 		}
 
@@ -366,7 +373,8 @@
 			display: flex;
 			gap: 0.5rem;
 
-			.refresh:hover, .refresh:focus-visible {
+			.refresh:hover,
+			.refresh:focus-visible {
 				text-decoration: underline;
 			}
 		}

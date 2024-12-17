@@ -125,7 +125,7 @@
 		return res.data.users.user.editors as UserEditor[];
 	}
 
-	let editors = $derived(queryEditors($user!.id));
+	let editors = $derived($user ? queryEditors($user.id) : Promise.race([]));
 </script>
 
 {#await editors}
