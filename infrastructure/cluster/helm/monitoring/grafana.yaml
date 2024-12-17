@@ -1,0 +1,68 @@
+plugins: |
+  meln5674-mongodb-community=https://github.com/meln5674/grafana-mongodb-community-plugin/releases/download/v0.1.2/meln5674-mongodb-community.zip
+
+admin:
+  password: "kxPivx4Sun"
+
+grafana:
+  replicaCount: 1
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 128m
+      memory: 1Gi
+
+  extraEnvVars:
+    - name: GF_SERVER_ROOT_URL
+      value: "https://grafana.k8s.7tv.io"
+    - name: GF_SERVER_DOMAIN
+      value: "grafana.k8s.7tv.io"
+    - name: GF_SECURITY_COOKIE_SAMESITE
+      value: "None"
+    - name: GF_SECURITY_COOKIE_SECURE
+      value: "true"
+    - name: GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS
+      value: "meln5674-mongodb-community"
+
+  updateStrategy:
+    type: RollingUpdate
+
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values: 
+      - monitoring
+
+  tolerations:
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+persistence:
+  enabled: true
+  storageClass: "monitoring"
+
+ingress:
+  enabled: false
+  pathType: ImplementationSpecific
+  apiVersion: ""
+  hostname: grafana.local
+  path: /
+  annotations: {}
+  tls: false
+  extraHosts: []
+  extraPaths: []
+  extraTls: []
+  secrets: []
+  selfSigned: false
+  ingressClassName: ""
+  extraRules: []
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

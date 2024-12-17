@@ -1,0 +1,55 @@
+mode: distributed
+
+auth:
+  forceNewKeys: true
+  existingSecret: "minio"
+  rootUserSecretKey: "root-user"
+  rootPasswordSecretKey: "root-password"
+
+provisioning:
+  enabled: true
+  buckets:
+    - name: "7tv-public"
+    - name: "7tv-private"
+
+statefulset:
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  replicaCount: 3
+  zones: 1
+  drivesPerNode: 2
+
+podAntiAffinityPreset: hard
+
+nodeAffinityPreset:
+  type: "hard"
+  key: "7tv.io/node-type"
+  values:
+    - database
+
+tolerations:
+  - key: "7tv.io/node-type"
+    operator: "Equal"
+    value: "database"
+    effect: "NoSchedule"
+
+resources:
+  requests:
+    cpu: "2000m"
+    memory: "4Gi"
+  limits:
+    cpu: "2000m"
+    memory: "4Gi"
+
+persistence:
+  enabled: true
+  storageClass: database-cdn
+  size: 10000Gi
+
+volumePermissions:
+  enabled: false
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

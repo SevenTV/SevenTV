@@ -1,0 +1,21 @@
+tls-san: |
+    {{ 
+        (
+        (additional_tls_sans | default([]) | list)
+        + (groups['control_plane'] | map('extract', hostvars, 'private_ip4') | select('defined') | list)
+        + (groups['control_plane'] | map('extract', hostvars, 'private_ip6') | select('defined') | list)
+        + (groups['control_plane'] | map('extract', hostvars, 'public_ip4') | select('defined') | list)
+        + (groups['control_plane'] | map('extract', hostvars, 'public_ip6') | select('defined') | list)
+        + ['127.0.0.1']
+        ) | list | join(',')
+    }}
+flannel-backend: "none"
+disable-kube-proxy: true
+egress-selector-mode: disabled
+disable-network-policy: true
+disable:
+- traefik
+- servicelb
+cluster-cidr: "{{ cluster_ipv4_cidr }},{{ cluster_ipv6_cidr }}"
+service-cidr: "{{ service_ipv4_cidr }},{{ service_ipv6_cidr}}"
+advertise-address: "{{ private_ip4 }}"

@@ -1,0 +1,20 @@
+- name: Allow Control Plane Traffic
+  ufw:
+    rule: allow
+    port: 6443
+    proto: tcp
+    comment: "K3s Control Plane"
+  when: ansible_hostname in groups["control_plane"]
+
+- name: Allow CIDR Ranges
+  ufw:
+    rule: allow
+    from: "{{ item }}"
+    comment: "CIDR Range"
+  with_items:
+    - "{{ node_ipv4_cidr }}"
+    - "{{ node_ipv6_cidr }}"
+    - "{{ cluster_ipv4_cidr }}"
+    - "{{ cluster_ipv6_cidr }}"
+    - "{{ service_ipv4_cidr }}"
+    - "{{ service_ipv6_cidr }}"

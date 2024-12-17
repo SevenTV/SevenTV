@@ -1,0 +1,17 @@
+- name: Create Config Directory
+  file:
+    dest: /etc/rancher/k3s/config.yaml.d
+    state: directory
+
+- name: Create k3s Config
+  template:
+    src: k3s_config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    mode: "0600"
+
+- name: Create k3s Control Plane Config
+  when: inventory_hostname in groups['control_plane']
+  template:
+    src: k3s_control_plane_config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml.d/control-plane.yaml
+    mode: "0600"

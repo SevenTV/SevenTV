@@ -1,0 +1,137 @@
+jetstream:
+  enabled: true
+  maxMemory: 16G
+
+configuration: |-
+  {{- $authPwd := default (include "nats.randomPassword" .) .Values.auth.password -}}
+  {{- $clusterAuthPwd := default (include "nats.randomPassword" .) .Values.cluster.auth.password -}}
+  {{- if eq .Values.resourceType "statefulset" }}
+  server_name: $NATS_SERVER_NAME
+  {{- end }}
+  listen: 0.0.0.0:{{ .Values.containerPorts.client }}
+  http: 0.0.0.0:{{ .Values.containerPorts.monitoring }}
+
+  # Authorization for client connections
+  {{- if .Values.auth.enabled }}
+  authorization {
+    {{- if .Values.auth.user }}
+    user: {{ .Values.auth.user | quote }}
+    password: {{ $authPwd | quote }}
+    {{- else if .Values.auth.token }}
+    token: {{ .Values.auth.token | quote }}
+    {{- else if .Values.auth.usersCredentials }}
+    users: [
+      {{- range $user := .Values.auth.usersCredentials }}
+        { user: {{ $user.username | quote }}, password: {{ $user.password | quote }} },
+      {{- end }}
+    ],
+    {{- end }}
+    timeout:  {{ int .Values.auth.timeout }}
+  }
+  {{- if .Values.auth.noAuthUser }}
+  no_auth_user: {{ .Values.auth.noAuthUser | quote }}
+  {{- end }}
+  {{- end }}
+
+  # Logging options
+  debug: {{ ternary "true" "false" (or .Values.debug.enabled .Values.diagnosticMode.enabled) }}
+  trace: {{ ternary "true" "false" (or .Values.debug.trace .Values.diagnosticMode.enabled) }}
+  logtime: {{ ternary "true" "false" (or .Values.debug.logtime .Values.diagnosticMode.enabled) }}
+  # Pid file
+  pid_file: "/opt/bitnami/nats/tmp/{{ .Values.natsFilename }}.pid"
+
+  # Some system overrides
+  {{- if .Values.maxConnections }}
+  max_connections: {{ int .Values.maxConnections }}
+  {{- end }}
+  {{- if .Values.maxControlLine }}
+  max_control_line: {{ int .Values.maxControlLine }}
+  {{- end }}
+  {{- if .Values.maxPayload }}
+  max_payload: {{ int .Values.maxPayload }}
+  {{- end }}
+  {{- if .Values.writeDeadline }}
+  write_deadline: {{ .Values.writeDeadline | quote }}
+  {{- end }}
+
+  {{- if gt (int .Values.replicaCount) 1 }}
+  # Clustering definition
+  cluster {
+    name: {{ .Values.cluster.name | quote }}
+    listen: 0.0.0.0:{{ .Values.containerPorts.cluster }}
+    {{- if .Values.cluster.auth.enabled }}
+    # Authorization for cluster connections
+    authorization {
+      user: {{ .Values.cluster.auth.user | quote }}
+      password: {{ $clusterAuthPwd | quote }}
+      timeout:  1
+    }
+    {{- end }}
+    # Routes are actively solicited and connected to from this server.
+    # Other servers can connect to us if they supply the correct credentials
+    # in their routes definitions from above
+    routes = [
+      {{- if .Values.cluster.auth.enabled }}
+      nats://{{ .Values.cluster.auth.user }}:{{ $clusterAuthPwd }}@{{ include "common.names.fullname" . }}:{{ .Values.service.ports.cluster }}
+      {{- else }}
+      nats://{{ template "common.names.fullname" . }}:{{ .Values.service.ports.cluster }}
+      {{- end }}
+    ]
+    {{- if .Values.cluster.connectRetries }}
+    # Configure number of connect retries for implicit routes
+    connect_retries: {{ .Values.cluster.connectRetries }}
+    {{- end }}
+  }
+  {{- end }}
+
+  {{- if .Values.jetstream.enabled }}
+  # JetStream configuration
+  jetstream: enabled
+  jetstream {
+    store_dir: /data/jetstream
+    max_memory_store: {{ .Values.jetstream.maxMemory }}
+    max_file_store: {{ .Values.persistence.size }}
+  }
+  {{- end }}
+replicaCount: 3
+resources:
+  requests:
+    cpu: "8000m"
+    memory: 32Gi
+  limits:
+    cpu: "8000m"
+    memory: 32Gi
+nodeAffinityPreset:
+  type: "hard"
+  key: "7tv.io/node-type"
+  values:
+    - database
+tolerations:
+  - key: "7tv.io/node-type"
+    operator: "Equal"
+    value: "database"
+    effect: "NoSchedule"
+
+metrics:
+  enabled: true
+  flags:
+    - -channelz
+    - -connz
+    - -connz_detailed
+    - -healthz
+    - -gatewayz
+    - -accstatz
+    - -leafz
+    - -jsz=all
+    - -varz
+    - -routez
+    - -serverz
+    - -subz
+  serviceMonitor:
+    enabled: true
+    interval: 5s
+
+persistence:
+  enabled: true
+  storageClass: database
+  size: 150Gi

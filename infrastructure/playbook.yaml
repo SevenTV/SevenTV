@@ -1,0 +1,13 @@
+- hosts: all
+  name: Basic Setup
+  become: true
+  roles:
+    - node
+    - firewall
+
+- hosts: all
+  name: Cluster setup
+  become: true
+  roles:
+    - k3s
+

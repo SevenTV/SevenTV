@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+  namespace: database
+spec:
+  schedule: "@daily"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          tolerations:
+            - key: "7tv.io/node-type"
+              operator: "Equal"
+              value: "database"
+              effect: "NoSchedule"
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: "7tv.io/node-type"
+                        operator: "In"
+                        values:
+                          - "database"
+          containers:
+          - name: backup
+            image: ghcr.io/seventv/db-backup:latest
+            imagePullPolicy: Always
+            args:
+              - mongodb
+            env:
+              - name: DB_HOST
+                value: mongodb-0.mongodb-headless.database.svc.cluster.local
+              - name: DB_PORT
+                value: "27017"
+              - name: DB_USER
+                value: root
+              - name: DB_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: mongodb
+                    key: mongodb-root-password
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: backup-cron-job
+                    key: aws-access-key-id
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: backup-cron-job
+                    key: aws-secret-access-key
+              - name: S3_BUCKET
+                valueFrom:
+                  secretKeyRef:
+                    name: backup-cron-job
+                    key: s3-bucket
+              - name: S3_ENDPOINT
+                valueFrom:
+                  secretKeyRef:
+                    name: backup-cron-job
+                    key: s3-endpoint
+              - name: EXTRA_ARGS
+                value: "--oplog"
+              - name: TZ
+                value: UTC
+          restartPolicy: OnFailure

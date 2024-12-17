@@ -1,0 +1,56 @@
+mode: distributed
+
+auth:
+  forceNewKeys: true
+  existingSecret: "minio"
+  rootUserSecretKey: "root-user"
+  rootPasswordSecretKey: "root-password"
+
+provisioning:
+  enabled: true
+  buckets:
+    - name: "loki"
+    - name: "tempo"
+
+statefulset:
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  replicaCount: 3
+  zones: 1
+  drivesPerNode: 2
+
+podAntiAffinityPreset: hard
+
+nodeAffinityPreset:
+  type: "hard"
+  key: "7tv.io/node-type"
+  values:
+    - monitoring
+
+tolerations:
+  - key: "7tv.io/node-type"
+    operator: "Equal"
+    value: "monitoring"
+    effect: "NoSchedule"
+
+resources:
+  requests:
+    cpu: "2000m"
+    memory: "4Gi"
+  limits:
+    cpu: "2000m"
+    memory: "4Gi"
+
+persistence:
+  enabled: true
+  storageClass: "monitoring"
+  size: 100Gi
+  selector:
+    matchLabels:
+      app: minio
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

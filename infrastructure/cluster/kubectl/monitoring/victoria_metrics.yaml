@@ -1,0 +1,130 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMCluster
+metadata:
+  name: vmcluster
+  namespace: monitoring
+spec:
+  replicationFactor: 3
+  retentionPeriod: "90d"
+  vmstorage:
+    replicaCount: 3
+    storageDataPath: "/vm-storage"
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: "app.kubernetes.io/name"
+              operator: In
+              values:
+              - "vmstorage"
+          topologyKey: "kubernetes.io/hostname"
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "7tv.io/node-type"
+              operator: "In"
+              values:
+              - "monitoring"
+    tolerations:
+      - key: "7tv.io/node-type"
+        value: "monitoring"
+        operator: "Equal"
+        effect: "NoSchedule"
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: monitoring
+          resources:
+            requests:
+              storage: "10Gi"
+    resources:
+      limits:
+        cpu: "2"
+        memory: 2048Mi
+  vmselect:
+    replicaCount: 3
+    cacheMountPath: "/select-cache"
+    affinity:
+      podAntiAffinity:
+        preferDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: "app.kubernetes.io/name"
+              operator: In
+              values:
+              - "vmselect"
+          topologyKey: "kubernetes.io/hostname"
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "7tv.io/node-type"
+              operator: "In"
+              values:
+              - "monitoring"
+    tolerations:
+      - key: "7tv.io/node-type"
+        value: "monitoring"
+        operator: "Equal"
+        effect: "NoSchedule"
+    storage:
+      emptyDir: {}
+    resources:
+      limits:
+        cpu: "1"
+        memory: "500Mi"
+  vminsert:
+    replicaCount: 4
+    affinity:
+      podAntiAffinity:
+        preferDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: "app.kubernetes.io/name"
+              operator: In
+              values:
+              - "vminsert"
+          topologyKey: "kubernetes.io/hostname"
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "7tv.io/node-type"
+              operator: "In"
+              values:
+              - "monitoring"
+    tolerations:
+      - key: "7tv.io/node-type"
+        value: "monitoring"
+        operator: "Equal"
+        effect: "NoSchedule"
+    resources:
+      limits:
+        cpu: "1"
+        memory: "500Mi"
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMAgent
+metadata:
+  name: agent
+  namespace: monitoring
+spec:
+  selectAllByDefault: true
+  remoteWrite:
+    - url: "http://vminsert-vmcluster.monitoring.svc:8480/insert/0/prometheus/api/v1/write"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: "7tv.io/node-type"
+            operator: "In"
+            values:
+            - "monitoring"
+  tolerations:
+    - key: "7tv.io/node-type"
+      value: "monitoring"
+      operator: "Equal"
+      effect: "NoSchedule"

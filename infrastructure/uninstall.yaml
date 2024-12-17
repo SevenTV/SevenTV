@@ -1,0 +1,22 @@
+- hosts: all
+  name: "Uninstall k3s"
+  become: true
+  tasks:
+    - name: Check if k3s is installed
+      register: k3s_stat
+      stat:
+        path: /usr/local/bin/{{ "k3s-uninstall.sh" if ansible_hostname in groups["control_plane"] else "k3s-agent-uninstall.sh" }}
+
+    - name: Uninstall k3s
+      command: '{{ "k3s-uninstall.sh" if ansible_hostname in groups["control_plane"] else "k3s-agent-uninstall.sh" }}'
+      args:
+        chdir: /usr/local/bin
+      when: k3s_stat.stat.exists
+
+    - name: Remove Cilium CNI
+      shell: |
+        ip link delete cilium_host || true
+        ip link delete cilium_net || true
+        ip link delete cilium_vxlan || true
+        iptables-save | grep -iv cilium | iptables-restore 
+        ip6tables-save | grep -iv cilium | ip6tables-restore

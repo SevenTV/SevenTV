@@ -1,0 +1,6 @@
+---
+- include_tasks: ssh.yaml
+
+- include_tasks: k3s.yaml
+
+- include_tasks: enable.yaml

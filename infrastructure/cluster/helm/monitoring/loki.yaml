@@ -1,0 +1,339 @@
+loki:
+  configuration: |
+    auth_enabled: false
+
+    server:
+      http_listen_port: {{ .Values.loki.containerPorts.http }}
+      grpc_listen_port: {{ .Values.loki.containerPorts.grpc }}
+    common:
+      compactor_address: http://{{ include "grafana-loki.compactor.fullname" . }}:{{ .Values.compactor.service.ports.http }}
+
+    distributor:
+      ring:
+        kvstore:
+          store: memberlist
+
+    memberlist:
+      join_members:
+        - {{ include "grafana-loki.gossip-ring.fullname" . }}
+
+    ingester:
+      lifecycler:
+        ring:
+          kvstore:
+            store: memberlist
+          replication_factor: 1
+      chunk_idle_period: 30m
+      chunk_block_size: 262144
+      chunk_encoding: snappy
+      chunk_retain_period: 1m
+      wal:
+        dir: {{ .Values.loki.dataDir }}/wal
+
+    limits_config:
+      retention_period: 2160h
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+      max_cache_freshness_per_query: 10m
+      split_queries_by_interval: 15m
+      allow_structured_metadata: true
+
+    schema_config:
+      configs:
+      - from: 2020-05-15
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+    storage_config:
+      tsdb_shipper:
+        active_index_directory: {{ .Values.loki.dataDir }}/loki/tsdb-index
+        cache_location: {{ .Values.loki.dataDir }}/loki/tsdb-cache
+        index_gateway_client:
+          server_address: {{ (printf "dns:///%s:9095" (include "grafana-loki.index-gateway.fullname" .)) }}
+      aws:
+        s3: s3://${LOKI_S3_ACCESS_KEY}:${LOKI_S3_SECRET_KEY}@minio.monitoring.svc.cluster.local:9000/loki
+        s3forcepathstyle: true
+
+    querier:
+      max_concurrent: 16
+
+    query_range:
+      align_queries_with_step: true
+      max_retries: 5
+      cache_results: true
+    frontend_worker:
+      frontend_address: {{ include "grafana-loki.query-frontend.fullname" . }}:{{ .Values.queryFrontend.service.ports.grpc }}
+
+    frontend:
+      log_queries_longer_than: 5s
+      compress_responses: true
+      tail_proxy_url: http://{{ include "grafana-loki.querier.fullname" . }}:{{ .Values.querier.service.ports.http }}
+
+    compactor:
+      working_directory: {{ .Values.loki.dataDir }}/loki/retention
+      compaction_interval: 10m
+      retention_enabled: true
+      retention_delete_delay: 2h
+      retention_delete_worker_count: 150
+      delete_request_store: aws
+
+  overrideConfiguration: {}
+
+compactor:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "8Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+  podAntiAffinityPreset: soft
+  extraArgs:
+    - -config.expand-env=true
+  extraEnvVars:
+    - name: LOKI_S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-user
+    - name: LOKI_S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-password
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values:
+      - monitoring
+  tolerations:
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  persistence:
+    enabled: false
+
+gateway:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values:
+      - monitoring
+  tolerations:
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  command: 
+    - /bin/bash
+    - '-ec'
+    - |
+      # Generate resolver data
+
+      echo resolver $(awk 'BEGIN{ORS=" "} $1=="nameserver" { if (index($2, ":") > 0) { print "[" $2 "]" } else { print $2 } }' /etc/resolv.conf) ";" > /opt/bitnami/nginx/conf/resolvers.conf
+
+      /opt/bitnami/scripts/nginx/entrypoint.sh /opt/bitnami/scripts/nginx/run.sh
+
+indexGateway:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  extraArgs:
+    - -config.expand-env=true
+  extraEnvVars:
+    - name: LOKI_S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-user
+    - name: LOKI_S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-password
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values:
+      - monitoring
+  tolerations:
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+distributor:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "4Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+  podAntiAffinityPreset: soft
+  extraArgs:
+    - -config.expand-env=true
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values:
+      - monitoring
+  tolerations:
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+ingester:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "8Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+  podAntiAffinityPreset: soft
+  extraArgs:
+    - -config.expand-env=true
+  extraEnvVars:
+    - name: LOKI_S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-user
+    - name: LOKI_S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-password
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values:
+      - monitoring
+  tolerations:
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  persistence:
+    enabled: false
+
+querier:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "4Gi"
+    limits:
+      cpu: "4000m"
+      memory: "4Gi"
+  podAntiAffinityPreset: soft
+  extraArgs:
+    - -config.expand-env=true
+  extraEnvVars:
+    - name: LOKI_S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-user
+    - name: LOKI_S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-password
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values:
+      - monitoring
+  tolerations:
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  persistence:
+    enabled: false
+
+queryFrontend:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  podAntiAffinityPreset: soft
+  extraArgs:
+    - -config.expand-env=true
+  extraEnvVars:
+    - name: LOKI_S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-user
+    - name: LOKI_S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio
+          key: root-password
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values:
+      - monitoring
+  tolerations:
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  persistence:
+    enabled: false
+
+promtail:
+  enabled: true
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+  tolerations:
+    - operator: "Exists"
+      effect: "NoSchedule"
+
+memcachedfrontend:
+  enabled: false
+
+memcachedchunks:
+  enabled: false
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

@@ -1,0 +1,55 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: cloudflare
+spec:
+  controllerName: github.com/pl4nty/cloudflare-kubernetes-gateway
+  parametersRef:
+    kind: Secret
+    group: ""
+    namespace: cloudflare-gateway
+    name: cloudflare
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gateway
+  namespace: cloudflare-gateway
+spec:
+  gatewayClassName: cloudflare
+  listeners:
+  - protocol: HTTP
+    port: 80
+    name: http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: cloudflare-gateway
+  hostnames:
+  - grafana.k8s.7tv.io
+  rules:
+  - backendRefs:
+    - name: grafana
+      port: 3000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: minio
+  namespace: monitoring
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: cloudflare-gateway
+  hostnames:
+  - minio.k8s.7tv.io
+  rules:
+  - backendRefs:
+    - name: minio
+      port: 9001

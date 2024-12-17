@@ -1,0 +1,150 @@
+lvmd:
+  managed: true
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: "7tv.io/node-type"
+                operator: "In"
+                values:
+                  - database
+
+  tolerations:
+    - key: "7tv.io/node-type"
+      value: "database"
+      operator: "Equal"
+      effect: "NoSchedule"
+
+  deviceClasses:
+    - name: database-raid
+      volume-group: database-nvme-vg
+      default: true
+      spare-gb: 10
+
+  additionalConfigs:
+    - affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: "7tv.io/node-type"
+                    operator: "In"
+                    values:
+                      - monitoring
+
+      tolerations:
+        - key: "7tv.io/node-type"
+          value: "monitoring"
+          operator: "Equal"
+          effect: "NoSchedule"
+
+      deviceClasses:
+        - name: monitoring-raid
+          volume-group: monitoring-nvme-vg
+          default: true
+          spare-gb: 10
+
+node:
+  lvmdEmbedded: false
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: "7tv.io/node-type"
+                operator: "In"
+                values:
+                  - database
+                  - monitoring
+
+  tolerations:
+    - key: "7tv.io/node-type"
+      value: "database"
+      operator: "Equal"
+      effect: "NoSchedule"
+    - key: "7tv.io/node-type"
+      value: "monitoring"
+      operator: "Equal"
+      effect: "NoSchedule"
+
+  prometheus:
+    podMonitor:
+      enabled: true
+
+controller:
+  replicaCount: 3
+
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+
+  affinity: |
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: "7tv.io/node-type"
+                operator: "In"
+                values:
+                  - control-plane
+
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                  - controller
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - {{ include "topolvm.name" . }}
+          topologyKey: kubernetes.io/hostname
+
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  prometheus:
+    podMonitor:
+      enabled: true
+      relabelings:
+        - action: replace
+          sourceLabels:
+          - __meta_kubernetes_node_name
+          targetLabel: instance
+      attachMetadata:
+        node: true
+
+storageClasses:
+  - name: database
+    storageClass:
+      fsType: xfs
+      reclaimPolicy: Retain
+      annotations: {}
+      isDefaultClass: false
+      volumeBindingMode: WaitForFirstConsumer
+      allowVolumeExpansion: true
+      additionalParameters:
+        topolvm.io/device-class: database-raid
+      mountOptions: []
+  - name: monitoring
+    storageClass:
+      fsType: xfs
+      reclaimPolicy: Retain
+      annotations: {}
+      isDefaultClass: false
+      volumeBindingMode: WaitForFirstConsumer
+      allowVolumeExpansion: true
+      additionalParameters:
+        topolvm.io/device-class: monitoring-raid
+      mountOptions: []
+
+priorityClass:
+  name: topolvm

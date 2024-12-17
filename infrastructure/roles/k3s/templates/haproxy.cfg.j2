@@ -1,0 +1,14 @@
+frontend k3s-frontend
+    bind 127.0.0.1:6443
+    mode tcp
+    option tcplog
+    default_backend k3s-backend
+
+backend k3s-backend
+    mode tcp
+    option tcp-check
+    balance roundrobin
+    default-server inter 10s downinter 5s
+{% for host in groups['control_plane'] %}
+    server {{ host }} {{ hostvars[host]['private_ip4'] }}:6443 check check-ssl verify none
+{% endfor %}

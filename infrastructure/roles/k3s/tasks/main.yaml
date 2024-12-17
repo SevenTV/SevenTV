@@ -1,0 +1,29 @@
+- include_tasks: configure.yaml
+
+- name: Assert that the control_plane_master variable is configured correctly
+  run_once: true
+  assert:
+    that:
+      - control_plane_master is defined
+      - control_plane_master is string
+      - control_plane_master != ""
+      - control_plane_master in groups['control_plane']
+    fail_msg: "The control_plane_master variable is not defined"
+    quiet: true
+
+- include_tasks: initialize.yaml
+  when: ansible_hostname == control_plane_master
+
+- name: Assert that cluster is initialized
+  run_once: true
+  assert:
+    that:
+      - hostvars[control_plane_master]['k3s_initialized']
+    fail_msg: "The cluster is not initialized"
+    quiet: true
+
+- include_tasks: haproxy.yaml
+  when: ansible_hostname not in groups['control_plane']
+
+- include_tasks: join.yaml
+  when: ansible_hostname != control_plane_master

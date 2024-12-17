@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: app
+  labels:
+    app: api
+spec:
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - name: api
+        image: ghcr.io/seventv/api-new:latest
+        imagePullPolicy: Always
+        args:
+          - "--config=/app/config.toml"
+        resources:
+          limits:
+            memory: "4Gi"
+            cpu: 4000m
+          requests:
+            memory: "4Gi"
+            cpu: 2000m
+        livenessProbe:
+          httpGet:
+            port: metrics
+            path: /health
+        readinessProbe:
+          httpGet:
+            port: metrics
+            path: /health
+        envFrom:
+          - secretRef:
+              name: api
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9000
+          name: metrics
+        volumeMounts:
+        - name: config
+          mountPath: /app/config.toml
+          subPath: config.toml
+      volumes:
+      - name: config
+        configMap:
+          name: api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: app
+  labels:
+    app: api
+spec:
+  selector:
+    app: api
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+  - name: metrics
+    port: 9000
+    targetPort: 9000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: api
+  namespace: app
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: cloudflare-gateway
+  hostnames:
+  - 7tv.io
+  rules:
+  - backendRefs:
+    - name: api
+      port: 8080

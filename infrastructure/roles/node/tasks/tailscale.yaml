@@ -1,0 +1,23 @@
+- name: Check tailscale status
+  shell: tailscale status
+  register: tailscale_status
+  ignore_errors: true
+  changed_when: false
+
+- name: Setup tailscale sysctl
+  register: sysctl_copy
+  copy:
+    content: |
+      net.ipv4.conf.all.forwarding=1
+      net.ipv6.conf.all.forwarding=1
+    dest: /etc/sysctl.d/99-tailscale.conf
+    mode: '0644'
+
+- name: Apply sysctl
+  shell: sysctl -p /etc/sysctl.d/99-tailscale.conf
+  when: sysctl_copy.changed
+
+- name: Install tailscale
+  shell: |
+    curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up --auth-key={{ tailscale_token }} --hostname=k3s-{{ ansible_hostname }} --advertise-routes={{ node_ipv4_cidr }},{{ node_ipv6_cidr }}
+  when: tailscale_status.rc != 0 or sysctl_copy.changed

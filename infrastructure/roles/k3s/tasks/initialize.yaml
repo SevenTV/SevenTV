@@ -1,0 +1,65 @@
+- name: Initialize the Control Plane
+  shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init
+  args:
+    creates: /etc/rancher/k3s/k3s.yaml
+
+- name: Wait for the K3s API to be available
+  wait_for:
+    host: localhost
+    port: 6443
+    timeout: 300
+    state: started
+    connect_timeout: 5
+    sleep: 5
+
+- name: Install Cilium CLI
+  shell: |
+    CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+    CLI_ARCH=amd64
+    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+    curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz
+    sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+    rm cilium-linux-${CLI_ARCH}.tar.gz
+  args:
+    creates: /usr/local/bin/cilium
+  tags: cilium
+
+- name: Configure Cilium
+  register: cilium_config
+  template:
+    src: cilium.yaml.j2
+    dest: /etc/rancher/k3s/cilium.yaml
+    mode: "0600"
+  tags: cilium
+
+- name: Check if Cilium is already installed
+  shell: KUBECONFIG=/etc/rancher/k3s/k3s.yaml cilium status
+  register: cilium_installed
+  ignore_errors: true
+  changed_when: false
+  tags: cilium
+
+- name: Install Cilium
+  shell: KUBECONFIG=/etc/rancher/k3s/k3s.yaml cilium install -f /etc/rancher/k3s/cilium.yaml --version {{ cilium_version }}
+  when: cilium_installed.rc != 0
+  tags: cilium
+
+- name: Update Cilium
+  shell: KUBECONFIG=/etc/rancher/k3s/k3s.yaml cilium upgrade -f /etc/rancher/k3s/cilium.yaml --version {{ cilium_version }}
+  when: cilium_installed.rc == 0 and cilium_config.changed
+  tags: cilium
+
+- name: Wait for Cilium to be ready
+  shell: KUBECONFIG=/etc/rancher/k3s/k3s.yaml cilium status --wait
+  when: cilium_installed.rc != 0 or cilium_config.changed
+  tags: cilium
+
+- name: Copy K3s configuration to the local machine
+  fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ playbook_dir }}/output/k3s.yaml"
+    flat: yes
+
+- name: Set k3s_initialized flag
+  set_fact:
+    k3s_initialized: true

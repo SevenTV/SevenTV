@@ -1,0 +1,38 @@
+architecture: replication
+
+common: &common
+  tolerations: 
+    - key: "7tv.io/node-type"
+      operator: "Equal"
+      value: "database"
+      effect: "NoSchedule"
+
+  nodeAffinityPreset:
+    type: "hard"
+    key: "7tv.io/node-type"
+    values: 
+      - database
+
+sentinel:
+  enabled: true
+
+replica:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "8Gi"
+    limits:
+      cpu: "1000m"
+      memory: "8Gi"
+  <<: *common
+  persistence:
+    enabled: true
+    storageClass: "database"
+
+metrics:
+  enabled: true
+  resourcesPreset: "nano"
+  serviceMonitor:
+    enabled: true
+  <<: *common
