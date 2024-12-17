@@ -283,7 +283,6 @@
 			<PaintBrush size="1.8rem" />
 			<UserCircle size="1.8rem" />
 			<Seal size="1.8rem" />
-			<!-- <Ticket size="1.8rem" /> -->
 			<Smiley size="1.8rem" />
 		</div>
 	</Banner>
@@ -402,10 +401,4 @@
 	.spinner-container {
 		margin: 0 auto;
 	}
-
-	// .three-grid {
-	// 	display: flex;
-	// 	gap: 1rem;
-	// 	flex-wrap: wrap;
-	// }
 </style>

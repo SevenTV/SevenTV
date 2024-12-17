@@ -30,12 +30,6 @@
 			</div>
 			<h3>{$t("pages.store.subscription.benefits.sub_badge")}</h3>
 		</div>
-		<!-- <div class="benefit">
-			<div class="gradient g6">
-				<Ticket size="4rem" weight="regular" />
-			</div>
-			<h3>{$t("pages.store.subscription.benefits.raffle_tickets")}</h3>
-		</div> -->
 	</div>
 </section>
 

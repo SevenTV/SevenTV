@@ -76,7 +76,6 @@
 					<Badge badge={user.style.activeBadge} enableDialog />
 				{/if}
 				<UserName {user} enablePaintDialog />
-				<!-- <SealCheck size="0.8rem" /> -->
 			</span>
 			<div class="roles">
 				{#each filterRoles(user.roles) as role}
@@ -84,31 +83,6 @@
 				{/each}
 			</div>
 		{/await}
-		<!-- <div class="data">
-			<span>
-				{numberFormat().format(1400)}
-				<br class="hide-on-mobile" />
-				<span class="text">{$t("common.followers", { values: { count: 1400 } })}</span>
-			</span>
-			<span>
-				{numberFormat().format(1200000)}
-				<br class="hide-on-mobile" />
-				<span class="text">{$t("common.channels", { values: { count: 1_200_000 } })}</span>
-			</span>
-		</div> -->
-		<!-- <div class="buttons">
-			<Button primary style="flex-grow: 1; justify-content: center;">
-				<Heart />
-				{$t("labels.follow")}
-			</Button>
-			<Button secondary hideOnMobile>
-				<CaretDown />
-			</Button>
-			<Button secondary hideOnDesktop>
-				<Gift />
-				{$t("labels.gift")}
-			</Button>
-		</div> -->
 		<nav class="link-list hide-on-mobile">
 			{#await data.streamed.userRequest.value}
 				<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
@@ -240,14 +214,6 @@
 					{/snippet}
 				</TabLink>
 			{/if}
-			<!-- <TabLink title={$t("common.analytics")} href="/users/{data.id}/analytics" big>
-				<ChartLineUp />
-				<ChartLineUp weight="fill" />
-			</TabLink>
-			<TabLink title={$t("common.mod_comments")} href="/users/{data.id}/mod-comments" big>
-				<ChatCircleText />
-				<ChatCircleText weight="fill" />
-			</TabLink> -->
 		</nav>
 	</aside>
 	<div class="content">
@@ -292,14 +258,6 @@
 						<Pulse weight="fill" />
 					{/snippet}
 				</TabLink>
-				<!-- <TabLink title={$t("common.analytics")} href="/users/{data.id}/analytics">
-					<ChartLineUp />
-					<ChartLineUp weight="fill" />
-				</TabLink>
-				<TabLink title={$t("common.mod_comments")} href="/users/{data.id}/mod-comments">
-					<ChatCircleText />
-					<ChatCircleText weight="fill" />
-				</TabLink> -->
 			</nav>
 		</div>
 		{@render children()}
@@ -341,30 +299,6 @@
 			gap: 0.25rem;
 			flex-wrap: wrap;
 		}
-
-		// .data {
-		// 	align-self: center;
-
-		// 	display: flex;
-		// 	gap: 2rem;
-
-		// 	font-size: 0.875rem;
-		// 	font-weight: 600;
-		// 	text-align: center;
-
-		// 	.text {
-		// 		font-weight: 400;
-		// 		color: var(--text-light);
-		// 	}
-		// }
-
-		// .buttons {
-		// 	align-self: stretch;
-
-		// 	display: flex;
-		// 	gap: 0.5rem;
-		// 	flex-wrap: wrap;
-		// }
 
 		// Select all buttons except the active one
 		.link-list > :global(.button:not(.secondary)) {
@@ -424,20 +358,6 @@
 				grid-row: 2;
 				grid-column: 2;
 			}
-
-			// .data {
-			// 	grid-row: 3;
-			// 	grid-column: 2;
-
-			// 	gap: 1rem;
-			// }
-
-			// .buttons {
-			// 	grid-row: 4;
-			// 	grid-column: 1 / span 2;
-
-			// 	margin-top: 0.5rem;
-			// }
 		}
 	}
 </style>

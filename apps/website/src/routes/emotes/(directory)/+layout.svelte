@@ -121,30 +121,6 @@
 					<Smiley weight="fill" />
 				{/snippet}
 			</TabLink>
-			<!-- <TabLink
-				href="/emotes/sets"
-				title={$t("common.emote_sets", { values: { count: 2 } })}
-				big
-				matcher={menuMatcher}
-			>
-				<FolderSimple />
-				{#snippet active()}
-					<FolderSimple weight="fill" />
-				{/snippet}
-			</TabLink> -->
-			<!-- {#if $user}
-				<TabLink
-					href="/emotes/bookmarked"
-					title={$t("pages.directory.bookmarked")}
-					big
-					matcher={menuMatcher}
-				>
-					<BookmarkSimple />
-					{#snippet active()}
-						<BookmarkSimple weight="fill" />
-					{/snippet}
-				</TabLink>
-			{/if} -->
 		</nav>
 		<hr />
 		<Expandable title={$t("labels.search")} expanded={true}>
@@ -157,26 +133,6 @@
 		<Expandable title={$t("labels.tags")}>
 			<TagsInput bind:tags />
 		</Expandable>
-		<!-- <Expandable title={$t("pages.directory.sorting.title")}>
-			<div class="row">
-				<Select
-					options={[
-						{ value: "alpha", label: $t("pages.directory.sorting.alphabetical") },
-						{ value: "date", label: $t("pages.directory.sorting.upload_date") },
-					]}
-					grow
-				/>
-				<Button secondary on:click={() => (sortAsc = !sortAsc)}>
-					<svelte:fragment slot="icon">
-						{#if sortAsc}
-							<SortAscending />
-						{:else}
-							<SortDescending />
-						{/if}
-					</svelte:fragment>
-				</Button>
-			</div>
-		</Expandable> -->
 		<Expandable title={$t("labels.filters")}>
 			<div class="filters">
 				<Checkbox bind:value={animated}>{$t("pages.directory.filters.animated")}</Checkbox>
@@ -186,20 +142,6 @@
 				<Checkbox bind:value={exactMatch}>{$t("pages.directory.filters.exact_match")}</Checkbox>
 			</div>
 		</Expandable>
-		<!-- <Expandable title={$t("pages.directory.size.title")}>
-			<div class="row">
-				<Select
-					options={[
-						{ value: "any", label: $t("pages.directory.size.any") },
-						{ value: "", label: "idk what this is" },
-					]}
-					grow
-				/>
-				<Button secondary>
-					<PencilSimple />
-				</Button>
-			</div>
-		</Expandable> -->
 	</aside>
 	<div class="content">
 		{@render children()}
@@ -207,12 +149,6 @@
 </div>
 
 <style lang="scss">
-	// .row {
-	// 	display: flex;
-	// 	align-items: center;
-	// 	gap: 0.5rem;
-	// }
-
 	.filters {
 		display: flex;
 		flex-direction: column;

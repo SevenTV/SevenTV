@@ -93,10 +93,6 @@
 				<Smiley />
 				{$t("common.emotes", { values: { count: 2 } })}
 			</MenuButton>
-			<!-- <MenuButton href="/discover">
-				<Compass />
-				{$t("pages.discover.title")}
-			</MenuButton> -->
 			<MenuButton href="/store" style="color: var(--store)">
 				<Star />
 				{$t("pages.store.title")}
@@ -108,10 +104,6 @@
 					<PaintBrush />
 					{$t("common.cosmetics")}
 				</MenuButton>
-				<!-- <MenuButton href="/analytics">
-					<ChartLine />
-					{$t("common.analytics")}
-				</MenuButton> -->
 			</div>
 			<hr class="hide-on-mobile" />
 		{/if}
@@ -138,10 +130,6 @@
 		</div>
 		<hr class="hide-on-mobile" />
 		<div class="link-list">
-			<!-- <MenuButton href={PUBLIC_DEVELOPER_PORTAL}>
-				<Code />
-				{$t("common.developer_portal")}
-			</MenuButton> -->
 			<MenuButton href="/privacy">
 				<LockSimple />
 				{$t("common.privacy")}
@@ -152,7 +140,7 @@
 			</MenuButton>
 		</div>
 		{#if $user}
-			<!-- <hr class="hide-on-mobile" /> -->
+			<hr class="hide-on-mobile" />
 			<div class="link-list">
 				<MenuButton onclick={logoutClick}>
 					{#if logoutLoading}

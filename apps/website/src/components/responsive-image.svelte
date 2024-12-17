@@ -18,7 +18,6 @@
 	import type { Image } from "$/gql/graphql";
 	import { reducedMotion, type ReducedMotion } from "$/lib/layout";
 	import { isSafari } from "$/lib/utils";
-	import { browser } from "$app/environment";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	type Props = {
