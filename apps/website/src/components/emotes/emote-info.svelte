@@ -37,6 +37,7 @@
 	import { editableEmoteSets } from "$/lib/emoteSets";
 	import Spinner from "../spinner.svelte";
 	import { invalidate } from "$app/navigation";
+	import { isSafari } from "$/lib/utils";
 
 	type MoreMenuMode = "root" | "download-format" | "download-size";
 
@@ -81,12 +82,19 @@
 	let reportDialogMode: DialogMode = $state("hidden");
 
 	function prepareImages(images: Image[]): Image[][] {
+		const safari = isSafari();
+
 		const animated = images.some((i) => i.frameCount > 1);
 
 		const result: Image[][] = [];
 
 		for (let i = 0; i < images.length; i++) {
 			const image = images[i];
+
+			// Safari doesn't fully support animated AVIF
+			if (safari && image.mime === "image/avif" && image.frameCount > 1) {
+				continue;
+			}
 
 			if (animated && image.frameCount === 1) {
 				continue;
