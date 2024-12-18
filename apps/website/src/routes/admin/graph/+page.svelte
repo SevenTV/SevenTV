@@ -351,7 +351,7 @@
 
 	$effect(() => {
 		graph.then((graph) => {
-			size = Math.ceil(((-15+3)/350) * graph.size + 15);
+			size = Math.max(Math.ceil(((-15 + 3) / 350) * graph.size + 15), 0);
 			renderer = new Sigma(graph, sigmaContainer);
 			layout = new ForceSupervisor(graph);
 			layout.start();
