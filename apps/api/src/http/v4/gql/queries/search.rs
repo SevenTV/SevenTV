@@ -40,7 +40,7 @@ impl SearchQuery {
 		let per_page = per_page.unwrap_or(10);
 		let page = page.unwrap_or_default().max(1);
 
-		let mut emotes_filter_by = Vec::new();
+		let mut emotes_filter_by = vec!["deleted: false".to_owned()];
 
 		if !session.has(EmotePermission::ViewUnlisted) {
 			emotes_filter_by.push("flag_public_listed: true".to_owned());
