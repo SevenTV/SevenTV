@@ -4,6 +4,7 @@
 	import { t } from "svelte-i18n";
 	import modge from "$assets/modge.webp?url";
 	import { user } from "$/lib/auth";
+	import { signInDialogMode } from "$/lib/layout";
 
 	let { children } = $props();
 
@@ -12,6 +13,12 @@
 	// function customMatcher(page: Page, href: string | undefined) {
 	// 	return !!href && page.url.pathname.startsWith(href);
 	// }
+
+	$effect(() => {
+		if ($user === null) {
+			$signInDialogMode = "shown-without-close";
+		}
+	});
 </script>
 
 <div class="side-bar-layout">
