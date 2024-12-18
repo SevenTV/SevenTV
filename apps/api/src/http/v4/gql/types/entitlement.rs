@@ -17,6 +17,8 @@ use super::{Badge, EmoteSet, Paint, Role, SpecialEvent, SubscriptionBenefit, Use
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
+pub mod raw_entitlement;
+
 #[allow(clippy::duplicated_attributes)]
 #[derive(async_graphql::SimpleObject)]
 #[graphql(concrete(name = "EntitlementEdgeAnyAny", params(EntitlementNodeAny, EntitlementNodeAny)))]
@@ -27,7 +29,16 @@ pub struct EntitlementEdge<From: OutputType, To: OutputType> {
 	pub to: To,
 }
 
-#[derive(async_graphql::Union)]
+impl EntitlementEdge<EntitlementNodeAny, EntitlementNodeAny> {
+	pub fn from_db(edge: &shared::database::entitlement::EntitlementEdge) -> Self {
+		Self {
+			from: EntitlementNodeAny::from_db(&edge.id.from),
+			to: EntitlementNodeAny::from_db(&edge.id.to),
+		}
+	}
+}
+
+#[derive(async_graphql::Union, Clone, PartialEq, Eq, Hash)]
 pub enum EntitlementNodeAny {
 	User(EntitlementNodeUser),
 	Role(EntitlementNodeRole),
@@ -72,7 +83,7 @@ impl EntitlementNodeAny {
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 #[graphql(complex)]
 pub struct EntitlementNodeUser {
 	pub user_id: UserId,
@@ -96,7 +107,7 @@ impl EntitlementNodeUser {
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 #[graphql(complex)]
 pub struct EntitlementNodeRole {
 	pub role_id: RoleId,
@@ -120,7 +131,7 @@ impl EntitlementNodeRole {
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 #[graphql(complex)]
 pub struct EntitlementNodeBadge {
 	pub badge_id: BadgeId,
@@ -144,7 +155,7 @@ impl EntitlementNodeBadge {
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 #[graphql(complex)]
 pub struct EntitlementNodePaint {
 	pub paint_id: PaintId,
@@ -168,7 +179,7 @@ impl EntitlementNodePaint {
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 #[graphql(complex)]
 pub struct EntitlementNodeEmoteSet {
 	pub emote_set_id: EmoteSetId,
@@ -192,12 +203,12 @@ impl EntitlementNodeEmoteSet {
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 pub struct EntitlementNodeProduct {
 	pub product_id: ProductId,
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 #[graphql(complex)]
 pub struct EntitlementNodeSubscriptionBenefit {
 	pub subscription_benefit_id: SubscriptionBenefitId,
@@ -233,12 +244,12 @@ impl EntitlementNodeSubscriptionBenefit {
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 pub struct EntitlementNodeSubscription {
 	pub subscription_id: SubscriptionId,
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 #[graphql(complex)]
 pub struct EntitlementNodeSpecialEvent {
 	pub special_event_id: SpecialEventId,
@@ -252,14 +263,9 @@ impl EntitlementNodeSpecialEvent {
 			.data::<Arc<Global>>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		// TODO: Use data loader?
-		let special_event = shared::database::product::special_event::SpecialEvent::collection(&global.db)
-			.find_one(filter::filter! {
-				shared::database::product::special_event::SpecialEvent {
-					#[query(rename = "_id")]
-					id: self.special_event_id,
-				}
-			})
+		let special_event = global
+			.special_event_by_id_loader
+			.load(self.special_event_id)
 			.await
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load special event"))?;
 
@@ -267,7 +273,7 @@ impl EntitlementNodeSpecialEvent {
 	}
 }
 
-#[derive(Default, async_graphql::SimpleObject)]
+#[derive(Default, async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 pub struct EntitlementNodeGlobalDefaultEntitlementGroup {
 	#[graphql(deprecation = true)]
 	pub noop: bool,

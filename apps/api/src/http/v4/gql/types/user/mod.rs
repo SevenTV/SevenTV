@@ -9,6 +9,7 @@ use shared::database::user::editor::EditorEmoteSetPermission;
 use shared::database::user::UserId;
 use shared::typesense::types::event::EventId;
 
+use super::raw_entitlement::RawEntitlements;
 use super::{Color, Emote, EmoteSet, Event, Permissions, Role, UserEditor, UserEvent};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
@@ -341,6 +342,28 @@ impl User {
 			user_id: self.id,
 			product_id,
 		})
+	}
+
+	async fn raw_entitlements(&self, ctx: &Context<'_>) -> Result<RawEntitlements, ApiError> {
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+		let authed_user = session.user()?;
+
+		if !authed_user.has(UserPermission::ManageAny) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you are not allowed to see this user's entitlements",
+			));
+		}
+
+		Ok(RawEntitlements::from_db(
+			self.full_user
+				.computed
+				.raw_entitlements
+				.as_ref()
+				.unwrap_or(&Default::default()),
+		))
 	}
 }
 
