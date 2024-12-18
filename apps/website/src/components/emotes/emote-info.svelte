@@ -67,7 +67,7 @@
 				}
 				return acc;
 			}, [] as Image[])
-			.filter((i) => i),
+			.filter((i) => !!i),
 	);
 
 	function clickFormat(format: string) {

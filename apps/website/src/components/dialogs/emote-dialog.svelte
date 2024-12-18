@@ -93,6 +93,7 @@
 		font-weight: 600;
 
 		max-width: 100%;
+		min-height: 1.2rem;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;

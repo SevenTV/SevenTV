@@ -42,13 +42,13 @@
 			return { items: [], totalCount: 0, pageCount: 0 };
 		}
 
-		if (timeout) {
-			clearTimeout(timeout);
-		}
-
 		// Small timeout to prevent spamming requests when user is typing
 
 		return new Promise((resolve, reject) => {
+			if (timeout) {
+				clearTimeout(timeout);
+			}
+
 			timeout = setTimeout(async () => {
 				const res = await gqlClient()
 					.query(
