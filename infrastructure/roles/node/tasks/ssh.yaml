@@ -4,3 +4,10 @@
     key: |
       ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPddlhL6JRR9Jl0K0ed3wEMyGR/YDU7v3DeRkra1N5fB lennart.kloock@protonmail.com
     state: present
+
+- name: Add Mark's SSH key
+  authorized_key:
+    user: root
+    key: |
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC1/7bjtM4k7wJ1Mo7QRdiAN52SWYLga7XUvViMKz7Fub+gCZIb962sic6rBJko4JLU8+FNGXxUrB6d7P1FGnI6jiAXMyoppx5l2UamnP4TvO8ADYjkfQxKtlKuZ7EiT+m4hU+KH3U/6IE1XVnVt99fm75WW8YDHaAMRx8qiM5yvBQhqgill8oYN7xmYtWTwDEFX1C1aFc9mjoH8rqaw2JB4VI6KihIFpfqPJUQuVMjFn+tpAhgIeL7YaWPFfh5XTjPQdj16/OkbB0ciSrEV3RptolEzbtPB5Fzuy97Lo+7yTokgJITUrn9dPuCxxcww+sy3W3Y+srs6faLzrAOAcoYAfPlMmrv9cuqE0CuIL9+8ylSg3jXT9xp4CbVlmhPdkc+f5oJupFWluXWs7PwN23rDY1vbixPYgIXvPTdiRnQBGu+MdQhLSstQajZEK7uciWk/BwedWNSaZPwokZ4cbRsoLsS9iA1RGt1xo8R066P0FlHDtJNPPFM2udE70U77YE= mos377@mos377-H81M-S2H
+    state: present
