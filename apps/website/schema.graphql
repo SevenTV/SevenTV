@@ -314,6 +314,11 @@ type EmoteSetQuery {
 	emoteSets(ids: [Id!]!): [EmoteSet!]!
 }
 
+type EntitlementEdgeAnyAny {
+	from: EntitlementNodeAny!
+	to: EntitlementNodeAny!
+}
+
 type EntitlementEdgeAnyBadge {
 	from: EntitlementNodeAny!
 	to: EntitlementNodeBadge!
@@ -648,6 +653,11 @@ enum Ranking {
 	TRENDING_WEEKLY
 }
 
+type RawEntitlements {
+	edges: [EntitlementEdgeAnyAny!]!
+	nodes: [EntitlementNodeAny!]!
+}
+
 type RedeemResponse {
 	checkoutUrl: String
 }
@@ -910,6 +920,7 @@ type User {
 	ownedEmotes: [Emote!]!
 	permissions: Permissions!
 	personalEmoteSet: EmoteSet
+	rawEntitlements: RawEntitlements!
 	roleIds: [Id!]!
 	roles: [Role!]!
 	searchUpdatedAt: DateTime

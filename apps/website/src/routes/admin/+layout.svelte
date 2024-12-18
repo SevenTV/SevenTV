@@ -1,26 +1,31 @@
 <script lang="ts">
 	import TabLink from "$/components/tab-link.svelte";
-	import { numberFormat } from "$/lib/utils";
-	import { page } from "$app/stores";
-	import { CaretDown, CaretUp, Flag, PaintBrush, Smiley, Table, Ticket } from "phosphor-svelte";
+	import { Graph } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
-	import { type Page } from "@sveltejs/kit";
 	import modge from "$assets/modge.webp?url";
+	import { user } from "$/lib/auth";
+	import { signInDialogMode } from "$/lib/layout";
 
 	let { children } = $props();
 
-	let ticketsSelected = $derived($page.url.pathname.startsWith("/admin/tickets"));
+	// let ticketsSelected = $derived($page.url.pathname.startsWith("/admin/tickets"));
 
-	function customMatcher(page: Page, href: string | undefined) {
-		return !!href && page.url.pathname.startsWith(href);
-	}
+	// function customMatcher(page: Page, href: string | undefined) {
+	// 	return !!href && page.url.pathname.startsWith(href);
+	// }
+
+	$effect(() => {
+		if ($user === null) {
+			$signInDialogMode = "shown-without-close";
+		}
+	});
 </script>
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
 		<h1>{$t("pages.admin.title")}</h1>
 		<nav class="link-list">
-			<TabLink title={$t("pages.admin.overview")} href="/admin" big>
+			<!-- <TabLink title={$t("pages.admin.overview")} href="/admin" big>
 				<Table />
 				{#snippet active()}
 					<Ticket weight="fill" />
@@ -73,7 +78,15 @@
 				{#snippet active()}
 					<PaintBrush weight="fill" />
 				{/snippet}
-			</TabLink>
+			</TabLink> -->
+			{#if $user?.permissions.user.manageAny}
+				<TabLink title="Entitlement Graph" href="/admin/graph" big>
+					<Graph />
+					{#snippet active()}
+						<Graph weight="fill" />
+					{/snippet}
+				</TabLink>
+			{/if}
 		</nav>
 		<img src={modge} width="64" height="64" alt="Modge" class="modge hide-on-mobile" />
 	</aside>
@@ -83,9 +96,9 @@
 </div>
 
 <style lang="scss">
-	.indent {
-		margin-left: 1rem;
-	}
+	// .indent {
+	// 	margin-left: 1rem;
+	// }
 
 	.modge {
 		margin-left: auto;

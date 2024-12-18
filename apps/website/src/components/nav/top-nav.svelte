@@ -29,6 +29,19 @@
 	afterNavigate(() => {
 		mobileSearchShown = false;
 	});
+
+	let tabs = $derived.by(() => {
+		const tabs = [
+			{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes" },
+			{ name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
+		];
+
+		if ($user?.permissions.user.manageAny) {
+			tabs.push({ name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" });
+		}
+
+		return tabs;
+	});
 </script>
 
 <nav>
@@ -37,13 +50,7 @@
 			<Logo />
 		</a>
 		<HideOn mobile>
-			<TopTabs
-				tabs={[
-					{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes" },
-					{ name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
-					// { name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" },
-				]}
-			/>
+			<TopTabs {tabs} />
 		</HideOn>
 	</div>
 	<HideOn mobile={!mobileSearchShown}>
