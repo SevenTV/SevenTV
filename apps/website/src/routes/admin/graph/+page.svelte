@@ -327,9 +327,9 @@
 	let graph = $derived(queryEntitlements(userId));
 
 	let layoutStarted = $state(true);
-	let renderer: Sigma | undefined = undefined;
+	let renderer = $state<Sigma>();
 	let layout: ForceSupervisor | undefined = undefined;
-	let size = $state(10);
+	let size = $state(5);
 
 	$effect(() => {
 		if (layoutStarted) {
@@ -351,6 +351,7 @@
 
 	$effect(() => {
 		graph.then((graph) => {
+			size = Math.ceil(((-15+3)/350) * graph.size + 15);
 			renderer = new Sigma(graph, sigmaContainer);
 			layout = new ForceSupervisor(graph);
 			layout.start();
@@ -374,15 +375,16 @@
 		<Toggle bind:value={layoutStarted}>Layout</Toggle>
 		<label>
 			Node Size
-			<input type="number" bind:value={size} min="1" max="20" step="1" />
+			<input type="number" bind:value={size} min="1" max="15" step="1" />
 		</label>
 	</div>
-	<div class="sigma-container" bind:this={sigmaContainer}></div>
+	<div class="sigma-container light-theme" bind:this={sigmaContainer}></div>
 {/if}
 
 <style lang="scss">
 	.sigma-container {
 		flex-grow: 1;
+		background-color: var(--bg-dark);
 	}
 
 	.inputs {
