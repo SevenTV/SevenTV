@@ -354,6 +354,7 @@
 			renderer = new Sigma(graph, sigmaContainer);
 			layout = new ForceSupervisor(graph);
 			layout.start();
+			layoutStarted = true;
 		});
 
 		return () => {
