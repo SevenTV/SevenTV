@@ -124,7 +124,7 @@ impl EmoteQuery {
 		let per_page = per_page.unwrap_or(30);
 		let page = page.unwrap_or_default().max(1);
 
-		let mut filter_by = Vec::new();
+		let mut filter_by = vec!["deleted: false".to_owned()];
 
 		if !session.has(EmotePermission::ViewUnlisted) {
 			filter_by.push("flag_public_listed: true".to_owned());
