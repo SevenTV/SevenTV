@@ -53,7 +53,6 @@
 	});
 
 	function handleInfinite(event: InfiniteEvent) {
-		console.log("handleInfinite", page, PER_PAGE);
 		load(page, PER_PAGE)
 			.then((result) => {
 				if (result.__typename === "EmoteSetEmoteSearchResult") {
