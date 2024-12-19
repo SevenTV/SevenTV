@@ -100,6 +100,25 @@ export async function updateName(id: string, name: string) {
 								capacity
 								kind
 								tags
+								owner {
+									id
+									editors {
+										editorId
+										state
+										permissions {
+											emoteSet {
+												manage
+											}
+											user {
+												manageProfile
+											}
+										}
+									}
+									permissions {
+										emoteSetCapacity
+										personalEmoteSetCapacity
+									}
+								}
 								emotes(page: 1, perPage: 12) {
 									items {
 										emote {
@@ -131,6 +150,69 @@ export async function updateName(id: string, name: string) {
 	return res.data.emoteSets.emoteSet.name as EmoteSet;
 }
 
+export async function updateCapacity(id: string, capacity: number) {
+	const res = await gqlClient()
+		.mutation(
+			graphql(`
+				mutation UpdateEmoteSetCapacity($id: Id!, $capacity: Int!) {
+					emoteSets {
+						emoteSet(id: $id) {
+							capacity(capacity: $capacity) {
+								id
+								name
+								capacity
+								kind
+								tags
+								owner {
+									id
+									editors {
+										editorId
+										state
+										permissions {
+											emoteSet {
+												manage
+											}
+											user {
+												manageProfile
+											}
+										}
+									}
+									permissions {
+										emoteSetCapacity
+										personalEmoteSetCapacity
+									}
+								}
+								emotes(page: 1, perPage: 12) {
+									items {
+										emote {
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												frameCount
+											}
+										}
+									}
+									totalCount
+								}
+							}
+						}
+					}
+				}
+			`),
+			{ id, capacity },
+		)
+		.toPromise();
+
+	if (!res.data) {
+		return undefined;
+	}
+
+	return res.data.emoteSets.emoteSet.capacity as EmoteSet;
+}
+
 export async function updateTags(id: string, tags: string[]) {
 	const res = await gqlClient()
 		.mutation(
@@ -144,6 +226,25 @@ export async function updateTags(id: string, tags: string[]) {
 								capacity
 								kind
 								tags
+								owner {
+									id
+									editors {
+										editorId
+										state
+										permissions {
+											emoteSet {
+												manage
+											}
+											user {
+												manageProfile
+											}
+										}
+									}
+									permissions {
+										emoteSetCapacity
+										personalEmoteSetCapacity
+									}
+								}
 								emotes(page: 1, perPage: 12) {
 									items {
 										emote {
