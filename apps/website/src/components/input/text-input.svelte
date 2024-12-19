@@ -90,10 +90,6 @@
 			pointer-events: none;
 		}
 
-		&.has-label > input {
-			margin-top: 0.25rem;
-		}
-
 		&.has-icon > input {
 			// icon left padding + icon width + gap
 			padding-left: calc(var(--icon-left-padding) + 1rem + var(--gap));
