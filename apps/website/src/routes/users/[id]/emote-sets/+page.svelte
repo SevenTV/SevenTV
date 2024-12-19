@@ -2,13 +2,13 @@
 	import EmoteSetPreview from "$/components/emote-set-preview.svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import type { PageData } from "./$types";
-	import DefaultEmoteSetButton from "$/components/default-emote-set-button.svelte";
 	import Button from "$/components/input/button.svelte";
 	import { Plus } from "phosphor-svelte";
 	import CreateEmoteSetDialog from "$/components/dialogs/create-emote-set-dialog.svelte";
 	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import { user } from "$/lib/auth";
 	import { UserEditorState } from "$/gql/graphql";
+	import ActiveEmoteSetButton from "$/components/users/active-emote-set-button.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -17,8 +17,15 @@
 
 <div class="buttons">
 	<CreateEmoteSetDialog ownerId={data.id} bind:mode={createEmoteSetDialog} />
-	<DefaultEmoteSetButton />
-	{#await data.streamed.userRequest.value then userData}
+	<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} />
+	{#await data.streamed.userRequest.value}
+		<Button primary disabled>
+			{#snippet icon()}
+				<Plus />
+			{/snippet}
+			<Spinner />
+		</Button>
+	{:then userData}
 		{#if $user?.permissions.emoteSet.manage && ($user.permissions.emoteSet.manageAny || $user?.id === data.id || userData.editors.some((editor) => editor.editorId === $user?.id && editor.state === UserEditorState.Accepted && editor.permissions.emoteSet.create))}
 			<Button primary onclick={() => (createEmoteSetDialog = "shown")}>
 				{#snippet icon()}

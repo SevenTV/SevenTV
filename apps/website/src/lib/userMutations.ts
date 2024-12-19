@@ -88,6 +88,10 @@ export async function setActiveSet(userId: string, setId?: string) {
 									}
 								}
 								activeEmoteSetId
+								activeEmoteSet {
+									id
+									name
+								}
 							}
 							highestRoleColor {
 								hex

@@ -220,15 +220,6 @@
 		{#await results then results}
 			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0)}
 				<div class="results">
-					{#if results.users.items}
-						<span class="label">Users</span>
-					{/if}
-					{#each results.users.items as result}
-						<ChannelPreview user={result} size={2} />
-					{/each}
-					{#if results.users.items && results.emotes.items}
-						<hr />
-					{/if}
 					{#if results.emotes.items}
 						<span class="label">Emotes</span>
 					{/if}
@@ -239,12 +230,18 @@
 							{/snippet}
 							{result.defaultName}
 							{#snippet iconRight()}
-								<Flags
-									flags={emoteToFlags(result, $defaultEmoteSet, $editableEmoteSets)}
-									iconOnly
-								/>
+								<Flags flags={emoteToFlags(result, $defaultEmoteSet, $editableEmoteSets)} iconOnly />
 							{/snippet}
 						</Button>
+					{/each}
+					{#if results.users.items && results.emotes.items}
+						<hr />
+					{/if}
+					{#if results.users.items}
+						<span class="label">Users</span>
+					{/if}
+					{#each results.users.items as result}
+						<ChannelPreview user={result} size={2} />
 					{/each}
 				</div>
 			{/if}
