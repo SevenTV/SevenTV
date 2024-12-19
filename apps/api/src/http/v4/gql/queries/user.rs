@@ -7,7 +7,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
 use crate::http::middleware::session::Session;
-use crate::http::v4::gql::types::{SearchResult, User};
+use crate::http::v4::gql::types::{Platform, SearchResult, User};
 use crate::search::{search, sorted_results, SearchOptions};
 
 #[derive(Default)]
@@ -56,6 +56,41 @@ impl UserQuery {
 		};
 
 		Ok(session.can_view(&user).then(|| user.into()))
+	}
+
+	#[tracing::instrument(skip_all, name = "UserQuery::user_by_connection")]
+	async fn user_by_connection(
+		&self,
+		ctx: &Context<'_>,
+		platform: Platform,
+		platform_id: String,
+	) -> Result<Option<User>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+
+		let platform = shared::database::user::connection::Platform::from(platform);
+
+		let user = match global
+			.user_by_platform_id_loader
+			.load((platform, platform_id))
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+		{
+			Some(u) => u,
+			None => return Ok(None),
+		};
+
+		let full_user = global
+			.user_loader
+			.load_fast_user(global, user)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(session.can_view(&full_user).then(|| full_user.into()))
 	}
 
 	#[graphql(guard = "RateLimitGuard::search(1)")]

@@ -1048,6 +1048,7 @@ type UserQuery {
 	me: User
 	search(page: Int, perPage: Int, query: String!): UserSearchResult!
 	user(id: Id!): User
+	userByConnection(platform: Platform!, platformId: String!): User
 }
 
 type UserSearchResult {
