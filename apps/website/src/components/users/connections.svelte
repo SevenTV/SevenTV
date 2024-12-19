@@ -25,6 +25,10 @@
 
 {#each user.connections as connection}
 	{#if connection.platformDisplayName.length !== 0}
+		{@const name =
+			connection.platformDisplayName === connection.platformUsername
+				? connection.platformDisplayName
+				: `${connection.platformDisplayName} (${connection.platformUsername})`}
 		<Button href={connectionLink(connection)} target="_blank" {big}>
 			{#snippet icon()}
 				{#if connection.platform === Platform.Twitch}
@@ -39,12 +43,8 @@
 					<Link />
 				{/if}
 			{/snippet}
-			<span class="name">
-				{#if connection.platformDisplayName === connection.platformUsername}
-					{connection.platformDisplayName}
-				{:else}
-					{connection.platformDisplayName} ({connection.platformUsername})
-				{/if}
+			<span class="name" title={name}>
+				{name}
 			</span>
 		</Button>
 	{/if}
