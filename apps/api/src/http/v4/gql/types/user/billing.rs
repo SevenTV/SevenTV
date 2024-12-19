@@ -77,6 +77,7 @@ impl BadgeProgressNextBadge {
 #[derive(async_graphql::SimpleObject)]
 pub struct SubscriptionInfo {
 	pub total_days: i32,
+	pub end_date: Option<chrono::DateTime<chrono::Utc>>,
 	pub active_period: Option<SubscriptionPeriod>,
 }
 
@@ -219,8 +220,15 @@ impl Billing {
 			.find(|p| p.start < chrono::Utc::now() && p.end > chrono::Utc::now())
 			.cloned();
 
+		let end_date = periods
+			.iter()
+			.max_by_key(|p| p.end)
+			.map(|p| p.end)
+			.or_else(|| active_period.as_ref().map(|p| p.end));
+
 		Ok(SubscriptionInfo {
 			total_days: age.days,
+			end_date,
 			active_period: active_period.map(Into::into),
 		})
 	}

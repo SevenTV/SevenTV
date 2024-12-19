@@ -56,7 +56,7 @@
 				{:else}
 					<Hourglass />
 				{/if}
-				<Date date={moment(data.activePeriod.end)} />
+				<Date date={moment(data.endDate)} />
 			</span>
 		{/if}
 
