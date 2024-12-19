@@ -4,6 +4,8 @@ import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 
 export const showMobileMenu = writable(false);
 
+export const showConstructionBar = writable(loadConstructionBarShown());
+
 export const uploadDialogMode = writable<DialogMode>("hidden");
 
 export const signInDialogMode = writable<DialogMode>("hidden");
@@ -13,6 +15,20 @@ export const defaultEmoteSetDialogMode = writable<DialogMode>("hidden");
 export type Theme = "system-theme" | "light-theme" | "dark-theme";
 
 export const theme = writable<Theme>(loadTheme());
+
+function loadConstructionBarShown() {
+	const savedValue = browser && window.localStorage.getItem("showConstructionBar");
+	if (savedValue) {
+		return JSON.parse(savedValue) as boolean;
+	}
+	return true;
+}
+
+showConstructionBar.subscribe((value) => {
+	if (browser) {
+		window.localStorage.setItem("showConstructionBar", JSON.stringify(value));
+	}
+});
 
 function loadTheme() {
 	const savedTheme = browser && window.localStorage.getItem("theme");

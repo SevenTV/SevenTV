@@ -9,6 +9,7 @@
 	import TopNav from "$/components/nav/top-nav.svelte";
 	import {
 		showMobileMenu,
+		showConstructionBar,
 		signInDialogMode,
 		uploadDialogMode,
 		defaultEmoteSetDialogMode,
@@ -24,6 +25,8 @@
 	import ErrorDialog from "$/components/dialogs/error-dialog.svelte";
 	import { currentError, errorDialogMode } from "$/lib/error";
 	import { PUBLIC_DISCORD_LINK, PUBLIC_OLD_WEBSITE_LINK } from "$env/static/public";
+	import Button from "../components/input/button.svelte";
+	import { X } from "phosphor-svelte";
 
 	let { children }: { children: Snippet } = $props();
 
@@ -38,15 +41,22 @@
 <IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>
 	<header>
 		<a href="#main" class="skip-to-main">{$t("common.skip_to_content")}</a>
-		<div class="alert-bar">
-			<Warning />
-			<span>Under construction</span>
-			<span class="small">
-				Give us feedback on the new site in the <a href={PUBLIC_DISCORD_LINK}>Discord</a>. Click
-				<a href={PUBLIC_OLD_WEBSITE_LINK}>here</a> to go back.
-			</span>
-		</div>
 		<TopNav />
+		{#if $showConstructionBar}
+			<div class="alert-bar">
+				<Warning />
+				<span>Under construction</span>
+				<span class="small">
+					Give us feedback on the new website in the <a href={PUBLIC_DISCORD_LINK}>Discord</a>. Click
+					<a href={PUBLIC_OLD_WEBSITE_LINK}>here</a> to return to the old website.
+				</span>
+				<Button onclick={() => ($showConstructionBar = false)}>
+					{#snippet icon()}
+						<X />
+					{/snippet}
+				</Button>
+			</div>
+		{/if}
 	</header>
 
 	<UploadDialog bind:mode={$uploadDialogMode} />
