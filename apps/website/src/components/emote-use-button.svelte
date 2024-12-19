@@ -16,6 +16,12 @@
 
 	let { data, big = false, primary = false, oncomplete }: Props = $props();
 
+	let setName = $derived(
+		$defaultEmoteSet && data
+			? $editableEmoteSets.find((s) => s.id === $defaultEmoteSet)?.name
+			: undefined,
+	);
+
 	let active = $derived(
 		$defaultEmoteSet && data
 			? $editableEmoteSets
@@ -76,7 +82,7 @@
 					<Minus />
 				{/if}
 			{/snippet}
-			Remove Emote
+			Remove Emote from {setName}
 		</Button>
 	{:else}
 		<Button
@@ -93,7 +99,7 @@
 					<Plus />
 				{/if}
 			{/snippet}
-			Use Emote
+			Add Emote to {setName}
 		</Button>
 	{/if}
 {/if}
