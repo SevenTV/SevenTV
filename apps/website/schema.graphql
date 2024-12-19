@@ -751,6 +751,7 @@ type SubscriptionId {
 
 type SubscriptionInfo {
 	activePeriod: SubscriptionPeriod
+	endDate: DateTime
 	totalDays: Int!
 }
 

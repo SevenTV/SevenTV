@@ -68,6 +68,7 @@
 									}
 									subscriptionInfo {
 										totalDays
+										endDate
 										activePeriod {
 											subscriptionProductVariant {
 												kind
