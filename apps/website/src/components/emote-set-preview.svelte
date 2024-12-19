@@ -48,7 +48,12 @@
 >
 	<div class="emotes" style:grid-template-columns="repeat({Math.min(data.capacity ?? 6, 6)}, 1fr)">
 		{#each emotePreviews as emote, i}
-			<ResponsiveImage images={emote.images} width={2 * 16} index={i} style="max-height: 2rem; overflow: hidden" />
+			<ResponsiveImage
+				images={emote.images}
+				width={2 * 16}
+				index={i}
+				style="max-height: 2rem; overflow: hidden"
+			/>
 		{/each}
 		<!-- Fill remaining slots (if any) with placeholders -->
 		{#each Array(placeholderCount) as _}
