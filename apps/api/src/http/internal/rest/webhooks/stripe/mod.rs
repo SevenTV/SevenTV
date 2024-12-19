@@ -182,7 +182,6 @@ pub async fn handle(
 
 			let prev_attributes = event.data.previous_attributes;
 
-			// https://kappa.lol/2NwAU
 			match (event.type_, event.data.object) {
 				(stripe::EventType::PriceUpdated, stripe::EventObject::Price(price)) => {
 					price::updated(&global, stripe_client, tx, price).await?;
@@ -215,6 +214,9 @@ pub async fn handle(
 				}
 				(stripe::EventType::InvoicePaymentFailed, stripe::EventObject::Invoice(iv)) => {
 					invoice::payment_failed(&global, tx, iv).await?;
+				}
+				(stripe::EventType::CustomerDeleted, stripe::EventObject::Customer(cus)) => {
+					customer::deleted(&global, tx, cus).await?;
 				}
 				(stripe::EventType::CustomerSubscriptionCreated, stripe::EventObject::Subscription(sub)) => {
 					return subscription::created(&global, tx, sub, event.id).await;
