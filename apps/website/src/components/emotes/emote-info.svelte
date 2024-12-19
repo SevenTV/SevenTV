@@ -391,6 +391,8 @@
 			display: flex;
 			align-items: flex-end;
 			gap: 2.25rem;
+			overflow: auto;
+			max-width: 100%;
 		}
 
 		.buttons {
