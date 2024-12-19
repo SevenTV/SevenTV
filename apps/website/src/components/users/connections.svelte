@@ -39,7 +39,13 @@
 					<Link />
 				{/if}
 			{/snippet}
-			<span class="name">{connection.platformDisplayName}</span>
+			<span class="name">
+				{#if connection.platformDisplayName === connection.platformUsername}
+					{connection.platformDisplayName}
+				{:else}
+					{connection.platformDisplayName} ({connection.platformUsername})
+				{/if}
+			</span>
 		</Button>
 	{/if}
 {/each}

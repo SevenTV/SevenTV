@@ -113,69 +113,63 @@
 				</Button>
 				<hr />
 			{:then user}
-				{#if user.connections.length > 0}
-					<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
-						{#snippet icon()}
-							<Link />
-						{/snippet}
-						{$t("common.connections")}
-						{#snippet iconRight()}
-							{#if connectionsExpanded}
-								<CaretDown style="margin-left: auto" />
-							{:else}
-								<CaretRight style="margin-left: auto" />
-							{/if}
-						{/snippet}
-					</Button>
-					{#if connectionsExpanded}
-						<div class="expanded">
-							<Connections {user} />
-							{#if isMe}
-								<Button href="/settings/account">
-									{#snippet icon()}
-										<Gear />
-									{/snippet}
-									Manage connections
-								</Button>
-							{/if}
-						</div>
-					{/if}
+				<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
+					{#snippet icon()}
+						<Link />
+					{/snippet}
+					{$t("common.connections")}
+					{#snippet iconRight()}
+						{#if connectionsExpanded}
+							<CaretDown style="margin-left: auto" />
+						{:else}
+							<CaretRight style="margin-left: auto" />
+						{/if}
+					{/snippet}
+				</Button>
+				{#if connectionsExpanded}
+					<div class="expanded">
+						<Connections {user} />
+						{#if isMe}
+							<Button href="/settings/account">
+								{#snippet icon()}
+									<Gear />
+								{/snippet}
+								Manage connections
+							</Button>
+						{/if}
+					</div>
 				{/if}
-				{#if user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted)}
-					<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
-						{#snippet icon()}
-							<UserCircle />
-						{/snippet}
-						{$t("common.editors")}
-						{#snippet iconRight()}
-							{#if editorsExpanded}
-								<CaretDown style="margin-left: auto" />
-							{:else}
-								<CaretRight style="margin-left: auto" />
+				<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
+					{#snippet icon()}
+						<UserCircle />
+					{/snippet}
+					{$t("common.editors")}
+					{#snippet iconRight()}
+						{#if editorsExpanded}
+							<CaretDown style="margin-left: auto" />
+						{:else}
+							<CaretRight style="margin-left: auto" />
+						{/if}
+					{/snippet}
+				</Button>
+				{#if editorsExpanded}
+					<div class="expanded">
+						{#each user.editors as editor}
+							{#if editor.editor && editor.state === UserEditorState.Accepted}
+								<ChannelPreview size={1.5} user={editor.editor} />
 							{/if}
-						{/snippet}
-					</Button>
-					{#if editorsExpanded}
-						<div class="expanded">
-							{#each user.editors as editor}
-								{#if editor.editor && editor.state === UserEditorState.Accepted}
-									<ChannelPreview size={1.5} user={editor.editor} />
-								{/if}
-							{/each}
-							{#if isMe}
-								<Button href="/settings/editors">
-									{#snippet icon()}
-										<Gear />
-									{/snippet}
-									Manage editors
-								</Button>
-							{/if}
-						</div>
-					{/if}
+						{/each}
+						{#if isMe}
+							<Button href="/settings/editors">
+								{#snippet icon()}
+									<Gear />
+								{/snippet}
+								Manage editors
+							</Button>
+						{/if}
+					</div>
 				{/if}
-				{#if user.connections.length > 0 || user.editors.some((e) => e.editor && e.state === UserEditorState.Accepted)}
-					<hr />
-				{/if}
+				<hr />
 			{/await}
 			<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.id}" big>
 				<Lightning />
