@@ -17,10 +17,13 @@ export type Theme = "system-theme" | "light-theme" | "dark-theme";
 export const theme = writable<Theme>(loadTheme());
 
 function loadConstructionBarShown() {
-	const savedValue = browser && window.localStorage.getItem("showConstructionBar");
+	if (!browser) return undefined;
+
+	const savedValue = window.localStorage.getItem("showConstructionBar");
 	if (savedValue) {
 		return JSON.parse(savedValue) as boolean;
 	}
+
 	return true;
 }
 
