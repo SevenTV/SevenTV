@@ -7,6 +7,7 @@ use shared::database::emote_set::EmoteSetId;
 use shared::database::user::UserId;
 
 use super::{Emote, SearchResult, User};
+use crate::dataloader::emote::EmoteByIdLoaderExt;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -24,7 +25,7 @@ pub struct EmoteSet {
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 
 	#[graphql(skip)]
-	pub emotes: Vec<EmoteSetEmote>,
+	pub emotes: Vec<shared::database::emote_set::EmoteSetEmote>,
 }
 
 #[async_graphql::ComplexObject]
@@ -32,10 +33,16 @@ impl EmoteSet {
 	#[tracing::instrument(skip_all, name = "EmoteSet::emotes")]
 	async fn emotes(
 		&self,
+		ctx: &Context<'_>,
 		#[graphql(validator(min_length = 1, max_length = 100))] query: Option<String>,
 		page: Option<u32>,
 		#[graphql(validator(minimum = 1))] per_page: Option<u32>,
-	) -> SearchResult<EmoteSetEmote> {
+	) -> Result<SearchResult<EmoteSetEmote>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))
+			.unwrap();
+
 		let filtered = self
 			.emotes
 			.iter()
@@ -58,17 +65,41 @@ impl EmoteSet {
 				.unwrap_or_default()
 				.to_vec();
 
-			SearchResult {
-				total_count: filtered.len() as u64,
-				page_count: (filtered.len() as u64 / chunk_size as u64) + 1,
+			let emotes = global
+				.emote_by_id_loader
+				.load_many_merged(items.iter().map(|e| e.id))
+				.await
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
+			let items = items
+				.into_iter()
+				.filter_map(|ese| emotes.get(ese.id).cloned().map(|e| (ese, e)))
+				.map(|(ese, e)| EmoteSetEmote::from_db(ese, Emote::from_db(e, &global.config.api.cdn_origin)))
+				.collect();
+
+			Ok(SearchResult {
+				total_count: emotes.len() as u64,
+				page_count: (emotes.len() as u64 / chunk_size as u64) + 1,
 				items,
-			}
+			})
 		} else {
-			SearchResult {
-				total_count: filtered.len() as u64,
+			let emotes = global
+				.emote_by_id_loader
+				.load_many_merged(filtered.iter().map(|e| e.id))
+				.await
+				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
+			let items = filtered
+				.into_iter()
+				.filter_map(|ese| emotes.get(ese.id).cloned().map(|e| (ese, e)))
+				.map(|(ese, e)| EmoteSetEmote::from_db(ese, Emote::from_db(e, &global.config.api.cdn_origin)))
+				.collect();
+
+			Ok(SearchResult {
+				total_count: emotes.len() as u64,
 				page_count: 1,
-				items: filtered,
-			}
+				items,
+			})
 		}
 	}
 
@@ -99,7 +130,7 @@ impl From<shared::database::emote_set::EmoteSet> for EmoteSet {
 			name: value.name,
 			description: value.description,
 			tags: value.tags,
-			emotes: value.emotes.into_iter().map(Into::into).collect(),
+			emotes: value.emotes,
 			capacity: value.capacity,
 			owner_id: value.owner_id,
 			kind: value.kind.into(),
@@ -129,9 +160,9 @@ impl From<shared::database::emote_set::EmoteSetKind> for EmoteSetKind {
 }
 
 #[derive(Debug, Clone, async_graphql::SimpleObject)]
-#[graphql(complex)]
 pub struct EmoteSetEmote {
 	pub id: EmoteId,
+	pub emote: Emote,
 	pub alias: String,
 	pub added_at: chrono::DateTime<chrono::Utc>,
 	pub flags: EmoteSetEmoteFlags,
@@ -139,28 +170,11 @@ pub struct EmoteSetEmote {
 	pub origin_set_id: Option<EmoteSetId>,
 }
 
-#[async_graphql::ComplexObject]
 impl EmoteSetEmote {
-	#[tracing::instrument(skip_all, name = "EmoteSetEmote::emote")]
-	async fn emote(&self, ctx: &Context<'_>) -> Result<Option<Emote>, ApiError> {
-		let global: &Arc<Global> = ctx
-			.data()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
-
-		let emote = global
-			.emote_by_id_loader
-			.load(self.id)
-			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
-
-		Ok(emote.map(|e| Emote::from_db(e, &global.config.api.cdn_origin)))
-	}
-}
-
-impl From<shared::database::emote_set::EmoteSetEmote> for EmoteSetEmote {
-	fn from(value: shared::database::emote_set::EmoteSetEmote) -> Self {
+	pub fn from_db(value: shared::database::emote_set::EmoteSetEmote, emote: Emote) -> Self {
 		Self {
 			id: value.id,
+			emote,
 			alias: value.alias,
 			added_at: value.added_at,
 			flags: value.flags.into(),

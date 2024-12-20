@@ -204,7 +204,11 @@ impl Emote {
 			.into_iter()
 			.map(|(id, set)| EmoteInEmoteSetResponse {
 				emote_set_id: id,
-				emote: set.emotes.into_iter().find(|e| e.id == self.id).map(EmoteSetEmote::from),
+				emote: set
+					.emotes
+					.into_iter()
+					.find(|e| e.id == self.id)
+					.map(|ese| EmoteSetEmote::from_db(ese, self.clone())),
 			})
 			.collect();
 

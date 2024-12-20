@@ -28,6 +28,10 @@ impl MergedResult {
 
 		None
 	}
+
+	pub fn len(&self) -> usize {
+		self.emotes.len()
+	}
 }
 
 pub trait EmoteByIdLoaderExt {

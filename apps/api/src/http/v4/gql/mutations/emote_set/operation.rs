@@ -21,7 +21,7 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::middleware::session::Session;
-use crate::http::v4::gql::types::{EmoteSet, EmoteSetEmote};
+use crate::http::v4::gql::types::{Emote, EmoteSet, EmoteSetEmote};
 use crate::http::validators::{EmoteNameValidator, NameValidator, TagsValidator};
 use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
@@ -1033,7 +1033,7 @@ impl EmoteSetOperation {
 					data: InternalEventData::EmoteSet {
 						after: emote_set.clone(),
 						data: InternalEventEmoteSetData::RenameEmote {
-							emote: Box::new(emote),
+							emote: Box::new(emote.clone()),
 							emote_set_emote: emote_set_emote.clone(),
 							old_alias: old_emote_set_emote.alias.clone(),
 						},
@@ -1041,13 +1041,16 @@ impl EmoteSetOperation {
 					timestamp: chrono::Utc::now(),
 				})?;
 
-				Ok(emote_set_emote.clone())
+				Ok(EmoteSetEmote::from_db(
+					emote_set_emote.clone(),
+					Emote::from_db(emote, &global.config.api.cdn_origin),
+				))
 			},
 		)
 		.await;
 
 		match res {
-			Ok(emote_set_emote) => Ok(emote_set_emote.into()),
+			Ok(emote_set_emote) => Ok(emote_set_emote),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
@@ -1159,13 +1162,16 @@ impl EmoteSetOperation {
 					TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
 				})?;
 
-				Ok(emote_set_emote.clone())
+				Ok(EmoteSetEmote::from_db(
+					emote_set_emote.clone(),
+					Emote::from_db(emote, &global.config.api.cdn_origin),
+				))
 			},
 		)
 		.await;
 
 		match res {
-			Ok(emote_set_emote) => Ok(emote_set_emote.into()),
+			Ok(emote_set_emote) => Ok(emote_set_emote),
 			Err(TransactionError::Custom(e)) => Err(e),
 			Err(e) => {
 				tracing::error!(error = %e, "transaction failed");
