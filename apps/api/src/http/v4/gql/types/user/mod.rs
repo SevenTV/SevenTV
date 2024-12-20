@@ -289,17 +289,6 @@ impl User {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
-		let session = ctx
-			.data::<Session>()
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
-		let authed_user = session.user()?;
-
-		if authed_user.id != self.id && !authed_user.has(UserPermission::ManageAny) {
-			return Err(ApiError::forbidden(
-				ApiErrorCode::LackingPrivileges,
-				"you are not allowed to see this user's events",
-			));
-		}
 
 		let options = SearchOptions::builder()
 			.query("*".to_owned())
