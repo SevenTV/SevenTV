@@ -603,6 +603,7 @@
 		align-items: center;
 		gap: 1rem;
 
+		color: var(--text);
 		text-decoration: none;
 	}
 
