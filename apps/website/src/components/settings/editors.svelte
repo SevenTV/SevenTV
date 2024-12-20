@@ -23,15 +23,17 @@
 	import { graphql } from "$/gql";
 	import Spinner from "../spinner.svelte";
 	import ChannelPreview from "../channel-preview.svelte";
-	import { user } from "$/lib/auth";
 	import EditorPermissionsDialog from "../dialogs/editor-permissions-dialog.svelte";
+	import type { Snippet } from "svelte";
 
 	interface Props {
+		userId: string;
 		editors: UserEditor[];
 		tab: "editors" | "editing-for";
+		children?: Snippet;
 	}
 
-	let { editors = $bindable(), tab }: Props = $props();
+	let { userId, editors = $bindable(), tab, children }: Props = $props();
 
 	let query = $state("");
 
@@ -288,7 +290,7 @@
 		e.preventDefault();
 
 		adding = {
-			userId: $user!.id,
+			userId,
 			editorId,
 		};
 	}
@@ -399,15 +401,7 @@
 {/if}
 <nav class="nav-bar">
 	<div class="buttons">
-		<div class="link-list">
-			<TabLink title={$t("common.editors")} href="/settings/editors" />
-			<NumberBadge count={$pendingEditorFor}>
-				<TabLink
-					title={$t("pages.settings.editors.editing_for")}
-					href="/settings/editors/editing-for"
-				/>
-			</NumberBadge>
-		</div>
+		{@render children?.()}
 	</div>
 	{#if tab === "editors"}
 		<TextInput
@@ -473,10 +467,10 @@
 				{#if user}
 					<tr class="data-row">
 						<td>
-							<div class="user-info">
+							<a class="user-info" href="/users/{user.id}">
 								<UserProfilePicture {user} size={2.5 * 16} />
 								<UserName {user} />
-							</div>
+							</a>
 						</td>
 						<td class="date">
 							<Date date={moment(editor.updatedAt)} />
@@ -564,14 +558,6 @@
 		}
 	}
 
-	.link-list {
-		display: flex;
-		background-color: var(--bg-light);
-		border-radius: 0.5rem;
-		padding: 0.3rem;
-		gap: 0.3rem;
-	}
-
 	:global(label.input:has(input:enabled)):focus-within > .results {
 		display: flex;
 	}
@@ -616,6 +602,8 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+
+		text-decoration: none;
 	}
 
 	.date {

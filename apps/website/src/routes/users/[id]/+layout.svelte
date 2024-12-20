@@ -35,16 +35,18 @@
 
 	let isMe = $derived(data.id === $user?.id);
 	let canManageEditors = $derived(
-		data.streamed.userRequest.value.then(
-			(data) =>
-				$user?.id === data.id ||
-				data.editors.some(
-					(editor) =>
-						editor.editor?.id === $user?.id &&
-						editor.state === UserEditorState.Accepted &&
-						editor.permissions.user.manageEditors,
-				),
-		),
+		$user &&
+			data.streamed.userRequest.value.then(
+				(data) =>
+					$user?.id === data.id ||
+					$user.permissions.user.manageAny ||
+					data.editors.some(
+						(editor) =>
+							editor.editor?.id === $user?.id &&
+							editor.state === UserEditorState.Accepted &&
+							editor.permissions.user.manageEditors,
+					),
+			),
 	);
 
 	$effect(() => {

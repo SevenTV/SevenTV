@@ -205,6 +205,10 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 								permissions {
 									emoteSet {
 										create
+										manage
+									}
+									emote {
+										manage
 									}
 									user {
 										manageProfile
