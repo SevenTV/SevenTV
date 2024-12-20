@@ -332,8 +332,18 @@ impl User {
 	}
 
 	#[tracing::instrument(skip_all, name = "User::inventory")]
-	async fn inventory(&self) -> UserInventory {
-		UserInventory::from_user(&self.full_user)
+	async fn inventory(&self, ctx: &Context<'_>) -> Result<UserInventory, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let full_user = global
+			.user_loader
+			.load_user(global, self.full_user.user.clone())
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(UserInventory::from_user(&full_user))
 	}
 
 	#[tracing::instrument(skip_all, name = "User::billing")]

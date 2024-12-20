@@ -86,7 +86,7 @@ impl UserQuery {
 
 		let full_user = global
 			.user_loader
-			.load_user(global, user)
+			.load_fast_user(global, user)
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
