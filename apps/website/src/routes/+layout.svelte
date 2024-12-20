@@ -35,6 +35,14 @@
 			$showMobileMenu = false;
 		});
 	});
+
+	$effect(() => {
+		if ($showConstructionBar) {
+			document.body.classList.add("construction-bar");
+		} else {
+			document.body.classList.remove("construction-bar");
+		}
+	});
 </script>
 
 <IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>
@@ -79,6 +87,10 @@
 		min-height: 100svh;
 
 		display: grid;
+		grid-template-rows: auto 1fr;
+	}
+
+	:global(body.construction-bar) {
 		grid-template-rows: auto auto 1fr;
 	}
 
