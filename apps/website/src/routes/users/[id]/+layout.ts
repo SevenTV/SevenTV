@@ -208,6 +208,7 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 									}
 									user {
 										manageProfile
+										manageEditors
 									}
 								}
 								state

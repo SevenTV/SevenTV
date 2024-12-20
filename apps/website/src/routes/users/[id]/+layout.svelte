@@ -26,20 +26,31 @@
 	import { user } from "$/lib/auth";
 	import Badge from "$/components/badge.svelte";
 	import { filterRoles } from "$/lib/utils";
+	import { page } from "$app/stores";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	let connectionsExpanded = $state(false);
-	let editorsExpanded = $state(false);
-
-	let showActivity = $derived($user?.id === data.id || $user?.permissions.user.manageAny);
+	let editorsExpanded = $state($page.url.pathname.endsWith("/editors"));
 
 	let isMe = $derived(data.id === $user?.id);
+	let canManageEditors = $derived(
+		data.streamed.userRequest.value.then(
+			(data) =>
+				$user?.id === data.id ||
+				data.editors.some(
+					(editor) =>
+						editor.editor?.id === $user?.id &&
+						editor.state === UserEditorState.Accepted &&
+						editor.permissions.user.manageEditors,
+				),
+		),
+	);
 
 	$effect(() => {
 		data.streamed.userRequest.value.then((user) => {
-			if (user) {
-				editorsExpanded = isMe && user.editors.length === 0;
+			if (user && isMe && user.editors.length === 0) {
+				editorsExpanded = true;
 			}
 		});
 	});
@@ -159,14 +170,16 @@
 								<ChannelPreview size={1.5} user={editor.editor} />
 							{/if}
 						{/each}
-						{#if isMe}
-							<Button href="/settings/editors">
-								{#snippet icon()}
+						{#await canManageEditors then manageEditors}
+							{#if manageEditors}
+								<TabLink title="Manage editors" href="/users/{data.id}/editors">
 									<Gear />
-								{/snippet}
-								Manage editors
-							</Button>
-						{/if}
+									{#snippet active()}
+										<Gear weight="fill" />
+									{/snippet}
+								</TabLink>
+							{/if}
+						{/await}
 					</div>
 				{/if}
 				<hr />
@@ -200,14 +213,12 @@
 					<PaintBrush weight="fill" />
 				{/snippet}
 			</TabLink>
-			{#if showActivity}
-				<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
-					<Pulse />
-					{#snippet active()}
-						<Pulse weight="fill" />
-					{/snippet}
-				</TabLink>
-			{/if}
+			<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
+				<Pulse />
+				{#snippet active()}
+					<Pulse weight="fill" />
+				{/snippet}
+			</TabLink>
 		</nav>
 	</aside>
 	<div class="content">
