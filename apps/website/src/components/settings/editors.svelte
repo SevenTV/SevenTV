@@ -400,9 +400,7 @@
 	/>
 {/if}
 <nav class="nav-bar">
-	<div class="buttons">
-		{@render children?.()}
-	</div>
+	{@render children?.()}
 	{#if tab === "editors"}
 		<TextInput
 			placeholder={$t("pages.settings.editors.add_editor")}
@@ -550,12 +548,6 @@
 		justify-content: space-between;
 		align-items: center;
 		gap: 1rem;
-
-		.buttons {
-			display: flex;
-			align-items: center;
-			gap: 0.5rem;
-		}
 	}
 
 	:global(label.input:has(input:enabled)):focus-within > .results {
