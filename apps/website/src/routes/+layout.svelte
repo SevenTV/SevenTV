@@ -16,7 +16,7 @@
 	} from "$/lib/layout";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
-	import { IconContext, Warning } from "phosphor-svelte";
+	import { IconContext, Warning, X } from "phosphor-svelte";
 	import UploadDialog from "$/components/dialogs/upload-dialog.svelte";
 	import SignInDialog from "$/components/dialogs/sign-in-dialog.svelte";
 	import DefaultEmoteSetDialog from "$/components/dialogs/default-emote-set-dialog.svelte";
@@ -26,7 +26,6 @@
 	import { currentError, errorDialogMode } from "$/lib/error";
 	import { PUBLIC_DISCORD_LINK, PUBLIC_OLD_WEBSITE_LINK } from "$env/static/public";
 	import Button from "../components/input/button.svelte";
-	import { X } from "phosphor-svelte";
 
 	let { children }: { children: Snippet } = $props();
 
