@@ -37,15 +37,12 @@ impl EmoteSetQuery {
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let emote_sets = global
+		let mut emote_sets = global
 			.emote_set_by_id_loader
-			.load_many(ids)
+			.load_many(ids.iter().copied())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
-			.into_values()
-			.map(Into::into)
-			.collect();
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?;
 
-		Ok(emote_sets)
+		Ok(ids.iter().filter_map(|id| emote_sets.remove(id)).map(Into::into).collect())
 	}
 }

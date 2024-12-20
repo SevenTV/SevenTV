@@ -7,6 +7,7 @@
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { emotesLayout } from "$/lib/layout";
+	import ActiveEmoteSetButton from "$/components/users/active-emote-set-button.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -145,7 +146,10 @@
 </script>
 
 <div class="buttons">
-	<LayoutButtons bind:value={$emotesLayout} />
+	<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} />
+	<div class="layout-buttons">
+		<LayoutButtons bind:value={$emotesLayout} />
+	</div>
 </div>
 {#key data.id}
 	<EmoteLoader {load} />
@@ -153,8 +157,13 @@
 
 <style lang="scss">
 	.buttons {
-		align-self: flex-end;
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+		justify-content: space-between;
+	}
 
+	.layout-buttons {
 		display: flex;
 		gap: 0.5rem;
 	}

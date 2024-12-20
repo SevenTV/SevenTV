@@ -5,10 +5,13 @@
 	import TextInput from "../input/text-input.svelte";
 	import DeleteEmoteSetDialog from "./delete-emote-set-dialog.svelte";
 	import { t } from "svelte-i18n";
-	import type { EmoteSet } from "$/gql/graphql";
+	import { EmoteSetKind, type EmoteSet } from "$/gql/graphql";
 	import { compareTags } from "$/lib/utils";
 	import Spinner from "../spinner.svelte";
-	import { updateName, updateTags } from "$/lib/setMutations";
+	import { updateCapacity, updateName, updateTags } from "$/lib/setMutations";
+	import Range from "../input/range.svelte";
+	import { gqlClient } from "$/lib/gql";
+	import { graphql } from "$/gql";
 
 	interface Props {
 		mode: DialogMode;
@@ -17,15 +20,35 @@
 
 	let { mode = $bindable("hidden"), data = $bindable() }: Props = $props();
 
+	async function queryCapacityLimit(userId: string, personal: boolean) {
+		const res = await gqlClient().query(
+			graphql(`
+				query UserCapacityLimit($userId: Id!) {
+					users {
+						user(id: $userId) {
+							permissions {
+								emoteSetCapacity
+								personalEmoteSetCapacity
+							}
+						}
+					}
+				}
+			`),
+			{ userId },
+		);
+
+		return personal ? res.data?.users.user?.permissions.personalEmoteSetCapacity : res.data?.users.user?.permissions.emoteSetCapacity;
+	}
+
 	let deleteDialogMode: DialogMode = $state("hidden");
 
 	let name = $state(data.name);
+	let capacity = $state(data.capacity);
 	let tags = $state(data.tags);
 
 	let nameChanged = $derived(name !== data.name);
+	let capacityChanged = $derived(capacity !== data.capacity);
 	let tagsChanged = $derived(!compareTags(tags, data.tags));
-
-	let changed = $derived(nameChanged || tagsChanged);
 
 	function onDeleteClick() {
 		mode = "hidden";
@@ -45,6 +68,14 @@
 			}
 		}
 
+		if (capacityChanged && capacity != undefined) {
+			const newData = await updateCapacity(data.id, capacity);
+
+			if (newData) {
+				data = newData;
+			}
+		}
+
 		if (tagsChanged) {
 			const newData = await updateTags(data.id, tags);
 
@@ -56,6 +87,8 @@
 		loading = false;
 		mode = "hidden";
 	}
+
+	let capacityLimit = $derived(data.owner ? queryCapacityLimit(data.owner.id, data.kind === EmoteSetKind.Personal) : undefined);
 </script>
 
 <DeleteEmoteSetDialog bind:mode={deleteDialogMode} bind:data />
@@ -66,6 +99,16 @@
 		<TextInput placeholder={$t("labels.emote_set_name")} bind:value={name}>
 			<span class="label">{$t("labels.emote_set_name")}</span>
 		</TextInput>
+		{#await capacityLimit}
+			<span>
+				Capacity:
+				<Spinner />
+			</span>
+		{:then max}
+			<Range min={data.emotes.totalCount} {max} bind:value={capacity}>
+				<span class="label">Capacity: {capacity}</span>
+			</Range>
+		{/await}
 		<div class="tags">
 			<TagsInput bind:tags>
 				<span class="label">{$t("labels.tags")}</span>
@@ -83,7 +126,7 @@
 				primary
 				submit
 				onclick={submit}
-				disabled={!changed || loading}
+				disabled={!(nameChanged || capacityChanged || tagsChanged) || loading}
 				icon={loading ? loadingSpinner : undefined}
 			>
 				{$t("labels.save")}

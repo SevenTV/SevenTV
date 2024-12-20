@@ -4,7 +4,7 @@
 	import { t } from "svelte-i18n";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
-	import type { SearchResultAll } from "$/gql/graphql";
+	import type { SearchResultAll, User } from "$/gql/graphql";
 	import Spinner from "../spinner.svelte";
 	import ResponsiveImage from "../responsive-image.svelte";
 	import ChannelPreview from "../channel-preview.svelte";
@@ -19,19 +19,26 @@
 
 	async function search(query: string): Promise<SearchResultAll> {
 		if (!query) {
+			const users = new Map<string, User>();
+			for (const set of $editableEmoteSets) {
+				if (set.owner) {
+					users.set(set.owner.id, set.owner);
+				}
+			}
+
 			return {
-				users: { items: [], totalCount: 0, pageCount: 0 },
+				users: { items: [...users.values()], totalCount: users.size, pageCount: 1 },
 				emotes: { items: [], totalCount: 0, pageCount: 0 },
 			};
-		}
-
-		if (timeout) {
-			clearTimeout(timeout);
 		}
 
 		// Small timeout to prevent spamming requests when user is typing
 
 		return new Promise((resolve, reject) => {
+			if (timeout) {
+				clearTimeout(timeout);
+			}
+
 			timeout = setTimeout(async () => {
 				const res = await gqlClient()
 					.query(
@@ -213,15 +220,6 @@
 		{#await results then results}
 			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0)}
 				<div class="results">
-					{#if results.users.items}
-						<span class="label">Users</span>
-					{/if}
-					{#each results.users.items as result}
-						<ChannelPreview user={result} size={2} />
-					{/each}
-					{#if results.users.items && results.emotes.items}
-						<hr />
-					{/if}
 					{#if results.emotes.items}
 						<span class="label">Emotes</span>
 					{/if}
@@ -232,12 +230,18 @@
 							{/snippet}
 							{result.defaultName}
 							{#snippet iconRight()}
-								<Flags
-									flags={emoteToFlags(result, $defaultEmoteSet, $editableEmoteSets)}
-									iconOnly
-								/>
+								<Flags flags={emoteToFlags(result, $defaultEmoteSet, $editableEmoteSets)} iconOnly />
 							{/snippet}
 						</Button>
+					{/each}
+					{#if results.users.items && results.emotes.items}
+						<hr />
+					{/if}
+					{#if results.users.items}
+						<span class="label">Users</span>
+					{/if}
+					{#each results.users.items as result}
+						<ChannelPreview user={result} size={2} />
 					{/each}
 				</div>
 			{/if}

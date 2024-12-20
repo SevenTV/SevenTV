@@ -5,6 +5,10 @@
 	import type { UserEditor } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { user } from "$/lib/auth";
+	import TabLink from "$/components/tab-link.svelte";
+	import NumberBadge from "$/components/number-badge.svelte";
+	import { pendingEditorFor } from "$/lib/auth";
+	import { t } from "svelte-i18n";
 
 	async function queryEditors(userId: string) {
 		const res = await gqlClient().query(
@@ -133,11 +137,29 @@
 		<Spinner />
 	</div>
 {:then editors}
-	<Editors {editors} tab="editors" />
+	<Editors userId={$user!.id} {editors} tab="editors">
+		<div class="link-list">
+			<TabLink title={$t("common.editors")} href="/settings/editors" />
+			<NumberBadge count={$pendingEditorFor}>
+				<TabLink
+					title={$t("pages.settings.editors.editing_for")}
+					href="/settings/editors/editing-for"
+				/>
+			</NumberBadge>
+		</div>
+	</Editors>
 {/await}
 
 <style lang="scss">
 	.spinner-container {
 		margin-inline: auto;
+	}
+
+	.link-list {
+		display: flex;
+		background-color: var(--bg-light);
+		border-radius: 0.5rem;
+		padding: 0.3rem;
+		gap: 0.3rem;
 	}
 </style>

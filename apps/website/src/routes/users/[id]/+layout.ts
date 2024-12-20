@@ -106,6 +106,10 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 										frameCount
 									}
 								}
+								activeEmoteSet {
+									id
+									name
+								}
 							}
 							highestRoleColor {
 								hex
@@ -201,6 +205,14 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 								permissions {
 									emoteSet {
 										create
+										manage
+									}
+									emote {
+										manage
+									}
+									user {
+										manageProfile
+										manageEditors
 									}
 								}
 								state

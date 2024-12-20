@@ -260,6 +260,12 @@ impl BillingMutation {
 						"subscription not found",
 					)))?;
 
+				let end_date = periods
+					.iter()
+					.max_by_key(|p| p.end)
+					.map(|p| p.end)
+					.unwrap_or(active_period.end);
+
 				match &active_period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
 						stripe::Subscription::update(
@@ -366,6 +372,7 @@ impl BillingMutation {
 
 				Ok(SubscriptionInfo {
 					active_period: Some(active_period.clone().into()),
+					end_date: Some(end_date),
 					total_days: age.days,
 				})
 			}
@@ -449,6 +456,12 @@ impl BillingMutation {
 					TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "subscription not found"))
 				})?;
 
+			let end_date = periods
+				.iter()
+				.max_by_key(|p| p.end)
+				.map(|p| p.end)
+				.unwrap_or(active_period.end);
+
 			match &active_period.provider_id {
 				Some(ProviderSubscriptionId::Stripe(id)) => {
 					stripe::Subscription::update(
@@ -501,6 +514,7 @@ impl BillingMutation {
 
 					Ok(SubscriptionInfo {
 						active_period: Some(active_period.clone().into()),
+						end_date: Some(end_date),
 						total_days: age.days,
 					})
 				}
