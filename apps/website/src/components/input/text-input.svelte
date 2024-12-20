@@ -9,6 +9,7 @@
 		big?: boolean;
 		disabled?: boolean;
 		children?: Snippet;
+		nonLabelChildren?: Snippet;
 		icon?: Snippet;
 		onkeypress?: (e: KeyboardEvent) => void;
 	} & HTMLLabelAttributes;
@@ -20,6 +21,7 @@
 		big = false,
 		disabled = false,
 		children,
+		nonLabelChildren,
 		icon,
 		onkeypress,
 		...restProps
@@ -38,6 +40,7 @@
 </script>
 
 <label class="input" class:big class:has-label={children} class:has-icon={icon} {...restProps}>
+	{@render nonLabelChildren?.()}
 	{@render children?.()}
 	{#if icon}
 		<div class="icon">

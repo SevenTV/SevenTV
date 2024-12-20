@@ -88,6 +88,8 @@
 		align-items: center;
 		background-color: var(--bg-light);
 		border-radius: 0.5rem;
+		gap: 0.3rem;
+		padding: 0.3rem;
 	}
 
 	.buttons {

@@ -408,19 +408,21 @@
 				/>
 			</NumberBadge>
 		</div>
-		{#if tab === "editors"}
-			<TextInput
-				placeholder={$t("pages.settings.editors.add_editor")}
-				bind:value={query}
-				disabled={!!adding}
-			>
-				{#snippet icon()}
-					{#await results}
-						<Spinner />
-					{:then _}
-						<UserCirclePlus />
-					{/await}
-				{/snippet}
+	</div>
+	{#if tab === "editors"}
+		<TextInput
+			placeholder={$t("pages.settings.editors.add_editor")}
+			bind:value={query}
+			disabled={!!adding}
+		>
+			{#snippet icon()}
+				{#await results}
+					<Spinner />
+				{:then _}
+					<UserCirclePlus />
+				{/await}
+			{/snippet}
+			{#snippet nonLabelChildren()}
 				{#await results then results}
 					{#if results && results.items.length > 0}
 						<div class="results">
@@ -434,9 +436,9 @@
 						</div>
 					{/if}
 				{/await}
-			</TextInput>
-		{/if}
-	</div>
+			{/snippet}
+		</TextInput>
+	{/if}
 	<HideOn mobile>
 		<TextInput placeholder={$t("labels.search")}>
 			{#snippet icon()}
@@ -457,6 +459,15 @@
 			</tr>
 		</thead>
 		<tbody>
+			{#if editors.length === 0}
+				<tr class="data-row">
+					<td class="shrink" colspan="4">
+						<div class="no-data-container">
+							<span class="no-data">No editors to show</span>
+						</div>
+					</td>
+				</tr>
+			{/if}
 			{#each editors as editor}
 				{@const user = tab === "editors" ? editor.editor : editor.user}
 				{#if user}
@@ -557,6 +568,8 @@
 		display: flex;
 		background-color: var(--bg-light);
 		border-radius: 0.5rem;
+		padding: 0.3rem;
+		gap: 0.3rem;
 	}
 
 	:global(label.input:has(input:enabled)):focus-within > .results {
@@ -615,5 +628,10 @@
 		align-items: center;
 		justify-content: flex-end;
 		gap: 0.5rem;
+	}
+
+	.no-data-container {
+		text-align: center;
+		padding: 0.5rem;
 	}
 </style>
