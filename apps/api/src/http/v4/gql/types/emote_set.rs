@@ -56,6 +56,12 @@ impl EmoteSet {
 			.cloned()
 			.collect_vec();
 
+		let emotes = global
+			.emote_by_id_loader
+			.load_many_merged(filtered.iter().map(|e| e.id))
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
 		if let Some(page) = page {
 			let chunk_size = per_page.map(|p| p as usize).unwrap_or(20);
 
@@ -64,12 +70,6 @@ impl EmoteSet {
 				.nth(page.saturating_sub(1) as usize)
 				.unwrap_or_default()
 				.to_vec();
-
-			let emotes = global
-				.emote_by_id_loader
-				.load_many_merged(items.iter().map(|e| e.id))
-				.await
-				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
 
 			let items = items
 				.into_iter()
@@ -83,12 +83,6 @@ impl EmoteSet {
 				items,
 			})
 		} else {
-			let emotes = global
-				.emote_by_id_loader
-				.load_many_merged(filtered.iter().map(|e| e.id))
-				.await
-				.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
-
 			let items = filtered
 				.into_iter()
 				.filter_map(|ese| emotes.get(ese.id).cloned().map(|e| (ese, e)))
