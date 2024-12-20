@@ -422,19 +422,21 @@
 					<UserCirclePlus />
 				{/await}
 			{/snippet}
-			{#await results then results}
-				{#if results && results.items.length > 0}
-					<div class="results">
-						{#each results.items as result}
-							<ChannelPreview
-								user={result}
-								size={2}
-								onclick={(e) => channelClick(e, result.id)}
-							/>
-						{/each}
-					</div>
-				{/if}
-			{/await}
+			{#snippet nonLabelChildren()}
+				{#await results then results}
+					{#if results && results.items.length > 0}
+						<div class="results">
+							{#each results.items as result}
+								<ChannelPreview
+									user={result}
+									size={2}
+									onclick={(e) => channelClick(e, result.id)}
+								/>
+							{/each}
+						</div>
+					{/if}
+				{/await}
+			{/snippet}
 		</TextInput>
 	{/if}
 	<HideOn mobile>
