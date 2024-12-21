@@ -11,6 +11,7 @@
 		Lightning,
 		Link,
 		PaintBrush,
+		PencilSimple,
 		Pulse,
 		Upload,
 		UserCircle,
@@ -232,6 +233,16 @@
 						<IdentificationCard weight="fill" />
 					{/snippet}
 				</TabLink>
+				{#await canManageEditors then manageEditors}
+					{#if manageEditors}
+						<TabLink title="Manage editors" href="/users/{data.id}/editors">
+							<PencilSimple />
+							{#snippet active()}
+								<PencilSimple weight="fill" />
+							{/snippet}
+						</TabLink>
+					{/if}
+				{/await}
 				<TabLink title={$t("common.active")} href="/users/{data.id}">
 					<Lightning />
 					{#snippet active()}
