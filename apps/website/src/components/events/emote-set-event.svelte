@@ -43,7 +43,7 @@
 	{#if emote}
 		<a href="/emotes/{emote.id}" class="emote-link" title={emote.defaultName}>
 			<span class="emote-name">{emote.defaultName}</span>
-			<ResponsiveImage images={emote.images} height={1.5 * 16} />
+			<ResponsiveImage images={emote.images} width={1.5 * 16} />
 		</a>
 	{:else}
 		<s>Deleted Emote</s>
