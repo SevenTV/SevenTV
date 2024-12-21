@@ -94,8 +94,9 @@
 		{:else if event.data.__typename === "EventEmoteSetDataChangeCapacity"}
 			<FolderSimple />
 			<span class="text">
+				Changed capacity for
 				{@render emoteSetLink(event.target)}
-				changed capacity from {event.data.oldCapacity} to {event.data.newCapacity}
+				from {event.data.oldCapacity} to {event.data.newCapacity}
 				{@render userLink(event.actor)}
 			</span>
 		{:else if event.data.__typename === "EventEmoteSetDataAddEmote"}
