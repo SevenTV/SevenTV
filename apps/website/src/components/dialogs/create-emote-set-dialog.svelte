@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { user } from "$/lib/auth";
 	import { createSet } from "$/lib/setMutations";
 	import { goto } from "$app/navigation";
 	import Button from "../input/button.svelte";
@@ -29,6 +30,10 @@
 
 		if (set) {
 			goto(`/emote-sets/${set.id}`);
+
+			if ($user) {
+				$user.editableEmoteSetIds = [...$user.editableEmoteSetIds, set.id];
+			}
 		}
 	}
 </script>
