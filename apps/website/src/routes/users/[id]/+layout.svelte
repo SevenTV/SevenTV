@@ -28,6 +28,7 @@
 	import Badge from "$/components/badge.svelte";
 	import { filterRoles } from "$/lib/utils";
 	import { page } from "$app/stores";
+	import Error from "$/components/error.svelte";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -69,131 +70,161 @@
 	{/await}
 </svelte:head>
 
-<div class="side-bar-layout">
-	<aside class="side-bar">
+{#snippet desktopMenu()}
+	<nav class="link-list hide-on-mobile">
 		{#await data.streamed.userRequest.value}
-			<UserProfilePicture
-				user={undefined}
-				size={4.75 * 16}
-				style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
-			/>
-			<div class="name placeholder loading-animation"></div>
-			<div class="roles placeholder loading-animation"></div>
+			<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
+				{#snippet icon()}
+					<Link />
+				{/snippet}
+				{$t("common.connections")}
+				{#snippet iconRight()}
+					{#if connectionsExpanded}
+						<CaretDown style="margin-left: auto" />
+					{:else}
+						<CaretRight style="margin-left: auto" />
+					{/if}
+				{/snippet}
+			</Button>
+			<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
+				{#snippet icon()}
+					<UserCircle />
+				{/snippet}
+				{$t("common.editors")}
+				{#snippet iconRight()}
+					{#if editorsExpanded}
+						<CaretDown style="margin-left: auto" />
+					{:else}
+						<CaretRight style="margin-left: auto" />
+					{/if}
+				{/snippet}
+			</Button>
+			<hr />
 		{:then user}
-			<UserProfilePicture
-				{user}
-				size={4.75 * 16}
-				style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
-			/>
-			<span class="name" style:color={user.highestRoleColor?.hex}>
-				{#if user.style.activeBadge}
-					<Badge badge={user.style.activeBadge} enableDialog />
-				{/if}
-				<UserName {user} enablePaintDialog />
-			</span>
-			<div class="roles">
-				{#each filterRoles(user.roles) as role}
-					<Role roleData={role} />
-				{/each}
-			</div>
-		{/await}
-		<nav class="link-list hide-on-mobile">
-			{#await data.streamed.userRequest.value}
-				<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
-					{#snippet icon()}
-						<Link />
-					{/snippet}
-					{$t("common.connections")}
-					{#snippet iconRight()}
-						{#if connectionsExpanded}
-							<CaretDown style="margin-left: auto" />
-						{:else}
-							<CaretRight style="margin-left: auto" />
+			<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
+				{#snippet icon()}
+					<Link />
+				{/snippet}
+				{$t("common.connections")}
+				{#snippet iconRight()}
+					{#if connectionsExpanded}
+						<CaretDown style="margin-left: auto" />
+					{:else}
+						<CaretRight style="margin-left: auto" />
+					{/if}
+				{/snippet}
+			</Button>
+			{#if connectionsExpanded}
+				<div class="expanded">
+					<Connections {user} />
+					{#if isMe}
+						<Button href="/settings/account">
+							{#snippet icon()}
+								<Gear />
+							{/snippet}
+							Manage connections
+						</Button>
+					{/if}
+				</div>
+			{/if}
+			<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
+				{#snippet icon()}
+					<UserCircle />
+				{/snippet}
+				{$t("common.editors")}
+				{#snippet iconRight()}
+					{#if editorsExpanded}
+						<CaretDown style="margin-left: auto" />
+					{:else}
+						<CaretRight style="margin-left: auto" />
+					{/if}
+				{/snippet}
+			</Button>
+			{#if editorsExpanded}
+				<div class="expanded">
+					{#each user.editors as editor}
+						{#if editor.editor && editor.state === UserEditorState.Accepted}
+							<ChannelPreview size={1.5} user={editor.editor} />
 						{/if}
-					{/snippet}
-				</Button>
-				<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
-					{#snippet icon()}
-						<UserCircle />
-					{/snippet}
-					{$t("common.editors")}
-					{#snippet iconRight()}
-						{#if editorsExpanded}
-							<CaretDown style="margin-left: auto" />
-						{:else}
-							<CaretRight style="margin-left: auto" />
-						{/if}
-					{/snippet}
-				</Button>
-				<hr />
-			{:then user}
-				<Button big onclick={() => (connectionsExpanded = !connectionsExpanded)}>
-					{#snippet icon()}
-						<Link />
-					{/snippet}
-					{$t("common.connections")}
-					{#snippet iconRight()}
-						{#if connectionsExpanded}
-							<CaretDown style="margin-left: auto" />
-						{:else}
-							<CaretRight style="margin-left: auto" />
-						{/if}
-					{/snippet}
-				</Button>
-				{#if connectionsExpanded}
-					<div class="expanded">
-						<Connections {user} />
-						{#if isMe}
-							<Button href="/settings/account">
-								{#snippet icon()}
-									<Gear />
+					{/each}
+					{#await canManageEditors then manageEditors}
+						{#if manageEditors}
+							<TabLink title="Manage editors" href="/users/{data.id}/editors">
+								<Gear />
+								{#snippet active()}
+									<Gear weight="fill" />
 								{/snippet}
-								Manage connections
-							</Button>
+							</TabLink>
 						{/if}
-					</div>
+					{/await}
+				</div>
+			{/if}
+			<hr />
+		{/await}
+		<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.id}" big>
+			<Lightning />
+			{#snippet active()}
+				<Lightning weight="fill" />
+			{/snippet}
+		</TabLink>
+		<TabLink title={$t("pages.user.uploaded_emotes")} href="/users/{data.id}/uploaded" big>
+			<Upload />
+			{#snippet active()}
+				<Upload weight="fill" />
+			{/snippet}
+		</TabLink>
+		<TabLink
+			title={$t("common.emote_sets", { values: { count: 2 } })}
+			href="/users/{data.id}/emote-sets"
+			big
+		>
+			<FolderSimple />
+			{#snippet active()}
+				<FolderSimple weight="fill" />
+			{/snippet}
+		</TabLink>
+		<hr />
+		<TabLink title={$t("common.cosmetics")} href="/users/{data.id}/cosmetics" big>
+			<PaintBrush />
+			{#snippet active()}
+				<PaintBrush weight="fill" />
+			{/snippet}
+		</TabLink>
+		<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
+			<Pulse />
+			{#snippet active()}
+				<Pulse weight="fill" />
+			{/snippet}
+		</TabLink>
+	</nav>
+{/snippet}
+
+{#snippet mobileMenu()}
+	<div class="header hide-on-desktop">
+		<nav class="tabs">
+			<TabLink title={$t("pages.user.about")} href="/users/{data.id}/about">
+				<IdentificationCard />
+				{#snippet active()}
+					<IdentificationCard weight="fill" />
+				{/snippet}
+			</TabLink>
+			{#await canManageEditors then manageEditors}
+				{#if manageEditors}
+					<TabLink title="Manage editors" href="/users/{data.id}/editors">
+						<PencilSimple />
+						{#snippet active()}
+							<PencilSimple weight="fill" />
+						{/snippet}
+					</TabLink>
 				{/if}
-				<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
-					{#snippet icon()}
-						<UserCircle />
-					{/snippet}
-					{$t("common.editors")}
-					{#snippet iconRight()}
-						{#if editorsExpanded}
-							<CaretDown style="margin-left: auto" />
-						{:else}
-							<CaretRight style="margin-left: auto" />
-						{/if}
-					{/snippet}
-				</Button>
-				{#if editorsExpanded}
-					<div class="expanded">
-						{#each user.editors as editor}
-							{#if editor.editor && editor.state === UserEditorState.Accepted}
-								<ChannelPreview size={1.5} user={editor.editor} />
-							{/if}
-						{/each}
-						{#await canManageEditors then manageEditors}
-							{#if manageEditors}
-								<TabLink title="Manage editors" href="/users/{data.id}/editors">
-									<Gear />
-									{#snippet active()}
-										<Gear weight="fill" />
-									{/snippet}
-								</TabLink>
-							{/if}
-						{/await}
-					</div>
-				{/if}
-				<hr />
 			{/await}
-			<TabLink title={$t("pages.user.active_emotes")} href="/users/{data.id}" big>
+			<TabLink title={$t("common.active")} href="/users/{data.id}">
 				<Lightning />
 				{#snippet active()}
 					<Lightning weight="fill" />
 				{/snippet}
 			</TabLink>
-			<TabLink title={$t("pages.user.uploaded_emotes")} href="/users/{data.id}/uploaded" big>
+			<TabLink title={$t("pages.user.uploaded")} href="/users/{data.id}/uploaded">
 				<Upload />
 				{#snippet active()}
 					<Upload weight="fill" />
@@ -202,85 +233,73 @@
 			<TabLink
 				title={$t("common.emote_sets", { values: { count: 2 } })}
 				href="/users/{data.id}/emote-sets"
-				big
 			>
 				<FolderSimple />
 				{#snippet active()}
 					<FolderSimple weight="fill" />
 				{/snippet}
 			</TabLink>
-			<hr />
-			<TabLink title={$t("common.cosmetics")} href="/users/{data.id}/cosmetics" big>
+			<TabLink title={$t("common.cosmetics")} href="/users/{data.id}/cosmetics">
 				<PaintBrush />
 				{#snippet active()}
 					<PaintBrush weight="fill" />
 				{/snippet}
 			</TabLink>
-			<TabLink title={$t("common.activity")} href="/users/{data.id}/activity" big>
+			<TabLink title={$t("common.activity")} href="/users/{data.id}/activity">
 				<Pulse />
 				{#snippet active()}
 					<Pulse weight="fill" />
 				{/snippet}
 			</TabLink>
 		</nav>
-	</aside>
-	<div class="content">
-		<div class="header hide-on-desktop">
-			<nav class="tabs">
-				<TabLink title={$t("pages.user.about")} href="/users/{data.id}/about">
-					<IdentificationCard />
-					{#snippet active()}
-						<IdentificationCard weight="fill" />
-					{/snippet}
-				</TabLink>
-				{#await canManageEditors then manageEditors}
-					{#if manageEditors}
-						<TabLink title="Manage editors" href="/users/{data.id}/editors">
-							<PencilSimple />
-							{#snippet active()}
-								<PencilSimple weight="fill" />
-							{/snippet}
-						</TabLink>
-					{/if}
-				{/await}
-				<TabLink title={$t("common.active")} href="/users/{data.id}">
-					<Lightning />
-					{#snippet active()}
-						<Lightning weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink title={$t("pages.user.uploaded")} href="/users/{data.id}/uploaded">
-					<Upload />
-					{#snippet active()}
-						<Upload weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink
-					title={$t("common.emote_sets", { values: { count: 2 } })}
-					href="/users/{data.id}/emote-sets"
-				>
-					<FolderSimple />
-					{#snippet active()}
-						<FolderSimple weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink title={$t("common.cosmetics")} href="/users/{data.id}/cosmetics">
-					<PaintBrush />
-					{#snippet active()}
-						<PaintBrush weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink title={$t("common.activity")} href="/users/{data.id}/activity">
-					<Pulse />
-					{#snippet active()}
-						<Pulse weight="fill" />
-					{/snippet}
-				</TabLink>
-			</nav>
-		</div>
-		{@render children()}
 	</div>
-</div>
+{/snippet}
+
+{#snippet layout()}
+	<div class="side-bar-layout">
+		<aside class="side-bar">
+			{#await data.streamed.userRequest.value}
+				<UserProfilePicture
+					user={undefined}
+					size={4.75 * 16}
+					style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
+				/>
+				<div class="name placeholder loading-animation"></div>
+				<div class="roles placeholder loading-animation"></div>
+			{:then user}
+				<UserProfilePicture
+					{user}
+					size={4.75 * 16}
+					style="align-self: center; grid-row: 1 / span 3; grid-column: 1;"
+				/>
+				<span class="name" style:color={user.highestRoleColor?.hex}>
+					{#if user.style.activeBadge}
+						<Badge badge={user.style.activeBadge} enableDialog />
+					{/if}
+					<UserName {user} enablePaintDialog />
+				</span>
+				<div class="roles">
+					{#each filterRoles(user.roles) as role}
+						<Role roleData={role} />
+					{/each}
+				</div>
+			{/await}
+			{@render desktopMenu()}
+		</aside>
+		<div class="content">
+			{@render mobileMenu()}
+			{@render children()}
+		</div>
+	</div>
+{/snippet}
+
+{#await data.streamed.userRequest.value}
+	{@render layout()}
+{:then user}
+	{@render layout()}
+{:catch error}
+	<Error title={error} details="Failed to load user" />
+{/await}
 
 <style lang="scss">
 	.side-bar {
