@@ -175,7 +175,7 @@
 		gap: 0.25rem;
 
 		.emote-name {
-			font-weight: 600;
+			font-weight: 700;
 
 			overflow: hidden;
 			text-overflow: ellipsis;
