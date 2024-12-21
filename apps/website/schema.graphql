@@ -61,6 +61,8 @@ type Color {
 	r: Int!
 }
 
+scalar CustomerId
+
 """
 Implement the DateTime<Utc> scalar
 
@@ -990,6 +992,7 @@ type User {
 	roles: [Role!]!
 	searchUpdatedAt: DateTime
 	specialEmoteSets: [EmoteSet!]!
+	stripeCustomerId: CustomerId
 	style: UserStyle!
 	updatedAt: DateTime!
 }
