@@ -2,14 +2,14 @@ import { graphql } from "$/gql";
 import type { Platform, User } from "$/gql/graphql";
 import { get } from "svelte/store";
 import { gqlClient } from "./gql";
-import { sessionToken } from "./auth";
+import { sessionToken, user } from "./auth";
 import { PUBLIC_REST_API_V4, PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 import { currentError, errorDialogMode } from "./error";
 
 export async function setActiveSet(userId: string, setId?: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation SetActiveSet($userId: Id!, $setId: Id, $productId: Id!) {
+			mutation SetActiveSet($userId: Id!, $setId: Id, $productId: Id!, $isMe: Boolean!) {
 				users {
 					user(id: $userId) {
 						activeEmoteSet(emoteSetId: $setId) {
@@ -102,7 +102,7 @@ export async function setActiveSet(userId: string, setId?: string) {
 									hex
 								}
 							}
-							editableEmoteSetIds
+							editableEmoteSetIds @include(if: $isMe)
 							editorFor {
 								state
 							}
@@ -136,7 +136,7 @@ export async function setActiveSet(userId: string, setId?: string) {
 				}
 			}
 		`),
-		{ userId, setId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
+		{ userId, setId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID, isMe: userId === get(user)?.id },
 	);
 
 	if (!res.data) {
