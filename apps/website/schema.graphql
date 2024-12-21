@@ -4,6 +4,8 @@ type AdminPermission {
 	superAdmin: Boolean!
 }
 
+union AnyEvent = EmoteEvent | EmoteSetEvent | UserEvent
+
 type BackdoorQuery {
 	executeSql(sql: String!): String!
 }
@@ -151,7 +153,7 @@ type EmoteEvent {
 	data: EventEmoteData!
 	id: Id!
 	searchUpdatedAt: DateTime
-	target: Emote!
+	target: Emote
 	targetId: Id!
 	updatedAt: DateTime!
 }
@@ -249,7 +251,7 @@ type EmoteSetEmote {
 	addedAt: DateTime!
 	addedById: Id
 	alias: String!
-	emote: Emote
+	emote: Emote!
 	flags: EmoteSetEmoteFlags!
 	id: Id!
 	originSetId: Id
@@ -274,6 +276,18 @@ type EmoteSetEmoteSearchResult {
 	items: [EmoteSetEmote!]!
 	pageCount: Int!
 	totalCount: Int!
+}
+
+type EmoteSetEvent {
+	actor: User
+	actorId: Id
+	createdAt: DateTime!
+	data: EventEmoteSetData!
+	id: Id!
+	searchUpdatedAt: DateTime
+	target: EmoteSet
+	targetId: Id!
+	updatedAt: DateTime!
 }
 
 enum EmoteSetKind {
@@ -423,6 +437,55 @@ type EventEmoteDataUpload {
 	Always false
 	"""
 	noop: Boolean! @deprecated
+}
+
+union EventEmoteSetData = EventEmoteSetDataCreate | EventEmoteSetDataChangeName | EventEmoteSetDataChangeTags | EventEmoteSetDataChangeCapacity | EventEmoteSetDataAddEmote | EventEmoteSetDataRemoveEmote | EventEmoteSetDataRenameEmote | EventEmoteSetDataDelete
+
+type EventEmoteSetDataAddEmote {
+	addedEmote: Emote
+	addedEmoteId: Id!
+	alias: String!
+}
+
+type EventEmoteSetDataChangeCapacity {
+	newCapacity: Int
+	oldCapacity: Int
+}
+
+type EventEmoteSetDataChangeName {
+	newName: String!
+	oldName: String!
+}
+
+type EventEmoteSetDataChangeTags {
+	newTags: [String!]!
+	oldTags: [String!]!
+}
+
+type EventEmoteSetDataCreate {
+	"""
+	Always false
+	"""
+	noop: Boolean! @deprecated
+}
+
+type EventEmoteSetDataDelete {
+	"""
+	Always false
+	"""
+	noop: Boolean! @deprecated
+}
+
+type EventEmoteSetDataRemoveEmote {
+	removedEmote: Emote
+	removedEmoteId: Id!
+}
+
+type EventEmoteSetDataRenameEmote {
+	newAlias: String!
+	oldAlias: String!
+	renamedEmote: Emote
+	renamedEmoteId: Id!
 }
 
 union EventUserData = EventUserDataCreate | EventUserDataChangeActivePaint | EventUserDataChangeActiveBadge | EventUserDataChangeActiveEmoteSet | EventUserDataAddConnection | EventUserDataRemoveConnection | EventUserDataDelete
@@ -922,6 +985,7 @@ type User {
 	permissions: Permissions!
 	personalEmoteSet: EmoteSet
 	rawEntitlements: RawEntitlements!
+	relatedEvents(page: Int, perPage: Int): [AnyEvent!]!
 	roleIds: [Id!]!
 	roles: [Role!]!
 	searchUpdatedAt: DateTime
@@ -998,7 +1062,7 @@ type UserEvent {
 	data: EventUserData!
 	id: Id!
 	searchUpdatedAt: DateTime
-	target: User!
+	target: User
 	targetId: Id!
 	updatedAt: DateTime!
 }

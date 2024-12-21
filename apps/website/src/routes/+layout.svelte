@@ -54,7 +54,8 @@
 				<Warning />
 				<span>Under construction</span>
 				<span class="small">
-					Give us feedback on the new website in the <a href={PUBLIC_DISCORD_LINK}>Discord</a>. Click
+					Give us feedback on the new website in the <a href={PUBLIC_DISCORD_LINK}>Discord</a>.
+					Click
 					<a href={PUBLIC_OLD_WEBSITE_LINK}>here</a> to return to the old website.
 				</span>
 				<Button onclick={() => ($showConstructionBar = false)}>

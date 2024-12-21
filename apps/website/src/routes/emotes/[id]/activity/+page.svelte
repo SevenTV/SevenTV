@@ -4,7 +4,7 @@
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import Spinner from "$/components/spinner.svelte";
-	import EmoteEventComponent from "$/components/emotes/emote-event.svelte";
+	import EmoteEventComponent from "$/components/events/emote-event.svelte";
 	import type { EmoteEvent } from "$/gql/graphql";
 
 	let { data }: { data: PageData } = $props();

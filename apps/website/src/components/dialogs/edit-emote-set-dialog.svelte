@@ -37,7 +37,9 @@
 			{ userId },
 		);
 
-		return personal ? res.data?.users.user?.permissions.personalEmoteSetCapacity : res.data?.users.user?.permissions.emoteSetCapacity;
+		return personal
+			? res.data?.users.user?.permissions.personalEmoteSetCapacity
+			: res.data?.users.user?.permissions.emoteSetCapacity;
 	}
 
 	let deleteDialogMode: DialogMode = $state("hidden");
@@ -88,7 +90,9 @@
 		mode = "hidden";
 	}
 
-	let capacityLimit = $derived(data.owner ? queryCapacityLimit(data.owner.id, data.kind === EmoteSetKind.Personal) : undefined);
+	let capacityLimit = $derived(
+		data.owner ? queryCapacityLimit(data.owner.id, data.kind === EmoteSetKind.Personal) : undefined,
+	);
 </script>
 
 <DeleteEmoteSetDialog bind:mode={deleteDialogMode} bind:data />
