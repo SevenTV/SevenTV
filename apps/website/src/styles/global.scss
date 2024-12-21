@@ -109,7 +109,7 @@ textarea {
 	}
 }
 
-input[type=range] {
+input[type="range"] {
 	-webkit-appearance: none;
 	-moz-appearance: none;
 	appearance: none;
@@ -117,15 +117,15 @@ input[type=range] {
 	background: transparent;
 }
 
-input[type=range]::-webkit-slider-thumb {
+input[type="range"]::-webkit-slider-thumb {
 	-webkit-appearance: none;
 }
 
-input[type=range]:focus {
+input[type="range"]:focus {
 	outline: none;
 }
 
-input[type=range]::-webkit-slider-thumb {
+input[type="range"]::-webkit-slider-thumb {
 	-webkit-appearance: none;
 	width: 1rem;
 	height: 1rem;
@@ -136,7 +136,7 @@ input[type=range]::-webkit-slider-thumb {
 	margin-top: -0.25rem;
 }
 
-input[type=range]::-moz-range-thumb {
+input[type="range"]::-moz-range-thumb {
 	width: 1rem;
 	height: 1rem;
 	border-radius: 50%;
@@ -145,7 +145,7 @@ input[type=range]::-moz-range-thumb {
 	cursor: pointer;
 }
 
-input[type=range]::-webkit-slider-runnable-track {
+input[type="range"]::-webkit-slider-runnable-track {
 	width: 100%;
 	height: 0.5rem;
 	cursor: pointer;
@@ -153,11 +153,11 @@ input[type=range]::-webkit-slider-runnable-track {
 	border-radius: 0.5rem;
 }
 
-input[type=range]:focus::-webkit-slider-runnable-track {
+input[type="range"]:focus::-webkit-slider-runnable-track {
 	background: var(--secondary);
 }
 
-input[type=range]::-moz-range-track {
+input[type="range"]::-moz-range-track {
 	width: 100%;
 	height: 0.5rem;
 	cursor: pointer;
@@ -192,7 +192,6 @@ progress[value] {
 }
 
 @media screen and (max-width: 960px) {
-
 	input[type="text"],
 	input[type="email"],
 	input[type="password"] {
@@ -207,7 +206,7 @@ progress[value] {
 	gap: 1.25rem;
 	height: 100%;
 
-	&>.side-bar {
+	& > .side-bar {
 		position: relative;
 
 		background-color: var(--bg-medium);
@@ -219,7 +218,7 @@ progress[value] {
 		flex-direction: column;
 		gap: 0.75rem;
 
-		&>h1 {
+		& > h1 {
 			font-size: 1.125rem;
 			font-weight: 700;
 			margin: 0.25rem 0;
@@ -232,7 +231,7 @@ progress[value] {
 		}
 	}
 
-	&>.content {
+	& > .content {
 		flex-grow: 1;
 		min-width: 0;
 		margin-bottom: -1.25rem;
@@ -266,7 +265,6 @@ th {
 }
 
 tr {
-
 	&:focus-visible,
 	&:hover {
 		td {
@@ -274,7 +272,7 @@ tr {
 		}
 	}
 
-	&:last-child>td {
+	&:last-child > td {
 		border-bottom: none;
 
 		&:first-child {
@@ -319,17 +317,17 @@ td {
 // Desktop
 @media screen and (min-width: 961px) {
 	.side-bar-layout {
-		&>.side-bar {
+		& > .side-bar {
 			width: 100%;
 			max-width: 16rem;
 			overflow: auto;
 			scrollbar-gutter: stable;
 		}
 
-		&>.content {
+		& > .content {
 			margin-right: -1.25rem;
 
-			&>* {
+			& > * {
 				padding-right: 1.25rem;
 
 				&:last-child {
@@ -349,7 +347,7 @@ td {
 		overflow: auto;
 		scrollbar-gutter: stable;
 
-		&>.side-bar {
+		& > .side-bar {
 			padding: 1rem;
 		}
 	}

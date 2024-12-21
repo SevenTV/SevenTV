@@ -3,8 +3,9 @@
 	import { gqlClient } from "$/lib/gql";
 	import type { PageData } from "./$types";
 	import Spinner from "$/components/spinner.svelte";
-	import UserEventComponent from "$/components/users/user-event.svelte";
-	import type { UserEvent } from "$/gql/graphql";
+	import UserEventComponent from "$/components/events/user-event.svelte";
+	import EmoteSetEventComponent from "$/components/events/emote-set-event.svelte";
+	import type { AnyEvent } from "$/gql/graphql";
 
 	let { data }: { data: PageData } = $props();
 
@@ -15,181 +16,264 @@
 					query UserEvents($id: Id!, $page: Int!) {
 						users {
 							user(id: $id) {
-								events(page: $page, perPage: 100) {
-									id
-									createdAt
-									actor {
+								relatedEvents(page: $page, perPage: 100) {
+									__typename
+									... on UserEvent {
 										id
-										mainConnection {
-											platformDisplayName
+										createdAt
+										actor {
+											id
+											mainConnection {
+												platformDisplayName
+											}
+											highestRoleColor {
+												hex
+											}
 										}
-										highestRoleColor {
-											hex
+										data {
+											__typename
+											... on EventUserDataChangeActivePaint {
+												newPaint {
+													id
+													name
+													data {
+														layers {
+															id
+															ty {
+																__typename
+																... on PaintLayerTypeSingleColor {
+																	color {
+																		hex
+																	}
+																}
+																... on PaintLayerTypeLinearGradient {
+																	angle
+																	repeating
+																	stops {
+																		at
+																		color {
+																			hex
+																		}
+																	}
+																}
+																... on PaintLayerTypeRadialGradient {
+																	repeating
+																	stops {
+																		at
+																		color {
+																			hex
+																		}
+																	}
+																	shape
+																}
+																... on PaintLayerTypeImage {
+																	images {
+																		url
+																		mime
+																		size
+																		scale
+																		width
+																		height
+																		frameCount
+																	}
+																}
+															}
+															opacity
+														}
+														shadows {
+															color {
+																hex
+															}
+															offsetX
+															offsetY
+															blur
+														}
+													}
+												}
+												oldPaint {
+													id
+													name
+													data {
+														layers {
+															id
+															ty {
+																__typename
+																... on PaintLayerTypeSingleColor {
+																	color {
+																		hex
+																	}
+																}
+																... on PaintLayerTypeLinearGradient {
+																	angle
+																	repeating
+																	stops {
+																		at
+																		color {
+																			hex
+																		}
+																	}
+																}
+																... on PaintLayerTypeRadialGradient {
+																	repeating
+																	stops {
+																		at
+																		color {
+																			hex
+																		}
+																	}
+																	shape
+																}
+																... on PaintLayerTypeImage {
+																	images {
+																		url
+																		mime
+																		size
+																		scale
+																		width
+																		height
+																		frameCount
+																	}
+																}
+															}
+															opacity
+														}
+														shadows {
+															color {
+																hex
+															}
+															offsetX
+															offsetY
+															blur
+														}
+													}
+												}
+											}
+											... on EventUserDataChangeActiveBadge {
+												newBadge {
+													id
+													name
+													description
+													images {
+														url
+														mime
+														size
+														scale
+														width
+														height
+														frameCount
+													}
+												}
+												oldBadge {
+													id
+													name
+													description
+													images {
+														url
+														mime
+														size
+														scale
+														width
+														height
+														frameCount
+													}
+												}
+											}
+											... on EventUserDataChangeActiveEmoteSet {
+												newEmoteSet {
+													id
+													name
+												}
+												oldEmoteSet {
+													id
+													name
+												}
+											}
+											... on EventUserDataAddConnection {
+												addedPlatform
+											}
+											... on EventUserDataRemoveConnection {
+												removedPlatform
+											}
 										}
 									}
-									data {
-										__typename
-										... on EventUserDataChangeActivePaint {
-											newPaint {
-												id
-												name
-												data {
-													layers {
-														id
-														ty {
-															__typename
-															... on PaintLayerTypeSingleColor {
-																color {
-																	hex
-																}
-															}
-															... on PaintLayerTypeLinearGradient {
-																angle
-																repeating
-																stops {
-																	at
-																	color {
-																		hex
-																	}
-																}
-															}
-															... on PaintLayerTypeRadialGradient {
-																repeating
-																stops {
-																	at
-																	color {
-																		hex
-																	}
-																}
-																shape
-															}
-															... on PaintLayerTypeImage {
-																images {
-																	url
-																	mime
-																	size
-																	scale
-																	width
-																	height
-																	frameCount
-																}
-															}
-														}
-														opacity
-													}
-													shadows {
-														color {
-															hex
-														}
-														offsetX
-														offsetY
-														blur
+									... on EmoteSetEvent {
+										id
+										createdAt
+										target {
+											id
+											name
+										}
+										actor {
+											id
+											mainConnection {
+												platformDisplayName
+											}
+											highestRoleColor {
+												hex
+											}
+										}
+										data {
+											__typename
+											... on EventEmoteSetDataChangeName {
+												oldName
+												newName
+											}
+											... on EventEmoteSetDataChangeTags {
+												oldTags
+												newTags
+											}
+											... on EventEmoteSetDataChangeCapacity {
+												oldCapacity
+												newCapacity
+											}
+											... on EventEmoteSetDataAddEmote {
+												alias
+												addedEmote {
+													id
+													defaultName
+													images {
+														url
+														mime
+														size
+														width
+														height
+														scale
+														frameCount
 													}
 												}
 											}
-											oldPaint {
-												id
-												name
-												data {
-													layers {
-														id
-														ty {
-															__typename
-															... on PaintLayerTypeSingleColor {
-																color {
-																	hex
-																}
-															}
-															... on PaintLayerTypeLinearGradient {
-																angle
-																repeating
-																stops {
-																	at
-																	color {
-																		hex
-																	}
-																}
-															}
-															... on PaintLayerTypeRadialGradient {
-																repeating
-																stops {
-																	at
-																	color {
-																		hex
-																	}
-																}
-																shape
-															}
-															... on PaintLayerTypeImage {
-																images {
-																	url
-																	mime
-																	size
-																	scale
-																	width
-																	height
-																	frameCount
-																}
-															}
-														}
-														opacity
-													}
-													shadows {
-														color {
-															hex
-														}
-														offsetX
-														offsetY
-														blur
+											... on EventEmoteSetDataRemoveEmote {
+												removedEmote {
+													id
+													defaultName
+													images {
+														url
+														mime
+														size
+														width
+														height
+														scale
+														frameCount
 													}
 												}
 											}
-										}
-										... on EventUserDataChangeActiveBadge {
-											newBadge {
-												id
-												name
-												description
-												images {
-													url
-													mime
-													size
-													scale
-													width
-													height
-													frameCount
+											... on EventEmoteSetDataRenameEmote {
+												oldAlias
+												newAlias
+												renamedEmote {
+													id
+													defaultName
+													images {
+														url
+														mime
+														size
+														width
+														height
+														scale
+														frameCount
+													}
 												}
 											}
-											oldBadge {
-												id
-												name
-												description
-												images {
-													url
-													mime
-													size
-													scale
-													width
-													height
-													frameCount
-												}
-											}
-										}
-										... on EventUserDataChangeActiveEmoteSet {
-											newEmoteSet {
-												id
-												name
-											}
-											oldEmoteSet {
-												id
-												name
-											}
-										}
-										... on EventUserDataAddConnection {
-											addedPlatform
-										}
-										... on EventUserDataRemoveConnection {
-											removedPlatform
 										}
 									}
 								}
@@ -201,7 +285,7 @@
 			)
 			.toPromise();
 
-		return res.data?.users.user?.events as UserEvent[];
+		return res.data?.users.user?.relatedEvents as AnyEvent[];
 	}
 
 	let page = $state(1);
@@ -215,7 +299,11 @@
 		</div>
 	{:then events}
 		{#each events as event, index}
-			<UserEventComponent {event} />
+			{#if event.__typename === "UserEvent"}
+				<UserEventComponent {event} />
+			{:else if event.__typename === "EmoteSetEvent"}
+				<EmoteSetEventComponent {event} />
+			{/if}
 			{#if index !== events.length - 1}
 				<hr />
 			{/if}

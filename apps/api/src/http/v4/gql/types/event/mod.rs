@@ -4,20 +4,43 @@ use async_graphql::{Context, OutputType};
 use shared::database::user::UserId;
 use shared::database::{stored_event, Id};
 
-use super::{Emote, User};
+use super::{Emote, EmoteSet, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
 mod emote;
+mod emote_set;
 mod user;
 
 pub type EmoteEvent = Event<emote::EventEmoteData>;
+pub type EmoteSetEvent = Event<emote_set::EventEmoteSetData>;
 pub type UserEvent = Event<user::EventUserData>;
+
+#[derive(async_graphql::Union)]
+pub enum AnyEvent {
+	Emote(EmoteEvent),
+	EmoteSet(EmoteSetEvent),
+	User(UserEvent),
+}
+
+impl TryFrom<stored_event::StoredEvent> for AnyEvent {
+	type Error = ();
+
+	fn try_from(value: stored_event::StoredEvent) -> Result<Self, Self::Error> {
+		match value.data {
+			stored_event::StoredEventData::Emote { .. } => EmoteEvent::try_from(value).map(Self::Emote),
+			stored_event::StoredEventData::EmoteSet { .. } => EmoteSetEvent::try_from(value).map(Self::EmoteSet),
+			stored_event::StoredEventData::User { .. } => UserEvent::try_from(value).map(Self::User),
+			_ => Err(()),
+		}
+	}
+}
 
 #[derive(async_graphql::SimpleObject)]
 #[graphql(
 	complex,
 	concrete(name = "EmoteEvent", params(emote::EventEmoteData)),
+	concrete(name = "EmoteSetEvent", params(emote_set::EventEmoteSetData)),
 	concrete(name = "UserEvent", params(user::EventUserData))
 )]
 pub struct Event<T: OutputType> {
@@ -43,6 +66,25 @@ impl TryFrom<stored_event::StoredEvent> for EmoteEvent {
 				return Err(());
 			}
 		}
+
+		Ok(Self {
+			id: value.id,
+			actor_id: value.actor_id,
+			target_id: target_id.cast(),
+			data: data.into(),
+			updated_at: value.updated_at,
+			search_updated_at: value.search_updated_at,
+		})
+	}
+}
+
+impl TryFrom<stored_event::StoredEvent> for EmoteSetEvent {
+	type Error = ();
+
+	fn try_from(value: stored_event::StoredEvent) -> Result<Self, Self::Error> {
+		let stored_event::StoredEventData::EmoteSet { target_id, data } = value.data else {
+			return Err(());
+		};
 
 		Ok(Self {
 			id: value.id,
@@ -100,7 +142,7 @@ impl EmoteEvent {
 	}
 
 	#[tracing::instrument(skip_all, name = "EmoteEvent::target")]
-	async fn target(&self, ctx: &Context<'_>) -> Result<Emote, ApiError> {
+	async fn target(&self, ctx: &Context<'_>) -> Result<Option<Emote>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -109,13 +151,40 @@ impl EmoteEvent {
 			.emote_by_id_loader
 			.load(self.target_id.cast())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "emote not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote"))?;
 
-		Ok(Emote::from_db(emote, &global.config.api.cdn_origin))
+		Ok(emote.map(|e| Emote::from_db(e, &global.config.api.cdn_origin)))
 	}
 
 	#[tracing::instrument(skip_all, name = "EmoteEvent::actor")]
+	async fn actor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+		actor(self, ctx).await
+	}
+}
+
+#[async_graphql::ComplexObject]
+impl EmoteSetEvent {
+	#[tracing::instrument(skip_all, name = "EmoteSetEvent::created_at")]
+	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
+		self.id.timestamp()
+	}
+
+	#[tracing::instrument(skip_all, name = "EmoteSetEvent::target")]
+	async fn target(&self, ctx: &Context<'_>) -> Result<Option<EmoteSet>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let emote_set = global
+			.emote_set_by_id_loader
+			.load(self.target_id.cast())
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote set"))?;
+
+		Ok(emote_set.map(Into::into))
+	}
+
+	#[tracing::instrument(skip_all, name = "EmoteSetEvent::actor")]
 	async fn actor(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		actor(self, ctx).await
 	}
@@ -129,7 +198,7 @@ impl UserEvent {
 	}
 
 	#[tracing::instrument(skip_all, name = "UserEvent::target")]
-	async fn target(&self, ctx: &Context<'_>) -> Result<User, ApiError> {
+	async fn target(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -138,10 +207,9 @@ impl UserEvent {
 			.user_loader
 			.load(global, self.target_id.cast())
 			.await
-			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
 
-		Ok(user.into())
+		Ok(user.map(Into::into))
 	}
 
 	#[tracing::instrument(skip_all, name = "UserEvent::actor")]

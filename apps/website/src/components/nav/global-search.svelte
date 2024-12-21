@@ -230,7 +230,10 @@
 							{/snippet}
 							{result.defaultName}
 							{#snippet iconRight()}
-								<Flags flags={emoteToFlags(result, $defaultEmoteSet, $editableEmoteSets)} iconOnly />
+								<Flags
+									flags={emoteToFlags(result, $defaultEmoteSet, $editableEmoteSets)}
+									iconOnly
+								/>
 							{/snippet}
 						</Button>
 					{/each}

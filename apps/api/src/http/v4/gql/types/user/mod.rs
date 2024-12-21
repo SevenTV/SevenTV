@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, SimpleObject};
+use itertools::Itertools;
 use shared::database::emote_set::{EmoteSetId, EmoteSetKind};
 use shared::database::product::SubscriptionProductId;
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
@@ -10,7 +11,7 @@ use shared::database::user::UserId;
 use shared::typesense::types::event::EventId;
 
 use super::raw_entitlement::RawEntitlements;
-use super::{Color, Emote, EmoteSet, Event, Permissions, Role, UserEditor, UserEvent};
+use super::{AnyEvent, Color, Emote, EmoteSet, Event, Permissions, Role, UserEditor, UserEvent};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::RateLimitGuard;
@@ -317,6 +318,61 @@ impl User {
 		Ok(sorted_results(result.hits, events)
 			.into_iter()
 			.filter_map(|e| Event::try_from(e).ok())
+			.collect())
+	}
+
+	#[graphql(guard = "RateLimitGuard::search(1)")]
+	#[tracing::instrument(skip_all, name = "User::related_events")]
+	async fn related_events(
+		&self,
+		ctx: &Context<'_>,
+		#[graphql(validator(maximum = 10))] page: Option<u32>,
+		#[graphql(validator(minimum = 1, maximum = 100))] per_page: Option<u32>,
+	) -> Result<Vec<AnyEvent>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		// TODO(troy): this is likely not a very good use of our query system
+		// We essentially need to know the IDs of all emote_sets owned by this user
+		// so that we can find the events related to those emote_sets.
+		// Ideally we should just query this on typesense using a JOIN.
+		// This is a temporary solution until we have a better way to query this.
+		let targets = global
+			.emote_set_by_user_id_loader
+			.load(self.id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emote sets"))?
+			.unwrap_or_default()
+			.into_iter()
+			.map(|s| EventId::EmoteSet(s.id))
+			.chain(std::iter::once(EventId::User(self.id)))
+			.join(", ");
+
+		let options = SearchOptions::builder()
+			.query("*".to_owned())
+			.filter_by(format!("target_id: [{targets}]"))
+			.sort_by(vec!["created_at:desc".to_owned()])
+			.page(page)
+			.per_page(per_page.unwrap_or(20))
+			.build();
+
+		let result = search::<shared::typesense::types::event::Event>(global, options)
+			.await
+			.map_err(|err| {
+				tracing::error!(error = %err, "failed to search");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to search")
+			})?;
+
+		let events = global
+			.event_by_id_loader
+			.load_many(result.hits.iter().copied())
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load events"))?;
+
+		Ok(sorted_results(result.hits, events)
+			.into_iter()
+			.filter_map(|e| AnyEvent::try_from(e).ok())
 			.collect())
 	}
 
