@@ -139,13 +139,13 @@
 	<title>Users - {$t("pages.admin.page_title_suffix")}</title>
 </svelte:head>
 
-{#await user}
-	<Spinner />
-{:then user}
-	{#if user}
-		{@const updatedAt = moment(user.updatedAt)}
-		{@const searchUpdatedAt = user.searchUpdatedAt ? moment(user.searchUpdatedAt) : undefined}
-		<div class="layout">
+<div class="layout">
+	{#await user}
+		<Spinner />
+	{:then user}
+		{#if user}
+			{@const updatedAt = moment(user.updatedAt)}
+			{@const searchUpdatedAt = user.searchUpdatedAt ? moment(user.searchUpdatedAt) : undefined}
 			<h1>User: {user.mainConnection?.platformDisplayName}</h1>
 			<div class="content">
 				<section>
@@ -162,14 +162,22 @@
 								<td>ID (ULID)</td>
 								<td>
 									<code>{data.id}</code>
-									<Button secondary style="display:inline-block" onclick={() => navigator.clipboard.writeText(data.id)}>Copy</Button>
+									<Button
+										secondary
+										style="display:inline-block"
+										onclick={() => navigator.clipboard.writeText(data.id)}>Copy</Button
+									>
 								</td>
 							</tr>
 							<tr>
 								<td>ID (UUID)</td>
 								<td>
 									<code>{uuid}</code>
-									<Button secondary style="display:inline-block" onclick={() => navigator.clipboard.writeText(uuid)}>Copy</Button>
+									<Button
+										secondary
+										style="display:inline-block"
+										onclick={() => navigator.clipboard.writeText(uuid)}>Copy</Button
+									>
 								</td>
 							</tr>
 							<tr>
@@ -229,7 +237,10 @@
 						</tbody>
 					</table>
 					<h2>Subscription</h2>
-					<SubInfo data={user.billing.subscriptionInfo} style="background-color:var(--bg-light); border-radius: 0.5rem;" />
+					<SubInfo
+						data={user.billing.subscriptionInfo}
+						style="background-color:var(--bg-light); border-radius: 0.5rem;"
+					/>
 				</section>
 				<!-- <section>
 					<h2>Actions</h2>
@@ -248,11 +259,11 @@
 					</div>
 				</section> -->
 			</div>
-		</div>
-	{:else}
-		<p>User not found</p>
-	{/if}
-{/await}
+		{:else}
+			<p>User not found</p>
+		{/if}
+	{/await}
+</div>
 
 <style lang="scss">
 	.layout {
