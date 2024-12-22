@@ -202,6 +202,7 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 									}
 								}
 								editorId
+								userId
 								permissions {
 									superAdmin
 									emoteSet {
