@@ -8,18 +8,27 @@
 	import Spinner from "./spinner.svelte";
 
 	type Props = {
-		onResultClick?: (e: MouseEvent, user: User) => void;
+		onresultclick?: (e: MouseEvent, user: User) => void;
+		resulthref?: (user: User) => string;
 		icon?: Snippet;
 		popup?: boolean;
+		searchlimit?: number;
 	} & ComponentProps<typeof TextInput>;
 
-	let { onResultClick, icon: providedIcon, popup = false, ...restProps }: Props = $props();
+	let {
+		onresultclick,
+		resulthref,
+		icon: providedIcon,
+		popup = false,
+		searchlimit = 5,
+		...restProps
+	}: Props = $props();
 
 	let query = $state("");
 
 	let timeout: NodeJS.Timeout | number | undefined; // not reactive
 
-	async function search(query: string): Promise<UserSearchResult> {
+	async function search(query: string, searchLimit: number): Promise<UserSearchResult> {
 		if (!query) {
 			return { items: [], totalCount: 0, pageCount: 0 };
 		}
@@ -35,9 +44,9 @@
 				const res = await gqlClient()
 					.query(
 						graphql(`
-							query EditorSearch($query: String!) {
+							query EditorSearch($query: String!, $perPage: Int!) {
 								users {
-									search(query: $query, page: 1, perPage: 5) {
+									search(query: $query, page: 1, perPage: $perPage) {
 										items {
 											id
 											mainConnection {
@@ -124,7 +133,7 @@
 								}
 							}
 						`),
-						{ query },
+						{ query, perPage: searchLimit },
 					)
 					.toPromise();
 
@@ -138,7 +147,7 @@
 		});
 	}
 
-	let results = $derived(search(query));
+	let results = $derived(search(query, searchlimit));
 </script>
 
 <TextInput type="text" bind:value={query} {...restProps}>
@@ -155,7 +164,12 @@
 				{#if results.items.length > 0}
 					<div class="popup-results">
 						{#each results.items as result}
-							<ChannelPreview user={result} size={2} onclick={(e) => onResultClick?.(e, result)} />
+							<ChannelPreview
+								user={result}
+								size={2}
+								href={resulthref?.(result)}
+								onclick={(e) => onresultclick?.(e, result)}
+							/>
 						{/each}
 					</div>
 				{/if}
@@ -168,7 +182,12 @@
 		{#if results.items.length > 0}
 			<div class="results">
 				{#each results.items as result}
-					<ChannelPreview user={result} size={2} onclick={(e) => onResultClick?.(e, result)} />
+					<ChannelPreview
+						user={result}
+						size={2}
+						href={resulthref?.(result)}
+						onclick={(e) => onresultclick?.(e, result)}
+					/>
 				{/each}
 			</div>
 		{/if}

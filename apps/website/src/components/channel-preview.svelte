@@ -8,13 +8,14 @@
 		user: User;
 		big?: boolean;
 		size?: number;
+		href?: string;
 		onclick?: (e: MouseEvent) => void;
 	}
 
-	let { user, big = false, size = 2, onclick }: Props = $props();
+	let { user, big = false, size = 2, href, onclick }: Props = $props();
 </script>
 
-<Button href="/users/{user.id}" {big} {onclick}>
+<Button href={href ?? `/users/${user.id}`} {big} {onclick}>
 	{#snippet icon()}
 		<UserProfilePicture {user} size={size * 16} />
 	{/snippet}

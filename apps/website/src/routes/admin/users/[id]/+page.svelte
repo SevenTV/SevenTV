@@ -10,6 +10,7 @@
 	import Spinner from "$/components/spinner.svelte";
 	import type { User } from "$/gql/graphql";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
+	import { CaretLeft } from "phosphor-svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -135,6 +136,14 @@
 </script>
 
 <div class="layout">
+	<div class="buttons">
+		<Button href="/admin/users" secondary>
+			{#snippet icon()}
+				<CaretLeft />
+			{/snippet}
+			Back
+		</Button>
+	</div>
 	{#await user}
 		<Spinner />
 	{:then user}
@@ -281,10 +290,10 @@
 		gap: 0.5rem;
 	}
 
-	// .buttons {
-	// 	display: flex;
-	// 	gap: 0.5rem;
-	// }
+	.buttons {
+		display: flex;
+		gap: 0.5rem;
+	}
 
 	.roles {
 		display: flex;

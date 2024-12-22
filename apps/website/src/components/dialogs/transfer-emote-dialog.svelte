@@ -61,7 +61,7 @@
 	{:else}
 		<UserSearch
 			placeholder={$t("labels.search_users", { values: { count: 1 } })}
-			onResultClick={(e, user) => {
+			onresultclick={(e, user) => {
 				e.preventDefault();
 				recipient = user;
 			}}

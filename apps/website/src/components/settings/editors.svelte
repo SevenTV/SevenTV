@@ -374,7 +374,7 @@
 		<UserSearch
 			placeholder={$t("pages.settings.editors.add_editor")}
 			disabled={!!adding}
-			onResultClick={(e, user) => channelClick(e, user.id)}
+			onresultclick={(e, user) => channelClick(e, user.id)}
 			popup
 		>
 			{#snippet icon()}

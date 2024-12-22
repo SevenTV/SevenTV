@@ -63,7 +63,7 @@
 		{:else}
 			<UserSearch
 				placeholder="Search User"
-				onResultClick={(e, user) => {
+				onresultclick={(e, user) => {
 					e.preventDefault();
 					recipient = user;
 				}}
