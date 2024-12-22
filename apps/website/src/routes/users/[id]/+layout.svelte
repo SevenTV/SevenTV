@@ -203,6 +203,18 @@
 				<Pulse weight="fill" />
 			{/snippet}
 		</TabLink>
+		{#if $user?.permissions.user.manageAny}
+			<hr style="margin-top: auto" />
+			<Button href="/admin/users/{data.id}">
+				{#snippet icon()}
+					<Wrench />
+				{/snippet}
+				<span style="color:var(--text); flex-grow: 1;">Admin</span>
+				{#snippet iconRight()}
+					<CaretRight />
+				{/snippet}
+			</Button>
+		{/if}
 	</nav>
 {/snippet}
 
@@ -259,7 +271,6 @@
 				{/snippet}
 			</TabLink>
 			{#if $user?.permissions.user.manageAny}
-				<hr style="margin-top: auto" />
 				<Button href="/admin/users/{data.id}">
 					{#snippet icon()}
 						<Wrench />

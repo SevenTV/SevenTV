@@ -226,7 +226,7 @@
 					<h2>Subscription</h2>
 					<SubInfo data={user.billing.subscriptionInfo} style="background-color:var(--bg-light); border-radius: 0.5rem;" />
 				</section>
-				<section>
+				<!-- <section>
 					<h2>Actions</h2>
 					<div class="action-group">
 						<h3>Sessions</h3>
@@ -241,7 +241,7 @@
 							<Button secondary style="color:var(--danger)">Cancel</Button>
 						</div>
 					</div>
-				</section>
+				</section> -->
 			</div>
 		</div>
 	{:else}
@@ -270,10 +270,10 @@
 		gap: 0.5rem;
 	}
 
-	.buttons {
-		display: flex;
-		gap: 0.5rem;
-	}
+	// .buttons {
+	// 	display: flex;
+	// 	gap: 0.5rem;
+	// }
 
 	.roles {
 		display: flex;
@@ -284,13 +284,13 @@
 		margin-top: 0.5rem;
 	}
 
-	.action-group {
-		border: 2px solid var(--border-active);
-		border-radius: 0.5rem;
-		padding: 1rem;
+	// .action-group {
+	// 	border: 2px solid var(--border-active);
+	// 	border-radius: 0.5rem;
+	// 	padding: 1rem;
 
-		h3 {
-			margin-bottom: 0.5rem;
-		}
-	}
+	// 	h3 {
+	// 		margin-bottom: 0.5rem;
+	// 	}
+	// }
 </style>
