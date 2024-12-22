@@ -1,7 +1,7 @@
 <script lang="ts">
 	import moment from "moment";
 	import type { PageData } from "./$types";
-	import { Ulid, Uuid4 } from "id128";
+	import { Ulid, Uuid } from "id128";
 	import Button from "$/components/input/button.svelte";
 	import Role from "$/components/users/role.svelte";
 	import SubInfo from "$/components/sub-info.svelte";
@@ -10,6 +10,7 @@
 	import Spinner from "$/components/spinner.svelte";
 	import type { User } from "$/gql/graphql";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
+	import { t } from "svelte-i18n";
 
 	let { data }: { data: PageData } = $props();
 
@@ -17,7 +18,7 @@
 
 	let idTime = $derived(moment(parsedId.time));
 
-	let uuid = $derived(Uuid4.fromRawTrusted(parsedId.toRaw()).toCanonical());
+	let uuid = $derived(Uuid.fromRawTrusted(parsedId.toRaw()).toCanonical());
 
 	async function queryUser(id: string) {
 		const res = await gqlClient().query(
@@ -133,6 +134,10 @@
 
 	let user = $derived(queryUser(data.id));
 </script>
+
+<svelte:head>
+	<title>Users - {$t("pages.admin.page_title_suffix")}</title>
+</svelte:head>
 
 {#await user}
 	<Spinner />
