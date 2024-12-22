@@ -175,7 +175,7 @@ pub async fn handle(
 			if res.upserted_id.is_none() {
 				// already processed
 				tracing::info!("stripe event already processed");
-				return Ok(None);
+				return Ok(vec![]);
 			}
 
 			tracing::info!("processing stripe event");
@@ -193,7 +193,9 @@ pub async fn handle(
 					customer::created(&global, tx, cus).await?;
 				}
 				(stripe::EventType::CheckoutSessionCompleted, stripe::EventObject::CheckoutSession(s)) => {
-					return checkout_session::completed(&global, stripe_client, tx, s).await;
+					return checkout_session::completed(&global, stripe_client, tx, s)
+						.await
+						.map(|sub_id| sub_id.into_iter().collect::<Vec<_>>());
 				}
 				(stripe::EventType::CheckoutSessionExpired, stripe::EventObject::CheckoutSession(s)) => {
 					checkout_session::expired(&global, tx, s).await?;
@@ -207,7 +209,8 @@ pub async fn handle(
 					invoice::updated(&global, &mut tx, &iv).await?;
 				}
 				(stripe::EventType::InvoicePaid, stripe::EventObject::Invoice(iv)) => {
-					return invoice::paid(&global, stripe_client, tx, event.id, iv).await;
+					return invoice::paid(&global, stripe_client, tx, event.id, iv).await
+						.map(|sub_id| sub_id.into_iter().collect::<Vec<_>>());
 				}
 				(stripe::EventType::InvoiceDeleted, stripe::EventObject::Invoice(iv)) => {
 					invoice::deleted(&global, tx, iv).await?;
@@ -219,7 +222,9 @@ pub async fn handle(
 					customer::deleted(&global, tx, cus).await?;
 				}
 				(stripe::EventType::CustomerSubscriptionCreated, stripe::EventObject::Subscription(sub)) => {
-					return subscription::created(&global, tx, sub, event.id).await;
+					return subscription::created(&global, tx, sub, event.id)
+						.await
+						.map(|sub_id| sub_id.into_iter().collect::<Vec<_>>());
 				}
 				(stripe::EventType::CustomerSubscriptionUpdated, stripe::EventObject::Subscription(sub)) => {
 					return subscription::updated(
@@ -231,10 +236,13 @@ pub async fn handle(
 						sub,
 						prev_attributes.unwrap_or_default(),
 					)
-					.await;
+					.await
+					.map(|sub_id| sub_id.into_iter().collect::<Vec<_>>());
 				}
 				(stripe::EventType::CustomerSubscriptionDeleted, stripe::EventObject::Subscription(sub)) => {
-					return subscription::deleted(&global, tx, sub).await;
+					return subscription::deleted(&global, tx, sub)
+						.await
+						.map(|sub_id| sub_id.into_iter().collect::<Vec<_>>());
 				}
 				(stripe::EventType::ChargeRefunded, stripe::EventObject::Charge(ch)) => {
 					charge::refunded(&global, tx, ch).await?;
@@ -247,17 +255,18 @@ pub async fn handle(
 				_ => return Err(TransactionError::Custom(ApiError::bad_request(ApiErrorCode::StripeError, "invalid event type"))),
 			}
 
-			Ok(None)
+			Ok(vec![])
 		}
 	})
 	.await;
 
 	match res {
-		Ok(Some(sub_id)) => {
-			sub_refresh_job::refresh(&global, sub_id).await?;
+		Ok(sub_ids) => {
+			for sub_id in sub_ids {
+				sub_refresh_job::refresh(&global, sub_id).await?;
+			}
 			Ok(StatusCode::OK)
 		}
-		Ok(None) => Ok(StatusCode::OK),
 		Err(TransactionError::Custom(e)) => Err(e),
 		Err(e) => {
 			tracing::error!(error = %e, "transaction failed");

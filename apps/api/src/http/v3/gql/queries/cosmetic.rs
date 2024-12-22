@@ -32,7 +32,7 @@ impl CosmeticsQuery {
 	async fn cosmetics<'ctx>(
 		&self,
 		ctx: &Context<'ctx>,
-		#[graphql(validator(max_items = 600))] list: Option<Vec<GqlObjectId>>,
+		#[graphql(validator(max_items = 1000))] list: Option<Vec<GqlObjectId>>,
 	) -> Result<CosmeticsQueryResponse, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()

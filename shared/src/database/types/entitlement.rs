@@ -54,36 +54,33 @@ impl std::str::FromStr for EntitlementEdgeKind {
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		let parts: Vec<&str> = s.splitn(2, ':').collect();
-		if parts.len() < 2 {
-			return Err("invalid format");
-		}
 
 		let kind = match parts[0] {
-			"user" => EntitlementEdgeKind::User {
+			"user" if parts.len() == 2 => EntitlementEdgeKind::User {
 				user_id: parts[1].parse().map_err(|_| "invalid user id")?,
 			},
-			"role" => EntitlementEdgeKind::Role {
+			"role" if parts.len() == 2 => EntitlementEdgeKind::Role {
 				role_id: parts[1].parse().map_err(|_| "invalid role id")?,
 			},
-			"badge" => EntitlementEdgeKind::Badge {
+			"badge" if parts.len() == 2 => EntitlementEdgeKind::Badge {
 				badge_id: parts[1].parse().map_err(|_| "invalid badge id")?,
 			},
-			"paint" => EntitlementEdgeKind::Paint {
+			"paint" if parts.len() == 2 => EntitlementEdgeKind::Paint {
 				paint_id: parts[1].parse().map_err(|_| "invalid paint id")?,
 			},
-			"emote_set" => EntitlementEdgeKind::EmoteSet {
+			"emote_set" if parts.len() == 2 => EntitlementEdgeKind::EmoteSet {
 				emote_set_id: parts[1].parse().map_err(|_| "invalid emote set id")?,
 			},
-			"product" => EntitlementEdgeKind::Product {
+			"product" if parts.len() == 2 => EntitlementEdgeKind::Product {
 				product_id: parts[1].parse().map_err(|_| "invalid product id")?,
 			},
-			"subscription" => EntitlementEdgeKind::Subscription {
+			"subscription" if parts.len() == 2 => EntitlementEdgeKind::Subscription {
 				subscription_id: parts[1].parse().map_err(|_| "invalid subscription id")?,
 			},
-			"global_default_entitlement_group" => EntitlementEdgeKind::GlobalDefaultEntitlementGroup,
-			"special_event" => EntitlementEdgeKind::SpecialEvent {
+			"special_event" if parts.len() == 2 => EntitlementEdgeKind::SpecialEvent {
 				special_event_id: parts[1].parse().map_err(|_| "invalid special event id")?,
 			},
+			"global_default_entitlement_group" => EntitlementEdgeKind::GlobalDefaultEntitlementGroup,
 			_ => return Err("invalid kind"),
 		};
 
@@ -149,6 +146,7 @@ pub enum EntitlementEdgeManagedBy {
 	SpecialEvent {
 		special_event_id: SpecialEventId,
 	},
+	AllCosmetics,
 }
 
 impl std::fmt::Display for EntitlementEdgeManagedBy {
@@ -161,6 +159,7 @@ impl std::fmt::Display for EntitlementEdgeManagedBy {
 			Self::Subscription { subscription_id } => write!(f, "subscription:{subscription_id}"),
 			Self::RedeemCode { redeem_code_id } => write!(f, "redeem_code:{redeem_code_id}"),
 			Self::SpecialEvent { special_event_id } => write!(f, "special_event:{special_event_id}"),
+			Self::AllCosmetics => write!(f, "all_cosmetics"),
 		}
 	}
 }

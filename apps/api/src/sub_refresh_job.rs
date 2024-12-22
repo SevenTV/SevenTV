@@ -1,16 +1,19 @@
 use std::collections::HashSet;
 use std::convert::Infallible;
+use std::str::FromStr;
 use std::sync::Arc;
 
+use chrono::TimeZone;
 use futures::TryStreamExt;
 use mongodb::options::FindOneOptions;
 use shared::database::duration::DurationUnit;
 use shared::database::emote_set::{EmoteSet, EmoteSetId, EmoteSetKind};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
+use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::subscription::{Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState};
-use shared::database::product::SubscriptionBenefitCondition;
+use shared::database::product::{ProductId, SubscriptionBenefitCondition};
 use shared::database::queries::{filter, update};
-use shared::database::user::{User, UserStyle};
+use shared::database::user::{User, UserId, UserStyle};
 use shared::database::MongoCollection;
 use shared::event::{InternalEvent, InternalEventData, InternalEventEmoteSetData};
 
@@ -189,6 +192,25 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 				} else if !is_fulfilled && outgoing.contains(&benefit_edge.to) {
 					remove_edges.push(benefit_edge);
 				}
+			}
+
+			let xmas_gift = handle_xmas_2024_gift(global, subscription_id.user_id).await?;
+			for add in xmas_gift.adds {
+				new_edges.push(EntitlementEdgeId {
+					from: EntitlementEdgeKind::Subscription { subscription_id },
+					to: EntitlementEdgeKind::SpecialEvent { special_event_id: add },
+					managed_by: Some(EntitlementEdgeManagedBy::Subscription { subscription_id }),
+				});
+			}
+
+			for remove in xmas_gift.removes {
+				remove_edges.push(EntitlementEdgeId {
+					from: EntitlementEdgeKind::Subscription { subscription_id },
+					to: EntitlementEdgeKind::SpecialEvent {
+						special_event_id: remove,
+					},
+					managed_by: Some(EntitlementEdgeManagedBy::Subscription { subscription_id }),
+				});
 			}
 
 			let now = chrono::Utc::now();
@@ -426,4 +448,84 @@ pub async fn refresh(global: &Arc<Global>, subscription_id: SubscriptionId) -> R
 			tracing::error!(error = %e, "failed to acquire mutex");
 			ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to acquire mutex")
 		})?
+}
+
+struct Xmas2024Gift {
+	adds: Vec<SpecialEventId>,
+	removes: Vec<SpecialEventId>,
+}
+
+async fn handle_xmas_2024_gift(global: &Arc<Global>, customer_id: UserId) -> Result<Xmas2024Gift, ApiError> {
+	let xmas_event_start = chrono::Utc.with_ymd_and_hms(2024, 12, 14, 0, 0, 0).unwrap();
+	let xmas_event_end = chrono::Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap();
+
+	// Count the number of subs the user has gifted.
+	const XMAS_1_SUB_ID: &str = "0193b680-0de9-25b4-dd0d-21b8ab811bc0";
+	const MINECRAFT_5_SUBS_ID: &str = "0193ef9e-ffa6-8c60-ceb6-279134b5b32a";
+	const MINECRAFT_10_SUBS_ID: &str = "0193ef9f-2ed9-2e29-48e2-ad78887dfab9";
+
+	let xmas_1_sub_id = SpecialEventId::from_str(XMAS_1_SUB_ID).unwrap();
+	let minecraft_5_subs_id = SpecialEventId::from_str(MINECRAFT_5_SUBS_ID).unwrap();
+	let minecraft_10_subs_id = SpecialEventId::from_str(MINECRAFT_10_SUBS_ID).unwrap();
+
+	let mut gifted_subs = SubscriptionPeriod::collection(&global.db)
+		.find(filter::filter! {
+			SubscriptionPeriod {
+				gifted_by: customer_id,
+			}
+		})
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to find gifted subs");
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find gifted subs")
+		})?
+		.try_collect::<Vec<_>>()
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to collect gifted subs");
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to collect gifted subs")
+		})?;
+
+	// Filter out any subs that are not in the xmas event
+	gifted_subs.retain(|sub| sub.id.timestamp() >= xmas_event_start && sub.id.timestamp() <= xmas_event_end);
+
+	const MONTH_SUB_PRODUCT_ID: &str = "price_1JWQ2QCHxsWbK3R31cZkaocV"; // = 1 gift
+	const YEAR_SUB_PRODUCT_ID: &str = "price_1JWQ2RCHxsWbK3R3a6emz76a"; // = 10 gifts
+
+	let month_product_id = ProductId::from(stripe::PriceId::from_str(MONTH_SUB_PRODUCT_ID).unwrap());
+	let year_product_id = ProductId::from(stripe::PriceId::from_str(YEAR_SUB_PRODUCT_ID).unwrap());
+
+	let mut gift_count = 0;
+	for gifted_sub in gifted_subs {
+		if gifted_sub.product_id == month_product_id {
+			gift_count += 1;
+		} else if gifted_sub.product_id == year_product_id {
+			gift_count += 10;
+		}
+	}
+
+	let mut xmas_gift = Xmas2024Gift {
+		adds: vec![],
+		removes: vec![],
+	};
+
+	if gift_count >= 1 {
+		xmas_gift.adds.push(xmas_1_sub_id);
+	} else {
+		xmas_gift.removes.push(xmas_1_sub_id);
+	}
+
+	if gift_count >= 5 {
+		xmas_gift.adds.push(minecraft_5_subs_id);
+	} else {
+		xmas_gift.removes.push(minecraft_5_subs_id);
+	}
+
+	if gift_count >= 10 {
+		xmas_gift.adds.push(minecraft_10_subs_id);
+	} else {
+		xmas_gift.removes.push(minecraft_10_subs_id);
+	}
+
+	Ok(xmas_gift)
 }

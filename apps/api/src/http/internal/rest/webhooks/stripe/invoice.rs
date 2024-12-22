@@ -1,19 +1,15 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use chrono::TimeZone;
-use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::invoice::{Invoice, InvoiceStatus};
-use shared::database::product::special_event::SpecialEvent;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
 use shared::database::product::{
-	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant,
+	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant,
 };
 use shared::database::queries::{filter, update};
 use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
-use shared::database::user::UserId;
 use stripe::Object;
 use tracing::Instrument;
 
@@ -261,7 +257,7 @@ pub async fn paid(
 	mut tx: TransactionSession<'_, ApiError>,
 	event_id: stripe::EventId,
 	invoice: stripe::Invoice,
-) -> TransactionResult<Option<SubscriptionId>, ApiError> {
+) -> TransactionResult<Vec<SubscriptionId>, ApiError> {
 	updated(global, &mut tx, &invoice).await?;
 
 	let metadata = invoice
@@ -280,7 +276,7 @@ pub async fn paid(
 
 	if let Some(InvoiceMetadata::PaypalLegacy { .. }) = metadata {
 		// ignore legacy paypal invoices
-		return Ok(None);
+		return Ok(vec![]);
 	}
 
 	match (invoice.subscription, metadata) {
@@ -301,7 +297,7 @@ pub async fn paid(
 				)
 				.await?;
 
-				return Ok(None);
+				return Ok(vec![]);
 			}
 
 			let stripe_product_id = items.into_iter().next().unwrap();
@@ -330,7 +326,7 @@ pub async fn paid(
 				)
 				.await?;
 
-				return Ok(None);
+				return Ok(vec![]);
 			};
 
 			// This invoice is for one of our subscription products.
@@ -356,7 +352,7 @@ pub async fn paid(
 
 			if stripe_sub.metadata.is_empty() {
 				tracing::warn!("subscription metadata is missing: {}", stripe_sub.id);
-				return Ok(None);
+				return Ok(vec![]);
 			}
 
 			let user_id = SubscriptionMetadata::from_stripe(&stripe_sub.metadata)
@@ -412,7 +408,7 @@ pub async fn paid(
 			)
 			.await?;
 
-			return Ok(Some(sub_id));
+			return Ok(vec![sub_id]);
 		}
 		(
 			None,
@@ -480,9 +476,6 @@ pub async fn paid(
 					"invoice created_at is missing",
 				))
 			})?;
-
-			// TODO: Delete after christmas gifter event
-			handle_xmas_2024_gift(&mut tx, start, customer_id, subscription_product_id).await?;
 
 			let subscription_id = SubscriptionId {
 				user_id,
@@ -606,7 +599,13 @@ pub async fn paid(
 			)
 			.await?;
 
-			return Ok(Some(subscription_id));
+			return Ok(vec![
+				subscription_id,
+				SubscriptionId {
+					user_id: customer_id,
+					product_id: subscription_product_id,
+				},
+			]);
 		}
 		(
 			None,
@@ -645,12 +644,12 @@ pub async fn paid(
 			)
 			.await?;
 
-			return Ok(Some(sub_id));
+			return Ok(vec![sub_id]);
 		}
 		_ => {}
 	}
 
-	Ok(None)
+	Ok(vec![])
 }
 
 /// Only sent for draft invoices.
@@ -703,80 +702,6 @@ pub async fn payment_failed(
 				updated_at: chrono::Utc::now(),
 				search_updated_at: &None,
 			}
-		},
-		None,
-	)
-	.await?;
-
-	Ok(())
-}
-
-/// TODO: Delete after christmas gifter event
-async fn handle_xmas_2024_gift(
-	tx: &mut TransactionSession<'_, ApiError>,
-	start: chrono::DateTime<chrono::Utc>,
-	customer_id: UserId,
-	subscription_product_id: SubscriptionProductId,
-) -> TransactionResult<(), ApiError> {
-	let xmas_event_start = chrono::Utc.with_ymd_and_hms(2024, 12, 14, 0, 0, 0).unwrap();
-	let xmas_event_end = chrono::Utc.with_ymd_and_hms(2024, 12, 27, 0, 0, 0).unwrap();
-
-	if start < xmas_event_start || start > xmas_event_end {
-		return Ok(());
-	}
-
-	let Some(special_event_id) = tx
-		.find_one(
-			filter::filter! {
-				SpecialEvent {
-					name: "2024 X-MAS Gifter".to_owned(),
-				}
-			},
-			None,
-		)
-		.await?
-	else {
-		tracing::warn!("could not find special event for xmas 2024 gift: {}", customer_id);
-		return Ok(());
-	};
-
-	// We gift them a special event because they gifted a sub during the christmas
-	// event
-	let from = EntitlementEdgeKind::Subscription {
-		subscription_id: SubscriptionId {
-			user_id: customer_id,
-			product_id: subscription_product_id,
-		},
-	};
-	let managed_by = EntitlementEdgeManagedBy::SpecialEvent {
-		special_event_id: special_event_id.id,
-	};
-
-	tx.delete(
-		filter::filter! {
-			EntitlementEdge {
-				#[query(flatten, rename = "_id")]
-				id: EntitlementEdgeId {
-					#[query(serde)]
-					from: &from,
-					#[query(serde)]
-					managed_by: Some(&managed_by),
-				}
-			}
-		},
-		None,
-	)
-	.await?;
-
-	tx.insert_one(
-		EntitlementEdge {
-			id: EntitlementEdgeId {
-				from,
-				to: EntitlementEdgeKind::SpecialEvent {
-					special_event_id: special_event_id.id,
-				},
-				managed_by: Some(managed_by),
-			},
 		},
 		None,
 	)

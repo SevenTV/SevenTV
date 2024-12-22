@@ -39,6 +39,8 @@ pub struct User {
 	pub email: Option<String>,
 	pub email_verified: bool,
 	pub has_bans: bool,
+	#[serde(default)]
+	pub all_cosmetics: bool,
 	/// The user that this user was merged into another user
 	/// Eventually we will have a cron job that will go through and clean up
 	/// these users

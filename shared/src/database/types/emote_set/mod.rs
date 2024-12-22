@@ -21,6 +21,7 @@ pub type EmoteSetId = Id<EmoteSet>;
 #[mongo(index(fields(_id = 1, "emotes.alias" = 1), unique))]
 #[mongo(index(fields("origin_config.origins.id" = 1)))]
 #[mongo(index(fields(search_updated_at = 1)))]
+#[mongo(index(fields(kind = 1)))]
 #[mongo(search = "crate::typesense::types::emote_set::EmoteSet")]
 #[serde(deny_unknown_fields)]
 pub struct EmoteSet {

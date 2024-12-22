@@ -1,27 +1,38 @@
 use std::collections::{HashMap, HashSet};
+use std::future::IntoFuture;
 use std::sync::{Arc, Weak};
 
+use futures::{TryFutureExt, TryStreamExt};
 use scuffle_batching::{DataLoader, DataLoaderFetcher};
-use shared::database::entitlement::{CalculatedEntitlements, EntitlementEdgeKind};
+use shared::database::badge::BadgeId;
+use shared::database::emote_set::{EmoteSetId, EmoteSetKind};
+use shared::database::entitlement::{
+	CalculatedEntitlements, EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy,
+};
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
 use shared::database::loader::dataloader::BatchLoad;
+use shared::database::paint::PaintId;
+use shared::database::queries::filter;
 use shared::database::role::permissions::{Permissions, PermissionsExt, UserPermission};
 use shared::database::role::{Role, RoleId};
 use shared::database::user::ban::ActiveBans;
 use shared::database::user::{FullUser, User, UserComputed, UserId};
+use shared::database::{Id, MongoCollection};
 use tracing::Instrument;
 
 use crate::global::Global;
 
 pub struct FullUserLoader {
 	pub computed_loader: DataLoader<UserComputedLoader>,
+	all_cosmetics_loader: DataLoader<AllCosmeticsLoader>,
 }
 
 impl FullUserLoader {
 	pub fn new(global: Weak<Global>) -> Self {
 		Self {
 			computed_loader: UserComputedLoader::new(global.clone()),
+			all_cosmetics_loader: AllCosmeticsLoader::new(global.clone()),
 		}
 	}
 
@@ -61,6 +72,12 @@ impl FullUserLoader {
 
 		let computed = self.computed_loader.load_many(users.iter().map(|user| user.id)).await?;
 
+		let all_cosmetics = if users.iter().any(|user| user.all_cosmetics) {
+			self.all_cosmetics_loader.load(()).await?.unwrap_or_default()
+		} else {
+			AllCosmeticsResult::default()
+		};
+
 		let bans = global
 			.user_ban_by_user_id_loader
 			.load_many(
@@ -87,6 +104,44 @@ impl FullUserLoader {
 			.into_iter()
 			.filter_map(|mut user| {
 				let mut computed = computed.get(&user.id)?.clone();
+
+				if user.all_cosmetics {
+					computed.entitlements.badges.extend(all_cosmetics.badges.iter().copied());
+					computed.entitlements.paints.extend(all_cosmetics.paints.iter().copied());
+					computed
+						.entitlements
+						.emote_sets
+						.extend(all_cosmetics.emote_sets.iter().copied());
+
+					let entitlements = computed.raw_entitlements.get_or_insert_default();
+					for to in all_cosmetics
+						.badges
+						.iter()
+						.copied()
+						.map(|id| EntitlementEdgeKind::Badge { badge_id: id })
+						.chain(
+							all_cosmetics
+								.paints
+								.iter()
+								.copied()
+								.map(|id| EntitlementEdgeKind::Paint { paint_id: id }),
+						)
+						.chain(
+							all_cosmetics
+								.emote_sets
+								.iter()
+								.copied()
+								.map(|id| EntitlementEdgeKind::EmoteSet { emote_set_id: id }),
+						) {
+						entitlements.push(EntitlementEdge {
+							id: EntitlementEdgeId {
+								from: EntitlementEdgeKind::User { user_id: user.id },
+								to,
+								managed_by: Some(EntitlementEdgeManagedBy::AllCosmetics),
+							},
+						});
+					}
+				}
 
 				if let Some(active_bans) = bans.get(&user.id).and_then(|bans| ActiveBans::new(bans)) {
 					computed.permissions.merge(active_bans.permissions());
@@ -185,6 +240,12 @@ impl FullUserLoader {
 			})
 			.collect::<HashMap<_, _>>();
 
+		let all_cosmetics = if users.values().any(|user| user.all_cosmetics) {
+			self.all_cosmetics_loader.load(()).await?.unwrap_or_default()
+		} else {
+			AllCosmeticsResult::default()
+		};
+
 		let mut roles: Vec<_> = global
 			.role_by_id_loader
 			.load_many(role_ids.iter().copied())
@@ -222,6 +283,46 @@ impl FullUserLoader {
 			.await?;
 
 		for user in users.values_mut() {
+			if user.all_cosmetics {
+				user.computed.entitlements.badges.extend(all_cosmetics.badges.iter().copied());
+				user.computed.entitlements.paints.extend(all_cosmetics.paints.iter().copied());
+				user.computed
+					.entitlements
+					.emote_sets
+					.extend(all_cosmetics.emote_sets.iter().copied());
+
+				let user_id = user.id;
+
+				let entitlements = user.computed.raw_entitlements.get_or_insert_default();
+				for to in all_cosmetics
+					.badges
+					.iter()
+					.copied()
+					.map(|id| EntitlementEdgeKind::Badge { badge_id: id })
+					.chain(
+						all_cosmetics
+							.paints
+							.iter()
+							.copied()
+							.map(|id| EntitlementEdgeKind::Paint { paint_id: id }),
+					)
+					.chain(
+						all_cosmetics
+							.emote_sets
+							.iter()
+							.copied()
+							.map(|id| EntitlementEdgeKind::EmoteSet { emote_set_id: id }),
+					) {
+					entitlements.push(EntitlementEdge {
+						id: EntitlementEdgeId {
+							from: EntitlementEdgeKind::User { user_id },
+							to,
+							managed_by: Some(EntitlementEdgeManagedBy::AllCosmetics),
+						},
+					});
+				}
+			}
+
 			user.computed.highest_role_rank = compute_highest_role_rank(&roles, &user.computed.entitlements.roles);
 			user.computed.highest_role_color = compute_highest_role_color(&roles, &user.computed.entitlements.roles);
 			user.computed.roles = roles
@@ -362,6 +463,124 @@ impl DataLoaderFetcher for UserComputedLoader {
 		}
 
 		Some(result)
+	}
+}
+
+struct AllCosmeticsLoader {
+	global: Weak<Global>,
+	name: String,
+}
+
+impl AllCosmeticsLoader {
+	pub fn new(global: Weak<Global>) -> DataLoader<Self> {
+		Self::new_with_config(
+			global,
+			"AllCosmeticsLoader".to_string(),
+			1,
+			5,
+			std::time::Duration::from_millis(5),
+		)
+	}
+
+	pub fn new_with_config(
+		global: Weak<Global>,
+		name: String,
+		batch_size: usize,
+		concurrency: usize,
+		sleep_duration: std::time::Duration,
+	) -> DataLoader<Self> {
+		DataLoader::new(Self { global, name }, batch_size, concurrency, sleep_duration)
+	}
+}
+
+#[derive(Debug, Clone, Default)]
+struct AllCosmeticsResult {
+	badges: Vec<BadgeId>,
+	paints: Vec<PaintId>,
+	emote_sets: Vec<EmoteSetId>,
+}
+
+impl DataLoaderFetcher for AllCosmeticsLoader {
+	type Key = ();
+	type Value = AllCosmeticsResult;
+
+	async fn load(
+		&self,
+		_: std::collections::HashSet<Self::Key>,
+	) -> Option<std::collections::HashMap<Self::Key, Self::Value>> {
+		use shared::database::badge::Badge;
+		use shared::database::emote_set::EmoteSet;
+		use shared::database::paint::Paint;
+
+		let _batch = BatchLoad::new(&self.name, 1);
+		let global = &self.global.upgrade()?;
+
+		async fn load_cosmetics<T: MongoCollection + serde::de::DeserializeOwned>(
+			global: &Global,
+			filter: impl Into<filter::Filter<T>>,
+		) -> Vec<Id<T>> {
+			#[derive(Debug, Clone, serde::Deserialize)]
+			struct Ret<I> {
+				#[serde(rename = "_id")]
+				id: Id<I>,
+			}
+
+			let filter = filter.into();
+			let results: Vec<Ret<T>> = match global
+				.db
+				.collection(T::COLLECTION_NAME)
+				.find(filter.to_document())
+				.projection(bson::doc! {
+					"_id": 1,
+				})
+				.into_future()
+				.and_then(|f| f.try_collect())
+				.await
+			{
+				Ok(results) => results,
+				Err(err) => {
+					tracing::error!("failed to load all cosmetics: {err}");
+					vec![]
+				}
+			};
+
+			results.into_iter().map(|r| r.id).collect()
+		}
+
+		let badges = load_cosmetics::<Badge>(
+			global,
+			filter::filter! {
+				Badge {}
+			},
+		)
+		.await;
+
+		let paints = load_cosmetics::<Paint>(
+			global,
+			filter::filter! {
+				Paint {}
+			},
+		)
+		.await;
+
+		let emote_sets = load_cosmetics::<EmoteSet>(
+			global,
+			filter::filter! {
+				EmoteSet {
+					#[query(serde)]
+					kind: EmoteSetKind::Special,
+				}
+			},
+		)
+		.await;
+
+		let result = AllCosmeticsResult {
+			badges,
+			paints,
+			emote_sets,
+		};
+
+		Some([((), result)].into_iter().collect())
 	}
 }
 
