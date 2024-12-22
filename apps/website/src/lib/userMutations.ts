@@ -3,17 +3,22 @@ import type { Platform, User } from "$/gql/graphql";
 import { get } from "svelte/store";
 import { gqlClient } from "./gql";
 import { sessionToken, user } from "./auth";
-import { PUBLIC_REST_API_V4, PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
+import { PUBLIC_REST_API_V4 } from "$env/static/public";
 import { currentError, errorDialogMode } from "./error";
 
 export async function setActiveSet(userId: string, setId?: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation SetActiveSet($userId: Id!, $setId: Id, $productId: Id!, $isMe: Boolean!) {
+			mutation SetActiveSet($userId: Id!, $setId: Id) {
 				users {
 					user(id: $userId) {
 						activeEmoteSet(emoteSetId: $setId) {
 							id
+							connections {
+								platform
+								platformUsername
+								platformDisplayName
+							}
 							mainConnection {
 								platformDisplayName
 								platformAvatarUrl
@@ -30,6 +35,7 @@ export async function setActiveSet(userId: string, setId?: string) {
 										frameCount
 									}
 								}
+								activePaintId
 								activePaint {
 									id
 									name
@@ -87,7 +93,21 @@ export async function setActiveSet(userId: string, setId?: string) {
 										}
 									}
 								}
-								activeEmoteSetId
+								activeBadgeId
+								activeBadge {
+									id
+									name
+									description
+									images {
+										url
+										mime
+										size
+										scale
+										width
+										height
+										frameCount
+									}
+								}
 								activeEmoteSet {
 									id
 									name
@@ -102,41 +122,109 @@ export async function setActiveSet(userId: string, setId?: string) {
 									hex
 								}
 							}
-							editableEmoteSetIds @include(if: $isMe)
-							editorFor {
-								state
-							}
-							permissions {
-								user {
-									manageAny
-									useCustomProfilePicture
-								}
-								emote {
-									manageAny
-								}
-								emoteSet {
-									manage
-									manageAny
-								}
-								ticket {
-									create
-								}
-							}
-							billing(productId: $productId) {
-								subscriptionInfo {
-									activePeriod {
-										providerId {
-											provider
+							editors {
+								editor {
+									id
+									mainConnection {
+										platformDisplayName
+										platformAvatarUrl
+									}
+									style {
+										activeProfilePicture {
+											images {
+												url
+												mime
+												size
+												width
+												height
+												scale
+												frameCount
+											}
+										}
+										activePaint {
+											id
+											name
+											data {
+												layers {
+													id
+													ty {
+														__typename
+														... on PaintLayerTypeSingleColor {
+															color {
+																hex
+															}
+														}
+														... on PaintLayerTypeLinearGradient {
+															angle
+															repeating
+															stops {
+																at
+																color {
+																	hex
+																}
+															}
+														}
+														... on PaintLayerTypeRadialGradient {
+															repeating
+															stops {
+																at
+																color {
+																	hex
+																}
+															}
+															shape
+														}
+														... on PaintLayerTypeImage {
+															images {
+																url
+																mime
+																size
+																scale
+																width
+																height
+																frameCount
+															}
+														}
+													}
+													opacity
+												}
+												shadows {
+													color {
+														hex
+													}
+													offsetX
+													offsetY
+													blur
+												}
+											}
 										}
 									}
+									highestRoleColor {
+										hex
+									}
 								}
+								editorId
+								permissions {
+									emoteSet {
+										create
+										manage
+									}
+									emote {
+										manage
+									}
+									user {
+										manageProfile
+										manageEditors
+									}
+								}
+								state
 							}
 						}
 					}
 				}
 			}
 		`),
-		{ userId, setId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID, isMe: userId === get(user)?.id },
+		{ userId, setId },
 	);
 
 	if (!res.data) {
@@ -150,7 +238,7 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-				mutation SetActiveBadge($id: Id!, $badgeId: Id, $productId: Id!) {
+				mutation SetActiveBadge($id: Id!, $badgeId: Id) {
 					users {
 						user(id: $id) {
 							activeBadge(badgeId: $badgeId) {
@@ -176,21 +264,6 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 											frameCount
 										}
 									}
-									activeBadgeId
-									activeBadge {
-										id
-										name
-										description
-										images {
-											url
-											mime
-											size
-											scale
-											width
-											height
-											frameCount
-										}
-									}
 									activePaintId
 									activePaint {
 										id
@@ -249,7 +322,25 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 											}
 										}
 									}
-									activeEmoteSetId
+									activeBadgeId
+									activeBadge {
+										id
+										name
+										description
+										images {
+											url
+											mime
+											size
+											scale
+											width
+											height
+											frameCount
+										}
+									}
+									activeEmoteSet {
+										id
+										name
+									}
 								}
 								highestRoleColor {
 									hex
@@ -341,36 +432,21 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 											hex
 										}
 									}
-									state
-								}
-								editorFor {
-									state
-								}
-								editableEmoteSetIds
-								permissions {
-									user {
-										manageAny
-										useCustomProfilePicture
-									}
-									emote {
-										manageAny
-									}
-									emoteSet {
-										manage
-										manageAny
-									}
-									ticket {
-										create
-									}
-								}
-								billing(productId: $productId) {
-									subscriptionInfo {
-										activePeriod {
-											providerId {
-												provider
-											}
+									editorId
+									permissions {
+										emoteSet {
+											create
+											manage
+										}
+										emote {
+											manage
+										}
+										user {
+											manageProfile
+											manageEditors
 										}
 									}
+									state
 								}
 							}
 						}
@@ -380,7 +456,6 @@ export async function setActiveBadge(userId: string, badgeId?: string | null) {
 			{
 				id: userId,
 				badgeId,
-				productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
 			},
 		)
 		.toPromise();
@@ -396,7 +471,7 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-				mutation SetActivePaint($id: Id!, $paintId: Id, $productId: Id!) {
+				mutation SetActivePaint($id: Id!, $paintId: Id) {
 					users {
 						user(id: $id) {
 							activePaint(paintId: $paintId) {
@@ -422,21 +497,6 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 											frameCount
 										}
 									}
-									activeBadgeId
-									activeBadge {
-										id
-										name
-										description
-										images {
-											url
-											mime
-											size
-											scale
-											width
-											height
-											frameCount
-										}
-									}
 									activePaintId
 									activePaint {
 										id
@@ -495,7 +555,25 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 											}
 										}
 									}
-									activeEmoteSetId
+									activeBadgeId
+									activeBadge {
+										id
+										name
+										description
+										images {
+											url
+											mime
+											size
+											scale
+											width
+											height
+											frameCount
+										}
+									}
+									activeEmoteSet {
+										id
+										name
+									}
 								}
 								highestRoleColor {
 									hex
@@ -587,36 +665,21 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 											hex
 										}
 									}
-									state
-								}
-								editorFor {
-									state
-								}
-								editableEmoteSetIds
-								permissions {
-									user {
-										manageAny
-										useCustomProfilePicture
-									}
-									emote {
-										manageAny
-									}
-									emoteSet {
-										manage
-										manageAny
-									}
-									ticket {
-										create
-									}
-								}
-								billing(productId: $productId) {
-									subscriptionInfo {
-										activePeriod {
-											providerId {
-												provider
-											}
+									editorId
+									permissions {
+										emoteSet {
+											create
+											manage
+										}
+										emote {
+											manage
+										}
+										user {
+											manageProfile
+											manageEditors
 										}
 									}
+									state
 								}
 							}
 						}
@@ -626,7 +689,6 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 			{
 				id: userId,
 				paintId,
-				productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
 			},
 		)
 		.toPromise();
@@ -645,138 +707,25 @@ export async function setMainConnection(userId: string, platform: Platform, plat
 				$userId: Id!
 				$platform: Platform!
 				$platformId: String!
-				$productId: Id!
 			) {
 				users {
 					user(id: $userId) {
 						mainConnection(platform: $platform, platformId: $platformId) {
-							id
 							mainConnection {
 								platform
 								platformId
-								platformDisplayName
-								platformAvatarUrl
 							}
 							connections {
 								platform
 								platformId
 								platformDisplayName
 							}
-							style {
-								activeProfilePicture {
-									images {
-										url
-										mime
-										size
-										width
-										height
-										scale
-										frameCount
-									}
-								}
-								activePaint {
-									id
-									name
-									data {
-										layers {
-											id
-											ty {
-												__typename
-												... on PaintLayerTypeSingleColor {
-													color {
-														hex
-													}
-												}
-												... on PaintLayerTypeLinearGradient {
-													angle
-													repeating
-													stops {
-														at
-														color {
-															hex
-														}
-													}
-												}
-												... on PaintLayerTypeRadialGradient {
-													repeating
-													stops {
-														at
-														color {
-															hex
-														}
-													}
-													shape
-												}
-												... on PaintLayerTypeImage {
-													images {
-														url
-														mime
-														size
-														scale
-														width
-														height
-														frameCount
-													}
-												}
-											}
-											opacity
-										}
-										shadows {
-											color {
-												hex
-											}
-											offsetX
-											offsetY
-											blur
-										}
-									}
-								}
-								activeEmoteSetId
-							}
-							highestRoleColor {
-								hex
-							}
-							roles {
-								name
-								color {
-									hex
-								}
-							}
-							editorFor {
-								state
-							}
-							editableEmoteSetIds
-							permissions {
-								user {
-									manageAny
-									useCustomProfilePicture
-								}
-								emote {
-									manageAny
-								}
-								emoteSet {
-									manage
-									manageAny
-								}
-								ticket {
-									create
-								}
-							}
-							billing(productId: $productId) {
-								subscriptionInfo {
-									activePeriod {
-										providerId {
-											provider
-										}
-									}
-								}
-							}
 						}
 					}
 				}
 			}
 		`),
-		{ userId, platform, platformId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
+		{ userId, platform, platformId },
 	);
 
 	if (!res.data) {
@@ -815,127 +764,17 @@ export async function uploadProfilePicture(userId: string, data: Blob) {
 export async function removeProfilePicture(userId: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation RemoveProfilePicture($userId: Id!, $productId: Id!) {
+			mutation RemoveProfilePicture($userId: Id!) {
 				users {
 					user(id: $userId) {
 						removeProfilePicture {
 							id
-							mainConnection {
-								platformDisplayName
-								platformAvatarUrl
-							}
-							style {
-								activeProfilePicture {
-									images {
-										url
-										mime
-										size
-										width
-										height
-										scale
-										frameCount
-									}
-								}
-								activePaint {
-									id
-									name
-									data {
-										layers {
-											id
-											ty {
-												__typename
-												... on PaintLayerTypeSingleColor {
-													color {
-														hex
-													}
-												}
-												... on PaintLayerTypeLinearGradient {
-													angle
-													repeating
-													stops {
-														at
-														color {
-															hex
-														}
-													}
-												}
-												... on PaintLayerTypeRadialGradient {
-													repeating
-													stops {
-														at
-														color {
-															hex
-														}
-													}
-													shape
-												}
-												... on PaintLayerTypeImage {
-													images {
-														url
-														mime
-														size
-														scale
-														width
-														height
-														frameCount
-													}
-												}
-											}
-											opacity
-										}
-										shadows {
-											color {
-												hex
-											}
-											offsetX
-											offsetY
-											blur
-										}
-									}
-								}
-								activeEmoteSetId
-							}
-							highestRoleColor {
-								hex
-							}
-							roles {
-								name
-								color {
-									hex
-								}
-							}
-							editableEmoteSetIds
-							permissions {
-								user {
-									manageAny
-									useCustomProfilePicture
-								}
-								emote {
-									manageAny
-								}
-								emoteSet {
-									manage
-									manageAny
-								}
-								ticket {
-									create
-								}
-							}
-							billing(productId: $productId) {
-								subscriptionInfo {
-									activePeriod {
-										providerId {
-											provider
-										}
-									}
-								}
-							}
 						}
 					}
 				}
 			}
 		`),
-		{ userId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
+		{ userId },
 	);
 
 	if (!res.data) {
@@ -952,135 +791,25 @@ export async function removeConnection(userId: string, platform: Platform, platf
 				$userId: Id!
 				$platform: Platform!
 				$platformId: String!
-				$productId: Id!
 			) {
 				users {
 					user(id: $userId) {
 						removeConnection(platform: $platform, platformId: $platformId) {
-							id
 							mainConnection {
 								platform
 								platformId
-								platformDisplayName
-								platformAvatarUrl
 							}
 							connections {
 								platform
 								platformId
 								platformDisplayName
 							}
-							style {
-								activeProfilePicture {
-									images {
-										url
-										mime
-										size
-										width
-										height
-										scale
-										frameCount
-									}
-								}
-								activePaint {
-									id
-									name
-									data {
-										layers {
-											id
-											ty {
-												__typename
-												... on PaintLayerTypeSingleColor {
-													color {
-														hex
-													}
-												}
-												... on PaintLayerTypeLinearGradient {
-													angle
-													repeating
-													stops {
-														at
-														color {
-															hex
-														}
-													}
-												}
-												... on PaintLayerTypeRadialGradient {
-													repeating
-													stops {
-														at
-														color {
-															hex
-														}
-													}
-													shape
-												}
-												... on PaintLayerTypeImage {
-													images {
-														url
-														mime
-														size
-														scale
-														width
-														height
-														frameCount
-													}
-												}
-											}
-											opacity
-										}
-										shadows {
-											color {
-												hex
-											}
-											offsetX
-											offsetY
-											blur
-										}
-									}
-								}
-								activeEmoteSetId
-							}
-							highestRoleColor {
-								hex
-							}
-							roles {
-								name
-								color {
-									hex
-								}
-							}
-							editableEmoteSetIds
-							permissions {
-								user {
-									manageAny
-									useCustomProfilePicture
-								}
-								emote {
-									manageAny
-								}
-								emoteSet {
-									manage
-									manageAny
-								}
-								ticket {
-									create
-								}
-							}
-							billing(productId: $productId) {
-								subscriptionInfo {
-									activePeriod {
-										providerId {
-											provider
-										}
-									}
-								}
-							}
 						}
 					}
 				}
 			}
 		`),
-		{ userId, platform, platformId, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
+		{ userId, platform, platformId },
 	);
 
 	if (!res.data) {

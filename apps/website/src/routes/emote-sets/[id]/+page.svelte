@@ -19,7 +19,7 @@
 	import { Lightning, LightningSlash, MagnifyingGlass, NotePencil } from "phosphor-svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { untrack } from "svelte";
-	import { user } from "$/lib/auth";
+	import { refreshUser, user } from "$/lib/auth";
 	import { setActiveSet } from "$/lib/userMutations";
 	import Spinner from "$/components/spinner.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
@@ -219,11 +219,9 @@
 
 		setActiveLoading = true;
 
-		const newUser = await setActiveSet($user.id, id);
+		await setActiveSet($user.id, id);
 
-		if (newUser) {
-			$user = newUser;
-		}
+		refreshUser();
 
 		setActiveLoading = false;
 	}

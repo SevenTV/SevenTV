@@ -10,7 +10,7 @@
 	import { MagnifyingGlass } from "phosphor-svelte";
 	import Spinner from "../spinner.svelte";
 	import { setActiveSet } from "$/lib/userMutations";
-	import { user } from "$/lib/auth";
+	import { refreshUser, user } from "$/lib/auth";
 
 	let {
 		mode = $bindable("hidden"),
@@ -89,13 +89,8 @@
 	});
 
 	function setUserActiveSet(userId: string, setId: string) {
-		const promise = setActiveSet(userId, setId);
-		promise.then((userData) => {
-			if (userData?.id === $user?.id) {
-				$user = userData;
-			}
-		});
-		userData = promise;
+		userData = setActiveSet(userId, setId);
+		userData.then(() => refreshUser());
 	}
 </script>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Error from "$/components/error.svelte";
-import { page } from "$app/stores";
+	import { page } from "$app/stores";
 
 	function defaultDetails(status: number): string {
 		if (status === 401) {

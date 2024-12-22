@@ -8,7 +8,7 @@
 	import type { Snippet } from "svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import { setMainConnection } from "$/lib/userMutations";
-	import { user } from "$/lib/auth";
+	import { refreshUser, user } from "$/lib/auth";
 	import { platformToValue, valueToPlatform } from "$/lib/utils";
 
 	let { userData = $bindable() }: { userData: Promise<User> } = $props();
@@ -52,11 +52,10 @@
 			const { platform, platformId } = valueToPlatform(mainConnection);
 
 			const promise = setMainConnection($user!.id, platform, platformId);
-			promise.then((data) => {
-				$user = data;
-			});
-
 			userData = promise;
+			promise.then(() => {
+				refreshUser();
+			});
 		}
 	});
 </script>

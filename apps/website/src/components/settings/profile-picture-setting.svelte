@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { user } from "$/lib/auth";
+	import { refreshUser, user } from "$/lib/auth";
 	import { Trash } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import ResponsiveImage from "../responsive-image.svelte";
@@ -48,11 +48,9 @@
 		}
 
 		removeProfilePictureLoading = true;
-		const res = await removeProfilePicture($user.id);
+		await removeProfilePicture($user.id);
 
-		if (res) {
-			$user = res;
-		}
+		refreshUser();
 
 		removeProfilePictureLoading = false;
 	}

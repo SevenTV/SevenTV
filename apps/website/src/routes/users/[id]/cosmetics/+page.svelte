@@ -2,7 +2,7 @@
 	import { graphql } from "$/gql";
 	import { gqlClient } from "$/lib/gql";
 	import { t } from "svelte-i18n";
-	import { user } from "$/lib/auth";
+	import { refreshUser, user } from "$/lib/auth";
 	import PaintComponent from "$/components/paint.svelte";
 	import BadgeComponent from "$/components/badge.svelte";
 	import Spinner from "$/components/spinner.svelte";
@@ -279,12 +279,8 @@
 			const promise = setActiveBadge(data.id, activeBadgeValue);
 			data.streamed.userRequest.value = promise;
 			promise
-				.then((newUser) => {
-					if (newUser) {
-						if ($user?.id === newUser.id) {
-							$user = newUser;
-						}
-					}
+				.then(() => {
+					refreshUser();
 				})
 				.finally(() => {
 					badgeLoading = false;
@@ -307,12 +303,8 @@
 			const promise = setActivePaint(data.id, activePaintValue);
 			data.streamed.userRequest.value = promise;
 			promise
-				.then((newUser) => {
-					if (newUser) {
-						if ($user?.id === newUser.id) {
-							$user = newUser;
-						}
-					}
+				.then(() => {
+					refreshUser();
 				})
 				.finally(() => {
 					paintLoading = false;

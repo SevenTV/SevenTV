@@ -10,7 +10,7 @@
 	import Button from "../input/button.svelte";
 	import Spinner from "../spinner.svelte";
 	import { t } from "svelte-i18n";
-	import { user } from "$/lib/auth";
+	import { refreshUser, user } from "$/lib/auth";
 
 	let { userData = $bindable() }: { userData: Promise<User> } = $props();
 
@@ -54,17 +54,14 @@
 	async function removeUserConnection(platform: Platform, platformId: string) {
 		removeLoading = platformToValue(platform, platformId);
 
-		const promise = removeConnection($user!.id, platform, platformId);
+		userData = removeConnection($user!.id, platform, platformId).then((data) =>
+			data ? data : userData,
+		);
 
-		userData = promise.then((data) => (data ? data : userData));
-
-		const res = await promise;
-
-		if (res) {
-			$user = res;
-		}
-
+		await userData;
 		removeLoading = undefined;
+
+		refreshUser();
 	}
 </script>
 

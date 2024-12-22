@@ -51,12 +51,18 @@
 			),
 	);
 
+	let error = $state<string>();
+
 	$effect(() => {
-		data.streamed.userRequest.value.then((user) => {
-			if (user && isMe && user.editors.length === 0) {
-				editorsExpanded = true;
-			}
-		});
+		data.streamed.userRequest.value
+			.then((user) => {
+				if (user && isMe && user.editors.length === 0) {
+					editorsExpanded = true;
+				}
+			})
+			.catch((e) => {
+				error = e;
+			});
 	});
 </script>
 
@@ -293,13 +299,11 @@
 	</div>
 {/snippet}
 
-{#await data.streamed.userRequest.value}
+{#if error}
+	<Error title="Failed to load user" details={error} />
+{:else}
 	{@render layout()}
-{:then user}
-	{@render layout()}
-{:catch error}
-	<Error title={error} details="Failed to load user" />
-{/await}
+{/if}
 
 <style lang="scss">
 	.side-bar {
