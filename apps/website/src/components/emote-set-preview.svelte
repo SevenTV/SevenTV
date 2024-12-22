@@ -132,10 +132,10 @@
 			width: 100%;
 			height: 100%;
 
-			background-color: var(--bg-light);
+			background-color: var(--bg-dark);
 
 			&::-webkit-progress-bar {
-				background-color: var(--bg-light);
+				background-color: var(--bg-dark);
 			}
 
 			&::-moz-progress-bar {
