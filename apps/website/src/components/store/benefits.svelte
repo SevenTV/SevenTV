@@ -71,8 +71,6 @@
 		flex-direction: column;
 		text-align: center;
 
-		cursor: pointer;
-
 		transition: background-color 0.2s;
 
 		&:hover,

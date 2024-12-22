@@ -1026,7 +1026,7 @@ type UserEditorMutation {
 
 type UserEditorOperation {
 	delete: Boolean!
-	updatePermissions: UserEditor!
+	updatePermissions(permissions: UserEditorPermissionsInput!): UserEditor!
 	updateState(state: UserEditorUpdateState!): UserEditor!
 }
 

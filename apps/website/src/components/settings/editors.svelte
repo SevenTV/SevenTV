@@ -1,14 +1,13 @@
 <script lang="ts">
 	import TextInput from "$/components/input/text-input.svelte";
-	import TabLink from "$/components/tab-link.svelte";
 	import { Check, MagnifyingGlass, Prohibit, Trash, UserCirclePlus } from "phosphor-svelte";
 	import HideOn from "../hide-on.svelte";
 	import { t } from "svelte-i18n";
-	import NumberBadge from "../number-badge.svelte";
 	import {
 		UserEditorState,
 		UserEditorUpdateState,
 		type UserEditor,
+		type UserEditorPermissions,
 		type UserEditorPermissionsInput,
 		type UserSearchResult,
 	} from "$/gql/graphql";
@@ -18,7 +17,7 @@
 	import moment from "moment";
 	import UserProfilePicture from "../user-profile-picture.svelte";
 	import UserName from "../user-name.svelte";
-	import { pendingEditorFor } from "$/lib/auth";
+	import { pendingEditorFor, user } from "$/lib/auth";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import Spinner from "../spinner.svelte";
@@ -258,15 +257,24 @@
 							}
 							state
 							permissions {
+								superAdmin
 								emoteSet {
+									admin
+									create
 									manage
 								}
 								emote {
+									admin
+									create
 									manage
+									transfer
 								}
 								user {
-									manageProfile
+									admin
+									manageBilling
 									manageEditors
+									managePersonalEmoteSet
+									manageProfile
 								}
 							}
 							updatedAt
@@ -285,8 +293,13 @@
 	}
 
 	let adding = $state<{ userId: string; editorId: string }>();
+	let editing = $state<{
+		userId: string;
+		editorId: string;
+		permissions: UserEditorPermissionsInput;
+	}>();
 
-	async function channelClick(e: MouseEvent, editorId: string) {
+	function channelClick(e: MouseEvent, editorId: string) {
 		e.preventDefault();
 
 		adding = {
@@ -295,9 +308,81 @@
 		};
 	}
 
+	function startEditing(userId: string, editorId: string, initPerms: UserEditorPermissionsInput) {
+		editing = {
+			userId,
+			editorId,
+			permissions: initPerms,
+		};
+	}
+
 	async function submitAdd(perms: UserEditorPermissionsInput) {
 		if (adding) {
 			await addEditor(adding.userId, adding.editorId, perms);
+		}
+	}
+
+	async function submitEdit(perms: UserEditorPermissionsInput) {
+		if (editing) {
+			await updatePermissions(editing.userId, editing.editorId, perms);
+		}
+	}
+
+	async function updatePermissions(
+		userId: string,
+		editorId: string,
+		permissions: UserEditorPermissionsInput,
+	) {
+		const res = await gqlClient().mutation(
+			graphql(`
+				mutation UpdateEditorPermissions(
+					$userId: Id!
+					$editorId: Id!
+					$permissions: UserEditorPermissionsInput!
+				) {
+					userEditors {
+						editor(userId: $userId, editorId: $editorId) {
+							updatePermissions(permissions: $permissions) {
+								userId
+								editorId
+								permissions {
+									superAdmin
+									emoteSet {
+										admin
+										create
+										manage
+									}
+									emote {
+										admin
+										create
+										manage
+										transfer
+									}
+									user {
+										admin
+										manageBilling
+										manageEditors
+										managePersonalEmoteSet
+										manageProfile
+									}
+								}
+							}
+						}
+					}
+				}
+			`),
+			{ userId, editorId, permissions },
+		);
+
+		if (res.data?.userEditors.editor.updatePermissions) {
+			editors = editors.map((editor) => {
+				if (editor.userId === userId && editor.editorId === editorId) {
+					editor.permissions = res.data!.userEditors.editor.updatePermissions
+						.permissions as UserEditorPermissions;
+				}
+
+				return editor;
+			});
 		}
 	}
 
@@ -386,19 +471,21 @@
 
 		return res;
 	}
+
+	let meId = $derived($user?.id);
 </script>
 
-{#if adding}
-	<EditorPermissionsDialog
-		bind:mode={() => (adding ? "shown" : "hidden"),
-		(mode) => {
-			if (mode === "hidden") {
-				adding = undefined;
-			}
-		}}
-		submit={submitAdd}
-	/>
-{/if}
+<EditorPermissionsDialog
+	bind:mode={() => (adding || editing ? "shown" : "hidden"),
+	(mode) => {
+		if (mode === "hidden") {
+			adding = undefined;
+			editing = undefined;
+		}
+	}}
+	permissions={editing?.permissions}
+	submit={adding ? submitAdd : submitEdit}
+/>
 <nav class="nav-bar">
 	{@render children?.()}
 	{#if tab === "editors"}
@@ -462,6 +549,7 @@
 			{/if}
 			{#each editors as editor}
 				{@const user = tab === "editors" ? editor.editor : editor.user}
+				{@const canEdit = tab === "editors" && meId !== editor.editorId}
 				{#if user}
 					<tr class="data-row">
 						<td>
@@ -474,7 +562,12 @@
 							<Date date={moment(editor.updatedAt)} />
 						</td>
 						<td>
-							<Flags flags={editorPermissionsToFlags(editor.permissions)} />
+							<Flags
+								flags={editorPermissionsToFlags(editor.permissions)}
+								edit={canEdit
+									? () => startEditing(userId, editor.editorId, editor.permissions)
+									: undefined}
+							/>
 						</td>
 						<td class="shrink">
 							<div class="buttons">

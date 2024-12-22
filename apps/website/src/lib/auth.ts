@@ -16,6 +16,10 @@ export const sessionToken = writable<string | null | undefined>(
 );
 export const user = writable<User | null | undefined>(undefined);
 
+export function refreshUser() {
+	fetchMe().then((data) => user.set(data));
+}
+
 sessionToken.subscribe(async (value) => {
 	if (!value) {
 		if (value === null) {
@@ -24,7 +28,7 @@ sessionToken.subscribe(async (value) => {
 		return;
 	}
 
-	fetchMe().then((data) => user.set(data));
+	refreshUser();
 });
 
 // Save session token to localstorage when changed

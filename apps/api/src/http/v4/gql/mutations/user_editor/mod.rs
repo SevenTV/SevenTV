@@ -66,7 +66,7 @@ impl UserEditorMutation {
 			));
 		}
 
-		let permissions = permissions.into();
+		let permissions: UserEditorPermissions = permissions.into();
 
 		if authed_user.id != user_id && !authed_user.has(UserPermission::ManageAny) {
 			let editor = global
@@ -84,11 +84,17 @@ impl UserEditorMutation {
 					)
 				})?;
 
-			// TODO: Check permissions
 			if editor.state != UserEditorState::Accepted || !editor.permissions.has(EditorUserPermission::ManageEditors) {
 				return Err(ApiError::forbidden(
 					ApiErrorCode::LackingPrivileges,
 					"you do not have permission to modify editors, you need the ManageEditors permission",
+				));
+			}
+
+			if permissions.is_superset_of(&editor.permissions) {
+				return Err(ApiError::bad_request(
+					ApiErrorCode::BadRequest,
+					"you cannot grant permissions that you do not have",
 				));
 			}
 		}

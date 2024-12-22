@@ -3,14 +3,14 @@
 
 	interface Props {
 		value: number;
-		min: number;
-		max: number;
+		min?: number;
+		max?: number;
 		step?: number;
 		disabled?: boolean;
 		children?: Snippet;
 	}
 
-	let { value = $bindable(), min, max, step = 1, disabled = false, children } = $props();
+	let { value = $bindable(), min, max, step = 1, disabled = false, children }: Props = $props();
 </script>
 
 <label>

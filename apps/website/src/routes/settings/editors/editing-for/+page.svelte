@@ -9,7 +9,6 @@
 	import TabLink from "$/components/tab-link.svelte";
 	import { t } from "svelte-i18n";
 	import { pendingEditorFor } from "$/lib/auth";
-	import type { PageData } from "./$types";
 
 	async function queryEditors(userId: string) {
 		const res = await gqlClient().query(

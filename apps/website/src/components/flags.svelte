@@ -17,7 +17,8 @@
 		personal: Star,
 		special: Sparkle,
 
-		// Permissions
+		// Editor Permissions
+		super_admin: Wrench,
 		profile: UserIcon,
 		editors: PencilSimple,
 		emote_sets: FolderSimple,
@@ -138,6 +139,8 @@
 	export function editorPermissionsToFlags(permissions: UserEditorPermissions) {
 		const flags = [];
 
+		if (permissions.superAdmin) flags.push("super_admin");
+
 		if (permissions.emoteSet.manage) flags.push("emote_sets");
 
 		if (permissions.emote.manage) flags.push("emotes");
@@ -181,6 +184,7 @@
 		Star,
 		Trash,
 		User as UserIcon,
+		Wrench,
 	} from "phosphor-svelte";
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
@@ -210,7 +214,8 @@
 		personal: $t("flags.personal"),
 		special: "Special",
 
-		// Permissions
+		// Editor Permissions
+		super_admin: "Super Admin",
 		profile: $t("common.profile"),
 		editors: $t("common.editors"),
 		emote_sets: $t("common.emote_sets", { values: { count: 2 } }),
