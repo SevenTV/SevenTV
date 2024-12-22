@@ -10,7 +10,7 @@
 	import { MagnifyingGlass } from "phosphor-svelte";
 	import Spinner from "../spinner.svelte";
 	import { setActiveSet } from "$/lib/userMutations";
-	import { refreshUser, user } from "$/lib/auth";
+	import { refreshUser } from "$/lib/auth";
 
 	let {
 		mode = $bindable("hidden"),

@@ -2,7 +2,7 @@ import { graphql } from "$/gql";
 import type { Platform, User } from "$/gql/graphql";
 import { get } from "svelte/store";
 import { gqlClient } from "./gql";
-import { sessionToken, user } from "./auth";
+import { sessionToken } from "./auth";
 import { PUBLIC_REST_API_V4 } from "$env/static/public";
 import { currentError, errorDialogMode } from "./error";
 

@@ -1,29 +1,19 @@
 <script lang="ts">
 	import type {
-		UserEvent,
-		Paint,
 		EmoteSet,
-		Badge,
 		EmoteSetEvent,
 		User,
 		Emote,
 	} from "$/gql/graphql";
 	import {
 		FolderSimple,
-		FolderSimplePlus,
 		IconContext,
 		Minus,
-		NotePencil,
-		PaintBrush,
 		PencilSimple,
-		Plugs,
-		PlugsConnected,
 		Plus,
-		Trash,
 	} from "phosphor-svelte";
 	import moment from "moment/min/moment-with-locales";
 	import FromNow from "$/components/from-now.svelte";
-	import UserName from "../user-name.svelte";
 	import ResponsiveImage from "../responsive-image.svelte";
 
 	let { event }: { event: EmoteSetEvent } = $props();

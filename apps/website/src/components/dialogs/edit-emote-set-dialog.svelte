@@ -109,7 +109,11 @@
 				<Spinner />
 			</span>
 		{:then max}
-			<Range min={data.emotes.totalCount} {max} bind:value={capacity}>
+			<Range
+				min={data.emotes.totalCount}
+				max={max ?? undefined}
+				bind:value={() => capacity ?? max ?? 0, (v) => (capacity = v)}
+			>
 				<span class="label">Capacity: {capacity}</span>
 			</Range>
 		{/await}
