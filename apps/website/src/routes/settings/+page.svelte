@@ -35,7 +35,9 @@
 		return res.data?.users.user as User;
 	}
 
-	let connections = $state<Promise<User> | undefined>($user ? queryConnections($user.id) : undefined);
+	let connections = $state<Promise<User> | undefined>(
+		$user ? queryConnections($user.id) : undefined,
+	);
 </script>
 
 <svelte:head>

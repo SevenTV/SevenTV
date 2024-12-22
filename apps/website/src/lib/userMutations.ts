@@ -703,11 +703,7 @@ export async function setActivePaint(userId: string, paintId?: string | null) {
 export async function setMainConnection(userId: string, platform: Platform, platformId: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation SetMainConnection(
-				$userId: Id!
-				$platform: Platform!
-				$platformId: String!
-			) {
+			mutation SetMainConnection($userId: Id!, $platform: Platform!, $platformId: String!) {
 				users {
 					user(id: $userId) {
 						mainConnection(platform: $platform, platformId: $platformId) {
@@ -787,11 +783,7 @@ export async function removeProfilePicture(userId: string) {
 export async function removeConnection(userId: string, platform: Platform, platformId: string) {
 	const res = await gqlClient().mutation(
 		graphql(`
-			mutation RemoveConnection(
-				$userId: Id!
-				$platform: Platform!
-				$platformId: String!
-			) {
+			mutation RemoveConnection($userId: Id!, $platform: Platform!, $platformId: String!) {
 				users {
 					user(id: $userId) {
 						removeConnection(platform: $platform, platformId: $platformId) {
