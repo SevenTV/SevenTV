@@ -307,14 +307,11 @@
 				<Spinner />
 			</div>
 		{:then events}
-			{#each events as event, index}
+			{#each events as event}
 				{#if event.__typename === "UserEvent"}
 					<UserEventComponent {event} />
 				{:else if event.__typename === "EmoteSetEvent"}
 					<EmoteSetEventComponent {event} />
-				{/if}
-				{#if index !== events.length - 1}
-					<hr />
 				{/if}
 			{/each}
 		{/await}
@@ -347,5 +344,7 @@
 	.events {
 		display: flex;
 		flex-direction: column;
+		gap: 1rem;
+		margin-top: 0.75rem;
 	}
 </style>
