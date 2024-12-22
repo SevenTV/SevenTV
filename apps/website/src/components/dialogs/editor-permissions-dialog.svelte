@@ -8,7 +8,7 @@
 
 	interface Props {
 		mode: DialogMode;
-		permissions?: UserEditorPermissionsInput;
+		initPermissions?: UserEditorPermissionsInput;
 		submit: (perms: UserEditorPermissionsInput) => Promise<void>;
 	}
 
@@ -25,7 +25,9 @@
 		},
 	};
 
-	let { mode = $bindable(), permissions = $bindable(DEFAULT_PERMS), submit }: Props = $props();
+	let { mode = $bindable(), initPermissions = DEFAULT_PERMS, submit }: Props = $props();
+
+	let permissions = $state(initPermissions);
 
 	let loading = $state(false);
 

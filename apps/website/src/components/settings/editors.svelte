@@ -328,6 +328,16 @@
 		}
 	}
 
+	function permissionsToInputPermissions(permissions: UserEditorPermissions) {
+		const permissionsCopy = { ...permissions };
+		delete permissionsCopy.__typename;
+		delete permissionsCopy.emote.__typename;
+		delete permissionsCopy.emoteSet.__typename;
+		delete permissionsCopy.user.__typename;
+
+		return permissionsCopy as UserEditorPermissionsInput;
+	}
+
 	async function updatePermissions(
 		userId: string,
 		editorId: string,
@@ -483,7 +493,7 @@
 			editing = undefined;
 		}
 	}}
-	permissions={editing?.permissions}
+	initPermissions={editing ? permissionsToInputPermissions(editing.permissions) : undefined}
 	submit={adding ? submitAdd : submitEdit}
 />
 <nav class="nav-bar">
