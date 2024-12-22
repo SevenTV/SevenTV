@@ -4,9 +4,10 @@ use async_graphql::Context;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
-use shared::database::user::editor::{EditorUserPermission, UserEditorId, UserEditorState};
+use shared::database::user::editor::{EditorUserPermission, UserEditorId, UserEditorPermissions, UserEditorState};
 use shared::event::{InternalEvent, InternalEventData, InternalEventUserEditorData};
 
+use super::UserEditorPermissionsInput;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -222,7 +223,111 @@ impl UserEditorOperation {
 	}
 
 	#[tracing::instrument(skip_all, name = "UserEditorOperation::update_permissions")]
-	async fn update_permissions(&self, _ctx: &Context<'_>) -> Result<UserEditor, ApiError> {
-		todo!()
+	async fn update_permissions(
+		&self,
+		ctx: &Context<'_>,
+		permissions: UserEditorPermissionsInput,
+	) -> Result<UserEditor, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id == self.user_editor.id.editor_id {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you do not have permission to update your own permissions",
+			));
+		}
+
+		if self.user_editor.state != UserEditorState::Accepted {
+			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "this editor is not accepted"));
+		}
+
+		let permissions: UserEditorPermissions = permissions.into();
+
+		if authed_user.id != self.user_editor.id.user_id && !authed_user.has(UserPermission::ManageAny) {
+			let editor = global
+				.user_editor_by_id_loader
+				.load(UserEditorId {
+					editor_id: authed_user.id,
+					user_id: self.user_editor.id.user_id,
+				})
+				.await
+				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editor"))?
+				.ok_or_else(|| {
+					ApiError::forbidden(
+						ApiErrorCode::LackingPrivileges,
+						"you do not have permission to modify editors",
+					)
+				})?;
+
+			if editor.state != UserEditorState::Accepted || !editor.permissions.has(EditorUserPermission::ManageEditors) {
+				return Err(ApiError::forbidden(
+					ApiErrorCode::LackingPrivileges,
+					"you do not have permission to modify editors, you need the ManageEditors permission",
+				));
+			}
+
+			if permissions.is_superset_of(&editor.permissions) {
+				return Err(ApiError::bad_request(
+					ApiErrorCode::BadRequest,
+					"you cannot grant permissions that you do not have",
+				));
+			}
+		}
+
+		let res = transaction_with_mutex(
+			global,
+			Some(GeneralMutexKey::User(self.user_editor.id.user_id).into()),
+			|mut tx| async move {
+				let editor = tx
+					.find_one_and_update(
+						filter::filter! {
+							shared::database::user::editor::UserEditor {
+								#[query(serde, rename = "_id")]
+								id: self.user_editor.id,
+							}
+						},
+						update::update! {
+							#[query(set)]
+							shared::database::user::editor::UserEditor {
+								#[query(serde)]
+								permissions,
+								updated_at: chrono::Utc::now(),
+								search_updated_at: &None,
+							},
+						},
+						FindOneAndUpdateOptions::builder()
+							.return_document(ReturnDocument::After)
+							.build(),
+					)
+					.await?
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::LoadError,
+							"failed to update editor",
+						))
+					})?;
+
+				Ok(editor)
+			},
+		)
+		.await;
+
+		match res {
+			Ok(editor) => Ok(editor.into()),
+			Err(TransactionError::Custom(e)) => Err(e),
+			Err(e) => {
+				tracing::error!(error = %e, "transaction failed");
+				Err(ApiError::internal_server_error(
+					ApiErrorCode::TransactionError,
+					"transaction failed",
+				))
+			}
+		}
 	}
 }

@@ -101,15 +101,24 @@
 								}
 								state
 								permissions {
+									superAdmin
 									emoteSet {
+										admin
+										create
 										manage
 									}
 									emote {
+										admin
+										create
 										manage
+										transfer
 									}
 									user {
-										manageProfile
+										admin
+										manageBilling
 										manageEditors
+										managePersonalEmoteSet
+										manageProfile
 									}
 								}
 								updatedAt

@@ -183,26 +183,30 @@ impl UserEditorPermissions {
 		}
 	}
 
+	pub fn is_super_admin(&self) -> bool {
+		self.user.contains(EditorUserPermission::SuperAdmin)
+	}
+
 	pub fn has_emote_set(&self, permission: EditorEmoteSetPermission) -> bool {
 		self.emote_set.contains(permission)
 			|| self.emote_set.contains(EditorEmoteSetPermission::Admin)
-			|| self.user.contains(EditorUserPermission::SuperAdmin)
+			|| self.is_super_admin()
 	}
 
 	pub fn has_emote(&self, permission: EditorEmotePermission) -> bool {
-		self.emote.contains(permission)
-			|| self.emote.contains(EditorEmotePermission::Admin)
-			|| self.user.contains(EditorUserPermission::SuperAdmin)
+		self.emote.contains(permission) || self.emote.contains(EditorEmotePermission::Admin) || self.is_super_admin()
 	}
 
 	pub fn has_user(&self, permission: EditorUserPermission) -> bool {
 		if permission.contains(EditorUserPermission::SuperAdmin) {
-			return self.user.contains(EditorUserPermission::SuperAdmin);
+			return self.is_super_admin();
 		}
 
-		self.user.contains(permission)
-			|| self.user.contains(EditorUserPermission::Admin)
-			|| self.user.contains(EditorUserPermission::SuperAdmin)
+		self.user.contains(permission) || self.user.contains(EditorUserPermission::Admin) || self.is_super_admin()
+	}
+
+	pub fn is_superset_of(&self, other: &Self) -> bool {
+		self.is_super_admin() || { self.has(other.user) && self.has(other.emote_set) && self.has(other.emote) }
 	}
 }
 
