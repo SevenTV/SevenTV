@@ -224,6 +224,14 @@
 					{#if results.emotes.items}
 						<span class="label">Emotes</span>
 					{/if}
+					{#if query.length !== 0}
+						<Button href="/emotes?q={query}" class="item">
+							{#snippet icon()}
+								<MagnifyingGlass />
+								{query}
+							{/snippet}
+						</Button>
+					{/if}
 					{#each results.emotes.items as result}
 						<Button href="/emotes/{result.id}" class="item">
 							{#snippet icon()}
