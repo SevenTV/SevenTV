@@ -403,10 +403,12 @@
 						{/if}
 					</h1>
 					<div class="buttons">
-						<Select
-							bind:selected={paintFilter}
-							options={[{ label: "None", value: "" }, ...inventory.paintFilters]}
-						/>
+						{#if inventory.paintFilters.length > 0}
+							<Select
+								bind:selected={paintFilter}
+								options={[{ label: "None", value: "" }, ...inventory.paintFilters]}
+							/>
+						{/if}
 						<HideOn mobile>
 							<TextInput placeholder="Search" bind:value={paintQuery}>
 								{#snippet icon()}
