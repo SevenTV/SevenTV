@@ -1,17 +1,6 @@
 <script lang="ts">
-	import type {
-		EmoteSet,
-		EmoteSetEvent,
-		User,
-		Emote,
-	} from "$/gql/graphql";
-	import {
-		FolderSimple,
-		IconContext,
-		Minus,
-		PencilSimple,
-		Plus,
-	} from "phosphor-svelte";
+	import type { EmoteSet, EmoteSetEvent, User, Emote } from "$/gql/graphql";
+	import { FolderSimple, IconContext, Minus, PencilSimple, Plus } from "phosphor-svelte";
 	import moment from "moment/min/moment-with-locales";
 	import FromNow from "$/components/from-now.svelte";
 	import ResponsiveImage from "../responsive-image.svelte";
