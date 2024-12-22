@@ -1,16 +1,14 @@
 <script lang="ts">
 	import { User as UserIcon } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
-	import TextInput from "../input/text-input.svelte";
 	import { type DialogMode } from "./dialog.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
 	import { t } from "svelte-i18n";
 	import type { Emote, User } from "$/gql/graphql";
 	import Spinner from "../spinner.svelte";
 	import ChannelPreview from "../channel-preview.svelte";
-	import { gqlClient } from "$/lib/gql";
-	import { graphql } from "$/gql";
 	import { updateOwner } from "$/lib/emoteMutations";
+	import UserSearch from "../user-search.svelte";
 
 	interface Props {
 		mode: DialogMode;
@@ -20,129 +18,6 @@
 	let { mode = $bindable("hidden"), data = $bindable() }: Props = $props();
 
 	let recipient = $state<User>();
-	let query = $state("");
-
-	let timeout: NodeJS.Timeout | number | undefined; // not reactive
-
-	async function search(query: string): Promise<User[]> {
-		if (!query) {
-			return [];
-		}
-
-		// Small timeout to prevent spamming requests when user is typing
-
-		return new Promise((resolve, reject) => {
-			if (timeout) {
-				clearTimeout(timeout);
-			}
-
-			timeout = setTimeout(async () => {
-				const res = await gqlClient()
-					.query(
-						graphql(`
-							query SearchUser($query: String!) {
-								users {
-									search(query: $query, page: 1, perPage: 10) {
-										items {
-											id
-											mainConnection {
-												platformDisplayName
-												platformAvatarUrl
-											}
-											roleIds
-											style {
-												activeProfilePicture {
-													images {
-														url
-														mime
-														size
-														width
-														height
-														scale
-														frameCount
-													}
-												}
-												activePaint {
-													id
-													name
-													data {
-														layers {
-															id
-															ty {
-																__typename
-																... on PaintLayerTypeSingleColor {
-																	color {
-																		hex
-																	}
-																}
-																... on PaintLayerTypeLinearGradient {
-																	angle
-																	repeating
-																	stops {
-																		at
-																		color {
-																			hex
-																		}
-																	}
-																}
-																... on PaintLayerTypeRadialGradient {
-																	repeating
-																	stops {
-																		at
-																		color {
-																			hex
-																		}
-																	}
-																	shape
-																}
-																... on PaintLayerTypeImage {
-																	images {
-																		url
-																		mime
-																		size
-																		scale
-																		width
-																		height
-																		frameCount
-																	}
-																}
-															}
-															opacity
-														}
-														shadows {
-															color {
-																hex
-															}
-															offsetX
-															offsetY
-															blur
-														}
-													}
-												}
-											}
-											highestRoleColor {
-												hex
-											}
-										}
-									}
-								}
-							}
-						`),
-						{ query },
-					)
-					.toPromise();
-
-				if (res.error || !res.data) {
-					reject();
-					return;
-				}
-
-				resolve(res.data.users.search.items as User[]);
-			}, 200);
-		});
-	}
-
-	let results = $derived(search(query));
 
 	let loading = $state(false);
 
@@ -184,36 +59,18 @@
 			}}
 		/>
 	{:else}
-		<TextInput
-			type="text"
+		<UserSearch
 			placeholder={$t("labels.search_users", { values: { count: 1 } })}
-			bind:value={query}
+			onResultClick={(e, user) => {
+				e.preventDefault();
+				recipient = user;
+			}}
 		>
 			{#snippet icon()}
-				{#await results}
-					<Spinner />
-				{:then _}
-					<UserIcon />
-				{/await}
+				<UserIcon />
 			{/snippet}
 			<span class="label">{$t("dialogs.transfer_emote.receipient")}</span>
-		</TextInput>
-		{#await results then results}
-			{#if results && results.length > 0}
-				<div class="results">
-					{#each results as result}
-						<ChannelPreview
-							user={result}
-							size={2}
-							onclick={(e) => {
-								e.preventDefault();
-								recipient = result;
-							}}
-						/>
-					{/each}
-				</div>
-			{/if}
-		{/await}
+		</UserSearch>
 	{/if}
 	{#snippet buttons()}
 		<Button onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>

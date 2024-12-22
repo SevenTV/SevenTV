@@ -366,7 +366,7 @@
 </script>
 
 <svelte:head>
-	<title>Entitlement Graph - {$t("pages.admin.page_title_suffix")}</title>
+	<title>Entitlement Graph - {$t("page_titles.admin_suffix")}</title>
 </svelte:head>
 
 {#if $user?.permissions.user.manageAny}

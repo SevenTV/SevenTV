@@ -10,7 +10,6 @@
 	import Spinner from "$/components/spinner.svelte";
 	import type { User } from "$/gql/graphql";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
-	import { t } from "svelte-i18n";
 
 	let { data }: { data: PageData } = $props();
 
@@ -134,10 +133,6 @@
 
 	let user = $derived(queryUser(data.id));
 </script>
-
-<svelte:head>
-	<title>Users - {$t("pages.admin.page_title_suffix")}</title>
-</svelte:head>
 
 <div class="layout">
 	{#await user}
