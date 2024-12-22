@@ -7,8 +7,11 @@
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { emotesLayout } from "$/lib/layout";
-	import ActiveEmoteSetButton from "$/components/users/active-emote-set-button.svelte";
 	import { t } from "svelte-i18n";
+	import Button from "$/components/input/button.svelte";
+	import { uploadDialogMode } from "$/lib/layout";
+	import { PlusSquare } from "phosphor-svelte";
+
 
 	let { data }: { data: PageData } = $props();
 
@@ -155,7 +158,12 @@
 </div>
 
 <div class="buttons">
-	<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} />
+	<Button secondary onclick={() => ($uploadDialogMode = "shown")}>
+		{#snippet icon()}
+			<PlusSquare />
+		{/snippet}
+		{$t("dialogs.upload.upload")}
+	</Button>
 	<div class="layout-buttons">
 		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
