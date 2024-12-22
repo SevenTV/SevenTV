@@ -82,7 +82,7 @@
 
 		padding: 1rem;
 		border: 1px solid transparent;
-		border-radius: 0.25rem;
+		border-radius: 0.75rem;
 		cursor: pointer;
 
 		border-color: var(--highlight);
