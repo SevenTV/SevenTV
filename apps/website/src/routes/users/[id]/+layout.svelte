@@ -134,19 +134,23 @@
 					{/if}
 				</div>
 			{/if}
-			<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
-				{#snippet icon()}
-					<UserCircle />
-				{/snippet}
-				{$t("common.editors")}
-				{#snippet iconRight()}
-					{#if editorsExpanded}
-						<CaretDown style="margin-left: auto" />
-					{:else}
-						<CaretRight style="margin-left: auto" />
-					{/if}
-				{/snippet}
-			</Button>
+			{#await canManageEditors then manageEditors}
+				{#if manageEditors || user.editors.some((editor) => editor.editor && editor.state === UserEditorState.Accepted)}
+					<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
+						{#snippet icon()}
+							<UserCircle />
+						{/snippet}
+						{$t("common.editors")}
+						{#snippet iconRight()}
+							{#if editorsExpanded}
+								<CaretDown style="margin-left: auto" />
+							{:else}
+								<CaretRight style="margin-left: auto" />
+							{/if}
+						{/snippet}
+					</Button>
+				{/if}
+			{/await}
 			{#if editorsExpanded}
 				<div class="expanded">
 					{#each user.editors as editor}
