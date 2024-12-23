@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { UserEvent, Paint, EmoteSet, Badge } from "$/gql/graphql";
+	import type { UserEvent, Paint, EmoteSet, Badge, User } from "$/gql/graphql";
 	import {
 		FolderSimple,
 		IconContext,
@@ -44,6 +44,17 @@
 	{/if}
 {/snippet}
 
+{#snippet userLink(actor?: User | null, by: boolean = true)}
+	{#if actor && actor.mainConnection}
+		{#if by}
+			by
+		{/if}
+		<a href="/users/{actor.id}" class="user-link" style:color={actor.highestRoleColor?.hex}>
+			{actor.mainConnection.platformDisplayName}
+		</a>
+	{/if}
+{/snippet}
+
 <IconContext
 	values={{
 		style: "grid-area: icon; margin: 0 0.5rem;",
@@ -54,35 +65,43 @@
 	<div class="event">
 		{#if event.data.__typename === "EventUserDataCreate"}
 			<Plus />
-			<span class="text">User created</span>
+			<span class="text">User created {@render userLink(event.actor)}</span>
 		{:else if event.data.__typename === "EventUserDataChangeActivePaint"}
 			<PaintBrush />
 			<span class="text">
-				Changed active paint from {@render paint(event.data.oldPaint)}
-				to {@render paint(event.data.newPaint)}
+				Changed active paint from
+				{@render paint(event.data.oldPaint)}
+				to
+				{@render paint(event.data.newPaint)}
+				{@render userLink(event.actor)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataChangeActiveBadge"}
 			<PaintBrush />
 			<span class="text">
-				Changed active badge from {@render badge(event.data.oldBadge)} to {@render badge(
-					event.data.newBadge,
-				)}
+				Changed active badge from
+				{@render badge(event.data.oldBadge)}
+				to
+				{@render badge(event.data.newBadge)}
+				{@render userLink(event.actor)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataChangeActiveEmoteSet"}
 			<FolderSimple />
 			<span class="text">
-				Changed active emote set from {@render emoteSetLink(event.data.oldEmoteSet)}
-				to {@render emoteSetLink(event.data.newEmoteSet)}
+				Changed active emote set from
+				{@render emoteSetLink(event.data.oldEmoteSet)}
+				to
+				{@render emoteSetLink(event.data.newEmoteSet)}
+				{@render userLink(event.actor)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataAddConnection"}
 			<PlugsConnected />
-			<span class="text">Added {event.data.addedPlatform} connection</span>
+			<span class="text">Added {event.data.addedPlatform} connection {@render userLink(event.actor)}</span>
 		{:else if event.data.__typename === "EventUserDataRemoveConnection"}
 			<Plugs />
-			<span class="text">Removed {event.data.removedPlatform} connection</span>
+			<span class="text">Removed {event.data.removedPlatform} connection {@render userLink(event.actor)}</span>
 		{:else if event.data.__typename === "EventUserDataDelete"}
 			<Trash />
-			<span class="text">Deleted</span>
+			<span class="text">Deleted {@render userLink(event.actor)}</span>
 		{/if}
 		<span class="time">
 			<FromNow date={moment(event.createdAt)} />
