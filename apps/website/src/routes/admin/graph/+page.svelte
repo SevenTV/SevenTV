@@ -2,7 +2,6 @@
 	import { MultiGraph } from "graphology";
 	import Sigma from "sigma";
 	import ForceSupervisor from "graphology-layout-forceatlas2/worker";
-	import TextInput from "$/components/input/text-input.svelte";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import type { EntitlementNodeAny } from "$/gql/graphql";
@@ -17,36 +16,38 @@
 
 	let userId = $state<string>();
 
+	let unknownCounter = 0;
+
 	function nodeToString(node: EntitlementNodeAny) {
 		let key = node.__typename + ":";
 
 		switch (node.__typename) {
 			case "EntitlementNodeUser":
-				key += node.user?.id;
+				key += node.user?.id ?? "unknown" + unknownCounter++;
 				break;
 			case "EntitlementNodeRole":
-				key += node.role?.id;
+				key += node.role?.id ?? "unknown" + unknownCounter++;
 				break;
 			case "EntitlementNodeBadge":
-				key += node.badge?.id;
+				key += node.badge?.id ?? "unknown" + unknownCounter++;
 				break;
 			case "EntitlementNodePaint":
-				key += node.paint?.id;
+				key += node.paint?.id ?? "unknown" + unknownCounter++;
 				break;
 			case "EntitlementNodeEmoteSet":
-				key += node.emoteSet?.id;
+				key += node.emoteSet?.id ?? "unknown" + unknownCounter++;
 				break;
 			case "EntitlementNodeProduct":
 				key += node.productId;
 				break;
 			case "EntitlementNodeSubscriptionBenefit":
-				key += node.subscriptionBenefit?.id;
+				key += node.subscriptionBenefit?.id ?? "unknown" + unknownCounter++;
 				break;
 			case "EntitlementNodeSubscription":
 				key += node.subscriptionId.userId + ":" + node.subscriptionId.productId;
 				break;
 			case "EntitlementNodeSpecialEvent":
-				key += node.specialEvent?.id;
+				key += node.specialEvent?.id ?? "unknown" + unknownCounter++;
 				break;
 		}
 
@@ -381,6 +382,8 @@
 				<p>Loading...</p>
 			{:then userData}
 				<span>{userData.name}</span>
+			{:catch e}
+				<p>Error: {e}</p>
 			{/await}
 		{:else}
 			<UserSearch
