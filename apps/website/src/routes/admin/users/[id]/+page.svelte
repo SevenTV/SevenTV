@@ -12,6 +12,7 @@
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import { CaretLeft } from "phosphor-svelte";
 	import UserName from "$/components/user-name.svelte";
+	import { user } from "$/lib/auth";
 
 	let { data }: { data: PageData } = $props();
 
@@ -21,10 +22,10 @@
 
 	let uuid = $derived(Uuid.fromRawTrusted(parsedId.toRaw()).toCanonical());
 
-	async function queryUser(id: string) {
+	async function queryUser(id: string, showAllPeriods: boolean) {
 		const res = await gqlClient().query(
 			graphql(`
-				query AdminGetUser($id: Id!, $productId: Id!) {
+				query AdminGetUser($id: Id!, $productId: Id!, $showAllPeriods: Boolean!) {
 					users {
 						user(id: $id) {
 							id
@@ -122,7 +123,7 @@
 											}
 										}
 									}
-									periods {
+									periods @include(if: $showAllPeriods) {
 										id
 										providerId {
 											provider
@@ -223,13 +224,13 @@
 					}
 				}
 			`),
-			{ id, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID },
+			{ id, productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID, showAllPeriods },
 		);
 
 		return res.data?.users?.user as User | undefined;
 	}
 
-	let user = $derived(queryUser(data.id));
+	let userData = $derived(queryUser(data.id, !!$user?.permissions.user.manageBilling));
 </script>
 
 <div class="layout">
@@ -241,7 +242,7 @@
 			Back
 		</Button>
 	</div>
-	{#await user}
+	{#await userData}
 		<Spinner />
 	{:then user}
 		{#if user}
@@ -342,121 +343,133 @@
 						data={user.billing.subscriptionInfo}
 						style="background-color:var(--bg-light); border-radius: 0.5rem;"
 					/>
-					<h2>Subscription Periods ({user.billing.subscriptionInfo.periods.length})</h2>
-					<div class="periods">
-						{#each user.billing.subscriptionInfo.periods.toReversed() as period}
-							<div class="period">
-								<table>
-									<thead>
-										<tr>
-											<th>Key</th>
-											<th>Value</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr>
-											<td>ID</td>
-											<td>
-												<code>{period.id}</code>
-											</td>
-										</tr>
-										{#if period.providerId}
+					{#if user.billing.subscriptionInfo.periods}
+						<h2>Subscription Periods ({user.billing.subscriptionInfo.periods.length})</h2>
+						<div class="periods">
+							{#each user.billing.subscriptionInfo.periods.toReversed() as period}
+								<div class="period">
+									<table>
+										<thead>
 											<tr>
-												<td>Provider ID</td>
+												<th>Key</th>
+												<th>Value</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td>ID (ULID)</td>
 												<td>
-													{period.providerId.provider} - <code>{period.providerId.id}</code>
-													{#if period.providerId.provider === SubscriptionProvider.Stripe}
-														<Button
-															href="https://dashboard.stripe.com/subscriptions/{period.providerId
-																.id}"
-															target="_blank"
-															secondary
-															style="display:inline-block">View</Button
-														>
-													{/if}
+													<code>{Ulid.fromCanonicalTrusted(period.id)}</code>
 												</td>
 											</tr>
-										{/if}
-										<tr>
-											<td>Product ID</td>
-											<td>
-												<code>{period.productId}</code>
-												<Button
-													href="https://dashboard.stripe.com/prices/{period.productId}"
-													target="_blank"
-													secondary
-													style="display:inline-block">View</Button
-												>
-											</td>
-										</tr>
-										<tr>
-											<td>Start</td>
-											<td>
-												<code>{moment(period.start).toISOString()}</code>
-												<br />
-												{moment(period.start).fromNow()}
-											</td>
-										</tr>
-										<tr>
-											<td>End</td>
-											<td>
-												<code>{moment(period.end).toISOString()}</code>
-												<br />
-												{moment(period.end).fromNow()}
-											</td>
-										</tr>
-										<tr>
-											<td>Is Trial?</td>
-											<td>
-												{period.isTrial ? "Yes" : "No"}
-											</td>
-										</tr>
-										<tr>
-											<td>Auto Renew?</td>
-											<td>
-												{period.autoRenew ? "Yes" : "No"}
-											</td>
-										</tr>
-										{#if period.giftedBy}
 											<tr>
-												<td>Gifted By</td>
+												<td>ID (UUID)</td>
 												<td>
-													<a href="/users/{period.giftedBy.id}">
-														<UserName user={period.giftedBy} />
-													</a>
+													<code
+														>{Uuid.fromRawTrusted(
+															Ulid.fromCanonicalTrusted(period.id).toRaw(),
+														).toCanonical()}</code
+													>
 												</td>
 											</tr>
-										{/if}
-										<tr>
-											<td>Created By</td>
-											<td>
-												{#if period.createdBy.__typename === "SubscriptionPeriodCreatedByRedeemCode"}
-													Redeem Code - <code>{period.createdBy.redeemCodeId}</code>
-												{:else if period.createdBy.__typename === "SubscriptionPeriodCreatedByInvoice"}
-													Invoice - <code>{period.createdBy.invoiceId}</code>
+											{#if period.providerId}
+												<tr>
+													<td>Provider ID</td>
+													<td>
+														{period.providerId.provider} - <code>{period.providerId.id}</code>
+														{#if period.providerId.provider === SubscriptionProvider.Stripe}
+															<Button
+																href="https://dashboard.stripe.com/subscriptions/{period.providerId
+																	.id}"
+																target="_blank"
+																secondary
+																style="display:inline-block">View</Button
+															>
+														{/if}
+													</td>
+												</tr>
+											{/if}
+											<tr>
+												<td>Product ID</td>
+												<td>
+													<code>{period.productId}</code>
 													<Button
-														href="https://dashboard.stripe.com/invoices/{period.createdBy
-															.invoiceId}"
+														href="https://dashboard.stripe.com/prices/{period.productId}"
 														target="_blank"
 														secondary
 														style="display:inline-block">View</Button
 													>
-												{:else if period.createdBy.__typename === "SubscriptionPeriodCreatedBySystem"}
-													System - {period.createdBy.reason}
-												{/if}
-											</td>
-										</tr>
-										<tr>
-											<td>Product Variant</td>
-											<td>
-												{period.subscriptionProductVariant.kind}
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-						{/each}
-					</div>
+												</td>
+											</tr>
+											<tr>
+												<td>Start</td>
+												<td>
+													<code>{moment(period.start).toISOString()}</code>
+													<br />
+													{moment(period.start).fromNow()}
+												</td>
+											</tr>
+											<tr>
+												<td>End</td>
+												<td>
+													<code>{moment(period.end).toISOString()}</code>
+													<br />
+													{moment(period.end).fromNow()}
+												</td>
+											</tr>
+											<tr>
+												<td>Is Trial?</td>
+												<td>
+													{period.isTrial ? "Yes" : "No"}
+												</td>
+											</tr>
+											<tr>
+												<td>Auto Renew?</td>
+												<td>
+													{period.autoRenew ? "Yes" : "No"}
+												</td>
+											</tr>
+											{#if period.giftedBy}
+												<tr>
+													<td>Gifted By</td>
+													<td>
+														<a href="/users/{period.giftedBy.id}">
+															<UserName user={period.giftedBy} />
+														</a>
+													</td>
+												</tr>
+											{/if}
+											<tr>
+												<td>Created By</td>
+												<td>
+													{#if period.createdBy.__typename === "SubscriptionPeriodCreatedByRedeemCode"}
+														Redeem Code - <code>{period.createdBy.redeemCodeId}</code>
+													{:else if period.createdBy.__typename === "SubscriptionPeriodCreatedByInvoice"}
+														Invoice - <code>{period.createdBy.invoiceId}</code>
+														<Button
+															href="https://dashboard.stripe.com/invoices/{period.createdBy
+																.invoiceId}"
+															target="_blank"
+															secondary
+															style="display:inline-block">View</Button
+														>
+													{:else if period.createdBy.__typename === "SubscriptionPeriodCreatedBySystem"}
+														System - {period.createdBy.reason}
+													{/if}
+												</td>
+											</tr>
+											<tr>
+												<td>Product Variant</td>
+												<td>
+													{period.subscriptionProductVariant.kind}
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							{/each}
+						</div>
+					{/if}
 				</section>
 				<!-- <section>
 					<h2>Actions</h2>
