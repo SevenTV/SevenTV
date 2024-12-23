@@ -42,6 +42,7 @@
 										state
 									}
 									end
+									autoRenew
 									giftedBy {
 										id
 										mainConnection {

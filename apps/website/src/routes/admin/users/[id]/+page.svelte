@@ -51,6 +51,7 @@
 										subscription {
 											state
 										}
+										autoRenew
 										end
 										giftedBy {
 											id

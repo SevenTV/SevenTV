@@ -46,12 +46,13 @@
 		{#if data.activePeriod}
 			<span class="key"
 				>{data.activePeriod.subscription.state === SubscriptionState.Active &&
+				data.activePeriod.autoRenew &&
 				!data.activePeriod.giftedBy
 					? "Next Billing"
 					: $t("sub_info.ends")}</span
 			>
 			<span class="value">
-				{#if data.activePeriod.subscription.state === SubscriptionState.Active && !data.activePeriod.giftedBy}
+				{#if data.activePeriod.subscription.state === SubscriptionState.Active && data.activePeriod.autoRenew && !data.activePeriod.giftedBy}
 					<CreditCard />
 				{:else}
 					<Hourglass />

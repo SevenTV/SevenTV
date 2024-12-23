@@ -277,16 +277,15 @@
 			};
 		});
 
-		const edges = res.data.users.user.rawEntitlements.edges
-			.map((edge) => {
-				const source = nodeToString(edge.from as EntitlementNodeAny);
-				const target = nodeToString(edge.to as EntitlementNodeAny);
+		const edges = res.data.users.user.rawEntitlements.edges.map((edge) => {
+			const source = nodeToString(edge.from as EntitlementNodeAny);
+			const target = nodeToString(edge.to as EntitlementNodeAny);
 
-				return {
-					source,
-					target,
-				};
-			});
+			return {
+				source,
+				target,
+			};
+		});
 
 		const graph = new MultiGraph();
 		graph.import({
