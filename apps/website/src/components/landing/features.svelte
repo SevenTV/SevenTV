@@ -7,6 +7,7 @@
 	import hourglass from "$assets/hourglass.webp?url";
 	import megaphone from "$assets/megaphone.webp?url";
 	import battery from "$assets/battery.webp?url";
+	import { user } from "$lib/auth";
 </script>
 
 <section class="features">
@@ -27,7 +28,7 @@
 			title="Emote Sets"
 			description="Group emotes in customizable sets that can be shared with other users or quickly swapped onto your channel."
 			link="Create an Emote Set"
-			href="/emote-sets"
+			href={$user ? `/users/${$user.id}/emote-sets` : "/login"}
 		/>
 		<Feature
 			image={hand}

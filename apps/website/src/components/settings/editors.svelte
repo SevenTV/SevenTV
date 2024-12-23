@@ -200,14 +200,28 @@
 		}
 	}
 
-	function permissionsToInputPermissions(permissions: UserEditorPermissions) {
-		const permissionsCopy = { ...permissions };
-		delete permissionsCopy.__typename;
-		delete permissionsCopy.emote.__typename;
-		delete permissionsCopy.emoteSet.__typename;
-		delete permissionsCopy.user.__typename;
-
-		return permissionsCopy as UserEditorPermissionsInput;
+	function permissionsToInputPermissions(permissions: UserEditorPermissions): UserEditorPermissionsInput {
+		return {
+			superAdmin: permissions.superAdmin,
+			emoteSet: {
+				admin: permissions.emoteSet.admin,
+				create: permissions.emoteSet.create,
+				manage: permissions.emoteSet.manage,
+			},
+			emote: {
+				admin: permissions.emote.admin,
+				create: permissions.emote.create,
+				manage: permissions.emote.manage,
+				transfer: permissions.emote.transfer,
+			},
+			user: {
+				admin: permissions.user.admin,
+				manageBilling: permissions.user.manageBilling,
+				manageEditors: permissions.user.manageEditors,
+				managePersonalEmoteSet: permissions.user.managePersonalEmoteSet,
+				manageProfile: permissions.user.manageProfile,
+			},
+		}
 	}
 
 	async function updatePermissions(
@@ -355,19 +369,23 @@
 	}
 
 	let meId = $derived($user?.id);
+
+	$inspect(editing);
 </script>
 
-<EditorPermissionsDialog
-	bind:mode={() => (adding || editing ? "shown" : "hidden"),
-	(mode) => {
-		if (mode === "hidden") {
-			adding = undefined;
-			editing = undefined;
-		}
-	}}
-	initPermissions={editing ? permissionsToInputPermissions(editing.permissions) : undefined}
-	submit={adding ? submitAdd : submitEdit}
-/>
+{#key editing}
+	<EditorPermissionsDialog
+		bind:mode={() => (adding || editing ? "shown" : "hidden"),
+		(mode) => {
+			if (mode === "hidden") {
+				adding = undefined;
+				editing = undefined;
+			}
+		}}
+		initPermissions={editing ? permissionsToInputPermissions(editing.permissions) : undefined}
+		submit={adding ? submitAdd : submitEdit}
+	/>
+{/key}
 <nav class="nav-bar">
 	{@render children?.()}
 	{#if tab === "editors"}
