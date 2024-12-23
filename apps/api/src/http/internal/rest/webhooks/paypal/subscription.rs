@@ -9,8 +9,6 @@ use crate::global::Global;
 use crate::http::error::ApiError;
 use crate::transactions::{TransactionResult, TransactionSession};
 
-/// Ends the current period right away.
-///
 /// Called for `BILLING.SUBSCRIPTION.CANCELLED` and
 /// `BILLING.SUBSCRIPTION.SUSPENDED`
 #[tracing::instrument(skip_all, name = "paypal::subscription::cancelled")]
@@ -38,7 +36,7 @@ pub async fn cancelled(
 			update::update! {
 				#[query(set)]
 				SubscriptionPeriod {
-					end: now,
+					auto_renew: false,
 					updated_at: now,
 					search_updated_at: &None,
 				}
