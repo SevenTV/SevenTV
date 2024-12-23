@@ -177,9 +177,9 @@ impl_bits!(EditorUserPermission);
 impl UserEditorPermissions {
 	pub fn has(&self, permission: impl Into<EditorPermission>) -> bool {
 		match permission.into() {
-			EditorPermission::User(permission) => self.user.contains(permission),
-			EditorPermission::EmoteSet(permission) => self.emote_set.contains(permission),
-			EditorPermission::Emote(permission) => self.emote.contains(permission),
+			EditorPermission::User(permission) => self.has_user(permission),
+			EditorPermission::EmoteSet(permission) => self.has_emote_set(permission),
+			EditorPermission::Emote(permission) => self.has_emote(permission),
 		}
 	}
 

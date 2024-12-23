@@ -261,24 +261,18 @@
 						</thead>
 						<tbody>
 							<tr>
-								<td>ID (ULID)</td>
+								<td>ID</td>
 								<td>
 									<code>{data.id}</code>
 									<Button
 										secondary
 										style="display:inline-block"
-										onclick={() => navigator.clipboard.writeText(data.id)}>Copy</Button
+										onclick={() => navigator.clipboard.writeText(data.id)}>Copy ULID</Button
 									>
-								</td>
-							</tr>
-							<tr>
-								<td>ID (UUID)</td>
-								<td>
-									<code>{uuid}</code>
 									<Button
 										secondary
 										style="display:inline-block"
-										onclick={() => navigator.clipboard.writeText(uuid)}>Copy</Button
+										onclick={() => navigator.clipboard.writeText(uuid)}>Copy UUID</Button
 									>
 								</td>
 							</tr>
@@ -347,6 +341,9 @@
 						<h2>Subscription Periods ({user.billing.subscriptionInfo.periods.length})</h2>
 						<div class="periods">
 							{#each user.billing.subscriptionInfo.periods.toReversed() as period}
+								{@const periodId = Ulid.fromCanonicalTrusted(period.id)}
+								{@const periodUuid = Uuid.fromRawTrusted(periodId.toRaw()).toCanonical()}
+								{@const periodTime = moment(periodId.time)}
 								<div class="period">
 									<table>
 										<thead>
@@ -357,19 +354,29 @@
 										</thead>
 										<tbody>
 											<tr>
-												<td>ID (ULID)</td>
+												<td>ID</td>
 												<td>
-													<code>{Ulid.fromCanonicalTrusted(period.id)}</code>
+													<code>{period.id}</code>
+													<Button
+														secondary
+														style="display:inline-block"
+														onclick={() => navigator.clipboard.writeText(period.id)}>Copy ULID</Button
+													>
+													<Button
+														secondary
+														style="display:inline-block"
+														onclick={() => navigator.clipboard.writeText(periodUuid)}>Copy UUID</Button
+													>
 												</td>
 											</tr>
 											<tr>
-												<td>ID (UUID)</td>
+												<td>ID (Timestamp)</td>
 												<td>
-													<code
-														>{Uuid.fromRawTrusted(
-															Ulid.fromCanonicalTrusted(period.id).toRaw(),
-														).toCanonical()}</code
-													>
+													<code>
+														{periodTime.toISOString()}
+													</code>
+													<br />
+													{periodTime.fromNow()}
 												</td>
 											</tr>
 											{#if period.providerId}
