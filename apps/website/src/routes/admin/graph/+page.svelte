@@ -16,38 +16,36 @@
 
 	let userId = $state<string>();
 
-	let unknownCounter = 0;
-
 	function nodeToString(node: EntitlementNodeAny) {
 		let key = node.__typename + ":";
 
 		switch (node.__typename) {
 			case "EntitlementNodeUser":
-				key += node.user?.id ?? "unknown" + unknownCounter++;
+				key += node.userId;
 				break;
 			case "EntitlementNodeRole":
-				key += node.role?.id ?? "unknown" + unknownCounter++;
+				key += node.roleId;
 				break;
 			case "EntitlementNodeBadge":
-				key += node.badge?.id ?? "unknown" + unknownCounter++;
+				key += node.badgeId;
 				break;
 			case "EntitlementNodePaint":
-				key += node.paint?.id ?? "unknown" + unknownCounter++;
+				key += node.paintId;
 				break;
 			case "EntitlementNodeEmoteSet":
-				key += node.emoteSet?.id ?? "unknown" + unknownCounter++;
+				key += node.emoteSetId;
 				break;
 			case "EntitlementNodeProduct":
 				key += node.productId;
 				break;
 			case "EntitlementNodeSubscriptionBenefit":
-				key += node.subscriptionBenefit?.id ?? "unknown" + unknownCounter++;
+				key += node.subscriptionBenefitId;
 				break;
 			case "EntitlementNodeSubscription":
 				key += node.subscriptionId.userId + ":" + node.subscriptionId.productId;
 				break;
 			case "EntitlementNodeSpecialEvent":
-				key += node.specialEvent?.id ?? "unknown" + unknownCounter++;
+				key += node.specialEventId;
 				break;
 		}
 
@@ -67,34 +65,34 @@
 								nodes {
 									__typename
 									... on EntitlementNodeUser {
+										userId
 										user {
-											id
 											mainConnection {
 												platformDisplayName
 											}
 										}
 									}
 									... on EntitlementNodeRole {
+										roleId
 										role {
-											id
 											name
 										}
 									}
 									... on EntitlementNodeBadge {
+										badgeId
 										badge {
-											id
 											name
 										}
 									}
 									... on EntitlementNodePaint {
+										paintId
 										paint {
-											id
 											name
 										}
 									}
 									... on EntitlementNodeEmoteSet {
+										emoteSetId
 										emoteSet {
-											id
 											name
 										}
 									}
@@ -102,8 +100,8 @@
 										productId
 									}
 									... on EntitlementNodeSubscriptionBenefit {
+										subscriptionBenefitId
 										subscriptionBenefit {
-											id
 											name
 										}
 									}
@@ -114,8 +112,8 @@
 										}
 									}
 									... on EntitlementNodeSpecialEvent {
+										specialEventId
 										specialEvent {
-											id
 											name
 										}
 									}
@@ -124,37 +122,25 @@
 									from {
 										__typename
 										... on EntitlementNodeUser {
-											user {
-												id
-											}
+											userId
 										}
 										... on EntitlementNodeRole {
-											role {
-												id
-											}
+											roleId
 										}
 										... on EntitlementNodeBadge {
-											badge {
-												id
-											}
+											badgeId
 										}
 										... on EntitlementNodePaint {
-											paint {
-												id
-											}
+											paintId
 										}
 										... on EntitlementNodeEmoteSet {
-											emoteSet {
-												id
-											}
+											emoteSetId
 										}
 										... on EntitlementNodeProduct {
 											productId
 										}
 										... on EntitlementNodeSubscriptionBenefit {
-											subscriptionBenefit {
-												id
-											}
+											subscriptionBenefitId
 										}
 										... on EntitlementNodeSubscription {
 											subscriptionId {
@@ -163,45 +149,31 @@
 											}
 										}
 										... on EntitlementNodeSpecialEvent {
-											specialEvent {
-												id
-											}
+											specialEventId
 										}
 									}
 									to {
 										__typename
 										... on EntitlementNodeUser {
-											user {
-												id
-											}
+											userId
 										}
 										... on EntitlementNodeRole {
-											role {
-												id
-											}
+											roleId
 										}
 										... on EntitlementNodeBadge {
-											badge {
-												id
-											}
+											badgeId
 										}
 										... on EntitlementNodePaint {
-											paint {
-												id
-											}
+											paintId
 										}
 										... on EntitlementNodeEmoteSet {
-											emoteSet {
-												id
-											}
+											emoteSetId
 										}
 										... on EntitlementNodeProduct {
 											productId
 										}
 										... on EntitlementNodeSubscriptionBenefit {
-											subscriptionBenefit {
-												id
-											}
+											subscriptionBenefitId
 										}
 										... on EntitlementNodeSubscription {
 											subscriptionId {
@@ -210,9 +182,7 @@
 											}
 										}
 										... on EntitlementNodeSpecialEvent {
-											specialEvent {
-												id
-											}
+											specialEventId
 										}
 									}
 								}
@@ -307,15 +277,16 @@
 			};
 		});
 
-		const edges = res.data.users.user.rawEntitlements.edges.map((edge) => {
-			const source = nodeToString(edge.from as EntitlementNodeAny);
-			const target = nodeToString(edge.to as EntitlementNodeAny);
+		const edges = res.data.users.user.rawEntitlements.edges
+			.map((edge) => {
+				const source = nodeToString(edge.from as EntitlementNodeAny);
+				const target = nodeToString(edge.to as EntitlementNodeAny);
 
-			return {
-				source,
-				target,
-			};
-		});
+				return {
+					source,
+					target,
+				};
+			});
 
 		const graph = new MultiGraph();
 		graph.import({
@@ -325,7 +296,7 @@
 
 		return {
 			name: res.data.users.user.mainConnection?.platformDisplayName,
-			graph
+			graph,
 		};
 	}
 
