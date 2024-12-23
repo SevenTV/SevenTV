@@ -95,10 +95,14 @@
 			</span>
 		{:else if event.data.__typename === "EventUserDataAddConnection"}
 			<PlugsConnected />
-			<span class="text">Added {event.data.addedPlatform} connection {@render userLink(event.actor)}</span>
+			<span class="text"
+				>Added {event.data.addedPlatform} connection {@render userLink(event.actor)}</span
+			>
 		{:else if event.data.__typename === "EventUserDataRemoveConnection"}
 			<Plugs />
-			<span class="text">Removed {event.data.removedPlatform} connection {@render userLink(event.actor)}</span>
+			<span class="text"
+				>Removed {event.data.removedPlatform} connection {@render userLink(event.actor)}</span
+			>
 		{:else if event.data.__typename === "EventUserDataDelete"}
 			<Trash />
 			<span class="text">Deleted {@render userLink(event.actor)}</span>
