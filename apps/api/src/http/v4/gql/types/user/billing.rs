@@ -6,10 +6,12 @@ use shared::database::entitlement::EntitlementEdgeKind;
 use shared::database::entitlement_edge::EntitlementEdgeGraphTraverse;
 use shared::database::graph::{Direction, GraphTraverse};
 use shared::database::product::{SubscriptionBenefitCondition, SubscriptionProductId};
+use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::user::UserId;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
+use crate::http::middleware::session::Session;
 use crate::http::v4::gql::types::{Badge, SubscriptionPeriod};
 use crate::sub_refresh_job;
 
@@ -75,10 +77,35 @@ impl BadgeProgressNextBadge {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct SubscriptionInfo {
 	pub total_days: i32,
 	pub end_date: Option<chrono::DateTime<chrono::Utc>>,
 	pub active_period: Option<SubscriptionPeriod>,
+
+	#[graphql(skip)]
+	pub user_id: UserId,
+	#[graphql(skip)]
+	pub periods: Vec<SubscriptionPeriod>,
+}
+
+#[async_graphql::ComplexObject]
+impl SubscriptionInfo {
+	async fn periods(&self, ctx: &Context<'_>) -> Result<Vec<SubscriptionPeriod>, ApiError> {
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
+		let authed_user = session.user()?;
+
+		if authed_user.id != self.user_id && !authed_user.has(UserPermission::ManageBilling) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you do not have permission to view this user's billing information",
+			));
+		}
+
+		Ok(self.periods.clone())
+	}
 }
 
 #[async_graphql::Object]
@@ -230,6 +257,8 @@ impl Billing {
 			total_days: age.days,
 			end_date,
 			active_period: active_period.map(Into::into),
+			user_id: self.user_id,
+			periods: periods.into_iter().map(Into::into).collect(),
 		})
 	}
 }

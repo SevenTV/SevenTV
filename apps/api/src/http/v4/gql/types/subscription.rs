@@ -51,7 +51,7 @@ impl From<shared::database::product::subscription::SubscriptionState> for Subscr
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone)]
 pub struct ProviderSubscriptionId {
 	pub provider: SubscriptionProvider,
 	pub id: String,
@@ -78,7 +78,7 @@ pub enum SubscriptionProvider {
 	PayPal,
 }
 
-#[derive(async_graphql::Union)]
+#[derive(async_graphql::Union, Clone)]
 pub enum SubscriptionPeriodCreatedBy {
 	RedeemCode(SubscriptionPeriodCreatedByRedeemCode),
 	Invoice(SubscriptionPeriodCreatedByInvoice),
@@ -101,22 +101,22 @@ impl From<shared::database::product::subscription::SubscriptionPeriodCreatedBy> 
 	}
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone)]
 pub struct SubscriptionPeriodCreatedByRedeemCode {
 	pub redeem_code_id: RedeemCodeId,
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone)]
 pub struct SubscriptionPeriodCreatedByInvoice {
 	pub invoice_id: InvoiceId,
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone)]
 pub struct SubscriptionPeriodCreatedBySystem {
 	pub reason: Option<String>,
 }
 
-#[derive(async_graphql::SimpleObject)]
+#[derive(async_graphql::SimpleObject, Clone)]
 #[graphql(complex)]
 pub struct SubscriptionPeriod {
 	pub id: SubscriptionPeriodId,

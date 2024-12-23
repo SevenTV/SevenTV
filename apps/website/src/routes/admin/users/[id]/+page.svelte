@@ -8,9 +8,10 @@
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import Spinner from "$/components/spinner.svelte";
-	import type { User } from "$/gql/graphql";
+	import { SubscriptionProvider, type User } from "$/gql/graphql";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import { CaretLeft } from "phosphor-svelte";
+	import UserName from "$/components/user-name.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -118,6 +119,101 @@
 											highestRoleColor {
 												hex
 											}
+										}
+									}
+									periods {
+										id
+										providerId {
+											provider
+											id
+										}
+										productId
+										start
+										end
+										isTrial
+										autoRenew
+										giftedBy {
+											id
+											mainConnection {
+												platformDisplayName
+											}
+											style {
+												activePaint {
+													id
+													name
+													data {
+														layers {
+															id
+															ty {
+																__typename
+																... on PaintLayerTypeSingleColor {
+																	color {
+																		hex
+																	}
+																}
+																... on PaintLayerTypeLinearGradient {
+																	angle
+																	repeating
+																	stops {
+																		at
+																		color {
+																			hex
+																		}
+																	}
+																}
+																... on PaintLayerTypeRadialGradient {
+																	repeating
+																	stops {
+																		at
+																		color {
+																			hex
+																		}
+																	}
+																	shape
+																}
+																... on PaintLayerTypeImage {
+																	images {
+																		url
+																		mime
+																		size
+																		scale
+																		width
+																		height
+																		frameCount
+																	}
+																}
+															}
+															opacity
+														}
+														shadows {
+															color {
+																hex
+															}
+															offsetX
+															offsetY
+															blur
+														}
+													}
+												}
+											}
+											highestRoleColor {
+												hex
+											}
+										}
+										createdBy {
+											__typename
+											... on SubscriptionPeriodCreatedByRedeemCode {
+												redeemCodeId
+											}
+											... on SubscriptionPeriodCreatedByInvoice {
+												invoiceId
+											}
+											... on SubscriptionPeriodCreatedBySystem {
+												reason
+											}
+										}
+										subscriptionProductVariant {
+											kind
 										}
 									}
 								}
@@ -245,6 +341,121 @@
 						data={user.billing.subscriptionInfo}
 						style="background-color:var(--bg-light); border-radius: 0.5rem;"
 					/>
+					<h2>Subscription Periods ({user.billing.subscriptionInfo.periods.length})</h2>
+					<div class="periods">
+						{#each user.billing.subscriptionInfo.periods.toReversed() as period}
+							<div class="period">
+								<table>
+									<thead>
+										<tr>
+											<th>Key</th>
+											<th>Value</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td>ID</td>
+											<td>
+												<code>{period.id}</code>
+											</td>
+										</tr>
+										{#if period.providerId}
+											<tr>
+												<td>Provider ID</td>
+												<td>
+													{period.providerId.provider} - <code>{period.providerId.id}</code>
+													{#if period.providerId.provider === SubscriptionProvider.Stripe}
+														<Button
+															href="https://dashboard.stripe.com/subscriptions/{period.providerId
+																.id}"
+															target="_blank"
+															secondary
+															style="display:inline-block">View</Button
+														>
+													{/if}
+												</td>
+											</tr>
+										{/if}
+										<tr>
+											<td>Product ID</td>
+											<td>
+												<code>{period.productId}</code>
+												<Button
+													href="https://dashboard.stripe.com/prices/{period.productId}"
+													target="_blank"
+													secondary
+													style="display:inline-block">View</Button
+												>
+											</td>
+										</tr>
+										<tr>
+											<td>Start</td>
+											<td>
+												<code>{moment(period.start).toISOString()}</code>
+												<br />
+												{moment(period.start).fromNow()}
+											</td>
+										</tr>
+										<tr>
+											<td>End</td>
+											<td>
+												<code>{moment(period.end).toISOString()}</code>
+												<br />
+												{moment(period.end).fromNow()}
+											</td>
+										</tr>
+										<tr>
+											<td>Is Trial?</td>
+											<td>
+												{period.isTrial ? "Yes" : "No"}
+											</td>
+										</tr>
+										<tr>
+											<td>Auto Renew?</td>
+											<td>
+												{period.autoRenew ? "Yes" : "No"}
+											</td>
+										</tr>
+										{#if period.giftedBy}
+											<tr>
+												<td>Gifted By</td>
+												<td>
+													<a href="/users/{period.giftedBy.id}">
+														<UserName user={period.giftedBy} />
+													</a>
+												</td>
+											</tr>
+										{/if}
+										<tr>
+											<td>Created By</td>
+											<td>
+												{#if period.createdBy.__typename === "SubscriptionPeriodCreatedByRedeemCode"}
+													Redeem Code - <code>{period.createdBy.redeemCodeId}</code>
+												{:else if period.createdBy.__typename === "SubscriptionPeriodCreatedByInvoice"}
+													Invoice - <code>{period.createdBy.invoiceId}</code>
+													<Button
+														href="https://dashboard.stripe.com/invoices/{period.createdBy
+															.invoiceId}"
+														target="_blank"
+														secondary
+														style="display:inline-block">View</Button
+													>
+												{:else if period.createdBy.__typename === "SubscriptionPeriodCreatedBySystem"}
+													System - {period.createdBy.reason}
+												{/if}
+											</td>
+										</tr>
+										<tr>
+											<td>Product Variant</td>
+											<td>
+												{period.subscriptionProductVariant.kind}
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						{/each}
+					</div>
 				</section>
 				<!-- <section>
 					<h2>Actions</h2>
@@ -274,6 +485,9 @@
 		margin-inline: auto;
 		width: 100%;
 		max-width: 100rem;
+
+		overflow: auto;
+		scrollbar-gutter: stable;
 	}
 
 	.content {
@@ -302,6 +516,12 @@
 
 	h2 {
 		margin-top: 0.5rem;
+	}
+
+	.periods {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(25rem, 1fr));
+		gap: 1rem;
 	}
 
 	// .action-group {
