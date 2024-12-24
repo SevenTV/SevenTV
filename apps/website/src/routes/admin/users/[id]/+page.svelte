@@ -15,6 +15,7 @@
 	import { user } from "$/lib/auth";
 	import AdminCreateSessionDialog from "$/components/dialogs/admin-create-session-dialog.svelte";
 	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
+	import AdminLinkKickDialog from "$/components/dialogs/admin-link-kick-dialog.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -258,6 +259,7 @@
 	}
 
 	let createSessionDialogMode = $state<DialogMode>("hidden");
+	let linkKickDialogMode = $state<DialogMode>("hidden");
 </script>
 
 <div class="layout">
@@ -360,17 +362,19 @@
 						</tbody>
 					</table>
 				</section>
-				{#if canManageSessions}
-					<AdminCreateSessionDialog bind:mode={createSessionDialogMode} userId={data.id} />
-					<section>
-						<h2>Actions</h2>
+				<section>
+					<h2>Actions</h2>
+					{#if canManageSessions}
+						<AdminCreateSessionDialog bind:mode={createSessionDialogMode} userId={data.id} />
 						<div class="action-group">
 							<h3>Sessions</h3>
 							{#snippet loadingSpinner()}
 								<Spinner />
 							{/snippet}
 							<div class="buttons">
-								<Button secondary onclick={() => (createSessionDialogMode = "shown")}>Create New Session</Button>
+								<Button secondary onclick={() => (createSessionDialogMode = "shown")}>
+									Create New Session
+								</Button>
 								<Button
 									secondary
 									style="color:var(--danger)"
@@ -382,14 +386,17 @@
 								</Button>
 							</div>
 						</div>
-						<!-- <div class="action-group">
-							<h3>Subscription</h3>
-							<div class="buttons">
-								<Button secondary style="color:var(--danger)">Cancel</Button>
-								</div>
-								</div> -->
-					</section>
-				{/if}
+					{/if}
+					<AdminLinkKickDialog bind:mode={linkKickDialogMode} userId={data.id} />
+					<div class="action-group">
+						<h3>Connections</h3>
+						<div class="buttons">
+							<Button secondary onclick={() => (linkKickDialogMode = "shown")}>
+								Manually Link Kick
+							</Button>
+						</div>
+					</div>
+				</section>
 				<section>
 					<h2>Subscription</h2>
 					<SubInfo
@@ -440,10 +447,10 @@
 													{periodTime.fromNow()}
 												</td>
 											</tr>
-											{#if period.providerId}
-												<tr>
-													<td>Provider ID</td>
-													<td>
+											<tr>
+												<td>Provider ID</td>
+												<td>
+													{#if period.providerId}
 														{period.providerId.provider} - <code>{period.providerId.id}</code>
 														{#if period.providerId.provider === SubscriptionProvider.Stripe}
 															<Button
@@ -454,9 +461,11 @@
 																style="display:inline-block">View</Button
 															>
 														{/if}
-													</td>
-												</tr>
-											{/if}
+													{:else}
+														N/A
+													{/if}
+												</td>
+											</tr>
 											<tr>
 												<td>Product ID</td>
 												<td>
@@ -497,16 +506,19 @@
 													{period.autoRenew ? "Yes" : "No"}
 												</td>
 											</tr>
-											{#if period.giftedBy}
-												<tr>
-													<td>Gifted By</td>
-													<td>
+											<tr>
+												<td>Gifted?</td>
+												<td>
+													{#if period.giftedBy}
+														Yes - By
 														<a href="/users/{period.giftedBy.id}">
 															<UserName user={period.giftedBy} />
 														</a>
-													</td>
-												</tr>
-											{/if}
+													{:else}
+														No
+													{/if}
+												</td>
+											</tr>
 											<tr>
 												<td>Created By</td>
 												<td>
