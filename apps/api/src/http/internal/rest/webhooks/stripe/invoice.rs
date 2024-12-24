@@ -498,7 +498,7 @@ pub async fn paid(
 			// Find all periods that are either in the future or currently active
 			let mut current_periods = current_periods
 				.into_iter()
-				.filter(|period| period.end > chrono::Utc::now() && period.start <= chrono::Utc::now())
+				.filter(|period| period.end > chrono::Utc::now())
 				.collect::<Vec<_>>();
 
 			// Sort them by the end date
