@@ -61,6 +61,8 @@ type Color {
 	r: Int!
 }
 
+scalar CustomerId
+
 """
 Implement the DateTime<Utc> scalar
 
@@ -577,12 +579,20 @@ A scalar that can represent any JSON Object value.
 """
 scalar JSONObject
 
+input KickLinkInput {
+	avatarUrl: String
+	displayName: String!
+	id: String!
+	username: String!
+}
+
 type Mutation {
 	billing(userId: Id!): BillingMutation!
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
 	tickets: TicketMutation!
 	userEditors: UserEditorMutation!
+	userSessions: UserSessionMutation!
 	users: UserMutation!
 }
 
@@ -815,6 +825,7 @@ type SubscriptionId {
 type SubscriptionInfo {
 	activePeriod: SubscriptionPeriod
 	endDate: DateTime
+	periods: [SubscriptionPeriod!]!
 	totalDays: Int!
 }
 
@@ -990,6 +1001,7 @@ type User {
 	roles: [Role!]!
 	searchUpdatedAt: DateTime
 	specialEmoteSets: [EmoteSet!]!
+	stripeCustomerId: CustomerId
 	style: UserStyle!
 	updatedAt: DateTime!
 }
@@ -1082,6 +1094,7 @@ type UserOperation {
 	activePaint(paintId: Id): User!
 	deleteAllSessions: Int!
 	mainConnection(platform: Platform!, platformId: String!): User!
+	manuallyLinkKick(kickChannel: KickLinkInput!): User!
 	removeConnection(platform: Platform!, platformId: String!): User!
 	removeProfilePicture: User!
 }
@@ -1093,6 +1106,7 @@ type UserPermission {
 	login: Boolean!
 	manageAny: Boolean!
 	manageBilling: Boolean!
+	manageSessions: Boolean!
 	moderate: Boolean!
 	useBadge: Boolean!
 	useCustomProfilePicture: Boolean!
@@ -1119,6 +1133,10 @@ type UserSearchResult {
 	items: [User!]!
 	pageCount: Int!
 	totalCount: Int!
+}
+
+type UserSessionMutation {
+	create(expiresAt: DateTime!, userId: Id!): String!
 }
 
 type UserStyle {

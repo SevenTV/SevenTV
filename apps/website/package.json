@@ -33,6 +33,7 @@
 		"graphology": "^0.25.4",
 		"graphology-layout-forceatlas2": "^0.10.1",
 		"graphql": "^16.9.0",
+		"id128": "^1.6.6",
 		"moment": "^2.30.1",
 		"phosphor-svelte": "^2.0.1",
 		"prettier": "^3.4.2",

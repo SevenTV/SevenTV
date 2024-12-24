@@ -35,9 +35,13 @@
 		return res.data?.users.user as User;
 	}
 
-	let connections = $state<Promise<User> | undefined>(
-		$user ? queryConnections($user.id) : undefined,
-	);
+	let connections = $state<Promise<User> | undefined>();
+
+	$effect(() => {
+		if ($user) {
+			connections = queryConnections($user.id);
+		}
+	})
 </script>
 
 <svelte:head>

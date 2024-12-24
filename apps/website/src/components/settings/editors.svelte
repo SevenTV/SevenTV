@@ -1,7 +1,5 @@
 <script lang="ts">
-	import TextInput from "$/components/input/text-input.svelte";
-	import { Check, MagnifyingGlass, Prohibit, Trash, UserCirclePlus } from "phosphor-svelte";
-	import HideOn from "../hide-on.svelte";
+	import { Check, Prohibit, Trash, UserCirclePlus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import {
 		UserEditorState,
@@ -9,7 +7,6 @@
 		type UserEditor,
 		type UserEditorPermissions,
 		type UserEditorPermissionsInput,
-		type UserSearchResult,
 	} from "$/gql/graphql";
 	import Date from "../date.svelte";
 	import Flags, { editorPermissionsToFlags, editorStateToFlags } from "../flags.svelte";
@@ -21,9 +18,9 @@
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import Spinner from "../spinner.svelte";
-	import ChannelPreview from "../channel-preview.svelte";
 	import EditorPermissionsDialog from "../dialogs/editor-permissions-dialog.svelte";
 	import type { Snippet } from "svelte";
+	import UserSearch from "../user-search.svelte";
 
 	interface Props {
 		userId: string;
@@ -33,131 +30,6 @@
 	}
 
 	let { userId, editors = $bindable(), tab, children }: Props = $props();
-
-	let query = $state("");
-
-	let timeout: NodeJS.Timeout | number | undefined; // not reactive
-
-	async function search(query: string): Promise<UserSearchResult> {
-		if (!query) {
-			return { items: [], totalCount: 0, pageCount: 0 };
-		}
-
-		// Small timeout to prevent spamming requests when user is typing
-
-		return new Promise((resolve, reject) => {
-			if (timeout) {
-				clearTimeout(timeout);
-			}
-
-			timeout = setTimeout(async () => {
-				const res = await gqlClient()
-					.query(
-						graphql(`
-							query EditorSearch($query: String!) {
-								users {
-									search(query: $query, page: 1, perPage: 5) {
-										items {
-											id
-											mainConnection {
-												platformDisplayName
-												platformAvatarUrl
-											}
-											style {
-												activeProfilePicture {
-													images {
-														url
-														mime
-														size
-														width
-														height
-														scale
-														frameCount
-													}
-												}
-												activePaint {
-													id
-													name
-													data {
-														layers {
-															id
-															ty {
-																__typename
-																... on PaintLayerTypeSingleColor {
-																	color {
-																		hex
-																	}
-																}
-																... on PaintLayerTypeLinearGradient {
-																	angle
-																	repeating
-																	stops {
-																		at
-																		color {
-																			hex
-																		}
-																	}
-																}
-																... on PaintLayerTypeRadialGradient {
-																	repeating
-																	stops {
-																		at
-																		color {
-																			hex
-																		}
-																	}
-																	shape
-																}
-																... on PaintLayerTypeImage {
-																	images {
-																		url
-																		mime
-																		size
-																		scale
-																		width
-																		height
-																		frameCount
-																	}
-																}
-															}
-															opacity
-														}
-														shadows {
-															color {
-																hex
-															}
-															offsetX
-															offsetY
-															blur
-														}
-													}
-												}
-											}
-											highestRoleColor {
-												hex
-											}
-										}
-										totalCount
-										pageCount
-									}
-								}
-							}
-						`),
-						{ query },
-					)
-					.toPromise();
-
-				if (res.error || !res.data) {
-					reject();
-					return;
-				}
-
-				resolve(res.data.users.search as UserSearchResult);
-			}, 200);
-		});
-	}
-
-	let results = $derived(search(query));
 
 	async function addEditor(
 		userId: string,
@@ -328,6 +200,32 @@
 		}
 	}
 
+	function permissionsToInputPermissions(
+		permissions: UserEditorPermissions,
+	): UserEditorPermissionsInput {
+		return {
+			superAdmin: permissions.superAdmin,
+			emoteSet: {
+				admin: permissions.emoteSet.admin,
+				create: permissions.emoteSet.create,
+				manage: permissions.emoteSet.manage,
+			},
+			emote: {
+				admin: permissions.emote.admin,
+				create: permissions.emote.create,
+				manage: permissions.emote.manage,
+				transfer: permissions.emote.transfer,
+			},
+			user: {
+				admin: permissions.user.admin,
+				manageBilling: permissions.user.manageBilling,
+				manageEditors: permissions.user.manageEditors,
+				managePersonalEmoteSet: permissions.user.managePersonalEmoteSet,
+				manageProfile: permissions.user.manageProfile,
+			},
+		};
+	}
+
 	async function updatePermissions(
 		userId: string,
 		editorId: string,
@@ -473,58 +371,37 @@
 	}
 
 	let meId = $derived($user?.id);
+
+	$inspect(editing);
 </script>
 
-<EditorPermissionsDialog
-	bind:mode={() => (adding || editing ? "shown" : "hidden"),
-	(mode) => {
-		if (mode === "hidden") {
-			adding = undefined;
-			editing = undefined;
-		}
-	}}
-	permissions={editing?.permissions}
-	submit={adding ? submitAdd : submitEdit}
-/>
+{#key editing}
+	<EditorPermissionsDialog
+		bind:mode={() => (adding || editing ? "shown" : "hidden"),
+		(mode) => {
+			if (mode === "hidden") {
+				adding = undefined;
+				editing = undefined;
+			}
+		}}
+		initPermissions={editing ? permissionsToInputPermissions(editing.permissions) : undefined}
+		submit={adding ? submitAdd : submitEdit}
+	/>
+{/key}
 <nav class="nav-bar">
 	{@render children?.()}
 	{#if tab === "editors"}
-		<TextInput
+		<UserSearch
 			placeholder={$t("pages.settings.editors.add_editor")}
-			bind:value={query}
 			disabled={!!adding}
+			onresultclick={(e, user) => channelClick(e, user.id)}
+			popup
 		>
 			{#snippet icon()}
-				{#await results}
-					<Spinner />
-				{:then _}
-					<UserCirclePlus />
-				{/await}
+				<UserCirclePlus />
 			{/snippet}
-			{#snippet nonLabelChildren()}
-				{#await results then results}
-					{#if results && results.items.length > 0}
-						<div class="results">
-							{#each results.items as result}
-								<ChannelPreview
-									user={result}
-									size={2}
-									onclick={(e) => channelClick(e, result.id)}
-								/>
-							{/each}
-						</div>
-					{/if}
-				{/await}
-			{/snippet}
-		</TextInput>
+		</UserSearch>
 	{/if}
-	<HideOn mobile>
-		<TextInput placeholder={$t("labels.search")}>
-			{#snippet icon()}
-				<MagnifyingGlass />
-			{/snippet}
-		</TextInput>
-	</HideOn>
 </nav>
 
 <div class="scroll">
@@ -641,41 +518,6 @@
 		justify-content: space-between;
 		align-items: center;
 		gap: 1rem;
-	}
-
-	:global(label.input:has(input:enabled)):focus-within > .results {
-		display: flex;
-	}
-
-	.results {
-		position: absolute;
-		top: calc(100% + 0.25rem);
-		left: 0;
-		right: 0;
-		z-index: 10;
-
-		background-color: var(--bg-light);
-
-		border: 1px solid var(--border-active);
-		border-radius: 0.5rem;
-
-		display: none;
-		overflow: hidden;
-
-		flex-direction: column;
-
-		& > :global(.button) {
-			animation: expand-down 0.2s forwards;
-		}
-	}
-
-	@keyframes expand-down {
-		from {
-			height: 2rem;
-		}
-		to {
-			height: 2.75rem;
-		}
 	}
 
 	.scroll {

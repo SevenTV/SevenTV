@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::{ComplexObject, Context, SimpleObject};
 use itertools::Itertools;
 use shared::database::emote_set::{EmoteSetId, EmoteSetKind};
-use shared::database::product::SubscriptionProductId;
+use shared::database::product::{CustomerId, SubscriptionProductId};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
 use shared::database::role::RoleId;
 use shared::database::user::editor::EditorEmoteSetPermission;
@@ -14,7 +14,7 @@ use super::raw_entitlement::RawEntitlements;
 use super::{AnyEvent, Color, Emote, EmoteSet, Event, Permissions, Role, UserEditor, UserEvent};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::guards::RateLimitGuard;
+use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::middleware::session::Session;
 use crate::search::{search, sorted_results, SearchOptions};
 
@@ -32,6 +32,8 @@ pub use style::*;
 pub struct User {
 	pub id: UserId,
 	pub connections: Vec<UserConnection>,
+	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageBilling)")]
+	pub stripe_customer_id: Option<CustomerId>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 
@@ -427,6 +429,7 @@ impl From<shared::database::user::FullUser> for User {
 		Self {
 			id: value.id,
 			connections: value.connections.iter().cloned().map(Into::into).collect(),
+			stripe_customer_id: value.stripe_customer_id.clone(),
 			updated_at: value.updated_at,
 			search_updated_at: value.search_updated_at,
 			highest_role_rank: value.computed.highest_role_rank,

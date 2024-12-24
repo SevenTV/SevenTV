@@ -46,12 +46,13 @@
 		{#if data.activePeriod}
 			<span class="key"
 				>{data.activePeriod.subscription.state === SubscriptionState.Active &&
+				data.activePeriod.autoRenew &&
 				!data.activePeriod.giftedBy
 					? "Next Billing"
 					: $t("sub_info.ends")}</span
 			>
 			<span class="value">
-				{#if data.activePeriod.subscription.state === SubscriptionState.Active && !data.activePeriod.giftedBy}
+				{#if data.activePeriod.subscription.state === SubscriptionState.Active && data.activePeriod.autoRenew && !data.activePeriod.giftedBy}
 					<CreditCard />
 				{:else}
 					<Hourglass />
@@ -60,17 +61,15 @@
 			</span>
 		{/if}
 
-		<span class="key">{data.activePeriod ? $t("sub_info.total") : "Previously Subscribed"}</span>
-		<span class="value">
-			<Clock />
-			{#if data.totalDays > 0}
+		{#if data.totalDays > 0}
+			<span class="key">{data.activePeriod ? $t("sub_info.total") : "Previously Subscribed"}</span>
+			<span class="value">
+				<Clock />
 				<span title={moment.duration(data.totalDays, "days").humanize()}>
 					{moment.duration(data.totalDays, "days").humanize({ d: Infinity })}
 				</span>
-			{:else}
-				<span>&#60; {moment.duration(1, "days").humanize()}</span>
-			{/if}
-		</span>
+			</span>
+		{/if}
 	</IconContext>
 </div>
 

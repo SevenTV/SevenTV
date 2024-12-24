@@ -19,6 +19,7 @@
 		Smiley,
 		Star,
 		Sun,
+		Wrench,
 	} from "phosphor-svelte";
 	import MenuButton from "../input/menu-button.svelte";
 	import { locale, dictionary, t } from "svelte-i18n";
@@ -96,6 +97,10 @@
 			<MenuButton href="/store" style="color: var(--store)">
 				<Star />
 				{$t("pages.store.title")}
+			</MenuButton>
+			<MenuButton href="/admin" style="color: var(--staff)">
+				<Wrench />
+				Admin
 			</MenuButton>
 		</div>
 		{#if $user}

@@ -374,6 +374,8 @@ impl BillingMutation {
 					active_period: Some(active_period.clone().into()),
 					end_date: Some(end_date),
 					total_days: age.days,
+					user_id: target_id,
+					periods: periods.into_iter().map(Into::into).collect(),
 				})
 			}
 		})
@@ -516,6 +518,8 @@ impl BillingMutation {
 						active_period: Some(active_period.clone().into()),
 						end_date: Some(end_date),
 						total_days: age.days,
+						user_id: target_id,
+						periods: periods.into_iter().map(Into::into).collect(),
 					})
 				}
 				_ => Err(TransactionError::Custom(ApiError::not_implemented(

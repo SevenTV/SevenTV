@@ -15,6 +15,7 @@ const config: CodegenConfig = {
 					Id: "string",
 					ProductId: "string",
 					InvoiceId: "string",
+					CustomerId: "string",
 					JSONObject: "object",
 				},
 			},

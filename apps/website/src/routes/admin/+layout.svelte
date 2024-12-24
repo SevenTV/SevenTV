@@ -1,18 +1,19 @@
 <script lang="ts">
 	import TabLink from "$/components/tab-link.svelte";
-	import { Graph } from "phosphor-svelte";
+	import { Graph, Users } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import modge from "$assets/modge.webp?url";
 	import { user } from "$/lib/auth";
 	import { signInDialogMode } from "$/lib/layout";
+	import { type Page } from "@sveltejs/kit";
 
 	let { children } = $props();
 
 	// let ticketsSelected = $derived($page.url.pathname.startsWith("/admin/tickets"));
 
-	// function customMatcher(page: Page, href: string | undefined) {
-	// 	return !!href && page.url.pathname.startsWith(href);
-	// }
+	function customMatcher(page: Page, href: string | undefined) {
+		return !!href && page.url.pathname.startsWith(href);
+	}
 
 	$effect(() => {
 		if ($user === null) {
@@ -80,6 +81,12 @@
 				{/snippet}
 			</TabLink> -->
 			{#if $user?.permissions.user.manageAny}
+				<TabLink title="Users" href="/admin/users" matcher={customMatcher} big>
+					<Users />
+					{#snippet active()}
+						<Users weight="fill" />
+					{/snippet}
+				</TabLink>
 				<TabLink title="Entitlement Graph" href="/admin/graph" big>
 					<Graph />
 					{#snippet active()}

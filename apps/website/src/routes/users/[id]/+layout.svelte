@@ -15,6 +15,7 @@
 		Pulse,
 		Upload,
 		UserCircle,
+		Wrench,
 	} from "phosphor-svelte";
 	import Button from "$/components/input/button.svelte";
 	import { t } from "svelte-i18n";
@@ -133,19 +134,23 @@
 					{/if}
 				</div>
 			{/if}
-			<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
-				{#snippet icon()}
-					<UserCircle />
-				{/snippet}
-				{$t("common.editors")}
-				{#snippet iconRight()}
-					{#if editorsExpanded}
-						<CaretDown style="margin-left: auto" />
-					{:else}
-						<CaretRight style="margin-left: auto" />
-					{/if}
-				{/snippet}
-			</Button>
+			{#await canManageEditors then manageEditors}
+				{#if manageEditors || user.editors.some((editor) => editor.editor && editor.state === UserEditorState.Accepted)}
+					<Button big onclick={() => (editorsExpanded = !editorsExpanded)}>
+						{#snippet icon()}
+							<UserCircle />
+						{/snippet}
+						{$t("common.editors")}
+						{#snippet iconRight()}
+							{#if editorsExpanded}
+								<CaretDown style="margin-left: auto" />
+							{:else}
+								<CaretRight style="margin-left: auto" />
+							{/if}
+						{/snippet}
+					</Button>
+				{/if}
+			{/await}
 			{#if editorsExpanded}
 				<div class="expanded">
 					{#each user.editors as editor}
@@ -202,6 +207,18 @@
 				<Pulse weight="fill" />
 			{/snippet}
 		</TabLink>
+		{#if $user?.permissions.user.manageAny}
+			<hr style="margin-top: auto" />
+			<Button href="/admin/users/{data.id}">
+				{#snippet icon()}
+					<Wrench />
+				{/snippet}
+				<span style="color:var(--text); flex-grow: 1;">Admin</span>
+				{#snippet iconRight()}
+					<CaretRight />
+				{/snippet}
+			</Button>
+		{/if}
 	</nav>
 {/snippet}
 
@@ -257,6 +274,17 @@
 					<Pulse weight="fill" />
 				{/snippet}
 			</TabLink>
+			{#if $user?.permissions.user.manageAny}
+				<Button href="/admin/users/{data.id}">
+					{#snippet icon()}
+						<Wrench />
+					{/snippet}
+					<span style="color:var(--text); flex-grow: 1;">Admin</span>
+					{#snippet iconRight()}
+						<CaretRight />
+					{/snippet}
+				</Button>
+			{/if}
 		</nav>
 	</div>
 {/snippet}
@@ -339,6 +367,10 @@
 			display: flex;
 			gap: 0.25rem;
 			flex-wrap: wrap;
+		}
+
+		.link-list {
+			flex-grow: 1;
 		}
 
 		// Select all buttons except the active one
