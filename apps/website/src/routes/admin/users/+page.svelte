@@ -17,7 +17,6 @@
 
 <style lang="scss">
 	.layout {
-		height: 100%;
 		width: 100%;
 		max-width: 20rem;
 		margin: 0 auto;
