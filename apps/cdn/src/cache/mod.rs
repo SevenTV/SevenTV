@@ -380,6 +380,8 @@ impl IntoResponse for CachedData {
 
 				headers.insert(header::CONTENT_LENGTH, data.len().to_string().try_into().unwrap());
 
+				headers.insert(header::CONTENT_DISPOSITION, "attachment".try_into().unwrap());
+
 				(headers, Body::from(data)).into_response()
 			}
 			Self::Redirect(uri) => {
