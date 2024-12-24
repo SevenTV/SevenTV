@@ -28,7 +28,7 @@
 		expanded = !expanded;
 	}
 
-	function close() {
+	export function close() {
 		expanded = false;
 	}
 </script>

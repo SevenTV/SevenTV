@@ -43,6 +43,8 @@
 
 	let { data, children }: { data: Emote | null; children?: Snippet } = $props();
 
+	// svelte-ignore non_reactive_update
+	let moreMenuDropdown: ReturnType<typeof DropDown>;
 	let moreMenuMode: MoreMenuMode = $state("root");
 	let downloadFormat = $state<string>();
 
@@ -117,6 +119,25 @@
 					data.owner?.editors.find((e) => e.editorId === $user.id)?.permissions.emote.manage
 			: undefined,
 	);
+
+	// svelte-ignore non_reactive_update
+	let downloadElement: HTMLAnchorElement;
+
+	function downloadImage(image: Image) {
+		if (!downloadElement) return;
+
+		moreMenuDropdown?.close();
+
+		fetch(image.url).then((response) => {
+			response.blob().then((blob) => {
+				const url = URL.createObjectURL(blob);
+				downloadElement.href = url;
+				downloadElement.download = `${data?.defaultName}-${image.scale}x`;
+				downloadElement.click();
+				URL.revokeObjectURL(url);
+			});
+		});
+	}
 </script>
 
 {#if !children && data}
@@ -227,7 +248,8 @@
 						</Button>
 					{/if}
 				{/if}
-				<DropDown>
+				<a href={undefined} style="display: none" bind:this={downloadElement}>Download</a>
+				<DropDown bind:this={moreMenuDropdown}>
 					{#if (!$user || data?.deleted) && !data?.imagesPending && formats && formats.length > 1}
 						<Button secondary onclick={() => (moreMenuMode = "download-format")}>
 							<Download />
@@ -302,7 +324,7 @@
 								{/each}
 							{:else if moreMenuMode === "download-size"}
 								{#each sizes ?? [] as image}
-									<MenuButton href={image.url} target="_blank">
+									<MenuButton onclick={() => downloadImage(image)}>
 										{image.scale}x {$t("pages.emote.size")}
 									</MenuButton>
 								{/each}
