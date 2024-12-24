@@ -173,6 +173,7 @@ pub struct UserPermission {
 	pub manage_billing: bool,
 	pub moderate: bool,
 	pub view_hidden: bool,
+	pub manage_sessions: bool,
 }
 
 impl UserPermission {
@@ -190,6 +191,7 @@ impl UserPermission {
 			manage_billing: permissions.has(permissions::UserPermission::ManageBilling),
 			moderate: permissions.has(permissions::UserPermission::Moderate),
 			view_hidden: permissions.has(permissions::UserPermission::ViewHidden),
+			manage_sessions: permissions.has(permissions::UserPermission::ManageSessions),
 		}
 	}
 }

@@ -296,7 +296,9 @@ pub async fn handle_callback(
 			session_id: None,
 			data: InternalEventData::UserSession {
 				after: user_session.clone(),
-				data: StoredEventUserSessionData::Create { platform },
+				data: StoredEventUserSessionData::Create {
+					platform: Some(platform),
+				},
 			},
 			timestamp: chrono::Utc::now(),
 		})?;

@@ -200,7 +200,9 @@
 		}
 	}
 
-	function permissionsToInputPermissions(permissions: UserEditorPermissions): UserEditorPermissionsInput {
+	function permissionsToInputPermissions(
+		permissions: UserEditorPermissions,
+	): UserEditorPermissionsInput {
 		return {
 			superAdmin: permissions.superAdmin,
 			emoteSet: {
@@ -221,7 +223,7 @@
 				managePersonalEmoteSet: permissions.user.managePersonalEmoteSet,
 				manageProfile: permissions.user.manageProfile,
 			},
-		}
+		};
 	}
 
 	async function updatePermissions(

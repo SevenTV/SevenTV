@@ -246,7 +246,7 @@ pub enum StoredEventUserBanData {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case", deny_unknown_fields)]
 pub enum StoredEventUserSessionData {
-	Create { platform: Platform },
+	Create { platform: Option<Platform> },
 	Delete,
 }
 

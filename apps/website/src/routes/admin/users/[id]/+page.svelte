@@ -13,6 +13,8 @@
 	import { CaretLeft } from "phosphor-svelte";
 	import UserName from "$/components/user-name.svelte";
 	import { user } from "$/lib/auth";
+	import AdminCreateSessionDialog from "$/components/dialogs/admin-create-session-dialog.svelte";
+	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -231,6 +233,31 @@
 	}
 
 	let userData = $derived(queryUser(data.id, !!$user?.permissions.user.manageBilling));
+
+	let canManageSessions = $derived($user?.permissions.user.manageSessions);
+
+	let deleteAllSessionsLoading = $state(false);
+
+	async function deleteAllSessions(userId: string) {
+		deleteAllSessionsLoading = true;
+
+		await gqlClient().mutation(
+			graphql(`
+				mutation AdminDeleteAllSessions($userId: Id!) {
+					users {
+						user(id: $userId) {
+							deleteAllSessions
+						}
+					}
+				}
+			`),
+			{ userId },
+		);
+
+		deleteAllSessionsLoading = false;
+	}
+
+	let createSessionDialogMode = $state<DialogMode>("hidden");
 </script>
 
 <div class="layout">
@@ -332,6 +359,38 @@
 							</tr>
 						</tbody>
 					</table>
+				</section>
+				{#if canManageSessions}
+					<AdminCreateSessionDialog bind:mode={createSessionDialogMode} userId={data.id} />
+					<section>
+						<h2>Actions</h2>
+						<div class="action-group">
+							<h3>Sessions</h3>
+							{#snippet loadingSpinner()}
+								<Spinner />
+							{/snippet}
+							<div class="buttons">
+								<Button secondary onclick={() => (createSessionDialogMode = "shown")}>Create New Session</Button>
+								<Button
+									secondary
+									style="color:var(--danger)"
+									disabled={deleteAllSessionsLoading}
+									onclick={() => deleteAllSessions(data.id)}
+									icon={deleteAllSessionsLoading ? loadingSpinner : undefined}
+								>
+									Delete All Sessions
+								</Button>
+							</div>
+						</div>
+						<!-- <div class="action-group">
+							<h3>Subscription</h3>
+							<div class="buttons">
+								<Button secondary style="color:var(--danger)">Cancel</Button>
+								</div>
+								</div> -->
+					</section>
+				{/if}
+				<section>
 					<h2>Subscription</h2>
 					<SubInfo
 						data={user.billing.subscriptionInfo}
@@ -360,12 +419,14 @@
 													<Button
 														secondary
 														style="display:inline-block"
-														onclick={() => navigator.clipboard.writeText(period.id)}>Copy ULID</Button
+														onclick={() => navigator.clipboard.writeText(period.id)}
+														>Copy ULID</Button
 													>
 													<Button
 														secondary
 														style="display:inline-block"
-														onclick={() => navigator.clipboard.writeText(periodUuid)}>Copy UUID</Button
+														onclick={() => navigator.clipboard.writeText(periodUuid)}
+														>Copy UUID</Button
 													>
 												</td>
 											</tr>
@@ -478,22 +539,6 @@
 						</div>
 					{/if}
 				</section>
-				<!-- <section>
-					<h2>Actions</h2>
-					<div class="action-group">
-						<h3>Sessions</h3>
-						<div class="buttons">
-							<Button secondary>Create New Session</Button>
-							<Button secondary style="color:var(--danger)">Delete All Sessions</Button>
-						</div>
-					</div>
-					<div class="action-group">
-						<h3>Subscription</h3>
-						<div class="buttons">
-							<Button secondary style="color:var(--danger)">Cancel</Button>
-						</div>
-					</div>
-				</section> -->
 			</div>
 		{:else}
 			<p>User not found</p>
@@ -545,13 +590,13 @@
 		gap: 1rem;
 	}
 
-	// .action-group {
-	// 	border: 2px solid var(--border-active);
-	// 	border-radius: 0.5rem;
-	// 	padding: 1rem;
+	.action-group {
+		border: 2px solid var(--border-active);
+		border-radius: 0.5rem;
+		padding: 1rem;
 
-	// 	h3 {
-	// 		margin-bottom: 0.5rem;
-	// 	}
-	// }
+		h3 {
+			margin-bottom: 0.5rem;
+		}
+	}
 </style>

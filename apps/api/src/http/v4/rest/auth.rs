@@ -439,7 +439,9 @@ async fn login_finish(
 			session_id: None,
 			data: InternalEventData::UserSession {
 				after: user_session.clone(),
-				data: StoredEventUserSessionData::Create { platform },
+				data: StoredEventUserSessionData::Create {
+					platform: Some(platform),
+				},
 			},
 			timestamp: chrono::Utc::now(),
 		})?;

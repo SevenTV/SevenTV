@@ -585,6 +585,7 @@ type Mutation {
 	emotes: EmoteMutation!
 	tickets: TicketMutation!
 	userEditors: UserEditorMutation!
+	userSessions: UserSessionMutation!
 	users: UserMutation!
 }
 
@@ -1097,6 +1098,7 @@ type UserPermission {
 	login: Boolean!
 	manageAny: Boolean!
 	manageBilling: Boolean!
+	manageSessions: Boolean!
 	moderate: Boolean!
 	useBadge: Boolean!
 	useCustomProfilePicture: Boolean!
@@ -1123,6 +1125,10 @@ type UserSearchResult {
 	items: [User!]!
 	pageCount: Int!
 	totalCount: Int!
+}
+
+type UserSessionMutation {
+	create(expiresAt: DateTime!, userId: Id!): String!
 }
 
 type UserStyle {

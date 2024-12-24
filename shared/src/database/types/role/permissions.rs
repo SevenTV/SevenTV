@@ -280,6 +280,9 @@ pub enum UserPermission {
 
 	/// View hidden users
 	ViewHidden = 2048,
+
+	/// Allows the user to manage other user's sessions
+	ManageSessions = 4096,
 }
 
 impl BitMask for UserPermission {

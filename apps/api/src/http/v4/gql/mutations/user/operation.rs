@@ -875,7 +875,7 @@ impl UserOperation {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing sesion data"))?;
 		let authed_user = authed_session.user()?;
 
-		if authed_user.id != self.user.id && !authed_user.has(UserPermission::ManageAny) {
+		if authed_user.id != self.user.id && !authed_user.has(UserPermission::ManageSessions) {
 			return Err(ApiError::forbidden(
 				ApiErrorCode::LackingPrivileges,
 				"you do not have permission to modify connections, you need the ManageProfile permission",

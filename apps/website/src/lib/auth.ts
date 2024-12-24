@@ -149,6 +149,7 @@ export async function fetchMe(): Promise<User | null> {
 									manageAny
 									useCustomProfilePicture
 									manageBilling
+									manageSessions
 								}
 								emote {
 									manageAny
