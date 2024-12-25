@@ -134,117 +134,114 @@ pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::
 }
 
 async fn listen_to_nats(global: Arc<Global>, ctx: Arc<Context>, scuffle_context: scuffle_context::Context) {
-	let sub = global.nats.subscribe("api.v4.events").await;
+	let mut sub = global
+		.nats
+		.subscribe("api.v4.events")
+		.await
+		.expect("failed to subscribe to nats subject");
 
-	match sub {
-		Ok(mut sub) => {
-			loop {
-				tokio::select! {
-					_ = scuffle_context.done() => break,
-					message = sub.next() => {
-						match message {
-							Some(message) => {
-								let payload: InternalEventPayload = match rmp_serde::from_slice(&message.payload) {
-									Ok(payload) => payload,
-									Err(err) => {
-										tracing::warn!(err = ?err, "malformed message");
-										break;
-									}
-								};
+	loop {
+		tokio::select! {
+			_ = scuffle_context.done() => break,
+			message = sub.next() => {
+				match message {
+					Some(message) => {
+						let payload: InternalEventPayload = match rmp_serde::from_slice(&message.payload) {
+							Ok(payload) => payload,
+							Err(err) => {
+								tracing::warn!(err = ?err, "malformed message");
+								break;
+							}
+						};
 
-								for event in payload.events {
-									match event.data {
-										InternalEventData::Emote { after, data } => {
-											if let StoredEventEmoteData::Process { event } = data {
-												if matches!(event, ImageProcessorEvent::Success) {
-													tokio::spawn({
-														let global = global.clone();
-														let ctx = ctx.clone();
+						for event in payload.events {
+							match event.data {
+								InternalEventData::Emote { after, data } => {
+									if let StoredEventEmoteData::Process { event } = data {
+										if matches!(event, ImageProcessorEvent::Success) {
+											tokio::spawn({
+												let global = global.clone();
+												let ctx = ctx.clone();
 
-														async move {
-															handle_emote_process_success(&global, &ctx, after).await;
-														}
-													});
+												async move {
+													handle_emote_process_success(&global, &ctx, after).await;
 												}
-											}
+											});
 										}
-										InternalEventData::UserCachedChange { after, .. } => {
-											let discord_connection =
-												after.connections.iter().find(|c| matches!(c.platform, Platform::Discord));
-
-											if let Some(discord_connection) = discord_connection {
-												if let Ok(discord_id) = discord_connection.platform_id.parse::<u64>() {
-													tokio::spawn({
-														let global = global.clone();
-														let ctx = ctx.clone();
-
-														async move {
-															let role_ids = after
-																.cached
-																.entitlements
-																.iter()
-																.filter_map(|e| {
-																	if let EntitlementEdgeKind::Role { role_id } = e {
-																		Some(role_id)
-																	} else {
-																		None
-																	}
-																})
-																.collect::<Vec<_>>();
-
-															let _ = handle_entitlement_change(&global, &ctx, discord_id, &role_ids);
-														}
-													});
-												}
-											}
-										}
-										InternalEventData::User { after, data } => match data {
-											InternalEventUserData::AddConnection { connection } => {
-												if matches!(connection.platform, Platform::Discord) {
-													if let Ok(discord_id) = connection.platform_id.parse::<u64>() {
-														tokio::spawn({
-															let global = global.clone();
-															let ctx = ctx.clone();
-
-															async move {
-																let _ = handle_add_connection(&global, &ctx, discord_id, after);
-															}
-														});
-													}
-												}
-											}
-											InternalEventUserData::RemoveConnection { connection } => {
-												if matches!(connection.platform, Platform::Discord) {
-													if let Ok(discord_id) = connection.platform_id.parse::<u64>() {
-														tokio::spawn({
-															let global = global.clone();
-															let ctx = ctx.clone();
-
-															async move {
-																let _ = handle_remove_connection(&global, &ctx, discord_id);
-															}
-														});
-													}
-												}
-											}
-											_ => {}
-										},
-										_ => {}
 									}
 								}
+								InternalEventData::UserCachedChange { after, .. } => {
+									let discord_connection =
+										after.connections.iter().find(|c| matches!(c.platform, Platform::Discord));
+
+									if let Some(discord_connection) = discord_connection {
+										if let Ok(discord_id) = discord_connection.platform_id.parse::<u64>() {
+											tokio::spawn({
+												let global = global.clone();
+												let ctx = ctx.clone();
+
+												async move {
+													let role_ids = after
+														.cached
+														.entitlements
+														.iter()
+														.filter_map(|e| {
+															if let EntitlementEdgeKind::Role { role_id } = e {
+																Some(role_id)
+															} else {
+																None
+															}
+														})
+														.collect::<Vec<_>>();
+
+													let _ = handle_entitlement_change(&global, &ctx, discord_id, &role_ids);
+												}
+											});
+										}
+									}
+								}
+								InternalEventData::User { after, data } => match data {
+									InternalEventUserData::AddConnection { connection } => {
+										if matches!(connection.platform, Platform::Discord) {
+											if let Ok(discord_id) = connection.platform_id.parse::<u64>() {
+												tokio::spawn({
+													let global = global.clone();
+													let ctx = ctx.clone();
+
+													async move {
+														let _ = handle_add_connection(&global, &ctx, discord_id, after);
+													}
+												});
+											}
+										}
+									}
+									InternalEventUserData::RemoveConnection { connection } => {
+										if matches!(connection.platform, Platform::Discord) {
+											if let Ok(discord_id) = connection.platform_id.parse::<u64>() {
+												tokio::spawn({
+													let global = global.clone();
+													let ctx = ctx.clone();
+
+													async move {
+														let _ = handle_remove_connection(&global, &ctx, discord_id);
+													}
+												});
+											}
+										}
+									}
+									_ => {}
+								},
+								_ => {}
 							}
-							None => break
 						}
 					}
+					None => break
 				}
 			}
-
-			tracing::info!("nats subscription closed");
-		}
-		Err(_) => {
-			tracing::error!("failed to subscribe to nats subject")
 		}
 	}
+
+	tracing::info!("nats subscription closed");
 }
 
 async fn handle_emote_process_success(global: &Global, ctx: &Context, emote: Emote) {
