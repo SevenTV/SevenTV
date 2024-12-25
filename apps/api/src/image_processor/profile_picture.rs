@@ -104,20 +104,26 @@ pub async fn handle_success(
 
 pub async fn handle_fail(
 	mut tx: TransactionSession<'_, anyhow::Error>,
-	global: &Arc<Global>,
+	_global: &Arc<Global>,
 	id: UserProfilePictureId,
 	event: event_callback::Fail,
 ) -> TransactionResult<(), anyhow::Error> {
-	let after = global
-		.user_profile_picture_id_loader
-		.load(id)
-		.await
-		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query profile picture")))?
-		.ok_or(TransactionError::Custom(anyhow::anyhow!("profile picture not found")))?;
-
 	let error = event.error.clone().unwrap_or_default();
 
-	tracing::info!("user_profile_picture {} failed: {:?}: {}", id, error.code(), error.message);
+	tracing::warn!("user_profile_picture {} failed: {:?}: {}", id, error.code(), error.message);
+
+	let after = tx
+		.find_one_and_delete(
+			filter::filter! {
+				UserProfilePicture {
+					#[query(rename = "_id")]
+					id: id,
+				}
+			},
+			None,
+		)
+		.await?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("profile picture not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
@@ -161,14 +167,20 @@ pub async fn handle_start(
 
 pub async fn handle_cancel(
 	mut tx: TransactionSession<'_, anyhow::Error>,
-	global: &Arc<Global>,
+	_global: &Arc<Global>,
 	id: UserProfilePictureId,
 ) -> TransactionResult<(), anyhow::Error> {
-	let after = global
-		.user_profile_picture_id_loader
-		.load(id)
-		.await
-		.map_err(|_| TransactionError::Custom(anyhow::anyhow!("failed to query profile picture")))?
+	let after = tx
+		.find_one_and_delete(
+			filter::filter! {
+				UserProfilePicture {
+					#[query(rename = "_id")]
+					id: id,
+				}
+			},
+			None,
+		)
+		.await?
 		.ok_or(TransactionError::Custom(anyhow::anyhow!("profile picture not found")))?;
 
 	tx.register_event(InternalEvent {
