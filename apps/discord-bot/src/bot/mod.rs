@@ -4,6 +4,7 @@ use std::sync::{
 };
 
 use anyhow::Context as _;
+use scuffle_context::ContextFutExt;
 use serenity::{
 	all::{
 		ActivityData, CacheHttp, ChannelId, Colour, Context, CreateEmbed, CreateInteractionResponse,
@@ -18,8 +19,10 @@ use shared::{
 	database::{
 		emote::{Emote, EmoteFlags},
 		entitlement::EntitlementEdgeKind,
+		role::Role,
 		stored_event::{ImageProcessorEvent, StoredEventEmoteData},
 		user::{connection::Platform, User},
+		Id,
 	},
 	event::{InternalEventData, InternalEventPayload, InternalEventUserData},
 };
@@ -35,6 +38,7 @@ mod utils;
 
 struct Handler {
 	global: Arc<Global>,
+	ctx: scuffle_context::Context,
 	is_listening_to_nats: AtomicBool,
 }
 
@@ -56,10 +60,11 @@ impl EventHandler for Handler {
 		if !self.is_listening_to_nats.load(Ordering::Relaxed) {
 			tokio::spawn({
 				let global = self.global.clone();
+				let scuffle_context = self.ctx.clone();
 				let ctx = Arc::new(ctx);
 
 				async move {
-					listen_to_nats(global, ctx).await;
+					listen_to_nats(global, ctx, scuffle_context).await;
 				}
 			});
 
@@ -104,128 +109,137 @@ impl EventHandler for Handler {
 	}
 }
 
-pub async fn run(global: Arc<Global>, _ctx: scuffle_context::Context) -> anyhow::Result<()> {
+pub async fn run(global: Arc<Global>, ctx: scuffle_context::Context) -> anyhow::Result<()> {
 	let mut client = Client::builder(&global.config.bot.discord_token, GatewayIntents::GUILD_MEMBERS)
 		.event_handler(Handler {
 			global: global.clone(),
+			ctx: ctx.clone(),
 			is_listening_to_nats: AtomicBool::new(false),
 		})
 		.await
 		.context("discord client creation")?;
 
-	client.start().await?;
+	client.start().with_context(ctx.clone()).await.transpose()?;
+
+	tokio::spawn({
+		let shard_manger = client.shard_manager.clone();
+
+		async move {
+			ctx.done().await;
+			shard_manger.shutdown_all().await;
+		}
+	});
 
 	Ok(())
 }
 
-async fn listen_to_nats(global: Arc<Global>, ctx: Arc<Context>) {
+async fn listen_to_nats(global: Arc<Global>, ctx: Arc<Context>, scuffle_context: scuffle_context::Context) {
 	let sub = global.nats.subscribe("api.v4.events").await;
 
 	match sub {
 		Ok(mut sub) => {
-			while let Some(message) = sub.next().await {
-				let payload: InternalEventPayload = match rmp_serde::from_slice(&message.payload) {
-					Ok(payload) => payload,
-					Err(err) => {
-						tracing::warn!(err = ?err, "malformed message");
-						break;
-					}
-				};
-
-				for event in payload.events {
-					match event.data {
-						InternalEventData::Emote { after, data } => {
-							if let StoredEventEmoteData::Process { event } = data {
-								if matches!(event, ImageProcessorEvent::Success) {
-									tokio::spawn({
-										let global = global.clone();
-										let ctx = ctx.clone();
-
-										async move {
-											handle_emote_process_success(&global, &ctx, after).await;
-										}
-									});
-								}
-							}
-						}
-						InternalEventData::User { after, data } => match data {
-							InternalEventUserData::AddEntitlement { target } => {
-								let discord_connection =
-									after.connections.iter().find(|c| matches!(c.platform, Platform::Discord));
-
-								if let Some(discord_connection) = discord_connection {
-									if let EntitlementEdgeKind::Role { role_id: _ } = target {
-										if let Ok(discord_id) = discord_connection.platform_id.parse::<u64>() {
-											tokio::spawn({
-												let global = global.clone();
-												let ctx = ctx.clone();
-
-												async move {
-													let _ = handle_add_entitlement(&global, &ctx, discord_id, after);
-												}
-											});
-										}
+			loop {
+				tokio::select! {
+					_ = scuffle_context.done() => break,
+					message = sub.next() => {
+						match message {
+							Some(message) => {
+								let payload: InternalEventPayload = match rmp_serde::from_slice(&message.payload) {
+									Ok(payload) => payload,
+									Err(err) => {
+										tracing::warn!(err = ?err, "malformed message");
+										break;
 									}
-								}
-							}
-							InternalEventUserData::RemoveEntitlement { target } => {
-								let discord_connection =
-									after.connections.iter().find(|c| matches!(c.platform, Platform::Discord));
+								};
 
-								if let Some(discord_connection) = discord_connection {
-									match target {
-										EntitlementEdgeKind::Role { role_id: _ } => {
-											if let Ok(discord_id) = discord_connection.platform_id.parse::<u64>() {
-												tokio::spawn({
-													let global = global.clone();
-													let ctx = ctx.clone();
+								for event in payload.events {
+									match event.data {
+										InternalEventData::Emote { after, data } => {
+											if let StoredEventEmoteData::Process { event } = data {
+												if matches!(event, ImageProcessorEvent::Success) {
+													tokio::spawn({
+														let global = global.clone();
+														let ctx = ctx.clone();
 
-													async move {
-														let _ = handle_remove_entitlement(&global, &ctx, discord_id, after);
-													}
-												});
+														async move {
+															handle_emote_process_success(&global, &ctx, after).await;
+														}
+													});
+												}
 											}
 										}
+										InternalEventData::UserCachedChange { after, .. } => {
+											let discord_connection =
+												after.connections.iter().find(|c| matches!(c.platform, Platform::Discord));
+
+											if let Some(discord_connection) = discord_connection {
+												if let Ok(discord_id) = discord_connection.platform_id.parse::<u64>() {
+													tokio::spawn({
+														let global = global.clone();
+														let ctx = ctx.clone();
+
+														async move {
+															let role_ids = after
+																.cached
+																.entitlements
+																.iter()
+																.filter_map(|e| {
+																	if let EntitlementEdgeKind::Role { role_id } = e {
+																		Some(role_id)
+																	} else {
+																		None
+																	}
+																})
+																.collect::<Vec<_>>();
+
+															let _ = handle_entitlement_change(&global, &ctx, discord_id, &role_ids);
+														}
+													});
+												}
+											}
+										}
+										InternalEventData::User { after, data } => match data {
+											InternalEventUserData::AddConnection { connection } => {
+												if matches!(connection.platform, Platform::Discord) {
+													if let Ok(discord_id) = connection.platform_id.parse::<u64>() {
+														tokio::spawn({
+															let global = global.clone();
+															let ctx = ctx.clone();
+
+															async move {
+																let _ = handle_add_connection(&global, &ctx, discord_id, after);
+															}
+														});
+													}
+												}
+											}
+											InternalEventUserData::RemoveConnection { connection } => {
+												if matches!(connection.platform, Platform::Discord) {
+													if let Ok(discord_id) = connection.platform_id.parse::<u64>() {
+														tokio::spawn({
+															let global = global.clone();
+															let ctx = ctx.clone();
+
+															async move {
+																let _ = handle_remove_connection(&global, &ctx, discord_id);
+															}
+														});
+													}
+												}
+											}
+											_ => {}
+										},
 										_ => {}
 									}
 								}
 							}
-							InternalEventUserData::AddConnection { connection } => {
-								if matches!(connection.platform, Platform::Discord) {
-									if let Ok(discord_id) = connection.platform_id.parse::<u64>() {
-										tokio::spawn({
-											let global = global.clone();
-											let ctx = ctx.clone();
-
-											async move {
-												let _ = handle_add_connection(&global, &ctx, discord_id, after);
-											}
-										});
-									}
-								}
-							}
-							InternalEventUserData::RemoveConnection { connection } => {
-								if matches!(connection.platform, Platform::Discord) {
-									if let Ok(discord_id) = connection.platform_id.parse::<u64>() {
-										tokio::spawn({
-											let global = global.clone();
-											let ctx = ctx.clone();
-
-											async move {
-												let _ = handle_remove_connection(&global, &ctx, discord_id);
-											}
-										});
-									}
-								}
-							}
-							_ => {}
-						},
-						_ => {}
+							None => break
+						}
 					}
 				}
 			}
 
-			tracing::warn!("nats subscription closed");
+			tracing::info!("nats subscription closed");
 		}
 		Err(_) => {
 			tracing::error!("failed to subscribe to nats subject")
@@ -265,44 +279,10 @@ async fn handle_emote_process_success(global: &Global, ctx: &Context, emote: Emo
 	}
 }
 
-async fn handle_add_entitlement(global: &Global, ctx: &Context, discord_id: u64, user: User) {
+async fn handle_entitlement_change(global: &Global, ctx: &Context, discord_id: u64, role_ids: &[&Id<Role>]) {
 	let member = GuildId::new(global.config.bot.guild_id).member(&ctx, discord_id).await;
 
 	if let Ok(member) = member {
-		let role_ids = user
-			.cached
-			.entitlements
-			.iter()
-			.filter_map(|e| {
-				if let EntitlementEdgeKind::Role { role_id } = e {
-					Some(role_id)
-				} else {
-					None
-				}
-			})
-			.collect::<Vec<_>>();
-
-		let _ = sync_roles(&role_ids, &member, ctx.http(), &global).await;
-	}
-}
-
-async fn handle_remove_entitlement(global: &Global, ctx: &Context, discord_id: u64, user: User) {
-	let member = GuildId::new(global.config.bot.guild_id).member(&ctx, discord_id).await;
-
-	if let Ok(member) = member {
-		let role_ids = user
-			.cached
-			.entitlements
-			.iter()
-			.filter_map(|e| {
-				if let EntitlementEdgeKind::Role { role_id } = e {
-					Some(role_id)
-				} else {
-					None
-				}
-			})
-			.collect::<Vec<_>>();
-
 		let _ = sync_roles(&role_ids, &member, ctx.http(), &global).await;
 	}
 }

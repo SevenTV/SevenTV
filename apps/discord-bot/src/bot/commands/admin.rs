@@ -58,26 +58,23 @@ pub async fn run(global: &Arc<Global>, ctx: &Context, command: &CommandInteracti
 
 						embed
 					}
-					Err(err) => match err {
-						QuerySyncRolesError::FailedQuery(err) => {
-							tracing::error!("failed to query: {err}");
+					Err(QuerySyncRolesError::FailedQuery(err)) => {
+						tracing::error!("failed to query: {err}");
 
-							CreateEmbed::new()
-								.title("Failed to query database")
-								.colour(Colour::new(16725838))
-						}
-						QuerySyncRolesError::UserNotFound => CreateEmbed::new()
-							.title("User does not have a connected 7TV account")
-							.colour(Colour::new(16753720)),
+						CreateEmbed::new()
+							.title("Failed to query database")
+							.colour(Colour::new(16725838))
+					}
+					Err(QuerySyncRolesError::UserNotFound) => CreateEmbed::new()
+						.title("User does not have a connected 7TV account")
+						.colour(Colour::new(16753720)),
+					Err(QuerySyncRolesError::SyncRole(err)) => {
+						tracing::error!("{err} to: {}", command.member.as_ref().unwrap().user.id);
 
-						QuerySyncRolesError::SyncRole(err) => {
-							tracing::error!("{err} to: {}", command.member.as_ref().unwrap().user.id);
-
-							CreateEmbed::new()
-								.title("Failed to apply roles")
-								.colour(Colour::new(16725838))
-						}
-					},
+						CreateEmbed::new()
+							.title("Failed to apply roles")
+							.colour(Colour::new(16725838))
+					}
 				},
 				Err(_) => CreateEmbed::new()
 					.title("Could not find user in guild")
