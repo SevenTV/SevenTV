@@ -19,6 +19,7 @@ use shared::database::updater::MongoReq;
 use shared::database::user::editor::UserEditorId;
 use shared::database::user::UserId;
 use shared::database::{MongoCollection, SearchableMongoCollection};
+use shared::event::{InternalEvent, InternalEventData, InternalEventPayload};
 use shared::typesense::types::TypesenseCollection;
 use typesense_rs::apis::documents_api::DeleteDocumentParams;
 use typesense_rs::apis::Api;
@@ -286,6 +287,8 @@ impl SupportedMongoCollection for mongo::User {
 			anyhow::bail!("failed to load data");
 		};
 
+		let before = data.clone();
+
 		if data.search_updated_at.is_some_and(|u| u > data.updated_at) {
 			return Ok(());
 		}
@@ -422,6 +425,23 @@ impl SupportedMongoCollection for mongo::User {
 		}
 
 		let updated_at = data.updated_at;
+
+		let payload = InternalEventPayload {
+			events: vec![InternalEvent {
+				actor: None,
+				session_id: None,
+				data: InternalEventData::UserCachedChange {
+					before: Box::new(before),
+					after: Box::new(data.clone()),
+				},
+				timestamp: chrono::Utc::now(),
+			}],
+			timestamp: chrono::Utc::now(),
+		};
+
+		if let Ok(payload) = rmp_serde::to_vec_named(&payload) {
+			global.nats.publish("api.v4.events", payload.into()).await?;
+		}
 
 		global
 			.user_batcher

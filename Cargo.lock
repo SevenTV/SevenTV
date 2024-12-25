@@ -3478,6 +3478,7 @@ dependencies = [
  "futures",
  "mongodb",
  "rand 0.8.5",
+ "rmp-serde",
  "rustls 0.23.19",
  "scuffle-batching",
  "scuffle-bootstrap",
