@@ -253,11 +253,15 @@ async fn handle_emote_process_success(global: &Global, ctx: &Context, emote: Emo
 
 			match activity_feed {
 				Some(activity_feed) => {
-					let image_url = if emote.flags.contains(EmoteFlags::Animated) {
-						format!("https://cdn.7tv.app/emote/{}/4x.gif", emote.id)
-					} else {
-						format!("https://cdn.7tv.app/emote/{}/4x.png", emote.id)
-					};
+					let image_url = format!(
+						"https://cdn.7tv.app/emote/{}/4x.{}",
+						emote.id,
+						if emote.flags.contains(EmoteFlags::Animated) {
+							"gif"
+						} else {
+							"png"
+						}
+					);
 
 					let embed = CreateEmbed::new()
 						.title(emote.default_name)
