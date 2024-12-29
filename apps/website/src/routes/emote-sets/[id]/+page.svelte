@@ -155,7 +155,7 @@
 														defaultZeroWidth
 														# deniedPersonal
 														# nsfw
-														# private
+														private
 														publicListed
 													}
 													images {
