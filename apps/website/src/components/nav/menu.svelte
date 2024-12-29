@@ -98,7 +98,7 @@
 				<Star />
 				{$t("pages.store.title")}
 			</MenuButton>
-			{#if $user?.permissions.user.manageAny}
+			{#if $user?.permissions.user.manageAny || $user?.permissions.user.manageBilling}
 				<MenuButton href="/admin" style="color: var(--staff)">
 					<Wrench />
 					{$t("pages.admin.title")}

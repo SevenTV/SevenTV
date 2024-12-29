@@ -53,6 +53,17 @@ type BillingMutation {
 }
 
 
+union CodeEffect = CodeEffectDirectEntitlement | CodeEffectSpecialEvent
+
+type CodeEffectDirectEntitlement {
+	entitlements: [EntitlementNodeAny!]!
+}
+
+type CodeEffectSpecialEvent {
+	specialEvent: SpecialEvent
+	specialEventId: Id!
+}
+
 type Color {
 	a: Int!
 	b: Int!
@@ -595,6 +606,7 @@ type Mutation {
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
 	jobs: JobMutation!
+	redeemCodes: RedeemCodeMutation!
 	tickets: TicketMutation!
 	userEditors: UserEditorMutation!
 	userSessions: UserSessionMutation!
@@ -716,7 +728,9 @@ type Query {
 	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
 	products: ProductQuery!
+	redeemCodes: RedeemCodeQuery!
 	search: SearchQuery!
+	specialEvents: SpecialEventQuery!
 	store: StoreQuery!
 	users: UserQuery!
 }
@@ -734,6 +748,49 @@ enum Ranking {
 type RawEntitlements {
 	edges: [EntitlementEdgeAnyAny!]!
 	nodes: [EntitlementNodeAny!]!
+}
+
+type RedeemCode {
+	activePeriod: TimePeriod
+	code: String!
+	createdAt: DateTime!
+	createdBy: User
+	createdById: Id!
+	description: String
+	effect: CodeEffect!
+	id: Id!
+	name: String!
+	remainingUses: Int!
+	searchUpdatedAt: DateTime
+	subscriptionEffect: RedeemCodeSubscriptionEffect
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type RedeemCodeMutation {
+	redeemCode(id: Id!): RedeemCodeOperation!
+}
+
+type RedeemCodeOperation {
+	deactivate: RedeemCode!
+}
+
+type RedeemCodeQuery {
+	redeemCode(id: Id!): RedeemCode
+	redeemCodes(page: Int, perPage: Int, query: String, remainingUses: Boolean): RedeemCodeSearchResult!
+}
+
+type RedeemCodeSearchResult {
+	items: [RedeemCode!]!
+	pageCount: Int!
+	totalCount: Int!
+}
+
+type RedeemCodeSubscriptionEffect {
+	id: Id!
+	noRedirectToStripe: Boolean!
+	subscriptionProduct: SubscriptionProduct
+	trialDays: Int
 }
 
 type RedeemResponse {
@@ -790,6 +847,8 @@ enum SortOrder {
 }
 
 type SpecialEvent {
+	createdAt: DateTime!
+	createdBy: User
 	createdById: Id!
 	description: String
 	id: Id!
@@ -797,6 +856,10 @@ type SpecialEvent {
 	searchUpdatedAt: DateTime
 	tags: [String!]!
 	updatedAt: DateTime!
+}
+
+type SpecialEventQuery {
+	specialEvents: [SpecialEvent!]!
 }
 
 type StoreQuery {
@@ -981,6 +1044,11 @@ enum TicketTargetType {
 	EMOTE
 	EMOTE_SET
 	USER
+}
+
+type TimePeriod {
+	end: DateTime!
+	start: DateTime!
 }
 
 type User {

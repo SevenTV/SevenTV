@@ -4,6 +4,7 @@ mod billing;
 mod emote;
 mod emote_set;
 mod jobs;
+mod redeem_code;
 mod ticket;
 mod user;
 mod user_editor;
@@ -14,11 +15,12 @@ mod user_session;
 pub struct Mutation {
 	emotes: emote::EmoteMutation,
 	emote_sets: emote_set::EmoteSetMutation,
+	jobs: jobs::JobMutation,
+	redeem_codes: redeem_code::RedeemCodeMutation,
 	tickets: ticket::TicketMutation,
 	users: user::UserMutation,
 	user_editors: user_editor::UserEditorMutation,
 	user_sessions: user_session::UserSessionMutation,
-	jobs: jobs::JobMutation,
 }
 
 #[async_graphql::ComplexObject]
