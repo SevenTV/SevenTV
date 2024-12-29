@@ -41,7 +41,7 @@
 		global: "#57ab5a",
 		trending: "#e0823d",
 		overlaying: "#fc8dc7",
-		private: "#dddddd",
+		private: "#888888",
 		unlisted: "#eb3d26",
 		personal_use_denied: "#eb3d26",
 		deleted: "#eb3d26",
