@@ -7,6 +7,7 @@
 		global: GlobeSimple,
 		trending: Fire,
 		overlaying: StackSimple,
+		private: LockSimple,
 		unlisted: EyeSlash,
 		personal_use_denied: EyeSlash,
 		deleted: Trash,
@@ -40,6 +41,7 @@
 		global: "#57ab5a",
 		trending: "#e0823d",
 		overlaying: "#fc8dc7",
+		private: "#888888",
 		unlisted: "#eb3d26",
 		personal_use_denied: "#eb3d26",
 		deleted: "#eb3d26",
@@ -94,6 +96,8 @@
 		}
 
 		if (emote.flags.defaultZeroWidth) flags.push("overlaying");
+
+		if (emote.flags.private) flags.push("private");
 
 		if (!emote.flags.publicListed) flags.push("unlisted");
 
@@ -176,6 +180,7 @@
 		Hourglass,
 		House,
 		Lightning,
+		LockSimple,
 		PencilSimple,
 		Prohibit,
 		Smiley,
@@ -205,6 +210,7 @@
 		global: $t("flags.global"),
 		trending: $t("flags.trending"),
 		overlaying: $t("flags.overlaying"),
+		private: "Private",
 		unlisted: $t("flags.unlisted"),
 		personal_use_denied: $t("flags.personal_use_denied"),
 		renamed: "Renamed",

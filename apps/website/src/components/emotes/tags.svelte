@@ -1,8 +1,12 @@
 <script lang="ts">
-	let { tags = [] }: { tags?: string[] } = $props();
+	import type { HTMLAttributes } from "svelte/elements";
+
+	type Props = { tags?: string[] } & HTMLAttributes<HTMLDivElement>;
+
+	let { tags = [], ...restProps }: Props = $props();
 </script>
 
-<div class="tags">
+<div class="tags" {...restProps}>
 	{#each tags as tag}
 		<a class="tag" href="/emotes?t={tag}">{tag}</a>
 	{/each}

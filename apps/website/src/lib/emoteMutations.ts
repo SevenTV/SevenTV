@@ -161,6 +161,7 @@ export async function updateName(id: string, name: string) {
 								flags {
 									animated
 									defaultZeroWidth
+									private
 									publicListed
 									approvedPersonal
 									deniedPersonal
@@ -337,6 +338,7 @@ export async function updateTags(id: string, tags: string[]) {
 								flags {
 									animated
 									defaultZeroWidth
+									private
 									publicListed
 									approvedPersonal
 									deniedPersonal
@@ -513,6 +515,7 @@ export async function updateFlags(id: string, flags: EmoteFlagsInput) {
 								flags {
 									animated
 									defaultZeroWidth
+									private
 									publicListed
 									approvedPersonal
 									deniedPersonal
@@ -689,6 +692,7 @@ export async function updateOwner(id: string, ownerId: string) {
 								flags {
 									animated
 									defaultZeroWidth
+									private
 									publicListed
 									approvedPersonal
 									deniedPersonal
@@ -860,6 +864,7 @@ export async function deleteEmote(id: string) {
 								flags {
 									animated
 									defaultZeroWidth
+									private
 									publicListed
 									approvedPersonal
 									deniedPersonal

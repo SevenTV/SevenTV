@@ -123,7 +123,7 @@ export async function queryEmotes(
 											defaultZeroWidth
 											# deniedPersonal
 											# nsfw
-											# private
+											private
 											publicListed
 										}
 										imagesPending

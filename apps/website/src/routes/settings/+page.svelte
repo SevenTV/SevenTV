@@ -41,7 +41,7 @@
 		if ($user) {
 			connections = queryConnections($user.id);
 		}
-	})
+	});
 </script>
 
 <svelte:head>
