@@ -3,6 +3,7 @@
 members = [
     "apps/api",
     "apps/cdn",
+    "apps/discord-bot",
     "apps/event-api",
     "apps/mongo-change-stream",
     "apps/mongo-typesense",

@@ -145,6 +145,7 @@ impl InternalEvent {
 				StoredEventRoleData::ChangeRank { .. } => "role.change_rank",
 			},
 			InternalEventData::UserPresence(_) => "user_presence.create",
+			InternalEventData::UserCachedChange { .. } => "user_cached_change",
 		}
 	}
 }
@@ -290,6 +291,10 @@ pub enum InternalEventData {
 		after: UserSession,
 		data: StoredEventUserSessionData,
 	},
+	UserCachedChange {
+		before: Box<User>,
+		after: Box<User>,
+	},
 	Ticket {
 		after: Ticket,
 		data: InternalEventTicketData,
@@ -333,6 +338,7 @@ impl InternalEventData {
 			InternalEventData::Badge { after, .. } => after.id.cast(),
 			InternalEventData::Role { after, .. } => after.id.cast(),
 			InternalEventData::UserPresence(data) => data.user.id.cast(),
+			InternalEventData::UserCachedChange { before, .. } => before.id.cast(),
 		}
 	}
 
@@ -352,6 +358,7 @@ impl InternalEventData {
 			InternalEventData::Badge { .. } => event_api::types::ObjectKind::Cosmetic,
 			InternalEventData::Role { .. } => event_api::types::ObjectKind::Role,
 			InternalEventData::UserPresence { .. } => event_api::types::ObjectKind::User,
+			InternalEventData::UserCachedChange { .. } => event_api::types::ObjectKind::User,
 		}
 	}
 
@@ -449,6 +456,7 @@ impl TryFrom<InternalEvent> for StoredEvent {
 				data,
 			},
 			InternalEventData::UserPresence { .. } => return Err(()),
+			InternalEventData::UserCachedChange { .. } => return Err(()),
 		};
 
 		Ok(Self {
