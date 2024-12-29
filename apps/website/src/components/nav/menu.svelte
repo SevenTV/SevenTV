@@ -98,10 +98,12 @@
 				<Star />
 				{$t("pages.store.title")}
 			</MenuButton>
-			<MenuButton href="/admin" style="color: var(--staff)">
-				<Wrench />
-				Admin
-			</MenuButton>
+			{#if $user?.permissions.user.manageAny}
+				<MenuButton href="/admin" style="color: var(--staff)">
+					<Wrench />
+					{$t("pages.admin.title")}
+				</MenuButton>
+			{/if}
 		</div>
 		{#if $user}
 			<div class="link-list">
