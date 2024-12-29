@@ -50,13 +50,38 @@
 		</div>
 	{/if}
 	{#if type === "text"}
-		<input type="text" bind:value {placeholder} {onkeypress} {disabled} {required} bind:this={input} />
+		<input
+			type="text"
+			bind:value
+			{placeholder}
+			{onkeypress}
+			{disabled}
+			{required}
+			bind:this={input}
+		/>
 	{:else if type === "email"}
-		<input type="email" bind:value {placeholder} {onkeypress} {disabled} {required} bind:this={input} />
+		<input
+			type="email"
+			bind:value
+			{placeholder}
+			{onkeypress}
+			{disabled}
+			{required}
+			bind:this={input}
+		/>
 	{:else if type === "password"}
-		<input type="password" bind:value {placeholder} {onkeypress} {disabled} {required} bind:this={input} />
+		<input
+			type="password"
+			bind:value
+			{placeholder}
+			{onkeypress}
+			{disabled}
+			{required}
+			bind:this={input}
+		/>
 	{:else if type === "textarea"}
-		<textarea bind:value {placeholder} {onkeypress} {disabled} {required} bind:this={input}></textarea>
+		<textarea bind:value {placeholder} {onkeypress} {disabled} {required} bind:this={input}
+		></textarea>
 	{/if}
 </label>
 

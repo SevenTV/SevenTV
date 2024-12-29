@@ -11,18 +11,29 @@
 		UserEditorState,
 		type EmoteSet,
 		type EmoteSetEmoteSearchResult,
+		type User,
 	} from "$/gql/graphql";
 	import Button from "$/components/input/button.svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import { emotesLayout } from "$/lib/layout";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
-	import { Lightning, LightningSlash, MagnifyingGlass, NotePencil } from "phosphor-svelte";
+	import {
+		CaretDown,
+		Lightning,
+		LightningSlash,
+		MagnifyingGlass,
+		NotePencil,
+	} from "phosphor-svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { untrack } from "svelte";
 	import { refreshUser, user } from "$/lib/auth";
 	import { setActiveSet } from "$/lib/userMutations";
 	import Spinner from "$/components/spinner.svelte";
 	import EditEmoteSetDialog from "$/components/dialogs/edit-emote-set-dialog.svelte";
+	import DropDown from "$/components/drop-down.svelte";
+	import UserName from "$/components/user-name.svelte";
+	import UserProfilePicture from "$/components/user-profile-picture.svelte";
+	import HideOn from "$/components/hide-on.svelte";
 
 	let { data }: { data: EmoteSet } = $props();
 
@@ -211,22 +222,33 @@
 	});
 
 	let setActiveLoading = $state(false);
+	// svelte-ignore non_reactive_update
+	let enableDropdown: ReturnType<typeof DropDown>;
 
-	async function setAsActiveSet(id?: string) {
-		if (!$user) {
-			return;
-		}
-
+	async function setAsActiveSet(userId: string, id?: string) {
+		enableDropdown?.close();
 		setActiveLoading = true;
 
-		await setActiveSet($user.id, id);
+		await setActiveSet(userId, id);
 
 		refreshUser();
 
 		setActiveLoading = false;
 	}
 
-	let isActive = $derived($user?.style.activeEmoteSetId === data.id);
+	let editingFor = $derived.by(() => {
+		const users: User[] = [];
+		if ($user) {
+			users.push($user);
+		}
+		const editorFor = $user?.editorFor;
+		for (const user of editorFor ?? []) {
+			if (user.user) {
+				users.push(user.user);
+			}
+		}
+		return users;
+	});
 </script>
 
 <svelte:head>
@@ -238,12 +260,17 @@
 <RemoveEmotesDialog bind:mode={removeEmotesDialogMode} /> -->
 <div class="layout">
 	<div class="set-info">
+		{#if data.owner}
+			<a href="/users/{data.owner.id}" class="user-info">
+				<UserProfilePicture user={data.owner} size={2 * 16} />
+				<HideOn mobile>
+					<UserName user={data.owner} />
+				</HideOn>
+			</a>
+		{/if}
 		<h1>{data.name}</h1>
-		<Flags
-			flags={emoteSetToFlags(data, $user, $defaultEmoteSet)}
-			style="position: absolute; top: 1rem; right: 1rem;"
-		/>
-		<Tags tags={data.tags} />
+		<Flags flags={emoteSetToFlags(data, $user, $defaultEmoteSet)} style="justify-self: end;" />
+		<Tags tags={data.tags} style="grid-column: 2;" />
 		{#if data.capacity}
 			<div class="progress">
 				<progress value={data.emotes.totalCount} max={data.capacity}></progress>
@@ -260,32 +287,49 @@
 				{/snippet}
 			</Button> -->
 			{#if $user}
-				{#snippet loadingSpinner()}
-					<Spinner />
-				{/snippet}
 				<!-- <HideOn mobile={selectionMode}> -->
-				{#if data.kind === EmoteSetKind.Normal && ($user.id === data.owner?.id || $user.permissions.user.manageAny || data.owner?.editors.some((editor) => editor?.editorId === $user?.id && editor.permissions.user.manageProfile))}
-					<Button
-						primary
-						onclick={() => setAsActiveSet(isActive ? undefined : data.id)}
-						icon={setActiveLoading ? loadingSpinner : undefined}
-						disabled={setActiveLoading}
-					>
-						{#if isActive}
-							{$t("labels.disable")}
-						{:else}
-							{$t("labels.enable")}
-						{/if}
-						{#snippet iconRight()}
-							{#if isActive}
-								<LightningSlash />
-							{:else}
-								<Lightning />
-							{/if}
+				{#if data.kind === EmoteSetKind.Normal && ($user.id === data.owner?.id || $user.permissions.user.manageAny || $user.editorFor.some((editor) => editor?.editorId === $user?.id && editor.permissions.user.manageProfile))}
+					<DropDown align="left" bind:this={enableDropdown}>
+						<Button primary disabled={setActiveLoading}>
+							Enable
+							{#snippet icon()}
+								{#if setActiveLoading}
+									<Spinner />
+								{:else}
+									<Lightning />
+								{/if}
+							{/snippet}
+							{#snippet iconRight()}
+								<CaretDown />
+							{/snippet}
+						</Button>
+						{#snippet dropdown()}
+							<div class="button-list">
+								{#each editingFor as user}
+									{@const isActive = user.style.activeEmoteSetId === data.id}
+									<Button
+										onclick={() => setAsActiveSet(user.id, isActive ? undefined : data.id)}
+										disabled={setActiveLoading}
+									>
+										{#if isActive}
+											{$t("labels.disable")} for <UserName {user} />
+										{:else}
+											{$t("labels.enable")} for <UserName {user} />
+										{/if}
+										{#snippet icon()}
+											{#if isActive}
+												<LightningSlash />
+											{:else}
+												<Lightning />
+											{/if}
+										{/snippet}
+									</Button>
+								{/each}
+							</div>
 						{/snippet}
-					</Button>
+					</DropDown>
 				{/if}
-				{#if $user?.permissions.emoteSet.manage && ($user.id === data.owner?.id || $user.permissions.emoteSet.manageAny || data.owner?.editors.some((editor) => editor?.editorId === $user?.id && editor.state === UserEditorState.Accepted && editor.permissions.emoteSet.manage))}
+				{#if $user.permissions.emoteSet.manage && ($user.id === data.owner?.id || $user.permissions.emoteSet.manageAny || data.owner?.editors.some((editor) => editor?.editorId === $user?.id && editor.state === UserEditorState.Accepted && editor.permissions.emoteSet.manage))}
 					<Button secondary hideOnMobile onclick={() => (editDialogMode = "shown")}>
 						{$t("labels.edit")}
 						{#snippet iconRight()}
@@ -379,24 +423,41 @@
 		gap: 1rem;
 	}
 
+	.user-info {
+		display: flex;
+		align-items: center;
+		column-gap: 0.5rem;
+
+		text-decoration: none;
+		font-weight: 500;
+		color: var(--text);
+	}
+
 	.set-info {
-		position: relative;
 		padding: 1rem;
 
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		gap: 0.75rem;
+		align-items: center;
 
 		background-color: var(--bg-medium);
 		border-radius: 0.5rem;
 
 		h1 {
+			grid-column: 2;
 			text-align: center;
 			font-size: 1.125rem;
 			font-weight: 500;
+
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
 		}
 
 		.progress {
+			grid-column: 1 / -1;
+
 			display: flex;
 			align-items: center;
 			gap: 0.75rem;
@@ -421,6 +482,11 @@
 		display: flex;
 		gap: 0.5rem;
 		align-items: center;
+	}
+
+	.button-list {
+		display: flex;
+		flex-direction: column;
 	}
 
 	.content {

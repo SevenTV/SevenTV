@@ -172,6 +172,87 @@ export async function fetchMe(): Promise<User | null> {
 								}
 							}
 							editorFor {
+								user {
+									id
+									mainConnection {
+										platformDisplayName
+										platformAvatarUrl
+									}
+									style {
+										activeProfilePicture {
+											images {
+												url
+												mime
+												size
+												width
+												height
+												scale
+												frameCount
+											}
+										}
+										activePaint {
+											id
+											name
+											data {
+												layers {
+													id
+													ty {
+														__typename
+														... on PaintLayerTypeSingleColor {
+															color {
+																hex
+															}
+														}
+														... on PaintLayerTypeLinearGradient {
+															angle
+															repeating
+															stops {
+																at
+																color {
+																	hex
+																}
+															}
+														}
+														... on PaintLayerTypeRadialGradient {
+															repeating
+															stops {
+																at
+																color {
+																	hex
+																}
+															}
+															shape
+														}
+														... on PaintLayerTypeImage {
+															images {
+																url
+																mime
+																size
+																scale
+																width
+																height
+																frameCount
+															}
+														}
+													}
+													opacity
+												}
+												shadows {
+													color {
+														hex
+													}
+													offsetX
+													offsetY
+													blur
+												}
+											}
+										}
+										activeEmoteSetId
+									}
+									highestRoleColor {
+										hex
+									}
+								}
 								state
 							}
 						}

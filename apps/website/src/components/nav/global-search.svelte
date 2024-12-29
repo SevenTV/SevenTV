@@ -4,7 +4,7 @@
 	import { t } from "svelte-i18n";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
-	import type { SearchResultAll, User } from "$/gql/graphql";
+	import type { SearchResultAll } from "$/gql/graphql";
 	import Spinner from "../spinner.svelte";
 	import ResponsiveImage from "../responsive-image.svelte";
 	import ChannelPreview from "../channel-preview.svelte";
@@ -12,6 +12,7 @@
 	import Flags, { emoteToFlags } from "../flags.svelte";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { editableEmoteSets } from "$/lib/emoteSets";
+	import { user } from "$/lib/auth";
 
 	let query = $state("");
 
@@ -19,15 +20,10 @@
 
 	async function search(query: string): Promise<SearchResultAll> {
 		if (!query) {
-			const users = new Map<string, User>();
-			for (const set of $editableEmoteSets) {
-				if (set.owner) {
-					users.set(set.owner.id, set.owner);
-				}
-			}
+			const users = $user?.editorFor.map((editor) => editor.user).filter((u) => !!u) ?? [];
 
 			return {
-				users: { items: [...users.values()], totalCount: users.size, pageCount: 1 },
+				users: { items: users, totalCount: users.length, pageCount: 1 },
 				emotes: { items: [], totalCount: 0, pageCount: 0 },
 			};
 		}
