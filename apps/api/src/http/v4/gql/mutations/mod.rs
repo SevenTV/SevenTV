@@ -3,6 +3,7 @@ use shared::database::user::UserId;
 mod billing;
 mod emote;
 mod emote_set;
+mod jobs;
 mod ticket;
 mod user;
 mod user_editor;
@@ -17,6 +18,7 @@ pub struct Mutation {
 	users: user::UserMutation,
 	user_editors: user_editor::UserEditorMutation,
 	user_sessions: user_session::UserSessionMutation,
+	jobs: jobs::JobMutation,
 }
 
 #[async_graphql::ComplexObject]

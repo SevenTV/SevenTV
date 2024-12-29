@@ -579,6 +579,10 @@ A scalar that can represent any JSON Object value.
 """
 scalar JSONObject
 
+type JobMutation {
+	rerunSubscriptionRefreshJob: Boolean!
+}
+
 input KickLinkInput {
 	avatarUrl: String
 	displayName: String!
@@ -590,6 +594,7 @@ type Mutation {
 	billing(userId: Id!): BillingMutation!
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
+	jobs: JobMutation!
 	tickets: TicketMutation!
 	userEditors: UserEditorMutation!
 	userSessions: UserSessionMutation!
