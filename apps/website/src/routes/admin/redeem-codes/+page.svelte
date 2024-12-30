@@ -70,8 +70,10 @@
 									}
 								}
 								subscriptionEffect {
-									id
 									trialDays
+									subscriptionProduct {
+										name
+									}
 								}
 								createdBy {
 									id
@@ -244,6 +246,7 @@
 					<th>Remaining Uses</th>
 					<th>Active Period</th>
 					<th>Effect</th>
+					<th>Subscription Effect</th>
 					<th>Created By</th>
 					<th>Created At</th>
 					<th>Actions</th>
@@ -252,7 +255,7 @@
 			<tbody>
 				{#await results}
 					<tr>
-						<td colspan="10" style="text-align: center;">
+						<td colspan="11" style="text-align: center;">
 							<Spinner />
 						</td>
 					</tr>
@@ -288,6 +291,18 @@
 									{/if}
 								</td>
 								<td>
+									{#if code.subscriptionEffect && code.subscriptionEffect.subscriptionProduct}
+										{code.subscriptionEffect.subscriptionProduct.name} -
+										{#if code.subscriptionEffect.trialDays}
+											{code.subscriptionEffect.trialDays} days trial
+										{:else}
+											No trial
+										{/if}
+									{:else}
+										None
+									{/if}
+								</td>
+								<td>
 									{#if code.createdBy}
 										<UserName user={code.createdBy as User} />
 									{:else}
@@ -316,7 +331,7 @@
 						{/each}
 					{:else}
 						<tr>
-							<td colspan="10" style="text-align: center;">No Codes</td>
+							<td colspan="11" style="text-align: center;">No Codes</td>
 						</tr>
 					{/if}
 				{/await}
