@@ -5,9 +5,9 @@ use std::time::Duration;
 use anyhow::Context;
 use async_nats::jetstream::{consumer, stream};
 use futures::StreamExt;
+use image_processor_proto::{event_callback, EventCallback};
 use prost::Message;
 use scuffle_context::ContextFutExt;
-use scuffle_image_processor_proto::{event_callback, EventCallback};
 use shared::database::image_set::{Image, ImageSet, ImageSetInput};
 use shared::image_processor::Subject;
 

@@ -6,7 +6,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
-use scuffle_image_processor_proto as image_processor;
+use image_processor_proto as image_processor;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{
 	EmoteModerationRequest, EmoteModerationRequestKind, EmoteModerationRequestStatus,

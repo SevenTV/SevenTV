@@ -8,7 +8,7 @@ use axum::{Extension, Json, Router};
 use bytes::Bytes;
 use hyper::StatusCode;
 use image_processor::{ProcessImageResponse, ProcessImageResponseUploadInfo};
-use scuffle_image_processor_proto as image_processor;
+use image_processor_proto as image_processor;
 use shared::database::badge::{Badge, BadgeId};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::role::permissions::{AdminPermission, PermissionsExt, RateLimitResource};

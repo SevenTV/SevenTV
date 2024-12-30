@@ -1,0 +1,33 @@
+[package]
+name = "image-processor-proto"
+version = "0.0.2"
+edition = "2021"
+
+[dependencies]
+prost = "0.13"
+tonic = "0.12"
+pbjson = { version = "0.7", optional = true }
+serde = { version = "1.0", optional = true }
+
+[build-dependencies]
+prost-build = "0.13"
+tonic-build = "0.12"
+pbjson-build = { version = "0.7", optional = true }
+
+[features]
+server = []
+client = []
+serde = [
+    "dep:serde",
+    "pbjson-build",
+    "pbjson",
+]
+
+[package.metadata.xtask]
+# Even though these features effect the build.rs they are additive because they do not
+# effect each other.
+addative-features = [
+    "server",
+    "client",
+    "serde",
+]

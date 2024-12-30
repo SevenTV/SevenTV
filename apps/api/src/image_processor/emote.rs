@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use image_processor_proto::event_callback;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use scuffle_image_processor_proto::event_callback;
 use shared::cdn::PurgeRequest;
 use shared::database::emote::{Emote, EmoteFlags, EmoteId};
 use shared::database::emote_moderation_request::{

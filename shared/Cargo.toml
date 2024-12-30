@@ -59,7 +59,7 @@ axum = "0.7"
 regex = "1.10.6"
 async-trait = "0.1.83"
 
-scuffle-image-processor-proto = { version = "0.0.2", features = ["client", "serde"] }
+image-processor-proto = { path = "../apps/image-processor/proto", features = ["client", "serde"] }
 scuffle-metrics = "0.0.4"
 scuffle-batching = "0.0.4"
 scuffle-http = { version = "0.0.4", features = [], default-features = false }

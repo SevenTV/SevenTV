@@ -4,7 +4,7 @@ use axum::extract::{DefaultBodyLimit, Path, State};
 use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
-use scuffle_image_processor_proto::{ProcessImageResponse, ProcessImageResponseUploadInfo};
+use image_processor_proto::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use shared::database::image_set::{ImageSet, ImageSetInput};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
@@ -107,8 +107,8 @@ async fn upload_user_profile_picture(
 			Ok(ProcessImageResponse { error: Some(err), .. }) => {
 				// At this point if we get a decode error then the image is invalid
 				// and we should return a bad request
-				if err.code == scuffle_image_processor_proto::ErrorCode::Decode as i32
-					|| err.code == scuffle_image_processor_proto::ErrorCode::InvalidInput as i32
+				if err.code == image_processor_proto::ErrorCode::Decode as i32
+					|| err.code == image_processor_proto::ErrorCode::InvalidInput as i32
 				{
 					return Err(ApiError::bad_request(
 						ApiErrorCode::ImageProcessorError,

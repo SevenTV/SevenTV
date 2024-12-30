@@ -1,4 +1,4 @@
-use scuffle_image_processor_proto::event_callback;
+use image_processor_proto::event_callback;
 
 use super::badge::BadgeId;
 use super::emote::{EmoteFlags, EmoteId};

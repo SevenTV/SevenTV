@@ -318,17 +318,17 @@ impl CosmeticPaintInput {
 					.upload_paint_layer(paint_id, layer_id, image_data)
 					.await
 				{
-					Ok(scuffle_image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
+					Ok(image_processor_proto::ProcessImageResponse { error: Some(error), .. }) => {
 						tracing::error!(error = ?error, "failed to start processing image");
 						return Err(ApiError::internal_server_error(
 							ApiErrorCode::ImageProcessorError,
 							"image processor error",
 						));
 					}
-					Ok(scuffle_image_processor_proto::ProcessImageResponse {
+					Ok(image_processor_proto::ProcessImageResponse {
 						id,
 						upload_info:
-							Some(scuffle_image_processor_proto::ProcessImageResponseUploadInfo {
+							Some(image_processor_proto::ProcessImageResponseUploadInfo {
 								path: Some(path),
 								content_type,
 								size,

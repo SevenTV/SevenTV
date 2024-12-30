@@ -6,6 +6,8 @@ members = [
     "apps/event-api",
     "apps/mongo-change-stream",
     "apps/mongo-typesense",
+    "apps/image-processor",
+    "apps/image-processor/proto",
     "macros",
     "shared",
     "tools/*",

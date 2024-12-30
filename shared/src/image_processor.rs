@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use anyhow::Context;
 use bytes::Bytes;
 use image_processor::{OutputFormat, OutputFormatOptions, OutputQuality};
-use scuffle_image_processor_proto::image_processor_client::ImageProcessorClient;
-use scuffle_image_processor_proto::{self as image_processor};
+use image_processor_proto::image_processor_client::ImageProcessorClient;
+use image_processor_proto::{self as image_processor};
 
 use crate::config::ImageProcessorConfig;
 use crate::database::badge::BadgeId;
@@ -292,7 +292,7 @@ impl ImageProcessor {
 					..Default::default()
 				}),
 				..self.make_task(
-					scuffle_image_processor_proto::Output {
+					image_processor_proto::Output {
 						max_aspect_ratio: None,
 						..self.make_output(format!("paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
 					},
@@ -398,7 +398,7 @@ impl ImageProcessor {
 					metadata: None,
 				}),
 				..self.make_task(
-					scuffle_image_processor_proto::Output {
+					image_processor_proto::Output {
 						max_aspect_ratio: None,
 						..self.make_output(format!("paint/{id}/layer/{layer_id}/{{scale}}x{{static}}.{{ext}}"))
 					},

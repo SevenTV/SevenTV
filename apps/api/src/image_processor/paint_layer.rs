@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use image_processor_proto::event_callback;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use scuffle_image_processor_proto::event_callback;
 use shared::cdn::PurgeRequest;
 use shared::database::paint::{Paint, PaintData, PaintId, PaintLayer, PaintLayerId, PaintLayerType};
 use shared::database::queries::{filter, update};

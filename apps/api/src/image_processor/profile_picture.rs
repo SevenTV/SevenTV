@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use image_processor_proto::event_callback;
 use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
-use scuffle_image_processor_proto::event_callback;
 use shared::cdn::PurgeRequest;
 use shared::database::queries::{filter, update};
 use shared::database::stored_event::{ImageProcessorEvent, StoredEventUserProfilePictureData};

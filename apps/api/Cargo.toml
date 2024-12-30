@@ -15,7 +15,7 @@ scuffle-bootstrap-telemetry = "0.0.3"
 scuffle-signal = { version = "0.0.2", features = ["bootstrap"] }
 scuffle-settings = { version = "0.0.2", features = ["toml", "templates", "cli", "bootstrap"] }
 scuffle-http = { version = "0.0.4", features = ["axum", "http1", "http2"], default-features = false }
-scuffle-image-processor-proto = { version = "0.0.2", features = ["client"] }
+image-processor-proto = { path = "../image-processor/proto", features = ["client"] }
 
 prost = "0.13"
 tonic = { version = "0.12" }
