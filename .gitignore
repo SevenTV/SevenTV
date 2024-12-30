@@ -3,4 +3,4 @@ target/
 local/
 .env
 .envrc
-.vs
+.vs/
