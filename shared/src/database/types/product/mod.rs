@@ -167,7 +167,7 @@ impl crate::typesense::types::TypesenseType for stripe::Currency {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TimePeriod {
 	#[serde(with = "crate::database::serde")]

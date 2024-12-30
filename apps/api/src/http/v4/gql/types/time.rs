@@ -12,3 +12,18 @@ impl From<shared::database::product::TimePeriod> for TimePeriod {
 		}
 	}
 }
+
+#[derive(async_graphql::InputObject)]
+pub struct TimePeriodInput {
+	pub start: chrono::DateTime<chrono::Utc>,
+	pub end: chrono::DateTime<chrono::Utc>,
+}
+
+impl From<TimePeriodInput> for shared::database::product::TimePeriod {
+	fn from(value: TimePeriodInput) -> Self {
+		Self {
+			start: value.start,
+			end: value.end,
+		}
+	}
+}
