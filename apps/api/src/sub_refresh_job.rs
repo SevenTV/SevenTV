@@ -476,7 +476,7 @@ async fn handle_xmas_2024_gift(global: &Arc<Global>, customer_id: UserId) -> Res
 	let events = [
 		Event {
 			start: chrono::Utc.with_ymd_and_hms(2024, 12, 14, 0, 0, 0).unwrap(),
-			end: chrono::Utc.with_ymd_and_hms(2024, 12, 28, 0, 0, 0).unwrap(),
+			end: chrono::Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap(),
 			levels: vec![
 				Level {
 					event_id: SpecialEventId::from_str(XMAS_1_SUB_ID).unwrap(),
