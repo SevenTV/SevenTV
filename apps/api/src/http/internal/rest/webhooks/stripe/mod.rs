@@ -262,9 +262,17 @@ pub async fn handle(
 
 	match res {
 		Ok(sub_ids) => {
-			for sub_id in sub_ids {
-				sub_refresh_job::refresh(&global, sub_id).await?;
-			}
+			// We schedule a task to run eventually to refresh subscriptions
+			// because the updates may not reflect immediately in the database.
+			// This is a bit-of-a hack however not a big deal since even if this does not run
+			// the subscriptions will be refreshed eventually by the cron job.
+			tokio::spawn(async move {
+				tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
+				for sub_id in sub_ids {
+					sub_refresh_job::refresh(&global, sub_id).await.ok();
+				}
+			});
 			Ok(StatusCode::OK)
 		}
 		Err(TransactionError::Custom(e)) => Err(e),
