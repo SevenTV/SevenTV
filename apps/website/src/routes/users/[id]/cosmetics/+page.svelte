@@ -157,6 +157,7 @@
 			);
 
 		const paints: { [key: string]: { paint: Paint; sourceKey?: string; sourceName?: string } } = {};
+		const paintSortings: Option[] = [];
 		const paintFilters: Option[] = [];
 
 		for (const entitlement of inventory.paints.filter((p) => p.to.paint)) {
@@ -169,6 +170,18 @@
 					sourceKey: roleId,
 					sourceName: roleName,
 				};
+
+				if (!paintSortings.some((f) => f.value === 'sort-asc')) {
+					paintSortings.push({
+						label: 'Sort Asc. (A-Z)',
+						value: 'sort-asc',
+					});
+				} else if (!paintSortings.some((f) => f.value === 'sort-desc')) {
+					paintFilters.push({
+						label: 'Sort Desc. (A-Z)',
+						value: 'sort-desc',
+					});
+				}
 
 				if (!paintFilters.some((f) => f.value === roleId)) {
 					paintFilters.push({
@@ -235,6 +248,7 @@
 	let editingEnabled = $derived($user?.id === data.id || $user?.permissions.user.manageAny);
 
 	let paintQuery = $state("");
+	let paintSorting = $state<string>("");
 	let paintFilter = $state<string>("");
 	let paintsLayout = $state<Layout>("big-grid");
 
@@ -337,6 +351,13 @@
 						(!paintFilter || p.sourceKey === paintFilter) &&
 						(!paintQuery || p.paint.name.toLowerCase().includes(paintQuery.trim().toLowerCase())),
 				)
+				.sort((a, b) => {
+					if (paintSorting === 'sort-asc') {
+							return a.paint.name.toLowerCase() < b.paint.name.toLowerCase() ? -1 : (a.paint.name.toLowerCase() > b.paint.name.toLowerCase() ? 1 : 0);
+					} else if (paintSorting === 'sort-desc') {
+							return b.paint.name.toLowerCase() < a.paint.name.toLowerCase() ? -1 : (b.paint.name.toLowerCase() > a.paint.name.toLowerCase() ? 1 : 0);
+					}
+				})
 				.map((p) => p.paint.id),
 		)}
 		<div class="layout">
@@ -403,6 +424,12 @@
 						{/if}
 					</h1>
 					<div class="buttons">
+						{#if inventory.paintSortings.length > 0}
+							<Select
+								bind:selected={paintSorting}
+								options={[{ label: "Default", value: "" }, ...inventory.paintSortings]}
+							/>
+						{/if}
 						{#if inventory.paintFilters.length > 0}
 							<Select
 								bind:selected={paintFilter}
