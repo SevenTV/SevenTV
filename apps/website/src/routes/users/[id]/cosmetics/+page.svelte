@@ -176,7 +176,9 @@
 						label: 'Sort Asc. (A-Z)',
 						value: 'sort-asc',
 					});
-				} else if (!paintSortings.some((s) => s.value === 'sort-desc')) {
+				} 
+				
+				if (!paintSortings.some((s) => s.value === 'sort-desc')) {
 					paintFilters.push({
 						label: 'Sort Desc. (Z-A)',
 						value: 'sort-desc',
