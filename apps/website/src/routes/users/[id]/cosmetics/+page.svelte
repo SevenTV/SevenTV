@@ -171,14 +171,14 @@
 					sourceName: roleName,
 				};
 
-				if (!paintSortings.some((f) => f.value === 'sort-asc')) {
+				if (!paintSortings.some((s) => s.value === 'sort-asc')) {
 					paintSortings.push({
 						label: 'Sort Asc. (A-Z)',
 						value: 'sort-asc',
 					});
-				} else if (!paintSortings.some((f) => f.value === 'sort-desc')) {
+				} else if (!paintSortings.some((s) => s.value === 'sort-desc')) {
 					paintFilters.push({
-						label: 'Sort Desc. (A-Z)',
+						label: 'Sort Desc. (Z-A)',
 						value: 'sort-desc',
 					});
 				}
@@ -353,9 +353,9 @@
 				)
 				.sort((a, b) => {
 					if (paintSorting === 'sort-asc') {
-							return a.paint.name.toLowerCase() < b.paint.name.toLowerCase() ? -1 : (a.paint.name.toLowerCase() > b.paint.name.toLowerCase() ? 1 : 0);
+						return a.paint.name.toLowerCase() < b.paint.name.toLowerCase() ? -1 : (a.paint.name.toLowerCase() > b.paint.name.toLowerCase() ? 1 : 0);
 					} else if (paintSorting === 'sort-desc') {
-							return b.paint.name.toLowerCase() < a.paint.name.toLowerCase() ? -1 : (b.paint.name.toLowerCase() > a.paint.name.toLowerCase() ? 1 : 0);
+						return b.paint.name.toLowerCase() < a.paint.name.toLowerCase() ? -1 : (b.paint.name.toLowerCase() > a.paint.name.toLowerCase() ? 1 : 0);
 					}
 				})
 				.map((p) => p.paint.id),
