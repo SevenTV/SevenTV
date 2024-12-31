@@ -90,7 +90,7 @@
 
 		if (!res.data) throw res.error?.message;
 
-		return res.data.badges.badges;
+		return res.data.badges.badges.toReversed();
 	}
 
 	let badges = $derived(type === EntitlementNodeTypeInput.Badge ? queryBadges() : []);
@@ -112,7 +112,7 @@
 
 		if (!res.data) throw res.error?.message;
 
-		return res.data.paints.paints;
+		return res.data.paints.paints.toReversed();
 	}
 
 	let paints = $derived(type === EntitlementNodeTypeInput.Paint ? queryPaints() : []);
