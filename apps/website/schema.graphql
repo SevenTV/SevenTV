@@ -42,6 +42,10 @@ type BadgeProgressNextBadge {
 	percentage: Float!
 }
 
+type BadgeQuery {
+	badges: [Badge!]!
+}
+
 type Billing {
 	badgeProgress: BadgeProgress!
 	subscriptionInfo: SubscriptionInfo!
@@ -725,6 +729,10 @@ type PaintPermission {
 	manage: Boolean!
 }
 
+type PaintQuery {
+	paints: [Paint!]!
+}
+
 enum PaintRadialGradientShape {
 	CIRCLE
 	ELLIPSE
@@ -782,10 +790,13 @@ type ProviderSubscriptionId {
 
 type Query {
 	backdoor: BackdoorQuery!
+	badges: BadgeQuery!
 	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
+	paints: PaintQuery!
 	products: ProductQuery!
 	redeemCodes: RedeemCodeQuery!
+	roles: RoleQuery!
 	search: SearchQuery!
 	specialEvents: SpecialEventQuery!
 	store: StoreQuery!
@@ -878,6 +889,10 @@ type RolePermission {
 	admin: Boolean!
 	assign: Boolean!
 	manage: Boolean!
+}
+
+type RoleQuery {
+	roles: [Role!]!
 }
 
 type SearchQuery {
