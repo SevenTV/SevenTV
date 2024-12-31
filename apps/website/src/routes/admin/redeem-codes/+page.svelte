@@ -162,6 +162,7 @@
 	let results = $state<Promise<RedeemCodeSearchResult>>();
 
 	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		createCodesDialogMode;
 		results = queryCodes(query, remainingUses, page);
 	});
