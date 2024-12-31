@@ -4,65 +4,18 @@ use async_graphql::Context;
 use shared::database::entitlement::EntitlementEdgeKind;
 use shared::database::queries::filter;
 use shared::database::role::permissions::AdminPermission;
-use shared::database::{Id, MongoCollection};
+use shared::database::MongoCollection;
 
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::PermissionGuard;
+use crate::http::v4::gql::types::raw_entitlement::EntitlementNodeInput;
 use crate::http::v4::gql::types::{EntitlementEdge, EntitlementNodeAny};
 
 mod operation;
 
 #[derive(Default)]
 pub struct EntitlementEdgeMutation;
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, async_graphql::Enum)]
-enum EntitlementNodeTypeInput {
-	User,
-	Role,
-	Badge,
-	Paint,
-	EmoteSet,
-	SubscriptionBenefit,
-	SpecialEvent,
-	GlobalDefaultEntitlementGroup,
-}
-
-#[derive(async_graphql::InputObject)]
-struct EntitlementNodeInput {
-	#[graphql(name = "type")]
-	ty: EntitlementNodeTypeInput,
-	id: Id<()>,
-}
-
-impl From<EntitlementNodeInput> for shared::database::entitlement::EntitlementEdgeKind {
-	fn from(value: EntitlementNodeInput) -> Self {
-		match value.ty {
-			EntitlementNodeTypeInput::User => EntitlementEdgeKind::User {
-				user_id: value.id.cast(),
-			},
-			EntitlementNodeTypeInput::Role => EntitlementEdgeKind::Role {
-				role_id: value.id.cast(),
-			},
-			EntitlementNodeTypeInput::Badge => EntitlementEdgeKind::Badge {
-				badge_id: value.id.cast(),
-			},
-			EntitlementNodeTypeInput::Paint => EntitlementEdgeKind::Paint {
-				paint_id: value.id.cast(),
-			},
-			EntitlementNodeTypeInput::EmoteSet => EntitlementEdgeKind::EmoteSet {
-				emote_set_id: value.id.cast(),
-			},
-			EntitlementNodeTypeInput::SubscriptionBenefit => EntitlementEdgeKind::SubscriptionBenefit {
-				subscription_benefit_id: value.id.cast(),
-			},
-			EntitlementNodeTypeInput::SpecialEvent => EntitlementEdgeKind::SpecialEvent {
-				special_event_id: value.id.cast(),
-			},
-			EntitlementNodeTypeInput::GlobalDefaultEntitlementGroup => EntitlementEdgeKind::GlobalDefaultEntitlementGroup,
-		}
-	}
-}
 
 #[async_graphql::Object]
 impl EntitlementEdgeMutation {

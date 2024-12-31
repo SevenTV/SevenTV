@@ -1,4 +1,6 @@
 use itertools::Itertools;
+use shared::database::entitlement::EntitlementEdgeKind;
+use shared::database::Id;
 
 use super::{EntitlementEdge, EntitlementNodeAny};
 
@@ -20,5 +22,53 @@ impl RawEntitlements {
 impl RawEntitlements {
 	async fn nodes(&self) -> Vec<&EntitlementNodeAny> {
 		self.edges.iter().flat_map(|edge| [&edge.from, &edge.to]).unique().collect()
+	}
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, async_graphql::Enum)]
+pub enum EntitlementNodeTypeInput {
+	User,
+	Role,
+	Badge,
+	Paint,
+	EmoteSet,
+	SubscriptionBenefit,
+	SpecialEvent,
+	GlobalDefaultEntitlementGroup,
+}
+
+#[derive(async_graphql::InputObject)]
+pub struct EntitlementNodeInput {
+	#[graphql(name = "type")]
+	ty: EntitlementNodeTypeInput,
+	id: Id<()>,
+}
+
+impl From<EntitlementNodeInput> for EntitlementEdgeKind {
+	fn from(value: EntitlementNodeInput) -> Self {
+		match value.ty {
+			EntitlementNodeTypeInput::User => EntitlementEdgeKind::User {
+				user_id: value.id.cast(),
+			},
+			EntitlementNodeTypeInput::Role => EntitlementEdgeKind::Role {
+				role_id: value.id.cast(),
+			},
+			EntitlementNodeTypeInput::Badge => EntitlementEdgeKind::Badge {
+				badge_id: value.id.cast(),
+			},
+			EntitlementNodeTypeInput::Paint => EntitlementEdgeKind::Paint {
+				paint_id: value.id.cast(),
+			},
+			EntitlementNodeTypeInput::EmoteSet => EntitlementEdgeKind::EmoteSet {
+				emote_set_id: value.id.cast(),
+			},
+			EntitlementNodeTypeInput::SubscriptionBenefit => EntitlementEdgeKind::SubscriptionBenefit {
+				subscription_benefit_id: value.id.cast(),
+			},
+			EntitlementNodeTypeInput::SpecialEvent => EntitlementEdgeKind::SpecialEvent {
+				special_event_id: value.id.cast(),
+			},
+			EntitlementNodeTypeInput::GlobalDefaultEntitlementGroup => EntitlementEdgeKind::GlobalDefaultEntitlementGroup,
+		}
 	}
 }

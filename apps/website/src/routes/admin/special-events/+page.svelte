@@ -1,6 +1,7 @@
 <script lang="ts">
 	import AdminAssignEntitlementDialog from "$/components/dialogs/admin-assign-entitlement-dialog.svelte";
 	import AdminCreateSpecialEventDialog from "$/components/dialogs/admin-create-special-event-dialog.svelte";
+	import AdminViewEntitlementDialog from "$/components/dialogs/admin-view-entitlement-dialog.svelte";
 	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import Button from "$/components/input/button.svelte";
 	import Spinner from "$/components/spinner.svelte";
@@ -9,7 +10,7 @@
 	import { EntitlementNodeTypeInput, type User } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import moment from "moment";
-	import { Graph, Plus } from "phosphor-svelte";
+	import { Eye, Graph, Plus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
 	async function querySpecialEvents() {
@@ -112,6 +113,7 @@
 	});
 
 	let assignEntitlementsDialog = $state<string>();
+	let viewEntitlementsDialog = $state<string>();
 </script>
 
 <svelte:head>
@@ -171,6 +173,16 @@
 								from={{ type: EntitlementNodeTypeInput.SpecialEvent, id: specialEvent.id }}
 								fromName={specialEvent.name}
 							/>
+							<AdminViewEntitlementDialog
+								bind:mode={() => (viewEntitlementsDialog === specialEvent.id ? "shown" : "hidden"),
+								(mode) => {
+									if (mode === "hidden") {
+										viewEntitlementsDialog = undefined;
+									}
+								}}
+								from={{ type: EntitlementNodeTypeInput.SpecialEvent, id: specialEvent.id }}
+								fromName={specialEvent.name}
+							/>
 							<tr>
 								<td>{specialEvent.name}</td>
 								<td>{specialEvent.description}</td>
@@ -197,6 +209,14 @@
 										>
 											{#snippet icon()}
 												<Graph />
+											{/snippet}
+										</Button>
+										<Button
+											title="View Entitlements"
+											onclick={() => (viewEntitlementsDialog = specialEvent.id)}
+										>
+											{#snippet icon()}
+												<Eye />
 											{/snippet}
 										</Button>
 									</div>

@@ -464,6 +464,10 @@ type EntitlementNodeUser {
 	userId: Id!
 }
 
+type EntitlementQuery {
+	traverse(from: EntitlementNodeInput!): RawEntitlements!
+}
+
 union EventEmoteData = EventEmoteDataUpload | EventEmoteDataProcess | EventEmoteDataChangeName | EventEmoteDataMerge | EventEmoteDataChangeOwner | EventEmoteDataChangeTags | EventEmoteDataChangeFlags | EventEmoteDataDelete
 
 type EventEmoteDataChangeFlags {
@@ -793,6 +797,7 @@ type Query {
 	badges: BadgeQuery!
 	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
+	entitlements: EntitlementQuery!
 	paints: PaintQuery!
 	products: ProductQuery!
 	redeemCodes: RedeemCodeQuery!
