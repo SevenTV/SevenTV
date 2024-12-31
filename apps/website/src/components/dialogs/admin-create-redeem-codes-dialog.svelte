@@ -10,6 +10,7 @@
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import Select from "../input/select.svelte";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
+	import type { CreateRedeemCodeBatchInput, CreateRedeemCodeInput } from "$/gql/graphql";
 
 	let { mode = $bindable() }: { mode: DialogMode } = $props();
 
@@ -81,12 +82,10 @@
 
 		loading = true;
 
-		const data = {
-			number,
+		let commonData = {
 			name,
 			description,
 			tags,
-			code: autoGenerate ? undefined : code,
 			uses,
 			activePeriod:
 				noExpiration || !startDate || !endDate
@@ -106,6 +105,12 @@
 		};
 
 		if (number === 1) {
+			let data: CreateRedeemCodeInput = commonData;
+
+			if (!autoGenerate) {
+				data.code = code;
+			}
+
 			const res = await gqlClient().mutation(
 				graphql(`
 					mutation AdminCreateRedeemCode($data: CreateRedeemCodeInput!) {
@@ -123,6 +128,8 @@
 				download("redeem-codes.txt", res.data.redeemCodes.create.code);
 			}
 		} else {
+			const data: CreateRedeemCodeBatchInput = { number, ...commonData };
+
 			const res = await gqlClient().mutation(
 				graphql(`
 					mutation AdminCreateRedeemCodes($data: CreateRedeemCodeBatchInput!) {
