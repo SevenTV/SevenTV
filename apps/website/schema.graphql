@@ -72,6 +72,28 @@ type Color {
 	r: Int!
 }
 
+input CreateRedeemCodeBatchInput {
+	activePeriod: TimePeriodInput
+	description: String
+	name: String!
+	number: Int!
+	specialEventId: Id!
+	subscriptionEffect: RedeemCodeSubscriptionEffectInput
+	tags: [String!]!
+	uses: Int!
+}
+
+input CreateRedeemCodeInput {
+	activePeriod: TimePeriodInput
+	code: String
+	description: String
+	name: String!
+	specialEventId: Id!
+	subscriptionEffect: RedeemCodeSubscriptionEffectInput
+	tags: [String!]!
+	uses: Int!
+}
+
 scalar CustomerId
 
 """
@@ -768,6 +790,8 @@ type RedeemCode {
 }
 
 type RedeemCodeMutation {
+	create(data: CreateRedeemCodeInput!): RedeemCode!
+	createBatch(data: CreateRedeemCodeBatchInput!): [RedeemCode!]!
 	redeemCode(id: Id!): RedeemCodeOperation!
 }
 
@@ -790,6 +814,12 @@ type RedeemCodeSubscriptionEffect {
 	id: Id!
 	noRedirectToStripe: Boolean!
 	subscriptionProduct: SubscriptionProduct
+	trialDays: Int
+}
+
+input RedeemCodeSubscriptionEffectInput {
+	noRedirectToStripe: Boolean!
+	productId: Id!
 	trialDays: Int
 }
 
@@ -1047,6 +1077,11 @@ enum TicketTargetType {
 }
 
 type TimePeriod {
+	end: DateTime!
+	start: DateTime!
+}
+
+input TimePeriodInput {
 	end: DateTime!
 	start: DateTime!
 }

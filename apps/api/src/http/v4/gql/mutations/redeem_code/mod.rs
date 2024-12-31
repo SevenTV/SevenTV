@@ -47,7 +47,7 @@ struct CreateRedeemCodeBatchInput {
 struct RedeemCodeSubscriptionEffectInput {
 	pub product_id: SubscriptionProductId,
 	pub trial_days: Option<u32>,
-	pub no_no_redirect_to_stripe: bool,
+	pub no_redirect_to_stripe: bool,
 }
 
 impl From<RedeemCodeSubscriptionEffectInput> for shared::database::product::codes::RedeemCodeSubscriptionEffect {
@@ -55,7 +55,7 @@ impl From<RedeemCodeSubscriptionEffectInput> for shared::database::product::code
 		Self {
 			id: input.product_id,
 			trial_days: input.trial_days.map(|d| d as i32),
-			no_redirect_to_stripe: input.no_no_redirect_to_stripe,
+			no_redirect_to_stripe: input.no_redirect_to_stripe,
 		}
 	}
 }
@@ -123,7 +123,7 @@ impl RedeemCodeMutation {
 		Ok(redeem_code.into())
 	}
 
-	#[tracing::instrument(skip_all, name = "RedeemCodeMutation::create")]
+	#[tracing::instrument(skip_all, name = "RedeemCodeMutation::create_batch")]
 	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageBilling)")]
 	async fn create_batch(&self, ctx: &Context<'_>, data: CreateRedeemCodeBatchInput) -> Result<Vec<RedeemCode>, ApiError> {
 		let global = ctx

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import AdminCreateRedeemCodesDialog from "$/components/dialogs/admin-create-redeem-codes-dialog.svelte";
+	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import Button from "$/components/input/button.svelte";
 	import Checkbox from "$/components/input/checkbox.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
@@ -183,6 +185,8 @@
 			results = queryCodes(query, remainingUses, page);
 		}
 	}
+
+	let createCodesDialogMode: DialogMode = $state("hidden");
 </script>
 
 <svelte:head>
@@ -190,9 +194,10 @@
 </svelte:head>
 
 <div class="layout">
+	<AdminCreateRedeemCodesDialog bind:mode={createCodesDialogMode} />
 	<div class="buttons">
 		<div class="buttons">
-			<Button primary>
+			<Button primary onclick={() => (createCodesDialogMode = "shown")}>
 				{#snippet icon()}
 					<Plus />
 				{/snippet}
@@ -221,6 +226,7 @@
 					{/snippet}
 				</Button>
 				<input
+					class="no-spinners"
 					type="number"
 					placeholder="Page"
 					min={PAGE_MIN_LIMIT}
@@ -370,24 +376,6 @@
 	.actions {
 		display: flex;
 		align-items: center;
-	}
-
-	input[type="number"] {
-		-moz-appearance: textfield;
-		appearance: textfield;
-
-		text-align: center;
-		width: 3rem;
-		height: 2rem;
-		border: none;
-		padding: 0.5rem;
-		border-radius: 0.5rem;
-
-		&::-webkit-outer-spin-button,
-		&::-webkit-inner-spin-button {
-			-webkit-appearance: none;
-			margin: 0;
-		}
 	}
 
 	.table-wrapper {
