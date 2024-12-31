@@ -94,6 +94,12 @@ input CreateRedeemCodeInput {
 	uses: Int!
 }
 
+input CreateSpecialEventInput {
+	description: String
+	name: String!
+	tags: [String!]!
+}
+
 scalar CustomerId
 
 """
@@ -629,6 +635,7 @@ type Mutation {
 	emotes: EmoteMutation!
 	jobs: JobMutation!
 	redeemCodes: RedeemCodeMutation!
+	specialEvents: SpecialEventMutation!
 	tickets: TicketMutation!
 	userEditors: UserEditorMutation!
 	userSessions: UserSessionMutation!
@@ -886,6 +893,10 @@ type SpecialEvent {
 	searchUpdatedAt: DateTime
 	tags: [String!]!
 	updatedAt: DateTime!
+}
+
+type SpecialEventMutation {
+	create(data: CreateSpecialEventInput!): SpecialEvent!
 }
 
 type SpecialEventQuery {

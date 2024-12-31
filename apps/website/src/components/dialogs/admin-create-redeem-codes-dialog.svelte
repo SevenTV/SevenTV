@@ -165,7 +165,7 @@
 			{},
 		);
 
-		return res.data?.specialEvents.specialEvents;
+		return res.data?.specialEvents.specialEvents.toReversed();
 	}
 
 	let specialEvents = $state(querySpecialEvents());

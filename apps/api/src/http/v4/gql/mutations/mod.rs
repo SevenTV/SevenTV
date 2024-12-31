@@ -5,6 +5,7 @@ mod emote;
 mod emote_set;
 mod jobs;
 mod redeem_code;
+mod special_event;
 mod ticket;
 mod user;
 mod user_editor;
@@ -17,6 +18,7 @@ pub struct Mutation {
 	emote_sets: emote_set::EmoteSetMutation,
 	jobs: jobs::JobMutation,
 	redeem_codes: redeem_code::RedeemCodeMutation,
+	special_events: special_event::SpecialEventMutation,
 	tickets: ticket::TicketMutation,
 	users: user::UserMutation,
 	user_editors: user_editor::UserEditorMutation,

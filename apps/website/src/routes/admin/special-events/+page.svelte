@@ -1,4 +1,6 @@
 <script lang="ts">
+	import AdminCreateSpecialEventDialog from "$/components/dialogs/admin-create-special-event-dialog.svelte";
+	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import Button from "$/components/input/button.svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
@@ -98,7 +100,15 @@
 		return res.data?.specialEvents.specialEvents;
 	}
 
-	let results = $state(querySpecialEvents());
+	let results = $state<ReturnType<typeof querySpecialEvents>>();
+
+	let createDialogMode: DialogMode = $state("hidden");
+
+	$effect(() => {
+		if (createDialogMode === "hidden") {
+			results = querySpecialEvents();
+		}
+	});
 </script>
 
 <svelte:head>
@@ -106,9 +116,10 @@
 </svelte:head>
 
 <div class="layout">
+	<AdminCreateSpecialEventDialog bind:mode={createDialogMode} />
 	<div class="buttons">
 		<div class="buttons">
-			<Button primary>
+			<Button primary onclick={() => (createDialogMode = "shown")}>
 				{#snippet icon()}
 					<Plus />
 				{/snippet}

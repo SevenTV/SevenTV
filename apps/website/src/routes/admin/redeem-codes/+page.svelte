@@ -162,6 +162,7 @@
 	let results = $state<Promise<RedeemCodeSearchResult>>();
 
 	$effect(() => {
+		createCodesDialogMode;
 		results = queryCodes(query, remainingUses, page);
 	});
 
