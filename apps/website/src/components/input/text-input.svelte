@@ -8,6 +8,8 @@
 		placeholder?: string | null;
 		big?: boolean;
 		required?: boolean;
+		minlength?: number;
+		maxlength?: number;
 		disabled?: boolean;
 		children?: Snippet;
 		nonLabelChildren?: Snippet;
@@ -21,6 +23,8 @@
 		placeholder = null,
 		big = false,
 		required = false,
+		minlength,
+		maxlength,
 		disabled = false,
 		children,
 		nonLabelChildren,
@@ -55,6 +59,8 @@
 			bind:value
 			{placeholder}
 			{onkeypress}
+			{minlength}
+			{maxlength}
 			{disabled}
 			{required}
 			bind:this={input}
@@ -65,6 +71,8 @@
 			bind:value
 			{placeholder}
 			{onkeypress}
+			{minlength}
+			{maxlength}
 			{disabled}
 			{required}
 			bind:this={input}
@@ -75,12 +83,22 @@
 			bind:value
 			{placeholder}
 			{onkeypress}
+			{minlength}
+			{maxlength}
 			{disabled}
 			{required}
 			bind:this={input}
 		/>
 	{:else if type === "textarea"}
-		<textarea bind:value {placeholder} {onkeypress} {disabled} {required} bind:this={input}
+		<textarea
+			bind:value
+			{placeholder}
+			{onkeypress}
+			{minlength}
+			{maxlength}
+			{disabled}
+			{required}
+			bind:this={input}
 		></textarea>
 	{/if}
 </label>

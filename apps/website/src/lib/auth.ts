@@ -145,6 +145,10 @@ export async function fetchMe(): Promise<User | null> {
 							}
 							editableEmoteSetIds
 							permissions {
+								admin {
+									manageRedeemCodes
+									manageEntitlements
+								}
 								user {
 									manageAny
 									useCustomProfilePicture

@@ -264,8 +264,8 @@ pub async fn handle(
 		Ok(sub_ids) => {
 			// We schedule a task to run eventually to refresh subscriptions
 			// because the updates may not reflect immediately in the database.
-			// This is a bit-of-a hack however not a big deal since even if this does not run
-			// the subscriptions will be refreshed eventually by the cron job.
+			// This is a bit-of-a hack however not a big deal since even if this does not
+			// run the subscriptions will be refreshed eventually by the cron job.
 			tokio::spawn(async move {
 				tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 

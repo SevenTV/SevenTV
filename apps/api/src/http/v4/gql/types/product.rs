@@ -7,6 +7,7 @@ use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::{ProductId, SubscriptionBenefitId, SubscriptionProductId};
 use shared::database::user::UserId;
 
+use super::User;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
@@ -189,6 +190,7 @@ impl From<shared::database::product::SubscriptionBenefit> for SubscriptionBenefi
 // }
 
 #[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
 pub struct SpecialEvent {
 	pub id: SpecialEventId,
 	pub name: String,
@@ -197,6 +199,29 @@ pub struct SpecialEvent {
 	pub created_by_id: UserId,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[async_graphql::ComplexObject]
+impl SpecialEvent {
+	#[tracing::instrument(skip_all, name = "SpecialEvent::created_at")]
+	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
+		self.id.timestamp()
+	}
+
+	#[tracing::instrument(skip_all, name = "SpecialEvent::created_by")]
+	async fn created_by(&self, ctx: &Context<'_>) -> Result<Option<User>, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let user = global
+			.user_loader
+			.load_fast(global, self.created_by_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
+
+		Ok(user.map(Into::into))
+	}
 }
 
 impl From<shared::database::product::special_event::SpecialEvent> for SpecialEvent {

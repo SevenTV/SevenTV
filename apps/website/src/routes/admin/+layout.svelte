@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TabLink from "$/components/tab-link.svelte";
-	import { Graph, Users } from "phosphor-svelte";
+	import { CalendarBlank, Gift, Graph, Users } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import modge from "$assets/modge.webp?url";
 	import { user } from "$/lib/auth";
@@ -91,6 +91,20 @@
 					<Graph />
 					{#snippet active()}
 						<Graph weight="fill" />
+					{/snippet}
+				</TabLink>
+			{/if}
+			{#if $user?.permissions.admin.manageRedeemCodes}
+				<TabLink title="Redeem Codes" href="/admin/redeem-codes" big>
+					<Gift />
+					{#snippet active()}
+						<Gift weight="fill" />
+					{/snippet}
+				</TabLink>
+				<TabLink title="Special Events" href="/admin/special-events" big>
+					<CalendarBlank />
+					{#snippet active()}
+						<CalendarBlank weight="fill" />
 					{/snippet}
 				</TabLink>
 			{/if}

@@ -1,4 +1,4 @@
-target/
+# target/
 .vscode/
 !.vscode/extensions.json
 node_modules/
@@ -7,7 +7,7 @@ node_modules/
 .DS_Store
 *.lcov
 lcov.info
-local/
+# local/
 coverage/
 **/Dockerfile
 **/.dockerignore

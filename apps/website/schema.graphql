@@ -1,6 +1,8 @@
 type AdminPermission {
 	admin: Boolean!
 	bypassRateLimit: Boolean!
+	manageEntitlements: Boolean!
+	manageRedeemCodes: Boolean!
 	superAdmin: Boolean!
 }
 
@@ -40,6 +42,10 @@ type BadgeProgressNextBadge {
 	percentage: Float!
 }
 
+type BadgeQuery {
+	badges: [Badge!]!
+}
+
 type Billing {
 	badgeProgress: BadgeProgress!
 	subscriptionInfo: SubscriptionInfo!
@@ -53,12 +59,51 @@ type BillingMutation {
 }
 
 
+union CodeEffect = CodeEffectDirectEntitlement | CodeEffectSpecialEvent
+
+type CodeEffectDirectEntitlement {
+	entitlements: [EntitlementNodeAny!]!
+}
+
+type CodeEffectSpecialEvent {
+	specialEvent: SpecialEvent
+	specialEventId: Id!
+}
+
 type Color {
 	a: Int!
 	b: Int!
 	g: Int!
 	hex: String!
 	r: Int!
+}
+
+input CreateRedeemCodeBatchInput {
+	activePeriod: TimePeriodInput
+	description: String
+	name: String!
+	number: Int!
+	specialEventId: Id!
+	subscriptionEffect: RedeemCodeSubscriptionEffectInput
+	tags: [String!]!
+	uses: Int!
+}
+
+input CreateRedeemCodeInput {
+	activePeriod: TimePeriodInput
+	code: String
+	description: String
+	name: String!
+	specialEventId: Id!
+	subscriptionEffect: RedeemCodeSubscriptionEffectInput
+	tags: [String!]!
+	uses: Int!
+}
+
+input CreateSpecialEventInput {
+	description: String
+	name: String!
+	tags: [String!]!
 }
 
 scalar CustomerId
@@ -345,6 +390,15 @@ type EntitlementEdgeAnyPaint {
 	to: EntitlementNodePaint!
 }
 
+type EntitlementEdgeMutation {
+	create(from: EntitlementNodeInput!, to: EntitlementNodeInput!): EntitlementEdgeAnyAny!
+	entitlementEdge(from: EntitlementNodeInput!, to: EntitlementNodeInput!): EntitlementEdgeOperation!
+}
+
+type EntitlementEdgeOperation {
+	delete: Boolean!
+}
+
 union EntitlementNodeAny = EntitlementNodeUser | EntitlementNodeRole | EntitlementNodeBadge | EntitlementNodePaint | EntitlementNodeEmoteSet | EntitlementNodeProduct | EntitlementNodeSubscriptionBenefit | EntitlementNodeSubscription | EntitlementNodeSpecialEvent | EntitlementNodeGlobalDefaultEntitlementGroup
 
 type EntitlementNodeBadge {
@@ -359,6 +413,11 @@ type EntitlementNodeEmoteSet {
 
 type EntitlementNodeGlobalDefaultEntitlementGroup {
 	noop: Boolean! @deprecated
+}
+
+input EntitlementNodeInput {
+	id: Id!
+	type: EntitlementNodeTypeInput!
 }
 
 type EntitlementNodePaint {
@@ -389,9 +448,24 @@ type EntitlementNodeSubscriptionBenefit {
 	subscriptionBenefitId: Id!
 }
 
+enum EntitlementNodeTypeInput {
+	BADGE
+	EMOTE_SET
+	GLOBAL_DEFAULT_ENTITLEMENT_GROUP
+	PAINT
+	ROLE
+	SPECIAL_EVENT
+	SUBSCRIPTION_BENEFIT
+	USER
+}
+
 type EntitlementNodeUser {
 	user: User
 	userId: Id!
+}
+
+type EntitlementQuery {
+	traverse(from: EntitlementNodeInput!): RawEntitlements!
 }
 
 union EventEmoteData = EventEmoteDataUpload | EventEmoteDataProcess | EventEmoteDataChangeName | EventEmoteDataMerge | EventEmoteDataChangeOwner | EventEmoteDataChangeTags | EventEmoteDataChangeFlags | EventEmoteDataDelete
@@ -579,6 +653,10 @@ A scalar that can represent any JSON Object value.
 """
 scalar JSONObject
 
+type JobMutation {
+	rerunSubscriptionRefreshJob: Boolean!
+}
+
 input KickLinkInput {
 	avatarUrl: String
 	displayName: String!
@@ -590,6 +668,10 @@ type Mutation {
 	billing(userId: Id!): BillingMutation!
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
+	entitlementEdges: EntitlementEdgeMutation!
+	jobs: JobMutation!
+	redeemCodes: RedeemCodeMutation!
+	specialEvents: SpecialEventMutation!
 	tickets: TicketMutation!
 	userEditors: UserEditorMutation!
 	userSessions: UserSessionMutation!
@@ -651,6 +733,10 @@ type PaintPermission {
 	manage: Boolean!
 }
 
+type PaintQuery {
+	paints: [Paint!]!
+}
+
 enum PaintRadialGradientShape {
 	CIRCLE
 	ELLIPSE
@@ -708,10 +794,16 @@ type ProviderSubscriptionId {
 
 type Query {
 	backdoor: BackdoorQuery!
+	badges: BadgeQuery!
 	emoteSets: EmoteSetQuery!
 	emotes: EmoteQuery!
+	entitlements: EntitlementQuery!
+	paints: PaintQuery!
 	products: ProductQuery!
+	redeemCodes: RedeemCodeQuery!
+	roles: RoleQuery!
 	search: SearchQuery!
+	specialEvents: SpecialEventQuery!
 	store: StoreQuery!
 	users: UserQuery!
 }
@@ -729,6 +821,57 @@ enum Ranking {
 type RawEntitlements {
 	edges: [EntitlementEdgeAnyAny!]!
 	nodes: [EntitlementNodeAny!]!
+}
+
+type RedeemCode {
+	activePeriod: TimePeriod
+	code: String!
+	createdAt: DateTime!
+	createdBy: User
+	createdById: Id!
+	description: String
+	effect: CodeEffect!
+	id: Id!
+	name: String!
+	remainingUses: Int!
+	searchUpdatedAt: DateTime
+	subscriptionEffect: RedeemCodeSubscriptionEffect
+	tags: [String!]!
+	updatedAt: DateTime!
+}
+
+type RedeemCodeMutation {
+	create(data: CreateRedeemCodeInput!): RedeemCode!
+	createBatch(data: CreateRedeemCodeBatchInput!): [RedeemCode!]!
+	redeemCode(id: Id!): RedeemCodeOperation!
+}
+
+type RedeemCodeOperation {
+	deactivate: RedeemCode!
+}
+
+type RedeemCodeQuery {
+	redeemCode(id: Id!): RedeemCode
+	redeemCodes(page: Int, perPage: Int, query: String, remainingUses: Boolean): RedeemCodeSearchResult!
+}
+
+type RedeemCodeSearchResult {
+	items: [RedeemCode!]!
+	pageCount: Int!
+	totalCount: Int!
+}
+
+type RedeemCodeSubscriptionEffect {
+	id: Id!
+	noRedirectToStripe: Boolean!
+	subscriptionProduct: SubscriptionProduct
+	trialDays: Int
+}
+
+input RedeemCodeSubscriptionEffectInput {
+	noRedirectToStripe: Boolean!
+	productId: Id!
+	trialDays: Int
 }
 
 type RedeemResponse {
@@ -751,6 +894,10 @@ type RolePermission {
 	admin: Boolean!
 	assign: Boolean!
 	manage: Boolean!
+}
+
+type RoleQuery {
+	roles: [Role!]!
 }
 
 type SearchQuery {
@@ -785,6 +932,8 @@ enum SortOrder {
 }
 
 type SpecialEvent {
+	createdAt: DateTime!
+	createdBy: User
 	createdById: Id!
 	description: String
 	id: Id!
@@ -792,6 +941,14 @@ type SpecialEvent {
 	searchUpdatedAt: DateTime
 	tags: [String!]!
 	updatedAt: DateTime!
+}
+
+type SpecialEventMutation {
+	create(data: CreateSpecialEventInput!): SpecialEvent!
+}
+
+type SpecialEventQuery {
+	specialEvents: [SpecialEvent!]!
 }
 
 type StoreQuery {
@@ -976,6 +1133,16 @@ enum TicketTargetType {
 	EMOTE
 	EMOTE_SET
 	USER
+}
+
+type TimePeriod {
+	end: DateTime!
+	start: DateTime!
+}
+
+input TimePeriodInput {
+	end: DateTime!
+	start: DateTime!
 }
 
 type User {

@@ -165,6 +165,32 @@ input[type="range"]::-moz-range-track {
 	border-radius: 0.5rem;
 }
 
+input[type="number"] {
+	text-align: center;
+	width: 4rem;
+	height: 2rem;
+	border: none;
+	padding: 0.5rem;
+	border-radius: 0.5rem;
+
+	&:invalid {
+		border: 1px solid var(--danger);
+	}
+
+	&.no-spinners {
+		width: 3rem;
+
+		-moz-appearance: textfield;
+		appearance: textfield;
+
+		&::-webkit-outer-spin-button,
+		&::-webkit-inner-spin-button {
+			-webkit-appearance: none;
+			margin: 0;
+		}
+	}
+}
+
 progress[value] {
 	-webkit-appearance: none;
 	-moz-appearance: none;

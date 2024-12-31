@@ -44,7 +44,7 @@
 		const res = await gqlClient()
 			.mutation(
 				graphql(`
-					mutation RedeemCode($userId: Id!, $code: String!) {
+					mutation RedeemRedeemCode($userId: Id!, $code: String!) {
 						billing(userId: $userId) {
 							redeemCode(code: $code) {
 								checkoutUrl

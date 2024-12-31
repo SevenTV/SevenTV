@@ -359,6 +359,10 @@ pub enum AdminPermission {
 	SuperAdmin = 2,
 	/// Bypass rate limit
 	BypassRateLimit = 4,
+	/// Manage redeem codes and special events
+	ManageRedeemCodes = 8,
+	/// Manage entitlements
+	ManageEntitlements = 16,
 }
 
 impl BitMask for AdminPermission {
@@ -376,7 +380,6 @@ impl Default for AdminPermission {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Default, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
 pub struct Permissions {
 	#[serde(skip_serializing_if = "AllowDeny::is_empty")]
 	#[serde(default)]
@@ -646,7 +649,11 @@ impl Permissions {
 	}
 
 	pub fn has_admin(&self, permission: AdminPermission) -> bool {
-		self.admin.permission().contains(permission) || self.admin.permission().contains(AdminPermission::SuperAdmin)
+		if permission == AdminPermission::SuperAdmin {
+			return self.is_super_admin();
+		}
+
+		self.is_admin() || self.admin.permission().contains(permission)
 	}
 
 	pub fn is_admin(&self) -> bool {
