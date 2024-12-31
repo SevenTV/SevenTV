@@ -28,8 +28,8 @@
 	let uses = $state(1);
 
 	let noExpiration = $state(true);
-	let startDate = $state<string>();
-	let endDate = $state<string>();
+	let startDate = $state<string>("");
+	let endDate = $state<string>("");
 
 	let specialEventId = $state<string>("");
 
@@ -45,6 +45,9 @@
 		description = "";
 		tags = [];
 		uses = 1;
+		noExpiration = true;
+		startDate = "";
+		endDate = "";
 		specialEventId = "";
 		trialDays = 0;
 	}
