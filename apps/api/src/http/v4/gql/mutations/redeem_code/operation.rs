@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::Context;
 use mongodb::options::FindOneAndUpdateOptions;
 use shared::database::queries::{filter, update};
-use shared::database::role::permissions::UserPermission;
+use shared::database::role::permissions::AdminPermission;
 use shared::database::MongoCollection;
 
 use crate::global::Global;
@@ -18,7 +18,7 @@ pub struct RedeemCodeOperation {
 #[async_graphql::Object]
 impl RedeemCodeOperation {
 	#[tracing::instrument(skip_all, name = "RedeemCodeOperation::deactivate")]
-	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageBilling)")]
+	#[graphql(guard = "PermissionGuard::one(AdminPermission::ManageRedeemCodes)")]
 	async fn deactivate(&self, ctx: &Context<'_>) -> Result<RedeemCode, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()

@@ -239,6 +239,8 @@ pub struct AdminPermission {
 	pub admin: bool,
 	pub super_admin: bool,
 	pub bypass_rate_limit: bool,
+	pub manage_redeem_codes: bool,
+	pub manage_entitlements: bool,
 }
 
 impl AdminPermission {
@@ -247,6 +249,8 @@ impl AdminPermission {
 			admin: permissions.has(permissions::AdminPermission::Admin),
 			super_admin: permissions.has(permissions::AdminPermission::SuperAdmin),
 			bypass_rate_limit: permissions.has(permissions::AdminPermission::BypassRateLimit),
+			manage_redeem_codes: permissions.has(permissions::AdminPermission::ManageRedeemCodes),
+			manage_entitlements: permissions.has(permissions::AdminPermission::ManageEntitlements),
 		}
 	}
 }

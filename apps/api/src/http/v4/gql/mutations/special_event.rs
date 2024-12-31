@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::Context;
 use shared::database::product::special_event::SpecialEventId;
-use shared::database::role::permissions::UserPermission;
+use shared::database::role::permissions::AdminPermission;
 use shared::database::MongoCollection;
 
 use crate::global::Global;
@@ -24,7 +24,7 @@ struct CreateSpecialEventInput {
 #[async_graphql::Object]
 impl SpecialEventMutation {
 	#[tracing::instrument(skip_all, name = "SpecialEventMutation::create")]
-	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageBilling)")]
+	#[graphql(guard = "PermissionGuard::one(AdminPermission::ManageRedeemCodes)")]
 	async fn create(&self, ctx: &Context<'_>, data: CreateSpecialEventInput) -> Result<SpecialEvent, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()

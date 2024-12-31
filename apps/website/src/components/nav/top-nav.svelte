@@ -36,7 +36,11 @@
 			{ name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
 		];
 
-		if ($user?.permissions.user.manageAny || $user?.permissions.user.manageBilling) {
+		if (
+			$user?.permissions.user.manageAny ||
+			$user?.permissions.admin.manageRedeemCodes ||
+			$user?.permissions.admin.manageEntitlements
+		) {
 			tabs.push({ name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" });
 		}
 

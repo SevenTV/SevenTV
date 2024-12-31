@@ -1,14 +1,15 @@
 <script lang="ts">
+	import AdminAssignEntitlementDialog from "$/components/dialogs/admin-assign-entitlement-dialog.svelte";
 	import AdminCreateSpecialEventDialog from "$/components/dialogs/admin-create-special-event-dialog.svelte";
 	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import Button from "$/components/input/button.svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import UserName from "$/components/user-name.svelte";
 	import { graphql } from "$/gql";
-	import type { User } from "$/gql/graphql";
+	import { EntitlementNodeTypeInput, type User } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import moment from "moment";
-	import { Plus } from "phosphor-svelte";
+	import { Graph, Plus } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
 	async function querySpecialEvents() {
@@ -109,6 +110,8 @@
 			results = querySpecialEvents();
 		}
 	});
+
+	let assignEntitlementsDialog = $state<string>();
 </script>
 
 <svelte:head>
@@ -143,12 +146,13 @@
 					<th>Tags</th>
 					<th>Created By</th>
 					<th>Created At</th>
+					<th>Actions</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#await results}
 					<tr>
-						<td colspan="5" style="text-align: center;">
+						<td colspan="6" style="text-align: center;">
 							<Spinner />
 						</td>
 					</tr>
@@ -156,6 +160,17 @@
 					{#if results && results.length > 0}
 						{#each results as specialEvent}
 							{@const createdAt = moment(specialEvent.createdAt)}
+							<AdminAssignEntitlementDialog
+								bind:mode={() =>
+									assignEntitlementsDialog === specialEvent.id ? "shown" : "hidden",
+								(mode) => {
+									if (mode === "hidden") {
+										assignEntitlementsDialog = undefined;
+									}
+								}}
+								from={{ type: EntitlementNodeTypeInput.SpecialEvent, id: specialEvent.id }}
+								fromName={specialEvent.name}
+							/>
 							<tr>
 								<td>{specialEvent.name}</td>
 								<td>{specialEvent.description}</td>
@@ -174,11 +189,23 @@
 									<br />
 									{createdAt.fromNow()}
 								</td>
+								<td>
+									<div class="actions">
+										<Button
+											title="Assign Entitlements"
+											onclick={() => (assignEntitlementsDialog = specialEvent.id)}
+										>
+											{#snippet icon()}
+												<Graph />
+											{/snippet}
+										</Button>
+									</div>
+								</td>
 							</tr>
 						{/each}
 					{:else}
 						<tr>
-							<td colspan="5" style="text-align: center;">No Special Events</td>
+							<td colspan="6" style="text-align: center;">No Special Events</td>
 						</tr>
 					{/if}
 				{/await}
@@ -206,6 +233,11 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
+	}
+
+	.actions {
+		display: flex;
+		align-items: center;
 	}
 
 	.table-wrapper {

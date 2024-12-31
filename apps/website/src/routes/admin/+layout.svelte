@@ -94,7 +94,7 @@
 					{/snippet}
 				</TabLink>
 			{/if}
-			{#if $user?.permissions.user.manageBilling}
+			{#if $user?.permissions.admin.manageRedeemCodes}
 				<TabLink title="Redeem Codes" href="/admin/redeem-codes" big>
 					<Gift />
 					{#snippet active()}

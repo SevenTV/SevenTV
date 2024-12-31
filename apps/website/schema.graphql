@@ -1,6 +1,8 @@
 type AdminPermission {
 	admin: Boolean!
 	bypassRateLimit: Boolean!
+	manageEntitlements: Boolean!
+	manageRedeemCodes: Boolean!
 	superAdmin: Boolean!
 }
 
@@ -384,6 +386,15 @@ type EntitlementEdgeAnyPaint {
 	to: EntitlementNodePaint!
 }
 
+type EntitlementEdgeMutation {
+	create(from: EntitlementNodeInput!, to: EntitlementNodeInput!): EntitlementEdgeAnyAny!
+	entitlementEdge(from: EntitlementNodeInput!, to: EntitlementNodeInput!): EntitlementEdgeOperation!
+}
+
+type EntitlementEdgeOperation {
+	delete: Boolean!
+}
+
 union EntitlementNodeAny = EntitlementNodeUser | EntitlementNodeRole | EntitlementNodeBadge | EntitlementNodePaint | EntitlementNodeEmoteSet | EntitlementNodeProduct | EntitlementNodeSubscriptionBenefit | EntitlementNodeSubscription | EntitlementNodeSpecialEvent | EntitlementNodeGlobalDefaultEntitlementGroup
 
 type EntitlementNodeBadge {
@@ -398,6 +409,11 @@ type EntitlementNodeEmoteSet {
 
 type EntitlementNodeGlobalDefaultEntitlementGroup {
 	noop: Boolean! @deprecated
+}
+
+input EntitlementNodeInput {
+	id: Id!
+	type: EntitlementNodeTypeInput!
 }
 
 type EntitlementNodePaint {
@@ -426,6 +442,17 @@ type EntitlementNodeSubscription {
 type EntitlementNodeSubscriptionBenefit {
 	subscriptionBenefit: SubscriptionBenefit
 	subscriptionBenefitId: Id!
+}
+
+enum EntitlementNodeTypeInput {
+	BADGE
+	EMOTE_SET
+	GLOBAL_DEFAULT_ENTITLEMENT_GROUP
+	PAINT
+	ROLE
+	SPECIAL_EVENT
+	SUBSCRIPTION_BENEFIT
+	USER
 }
 
 type EntitlementNodeUser {
@@ -633,6 +660,7 @@ type Mutation {
 	billing(userId: Id!): BillingMutation!
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
+	entitlementEdges: EntitlementEdgeMutation!
 	jobs: JobMutation!
 	redeemCodes: RedeemCodeMutation!
 	specialEvents: SpecialEventMutation!

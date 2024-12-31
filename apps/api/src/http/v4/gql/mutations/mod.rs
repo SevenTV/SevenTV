@@ -3,6 +3,7 @@ use shared::database::user::UserId;
 mod billing;
 mod emote;
 mod emote_set;
+mod entitlement_edge;
 mod jobs;
 mod redeem_code;
 mod special_event;
@@ -16,6 +17,7 @@ mod user_session;
 pub struct Mutation {
 	emotes: emote::EmoteMutation,
 	emote_sets: emote_set::EmoteSetMutation,
+	entitlement_edges: entitlement_edge::EntitlementEdgeMutation,
 	jobs: jobs::JobMutation,
 	redeem_codes: redeem_code::RedeemCodeMutation,
 	special_events: special_event::SpecialEventMutation,

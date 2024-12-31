@@ -5,7 +5,7 @@ use rand::distributions::DistString;
 use shared::database::product::codes::RedeemCodeId;
 use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::SubscriptionProductId;
-use shared::database::role::permissions::UserPermission;
+use shared::database::role::permissions::AdminPermission;
 use shared::database::MongoCollection;
 
 use crate::global::Global;
@@ -68,6 +68,7 @@ fn generate_code(len: usize) -> String {
 #[async_graphql::Object]
 impl RedeemCodeMutation {
 	#[tracing::instrument(skip_all, name = "RedeemCodeMutation::redeem_code")]
+	#[graphql(guard = "PermissionGuard::one(AdminPermission::ManageRedeemCodes)")]
 	async fn redeem_code(&self, ctx: &Context<'_>, id: RedeemCodeId) -> Result<operation::RedeemCodeOperation, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
@@ -84,7 +85,7 @@ impl RedeemCodeMutation {
 	}
 
 	#[tracing::instrument(skip_all, name = "RedeemCodeMutation::create")]
-	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageBilling)")]
+	#[graphql(guard = "PermissionGuard::one(AdminPermission::ManageRedeemCodes)")]
 	async fn create(&self, ctx: &Context<'_>, data: CreateRedeemCodeInput) -> Result<RedeemCode, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()
@@ -125,7 +126,7 @@ impl RedeemCodeMutation {
 	}
 
 	#[tracing::instrument(skip_all, name = "RedeemCodeMutation::create_batch")]
-	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageBilling)")]
+	#[graphql(guard = "PermissionGuard::one(AdminPermission::ManageRedeemCodes)")]
 	async fn create_batch(&self, ctx: &Context<'_>, data: CreateRedeemCodeBatchInput) -> Result<Vec<RedeemCode>, ApiError> {
 		let global = ctx
 			.data::<Arc<Global>>()

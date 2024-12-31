@@ -8,7 +8,7 @@
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
 	import Spinner from "$/components/spinner.svelte";
-	import { SubscriptionProvider, type User } from "$/gql/graphql";
+	import { EntitlementNodeTypeInput, SubscriptionProvider, type User } from "$/gql/graphql";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import { CaretLeft } from "phosphor-svelte";
 	import UserName from "$/components/user-name.svelte";
@@ -16,6 +16,7 @@
 	import AdminCreateSessionDialog from "$/components/dialogs/admin-create-session-dialog.svelte";
 	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import AdminLinkKickDialog from "$/components/dialogs/admin-link-kick-dialog.svelte";
+	import AdminAssignEntitlementDialog from "$/components/dialogs/admin-assign-entitlement-dialog.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -236,6 +237,7 @@
 	let userData = $derived(queryUser(data.id, !!$user?.permissions.user.manageBilling));
 
 	let canManageSessions = $derived($user?.permissions.user.manageSessions);
+	let canManageEntitlements = $derived($user?.permissions.admin.manageEntitlements);
 
 	let deleteAllSessionsLoading = $state(false);
 
@@ -260,6 +262,7 @@
 
 	let createSessionDialogMode = $state<DialogMode>("hidden");
 	let linkKickDialogMode = $state<DialogMode>("hidden");
+	let assignEntitlementsDialogMode = $state<DialogMode>("hidden");
 </script>
 
 <div class="layout">
@@ -396,6 +399,21 @@
 							</Button>
 						</div>
 					</div>
+					{#if canManageEntitlements}
+						<AdminAssignEntitlementDialog
+							bind:mode={assignEntitlementsDialogMode}
+							from={{ type: EntitlementNodeTypeInput.User, id: user.id }}
+							fromName={user.mainConnection?.platformDisplayName ?? ""}
+						/>
+						<div class="action-group">
+							<h3>Entitlements</h3>
+							<div class="buttons">
+								<Button secondary onclick={() => (assignEntitlementsDialogMode = "shown")}>
+									Manually Assign Entitlements
+								</Button>
+							</div>
+						</div>
+					{/if}
 				</section>
 				<section>
 					<h2>Subscription</h2>
