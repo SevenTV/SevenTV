@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { graphql } from "$/gql";
 	import { gqlClient } from "$/lib/gql";
-	import { Gift, PencilSimple, TextAa, TextAlignLeft } from "phosphor-svelte";
+	import { Gift, PencilSimple, TextAlignLeft } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import Checkbox from "../input/checkbox.svelte";
 	import TagsInput from "../input/tags-input.svelte";
@@ -181,7 +181,14 @@
 		</label>
 		<Checkbox bind:value={autoGenerate} disabled={number > 1}>Generate random codes</Checkbox>
 		{#if !autoGenerate}
-			<TextInput placeholder="Code" bind:value={code} required style="font-family: monospace;">
+			<TextInput
+				placeholder="Code"
+				bind:value={code}
+				minlength={1}
+				maxlength={24}
+				required
+				style="font-family: monospace;"
+			>
 				{#snippet icon()}
 					<Gift />
 				{/snippet}

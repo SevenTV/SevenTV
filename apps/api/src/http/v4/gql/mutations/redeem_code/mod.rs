@@ -24,6 +24,7 @@ struct CreateRedeemCodeInput {
 	pub name: String,
 	pub description: Option<String>,
 	pub tags: Vec<String>,
+	#[graphql(validator(min_length = 1, max_length = 24))]
 	pub code: Option<String>,
 	pub uses: u32,
 	pub active_period: Option<TimePeriodInput>,

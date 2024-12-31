@@ -218,7 +218,6 @@ progress[value] {
 }
 
 @media screen and (max-width: 960px) {
-
 	input[type="text"],
 	input[type="email"],
 	input[type="password"] {
@@ -233,7 +232,7 @@ progress[value] {
 	gap: 1.25rem;
 	height: 100%;
 
-	&>.side-bar {
+	& > .side-bar {
 		position: relative;
 
 		background-color: var(--bg-medium);
@@ -245,7 +244,7 @@ progress[value] {
 		flex-direction: column;
 		gap: 0.75rem;
 
-		&>h1 {
+		& > h1 {
 			font-size: 1.125rem;
 			font-weight: 700;
 			margin: 0.25rem 0;
@@ -258,7 +257,7 @@ progress[value] {
 		}
 	}
 
-	&>.content {
+	& > .content {
 		flex-grow: 1;
 		min-width: 0;
 		margin-bottom: -1.25rem;
@@ -292,7 +291,6 @@ th {
 }
 
 tr {
-
 	&:focus-visible,
 	&:hover {
 		td {
@@ -300,7 +298,7 @@ tr {
 		}
 	}
 
-	&:last-child>td {
+	&:last-child > td {
 		border-bottom: none;
 
 		&:first-child {
@@ -345,17 +343,17 @@ td {
 // Desktop
 @media screen and (min-width: 961px) {
 	.side-bar-layout {
-		&>.side-bar {
+		& > .side-bar {
 			width: 100%;
 			max-width: 16rem;
 			overflow: auto;
 			scrollbar-gutter: stable;
 		}
 
-		&>.content {
+		& > .content {
 			margin-right: -1.25rem;
 
-			&>* {
+			& > * {
 				padding-right: 1.25rem;
 
 				&:last-child {
@@ -375,7 +373,7 @@ td {
 		overflow: auto;
 		scrollbar-gutter: stable;
 
-		&>.side-bar {
+		& > .side-bar {
 			padding: 1rem;
 		}
 	}

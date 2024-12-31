@@ -40,7 +40,7 @@ impl RedeemCodeQuery {
 		ctx: &Context<'_>,
 		#[graphql(validator(max_length = 100))] query: Option<String>,
 		remaining_uses: Option<bool>,
-		#[graphql(validator(maximum = 100))] page: Option<u32>,
+		page: Option<u32>,
 		#[graphql(validator(minimum = 1, maximum = 250))] per_page: Option<u32>,
 	) -> Result<SearchResult<RedeemCode>, ApiError> {
 		let global = ctx
@@ -83,7 +83,7 @@ impl RedeemCodeQuery {
 		let result = SearchResult {
 			items: sorted_results(result.hits, codes).into_iter().map(Into::into).collect(),
 			total_count: result.found,
-			page_count: result.found.div_ceil(per_page as u64).min(100),
+			page_count: result.found.div_ceil(per_page as u64),
 		};
 
 		Ok(result)
