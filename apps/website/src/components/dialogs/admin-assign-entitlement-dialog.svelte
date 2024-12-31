@@ -125,15 +125,9 @@
 		<p>Assign entitlements to <b>{from.type.replace("_", " ")} {fromName}</b></p>
 		<div class="types">
 			Type
-			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Role}>
-				Role
-			</Radio>
-			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Badge}>
-				Badge
-			</Radio>
-			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Paint}>
-				Paint
-			</Radio>
+			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Role}>Role</Radio>
+			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Badge}>Badge</Radio>
+			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Paint}>Paint</Radio>
 			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.EmoteSet}>
 				Emote Set
 			</Radio>
