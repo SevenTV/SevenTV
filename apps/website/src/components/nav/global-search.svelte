@@ -198,7 +198,7 @@
 
 	function handleInputKeyPress(event: KeyboardEvent) {
 		if (event.key === "Enter" && query.trim() != "") {
-			goto(`/emotes?q=${query}`);
+			goto(`/emotes?q=${query}&updateSearch=true`);
 		}
 	}
 </script>
@@ -228,7 +228,7 @@
 						<div class="container-flex">
 							<span class="label">Emotes</span>
 							<span class="open-button">
-								<Button href="/emotes?q={query}"><ArrowSquareOut /></Button>
+								<Button href="/emotes?q={query}&updateSearch=true"><ArrowSquareOut /></Button>
 							</span>
 						</div>
 					{/if}
