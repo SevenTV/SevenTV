@@ -13,6 +13,7 @@
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { editableEmoteSets } from "$/lib/emoteSets";
 	import { user } from "$/lib/auth";
+	import { goto } from "$app/navigation";
 
 	let query = $state("");
 
@@ -194,6 +195,17 @@
 			event.stopPropagation();
 		}
 	}
+
+	function handleInputKeyPress(event: KeyboardEvent) {
+		if (event.key === "Enter" && query.trim() != "") {
+			openEmotesPage();
+		}
+	}
+
+	function openEmotesPage() {
+		goto(`/emotes?q=${query}`);
+		query = "";
+	}
 </script>
 
 <svelte:window {onkeydown} />
@@ -201,6 +213,7 @@
 <TextInput
 	placeholder={$t("labels.search")}
 	bind:value={query}
+	onkeypress={handleInputKeyPress}
 	style="flex: 0 1 20rem"
 	big
 	bind:this={input}

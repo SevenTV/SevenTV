@@ -12,7 +12,7 @@
 	import { t } from "svelte-i18n";
 	import { page } from "$app/stores";
 	import { type Page } from "@sveltejs/kit";
-	import { goto } from "$app/navigation";
+	import { goto, invalidate } from "$app/navigation";
 	import type { Snippet } from "svelte";
 
 	let { children }: { children: Snippet } = $props();
@@ -90,7 +90,10 @@
 			url.searchParams.delete("e");
 		}
 
-		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+		if (url.toString() !== $page.url.toString()) {
+			goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+			invalidate(url.pathname);
+		}
 	});
 
 	function menuMatcher(page: Page, href: string | undefined) {
