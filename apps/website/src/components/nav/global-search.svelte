@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MagnifyingGlass } from "phosphor-svelte";
+	import { ArrowSquareOut, MagnifyingGlass } from "phosphor-svelte";
 	import TextInput from "../input/text-input.svelte";
 	import { t } from "svelte-i18n";
 	import { gqlClient } from "$/lib/gql";
@@ -198,13 +198,8 @@
 
 	function handleInputKeyPress(event: KeyboardEvent) {
 		if (event.key === "Enter" && query.trim() != "") {
-			openEmotesPage();
+			goto(`/emotes?q=${query}`);
 		}
-	}
-
-	function openEmotesPage() {
-		goto(`/emotes?q=${query}`);
-		query = "";
 	}
 </script>
 
@@ -230,7 +225,12 @@
 			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0)}
 				<div class="results">
 					{#if results.emotes.items}
-						<span class="label">Emotes</span>
+						<div class="container-flex">
+							<span class="label">Emotes</span>
+							<span class="open-button">
+								<Button href="/emotes?q={query}"><ArrowSquareOut /></Button>
+							</span>
+						</div>
 					{/if}
 					{#each results.emotes.items as result}
 						<Button href="/emotes/{result.id}" class="item">
@@ -264,6 +264,18 @@
 <style lang="scss">
 	:global(label.input):focus-within > .results {
 		display: flex;
+	}
+
+	.open-button {
+		margin: 0.3rem;
+	}
+
+	.container-flex {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		flex-wrap: wrap;
 	}
 
 	.results {
