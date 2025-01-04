@@ -23,6 +23,7 @@
 	let imageSrc = $state<string>();
 	let zeroWidth = $state(false);
 	let privateFlag = $state(false);
+	let acceptTerms = $state(false);
 
 	let loading = $state(false);
 
@@ -149,8 +150,6 @@
 	// 	}
 	// }
 
-	let acceptTerms = $state(false);
-
 	async function submit() {
 		if (!files || !files[0]) return;
 
@@ -158,17 +157,26 @@
 
 		const res = await upload(files[0], name, tags, zeroWidth, privateFlag);
 
-		loading = false;
-		mode = "hidden";
+		closeAndResetDialog();
 
 		if (res && res.emote_id) {
 			goto(`/emotes/${res.emote_id}`);
 		}
 	}
 
-	function reset() {
+	function resetFile() {
 		files = undefined;
 		loading = false;
+	}
+
+	function closeAndResetDialog() {
+		mode = "hidden";
+		resetFile();
+		name = "";
+		tags = [];
+		zeroWidth = false;
+		privateFlag = false;
+		acceptTerms = false;
 	}
 </script>
 
@@ -197,7 +205,7 @@
 							{/if}
 						{/snippet}
 					</Button>
-					<Button secondary onclick={reset}>
+					<Button secondary onclick={resetFile}>
 						{#snippet icon()}
 							<Trash />
 						{/snippet}
@@ -252,7 +260,7 @@
 			</div>
 			{#snippet footerButtons()}
 				<div class="buttons">
-					<Button secondary onclick={() => (mode = "hidden")}>
+					<Button secondary onclick={closeAndResetDialog}>
 						{$t("dialogs.upload.discard")}
 					</Button>
 					{#snippet loadingSpinner()}
