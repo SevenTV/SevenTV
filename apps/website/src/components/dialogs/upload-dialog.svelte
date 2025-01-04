@@ -23,6 +23,7 @@
 	let imageSrc = $state<string>();
 	let zeroWidth = $state(false);
 	let privateFlag = $state(false);
+	let acceptTerms = $state(false);
 
 	let loading = $state(false);
 
@@ -149,8 +150,6 @@
 	// 	}
 	// }
 
-	let acceptTerms = $state(false);
-
 	async function submit() {
 		if (!files || !files[0]) return;
 
@@ -166,10 +165,25 @@
 		}
 	}
 
-	function reset() {
+	function resetFile() {
 		files = undefined;
 		loading = false;
 	}
+
+	function onModeChange(mode: string) {
+		if (mode === "hidden") {
+			resetFile();
+			name = "";
+			tags = [];
+			zeroWidth = false;
+			privateFlag = false;
+			acceptTerms = false;
+		}
+	}
+
+	$effect(() => {
+		onModeChange(mode);
+	});
 </script>
 
 <Dialog width={60} bind:mode>
@@ -197,7 +211,7 @@
 							{/if}
 						{/snippet}
 					</Button>
-					<Button secondary onclick={reset}>
+					<Button secondary onclick={resetFile}>
 						{#snippet icon()}
 							<Trash />
 						{/snippet}
