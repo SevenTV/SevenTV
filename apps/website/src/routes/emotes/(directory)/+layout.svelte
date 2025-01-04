@@ -12,7 +12,7 @@
 	import { t } from "svelte-i18n";
 	import { page } from "$app/stores";
 	import { type Page } from "@sveltejs/kit";
-	import { goto, invalidate } from "$app/navigation";
+	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";
 
 	let { children }: { children: Snippet } = $props();
