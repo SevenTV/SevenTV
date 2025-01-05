@@ -34,6 +34,7 @@
 	let results: Results | undefined = $state();
 
 	let identifier = $state(0);
+	let currentAbortController: AbortController | null = null;
 
 	export function reset() {
 		page = 1;
@@ -47,23 +48,37 @@
 		$emotesLayout;
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		$defaultEmoteSet;
-		untrack(() => {
-			reset();
-		});
+
+		untrack(reset);
 	});
 
 	function handleInfinite(event: InfiniteEvent) {
+		if (currentAbortController) {
+			currentAbortController.abort();
+		}
+
+		const abortController = new AbortController();
+		currentAbortController = abortController;
+
+		const currentIdentifier = identifier;
+
+		if (page === 1) {
+			results = undefined;
+		}
+
 		load(page, PER_PAGE)
 			.then((result) => {
+				if (currentIdentifier !== identifier) {
+					return;
+				}
+
 				if (result.__typename === "EmoteSetEmoteSearchResult") {
 					const items = result.items
 						.filter((e) => e.emote)
-						.map((item) => {
-							return {
-								emote: item.emote!,
-								emoteSetEmote: item,
-							};
-						});
+						.map((item) => ({
+							emote: item.emote!,
+							emoteSetEmote: item,
+						}));
 
 					if (results) {
 						results.pageCount = result.pageCount;
@@ -79,12 +94,10 @@
 				} else {
 					result = result as EmoteSearchResult;
 
-					const items = result.items.map((item) => {
-						return {
-							emote: item,
-							emoteSetEmote: undefined,
-						};
-					});
+					const items = result.items.map((item) => ({
+						emote: item,
+						emoteSetEmote: undefined,
+					}));
 
 					if (results) {
 						results.pageCount = result.pageCount;
@@ -112,10 +125,18 @@
 				}
 			})
 			.catch(() => {
-				event.detail.error();
+				if (!abortController.signal.aborted) {
+					event.detail.error();
+				}
 			})
 			.finally(() => {
-				page++;
+				if (currentAbortController === abortController) {
+					currentAbortController = null;
+				}
+
+				if (currentIdentifier === identifier) {
+					page++;
+				}
 			});
 	}
 </script>
