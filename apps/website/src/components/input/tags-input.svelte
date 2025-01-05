@@ -53,7 +53,9 @@
 
 <TextInput
 	disabled={tags.length >= LIMIT}
-	placeholder={$t("labels.enter_tags")}
+	placeholder={tags.length < LIMIT
+		? $t("labels.enter_tags")
+		: $t("labels.tag_limit_reached", { values: { limit: LIMIT } })}
 	bind:value={tagInput}
 	onkeypress={onTagInput}
 >
