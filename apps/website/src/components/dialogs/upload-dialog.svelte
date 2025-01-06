@@ -184,19 +184,36 @@
 	$effect(() => {
 		onModeChange(mode);
 	});
+
+	const fileType = $derived.by(() => {
+		if (files) {
+			const type = files[0].type;
+			if (type.startsWith("image/")) {
+				return "image";
+			} else if (type.startsWith("video/")) {
+				return "video";
+			} else {
+				return "";
+			}
+		}
+	});
 </script>
 
 <Dialog width={60} bind:mode>
 	<form class="grid">
 		<h1 class="heading">{$t("dialogs.upload.title")}</h1>
 		<section class="upload {previewTheme}" class:preview={files && files[0]}>
-			{#if files && files[0] && imageSrc}
+			{#if files && files[0] && fileType != "" && imageSrc}
 				<span class="name">{name}</span>
 				<Tags {tags} />
 				<div class="previews">
 					{#each [32, 64, 96, 128] as resolution}
 						<div class="preview">
-							<img src={imageSrc} width={resolution} alt="Upload Preview" />
+							{#if fileType === "image"}
+								<img src={imageSrc} width={resolution} alt="Emote Preview" />
+							{:else if fileType === "video"}
+								<video src={imageSrc} width={resolution} autoplay loop muted></video>
+							{/if}
 							<span class="size-text">{resolution}x{resolution}</span>
 						</div>
 					{/each}
