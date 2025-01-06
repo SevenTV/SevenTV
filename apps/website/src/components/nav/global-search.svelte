@@ -16,8 +16,10 @@
 	import { goto } from "$app/navigation";
 
 	let query = $state("");
-
 	let timeout: NodeJS.Timeout | number | undefined; // not reactive
+	let results = $derived(search(query));
+	let input: ReturnType<typeof TextInput>;
+	let resultSelectedIndex: number = -1;
 
 	async function search(query: string): Promise<SearchResultAll> {
 		if (!query) {
@@ -179,10 +181,6 @@
 		});
 	}
 
-	let results = $derived(search(query));
-
-	let input: ReturnType<typeof TextInput>;
-
 	export function focus() {
 		input?.focus();
 	}
@@ -193,6 +191,38 @@
 			input?.focus();
 			event.preventDefault();
 			event.stopPropagation();
+			return;
+		}
+		// Handle Up and Down scrolling
+		if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+			const resultsElement = document.getElementById("globalResults");
+			if (!resultsElement || !resultsElement.checkVisibility()) {
+				return;
+			}
+
+			const links = resultsElement.querySelectorAll("a");
+
+			switch (event.key) {
+				case "ArrowUp":
+					resultSelectedIndex =
+						resultSelectedIndex === -1 ? links.length - 1 : resultSelectedIndex - 1;
+					break;
+
+				case "ArrowDown":
+					resultSelectedIndex = resultSelectedIndex === -1 ? 0 : resultSelectedIndex + 1;
+					break;
+
+				default:
+					return resultSelectedIndex;
+			}
+
+			// Wrap around the index
+			resultSelectedIndex = (resultSelectedIndex + links.length) % links.length;
+			links[resultSelectedIndex].focus();
+
+			event.preventDefault();
+			event.stopPropagation();
+			return;
 		}
 	}
 
@@ -201,6 +231,12 @@
 			goto(`/emotes?q=${query}&updateSearch=true`);
 		}
 	}
+
+	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		query;
+		resultSelectedIndex = -1;
+	});
 </script>
 
 <svelte:window {onkeydown} />
@@ -223,7 +259,7 @@
 	{#snippet nonLabelChildren()}
 		{#await results then results}
 			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0)}
-				<div class="results">
+				<div id="globalResults" class="results">
 					{#if results.emotes.items}
 						<span class="label">Emotes</span>
 					{/if}
