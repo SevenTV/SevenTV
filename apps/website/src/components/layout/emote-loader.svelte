@@ -30,14 +30,13 @@
 		totalCount: number;
 	}
 
-	let page = $state(1);
+	let page = $state(0);
 	let results: Results | undefined = $state();
 
 	let identifier = $state(0);
-	let currentAbortController: AbortController | null = null;
 
 	export function reset() {
-		page = 1;
+		page = 0;
 		results = undefined;
 		identifier++;
 	}
@@ -53,20 +52,9 @@
 	});
 
 	function handleInfinite(event: InfiniteEvent) {
-		if (currentAbortController) {
-			currentAbortController.abort();
-		}
-
-		const abortController = new AbortController();
-		currentAbortController = abortController;
-
 		const currentIdentifier = identifier;
 
-		if (page === 1) {
-			results = undefined;
-		}
-
-		load(page, PER_PAGE)
+		load(++page, PER_PAGE)
 			.then((result) => {
 				if (currentIdentifier !== identifier) {
 					return;
@@ -125,18 +113,7 @@
 				}
 			})
 			.catch(() => {
-				if (!abortController.signal.aborted) {
-					event.detail.error();
-				}
-			})
-			.finally(() => {
-				if (currentAbortController === abortController) {
-					currentAbortController = null;
-				}
-
-				if (currentIdentifier === identifier) {
-					page++;
-				}
+				event.detail.error();
 			});
 	}
 </script>
