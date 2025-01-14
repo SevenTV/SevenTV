@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Gift, PaintBrush, Star } from "phosphor-svelte";
+	// PaintBrush
+	// import disabled for now
+	import { Gift, Star } from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
@@ -21,12 +23,12 @@
 					<Star weight="fill" />
 				{/snippet}
 			</TabLink>
-			<TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>
-				<PaintBrush />
-				{#snippet active()}
-					<PaintBrush weight="fill" />
-				{/snippet}
-			</TabLink>
+<!--			<TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>-->
+<!--				<PaintBrush />-->
+<!--				{#snippet active()}-->
+<!--					<PaintBrush weight="fill" />-->
+<!--				{/snippet}-->
+<!--			</TabLink>-->
 			<TabLink href="/store/redeem" title="Redeem" big>
 				<Gift />
 				{#snippet active()}
