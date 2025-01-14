@@ -38,7 +38,7 @@ function loadTheme() {
 	if (savedTheme) {
 		return JSON.parse(savedTheme) as Theme;
 	}
-	return "system-theme";
+	return "dark-theme";
 }
 
 theme.subscribe((value) => {
