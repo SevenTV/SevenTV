@@ -103,7 +103,7 @@ impl From<&Image> for ImageFile {
 		let (name, ext) = name.split_once('.').unwrap_or((&name, ""));
 
 		Self {
-			static_name: format!("{}_static.{}", name, ext),
+			static_name: format!("{}{}.{}", name, if value.frame_count > 1 { "_static" } else { "" }, ext),
 			name: format!("{}.{}", name, ext),
 			width: value.width as u32,
 			height: value.height as u32,

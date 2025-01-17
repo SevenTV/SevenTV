@@ -47,17 +47,17 @@ const ALLOWED_CORS_HEADERS: &[&str] = &[
 ];
 
 fn cors_layer(global: &Arc<Global>) -> CorsLayer {
-	let mut allowed_orings = global.config.api.cors_allowed_credential_origins.clone();
-	allowed_orings.push(global.config.api.old_website_origin.clone());
-	allowed_orings.push(global.config.api.website_origin.clone());
-	allowed_orings.push(global.config.api.api_origin.clone());
+	let mut allowed_origins = global.config.api.cors_allowed_credential_origins.clone();
+	allowed_origins.push(global.config.api.old_website_origin.clone());
+	allowed_origins.push(global.config.api.website_origin.clone());
+	allowed_origins.push(global.config.api.api_origin.clone());
 
 	let allow_credentials = AllowCredentials::predicate(move |origin, _| {
 		origin
 			.to_str()
 			.ok()
 			.and_then(|o| url::Url::parse(o).ok())
-			.map(|o| allowed_orings.iter().any(|allowed| allowed.origin() == o.origin()))
+			.map(|o| allowed_origins.iter().any(|allowed| allowed.origin() == o.origin()))
 			.unwrap_or_default()
 	});
 

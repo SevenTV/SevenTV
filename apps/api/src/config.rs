@@ -37,9 +37,9 @@ pub struct Api {
 	#[default("https://7tv.io".parse().unwrap())]
 	pub api_origin: url::Url,
 
-	/// All orgins which are allowed to send CORS requests with credentials
+	/// All origins which are allowed to send CORS requests with credentials
 	/// included
-	#[default(vec!["https://twitch.tv".parse().unwrap(), "https://kick.com".parse().unwrap()])]
+	#[default(vec!["https://twitch.tv".parse().unwrap(), "https://kick.com".parse().unwrap(), "https://dashboard.twitch.tv".parse().unwrap()])]
 	pub cors_allowed_credential_origins: Vec<url::Url>,
 
 	/// Event API nats prefix
