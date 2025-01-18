@@ -17,7 +17,7 @@
 
 	let { dropdown, align = "right", children, hover, ...restProps }: Props = $props();
 
-	const closeDelay = 400; // ms
+	const CLOSE_DELAY = 400; // ms
 
 	let hideOnMobile = $state(false);
 	let hideOnDesktop = $state(false);
@@ -38,7 +38,7 @@
 		}
 		hoverTimout = setTimeout(() => {
 			expanded = false;
-		}, closeDelay);
+		}, CLOSE_DELAY);
 	}
 
 	function handleMouseEnter() {
