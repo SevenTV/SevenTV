@@ -9,7 +9,6 @@ use crate::global::Global;
 pub struct DiscordUserData {
 	pub id: String,
 	pub username: String,
-	pub global_name: Option<String>,
 	pub avatar: Option<String>,
 }
 
@@ -25,7 +24,7 @@ impl From<DiscordUserData> for PlatformUserData {
 			avatar,
 			id: value.id,
 			username: value.username.clone(),
-			display_name: value.global_name.unwrap_or(value.username),
+			display_name: value.username.clone(),
 		}
 	}
 }
