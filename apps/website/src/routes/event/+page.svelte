@@ -1,11 +1,20 @@
 <script>
 	import Button from "$/components/input/button.svelte";
 	import { ArrowRight } from "phosphor-svelte";
+
+	let enabled = false;
+
 </script>
 
 <svelte:head>
-	<title>7TV Winter Games & Gift Sub Event</title>
+	{#if enabled}
+		<title>7TV Winter Games & Gift Sub Event</title>
+	{:else}
+		<title>7TV: No upcoming events</title>
+	{/if}
 </svelte:head>
+
+{#if enabled}
 
 <div class="layout">
 	<div class="heading">
@@ -212,3 +221,54 @@
 		margin-bottom: 0.4rem;
 	}
 </style>
+
+
+
+{:else}
+
+	<div class="layout">
+		<div class="heading">
+			<h1>No upcoming events</h1>
+		</div>
+	</div>
+
+	<style lang="scss">
+		.layout {
+			max-width: 60rem;
+			margin: 2rem auto;
+			padding: 0 1rem;
+		}
+
+		hr {
+			margin: 1rem 0;
+		}
+
+		.heading {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		h1 {
+			margin: 0 auto;
+			margin-bottom: 1rem;
+			font-size: 1.2rem;
+		}
+
+		h2 {
+			margin: 1.2rem 0;
+			margin-bottom: 0.8rem;
+		}
+
+		h3 {
+			margin: 1rem 0;
+			margin-bottom: 0.6rem;
+		}
+
+		h4 {
+			margin: 0.8rem 0;
+			margin-bottom: 0.4rem;
+		}
+	</style>
+
+{/if}
