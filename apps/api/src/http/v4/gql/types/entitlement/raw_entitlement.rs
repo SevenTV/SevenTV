@@ -1,6 +1,7 @@
 use itertools::Itertools;
-use shared::database::entitlement::EntitlementEdgeKind;
 use shared::database::Id;
+use shared::database::{entitlement::EntitlementEdgeKind, product::subscription::SubscriptionId};
+use std::str::FromStr;
 
 use super::{EntitlementEdge, EntitlementNodeAny};
 
@@ -35,6 +36,7 @@ pub enum EntitlementNodeTypeInput {
 	SubscriptionBenefit,
 	SpecialEvent,
 	GlobalDefaultEntitlementGroup,
+	Subscription,
 }
 
 #[derive(async_graphql::InputObject)]
@@ -69,6 +71,13 @@ impl From<EntitlementNodeInput> for EntitlementEdgeKind {
 				special_event_id: value.id.cast(),
 			},
 			EntitlementNodeTypeInput::GlobalDefaultEntitlementGroup => EntitlementEdgeKind::GlobalDefaultEntitlementGroup,
+			EntitlementNodeTypeInput::Subscription => EntitlementEdgeKind::Subscription {
+				subscription_id: SubscriptionId {
+					user_id: value.id.cast(),
+					// Use hardcoded product_id for now.
+					product_id: Id::from_str("01FEVKBBTGRAT7FCY276TNTJ4A").unwrap(),
+				},
+			},
 		}
 	}
 }
