@@ -19,7 +19,7 @@
 
 	let { mode = $bindable(), from, fromName }: Props = $props();
 
-	let subscription = $state<boolean>(true);
+	let subscription = $state<boolean>(from.type === EntitlementNodeTypeInput.User);
 	let type = $state<EntitlementNodeTypeInput | "">("");
 	let id = $state<string>("");
 
@@ -157,9 +157,11 @@
 			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.EmoteSet}>
 				Emote Set
 			</Radio>
-			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.SpecialEvent}>
-				SpecialEvent
-			</Radio>
+			{#if from.type === EntitlementNodeTypeInput.User}
+				<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.SpecialEvent}>
+					SpecialEvent
+				</Radio>
+			{/if}
 		</div>
 		{#if type}
 			{#if type === EntitlementNodeTypeInput.Role}
@@ -224,9 +226,11 @@
 				</label>
 			{/if}
 		{/if}
-		<div class="sub-entitlement">
-			<Checkbox bind:value={subscription}>Subscription entitlement?</Checkbox>
-		</div>
+		{#if from.type === EntitlementNodeTypeInput.User}
+			<div class="sub-entitlement">
+				<Checkbox bind:value={subscription}>Subscription entitlement?</Checkbox>
+			</div>
+		{/if}
 
 		{#snippet loadingSpinner()}
 			<Spinner />
