@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      svelte-eslint-parser:
+        specifier: ^0.43.0
+        version: 0.43.0(svelte@5.11.2)
     devDependencies:
       '@eslint/js':
         specifier: ^9.16.0
