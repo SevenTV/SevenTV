@@ -102,6 +102,7 @@ pub async fn handle_success(
 	})
 }
 
+// handle failure
 pub async fn handle_fail(
 	mut tx: TransactionSession<'_, anyhow::Error>,
 	_global: &Arc<Global>,
@@ -115,15 +116,42 @@ pub async fn handle_fail(
 	let after = tx
 		.find_one_and_delete(
 			filter::filter! {
-				UserProfilePicture {
-					#[query(rename = "_id")]
-					id: id,
-				}
-			},
+                UserProfilePicture {
+                    #[query(rename = "_id")]
+                    id: id,
+                }
+            },
 			None,
 		)
 		.await?
 		.ok_or(TransactionError::Custom(anyhow::anyhow!("profile picture not found")))?;
+
+	tx.find_one_and_update(
+		filter::filter! {
+            User {
+                #[query(rename = "_id")]
+                id: after.user_id,
+                #[query(flatten)]
+                style: UserStyle {
+                    pending_profile_picture: Some(after.id),
+                }
+            }
+        },
+		update::update! {
+            #[query(set)]
+            User {
+                #[query(flatten)]
+                style: UserStyle {
+                    pending_profile_picture: &None,
+                },
+                updated_at: chrono::Utc::now(),
+                search_updated_at: &None,
+            }
+        },
+		None,
+	)
+		.await?
+		.ok_or(TransactionError::Custom(anyhow::anyhow!("pending_profile_picture not found")))?;
 
 	tx.register_event(InternalEvent {
 		actor: None,
