@@ -142,6 +142,11 @@
 		});
 	}
 
+	function setDialogState(mode: MoreMenuMode, download: boolean = true) {
+		moreMenuMode = mode;
+		moreMenuAction = download ? "download" : "copy";
+	}
+
 	async function copyToClipboard(text: string) {
 		moreMenuDropdown?.close();
 		await navigator.clipboard.writeText(text);
@@ -301,8 +306,7 @@
 									<MenuButton
 										iconRight={caret}
 										onclick={() => {
-											moreMenuMode = "format";
-											moreMenuAction = "download";
+											setDialogState("format", true);
 										}}
 									>
 										<Download />
@@ -311,8 +315,7 @@
 									<MenuButton
 										iconRight={caret}
 										onclick={() => {
-											moreMenuMode = "format";
-											moreMenuAction = "copy";
+											setDialogState("format", false);
 										}}
 									>
 										<CopySimple />
