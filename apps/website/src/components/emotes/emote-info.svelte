@@ -49,7 +49,7 @@
 	let moreMenuDropdown: ReturnType<typeof DropDown>;
 	let moreMenuMode: MoreMenuMode = $state("root");
 	let downloadFormat = $state<string>();
-	let moreMenuAction: MoreMenuAction = "download";
+	let moreMenuAction: MoreMenuAction = $state("download");
 
 	let formats = $derived(
 		data?.images
@@ -258,41 +258,18 @@
 				{/if}
 				<a href={undefined} style="display: none" bind:this={downloadElement}>Download</a>
 				<DropDown bind:this={moreMenuDropdown}>
-					{#if (!$user || data?.deleted) && !data?.imagesPending && formats && formats.length > 1}
-						<Button
-							secondary
-							onclick={() => {
-								moreMenuMode = "format";
-								moreMenuAction = "download";
-							}}
-						>
-							<Download />
-							{$t("labels.download")}
-						</Button>
-						<Button
-							secondary
-							onclick={() => {
-								moreMenuMode = "format";
-								moreMenuAction = "copy";
-							}}
-						>
-							<CopySimple />
-							{$t("labels.copy_link")}
-						</Button>
-					{/if}
-					{#if $user && !data?.deleted}
-						<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
-							{$t("labels.more")}
-							{#snippet iconRight()}
-								<CaretDown />
-							{/snippet}
-						</Button>
-						<Button secondary hideOnDesktop>
-							{#snippet icon()}
-								<CaretDown />
-							{/snippet}
-						</Button>
-					{/if}
+					<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
+						{$t("labels.more")}
+						{#snippet iconRight()}
+							<CaretDown />
+						{/snippet}
+					</Button>
+					<Button secondary hideOnDesktop onclick={() => (moreMenuMode = "root")}>
+						{$t("labels.actions")}
+						{#snippet iconRight()}
+							<CaretDown />
+						{/snippet}
+					</Button>
 					{#snippet dropdown()}
 						<div class="dropdown">
 							{#if moreMenuMode === "root"}
@@ -326,7 +303,7 @@
 											moreMenuAction = "copy";
 										}}
 									>
-										<Download />
+										<CopySimple />
 										{$t("labels.copy_link")}
 									</MenuButton>
 								{/if}
