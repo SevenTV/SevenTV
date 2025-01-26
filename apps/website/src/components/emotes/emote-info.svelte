@@ -258,27 +258,30 @@
 				{/if}
 				<a href={undefined} style="display: none" bind:this={downloadElement}>Download</a>
 				<DropDown bind:this={moreMenuDropdown}>
-					<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
-						{#if $user}
-							{$t("labels.more")}
-						{:else}
-							{$t("labels.actions")}
-						{/if}
+					{#if !data?.imagesPending && formats && formats.length > 1}
+						<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
+							{#if $user}
+								{$t("labels.more")}
+							{:else}
+								{$t("labels.actions")}
+							{/if}
 
-						{#snippet iconRight()}
-							<CaretDown />
-						{/snippet}
-					</Button>
-					<Button secondary hideOnDesktop onclick={() => (moreMenuMode = "root")}>
-						{#if $user}
-							{$t("labels.more")}
-						{:else}
-							{$t("labels.actions")}
-						{/if}
-						{#snippet iconRight()}
-							<CaretDown />
-						{/snippet}
-					</Button>
+							{#snippet iconRight()}
+								<CaretDown />
+							{/snippet}
+						</Button>
+						<Button secondary hideOnDesktop onclick={() => (moreMenuMode = "root")}>
+							{#if $user}
+								{$t("labels.more")}
+							{:else}
+								{$t("labels.actions")}
+							{/if}
+							{#snippet iconRight()}
+								<CaretDown />
+							{/snippet}
+						</Button>
+					{/if}
+
 					{#snippet dropdown()}
 						<div class="dropdown">
 							{#if moreMenuMode === "root"}
