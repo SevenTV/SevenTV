@@ -259,13 +259,22 @@
 				<a href={undefined} style="display: none" bind:this={downloadElement}>Download</a>
 				<DropDown bind:this={moreMenuDropdown}>
 					<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
-						{$t("labels.more")}
+						{#if $user}
+							{$t("labels.more")}
+						{:else}
+							{$t("labels.actions")}
+						{/if}
+
 						{#snippet iconRight()}
 							<CaretDown />
 						{/snippet}
 					</Button>
 					<Button secondary hideOnDesktop onclick={() => (moreMenuMode = "root")}>
-						{$t("labels.actions")}
+						{#if $user}
+							{$t("labels.more")}
+						{:else}
+							{$t("labels.actions")}
+						{/if}
 						{#snippet iconRight()}
 							<CaretDown />
 						{/snippet}
