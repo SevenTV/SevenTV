@@ -11,6 +11,7 @@
 		Flag,
 		CaretRight,
 		Cpu,
+		CopySimple,
 	} from "phosphor-svelte";
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags, { emoteToFlags } from "$/components/flags.svelte";
@@ -39,7 +40,8 @@
 	import { invalidate } from "$app/navigation";
 	import { isSafari } from "$/lib/utils";
 
-	type MoreMenuMode = "root" | "download-format" | "download-size";
+	type MoreMenuMode = "root" | "format" | "size";
+	type MoreMenuAction = "download" | "copy";
 
 	let { data, children }: { data: Emote | null; children?: Snippet } = $props();
 
@@ -47,6 +49,7 @@
 	let moreMenuDropdown: ReturnType<typeof DropDown>;
 	let moreMenuMode: MoreMenuMode = $state("root");
 	let downloadFormat = $state<string>();
+	let moreMenuAction: MoreMenuAction = "download";
 
 	let formats = $derived(
 		data?.images
@@ -74,7 +77,7 @@
 
 	function clickFormat(format: string) {
 		downloadFormat = format;
-		moreMenuMode = "download-size";
+		moreMenuMode = "size";
 	}
 
 	let addEmoteDialogMode: DialogMode = $state("hidden");
@@ -137,6 +140,11 @@
 				URL.revokeObjectURL(url);
 			});
 		});
+	}
+
+	async function copyToClipboard(text: string) {
+		moreMenuDropdown?.close();
+		await navigator.clipboard.writeText(text);
 	}
 </script>
 
@@ -251,9 +259,25 @@
 				<a href={undefined} style="display: none" bind:this={downloadElement}>Download</a>
 				<DropDown bind:this={moreMenuDropdown}>
 					{#if (!$user || data?.deleted) && !data?.imagesPending && formats && formats.length > 1}
-						<Button secondary onclick={() => (moreMenuMode = "download-format")}>
+						<Button
+							secondary
+							onclick={() => {
+								moreMenuMode = "format";
+								moreMenuAction = "download";
+							}}
+						>
 							<Download />
 							{$t("labels.download")}
+						</Button>
+						<Button
+							secondary
+							onclick={() => {
+								moreMenuMode = "format";
+								moreMenuAction = "copy";
+							}}
+						>
+							<CopySimple />
+							{$t("labels.copy_link")}
 						</Button>
 					{/if}
 					{#if $user && !data?.deleted}
@@ -285,9 +309,25 @@
 									</MenuButton>
 								{/if}
 								{#if !data?.imagesPending && formats && formats.length > 1}
-									<MenuButton iconRight={caret} onclick={() => (moreMenuMode = "download-format")}>
+									<MenuButton
+										iconRight={caret}
+										onclick={() => {
+											moreMenuMode = "format";
+											moreMenuAction = "download";
+										}}
+									>
 										<Download />
 										{$t("labels.download")}
+									</MenuButton>
+									<MenuButton
+										iconRight={caret}
+										onclick={() => {
+											moreMenuMode = "format";
+											moreMenuAction = "copy";
+										}}
+									>
+										<Download />
+										{$t("labels.copy_link")}
 									</MenuButton>
 								{/if}
 								{#if $user?.permissions.ticket.create}
@@ -306,7 +346,7 @@
 										{$t("labels.delete")}
 									</MenuButton>
 								{/if}
-							{:else if moreMenuMode === "download-format"}
+							{:else if moreMenuMode === "format"}
 								{#each formats ?? [] as format}
 									<MenuButton iconRight={caret} onclick={() => clickFormat(format)}>
 										{#if format === "image/avif"}
@@ -322,9 +362,13 @@
 										{/if}
 									</MenuButton>
 								{/each}
-							{:else if moreMenuMode === "download-size"}
+							{:else if moreMenuMode === "size"}
 								{#each sizes ?? [] as image}
-									<MenuButton onclick={() => downloadImage(image)}>
+									<MenuButton
+										onclick={moreMenuAction === "download"
+											? () => downloadImage(image)
+											: () => copyToClipboard(image.url)}
+									>
 										{image.scale}x {$t("pages.emote.size")}
 									</MenuButton>
 								{/each}
