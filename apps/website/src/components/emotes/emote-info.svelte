@@ -264,23 +264,13 @@
 				<a href={undefined} style="display: none" bind:this={downloadElement}>Download</a>
 				<DropDown bind:this={moreMenuDropdown}>
 					{#if !data?.imagesPending && formats && formats.length > 1}
-						<Button secondary hideOnMobile onclick={() => (moreMenuMode = "root")}>
+						<Button secondary onclick={() => (moreMenuMode = "root")}>
 							{#if $user}
 								{$t("labels.more")}
 							{:else}
 								{$t("labels.actions")}
 							{/if}
 
-							{#snippet iconRight()}
-								<CaretDown />
-							{/snippet}
-						</Button>
-						<Button secondary hideOnDesktop onclick={() => (moreMenuMode = "root")}>
-							{#if $user}
-								{$t("labels.more")}
-							{:else}
-								{$t("labels.actions")}
-							{/if}
 							{#snippet iconRight()}
 								<CaretDown />
 							{/snippet}
