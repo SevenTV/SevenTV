@@ -71,6 +71,11 @@ async fn verify_stripe_ip(global: &Arc<Global>, ip: &IpAddr) -> bool {
 		webhooks: Vec<IpAddr>,
 	}
 
+	// Allow ips from localhost
+	if ip.is_loopback() {
+		return true;
+	}
+
 	static STRIPE_IPS: OnceCell<Response> = OnceCell::const_new();
 
 	match STRIPE_IPS

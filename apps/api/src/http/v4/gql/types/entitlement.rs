@@ -13,7 +13,7 @@ use shared::database::role::RoleId;
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-use super::{Badge, EmoteSet, Paint, Role, SpecialEvent, SubscriptionBenefit, User};
+use super::{Badge, EmoteSet, Paint, Product, Role, SpecialEvent, SubscriptionBenefit, User};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 
@@ -24,6 +24,7 @@ pub mod raw_entitlement;
 #[graphql(concrete(name = "EntitlementEdgeAnyAny", params(EntitlementNodeAny, EntitlementNodeAny)))]
 #[graphql(concrete(name = "EntitlementEdgeAnyPaint", params(EntitlementNodeAny, EntitlementNodePaint)))]
 #[graphql(concrete(name = "EntitlementEdgeAnyBadge", params(EntitlementNodeAny, EntitlementNodeBadge)))]
+#[graphql(concrete(name = "EntitlementEdgeAnyProduct", params(EntitlementNodeAny, EntitlementNodeProduct)))]
 pub struct EntitlementEdge<From: OutputType, To: OutputType> {
 	pub from: From,
 	pub to: To,
@@ -62,9 +63,7 @@ impl EntitlementNodeAny {
 			EntitlementEdgeKind::EmoteSet { emote_set_id } => Self::EmoteSet(EntitlementNodeEmoteSet {
 				emote_set_id: *emote_set_id,
 			}),
-			EntitlementEdgeKind::Product { product_id } => Self::Product(EntitlementNodeProduct {
-				product_id: product_id.clone(),
-			}),
+			EntitlementEdgeKind::Product { product_id } => Self::Product(EntitlementNodeProduct { product_id: *product_id }),
 			EntitlementEdgeKind::SubscriptionBenefit { subscription_benefit_id } => {
 				Self::SubscriptionBenefit(EntitlementNodeSubscriptionBenefit {
 					subscription_benefit_id: *subscription_benefit_id,
@@ -206,6 +205,23 @@ impl EntitlementNodeEmoteSet {
 #[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
 pub struct EntitlementNodeProduct {
 	pub product_id: ProductId,
+}
+#[async_graphql::ComplexObject]
+impl EntitlementNodeProduct {
+	#[tracing::instrument(skip_all, name = "EntitlementNodeBadge::badge")]
+	async fn product(&self, ctx: &Context<'_>) -> Result<Option<Product>, ApiError> {
+		let global = ctx
+			.data::<Arc<Global>>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let product = global
+			.product_by_id_loader
+			.load(self.product_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load product"))?;
+
+		Ok(product.map(Into::into))
+	}
 }
 
 #[derive(async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]

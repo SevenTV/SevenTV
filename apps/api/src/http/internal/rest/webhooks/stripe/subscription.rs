@@ -5,7 +5,7 @@ use mongodb::options::{FindOneAndUpdateOptions, ReturnDocument};
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy,
 };
-use shared::database::product::{ProductId, SubscriptionProduct, SubscriptionProductVariant};
+use shared::database::product::{StripeProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
 use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
 
@@ -14,12 +14,12 @@ use crate::http::egvault::metadata::{StripeMetadata, SubscriptionMetadata};
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
-fn subscription_products(items: stripe::List<stripe::SubscriptionItem>) -> Result<Vec<ProductId>, ApiError> {
+fn subscription_products(items: stripe::List<stripe::SubscriptionItem>) -> Result<Vec<StripeProductId>, ApiError> {
 	items
 		.data
 		.into_iter()
 		.map(|i| {
-			Ok(ProductId::from(
+			Ok(StripeProductId::from(
 				i.price
 					.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeError, "subscription item price is missing"))?
 					.id,
@@ -58,14 +58,13 @@ pub async fn created(
 		)
 		.await?;
 
-	if products.len() != 1 {
-		// only accept subs with one product
-		tracing::warn!("subscription has more than one product: {}", subscription.id);
+	if products.is_empty() {
+		tracing::warn!("subscription has no products: {}", subscription.id);
 		tx.insert_one(
 			StripeError {
 				id: StripeErrorId::new(),
 				event_id,
-				error_kind: StripeErrorKind::SubscriptionMultipleProducts,
+				error_kind: StripeErrorKind::SubscriptionInvoiceNoProduct,
 			},
 			None,
 		)

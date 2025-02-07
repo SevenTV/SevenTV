@@ -5,7 +5,9 @@ use async_graphql::Context;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState,
 };
-use shared::database::product::{ProductId, SubscriptionProduct, SubscriptionProductId, SubscriptionProductVariant};
+use shared::database::product::{
+	ProductId, StripeProductId, SubscriptionProduct, SubscriptionProductId, SubscriptionProductVariant,
+};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::user::UserId;
@@ -41,7 +43,7 @@ pub struct RedeemResponse {
 impl BillingMutation {
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultSubscribe, 1)")]
 	#[tracing::instrument(skip_all, name = "BillingMutation::subscribe")]
-	async fn subscribe(&self, ctx: &Context<'_>, variant_id: ProductId) -> Result<SubscribeResponse, ApiError> {
+	async fn subscribe(&self, ctx: &Context<'_>, variant_id: StripeProductId) -> Result<SubscribeResponse, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -561,7 +563,6 @@ impl BillingMutation {
 		let user_id = session
 			.user_id()
 			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
-
 		if self.user_id != user_id {
 			return Err(ApiError::bad_request(
 				ApiErrorCode::BadRequest,
@@ -581,5 +582,198 @@ impl BillingMutation {
 		let checkout_url = redeem_code_inner(global, session, code, success_url, cancel_url).await?;
 
 		Ok(RedeemResponse { checkout_url })
+	}
+
+	#[graphql(
+		guard = "PermissionGuard::one(UserPermission::Billing).and(RateLimitGuard::new(RateLimitResource::EgVaultSubscribe, 1))"
+	)]
+	async fn get_pickems(
+		&self,
+		ctx: &Context<'_>,
+		pickems_id: ProductId,
+		subscription_price_id: Option<StripeProductId>,
+	) -> Result<SubscribeResponse, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+
+		let user_id = session
+			.user_id()
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
+
+		let user = session.user()?;
+
+		if self.user_id != user_id {
+			return Err(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
+				"You can only get the pickems pass for yourself",
+			));
+		}
+
+		let authed_user = session.user()?;
+
+		if !authed_user.has(UserPermission::Billing) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"this user isn't allowed to use billing features",
+			));
+		}
+
+		// check if the variant exitsts in our products
+		if let Some(price_id) = subscription_price_id.clone() {
+			SubscriptionProduct::collection(&global.db)
+				.find_one(filter::filter! {
+					SubscriptionProduct {
+						#[query(flatten)]
+						variants: SubscriptionProductVariant {
+							#[query(serde)]
+							id: &price_id,
+							active: true,
+						}
+					}
+				})
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to find subscription product");
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find subscription product")
+				})?
+				.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "subscription product not found"))?;
+		}
+
+		let customer_id = match authed_user.stripe_customer_id.clone() {
+			Some(id) => id,
+			None => {
+				// We don't need the safe client here because this won't be retried
+				find_or_create_customer(global, global.stripe_client.client().await, authed_user.id, None).await?
+			}
+		};
+
+		let success_url = global.config.api.website_origin.join("/store?pickems=1").unwrap().to_string();
+		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
+
+		// Create the checkout session params
+		let mut line_items: Vec<stripe::CreateCheckoutSessionLineItems> = vec![];
+		let mut params = stripe::CreateCheckoutSession {
+			customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
+				address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
+				..Default::default()
+			}),
+			automatic_tax: Some(stripe::CreateCheckoutSessionAutomaticTax {
+				enabled: true,
+				..Default::default()
+			}),
+			currency: Some(stripe::Currency::EUR),
+			customer: Some(customer_id.into()),
+			// expire the session 4 hours from now so we can restore unused redeem codes in the checkout.session.expired handler
+			expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),
+			success_url: Some(&success_url),
+			cancel_url: Some(&cancel_url),
+			..Default::default()
+		};
+
+		let pickems_product = global
+			.product_by_id_loader
+			.load(pickems_id)
+			.await
+			.map_err(|_| {
+				tracing::error!("failed to find pickems product");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find pickems product")
+			})?
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "pickems product not found"))?;
+
+		// Product can only be bought if not owned
+		if user.computed.entitlements.products.contains(&pickems_product.id) {
+			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "product already owned"));
+		}
+
+		// If a varaint is passed and the user has not subscription, then add it
+		let add_subscription = subscription_price_id.is_some()
+			&& global
+				.active_subscription_period_by_user_id_loader
+				.load(authed_user.id)
+				.await
+				.map_err(|()| {
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription period")
+				})?
+				.is_none();
+
+		if add_subscription {
+			params.mode = Some(stripe::CheckoutSessionMode::Subscription);
+			params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
+				metadata: Some(
+					SubscriptionMetadata {
+						user_id: authed_user.id,
+						customer_id: None,
+					}
+					.to_stripe(),
+				),
+				..Default::default()
+			});
+
+			let subscription_line = stripe::CreateCheckoutSessionLineItems {
+				price: Some(subscription_price_id.unwrap().to_string()),
+				quantity: Some(1),
+				..Default::default()
+			};
+
+			line_items.push(subscription_line);
+
+			params.discounts = Some(vec![stripe::CreateCheckoutSessionDiscounts {
+				coupon: pickems_product.discount,
+				..Default::default()
+			}]);
+		} else {
+			params.mode = Some(stripe::CheckoutSessionMode::Payment);
+			params.invoice_creation = Some(stripe::CreateCheckoutSessionInvoiceCreation {
+				enabled: true,
+				invoice_data: None,
+			});
+		}
+
+		// Create the pickems product line
+		let pickems_line = stripe::CreateCheckoutSessionLineItems {
+			price_data: Some(stripe::CreateCheckoutSessionLineItemsPriceData {
+				product: Some(pickems_product.provider_id.to_string()),
+				unit_amount: pickems_product
+					.currency_prices
+					.get(&pickems_product.default_currency)
+					.copied(),
+				currency: pickems_product.default_currency,
+				..Default::default()
+			}),
+			quantity: Some(1),
+			..Default::default()
+		};
+
+		line_items.push(pickems_line);
+		params.line_items = Some(line_items);
+
+		//Metadata that the webhook listener will user to apply the product to the user
+		params.metadata = Some(
+			CheckoutSessionMetadata::Pickems {
+				user_id,
+				product_id: pickems_id,
+			}
+			.to_stripe(),
+		);
+
+		// We don't need the safe client here because this won't be retried
+		let session_url = stripe::CheckoutSession::create(global.stripe_client.client().await.deref(), params)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to create checkout session");
+				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
+			})?
+			.url
+			.ok_or_else(|| {
+				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
+			})?;
+
+		Ok(SubscribeResponse {
+			checkout_url: session_url,
+		})
 	}
 }

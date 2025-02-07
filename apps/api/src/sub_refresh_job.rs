@@ -11,7 +11,7 @@ use shared::database::emote_set::{EmoteSet, EmoteSetId, EmoteSetKind};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::subscription::{Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState};
-use shared::database::product::{ProductId, SubscriptionBenefitCondition};
+use shared::database::product::{StripeProductId, SubscriptionBenefitCondition};
 use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId, UserStyle};
 use shared::database::MongoCollection;
@@ -526,8 +526,8 @@ async fn handle_xmas_2024_gift(global: &Arc<Global>, customer_id: UserId) -> Res
 	const MONTH_SUB_PRODUCT_ID: &str = "price_1JWQ2QCHxsWbK3R31cZkaocV"; // = 1 gift
 	const YEAR_SUB_PRODUCT_ID: &str = "price_1JWQ2RCHxsWbK3R3a6emz76a"; // = 10 gifts
 
-	let month_product_id = ProductId::from(stripe::PriceId::from_str(MONTH_SUB_PRODUCT_ID).unwrap());
-	let year_product_id = ProductId::from(stripe::PriceId::from_str(YEAR_SUB_PRODUCT_ID).unwrap());
+	let month_product_id = StripeProductId::from_str(MONTH_SUB_PRODUCT_ID).unwrap();
+	let year_product_id = StripeProductId::from_str(YEAR_SUB_PRODUCT_ID).unwrap();
 
 	let mut xmas_gift = Xmas2024Gift {
 		adds: vec![],

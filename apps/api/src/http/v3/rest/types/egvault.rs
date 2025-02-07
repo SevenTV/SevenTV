@@ -1,6 +1,8 @@
 use shared::database::paint::PaintId;
 use shared::database::product::subscription::{SubscriptionPeriodId, SubscriptionState};
-use shared::database::product::{ProductId, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant};
+use shared::database::product::{
+	StripeProductId, SubscriptionProductId, SubscriptionProductKind, SubscriptionProductVariant,
+};
 use shared::database::user::UserId;
 
 #[derive(Debug, serde::Serialize)]
@@ -10,7 +12,7 @@ pub struct Subscription {
 	/// Stripe product id
 	pub product_id: SubscriptionProductId,
 	/// Stripe price id
-	pub plan: ProductId,
+	pub plan: StripeProductId,
 	/// always 1
 	pub seats: u32,
 	/// Id of the user who is subscribed

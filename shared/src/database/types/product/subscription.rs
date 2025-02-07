@@ -2,7 +2,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use super::codes::RedeemCodeId;
-use super::{InvoiceId, ProductId, StripeSubscriptionId, SubscriptionProductId};
+use super::{InvoiceId, StripeProductId, StripeSubscriptionId, SubscriptionProductId};
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::{Id, IdFromStrError, MongoCollection};
@@ -128,7 +128,7 @@ pub struct SubscriptionPeriod {
 	pub id: SubscriptionPeriodId,
 	pub subscription_id: SubscriptionId,
 	pub provider_id: Option<ProviderSubscriptionId>,
-	pub product_id: ProductId,
+	pub product_id: StripeProductId,
 	#[serde(with = "crate::database::serde")]
 	pub start: chrono::DateTime<chrono::Utc>,
 	#[serde(with = "crate::database::serde")]
