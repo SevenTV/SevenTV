@@ -81,6 +81,7 @@ ipnet = { version = "2.9.0", features = ["serde"] }
 shared = { workspace = true }
 
 fred = { version = "10.0.0", features = ["enable-rustls", "dns", "sentinel-client", "sentinel-auth", "metrics", "replicas", "i-scripts"]}
+oauth2 = "5.0.0"
 
 [features]
 default = []

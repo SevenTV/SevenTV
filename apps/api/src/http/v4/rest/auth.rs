@@ -1,6 +1,8 @@
+use cookie::SameSite;
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
+use time::Duration;
 
 use axum::extract::{Query, State};
 use axum::response::{IntoResponse, Redirect, Response};
@@ -18,11 +20,12 @@ use shared::event::{InternalEvent, InternalEventData};
 use crate::connections;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
-use crate::http::middleware::cookies::Cookies;
+use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::http::middleware::session::{parse_session, Session, AUTH_COOKIE};
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::RateLimitRequest;
 use crate::transactions::{transaction, TransactionError};
+const VERIFIER_COOKIE: &str = "id-token";
 
 const TWITCH_AUTH_URL: &str = "https://id.twitch.tv/oauth2/authorize?";
 const TWITCH_AUTH_SCOPE: &str = "";
@@ -34,6 +37,8 @@ const GOOGLE_AUTH_URL: &str =
 	"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&include_granted_scopes=true&";
 const GOOGLE_AUTH_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonly";
 
+const KICK_AUTH_URL: &str = "https://id.kick.com/oauth/authorize?";
+const KICK_AUTH_SCOPE: &str = "user:read";
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
 		.route("/login", get(login))
@@ -111,6 +116,7 @@ async fn login_inner(
 	query: LoginRequest,
 	headers: HeaderMap,
 	redirect_uri: url::Url,
+	cookies: &Cookies,
 ) -> Result<Response, ApiError> {
 	let allowed = [
 		&global.config.api.api_origin,
@@ -154,13 +160,23 @@ async fn login_inner(
 			Platform::Google if global.config.connections.google.enabled => {
 				(GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.connections.google)
 			}
+			Platform::Kick if global.config.connections.kick.enabled => {
+				(KICK_AUTH_URL, KICK_AUTH_SCOPE, &global.config.connections.kick)
+			}
 			_ => {
 				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "unsupported platform"));
 			}
 		};
 
+		let (pkce_challenge, pkce_verifier) = oauth2::PkceCodeChallenge::new_random_sha256();
+
+		cookies.add(
+			new_cookie(global, (VERIFIER_COOKIE, pkce_verifier.into_secret()))
+				.max_age(Duration::seconds(300))
+				.same_site(SameSite::Strict),
+		);
 		let redirect_url = format!(
-			"{}client_id={}&redirect_uri={}&response_type=code&scope={}{}",
+			"{}client_id={}&redirect_uri={}&response_type=code&scope={}{}&code_challenge_method={}&code_challenge={}",
 			url,
 			config.client_id,
 			urlencoding::encode(redirect_uri.as_str()),
@@ -169,7 +185,9 @@ async fn login_inner(
 				.return_to
 				.as_ref()
 				.map(|r| format!("&state={}", urlencoding::encode(r.as_str())))
-				.unwrap_or_default()
+				.unwrap_or_default(),
+			urlencoding::encode(pkce_challenge.method()),
+			urlencoding::encode(pkce_challenge.as_str()),
 		);
 
 		Ok(Redirect::to(&redirect_url))
@@ -181,22 +199,24 @@ async fn login_inner(
 async fn login(
 	State(global): State<Arc<Global>>,
 	Extension(session): Extension<Session>,
+	Extension(cookies): Extension<Cookies>,
 	Query(query): Query<LoginRequest>,
 	headers: HeaderMap,
 ) -> Result<Response, ApiError> {
 	let redirect_uri = login_redirect_uri(&global, query.platform)?;
-	login_inner(&global, &session, query, headers, redirect_uri).await
+	login_inner(&global, &session, query, headers, redirect_uri, &cookies).await
 }
 
 #[tracing::instrument(skip_all)]
 async fn link(
 	State(global): State<Arc<Global>>,
 	Extension(session): Extension<Session>,
+	Extension(cookies): Extension<Cookies>,
 	Query(query): Query<LoginRequest>,
 	headers: HeaderMap,
 ) -> Result<Response, ApiError> {
 	let redirect_uri = link_redirect_uri(&global, query.platform)?;
-	login_inner(&global, &session, query, headers, redirect_uri).await
+	login_inner(&global, &session, query, headers, redirect_uri, &cookies).await
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -213,6 +233,7 @@ struct LoginFinishResponse {
 #[tracing::instrument(skip_all)]
 async fn login_finish(
 	State(global): State<Arc<Global>>,
+	Extension(cookies): Extension<Cookies>,
 	headers: HeaderMap,
 	Json(payload): Json<LoginFinishPayload>,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -238,12 +259,15 @@ async fn login_finish(
 
 	let platform = payload.platform.into();
 
+	let verifier = cookies.get(VERIFIER_COOKIE).map(|c| c.value().to_string());
+	cookies.remove(&global, VERIFIER_COOKIE);
 	// exchange code for access token
 	let token = connections::exchange_code(
 		&global,
 		platform,
 		&payload.code,
 		login_redirect_uri(&global, payload.platform)?.to_string(),
+		verifier,
 	)
 	.await?;
 
@@ -477,6 +501,7 @@ async fn login_finish(
 async fn link_finish(
 	State(global): State<Arc<Global>>,
 	Extension(session): Extension<Session>,
+	Extension(cookies): Extension<Cookies>,
 	headers: HeaderMap,
 	Json(payload): Json<LoginFinishPayload>,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -506,12 +531,15 @@ async fn link_finish(
 
 	let platform = payload.platform.into();
 
+	let verifier = cookies.get(VERIFIER_COOKIE).map(|c| c.value().to_string());
+	cookies.remove(&global, VERIFIER_COOKIE);
 	// exchange code for access token
 	let token = connections::exchange_code(
 		&global,
 		platform,
 		&payload.code,
 		link_redirect_uri(&global, payload.platform)?.to_string(),
+		verifier,
 	)
 	.await?;
 
