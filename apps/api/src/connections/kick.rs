@@ -32,7 +32,7 @@ impl From<KickUserData> for PlatformUserData {
 pub async fn get_user_data(global: &Arc<Global>, access_token: &str) -> Result<KickUserData, ConnectionError> {
 	let res = global
 		.http_client
-		.get("https://api.kick.com/users")
+		.get("https://api.kick.com/public/v1/users")
 		.bearer_auth(access_token)
 		.send()
 		.await
