@@ -40,7 +40,7 @@
 		const res = await gqlClient()
 			.mutation(
 				graphql(`
-					mutation Subscribe($userId: Id!, $variantId: ProductId!) {
+					mutation Subscribe($userId: Id!, $variantId: StripeProductId!) {
 						billing(userId: $userId) {
 							subscribe(variantId: $variantId) {
 								checkoutUrl

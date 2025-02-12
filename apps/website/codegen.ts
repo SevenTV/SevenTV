@@ -13,7 +13,7 @@ const config: CodegenConfig = {
 				scalars: {
 					DateTime: "Date",
 					Id: "string",
-					ProductId: "string",
+					StripeProductId: "string",
 					InvoiceId: "string",
 					CustomerId: "string",
 					JSONObject: "object",

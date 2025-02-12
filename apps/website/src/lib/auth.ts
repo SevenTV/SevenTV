@@ -175,6 +175,13 @@ export async function fetchMe(): Promise<User | null> {
 									}
 								}
 							}
+							inventory {
+								products {
+									to {
+										productId
+									}
+								}
+							}
 							editorFor {
 								user {
 									id
