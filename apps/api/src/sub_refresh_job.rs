@@ -472,6 +472,8 @@ async fn handle_xmas_2024_gift(global: &Arc<Global>, customer_id: UserId) -> Res
 	const XMAS_10_SUBS_ID: &str = "0193F0E3-828A-13C2-1E24-17CF874748DF";
 	const MINECRAFT_5_SUBS_ID: &str = "0193ef9e-ffa6-8c60-ceb6-279134b5b32a";
 	const MINECRAFT_10_SUBS_ID: &str = "0193ef9f-2ed9-2e29-48e2-ad78887dfab9";
+	const VALENTINE_1_SUB_ID: &str = "0195098d-54ff-5b5e-73fd-30fbcd44de60";
+	const VALENTINE_4_SUBS_ID: &str = "0195098d-faf3-71a4-1475-6abb76da23c6";
 
 	let events = [
 		Event {
@@ -499,6 +501,20 @@ async fn handle_xmas_2024_gift(global: &Arc<Global>, customer_id: UserId) -> Res
 				Level {
 					event_id: SpecialEventId::from_str(MINECRAFT_10_SUBS_ID).unwrap(),
 					count: 10,
+				},
+			],
+		},
+		Event {
+			start: chrono::Utc.with_ymd_and_hms(2025, 2, 14, 0, 0, 0).unwrap(),
+			end: chrono::Utc.with_ymd_and_hms(2025, 2, 18, 6, 0, 0).unwrap(),
+			levels: vec![
+				Level {
+					event_id: SpecialEventId::from_str(VALENTINE_1_SUB_ID).unwrap(),
+					count: 1,
+				},
+				Level {
+					event_id: SpecialEventId::from_str(VALENTINE_4_SUBS_ID).unwrap(),
+					count: 4,
 				},
 			],
 		},
