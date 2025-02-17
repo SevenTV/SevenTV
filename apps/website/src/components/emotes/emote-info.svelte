@@ -278,12 +278,6 @@
 										{$t("pages.emote.transfer")}
 									</MenuButton>
 								{/if}
-								{#if editPermission}
-									<MenuButton>
-										<ArrowsMerge style="transform: rotate(-90deg)" />
-										{$t("pages.emote.merge")}
-									</MenuButton>
-								{/if}
 								{#if !data?.imagesPending && formats && formats.length > 1}
 									<MenuButton iconRight={caret} onclick={() => (moreMenuMode = "download-format")}>
 										<Download />
