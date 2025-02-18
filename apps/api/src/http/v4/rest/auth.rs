@@ -25,7 +25,7 @@ use crate::http::middleware::session::{parse_session, Session, AUTH_COOKIE};
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::RateLimitRequest;
 use crate::transactions::{transaction, TransactionError};
-const VERIFIER_COOKIE: &str = "id-token";
+const VERIFIER_COOKIE: &str = "seventv-verifier";
 
 const TWITCH_AUTH_URL: &str = "https://id.twitch.tv/oauth2/authorize?";
 const TWITCH_AUTH_SCOPE: &str = "";
