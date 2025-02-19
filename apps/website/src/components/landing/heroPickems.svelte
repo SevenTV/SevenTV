@@ -1,15 +1,14 @@
 <script lang="ts">
-	import Logo from "../icons/logo.svelte";
 	import Button from "../input/button.svelte";
-	import nnysPlaceholder from "$assets/nnys.webp?url";
-	import { isXmasEvent } from "$/lib/xmas";
-	import moment from "moment";
-	import { Minus } from "phosphor-svelte";
+	import { ArrowSquareOut, Minus, Ticket } from "phosphor-svelte";
 	import { graphql } from "$/gql";
 	import { gqlClient } from "$/lib/gql";
 	import { type Badge } from "$/gql/graphql";
 	import BadgeComponent from "../badge.svelte";
+	import { user } from "$/lib/auth";
 	import HeroPepe from "$/components/pickems/hero-pepe.svelte";
+	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
+
 	async function queryCosmetics() {
 		let res = await gqlClient()
 			.query(
@@ -91,11 +90,27 @@
 				</div>
 			</div>
 			<div class="buttons">
-				<Button
-					primary
-					style="font-size: 1em; background-color: #EFDFFF;"
-					href="/landing/pickems_pass/about">Learn More</Button
-				>
+				{#if hasPass}
+					<Button primary style="font-size: 1em;" href="https://pickems.tv">
+						{#snippet iconRight()}
+							<ArrowSquareOut />
+						{/snippet}
+						Place your pick'ems
+					</Button>
+					<Button style="font-size: 1em;" href="/store/pickems">
+						{#snippet iconRight()}
+							<Ticket />
+						{/snippet}
+						Learn More
+					</Button>
+				{:else}
+					<Button primary style="font-size: 1em;" href="/store/pickems">
+						{#snippet iconRight()}
+							<Ticket />
+						{/snippet}
+						Learn More & Purchase
+					</Button>
+				{/if}
 			</div>
 		</div>
 		<div class="header-image" style="margin-top: -2.5rem;">
@@ -271,7 +286,10 @@
 		}
 
 		.buttons {
-			display: inline-flex;
+			display: flex;
+			flex-wrap: wrap;
+			column-gap: 1rem;
+			row-gap: 0.5rem;
 		}
 	}
 
