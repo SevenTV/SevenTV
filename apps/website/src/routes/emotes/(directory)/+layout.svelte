@@ -108,7 +108,7 @@
 </script>
 
 <div>
-	<PickemsHeader></PickemsHeader>
+	<PickemsHeader />
 	<div class="side-bar-layout">
 		<aside class="side-bar">
 			<h1>{$t("pages.directory.title")}</h1>

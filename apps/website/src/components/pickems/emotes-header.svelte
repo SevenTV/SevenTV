@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowSquareOut, Ticket } from "phosphor-svelte";
+	import { ArrowSquareOut, Ticket, X } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import PaintComponent from "../paint.svelte";
 	import { graphql } from "$/gql";
@@ -7,10 +7,18 @@
 	import { type Paint, type Badge } from "$/gql/graphql";
 	import BadgeComponent from "../badge.svelte";
 	import { user } from "$/lib/auth";
+	import { onMount } from "svelte";
+	import { fly } from "svelte/transition";
 
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
 	let paintMouseOver = $state(false);
 	let username = $derived($user?.mainConnection?.platformDisplayName ?? "Username");
+
+	let dismissed = $state(window.localStorage.getItem("pickems-dismissed") ?? "false");
+	function dismiss() {
+		dismissed = "true";
+		window.localStorage.setItem("pickems-dismissed", "true");
+	}
 
 	async function queryCosmetics() {
 		let res = await gqlClient()
@@ -109,6 +117,13 @@
 
 	let badges = $state<Badge[]>([]);
 	let paints = $state<Paint[]>([]);
+	let paintIndex = $state(0);
+	onMount(() => {
+		const interval = setInterval(() => {
+			paintIndex = (paintIndex + 1) % paints.length;
+		}, 5000);
+		return () => clearInterval(interval);
+	});
 
 	const badgeIds = new Set([
 		"01JJQEA3655687JWHG7P9CV3W8",
@@ -127,64 +142,81 @@
 	});
 </script>
 
-<div class="pickems-header-layout">
-	<div class="pickems-header">
-		<div class="purchase-info">
-			<p class="pre-title">7TV Hoster CS2 Tournament &#x2022 Feb. 29th - Mar. 2nd</p>
-			<h2 class="title">Place your Pick'ems. Win Prizes.</h2>
-			<div class="buttons">
-				{#if hasPass}
-					<Button primary href="https://pickems.tv">
-						{#snippet iconRight()}
-							<ArrowSquareOut />
-						{/snippet}
-						Place Pick'ems
-					</Button>
-				{:else}
-					<Button href="/store" primary>
-						{#snippet iconRight()}
-							<Ticket />
-						{/snippet}
-						Purchase Pass
-					</Button>
-					<Button secondary href="https://pickems.tv">
-						{#snippet iconRight()}
-							<ArrowSquareOut />
-						{/snippet}
-						Learn More
-					</Button>
-				{/if}
+{#if dismissed !== "true"}
+	<div class="pickems-header-layout">
+		<div class="pickems-header">
+			<div class="purchase-info">
+				<p class="pre-title">7TV Hoster CS2 Tournament &#x2022 Feb. 29th - Mar. 2nd</p>
+				<h2 class="title">Place your Pick'ems. Win Prizes.</h2>
+				<div class="buttons">
+					{#if hasPass}
+						<Button primary href="https://pickems.tv">
+							{#snippet iconRight()}
+								<ArrowSquareOut />
+							{/snippet}
+							Place Pick'ems
+						</Button>
+					{:else}
+						<Button href="/store" primary>
+							{#snippet iconRight()}
+								<Ticket />
+							{/snippet}
+							Purchase Pass
+						</Button>
+						<Button secondary href="https://pickems.tv">
+							{#snippet iconRight()}
+								<ArrowSquareOut />
+							{/snippet}
+							Learn More
+						</Button>
+					{/if}
+				</div>
 			</div>
-		</div>
-		<div class="paint-preview">
-			<div class="paint">
-				{#each paints as paint}
-					<PaintComponent
-						{paint}
-						enableDialog
-						onmouseenter={() => (paintMouseOver = true)}
-						onmouseleave={() => (paintMouseOver = false)}
-					>
-						<h2>
-							{#if paintMouseOver}
-								{username}
-							{:else}
-								{paint.name}
-							{/if}
-						</h2>
-					</PaintComponent>
-				{/each}
+			<div class="paint-preview hide-on-mobile">
+				<div class="paint">
+					{#each paints as paint, i}
+						{#if paintIndex === i}
+							<div
+								class="paint-inner"
+								in:fly={{ y: 100, duration: 500 }}
+								out:fly={{ y: -100, duration: 500 }}
+							>
+								<PaintComponent
+									{paint}
+									enableDialog
+									onmouseenter={() => (paintMouseOver = true)}
+									onmouseleave={() => (paintMouseOver = false)}
+								>
+									<h2>
+										{#if paintMouseOver}
+											{username}
+										{:else}
+											{paint.name}
+										{/if}
+									</h2>
+								</PaintComponent>
+							</div>
+						{/if}
+					{/each}
+				</div>
 			</div>
-		</div>
-		<div class="badge-preview">
-			<div class="badges">
-				{#each badges as badge}
-					<BadgeComponent enableDialog size={48} {badge}></BadgeComponent>
-				{/each}
+			<div class="badge-preview hide-on-mobile">
+				<div class="badges">
+					{#each badges as badge}
+						<BadgeComponent enableDialog size={48} {badge} />
+					{/each}
+				</div>
+			</div>
+			<div class="dismiss">
+				<Button onclick={dismiss}>
+					{#snippet icon()}
+						<X />
+					{/snippet}
+				</Button>
 			</div>
 		</div>
 	</div>
-</div>
+{/if}
 
 <style lang="scss">
 	@keyframes backgroundScroll {
@@ -258,12 +290,20 @@
 				align-items: center;
 
 				.paint {
+					position: relative;
+					height: 50%;
+					width: 12rem;
 					display: flex;
 					justify-content: center;
 					padding: 1rem 2rem;
 					background: hsla(0deg, 0%, 40%, 20%);
 					backdrop-filter: blur(2rem);
 					border-radius: 0.5rem;
+					overflow: clip;
+
+					.paint-inner {
+						position: absolute;
+					}
 				}
 			}
 
@@ -281,6 +321,12 @@
 					border-radius: 0.5rem;
 				}
 			}
+		}
+
+		.dismiss {
+			position: absolute;
+			top: 0.5rem;
+			right: 0.5rem;
 		}
 	}
 
