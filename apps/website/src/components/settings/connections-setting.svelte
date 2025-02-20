@@ -34,7 +34,7 @@
 			linkUrl: linkUrl("kick"),
 			name: "Kick",
 			icon: kickLogo,
-			linkingEnabled: false,
+			linkingEnabled: true,
 		},
 		{
 			id: Platform.Google,
@@ -46,7 +46,7 @@
 	];
 
 	function linkUrl(platform: string) {
-		return `${PUBLIC_REST_API_V4}/auth/link?platform=${platform}`;
+		return `${PUBLIC_REST_API_V4}/auth/link?platform=${platform}&return_to=/settings`;
 	}
 
 	let removeLoading = $state();
