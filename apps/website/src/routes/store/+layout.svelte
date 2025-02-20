@@ -1,7 +1,7 @@
 <script lang="ts">
 	// PaintBrush
 	// import disabled for now
-	import { Gift, Star } from "phosphor-svelte";
+	import { Gift, Star, Ticket } from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
@@ -19,6 +19,12 @@
 		<nav class="link-list">
 			<TabLink href="/store" title={$t("common.subscriptions", { values: { count: 1 } })} big>
 				<Star />
+				{#snippet active()}
+					<Star weight="fill" />
+				{/snippet}
+			</TabLink>
+			<TabLink href="/store/pickems" title="Pickems Pass" big>
+				<Ticket />
 				{#snippet active()}
 					<Star weight="fill" />
 				{/snippet}

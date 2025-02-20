@@ -1,18 +1,13 @@
 <script lang="ts">
 	import { ArrowSquareOut, Ticket, X } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
-	import PaintComponent from "../paint.svelte";
-	import { graphql } from "$/gql";
-	import { gqlClient } from "$/lib/gql";
 	import { type Paint, type Badge } from "$/gql/graphql";
-	import BadgeComponent from "../badge.svelte";
 	import { user } from "$/lib/auth";
-	import { onMount } from "svelte";
-	import { fly } from "svelte/transition";
+	import { queryPickemsCosmetics } from "$/lib/pickems";
+	import PickemsBadges from "./pickems-badges.svelte";
+	import PickemsPaints from "./pickems-paints.svelte";
 
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
-	let paintMouseOver = $state(false);
-	let username = $derived($user?.mainConnection?.platformDisplayName ?? "Username");
 
 	let dismissed = $state(window.localStorage.getItem("pickems-dismissed") ?? "false");
 	function dismiss() {
@@ -20,124 +15,13 @@
 		window.localStorage.setItem("pickems-dismissed", "true");
 	}
 
-	async function queryCosmetics() {
-		let res = await gqlClient()
-			.query(
-				graphql(`
-					query GetCosmetics {
-						badges {
-							badges {
-								__typename
-								id
-								name
-								description
-								tags
-								images {
-									__typename
-									url
-									mime
-									size
-									scale
-									width
-									height
-									frameCount
-								}
-								createdById
-								updatedAt
-								searchUpdatedAt
-							}
-						}
-						paints {
-							paints {
-								id
-								name
-								data {
-									layers {
-										id
-										ty {
-											__typename
-											... on PaintLayerTypeSingleColor {
-												color {
-													hex
-												}
-											}
-											... on PaintLayerTypeLinearGradient {
-												angle
-												repeating
-												stops {
-													at
-													color {
-														hex
-													}
-												}
-											}
-											... on PaintLayerTypeRadialGradient {
-												repeating
-												stops {
-													at
-													color {
-														hex
-													}
-												}
-												shape
-											}
-											... on PaintLayerTypeImage {
-												images {
-													url
-													mime
-													size
-													scale
-													width
-													height
-													frameCount
-												}
-											}
-										}
-										opacity
-									}
-									shadows {
-										color {
-											hex
-										}
-										offsetX
-										offsetY
-										blur
-									}
-								}
-							}
-						}
-					}
-				`),
-				{},
-			)
-			.toPromise();
-
-		return res.data;
-	}
-
 	let badges = $state<Badge[]>([]);
 	let paints = $state<Paint[]>([]);
-	let paintIndex = $state(0);
-	onMount(() => {
-		const interval = setInterval(() => {
-			paintIndex = (paintIndex + 1) % paints.length;
-		}, 5000);
-		return () => clearInterval(interval);
-	});
-
-	const badgeIds = new Set([
-		"01JJQEA3655687JWHG7P9CV3W8",
-		"01JJQECTG04J5J6QE1BCATE6JN",
-		"01JJQEDT21JXF1JM4F1P805VTK",
-		"01JJQEENE6CJ6KR70CBCF39ACN",
-	]);
-
-	const paintIds = new Set(["01JHXJH9C9MHN9FJMPNQB4YZ4N", "01JHXJCX6WPJR5ETEYRDP6WVYH"]);
 
 	$effect(() => {
-		queryCosmetics().then((res) => {
-			badges = res?.badges.badges.filter((b) => badgeIds.has(b.id)) ?? [];
-			paints = (res?.paints.paints.filter((p) => paintIds.has(p.id)) ?? []) as Paint[];
+		queryPickemsCosmetics().then((cosmetics) => {
+			badges = cosmetics.badges;
+			paints = cosmetics.paints;
 		});
 	});
 </script>
@@ -173,39 +57,10 @@
 				</div>
 			</div>
 			<div class="paint-preview hide-on-mobile">
-				<div class="paint">
-					{#each paints as paint, i}
-						{#if paintIndex === i}
-							<div
-								class="paint-inner"
-								in:fly={{ y: 100, duration: 500 }}
-								out:fly={{ y: -100, duration: 500 }}
-							>
-								<PaintComponent
-									{paint}
-									enableDialog
-									onmouseenter={() => (paintMouseOver = true)}
-									onmouseleave={() => (paintMouseOver = false)}
-								>
-									<h2>
-										{#if paintMouseOver}
-											{username}
-										{:else}
-											{paint.name}
-										{/if}
-									</h2>
-								</PaintComponent>
-							</div>
-						{/if}
-					{/each}
-				</div>
+				<PickemsPaints {paints} />
 			</div>
 			<div class="badge-preview hide-on-mobile">
-				<div class="badges">
-					{#each badges as badge}
-						<BadgeComponent enableDialog size={48} {badge} />
-					{/each}
-				</div>
+				<PickemsBadges {badges} />
 			</div>
 			<div class="dismiss">
 				<Button onclick={dismiss}>
@@ -288,38 +143,12 @@
 				display: flex;
 				justify-content: center;
 				align-items: center;
-
-				.paint {
-					position: relative;
-					height: 50%;
-					width: 12rem;
-					display: flex;
-					justify-content: center;
-					padding: 1rem 2rem;
-					background: hsla(0deg, 0%, 40%, 20%);
-					backdrop-filter: blur(2rem);
-					border-radius: 0.5rem;
-					overflow: clip;
-
-					.paint-inner {
-						position: absolute;
-					}
-				}
 			}
 
 			.badge-preview {
 				display: flex;
 				justify-content: end;
 				align-items: center;
-
-				.badges {
-					display: flex;
-					gap: 1rem;
-					padding: 1rem;
-					background: hsla(0deg, 0%, 40%, 20%);
-					backdrop-filter: blur(2rem);
-					border-radius: 0.5rem;
-				}
 			}
 		}
 

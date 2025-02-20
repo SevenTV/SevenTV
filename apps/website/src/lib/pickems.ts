@@ -4,7 +4,7 @@ import { gqlClient } from "$/lib/gql";
 import { graphql } from "$/gql";
 import { get } from "svelte/store";
 import { signInDialogMode, signInDialogPayload } from "./layout";
-import type { User } from "$/gql/graphql";
+import type { GetPickemsCosmeticsQuery, Paint, User } from "$/gql/graphql";
 export async function purchasePickems(variantId?: string, waitForUser = false) {
 	let $user: User | null | undefined;
 	if (!waitForUser) {
@@ -58,4 +58,113 @@ export async function purchasePickems(variantId?: string, waitForUser = false) {
 	if (res.data) {
 		window.location.href = res.data.billing.getPickems.checkoutUrl;
 	}
+}
+
+
+const badgeIds = new Set([
+	"01JJQEA3655687JWHG7P9CV3W8",
+	"01JJQECTG04J5J6QE1BCATE6JN",
+	"01JJQEDT21JXF1JM4F1P805VTK",
+	"01JJQEENE6CJ6KR70CBCF39ACN",
+]);
+
+const paintIds = new Set(["01JHXJH9C9MHN9FJMPNQB4YZ4N", "01JHXJCX6WPJR5ETEYRDP6WVYH"]);
+
+export async function queryPickemsCosmetics() {
+	const res = await gqlClient()
+		.query(
+			graphql(`
+					query GetPickemsCosmetics {
+						badges {
+							badges {
+								__typename
+								id
+								name
+								description
+								tags
+								images {
+									__typename
+									url
+									mime
+									size
+									scale
+									width
+									height
+									frameCount
+								}
+								createdById
+								updatedAt
+								searchUpdatedAt
+							}
+						}
+						paints {
+							paints {
+								id
+								name
+								data {
+									layers {
+										id
+										ty {
+											__typename
+											... on PaintLayerTypeSingleColor {
+												color {
+													hex
+												}
+											}
+											... on PaintLayerTypeLinearGradient {
+												angle
+												repeating
+												stops {
+													at
+													color {
+														hex
+													}
+												}
+											}
+											... on PaintLayerTypeRadialGradient {
+												repeating
+												stops {
+													at
+													color {
+														hex
+													}
+												}
+												shape
+											}
+											... on PaintLayerTypeImage {
+												images {
+													url
+													mime
+													size
+													scale
+													width
+													height
+													frameCount
+												}
+											}
+										}
+										opacity
+									}
+									shadows {
+										color {
+											hex
+										}
+										offsetX
+										offsetY
+										blur
+									}
+								}
+							}
+						}
+					}
+				`),
+			{},
+		)
+		.toPromise();
+
+	const data = res.data as GetPickemsCosmeticsQuery;
+
+	const badges = data?.badges.badges.filter((b) => badgeIds.has(b.id)) ?? [];
+	const paints = (data?.paints.paints.filter((p) => paintIds.has(p.id)) ?? []) as Paint[];
+	return { badges, paints };
 }
