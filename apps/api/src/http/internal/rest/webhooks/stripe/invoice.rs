@@ -509,6 +509,10 @@ pub async fn paid(
 					break;
 				}
 
+				if !period.auto_renew {
+					break;
+				}
+
 				// Cancel the period on the provider
 				match period.provider_id {
 					Some(ProviderSubscriptionId::Stripe(id)) => {
