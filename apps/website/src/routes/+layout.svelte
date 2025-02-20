@@ -11,6 +11,7 @@
 		showMobileMenu,
 		showConstructionBar,
 		signInDialogMode,
+		signInDialogPayload,
 		uploadDialogMode,
 		defaultEmoteSetDialogMode,
 	} from "$/lib/layout";
@@ -69,7 +70,7 @@
 	</header>
 
 	<UploadDialog bind:mode={$uploadDialogMode} />
-	<SignInDialog bind:mode={$signInDialogMode} />
+	<SignInDialog bind:mode={$signInDialogMode} bind:return_payload={$signInDialogPayload} />
 	<DefaultEmoteSetDialog bind:mode={$defaultEmoteSetDialogMode} />
 	<ErrorDialog bind:mode={$errorDialogMode} error={$currentError} />
 	<main id="main">

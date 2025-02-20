@@ -4,10 +4,9 @@
 	import StoreSection from "../store/store-section.svelte";
 	import Button from "../input/button.svelte";
 	import DropDown from "../drop-down.svelte";
-	import { user } from "$/lib/auth";
-	import { gqlClient } from "$/lib/gql";
-	import { graphql } from "$/gql";
 	import { priceFormat, variantName } from "$/lib/utils";
+	import { user } from "$/lib/auth";
+	import { purchasePickems } from "$/lib/pickems";
 
 	interface Props {
 		subInfo?: SubscriptionInfo;
@@ -17,61 +16,26 @@
 	let purchaseLoading = $state<string>();
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
 
-	let { subInfo, product }: Props = $props();
 	async function purchase(variantId?: string) {
-		if (!$user) {
-			return;
-		}
-
 		purchaseLoading = variantId ?? "pass";
-
-		const pickemsId = "01JK6K2GCE06A9F6FSBVZA2KQA";
-
-		const res = await gqlClient()
-			.mutation(
-				graphql(`
-					mutation PurchasePickems(
-						$userId: Id!
-						$pickemsId: Id!
-						$subscriptionPriceId: StripeProductId
-					) {
-						billing(userId: $userId) {
-							getPickems(pickemsId: $pickemsId, subscriptionPriceId: $subscriptionPriceId) {
-								checkoutUrl
-							}
-						}
-					}
-				`),
-				{ userId: $user.id, pickemsId, subscriptionPriceId: variantId },
-			)
-			.toPromise();
-
-		if (res.data) {
-			window.location.href = res.data.billing.getPickems.checkoutUrl;
-		}
-
+		await purchasePickems(variantId);
 		purchaseLoading = undefined;
 	}
+
+	let { subInfo, product }: Props = $props();
 </script>
 
 <StoreSection title="Pick'ems Pass">
 	{#snippet header()}
 		<div class="buttons">
-			{#if !subInfo}
-				<Button href="" disabled secondary style="color: var(--store)">
-					{#snippet icon()}
-						<Ticket />
-					{/snippet}
-					<span> Sign in to purchase </span>
-				</Button>
-			{:else if hasPass}
+			{#if hasPass}
 				<Button href="https://pickems.tv" secondary>
 					{#snippet icon()}
 						<ArrowSquareOut />
 					{/snippet}
 					<span> Place Pick'ems </span>
 				</Button>
-			{:else if subInfo.activePeriod}
+			{:else if subInfo?.activePeriod}
 				<Button onclick={() => purchase()} secondary style="color: var(--store)">
 					{#snippet icon()}
 						<Ticket />
