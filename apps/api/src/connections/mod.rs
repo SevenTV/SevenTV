@@ -51,8 +51,7 @@ pub struct TokenResponse {
 /// Twitch docs: https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow
 /// Discord docs: https://discord.com/developers/docs/topics/oauth2#authorization-code-grant
 /// Google docs: https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
-/// Kick docs: Kick does not have any documentation.
-/// TODO add kick docs once publicly released
+/// Kick docs: https://docs.kick.com/getting-started/generating-tokens-oauth2-flow#authorization-endpoint
 #[tracing::instrument(skip(global, code, redirect_uri), fields(endpoint))]
 pub async fn exchange_code(
 	global: &Arc<Global>,
