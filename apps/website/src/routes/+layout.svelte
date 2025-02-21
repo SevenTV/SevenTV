@@ -26,7 +26,6 @@
 	import { currentError, errorDialogMode } from "$/lib/error";
 	import { PUBLIC_DISCORD_LINK, PUBLIC_OLD_WEBSITE_LINK } from "$env/static/public";
 	import Button from "../components/input/button.svelte";
-	import GoogleAnalytics from "$/components/google-analytics.svelte";
 	let { children }: { children: Snippet } = $props();
 
 	beforeNavigate((nav) => {
@@ -45,7 +44,6 @@
 	});
 </script>
 
-<GoogleAnalytics id="G-39W9YP5D86" />
 <IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>
 	<header>
 		<a href="#main" class="skip-to-main">{$t("common.skip_to_content")}</a>
