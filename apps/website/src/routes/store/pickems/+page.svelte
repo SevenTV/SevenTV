@@ -83,7 +83,7 @@
 		<div class="bar">
 			<StoreSection title="Go to pickems.tv to place your Pick'ems!">
 				{#snippet header()}
-					<Button primary href="/store/pickems">
+					<Button primary href="https://pickems.tv">
 						{#snippet iconRight()}
 							<ArrowSquareOut />
 						{/snippet}
@@ -96,14 +96,16 @@
 	<div class="top-grid">
 		<div class="subgrid">
 			<StoreSection title="INFO">1</StoreSection>
-			<StoreSection>
-				<div class="top-grid">
-					<PickemsPurchaseButton title="PICKEMS PASS ONLY" />
-					{#each storeData?.products.subscriptionProduct?.variants ?? [] as variant}
-						<PickemsPurchaseButton title={`PASS + ${variant.kind} SUB`} {variant} />
-					{/each}
-				</div>
-			</StoreSection>
+			{#if !hasPass}
+				<StoreSection>
+					<div class="top-grid">
+						<PickemsPurchaseButton title="PICKEMS PASS ONLY" />
+						{#each storeData?.products.subscriptionProduct?.variants ?? [] as variant}
+							<PickemsPurchaseButton title={`PASS + ${variant.kind} SUB`} {variant} />
+						{/each}
+					</div>
+				</StoreSection>
+			{/if}
 		</div>
 		<div class="subgrid" style="max-width: 18rem">
 			<StoreSection title="Rewards">
