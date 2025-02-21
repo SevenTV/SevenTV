@@ -40,12 +40,12 @@
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Discord" } })}
 			</Button>
-			<Button secondary big href={loginUrl("kick")}>
-				{#snippet icon()}
-					<KickLogo />
-				{/snippet}
-				{$t("dialogs.sign_in.continue_with", { values: { platform: "Kick" } })}
-			</Button>
+			<!-- <Button secondary big href={loginUrl("kick")}> -->
+			<!-- 	{#snippet icon()} -->
+			<!-- 		<KickLogo /> -->
+			<!-- 	{/snippet} -->
+			<!-- 	{$t("dialogs.sign_in.continue_with", { values: { platform: "Kick" } })} -->
+			<!-- </Button> -->
 			<!-- <Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=google">
 				<GoogleLogo />
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
