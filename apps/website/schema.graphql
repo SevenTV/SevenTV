@@ -53,9 +53,10 @@ type Billing {
 
 type BillingMutation {
 	cancelSubscription(productId: Id!): SubscriptionInfo!
+	getPickems(pickemsId: Id!, subscriptionPriceId: StripeProductId): SubscribeResponse!
 	reactivateSubscription(productId: Id!): SubscriptionInfo!
 	redeemCode(code: String!): RedeemResponse!
-	subscribe(variantId: ProductId!): SubscribeResponse!
+	subscribe(variantId: StripeProductId!): SubscribeResponse!
 }
 
 
@@ -76,6 +77,14 @@ type Color {
 	g: Int!
 	hex: String!
 	r: Int!
+}
+
+input CreateProductInput {
+	active: Boolean!
+	description: String
+	name: String!
+	price: Int!
+	providerId: String!
 }
 
 input CreateRedeemCodeBatchInput {
@@ -390,6 +399,11 @@ type EntitlementEdgeAnyPaint {
 	to: EntitlementNodePaint!
 }
 
+type EntitlementEdgeAnyProduct {
+	from: EntitlementNodeAny!
+	to: EntitlementNodeProduct!
+}
+
 type EntitlementEdgeMutation {
 	create(from: EntitlementNodeInput!, to: EntitlementNodeInput!): EntitlementEdgeAnyAny!
 	entitlementEdge(from: EntitlementNodeInput!, to: EntitlementNodeInput!): EntitlementEdgeOperation!
@@ -426,7 +440,7 @@ type EntitlementNodePaint {
 }
 
 type EntitlementNodeProduct {
-	productId: ProductId!
+	productId: Id!
 }
 
 type EntitlementNodeRole {
@@ -671,6 +685,7 @@ type Mutation {
 	emotes: EmoteMutation!
 	entitlementEdges: EntitlementEdgeMutation!
 	jobs: JobMutation!
+	product: ProductMutation!
 	redeemCodes: RedeemCodeMutation!
 	specialEvents: SpecialEventMutation!
 	tickets: TicketMutation!
@@ -781,7 +796,19 @@ type Price {
 	currency: String!
 }
 
-scalar ProductId
+type Product {
+	createdAt: DateTime!
+	description: String
+	id: Id!
+	name: String!
+	providerId: String!
+	searchUpdatedAt: DateTime
+	updatedAt: DateTime!
+}
+
+type ProductMutation {
+	create(data: CreateProductInput!): Product!
+}
 
 type ProductQuery {
 	subscriptionProduct(id: Id!): SubscriptionProduct
@@ -957,6 +984,8 @@ type StoreQuery {
 }
 
 
+scalar StripeProductId
+
 type SubscribeResponse {
 	checkoutUrl: String!
 }
@@ -995,7 +1024,7 @@ type SubscriptionPeriod {
 	giftedById: Id
 	id: Id!
 	isTrial: Boolean!
-	productId: ProductId!
+	productId: StripeProductId!
 	providerId: ProviderSubscriptionId
 	searchUpdatedAt: DateTime
 	start: DateTime!
@@ -1038,7 +1067,7 @@ enum SubscriptionProductKind {
 }
 
 type SubscriptionProductVariant {
-	id: ProductId!
+	id: StripeProductId!
 	kind: SubscriptionProductKind!
 	paypalId: String
 	price(preferredCurrency: String): Price!
@@ -1250,6 +1279,7 @@ type UserEvent {
 type UserInventory {
 	badges: [EntitlementEdgeAnyBadge!]!
 	paints: [EntitlementEdgeAnyPaint!]!
+	products: [EntitlementEdgeAnyProduct!]!
 }
 
 type UserMutation {
