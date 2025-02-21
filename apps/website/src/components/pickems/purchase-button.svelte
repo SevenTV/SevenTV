@@ -28,7 +28,7 @@
 			<wbr />
 		{/if}
 	</div>
-	<Button primary={!disabled} disabled={!!disabled} onclick={() => purchasePickems(variant?.id)}>
+	<Button primary disabled={!!disabled} onclick={() => purchasePickems(variant?.id)}>
 		{#snippet iconRight()}
 			<ArrowRight />
 		{/snippet}

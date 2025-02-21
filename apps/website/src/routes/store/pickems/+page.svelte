@@ -13,6 +13,7 @@
 	import pickemsHeaderImage from "$assets/pickems-banner.png?url";
 	import { user } from "$/lib/auth";
 	import Button from "$/components/input/button.svelte";
+	import PickemsStreamers from "$/components/pickems/pickems-streamers.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -52,24 +53,6 @@
 	let badges = $state<Badge[]>([]);
 	let paints = $state<Paint[]>([]);
 
-	let streamers = [
-		"xQc",
-		"OHNE",
-		"JASON",
-		"EROBB",
-		"ARROW",
-		"FURI",
-		"OMIE",
-		"DONA",
-		"DIMA",
-		"DORO",
-		"DIZZY",
-		"DUWAP",
-		"RENYAN",
-		"STEWIE",
-		"TRILLUXE",
-	];
-
 	$effect(() => {
 		queryStore().then((res) => {
 			storeData = res;
@@ -89,7 +72,7 @@
 <!-- <Banner title="Pickems pass" subtitle="Purchase the 7TV pickems pass" gradientColor="orange" /> -->
 
 <div class="grid">
-	<img alt="Pickems Banner" class="banner-image" src={pickemsHeaderImage} />
+	<!-- <img alt="Pickems Banner" class="banner-image" src={pickemsHeaderImage} /> -->
 	{#if data.success}
 		<div class="bar">
 			<Info />
@@ -122,17 +105,13 @@
 				</div>
 			</StoreSection>
 		</div>
-		<div class="subgrid" style="max-width: 20rem">
+		<div class="subgrid" style="max-width: 18rem">
 			<StoreSection title="Rewards">
 				<PickemsBadges {badges} />
 				<PickemsPaints {paints} />
 			</StoreSection>
 			<StoreSection title="Streamers">
-				{#each streamers as streamer}
-					<div class="streamer">
-						{streamer}
-					</div>
-				{/each}
+				<PickemsStreamers />
 			</StoreSection>
 		</div>
 	</div>
