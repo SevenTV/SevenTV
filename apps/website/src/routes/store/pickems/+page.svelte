@@ -3,7 +3,7 @@
 	import { type Badge, type Paint, type PickemsStoreDataQuery } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
-	import { Info } from "phosphor-svelte";
+	import { ArrowSquareOut, Info } from "phosphor-svelte";
 	import type { PageData } from "./$types";
 	import StoreSection from "$/components/store/store-section.svelte";
 	import { queryPickemsCosmetics } from "$/lib/pickems";
@@ -11,8 +11,12 @@
 	import PickemsPaints from "$/components/pickems/pickems-paints.svelte";
 	import PickemsPurchaseButton from "$/components/pickems/purchase-button.svelte";
 	import pickemsHeaderImage from "$assets/pickems-banner.png?url";
+	import { user } from "$/lib/auth";
+	import Button from "$/components/input/button.svelte";
 
 	let { data }: { data: PageData } = $props();
+
+	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
 
 	async function queryStore() {
 		let res = await gqlClient()
@@ -90,6 +94,20 @@
 		<div class="bar">
 			<Info />
 			Pickems pass successfully purchased
+		</div>
+	{/if}
+	{#if hasPass}
+		<div class="bar">
+			<StoreSection title="Go to pickems.tv to place your Pick'ems!">
+				{#snippet header()}
+					<Button primary href="/store/pickems">
+						{#snippet iconRight()}
+							<ArrowSquareOut />
+						{/snippet}
+						Place Pick'ems
+					</Button>
+				{/snippet}
+			</StoreSection>
 		</div>
 	{/if}
 	<div class="top-grid">

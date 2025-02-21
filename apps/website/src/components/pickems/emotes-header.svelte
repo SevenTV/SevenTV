@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowSquareOut, Ticket, X } from "phosphor-svelte";
+	import { ArrowRight, Ticket, X } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import { type Paint, type Badge } from "$/gql/graphql";
 	import { user } from "$/lib/auth";
@@ -30,28 +30,24 @@
 	<div class="pickems-header-layout">
 		<div class="pickems-header">
 			<div class="purchase-info">
-				<p class="pre-title">7TV Hoster CS2 Tournament &#x2022 Feb. 29th - Mar. 2nd</p>
-				<h2 class="title">Place your Pick'ems. Win Prizes.</h2>
+				<div class="text">
+					<p class="pre-title">7TV Hoster CS2 Tournament &#x2022 Feb. 29th - Mar. 2nd</p>
+					<h2 class="title">Place your Pick'ems. Win Prizes.</h2>
+				</div>
 				<div class="buttons">
 					{#if hasPass}
-						<Button primary href="https://pickems.tv">
+						<Button primary href="/store/pickems">
 							{#snippet iconRight()}
-								<ArrowSquareOut />
+								<ArrowRight />
 							{/snippet}
 							Place Pick'ems
 						</Button>
 					{:else}
-						<Button href="/store" primary>
+						<Button href="/store/pickems" primary>
 							{#snippet iconRight()}
 								<Ticket />
 							{/snippet}
 							Purchase Pass
-						</Button>
-						<Button secondary href="https://pickems.tv">
-							{#snippet iconRight()}
-								<ArrowSquareOut />
-							{/snippet}
-							Learn More
 						</Button>
 					{/if}
 				</div>
@@ -91,7 +87,7 @@
 			position: relative;
 			border: solid 1px hsla(0deg, 0%, 100%, 20%);
 			border-radius: 0.5rem;
-			padding: 2rem;
+			padding: 1rem 3rem;
 
 			display: grid;
 			gap: 1rem;
@@ -124,8 +120,8 @@
 
 			.purchase-info {
 				display: flex;
-				flex-direction: column;
 				gap: 0.5rem;
+				align-items: center;
 
 				p {
 					color: silver;
@@ -133,9 +129,7 @@
 				}
 
 				.buttons {
-					padding-top: 1rem;
-					display: flex;
-					gap: 0.5rem;
+					padding-left: 1rem;
 				}
 			}
 
@@ -165,6 +159,11 @@
 			padding-bottom: 0rem;
 			.pickems-header {
 				grid-template-columns: 1fr;
+
+				.purchase-info {
+					flex-direction: column;
+					justify-content: left;
+				}
 
 				.badge-preview {
 					justify-content: center;

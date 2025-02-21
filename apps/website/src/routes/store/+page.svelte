@@ -6,7 +6,6 @@
 	import MonthlyPaints from "$/components/store/monthly-paints.svelte";
 	import PersonalEmotes from "$/components/store/personal-emotes.svelte";
 	import YourSub from "$/components/store/your-sub.svelte";
-	import PickemsStoreSection from "$/components/pickems/store-section.svelte";
 	import { graphql } from "$/gql";
 	import {
 		type BadgeProgress,
@@ -317,10 +316,6 @@
 		</div>
 	{/if}
 
-	<PickemsStoreSection
-		subInfo={myStoreData?.users.user?.billing.subscriptionInfo as SubscriptionInfo | undefined}
-		product={storeData?.products.subscriptionProduct as SubscriptionProduct | undefined}
-	/>
 	{#if myStoreData}
 		{#if !myStoreData.users.user?.billing.subscriptionInfo.activePeriod}
 			<Benefits />
