@@ -18,6 +18,8 @@
 	import dizzyProfile from "$assets/dizzy.png?url";
 	import Button from "../input/button.svelte";
 
+	let { hasPass }: { hasPass: Boolean } = $props();
+
 	let streamers = [
 		{
 			name: "xQc",
@@ -101,8 +103,9 @@
 		</p>
 		<p>Want to earn cosmetics for predicting the outcome? Click below!</p>
 		<div class="purchase-div">
-			<Button
-				style="width: 100%;
+			{#if !hasPass}
+				<Button
+					style="width: 100%;
 				padding: 0.75rem 1.5rem;
 				border-radius: 8px;
 				background: rgb(89 5 199);
@@ -112,10 +115,29 @@
 				border: none;
 				border-radius: 0.25rem;
 				cursor: pointer;"
-			>
-				Predict Winners
-				<Ticket style="margin-left: auto; margin-right: 0;" />
-			</Button>
+					href="https://pickems.tv"
+				>
+					Predict Winners
+					<Ticket style="margin-left: auto; margin-right: 0;" />
+				</Button>
+			{:else}
+				<Button
+					style="width: 100%;
+				padding: 0.75rem 1.5rem;
+				border-radius: 8px;
+				background: rgb(89 5 199);
+    			box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset;
+				font-family: Inter;
+				color: white;
+				border: none;
+				border-radius: 0.25rem;
+				cursor: pointer;"
+					href="#PickemsPurchaseButton"
+				>
+					Purchase Pass
+					<Ticket style="margin-left: auto; margin-right: 0;" />
+				</Button>
+			{/if}
 		</div>
 	</div>
 	<div class="right-panel">

@@ -1,10 +1,12 @@
-<script>
+<script lang="ts">
 	import { Ticket } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 
+	let { hasPass }: { hasPass: Boolean } = $props();
+
 	let schedule = [
 		{
-			day: "Day 2",
+			day: "Day 1",
 			date: "Feb. 29th",
 			stage: "Round of 16",
 			bestOf: "1 Match",
@@ -32,15 +34,6 @@
 		<h1>
 			Tournament<br />Schedule
 		</h1>
-		<Button
-			style="border-radius: 8px;
-			border: 1px solid #FFF;
-			background: #EFDFFF;
-			color: #200048;"
-		>
-			Predict Winners
-			<Ticket style="margin-left: auto; margin-right: 0;" />
-		</Button>
 	</div>
 
 	<div class="schedule-grid">
@@ -82,6 +75,8 @@
 		-webkit-text-fill-color: transparent;
 	}
 	.container {
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.15);
 		background: black;
 		display: flex;
 		flex-direction: column;

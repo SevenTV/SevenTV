@@ -31,7 +31,7 @@
 		<div class="pickems-header">
 			<div class="purchase-info">
 				<div class="text">
-					<p class="pre-title">7TV Hoster CS2 Tournament &#x2022 Feb. 29th - Mar. 2nd</p>
+					<p class="pre-title">7TV Hosted CS2 Tournament &#x2022 Feb. 29th - Mar. 2nd</p>
 					<h2 class="title">Place your Pick'ems. Win Prizes.</h2>
 				</div>
 				<div class="buttons">

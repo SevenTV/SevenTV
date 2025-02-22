@@ -1,22 +1,27 @@
 <script lang="ts">
 	import { type SubscriptionProductVariant } from "$/gql/graphql";
-	import { ArrowRight } from "phosphor-svelte";
+	import { ArrowRight, Password } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import { priceFormat } from "$/lib/utils";
 	import { purchasePickems } from "$/lib/pickems";
 	import { isSubscribed } from "$/lib/auth";
-	let { variant, title }: { variant?: SubscriptionProductVariant; title: string } = $props();
+
+	let {
+		variant,
+		title,
+		myStoreData,
+	}: { variant?: SubscriptionProductVariant; title: string; myStoreData?: boolean } = $props();
 
 	let price = $derived(priceFormat("EUR").format((499 + (variant?.price.amount ?? 0)) / 100));
 	let discounted = $derived(priceFormat("EUR").format((300 + (variant?.price.amount ?? 0)) / 100));
 	let recurring = $derived(priceFormat("EUR").format((variant?.price.amount ?? 0) / 100));
-
-	let disabled = $derived(variant && isSubscribed);
+	let disabled = $derived(myStoreData);
 </script>
 
-<div class="purchase-option" class:disabled>
+<div class="purchase-option" class:disabled id="PickemsPurchaseButton">
 	<h3>{title}</h3>
-	<div class="line" class:strike={variant}>
+	<hr class="hrDialog" />
+	<div class="line strike" class:strike={variant}>
 		<span>Regular: </span>
 		<span>{price}</span>
 	</div>
@@ -24,28 +29,33 @@
 		{#if variant}
 			<span>Bundle: </span>
 			<span>{discounted}</span>
-		{:else}
-			<wbr />
 		{/if}
 	</div>
-	<Button primary disabled={!!disabled} onclick={() => purchasePickems(variant?.id)}>
+	<Button
+		primary
+		style="width: 70%"
+		disabled={myStoreData}
+		onclick={() => purchasePickems(variant?.id)}
+	>
 		{#snippet iconRight()}
 			<ArrowRight />
 		{/snippet}
-		{#if !disabled}
-			Buy Now
+		{#if !myStoreData}
+			{#if variant}
+				Purchase Bundle
+			{:else}
+				Purchase Pass
+			{/if}
 		{:else}
 			Already Subscribed
 		{/if}
 	</Button>
 	<small>
-		<small>
-			{#if variant}
-				{price} today, then {recurring} a {variant.kind.toLowerCase()}
-			{:else}
-				no subscription
-			{/if}
-		</small>
+		{#if variant}
+			{price} today, then {recurring} monthly
+		{:else}
+			Billed as one-time purchase
+		{/if}
 	</small>
 </div>
 
@@ -54,31 +64,57 @@
 		flex-grow: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 1.75rem;
+		align-items: center;
 		justify-content: space-between;
-		border: 2px solid black;
 		border-radius: 1rem;
-		padding: 1rem;
-
+		padding: 3.5rem;
+		text-align: center;
+		background: rgba(0, 0, 0, 0.288);
 		&.disabled {
-			opacity: 0.75;
+			opacity: 0.6;
+		}
+
+		.hrDialog {
+			background: rgba(255, 255, 255, 0.07);
+			width: 100%;
+			margin: 0;
+		}
+
+		h3 {
+			font-family: Inter;
+			font-size: 56px;
+			font-style: normal;
+			font-weight: 600;
+			line-height: 120%; /* 67.2px */
+			background: linear-gradient(0deg, #fff -24.36%, rgba(255, 255, 255, 0.61) 116.67%);
+			background-clip: text;
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			text-align: left;
+			width: 100%;
+			padding-left: 1rem; /* Adjust this value as needed */
 		}
 
 		.line {
 			display: flex;
 			justify-content: space-between;
+			width: 75%;
 
 			&.strike {
 				text-decoration: line-through;
+				color: gray;
 			}
 		}
 
-		:global(button) {
+		button {
 			margin-top: 1rem;
+			width: 70%;
 		}
 
 		small {
-			text-align: center;
+			font-size: 0.85rem;
+			color: gray;
 		}
 	}
 </style>
