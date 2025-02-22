@@ -1,77 +1,34 @@
 <script lang="ts">
+	import Logo from "../icons/logo.svelte";
 	import Button from "../input/button.svelte";
-	import { ArrowSquareOut, Minus, Ticket } from "phosphor-svelte";
-	import { graphql } from "$/gql";
-	import { gqlClient } from "$/lib/gql";
-	import { type Badge } from "$/gql/graphql";
-	import BadgeComponent from "../badge.svelte";
-	import { user } from "$/lib/auth";
-	import HeroPepe from "$/components/pickems/hero-pepe.svelte";
-	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
-
-	async function queryCosmetics() {
-		let res = await gqlClient()
-			.query(
-				graphql(`
-					query GetPickemsBadges {
-						badges {
-							badges {
-								__typename
-								id
-								name
-								description
-								tags
-								images {
-									__typename
-									url
-									mime
-									size
-									scale
-									width
-									height
-									frameCount
-								}
-								createdById
-								updatedAt
-								searchUpdatedAt
-							}
-						}
-					}
-				`),
-				{},
-			)
-			.toPromise();
-		return res.data;
-	}
-	let badges = $state<Badge[]>([]);
-
-	const badgeIds = new Set([
-		"01JJQEA3655687JWHG7P9CV3W8",
-		"01JJQECTG04J5J6QE1BCATE6JN",
-		"01JJQEDT21JXF1JM4F1P805VTK",
-		"01JJQEENE6CJ6KR70CBCF39ACN",
-	]);
-
-	$effect(() => {
-		queryCosmetics().then((res) => {
-			badges = res?.badges.badges.filter((b: { id: string }) => badgeIds.has(b.id)) ?? [];
-		});
-	});
+	import image1 from "$assets/t2.jpg";
+	import cslogo from "$assets/4a.jpg";
+	import image2 from "$assets/t3.jpg";
+	import { ArrowSquareOut, Minus } from "phosphor-svelte";
 </script>
 
-<div class="layout">
+<div>
 	<section class="hero">
-		{#if badges.length > 0}
-			<div class="badge-preview hide-on-mobile">
-				<HeroPepe />
-				<div class="badges">
-					{#each badges as badge}
-						<BadgeComponent enableDialog size={48} {badge} />
-					{/each}
-				</div>
+		<div class="hero-content">
+			<div style="margin-top:-20px;">
+				<Logo size={8.5 * 16} />
 			</div>
-		{/if}
-		<div class="hero-content centered">
+			<div class="content">
+				<h1 style="padding-bottom: 20px;">
+					The Emote Platform <span class="for-all">for All</span>
+				</h1>
+				<p style="padding-bottom: 10px;">
+					Manage hundreds of emotes for your Twitch, Kick or YouTube channels with ease. Enhance
+					your chatting experience.
+				</p>
+			</div>
+			<div class="buttons">
+				<Button primary style="font-size: 1em;" href="#download">Download</Button>
+				<Button style="font-size: 1em;">Learn More</Button>
+			</div>
+		</div>
+		<!--			<img class="hero-image hide-on-mobile" src={landingPagePlaceholder} alt="7TV" />-->
+		<div class="hero-content hero-image custom-box">
 			<div class="top-info hide-on-mobile">
 				<p>16 STREAMERS</p>
 				<Minus />
@@ -79,73 +36,42 @@
 				<Minus />
 				<p>3 DAY EVENT</p>
 			</div>
-			<div class="content">
-				<div>
-					<h1>Place Pick’ems</h1>
-					<h1>Win Badges & Paints.</h1>
+			<div class="content custom-content">
+				<div class="tabs"></div>
+
+				<div class="pp-header">
+					Place Pick’ems <br /><span class="pp-subheader">Win Badges & Paints.</span>
 				</div>
-				<div class="description">
-					<p>xQc, OhnePixel, JasonTheWeen and 13 other streamers go head to head</p>
-					<p>in a 3-day Single Elimination 7TV Hosted CS2 tournament.</p>
+				<div class="thumbs">
+					<div class="header-image" style="margin-top: -2.5rem;">
+						<img src="../assets/pickems_header_bench.png" alt="Header Bench" />
+					</div>
+				</div>
+				<p class="pp-body">
+					<i>xQc, OhnePixel, JasonTheWeen</i> and 13 other streamers go head to head. in a
+					<i>3-day</i>
+					Single Elimination 7TV Hosted <i>CS2</i> tournament.
+				</p>
+
+				<div class="buttons centered">
+					<Button primary href="/landing/pickems_pass/about">
+						<span style=" font-size: 1rem;">Check It Out</span>
+					</Button>
+					<div class="tdateouter">
+						<div class="theader">Event Date</div>
+						<div class="tdate">28.02.25 - 02.03.25</div>
+					</div>
 				</div>
 			</div>
-			<div class="buttons">
-				{#if hasPass}
-					<Button primary style="font-size: 1em;" href="https://pickems.tv">
-						{#snippet iconRight()}
-							<ArrowSquareOut />
-						{/snippet}
-						Place your pick'ems
-					</Button>
-					<Button style="font-size: 1em;" href="/store/pickems">
-						{#snippet iconRight()}
-							<Ticket />
-						{/snippet}
-						Learn More
-					</Button>
-				{:else}
-					<Button primary style="font-size: 1em;" href="/store/pickems">
-						{#snippet iconRight()}
-							<Ticket />
-						{/snippet}
-						Learn More & Purchase
-					</Button>
-				{/if}
-			</div>
-		</div>
-		<div class="header-image" style="margin-top: -2.5rem;">
-			<img src="../assets/pickems_header_bench.png" alt="Header Bench" />
 		</div>
 	</section>
 </div>
 
 <style lang="scss">
-	.layout {
-		margin: 3rem;
-	}
-
-	.top-info {
-		opacity: 50%;
-		top: -4rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
-		position: relative;
-
-		p {
-			margin: 0;
-		}
-	}
-	.description {
-		opacity: 50%;
-	}
-
 	.header-image {
 		object-fit: contain;
 		justify-content: center;
 		z-index: 1;
-		position: absolute;
 		pointer-events: none;
 		bottom: 0;
 		img {
@@ -156,14 +82,115 @@
 			height: 100%;
 		}
 	}
-	.hero {
+	.top-info {
+		opacity: 50%;
 		display: flex;
 		justify-content: center;
+		gap: 1rem;
+
+		p {
+			font-size: 1rem !important;
+		}
+	}
+	.tdateouter {
+		margin-left: auto;
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		color: #ffa200;
+		@media screen and (max-width: 960px) {
+			margin-left: 0;
+		}
+	}
+
+	.theader {
+		font-size: 0.72rem;
+		font-family: AKONY, serif;
+	}
+
+	.s-image {
+		width: 132px;
+		height: 132px;
+		border-radius: 1rem;
+	}
+
+	.custom-box {
+		border: none;
+		padding: 1.2rem;
+		border-radius: 1rem;
+		background-position: center;
+		background-repeat: no-repeat;
+		background-size: cover;
+		background: rgba(0, 0, 0, 0.5);
+	}
+
+	.thumbs {
+		margin-bottom: 5.9rem;
+		width: 100%;
+		justify-content: space-between;
+		@media screen and (max-width: 960px) {
+			margin-bottom: 1.2rem;
+		}
+	}
+
+	.custom-button {
+		font-size: 1.2em;
+		display: inline-block !important;
+	}
+
+	.centered {
+		justify-content: center;
+	}
+
+	.pp-header {
+		opacity: 0.9;
+		background: linear-gradient(0deg, #fff 24.23%, rgba(255, 255, 255, 0.61) 100%);
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		font-size: 1.3rem !important;
+		margin-bottom: 2rem;
+		font-weight: bold;
+		text-align: center;
+		font-family: AKONY, serif;
+		letter-spacing: 0.1rem;
+		line-height: 1.3rem;
+	}
+
+	.pp-subheader {
+		font-size: 1rem !important;
+		color: #eee;
+	}
+
+	.pp-body {
+		color: white;
+		text-align: center;
+	}
+
+	.pp-body i {
+		color: #ffa200;
+	}
+
+	.custom-box h1 {
+		margin-bottom: 20px;
+	}
+	.custom-box p {
+		margin-bottom: 20px;
+		font-size: 1.125rem;
+		line-height: 1.6rem;
+	}
+
+	.hero {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		gap: 2rem;
 		flex-wrap: wrap;
+
 		padding: 5.5rem;
 		min-height: min(50rem, 80vh);
-		margin-bottom: 10rem;
 
 		position: relative;
 		z-index: 1;
@@ -199,7 +226,6 @@
 
 			.hero-content {
 				background-color: #00000027;
-				margin-bottom: 4rem;
 				backdrop-filter: blur(1rem);
 				border-radius: 1rem;
 			}
@@ -217,13 +243,16 @@
 			z-index: -1;
 
 			background: radial-gradient(
-					76.09% 165.33% at 50% 146.72%,
-					#e8aa00 19.98%,
-					rgba(59, 0, 137, 0.77) 68%,
-					rgba(48, 0, 112, 0.09) 100%
+					180% 80% at 0% 100%,
+					#ffffff 0%,
+					#5bf8f9 25%,
+					#8a00ffe6 56%,
+					#25158480 79%,
+					transparent 100%
 				),
 				#1111110a;
 
+			mask-image: linear-gradient(transparent, white);
 			mask-image: radial-gradient(
 				180% 80% at 0% 100%,
 				rgba(white, 1) 0%,
@@ -248,30 +277,32 @@
 
 	.hero-content {
 		margin-inline: auto;
+
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		text-align: center;
 		gap: 1.25rem;
 		padding: 2rem;
+		background: rgba(0, 0, 0, 0.5);
+		border-radius: 1rem;
 
 		.content {
-			display: inline-grid;
-			gap: 4rem;
 			h1 {
-				font-family: "Inter", sans-serif;
-				font-size: 5rem;
+				text-transform: uppercase;
+
+				font-size: 2rem;
 				font-weight: 700;
-				letter-spacing: 0.05rem;
+				letter-spacing: 0.15rem;
+				text-align: justify;
+				text-justify: inter-character;
 				word-break: break-word;
-				opacity: 0.9;
-				background: linear-gradient(0deg, #fff 24.23%, rgba(255, 255, 255, 0.61) 100%);
-				background-clip: text;
-				-webkit-background-clip: text;
-				-webkit-text-fill-color: transparent;
-				text-align: center;
+
+				max-width: 27rem;
+
+				font-family: "AKONY", sans-serif;
+
 				.for-all {
 					letter-spacing: calc(0.15rem + 2px);
+					color: transparent;
 					font-size: 2.65rem;
 					-webkit-text-stroke-width: 1.5px;
 					-webkit-text-stroke-color: var(--text);
@@ -282,6 +313,8 @@
 				font-size: 1.125rem;
 				font-weight: 400;
 				line-height: 1.6rem;
+
+				max-width: 37rem;
 			}
 		}
 
@@ -296,55 +329,31 @@
 	.hero-image {
 		width: 100%;
 		min-width: 15rem;
-		max-width: 25rem;
+		max-width: 40rem;
 
 		margin-inline: auto;
 	}
-	.badge-preview {
-		position: absolute;
-		display: flex;
-		justify-content: end;
-		align-items: center;
-		top: 0rem;
-		right: 1rem;
-		@media screen and (max-width: 1300px) {
-			display: none;
-		}
 
-		.badges {
-			display: flex;
-			gap: 1rem;
-			padding: 1rem;
-			background: hsla(0deg, 0%, 40%, 20%);
-			backdrop-filter: blur(2rem);
-			border-radius: 0.5rem;
-			z-index: 2;
-			position: relative;
-			top: 1rem;
-		}
-	}
 	.gifting {
 		align-items: center;
 		text-align: center;
+
+		// only temporary
+		h1 {
+			text-align: center !important;
+			max-width: unset !important;
+		}
 	}
 
 	@media screen and (max-width: 960px) {
 		.hero {
 			padding: 2rem;
-			margin-bottom: 0rem;
-		}
-
-		.layout {
-			margin: 0rem;
-		}
-		.header-image {
-			bottom: 0rem;
-			width: 80%;
 		}
 
 		.hero-content .content {
 			h1 {
 				font-size: 1.8rem;
+				text-align: left;
 
 				.for-all {
 					font-size: 2rem;

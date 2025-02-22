@@ -13,6 +13,7 @@
 	import pickemsHeaderImage from "$assets/pickems-banner.png?url";
 	import { user } from "$/lib/auth";
 	import Button from "$/components/input/button.svelte";
+	import StorePickemsBanner from "$/components/store/store-pickems-banner.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -86,7 +87,7 @@
 	<title>Pickems</title>
 </svelte:head>
 
-<!-- <Banner title="Pickems pass" subtitle="Purchase the 7TV pickems pass" gradientColor="orange" /> -->
+<StorePickemsBanner title="7TV x CSMONEY" title2="Streamer Invitational" />
 
 <div class="grid">
 	<img alt="Pickems Banner" class="banner-image" src={pickemsHeaderImage} />
