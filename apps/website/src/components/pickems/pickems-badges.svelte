@@ -15,7 +15,7 @@
 	.badges {
 		display: flex;
 		gap: 1rem;
-		padding: 1rem;
+		padding: 0.5rem;
 		background: hsla(0deg, 0%, 40%, 20%);
 		backdrop-filter: blur(2rem);
 		border-radius: 0.5rem;

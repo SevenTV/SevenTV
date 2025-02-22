@@ -14,6 +14,7 @@
 	import { user } from "$/lib/auth";
 	import Button from "$/components/input/button.svelte";
 	import StorePickemsBanner from "$/components/store/store-pickems-banner.svelte";
+	import PickemsStreamers from "$/components/pickems/pickems-streamers.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -53,24 +54,6 @@
 	let badges = $state<Badge[]>([]);
 	let paints = $state<Paint[]>([]);
 
-	let streamers = [
-		"xQc",
-		"OHNE",
-		"JASON",
-		"EROBB",
-		"ARROW",
-		"FURI",
-		"OMIE",
-		"DONA",
-		"DIMA",
-		"DORO",
-		"DIZZY",
-		"DUWAP",
-		"RENYAN",
-		"STEWIE",
-		"TRILLUXE",
-	];
-
 	$effect(() => {
 		queryStore().then((res) => {
 			storeData = res;
@@ -90,7 +73,7 @@
 <StorePickemsBanner title="7TV x CSMONEY" title2="Streamer Invitational" />
 
 <div class="grid">
-	<img alt="Pickems Banner" class="banner-image" src={pickemsHeaderImage} />
+	<!-- <img alt="Pickems Banner" class="banner-image" src={pickemsHeaderImage} /> -->
 	{#if data.success}
 		<div class="bar">
 			<Info />
@@ -101,7 +84,7 @@
 		<div class="bar">
 			<StoreSection title="Go to pickems.tv to place your Pick'ems!">
 				{#snippet header()}
-					<Button primary href="/store/pickems">
+					<Button primary href="https://pickems.tv">
 						{#snippet iconRight()}
 							<ArrowSquareOut />
 						{/snippet}
@@ -114,26 +97,24 @@
 	<div class="top-grid">
 		<div class="subgrid">
 			<StoreSection title="INFO">1</StoreSection>
-			<StoreSection>
-				<div class="top-grid">
-					<PickemsPurchaseButton title="PICKEMS PASS ONLY" />
-					{#each storeData?.products.subscriptionProduct?.variants ?? [] as variant}
-						<PickemsPurchaseButton title={`PASS + ${variant.kind} SUB`} {variant} />
-					{/each}
-				</div>
-			</StoreSection>
+			{#if !hasPass}
+				<StoreSection>
+					<div class="top-grid">
+						<PickemsPurchaseButton title="PICKEMS PASS ONLY" />
+						{#each storeData?.products.subscriptionProduct?.variants ?? [] as variant}
+							<PickemsPurchaseButton title={`PASS + ${variant.kind} SUB`} {variant} />
+						{/each}
+					</div>
+				</StoreSection>
+			{/if}
 		</div>
-		<div class="subgrid" style="max-width: 20rem">
+		<div class="subgrid" style="max-width: 18rem">
 			<StoreSection title="Rewards">
 				<PickemsBadges {badges} />
 				<PickemsPaints {paints} />
 			</StoreSection>
 			<StoreSection title="Streamers">
-				{#each streamers as streamer}
-					<div class="streamer">
-						{streamer}
-					</div>
-				{/each}
+				<PickemsStreamers />
 			</StoreSection>
 		</div>
 	</div>
