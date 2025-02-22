@@ -54,7 +54,7 @@
 				</p>
 
 				<div class="buttons centered">
-					<Button primary href="/landing/pickems_pass/about">
+					<Button primary href="/store/pickems">
 						<span style=" font-size: 1rem;">Check It Out</span>
 					</Button>
 					<div class="tdateouter">

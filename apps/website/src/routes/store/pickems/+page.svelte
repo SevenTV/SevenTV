@@ -10,11 +10,11 @@
 	import PickemsBadges from "$/components/pickems/pickems-badges.svelte";
 	import PickemsPaints from "$/components/pickems/pickems-paints.svelte";
 	import PickemsPurchaseButton from "$/components/pickems/purchase-button.svelte";
-	import pickemsHeaderImage from "$assets/pickems-banner.png?url";
 	import { user } from "$/lib/auth";
 	import Button from "$/components/input/button.svelte";
 	import StorePickemsBanner from "$/components/store/store-pickems-banner.svelte";
 	import PickemsStreamers from "$/components/pickems/pickems-streamers.svelte";
+	import PickemsSchedule from "$/components/pickems/pickems-schedule.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -96,7 +96,7 @@
 	{/if}
 	<div class="top-grid">
 		<div class="subgrid">
-			<StoreSection title="INFO">1</StoreSection>
+			<PickemsStreamers />
 			{#if !hasPass}
 				<StoreSection>
 					<div class="top-grid">
@@ -107,24 +107,15 @@
 					</div>
 				</StoreSection>
 			{/if}
-		</div>
-		<div class="subgrid" style="max-width: 18rem">
-			<StoreSection title="Rewards">
-				<PickemsBadges {badges} />
-				<PickemsPaints {paints} />
-			</StoreSection>
-			<StoreSection title="Streamers">
-				<PickemsStreamers />
-			</StoreSection>
+			<PickemsSchedule />
 		</div>
 	</div>
 </div>
 
-<!-- <div class="spinner-container"> -->
-<!-- 	<Spinner /> -->
-<!-- </div> -->
-
 <style lang="scss">
+	.grid {
+		min-width: 100% !important;
+	}
 	.banner-image {
 		object-fit: contain;
 		width: 100%;
