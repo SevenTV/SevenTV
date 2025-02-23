@@ -18,7 +18,7 @@
 	import dizzyProfile from "$assets/dizzy.png?url";
 	import Button from "../input/button.svelte";
 
-	let { hasPass }: { hasPass: Boolean } = $props();
+	let { hasPass = $bindable() }: { hasPass: Boolean } = $props();
 
 	let streamers = [
 		{
@@ -103,7 +103,7 @@
 		</p>
 		<p>Want to earn cosmetics for predicting the outcome? Click below!</p>
 		<div class="purchase-div">
-			{#if !hasPass}
+			{#if hasPass}
 				<Button
 					style="width: 100%;
 				padding: 0.75rem 1.5rem;
@@ -118,7 +118,7 @@
 					href="https://pickems.tv"
 				>
 					Predict Winners
-					<Ticket style="margin-left: auto; margin-right: 0;" />
+					<ArrowSquareOut style="margin-left: auto; margin-right: 0;" />
 				</Button>
 			{:else}
 				<Button

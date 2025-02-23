@@ -244,7 +244,11 @@
 	{/if}
 	<div class="top-grid">
 		<div class="subgrid">
-			<PickemsStreamers hasPass />
+			{#if !hasPass}
+				<PickemsStreamers hasPass={false} />
+			{:else}
+				<PickemsStreamers hasPass={true} />
+			{/if}
 			{#if !hasPass}
 				<div class="container">
 					<h1 class="title">7TV Pick’ems Pass</h1>
