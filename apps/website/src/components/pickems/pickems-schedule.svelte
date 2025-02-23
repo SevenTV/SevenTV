@@ -7,24 +7,24 @@
 	let schedule = [
 		{
 			day: "Day 1",
-			date: "Feb. 29th",
+			date: "Feb. 28th",
 			stage: "Round of 16",
 			bestOf: "1 Match",
-			startTime: "10:00 AM E.T / 3:00 PM GMT",
+			startTime: "10:00 AM EST / 3:00 PM GMT",
 		},
 		{
 			day: "Day 2",
 			date: "Mar. 1st",
 			stage: "Quarterfinals",
 			bestOf: "1 Match",
-			startTime: "10:00 AM E.T / 3:00 PM GMT",
+			startTime: "12:00 PM EST / 5:00 PM GMT",
 		},
 		{
 			day: "Day 3",
 			date: "Mar. 2nd",
 			stage: "Semifinals + Finals + Showmatch",
 			bestOf: "3 Matches",
-			startTime: "10:00 AM E.T / 3:00 PM GMT",
+			startTime: "10:00 AM EST / 3:00 PM GMT",
 		},
 	];
 </script>

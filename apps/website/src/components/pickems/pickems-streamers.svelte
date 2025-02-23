@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowUpRight, Ticket } from "phosphor-svelte";
+	import { ArrowSquareOut, ArrowUpRight, Ticket } from "phosphor-svelte";
 	import xQcProfile from "$assets/xqc.png?url";
 	import stableRonaldoProfile from "$assets/stableronaldo.png?url";
 	import aikoBlissProfile from "$assets/aikobliss.png?url";
@@ -98,7 +98,7 @@
 		</p>
 		<p>
 			Watch the main event on <a href="https://twitch.tv/7tvapp" aria-label="7tvapp Twitch Channel"
-				>7tvapp Stream</a
+				>7TV Twitch Channel <ArrowSquareOut style="vertical-align: text-top;" /></a
 			>, or through your favourite streamer's POV.
 		</p>
 		<p>Want to earn cosmetics for predicting the outcome? Click below!</p>
