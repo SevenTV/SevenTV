@@ -33,7 +33,7 @@
 	</div>
 	<Button
 		primary
-		style="width: 70%; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, 0 4px 8px rgba(0, 0, 0, 0.2); filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));"
+		style="width: 70%;  justify-content: space-between; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, rgba(0, 0, 0, 0.2) 0px 6px 4px; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));"
 		disabled={myStoreData}
 		onclick={() => purchasePickems(variant?.id)}
 	>
@@ -60,17 +60,26 @@
 </div>
 
 <style lang="scss">
+	span {
+		font-size: 1.2rem;
+	}
 	.purchase-option {
 		flex-grow: 1;
 		display: flex;
 		flex-direction: column;
 		gap: 1.75rem;
 		align-items: center;
-		justify-content: space-between;
-		border-radius: 1rem;
-		padding: 3.5rem;
+		border-radius: 0.8rem;
 		text-align: center;
-		background: rgba(0, 0, 0, 0.288);
+		background: rgb(255 255 255 / 10%);
+		border: 1px solid #ffffff30;
+		box-shadow: inset 0 -4px 9px -3px #ffffff52;
+		padding: 1.2rem 0.8rem;
+		justify-content: space-between;
+		width: 100% !important;
+		font-weight: 600;
+		font-size: 1.1rem;
+
 		&.disabled {
 			opacity: 0.6;
 		}
@@ -79,11 +88,13 @@
 			background: rgba(255, 255, 255, 0.07);
 			width: 100%;
 			margin: 0;
+			border-color: #ffffff;
+			opacity: 0.2;
 		}
 
 		h3 {
 			font-family: Inter;
-			font-size: 56px;
+			font-size: 51px;
 			font-style: normal;
 			font-weight: 600;
 			line-height: 120%; /* 67.2px */
@@ -93,23 +104,34 @@
 			-webkit-text-fill-color: transparent;
 			text-align: left;
 			width: 100%;
-			padding-left: 1rem; /* Adjust this value as needed */
+			padding-left: 1rem;
 		}
 
 		.line {
 			display: flex;
 			justify-content: space-between;
-			width: 75%;
+			width: 100%;
 
 			&.strike {
 				text-decoration: line-through;
-				color: gray;
+				color: #cfcfcf;
+				span {
+					color: white;
+					opacity: 0.4;
+				}
 			}
 		}
 
 		button {
-			margin-top: 1rem;
-			width: 70%;
+			padding: 1.2rem 0.8rem;
+			justify-content: space-between;
+			width: 100% !important;
+			font-weight: 600;
+			font-size: 1.1rem;
+			box-shadow:
+				rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset,
+				rgba(0, 0, 0, 0.2) 0px 6px 4px !important;
+			filter: drop-shadow(rgba(255, 255, 255, 0.3) 0px 0px 10px) !important;
 		}
 
 		small {

@@ -322,25 +322,26 @@
 	}
 
 	.container {
-		background: radial-gradient(304.85% 93.65% at 50% 83.99%, #4d119b 0%, rgba(45, 0, 104, 0) 100%);
-
+		padding: 3rem 10rem;
+		background: radial-gradient(304.85% 93.65% at 50% 83.99%, #420097 0%, rgba(45, 0, 104, 0) 100%);
 		border-radius: 12px;
 		border: 1px solid rgb(255 255 255 / 12%);
-		padding: 1rem;
 		border-radius: 0.5rem;
 		text-align: center;
 
 		.title {
 			text-align: center;
 			font-family: Inter;
-			font-size: 64px;
-			font-weight: 600;
 			letter-spacing: -1.28px;
 			background: linear-gradient(0deg, #fff -24.36%, rgba(255, 255, 255, 0.61) 116.67%);
 			background-clip: text;
 			-webkit-background-clip: text;
 			margin: 4rem;
 			-webkit-text-fill-color: transparent;
+			padding-left: 0;
+			font-size: 64px;
+			margin-top: 0;
+			font-weight: 700;
 		}
 
 		.description {

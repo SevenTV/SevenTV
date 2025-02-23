@@ -64,7 +64,7 @@
 
 <style scss>
 	h1 {
-		font-size: 1.5rem;
+		font-size: 2.5rem;
 		font-weight: normal;
 		font-family: Inter;
 		font-size: 48px;
@@ -75,13 +75,13 @@
 		-webkit-text-fill-color: transparent;
 	}
 	.container {
+		background-color: transparent;
+		padding: 3rem 3rem;
 		border-radius: 12px;
 		border: 1px solid rgba(255, 255, 255, 0.15);
-		background: black;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 2rem;
 		color: white;
 		width: 100%;
 
@@ -107,29 +107,29 @@
 			.match-card {
 				background: rgba(235, 219, 255, 0.11);
 				border-radius: 8px;
+				padding: 0;
 				border: 1px solid #413c47;
 
 				padding: 1rem;
 
 				.match-header {
+					padding: 1rem;
+					font-size: 1.2rem;
+					border: none;
 					display: flex;
 					justify-content: space-between;
 					background: #ebdbff;
-					border-radius: 8px;
-					border: 1px solid #413c47;
-					padding: 0.5rem;
 					font-weight: bold;
 					color: #2d2d2d;
 				}
 
 				.match-details {
-					margin-top: 1rem;
+					margin-top: 0.5rem;
 
 					.match-row {
+						padding: 1rem 1.2rem;
 						display: flex;
 						justify-content: space-between;
-						border-bottom: 1px solid #444;
-						padding: 0.5rem 0;
 						color: #ccc;
 					}
 				}

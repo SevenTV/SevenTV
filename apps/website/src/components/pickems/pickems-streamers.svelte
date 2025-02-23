@@ -14,8 +14,10 @@
 	import dimaWallhacksProfile from "$assets/dima_wallhacks.png?url";
 	import ohnePixelProfile from "$assets/ohnepixel.png?url";
 	import furiProfile from "$assets/furi.png?url";
-	import kaiCanetProfile from "$assets/kaicanet.png?url";
+	import neokProfile from "$assets/neok.png?url";
 	import dizzyProfile from "$assets/dizzy.png?url";
+	import StewieProfile from "$assets/stewie2k.png?url";
+	import duwapProfile from "$assets/duwap.png?url";
 	import Button from "../input/button.svelte";
 
 	let { hasPass = $bindable() }: { hasPass: Boolean } = $props();
@@ -78,12 +80,20 @@
 			profile: furiProfile,
 		},
 		{
-			name: "KaiCenat",
-			profile: kaiCanetProfile,
+			name: "neok",
+			profile: neokProfile,
 		},
 		{
 			name: "Dizzy",
 			profile: dizzyProfile,
+		},
+		{
+			name: "Stewie2K",
+			profile: StewieProfile,
+		},
+		{
+			name: "duwap",
+			profile: duwapProfile,
 		},
 	];
 </script>
@@ -163,6 +173,10 @@
 </div>
 
 <style lang="scss">
+	.streamer-pfp {
+		border-radius: 4px;
+		margin-right: 0.75rem;
+	}
 	.hrDialog {
 		background: rgba(255, 255, 255, 0.07);
 		width: 100%;
@@ -175,16 +189,13 @@
 	}
 
 	.left-panel {
+		width: 20%;
+		background: linear-gradient(180deg, rgba(175, 175, 175, 0.24), rgba(175, 175, 175, 0.18));
+		border-right: none;
+		border-radius: 12px 0 0 12px;
 		gap: 1rem;
-		border-radius: 8px;
-		border-right: 1px solid rgba(255, 255, 255, 0.15);
 		width: 25%;
 		padding: 2rem;
-		background: linear-gradient(
-			180deg,
-			rgba(175, 175, 175, 0.16) 0%,
-			rgba(113, 113, 113, 0.16) 100%
-		);
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
@@ -214,38 +225,41 @@
 	}
 
 	.right-panel {
-		border-radius: 12px;
 		border: 1px solid rgba(255, 255, 255, 0.15);
 		width: 75%;
 		padding: 2rem;
 		overflow-y: auto;
+		border-radius: 0 12px 12px 0;
+		width: 80%;
+		justify-content: center;
+		align-items: center;
 	}
 
 	.streamer-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 1rem;
+		gap: 3rem;
 
 		.streamer {
 			display: flex;
 			align-items: center;
 			padding: 0.5rem;
-			background-color: #000000;
+			background-color: #191919;
 			border-radius: 0.5rem;
 			box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
 
 			img {
-				border-radius: 0; /* Make the image square */
-				height: 4rem; /* Increase the size of the image */
+				border-radius: 0.3rem;
+				height: 4rem;
 				width: 4rem;
-				margin-right: 0.5rem; /* Add margin to the right */
+				margin-right: 0.5rem;
 			}
 
 			.info {
 				text-align: left;
 
 				h3 {
-					font-size: 1rem; /* Make the username smaller */
+					font-size: 1rem;
 				}
 
 				a {
@@ -253,7 +267,7 @@
 					align-items: center;
 					color: grey;
 					margin-top: 0.5rem;
-					font-size: 0.875rem; /* Make the view twitch text smaller */
+					font-size: 0.875rem;
 
 					:global(svg) {
 						margin-left: 0.5rem;
