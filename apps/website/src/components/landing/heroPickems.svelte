@@ -9,11 +9,12 @@
 	import { gqlClient } from "$/lib/gql";
 	import { type Badge } from "$/gql/graphql";
 	import BadgeComponent from "../badge.svelte";
+	import HeroPepe from "$/components/pickems/hero-pepe.svelte";
 	async function queryCosmetics() {
 		let res = await gqlClient()
 			.query(
 				graphql(`
-					query PickemsGetCosmetics {
+					query GetPickemsBadges {
 						badges {
 							badges {
 								__typename
@@ -60,120 +61,54 @@
 </script>
 
 <div class="layout">
-	{#if isXmasEvent()}
-		<section class="gifting hero-content">
+	<section class="hero">
+		{#if badges.length > 0}
+			<div class="badge-preview hide-on-mobile">
+				<HeroPepe />
+				<div class="badges">
+					{#each badges as badge}
+						<BadgeComponent enableDialog size={48} {badge} />
+					{/each}
+				</div>
+			</div>
+		{/if}
+		<div class="hero-content centered">
+			<div class="top-info hide-on-mobile">
+				<p>16 STREAMERS</p>
+				<Minus />
+				<p>CS2 HOSTED TOURNAMENT</p>
+				<Minus />
+				<p>3 DAY EVENT</p>
+			</div>
 			<div class="content">
-				<h1>X-MAS SUB EVENT</h1>
-				<p>
-					Gift 1 sub to anyone this christmas and get a special badge!
-					<br />
-					<a href="/store">Gift a sub</a>
-				</p>
-			</div>
-		</section>
-	{/if}
-
-	{#if moment("2024-12-20T16:00:00Z").isAfter()}
-		<section class="hero nnys dark-theme">
-			<div class="hero-content">
-				<Logo size={8.5 * 16} />
-				<div class="content">
-					<h1>
-						The Emote Platform <span class="for-all">for All</span>
-					</h1>
-					<p>
-						Manage hundreds of emotes for your Twitch, Kick or YouTube channels with ease. Enhance
-						your chatting experience.
-					</p>
-					<p>Vote on NNYS 2024 to get an exclusive paint, badge & emote set.</p>
+				<div>
+					<h1>Place Pick’ems</h1>
+					<h1>Win Badges & Paints.</h1>
 				</div>
-				<div class="buttons">
-					<Button primary style="font-size: 1em;" href="https://www.nnys.live/">Vote now!</Button>
-					<Button style="font-size: 1em;" href="#download">Download</Button>
+				<div class="description">
+					<p>xQc, OhnePixel, JasonTheWeen and 13 other streamers go head to head</p>
+					<p>in a 3-day Single Elimination 7TV Hosted CS2 tournament.</p>
 				</div>
 			</div>
-			<img class="hero-image hide-on-mobile" src={nnysPlaceholder} alt="7TV" />
-		</section>
-	{:else}
-		<section class="hero">
-			{#if badges.length > 0}
-				<div class="badge-preview">
-					<img src="../assets/pickems_peepo_eye.svg" class="pepe-eye-right" />
-					<img src="../assets/pickems_peepo_eye.svg" class="pepe-eye-left" />
-					<!-- svelte-ignore a11y_missing_attribute -->
-					<img src="../assets/pickems_peepo_hand.png" class="pepe-hand" />
-					<!-- svelte-ignore a11y_missing_attribute -->
-					<img src="../assets/pickems_peepo_no_eyes.svg" class="pepe-face" />
-					<div class="badges">
-						{#each badges as badge}
-							<BadgeComponent enableDialog size={48} {badge}></BadgeComponent>
-						{/each}
-					</div>
-				</div>
-			{/if}
-			<div class="hero-content centered">
-				<div class="top-info">
-					<p>16 STREAMERS</p>
-					<Minus />
-					<p>CS2 HOSTED TOURNAMENT</p>
-					<Minus />
-					<p>3 DAY EVENT</p>
-				</div>
-				<div class="content">
-					<div>
-						<h1>Place Pick’ems</h1>
-						<h1>Win Badges & Paints.</h1>
-					</div>
-					<div class="description">
-						<p>xQc, OhnePixel, JasonTheWeen and 13 other streamers go head to head</p>
-						<p>in a 3-day Single Elimination 7TV Hosted CS2 tournament.</p>
-					</div>
-				</div>
-				<div class="buttons">
-					<Button
-						primary
-						style="font-size: 1em; background-color: #EFDFFF;"
-						href="/landing/pickems_pass/about">Learn More</Button
-					>
-				</div>
+			<div class="buttons">
+				<Button
+					primary
+					style="font-size: 1em; background-color: #EFDFFF;"
+					href="/landing/pickems_pass/about">Learn More</Button
+				>
 			</div>
-		</section>
+		</div>
 		<div class="header-image" style="margin-top: -2.5rem;">
 			<img src="../assets/pickems_header_bench.png" alt="Header Bench" />
 		</div>
-	{/if}
+	</section>
 </div>
 
 <style lang="scss">
 	.layout {
 		margin: 3rem;
 	}
-	.pepe-face {
-		bottom: 1rem;
-		position: absolute;
-		width: 11rem;
-		left: 3rem;
-	}
-	.pepe-eye-right {
-		position: absolute;
-		z-index: 1;
-		width: 2.5rem;
-		bottom: 4rem;
-		left: 6rem;
-	}
-	.pepe-eye-left {
-		position: absolute;
-		z-index: 1;
-		width: 2.5rem;
-		left: 10.5rem;
-		bottom: 4rem;
-	}
-	.pepe-hand {
-		position: absolute;
-		width: 4rem;
-		left: 15.5rem;
-		z-index: 3;
-	}
+
 	.top-info {
 		opacity: 50%;
 		top: -4rem;
@@ -194,13 +129,15 @@
 	.header-image {
 		object-fit: contain;
 		justify-content: center;
-		display: flex;
 		z-index: 1;
-		bottom: 12rem;
-		position: relative;
+		position: absolute;
+		pointer-events: none;
+		bottom: 0;
 		img {
 			display: inline;
-			width: 1400px;
+			width: 100%;
+			position: relative;
+			margin-bottom: -13.5%;
 			height: 100%;
 		}
 	}
@@ -211,6 +148,7 @@
 		flex-wrap: wrap;
 		padding: 5.5rem;
 		min-height: min(50rem, 80vh);
+		margin-bottom: 10rem;
 
 		position: relative;
 		z-index: 1;
@@ -246,6 +184,7 @@
 
 			.hero-content {
 				background-color: #00000027;
+				margin-bottom: 4rem;
 				backdrop-filter: blur(1rem);
 				border-radius: 1rem;
 			}
@@ -350,6 +289,9 @@
 		align-items: center;
 		top: 0rem;
 		right: 1rem;
+		@media screen and (max-width: 1300px) {
+			display: none;
+		}
 
 		.badges {
 			display: flex;
@@ -371,6 +313,15 @@
 	@media screen and (max-width: 960px) {
 		.hero {
 			padding: 2rem;
+			margin-bottom: 0rem;
+		}
+
+		.layout {
+			margin: 0rem;
+		}
+		.header-image {
+			bottom: 0rem;
+			width: 80%;
 		}
 
 		.hero-content .content {
