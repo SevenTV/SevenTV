@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import { ArrowSquareOut } from "phosphor-svelte";
 
 	type Tab = {
 		name: string;
 		pathname: string;
 		highlight?: string;
+		arrow?: Boolean;
 	};
 
 	let { tabs }: { tabs: Tab[] } = $props();
@@ -17,7 +19,11 @@
 				class:selected={$page.url.pathname.startsWith(tab.pathname)}
 				style="--highlight: {tab.highlight}"
 				href={tab.pathname}
-				draggable="false">{tab.name}</a
+				draggable="false"
+				>{tab.name}
+				{#if tab.arrow}
+					<ArrowSquareOut style="vertical-align: bottom;" />
+				{/if}</a
 			>
 		</li>
 	{/each}
