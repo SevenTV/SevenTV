@@ -91,10 +91,8 @@
 				</div>
 			</div>
 			<div class="buttons">
-				<Button
-					primary
-					style="font-size: 1em; background-color: #EFDFFF;"
-					href="/landing/pickems_pass/about">Learn More</Button
+				<Button primary style="font-size: 1em; background-color: #EFDFFF;" href="/store/pickems"
+					>Learn More</Button
 				>
 			</div>
 		</div>
