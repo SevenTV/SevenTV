@@ -33,7 +33,7 @@
 	</div>
 	<Button
 		primary
-		style="width: 70%"
+		style="width: 70%; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, 0 4px 8px rgba(0, 0, 0, 0.2); filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));"
 		disabled={myStoreData}
 		onclick={() => purchasePickems(variant?.id)}
 	>
