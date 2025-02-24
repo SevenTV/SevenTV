@@ -9,10 +9,10 @@
 	import TagsInput from "$/components/input/tags-input.svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
-	import PickemsHeader from "$/components/pickems/emotes-header.svelte";
 	import { t } from "svelte-i18n";
 	import { page } from "$app/stores";
 	import { type Page } from "@sveltejs/kit";
+	import PickemsHeader from "$/components/pickems/emotes-header.svelte";
 	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";
 
@@ -107,52 +107,89 @@
 	}
 </script>
 
-<div>
-	<PickemsHeader />
-	<div class="side-bar-layout">
-		<aside class="side-bar">
-			<h1>{$t("pages.directory.title")}</h1>
-			<nav class="link-list">
-				<TabLink
-					href="/emotes"
-					title={$t("common.emotes", { values: { count: 2 } })}
-					big
-					matcher={menuMatcher}
-				>
-					<Smiley />
-					{#snippet active()}
-						<Smiley weight="fill" />
-					{/snippet}
-				</TabLink>
-			</nav>
-			<hr />
-			<Expandable title={$t("labels.search")} expanded={true}>
-				<TextInput placeholder={$t("common.emotes", { values: { count: 1 } })} bind:value={query}>
-					{#snippet icon()}
-						<MagnifyingGlass />
-					{/snippet}
-				</TextInput>
-			</Expandable>
-			<Expandable title={$t("labels.tags")}>
-				<TagsInput bind:tags />
-			</Expandable>
-			<Expandable title={$t("labels.filters")}>
-				<div class="filters">
-					<Checkbox bind:value={animated}>{$t("pages.directory.filters.animated")}</Checkbox>
-					<Checkbox bind:value={staticFilter}>{$t("pages.directory.filters.static")}</Checkbox>
-					<Checkbox bind:value={overlaying}>{$t("flags.overlaying")}</Checkbox>
-					<Checkbox bind:value={personalUse}>Personal Use</Checkbox>
-					<Checkbox bind:value={exactMatch}>{$t("pages.directory.filters.exact_match")}</Checkbox>
-				</div>
-			</Expandable>
-		</aside>
-		<div class="content">
-			{@render children()}
-		</div>
+<PickemsHeader />
+<div class="side-bar-layout">
+	<aside class="side-bar">
+		<h1>{$t("pages.directory.title")}</h1>
+		<nav class="link-list">
+			<TabLink
+				href="/emotes"
+				title={$t("common.emotes", { values: { count: 2 } })}
+				big
+				matcher={menuMatcher}
+			>
+				<Smiley />
+				{#snippet active()}
+					<Smiley weight="fill" />
+				{/snippet}
+			</TabLink>
+		</nav>
+		<hr />
+		<Expandable title={$t("labels.search")} expanded={true}>
+			<TextInput placeholder={$t("common.emotes", { values: { count: 1 } })} bind:value={query}>
+				{#snippet icon()}
+					<MagnifyingGlass />
+				{/snippet}
+			</TextInput>
+		</Expandable>
+		<Expandable title={$t("labels.tags")}>
+			<TagsInput bind:tags />
+		</Expandable>
+		<Expandable title={$t("labels.filters")}>
+			<div class="filters">
+				<Checkbox bind:value={animated}>{$t("pages.directory.filters.animated")}</Checkbox>
+				<Checkbox bind:value={staticFilter}>{$t("pages.directory.filters.static")}</Checkbox>
+				<Checkbox bind:value={overlaying}>{$t("flags.overlaying")}</Checkbox>
+				<Checkbox bind:value={personalUse}>Personal Use</Checkbox>
+				<Checkbox bind:value={exactMatch}>{$t("pages.directory.filters.exact_match")}</Checkbox>
+			</div>
+		</Expandable>
+	</aside>
+
+	<div class="content">
+		{@render children()}
 	</div>
 </div>
 
 <style lang="scss">
+	.side-bar-layout {
+		padding: 1.25rem;
+
+		display: flex;
+		gap: 1.25rem;
+		height: 85%;
+
+		& > .side-bar {
+			position: relative;
+
+			background-color: var(--bg-medium);
+			padding: 1rem 1.25rem;
+			border-radius: 0.5rem;
+			border: 1px solid var(--layout-border);
+
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+
+			& > h1 {
+				font-size: 1.125rem;
+				font-weight: 700;
+				margin: 0.25rem 0;
+			}
+
+			& .link-list {
+				display: flex;
+				flex-direction: column;
+				gap: 0.25rem;
+			}
+		}
+
+		& > .content {
+			flex-grow: 1;
+			min-width: 0;
+			margin-bottom: -1.25rem;
+		}
+	}
 	.filters {
 		display: flex;
 		flex-direction: column;
