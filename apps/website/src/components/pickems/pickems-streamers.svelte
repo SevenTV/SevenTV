@@ -103,11 +103,13 @@
 		<h1 class="alt_head">Meet the Streamers</h1>
 		<hr class="hrDialog" />
 		<p>
-			A prominent line-up of Twitch Streamers build a team from their communities who go head-to-head in a
-			CS-Style Single Elimination Tournament.
+			A prominent line-up of Twitch Streamers build a team from their communities who go
+			head-to-head in a CS-Style Single Elimination Tournament.
 		</p>
 		<p>
-			Watch the main event on the <a href="https://twitch.tv/7tvapp" aria-label="7tvapp Twitch Channel"
+			Watch the main event on the <a
+				href="https://twitch.tv/7tvapp"
+				aria-label="7tvapp Twitch Channel"
 				>7TV Twitch Channel <ArrowSquareOut style="vertical-align: text-top;" /></a
 			>, or through your favourite streamer's POV.
 		</p>
@@ -153,20 +155,24 @@
 	<div class="right-panel">
 		<div class="streamer-grid">
 			{#each streamers as streamer}
-				<a href={`https://twitch.tv/${streamer.name}`} target="_blank" style="text-decoration: none;">
-				<div class="streamer">
-					<img
-						class="streamer-pfp"
-						alt={`${streamer.name}'s profile picture`}
-						src={streamer.profile}
-					/>
-					<div class="info">
-						<h3>{streamer.name}</h3>
-						<span class="streamer-link">
-							<u> VIEW TWITCH </u>
-						</span>
+				<a
+					href={`https://twitch.tv/${streamer.name}`}
+					target="_blank"
+					style="text-decoration: none;"
+				>
+					<div class="streamer">
+						<img
+							class="streamer-pfp"
+							alt={`${streamer.name}'s profile picture`}
+							src={streamer.profile}
+						/>
+						<div class="info">
+							<h3>{streamer.name}</h3>
+							<span class="streamer-link">
+								<u> VIEW TWITCH </u>
+							</span>
+						</div>
 					</div>
-				</div>
 				</a>
 			{/each}
 		</div>
@@ -190,7 +196,7 @@
 	}
 
 	.left-panel {
-		background: linear-gradient(180deg, rgba(175, 175, 175, 0.20), rgba(175, 175, 175, 0.14));
+		background: linear-gradient(180deg, rgba(175, 175, 175, 0.2), rgba(175, 175, 175, 0.14));
 		border-right: none;
 		border-radius: 12px 0 0 12px;
 		gap: 1rem;
@@ -255,7 +261,7 @@
 				margin-right: 0.5rem;
 			}
 
-			.streamer-link{
+			.streamer-link {
 				font-size: 0.75rem;
 			}
 
@@ -281,7 +287,7 @@
 		}
 	}
 
-	.alt_head{
+	.alt_head {
 		font-size: 1.5rem;
 		font-weight: 600;
 	}

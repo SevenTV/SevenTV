@@ -19,6 +19,13 @@
 	let paints = $state<Paint[]>([]);
 
 	$effect(() => {
+		const emotesDirectoryElement = document.querySelector(
+			".emotes-side-bar-layout, .emotes-side-bar-layout-full",
+		);
+		if (emotesDirectoryElement) {
+			emotesDirectoryElement.classList.toggle("emotes-side-bar-layout-full", dismissed === "true");
+			emotesDirectoryElement.classList.toggle("emotes-side-bar-layout", dismissed !== "true");
+		}
 		queryPickemsCosmetics().then((cosmetics) => {
 			badges = cosmetics.badges;
 			paints = cosmetics.paints;

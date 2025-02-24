@@ -1,29 +1,24 @@
 <script lang="ts">
-	import { Ticket } from "phosphor-svelte";
-	import Button from "../input/button.svelte";
-
-	let { hasPass }: { hasPass: Boolean } = $props();
-
 	let schedule = [
 		{
 			day: "Day 1",
 			date: "Feb. 28th",
 			stage: "Round of 16",
-			bestOf: "1 Match",
+			bestOf: "1 Map",
 			startTime: "10:00 AM EST / 3:00 PM GMT",
 		},
 		{
 			day: "Day 2",
 			date: "Mar. 1st",
 			stage: "Quarterfinals",
-			bestOf: "1 Match",
+			bestOf: "1 Map",
 			startTime: "12:00 PM EST / 5:00 PM GMT",
 		},
 		{
 			day: "Day 3",
 			date: "Mar. 2nd",
 			stage: "Semifinals + Finals + Showmatch",
-			bestOf: "3 Matches",
+			bestOf: "3 Maps",
 			startTime: "10:00 AM EST / 3:00 PM GMT",
 		},
 	];
@@ -31,9 +26,7 @@
 
 <div class="container">
 	<div class="header">
-		<h1>
-			Tournament Schedule
-		</h1>
+		<h1>Tournament Schedule</h1>
 	</div>
 
 	<div class="schedule-grid">

@@ -15,7 +15,6 @@
 	import PickemsHeader from "$/components/pickems/emotes-header.svelte";
 	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";
-
 	let { children }: { children: Snippet } = $props();
 
 	let query: string | undefined = $state($page.url.searchParams.get("q") ?? undefined);
@@ -108,7 +107,7 @@
 </script>
 
 <PickemsHeader />
-<div class="side-bar-layout">
+<div class="side-bar-layout emotes-side-bar-layout">
 	<aside class="side-bar">
 		<h1>{$t("pages.directory.title")}</h1>
 		<nav class="link-list">
@@ -152,43 +151,11 @@
 </div>
 
 <style lang="scss">
-	.side-bar-layout {
-		padding: 1.25rem;
-
-		display: flex;
-		gap: 1.25rem;
-		height: 85%;
-
-		& > .side-bar {
-			position: relative;
-
-			background-color: var(--bg-medium);
-			padding: 1rem 1.25rem;
-			border-radius: 0.5rem;
-			border: 1px solid var(--layout-border);
-
-			display: flex;
-			flex-direction: column;
-			gap: 0.75rem;
-
-			& > h1 {
-				font-size: 1.125rem;
-				font-weight: 700;
-				margin: 0.25rem 0;
-			}
-
-			& .link-list {
-				display: flex;
-				flex-direction: column;
-				gap: 0.25rem;
-			}
-		}
-
-		& > .content {
-			flex-grow: 1;
-			min-width: 0;
-			margin-bottom: -1.25rem;
-		}
+	.emotes-side-bar-layout {
+		height: 85% !important;
+	}
+	.emotes-side-bar-layout-full {
+		height: 100% !important;
 	}
 	.filters {
 		display: flex;
