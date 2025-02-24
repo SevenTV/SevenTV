@@ -20,7 +20,7 @@
 	import duwapProfile from "$assets/duwap.png?url";
 	import Button from "../input/button.svelte";
 
-	let { hasPass = $bindable() }: { hasPass: Boolean } = $props();
+	let { hasPass = $bindable() }: { hasPass: boolean } = $props();
 
 	let streamers = [
 		{
@@ -103,13 +103,11 @@
 		<h1 class="alt_head">Meet the Streamers</h1>
 		<hr class="hrDialog" />
 		<p>
-			A prominent line-up of Twitch Streamers build a team from their communities who go
-			head-to-head in a CS-Style Single Elimination Tournament.
+			A prominent line-up of Twitch Streamers build a team from their communities who go head-to-head in a
+			CS-Style Single Elimination Tournament.
 		</p>
 		<p>
-			Watch the main event on the <a
-				href="https://twitch.tv/7tvapp"
-				aria-label="7tvapp Twitch Channel"
+			Watch the main event on the <a href="https://twitch.tv/7tvapp" aria-label="7tvapp Twitch Channel"
 				>7TV Twitch Channel <ArrowSquareOut style="vertical-align: text-top;" /></a
 			>, or through your favourite streamer's POV.
 		</p>
@@ -119,7 +117,6 @@
 				<Button
 					style="width: 100%;
 				padding: 0.75rem 1.5rem;
-				border-radius: 8px;
 				background: rgb(89 5 199);
     			box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset;
 				font-family: Inter;
@@ -136,7 +133,6 @@
 				<Button
 					style="width: 100%;
 				padding: 0.75rem 1.5rem;
-				border-radius: 8px;
 				background: rgb(89 5 199);
     			box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset;
 				font-family: Inter;
@@ -144,7 +140,7 @@
 				border: none;
 				border-radius: 0.25rem;
 				cursor: pointer;"
-					href="#PickemsPurchaseButton"
+					href="#PickemsPricing"
 				>
 					Purchase Pass
 					<Ticket style="margin-left: auto; margin-right: 0;" />
@@ -155,24 +151,20 @@
 	<div class="right-panel">
 		<div class="streamer-grid">
 			{#each streamers as streamer}
-				<a
-					href={`https://twitch.tv/${streamer.name}`}
-					target="_blank"
-					style="text-decoration: none;"
-				>
-					<div class="streamer">
-						<img
-							class="streamer-pfp"
-							alt={`${streamer.name}'s profile picture`}
-							src={streamer.profile}
-						/>
-						<div class="info">
-							<h3>{streamer.name}</h3>
-							<span class="streamer-link">
-								<u> VIEW TWITCH </u>
-							</span>
-						</div>
+				<a href={`https://twitch.tv/${streamer.name}`} target="_blank" class="streamer-box">
+				<div class="streamer">
+					<img
+						class="streamer-pfp"
+						alt={`${streamer.name}'s profile picture`}
+						src={streamer.profile}
+					/>
+					<div class="info">
+						<h3>{streamer.name}</h3>
+						<span class="streamer-link">
+							<u> VIEW TWITCH </u>
+						</span>
 					</div>
+				</div>
 				</a>
 			{/each}
 		</div>
@@ -195,8 +187,12 @@
 		background-color: transparent;
 	}
 
+	.streamer-box {
+		text-decoration: none;
+	}
+
 	.left-panel {
-		background: linear-gradient(180deg, rgba(175, 175, 175, 0.2), rgba(175, 175, 175, 0.14));
+		background: linear-gradient(180deg, rgba(175, 175, 175, 0.20), rgba(175, 175, 175, 0.14));
 		border-right: none;
 		border-radius: 12px 0 0 12px;
 		gap: 1rem;
@@ -220,9 +216,8 @@
 
 		p {
 			margin-bottom: 2rem;
-			color: rgba(255, 255, 255, 0.5);
-
-			font-family: Inter;
+			color: rgba(255, 255, 255, 0.7);
+			font-family: Inter, serif;
 		}
 		.purchase-div {
 			margin-top: auto;
@@ -253,6 +248,7 @@
 			background-color: #191919;
 			border-radius: 0.5rem;
 			box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+			color: #999999;
 
 			img {
 				border-radius: 0.3rem;
@@ -261,7 +257,7 @@
 				margin-right: 0.5rem;
 			}
 
-			.streamer-link {
+			.streamer-link{
 				font-size: 0.75rem;
 			}
 
@@ -285,9 +281,14 @@
 				}
 			}
 		}
+		.streamer:hover{
+			transition: ease-in-out 0.3s;
+			background-color: rgba(255, 255, 255, 0.15);
+			color: white;
+		}
 	}
 
-	.alt_head {
+	.alt_head{
 		font-size: 1.5rem;
 		font-weight: 600;
 	}

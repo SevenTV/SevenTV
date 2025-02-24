@@ -80,16 +80,16 @@
 			-webkit-text-fill-color: transparent;
 			font-weight: 600;
 			font-size: 2.5rem;
-			font-family: Inter;
+			font-family: Inter, serif;
 		}
 	}
 
 	@keyframes fade-in {
 		from {
-			mask-position: 0% 100%;
+			mask-position: 0 100%;
 		}
 		to {
-			mask-position: 0% 0%;
+			mask-position: 0 0;
 		}
 	}
 

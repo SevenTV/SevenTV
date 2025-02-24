@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { type SubscriptionProductVariant } from "$/gql/graphql";
-	import { ArrowRight, Password } from "phosphor-svelte";
+	import { ArrowRight } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import { priceFormat } from "$/lib/utils";
 	import { purchasePickems } from "$/lib/pickems";
-	import { isSubscribed } from "$/lib/auth";
+	// import { isSubscribed } from "$/lib/auth";
 
 	let {
 		variant,
@@ -13,7 +13,7 @@
 	}: { variant?: SubscriptionProductVariant; title: string; myStoreData?: boolean } = $props();
 
 	let price = $derived(priceFormat("EUR").format((499 + (variant?.price.amount ?? 0)) / 100 - 1.49));
-	let discounted = $derived(priceFormat("EUR").format((300 + (variant?.price.amount ?? 0)) / 100));
+	// let discounted = $derived(priceFormat("EUR").format((300 + (variant?.price.amount ?? 0)) / 100));
 	let recurring = $derived(priceFormat("EUR").format((variant?.price.amount ?? 0) / 100));
 	let disabled = $derived(myStoreData);
 </script>
@@ -28,12 +28,6 @@
 		<span>€4.99</span>
 		{/if}
 	</div>
-<!--	<div class="line">-->
-<!--		{#if variant}-->
-<!--			<span>Bundle: </span>-->
-<!--			<span>{price}</span>-->
-<!--		{/if}-->
-<!--	</div>-->
 	<Button
 		primary
 		style="width: 70%; justify-content: space-between; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, rgba(0, 0, 0, 0.2) 0px 6px 4px; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));"
@@ -55,7 +49,7 @@
 	</Button>
 	<small>
 		{#if variant}
-			{price} today, then {recurring} monthly
+			{price} today, then {recurring} {variant.kind.toLowerCase()}
 		{:else}
 			Billed as one-time purchase
 		{/if}
@@ -117,27 +111,27 @@
 			justify-content: center;
 			width: 100%;
 
-			&.strike {
-				text-decoration: line-through;
-				color: #cfcfcf;
-				span {
-					color: white;
-					opacity: 0.4;
-				}
-			}
+			//&.strike {
+			//	text-decoration: line-through;
+			//	color: #cfcfcf;
+			//	span {
+			//		color: white;
+			//		opacity: 0.4;
+			//	}
+			//}
 		}
 
-		button {
-			padding: 1.2rem 0.8rem;
-			justify-content: space-between;
-			width: 100% !important;
-			font-weight: 600;
-			font-size: 1.1rem;
-			box-shadow:
-				rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset,
-				rgba(0, 0, 0, 0.2) 0px 6px 4px !important;
-			filter: drop-shadow(rgba(255, 255, 255, 0.3) 0px 0px 10px) !important;
-		}
+		//button {
+		//	padding: 1.2rem 0.8rem;
+		//	justify-content: space-between;
+		//	width: 100% !important;
+		//	font-weight: 600;
+		//	font-size: 1.1rem;
+		//	box-shadow:
+		//		rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset,
+		//		rgba(0, 0, 0, 0.2) 0px 6px 4px !important;
+		//	filter: drop-shadow(rgba(255, 255, 255, 0.3) 0px 0px 10px) !important;
+		//}
 
 		small {
 			font-size: 0.85rem;

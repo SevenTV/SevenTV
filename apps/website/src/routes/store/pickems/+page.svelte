@@ -250,7 +250,7 @@
 				<PickemsStreamers hasPass={true} />
 			{/if}
 			{#if !hasPass}
-				<div class="container">
+				<div class="container" id="PickemsPricing">
 					<h1 class="title">7TV Pick’ems Pass</h1>
 					<p class="description">
 						<span class="dashed-line"></span>
