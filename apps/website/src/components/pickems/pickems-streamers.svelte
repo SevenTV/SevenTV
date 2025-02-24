@@ -100,14 +100,14 @@
 
 <div class="container">
 	<div class="left-panel">
-		<h1>Meet the Streamers.</h1>
+		<h1 class="alt_head">Meet the Streamers</h1>
 		<hr class="hrDialog" />
 		<p>
-			16 Streamers each build a team from their community to come head to head with each other in a
-			Single Elimination Tournament.
+			A prominent line-up of Twitch Streamers build a team from their communities who go head-to-head in a
+			CS-Style Single Elimination Tournament.
 		</p>
 		<p>
-			Watch the main event on <a href="https://twitch.tv/7tvapp" aria-label="7tvapp Twitch Channel"
+			Watch the main event on the <a href="https://twitch.tv/7tvapp" aria-label="7tvapp Twitch Channel"
 				>7TV Twitch Channel <ArrowSquareOut style="vertical-align: text-top;" /></a
 			>, or through your favourite streamer's POV.
 		</p>
@@ -153,6 +153,7 @@
 	<div class="right-panel">
 		<div class="streamer-grid">
 			{#each streamers as streamer}
+				<a href={`https://twitch.tv/${streamer.name}`} target="_blank" style="text-decoration: none;">
 				<div class="streamer">
 					<img
 						class="streamer-pfp"
@@ -161,12 +162,12 @@
 					/>
 					<div class="info">
 						<h3>{streamer.name}</h3>
-						<a href={`https://twitch.tv/${streamer.name}`} target="_blank">
+						<span class="streamer-link">
 							<u> VIEW TWITCH </u>
-							<ArrowUpRight />
-						</a>
+						</span>
 					</div>
 				</div>
+				</a>
 			{/each}
 		</div>
 	</div>
@@ -185,17 +186,16 @@
 	.container {
 		display: flex;
 		width: 100%;
-		background-color: black;
+		background-color: transparent;
 	}
 
 	.left-panel {
-		width: 20%;
-		background: linear-gradient(180deg, rgba(175, 175, 175, 0.24), rgba(175, 175, 175, 0.18));
+		background: linear-gradient(180deg, rgba(175, 175, 175, 0.20), rgba(175, 175, 175, 0.14));
 		border-right: none;
 		border-radius: 12px 0 0 12px;
 		gap: 1rem;
 		width: 25%;
-		padding: 2rem;
+		padding: 1.25rem 2.5rem;
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
@@ -209,7 +209,7 @@
 			width: 100%;
 			border: 0;
 			border-top: 1px solid rgba(255, 255, 255, 0.15);
-			margin-bottom: 1rem;
+			margin-bottom: 0.5rem;
 		}
 
 		p {
@@ -227,18 +227,18 @@
 	.right-panel {
 		border: 1px solid rgba(255, 255, 255, 0.15);
 		width: 75%;
-		padding: 2rem;
-		overflow-y: auto;
+		padding: 1.25rem 2.5rem;
+		overflow: hidden;
 		border-radius: 0 12px 12px 0;
-		width: 80%;
 		justify-content: center;
 		align-items: center;
+		background-color: black;
 	}
 
 	.streamer-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 3rem;
+		gap: 2rem;
 
 		.streamer {
 			display: flex;
@@ -253,6 +253,10 @@
 				height: 4rem;
 				width: 4rem;
 				margin-right: 0.5rem;
+			}
+
+			.streamer-link{
+				font-size: 0.75rem;
 			}
 
 			.info {
@@ -275,5 +279,10 @@
 				}
 			}
 		}
+	}
+
+	.alt_head{
+		font-size: 1.5rem;
+		font-weight: 600;
 	}
 </style>

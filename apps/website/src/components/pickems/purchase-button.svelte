@@ -12,7 +12,7 @@
 		myStoreData,
 	}: { variant?: SubscriptionProductVariant; title: string; myStoreData?: boolean } = $props();
 
-	let price = $derived(priceFormat("EUR").format((499 + (variant?.price.amount ?? 0)) / 100));
+	let price = $derived(priceFormat("EUR").format((499 + (variant?.price.amount ?? 0)) / 100 - 1.49));
 	let discounted = $derived(priceFormat("EUR").format((300 + (variant?.price.amount ?? 0)) / 100));
 	let recurring = $derived(priceFormat("EUR").format((variant?.price.amount ?? 0) / 100));
 	let disabled = $derived(myStoreData);
@@ -21,19 +21,22 @@
 <div class="purchase-option" class:disabled id="PickemsPurchaseButton">
 	<h3>{title}</h3>
 	<hr class="hrDialog" />
-	<div class="line strike" class:strike={variant}>
-		<span>Regular: </span>
-		<span>{price}</span>
-	</div>
 	<div class="line">
 		{#if variant}
-			<span>Bundle: </span>
-			<span>{discounted}</span>
+			<span>{price}</span>
+		{:else}
+		<span>€4.99</span>
 		{/if}
 	</div>
+<!--	<div class="line">-->
+<!--		{#if variant}-->
+<!--			<span>Bundle: </span>-->
+<!--			<span>{price}</span>-->
+<!--		{/if}-->
+<!--	</div>-->
 	<Button
 		primary
-		style="width: 70%;  justify-content: space-between; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, rgba(0, 0, 0, 0.2) 0px 6px 4px; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));"
+		style="width: 70%; justify-content: space-between; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, rgba(0, 0, 0, 0.2) 0px 6px 4px; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));"
 		disabled={myStoreData}
 		onclick={() => purchasePickems(variant?.id)}
 	>
@@ -60,8 +63,10 @@
 </div>
 
 <style lang="scss">
+
 	span {
-		font-size: 1.2rem;
+		font-size: 1.8rem;
+		font-weight: normal;
 	}
 	.purchase-option {
 		flex-grow: 1;
@@ -93,8 +98,8 @@
 		}
 
 		h3 {
-			font-family: Inter;
-			font-size: 51px;
+			font-family: Inter, sans-serif;
+			font-size: 1.5rem;
 			font-style: normal;
 			font-weight: 600;
 			line-height: 120%; /* 67.2px */
@@ -102,14 +107,14 @@
 			background-clip: text;
 			-webkit-background-clip: text;
 			-webkit-text-fill-color: transparent;
-			text-align: left;
+			text-align: center;
 			width: 100%;
 			padding-left: 1rem;
 		}
 
 		.line {
 			display: flex;
-			justify-content: space-between;
+			justify-content: center;
 			width: 100%;
 
 			&.strike {

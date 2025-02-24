@@ -26,7 +26,7 @@
 			<TabLink href="/store/pickems" title="Pickems Pass" big>
 				<Ticket />
 				{#snippet active()}
-					<Star weight="fill" />
+					<Ticket weight="fill" />
 				{/snippet}
 			</TabLink>
 			<!--			<TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>-->

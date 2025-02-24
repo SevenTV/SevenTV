@@ -322,7 +322,7 @@
 	}
 
 	.container {
-		padding: 3rem 10rem;
+		padding: 3rem 8rem;
 		background: radial-gradient(304.85% 93.65% at 50% 83.99%, #420097 0%, rgba(45, 0, 104, 0) 100%);
 		border-radius: 12px;
 		border: 1px solid rgb(255 255 255 / 12%);
@@ -339,7 +339,7 @@
 			margin: 4rem;
 			-webkit-text-fill-color: transparent;
 			padding-left: 0;
-			font-size: 64px;
+			font-size: 2.5rem;
 			margin-top: 0;
 			font-weight: 700;
 		}
@@ -381,7 +381,7 @@
 		.buttons {
 			display: flex;
 			flex-direction: row;
-			gap: 0.5rem;
+			gap: 1rem;
 			justify-content: center;
 		}
 	}

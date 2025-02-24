@@ -69,6 +69,7 @@
 			-webkit-background-clip: text;
 			-webkit-text-fill-color: transparent;
 			font-family: Inter;
+			font-size: 1.5rem;
 		}
 
 		h2 {
@@ -78,7 +79,7 @@
 			-webkit-background-clip: text;
 			-webkit-text-fill-color: transparent;
 			font-weight: 600;
-			font-size: 56px;
+			font-size: 2.5rem;
 			font-family: Inter;
 		}
 	}

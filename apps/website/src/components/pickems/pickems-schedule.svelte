@@ -32,7 +32,7 @@
 <div class="container">
 	<div class="header">
 		<h1>
-			Tournament<br />Schedule
+			Tournament Schedule
 		</h1>
 	</div>
 
@@ -73,6 +73,7 @@
 		background-clip: text;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
+		text-align: center;
 	}
 	.container {
 		background-color: transparent;
@@ -87,13 +88,13 @@
 
 		.header {
 			display: flex;
-			justify-content: space-between;
+			justify-content: center;
 			align-items: center;
 			width: 100%;
 			margin-bottom: 1.5rem;
 
 			h1 {
-				font-size: 2rem;
+				font-size: 2.5rem;
 				font-weight: bold;
 			}
 		}
