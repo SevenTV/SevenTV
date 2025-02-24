@@ -267,7 +267,7 @@
 					</div>
 				</div>
 			{/if}
-			<PickemsSchedule hasPass />
+			<PickemsSchedule />
 		</div>
 	</div>
 </div>
