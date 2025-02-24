@@ -1,15 +1,13 @@
 <script lang="ts">
-	import Logo from "../icons/logo.svelte";
 	import Button from "../input/button.svelte";
-	import nnysPlaceholder from "$assets/nnys.webp?url";
-	import { isXmasEvent } from "$/lib/xmas";
-	import moment from "moment";
 	import { Minus } from "phosphor-svelte";
 	import { graphql } from "$/gql";
 	import { gqlClient } from "$/lib/gql";
 	import { type Badge } from "$/gql/graphql";
 	import BadgeComponent from "../badge.svelte";
 	import HeroPepe from "$/components/pickems/hero-pepe.svelte";
+	import PickemsHeaderBench from "$assets/pickems_header_bench.png";
+
 	async function queryCosmetics() {
 		let res = await gqlClient()
 			.query(
@@ -97,7 +95,7 @@
 			</div>
 		</div>
 		<div class="header-image" style="margin-top: -2.5rem;">
-			<img src="../assets/pickems_header_bench.png" alt="Header Bench" />
+			<img src="{PickemsHeaderBench}" alt="Header Bench" />
 		</div>
 	</section>
 </div>
@@ -151,43 +149,6 @@
 		position: relative;
 		z-index: 1;
 
-		&.nnys {
-			color: var(--text);
-
-			&::before {
-				background: url("$assets/nnys-background.webp?url");
-				background-size: cover;
-
-				content: "";
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				border-radius: 1rem;
-
-				z-index: -1;
-
-				mask-image: radial-gradient(
-					180% 80% at 0% 100%,
-					rgba(white, 1) 0%,
-					rgba(white, 0.7) 25%,
-					rgba(white, 0.5) 56%,
-					rgba(white, 0.2) 79%,
-					transparent 100%
-				);
-				mask-size: 100% 400%;
-				animation: fade-in 0.5s linear forwards;
-			}
-
-			.hero-content {
-				background-color: #00000027;
-				margin-bottom: 4rem;
-				backdrop-filter: blur(1rem);
-				border-radius: 1rem;
-			}
-		}
-
 		&::before {
 			content: "";
 			position: absolute;
@@ -221,10 +182,10 @@
 
 		@keyframes fade-in {
 			from {
-				mask-position: 0% 0%;
+				mask-position: 0 0;
 			}
 			to {
-				mask-position: 0% 100%;
+				mask-position: 0 100%;
 			}
 		}
 	}
@@ -253,12 +214,6 @@
 				-webkit-background-clip: text;
 				-webkit-text-fill-color: transparent;
 				text-align: center;
-				.for-all {
-					letter-spacing: calc(0.15rem + 2px);
-					font-size: 2.65rem;
-					-webkit-text-stroke-width: 1.5px;
-					-webkit-text-stroke-color: var(--text);
-				}
 			}
 
 			p {
@@ -273,19 +228,12 @@
 		}
 	}
 
-	.hero-image {
-		width: 100%;
-		min-width: 15rem;
-		max-width: 25rem;
-
-		margin-inline: auto;
-	}
 	.badge-preview {
 		position: absolute;
 		display: flex;
 		justify-content: end;
 		align-items: center;
-		top: 0rem;
+		top: 0;
 		right: 1rem;
 		@media screen and (max-width: 1300px) {
 			display: none;
@@ -303,22 +251,18 @@
 			top: 1rem;
 		}
 	}
-	.gifting {
-		align-items: center;
-		text-align: center;
-	}
 
 	@media screen and (max-width: 960px) {
 		.hero {
 			padding: 2rem;
-			margin-bottom: 0rem;
+			margin-bottom: 0;
 		}
 
 		.layout {
-			margin: 0rem;
+			margin: 0;
 		}
 		.header-image {
-			bottom: 0rem;
+			bottom: 0;
 			width: 80%;
 		}
 
@@ -326,9 +270,6 @@
 			h1 {
 				font-size: 1.8rem;
 
-				.for-all {
-					font-size: 2rem;
-				}
 			}
 
 			p {
