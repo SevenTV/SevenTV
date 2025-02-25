@@ -55,11 +55,10 @@
 	</div>
 </div>
 
-<style scss>
+<style>
 	h1 {
-		font-size: 2.5rem;
 		font-weight: normal;
-		font-family: Inter;
+		font-family: Inter, serif;
 		font-size: 48px;
 		font-style: normal;
 		background: linear-gradient(0deg, #fff -24.36%, rgba(255, 255, 255, 0.61) 116.67%);
@@ -101,9 +100,7 @@
 			.match-card {
 				background: rgba(235, 219, 255, 0.11);
 				border-radius: 8px;
-				padding: 0;
 				border: 1px solid #413c47;
-
 				padding: 1rem;
 
 				.match-header {

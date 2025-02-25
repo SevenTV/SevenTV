@@ -88,13 +88,13 @@
 
 	.pickems-header-layout {
 		padding: 1.25rem;
-		padding-bottom: 0rem;
+		padding-bottom: 0;
 
 		.pickems-header {
 			position: relative;
 			border: solid 1px hsla(0deg, 0%, 100%, 20%);
 			border-radius: 0.5rem;
-			padding: 1rem 3rem;
+			padding: 1rem 3rem 1rem 1rem;
 
 			display: grid;
 			gap: 1rem;
@@ -163,7 +163,7 @@
 	@media screen and (max-width: 960px) {
 		.pickems-header-layout {
 			padding: 0.5rem;
-			padding-bottom: 0rem;
+			padding-bottom: 0;
 			.pickems-header {
 				grid-template-columns: 1fr;
 
