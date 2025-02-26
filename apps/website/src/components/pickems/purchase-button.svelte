@@ -12,7 +12,9 @@
 		myStoreData,
 	}: { variant?: SubscriptionProductVariant; title: string; myStoreData?: boolean } = $props();
 
-	let price = $derived(priceFormat("EUR").format((499 + (variant?.price.amount ?? 0)) / 100 - 1.49));
+	let price = $derived(
+		priceFormat("EUR").format((499 + (variant?.price.amount ?? 0)) / 100 - 1.49),
+	);
 	// let discounted = $derived(priceFormat("EUR").format((300 + (variant?.price.amount ?? 0)) / 100));
 	let recurring = $derived(priceFormat("EUR").format((variant?.price.amount ?? 0) / 100));
 	let disabled = $derived(myStoreData);
@@ -25,12 +27,12 @@
 		{#if variant}
 			<span>{price}</span>
 		{:else}
-		<span>€4.99</span>
+			<span>€4.99</span>
 		{/if}
 	</div>
 	<Button
 		primary
-		style="width: 70%; justify-content: space-between; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, rgba(0, 0, 0, 0.2) 0px 6px 4px; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));"
+		style="width: 70%; justify-content: space-between; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, rgba(0, 0, 0, 0.2) 0px 6px 4px; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));	@media screen and (max-width: 960px) width: unset;"
 		disabled={myStoreData}
 		onclick={() => purchasePickems(variant?.id)}
 	>
@@ -57,7 +59,6 @@
 </div>
 
 <style lang="scss">
-
 	span {
 		font-size: 1.8rem;
 		font-weight: normal;
@@ -129,7 +130,4 @@
 			}
 		}
 	}
-
-
-
 </style>

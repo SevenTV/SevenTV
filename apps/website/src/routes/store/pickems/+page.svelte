@@ -273,7 +273,6 @@
 </div>
 
 <style>
-
 	.grid {
 		display: flex;
 		flex-direction: column;
@@ -322,7 +321,7 @@
 
 		.title {
 			text-align: center;
-			font-family: Inter,serif;
+			font-family: Inter, serif;
 			letter-spacing: -1.28px;
 			background: linear-gradient(0deg, #fff -24.36%, rgba(255, 255, 255, 0.61) 116.67%);
 			background-clip: text;
@@ -356,27 +355,24 @@
 		}
 
 		@media screen and (max-width: 1200px) {
-			.buttons{
+			.buttons {
 				flex-direction: column !important;
 			}
 		}
-
 	}
 
 	@media screen and (max-width: 1600px) {
-		.container{
+		.container {
 			padding: 3rem 4rem !important;
 		}
-
 	}
 
 	@media screen and (max-width: 1400px) {
-		.container{
+		.container {
 			padding: 3rem 3rem !important;
 		}
-
+		.title {
+			margin: unset !important;
+		}
 	}
-
-
-
 </style>

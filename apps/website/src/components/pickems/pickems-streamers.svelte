@@ -103,11 +103,13 @@
 		<h1 class="alt_head">Meet the Streamers</h1>
 		<hr class="hrDialog" />
 		<p>
-			A prominent line-up of Twitch Streamers build a team from their communities who go head-to-head in a
-			CS-Style Single Elimination Tournament.
+			A prominent line-up of Twitch Streamers build a team from their communities who go
+			head-to-head in a CS-Style Single Elimination Tournament.
 		</p>
 		<p>
-			Watch the main event on the <a href="https://twitch.tv/7tvapp" aria-label="7tvapp Twitch Channel"
+			Watch the main event on the <a
+				href="https://twitch.tv/7tvapp"
+				aria-label="7tvapp Twitch Channel"
 				>7TV Twitch Channel <ArrowSquareOut style="vertical-align: text-top;" /></a
 			>, or through your favourite streamer's POV.
 		</p>
@@ -152,19 +154,19 @@
 		<div class="streamer-grid">
 			{#each streamers as streamer}
 				<a href={`https://twitch.tv/${streamer.name}`} target="_blank" class="streamer-box">
-				<div class="streamer">
-					<img
-						class="streamer-pfp"
-						alt={`${streamer.name}'s profile picture`}
-						src={streamer.profile}
-					/>
-					<div class="info">
-						<h3>{streamer.name}</h3>
-						<span class="streamer-link">
-							<u> VIEW TWITCH </u>
-						</span>
+					<div class="streamer">
+						<img
+							class="streamer-pfp"
+							alt={`${streamer.name}'s profile picture`}
+							src={streamer.profile}
+						/>
+						<div class="info">
+							<h3>{streamer.name}</h3>
+							<span class="streamer-link">
+								<u> VIEW TWITCH </u>
+							</span>
+						</div>
 					</div>
-				</div>
 				</a>
 			{/each}
 		</div>
@@ -193,7 +195,7 @@
 	}
 
 	.left-panel {
-		background: linear-gradient(180deg, rgba(175, 175, 175, 0.20), rgba(175, 175, 175, 0.14));
+		background: linear-gradient(180deg, rgba(175, 175, 175, 0.2), rgba(175, 175, 175, 0.14));
 		border-right: none;
 		border-radius: 12px 0 0 12px;
 		gap: 1rem;
@@ -258,7 +260,7 @@
 				margin-right: 0.5rem;
 			}
 
-			.streamer-link{
+			.streamer-link {
 				font-size: 0.75rem;
 			}
 
@@ -282,14 +284,14 @@
 				}
 			}
 		}
-		.streamer:hover{
+		.streamer:hover {
 			transition: ease-in-out 0.3s;
 			background-color: rgba(255, 255, 255, 0.15);
 			color: white;
 		}
 	}
 
-	.alt_head{
+	.alt_head {
 		font-size: 1.5rem;
 		font-weight: 600;
 	}
@@ -307,7 +309,7 @@
 	}
 
 	@media screen and (max-width: 1200px) {
-		.container{
+		.container {
 			flex-direction: column !important;
 		}
 		.left-panel {
@@ -326,8 +328,24 @@
 		}
 	}
 
-	@media screen and (max-width: 960px) {
+	@media screen and (max-width: 500px) {
+		.container {
+			flex-direction: column !important;
+			width: 24.2rem;
+		}
+		.left-panel {
+			width: 100% !important;
+			border-radius: 12px 12px 12px 12px !important;
+		}
+		.right-panel {
+			width: 100% !important;
+			border-radius: 12px 12px 12px 12px !important;
+			margin-top: 1rem !important;
+		}
 
+		.streamer-grid {
+			grid-template-columns: repeat(1, 1fr) !important;
+			gap: 1rem !important;
+		}
 	}
-
 </style>
