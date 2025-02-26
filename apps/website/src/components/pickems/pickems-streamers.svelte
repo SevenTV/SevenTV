@@ -64,10 +64,6 @@
 			profile: arrowCSProfile,
 		},
 		{
-			name: "anomaly",
-			profile: anomalyProfile,
-		},
-		{
 			name: "dima_wallhacks",
 			profile: dimaWallhacksProfile,
 		},
