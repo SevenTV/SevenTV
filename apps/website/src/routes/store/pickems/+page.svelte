@@ -230,9 +230,9 @@
 	{/if}
 	{#if hasPass}
 		<div class="bar">
-			<StoreSection title="Go to pickems.tv to place your Pick'ems!">
+			<StoreSection title="Go to app.pickems.tv to place your Pick'ems!">
 				{#snippet header()}
-					<Button primary href="https://pickems.tv">
+					<Button primary href="https://app.pickems.tv">
 						{#snippet iconRight()}
 							<ArrowSquareOut />
 						{/snippet}
@@ -272,22 +272,14 @@
 	</div>
 </div>
 
-<style lang="scss">
-	.grid {
-		min-width: 100% !important;
-	}
-	.banner-image {
-		object-fit: contain;
-		width: 100%;
-		margin-top: -20%;
-	}
+<style>
 
 	.grid {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
 		flex-wrap: wrap;
-
+		min-width: 100%;
 		max-width: 70rem;
 		margin-top: 1rem;
 		margin-inline: auto;
@@ -324,23 +316,21 @@
 	.container {
 		padding: 3rem 8rem;
 		background: radial-gradient(304.85% 93.65% at 50% 83.99%, #420097 0%, rgba(45, 0, 104, 0) 100%);
-		border-radius: 12px;
 		border: 1px solid rgb(255 255 255 / 12%);
 		border-radius: 0.5rem;
 		text-align: center;
 
 		.title {
 			text-align: center;
-			font-family: Inter;
+			font-family: Inter,serif;
 			letter-spacing: -1.28px;
 			background: linear-gradient(0deg, #fff -24.36%, rgba(255, 255, 255, 0.61) 116.67%);
 			background-clip: text;
 			-webkit-background-clip: text;
-			margin: 4rem;
 			-webkit-text-fill-color: transparent;
 			padding-left: 0;
 			font-size: 2.5rem;
-			margin-top: 0;
+			margin: 0 4rem 4rem;
 			font-weight: 700;
 		}
 
@@ -349,26 +339,6 @@
 			color: white;
 			margin-bottom: 1rem;
 			position: relative;
-
-			.dialog {
-				position: absolute;
-				top: -1rem;
-				font-size: 1rem;
-				color: white;
-			}
-
-			.left {
-				left: 15%;
-			}
-
-			.middle {
-				left: 50%;
-				transform: translateX(-50%);
-			}
-
-			.right {
-				left: 82%;
-			}
 
 			.dashed-line {
 				display: block;
@@ -384,5 +354,29 @@
 			gap: 1rem;
 			justify-content: center;
 		}
+
+		@media screen and (max-width: 1200px) {
+			.buttons{
+				flex-direction: column !important;
+			}
+		}
+
 	}
+
+	@media screen and (max-width: 1600px) {
+		.container{
+			padding: 3rem 4rem !important;
+		}
+
+	}
+
+	@media screen and (max-width: 1400px) {
+		.container{
+			padding: 3rem 3rem !important;
+		}
+
+	}
+
+
+
 </style>

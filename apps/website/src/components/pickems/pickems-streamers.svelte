@@ -124,7 +124,7 @@
 				border: none;
 				border-radius: 0.25rem;
 				cursor: pointer;"
-					href="https://pickems.tv"
+					href="https://app.pickems.tv"
 				>
 					Predict Winners
 					<ArrowSquareOut style="margin-left: auto; margin-right: 0;" />
@@ -185,6 +185,7 @@
 		display: flex;
 		width: 100%;
 		background-color: transparent;
+		flex-direction: row;
 	}
 
 	.streamer-box {
@@ -292,4 +293,41 @@
 		font-size: 1.5rem;
 		font-weight: 600;
 	}
+
+	@media screen and (max-width: 1600px) {
+		.streamer-grid {
+			grid-template-columns: repeat(3, 1fr) !important;
+		}
+	}
+
+	@media screen and (max-width: 1400px) {
+		.streamer-grid {
+			grid-template-columns: repeat(2, 1fr) !important;
+		}
+	}
+
+	@media screen and (max-width: 1200px) {
+		.container{
+			flex-direction: column !important;
+		}
+		.left-panel {
+			width: 100% !important;
+			border-radius: 12px 12px 12px 12px !important;
+		}
+		.right-panel {
+			width: 100% !important;
+			border-radius: 12px 12px 12px 12px !important;
+			margin-top: 1rem !important;
+		}
+
+		.streamer-grid {
+			grid-template-columns: repeat(2, 1fr) !important;
+			gap: 1rem !important;
+		}
+	}
+
+	@media screen and (max-width: 960px) {
+
+	}
+
 </style>

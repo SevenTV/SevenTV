@@ -110,32 +110,26 @@
 			display: flex;
 			justify-content: center;
 			width: 100%;
-
-			//&.strike {
-			//	text-decoration: line-through;
-			//	color: #cfcfcf;
-			//	span {
-			//		color: white;
-			//		opacity: 0.4;
-			//	}
-			//}
 		}
-
-		//button {
-		//	padding: 1.2rem 0.8rem;
-		//	justify-content: space-between;
-		//	width: 100% !important;
-		//	font-weight: 600;
-		//	font-size: 1.1rem;
-		//	box-shadow:
-		//		rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset,
-		//		rgba(0, 0, 0, 0.2) 0px 6px 4px !important;
-		//	filter: drop-shadow(rgba(255, 255, 255, 0.3) 0px 0px 10px) !important;
-		//}
 
 		small {
 			font-size: 0.85rem;
 			color: gray;
 		}
+
+		@media screen and (max-width: 1400px) {
+			h3 {
+				font-size: 1.2rem !important;
+			}
+		}
+
+		@media screen and (max-width: 1200px) {
+			h3 {
+				font-size: 1.4rem !important;
+			}
+		}
 	}
+
+
+
 </style>

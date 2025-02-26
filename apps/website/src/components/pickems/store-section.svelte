@@ -29,7 +29,7 @@
 	{#snippet header()}
 		<div class="buttons">
 			{#if hasPass}
-				<Button href="https://pickems.tv" secondary>
+				<Button href="https://app.pickems.tv" secondary>
 					{#snippet icon()}
 						<ArrowSquareOut />
 					{/snippet}

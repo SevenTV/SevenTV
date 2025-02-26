@@ -60,7 +60,7 @@
 				</div>
 				<div class="buttons">
 					{#if hasPass}
-						<Button primary style="font-size: 1em;" href="https://pickems.tv">
+						<Button primary style="font-size: 1em;" href="https://app.pickems.tv">
 							{#snippet iconRight()}
 								<ArrowSquareOut />
 							{/snippet}
@@ -73,7 +73,7 @@
 							{/snippet}
 							Get the pass!
 						</Button>
-						<Button style="font-size: 1em;" href="https://pickems.tv">
+						<Button style="font-size: 1em;" href="https://app.pickems.tv">
 							{#snippet iconRight()}
 								<ArrowSquareOut />
 							{/snippet}

@@ -52,7 +52,7 @@
 		}
 		tabs.push({
 			name: "Pickems",
-			pathname: "https://pickems.tv/",
+			pathname: "https://app.pickems.tv/",
 			highlight: "var(--pickems)",
 			arrow: true,
 		});
