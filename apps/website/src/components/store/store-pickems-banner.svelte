@@ -94,8 +94,24 @@
 	}
 
 	@media screen and (max-width: 768px) {
-		.banner {
-			padding: 1rem;
+		.banner h2 {
+			font-size: 2rem;
+		}
+	}
+
+	@media screen and (max-width: 500px) {
+
+		.banner{
+			justify-content: center;
+			text-align: center;
+		}
+		.banner h1{
+			font-size: 1.3rem;
+			text-align: center;
+		}
+		.banner h2 {
+			font-size: 1.6rem;
+			text-align: center;
 		}
 	}
 </style>

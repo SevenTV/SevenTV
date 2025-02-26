@@ -104,7 +104,6 @@
 			-webkit-text-fill-color: transparent;
 			text-align: center;
 			width: 100%;
-			padding-left: 1rem;
 		}
 
 		.line {
@@ -129,5 +128,8 @@
 				font-size: 1.4rem !important;
 			}
 		}
+
 	}
+
+
 </style>

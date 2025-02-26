@@ -358,7 +358,11 @@
 			.buttons {
 				flex-direction: column !important;
 			}
+			.title{
+				font-size: 2rem;
+			}
 		}
+
 	}
 
 	@media screen and (max-width: 1600px) {
