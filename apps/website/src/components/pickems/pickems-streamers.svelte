@@ -331,21 +331,25 @@
 	@media screen and (max-width: 500px) {
 		.container {
 			flex-direction: column !important;
-			width: 24.2rem;
 		}
 		.left-panel {
 			width: 100% !important;
 			border-radius: 12px 12px 12px 12px !important;
+			text-align: center;
 		}
 		.right-panel {
 			width: 100% !important;
 			border-radius: 12px 12px 12px 12px !important;
 			margin-top: 1rem !important;
 		}
-
 		.streamer-grid {
 			grid-template-columns: repeat(1, 1fr) !important;
 			gap: 1rem !important;
+		}
+		.alt_head {
+			text-align: center;
+			width: 100%;
+			font-size: 1.3rem;
 		}
 	}
 </style>

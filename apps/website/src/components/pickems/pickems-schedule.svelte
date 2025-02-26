@@ -89,19 +89,29 @@
 				font-size: 2.5rem;
 				font-weight: bold;
 			}
+
+			@media screen and (max-width: 1200px) {
+				h1 {
+					font-size: 2rem;
+				}
+			}
 		}
 
 		.schedule-grid {
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+			display: flex;
+			/*grid-template-columns: repeat(auto-fit, minmax(350px, 3fr));*/
+			flex-direction: row;
 			gap: 1.5rem;
+			justify-content: space-between;
 			width: 100%;
 
 			.match-card {
 				background: rgba(235, 219, 255, 0.11);
 				border-radius: 8px;
 				border: 1px solid #413c47;
-				padding: 1rem;
+				padding: 0;
+				overflow: hidden;
+				width: 100%;
 
 				.match-header {
 					padding: 1rem;
@@ -122,9 +132,29 @@
 						display: flex;
 						justify-content: space-between;
 						color: #ccc;
+						flex-direction: row;
+					}
+
+					.match-row span:first-child {
+						font-weight: bold;
+					}
+
+					@media screen and (max-width: 500px) {
+						.match-row {
+							flex-direction: column !important;
+						}
+
 					}
 				}
 			}
 		}
+
+		@media screen and (max-width: 1600px) {
+			.schedule-grid {
+				flex-direction: column;
+				width: 100%;
+			}
+		}
 	}
+
 </style>
