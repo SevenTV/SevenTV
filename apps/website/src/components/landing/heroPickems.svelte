@@ -72,7 +72,7 @@
 		{/if}
 		<div class="hero-content centered">
 			<div class="top-info hide-on-mobile">
-				<p>16 STREAMERS</p>
+				<p>17 STREAMERS</p>
 				<Minus />
 				<p>7TV HOSTED TOURNAMENT</p>
 				<Minus />
@@ -84,7 +84,7 @@
 					<h1>Win Badges & Paints.</h1>
 				</div>
 				<div class="description">
-					<p>xQc, OhnePixel, JasonTheWeen and 13 other streamers go head to head</p>
+					<p>xQc, OhnePixel, JasonTheWeen and 14 other streamers go head to head</p>
 					<p>in a 3-day Single Elimination 7TV Hosted CS2 tournament.</p>
 				</div>
 			</div>
