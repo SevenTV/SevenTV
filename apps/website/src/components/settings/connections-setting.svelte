@@ -46,7 +46,7 @@
 	];
 
 	function linkUrl(platform: string) {
-		return `${PUBLIC_REST_API_V4}/auth/link?platform=${platform}`;
+		return `${PUBLIC_REST_API_V4}/auth/link?platform=${platform}&return_to=/settings`;
 	}
 
 	let removeLoading = $state();

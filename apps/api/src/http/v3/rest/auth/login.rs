@@ -30,6 +30,8 @@ const GOOGLE_AUTH_URL: &str =
 	"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&include_granted_scopes=true&";
 const GOOGLE_AUTH_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonly";
 
+const KICK_AUTH_URL: &str = "https://id.kick.com/oauth/authorize?";
+const KICK_AUTH_SCOPE: &str = "user:read";
 fn redirect_uri(global: &Arc<Global>, platform: impl Display) -> Result<url::Url, ApiError> {
 	global
 		.config
@@ -220,8 +222,14 @@ pub async fn handle_callback(
 	let platform = Platform::from(query.platform);
 
 	// exchange code for access token
-	let token =
-		connections::exchange_code(global, platform, &code, redirect_uri(global, query.platform)?.to_string()).await?;
+	let token = connections::exchange_code(
+		global,
+		platform,
+		&code,
+		redirect_uri(global, query.platform)?.to_string(),
+		None,
+	)
+	.await?;
 
 	// query user data from platform
 	let user_data = &connections::get_user_data(global, platform, &token.access_token).await?;
@@ -370,6 +378,9 @@ pub fn handle_login(
 		}
 		Platform::Google if global.config.connections.google.enabled => {
 			(GOOGLE_AUTH_URL, GOOGLE_AUTH_SCOPE, &global.config.connections.google)
+		}
+		Platform::Kick if global.config.connections.kick.enabled => {
+			(KICK_AUTH_URL, KICK_AUTH_SCOPE, &global.config.connections.kick)
 		}
 		_ => {
 			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "unsupported platform"));
