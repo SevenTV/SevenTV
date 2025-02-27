@@ -10,7 +10,7 @@ use shared::database::product::{
 };
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
-use shared::database::user::UserId;
+use shared::database::user::{FullUser, UserId};
 use shared::database::{Id, MongoCollection};
 
 use crate::global::Global;
@@ -607,10 +607,11 @@ impl BillingMutation {
 		let is_gift = self.user_id != user_id;
 
 		let authed_user = session.user()?;
-		let recipient = if is_gift {
+
+		let recipient: &FullUser = if is_gift {
 			authed_user
 		} else {
-			global
+			&global
 				.user_loader
 				.load(global, self.user_id)
 				.await
@@ -618,7 +619,7 @@ impl BillingMutation {
 					tracing::error!("failed to load user");
 					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user")
 				})?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"));
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?
 		};
 
 		if !authed_user.has(UserPermission::Billing) {
