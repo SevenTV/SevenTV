@@ -4,18 +4,17 @@
 	import Button from "../input/button.svelte";
 	import { priceFormat } from "$/lib/utils";
 	import { purchasePickems } from "$/lib/pickems";
+	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 	import GiftPickemsDialog from "../dialogs/gift-pickems-dialog.svelte";
-	// import { isSubscribed } from "$/lib/auth";
+	import { isSubscribed } from "$/lib/auth";
 
 	let {
 		variant,
 		title,
-		myStoreData,
 		gift,
 	}: {
 		variant?: SubscriptionProductVariant;
 		title: string;
-		myStoreData?: boolean;
 		gift?: boolean;
 	} = $props();
 
@@ -24,7 +23,7 @@
 	);
 	// let discounted = $derived(priceFormat("EUR").format((300 + (variant?.price.amount ?? 0)) / 100));
 	let recurring = $derived(priceFormat("EUR").format((variant?.price.amount ?? 0) / 100));
-	let disabled = $derived(myStoreData);
+	let disabled = $derived(!!$isSubscribed);
 
 	let giftDialog: DialogMode = $state("hidden");
 </script>
@@ -43,7 +42,7 @@
 	<Button
 		primary
 		style="width: 70%; justify-content: space-between; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, rgba(0, 0, 0, 0.2) 0px 6px 4px; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));	@media screen and (max-width: 960px) width: unset;"
-		disabled={myStoreData}
+		{disabled}
 		onclick={() => (gift ? (giftDialog = "shown") : purchasePickems(variant?.id))}
 	>
 		{#snippet iconRight()}
@@ -52,7 +51,7 @@
 
 		{#if gift}
 			Gift Pass
-		{:else if !myStoreData}
+		{:else if !disabled}
 			{#if variant}
 				Purchase Bundle
 			{:else}
