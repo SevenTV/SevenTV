@@ -609,8 +609,6 @@ impl BillingMutation {
 		let authed_user = session.user()?;
 
 		let recipient: &FullUser = if is_gift {
-			authed_user
-		} else {
 			&global
 				.user_loader
 				.load(global, self.user_id)
@@ -620,6 +618,8 @@ impl BillingMutation {
 					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user")
 				})?
 				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?
+		} else {
+			authed_user
 		};
 
 		if !authed_user.has(UserPermission::Billing) {
