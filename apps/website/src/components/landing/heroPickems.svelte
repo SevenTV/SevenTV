@@ -74,7 +74,7 @@
 			<div class="top-info hide-on-mobile">
 				<p>16 STREAMERS</p>
 				<Minus />
-				<p>CS2 HOSTED TOURNAMENT</p>
+				<p>7TV HOSTED TOURNAMENT</p>
 				<Minus />
 				<p>3 DAY EVENT</p>
 			</div>
