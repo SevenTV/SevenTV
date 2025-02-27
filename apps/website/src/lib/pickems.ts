@@ -1,11 +1,14 @@
-
 import { user } from "$/lib/auth";
 import { gqlClient } from "$/lib/gql";
 import { graphql } from "$/gql";
 import { get } from "svelte/store";
 import { signInDialogMode, signInDialogPayload } from "./layout";
 import type { GetPickemsCosmeticsQuery, Paint, User } from "$/gql/graphql";
-export async function purchasePickems(variantId?: string, waitForUser = false) {
+export async function purchasePickems(
+	variantId?: string,
+	recipientId?: string,
+	waitForUser = false,
+) {
 	let $user: User | null | undefined;
 	if (!waitForUser) {
 		$user = get(user);
@@ -13,24 +16,23 @@ export async function purchasePickems(variantId?: string, waitForUser = false) {
 		$user = await new Promise<User | undefined>((res) => {
 			const unsub = user.subscribe((u) => {
 				if (!u) return;
-				unsub()
-				res(u)
-			})
+				unsub();
+				res(u);
+			});
 		});
 	}
 
-	console.log($user, waitForUser);
 	if (!$user) {
 		// needs to be not undefined as to be JSON.stringable
-		signInDialogPayload.set({ pickems: variantId });
-		signInDialogMode.set("shown")
+		signInDialogPayload.set({ pickems: `${variantId},${recipientId}` });
+		signInDialogMode.set("shown");
 		return new Promise<void>((res) => {
 			const unsub = signInDialogMode.subscribe((v) => {
 				if (v !== "hidden") return;
-				unsub()
-				res()
-			}, res)
-		})
+				unsub();
+				res();
+			}, res);
+		});
 	}
 
 	// FIX update this for live
@@ -39,19 +41,19 @@ export async function purchasePickems(variantId?: string, waitForUser = false) {
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-					mutation PurchasePickems(
-						$userId: Id!
-						$pickemsId: Id!
-						$subscriptionPriceId: StripeProductId
-					) {
-						billing(userId: $userId) {
-							getPickems(pickemsId: $pickemsId, subscriptionPriceId: $subscriptionPriceId) {
-								checkoutUrl
-							}
+				mutation PurchasePickems(
+					$userId: Id!
+					$pickemsId: Id!
+					$subscriptionPriceId: StripeProductId
+				) {
+					billing(userId: $userId) {
+						getPickems(pickemsId: $pickemsId, subscriptionPriceId: $subscriptionPriceId) {
+							checkoutUrl
 						}
 					}
-				`),
-			{ userId: $user.id, pickemsId, subscriptionPriceId: variantId },
+				}
+			`),
+			{ userId: recipientId ?? $user.id, pickemsId, subscriptionPriceId: variantId },
 		)
 		.toPromise();
 
@@ -59,7 +61,6 @@ export async function purchasePickems(variantId?: string, waitForUser = false) {
 		window.location.href = res.data.billing.getPickems.checkoutUrl;
 	}
 }
-
 
 const badgeIds = new Set([
 	"01JJQEA3655687JWHG7P9CV3W8",
@@ -74,90 +75,90 @@ export async function queryPickemsCosmetics() {
 	const res = await gqlClient()
 		.query(
 			graphql(`
-					query GetPickemsCosmetics {
+				query GetPickemsCosmetics {
+					badges {
 						badges {
-							badges {
+							__typename
+							id
+							name
+							description
+							tags
+							images {
 								__typename
-								id
-								name
-								description
-								tags
-								images {
-									__typename
-									url
-									mime
-									size
-									scale
-									width
-									height
-									frameCount
-								}
-								createdById
-								updatedAt
-								searchUpdatedAt
+								url
+								mime
+								size
+								scale
+								width
+								height
+								frameCount
 							}
+							createdById
+							updatedAt
+							searchUpdatedAt
 						}
+					}
+					paints {
 						paints {
-							paints {
-								id
-								name
-								data {
-									layers {
-										id
-										ty {
-											__typename
-											... on PaintLayerTypeSingleColor {
+							id
+							name
+							data {
+								layers {
+									id
+									ty {
+										__typename
+										... on PaintLayerTypeSingleColor {
+											color {
+												hex
+											}
+										}
+										... on PaintLayerTypeLinearGradient {
+											angle
+											repeating
+											stops {
+												at
 												color {
 													hex
 												}
 											}
-											... on PaintLayerTypeLinearGradient {
-												angle
-												repeating
-												stops {
-													at
-													color {
-														hex
-													}
+										}
+										... on PaintLayerTypeRadialGradient {
+											repeating
+											stops {
+												at
+												color {
+													hex
 												}
 											}
-											... on PaintLayerTypeRadialGradient {
-												repeating
-												stops {
-													at
-													color {
-														hex
-													}
-												}
-												shape
-											}
-											... on PaintLayerTypeImage {
-												images {
-													url
-													mime
-													size
-													scale
-													width
-													height
-													frameCount
-												}
+											shape
+										}
+										... on PaintLayerTypeImage {
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												height
+												frameCount
 											}
 										}
-										opacity
 									}
-									shadows {
-										color {
-											hex
-										}
-										offsetX
-										offsetY
-										blur
+									opacity
+								}
+								shadows {
+									color {
+										hex
 									}
+									offsetX
+									offsetY
+									blur
 								}
 							}
 						}
 					}
-				`),
+				}
+			`),
 			{},
 		)
 		.toPromise();

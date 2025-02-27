@@ -604,14 +604,15 @@ impl BillingMutation {
 			.user_id()
 			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
 
-		let user = session.user()?;
-
-		if self.user_id != user_id {
-			return Err(ApiError::bad_request(
-				ApiErrorCode::BadRequest,
-				"You can only get the pickems pass for yourself",
-			));
-		}
+		let user = global
+			.user_loader
+			.load(&global, user_id)
+			.await
+			.map_err(|_| {
+				tracing::error!("failed to load user");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user")
+			})?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
 
 		let authed_user = session.user()?;
 
@@ -619,6 +620,15 @@ impl BillingMutation {
 			return Err(ApiError::forbidden(
 				ApiErrorCode::LackingPrivileges,
 				"this user isn't allowed to use billing features",
+			));
+		}
+
+		let is_gift = self.user_id != user_id;
+
+		if is_gift && subscription_price_id.is_some() {
+			return Err(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
+				"gift can only contain the pass, not a subscription",
 			));
 		}
 
@@ -731,6 +741,20 @@ impl BillingMutation {
 				enabled: true,
 				invoice_data: None,
 			});
+
+			if is_gift {
+				params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
+					description: Some(format!(
+						"Gifting Pick'ems Pass for {} (7TV:{})",
+						user.connections
+							.first()
+							.map(|c| { format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id) })
+							.unwrap_or_else(|| "Unknown User".to_owned()),
+						user.id
+					)),
+					..Default::default()
+				});
+			}
 		}
 
 		// Create the pickems product line
@@ -754,7 +778,7 @@ impl BillingMutation {
 		//Metadata that the webhook listener will user to apply the product to the user
 		params.metadata = Some(
 			CheckoutSessionMetadata::Pickems {
-				user_id,
+				user_id: user.id,
 				product_id: pickems_id,
 			}
 			.to_stripe(),

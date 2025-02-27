@@ -249,13 +249,13 @@
 			{:else}
 				<PickemsStreamers hasPass={true} />
 			{/if}
-			{#if !hasPass}
-				<div class="container" id="PickemsPricing">
-					<h1 class="title">7TV Pick’ems Pass</h1>
-					<p class="description">
-						<span class="dashed-line"></span>
-					</p>
-					<div class="buttons">
+			<div class="container" id="PickemsPricing">
+				<h1 class="title">7TV Pick’ems Pass</h1>
+				<p class="description">
+					<span class="dashed-line"></span>
+				</p>
+				<div class="buttons">
+					{#if !hasPass}
 						<PickemsPurchaseButton title="PICKEMS PASS ONLY" />
 						{#each storeData?.products.subscriptionProduct?.variants ?? [] as variant}
 							<PickemsPurchaseButton
@@ -264,9 +264,11 @@
 								myStoreData={!!myStoreData?.users.user?.billing.subscriptionInfo.activePeriod}
 							/>
 						{/each}
-					</div>
+					{:else}
+						<PickemsPurchaseButton title="GIFT PASS" gift />
+					{/if}
 				</div>
-			{/if}
+			</div>
 			<PickemsSchedule />
 		</div>
 	</div>
@@ -357,12 +359,12 @@
 		@media screen and (max-width: 1200px) {
 			.buttons {
 				flex-direction: column !important;
+				align-items: center;
 			}
-			.title{
+			.title {
 				font-size: 2rem;
 			}
 		}
-
 	}
 
 	@media screen and (max-width: 1600px) {
