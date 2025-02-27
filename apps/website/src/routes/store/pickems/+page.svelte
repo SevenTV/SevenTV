@@ -67,7 +67,7 @@
 	{#if data.success}
 		<div class="bar">
 			<Info />
-			Pickems pass successfully purchased
+			Pick'ems Pass successfully purchased!
 		</div>
 	{/if}
 	{#if hasPass}

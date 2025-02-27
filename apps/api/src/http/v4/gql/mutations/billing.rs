@@ -604,17 +604,22 @@ impl BillingMutation {
 			.user_id()
 			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
 
-		let user = global
-			.user_loader
-			.load(&global, user_id)
-			.await
-			.map_err(|_| {
-				tracing::error!("failed to load user");
-				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user")
-			})?
-			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+		let is_gift = self.user_id != user_id;
 
 		let authed_user = session.user()?;
+		let recipient = if is_gift {
+			authed_user
+		} else {
+			global
+				.user_loader
+				.load(global, self.user_id)
+				.await
+				.map_err(|_| {
+					tracing::error!("failed to load user");
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user")
+				})?
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"));
+		};
 
 		if !authed_user.has(UserPermission::Billing) {
 			return Err(ApiError::forbidden(
@@ -622,8 +627,6 @@ impl BillingMutation {
 				"this user isn't allowed to use billing features",
 			));
 		}
-
-		let is_gift = self.user_id != user_id;
 
 		if is_gift && subscription_price_id.is_some() {
 			return Err(ApiError::bad_request(
@@ -661,8 +664,14 @@ impl BillingMutation {
 			}
 		};
 
-		let success_url = global.config.api.website_origin.join("/store?pickems=1").unwrap().to_string();
-		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
+		let success_url = global
+			.config
+			.api
+			.website_origin
+			.join("/store/pickems?success=1")
+			.unwrap()
+			.to_string();
+		let cancel_url = global.config.api.website_origin.join("/store/pickems").unwrap().to_string();
 
 		// Create the checkout session params
 		let mut line_items: Vec<stripe::CreateCheckoutSessionLineItems> = vec![];
@@ -695,7 +704,7 @@ impl BillingMutation {
 			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "pickems product not found"))?;
 
 		// Product can only be bought if not owned
-		if user.computed.entitlements.products.contains(&pickems_product.id) {
+		if recipient.computed.entitlements.products.contains(&pickems_product.id) {
 			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "product already owned"));
 		}
 
@@ -746,11 +755,12 @@ impl BillingMutation {
 				params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
 					description: Some(format!(
 						"Gifting Pick'ems Pass for {} (7TV:{})",
-						user.connections
+						recipient
+							.connections
 							.first()
 							.map(|c| { format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id) })
 							.unwrap_or_else(|| "Unknown User".to_owned()),
-						user.id
+						recipient.id
 					)),
 					..Default::default()
 				});
@@ -778,7 +788,7 @@ impl BillingMutation {
 		//Metadata that the webhook listener will user to apply the product to the user
 		params.metadata = Some(
 			CheckoutSessionMetadata::Pickems {
-				user_id: user.id,
+				user_id: recipient.id,
 				product_id: pickems_id,
 			}
 			.to_stripe(),
