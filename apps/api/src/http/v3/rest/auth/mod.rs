@@ -40,7 +40,6 @@ pub enum LoginRequestPlatform {
 	Twitch,
 	Discord,
 	Youtube,
-	Kick,
 }
 
 impl From<LoginRequestPlatform> for Platform {
@@ -49,7 +48,6 @@ impl From<LoginRequestPlatform> for Platform {
 			LoginRequestPlatform::Twitch => Platform::Twitch,
 			LoginRequestPlatform::Discord => Platform::Discord,
 			LoginRequestPlatform::Youtube => Platform::Google,
-			LoginRequestPlatform::Kick => Platform::Kick,
 		}
 	}
 }
@@ -60,7 +58,6 @@ impl Display for LoginRequestPlatform {
 			LoginRequestPlatform::Twitch => write!(f, "twitch"),
 			LoginRequestPlatform::Discord => write!(f, "discord"),
 			LoginRequestPlatform::Youtube => write!(f, "youtube"),
-			LoginRequestPlatform::Kick => write!(f, "kick"),
 		}
 	}
 }

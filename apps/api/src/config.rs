@@ -71,8 +71,6 @@ pub struct ConnectionsConfig {
 	pub discord: ConnectionConfig,
 	/// Google connection
 	pub google: ConnectionConfig,
-	/// Google connection
-	pub kick: ConnectionConfig,
 }
 
 #[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
