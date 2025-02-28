@@ -10,7 +10,6 @@
 	import renyanProfile from "$assets/renyan.png?url";
 	import omieProfile from "$assets/omie.png?url";
 	import arrowCSProfile from "$assets/arrowcs.png?url";
-	import anomalyProfile from "$assets/anomaly.png?url";
 	import dimaWallhacksProfile from "$assets/dima_wallhacks.png?url";
 	import ohnePixelProfile from "$assets/ohnepixel.png?url";
 	import furiProfile from "$assets/furi.png?url";
@@ -18,6 +17,14 @@
 	import dizzyProfile from "$assets/dizzy.png?url";
 	import StewieProfile from "$assets/stewie2k.png?url";
 	import duwapProfile from "$assets/duwap.png?url";
+	import trilluxeProfile from "$assets/trilluxe.png?url";
+	import trainwreckProfile from "$assets/trainwreckstv.png?url";
+	import propernatorProfile from "$assets/propernator.png?url";
+	import andersProfile from "$assets/anders.png?url";
+	import moetvProfile from "$assets/m0e_tv.png?url";
+	import moxyProfile from "$assets/m0xyy.jpg?url";
+	import austinProfile from "$assets/austincs_.png?url";
+	import hyzacsProfile from "$assets/hyzacs.png?url";
 	import Button from "../input/button.svelte";
 
 	let { hasPass = $bindable() }: { hasPass: boolean } = $props();
@@ -91,6 +98,38 @@
 			name: "duwap",
 			profile: duwapProfile,
 		},
+		{
+			name: "TrilluXe",
+			profile: trilluxeProfile,
+		},
+		{
+			name: "trainwreckstv",
+			profile: trainwreckProfile,
+		},
+		{
+			name: "propernator",
+			profile: propernatorProfile,
+		},
+		{
+			name: "anders",
+			profile: andersProfile,
+		},
+		{
+			name: "m0e_tv",
+			profile: moetvProfile,
+		},
+		{
+			name: "m0xyy",
+			profile: moxyProfile,
+		},
+		{
+			name: "austincs_",
+			profile: austinProfile,
+		},
+		{
+			name: "hyzaCS",
+			profile: hyzacsProfile,
+		}
 	];
 </script>
 
