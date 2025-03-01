@@ -18,6 +18,17 @@
 	import dizzyProfile from "$assets/dizzy.png?url";
 	import StewieProfile from "$assets/stewie2k.png?url";
 	import duwapProfile from "$assets/duwap.png?url";
+	import jojodjProfile from "$assets/jojodj.png?url";
+	import tylert69Profile from "$assets/tylert69.png?url";
+	import segalsonProfile from "$assets/segalson.png?url";
+	import loagurtProfile from "$assets/loagurt.png?url";
+	import coachmaryyProfile from "$assets/coachmaryy.png?url";
+	import pol0Profile from "$assets/pol0.png?url";
+	import trucklover86Profile from "$assets/trucklover86.png?url";
+	import dathrixProfile from "$assets/dathrix.png?url";
+	import dementorcsgoProfile from "$assets/dementorcsgo.png?url";
+	import destroybladerProfile from "$assets/destroyblader.png?url";
+
 	import Button from "../input/button.svelte";
 
 	let { hasPass = $bindable() }: { hasPass: boolean } = $props();
@@ -94,6 +105,46 @@
 		{
 			name: "duwap",
 			profile: duwapProfile,
+		},
+		{
+			name: "jojodj",
+			profile: jojodjProfile,
+		},
+		{
+			name: "tylert69",
+			profile: tylert69Profile,
+		},
+		{
+			name: "segalson",
+			profile: segalsonProfile,
+		},
+		{
+			name: "loagurt",
+			profile: loagurtProfile,
+		},
+		{
+			name: "coachmaryy",
+			profile: coachmaryyProfile,
+		},
+		{
+			name: "pol0",
+			profile: pol0Profile,
+		},
+		{
+			name: "trucklover86",
+			profile: trucklover86Profile,
+		},
+		{
+			name: "dathrix",
+			profile: dathrixProfile,
+		},
+		{
+			name: "dementorcsgo",
+			profile: dementorcsgoProfile,
+		},
+		{
+			name: "destroyblader",
+			profile: destroybladerProfile,
 		},
 	];
 </script>
