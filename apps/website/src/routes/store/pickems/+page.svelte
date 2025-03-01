@@ -86,7 +86,6 @@
 	{/if}
 	<div class="top-grid">
 		<div class="subgrid">
-			<PickemsStreamers {hasPass} />
 			<div class="container" id="PickemsPricing">
 				<h1 class="title">7TV Pick’ems Pass</h1>
 				<p class="description">
@@ -103,6 +102,7 @@
 					{/if}
 				</div>
 			</div>
+			<PickemsStreamers {hasPass} />
 			<PickemsSchedule />
 		</div>
 	</div>
