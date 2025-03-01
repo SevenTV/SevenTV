@@ -19,7 +19,7 @@
 	import StewieProfile from "$assets/stewie2k.png?url";
 	import duwapProfile from "$assets/duwap.png?url";
 	import jojodjProfile from "$assets/jojodj.png?url";
-	import tylert69Profile from "$assets/tylert69.png?url";
+	import tylert69Profile from "$assets/tylert69_.png?url";
 	import segalsonProfile from "$assets/segalson.png?url";
 	import loagurtProfile from "$assets/loagurt.png?url";
 	import coachmaryyProfile from "$assets/coachmaryy.png?url";
@@ -111,7 +111,7 @@
 			profile: jojodjProfile,
 		},
 		{
-			name: "tylert69",
+			name: "tylert69_",
 			profile: tylert69Profile,
 		},
 		{
