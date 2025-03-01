@@ -1,17 +1,11 @@
 <script lang="ts">
 	import { graphql } from "$/gql";
-	import {
-		type Badge,
-		type MyStoreDataQuery,
-		type Paint,
-		type PickemsStoreDataQuery,
-	} from "$/gql/graphql";
+	import { type PickemsStoreDataQuery } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
-	import { ArrowSquareOut, Info, Minus } from "phosphor-svelte";
+	import { ArrowSquareOut, Info } from "phosphor-svelte";
 	import type { PageData } from "./$types";
 	import StoreSection from "$/components/store/store-section.svelte";
-	import { queryPickemsCosmetics } from "$/lib/pickems";
 	import PickemsPurchaseButton from "$/components/pickems/purchase-button.svelte";
 	import { user } from "$/lib/auth";
 	import Button from "$/components/input/button.svelte";
@@ -22,144 +16,6 @@
 	let { data }: { data: PageData } = $props();
 
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
-
-	async function queryMyStore(userId: string) {
-		let res = await gqlClient()
-			.query(
-				graphql(`
-					query PickemsMyStoreData($userId: Id!, $productId: Id!) {
-						users {
-							user(id: $userId) {
-								billing(productId: $productId) {
-									badgeProgress {
-										currentBadge {
-											id
-											name
-											description
-											images {
-												url
-												mime
-												size
-												scale
-												width
-												height
-												frameCount
-											}
-										}
-										nextBadge {
-											badge {
-												id
-												name
-												images {
-													url
-													mime
-													size
-													scale
-													width
-													height
-													frameCount
-												}
-											}
-											percentage
-											daysLeft
-										}
-									}
-									subscriptionInfo {
-										totalDays
-										endDate
-										activePeriod {
-											subscriptionProductVariant {
-												kind
-											}
-											subscription {
-												state
-											}
-											end
-											autoRenew
-											giftedBy {
-												id
-												mainConnection {
-													platformDisplayName
-												}
-												style {
-													activePaint {
-														id
-														name
-														data {
-															layers {
-																id
-																ty {
-																	__typename
-																	... on PaintLayerTypeSingleColor {
-																		color {
-																			hex
-																		}
-																	}
-																	... on PaintLayerTypeLinearGradient {
-																		angle
-																		repeating
-																		stops {
-																			at
-																			color {
-																				hex
-																			}
-																		}
-																	}
-																	... on PaintLayerTypeRadialGradient {
-																		repeating
-																		stops {
-																			at
-																			color {
-																				hex
-																			}
-																		}
-																		shape
-																	}
-																	... on PaintLayerTypeImage {
-																		images {
-																			url
-																			mime
-																			size
-																			scale
-																			width
-																			height
-																			frameCount
-																		}
-																	}
-																}
-																opacity
-															}
-															shadows {
-																color {
-																	hex
-																}
-																offsetX
-																offsetY
-																blur
-															}
-														}
-													}
-												}
-												highestRoleColor {
-													hex
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				`),
-				{
-					userId,
-					productId: PUBLIC_SUBSCRIPTION_PRODUCT_ID,
-				},
-			)
-			.toPromise();
-
-		return res.data;
-	}
 
 	async function queryStore() {
 		let res = await gqlClient()
@@ -192,24 +48,10 @@
 	}
 
 	let storeData = $state<PickemsStoreDataQuery>();
-	let myStoreData = $state<MyStoreDataQuery>();
-	let badges = $state<Badge[]>([]);
-	let paints = $state<Paint[]>([]);
 
 	$effect(() => {
 		queryStore().then((res) => {
 			storeData = res;
-		});
-
-		if ($user) {
-			queryMyStore($user.id).then((res) => {
-				myStoreData = res;
-			});
-		}
-
-		queryPickemsCosmetics().then((cosmetics) => {
-			badges = cosmetics.badges;
-			paints = cosmetics.paints;
 		});
 	});
 </script>
@@ -225,7 +67,7 @@
 	{#if data.success}
 		<div class="bar">
 			<Info />
-			Pickems pass successfully purchased
+			Pick'ems Pass successfully purchased!
 		</div>
 	{/if}
 	{#if hasPass}
@@ -244,29 +86,23 @@
 	{/if}
 	<div class="top-grid">
 		<div class="subgrid">
-			{#if !hasPass}
-				<div class="container" id="PickemsPricing">
-					<h1 class="title">7TV Pick’ems Pass</h1>
-					<p class="description">
-						<span class="dashed-line"></span>
-					</p>
-					<div class="buttons">
+			<div class="container" id="PickemsPricing">
+				<h1 class="title">7TV Pick’ems Pass</h1>
+				<p class="description">
+					<span class="dashed-line"></span>
+				</p>
+				<div class="buttons">
+					{#if !hasPass}
 						<PickemsPurchaseButton title="PICKEMS PASS ONLY" />
 						{#each storeData?.products.subscriptionProduct?.variants ?? [] as variant}
-							<PickemsPurchaseButton
-								title={`PASS + ${variant.kind} SUB`}
-								{variant}
-								myStoreData={!!myStoreData?.users.user?.billing.subscriptionInfo.activePeriod}
-							/>
+							<PickemsPurchaseButton title={`PASS + ${variant.kind} SUB`} {variant} />
 						{/each}
-					</div>
+					{:else}
+						<PickemsPurchaseButton title="GIFT PASS" gift />
+					{/if}
 				</div>
-			{/if}
-			{#if !hasPass}
-				<PickemsStreamers hasPass={false} />
-			{:else}
-				<PickemsStreamers hasPass={true} />
-			{/if}
+			</div>
+			<PickemsStreamers {hasPass} />
 			<PickemsSchedule />
 		</div>
 	</div>
@@ -357,6 +193,7 @@
 		@media screen and (max-width: 1200px) {
 			.buttons {
 				flex-direction: column !important;
+				align-items: center;
 			}
 			.title {
 				font-size: 2rem;

@@ -24,8 +24,12 @@
 			if (data.returnTo?.includes("?")) {
 				const params = new URLSearchParams(data.returnTo.slice(data.returnTo.indexOf("?")));
 				if (params.has("pickems")) {
-					const productId = params.get("pickems")!;
-					purchasePickems(productId === "undefined" ? undefined : productId, true);
+					const [productId, recipientId] = params.get("pickems")!.split(",");
+					purchasePickems(
+						productId === "undefined" ? undefined : productId,
+						recipientId === "undefined" ? undefined : recipientId,
+						true,
+					);
 				}
 			}
 

@@ -10,7 +10,7 @@ use shared::database::product::{
 };
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
-use shared::database::user::UserId;
+use shared::database::user::{FullUser, UserId};
 use shared::database::{Id, MongoCollection};
 
 use crate::global::Global;
@@ -604,21 +604,35 @@ impl BillingMutation {
 			.user_id()
 			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
 
-		let user = session.user()?;
-
-		if self.user_id != user_id {
-			return Err(ApiError::bad_request(
-				ApiErrorCode::BadRequest,
-				"You can only get the pickems pass for yourself",
-			));
-		}
+		let is_gift = self.user_id != user_id;
 
 		let authed_user = session.user()?;
+
+		let recipient: &FullUser = if is_gift {
+			&global
+				.user_loader
+				.load(global, self.user_id)
+				.await
+				.map_err(|_| {
+					tracing::error!("failed to load user");
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user")
+				})?
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?
+		} else {
+			authed_user
+		};
 
 		if !authed_user.has(UserPermission::Billing) {
 			return Err(ApiError::forbidden(
 				ApiErrorCode::LackingPrivileges,
 				"this user isn't allowed to use billing features",
+			));
+		}
+
+		if is_gift && subscription_price_id.is_some() {
+			return Err(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
+				"gift can only contain the pass, not a subscription",
 			));
 		}
 
@@ -651,8 +665,14 @@ impl BillingMutation {
 			}
 		};
 
-		let success_url = global.config.api.website_origin.join("/store?pickems=1").unwrap().to_string();
-		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
+		let success_url = global
+			.config
+			.api
+			.website_origin
+			.join("/store/pickems?success=1")
+			.unwrap()
+			.to_string();
+		let cancel_url = global.config.api.website_origin.join("/store/pickems").unwrap().to_string();
 
 		// Create the checkout session params
 		let mut line_items: Vec<stripe::CreateCheckoutSessionLineItems> = vec![];
@@ -685,7 +705,7 @@ impl BillingMutation {
 			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "pickems product not found"))?;
 
 		// Product can only be bought if not owned
-		if user.computed.entitlements.products.contains(&pickems_product.id) {
+		if recipient.computed.entitlements.products.contains(&pickems_product.id) {
 			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "product already owned"));
 		}
 
@@ -731,6 +751,21 @@ impl BillingMutation {
 				enabled: true,
 				invoice_data: None,
 			});
+
+			if is_gift {
+				params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
+					description: Some(format!(
+						"Gifting Pick'ems Pass for {} (7TV:{})",
+						recipient
+							.connections
+							.first()
+							.map(|c| { format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id) })
+							.unwrap_or_else(|| "Unknown User".to_owned()),
+						recipient.id
+					)),
+					..Default::default()
+				});
+			}
 		}
 
 		// Create the pickems product line
@@ -754,7 +789,7 @@ impl BillingMutation {
 		//Metadata that the webhook listener will user to apply the product to the user
 		params.metadata = Some(
 			CheckoutSessionMetadata::Pickems {
-				user_id,
+				user_id: recipient.id,
 				product_id: pickems_id,
 			}
 			.to_stripe(),

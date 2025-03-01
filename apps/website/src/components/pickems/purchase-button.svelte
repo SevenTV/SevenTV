@@ -4,22 +4,31 @@
 	import Button from "../input/button.svelte";
 	import { priceFormat } from "$/lib/utils";
 	import { purchasePickems } from "$/lib/pickems";
-	// import { isSubscribed } from "$/lib/auth";
+	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
+	import GiftPickemsDialog from "../dialogs/gift-pickems-dialog.svelte";
+	import { isSubscribed } from "$/lib/auth";
 
 	let {
 		variant,
 		title,
-		myStoreData,
-	}: { variant?: SubscriptionProductVariant; title: string; myStoreData?: boolean } = $props();
+		gift,
+	}: {
+		variant?: SubscriptionProductVariant;
+		title: string;
+		gift?: boolean;
+	} = $props();
 
 	let price = $derived(
 		priceFormat("EUR").format((499 + (variant?.price.amount ?? 0)) / 100 - 1.49),
 	);
 	// let discounted = $derived(priceFormat("EUR").format((300 + (variant?.price.amount ?? 0)) / 100));
 	let recurring = $derived(priceFormat("EUR").format((variant?.price.amount ?? 0) / 100));
-	let disabled = $derived(myStoreData);
+	let disabled = $derived(!!(variant && $isSubscribed));
+
+	let giftDialog: DialogMode = $state("hidden");
 </script>
 
+<GiftPickemsDialog bind:mode={giftDialog} />
 <div class="purchase-option" class:disabled id="PickemsPurchaseButton">
 	<h3>{title}</h3>
 	<hr class="hrDialog" />
@@ -33,13 +42,16 @@
 	<Button
 		primary
 		style="width: 70%; justify-content: space-between; box-shadow: rgba(127, 127, 127, 0.25) 2px 5px 4px 0px inset, rgba(0, 0, 0, 0.2) 0px 6px 4px; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));	@media screen and (max-width: 960px) width: unset;"
-		disabled={myStoreData}
-		onclick={() => purchasePickems(variant?.id)}
+		{disabled}
+		onclick={() => (gift ? (giftDialog = "shown") : purchasePickems(variant?.id))}
 	>
 		{#snippet iconRight()}
 			<ArrowRight />
 		{/snippet}
-		{#if !myStoreData}
+
+		{#if gift}
+			Gift Pass
+		{:else if !disabled}
 			{#if variant}
 				Purchase Bundle
 			{:else}
@@ -64,6 +76,7 @@
 		font-weight: normal;
 	}
 	.purchase-option {
+		max-width: 30rem;
 		flex-grow: 1;
 		display: flex;
 		flex-direction: column;
@@ -128,8 +141,5 @@
 				font-size: 1.4rem !important;
 			}
 		}
-
 	}
-
-
 </style>
