@@ -245,11 +245,6 @@
 	<div class="top-grid">
 		<div class="subgrid">
 			{#if !hasPass}
-				<PickemsStreamers hasPass={false} />
-			{:else}
-				<PickemsStreamers hasPass={true} />
-			{/if}
-			{#if !hasPass}
 				<div class="container" id="PickemsPricing">
 					<h1 class="title">7TV Pick’ems Pass</h1>
 					<p class="description">
@@ -266,6 +261,11 @@
 						{/each}
 					</div>
 				</div>
+			{/if}
+			{#if !hasPass}
+				<PickemsStreamers hasPass={false} />
+			{:else}
+				<PickemsStreamers hasPass={true} />
 			{/if}
 			<PickemsSchedule />
 		</div>
@@ -358,11 +358,10 @@
 			.buttons {
 				flex-direction: column !important;
 			}
-			.title{
+			.title {
 				font-size: 2rem;
 			}
 		}
-
 	}
 
 	@media screen and (max-width: 1600px) {
