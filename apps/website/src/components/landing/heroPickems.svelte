@@ -6,7 +6,7 @@
 	import { type Badge } from "$/gql/graphql";
 	import BadgeComponent from "../badge.svelte";
 	import HeroPepe from "$/components/pickems/hero-pepe.svelte";
-	import PickemsHeaderBench from "$assets/pickems_header_bench.png";
+	// import PickemsHeaderBench from "$assets/pickems_header_bench.png";
 
 	async function queryCosmetics() {
 		let res = await gqlClient()
@@ -95,7 +95,7 @@
 			</div>
 		</div>
 		<div class="header-image" style="margin-top: -2.5rem;">
-			<img src="{PickemsHeaderBench}" alt="Header Bench" />
+			<!-- <img src={PickemsHeaderBench} alt="Header Bench" /> -->
 		</div>
 	</section>
 </div>
@@ -269,7 +269,6 @@
 		.hero-content .content {
 			h1 {
 				font-size: 1.8rem;
-
 			}
 
 			p {

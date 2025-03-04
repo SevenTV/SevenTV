@@ -7,7 +7,7 @@
 	import moment from "moment";
 	import { user } from "$/lib/auth";
 	import { ArrowSquareOut, Ticket } from "phosphor-svelte";
-	import pickemsBanner from "$assets/pickems-banner.png?url";
+	// import pickemsBanner from "$assets/pickems-banner.png?url";
 
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
 </script>
@@ -82,7 +82,7 @@
 					{/if}
 				</div>
 			</div>
-			<img class="hero-image hide-on-mobile" src={pickemsBanner} alt="7TV" />
+			<!-- <img class="hero-image hide-on-mobile" src={pickemsBanner} alt="7TV" /> -->
 		</section>
 	{:else}
 		<section class="hero">
