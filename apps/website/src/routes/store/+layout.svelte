@@ -23,12 +23,12 @@
 					<Star weight="fill" />
 				{/snippet}
 			</TabLink>
-			<TabLink href="/store/pickems" title="Pickems Pass" big>
-				<Ticket />
-				{#snippet active()}
-					<Ticket weight="fill" />
-				{/snippet}
-			</TabLink>
+			<!-- <TabLink href="/store/pickems" title="Pickems Pass" big> -->
+			<!-- 	<Ticket /> -->
+			<!-- 	{#snippet active()} -->
+			<!-- 		<Ticket weight="fill" /> -->
+			<!-- 	{/snippet} -->
+			<!-- </TabLink> -->
 			<!--			<TabLink href="/store/paint-bundles" title={$t("common.paint_bundles")} big>-->
 			<!--				<PaintBrush />-->
 			<!--				{#snippet active()}-->

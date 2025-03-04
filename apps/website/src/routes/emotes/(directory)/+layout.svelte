@@ -12,7 +12,7 @@
 	import { t } from "svelte-i18n";
 	import { page } from "$app/stores";
 	import { type Page } from "@sveltejs/kit";
-	import PickemsHeader from "$/components/pickems/emotes-header.svelte";
+	// import PickemsHeader from "$/components/pickems/emotes-header.svelte";
 	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";
 	let { children }: { children: Snippet } = $props();
@@ -106,7 +106,7 @@
 	}
 </script>
 
-<PickemsHeader />
+<!-- <PickemsHeader /> -->
 <div class="side-bar-layout emotes-side-bar-layout">
 	<aside class="side-bar">
 		<h1>{$t("pages.directory.title")}</h1>

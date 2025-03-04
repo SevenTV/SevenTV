@@ -4,7 +4,7 @@
 	import Features from "$/components/landing/features.svelte";
 	import Footer from "$/components/landing/footer.svelte";
 	import Hero from "$/components/landing/hero.svelte";
-	import HeroPickems from "$/components/landing/heroPickems.svelte";
+	// import HeroPickems from "$/components/landing/heroPickems.svelte";
 	import { t } from "svelte-i18n";
 </script>
 
@@ -13,7 +13,7 @@
 </svelte:head>
 
 <div class="layout">
-	<HeroPickems />
+	<Hero />
 	<Download />
 	<Features />
 	<Developers />

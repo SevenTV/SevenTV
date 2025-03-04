@@ -370,7 +370,7 @@ td {
 @media screen and (max-width: 960px) {
 	.side-bar-layout {
 		padding: 0.5rem;
-		// overflow: auto;
+		overflow: auto;
 
 		flex-direction: column;
 		scrollbar-gutter: stable;

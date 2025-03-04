@@ -34,7 +34,7 @@
 		name: string;
 		pathname: string;
 		highlight: string;
-		arrow?: Boolean;
+		arrow?: boolean;
 	};
 
 	let tabs = $derived.by(() => {
@@ -50,12 +50,12 @@
 		) {
 			tabs.push({ name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" });
 		}
-		tabs.push({
-			name: "Pickems",
-			pathname: "https://app.pickems.tv/",
-			highlight: "var(--pickems)",
-			arrow: true,
-		});
+		// tabs.push({
+		// 	name: "Pickems",
+		// 	pathname: "https://app.pickems.tv/",
+		// 	highlight: "var(--pickems)",
+		// 	arrow: true,
+		// });
 		return tabs;
 	});
 </script>
