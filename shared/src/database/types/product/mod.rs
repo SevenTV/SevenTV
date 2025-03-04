@@ -154,7 +154,7 @@ macro_rules! stripe_type {
 	};
 }
 
-stripe_type!(ProductId, stripe::PriceId);
+stripe_type!(StripeProductId, stripe::PriceId);
 stripe_type!(StripeSubscriptionId, stripe::SubscriptionId);
 stripe_type!(InvoiceId, stripe::InvoiceId);
 stripe_type!(InvoiceLineItemId, stripe::InvoiceLineItemId);
@@ -176,6 +176,8 @@ pub struct TimePeriod {
 	pub end: chrono::DateTime<chrono::Utc>,
 }
 
+pub type ProductId = Id<Product>;
+
 /// A non-recurring product, e.g. a paint bundle
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, MongoCollection)]
 #[mongo(collection_name = "products")]
@@ -186,9 +188,11 @@ pub struct Product {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: ProductId,
+	pub provider_id: StripeProductId,
 	pub active: bool,
 	pub name: String,
 	pub description: Option<String>,
+	pub discount: Option<String>,
 	pub extends_subscription: Option<SubscriptionProductId>,
 	pub default_currency: stripe::Currency,
 	pub currency_prices: HashMap<stripe::Currency, i64>,
@@ -213,7 +217,7 @@ pub struct SubscriptionProduct {
 	#[mongo(id)]
 	#[serde(rename = "_id")]
 	pub id: SubscriptionProductId,
-	pub provider_id: stripe::ProductId,
+	pub provider_id: StripeProductId,
 	pub variants: Vec<SubscriptionProductVariant>,
 	pub default_variant_idx: i32,
 	pub name: String,
@@ -228,7 +232,7 @@ pub struct SubscriptionProduct {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SubscriptionProductVariant {
-	pub id: ProductId,
+	pub id: StripeProductId,
 	pub paypal_id: Option<String>,
 	pub active: bool,
 	pub kind: SubscriptionProductKind,

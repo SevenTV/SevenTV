@@ -21,6 +21,11 @@ declare global {
 	interface Window {
 		EVENT_API_WORKER: SharedWorker;
 		EVENT_API_CALLBACKS: Map<string, (pl: DispatchPayload) => void>;
+
+		// For google analytics
+		dataLayer: IArguments[];
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		gtag?: (...args: any[]) => void;
 	}
 }
 

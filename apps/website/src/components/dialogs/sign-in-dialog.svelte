@@ -9,14 +9,28 @@
 	import { PUBLIC_DISCORD_LINK, PUBLIC_REST_API_V4 } from "$env/static/public";
 	import { page } from "$app/stores";
 
-	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
+	let {
+		mode = $bindable("hidden"),
+		return_payload = $bindable(),
+	}: { mode: DialogMode; return_payload?: object } = $props();
 
-	function loginUrl(platform: string) {
-		if ($page.url.pathname === "/login") {
-			return `${PUBLIC_REST_API_V4}/auth/login?platform=${platform}`;
-		} else {
-			return `${PUBLIC_REST_API_V4}/auth/login?platform=${platform}&return_to=${encodeURIComponent($page.url.pathname)}`;
+	let loginUrl = $derived.by(() => {
+		let url = `${PUBLIC_REST_API_V4}/auth/login?platform={platform}`;
+		if ($page.url.pathname !== "/login") {
+			let return_to = $page.url.pathname;
+			if (return_payload) {
+				return_to += "?";
+				for (const [key, val] of Object.entries(return_payload)) {
+					return_to += `${key}=${val}`;
+				}
+			}
+			url += `&return_to=${return_to}`;
 		}
+		return url;
+	});
+
+	function withPlatform(platform: string) {
+		return loginUrl.replace("{platform}", platform);
 	}
 </script>
 
@@ -28,13 +42,13 @@
 			<span class="details">{$t("dialogs.sign_in.subtitle")}</span>
 		</div>
 		<div class="buttons">
-			<Button secondary big href={loginUrl("twitch")}>
+			<Button secondary big href={withPlatform("twitch")}>
 				{#snippet icon()}
 					<TwitchLogo />
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Twitch" } })}
 			</Button>
-			<Button secondary big href={loginUrl("discord")}>
+			<Button secondary big href={withPlatform("discord")}>
 				{#snippet icon()}
 					<DiscordLogo />
 				{/snippet}

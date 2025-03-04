@@ -9,6 +9,7 @@ export const showConstructionBar = writable(loadConstructionBarShown());
 export const uploadDialogMode = writable<DialogMode>("hidden");
 
 export const signInDialogMode = writable<DialogMode>("hidden");
+export const signInDialogPayload = writable<object | undefined>();
 
 export const defaultEmoteSetDialogMode = writable<DialogMode>("hidden");
 

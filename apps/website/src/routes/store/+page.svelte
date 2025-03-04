@@ -315,6 +315,7 @@
 			X-MAS 2024 EVENT: GIFT 1 SUB TO GET A SPECIAL BADGE
 		</div>
 	{/if}
+
 	{#if myStoreData}
 		{#if !myStoreData.users.user?.billing.subscriptionInfo.activePeriod}
 			<Benefits />

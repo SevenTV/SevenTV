@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use shared::database::product::{Product, ProductId, SubscriptionProduct, SubscriptionProductVariant};
+use shared::database::product::{Product, StripeProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
 use tracing::Instrument;
 
@@ -33,7 +33,7 @@ pub async fn updated(
 		))
 	})?;
 
-	let product_id: ProductId = price.id.into();
+	let product_id: StripeProductId = price.id.into();
 
 	let active = price.active == Some(true);
 
@@ -47,8 +47,7 @@ pub async fn updated(
 	tx.update(
 		filter::filter! {
 			Product {
-				#[query(rename = "_id")]
-				id: &product_id,
+				provider_id: &product_id,
 			}
 		},
 		update::update! {
@@ -103,7 +102,7 @@ pub async fn deleted(
 	// Prices can only be deleted if there are no payments associated with them.
 	// This means we can safely delete them from our data too.
 
-	let product_id: ProductId = price.id.into();
+	let product_id: StripeProductId = price.id.into();
 
 	tx.update(
 		filter::filter! {
@@ -134,8 +133,7 @@ pub async fn deleted(
 	tx.delete(
 		filter::filter! {
 			Product {
-				#[query(rename = "_id")]
-				id: &product_id,
+				provider_id: &product_id,
 			}
 		},
 		None,

@@ -1,7 +1,7 @@
 import { graphql } from "$/gql";
 import { UserEditorState, type User } from "$/gql/graphql";
 import { PUBLIC_REST_API_V4, PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
-import { get, writable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 import { gqlClient } from "./gql";
 import { browser } from "$app/environment";
 import { defaultEmoteSet } from "./defaultEmoteSet";
@@ -15,6 +15,7 @@ export const sessionToken = writable<string | null | undefined>(
 	browser ? window.localStorage.getItem(LOCALSTORAGE_KEY) : undefined,
 );
 export const user = writable<User | null | undefined>(undefined);
+export const isSubscribed = derived(user, ($user) => $user?.billing.subscriptionInfo.activePeriod)
 
 export function refreshUser() {
 	fetchMe().then((data) => user.set(data));
@@ -172,6 +173,13 @@ export async function fetchMe(): Promise<User | null> {
 										providerId {
 											provider
 										}
+									}
+								}
+							}
+							inventory {
+								products {
+									to {
+										productId
 									}
 								}
 							}
