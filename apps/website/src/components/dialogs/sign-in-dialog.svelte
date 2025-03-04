@@ -1,8 +1,9 @@
 <script lang="ts">
 	import Button from "../input/button.svelte";
-	import DiscordLogo from "../icons/discord-logo.svelte";
 	import Logo from "../icons/logo.svelte";
+	import DiscordLogo from "../icons/discord-logo.svelte";
 	import TwitchLogo from "../icons/twitch-logo.svelte";
+	import KickLogo from "../icons/kick-logo.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 	import { PUBLIC_DISCORD_LINK, PUBLIC_REST_API_V4 } from "$env/static/public";
@@ -53,6 +54,12 @@
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Discord" } })}
 			</Button>
+			<!-- <Button secondary big href={loginUrl("kick")}> -->
+			<!-- 	{#snippet icon()} -->
+			<!-- 		<KickLogo /> -->
+			<!-- 	{/snippet} -->
+			<!-- 	{$t("dialogs.sign_in.continue_with", { values: { platform: "Kick" } })} -->
+			<!-- </Button> -->
 			<!-- <Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=google">
 				<GoogleLogo />
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
