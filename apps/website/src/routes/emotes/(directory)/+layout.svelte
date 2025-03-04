@@ -151,12 +151,6 @@
 </div>
 
 <style lang="scss">
-	.emotes-side-bar-layout {
-		height: 85% !important;
-	}
-	.emotes-side-bar-layout-full {
-		height: 100% !important;
-	}
 	.filters {
 		display: flex;
 		flex-direction: column;
