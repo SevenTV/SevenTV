@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
-	import csMoneyIcon from "$assets/csmoneyiconpickems.png?url";
+	// import csMoneyIcon from "$assets/csmoneyiconpickems.png?url";
 
 	interface Props {
 		title: string;
@@ -17,7 +17,7 @@
 		<h1>{title}</h1>
 		<h2>{title2}</h2>
 	</span>
-	<img src={csMoneyIcon} alt="CS Money Icon" class="csmoney-banner-image" />
+	<!-- <img src={csMoneyIcon} alt="CS Money Icon" class="csmoney-banner-image" /> -->
 	{@render children?.()}
 </section>
 
@@ -112,12 +112,11 @@
 	}
 
 	@media screen and (max-width: 500px) {
-
-		.banner{
+		.banner {
 			justify-content: center;
 			text-align: center;
 		}
-		.banner h1{
+		.banner h1 {
 			font-size: 1.3rem;
 			text-align: center;
 		}
