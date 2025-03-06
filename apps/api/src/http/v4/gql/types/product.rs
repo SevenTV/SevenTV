@@ -4,13 +4,45 @@ use std::sync::Arc;
 
 use async_graphql::Context;
 use shared::database::product::special_event::SpecialEventId;
-use shared::database::product::{ProductId, SubscriptionBenefitId, SubscriptionProductId};
+use shared::database::product::{ProductId, StripeProductId, SubscriptionBenefitId, SubscriptionProductId};
 use shared::database::user::UserId;
 
 use super::User;
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::session::Session;
+
+#[derive(async_graphql::SimpleObject)]
+#[graphql(complex)]
+pub struct Product {
+	pub id: ProductId,
+	pub provider_id: String,
+	pub name: String,
+	pub description: Option<String>,
+	pub updated_at: chrono::DateTime<chrono::Utc>,
+	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[async_graphql::ComplexObject]
+impl Product {
+	#[tracing::instrument(skip_all, name = "Product::created_at")]
+	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
+		self.id.timestamp()
+	}
+}
+
+impl From<shared::database::product::Product> for Product {
+	fn from(value: shared::database::product::Product) -> Self {
+		Self {
+			id: value.id,
+			provider_id: value.provider_id.to_string(),
+			name: value.name,
+			description: value.description,
+			updated_at: value.updated_at,
+			search_updated_at: value.search_updated_at,
+		}
+	}
+}
 
 #[derive(async_graphql::SimpleObject)]
 #[graphql(complex)]
@@ -76,7 +108,7 @@ impl From<shared::database::product::SubscriptionProduct> for SubscriptionProduc
 #[derive(async_graphql::SimpleObject)]
 #[graphql(complex)]
 pub struct SubscriptionProductVariant {
-	pub id: ProductId,
+	pub id: StripeProductId,
 	pub paypal_id: Option<String>,
 	pub kind: SubscriptionProductKind,
 

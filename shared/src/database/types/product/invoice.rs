@@ -1,4 +1,4 @@
-use super::{CustomerId, InvoiceId, ProductId};
+use super::{CustomerId, InvoiceId, StripeProductId};
 use crate::database::types::MongoGenericCollection;
 use crate::database::user::UserId;
 use crate::database::MongoCollection;
@@ -20,7 +20,7 @@ pub struct Invoice {
 	#[serde(rename = "_id")]
 	pub id: InvoiceId,
 	/// These items will be the stripe line items for the invoice
-	pub items: Vec<ProductId>,
+	pub items: Vec<StripeProductId>,
 	/// customer id from stripe
 	pub customer_id: CustomerId,
 	/// User who the invoice is for

@@ -34,6 +34,7 @@ struct CreateBadgeData {
 #[derive(Debug, serde::Deserialize)]
 struct CreateBadgeMetadata {
 	name: String,
+	description: String,
 }
 
 async fn parse_multipart(mut multipart: Multipart) -> Result<CreateBadgeData, ApiError> {
@@ -167,7 +168,7 @@ pub async fn create_badge(
 				id: badge_id,
 				name: data.metadata.name,
 				image_set: ImageSet { input, outputs: vec![] },
-				description: None,
+				description: Some(data.metadata.description),
 				tags: vec![],
 				created_by_id: authed_user.id,
 				updated_at: chrono::Utc::now(),

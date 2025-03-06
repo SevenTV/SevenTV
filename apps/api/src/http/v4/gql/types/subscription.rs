@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::Context;
 use shared::database::product::codes::RedeemCodeId;
 use shared::database::product::subscription::{SubscriptionId, SubscriptionPeriodId};
-use shared::database::product::{InvoiceId, ProductId};
+use shared::database::product::{InvoiceId, StripeProductId};
 use shared::database::user::UserId;
 
 use super::User;
@@ -122,7 +122,7 @@ pub struct SubscriptionPeriod {
 	pub id: SubscriptionPeriodId,
 	pub subscription_id: SubscriptionId,
 	pub provider_id: Option<ProviderSubscriptionId>,
-	pub product_id: ProductId,
+	pub product_id: StripeProductId,
 	pub start: chrono::DateTime<chrono::Utc>,
 	pub end: chrono::DateTime<chrono::Utc>,
 	pub is_trial: bool,

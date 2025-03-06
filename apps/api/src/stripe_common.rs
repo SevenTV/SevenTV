@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use shared::database::product::CustomerId;
+use shared::database::product::{CustomerId, StripeProductId};
 use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId};
 use shared::database::MongoCollection;
@@ -31,7 +31,7 @@ impl std::fmt::Display for EgVaultMutexKey {
 
 pub enum CheckoutProduct {
 	Price(stripe::PriceId),
-	Gift(stripe::ProductId),
+	Gift(StripeProductId),
 }
 
 #[allow(clippy::too_many_arguments)]

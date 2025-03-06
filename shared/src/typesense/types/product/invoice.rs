@@ -1,7 +1,7 @@
 use chrono::Utc;
 
 use crate::database::product::invoice::InvoiceStatus;
-use crate::database::product::{CustomerId, InvoiceId, ProductId};
+use crate::database::product::{CustomerId, InvoiceId, StripeProductId};
 use crate::database::user::UserId;
 use crate::database::{self};
 use crate::typesense::types::{TypesenseCollection, TypesenseGenericCollection};
@@ -11,7 +11,7 @@ use crate::typesense::types::{TypesenseCollection, TypesenseGenericCollection};
 #[serde(deny_unknown_fields)]
 pub struct Invoice {
 	pub id: InvoiceId,
-	pub items: Vec<ProductId>,
+	pub items: Vec<StripeProductId>,
 	pub customer_id: CustomerId,
 	pub user_id: UserId,
 	pub paypal_payment_id: Option<String>,

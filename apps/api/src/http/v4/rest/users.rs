@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::extract::{DefaultBodyLimit, Path, State};
 use axum::response::IntoResponse;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use image_processor_proto::{ProcessImageResponse, ProcessImageResponseUploadInfo};
 use shared::database::image_set::{ImageSet, ImageSetInput};
@@ -19,10 +19,12 @@ use crate::http::middleware::session::Session;
 use crate::ratelimit::RateLimitRequest;
 
 pub fn routes() -> Router<Arc<Global>> {
-	Router::new().route(
-		"/:id/profile-picture",
-		post(upload_user_profile_picture).layer(DefaultBodyLimit::max(7 * 1024 * 1024)),
-	)
+	Router::new()
+		.route(
+			"/:id/profile-picture",
+			post(upload_user_profile_picture).layer(DefaultBodyLimit::max(7 * 1024 * 1024)),
+		)
+		.route("/:id/products", get(get_user_products))
 }
 
 #[derive(serde::Serialize)]
@@ -182,4 +184,20 @@ async fn upload_user_profile_picture(
 		}))
 	})
 	.await
+}
+
+#[tracing::instrument(skip_all, fields(id = ?id))]
+async fn get_user_products(
+	State(global): State<Arc<Global>>,
+	Path(id): Path<UserId>,
+) -> Result<impl IntoResponse, ApiError> {
+	let user = global
+		.user_loader
+		.load(&global, id)
+		.await
+		.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+		.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+
+	let owned_products: Vec<_> = user.computed.entitlements.products.into_iter().collect();
+	Ok(Json(owned_products))
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use shared::database::product::codes::RedeemCodeId;
-use shared::database::product::{ProductId, SubscriptionProductId};
+use shared::database::product::{ProductId, StripeProductId, SubscriptionProductId};
 use shared::database::user::UserId;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -21,14 +21,14 @@ pub enum InvoiceMetadata {
 		customer_id: UserId,
 		#[serde(default, skip_serializing_if = "Option::is_none")]
 		subscription_product_id: Option<SubscriptionProductId>,
-		product_id: ProductId,
+		product_id: StripeProductId,
 	},
 	BoughtPeriod {
 		user_id: UserId,
 		start: DateTime<Utc>,
 		end: DateTime<Utc>,
 		subscription_product_id: SubscriptionProductId,
-		product_id: ProductId,
+		product_id: StripeProductId,
 	},
 }
 
@@ -51,6 +51,7 @@ pub enum CheckoutSessionMetadata {
 	Subscription,
 	Gift,
 	Setup,
+	Pickems { user_id: UserId, product_id: ProductId },
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
