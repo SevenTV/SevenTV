@@ -34,7 +34,7 @@
 			linkUrl: linkUrl("kick"),
 			name: "Kick",
 			icon: kickLogo,
-			linkingEnabled: false,
+			linkingEnabled: true,
 		},
 		{
 			id: Platform.Google,

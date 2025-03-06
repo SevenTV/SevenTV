@@ -54,16 +54,21 @@
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Discord" } })}
 			</Button>
-			<!-- <Button secondary big href={loginUrl("kick")}> -->
-			<!-- 	{#snippet icon()} -->
-			<!-- 		<KickLogo /> -->
-			<!-- 	{/snippet} -->
-			<!-- 	{$t("dialogs.sign_in.continue_with", { values: { platform: "Kick" } })} -->
-			<!-- </Button> -->
+			<Button secondary big href={withPlatform("kick")}>
+				{#snippet icon()}
+					<KickLogo />
+				{/snippet}
+				{$t("dialogs.sign_in.continue_with", { values: { platform: "Kick" } })}
+			</Button>
 			<!-- <Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=google">
 				<GoogleLogo />
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
 			</Button> -->
+			<p class="trouble">
+				Already have a 7TV account and plan on linking a new connection? Sign in with your existing
+				connection and link the new one in the
+				<a href="/settings/account"> settings </a>.
+			</p>
 			<a class="trouble" href={PUBLIC_DISCORD_LINK}>
 				{$t("dialogs.sign_in.trouble")}
 			</a>
