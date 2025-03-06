@@ -5,6 +5,7 @@ mod emote;
 mod emote_set;
 mod entitlement_edge;
 mod jobs;
+mod product;
 mod redeem_code;
 mod special_event;
 mod ticket;
@@ -21,6 +22,7 @@ pub struct Mutation {
 	jobs: jobs::JobMutation,
 	redeem_codes: redeem_code::RedeemCodeMutation,
 	special_events: special_event::SpecialEventMutation,
+	product: product::ProductMutation,
 	tickets: ticket::TicketMutation,
 	users: user::UserMutation,
 	user_editors: user_editor::UserEditorMutation,

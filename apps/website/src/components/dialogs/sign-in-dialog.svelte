@@ -1,21 +1,36 @@
 <script lang="ts">
 	import Button from "../input/button.svelte";
-	import DiscordLogo from "../icons/discord-logo.svelte";
 	import Logo from "../icons/logo.svelte";
+	import DiscordLogo from "../icons/discord-logo.svelte";
 	import TwitchLogo from "../icons/twitch-logo.svelte";
+	import KickLogo from "../icons/kick-logo.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 	import { PUBLIC_DISCORD_LINK, PUBLIC_REST_API_V4 } from "$env/static/public";
 	import { page } from "$app/stores";
 
-	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
+	let {
+		mode = $bindable("hidden"),
+		return_payload = $bindable(),
+	}: { mode: DialogMode; return_payload?: object } = $props();
 
-	function loginUrl(platform: string) {
-		if ($page.url.pathname === "/login") {
-			return `${PUBLIC_REST_API_V4}/auth/login?platform=${platform}`;
-		} else {
-			return `${PUBLIC_REST_API_V4}/auth/login?platform=${platform}&return_to=${encodeURIComponent($page.url.pathname)}`;
+	let loginUrl = $derived.by(() => {
+		let url = `${PUBLIC_REST_API_V4}/auth/login?platform={platform}`;
+		if ($page.url.pathname !== "/login") {
+			let return_to = $page.url.pathname;
+			if (return_payload) {
+				return_to += "?";
+				for (const [key, val] of Object.entries(return_payload)) {
+					return_to += `${key}=${val}`;
+				}
+			}
+			url += `&return_to=${return_to}`;
 		}
+		return url;
+	});
+
+	function withPlatform(platform: string) {
+		return loginUrl.replace("{platform}", platform);
 	}
 </script>
 
@@ -27,22 +42,33 @@
 			<span class="details">{$t("dialogs.sign_in.subtitle")}</span>
 		</div>
 		<div class="buttons">
-			<Button secondary big href={loginUrl("twitch")}>
+			<Button secondary big href={withPlatform("twitch")}>
 				{#snippet icon()}
 					<TwitchLogo />
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Twitch" } })}
 			</Button>
-			<Button secondary big href={loginUrl("discord")}>
+			<Button secondary big href={withPlatform("discord")}>
 				{#snippet icon()}
 					<DiscordLogo />
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Discord" } })}
 			</Button>
+			<Button secondary big href={withPlatform("kick")}>
+				{#snippet icon()}
+					<KickLogo />
+				{/snippet}
+				{$t("dialogs.sign_in.continue_with", { values: { platform: "Kick" } })}
+			</Button>
 			<!-- <Button secondary big href="{PUBLIC_REST_API_V4}/auth/login?platform=google">
 				<GoogleLogo />
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
 			</Button> -->
+			<p class="trouble">
+				Already have a 7TV account and plan on linking a new connection? Sign in with your existing
+				connection and link the new one in the
+				<a href="/settings/account"> settings </a>.
+			</p>
 			<a class="trouble" href={PUBLIC_DISCORD_LINK}>
 				{$t("dialogs.sign_in.trouble")}
 			</a>

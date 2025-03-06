@@ -11,7 +11,7 @@ use shared::database::emote_set::{EmoteSet, EmoteSetId, EmoteSetKind};
 use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind, EntitlementEdgeManagedBy};
 use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::subscription::{Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState};
-use shared::database::product::{ProductId, SubscriptionBenefitCondition};
+use shared::database::product::{StripeProductId, SubscriptionBenefitCondition};
 use shared::database::queries::{filter, update};
 use shared::database::user::{User, UserId, UserStyle};
 use shared::database::MongoCollection;
@@ -472,6 +472,8 @@ async fn handle_xmas_2024_gift(global: &Arc<Global>, customer_id: UserId) -> Res
 	const XMAS_10_SUBS_ID: &str = "0193F0E3-828A-13C2-1E24-17CF874748DF";
 	const MINECRAFT_5_SUBS_ID: &str = "0193ef9e-ffa6-8c60-ceb6-279134b5b32a";
 	const MINECRAFT_10_SUBS_ID: &str = "0193ef9f-2ed9-2e29-48e2-ad78887dfab9";
+	const VALENTINE_1_SUB_ID: &str = "0195098d-54ff-5b5e-73fd-30fbcd44de60";
+	const VALENTINE_4_SUBS_ID: &str = "0195098d-faf3-71a4-1475-6abb76da23c6";
 
 	let events = [
 		Event {
@@ -502,6 +504,20 @@ async fn handle_xmas_2024_gift(global: &Arc<Global>, customer_id: UserId) -> Res
 				},
 			],
 		},
+		Event {
+			start: chrono::Utc.with_ymd_and_hms(2025, 2, 14, 0, 0, 0).unwrap(),
+			end: chrono::Utc.with_ymd_and_hms(2025, 2, 18, 6, 0, 0).unwrap(),
+			levels: vec![
+				Level {
+					event_id: SpecialEventId::from_str(VALENTINE_1_SUB_ID).unwrap(),
+					count: 1,
+				},
+				Level {
+					event_id: SpecialEventId::from_str(VALENTINE_4_SUBS_ID).unwrap(),
+					count: 4,
+				},
+			],
+		},
 	];
 
 	let gifted_subs = SubscriptionPeriod::collection(&global.db)
@@ -526,8 +542,8 @@ async fn handle_xmas_2024_gift(global: &Arc<Global>, customer_id: UserId) -> Res
 	const MONTH_SUB_PRODUCT_ID: &str = "price_1JWQ2QCHxsWbK3R31cZkaocV"; // = 1 gift
 	const YEAR_SUB_PRODUCT_ID: &str = "price_1JWQ2RCHxsWbK3R3a6emz76a"; // = 10 gifts
 
-	let month_product_id = ProductId::from(stripe::PriceId::from_str(MONTH_SUB_PRODUCT_ID).unwrap());
-	let year_product_id = ProductId::from(stripe::PriceId::from_str(YEAR_SUB_PRODUCT_ID).unwrap());
+	let month_product_id = StripeProductId::from_str(MONTH_SUB_PRODUCT_ID).unwrap();
+	let year_product_id = StripeProductId::from_str(YEAR_SUB_PRODUCT_ID).unwrap();
 
 	let mut xmas_gift = Xmas2024Gift {
 		adds: vec![],

@@ -4,6 +4,7 @@
 	import { sessionToken } from "$/lib/auth";
 	import { Check, X } from "phosphor-svelte";
 	import { goto } from "$app/navigation";
+	import { purchasePickems } from "$/lib/pickems";
 
 	let { data }: { data: PageData } = $props();
 
@@ -18,6 +19,17 @@
 					payload = JSON.parse(atob(splitToken[1]));
 				} catch (e) {
 					console.error(e);
+				}
+			}
+			if (data.returnTo?.includes("?")) {
+				const params = new URLSearchParams(data.returnTo.slice(data.returnTo.indexOf("?")));
+				if (params.has("pickems")) {
+					const [productId, recipientId] = params.get("pickems")!.split(",");
+					purchasePickems(
+						productId === "undefined" ? undefined : productId,
+						recipientId === "undefined" ? undefined : recipientId,
+						true,
+					);
 				}
 			}
 

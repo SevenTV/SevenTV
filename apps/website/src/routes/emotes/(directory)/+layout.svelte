@@ -12,9 +12,9 @@
 	import { t } from "svelte-i18n";
 	import { page } from "$app/stores";
 	import { type Page } from "@sveltejs/kit";
+	// import PickemsHeader from "$/components/pickems/emotes-header.svelte";
 	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";
-
 	let { children }: { children: Snippet } = $props();
 
 	let query: string | undefined = $state($page.url.searchParams.get("q") ?? undefined);
@@ -106,7 +106,8 @@
 	}
 </script>
 
-<div class="side-bar-layout">
+<!-- <PickemsHeader /> -->
+<div class="side-bar-layout emotes-side-bar-layout">
 	<aside class="side-bar">
 		<h1>{$t("pages.directory.title")}</h1>
 		<nav class="link-list">
@@ -143,6 +144,7 @@
 			</div>
 		</Expandable>
 	</aside>
+
 	<div class="content">
 		{@render children()}
 	</div>

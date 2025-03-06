@@ -11,6 +11,7 @@
 		showMobileMenu,
 		showConstructionBar,
 		signInDialogMode,
+		signInDialogPayload,
 		uploadDialogMode,
 		defaultEmoteSetDialogMode,
 	} from "$/lib/layout";
@@ -26,7 +27,6 @@
 	import { currentError, errorDialogMode } from "$/lib/error";
 	import { PUBLIC_DISCORD_LINK, PUBLIC_OLD_WEBSITE_LINK } from "$env/static/public";
 	import Button from "../components/input/button.svelte";
-
 	let { children }: { children: Snippet } = $props();
 
 	beforeNavigate((nav) => {
@@ -68,7 +68,7 @@
 	</header>
 
 	<UploadDialog bind:mode={$uploadDialogMode} />
-	<SignInDialog bind:mode={$signInDialogMode} />
+	<SignInDialog bind:mode={$signInDialogMode} bind:return_payload={$signInDialogPayload} />
 	<DefaultEmoteSetDialog bind:mode={$defaultEmoteSetDialogMode} />
 	<ErrorDialog bind:mode={$errorDialogMode} error={$currentError} />
 	<main id="main">

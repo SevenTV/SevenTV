@@ -30,9 +30,16 @@
 		mobileSearchShown = false;
 	});
 
+	type Tab = {
+		name: string;
+		pathname: string;
+		highlight: string;
+		arrow?: boolean;
+	};
+
 	let tabs = $derived.by(() => {
-		const tabs = [
-			{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes" },
+		const tabs: Tab[] = [
+			{ name: $t("common.emotes", { values: { count: 2 } }), pathname: "/emotes", highlight: "" },
 			{ name: $t("pages.store.title"), pathname: "/store", highlight: "var(--store)" },
 		];
 
@@ -43,7 +50,12 @@
 		) {
 			tabs.push({ name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" });
 		}
-
+		// tabs.push({
+		// 	name: "Pickems",
+		// 	pathname: "https://app.pickems.tv/",
+		// 	highlight: "var(--pickems)",
+		// 	arrow: true,
+		// });
 		return tabs;
 	});
 </script>

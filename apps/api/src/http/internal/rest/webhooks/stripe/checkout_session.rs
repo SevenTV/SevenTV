@@ -1,9 +1,11 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
 use shared::database::product::codes::RedeemCode;
 use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
 use shared::database::queries::{filter, update};
+use shared::database::MongoCollection;
 use tracing::Instrument;
 
 use crate::global::Global;
@@ -190,6 +192,23 @@ pub async fn completed(
 			grant_entitlements(global, &redeem_code, user_id)
 				.await
 				.map_err(TransactionError::Custom)?;
+		}
+		(_, CheckoutSessionMetadata::Pickems { user_id, product_id }) => {
+			EntitlementEdge::collection(&global.db)
+				.insert_one(EntitlementEdge {
+					id: EntitlementEdgeId {
+						from: EntitlementEdgeKind::User { user_id },
+						to: EntitlementEdgeKind::Product { product_id },
+						managed_by: None,
+					},
+				})
+				.await
+				.map_err(|_| {
+					TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::StripeError,
+						"unable to create entitlement edge",
+					))
+				})?;
 		}
 		_ => {}
 	}

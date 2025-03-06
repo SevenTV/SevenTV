@@ -6,7 +6,7 @@ use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
 use shared::database::product::{
-	InvoiceId, ProductId, SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant,
+	InvoiceId, StripeProductId, SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant,
 };
 use shared::database::queries::{filter, update};
 use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
@@ -20,7 +20,7 @@ use crate::paypal_api;
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
-fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Result<Vec<ProductId>, ApiError> {
+fn invoice_items(items: Option<&stripe::List<stripe::InvoiceLineItem>>) -> Result<Vec<StripeProductId>, ApiError> {
 	items
 		.ok_or_else(|| ApiError::bad_request(ApiErrorCode::StripeError, "invoice line items are missing"))?
 		.data
@@ -286,29 +286,14 @@ pub async fn paid(
 				.into_iter()
 				.collect::<Vec<_>>();
 
-			if items.len() != 1 {
-				tx.insert_one(
-					StripeError {
-						id: StripeErrorId::new(),
-						event_id,
-						error_kind: StripeErrorKind::SubscriptionInvoiceInvalidItems,
-					},
-					None,
-				)
-				.await?;
-
-				return Ok(vec![]);
-			}
-
-			let stripe_product_id = items.into_iter().next().unwrap();
-
 			let Some(product) = tx
 				.find_one(
 					filter::filter! {
 						SubscriptionProduct {
 							#[query(flatten)]
 							variants: SubscriptionProductVariant {
-								id: &stripe_product_id,
+								#[query(selector = "in")]
+								id: &items,
 							}
 						}
 					},
@@ -386,6 +371,10 @@ pub async fn paid(
 			})?;
 
 			let provider_id = ProviderSubscriptionId::from(stripe_sub.id);
+			let stripe_variant_id = match product.variants.iter().find(|v| items.contains(&v.id)) {
+				Some(variant) => variant.id.clone(),
+				None => product.provider_id,
+			};
 
 			tx.insert_one(
 				SubscriptionPeriod {
@@ -394,7 +383,7 @@ pub async fn paid(
 					provider_id: Some(provider_id),
 					start,
 					end,
-					product_id: stripe_product_id,
+					product_id: stripe_variant_id,
 					is_trial: stripe_sub.trial_end.is_some(),
 					auto_renew: !stripe_sub.cancel_at_period_end,
 					gifted_by: None,
@@ -517,6 +506,10 @@ pub async fn paid(
 
 			for period in current_periods {
 				if period.start > chrono::Utc::now() {
+					break;
+				}
+
+				if !period.auto_renew {
 					break;
 				}
 
