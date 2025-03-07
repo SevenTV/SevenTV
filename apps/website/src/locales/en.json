@@ -141,7 +141,9 @@
 	"file_limits": {
 		"max_size": "{size} max file size",
 		"max_resolution": "{width}x{height} max resolution",
-		"max_frames": "{count} max frames"
+		"max_frames": "{count} max frames",
+		"resolution_error": "Resolution must not exceed {width}x{height}",
+		"duration_error": "Duration must be {duration} seconds or less"
 	},
 	"dialogs": {
 		"sign_in": {
