@@ -73,6 +73,7 @@
 		"search_users": "{count, plural, one {Search a user} other {Search users}}",
 		"tags": "Tags",
 		"enter_tags": "Enter tags",
+		"tag_limit_reached": "Tag limit of {limit} reached",
 		"filters": "Filters",
 		"no_filters": "No Filters",
 		"emote_name": "Emote Name",
@@ -140,7 +141,9 @@
 	"file_limits": {
 		"max_size": "{size} max file size",
 		"max_resolution": "{width}x{height} max resolution",
-		"max_frames": "{count} max frames"
+		"max_frames": "{count} max frames",
+		"resolution_error": "Resolution must not exceed {width}x{height}",
+		"duration_error": "Duration must be {duration} seconds or less"
 	},
 	"dialogs": {
 		"sign_in": {
@@ -353,7 +356,7 @@
 				}
 			},
 			"editors": {
-				"details": "Manage and customize your editors or channels your edit for",
+				"details": "Manage and customize your editors or channels you edit for",
 				"editing_for": "Editing For",
 				"add_editor": "Add Editor"
 			},
