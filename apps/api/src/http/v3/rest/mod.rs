@@ -6,6 +6,7 @@ use crate::global::Global;
 
 pub mod auth;
 pub mod bridge;
+pub mod chatterino;
 pub mod config;
 pub mod emote_sets;
 pub mod emotes;
@@ -15,6 +16,7 @@ pub mod users;
 
 pub fn routes() -> Router<Arc<Global>> {
 	Router::new()
+		.nest("/chatterino", chatterino::routes())
 		.nest("/config", config::routes())
 		.nest("/auth", auth::routes())
 		.nest("/emotes", emotes::routes())

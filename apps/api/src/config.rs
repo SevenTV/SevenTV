@@ -48,6 +48,9 @@ pub struct Api {
 
 	/// IP Header config
 	pub incoming_request: IncomingRequestConfig,
+
+	/// Chatterino config
+	pub chatterino: ChatterinoConfig,
 }
 
 #[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
@@ -127,6 +130,18 @@ pub struct PayPalConfig {
 	/// PayPal webhook id
 	#[default("webhook_id".into())]
 	pub webhook_id: String,
+}
+
+#[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct ChatterinoConfig {
+	/// Current stable version (without the 'v' prefix)
+	#[default("7.5.3".into())]
+	pub stable_version: String,
+
+	/// Current beta version (without the 'v' prefix, [None] if there's no beta version)
+	#[default(None)]
+	pub beta_version: Option<String>,
 }
 
 #[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]

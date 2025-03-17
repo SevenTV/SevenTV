@@ -35,6 +35,7 @@ pub fn docs() -> utoipa::openapi::OpenApi {
 	docs.merge(docs::Docs::openapi());
 	docs.merge(gql::Docs::openapi());
 	docs.merge(rest::types::Docs::openapi());
+	docs.merge(rest::chatterino::Docs::openapi());
 	docs.merge(rest::config::Docs::openapi());
 	docs.merge(rest::auth::Docs::openapi());
 	docs.merge(rest::emotes::Docs::openapi());
