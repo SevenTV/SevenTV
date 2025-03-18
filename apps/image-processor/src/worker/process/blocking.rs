@@ -324,7 +324,7 @@ impl<'a> BlockingTask<'a> {
 		self.frame_idx += 1;
 
 		// Convert from the decode timescale into ms.
-		frame.duration_ts = (frame.duration_ts as f64 * 1000.0 / self.decoder_info.timescale as f64).round() as u64;
+		frame.duration_ts = (frame.duration_ts as f64 * 1000.0 / self.decoder_info.timescale.decimal_value()).round() as u64;
 
 		let variants = if idx == self.static_frame_idx {
 			let variants = self.resizer.resize(frame)?;
