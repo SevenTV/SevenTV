@@ -38,7 +38,7 @@ pub fn check_emote_alias(value: impl AsRef<str>) -> bool {
 	static REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
 
 	REGEX
-		.get_or_init(|| regex::Regex::new(r"^[^\x00-\x20\u{00A0}\u{180E}\u{2000}-\u{200A}\u{202F}\u{205F}\u{3000}\u{E0000}]{1,100}$").unwrap())
+		.get_or_init(|| regex::Regex::new(r"^[\w\-():!+|.'?><\p{Emoji_Presentation}*$#]{1,100}$").unwrap())
 		.is_match(value.as_ref())
 }
 
