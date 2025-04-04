@@ -45,7 +45,7 @@
 			tags.length < LIMIT &&
 			!tags.includes(sanitizedTagInput)
 		) {
-			tags = [sanitizedTagInput, ...tags];
+			tags = [...tags, sanitizedTagInput];
 			tagInput = "";
 		}
 	}
