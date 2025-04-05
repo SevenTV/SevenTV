@@ -8,8 +8,12 @@
 	import { emotesLayout } from "$/lib/layout";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import ActiveEmoteSetButton from "$/components/users/active-emote-set-button.svelte";
+	import TextInput from "$/components/input/text-input.svelte";
+	import { MagnifyingGlass } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	let { data }: { data: PageData } = $props();
+	let query: string = $state("");
 
 	function load(page: number, _perPage: number): Promise<EmoteSetEmoteSearchResult> {
 		return gqlClient()
@@ -169,6 +173,11 @@
 <div class="buttons">
 	<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} />
 	<div class="layout-buttons">
+		<TextInput placeholder={$t("labels.search")} bind:value={query}>
+			{#snippet icon()}
+				<MagnifyingGlass />
+			{/snippet}
+		</TextInput>
 		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
 </div>
