@@ -15,8 +15,8 @@
 	let { data }: { data: PageData } = $props();
 	let query: string = $state("");
 
-	function load(page: number, _perPage: number): Promise<EmoteSetEmoteSearchResult> {
-		return gqlClient()
+	async function load(page: number, _perPage: number): Promise<EmoteSetEmoteSearchResult> {
+		const res = await gqlClient()
 			.query(
 				graphql(`
 					query UserActiveEmotes(
@@ -149,24 +149,19 @@
 					defaultSetId: $defaultEmoteSet ?? "",
 				},
 			)
-			.toPromise()
-			.then((res) => {
-				if (res.error || !res.data) {
-					throw res.error;
-				}
-
-				const emotes = res.data.users.user?.style.activeEmoteSet?.emotes;
-
-				if (!emotes) {
-					return {
-						items: [],
-						totalCount: 0,
-						pageCount: 0,
-					};
-				}
-
-				return emotes as EmoteSetEmoteSearchResult;
-			});
+			.toPromise();
+		if (res.error || !res.data) {
+			throw res.error;
+		}
+		const emotes = res.data.users.user?.style.activeEmoteSet?.emotes;
+		if (!emotes) {
+			return {
+				items: [],
+				totalCount: 0,
+				pageCount: 0,
+			};
+		}
+		return emotes as EmoteSetEmoteSearchResult;
 	}
 </script>
 
