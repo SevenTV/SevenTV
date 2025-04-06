@@ -1,6 +1,5 @@
 <script lang="ts">
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
-	import { graphql } from "$/gql";
 	import type { PageData } from "./$types";
 	import type { EmoteSetEmoteSearchResult } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
@@ -11,157 +10,172 @@
 	import TextInput from "$/components/input/text-input.svelte";
 	import { MagnifyingGlass } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
+	import { gql } from "@urql/svelte";
 
 	let { data }: { data: PageData } = $props();
 	let query: string = $state("");
 
 	async function load(page: number, _perPage: number): Promise<EmoteSetEmoteSearchResult> {
-		const res = await gqlClient()
-			.query(
-				graphql(`
-					query UserActiveEmotes(
-						$id: Id!
-						$page: Int!
-						$isDefaultSetSet: Boolean!
-						$defaultSetId: Id!
-					) {
-						users {
-							user(id: $id) {
-								style {
-									activeEmoteSet {
-										emotes(page: $page, perPage: 100) {
-											__typename
-											items {
-												alias
-												flags {
-													zeroWidth
+		const search = query || undefined;
+
+		const variables = {
+			userId: data.id,
+			page: page,
+			query: search,
+			isDefaultSetSet: !!$defaultEmoteSet,
+			defaultSetId: $defaultEmoteSet ?? "",
+		};
+
+		const gql_query = gql`
+			query SearchEmotesInActiveSet(
+				$userId: Id!
+				$query: String
+				$page: Int!
+				$isDefaultSetSet: Boolean!
+				$defaultSetId: Id!
+			) {
+				users {
+					user(id: $userId) {
+						style {
+							activeEmoteSet {
+								id
+								emotes(query: $query, page: $page, perPage: 100) {
+									__typename
+									items {
+										alias
+										flags {
+											zeroWidth
+										}
+										emote {
+											id
+											defaultName
+											owner {
+												mainConnection {
+													platformDisplayName
 												}
-												emote {
-													id
-													defaultName
-													owner {
-														mainConnection {
-															platformDisplayName
-														}
-														style {
-															activePaint {
+												style {
+													activePaint {
+														id
+														name
+														data {
+															layers {
 																id
-																name
-																data {
-																	layers {
-																		id
-																		ty {
-																			__typename
-																			... on PaintLayerTypeSingleColor {
-																				color {
-																					hex
-																				}
-																			}
-																			... on PaintLayerTypeLinearGradient {
-																				angle
-																				repeating
-																				stops {
-																					at
-																					color {
-																						hex
-																					}
-																				}
-																			}
-																			... on PaintLayerTypeRadialGradient {
-																				repeating
-																				stops {
-																					at
-																					color {
-																						hex
-																					}
-																				}
-																				shape
-																			}
-																			... on PaintLayerTypeImage {
-																				images {
-																					url
-																					mime
-																					size
-																					scale
-																					width
-																					height
-																					frameCount
-																				}
-																			}
-																		}
-																		opacity
-																	}
-																	shadows {
+																ty {
+																	__typename
+																	... on PaintLayerTypeSingleColor {
 																		color {
 																			hex
 																		}
-																		offsetX
-																		offsetY
-																		blur
+																	}
+																	... on PaintLayerTypeLinearGradient {
+																		angle
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
+																		}
+																	}
+																	... on PaintLayerTypeRadialGradient {
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
+																		}
+																		shape
+																	}
+																	... on PaintLayerTypeImage {
+																		images {
+																			url
+																			mime
+																			size
+																			scale
+																			width
+																			height
+																			frameCount
+																		}
 																	}
 																}
+																opacity
 															}
-														}
-														highestRoleColor {
-															hex
-														}
-													}
-													flags {
-														# animated
-														# approvedPersonal
-														defaultZeroWidth
-														# deniedPersonal
-														# nsfw
-														private
-														publicListed
-													}
-													images {
-														url
-														mime
-														size
-														scale
-														width
-														frameCount
-													}
-													ranking(ranking: TRENDING_WEEKLY)
-													inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
-														emoteSetId
-														emote {
-															id
-															alias
+															shadows {
+																color {
+																	hex
+																}
+																offsetX
+																offsetY
+																blur
+															}
 														}
 													}
 												}
+												highestRoleColor {
+													hex
+												}
 											}
-											totalCount
-											pageCount
+											flags {
+												# animated
+												# approvedPersonal
+												defaultZeroWidth
+												# deniedPersonal
+												# nsfw
+												private
+												publicListed
+											}
+											images {
+												url
+												mime
+												size
+												scale
+												width
+												frameCount
+											}
+											ranking(ranking: TRENDING_WEEKLY)
+											inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
+												emoteSetId
+												emote {
+													id
+													alias
+												}
+											}
 										}
 									}
+									totalCount
+									pageCount
 								}
 							}
 						}
 					}
-				`),
-				{
-					id: data.id,
-					page,
-					isDefaultSetSet: !!$defaultEmoteSet,
-					defaultSetId: $defaultEmoteSet ?? "",
-				},
-			)
-			.toPromise();
-		if (res.error || !res.data) {
-			throw res.error;
-		}
-		const emotes = res.data.users.user?.style.activeEmoteSet?.emotes;
-		if (!emotes) {
+				}
+			}
+		`;
+
+		try {
+			const res = await gqlClient().query(gql_query, variables).toPromise();
+
+			if (res.error || !res.data) {
+				throw res.error ?? new Error("No data returned");
+			}
+
+			const emotes = res.data.users.user?.style.activeEmoteSet?.emotes;
+			return (
+				emotes ?? {
+					items: [],
+					totalCount: 0,
+					pageCount: 0,
+				}
+			);
+		} catch (error) {
+			console.error("Failed to load emotes:", error);
 			return {
 				items: [],
 				totalCount: 0,
 				pageCount: 0,
 			};
 		}
-		return emotes as EmoteSetEmoteSearchResult;
 	}
 </script>
 
@@ -176,7 +190,7 @@
 		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
 </div>
-{#key data.id}
+{#key data.id + query}
 	<EmoteLoader {load} />
 {/key}
 
