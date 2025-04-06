@@ -15,6 +15,8 @@
 	let { data }: { data: PageData } = $props();
 	let query: string = $state("");
 
+	let timeout: NodeJS.Timeout | number | undefined;
+
 	async function load(page: number, _perPage: number): Promise<EmoteSetEmoteSearchResult> {
 		const search = query || undefined;
 
@@ -153,29 +155,26 @@
 			}
 		`;
 
-		try {
-			const res = await gqlClient().query(gql_query, variables).toPromise();
-
-			if (res.error || !res.data) {
-				throw res.error ?? new Error("No data returned");
+		return new Promise((resolve, reject) => {
+			if (timeout) {
+				clearTimeout(timeout);
 			}
 
-			const emotes = res.data.users.user?.style.activeEmoteSet?.emotes;
-			return (
-				emotes ?? {
-					items: [],
-					totalCount: 0,
-					pageCount: 0,
+			timeout = setTimeout(async () => {
+				try {
+					const res = await gqlClient().query(gql_query, variables).toPromise();
+
+					if (res.error || !res.data) {
+						reject(res.error ?? new Error("No data returned"));
+					}
+
+					resolve(res.data.users.user?.style.activeEmoteSet?.emotes);
+				} catch (error) {
+					console.error("Failed to load emotes:", error);
+					reject(error);
 				}
-			);
-		} catch (error) {
-			console.error("Failed to load emotes:", error);
-			return {
-				items: [],
-				totalCount: 0,
-				pageCount: 0,
-			};
-		}
+			}, 200);
+		});
 	}
 </script>
 
