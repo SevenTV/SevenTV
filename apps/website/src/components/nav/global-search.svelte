@@ -258,11 +258,17 @@
 	{/snippet}
 	{#snippet nonLabelChildren()}
 		{#await results then results}
-			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0)}
+			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0 || query !== "")}
 				<div id="globalResults" class="results">
 					{#if results.emotes.items}
 						<span class="label">Emotes</span>
 					{/if}
+					<Button href="/emotes/?q={query}&updateSearch=true" class="item">
+						{#snippet icon()}
+							<MagnifyingGlass />
+						{/snippet}
+						{query}
+					</Button>
 					{#each results.emotes.items as result}
 						<Button href="/emotes/{result.id}" class="item">
 							{#snippet icon()}
