@@ -108,7 +108,9 @@
 		"remove": "Remove",
 		"accept": "Accept",
 		"deny": "Deny",
-		"enter": "Enter"
+		"enter": "Enter",
+		"copy_link": "Copy Image",
+		"actions": "Actions"
 	},
 	"themes": {
 		"system": "System",
