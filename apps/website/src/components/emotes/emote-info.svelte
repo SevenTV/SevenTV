@@ -304,6 +304,7 @@
 									</MenuButton>
 									<MenuButton
 										iconRight={caret}
+										style="text-align: left"
 										onclick={() => {
 											setDialogState("format", false);
 										}}
