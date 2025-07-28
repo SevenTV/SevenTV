@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::ptr::NonNull;
 
 use image_processor_proto::Task;
+use rational::Rational;
 
 use super::{Decoder, DecoderError, DecoderFrontend, DecoderInfo, LoopCount};
 use crate::worker::process::frame::FrameRef;
@@ -63,7 +64,7 @@ impl<'data> AvifDecoder<'data> {
 				LoopCount::Finite(decoder.as_ref().repetitionCount as usize)
 			},
 			frame_count: decoder.as_ref().imageCount.max(1) as _,
-			timescale: decoder.as_ref().timescale,
+			timescale: Rational::integer(decoder.as_ref().timescale.into()),
 		};
 
 		if let Some(max_input_width) = task.limits.as_ref().and_then(|l| l.max_input_width) {
@@ -92,7 +93,7 @@ impl<'data> AvifDecoder<'data> {
 				.limits
 				.as_ref()
 				.and_then(|l| l.max_input_duration_ms)
-				.map(|max_input_duration_ms| max_input_duration_ms as u64 * info.timescale / 1000),
+				.map(|max_input_duration_ms| max_input_duration_ms as u64 * info.timescale.decimal_value() as u64 / 1000),
 			total_duration: 0,
 			info,
 		})
@@ -134,6 +135,6 @@ impl Decoder for AvifDecoder<'_> {
 	}
 
 	fn duration_ms(&self) -> i64 {
-		self.total_duration as i64 * 1000 / self.info.timescale as i64
+		self.total_duration as i64 * 1000 / self.info.timescale.decimal_value() as i64
 	}
 }

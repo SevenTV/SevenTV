@@ -51,3 +51,4 @@ scuffle-signal = { version = "0.0.2", features = ["bootstrap"] }
 image-processor-proto = { path = "../image-processor/proto", features = ["server", "serde"]}
 scuffle-metrics = { version = "0.0.4" }
 scuffle-settings = { version = "0.0.2", features = ["full"] }
+rational = "1.6.0"
