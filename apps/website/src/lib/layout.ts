@@ -1,10 +1,13 @@
 import { writable } from "svelte/store";
 import { browser } from "$app/environment";
 import { type DialogMode } from "$/components/dialogs/dialog.svelte";
+import { isEasterEvent, isSummerGiftEvent } from "./events";
 
 export const showMobileMenu = writable(false);
 
-export const showConstructionBar = writable(loadConstructionBarShown());
+export const showConstructionBar = loadBarShown("showConstructionBar");
+export const showEasterBar = loadBarShown("showEasterBar", !isEasterEvent());
+export const showSummerGift = loadBarShown("showSummerGift", !isSummerGiftEvent());
 
 export const uploadDialogMode = writable<DialogMode>("hidden");
 
@@ -17,22 +20,26 @@ export type Theme = "system-theme" | "light-theme" | "dark-theme";
 
 export const theme = writable<Theme>(loadTheme());
 
-function loadConstructionBarShown() {
-	if (!browser) return undefined;
+function loadBarShown(key: string, disable?: boolean) {
+	if (!browser) return writable(undefined);
+	if (disable === true) return writable(false);
 
-	const savedValue = window.localStorage.getItem("showConstructionBar");
+	let init = true;
+
+	const savedValue = window.localStorage.getItem(key);
 	if (savedValue) {
-		return JSON.parse(savedValue) as boolean;
+		init = JSON.parse(savedValue) as boolean;
 	}
 
-	return true;
+	const store = writable(init);
+	store.subscribe((value) => {
+		if (browser) {
+			window.localStorage.setItem(key, JSON.stringify(value));
+		}
+	});
+
+	return store;
 }
-
-showConstructionBar.subscribe((value) => {
-	if (browser) {
-		window.localStorage.setItem("showConstructionBar", JSON.stringify(value));
-	}
-});
 
 function loadTheme() {
 	const savedTheme = browser && window.localStorage.getItem("theme");
@@ -89,7 +96,7 @@ reducedMotion.subscribe((value) => {
 
 // Layout
 
-export type Layout = "small-grid" | "big-grid" | "list";
+export type Layout = "small-grid" | "big-grid" | "list" | "gallery";
 
 function loadLayout(key: string, defaultLayout?: Layout) {
 	const savedLayout = browser && window.localStorage.getItem(key);
