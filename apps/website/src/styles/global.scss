@@ -11,6 +11,8 @@ body {
 
 * {
 	box-sizing: border-box;
+	scrollbar-width: thin;
+	scrollbar-color: #444 transparent;
 
 	&:focus-visible {
 		outline: 1px solid var(--primary);
