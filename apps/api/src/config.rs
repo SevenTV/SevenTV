@@ -140,7 +140,7 @@ pub struct ChatterinoConfig {
 	pub stable_version: String,
 
 	/// Current beta version (without the 'v' prefix, [None] if there's no beta version)
-	#[default(None)]
+	#[default("7.5.4-beta.1".to_owned().into())]
 	pub beta_version: Option<String>,
 }
 
