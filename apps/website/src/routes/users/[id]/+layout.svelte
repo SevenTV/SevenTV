@@ -30,6 +30,9 @@
 	import { filterRoles } from "$/lib/utils";
 	import { page } from "$app/stores";
 	import Error from "$/components/error.svelte";
+	import { onDestroy } from "svelte";
+	import { onMount } from "svelte";
+	import { get } from "svelte/store";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -65,16 +68,47 @@
 				error = e;
 			});
 	});
+
+	let isCosmetics = $state($page.url.pathname.endsWith("/cosmetics"));
+
+	onMount(() => {
+		const unsubscribe = page.subscribe(($page) => {
+			if ($page.url.pathname.endsWith("/cosmetics")) {
+				document.title = `Cosmetics - ${$t("page_titles.suffix")}`;
+			} else {
+				const promise = data.streamed.userRequest.value;
+
+				promise
+					.then((userData) => {
+						const name = userData?.mainConnection?.platformDisplayName || "Unknown";
+						document.title = `${name} - ${$t("page_titles.suffix")}`;
+					})
+					.catch(() => {
+						document.title = `Error - ${$t("page_titles.suffix")}`;
+					});
+
+				document.title = `Loading... - ${$t("page_titles.suffix")}`;
+			}
+		});
+
+		onDestroy(() => {
+			unsubscribe();
+		});
+	});
 </script>
 
 <svelte:head>
-	{#await data.streamed.userRequest.value}
-		<title>Loading... - {$t("page_titles.suffix")}</title>
-	{:then userData}
-		<title>{userData?.mainConnection?.platformDisplayName} - {$t("page_titles.suffix")}</title>
-	{:catch}
-		<title>Error - {$t("page_titles.suffix")}</title>
-	{/await}
+	{#if isCosmetics}
+		<title>Cosmetics - {$t("page_titles.suffix")}</title>
+	{:else}
+		{#await data.streamed.userRequest.value}
+			<title>Loading... - {$t("page_titles.suffix")}</title>
+		{:then userData}
+			<title>{userData?.mainConnection?.platformDisplayName} - {$t("page_titles.suffix")}</title>
+		{:catch}
+			<title>Error - {$t("page_titles.suffix")}</title>
+		{/await}
+	{/if}
 </svelte:head>
 
 {#snippet desktopMenu()}
