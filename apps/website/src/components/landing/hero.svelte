@@ -45,7 +45,7 @@
 					<Button style="font-size: 1em;" href="#download">Download</Button>
 				</div>
 			</div>
-			<img class="hero-image hide-on-mobile" src={nnysPlaceholder} alt="7TV" />
+			<img class="hero-image hide-on-mobile hero-floating" src={nnysPlaceholder} alt="7TV" />
 		</section>
 	{:else if moment("2025-03-02T00:00:00Z").isAfter()}
 		<section class="hero pickems dark-theme">
@@ -102,7 +102,7 @@
 					<Button style="font-size: 1em;">Learn More</Button>
 				</div>
 			</div>
-			<img class="hero-image hide-on-mobile" src={landingPagePlaceholder} alt="7TV" />
+			<img class="hero-image hide-on-mobile hero-floating" src={landingPagePlaceholder} alt="7TV" />
 		</section>
 	{/if}
 </div>
@@ -114,6 +114,20 @@
 		}
 		100% {
 			background-position: 0 -40rem;
+		}
+	}
+
+	@keyframes heroFloat {
+		0% {
+			transform: translate3d(0, 0px, 0) rotate(0deg);
+			animation-timing-function: cubic-bezier(0.445, 0.05, 0.55, 0.95);
+		}
+		50% {
+			transform: translate3d(0, -20px, 0) rotate(1deg);
+			animation-timing-function: cubic-bezier(0.445, 0.05, 0.55, 0.95);
+		}
+		100% {
+			transform: translate3d(0, 0px, 0) rotate(0deg);
 		}
 	}
 	.hero {
@@ -291,6 +305,13 @@
 		max-width: 25rem;
 
 		margin-inline: auto;
+		
+		/* Floating animation */
+		animation: heroFloat 6s ease-in-out infinite !important;
+		transform-origin: center center !important;
+		will-change: transform;
+		backface-visibility: hidden;
+		transform: translateZ(0);
 	}
 
 	.gifting {
