@@ -105,7 +105,7 @@
 		</TextInput>
 		{#await capacityLimit}
 			<span>
-				Capacity:
+				{$t("labels.capacity")}:
 				<Spinner />
 			</span>
 		{:then max}
@@ -114,7 +114,7 @@
 				max={max ?? undefined}
 				bind:value={() => capacity ?? max ?? 0, (v) => (capacity = v)}
 			>
-				<span class="label">Capacity: {capacity}</span>
+				<span class="label">{$t("labels.capacity")}: {capacity}</span>
 			</Range>
 		{/await}
 		<div class="tags">

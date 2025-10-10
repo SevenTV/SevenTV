@@ -40,9 +40,9 @@
 
 <Dialog width={30} bind:mode>
 	<form class="layout">
-		<h1>Create Emote Set</h1>
+		<h1>{$t("dialogs.emote_set.create")}</h1>
 		<TextInput placeholder="Name" bind:value={name}>
-			<span class="label">Emote Set Name</span>
+			<span class="label">{$t("dialogs.emote_set.name")}</span>
 		</TextInput>
 		<TagsInput bind:tags />
 		<div class="buttons">
@@ -57,7 +57,7 @@
 				onclick={submit}
 				icon={loading ? loadingSpinner : undefined}
 			>
-				Create
+				{$t("dialogs.emote_set.confirm")}
 			</Button>
 		</div>
 	</form>

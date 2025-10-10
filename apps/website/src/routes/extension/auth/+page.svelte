@@ -4,6 +4,7 @@
 	import { signInDialogMode } from "$/lib/layout";
 	import { browser } from "$app/environment";
 	import { Check, X } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	let state = $state<"loading" | "failed" | "success">("loading");
 
@@ -27,25 +28,25 @@
 
 <svelte:head>
 	{#if state === "loading"}
-		<title>Logging you in...</title>
+		<title>{$t("pages.extension.login")}</title>
 	{:else if state === "success"}
-		<title>Logged in</title>
+		<title>{$t("pages.extension.login_successful")}</title>
 	{:else if state === "failed"}
-		<title>Failed to log in</title>
+		<title>{$t("pages.extension.login_failed")}</title>
 	{/if}
 </svelte:head>
 
 <div class="container">
 	{#if state === "loading"}
 		<Spinner />
-		<h2>Logging you in...</h2>
+		<h2>{$t("pages.extension.login")}</h2>
 	{:else if state === "success"}
 		<Check />
-		<h2>Logged in</h2>
+		<h2>{$t("pages.extension.login_successful")}</h2>
 	{:else if state === "failed"}
 		<X />
-		<h2>Login Failed</h2>
-		<p>Make sure to open this window through the extension</p>
+		<h2>{$t("pages.extension.login_failed")}</h2>
+		<p>{$t("pages.extension.window")}</p>
 	{/if}
 </div>
 

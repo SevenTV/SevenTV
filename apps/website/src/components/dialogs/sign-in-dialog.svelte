@@ -65,9 +65,8 @@
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Google" } })}
 			</Button> -->
 			<p class="trouble">
-				Already have a 7TV account and plan on linking a new connection? Sign in with your existing
-				connection and link the new one in the
-				<a href="/settings/account"> settings </a>.
+				{$t("dialogs.sign_in.linking_new")}
+				<a href="/settings/account"> {$t("dialogs.sign_in.settings")} </a>.
 			</p>
 			<a class="trouble" href={PUBLIC_DISCORD_LINK}>
 				{$t("dialogs.sign_in.trouble")}

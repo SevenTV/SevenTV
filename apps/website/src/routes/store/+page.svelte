@@ -300,19 +300,19 @@
 	{#if data.success}
 		<div class="bar">
 			<Info />
-			Your purchase was successfully completed
+			{$t("pages.store.redeem.purchase.success")}
 		</div>
 	{/if}
 	{#if data.redeemSuccess}
 		<div class="bar">
 			<Info />
-			Your successfully redeemed your trial subscription
+			{$t("pages.store.redeem.trial")}
 		</div>
 	{/if}
 	{#if isXmasEvent()}
 		<div class="bar">
 			<Gift />
-			X-MAS 2024 EVENT: GIFT 1 SUB TO GET A SPECIAL BADGE
+			{$t("pages.store.events.xmas")}
 		</div>
 	{/if}
 

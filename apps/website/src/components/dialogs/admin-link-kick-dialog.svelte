@@ -8,6 +8,7 @@
 	import TextInput from "../input/text-input.svelte";
 	import Spinner from "../spinner.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	let { mode = $bindable(), userId }: { mode: DialogMode; userId: string } = $props();
 
@@ -70,13 +71,13 @@
 
 <Dialog bind:mode>
 	<form onsubmit={submit} class="layout">
-		<h1>Manually link Kick</h1>
+		<h1>{$t("pages.admin.users.id.actions.connections.kick")}</h1>
 		<hr />
 		<TextInput bind:value={username} required>
 			{#snippet icon()}
 				<KickLogo />
 			{/snippet}
-			Kick Username
+			{$t("pages.admin.users.id.actions.connections.username")}
 		</TextInput>
 		{#snippet loadingSpinner()}
 			<Spinner />

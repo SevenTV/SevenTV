@@ -2,15 +2,15 @@
 	import GithubLogo from "../icons/github-logo.svelte";
 	import Button from "../input/button.svelte";
 	import { PUBLIC_GITHUB_LINK } from "$env/static/public";
+	import { t } from "svelte-i18n";
 </script>
 
 <section class="developers">
 	<div class="column">
 		<GithubLogo size={2.5 * 16} />
-		<h2>Source-Available</h2>
+		<h2>{$t("pages.landing.developers.header")}</h2>
 		<p>
-			Our entire codebase is available on GitHub with a source-available license. Anyone can view
-			and contribute.
+			{$t("pages.landing.developers.info")}
 		</p>
 		<Button primary big href={PUBLIC_GITHUB_LINK}>Contribute</Button>
 	</div>

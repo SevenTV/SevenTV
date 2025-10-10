@@ -7,6 +7,7 @@
 	import moment from "moment";
 	import { user } from "$/lib/auth";
 	import { ArrowSquareOut, Ticket } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 	// import pickemsBanner from "$assets/pickems-banner.png?url";
 
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
@@ -16,11 +17,11 @@
 	{#if isXmasEvent()}
 		<section class="gifting hero-content">
 			<div class="content">
-				<h1>X-MAS SUB EVENT</h1>
+				<h1>{$t("pages.landing.hero.xmas.header")}</h1>
 				<p>
-					Gift 1 sub to anyone this christmas and get a special badge!
+					{$t("pages.landing.hero.xmas.info")}
 					<br />
-					<a href="/store">Gift a sub</a>
+					<a href="/store">{$t("pages.landing.hero.xmas.gift")}</a>
 				</p>
 			</div>
 		</section>
@@ -32,17 +33,21 @@
 				<Logo size={8.5 * 16} />
 				<div class="content">
 					<h1>
-						The Emote Platform <span class="for-all">for All</span>
+						{$t("pages.landing.hero.platform")}
+						<span class="for-all">{$t("pages.landing.hero.all")}</span>
 					</h1>
 					<p>
-						Manage hundreds of emotes for your Twitch, Kick or YouTube channels with ease. Enhance
-						your chatting experience.
+						{$t("pages.landing.hero.manage")}
 					</p>
-					<p>Vote on NNYS 2024 to get an exclusive paint, badge & emote set.</p>
+					<p>{$t("pages.landing.hero.nnys.info")}</p>
 				</div>
 				<div class="buttons">
-					<Button primary style="font-size: 1em;" href="https://www.nnys.live/">Vote now!</Button>
-					<Button style="font-size: 1em;" href="#download">Download</Button>
+					<Button primary style="font-size: 1em;" href="https://www.nnys.live/"
+						>{$t("pages.landing.hero.nnys.vote")}</Button
+					>
+					<Button style="font-size: 1em;" href="#download"
+						>{$t("pages.landing.hero.download")}</Button
+					>
 				</div>
 			</div>
 			<img class="hero-image hide-on-mobile" src={nnysPlaceholder} alt="7TV" />
@@ -53,10 +58,11 @@
 				<Logo size={8.5 * 16} />
 				<div class="content">
 					<h1>
-						The Emote Platform <span class="for-all">for All</span>
+						{$t("pages.landing.hero.platform")}
+						<span class="for-all">{$t("pages.landing.hero.all")}</span>
 					</h1>
-					<p>Place your Pick'ems. Win Prizes.</p>
-					<p>7TV Hoster CS2 Tournament • Feb. 29th - Mar. 2nd</p>
+					<p>{$t("pages.landing.hero.cs2.header")}</p>
+					<p>{$t("pages.landing.hero.cs2.info")} • {$t("pages.landing.hero.cs2.date")}</p>
 				</div>
 				<div class="buttons">
 					{#if hasPass}
@@ -64,20 +70,20 @@
 							{#snippet iconRight()}
 								<ArrowSquareOut />
 							{/snippet}
-							Place your pick'ems
+							{$t("pages.landing.hero.cs2.pickems")}
 						</Button>
 					{:else}
 						<Button primary style="font-size: 1em;" href="/store">
 							{#snippet iconRight()}
 								<Ticket />
 							{/snippet}
-							Get the pass!
+							{$t("pages.landing.hero.cs2.pass")}
 						</Button>
 						<Button style="font-size: 1em;" href="https://app.pickems.tv">
 							{#snippet iconRight()}
 								<ArrowSquareOut />
 							{/snippet}
-							Learn More
+							{$t("pages.landing.hero.more")}
 						</Button>
 					{/if}
 				</div>
@@ -90,16 +96,18 @@
 				<Logo size={8.5 * 16} />
 				<div class="content">
 					<h1>
-						The Emote Platform <span class="for-all">for All</span>
+						{$t("pages.landing.hero.platform")}
+						<span class="for-all">{$t("pages.landing.hero.all")}</span>
 					</h1>
 					<p>
-						Manage hundreds of emotes for your Twitch, Kick or YouTube channels with ease. Enhance
-						your chatting experience.
+						{$t("pages.landing.hero.manage")}
 					</p>
 				</div>
 				<div class="buttons">
-					<Button primary style="font-size: 1em;" href="#download">Download</Button>
-					<Button style="font-size: 1em;">Learn More</Button>
+					<Button primary style="font-size: 1em;" href="#download"
+						>{$t("pages.landing.hero.download")}</Button
+					>
+					<Button style="font-size: 1em;">{$t("pages.landing.hero.more")}</Button>
 				</div>
 			</div>
 			<img class="hero-image hide-on-mobile" src={landingPagePlaceholder} alt="7TV" />

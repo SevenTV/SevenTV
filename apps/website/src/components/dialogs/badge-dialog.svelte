@@ -2,6 +2,7 @@
 	import type { Badge } from "$/gql/graphql";
 	import ResponsiveImage from "../responsive-image.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	interface Props {
 		mode: DialogMode;
@@ -13,7 +14,7 @@
 
 <Dialog width={30} bind:mode>
 	<div class="layout">
-		<h1>Badge</h1>
+		<h1>{$t("dialogs.badge.title")}</h1>
 		<hr />
 		<div class="badge-container">
 			<ResponsiveImage images={badge.images} width={5 * 16} title={badge.description} />

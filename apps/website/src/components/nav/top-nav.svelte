@@ -48,7 +48,11 @@
 			$user?.permissions.admin.manageRedeemCodes ||
 			$user?.permissions.admin.manageEntitlements
 		) {
-			tabs.push({ name: $t("pages.admin.title"), pathname: "/admin", highlight: "var(--staff)" });
+			tabs.push({
+				name: $t("dialogs.editor.admin"),
+				pathname: "/admin",
+				highlight: "var(--staff)",
+			});
 		}
 		// tabs.push({
 		// 	name: "Pickems",

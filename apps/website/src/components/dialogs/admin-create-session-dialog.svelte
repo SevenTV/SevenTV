@@ -4,6 +4,7 @@
 	import Button from "../input/button.svelte";
 	import Spinner from "../spinner.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	let { mode = $bindable(), userId }: { mode: DialogMode; userId: string } = $props();
 
@@ -43,10 +44,10 @@
 
 <Dialog bind:mode>
 	<form onsubmit={submit} class="layout">
-		<h1>Create Session</h1>
+		<h1>{$t("dialogs.admin.session.title")}</h1>
 		<hr />
 		<label>
-			Expiration date in {Intl.DateTimeFormat().resolvedOptions().timeZone} time
+			{$t("pages.admin.users.id.actions.sessions.expiration")} {Intl.DateTimeFormat().resolvedOptions().timeZone} time
 			<input type="datetime-local" required bind:value={expiration} />
 		</label>
 		{#snippet loadingSpinner()}
@@ -54,19 +55,19 @@
 		{/snippet}
 		{#if token}
 			<label>
-				Token
+				{$t("pages.admin.users.id.actions.sessions.token")}
 				<textarea readonly class="token">{token}</textarea>
 			</label>
 		{/if}
 		<div class="buttons">
 			{#if !token}
-				<Button submit primary icon={loading ? loadingSpinner : undefined}>Create</Button>
+				<Button submit primary icon={loading ? loadingSpinner : undefined}>{$t("pages.admin.users.id.actions.sessions.create")}</Button>
 			{:else}
 				<Button secondary onclick={() => token && window.navigator.clipboard.writeText(token)}>
-					Copy Token
+					{$t("pages.admin.users.id.actions.sessions.copy_token")}
 				</Button>
 			{/if}
-			<Button secondary onclick={reset}>Close</Button>
+			<Button secondary onclick={reset}>{$t("pages.admin.users.id.actions.sessions.close")}</Button>
 		</div>
 	</form>
 </Dialog>

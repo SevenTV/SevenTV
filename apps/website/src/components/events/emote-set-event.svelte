@@ -14,7 +14,7 @@
 			<b>{emoteSet.name}</b>
 		</a>
 	{:else}
-		<s>Deleted Set</s>
+		<s>{$t("pages.store.events.emote.deleted_set")}</s>
 	{/if}
 {/snippet}
 
@@ -25,14 +25,14 @@
 			<ResponsiveImage images={emote.images} width={1.5 * 16} />
 		</a>
 	{:else}
-		<s>Deleted Emote</s>
+		<s>{$t("pages.store.events.emote.emote")}</s>
 	{/if}
 {/snippet}
 
 {#snippet userLink(actor?: User | null, by: boolean = true)}
 	{#if actor && actor.mainConnection}
 		{#if by}
-			by
+			{$t("pages.store.events.emote.by")}
 		{/if}
 		<a href="/users/{actor.id}" class="user-link" style:color={actor.highestRoleColor?.hex}>
 			{actor.mainConnection.platformDisplayName}
@@ -52,7 +52,7 @@
 			<FolderSimple />
 			<span class="text">
 				{@render emoteSetLink(event.target)}
-				created
+				{$t("pages.store.events.emote.created")}
 				{@render userLink(event.actor)}
 			</span>
 		{:else if event.data.__typename === "EventEmoteSetDataChangeName"}
@@ -65,7 +65,7 @@
 		{:else if event.data.__typename === "EventEmoteSetDataChangeTags"}
 			<FolderSimple />
 			<span class="text">
-				Changed tags for
+				{$t("pages.store.events.emote.changed_tags")}
 				{@render emoteSetLink(event.target)}
 				from {event.data.oldTags} to {event.data.newTags}
 				{@render userLink(event.actor)}
@@ -73,7 +73,7 @@
 		{:else if event.data.__typename === "EventEmoteSetDataChangeCapacity"}
 			<FolderSimple />
 			<span class="text">
-				Changed capacity for
+				{$t("pages.store.events.emote.changed_capacity")}
 				{@render emoteSetLink(event.target)}
 				from {event.data.oldCapacity} to {event.data.newCapacity}
 				{@render userLink(event.actor)}
@@ -81,7 +81,7 @@
 		{:else if event.data.__typename === "EventEmoteSetDataAddEmote"}
 			<Plus />
 			<span class="text">
-				Added emote
+				{$t("pages.store.events.emote.added")}
 				{@render emoteLink(event.data.addedEmote)}
 				to
 				{@render emoteSetLink(event.target)}
@@ -90,7 +90,7 @@
 		{:else if event.data.__typename === "EventEmoteSetDataRemoveEmote"}
 			<Minus />
 			<span class="text">
-				Removed emote
+				{$t("pages.store.events.emote.removed")}
 				{@render emoteLink(event.data.removedEmote)}
 				from
 				{@render emoteSetLink(event.target)}
@@ -99,13 +99,13 @@
 		{:else if event.data.__typename === "EventEmoteSetDataRenameEmote"}
 			<PencilSimple />
 			<span class="text">
-				Renamed emote
+				{$t("pages.store.events.emote.renamed")}
 				{@render emoteLink(event.data.renamedEmote)}
-				in
+				{$t("pages.store.events.emote.in")}
 				{@render emoteSetLink(event.target)}
-				from
+				{$t("pages.store.events.emote.from")}
 				<b>{event.data.oldAlias}</b>
-				to
+				{$t("pages.store.events.emote.to")}
 				<b>{event.data.newAlias}</b>
 				{@render userLink(event.actor)}
 			</span>
@@ -113,7 +113,7 @@
 			<FolderSimple />
 			<span class="text">
 				{@render emoteSetLink(event.target)}
-				deleted
+				{$t("pages.store.events.emote.deleted")}
 				{@render userLink(event.actor)}
 			</span>
 		{/if}

@@ -5,6 +5,7 @@
 	import Spinner from "../spinner.svelte";
 	import type { DialogMode } from "./dialog.svelte";
 	import Dialog from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	interface Props {
 		mode: DialogMode;
@@ -86,9 +87,9 @@
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>View Entitlements</h1>
+		<h1>{$t("pages.admin.users.id.actions.entitlements.view")}</h1>
 		<hr />
-		<p>Showing entitlements assigned to <b>{from.type.replace("_", " ")} {fromName}</b></p>
+		<p>{$t("pages.admin.users.id.actions.entitlements.showing")} <b>{from.type.replace("_", " ")} {fromName}</b></p>
 		{#await query(from)}
 			<Spinner />
 		{:then nodes}

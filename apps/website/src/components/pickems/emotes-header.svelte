@@ -38,8 +38,8 @@
 		<div class="pickems-header">
 			<div class="purchase-info">
 				<div class="text">
-					<p class="pre-title">7TV Hosted CS2 Tournament &#x2022 Feb. 29th - Mar. 2nd</p>
-					<h2 class="title">Place your Pick'ems. Win Prizes.</h2>
+					<p class="pre-title">{$t("pages.store.events.cs2.tournament")} &#x2022 {$t("pages.landing.hero.cs2.date")}</p>
+					<h2 class="title">{$t("pages.landing.hero.cs2.header")}</h2>
 				</div>
 				<div class="buttons">
 					{#if hasPass}
@@ -47,14 +47,14 @@
 							{#snippet iconRight()}
 								<ArrowRight />
 							{/snippet}
-							Place Pick'ems
+							{$t("pages.store.events.cs2.pickems.place")}
 						</Button>
 					{:else}
 						<Button href="/store/pickems" primary>
 							{#snippet iconRight()}
 								<Ticket />
 							{/snippet}
-							Purchase Pass
+							{$t("pages.store.events.cs2.pickems.purchase_pass")}
 						</Button>
 					{/if}
 				</div>

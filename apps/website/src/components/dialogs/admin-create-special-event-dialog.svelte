@@ -7,6 +7,7 @@
 	import TextInput from "../input/text-input.svelte";
 	import Spinner from "../spinner.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	let { mode = $bindable() }: { mode: DialogMode } = $props();
 
@@ -47,22 +48,22 @@
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>Create Special Event</h1>
+		<h1>{$t("pages.admin.special_events.create")}</h1>
 		<hr />
 		<TextInput placeholder="Name" bind:value={name} required>
 			{#snippet icon()}
 				<PencilSimple />
 			{/snippet}
-			Name
+			{$t("pages.admin.special_events.attributes.name")}
 		</TextInput>
 		<TextInput placeholder="Description" bind:value={description}>
 			{#snippet icon()}
 				<TextAlignLeft />
 			{/snippet}
-			Description
+			{$t("pages.admin.special_events.attributes.description")}
 		</TextInput>
 		<div class="tags">
-			<TagsInput bind:tags>Tags</TagsInput>
+			<TagsInput bind:tags>{$t("pages.admin.special_events.attributes.tags")}</TagsInput>
 		</div>
 		{#snippet loadingSpinner()}
 			<Spinner />
@@ -74,9 +75,9 @@
 				onclick={submit}
 				disabled={loading || !name}
 			>
-				Create
+				{$t("pages.admin.special_events.attributes.create")}
 			</Button>
-			<Button secondary onclick={() => (mode = "hidden")}>Cancel</Button>
+			<Button secondary onclick={() => (mode = "hidden")}>{$t("pages.admin.special_events.attributes.cancel")}</Button>
 		</div>
 	</form>
 </Dialog>
