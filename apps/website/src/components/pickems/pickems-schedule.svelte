@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "svelte-i18n";
 	let schedule = [
 		{
 			day: "Day 1",
@@ -143,7 +144,6 @@
 						.match-row {
 							flex-direction: column !important;
 						}
-
 					}
 				}
 			}
@@ -156,5 +156,4 @@
 			}
 		}
 	}
-
 </style>

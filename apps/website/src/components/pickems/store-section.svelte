@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "svelte-i18n";
 	import type { SubscriptionInfo, SubscriptionProduct } from "$/gql/graphql";
 	import { ArrowSquareOut, CaretDown, Spinner, Ticket } from "phosphor-svelte";
 	import StoreSection from "../store/store-section.svelte";

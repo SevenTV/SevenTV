@@ -3,7 +3,7 @@
 	import Button from "../input/button.svelte";
 	import landingPagePlaceholder from "$assets/landing-page-placeholder.webp?url";
 	import nnysPlaceholder from "$assets/nnys.webp?url";
-	import { isXmasEvent } from "$/lib/xmas";
+	//import { isXmasEvent } from "$/lib/xmas";
 	import moment from "moment";
 	import { user } from "$/lib/auth";
 	import { ArrowSquareOut, Ticket } from "phosphor-svelte";
@@ -14,7 +14,7 @@
 </script>
 
 <div>
-	{#if isXmasEvent()}
+	<!-- {#if isXmasEvent()}
 		<section class="gifting hero-content">
 			<div class="content">
 				<h1>{$t("pages.landing.hero.xmas.header")}</h1>
@@ -25,7 +25,7 @@
 				</p>
 			</div>
 		</section>
-	{/if}
+	{/if} -->
 
 	{#if moment("2024-12-20T16:00:00Z").isAfter()}
 		<section class="hero nnys dark-theme">
@@ -299,17 +299,6 @@
 		max-width: 25rem;
 
 		margin-inline: auto;
-	}
-
-	.gifting {
-		align-items: center;
-		text-align: center;
-
-		// only temporary
-		h1 {
-			text-align: center !important;
-			max-width: unset !important;
-		}
 	}
 
 	@media screen and (max-width: 960px) {

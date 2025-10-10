@@ -13,6 +13,7 @@
 	import FromNow from "$/components/from-now.svelte";
 	import PaintComponent from "../paint.svelte";
 	import BadgeComponent from "../badge.svelte";
+	import { t } from "svelte-i18n";
 
 	let { event }: { event: UserEvent } = $props();
 </script>

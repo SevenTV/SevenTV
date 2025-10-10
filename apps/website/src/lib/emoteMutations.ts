@@ -229,6 +229,51 @@ export async function updateName(id: string, name: string) {
 	return undefined;
 }
 
+export async function mergeEmote(sourceId: string, targetId: string) {
+	const res = await gqlClient()
+		.mutation(
+			graphql(`
+				mutation MergeEmote($sourceId: Id!, $targetId: Id!) {
+					emotes {
+						emote(id: $sourceId) {
+							merge(targetId: $targetId) {
+								id
+								defaultName
+								owner {
+									id
+									mainConnection {
+										platformDisplayName
+										platformAvatarUrl
+									}
+								}
+								images {
+									url
+									mime
+									size
+									width
+									height
+									scale
+									frameCount
+								}
+							}
+						}
+					}
+				}
+			`),
+			{
+				sourceId,
+				targetId,
+			},
+		)
+		.toPromise();
+
+	if (res.data?.emotes.emote?.merge) {
+		return res.data.emotes.emote.merge;
+	}
+
+	return undefined;
+}
+
 export async function updateTags(id: string, tags: string[]) {
 	const defaultSet = get(defaultEmoteSet);
 

@@ -3,7 +3,6 @@
 	import { EntitlementNodeTypeInput, type EntitlementNodeInput } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import Button from "../input/button.svelte";
-	import Checkbox from "../input/checkbox.svelte";
 	import Radio from "../input/radio.svelte";
 	import Select from "../input/select.svelte";
 	import TextInput from "../input/text-input.svelte";
@@ -11,6 +10,7 @@
 	import type { DialogMode } from "./dial
 	import { t } from "svelte-i18n";og.svelte";
 	import Dialog from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	interface Props {
 		mode: DialogMode;
@@ -20,7 +20,6 @@
 
 	let { mode = $bindable(), from, fromName }: Props = $props();
 
-	let subscription = $state<boolean>(from.type === EntitlementNodeTypeInput.User);
 	let type = $state<EntitlementNodeTypeInput | "">("");
 	let id = $state<string>("");
 
@@ -42,7 +41,7 @@
 				}
 			`),
 			{
-				from: subscription ? { type: EntitlementNodeTypeInput.Subscription, id: from.id } : from,
+				from,
 				to: {
 					type,
 					id,
@@ -119,30 +118,6 @@
 	}
 
 	let paints = $derived(type === EntitlementNodeTypeInput.Paint ? queryPaints() : []);
-
-	async function querySpecialEvents() {
-		const res = await gqlClient().query(
-			graphql(`
-				query AdminCreateRedeemCodeSpecialEvents {
-					specialEvents {
-						specialEvents {
-							id
-							name
-						}
-					}
-				}
-			`),
-			{},
-		);
-
-		if (!res.data) throw res.error?.message;
-
-		return res.data.specialEvents.specialEvents.toReversed();
-	}
-
-	let specialEvents = $derived(
-		type === EntitlementNodeTypeInput.SpecialEvent ? querySpecialEvents() : [],
-	);
 </script>
 
 <Dialog bind:mode>
@@ -158,11 +133,6 @@
 			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.EmoteSet}>
 				Emote Set
 			</Radio>
-			{#if from.type === EntitlementNodeTypeInput.User}
-				<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.SpecialEvent}>
-					SpecialEvent
-				</Radio>
-			{/if}
 		</div>
 		{#if type}
 			{#if type === EntitlementNodeTypeInput.Role}
@@ -207,32 +177,12 @@
 						/>
 					{/await}
 				</label>
-			{:else if type === EntitlementNodeTypeInput.EmoteSet}
+			{:else}
 				<TextInput bind:value={id} placeholder="ID">
 					{type.replace("_", " ")} ID
 				</TextInput>
-			{:else}
-				<label>
-					SpecialEvent
-					{#await specialEvents}
-						<Spinner />
-					{:then specialEvents}
-						<Select
-							bind:selected={id}
-							options={specialEvents.map((p) => {
-								return { value: p.id, label: p.name };
-							})}
-						/>
-					{/await}
-				</label>
 			{/if}
 		{/if}
-		{#if from.type === EntitlementNodeTypeInput.User}
-			<div class="sub-entitlement">
-				<Checkbox bind:value={subscription}>Subscription entitlement?</Checkbox>
-			</div>
-		{/if}
-
 		{#snippet loadingSpinner()}
 			<Spinner />
 		{/snippet}

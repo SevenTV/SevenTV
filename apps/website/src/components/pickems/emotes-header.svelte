@@ -6,6 +6,7 @@
 	import { queryPickemsCosmetics } from "$/lib/pickems";
 	import PickemsBadges from "./pickems-badges.svelte";
 	import PickemsPaints from "./pickems-paints.svelte";
+	import { t } from "svelte-i18n";
 
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
 

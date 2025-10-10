@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "svelte-i18n";
 	import { type SubscriptionProductVariant } from "$/gql/graphql";
 	import { ArrowRight } from "phosphor-svelte";
 	import Button from "../input/button.svelte";
