@@ -5,6 +5,7 @@
 	import { graphql } from "$/gql";
 	import { gqlClient } from "$/lib/gql";
 	import { User } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 
 	let rerunJobLoading = $state(false);
 
@@ -30,25 +31,24 @@
 
 <div class="layout">
 	<div class="action-group">
-		<h2>Manage</h2>
+		<h2>{$t("pages.admin.users.manage")}</h2>
 		<UserSearch
 			searchlimit={15}
-			placeholder="Search user to inspect"
+			placeholder={$t("pages.admin.users.search_user_placeholder")}
 			resulthref={(user) => `/admin/users/${user.id}`}
 		>
-			<p>Manage a single user</p>
+			<p>{$t("pages.admin.users.manage_single_user")}</p>
 			{#snippet icon()}
 				<User />
 			{/snippet}
 		</UserSearch>
 	</div>
 	<div class="action-group">
-		<h2>Actions</h2>
+		<h2>{$t("pages.admin.users.actions")}</h2>
 		<div class="action">
-			<h3>Subscription Benefits Job</h3>
+			<h3>{$t("pages.admin.users.subscription_benefits_job")}</h3>
 			<p>
-				Manually trigger the subscription job to recalculate entitlements and subscription benefits
-				for all users.
+				{$t("pages.admin.users.subscription_benefits_job_desc")}
 			</p>
 			{#snippet loadingSpinner()}
 				<Spinner />
@@ -59,7 +59,7 @@
 				onclick={rerunSubscriptionBenefitsJob}
 				icon={rerunJobLoading ? loadingSpinner : undefined}
 			>
-				Rerun
+				{$t("pages.admin.users.rerun")}
 			</Button>
 		</div>
 	</div>

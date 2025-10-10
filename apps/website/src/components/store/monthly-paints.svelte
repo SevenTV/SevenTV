@@ -28,7 +28,7 @@
 							{#snippet icon()}
 								<PaintBrush />
 							{/snippet}
-							Your Paints
+							{$t("pages.store.subscription.your_paints")}
 						</Button>
 					{/snippet}
 					<Button secondary>

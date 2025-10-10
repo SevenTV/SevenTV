@@ -59,7 +59,6 @@ type BillingMutation {
 	subscribe(variantId: StripeProductId!): SubscribeResponse!
 }
 
-
 union CodeEffect = CodeEffectDirectEntitlement | CodeEffectSpecialEvent
 
 type CodeEffectDirectEntitlement {
@@ -270,7 +269,14 @@ type EmotePermission {
 
 type EmoteQuery {
 	emote(id: Id!): Emote
-	search(filters: Filters, page: Int, perPage: Int, query: String, sort: Sort!, tags: Tags): EmoteSearchResult!
+	search(
+		filters: Filters
+		page: Int
+		perPage: Int
+		query: String
+		sort: Sort!
+		tags: Tags
+	): EmoteSearchResult!
 }
 
 type EmoteScores {
@@ -413,7 +419,17 @@ type EntitlementEdgeOperation {
 	delete: Boolean!
 }
 
-union EntitlementNodeAny = EntitlementNodeUser | EntitlementNodeRole | EntitlementNodeBadge | EntitlementNodePaint | EntitlementNodeEmoteSet | EntitlementNodeProduct | EntitlementNodeSubscriptionBenefit | EntitlementNodeSubscription | EntitlementNodeSpecialEvent | EntitlementNodeGlobalDefaultEntitlementGroup
+union EntitlementNodeAny =
+	| EntitlementNodeUser
+	| EntitlementNodeRole
+	| EntitlementNodeBadge
+	| EntitlementNodePaint
+	| EntitlementNodeEmoteSet
+	| EntitlementNodeProduct
+	| EntitlementNodeSubscriptionBenefit
+	| EntitlementNodeSubscription
+	| EntitlementNodeSpecialEvent
+	| EntitlementNodeGlobalDefaultEntitlementGroup
 
 type EntitlementNodeBadge {
 	badge: Badge
@@ -469,7 +485,6 @@ enum EntitlementNodeTypeInput {
 	PAINT
 	ROLE
 	SPECIAL_EVENT
-	SUBSCRIPTION
 	SUBSCRIPTION_BENEFIT
 	USER
 }
@@ -483,7 +498,15 @@ type EntitlementQuery {
 	traverse(from: EntitlementNodeInput!): RawEntitlements!
 }
 
-union EventEmoteData = EventEmoteDataUpload | EventEmoteDataProcess | EventEmoteDataChangeName | EventEmoteDataMerge | EventEmoteDataChangeOwner | EventEmoteDataChangeTags | EventEmoteDataChangeFlags | EventEmoteDataDelete
+union EventEmoteData =
+	| EventEmoteDataUpload
+	| EventEmoteDataProcess
+	| EventEmoteDataChangeName
+	| EventEmoteDataMerge
+	| EventEmoteDataChangeOwner
+	| EventEmoteDataChangeTags
+	| EventEmoteDataChangeFlags
+	| EventEmoteDataDelete
 
 type EventEmoteDataChangeFlags {
 	newFlags: EmoteFlags!
@@ -530,7 +553,15 @@ type EventEmoteDataUpload {
 	noop: Boolean! @deprecated
 }
 
-union EventEmoteSetData = EventEmoteSetDataCreate | EventEmoteSetDataChangeName | EventEmoteSetDataChangeTags | EventEmoteSetDataChangeCapacity | EventEmoteSetDataAddEmote | EventEmoteSetDataRemoveEmote | EventEmoteSetDataRenameEmote | EventEmoteSetDataDelete
+union EventEmoteSetData =
+	| EventEmoteSetDataCreate
+	| EventEmoteSetDataChangeName
+	| EventEmoteSetDataChangeTags
+	| EventEmoteSetDataChangeCapacity
+	| EventEmoteSetDataAddEmote
+	| EventEmoteSetDataRemoveEmote
+	| EventEmoteSetDataRenameEmote
+	| EventEmoteSetDataDelete
 
 type EventEmoteSetDataAddEmote {
 	addedEmote: Emote
@@ -579,7 +610,14 @@ type EventEmoteSetDataRenameEmote {
 	renamedEmoteId: Id!
 }
 
-union EventUserData = EventUserDataCreate | EventUserDataChangeActivePaint | EventUserDataChangeActiveBadge | EventUserDataChangeActiveEmoteSet | EventUserDataAddConnection | EventUserDataRemoveConnection | EventUserDataDelete
+union EventUserData =
+	| EventUserDataCreate
+	| EventUserDataChangeActivePaint
+	| EventUserDataChangeActiveBadge
+	| EventUserDataChangeActiveEmoteSet
+	| EventUserDataAddConnection
+	| EventUserDataRemoveConnection
+	| EventUserDataDelete
 
 type EventUserDataAddConnection {
 	addedPlatform: Platform!
@@ -639,8 +677,6 @@ type FlagPermission {
 	hidden: Boolean!
 }
 
-
-
 scalar Id
 
 type Image {
@@ -659,7 +695,6 @@ enum ImageProcessorEvent {
 	START
 	SUCCESS
 }
-
 
 scalar InvoiceId
 
@@ -721,7 +756,11 @@ type PaintLayer {
 	ty: PaintLayerType!
 }
 
-union PaintLayerType = PaintLayerTypeSingleColor | PaintLayerTypeLinearGradient | PaintLayerTypeRadialGradient | PaintLayerTypeImage
+union PaintLayerType =
+	| PaintLayerTypeSingleColor
+	| PaintLayerTypeLinearGradient
+	| PaintLayerTypeRadialGradient
+	| PaintLayerTypeImage
 
 type PaintLayerTypeImage {
 	images: [Image!]!
@@ -791,6 +830,27 @@ enum Platform {
 	TWITCH
 }
 
+enum ReportStatus {
+	OPEN
+	ASSIGNED
+	CLOSED
+}
+
+type Report {
+	id: Id!
+	target_kind: Int!
+	target_id: Id!
+	actor_id: Id!
+	subject: String!
+	body: String!
+	priority: Int!
+	status: ReportStatus!
+	notes: [String!]!
+	actor: V3User!
+	assignees: [V3User!]!
+	created_at: DateTime!
+}
+
 type Price {
 	amount: Int!
 	currency: String!
@@ -834,6 +894,75 @@ type Query {
 	specialEvents: SpecialEventQuery!
 	store: StoreQuery!
 	users: UserQuery!
+	modRequests(page: Int!, limit: Int!, wish: String!, country: [String!]!): ModRequestMessageList!
+	reports(status: ReportStatus, limit: Int, page: Int): [Report!]!
+	emotesByID(list: [Id!]!): [EmotePartial!]!
+}
+
+type ImageFile {
+	name: String!
+	format: String!
+	width: Int!
+	height: Int!
+	size: Int!
+}
+
+type ImageHost {
+	files: [ImageFile!]!
+	url: String!
+}
+
+type UserPartial {
+	display_name: String!
+	id: Id!
+	username: String!
+	avatar_url: String!
+	type: String!
+	biography: String!
+	created_at: DateTime!
+	style: UserStyle!
+	roles: [Id!]!
+	connections: [UserConnection!]!
+}
+
+type EmotePartial {
+	id: Id!
+	name: String!
+	tags: [String!]!
+	animated: Boolean!
+	owner_id: Id!
+	host: ImageHost!
+	listed: Boolean!
+	created_at: DateTime!
+	owner: UserPartial!
+	flags: [String!]!
+	state: String!
+}
+
+type ModRequestMessageList {
+	messages: [ModRequestMessage!]!
+	total: Int!
+}
+
+type ModRequestMessage {
+	id: Id!
+	kind: MessageKind!
+	author_id: Id
+	read: Boolean!
+	read_at: DateTime
+	target_kind: Int!
+	target_id: Id!
+	wish: String!
+	actor_country_name: String!
+	actor_country_code: String!
+	created_at: DateTime!
+}
+
+enum MessageKind {
+	EMOTE_COMMENT
+	MOD_REQUEST
+	INBOX
+	NEWS
 }
 
 enum Ranking {
@@ -880,7 +1009,12 @@ type RedeemCodeOperation {
 
 type RedeemCodeQuery {
 	redeemCode(id: Id!): RedeemCode
-	redeemCodes(page: Int, perPage: Int, query: String, remainingUses: Boolean): RedeemCodeSearchResult!
+	redeemCodes(
+		page: Int
+		perPage: Int
+		query: String
+		remainingUses: Boolean
+	): RedeemCodeSearchResult!
 }
 
 type RedeemCodeSearchResult {
@@ -983,7 +1117,6 @@ type StoreQuery {
 	monthlyPaints: [Paint!]!
 }
 
-
 scalar StripeProductId
 
 type SubscribeResponse {
@@ -1035,7 +1168,10 @@ type SubscriptionPeriod {
 	updatedAt: DateTime!
 }
 
-union SubscriptionPeriodCreatedBy = SubscriptionPeriodCreatedByRedeemCode | SubscriptionPeriodCreatedByInvoice | SubscriptionPeriodCreatedBySystem
+union SubscriptionPeriodCreatedBy =
+	| SubscriptionPeriodCreatedByRedeemCode
+	| SubscriptionPeriodCreatedByInvoice
+	| SubscriptionPeriodCreatedBySystem
 
 type SubscriptionPeriodCreatedByInvoice {
 	invoiceId: InvoiceId!
@@ -1203,6 +1339,41 @@ type User {
 	updatedAt: DateTime!
 }
 
+type V3User {
+	id: Id!
+	username: String!
+	display_name: String!
+	avatar_url: String!
+	biography: String
+	inbox_unread_count: Int
+	created_at: DateTime
+	style: UserStyle
+	editors: [UserEditor!]
+	editor_of: [UserEditor!]
+	cosmetics: [UserCosmetic!]
+	roles: [Id!]
+	emote_sets(entitled: Boolean): [EmoteSet!]
+	owned_emotes: [Emote!]
+	activity(limit: Int): [AuditLog!]
+	connections: [UserConnection!]
+	reports: [Report!]
+}
+
+type AuditLog {
+	id: Id!
+	actor_id: Id!
+	target_id: Id!
+	target_kind: Int!
+	created_at: DateTime!
+	reason: String!
+	actor: UserPartial!
+}
+
+type UserCosmetic {
+	id: Id!
+	selected: Boolean!
+}
+
 type UserConnection {
 	allowLogin: Boolean!
 	linkedAt: DateTime!
@@ -1349,11 +1520,25 @@ type UserStyle {
 	pendingProfilePictureId: Id
 }
 
-directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
+directive @deprecated(
+	reason: String = "No longer supported"
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
 directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 directive @specifiedBy(url: String!) on SCALAR
-extend schema @link(
-	url: "https://specs.apollo.dev/federation/v2.3",
-	import: ["@key", "@tag", "@shareable", "@inaccessible", "@override", "@external", "@provides", "@requires", "@composeDirective", "@interfaceObject"]
-)
+extend schema
+	@link(
+		url: "https://specs.apollo.dev/federation/v2.3"
+		import: [
+			"@key"
+			"@tag"
+			"@shareable"
+			"@inaccessible"
+			"@override"
+			"@external"
+			"@provides"
+			"@requires"
+			"@composeDirective"
+			"@interfaceObject"
+		]
+	)

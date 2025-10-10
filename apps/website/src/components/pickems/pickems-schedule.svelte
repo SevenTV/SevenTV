@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "svelte-i18n";
 	let schedule = [
 		{
 			day: "Day 1",
@@ -26,7 +27,7 @@
 
 <div class="container">
 	<div class="header">
-		<h1>Tournament Schedule</h1>
+		<h1>{$t("pages.store.events.cs2.schedule.header")}</h1>
 	</div>
 
 	<div class="schedule-grid">
@@ -38,15 +39,15 @@
 				</div>
 				<div class="match-details">
 					<div class="match-row">
-						<span>Stage</span>
+						<span>{$t("pages.store.events.cs2.schedule.stage")}</span>
 						<span>{match.stage}</span>
 					</div>
 					<div class="match-row">
-						<span>Best of</span>
+						<span>{$t("pages.store.events.cs2.schedule.best_of")}</span>
 						<span>{match.bestOf}</span>
 					</div>
 					<div class="match-row">
-						<span>Start Time</span>
+						<span>{$t("pages.store.events.cs2.schedule.start_time")}</span>
 						<span>{match.startTime}</span>
 					</div>
 				</div>

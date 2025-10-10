@@ -41,6 +41,9 @@ export function subscribe(
 	handler: (pl: DispatchPayload) => void,
 	handlerId?: string,
 ) {
+	if (!window.SharedWorker) {
+		return () => void 0;
+	}
 	const w = worker();
 
 	// Generate a random handler ID to identify this specific handler

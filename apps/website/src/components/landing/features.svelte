@@ -8,12 +8,13 @@
 	import megaphone from "$assets/megaphone.webp?url";
 	import battery from "$assets/battery.webp?url";
 	import { user } from "$lib/auth";
+	import { t } from "svelte-i18n";
 </script>
 
 <section class="features">
-	<h2>Why 7TV?</h2>
+	<h2>{$t("pages.landing.features.header")}</h2>
 	<p>
-		Our platform offers a variety of useful features that will enhance your chatting experience.
+		{$t("pages.landing.features.info")}
 	</p>
 	<div class="feature-grid">
 		<Feature

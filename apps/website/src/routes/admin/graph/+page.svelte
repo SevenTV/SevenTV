@@ -342,18 +342,18 @@
 </script>
 
 <svelte:head>
-	<title>Entitlement Graph - {$t("page_titles.admin_suffix")}</title>
+	<title>{$t("pages.admin.graph.title")} - {$t("page_titles.admin_suffix")}</title>
 </svelte:head>
 
 {#if $user?.permissions.user.manageAny}
 	<div class="inputs">
 		{#if userData}
 			{#await userData}
-				<p>Loading...</p>
+				<p>{$t("pages.admin.graph.loading")}</p>
 			{:then userData}
 				<span>{userData.name}</span>
 			{:catch e}
-				<p>Error: {e}</p>
+				<p>{$t("common.error")}: {e}</p>
 			{/await}
 		{:else}
 			<UserSearch
@@ -369,9 +369,9 @@
 				{/snippet}
 			</UserSearch>
 		{/if}
-		<Toggle bind:value={layoutStarted}>Layout</Toggle>
+		<Toggle bind:value={layoutStarted}>{$t("pages.admin.graph.layout")}</Toggle>
 		<label>
-			Node Size
+			{$t("pages.admin.graph.node_size")}
 			<input type="number" bind:value={size} min="1" max="15" step="1" />
 		</label>
 	</div>

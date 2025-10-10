@@ -291,7 +291,7 @@
 				{#if data.kind === EmoteSetKind.Normal && ($user.id === data.owner?.id || $user.permissions.user.manageAny || $user.editorFor.some((editor) => editor?.editorId === $user?.id && editor.permissions.user.manageProfile))}
 					<DropDown align="left" bind:this={enableDropdown}>
 						<Button primary disabled={setActiveLoading}>
-							Enable
+							{$t("labels.enable")}
 							{#snippet icon()}
 								{#if setActiveLoading}
 									<Spinner />

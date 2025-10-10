@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Badge } from "$/gql/graphql";
 	import BadgeComponent from "../badge.svelte";
+	import { t } from "svelte-i18n";
 
 	let { badges }: { badges: Badge[] } = $props();
 </script>

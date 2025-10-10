@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	interface Props {
 		mode: DialogMode;
@@ -11,7 +12,7 @@
 
 <Dialog width={30} bind:mode>
 	<div class="layout">
-		<h1>Error</h1>
+		<h1>{$t("dialogs.error.title")}</h1>
 		<hr />
 		<p>{error}</p>
 	</div>

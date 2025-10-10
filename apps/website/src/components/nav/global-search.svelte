@@ -258,17 +258,11 @@
 	{/snippet}
 	{#snippet nonLabelChildren()}
 		{#await results then results}
-			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0 || query !== "")}
+			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0)}
 				<div id="globalResults" class="results">
 					{#if results.emotes.items}
-						<span class="label">Emotes</span>
+						<span class="label">{$t("dialogs.editor.emotes")}</span>
 					{/if}
-					<Button href="/emotes/?q={query}&updateSearch=true" class="item">
-						{#snippet icon()}
-							<MagnifyingGlass />
-						{/snippet}
-						{query}
-					</Button>
 					{#each results.emotes.items as result}
 						<Button href="/emotes/{result.id}" class="item">
 							{#snippet icon()}

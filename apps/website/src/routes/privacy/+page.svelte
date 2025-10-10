@@ -7,367 +7,333 @@
 </svelte:head>
 
 <div class="page">
-	<h1>Privacy Policy</h1>
-	<p>Last updated: August 13, 2022</p>
+	<h1>{$t("pages.privacy.title")}</h1>
+	<p>{$t("pages.privacy.last_updated")}</p>
 	<p>
-		This Privacy Policy describes our policies and procedures on the collection, use and disclosure
-		of your information when you use the service and tells you about your privacy rights and how the
-		law protects you.
+		{$t("pages.prvacy.policy_description")}
 	</p>
 	<p>
-		We use your personal data to provide and improve the service. By using the service, you agree to
-		the collection and use of information in accordance with this Privacy Policy.
+		{$t("pages.privacy.personal_data")}
 	</p>
-	<h1>Interpretation and Definitions</h1>
-	<h2>Interpretation</h2>
+	<h1>{$t("pages.privacy.interpretation_definitions.title")}</h1>
+	<h2>{$t("pages.privacy.interpretation_definitions.interpretation.header")}</h2>
 	<p>
-		The words of which the initial letter is capitalised have meanings defined under the following
-		conditions. The following definitions shall have the same meaning regardless of whether they
-		appear in singular or in plural.
+		{$t("pages.privacy.interpretation_definitions.interpretation.description")}
 	</p>
-	<h2>Definitions</h2>
-	<p>For the purposes of this Privacy Policy:</p>
+	<h2>{$t("pages.privacy.interpretation_definitions.definitions.header")}</h2>
+	<p>{$t("pages.privacy.interpretation_definitions.definitions.purposes")}</p>
 	<ul>
 		<li>
 			<p>
-				<strong>Account</strong> means a unique account created for you to access our service or parts
-				of our service.
+				<strong
+					>{$t("pages.privacy.interpretation_definitions.definitions.purposes_account")}</strong
+				>
+				{$t("pages.privacy.interpretation_definitions.definitions.purposes_affiliate_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>Affiliate</strong> means an entity that controls, is controlled by or is under common
-				control with a party, where &quot;control&quot; means ownership of 50% or more of the shares,
-				equity interest or other securities entitled to vote for election of directors or other managing
-				authority.
+				<strong
+					>{$t("pages.privacy.interpretation_definitions.definitions.purposes_affiliate")}</strong
+				>
+				{$t("pages.privacy.interpretation_definitions.definitions.purposes_affiliate_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>Application</strong> means the software program provided by the Company downloaded by
-				you on any electronic device, named SEVENTV SARL
+				<strong
+					>{$t("pages.privacy.interpretation_definitions.definitions.purposes_application")}</strong
+				>
+				{$t(
+					"pages.privacy.interpretation_definitions.definitions.purposes_application_description",
+				)}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>Company</strong> (referred to as either &quot;the Company&quot;, &quot;We&quot;, &quot;Us&quot;
-				or &quot;our&quot; in this Agreement) refers to SEVENTV SARL.
-			</p>
-		</li>
-		<li>
-			<p><strong>Country</strong> refers to: France</p>
-		</li>
-		<li>
-			<p>
-				<strong>Device</strong> means any device that can access the service such as a computer, a cell
-				phone or a digital tablet.
+				<strong
+					>{$t("pages.privacy.interpretation_definitions.definitions.purposes_company")}</strong
+				>
+				{$t("pages.privacy.interpretation_definitions.definitions.purposes_company_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>Do Not Track</strong> (DNT) is a concept that has been promoted by US regulatory authorities,
-				in particular the U.S. Federal Trade Commission (FTC), for the Internet industry to develop and
-				implement a mechanism for allowing internet users to control the tracking of their online activities
-				across websites.
+				<strong
+					>{$t("pages.privacy.interpretation_definitions.definitions.purposes_country")}</strong
+				>
+				{$t("pages.privacy.interpretation_definitions.definitions.purposes_country_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>Personal Data</strong> is any information that relates to an identified or identifiable
-				individual.
-			</p>
-		</li>
-		<li>
-			<p><strong>Service</strong> refers to the Application.</p>
-		</li>
-		<li>
-			<p>
-				<strong>Service Provider</strong> means any natural or legal person who processes the data on
-				behalf of the Company. It refers to third-party companies or individuals employed by the Company
-				to facilitate the service, to provide the service on behalf of the Company, to perform services
-				related to the service or to assist the Company in analysing how the service is used.
+				<strong>{$t("pages.privacy.interpretation_definitions.definitions.purposes_device")}</strong
+				>
+				{$t("pages.privacy.interpretation_definitions.definitions.purposes_device_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>Third-party Social Media Service</strong> refers to any website or any social network
-				website through which a User can log in or create an account to use the service.
+				<strong
+					>{$t(
+						"pages.privacy.interpretation_definitions.definitions.purposes_do_not_track",
+					)}</strong
+				>
+				{$t(
+					"pages.privacy.interpretation_definitions.definitions.purposes_do_not_track_description",
+				)}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>Usage Data</strong> refers to data collected automatically, either generated by the use
-				of the service or from the service infrastructure itself (for example, the duration of a page
-				visit).
+				<strong
+					>{$t(
+						"pages.privacy.interpretation_definitions.definitions.purposes_personal_data",
+					)}</strong
+				>
+				{$t(
+					"pages.privacy.interpretation_definitions.definitions.purposes_personal_data_description",
+				)}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>you</strong> means the individual accessing or using the service, or the company, or
-				other legal entity on behalf of which such individual is accessing or using the service, as applicable.
+				<strong
+					>{$t("pages.privacy.interpretation_definitions.definitions.purposes_service")}</strong
+				>
+				{$t("pages.privacy.interpretation_definitions.definitions.purposes_service_description")}
+			</p>
+		</li>
+		<li>
+			<p>
+				<strong
+					>{$t(
+						"pages.privacy.interpretation_definitions.definitions.purposes_service_provider",
+					)}</strong
+				>
+				{$t(
+					"pages.privacy.interpretation_definitions.definitions.purposes_service_provider_description",
+				)}
+			</p>
+		</li>
+		<li>
+			<p>
+				<strong
+					>{$t(
+						"pages.privacy.interpretation_definitions.definitions.purposes_third_party_social_media_service",
+					)}</strong
+				>
+				{$t(
+					"pages.privacy.interpretation_definitions.definitions.purposes_third_party_social_media_service_description",
+				)}
+			</p>
+		</li>
+		<li>
+			<p>
+				<strong
+					>{$t("pages.privacy.interpretation_definitions.definitions.purposes_usage_data")}</strong
+				>
+				{$t("pages.privacy.interpretation_definitions.definitions.purposes_usage_data_description")}
+			</p>
+		</li>
+		<li>
+			<p>
+				<strong>{$t("pages.privacy.interpretation_definitions.definitions.purposes_you")}</strong>
+				{$t("pages.privacy.interpretation_definitions.definitions.purposes_you_description")}
 			</p>
 		</li>
 	</ul>
-	<h1>Collecting and Using your Personal Data</h1>
-	<h2>Types of Data Collected</h2>
-	<h3>Personal Data</h3>
+	<h1>{$t("pages.privacy.data_collecting.title")}</h1>
+	<h2>{$t("pages.privacy.data_collecting.types.header")}</h2>
+	<h3>{$t("pages.privacy.data_collecting.types.personal.header")}</h3>
 	<p>
-		While using our service, we may ask you to provide us with certain personally identifiable
-		information that can be used to contact or identify you. Personally identifiable information may
-		include, but is not limited to:
+		{$t("pages.privacy.data_collecting.types.personal.description")}
 	</p>
 	<ul>
-		<li>Usage Data</li>
+		<li>{$t("pages.privacy.data_collecting.types.personal.information")}</li>
 	</ul>
-	<h3>Usage Data</h3>
-	<p>Usage Data is collected automatically when using the service.</p>
+	<h3>{$t("pages.privacy.data_collecting.types.usage_data.header")}</h3>
+	<p>{$t("pages.privacy.data_collecting.types.usage_data.description_1")}</p>
 	<p>
-		Usage Data may include information such as your Device's Internet Protocol address (e.g. IP
-		address), browser type, browser version, the pages of our service that you visit, the time and
-		date of your visit, the time spent on those pages, unique device identifiers and other
-		diagnostic data.
+		{$t("pages.privacy.data_collecting.types.usage_data.description_2")}
 	</p>
 	<p>
-		When you access the service by or through a mobile device, we may collect certain information
-		automatically, including, but not limited to, the type of mobile device you use, your mobile
-		device unique ID, the IP address of your mobile device, your mobile operating system, the type
-		of mobile Internet browser you use, unique device identifiers and other diagnostic data.
+		{$t("pages.privacy.data_collecting.types.usage_data.description_3")}
 	</p>
 	<p>
-		We may also collect information that your browser sends whenever you visit our service or when
-		you access the service by or through a mobile device.
+		{$t("pages.privacy.data_collecting.types.usage_data.description_4")}
 	</p>
-	<h3>Information from Third-Party Social Media services</h3>
+	<h3>{$t("pages.privacy.data_collecting.types.information_social_media.header")}</h3>
 	<p>
-		The Company allows you to create an account and log in to use the service through the following
-		Third-party Social Media Services:
+		{$t("pages.privacy.data_collecting.types.information_social_media.description_1")}
 	</p>
 	<ul>
-		<li>Twitch, operated by Twitch Interactive</li>
-		<li>YouTube, operated by Alphabet, Inc</li>
-		<li>Discord, operated by Discord, Inc</li>
+		<li>{$t("pages.privacy.data_collecting.types.information_social_media.twitch")}</li>
+		<li>{$t("pages.privacy.data_collecting.types.information_social_media.youtube")}</li>
+		<li>{$t("pages.privacy.data_collecting.types.information_social_media.discord")}</li>
 	</ul>
 	<p>
-		If you decide to register through or otherwise grant us access to a Third-Party Social Media
-		Service, we may collect Personal data that is already associated with your Third-Party Social
-		Media Service's account, such as your name, your email address, your activities or your contact
-		list associated with that account.
+		{$t("pages.privacy.data_collecting.types.information_social_media.description_2")}
 	</p>
 	<p>
-		You may also have the option of sharing additional information with the Company through your
-		Third-Party Social Media Service's account. If you choose to provide such information and
-		Personal Data, during registration or otherwise, you are giving the Company permission to use,
-		share, and store it in a manner consistent with this Privacy Policy.
+		{$t("pages.privacy.data_collecting.types.information_social_media.description_3")}
 	</p>
-	<h2>Use of your Personal Data</h2>
-	<p>The Company may use Personal Data for the following purposes:</p>
+	<h2>{$t("pages.privacy.data_collecting.use.header")}</h2>
+	<p>{$t("pages.privacy.data_collecting.use.description_1")}</p>
 	<ul>
 		<li>
 			<p>
-				<strong>To provide and maintain our Service</strong>, including to monitor the usage of our
-				Service.
+				<strong>{$t("pages.privacy.data_collecting.use.provide_maintain")}</strong>, {$t(
+					"pages.privacy.data_collecting.use.provide_maintain_description",
+				)}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>To manage your Account:</strong> to manage your registration as a user of the Service.
-				The Personal Data you provide can give you access to different functionalities of the Service
-				that are available to you as a registered user.
+				<strong>{$t("pages.privacy.data_collecting.use.manage_account")}</strong>
+				{$t("pages.privacy.data_collecting.use.manage_account_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>For the performance of a contract:</strong> the development, compliance and undertaking
-				of the purchase contract for the products, items or services you have purchased or of any other
-				contract with us through the Service.
+				<strong>{$t("pages.privacy.data_collecting.use.performance_of_contract")}</strong>
+				{$t("pages.privacy.data_collecting.use.performance_of_contract_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>To contact you:</strong> by email, or other equivalent forms of electronic communication,
-				regarding updates or informative communications related to the functionalities, products or contracted
-				services, including security updates, when necessary or reasonable for their implementation.
+				<strong>{$t("pages.privacy.data_collecting.use.contact")}</strong>
+				{$t("pages.privacy.data_collecting.use.contact_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>To provide you</strong> with news, special offers and general information about other
-				goods, services and events which we offer that are similar to those that you have already purchased
-				or enquired about unless you have opted not to receive such information.
+				<strong>{$t("pages.privacy.data_collecting.use.provide")}</strong>
+				{$t("pages.privacy.data_collecting.use.provide_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>To manage your requests:</strong> To attend and manage your requests to us.
+				<strong>{$t("pages.privacy.data_collecting.use.manage_requests")}</strong>
+				{$t("pages.privacy.data_collecting.use.manage_requests_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>For business transfers:</strong> we may use your information to evaluate or conduct a
-				merger, divestiture, restructuring, reorganisation, dissolution, or other sale or transfer of
-				some or all of our assets, whether as a going concern or as part of bankruptcy, liquidation,
-				or similar proceeding, in which Personal Data held by us about our Service users is among the
-				assets transferred.
+				<strong>{$t("pages.privacy.data_collecting.use.business_transfers")}</strong>
+				{$t("pages.privacy.data_collecting.use.business_transfers_description")}
 			</p>
 		</li>
 		<li>
 			<p>
-				<strong>For other purposes</strong>: we may use your information for other purposes, such as
-				data analysis, identifying usage trends, determining the effectiveness of our promotional
-				campaigns and to evaluate and improve our Service, products, services, marketing and your
-				experience.
+				<strong>{$t("pages.privacy.data_collecting.use.other")}</strong>
+				{$t("pages.privacy.data_collecting.use.other_description")}
 			</p>
 		</li>
 	</ul>
-	<p>We may share your personal information in the following situations:</p>
+	<p>{$t("pages.privacy.data_collecting.use.share.description")}</p>
 	<ul>
 		<li>
-			<strong>With Service Providers:</strong> we may share your personal information with Service Providers
-			to monitor and analyse the use of our Service, to contact you.
+			<strong>{$t("pages.privacy.data_collecting.use.share.service_providers")}</strong>
+			{$t("pages.privacy.data_collecting.use.share.service_providers_description")}
 		</li>
 		<li>
-			<strong>For business transfers:</strong> we may share or transfer your personal information in
-			connection with, or during negotiations of, any merger, sale of Company assets, financing, or acquisition
-			of all or a portion of our business to another company.
+			<strong>{$t("pages.privacy.data_collecting.use.share.business_transfers")}</strong>
+			{$t("pages.privacy.data_collecting.use.share.business_transfers_description")}
 		</li>
 		<li>
-			<strong>With Affiliates:</strong> we may share your information with our affiliates, in which case
-			we will require those affiliates to honour this Privacy Policy. Affiliates include our parent company
-			and any other subsidiaries, joint venture partners or other companies that we control or that are
-			under common control with us.
+			<strong>{$t("pages.privacy.data_collecting.use.share.affiliates")}</strong>
+			{$t("pages.privacy.data_collecting.use.share.affiliates_description")}
 		</li>
 		<li>
-			<strong>With business partners:</strong> we may share your information with our business partners
-			to offer you certain products, services or promotions.
+			<strong>{$t("pages.privacy.data_collecting.use.share._business_partners")}</strong>
+			{$t("pages.privacy.data_collecting.use.share.business_partners_description")}
 		</li>
 		<li>
-			<strong>With other users:</strong> when you share personal information or otherwise interact in
-			the public areas with other users, such information may be viewed by all users and may be publicly
-			distributed outside. If you interact with other users or register through a Third-Party Social
-			Media Service, your contacts on the Third-Party Social Media Service may see your name, profile,
-			pictures and description of your activity. Similarly, other users will be able to view descriptions
-			of your activity, communicate with you and view your profile.
+			<strong>{$t("pages.privacy.data_collecting.use.share.other_users")}</strong>
+			{$t("pages.privacy.data_collecting.use.share.other_users_description")}
 		</li>
 		<li>
-			<strong>With your consent</strong>: we may disclose your personal information for any other
-			purpose with your consent.
+			<strong>{$t("pages.privacy.data_collecting.use.share.consent")}</strong>
+			{$t("pages.privacy.data_collecting.use.share.consent_description")}
 		</li>
 	</ul>
-	<h2>Retention of your Personal Data</h2>
+	<h2>{$t("pages.privacy.data_collecting.retention.header")}</h2>
 	<p>
-		The Company will retain your Personal Data only for as long as is necessary for the purposes set
-		out in this Privacy Policy. We will retain and use your Personal Data to the extent necessary to
-		comply with our legal obligations (for example, if we are required to retain your data to comply
-		with applicable laws), resolve disputes, and enforce our legal agreements and policies.
+		{$t("pages.privacy.data_collecting.retention.description_1")}
 	</p>
 	<p>
-		The Company will also retain Usage Data for internal analysis purposes. Usage Data is generally
-		retained for a shorter period of time, except when this data is used to strengthen the security
-		or to improve the functionality of our service, or we are legally obligated to retain this data
-		for longer time periods.
+		{$t("pages.privacy.data_collecting.retention.description_2")}
 	</p>
-	<h2>Transfer of your Personal Data</h2>
+	<h2>{$t("pages.privacy.data_collecting.transfer.header")}</h2>
 	<p>
-		Your information, including Personal Data, is processed at the Company's operating offices and
-		in any other places where the parties involved in the processing are located. It means that this
-		information may be transferred to — and maintained on — computers located outside of your state,
-		province, country or other governmental jurisdiction where the data protection laws may differ
-		than those from your jurisdiction.
+		{$t("pages.privacy.data_collecting.transfer.description_1")}
 	</p>
 	<p>
-		Your consent to this Privacy Policy followed by your submission of such information represents
-		your agreement to that transfer.
+		{$t("pages.privacy.data_collecting.transfer.description_2")}
 	</p>
 	<p>
-		The Company will take all steps reasonably necessary to ensure that your data is treated
-		securely and in accordance with this Privacy Policy and no transfer of your Personal Data will
-		take place to an organisation or a country unless there are adequate controls in place including
-		the security of your data and other personal information.
+		{$t("pages.privacy.data_collecting.transfer.description_3")}
 	</p>
-	<h2>Disclosure of your Personal Data</h2>
-	<h3>Business Transactions</h3>
+	<h2>{$t("pages.privacy.data_collecting.disclosure.header")}</h2>
+	<h3>{$t("pages.privacy.data_collecting.disclosure.business_transactions.header")}</h3>
 	<p>
-		If the Company is involved in a merger, acquisition or asset sale, your Personal Data may be
-		transferred. We will provide notice before your Personal Data is transferred and becomes subject
-		to a different Privacy Policy.
+		{$t("pages.privacy.data_collecting.disclosure.business_transactions.description")}
 	</p>
-	<h3>Law enforcement</h3>
+	<h3>{$t("pages.privacy.data_collecting.disclosure.law_enforcement.header")}</h3>
 	<p>
-		Under certain circumstances, the Company may be required to disclose your Personal Data if
-		required to do so by law or in response to valid requests by public authorities (e.g. a court or
-		a government agency).
+		{$t("pages.privacy.data_collecting.disclosure.law_enforcement.description")}
 	</p>
-	<h3>Other legal requirements</h3>
+	<h3>{$t("pages.privacy.data_collecting.disclosure.other_legal_requirements.header")}</h3>
 	<p>
-		The Company may disclose your Personal Data in the good faith belief that such action is
-		necessary to:
+		{$t("pages.privacy.data_collecting.disclosure.other_legal_requirements.description")}
 	</p>
 	<ul>
-		<li>Comply with a legal obligation</li>
-		<li>Protect and defend the rights or property of the Company</li>
-		<li>Prevent or investigate possible wrongdoing in connection with the service</li>
-		<li>Protect the personal safety of Users of the service or the public</li>
-		<li>Protect against legal liability</li>
+		<li>{$t("pages.privacy.data_collecting.disclosure.other_legal_requirements.bullet_1")}</li>
+		<li>{$t("pages.privacy.data_collecting.disclosure.other_legal_requirements.bullet_2")}</li>
+		<li>{$t("pages.privacy.data_collecting.disclosure.other_legal_requirements.bullet_3")}</li>
+		<li>{$t("pages.privacy.data_collecting.disclosure.other_legal_requirements.bullet_4")}</li>
+		<li>{$t("pages.privacy.data_collecting.disclosure.other_legal_requirements.bullet_5")}</li>
 	</ul>
-	<h2>Security of your Personal Data</h2>
+	<h2>{$t("pages.privacy.security.header")}</h2>
 	<p>
-		The security of your Personal Data is important to us, but remember that no method of
-		transmission over the Internet, or method of electronic storage is 100% secure. While we strive
-		to use commercially acceptable means to protect your Personal Data, we cannot guarantee its
-		absolute security.
+		{$t("pages.privacy.security.description")}
 	</p>
 	<h1>
-		&quot;Do Not Track&quot; Policy as Required by California Online Privacy Protection Act
-		(CalOPPA)
+		{$t("pages.privacy.caloppa.title")}
 	</h1>
-	<p>Our service does not respond to Do Not Track signals.</p>
+	<p>{$t("pages.privacy.caloppa.description_1")}</p>
 	<p>
-		However, some third party websites do keep track of your browsing activities. If you are
-		visiting such websites, you can set your preferences in your web browser to inform websites that
-		you do not want to be tracked. you can enable or disable DNT by visiting the preferences or
-		settings page of your web browser.
+		{$t("pages.privacy.caloppa.description_2")}
 	</p>
-	<h1>Children's Privacy</h1>
+	<h1>{$t("pages.privacy.children.title")}</h1>
 	<p>
-		Our service does not address anyone under the age of 13. We do not knowingly collect personally
-		identifiable information from anyone under the age of 13. If you are a parent or guardian and
-		you are aware that your child has provided us with Personal Data, please contact us. If we
-		become aware that we have collected Personal Data from anyone under the age of 13 without
-		verification of parental consent, we take steps to remove that information from our servers.
+		{$t("pages.privacy.children.description_1")}
 	</p>
 	<p>
-		If we need to rely on consent as a legal basis for processing your information and your country
-		requires consent from a parent, we may require your parent's consent before we collect and use
-		that information.
+		{$t("pages.privacy.children.description_2")}
 	</p>
-	<h1>Links to Other Websites</h1>
+	<h1>{$t("pages.privacy.links.title")}</h1>
 	<p>
-		Our service may contain links to other websites that are not operated by us. If you click on a
-		third party link, you will be directed to that third party's site. We strongly advise you to
-		review the Privacy Policy of every site you visit.
+		{$t("pages.privacy.links.description_1")}
 	</p>
 	<p>
-		We have no control over and assume no responsibility for the content, privacy policies or
-		practices of any third party sites or services.
+		{$t("pages.privacy.links.description_2")}
 	</p>
-	<h1>Changes to this Privacy Policy</h1>
+	<h1>{$t("pages.privacy.changes.title")}</h1>
 	<p>
-		We may update our Privacy Policy from time to time. We will notify you of any changes by posting
-		the new Privacy Policy on this page.
+		{$t("pages.privacy.changes.description_1")}
 	</p>
 	<p>
-		We will let you know via email and/or a prominent notice on our service, prior to the change
-		becoming effective and update the &quot;Last updated&quot; date at the top of this Privacy
-		Policy.
+		{$t("pages.privacy.changes.description_2")}
 	</p>
 	<p>
-		you are advised to review this Privacy Policy periodically for any changes. Changes to this
-		Privacy Policy are effective when they are posted on this page.
+		{$t("pages.privacy.changes.description_3")}
 	</p>
-	<h1>Contact Us</h1>
-	<p>If you have any questions about this Privacy Policy, you can contact us:</p>
+	<h1>{$t("pages.privacy.contact.title")}</h1>
+	<p>{$t("pages.privacy.contact.description")}</p>
 	<ul>
-		<li>By email: <a href="mailto:kathy@7tv.app"> kathy@7tv.app</a></li>
+		<li>{$t("pages.privacy.contact.email")}<a href="mailto:kathy@7tv.app"> kathy@7tv.app</a></li>
 	</ul>
 </div>
 

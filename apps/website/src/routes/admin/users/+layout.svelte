@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Users - {$t("page_titles.admin_suffix")}</title>
+	<title>{$t("pages.admin.users.title")} - {$t("page_titles.admin_suffix")}</title>
 </svelte:head>
 
 {@render children()}

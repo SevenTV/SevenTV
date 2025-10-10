@@ -6,6 +6,7 @@
 	import { type Badge } from "$/gql/graphql";
 	import BadgeComponent from "../badge.svelte";
 	import HeroPepe from "$/components/pickems/hero-pepe.svelte";
+	import { t } from "svelte-i18n";
 	// import PickemsHeaderBench from "$assets/pickems_header_bench.png";
 
 	async function queryCosmetics() {
@@ -72,25 +73,25 @@
 		{/if}
 		<div class="hero-content centered">
 			<div class="top-info hide-on-mobile">
-				<p>35 STREAMERS</p>
+				<p>{$t("pages.landing.hero.cs2.streamers")}</p>
 				<Minus />
-				<p>7TV HOSTED TOURNAMENT</p>
+				<p>{$t("pages.landing.hero.cs2.tournament")}</p>
 				<Minus />
-				<p>3 DAY EVENT</p>
+				<p>{$t("pages.landing.hero.cs2.event")}</p>
 			</div>
 			<div class="content">
 				<div>
-					<h1>Place Pick’ems</h1>
-					<h1>Win Badges & Paints.</h1>
+					<h1>{$t("pages.landing.hero.cs2.pickems")}</h1>
+					<h1>{$t("pages.landing.hero.cs2.badges_paints")}</h1>
 				</div>
 				<div class="description">
-					<p>xQc, OhnePixel, JasonTheWeen and 32 other streamers go head to head</p>
-					<p>in a 3-day Single Elimination 7TV Hosted CS2 tournament.</p>
+					<p>{$t("pages.landing.hero.cs2.description1")}</p>
+					<p>{$t("pages.landing.hero.cs2.description2")}</p>
 				</div>
 			</div>
 			<div class="buttons">
 				<Button primary style="font-size: 1em; background-color: #EFDFFF;" href="/store/pickems"
-					>Learn More</Button
+					>{$t("pages.landing.hero.more")}</Button
 				>
 			</div>
 		</div>

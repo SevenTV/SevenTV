@@ -279,7 +279,7 @@
 							{#snippet icon()}
 								<PaintBrush />
 							{/snippet}
-							Your Cosmetics
+							{$t("pages.store.subscription.your_cosmetics")}
 						</Button>
 					{/if}
 					{#if subInfo.activePeriod}
@@ -288,7 +288,7 @@
 								{#snippet icon()}
 									<Warning />
 								{/snippet}
-								Cancel Subscription
+								{$t("pages.store.subscription.cancel")}
 							</Button>
 						{:else if subInfo.activePeriod.subscription.state === SubscriptionState.CancelAtEnd && !subInfo.activePeriod.giftedBy}
 							<Button
@@ -304,7 +304,7 @@
 										<Star />
 									{/if}
 								{/snippet}
-								Reactivate Subscription
+								{$t("pages.store.subscription.reactivate")}
 							</Button>
 						{/if}
 					{/if}
