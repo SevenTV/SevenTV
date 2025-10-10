@@ -12,7 +12,7 @@ All country flags have been downloaded from [here](https://github.com/hampusborg
 ## Development
 
 ### Install Dependencies
-Make sure to have NodeJS, and pnpm first.
+Make sure to have [NodeJS](https://nodejs.org/) and [pnpm](https://pnpm.io/) first.
 
 Install all dependencies by using
 ```bash
