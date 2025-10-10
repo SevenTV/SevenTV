@@ -4,6 +4,7 @@
 	import moment from "moment/min/moment-with-locales";
 	import FromNow from "$/components/from-now.svelte";
 	import ResponsiveImage from "../responsive-image.svelte";
+	import { t } from "svelte-i18n";
 
 	let { event }: { event: EmoteSetEvent } = $props();
 </script>

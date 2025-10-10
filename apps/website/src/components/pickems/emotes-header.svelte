@@ -6,6 +6,7 @@
 	import { queryPickemsCosmetics } from "$/lib/pickems";
 	import PickemsBadges from "./pickems-badges.svelte";
 	import PickemsPaints from "./pickems-paints.svelte";
+	import { t } from "svelte-i18n";
 
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
 
@@ -38,7 +39,9 @@
 		<div class="pickems-header">
 			<div class="purchase-info">
 				<div class="text">
-					<p class="pre-title">{$t("pages.store.events.cs2.tournament")} &#x2022 {$t("pages.landing.hero.cs2.date")}</p>
+					<p class="pre-title">
+						{$t("pages.store.events.cs2.tournament")} &#x2022 {$t("pages.landing.hero.cs2.date")}
+					</p>
 					<h2 class="title">{$t("pages.landing.hero.cs2.header")}</h2>
 				</div>
 				<div class="buttons">

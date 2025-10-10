@@ -19,11 +19,10 @@
 		User,
 	} from "phosphor-svelte";
 	import Button from "../input/button.svelte";
-	import CountryFlag from "../country-flag.svelte";
 	import moment from "moment/min/moment-with-locales";
 	import Flags from "../flags.svelte";
 	import FromNow from "../from-now.svelte";
-	import type { ModRequestsTicket } from "$/components/admin/emote-tickets.svelte";
+	import type { ModRequestsTicket } from "$/components/admin/report-tickets.svelte";
 	import ResponsiveImage from "../responsive-image.svelte";
 
 	let {
@@ -101,12 +100,6 @@
 			<Smiley />
 			{emote.defaultName}
 		</a>
-		<CountryFlag
-			code={ticket.message.actor_country_code}
-			name={ticket.message.actor_country_name}
-			height={1.2 * 16}
-			style="justify-self: end"
-		/>
 		<a
 			class="username field owner"
 			href="/users/{emote.owner?.id}"
@@ -209,6 +202,7 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 	}
+
 	.from-now {
 		justify-self: end;
 		gap: 0.3rem;

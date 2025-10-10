@@ -15,7 +15,7 @@ export const sessionToken = writable<string | null | undefined>(
 	browser ? window.localStorage.getItem(LOCALSTORAGE_KEY) : undefined,
 );
 export const user = writable<User | null | undefined>(undefined);
-export const isSubscribed = derived(user, ($user) => $user?.billing.subscriptionInfo.activePeriod)
+export const isSubscribed = derived(user, ($user) => $user?.billing.subscriptionInfo.activePeriod);
 
 export function refreshUser() {
 	fetchMe().then((data) => user.set(data));

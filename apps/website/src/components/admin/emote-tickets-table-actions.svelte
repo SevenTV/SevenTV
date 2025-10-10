@@ -3,34 +3,44 @@
 	import Button from "../input/button.svelte";
 	import type { ButtonOptions } from "./emote-ticket.svelte";
 
-	let { buttonOptions = $bindable() }: { buttonOptions: ButtonOptions } = $props();
+	let {
+		buttonOptions = $bindable(),
+		onaction,
+	}: {
+		buttonOptions: ButtonOptions;
+		onaction: (action: string) => void;
+	} = $props();
+	function onClickStop(event: Event, action: string) {
+		event.stopPropagation();
+		onaction(action);
+	}
 </script>
 
 <td class="shrink">
 	<div class="buttons">
 		{#if buttonOptions.merge}
-			<Button>
+			<Button onclick={(event) => onClickStop(event, "merge")}>
 				{#snippet icon()}
 					<ArrowsMerge style="transform: rotate(-90deg)" color="var(--admin-merge)" />
 				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.delete}
-			<Button>
+			<Button onclick={(event) => onClickStop(event, "delete")}>
 				{#snippet icon()}
 					<Trash color="var(--danger)" />
 				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.unlist}
-			<Button>
+			<Button onclick={(event) => onClickStop(event, "unlist")}>
 				{#snippet icon()}
 					<EyeSlash color="var(--admin-unlist)" />
 				{/snippet}
 			</Button>
 		{/if}
 		{#if buttonOptions.approve}
-			<Button>
+			<Button onclick={(event) => onClickStop(event, "approve")}>
 				{#snippet icon()}
 					<Check color="var(--approve)" />
 				{/snippet}

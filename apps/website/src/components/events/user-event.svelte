@@ -13,6 +13,7 @@
 	import FromNow from "$/components/from-now.svelte";
 	import PaintComponent from "../paint.svelte";
 	import BadgeComponent from "../badge.svelte";
+	import { t } from "svelte-i18n";
 
 	let { event }: { event: UserEvent } = $props();
 </script>
@@ -96,16 +97,24 @@
 		{:else if event.data.__typename === "EventUserDataAddConnection"}
 			<PlugsConnected />
 			<span class="text"
-				>{$t("pages.store.events.user.added")} {event.data.addedPlatform} {$t("pages.store.events.user.connection")} {@render userLink(event.actor)}</span
+				>{$t("pages.store.events.user.added")}
+				{event.data.addedPlatform}
+				{$t("pages.store.events.user.connection")}
+				{@render userLink(event.actor)}</span
 			>
 		{:else if event.data.__typename === "EventUserDataRemoveConnection"}
 			<Plugs />
 			<span class="text"
-				>{$t("pages.store.events.user.removed")} {event.data.removedPlatform} {$t("pages.store.events.user.connection")} {@render userLink(event.actor)}</span
+				>{$t("pages.store.events.user.removed")}
+				{event.data.removedPlatform}
+				{$t("pages.store.events.user.connection")}
+				{@render userLink(event.actor)}</span
 			>
 		{:else if event.data.__typename === "EventUserDataDelete"}
 			<Trash />
-			<span class="text">{$t("pages.store.events.user.deleted")} {@render userLink(event.actor)}</span>
+			<span class="text"
+				>{$t("pages.store.events.user.deleted")} {@render userLink(event.actor)}</span
+			>
 		{/if}
 		<span class="time">
 			<FromNow date={moment(event.createdAt)} />
