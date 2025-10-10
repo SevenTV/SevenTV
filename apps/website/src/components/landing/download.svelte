@@ -18,6 +18,7 @@
 	import DankchatLogo from "../icons/dankchat-logo.svelte";
 	import ChatsenLogo from "../icons/chatsen-logo.svelte";
 	import { browser } from "$app/environment";
+	import { t } from "svelte-i18n";
 
 	const isFirefox = browser ? navigator.userAgent.includes("Firefox") : false;
 </script>
@@ -27,7 +28,7 @@
 		<img src={weirdSmiley} alt="Weird Smiley" />
 	</div>
 	<h2>
-		Download
+		{$t("labels.download")}
 		<svg
 			aria-hidden="true"
 			class="star hide-on-mobile"
@@ -44,8 +45,7 @@
 		</svg>
 	</h2>
 	<p>
-		Start your journey with hundreds of emotes and features that enhance your chatting experience.
-		Download the Official 7TV Extension or other 3rd party tools.
+		{$t("pages.landing.download.start")}
 	</p>
 	<div class="buttons">
 		<DropDown align="left">
@@ -53,7 +53,7 @@
 				{#snippet icon()}
 					<Logo size={1.25 * 16} />
 				{/snippet}
-				Web Extension
+				{$t("pages.landing.download.extension")}
 				{#snippet iconRight()}
 					<CaretDown />
 				{/snippet}
@@ -68,7 +68,7 @@
 						{#snippet icon()}
 							<Logo size={1.25 * 16} />
 						{/snippet}
-						<span>Stable Release</span>
+						<span>{$t("pages.landing.download.stable")}</span>
 						{#snippet iconRight()}
 							{#if isFirefox}
 								<DownloadSimple />
@@ -85,7 +85,7 @@
 						{#snippet icon()}
 							<Logo size={1.25 * 16} style="color: var(--store)" />
 						{/snippet}
-						<span>Nightly Release</span>
+						<span>{$t("pages.landing.download.nightly")}</span>
 						{#snippet iconRight()}
 							{#if isFirefox}
 								<DownloadSimple />
@@ -115,7 +115,7 @@
 				{#snippet icon()}
 					<DeviceMobile />
 				{/snippet}
-				<span>Mobile Apps</span>
+				<span>{$t("pages.landing.download.mobile.apps")}</span>
 				{#snippet iconRight()}
 					<CaretDown />
 				{/snippet}
@@ -126,7 +126,7 @@
 						{#snippet icon()}
 							<ChatsenLogo />
 						{/snippet}
-						<span>Chatsen</span>
+						<span>{$t("pages.landing.download.mobile.chatsen")}</span>
 						{#snippet iconRight()}
 							<ArrowSquareOut />
 						{/snippet}
@@ -135,7 +135,7 @@
 						{#snippet icon()}
 							<FrostyLogo />
 						{/snippet}
-						<span>Frosty</span>
+						<span>{$t("pages.landing.download.mobile.frosty")}</span>
 						{#snippet iconRight()}
 							<ArrowSquareOut />
 						{/snippet}
@@ -144,7 +144,7 @@
 						{#snippet icon()}
 							<DankchatLogo />
 						{/snippet}
-						<span>DankChat</span>
+						<span>{$t("pages.landing.download.mobile.dankchat")}</span>
 						{#snippet iconRight()}
 							<ArrowSquareOut />
 						{/snippet}

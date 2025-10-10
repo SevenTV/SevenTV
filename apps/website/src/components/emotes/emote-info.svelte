@@ -198,10 +198,10 @@
 			{#if data.imagesPending}
 				<div class="processing">
 					<Cpu />
-					This emote is still processing
+					{$t("dialogs.emote_info.processing")}
 					{#if data}
 						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}>
-							Refresh
+							{$t("dialogs.emote_info.refresh")}
 						</button>
 					{/if}
 				</div>
@@ -248,7 +248,7 @@
 						</Button>
 					{/if}
 				{/if}
-				<a href={undefined} style="display: none" bind:this={downloadElement}>Download</a>
+				<a href={undefined} style="display: none" bind:this={downloadElement}>{$t("dialogs.emote_info.download")}</a>
 				<DropDown bind:this={moreMenuDropdown}>
 					{#if (!$user || data?.deleted) && !data?.imagesPending && formats && formats.length > 1}
 						<Button secondary onclick={() => (moreMenuMode = "download-format")}>

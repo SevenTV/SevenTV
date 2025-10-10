@@ -34,11 +34,11 @@
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>Gift Pick'ems Pass</h1>
+		<h1>{$t("dialogs.pickems.gift.title")}</h1>
 		<hr />
 		{#if recipient}
 			<p>
-				Gift Pick'ems Pass to <UserName user={recipient} />.
+				{$t("dialogs.pickems.gift.gift_to")} <UserName user={recipient} />.
 			</p>
 		{:else}
 			<UserSearch
@@ -51,7 +51,7 @@
 				{#snippet icon()}
 					<UserIcon />
 				{/snippet}
-				<h2>Select recipient</h2>
+				<h2>{$t("dialogs.pickems.gift.recipient")}</h2>
 			</UserSearch>
 		{/if}
 
@@ -61,7 +61,7 @@
 					{#snippet icon()}
 						<CaretLeft />
 					{/snippet}
-					Back
+					{$t("dialogs.buttons.back")}
 				</Button>
 			{/if}
 
@@ -82,7 +82,7 @@
 				primary
 				submit
 			>
-				Continue
+				{$t("dialogs.buttons.continue")}
 			</Button>
 		</div>
 	</form>

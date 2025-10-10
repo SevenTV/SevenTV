@@ -11,6 +11,7 @@
 	import InfiniteLoading, { type InfiniteEvent } from "svelte-infinite-loading";
 	import Spinner from "../spinner.svelte";
 	import { untrack } from "svelte";
+	import { t } from "svelte-i18n";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 
 	const PER_PAGE = 72;
@@ -141,8 +142,8 @@
 			}}
 			on:infinite={handleInfinite}
 		>
-			<p slot="noMore">No more emotes</p>
-			<p slot="noResults">No emotes</p>
+			<p slot="noMore">{$t("common.no_more_emotes")}</p>
+			<p slot="noResults">{$t("common.no_emotes")}</p>
 			<Spinner slot="spinner" />
 		</InfiniteLoading>
 	</div>

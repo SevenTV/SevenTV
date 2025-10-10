@@ -138,14 +138,12 @@
 		<hr />
 		{#if subInfo.activePeriod?.giftedBy}
 			<p>
-				Your subscription was gifted to you by {subInfo.activePeriod.giftedBy.mainConnection
-					?.platformDisplayName}. Ending your subscription now will make you lose access to your
-				subscription benefits immediately. Are you sure you want to end your subscription?
+				{$t("dialogs.subscription.gifted_by")} {subInfo.activePeriod.giftedBy.mainConnection
+					?.platformDisplayName}. {$t("dialogs.subscription.cancel_notice")}
 			</p>
 		{:else}
 			<p>
-				Are you sure you want to cancel your subscription? You will lose access to your subscription
-				benefits at the end of your current billing period. (<Date
+				{$t("dialogs.subscription.cancel_confirmation")} (<Date
 					date={moment(subInfo.activePeriod?.end)}
 				/>)
 			</p>
@@ -164,7 +162,7 @@
 				onclick={cancelSubscription}
 				submit
 			>
-				Confirm
+				{$t("dialogs.subscription.confirm")}
 			</Button>
 		</div>
 	</form>

@@ -39,6 +39,8 @@
 		"profile_picture": "Profile Picture",
 		"suggested_emotes": "Suggested Emotes",
 		"personal_emotes": "Personal Emotes",
+		"no_more_emotes": "No more emotes",
+		"no_emotes": "No emotes",
 		"your_subscription": "Your Subscription",
 		"theme": "Theme",
 		"language": "Language",
@@ -82,6 +84,7 @@
 		"select": "Select",
 		"selection_mode": "Selection Mode",
 		"edit": "Edit",
+		"capacity": "Capacity",
 		"enable": "Enable",
 		"disable": "Disable",
 		"more": "More",
@@ -124,7 +127,9 @@
 		"listed": "Listed",
 		"unlisted": "Unlisted",
 		"personal_use": "Personal Use",
-		"personal_use_denied": "Personal Use Denied"
+		"personal_use_approved": "Approved Personal Use",
+		"personal_use_denied": "Denied Personal Use",
+		"nsfw": "NSFW"
 	},
 	"notifications": {
 		"system": "System",
@@ -152,7 +157,9 @@
 			"continue_with": "Continue with {platform}",
 			"trouble": "Trouble signing in?",
 			"legal_yapping": "By signing in, you agree to our",
-			"and": "and"
+			"and": "and",
+			"linking_new": "Already have a 7TV account and plan on linking a new connection? Sign in with your existing connection and link the new one in the",
+			"settings": "settings"
 		},
 		"upload": {
 			"title": "Upload Emote",
@@ -164,11 +171,23 @@
 			"discard": "Discard",
 			"upload": "Upload"
 		},
+		"emote_set": {
+			"title": "Active Emote Set",
+			"create": "Create Emote Set",
+			"name": "Emote Set Name",
+			"confirm": "Create",
+			"copy_set": "Copy Set"
+		},
 		"add_emote": {
 			"title": "Add {emote} to",
 			"change_name": "Change emote name",
 			"confirm": "Confirm",
 			"confirm_changes": "{count, plural, one {Confirm 1 change} other {Confirm {count} changes}}"
+		},
+		"emote_ticket": {
+			"emote_queue": "Emote queue",
+			"activity": "Activity",
+			"comments": "Comments"
 		},
 		"cart": {
 			"title": "Your Cart",
@@ -177,6 +196,21 @@
 			"preview": "Preview",
 			"purchase_as_gift": "Purchase as a gift",
 			"total": "Total"
+		},
+		"editor": {
+			"permissions": "Set Editor Permissions",
+			"super_admin": "Super Admin",
+			"emote_sets": "Emote Sets",
+			"admin": "Admin",
+			"emotes": "Emotes",
+			"user": "User",
+			"manage_personal_emotes": "Manage Personal Emote Set",
+			"confirm": "Confirm"
+		},
+		"emote_info": {
+			"processing": "This emote is still processing",
+			"refresh": "Refresh",
+			"download": "Download"
 		},
 		"copy_emotes": {
 			"title": "Copy selected emotes to"
@@ -234,6 +268,39 @@
 			"details": "This will transfer {emote}.",
 			"receipient": "Emote Receipient",
 			"transfer": "Transfer"
+		},
+		"badge": {
+			"title": "Badge"
+		},
+		"subscription": {
+			"gifted_by": "Your subscription was gifted to you by",
+			"cancel_notice": "Ending your subscription now will make you lose access to your subscription benefits immediately. Are you sure you want to end your subscription?",
+			"cancel_confirmation": "Are you sure you want to cancel your subscription? You will lose access to your subscription benefits at the end of your current billing period.",
+			"confirm": "Confirm"
+		},
+		"error": {
+			"title": "Error"
+		},
+		"pickems": {
+			"gift": {
+				"title": "Gift Pick'ems Pass",
+				"gift_to": "Gift Pick'ems Pass to",
+				"recipient": "Select recipient",
+				"back": "Back",
+				"continue": "Continue"
+			}
+		},
+		"gift": {
+			"title": "Gift 1",
+			"gift_to": "Gift 1 {variantUnit(variant)} to",
+			"recipient": "Select recipient"
+		},
+		"paint": {
+			"title": "Paint"
+		},
+		"buttons": {
+			"back": "Back",
+			"continue": "Continue"
 		}
 	},
 	"pages": {
@@ -258,6 +325,64 @@
 				"any": "Any Size"
 			}
 		},
+		"landing": {
+			"start": "Start your journey with hundreds of emotes and features that enhance your chatting experience. Download the Official 7TV Extension or other 3rd party tools.",
+			"developers": {
+				"header": "Source-Available",
+				"info": "Our entire codebase is available on GitHub with a source-available license. Anyone can view and contribute."
+			},
+			"download": {
+				"start": "Start your journey with hundreds of emotes and features that enhance your chatting experience. Download the Official 7TV Extension or other 3rd party tools.",
+				"extension": "Web Extension",
+				"stable": "Stable Release",
+				"nightly": "Nightly Release",
+				"chatterino": "Chatterino",
+				"mobile": {
+					"apps": "Mobile Apps",
+					"chatsen": "Chatsen",
+					"frosty": "Frosty",
+					"dankchat": "DankChat"
+				}
+			},
+			"features": {
+				"header": "Why 7TV?",
+				"info": "Our platform offers a variety of useful features that will enhance your chatting experience."
+			},
+			"footer": {
+				"affiliated": "7TV is not affiliated with Twitch, Kick, YouTube or Discord",
+				"privacy_policy": "Privacy Policy",
+				"tos": "Terms of Service"
+			},
+			"hero": {
+				"platform": "The Emote Platform",
+				"all": "for All",
+				"download": "Download",
+				"manage": "Manage hundreds of emotes for your Twitch, Kick or YouTube channels with ease. Enhance your chatting experience.",
+				"more": "Learn more",
+				"xmas": {
+					"header": "X-MAS SUB EVENT",
+					"info": "Gift 1 sub to anyone this christmas and get a special badge!",
+					"gift": "Gift a sub"
+				},
+				"nnys": {
+					"info": "Vote on NNYS 2024 to get an exclusive paint, badge & emote set.",
+					"vote": "Vote in NNYS 2024"
+				},
+				"cs2": {
+					"streamers": "35 STREAMERS",
+					"tournament": "7TV HOSTED TOURNAMENT",
+					"event": "3 DAY EVENT",
+					"header": "Place your Pick'ems. Win Prizes.",
+					"info": "7TV Hoster CS2 Tournament",
+					"date": "Feb. 29th - Mar. 2nd",
+					"pickems": "Place your pick'ems",
+					"pass": "Get the pass!",
+					"badges_paints": "Win Badges & Paints.",
+					"description1": "xQc, OhnePixel, JasonTheWeen and 32 other streamers go head to head",
+					"description2": "in a 3-day Single Elimination 7TV Hosted CS2 tournament."
+				}
+			}
+		},
 		"discover": {
 			"title": "Discover",
 			"uploads": "Uploads",
@@ -265,7 +390,22 @@
 		},
 		"store": {
 			"title": "Store",
-			"redeem": "Redeem Gift Code",
+			"redeem": {
+				"title": "Redeem",
+				"header": "Redeem a Gift Code",
+				"subtitle": "Redeem a gift code to unlock exclusive cosmetics and benefits.",
+				"state": {
+					"idle": "Idle",
+					"loading": "Loading",
+					"success": "Success"
+				},
+				"code": "code",
+				"shown": "shown",
+				"trial": "Your successfully redeemed your trial subscription"
+			},
+			"purchase": {
+				"success": "Your purchase was successfully completed"
+			},
 			"subscription": {
 				"banner_title_subbed": "Thank You For the Support",
 				"banner_title_unsubbed": "Unlock Special Perks",
@@ -285,13 +425,78 @@
 				},
 				"raffle": "Global Emote Raffle",
 				"monthly_paints": "Monthly Paints",
+				"your_cosmetics": "Your Cosmetics",
+				"your_paints": "Your Paints",
 				"top_gifters": "Top Gifters",
 				"subscribe": "Subscribe",
-				"subscribed": "Subscribed"
+				"subscribed": "Subscribed",
+				"cancel": "Cancel Subscription",
+				"reactivate": "Reactivate Subscription"
 			},
 			"paint_bundles": {
 				"banner_title": "Make Yourself Glow",
 				"banner_subtitle": "Nametag Paints Will Let You Express Yourself in Every Hue."
+			},
+			"events": {
+				"xmas": "X-MAS 2024 EVENT: GIFT 1 SUB TO GET A SPECIAL BADGE",
+				"emote": {
+					"deleted_emote": "Deleted Emote",
+					"deleted_set": "Deleted Set",
+					"by": "by",
+					"created": "created",
+					"changed_tags": "Changed tags for",
+					"changed_capacity": "Changed capacity for",
+					"added": "added",
+					"removed": "Removed emote",
+					"renamed": "Renamed emote",
+					"in": "in",
+					"from": "from",
+					"to": "to",
+					"deleted": "deleted"
+				},
+				"cs2": {
+					"tournament": "7TV Hosted CS2 Tournament",
+					"cosmetics": "Want to earn cosmetics for predicting the outcome? Click below!",
+					"twitch": "VIEW TWITCH",
+					"bundle": "Purchase Bundle",
+					"already_subscribed": "Already Subscribed",
+					"subscribe": "{price} today, then {recurring}",
+					"billing_cycle": "Billed as one-time purchase",
+					"pickems": {
+						"place": "Place Pick'ems",
+						"predict": "Predict Winners",
+						"purchase_pass": "Purchase Pass"
+					},
+					"pass": {
+						"title": "Pick'ems Pass",
+						"get": "Get Pass",
+						"bundle": "Pass + {variantName(variant)} Subscription Bundle"
+					},
+					"schedule": {
+						"header": "Tournament Schedule",
+						"stage": "Stage",
+						"best_of": "Best of",
+						"start_time": "Start Time"
+					},
+					"streamers": {
+						"header": "Meet the Streamers",
+						"info": "A prominent line-up of Twitch Streamers build a team from their communities who go head-to-head in a CS-Style Single Elimination Tournament.",
+						"watch": "Watch the main event on the",
+						"twitch_channel": "7TV Twitch Channel",
+						"streamer_pov": "or through your favourite streamer's POV."
+					},
+					"user": {
+						"no_badge": "No Badge",
+						"no_paint": "No Paint",
+						"changed_paint": "Changed active paint from",
+						"changed_badge": "Changed active badge from",
+						"changed_set": "Changed active emote set from",
+						"added": "Added",
+						"removed": "Removed",
+						"connection": "connected",
+						"deleted": "Deleted"
+					}
+				}
 			}
 		},
 		"admin": {
@@ -311,10 +516,154 @@
 					"reviewed_by": "Reviewed By"
 				},
 				"reports": "Reports"
+			},
+			"codes": {
+				"redeem": "Redeem Codes",
+				"add": "Add Code(s)",
+				"filters": {
+					"header": "Filters:",
+					"remaining_uses": "Remaining Uses"
+				},
+				"search": {
+					"results": "Found {results.totalCount} results ({results.pageCount} pages)"
+				},
+				"attributes": {
+					"name": {
+						"name": "Name",
+						"description": "Description",
+						"tags": "Tags",
+						"code": "Code",
+						"remaining_uses": "Remaining Uses",
+						"active_period": "Active Period",
+						"effect": "Effect",
+						"subscription_effect": "Subscription Effect",
+						"created_by": "Created By",
+						"created_at": "Created At",
+						"actions": "Actions"
+					}
+				},
+				"period": {
+					"unlimited": "Unlimited"
+				},
+				"trial": {
+					"days": "days trial",
+					"no_trial": "No trial",
+					"none": "None"
+				},
+				"system": "System"
+			},
+			"special_events": {
+				"header": "Special Events",
+				"create": "Create Special Event",
+				"add": "Add Special Event",
+				"results": "Found {results.length} results",
+				"attributes": {
+					"name": "Name",
+					"description": "Description",
+					"tags": "Tags",
+					"created_by": "Created By",
+					"created_at": "Created At",
+					"actions": "Actions",
+					"create": "Create",
+					"cancel": "Cancel"
+				},
+				"system": "System",
+				"no_events": "No Special Events"
+			},
+			"users": {
+				"id": {
+					"back": "Back",
+					"last_updated": "Last Updated At",
+					"search_last_update": "Search Last Updated At",
+					"queued": "Queued for update",
+					"stripe": {
+						"customer": "Stripe Customer",
+						"view": "View",
+						"no_customer": "No stripe customer associated",
+						"roles": "Roles"
+					},
+					"actions": {
+						"header": "Actions",
+						"sessions": {
+							"header": "Sessions",
+							"create_session": "Create New Session",
+							"delete_all": "Delete All Sessions",
+							"expiration": "Expiration date in",
+							"token": "Token",
+							"copy_token": "Copy Token",
+							"create": "Create",
+							"close": "Close"
+						},
+						"connections": {
+							"header": "Connections",
+							"kick": "Manually Link Kick",
+							"username": "Kick Username"
+						},
+						"entitlements": {
+							"header": "Entitlements",
+							"create": "Create Entitlements",
+							"assign": "Manually Assign Entitlements",
+							"assign_to": "Assign entitlements to",
+							"remove_all": "Remove All Entitlements",
+							"view": "View Entitlements",
+							"showing": "Showing entitlements assigned to"
+						}
+					},
+					"subscription": {
+						"header": "Subscription",
+						"period": {
+							"header": "Subscription Periods",
+							"key": "Key",
+							"value": "Value",
+							"id": "ID"
+						},
+						"copy": {
+							"ulid": "Copy ULID",
+							"uuid": "Copy UUID"
+						},
+						"provider": {
+							"id": "Provider ID",
+							"view": "View"
+						},
+						"product": {
+							"id": "Product ID",
+							"view": "View",
+							"start": "Start",
+							"end": "End",
+							"is_trial": "Is Trial?",
+							"auto_renew": "Auto Renew?",
+							"gifted": {
+								"header": "Gifted?",
+								"yes": "Yes - By",
+								"no": "No"
+							},
+							"created_by": "Created By",
+							"redeem": "Redeem Code",
+							"invoice": "Invoice",
+							"system": "System",
+							"variant": "Product Variant"
+						}
+					},
+					"not_found": "User not found"
+				},
+				"layout": {
+					"users": "Users"
+				},
+				"page": {
+					"manage": {
+						"header": "Manage",
+						"single_user": "Manage a single user"
+					},
+					"actions": {
+						"header": "Actions",
+						"sub_benefits_job": {
+							"header": "Subscription Benefits Job",
+							"manually": "Manually trigger the subscription job to recalculate entitlements and subscription benefits for all users.",
+							"rerun": "Rerun"
+						}
+					}
+				}
 			}
-		},
-		"emote_set": {
-			"copy_set": "Copy Set"
 		},
 		"emote": {
 			"use_emote": "Use Emote",
@@ -403,6 +752,277 @@
 				"last_modified": "Last Modified",
 				"permissions": "Permissions"
 			}
+		},
+		"privacy": {
+			"title": "Privacy Policy",
+			"last_updated": "Last updated: August 13, 2022",
+			"policy_description": "This Privacy Policy describes our policies and procedures on the collection, use and disclosure of your information when you use the service and tells you about your privacy rights and how the law protects you.",
+			"personal_data": "We use your personal data to provide and improve the service. By using the service, you agree to the collection and use of information in accordance with this Privacy Policy.",
+			"interpretation_definitions": {
+				"title": "Interpretation and Definitions",
+				"interpretation": {
+					"header": "Interpretation",
+					"description": "The words of which the initial letter is capitalised have meanings defined under the following conditions. The following definitions shall have the same meaning regardless of whether they appear in singular or in plural."
+				},
+				"definitions": {
+					"header": "Definitions",
+					"purposes": "For the purposes of this Privacy Policy:",
+					"purposes_account": "Account",
+					"purposes_account_description": "means a unique account created for you to access our service or parts of our service.",
+					"purposes_affiliate": "Affiliate",
+					"purposes_affiliate_description": "means an entity that controls, is controlled by or is under common control with a party, where &quot;control&quot; means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.",
+					"purposes_application": "Application",
+					"purposes_application_description": "means the software program provided by the Company downloaded by you on any electronic device, named SEVENTV SARL",
+					"purposes_company": "Company",
+					"purposes_company_description": "(referred to as either &quot;the Company&quot;, &quot;We&quot;, &quot;Us&quot; or &quot;our&quot; in this Agreement) refers to SEVENTV SARL.",
+					"purposes_country": "Country",
+					"purposes_country_description": "refers to: France",
+					"purposes_device": "Device",
+					"purposes_device_description": "means any device that can access the service such as a computer, a cell phone or a digital tablet.",
+					"purposes_do_not_track": "Do Not Track",
+					"purposes_do_not_track_description": "(DNT) is a concept that has been promoted by US regulatory authorities, in particular the U.S. Federal Trade Commission (FTC), for the Internet industry to develop and implement a mechanism for allowing internet users to control the tracking of their online activities across websites.",
+					"purposes_personal_data": "Personal Data",
+					"purposes_personal_data_description": "is any information that relates to an identified or identifiable individual.",
+					"purposes_service": "Service",
+					"purposes_service_description": "refers to the Application.",
+					"purposes_service_provider": "Service Provider",
+					"purposes_service_provider_description": "means any natural or legal person who processes the data on behalf of the Company. It refers to third-party companies or individuals employed by the Company to facilitate the service, to provide the service on behalf of the Company, to perform services related to the service or to assist the Company in analysing how the service is used.",
+					"purposes_third_party_social_media_service": "Third-party Social Media Service",
+					"purposes_third_party_social_media_service_description": "refers to any website or any social network website through which a User can log in or create an account to use the service.",
+					"purposes_usage_data": "Usage Data",
+					"purposes_usage_data_description": "refers to data collected automatically, either generated by the use of the service or from the service infrastructure itself (for example, the duration of a page visit).",
+					"purposes_you": "you",
+					"purposes_you_description": "means the individual accessing or using the service, or the company, or other legal entity on behalf of which such individual is accessing or using the service, as applicable."
+				}
+			},
+			"data_collecting": {
+				"title": "Collecting and Using your Personal Data",
+				"types": {
+					"header": "Types of Data Collected",
+					"personal": {
+						"header": "Personal Data",
+						"description": "While using our service, we may ask you to provide us with certain personally identifiable information that can be used to contact or identify you. Personally identifiable information may include, but is not limited to:",
+						"information": "Usage Data"
+					},
+					"usage_data": {
+						"header": "Usage Data",
+						"description_1": "Usage Data is collected automatically when using the service.",
+						"description_2": "Usage Data may include information such as your Device's Internet Protocol address (e.g. IP address), browser type, browser version, the pages of our service that you visit, the time and date of your visit, the time spent on those pages, unique device identifiers and other diagnostic data.",
+						"description_3": "When you access the service by or through a mobile device, we may collect certain information automatically, including, but not limited to, the type of mobile device you use, your mobile device unique ID, the IP address of your mobile device, your mobile operating system, the type of mobile Internet browser you use, unique device identifiers and other diagnostic data.",
+						"description_4": "We may also collect information that your browser sends whenever you visit our service or when you access the service by or through a mobile device."
+					},
+					"information_social_media": {
+						"header": "Information from Third-Party Social Media services",
+						"description_1": "The Company allows you to create an account and log in to use the service through the following Third-party Social Media Services:",
+						"twitch": "Twitch, operated by Twitch Interactive",
+						"youtube": "YouTube, operated by Alphabet, Inc",
+						"discord": "Discord, operated by Discord, Inc",
+						"description_2": "If you decide to register through or otherwise grant us access to a Third-Party Social Media Service, we may collect Personal data that is already associated with your Third-Party Social Media Service's account, such as your name, your email address, your activities or your contact list associated with that account.",
+						"description_3": "You may also have the option of sharing additional information with the Company through your Third-Party Social Media Service's account. If you choose to provide such information and Personal Data, during registration or otherwise, you are giving the Company permission to use, share, and store it in a manner consistent with this Privacy Policy."
+					}
+				},
+				"use": {
+					"header": "Use of your Personal Data",
+					"description_1": "The Company may use Personal Data for the following purposes:",
+					"provide_maintain": "To provide and maintain our Service",
+					"provide_maintain_description": "including to monitor the usage of our Service.",
+					"manage_account": "To manage your Account:",
+					"manage_account_description": "to manage your registration as a user of the Service. The Personal Data you provide can give you access to different functionalities of the Service that are available to you as a registered user.",
+					"performance_of_contract": "For the performance of a contract:",
+					"performance_of_contract_description": "the development, compliance and undertaking of the purchase contract for the products, items or services you have purchased or of any other contract with us through the Service.",
+					"contact": "To contact you:",
+					"contact_description": "by email, or other equivalent forms of electronic communication, regarding updates or informative communications related to the functionalities, products or contracted services, including security updates, when necessary or reasonable for their implementation.",
+					"provide": "To provide you",
+					"provide_description": "with news, special offers and general information about other goods, services and events which we offer that are similar to those that you have already purchased or enquired about unless you have opted not to receive such information.",
+					"manage_requests": "To manage your requests:",
+					"manage_requests_description": "To attend and manage your requests to us.",
+					"business_transfers": "For business transfers:",
+					"business_transfers_description": "we may use your information to evaluate or conduct a merger, divestiture, restructuring, reorganisation, dissolution, or other sale or transfer of some or all of our assets, whether as a going concern or as part of bankruptcy, liquidation, or similar proceeding, in which Personal Data held by us about our Service users is among the assets transferred.",
+					"other": "For other purposes:",
+					"other_description": "we may use your information for other purposes, such as data analysis, identifying usage trends, determining the effectiveness of our promotional campaigns and to evaluate and improve our Service, products, services, marketing and your experience.",
+					"share": {
+						"description": "We may share your personal information in the following situations:",
+						"service_providers": "With Service Providers:",
+						"service_providers_description": "we may share your personal information with Service Providers to monitor and analyse the use of our Service, to contact you.",
+						"business_transfers": "For business transfers:",
+						"business_transfers_description": "we may share or transfer your personal information in connection with, or during negotiations of, any merger, sale of Company assets, financing, or acquisition of all or a portion of our business to another company.",
+						"affiliates": "With Affiliates:",
+						"affiliates_description": "we may share your information with our affiliates, in which case we will require those affiliates to honour this Privacy Policy. Affiliates include our parent company and any other subsidiaries, joint venture partners or other companies that we control or that are under common control with us.",
+						"business_partners": "With business partners:",
+						"business_partners_description": "we may share your information with our business partners to offer you certain products, services or promotions.",
+						"other_users": "With other users:",
+						"other_users_description": "when you share personal information or otherwise interact in the public areas with other users, such information may be viewed by all users and may be publicly distributed outside. If you interact with other users or register through a Third-Party Social Media Service, your contacts on the Third-Party Social Media Service may see your name, profile, pictures and description of your activity. Similarly, other users will be able to view descriptions of your activity, communicate with you and view your profile.",
+						"consent": "With your consent:",
+						"consent_description": "we may disclose your personal information for any other purpose with your consent."
+					}
+				},
+				"retention": {
+					"header": "Retention of your Personal Data",
+					"description_1": "The Company will retain your Personal Data only for as long as is necessary for the purposes set out in this Privacy Policy. We will retain and use your Personal Data to the extent necessary to comply with our legal obligations (for example, if we are required to retain your data to comply with applicable laws), resolve disputes, and enforce our legal agreements and policies.",
+					"description_2": "The Company will also retain Usage Data for internal analysis purposes. Usage Data is generally retained for a shorter period of time, except when this data is used to strengthen the security or to improve the functionality of our service, or we are legally obligated to retain this data for longer time periods."
+				},
+				"transfer": {
+					"header": "Transfer of your Personal Data",
+					"description_1": "Your information, including Personal Data, is processed at the Company's operating offices and in any other places where the parties involved in the processing are located. It means that this information may be transferred to — and maintained on — computers located outside of your state, province, country or other governmental jurisdiction where the data protection laws may differ than those from your jurisdiction.",
+					"description_2": "Your consent to this Privacy Policy followed by your submission of such information represents your agreement to that transfer.",
+					"description_3": "The Company will take all steps reasonably necessary to ensure that your data is treated securely and in accordance with this Privacy Policy and no transfer of your Personal Data will take place to an organisation or a country unless there are adequate controls in place including the security of your data and other personal information."
+				},
+				"disclosure": {
+					"header": "Disclosure of your Personal Data",
+					"business_transactions": {
+						"header": "Business Transactions",
+						"description": "If the Company is involved in a merger, acquisition or asset sale, your Personal Data may be transferred. We will provide notice before your Personal Data is transferred and becomes subject to a different Privacy Policy."
+					},
+					"law_enforcement": {
+						"header": "Law Enforcement",
+						"description": "Under certain circumstances, the Company may be required to disclose your Personal Data if required to do so by law or in response to valid requests by public authorities (e.g. a court or a government agency)."
+					},
+					"other_legal_requirements": {
+						"header": "Other legal requirements",
+						"description": "The Company may disclose your Personal Data in the good faith belief that such action is necessary to:",
+						"bullet_1": "Comply with a legal obligation",
+						"bullet_2": "Protect and defend the rights or property of the Company",
+						"bullet_3": "Prevent or investigate possible wrongdoing in connection with the Service",
+						"bullet_4": "Protect the personal safety of users of the Service or the public",
+						"bullet_5": "Protect against legal liability"
+					}
+				},
+				"security": {
+					"header": "Security of your Personal Data",
+					"description": "The security of your Personal Data is important to us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. While we strive to use commercially acceptable means to protect your Personal Data, we cannot guarantee its absolute security."
+				}
+			},
+			"caloppa": {
+				"title": "&quot;Do Not Track&quot; Policy as Required by California Online Privacy Protection Act (CalOPPA)",
+				"description_1": "Our service does not respond to Do Not Track signals.",
+				"description_2": "However, some third party websites do keep track of your browsing activities. If you are visiting such websites, you can set your preferences in your web browser to inform websites that you do not want to be tracked. you can enable or disable DNT by visiting the preferences or settings page of your web browser."
+			},
+			"children": {
+				"title": "Children's Privacy",
+				"description_1": "Our service does not address anyone under the age of 13. We do not knowingly collect personally identifiable information from anyone under the age of 13. If you are a parent or guardian and you are aware that your child has provided us with Personal Data, please contact us. If we become aware that we have collected Personal Data from anyone under the age of 13 without verification of parental consent, we take steps to remove that information from our servers.",
+				"description_2": "If we need to rely on consent as a legal basis for processing your information and your country requires consent from a parent, we may require your parent's consent before we collect and use that information."
+			},
+			"links": {
+				"title": "Links to Other Websites",
+				"description_1": "Our service may contain links to other websites that are not operated by us. If you click on a third party link, you will be directed to that third party's site. We strongly advise you to review the Privacy Policy of every site you visit.",
+				"description_2": "We have no control over and assume no responsibility for the content, privacy policies or practices of any third party sites or services."
+			},
+			"changes": {
+				"title": "Changes to this Privacy Policy",
+				"description_1": "We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.",
+				"description_2": "We will let you know via email and/or a prominent notice on our service, prior to the change becoming effective and update the &quot;Last updated&quot; date at the top of this Privacy Policy.",
+				"description_3": "you are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page."
+			},
+			"contact": {
+				"title": "Contact Us",
+				"description": "If you have any questions about this Privacy Policy, you can contact us:",
+				"email": "By email: "
+			}
+		},
+		"terms": {
+			"title": "Terms of Service",
+			"last_updated": "Last updated: July 31, 2022",
+			"description_1": "Please read these Terms of Service (“terms”, “terms of service”) carefully before using the 7tv.app website and/or the 7TV browser extension operated by SEVENTV SARL (“us”, “we”, “our”). This website is operated by SEVENTV SARL. SEVENTV SARL offers this website, including all information, tools and services available from this site to you, the user, conditioned upon your acceptance of all terms, conditions, policies and notices stated here.",
+			"description_2": "By visiting our site and/ or purchasing something from us, you engage in our “Service” and agree to be bound by the following terms and conditions (“Terms of Service”, “Terms”), including those additional terms and conditions and policies referenced herein and/or available by hyperlink. These Terms of Service apply to all users of the site, including without limitation users who are browsers, vendors, customers, merchants, and/ or contributors of content.",
+			"description_3": "Please read these Terms of Service carefully before accessing or using our website. By accessing or using any part of the site, you agree to be bound by these Terms of Service. If you do not agree to all the terms and conditions of this agreement, then you may not access the website or use any services. If these Terms of Service are considered an offer, acceptance is expressly limited to these Terms of Service.",
+			"description_4": "Any new features or tools which are added to the current store shall also be subject to the Terms of Service. You can review the most current version of the Terms of Service at any time on this page. We reserve the right to update, change or replace any part of these Terms of Service by posting updates and/or changes to our website. It is your responsibility to check this page periodically for changes. Your continued use of or access to the website following the posting of any changes constitutes acceptance of those changes.",
+			"conditions": {
+				"header": "Conditions of use",
+				"description": "We will provide these services to you, which are subject to the conditions stated below. Every time you visit this website, use its services, or install the 7TV extension app, you accept the following conditions. We encourage you to read them carefully."
+			},
+			"privacy": {
+				"header": "Privacy Policy",
+				"description": "Before you continue using our website we advise you to read our privacy policy regarding our user data collection. It will help you to better understand our practices."
+			},
+			"modifications": {
+				"header": "Site Terms of Use Modifications",
+				"description": "SEVENTV SARL may revise these Terms of Use for its Website at any time without prior notice. By using this Website, you are agreeing to be bound by the current version of these Terms and Conditions of Use."
+			},
+			"terms_conditions": {
+				"header": "Terms and conditions",
+				"description_1": "These terms and conditions (\"Agreement\") set forth the general terms and conditions of your use of the 7tv.app website (\"Website\" or \"Service\") and any of its related products and services (collectively, \"Services\"). This Agreement is legally binding between you (\"User\", \"you\" or \"your\") and this Website operator (\"Operator\", \"we\", \"us\" or \"our\"). By accessing and using the Website and Services, you acknowledge that you have read, understood, and agree to be bound by the terms of this Agreement. If you are entering into this Agreement on behalf of a business or other legal entity, you represent that you have the authority to bind such an entity to this Agreement, in which case the terms \"User\", \"you\" or \"your\" shall refer to such entity. If you do not have such authority, or if you do not agree with the terms of this Agreement, you must not accept this Agreement and may not access and use the Website and Services. You acknowledge that this Agreement is a contract between you and the Operator, even though it is electronic and is not physically signed by you, and it governs your use of the Website and Services.",
+				"description_2": "We reserve the right to refuse service to anyone for any reason at any time.",
+				"description_3": "You agree not to reproduce, duplicate, copy, sell, resell or exploit any portion of the Service, use of the Service, or access to the Service or any contact on the website through which the service is provided, without express written permission by us.",
+				"description_4": "The headings used in this agreement are included for convenience only and will not limit or otherwise affect these Terms."
+			},
+			"store": {
+				"header": "Online Store Terms",
+				"description_1": "By agreeing to these Terms of Service, you represent that you are at least the age of majority in your state or province of residence, or that you are the age of majority in your state or province of residence and you have given us your consent to allow any of your minor dependents to use this site.",
+				"description_2": "A breach or violation of any of the Terms will result in an immediate termination of your Services."
+			},
+			"accuracy_completeness_timelessness": {
+				"header": "Accuracy, Completeness, and Timelessness of Information",
+				"description_1": "We are not responsible if information made available on this site is not accurate, complete or current. The material on this site is provided for general information only and should not be relied upon or used as the sole basis for making decisions without consulting primary, more accurate, more complete or more timely sources of information. Any reliance on the material on this site is at your own risk.",
+				"description_2": "This site may contain certain historical information. Historical information, necessarily, is not current and is provided for your reference only. We reserve the right to modify the contents of this site at any time, but we have no obligation to update any information on our site. You agree that it is your responsibility to monitor changes to our site."
+			},
+			"user_content": {
+				"header": "User content",
+				"description": "We do not own any data, information or material (collectively, \"Content\") that you submit on the Website in the course of using the Service. You shall have sole responsibility for the accuracy, quality, integrity, legality, reliability, appropriateness, and intellectual property ownership or right to use of all submitted Content. We may, but have no obligation to, monitor and review the Content on the Website submitted or created using our Services by you. You grant us permission to access, copy, distribute, store, transmit, reformat, display and perform the Content of your user account solely as required for the purpose of providing the Services to you. Without limiting any of those representations or warranties, we have the right, though not the obligation, to, in our own sole discretion, refuse or remove any Content that, in our reasonable opinion, violates any of our policies or is in any way harmful or objectionable. Unless specifically permitted by you, your use of the Website and Services does not grant us the licence to use, reproduce, adapt, modify, publish or distribute the Content created by you or stored in your user account for commercial, marketing or any similar purpose."
+			},
+			"changes_amendments": {
+				"header": "Changes and amendments",
+				"description": "We reserve the right to modify this Agreement or its terms relating to the Website and Services at any time, effective upon posting of an updated version of this Agreement on the Website. When we do, we will post a notification on the main page of the Website. Continued use of the Website and Services after any such changes shall constitute your consent to such changes."
+			},
+			"dmca": {
+				"header": "DMCA policy",
+				"description_1": "This Digital Millennium Copyright Act policy (\"Policy\") applies to the 7tv.app website (\"Website\" or \"Service\") and any of its related products and services (collectively, \"Services\") and outlines how SEVENTV SARL addresses copyright infringement notifications and how you (\"you\" or \"your\") may submit a copyright infringement complaint.",
+				"description_2": "Protection of intellectual property is of utmost importance to us and we ask our users and their authorised agents to do the same. It is our policy to expeditiously respond to clear notifications of alleged copyright infringement that comply with the United States Digital Millennium Copyright Act (\"DMCA\") of 1998, the text of which can be found at the U.S. Copyright Office website."
+			},
+			"copyright_complaint": {
+				"header": "What to consider before submitting a copyright complaint",
+				"description_1": "Before submitting a copyright complaint to us, consider whether the use could be considered fair use. Fair use states that brief excerpts of copyrighted material may, under certain circumstances, be quoted verbatim for purposes such as criticism, news reporting, teaching, and research, without the need for permission from or payment to the copyright holder. If you have considered fair use, and you still wish to continue with a copyright complaint, you may want to first reach out to the user in question to see if you can resolve the matter directly with the user.",
+				"description_2": "Please note that under 17 U.S.C. § 512(f), you may be liable for any damages, including costs and attorneys’ fees incurred by us or our users, if you knowingly misrepresent that the material or activity is infringing. If you are unsure whether the material you are reporting is in fact infringing, you may wish to contact an attorney before filing a notification with us.",
+				"description_3": "We may, at our discretion or as required by law, share a copy of your notification or counter-notification with the account holder engaged in the allegedly infringing activity or for publication. If you are concerned about your information being forwarded, you may wish to use an agent to report infringing material for you."
+			},
+			"infringement_notifications": {
+				"header": "Notifications of infringement",
+				"description_1": "If you are a copyright owner or an agent thereof, and you believe that any material available on our Services infringes your copyrights, then you may submit a written copyright infringement notification (\"Notification\") using the contact details below pursuant to the DMCA by providing us with the following information:",
+				"description_2": "Identification of the copyrighted work that you claim has been infringed, or, if multiple copyrighted works are covered by this Notification, you may provide a representative list of the copyrighted works that you claim have been infringed.",
+				"description_3": "Identification of the infringing material and information you claim is infringing (or the subject of infringing activity), including at a minimum, if applicable, the URL or URLs of the web pages where the allegedly infringing material may be found.",
+				"description_4": "Information reasonably sufficient to permit us to contact you, such as an address, telephone number, and, if available, an e-mail address.",
+				"description_5": "A statement that you have a good faith belief that use of the material in the manner complained of is not authorised by the copyright owner, the copyright owner's agent, or the law.",
+				"description_6": "A statement that the information in the notification is accurate, and under penalty of perjury that you are authorised to act on behalf of the owner of an exclusive right that is allegedly infringed.",
+				"description_7": "A physical or electronic signature (typing your full name will suffice) of the copyright owner or a person authorised to act on their behalf.",
+				"description_8": "All such Notifications must comply with the DMCA requirements. You may refer to a DMCA takedown notice generator or other similar services to avoid making mistakes and ensure compliance of your Notification.",
+				"description_9": "Filing a DMCA complaint is the start of a pre-defined legal process. Your complaint will be reviewed for accuracy, validity, and completeness. If your complaint has satisfied these requirements, our response may include the removal or restriction of access to allegedly infringing material as well as a permanent termination of repeat infringers’ accounts. A backup of the terminated account’s data may be requested, however it may be subject to certain penalty fees imposed. The final penalty fee will be determined by the severity and frequency of the violations.",
+				"description_10": "If we remove or restrict access to materials or terminate an account in response to a Notification of alleged infringement, we will make a good faith effort to contact the affected user with information concerning the removal or restriction of access, which may include a full copy of your Notification (including your name, address, phone, and email address), along with instructions for filing a counter-notification.",
+				"description_11": "Notwithstanding anything to the contrary contained in any portion of this Policy, SEVENTV SARL reserves the right to take no action upon receipt of a DMCA copyright infringement notification if it fails to comply with all the requirements of the DMCA for such notifications."
+			},
+			"counter_notifications": {
+				"header": "Counter-notifications",
+				"description_1": "A user who receives a copyright infringement Notification may make a counter-Notification pursuant to sections 512(g)(2) and (3) of the US Copyright Act. If you receive a copyright infringement Notification, it means that the material described in the Notification has been removed from our Services or access to the material has been restricted. Please take the time to read through the Notification, which includes information on the Notification we received as well as instructions on how to file a counter-notifications.",
+				"description_2": "To file a counter-notification with us, you must provide a written communication that sets out the information specified in the list below:",
+				"description_3": "Identification of the material that has been removed or to which access has been restricted and the location at which the material appeared before it was removed or access to it was restricted.",
+				"description_4": "Information reasonably sufficient to permit us to contact you, such as an address, telephone number, and, if available, an e-mail address.",
+				"description_5": "A statement under penalty of perjury that you have a good faith belief that the material was removed or restricted as a result of mistake or misidentification of the material to be removed or restricted.",
+				"description_6": "A statement that you consent to the jurisdiction of the federal district court for the judicial district in which the address is located (or if you are outside of the United States, that you consent to the jurisdiction of any judicial district in which the service provider may be found), and that you will accept service of process from the person or company who provided the original infringement notification.",
+				"description_7": "A physical or electronic signature (typing your full name will suffice) of the copyright owner or a person authorised to act on their behalf.",
+				"description_8": "Please note that you may be liable for, including costs and attorneys’ fees incurred by us or our users, if you knowingly misrepresent that the material or activity is not infringing the copyrights of others or that the material or activity was removed or restricted by mistake or misidentification. Accordingly, if you are not sure whether certain material infringes the copyrights of others or that the material or activity was removed or restricted by mistake or misidentification, you may wish to contact an attorney before filing a counter-notification.",
+				"description_9": "Notwithstanding anything to the contrary contained in any portion of this Policy, SEVENTV SARL reserves the right to take no action upon receipt of a counter-notification. If we receive a counter-notification that complies with the terms of 17 U.S.C. § 512(g), we may forward it to the person who filed the original Notification.",
+				"description_10": "The process described in this Policy does not limit our ability to pursue any other remedies we may have to address suspected infringement."
+			},
+			"sale": {
+				"header": "Terms of Sale"
+			},
+			"amendments_changes": {
+				"header": "Changes and amendments",
+				"description": "We reserve the right to modify this Policy or its terms relating to the Website and Services at any time, effective upon posting of an updated version of this Policy on the Website. When we do, we will revise the updated date at the bottom of this page."
+			},
+			"reporting": {
+				"header": "Reporting copyright infringement",
+				"description": "If you would like to notify us of the infringing material or activity, you may send an email to"
+			}
+		},
+		"link": {
+			"linking": "Linking Your Account...",
+			"linking_successful": "Account Successfully Linked",
+			"linking_failed": "Linking Failed"
+		},
+		"extension": {
+			"login": "Logging you in...",
+			"login_successful": "Logged in",
+			"login_failed": "Failed to log in",
+			"window": "Make sure to open this window through the extension"
 		}
 	}
 }

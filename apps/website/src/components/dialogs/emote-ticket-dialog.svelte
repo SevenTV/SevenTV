@@ -3,7 +3,7 @@
 	import Button from "../input/button.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
 	import TabLink from "../tab-link.svelte";
-
+	import { t } from "svelte-i18n";
 	let { mode = $bindable("hidden") }: { mode: DialogMode } = $props();
 
 	let tab: "activity" | "comments" = $state("activity");
@@ -11,7 +11,7 @@
 
 <Dialog bind:mode width={42}>
 	<form class="layout">
-		<h1>Emote queue</h1>
+		<h1>{$t("dialogs.emote_ticket.emote_queue")}</h1>
 		<hr />
 		<div class="emote">
 			<!-- <EmoteInfo>
@@ -47,9 +47,9 @@
 			/>
 		</div>
 		{#if tab === "activity"}
-			Activity
+			{$t("dialogs.emote_ticket.activity")}
 		{:else}
-			Comments
+			{$t("dialogs.emote_ticket.comments")}
 		{/if}
 		<hr />
 		<div class="buttons">

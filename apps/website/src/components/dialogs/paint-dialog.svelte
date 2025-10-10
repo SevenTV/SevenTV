@@ -2,6 +2,7 @@
 	import type { Paint } from "$/gql/graphql";
 	import PaintComponent from "../paint.svelte";
 	import Dialog, { type DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	interface Props {
 		mode: DialogMode;
@@ -13,7 +14,7 @@
 
 <Dialog width={30} bind:mode>
 	<div class="layout">
-		<h1>Paint</h1>
+		<h1>{$t("dialogs.paint.title")}</h1>
 		<hr />
 		<div class="paint-container">
 			<PaintComponent {paint}>

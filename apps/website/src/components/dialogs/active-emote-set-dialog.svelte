@@ -11,6 +11,7 @@
 	import Spinner from "../spinner.svelte";
 	import { setActiveSet } from "$/lib/userMutations";
 	import { refreshUser } from "$/lib/auth";
+	import { t } from "svelte-i18n";
 
 	let {
 		mode = $bindable("hidden"),
@@ -96,7 +97,7 @@
 
 <Dialog width={30} bind:mode>
 	<div class="layout">
-		<h1>Active Emote Set</h1>
+		<h1>{$t("dialogs.emote_set.title")}</h1>
 		<hr />
 		{#if $editableEmoteSets}
 			{#await userData}

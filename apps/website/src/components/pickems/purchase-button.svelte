@@ -50,22 +50,22 @@
 		{/snippet}
 
 		{#if gift}
-			Gift Pass
+			{$t("dialogs.pickems.gift.title")}
 		{:else if !disabled}
 			{#if variant}
-				Purchase Bundle
+				{$t("pages.store.events.cs2.bundle")}
 			{:else}
-				Purchase Pass
+				{$t("pages.store.events.cs2.pickems.purchase_pass")}
 			{/if}
 		{:else}
-			Already Subscribed
+			{$t("pages.store.events.cs2.already_subscribed")}
 		{/if}
 	</Button>
 	<small>
 		{#if variant}
-			{price} today, then {recurring} {variant.kind.toLowerCase()}
+			{$t("pages.store.events.cs2.subscribe")} {variant.kind.toLowerCase()}
 		{:else}
-			Billed as one-time purchase
+			{$t("pages.store.events.cs2.billing_cycle")}
 		{/if}
 	</small>
 </div>

@@ -69,17 +69,17 @@
 </script>
 
 <svelte:head>
-	<title>Redeem - {$t("page_titles.suffix")}</title>
+	<title>{$t("pages.store.redeem.title")} - {$t("page_titles.suffix")}</title>
 </svelte:head>
 
 <Banner
-	title="Redeem a Gift Code"
-	subtitle="Redeem a gift code to unlock exclusive cosmetics and benefits."
+	title={$t("pages.store.redeem.header")}
+	subtitle={$t("pages.store.redeem.subtitle")}
 	gradientColor="#ff11bc"
 />
 
 <div class="grid">
-	<StoreSection title="Redeem a Gift Code">
+	<StoreSection title={$t("pages.store.redeem.header")}>
 		<form class="redeem" onsubmit={submit}>
 			<TextInput
 				placeholder={$t("labels.redeem")}
@@ -93,7 +93,7 @@
 				{/snippet}
 			</TextInput>
 			<Button secondary submit disabled={redeemState !== "idle" || !code} style="align-self: end">
-				Redeem
+				{$t("pages.store.redeem.title")}
 				{#snippet iconRight()}
 					{#if redeemState === "idle"}
 						<CaretRight />

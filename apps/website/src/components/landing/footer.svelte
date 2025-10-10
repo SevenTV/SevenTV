@@ -4,6 +4,7 @@
 	import Logo from "../icons/logo.svelte";
 	import XTwitterLogo from "../icons/x-twitter-logo.svelte";
 	import { PUBLIC_TWITTER_LINK, PUBLIC_GITHUB_LINK, PUBLIC_DISCORD_LINK } from "$env/static/public";
+	import { t } from "svelte-i18n";
 
 	import buh from "$assets/buh.webp?url";
 
@@ -27,9 +28,9 @@
 	</div>
 	<hr />
 	<div class="links small">
-		<span>7TV is not affiliated with Twitch, Kick, YouTube or Discord</span>
-		<a href="/privacy">Privacy Policy</a>
-		<a href="/tos">Terms of Service</a>
+		<span>{$t("pages.landing.footer.affiliated")}</span>
+		<a href="/privacy">{$t("pages.landing.footer.privacy_policy")}</a>
+		<a href="/tos">{$t("pages.landing.footer.tos")}</a>
 	</div>
 </footer>
 

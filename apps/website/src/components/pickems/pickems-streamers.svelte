@@ -186,20 +186,19 @@
 
 <div class="container">
 	<div class="left-panel">
-		<h1 class="alt_head">Meet the Streamers</h1>
+		<h1 class="alt_head">{$t("pages.store.events.cs2.streamers.header")}</h1>
 		<hr class="hrDialog" />
 		<p>
-			A prominent line-up of Twitch Streamers build a team from their communities who go
-			head-to-head in a CS-Style Single Elimination Tournament.
+			{$t("pages.store.events.cs2.streamers.info")}
 		</p>
 		<p>
-			Watch the main event on the <a
+			{$t("pages.store.events.cs2.streamers.watch")} <a
 				href="https://twitch.tv/7tvapp"
 				aria-label="7tvapp Twitch Channel"
-				>7TV Twitch Channel <ArrowSquareOut style="vertical-align: text-top;" /></a
-			>, or through your favourite streamer's POV.
+				>{$t("pages.store.events.cs2.streamers.twitch_channel")} <ArrowSquareOut style="vertical-align: text-top;" /></a
+			>, {$t("pages.store.events.cs2.streamers.streamer_pov")}
 		</p>
-		<p>Want to earn cosmetics for predicting the outcome? Click below!</p>
+		<p>{$t("pages.store.events.cs2.cosmetics")}</p>
 		<div class="purchase-div">
 			{#if hasPass}
 				<Button
@@ -214,7 +213,7 @@
 				cursor: pointer;"
 					href="https://app.pickems.tv"
 				>
-					Predict Winners
+					{$t("pages.store.events.cs2.pickems.predict")}
 					<ArrowSquareOut style="margin-left: auto; margin-right: 0;" />
 				</Button>
 			{:else}
@@ -230,7 +229,7 @@
 				cursor: pointer;"
 					href="#PickemsPricing"
 				>
-					Purchase Pass
+					{$t("pages.store.events.cs2.pickems.purchase_pass")}
 					<Ticket style="margin-left: auto; margin-right: 0;" />
 				</Button>
 			{/if}
@@ -249,7 +248,7 @@
 						<div class="info">
 							<h3>{streamer.name}</h3>
 							<span class="streamer-link">
-								<u> VIEW TWITCH </u>
+								<u> {$t("pages.store.events.cs2.twitch")} </u>
 							</span>
 						</div>
 					</div>

@@ -149,9 +149,9 @@
 				<Checkbox bind:value={privateFlag}>Private</Checkbox>
 				{#if $user?.permissions.emote.manageAny}
 					<Checkbox bind:value={publicListed}>{$t("flags.listed")}</Checkbox>
-					<Checkbox bind:value={approvedPersonal}>Approved Personal Use</Checkbox>
-					<Checkbox bind:value={deniedPersonal}>Denied Personal Use</Checkbox>
-					<Checkbox bind:value={nsfw}>NSFW</Checkbox>
+					<Checkbox bind:value={approvedPersonal}>{$t("flags.personal_use_approved")}</Checkbox>
+					<Checkbox bind:value={deniedPersonal}>{$t("flags.personal_use_denied")}</Checkbox>
+					<Checkbox bind:value={nsfw}>{$t("flags.nsfw")}</Checkbox>
 				{/if}
 			</div>
 		</div>

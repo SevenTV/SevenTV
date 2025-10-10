@@ -41,16 +41,16 @@
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>Set Editor Permissions</h1>
+		<h1>{$t("dialogs.editor.permissions")}</h1>
 		<hr />
-		<Checkbox bind:value={permissions.superAdmin}>Super Admin</Checkbox>
+		<Checkbox bind:value={permissions.superAdmin}>{$t("dialogs.editor.super_admin")}</Checkbox>
 		<div>
-			<span class="label">Emote Sets</span>
+			<span class="label">{$t("dialogs.editor.emote_sets")}</span>
 			<div class="settings">
 				{#if permissions.superAdmin}
-					<Checkbox value={true} disabled>Admin</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.admin")}</Checkbox>
 				{:else}
-					<Checkbox bind:value={permissions.emoteSet.admin}>Admin</Checkbox>
+					<Checkbox bind:value={permissions.emoteSet.admin}>{$t("dialogs.editor.admin")}</Checkbox>
 				{/if}
 				{#if permissions.superAdmin || permissions.emoteSet.admin}
 					<Checkbox value={true} disabled>Manage</Checkbox>
@@ -62,12 +62,12 @@
 			</div>
 		</div>
 		<div>
-			<span class="label">Emotes</span>
+			<span class="label">{$t("dialogs.editor.emotes")}</span>
 			<div class="settings">
 				{#if permissions.superAdmin}
-					<Checkbox value={true} disabled>Admin</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.admin")}</Checkbox>
 				{:else}
-					<Checkbox bind:value={permissions.emote.admin}>Admin</Checkbox>
+					<Checkbox bind:value={permissions.emote.admin}>{$t("dialogs.editor.admin")}</Checkbox>
 				{/if}
 				{#if permissions.superAdmin || permissions.emote.admin}
 					<Checkbox value={true} disabled>Manage</Checkbox>
@@ -81,12 +81,12 @@
 			</div>
 		</div>
 		<div>
-			<span class="label">User</span>
+			<span class="label">{$t("dialogs.editor.user")}</span>
 			<div class="settings">
 				{#if permissions.superAdmin}
-					<Checkbox value={true} disabled>Admin</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.admin")}</Checkbox>
 				{:else}
-					<Checkbox bind:value={permissions.user.admin}>Admin</Checkbox>
+					<Checkbox bind:value={permissions.user.admin}>{$t("dialogs.editor.admin")}</Checkbox>
 				{/if}
 				{#if permissions.superAdmin || permissions.user.admin}
 					<Checkbox value={true} disabled>Manage Billing</Checkbox>
@@ -98,7 +98,7 @@
 					<Checkbox bind:value={permissions.user.manageProfile}>Manage Profile</Checkbox>
 					<Checkbox bind:value={permissions.user.manageEditors}>Manage Editors</Checkbox>
 					<Checkbox bind:value={permissions.user.managePersonalEmoteSet}>
-						Manage Personal Emote Set
+						{$t("dialogs.editor.manage_personal_emotes")}
 					</Checkbox>
 				{/if}
 			</div>
@@ -115,7 +115,7 @@
 				disabled={loading}
 				onclick={clickSubmit}
 			>
-				Confirm
+				{$t("dialogs.editor.confirm")}
 			</Button>
 		</div>
 	</form>

@@ -33,14 +33,14 @@
 					{#snippet icon()}
 						<ArrowSquareOut />
 					{/snippet}
-					<span> Place Pick'ems </span>
+					<span> {$t("pages.store.events.cs2.pickems.place")} </span>
 				</Button>
 			{:else if subInfo?.activePeriod}
 				<Button onclick={() => purchase()} secondary style="color: var(--store)">
 					{#snippet icon()}
 						<Ticket />
 					{/snippet}
-					<span> Get Pass </span>
+					<span> {$t("pages.store.events.cs2.pass.get")} </span>
 				</Button>
 			{:else}
 				<DropDown>
@@ -59,7 +59,7 @@
 								{/if}
 							{/snippet}
 							<div class="button-text">
-								<span> Pick'ems Pass </span>
+								<span> {$t("pages.store.events.cs2.pass.title")} </span>
 								<span>
 									{priceFormat("eur").format(4.99)}
 								</span>
@@ -81,7 +81,7 @@
 								{/snippet}
 								<div class="button-text">
 									<span>
-										Pass + {variantName(variant)} Subscription Bundle
+										{$t("pages.store.events.cs2.pass.bundle")}
 									</span>
 									<span>
 										{priceFormat("eur").format((variant.price.amount + 350) / 100)}
