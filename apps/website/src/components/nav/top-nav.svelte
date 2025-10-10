@@ -60,6 +60,7 @@
 		// 	highlight: "var(--pickems)",
 		// 	arrow: true,
 		// });
+		tabs.push({ name: $t("pages.help.title"), pathname: "https://help.7tv.app/", highlight: "" });
 		return tabs;
 	});
 </script>

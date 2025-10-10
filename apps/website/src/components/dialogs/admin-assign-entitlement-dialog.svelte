@@ -3,12 +3,13 @@
 	import { EntitlementNodeTypeInput, type EntitlementNodeInput } from "$/gql/graphql";
 	import { gqlClient } from "$/lib/gql";
 	import Button from "../input/button.svelte";
+	import Checkbox from "../input/checkbox.svelte";
 	import Radio from "../input/radio.svelte";
 	import Select from "../input/select.svelte";
 	import TextInput from "../input/text-input.svelte";
 	import Spinner from "../spinner.svelte";
-	import type { DialogMode } from "./dial
-	import { t } from "svelte-i18n";og.svelte";
+	import type { DialogMode } from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 	import Dialog from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 
@@ -20,6 +21,7 @@
 
 	let { mode = $bindable(), from, fromName }: Props = $props();
 
+	let subscription = $state<boolean>(from.type === EntitlementNodeTypeInput.User);
 	let type = $state<EntitlementNodeTypeInput | "">("");
 	let id = $state<string>("");
 
@@ -41,7 +43,7 @@
 				}
 			`),
 			{
-				from,
+				from: subscription ? { type: EntitlementNodeTypeInput.Subscription, id: from.id } : from,
 				to: {
 					type,
 					id,
@@ -118,13 +120,40 @@
 	}
 
 	let paints = $derived(type === EntitlementNodeTypeInput.Paint ? queryPaints() : []);
+
+	async function querySpecialEvents() {
+		const res = await gqlClient().query(
+			graphql(`
+				query AdminCreateRedeemCodeSpecialEvents {
+					specialEvents {
+						specialEvents {
+							id
+							name
+						}
+					}
+				}
+			`),
+			{},
+		);
+
+		if (!res.data) throw res.error?.message;
+
+		return res.data.specialEvents.specialEvents.toReversed();
+	}
+
+	let specialEvents = $derived(
+		type === EntitlementNodeTypeInput.SpecialEvent ? querySpecialEvents() : [],
+	);
 </script>
 
 <Dialog bind:mode>
 	<form class="layout">
 		<h1>{$t("pages.admin.users.id.actions.entitlements.create")}</h1>
 		<hr />
-		<p>{$t("pages.admin.users.id.actions.entitlements.assign_to")} <b>{from.type.replace("_", " ")} {fromName}</b></p>
+		<p>
+			{$t("pages.admin.users.id.actions.entitlements.assign_to")}
+			<b>{from.type.replace("_", " ")} {fromName}</b>
+		</p>
 		<div class="types">
 			Type
 			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Role}>Role</Radio>
@@ -133,6 +162,11 @@
 			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.EmoteSet}>
 				Emote Set
 			</Radio>
+			{#if from.type === EntitlementNodeTypeInput.User}
+				<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.SpecialEvent}>
+					SpecialEvent
+				</Radio>
+			{/if}
 		</div>
 		{#if type}
 			{#if type === EntitlementNodeTypeInput.Role}
@@ -177,12 +211,32 @@
 						/>
 					{/await}
 				</label>
-			{:else}
+			{:else if type === EntitlementNodeTypeInput.EmoteSet}
 				<TextInput bind:value={id} placeholder="ID">
 					{type.replace("_", " ")} ID
 				</TextInput>
+			{:else}
+				<label>
+					SpecialEvent
+					{#await specialEvents}
+						<Spinner />
+					{:then specialEvents}
+						<Select
+							bind:selected={id}
+							options={specialEvents.map((p) => {
+								return { value: p.id, label: p.name };
+							})}
+						/>
+					{/await}
+				</label>
 			{/if}
 		{/if}
+		{#if from.type === EntitlementNodeTypeInput.User}
+			<div class="sub-entitlement">
+				<Checkbox bind:value={subscription}>Subscription entitlement?</Checkbox>
+			</div>
+		{/if}
+
 		{#snippet loadingSpinner()}
 			<Spinner />
 		{/snippet}

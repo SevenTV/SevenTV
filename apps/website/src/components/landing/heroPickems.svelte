@@ -123,6 +123,21 @@
 		opacity: 50%;
 	}
 
+	.header-image {
+		object-fit: contain;
+		justify-content: center;
+		z-index: 1;
+		position: absolute;
+		pointer-events: none;
+		bottom: 0;
+		img {
+			display: inline;
+			width: 100%;
+			position: relative;
+			margin-bottom: -13.5%;
+			height: 100%;
+		}
+	}
 	.hero {
 		display: flex;
 		justify-content: center;

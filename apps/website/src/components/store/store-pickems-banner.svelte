@@ -22,6 +22,16 @@
 </section>
 
 <style lang="scss">
+	.csmoney-banner-image {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		width: 9rem;
+		height: auto;
+		@media screen and (max-width: 600px) {
+			display: none;
+		}
+	}
 	.banner {
 		position: relative;
 		z-index: 0;

@@ -9,11 +9,11 @@
 
 <script lang="ts">
 	import {
-		ArrowCounterClockwise,
 		ArrowsMerge,
 		Check,
 		Clock,
 		EyeSlash,
+		SealCheck,
 		Smiley,
 		Trash,
 		User,
@@ -23,109 +23,67 @@
 	import moment from "moment/min/moment-with-locales";
 	import Flags from "../flags.svelte";
 	import FromNow from "../from-now.svelte";
-	import type { ModRequestsTicket } from "$/components/admin/emote-tickets.svelte";
-	import ResponsiveImage from "../responsive-image.svelte";
 
 	let {
 		buttonOptions = $bindable(),
 		onclick,
-		ticket = $bindable(),
-		onaction,
-		onrevertticketaction,
-	}: {
-		buttonOptions: ButtonOptions;
-		onclick: () => void;
-		ticket: ModRequestsTicket;
-		onaction: (action: string) => void;
-		onrevertticketaction: (ticket: ModRequestsTicket) => void;
-	} = $props();
-	let { emote } = ticket;
-	function onClickStop(event: Event, action: string) {
-		event.stopPropagation();
-		onaction(action);
-	}
+	}: { buttonOptions: ButtonOptions; onclick: () => void } = $props();
 </script>
 
 <button class="emote-ticket" {onclick}>
 	<div class="buttons">
-		{#if ticket.isActioned}
-			<Button
-				big
-				title="Revert action"
-				onclick={async (event) => {
-					event.stopPropagation();
-					await onrevertticketaction(ticket);
-				}}
-			>
+		{#if buttonOptions.approve}
+			<Button>
 				{#snippet icon()}
-					<ArrowCounterClockwise color="lightblue" />
+					<Check color="var(--approve)" />
 				{/snippet}
 			</Button>
 		{/if}
-		{#if !ticket.isActioned}
-			{#if buttonOptions.approve}
-				<Button onclick={(event) => onClickStop(event, "approve")}>
-					{#snippet icon()}
-						<Check color="var(--approve)" />
-					{/snippet}
-				</Button>
-			{/if}
-			{#if buttonOptions.unlist}
-				<Button onclick={(event) => onClickStop(event, "unlist")}>
-					{#snippet icon()}
-						<EyeSlash color="var(--admin-unlist)" />
-					{/snippet}
-				</Button>
-			{/if}
-			{#if buttonOptions.delete}
-				<Button onclick={(event) => onClickStop(event, "delete")}>
-					{#snippet icon()}
-						<Trash color="var(--danger)" />
-					{/snippet}
-				</Button>
-			{/if}
-			{#if buttonOptions.merge}
-				<Button onclick={(event) => onClickStop(event, "merge")}>
-					{#snippet icon()}
-						<ArrowsMerge style="transform: rotate(-90deg)" color="var(--admin-merge)" />
-					{/snippet}
-				</Button>
-			{/if}
+		{#if buttonOptions.unlist}
+			<Button>
+				{#snippet icon()}
+					<EyeSlash color="var(--admin-unlist)" />
+				{/snippet}
+			</Button>
+		{/if}
+		{#if buttonOptions.delete}
+			<Button>
+				{#snippet icon()}
+					<Trash color="var(--danger)" />
+				{/snippet}
+			</Button>
+		{/if}
+		{#if buttonOptions.merge}
+			<Button>
+				{#snippet icon()}
+					<ArrowsMerge style="transform: rotate(-90deg)" color="var(--admin-merge)" />
+				{/snippet}
+			</Button>
 		{/if}
 	</div>
-	<div class="emote-preivew">
-		<ResponsiveImage images={ticket.emote.images} />
-	</div>
+	<!-- <EmotePreview
+		emoteOnly
+		style="width: auto; align-self: center; flex-shrink: 0; pointer-events: none"
+	/> -->
 	<div class="info">
-		<a class="emote-name field" href="/emotes/{emote.id}" title={emote.defaultName}>
+		<div class="field">
 			<Smiley />
-			{emote.defaultName}
-		</a>
-		<CountryFlag
-			code={ticket.message.actor_country_code}
-			name={ticket.message.actor_country_name}
-			height={1.2 * 16}
-			style="justify-self: end"
-		/>
-		<a
-			class="username field owner"
-			href="/users/{emote.owner?.id}"
-			title={emote.owner?.mainConnection?.platformUsername}
-		>
+			EmoteName
+		</div>
+		<CountryFlag code="fr" name="France" height={1.2 * 16} style="justify-self: end" />
+		<a class="field" href="/users/username">
 			<User />
-			{emote.owner?.mainConnection?.platformUsername}
+			Username
+			<SealCheck weight="fill" color="var(--store)" />
 		</a>
 		<div class="field from-now">
 			<Clock />
-			<FromNow date={moment(ticket.message.created_at)} />
+			<FromNow date={moment("2024-03-18T19:30:00")} />
 		</div>
-		{#if emote.tags && emote.tags.length > 0}
-			{#if emote.tags.length > 3}
-				<Flags flags={emote.tags.slice(0, 3).concat(["..."])} />
-			{:else}
-				<Flags flags={emote.tags} />
-			{/if}
-		{/if}
+		<Flags
+			flags={["overlaying", "lorem", "ipsum", "dolor", "sit", "amet", "consectetur"]}
+			style="grid-column: span 2"
+		/>
 	</div>
 </button>
 
@@ -134,52 +92,9 @@
 		background-color: var(--bg-medium);
 		border-radius: 0.5rem;
 		padding: 0.75rem;
+
 		display: flex;
 		gap: 0.5rem;
-	}
-
-	.username {
-		white-space: nowrap !important;
-		overflow: hidden !important;
-		text-overflow: ellipsis !important;
-		display: block !important;
-		max-width: 12ch !important;
-		text-align: left;
-	}
-
-	.emote-name {
-		white-space: nowrap !important;
-		overflow: hidden !important;
-		text-overflow: ellipsis !important;
-		display: block !important;
-		max-width: 12ch !important;
-		text-align: left;
-	}
-
-	.emote-preivew {
-		display: flex;
-		align-items: center;
-		position: relative;
-		max-width: 200px;
-		justify-content: center;
-		max-height: 9.5rem;
-		height: 100%;
-		padding: 0.75rem;
-		width: 100%;
-
-		align-items: center;
-
-		> :global(picture > img) {
-			object-fit: contain;
-			height: 100%;
-			width: 100%;
-		}
-
-		> :global(picture) {
-			flex-grow: 1;
-			width: 100%;
-			height: 100%;
-		}
 	}
 
 	.buttons {
@@ -203,12 +118,12 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		text-overflow: ellipsis;
+
 		color: var(--text);
-		width: 100px;
 		font-size: 0.875rem;
 		font-weight: 500;
 	}
+
 	.from-now {
 		justify-self: end;
 		gap: 0.3rem;

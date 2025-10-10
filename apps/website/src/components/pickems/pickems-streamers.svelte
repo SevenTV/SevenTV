@@ -325,6 +325,58 @@
 		background-color: black;
 	}
 
+	.streamer-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 2rem;
+
+		.streamer {
+			display: flex;
+			align-items: center;
+			padding: 0.5rem;
+			background-color: #191919;
+			border-radius: 0.5rem;
+			box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+			color: #999999;
+
+			img {
+				border-radius: 0.3rem;
+				height: 4rem;
+				width: 4rem;
+				margin-right: 0.5rem;
+			}
+
+			.streamer-link {
+				font-size: 0.75rem;
+			}
+
+			.info {
+				text-align: left;
+
+				h3 {
+					font-size: 1rem;
+				}
+
+				a {
+					display: flex;
+					align-items: center;
+					color: grey;
+					margin-top: 0.5rem;
+					font-size: 0.875rem;
+
+					:global(svg) {
+						margin-left: 0.5rem;
+					}
+				}
+			}
+		}
+		.streamer:hover {
+			transition: ease-in-out 0.3s;
+			background-color: rgba(255, 255, 255, 0.15);
+			color: white;
+		}
+	}
+
 	.alt_head {
 		font-size: 1.5rem;
 		font-weight: 600;
