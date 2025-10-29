@@ -144,7 +144,6 @@
 						.match-row {
 							flex-direction: column !important;
 						}
-
 					}
 				}
 			}
@@ -157,5 +156,4 @@
 			}
 		}
 	}
-
 </style>

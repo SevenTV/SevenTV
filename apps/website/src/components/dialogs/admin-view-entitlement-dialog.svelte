@@ -89,7 +89,10 @@
 	<form class="layout">
 		<h1>{$t("pages.admin.users.id.actions.entitlements.view")}</h1>
 		<hr />
-		<p>{$t("pages.admin.users.id.actions.entitlements.showing")} <b>{from.type.replace("_", " ")} {fromName}</b></p>
+		<p>
+			{$t("pages.admin.users.id.actions.entitlements.showing")}
+			<b>{from.type.replace("_", " ")} {fromName}</b>
+		</p>
 		{#await query(from)}
 			<Spinner />
 		{:then nodes}

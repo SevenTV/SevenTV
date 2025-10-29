@@ -20,4 +20,3 @@ export function isSummerGiftEvent() {
 		moment().isBefore(moment("2025-08-28T00:00:00Z"))
 	);
 }
-
