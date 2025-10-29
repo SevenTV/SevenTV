@@ -5,7 +5,7 @@
 	import StoreSection from "../store/store-section.svelte";
 	import Button from "../input/button.svelte";
 	import DropDown from "../drop-down.svelte";
-	import { priceFormat, variantName } from "$/lib/utils";
+	import { priceFormat } from "$/lib/utils";
 	import { user } from "$/lib/auth";
 	import { purchasePickems } from "$/lib/pickems";
 

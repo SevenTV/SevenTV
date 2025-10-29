@@ -4,7 +4,6 @@
 	import PaintComponent from "../paint.svelte";
 	import { fly } from "svelte/transition";
 	import { user } from "$/lib/auth";
-	import { t } from "svelte-i18n";
 
 	let { paints }: { paints: Paint[] } = $props();
 	let username = $derived($user?.mainConnection?.platformDisplayName ?? "Username");
