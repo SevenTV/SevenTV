@@ -23,7 +23,7 @@
 {/snippet}
 
 {#if user.style.activePaint}
-	<Paint paint={user.style.activePaint} enableDialog={enablePaintDialog} style="display: inline">
+	<Paint paint={user.style.activePaint} enableDialog={enablePaintDialog} style="display: inline; color: {user.highestRoleColor?.hex || null};">
 		{@render name()}
 	</Paint>
 {:else}
