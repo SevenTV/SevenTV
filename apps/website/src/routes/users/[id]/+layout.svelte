@@ -30,9 +30,7 @@
 	import { filterRoles } from "$/lib/utils";
 	import { page } from "$app/stores";
 	import Error from "$/components/error.svelte";
-	import { onDestroy } from "svelte";
-	import { onMount } from "svelte";
-	import { get } from "svelte/store";
+	import { onDestroy, onMount } from "svelte";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
