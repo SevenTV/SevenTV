@@ -34,6 +34,7 @@ pub struct User {
 	pub connections: Vec<UserConnection>,
 	#[graphql(guard = "PermissionGuard::one(UserPermission::ManageBilling)")]
 	pub stripe_customer_id: Option<CustomerId>,
+	pub created_at: chrono::DateTime<chrono::Utc>,
 	pub updated_at: chrono::DateTime<chrono::Utc>,
 	pub search_updated_at: Option<chrono::DateTime<chrono::Utc>>,
 
@@ -430,6 +431,7 @@ impl From<shared::database::user::FullUser> for User {
 			id: value.id,
 			connections: value.connections.iter().cloned().map(Into::into).collect(),
 			stripe_customer_id: value.stripe_customer_id.clone(),
+			created_at: value.id.timestamp(),
 			updated_at: value.updated_at,
 			search_updated_at: value.search_updated_at,
 			highest_role_rank: value.computed.highest_role_rank,
