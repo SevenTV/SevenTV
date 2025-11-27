@@ -36,4 +36,23 @@ impl BadgeQuery {
 			.map(|b| Badge::from_db(b, &global.config.api.cdn_origin))
 			.collect())
 	}
+
+	#[tracing::instrument(skip_all, name = "BadgeQuery::badge")]
+	async fn badge(
+		&self,
+		ctx: &Context<'_>,
+		id: shared::database::badge::BadgeId,
+	) -> Result<Option<Badge>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let badge = global
+			.badge_by_id_loader
+			.load(id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load badge"))?;
+
+		Ok(badge.map(|b| Badge::from_db(b, &global.config.api.cdn_origin)))
+	}
 }
