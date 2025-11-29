@@ -22,6 +22,27 @@ pub fn check_emote_name(value: impl AsRef<str>) -> bool {
 }
 
 #[derive(Debug, Copy, Clone)]
+pub struct EmoteAliasValidator;
+
+impl CustomValidator<String> for EmoteAliasValidator {
+	fn check(&self, value: &String) -> Result<(), async_graphql::InputValueError<String>> {
+		if check_emote_alias(value) {
+			Ok(())
+		} else {
+			Err(async_graphql::InputValueError::custom("invalid emote alias"))
+		}
+	}
+}
+
+pub fn check_emote_alias(value: impl AsRef<str>) -> bool {
+	static REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+
+	REGEX
+		.get_or_init(|| regex::Regex::new(r"^[^\x00-\x20\u{00A0}\u{180E}\u{2000}-\u{200A}\u{202F}\u{205F}\u{3000}\u{E0000}]{1,100}$").unwrap())
+		.is_match(value.as_ref())
+}
+
+#[derive(Debug, Copy, Clone)]
 pub struct NameValidator;
 
 impl CustomValidator<String> for NameValidator {
