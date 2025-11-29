@@ -422,6 +422,12 @@ impl User {
 				.unwrap_or(&Default::default()),
 		))
 	}
+
+	#[tracing::instrument(skip_all, name = "User::created_at")]
+	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
+		self.id.timestamp()
+	}
+
 }
 
 impl From<shared::database::user::FullUser> for User {
