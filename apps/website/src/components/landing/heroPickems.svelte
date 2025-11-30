@@ -130,13 +130,6 @@
 		position: absolute;
 		pointer-events: none;
 		bottom: 0;
-		img {
-			display: inline;
-			width: 100%;
-			position: relative;
-			margin-bottom: -13.5%;
-			height: 100%;
-		}
 	}
 	.hero {
 		display: flex;

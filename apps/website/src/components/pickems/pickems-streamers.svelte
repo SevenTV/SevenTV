@@ -356,18 +356,6 @@
 				h3 {
 					font-size: 1rem;
 				}
-
-				a {
-					display: flex;
-					align-items: center;
-					color: grey;
-					margin-top: 0.5rem;
-					font-size: 0.875rem;
-
-					:global(svg) {
-						margin-left: 0.5rem;
-					}
-				}
 			}
 		}
 		.streamer:hover {
