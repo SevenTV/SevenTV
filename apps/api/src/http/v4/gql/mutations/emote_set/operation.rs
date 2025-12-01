@@ -22,7 +22,7 @@ use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::middleware::session::Session;
 use crate::http::v4::gql::types::{Emote, EmoteSet, EmoteSetEmote};
-use crate::http::validators::{EmoteNameValidator, NameValidator, TagsValidator};
+use crate::http::validators::{EmoteAliasValidator, NameValidator, TagsValidator};
 use crate::transactions::{transaction_with_mutex, GeneralMutexKey, TransactionError};
 
 pub struct EmoteSetOperation {
@@ -128,6 +128,7 @@ impl EmoteSetOperation {
 #[derive(async_graphql::InputObject, Clone)]
 pub struct EmoteSetEmoteId {
 	pub emote_id: EmoteId,
+	#[graphql(validator(custom = "EmoteAliasValidator"))]
 	pub alias: Option<String>,
 }
 
@@ -922,7 +923,7 @@ impl EmoteSetOperation {
 		&self,
 		ctx: &Context<'_>,
 		id: EmoteSetEmoteId,
-		#[graphql(validator(custom = "EmoteNameValidator"))] alias: String,
+		#[graphql(validator(custom = "EmoteAliasValidator"))] alias: String,
 	) -> Result<EmoteSetEmote, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
