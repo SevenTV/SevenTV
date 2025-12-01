@@ -11,7 +11,6 @@
 	import type { DialogMode } from "./dialog.svelte";
 	import { t } from "svelte-i18n";
 	import Dialog from "./dialog.svelte";
-	import { t } from "svelte-i18n";
 
 	interface Props {
 		mode: DialogMode;
