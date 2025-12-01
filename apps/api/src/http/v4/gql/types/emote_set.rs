@@ -55,6 +55,7 @@ impl EmoteSet {
 			})
 			.cloned()
 			.collect_vec();
+		let total_count = filtered.len() as u64;
 
 		let emotes = global
 			.emote_by_id_loader
@@ -78,8 +79,8 @@ impl EmoteSet {
 				.collect();
 
 			Ok(SearchResult {
-				total_count: emotes.len() as u64,
-				page_count: (emotes.len() as u64 / chunk_size as u64) + 1,
+				total_count,
+				page_count: (total_count / chunk_size as u64) + 1,
 				items,
 			})
 		} else {
@@ -90,7 +91,7 @@ impl EmoteSet {
 				.collect();
 
 			Ok(SearchResult {
-				total_count: emotes.len() as u64,
+				total_count,
 				page_count: 1,
 				items,
 			})
