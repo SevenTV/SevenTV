@@ -136,7 +136,7 @@ pub struct PayPalConfig {
 #[serde(default)]
 pub struct ChatterinoConfig {
 	/// Current stable version (without the 'v' prefix)
-	#[default("7.5.3".into())]
+	#[default("7.5.4".into())]
 	pub stable_version: String,
 
 	/// Current beta version (without the 'v' prefix, [None] if there's no beta version)
