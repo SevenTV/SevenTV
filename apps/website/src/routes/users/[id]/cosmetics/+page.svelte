@@ -315,10 +315,6 @@
 	let paintMouseOver = $state();
 </script>
 
-<svelte:head>
-	<title>Cosmetics - {$t("page_titles.suffix")}</title>
-</svelte:head>
-
 {#await inventory}
 	<div class="spinner-container">
 		<Spinner />

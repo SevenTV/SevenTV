@@ -17,6 +17,8 @@
 				return `https://youtube.com/@${connection.platformUsername}`;
 			case Platform.Kick:
 				return `https://kick.com/${connection.platformUsername}`;
+			case Platform.Discord:
+				return `https://discord.com/users/${connection.platformId}`;
 			default:
 				return undefined;
 		}
