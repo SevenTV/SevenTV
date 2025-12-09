@@ -36,4 +36,23 @@ impl PaintQuery {
 			.map(|p| Paint::from_db(p, &global.config.api.cdn_origin))
 			.collect())
 	}
+
+	#[tracing::instrument(skip_all, name = "PaintQuery::paint")]
+	async fn paint(
+		&self,
+		ctx: &Context<'_>,
+		id: shared::database::paint::PaintId,
+	) -> Result<Option<Paint>, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		let paint = global
+			.paint_by_id_loader
+			.load(id)
+			.await
+			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load paint"))?;
+
+		Ok(paint.map(|p| Paint::from_db(p, &global.config.api.cdn_origin)))
+	}
 }

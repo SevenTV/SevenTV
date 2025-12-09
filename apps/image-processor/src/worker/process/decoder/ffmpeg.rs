@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use image_processor_proto::Task;
 use imgref::Img;
+use rational::Rational;
 use rgb::RGBA8;
 
 use super::{Decoder, DecoderError, DecoderFrontend, DecoderInfo, LoopCount};
@@ -113,9 +114,7 @@ impl<'data> FfmpegDecoder<'data> {
 			frame_count: input_stream_frames as usize,
 			// TODO: Support loop count from ffmpeg.
 			loop_count: LoopCount::Infinite,
-			// TODO: This is a rough estimate of the timescale. We store it as a single integer but perhaps we should,
-			// store it as a fraction instead. Would require changes throughout the codebase.
-			timescale: (input_stream_time_base.den as f64 / input_stream_time_base.num as f64).round() as u64,
+			timescale: Rational::new(input_stream_time_base.den, input_stream_time_base.num),
 		};
 
 		let average_frame_duration_ts = (input_stream_duration_ts / input_stream_frames) as u64;

@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use file_format::FileFormat;
 use image_processor_proto::Task;
+use rational::Rational;
 use scuffle_ffmpeg::error::FfmpegError;
 
 use super::frame::FrameRef;
@@ -108,7 +109,7 @@ pub struct DecoderInfo {
 	pub height: usize,
 	pub loop_count: LoopCount,
 	pub frame_count: usize,
-	pub timescale: u64,
+	pub timescale: Rational,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

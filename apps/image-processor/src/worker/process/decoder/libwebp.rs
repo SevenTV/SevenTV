@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::ptr::NonNull;
 
 use image_processor_proto::Task;
+use rational::Rational;
 
 use super::{Decoder, DecoderError, DecoderFrontend, DecoderInfo, LoopCount};
 use crate::worker::process::frame::FrameRef;
@@ -73,7 +74,7 @@ impl<'data> WebpDecoder<'data> {
 					_ => LoopCount::Finite(info.loop_count as usize),
 				},
 				frame_count: info.frame_count as usize,
-				timescale: 1000,
+				timescale: Rational::integer(1000),
 			},
 			max_input_duration: task
 				.limits
