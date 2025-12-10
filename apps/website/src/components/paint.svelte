@@ -180,5 +180,9 @@
 
 	div[role="button"] {
 		cursor: pointer;
+
+		// Fix long names with paints breaking the sidebar
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 </style>
