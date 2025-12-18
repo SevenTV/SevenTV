@@ -162,6 +162,10 @@
 	.paint {
 		display: grid;
 		justify-items: start;
+
+		// Fix long names with paints causing overflow
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.layer {
@@ -180,9 +184,5 @@
 
 	div[role="button"] {
 		cursor: pointer;
-
-		// Fix long names with paints breaking the sidebar
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 </style>
