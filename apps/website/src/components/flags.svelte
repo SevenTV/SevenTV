@@ -12,6 +12,7 @@
 		personal_use_denied: EyeSlash,
 		deleted: Trash,
 		renamed: PencilSimple,
+		personal_use_pending: ClockUser,
 
 		// Emote set flags
 		default: House,
@@ -45,6 +46,7 @@
 		unlisted: "#eb3d26",
 		personal_use_denied: "#eb3d26",
 		deleted: "#eb3d26",
+		personal_use_pending: "#888888",
 
 		you_rejected: "#eb3d26",
 		rejected: "#eb3d26",
@@ -106,6 +108,9 @@
 		if (emote.ranking && emote.ranking < 200) flags.push("trending");
 
 		if (emote.deleted) flags.push("deleted");
+
+		if (typeof emote?.flags?.approvedPersonal != "undefined" && !emote.flags.approvedPersonal)
+			flags.push("personal_use_pending");
 
 		return flags;
 	}
@@ -173,6 +178,7 @@
 <script lang="ts">
 	import {
 		Check,
+		ClockUser,
 		EyeSlash,
 		Fire,
 		FolderSimple,
@@ -214,6 +220,7 @@
 		unlisted: $t("flags.unlisted"),
 		personal_use_denied: $t("flags.personal_use_denied"),
 		renamed: "Renamed",
+		personal_use_pending: "Pending Personal Use Review",
 
 		// Emote set flags
 		default: $t("flags.default"),
@@ -275,7 +282,7 @@
 				<!-- svelte-ignore svelte_component_deprecated -->
 				<!-- Disable warning until phosphor-svelte has full Svelte 5 support -->
 				<svelte:component this={icons[flag]} size={1 * 16} />
-				<span class:hide-on-mobile={icons[flag]}>{names[flag] || flag.replace("_", " ")}</span>
+				<span class:hide-on-mobile={icons[flag]}>{names[flag] || flag.replace(/_/g, " ")}</span>
 			</span>
 		{/if}
 	{/each}
@@ -321,6 +328,7 @@
 		&.icon-only {
 			padding: 0;
 			background: none;
+			border-radius: 0;
 		}
 	}
 
